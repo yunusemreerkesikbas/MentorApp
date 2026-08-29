@@ -1,0 +1,114 @@
+{
+  "ledger": {
+    "questReward": {
+      "title": "Quest right"
+    },
+    "aiChatSpend": {
+      "title": "Coach chat right used",
+      "description": "An earned coach-chat right was used."
+    },
+    "aiChatRefund": {
+      "title": "Coach chat right returned",
+      "description": "An unused chat right was written back to your account."
+    },
+    "streakFreeze": {
+      "title": "Streak rescue",
+      "description": "The missed day was frozen with coin; your streak stayed."
+    },
+    "streakFreezeRefund": {
+      "title": "Streak rescue returned",
+      "description": "A freeze that could not apply was returned to your account."
+    },
+    "inviteConverted": {
+      "title": "Invite right",
+      "description": "When your invite became active, a right landed on your account."
+    },
+    "inviteReversal": {
+      "title": "Invite right reversed",
+      "description": "The invite right was taken back because the subscription was refunded."
+    },
+    "deepAnalysis": {
+      "title": "Deep analysis opened",
+      "description": "This week's deep analysis report was opened with coin."
+    },
+    "community": {
+      "title": "Community contribution",
+      "description": "XP was recorded for your contribution in the community."
+    },
+    "fallback": {
+      "title": "Ledger movement",
+      "description": "{unit} landed on your account."
+    }
+  },
+  "quests": {
+    "daily": {
+      "plan-task-done": {
+        "title": "Complete 1 task from today's plan",
+        "badge": "Rhythm"
+      },
+      "focus-session-completed": {
+        "title": "Finish 1 focus session",
+        "badge": "Focus"
+      },
+      "focus-goal-met": {
+        "title": "Reach today's focus goal",
+        "badge": "Focus"
+      },
+      "mood-checkin": {
+        "title": "Mark how you feel today",
+        "badge": "Mood"
+      }
+    },
+    "weekly": {
+      "effort-allowance": {
+        "title": "Be active {target} days this week",
+        "ledgerTitle": "Weekly active-day goal",
+        "badge": "Rhythm"
+      },
+      "focus-sessions": {
+        "title": "Complete {target} focus sessions this week",
+        "badge": "Focus"
+      },
+      "plan-tasks": {
+        "title": "Complete {target} plan tasks this week",
+        "badge": "Plan"
+      },
+      "streak-full-week": {
+        "title": "Be active all 7 days this week",
+        "badge": "Rhythm"
+      }
+    },
+    "onboarding": {
+      "profile-setup": {
+        "title": "Finish your profile (pick an exam)",
+        "badge": "Start"
+      },
+      "email-verified": {
+        "title": "Verify your email",
+        "badge": "Start"
+      },
+      "first-subscription": {
+        "title": "Start your first subscription",
+        "badge": "Start"
+      },
+      "invite-redeemed": {
+        "title": "Use an invite code",
+        "badge": "Start"
+      }
+    },
+    "milestone": {
+      "streak": {
+        "title": "Reach a {days}-day rhythm",
+        "badge": "Milestone"
+      },
+      "focus_sessions": {
+        "title": "Complete {count} focus sessions",
+        "badge": "Focus"
+      },
+      "plan_tasks": {
+        "title": "Complete {count} plan tasks",
+        "badge": "Plan"
+      }
+    }
+  }
+}

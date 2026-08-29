@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 import { AccountModule } from "../account/account.module";
+import { AdsModule } from "../ads/ads.module";
 import { AiModule } from "../ai/ai.module";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
@@ -34,6 +35,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
   // AiModule → cost/feedback metrics; AccountModule → the shared KVKK erasure path (anonymize).
   imports: [
     IdentityModule,
+    AdsModule,
     EconomyModule,
     ContentModule,
     PaymentsModule,

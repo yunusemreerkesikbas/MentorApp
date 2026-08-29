@@ -7,6 +7,7 @@ import { UsersRepository } from "../../../identity/infrastructure/users.reposito
 import { DRIZZLE } from "../../../../database/database.constants";
 import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
+import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationsService } from "../notifications.service";
 
@@ -51,12 +52,12 @@ export class BuddyActivityListener {
     if (!actor) return;
 
     await this.notifications
-      .createInApp(
+      .createFromTemplate(
         recipientId,
         "FORUM",
-        "Yol arkadaşından haber",
-        `${actor.displayName} bugün ilk seansını tamamladı 👏`,
+        NotificationCopyKey.BUDDY_FIRST_SESSION,
         "/study-session",
+        { args: { name: actor.displayName } },
       )
       .catch(() => {});
   }

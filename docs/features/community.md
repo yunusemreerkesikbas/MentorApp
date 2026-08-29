@@ -67,6 +67,50 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Yolculuk seviyesi paneli açık yüzeye geçti + redesign (2026-08-29)** —
+  `.profile-progress-panel` zemini `--color-btn` (`.community-workspace` içinde `#1d9bf0`) idi.
+  Üç sorun birden: (a) `--color-progress` **aynı renk**, yani madalyon halkası görünmüyor, %18 tint
+  mavi-üstüne-mavi çamur yapıyor ve `JourneyLevelProgressBar` dolgusu tamamen kayboluyordu;
+  (b) beyaz mürekkep bu zeminde **3.0:1** tavanına vuruyor — panelin 12/14/16px metinleri WCAG AA'yı
+  (4.5:1) geçemiyordu, %78 opaklıktaki gövde metni 2.4:1'de kalıyordu; (c) `--color-btn` bir buton
+  token'ı ve CTA rengi, yüzey token'ı değil — "mavi = tıklanabilir" sinyalini zayıflatıyordu.
+  Zemin `--color-soft` + `--color-border`, mürekkep `--color-main` (17.5:1) / `--color-secondary`
+  (5.8:1) oldu; ikisi de AA'yı rahat geçiyor. Bu sayede `--color-progress` ve
+  `--color-progress-track` yeniden görünür hale geldi, yani madalyon/progress bar'a kısa süreliğine
+  eklenen `onDark` prop'ları **gereksizleşip silindi** ve rozet panelde de guide'daki gibi görünüyor.
+  Guide tetikleyici ikonu ve `BadgeStrip` de on-dark mürekkepten çıktı. Yerleşim dikey ortalı
+  yığından **rozet + sola hizalı başlık** satırına döndü; seviye adı `text-xl` (panel başlığıyla
+  1.25 oran). Guide diyaloğunda "tamamlanmış" halkası `--color-btn-label` karışımıydı → beyaz
+  zeminde görünmezdi, `--color-border` oldu. Panelden **"Seri" satırı ve "… XP daha" metni
+  kaldırıldı**; artık kullanılmayan `next_remaining` anahtarı TR+EN'den silindi (`stat_streak*`
+  duruyor — `stat-snapshot.tsx` kullanıyor). Ölü `.profile-level-medallion--current svg` kuralı
+  silindi. Gotcha: `levels.*.destination` (12×2) anahtarları artık kullanılmıyor ama elle yazılmış
+  Türkçe yönelme hâlleri oldukları için bilerek bırakıldı. İlgili: `journey-level-profile.tsx`,
+  `journey-level-medallion.tsx`, `journey-level-progress.tsx`, `journey-level-guide.tsx`,
+  `profile-header.tsx`, `community-parity.css`, `messages/{tr,en}.json`.
+
+- **Gece Yolculuğu seviye rozetleri görselleşti (2026-08-29)** — `JourneyLevelMedallion` numaralı
+  hexagon SVG'yi bıraktı; artık `public/img/levels/{levelKey}.webp` görselini dairesel çerçeve
+  içinde `next/image` ile render ediyor. Yol `levelKey`'den türetilir (ayrı registry yok),
+  `achievement-art.tsx` desenini yansıtır. 12 asset 384×384 WebP, toplam 152 KB. `tier` prop'u
+  kaldırıldı — seviye numarası zaten guide/profil metninde var. **Kilitli seviye = soluk görsel +
+  üstünde kilit pill'i** (`opacity-35 grayscale` + `AchievementCollection`'daki beyaz yuvarlak
+  rozet): başarılar sekmesiyle aynı dil, bu yüzden guide grid'indeki köşe kilit ikonu kalktı
+  (çift kilit olurdu). Guide grid rozeti 48 → **64 px**
+  (`size-16`): 48 px'de ouroboros (`cycle`) ve mandala (`rhythm`) gibi düşük kontrastlı stok
+  görseller okunmuyordu, 64 px'de ana sembolleri ortaya çıkıyor. Tüm rozetlere `--color-progress`
+  %18 overlay: 12 stok görsel ortak palet paylaşmıyor, tint onları gece temasına yaklaştırıyor.
+  Seviye adları, bölümler, XP eşikleri, API sözleşmesi ve TR/EN kopya değişmedi. Gotcha: kaynak
+  görsellerin arka planı gömülü olduğu için `object-cover` kırpıyor — şeffaflık yok, daire içi renk
+  görselden gelir. İlgili: `journey-level-medallion.tsx`, `journey-level-guide.tsx`,
+  `journey-level-contract.spec.ts` (asset varlık testi), `apps/web/public/img/levels/`.
+
+- **Yoldaşlık sesi Dalga 5 — kaçmış empty + Lütfen (2026-08-29)** — Kaydedilenler / oda medyası / profil aktivitesi / takip listesi / following feed Puhu; `zone_about_empty` companion. `action_failed`, etiket/anket hataları ve `search_no_results*` companion (`Lütfen` kalktı). Hub/feed empty’ye dokunulmadı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `invite_headline` durdu. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 4 — başarı vitrini empty (2026-08-29)** — `achievements.public_empty` Puhu: “Paylaşılan bir iz henüz yok. Kazanınca burada durur.” Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: sıralama utancı yok. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 3 — community empty (2026-08-28)** — Hub/feed/QA/cevap ilk ziyaret empty Puhu; filtre, arama boşluğu ve `community.error` companion (`Lütfen tekrar dene` kalktı). Sıralama utancı yok. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: admin operatör UI’si dokunulmadı. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **X-benzeri Topluluk light palette (2026-08-28)** — Light temadaki sıcak gri sidebar ve görünmez
   beyaz ayırıcılar, yalnız `.community-workspace` kapsamında soğuk beyaz yüzeyler, mavi-gri ince
   sınırlar ve daha net sosyal mavi vurgu ile değiştirildi. Kartlar light temada gölge yerine flat

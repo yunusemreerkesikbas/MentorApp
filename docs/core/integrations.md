@@ -74,6 +74,18 @@
   `PHOTOREALISTIC`; if only terrain is usable, persist `TERRAIN_ONLY` with `HYBRID`. Leave the campus
   row disabled when coverage or any of the five official POI coordinates is unverified.
 
+### Google Ad Manager (web v1)
+- Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
+  `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
+- Verify the production domain and publish the real network's `ads.txt`; do not ship a placeholder
+  publisher id. Keep all `ads.*` flags off until this is complete.
+- In **Admin → Global settings → Network settings**, turn off Programmatic limited ads. Block adult,
+  gambling, dating, alcohol/tobacco, violent and other age-inappropriate categories; apply child
+  treatment to LGS inventory.
+- The web loads Google's limited-ads GPT URL only after backend eligibility. EEA/UK/Switzerland stays
+  off until a compatible CMP and legal review exist. Update privacy/cookie/foreign-transfer copy
+  before rollout; limited ads is not synonymous with “no data processing.”
+
 ### Render (hosting)
 - Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.
 - Cost shield (§8): Neon max-CU + budget alert + Cloudflare edge rate-limit.

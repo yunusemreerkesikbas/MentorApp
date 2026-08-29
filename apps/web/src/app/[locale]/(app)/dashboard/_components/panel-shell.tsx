@@ -69,6 +69,7 @@ import {
 } from "@/lib/weekly-recap";
 
 import { CommunityCard } from "./community-card";
+import { RewardedAdOffer } from "@/components/ads/rewarded-ad-offer";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { useMoodCheckin } from "./mood-checkin";
 import { SoftPromoShell } from "./soft-promo-shell";
@@ -599,6 +600,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
           </motion.div>
           <motion.div variants={staggerItemVariants}>
             <CommunityCard />
+          </motion.div>
+          <motion.div variants={staggerItemVariants}>
+            <RewardedAdOffer />
           </motion.div>
         </aside>
       </motion.div>

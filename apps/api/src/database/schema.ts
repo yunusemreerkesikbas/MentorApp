@@ -1832,6 +1832,86 @@ export const ledgerEntries = pgTable(
   ],
 );
 
+/**
+ * Mutable control rows that reserve organic Coin-capacity before a reward is fulfilled. These are
+ * deliberately separate from the append-only ledger: only a settled reservation creates Coin.
+ * RLS is SERVICE/ADMIN only; source modules use EconomyService instead of touching this table.
+ */
+export const coinGrantReservations = pgTable(
+  "coin_grant_reservations",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    amount: integer("amount").notNull(),
+    source: text("source").notNull(),
+    refId: text("ref_id").notNull(),
+    status: text("status").notNull().default("ACTIVE"),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    settledAt: timestamp("settled_at", { withTimezone: true }),
+    releasedAt: timestamp("released_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("coin_grant_reservations_source_ref_unique_idx").on(t.source, t.refId),
+    index("coin_grant_reservations_user_status_expiry_idx").on(t.userId, t.status, t.expiresAt),
+    index("coin_grant_reservations_user_created_idx").on(t.userId, t.createdAt),
+    check("coin_grant_reservations_amount_positive", sql`${t.amount} > 0`),
+    check(
+      "coin_grant_reservations_status_check",
+      sql`${t.status} in ('ACTIVE', 'SETTLED', 'RELEASED')`,
+    ),
+  ],
+);
+
+/* =============================== Ads =====================================
+ * Rewarded-ad control state. Passive banner impressions stay in Google Ad Manager; Mentor stores
+ * only reward sessions needed for abuse prevention, idempotency and aggregate operational metrics.
+ * RLS: SERVICE/ADMIN only. Account erasure may delete these control rows; the ledger stays immutable.
+ * ========================================================================= */
+export const adRewardSessions = pgTable(
+  "ad_reward_sessions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    placementId: text("placement_id").notNull(),
+    platform: text("platform").notNull().default("WEB"),
+    provider: text("provider").notNull().default("GOOGLE_AD_MANAGER"),
+    proofType: text("proof_type").notNull().default("CLIENT_EVENT"),
+    status: text("status").notNull().default("CREATED"),
+    rewardCoin: integer("reward_coin").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
+    rejectionCode: text("rejection_code"),
+    providerTransactionId: text("provider_transaction_id"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("ad_reward_sessions_user_status_expiry_idx").on(t.userId, t.status, t.expiresAt),
+    index("ad_reward_sessions_user_created_idx").on(t.userId, t.createdAt),
+    uniqueIndex("ad_reward_sessions_provider_tx_unique_idx")
+      .on(t.providerTransactionId)
+      .where(sql`${t.providerTransactionId} is not null`),
+    check("ad_reward_sessions_reward_positive", sql`${t.rewardCoin} > 0`),
+    check(
+      "ad_reward_sessions_status_check",
+      sql`${t.status} in ('CREATED', 'REWARDED', 'CLOSED', 'EXPIRED', 'REJECTED')`,
+    ),
+  ],
+);
+
 /* --- Invite (§3 light economy slice 2a): davet → dönüşürse coin -------------
  * One stable code per inviter. A user can be invited at most once (unique). Reward fires only on
  * the invited user's subscription activation (forward-only) — see economy InviteEventsListener.

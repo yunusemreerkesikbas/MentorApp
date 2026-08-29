@@ -1,0 +1,162 @@
+{
+  "inApp": {
+    "streakBroken": {
+      "register": "companion",
+      "title": "We'll be here tomorrow",
+      "body": "Your {days}-day streak paused — the path didn't. One small step today is enough."
+    },
+    "streakMilestone7": {
+      "register": "puhu",
+      "title": "{days} days — rhythm begins",
+      "body": "You've come back for seven days. This isn't one day anymore; it's your rhythm."
+    },
+    "streakMilestone14": {
+      "register": "puhu",
+      "title": "{days} days in a row",
+      "body": "Two weeks on your path. This rhythm is yours."
+    },
+    "streakMilestone30": {
+      "register": "puhu",
+      "title": "{days}-day streak",
+      "body": "Thirty days. Small steps became a road."
+    },
+    "streakMilestone100": {
+      "register": "puhu",
+      "title": "{days} days — remarkable",
+      "body": "This steadfastness is part of your path now. We're with you."
+    },
+    "moodLow": {
+      "register": "companion",
+      "title": "Today might feel heavy",
+      "body": "Even one small step is enough. I'm here."
+    },
+    "firstSession": {
+      "register": "puhu",
+      "title": "Today's first step is in",
+      "body": "Starting was the hard part. The rest walks with you."
+    },
+    "planCompleted": {
+      "register": "puhu",
+      "title": "Today's plan is done",
+      "body": "{count} tasks finished. You took good care of yourself today."
+    },
+    "dailyReminder": {
+      "register": "puhu",
+      "title": "Take a step today",
+      "body": "A short session or a check-in is enough. We're right here with you."
+    },
+    "sessionReturn": {
+      "register": "puhu",
+      "title": "Tomorrow's step is waiting",
+      "body": "A short session is enough. We're right here with you."
+    },
+    "sessionReturnWithSubject": {
+      "register": "puhu",
+      "title": "Tomorrow's step is waiting",
+      "body": "A short session for {subject} is enough. We're right here with you."
+    },
+    "notebookReviewSingular": {
+      "register": "companion",
+      "title": "Your notebook is waiting",
+      "body": "Time to look at one question again. Five minutes is enough."
+    },
+    "notebookReviewPlural": {
+      "register": "companion",
+      "title": "Your notebook is waiting",
+      "body": "Time to look at {count} questions again. Five minutes is enough."
+    },
+    "questionAnswered": {
+      "register": "puhu",
+      "title": "An answer arrived",
+      "body": "Someone reached out to what you asked."
+    },
+    "threadCommented": {
+      "register": "puhu",
+      "title": "A comment for you",
+      "body": "Someone left a word on your post."
+    },
+    "commentReplied": {
+      "register": "puhu",
+      "title": "A reply arrived",
+      "body": "Your comment found someone."
+    },
+    "answerAccepted": {
+      "register": "puhu",
+      "title": "Your answer was chosen",
+      "body": "What you wrote became the best answer. Nice work."
+    },
+    "userMentioned": {
+      "register": "puhu",
+      "title": "Your name came up",
+      "body": "Someone mentioned you in a post."
+    },
+    "memberRequested": {
+      "register": "puhu",
+      "title": "Someone wants in",
+      "body": "A new request landed in a space you look after."
+    },
+    "newFollower": {
+      "register": "puhu",
+      "title": "Someone found you",
+      "body": "{name} started following you."
+    },
+    "buddyRequested": {
+      "register": "puhu",
+      "title": "A path-buddy invite",
+      "body": "{name} wants to walk with you."
+    },
+    "buddyAccepted": {
+      "register": "puhu",
+      "title": "Your invite was accepted",
+      "body": "{name} said yes — you're path buddies now."
+    },
+    "buddyNudged": {
+      "register": "puhu",
+      "title": "A nudge from your buddy",
+      "body": "{name} nudged you — a session today?"
+    },
+    "buddyFirstSession": {
+      "register": "puhu",
+      "title": "News from your buddy",
+      "body": "{name} finished their first session today."
+    },
+    "studyRoomSessionStarted": {
+      "register": "puhu",
+      "title": "Someone sat down",
+      "body": "{name} sat at {roomName}. You can join too."
+    }
+  },
+  "email": {
+    "identityVerifyEmail": {
+      "subject": "Mentor — Confirm your email",
+      "greeting": "Hi {name},",
+      "body": "One tap is enough — your account is waiting.",
+      "cta": "Confirm my email"
+    },
+    "identityResetPassword": {
+      "subject": "Mentor — Reset your password",
+      "greeting": "Hi {name},",
+      "body": "Use the link below whenever you're ready to set a new password.",
+      "cta": "Reset my password"
+    },
+    "paymentsDunning": {
+      "subject": "Mentor — Payment didn't go through",
+      "greeting": "Hi {name},",
+      "body": "The payment didn't complete. A look at your subscription settings is enough to keep Premium going."
+    },
+    "paymentsWelcome": {
+      "subject": "Mentor — Welcome to Premium",
+      "greeting": "Hi {name},",
+      "body": "Your coach is with you now. Take a small step today — we'll carry the rest together."
+    },
+    "dailyReminder": {
+      "subject": "Mentor — Take a step today",
+      "greeting": "Hi {name},",
+      "body": "Want to set aside a small step for yourself today? We're right here with you."
+    },
+    "fallback": {
+      "subject": "Mentor",
+      "body": "We have a note for you."
+    }
+  }
+}

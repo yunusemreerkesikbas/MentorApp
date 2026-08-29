@@ -261,7 +261,7 @@ export function BoardEditorShell() {
 
   const addText = useCallback(() => {
     if (state.doc.items.filter((i) => i.kind === "text").length >= VISION_BOARD_MAX_TEXTS) {
-      toast.error({ title: t("limit_texts") });
+      toast.warning({ title: t("limit_texts") });
       return;
     }
     dispatch({
@@ -275,7 +275,7 @@ export function BoardEditorShell() {
       const room =
         VISION_BOARD_MAX_IMAGES - state.doc.items.filter((i) => i.kind === "image").length;
       if (room <= 0) {
-        toast.error({ title: t("limit_images") });
+        toast.warning({ title: t("limit_images") });
         return;
       }
       const queued = Array.from(files).slice(0, room);
@@ -283,12 +283,12 @@ export function BoardEditorShell() {
       try {
         for (const [index, file] of queued.entries()) {
           if (!isSupportedBoardImage(file)) {
-            toast.error({ title: t("image_unsupported") });
+            toast.warning({ title: t("image_unsupported") });
             setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }
           if (!isWithinBoardImageLimit(file)) {
-            toast.error({ title: t("image_too_large") });
+            toast.warning({ title: t("image_too_large") });
             setUploadProgress({ done: index + 1, total: queued.length });
             continue;
           }

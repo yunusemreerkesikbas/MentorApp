@@ -1,15 +1,15 @@
 {
   "mood": {
-    "VERY_LOW": "Bugün ağır bir gün, biliyorum. Kendine nazik ol — küçük bir mola da ilerlemenin parçası. Yanındayım.",
+    "VERY_LOW": "Bugün ağır, biliyorum. Kendine nazik ol — küçük bir mola da yolun parçası. Buradayım.",
     "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
-    "LOW": "Zor günler olur. Bugün sadece tek bir küçük adım at, gerisi yarına kalsın. Buradayım.",
-    "OKAY": "İyi gidiyorsun. Bugünü olduğu gibi kabul et ve elinden geleni yap — bu yeterli.",
-    "GOOD": "Enerjin yerinde, harika! Bu motivasyonu bugünkü planına taşı, çok şey başaracaksın.",
-    "GREAT": "Müthiş hissettiğine sevindim! Bu coşkuyla bugün kendine güzel bir ivme kazandır."
+    "LOW": "Zor günler olur. Bugün tek bir küçük adım yeter, gerisi yarına kalsın. Buradayım.",
+    "OKAY": "Bugün böyle. Elinden geleni yap — bu yeterli. Yanındayım.",
+    "GOOD": "Enerjin yerinde. Bunu bugünün küçük bir adımına taşı — yeter.",
+    "GREAT": "İçinden geliyor bugün. Bu hali tek bir adıma bağla; gerisi gelir."
   },
   "motivation": {
     "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
-    "GOING": "İstikrarın harika gidiyor. Bugün de devam edelim, yanındayım."
+    "GOING": "Ritmin duruyor. Bugün de küçük bir adım yeter. Yanındayım."
   },
   "coachEvidence": {
     "todayPlan": "Bugünkü planında {done}/{total} görev tamamlandı (yüzde {completionRate}). Ders dağılımı: {subjects}.",
@@ -58,7 +58,7 @@
     }
   },
   "mentorV2": {
-    "calibration": "Sana gerçekten uygun eşlik edebilmem için önce şunu netleştirelim: zorlandığında daha çok sakin destek mi, dengeli bir yaklaşım mı, yoksa doğrudan aksiyon mu istersin? İstersen bu adımı atlayabilirsin.",
+    "calibration": "Zorlandığında nasıl durayım: önce sakin mi, dengeli mi, yoksa doğrudan bir adım mı? Bu adımı atlamak da olur.",
     "createTask": "Plana ekle",
     "openPlanAdaptation": "Planı birlikte hafiflet",
     "startSession": "Önerilen görevin seansını başlat",
@@ -69,8 +69,8 @@
   "nextAction": {
     "START_TASK": {
       "title": "{taskTitle} ile başla",
-      "message": "Bugünün tek küçük adımı bu. Hazırsan başlayalım.",
-      "lowMoodMessage": "Bugün sadece bu küçük adıma odaklan. Kısa tutmak da tamam."
+      "message": "Bugünün tek küçük adımı bu. Hazırsan buradayım.",
+      "lowMoodMessage": "Bugün yalnız bu küçük adım. Kısa tutmak da olur."
     },
     "ADD_TASK": {
       "title": "Bugün için bir görev ekle",
@@ -78,7 +78,7 @@
     },
     "DAY_COMPLETE": {
       "title": "Bugünün planı tamam",
-      "message": "Bugünlük bu kadar. Emeğini fark et ve dinlen."
+      "message": "Bugünlük bu kadar. Emeğini fark et, dinlen."
     }
   },
   "planAdaptation": {

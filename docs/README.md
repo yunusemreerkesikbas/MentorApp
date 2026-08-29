@@ -14,6 +14,9 @@
 - [core/repo-and-conventions.md](./core/repo-and-conventions.md) — repo hygiene, standards, git, agent-skills
 - [core/design-system.md](./core/design-system.md) — `@mentor/ui` design system, fonts, responsive shell
 
+## Copy — [`copy/`](./copy/voice.md)
+- [copy/voice.md](./copy/voice.md) — dual register (Puhu / companion), *sen* rule, banned patterns, before/after
+
 ## Feature docs — [`features/`](./features/README.md)
 - [features/identity.md](./features/identity.md) — auth, RLS, JWT, web auth screens (W0)
 - [features/content.md](./features/content.md) — exam calendar, knowledge center, pgvector embeddings (W1)
@@ -23,6 +26,7 @@
 - [features/notifications.md](./features/notifications.md) — job queue, email, web push, config registry + feature flags (W5)
 - [features/admin.md](./features/admin.md) — user management, content editors, refunds, metrics, fine RBAC, audit log (W6)
 - [features/economy.md](./features/economy.md) — XP/coin ledger, capped rewards, quests, invite, spend (W6)
+- [features/ads.md](./features/ads.md) — limited contextual ads + voluntary rewarded Coin (web v1)
 - [features/forum.md](./features/forum.md) — zones, feed, Q&A, moderation, SEO (W7)
 - [features/web-shell.md](./features/web-shell.md) — landing, app nav, layout, shared motion, B2C UI polish
 - [features/i18n.md](./features/i18n.md) — next-intl TR/EN URL-based internationalization

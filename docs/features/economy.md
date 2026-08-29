@@ -74,6 +74,31 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Seviye rozeti SVG kontratı kaldırıldı (2026-08-29)** — 2026-08-22 girdisindeki
+  "gelecekteki SVG ailesi için `assets:check:journey-levels`" cümlesi **artık geçersiz**. Seviye
+  rozetleri raster WebP'ye geçti (`public/img/levels/{levelKey}.webp`), planlanan bespoke relic
+  ailesi iptal edildi. SVG-only validator (`<svg>` dokümanı, 1024 kare viewBox, şeffaf köşeler,
+  vektör-dışı içerik yasağı) raster için tek bir kontrolü bile geçerli olmadığından üç script ve
+  iki package.json komutu silindi; hedefi olan `public/journey-levels/puhu` dizini zaten hiç
+  oluşturulmamıştı. Yerine `journey-level-contract.spec.ts` içinde 12 asset için varlık kontrolü
+  var — CI'da `turbo run test` ile koşar. XP eşikleri, ledger ve `CommunityLevelView` sözleşmesi
+  değişmedi. İlgili: `journey-level-medallion.tsx`, `journey-level-contract.spec.ts`,
+  `apps/web/package.json`, detay için [community.md](./community.md) aynı tarihli girdi.
+
+- **2026-08-29 — Reward kapasite rezervasyonu** — Reklam gibi dış akışlar Coin vaat etmeden önce
+  günlük/haftalık organic cap içinde `coin_grant_reservations` kapasitesi ayırabilir; settle tek
+  idempotent ledger grant üretir, close/expiry kapasiteyi bırakır. Ledger append-only kalır.
+
+- **Yoldaşlık sesi Dalga 8 — quest katalog i18n (2026-08-29)** — `QUEST_CATALOG` öğrenci başlıkları (`title` / `badge` / `ledgerTitle`) `economy.json` `quests.*` companion kopyasına çekildi; id ve ödül mekaniği durdu. `{target}` kartta çözülür, ledger satırında strip; kilometre `{days}`/`{count}` id’den gelir. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: admin Swal ve `quests_subtitle` bu dalgada değil. İlgili: `quest.catalog.ts`, `quest-copy.ts`, `quest.service.ts`, `ledger-entry-view.ts`, `locales/{tr,en}/economy.json`.
+
+- **Yoldaşlık sesi Dalga 7 — ledger i18n (2026-08-29)** — `toLedgerEntryView` sabit TR cümleleri `economy.json` companion hak diline çekildi (`ödül` → `hak`, `Accept-Language`). Quest açıklaması hâlâ katalog TR. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `QUEST_CATALOG` başlıkları bu dalgada değil. İlgili: `ledger-entry-view.ts`, `locales/{tr,en}/economy.json`.
+
+- **Yoldaşlık sesi Dalga 6 — davet overlay (2026-08-29)** — `invite_eyebrow` / `invite_headline` Puhu (“Birini yanına al. Yol yalnız gitmesin.”); `invite_subtitle` / `redeem_pending` companion hak gerçeği (ödül/FOMO yok, miktar yok). `quests_subtitle` ve coin satırları durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: dönüşüm hâlâ kayıt+aktif; cap sunucuda. İlgili: `apps/web/messages/{tr,en}.json`, `economy-invite-card.tsx`.
+
+- **Yoldaşlık sesi Dalga 5 — davet kodu kayıt hatası (2026-08-29)** — `economy.redeem_failed` companion: “Kaydedilemedi.” → “Şimdi kaydolmadı.” `invite_headline` dokunulmadı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: FOMO kümesi duruyor. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 4 — ledger empty (2026-08-29)** — `economy.ledger_empty` / `ledger_error` companion: hak defteri, kutlama değil (“Henüz bir hareket düşmedi.”). `invite_headline` FOMO satırları dokunulmadı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: coin cüzdan dili yok. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **Commit-sonrası XP seviye sinyali (2026-08-22)** — Başarılı ve gerçekten yeni bir XP ledger
   satırı, yeni bakiye hesaplandıktan sonra `economy.xp.changed` olayı yayınlar. İdempotent tekrarlar
   ve Coin hareketleri olay üretmez. Quest grantleri dış transaction tamamlanmadan sinyal vermez;

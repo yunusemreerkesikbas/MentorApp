@@ -8,6 +8,7 @@ import {
   type CoachingQueryPort,
 } from "../../coaching/domain/coaching-query.port";
 import { EmailTemplate, JobName } from "../domain/notifications.constants";
+import { NotificationCopyKey } from "../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { NotificationsService } from "./notifications.service";
@@ -39,11 +40,15 @@ export class DailyReminderService {
       const pushOn = prefs?.pushEnabled ?? true;
 
       const dedupeKey = `daily-reminder:${dateIso}`;
-      const title = "Bugün bir adım at";
-      const body = "Küçük bir çalışma veya mood check-in bile yeter. Seninle buradayız.";
+      const { title, body } = this.notifications.resolveCopy(NotificationCopyKey.DAILY_REMINDER);
 
       // In-app inbox is a separate channel — always create regardless of email/push prefs
-      await this.notifications.createInApp(user.userId, "COACH", title, body, "/study-session");
+      await this.notifications.createFromTemplate(
+        user.userId,
+        "COACH",
+        NotificationCopyKey.DAILY_REMINDER,
+        "/study-session",
+      );
 
       if (!emailOn && !pushOn) {
         skipped += 1;

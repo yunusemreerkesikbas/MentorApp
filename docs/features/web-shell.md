@@ -63,6 +63,34 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-08-29 — Limited GPT altyapısı** — Backend placement kararı sonrası yüklenen singleton GPT
+  loader, contextual slot ve gönüllü rewarded Coin kartı eklendi. Reklam hazır olmadan CTA aktif
+  olmaz; kapatma/no-fill Coin vermez; tamamlamada ekonomi pill'leri yenilenir.
+
+- **Toast: Puhu yerine durum ikonu (2026-08-29)** — Toast'ların leading'i maskottan **durum
+  ikonuna** geçti. Puhu çıktı çünkü toast, ekranda ne varsa onun üzerine biniyor: Puhu'lu bir empty
+  state veya Koç FAB'ı varken ikinci maskot çıkıyordu ve `TOAST_MAX_STACK = 3` olduğu için aynı anda
+  üç maskot mümkündü — DESIGN.md §8.3 "at most one banner-class visual per page viewport". Ayrıca
+  `error` zaten ikondu (`CircleAlert`), yani aynı bileşende iki görsel dil vardı. Maskot empty
+  state / dialog / Koç hub'ında kalıyor.
+  - **Tip seti `success | error | warning | info`.** Ölü `coach` varyantı silindi (sıfır çağrı
+    yeri). Yeni `warning`, vision-board'daki dört "limit doldu / dosya desteklenmiyor / dosya çok
+    büyük" toast'ını `error` kırmızısından çıkardı — bunlar başarısızlık değil sınır uyarısı, ve
+    kırmızı §0 anti-shaming tonuna aykırıydı.
+  - **Asset sözleşmesi:** `/visuals/toast-{success,error,warning,info}.svg`, 40px kutu (Puhu `sm`
+    ile aynı ayak izi → layout kaymaz). Final art tasarımdan gelir (DESIGN.md §8.1); dosya yokken
+    `ToastIcon` token renkli lucide glifine düşer, yani kırık görsel değil çalışan bir yedek görünür.
+  - **Kontrast:** DESIGN.md'de `--color-warning` yok. Ham `--color-star` kendi well'i üzerinde
+    ~1.5:1, ham `--color-progress` ~2.2:1 — ikisi de WCAG 1.4.11 metin-dışı 3:1 eşiğinin altındaydı.
+    İkisi de `--color-main`'e karıştırıldı (tema-uyumlu: light'ta koyulaşır, dark'ta açılır).
+    Ölçülen: light 3.54–5.09, dark 5.96–8.59.
+  - `puhuVariant` toast seçeneği ve `getPuhuToastLeading` kaldırıldı (toast'ta hiç çağrılmıyordu);
+    `leading` tam override'ı duruyor. `mentor-dialog`'un `puhuVariant`'ı etkilenmedi.
+  İlgili: `toast-lead.tsx`, `mentor-toast.ts`, `packages/ui/src/components/toast/*`,
+  `board-editor-shell.tsx`.
+
+- **Yoldaşlık sesi Dalga 5 — panel toast (2026-08-29)** — `streak_rescue_error_message` / `task_update_error_message` companion: `Lütfen` kalktı, D3 ağız. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seri kurtarma FOMO metni bu dalgada değil. İlgili: `apps/web/messages/{tr,en}.json`.
+
 - **Premium kampanya banner (2026-08-23)** — Paylaşılan `PremiumCampaignBanner`: sol hediye
   (`upgrade-premium-2.svg`), sağda 7 gün deneme + koç vurgusu, cyan→charcoal linear wash
   (`.premium-campaign-banner`, tema takip etmez). Tıklayınca paywall açılır. Yalnız
@@ -315,10 +343,10 @@ http://localhost:3000/panel               # daily ritual hub
   `DashProgress`. Separate from post-login onboarding. _(0062.)_
 - **Toast notification stack** — Stitch "Mentor Puhu Design System" toast implemented in `@mentor/ui`
   - root `ToastProviderShell`. Usage in client components:
-    `const { success, error, coach } = useMentorToast();` then
-    `success({ title: "…", message: "…", duration: 3000, puhuVariant: "happy" })`. Puhu variants per
-    toast type (overridable via `puhuVariant` / `leading`); error uses SVG icon (gentle-error PNG not yet
-    designed). Viewport portals to `document.body`; z-index `100`; mobile 335px top-center, desktop 380px
+    `const { success, error, warning, info } = useMentorToast();` then
+    `success({ title: "…", message: "…", duration: 3000 })`. Leading is the variant status icon
+    (override with `leading`); Puhu no longer appears in toasts — see the 2026-08-29 entry above.
+    Viewport portals to `document.body`; z-index `100`; mobile 335px top-center, desktop 380px
     top-right. _(0063.)_
 - **Dialog / modal** — Stitch Prompt 02 variants as one generic system in `@mentor/ui` +
   `DialogProviderShell` (inside toast shell). Usage:

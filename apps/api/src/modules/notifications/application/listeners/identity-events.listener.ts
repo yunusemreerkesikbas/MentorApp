@@ -5,7 +5,8 @@ import {
   type BuddyEvent,
   type UserFollowed,
 } from "../../../identity/domain/identity.events";
-import { NotificationsService, REALTIME_QUEUE_TTL_MS } from "../notifications.service";
+import { NotificationCopyKey } from "../../domain/notification-copy";
+import { NotificationsService } from "../notifications.service";
 
 /**
  * Consumes identity domain events → in-app notifications. Best-effort: a failed notification never
@@ -25,7 +26,9 @@ export class IdentityEventsListener {
     // A follower without a handle has no linkable profile page → notify without a link.
     const link = e.actorUsername ? `/community/member/${e.actorUsername}` : undefined;
     await this.notifications
-      .createInApp(e.recipientId, "FORUM", "Yeni takipçi", `${e.actorDisplayName} seni takip etti.`, link)
+      .createFromTemplate(e.recipientId, "FORUM", NotificationCopyKey.NEW_FOLLOWER, link, {
+        args: { name: e.actorDisplayName },
+      })
       .catch((err: unknown) =>
         this.logger.warn(`follow notification failed for ${e.recipientId}: ${String(err)}`),
       );
@@ -35,40 +38,25 @@ export class IdentityEventsListener {
 
   @OnEvent(IdentityEventTopic.BUDDY_REQUESTED)
   async onBuddyRequested(e: BuddyEvent): Promise<void> {
-    await this.createBuddyNotification(
-      e,
-      "Yol arkadaşı daveti",
-      `${e.actorDisplayName} seni yol arkadaşı olmak için davet etti.`,
-    );
+    await this.createBuddyNotification(e, NotificationCopyKey.BUDDY_REQUESTED);
   }
 
   @OnEvent(IdentityEventTopic.BUDDY_ACCEPTED)
   async onBuddyAccepted(e: BuddyEvent): Promise<void> {
-    await this.createBuddyNotification(
-      e,
-      "Davetin kabul edildi",
-      `${e.actorDisplayName} davetini kabul etti — artık yol arkadaşısınız.`,
-    );
+    await this.createBuddyNotification(e, NotificationCopyKey.BUDDY_ACCEPTED);
   }
 
   @OnEvent(IdentityEventTopic.BUDDY_NUDGED)
   async onBuddyNudged(e: BuddyEvent): Promise<void> {
-    await this.createBuddyNotification(
-      e,
-      "Yol arkadaşından dürtme",
-      `${e.actorDisplayName} seni dürttü — bugün bir seansa var mısın?`,
-    );
+    await this.createBuddyNotification(e, NotificationCopyKey.BUDDY_NUDGED);
   }
 
-
-  private async createBuddyNotification(
-    e: BuddyEvent,
-    title: string,
-    body: string,
-  ): Promise<void> {
+  private async createBuddyNotification(e: BuddyEvent, templateKey: NotificationCopyKey): Promise<void> {
     if (e.recipientId === e.actorId) return;
     await this.notifications
-      .createInApp(e.recipientId, "FORUM", title, body, "/study-session")
+      .createFromTemplate(e.recipientId, "FORUM", templateKey, "/study-session", {
+        args: { name: e.actorDisplayName },
+      })
       .catch((err: unknown) =>
         this.logger.warn(`buddy notification failed for ${e.recipientId}: ${String(err)}`),
       );

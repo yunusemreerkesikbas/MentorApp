@@ -179,7 +179,6 @@ export function JourneyLevelCelebration({
             transition={{ duration: reduceMotion ? 0.12 : 0.38, ease: "easeOut" }}
           >
             <JourneyLevelMedallion
-              tier={celebration.tier}
               levelKey={celebration.key}
               current
               className="size-36 sm:size-44"

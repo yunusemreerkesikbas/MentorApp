@@ -19,14 +19,14 @@ const activePair = () => ({
 });
 
 describe("BuddyActivityListener.onBuddyFirstSession", () => {
-  let notifications: { createInApp: ReturnType<typeof vi.fn> };
+  let notifications: { createFromTemplate: ReturnType<typeof vi.fn> };
   let buddy: { getActivePair: ReturnType<typeof vi.fn> };
   let usersRepo: { findByIdService: ReturnType<typeof vi.fn> };
   let deliveries: { tryRecord: ReturnType<typeof vi.fn> };
   let listener: BuddyActivityListener;
 
   beforeEach(() => {
-    notifications = { createInApp: vi.fn().mockResolvedValue(undefined) };
+    notifications = { createFromTemplate: vi.fn().mockResolvedValue(undefined) };
     buddy = { getActivePair: vi.fn().mockResolvedValue(activePair()) };
     usersRepo = { findByIdService: vi.fn().mockResolvedValue({ displayName: "Elif" }) };
     deliveries = { tryRecord: vi.fn().mockResolvedValue(true) };
@@ -45,12 +45,12 @@ describe("BuddyActivityListener.onBuddyFirstSession", () => {
       expect.anything(),
       expect.objectContaining({ userId: "partner", channel: "IN_APP" }),
     );
-    expect(notifications.createInApp).toHaveBeenCalledWith(
+    expect(notifications.createFromTemplate).toHaveBeenCalledWith(
       "partner",
       "FORUM",
       expect.any(String),
-      expect.stringContaining("Elif"),
       "/study-session",
+      expect.objectContaining({ args: { name: "Elif" } }),
     );
   });
 
@@ -59,24 +59,24 @@ describe("BuddyActivityListener.onBuddyFirstSession", () => {
     await listener.onBuddyFirstSession({ userId: "actor" });
     expect(deliveries.tryRecord).not.toHaveBeenCalled();
     expect(usersRepo.findByIdService).not.toHaveBeenCalled();
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("skips when already deduped for the day (tryRecord false)", async () => {
     deliveries.tryRecord.mockResolvedValue(false);
     await listener.onBuddyFirstSession({ userId: "actor" });
     expect(usersRepo.findByIdService).not.toHaveBeenCalled();
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("skips when the actor can't be resolved (no name)", async () => {
     usersRepo.findByIdService.mockResolvedValue(undefined);
     await listener.onBuddyFirstSession({ userId: "actor" });
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("never throws when the notification write fails (best-effort)", async () => {
-    notifications.createInApp.mockRejectedValueOnce(new Error("db down"));
+    notifications.createFromTemplate.mockRejectedValueOnce(new Error("db down"));
     await expect(listener.onBuddyFirstSession({ userId: "actor" })).resolves.toBeUndefined();
   });
 });

@@ -1,0 +1,162 @@
+{
+  "inApp": {
+    "streakBroken": {
+      "register": "companion",
+      "title": "Yarın yine seninle",
+      "body": "{days} günlük seri durdu, yol durmadı. Bugün küçük bir adım yeter."
+    },
+    "streakMilestone7": {
+      "register": "puhu",
+      "title": "{days} gün — ritim başladı",
+      "body": "Yedi gündür dönüyorsun. Bu artık bir gün değil, senin ritmin."
+    },
+    "streakMilestone14": {
+      "register": "puhu",
+      "title": "{days} gün üst üste",
+      "body": "İki haftadır yolunla kaldın. Bu düzen senin."
+    },
+    "streakMilestone30": {
+      "register": "puhu",
+      "title": "{days} günlük seri",
+      "body": "Otuz gün. Küçük adımlar bir yola dönüştü."
+    },
+    "streakMilestone100": {
+      "register": "puhu",
+      "title": "{days} gün — inanılmaz",
+      "body": "Bu kararlılık artık yolunun parçası. Yanındayız."
+    },
+    "moodLow": {
+      "register": "companion",
+      "title": "Bugün ağır gelebilir",
+      "body": "Küçük bir adım bile yeterli. Buradayım."
+    },
+    "firstSession": {
+      "register": "puhu",
+      "title": "Günün ilk adımı atıldı",
+      "body": "En zor kısım başlamaktı. Devamı seninle."
+    },
+    "planCompleted": {
+      "register": "puhu",
+      "title": "Bugünün planı tamam",
+      "body": "{count} görev bitti. Bugün kendine iyi baktın."
+    },
+    "dailyReminder": {
+      "register": "puhu",
+      "title": "Bugün bir adım at",
+      "body": "Küçük bir seans veya check-in yeter. Seninle buradayız."
+    },
+    "sessionReturn": {
+      "register": "puhu",
+      "title": "Yarınki adımın duruyor",
+      "body": "Küçük bir seans yeter. Seninle buradayız."
+    },
+    "sessionReturnWithSubject": {
+      "register": "puhu",
+      "title": "Yarınki adımın duruyor",
+      "body": "{subject} için küçük bir seans yeter. Seninle buradayız."
+    },
+    "notebookReviewSingular": {
+      "register": "companion",
+      "title": "Defterin seni bekliyor",
+      "body": "Bir soruya tekrar bakma zamanı. Beş dakika yeter."
+    },
+    "notebookReviewPlural": {
+      "register": "companion",
+      "title": "Defterin seni bekliyor",
+      "body": "{count} soruya tekrar bakma zamanı. Beş dakika yeter."
+    },
+    "questionAnswered": {
+      "register": "puhu",
+      "title": "Cevabın geldi",
+      "body": "Sorduğun şeye biri el uzattı."
+    },
+    "threadCommented": {
+      "register": "puhu",
+      "title": "Yorumun var",
+      "body": "Paylaşımına birinin sözü düştü."
+    },
+    "commentReplied": {
+      "register": "puhu",
+      "title": "Yanıtın geldi",
+      "body": "Yorumun biriyle buluştu."
+    },
+    "answerAccepted": {
+      "register": "puhu",
+      "title": "Cevabın seçildi",
+      "body": "Yazdığın cevap en iyi cevap oldu. Güzel iş."
+    },
+    "userMentioned": {
+      "register": "puhu",
+      "title": "Adın geçti",
+      "body": "Bir gönderide senden bahsedildi."
+    },
+    "memberRequested": {
+      "register": "puhu",
+      "title": "Alana katılmak isteyen var",
+      "body": "Yönettiğin alana yeni bir istek geldi."
+    },
+    "newFollower": {
+      "register": "puhu",
+      "title": "Biri seni buldu",
+      "body": "{name} seni takip etti."
+    },
+    "buddyRequested": {
+      "register": "puhu",
+      "title": "Yol arkadaşı daveti",
+      "body": "{name} seninle yürümek istiyor."
+    },
+    "buddyAccepted": {
+      "register": "puhu",
+      "title": "Davetin kabul edildi",
+      "body": "{name} kabul etti — artık yol arkadaşısınız."
+    },
+    "buddyNudged": {
+      "register": "puhu",
+      "title": "Yol arkadaşından dürtme",
+      "body": "{name} seni dürttü — bugün bir seansa var mısın?"
+    },
+    "buddyFirstSession": {
+      "register": "puhu",
+      "title": "Yol arkadaşından haber",
+      "body": "{name} bugün ilk seansını tamamladı."
+    },
+    "studyRoomSessionStarted": {
+      "register": "puhu",
+      "title": "Masada biri var",
+      "body": "{name}, {roomName} masasına oturdu. Sen de katılabilirsin."
+    }
+  },
+  "email": {
+    "identityVerifyEmail": {
+      "subject": "Mentor — E-postanı doğrula",
+      "greeting": "Merhaba {name},",
+      "body": "Bir dokunuş yeter — hesabın seni bekliyor.",
+      "cta": "E-postamı doğrula"
+    },
+    "identityResetPassword": {
+      "subject": "Mentor — Şifreni yenile",
+      "greeting": "Merhaba {name},",
+      "body": "Şifreni yenilemek için aşağıdaki bağlantı yeterli.",
+      "cta": "Şifremi yenile"
+    },
+    "paymentsDunning": {
+      "subject": "Mentor — Ödeme tamamlanamadı",
+      "greeting": "Merhaba {name},",
+      "body": "Ödeme tamamlanamadı. Premium'un durmasın diye ayarlardan bir bakman yeterli."
+    },
+    "paymentsWelcome": {
+      "subject": "Mentor — Premium'a hoş geldin",
+      "greeting": "Merhaba {name},",
+      "body": "Koçun artık yanında. Bugün küçük bir adım at — gerisini birlikte taşırız."
+    },
+    "dailyReminder": {
+      "subject": "Mentor — Bugün bir adım at",
+      "greeting": "Merhaba {name},",
+      "body": "Bugün kendine küçük bir adım ayırmak ister misin? Seninle buradayız."
+    },
+    "fallback": {
+      "subject": "Mentor",
+      "body": "Sana bir notumuz var."
+    }
+  }
+}

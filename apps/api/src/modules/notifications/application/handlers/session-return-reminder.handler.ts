@@ -5,6 +5,7 @@ import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../../shared/ports/job-queue.port";
 import { DeliveryTemplate, JobName } from "../../domain/notifications.constants";
+import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationPreferencesRepository } from "../../infrastructure/notification-preferences.repository";
 import { NotificationsService } from "../notifications.service";
 
@@ -27,12 +28,15 @@ export class SessionReturnReminderHandler {
 
   async handle(payload: unknown): Promise<void> {
     const data = payloadSchema.parse(payload);
-    const title = "Yarınki adımın bekliyor";
-    const body = data.subject
-      ? `"${data.subject}" için küçük bir seans yeter. Seninle buradayız.`
-      : "Küçük bir seans yeter. Seninle buradayız.";
+    const templateKey = data.subject
+      ? NotificationCopyKey.SESSION_RETURN_WITH_SUBJECT
+      : NotificationCopyKey.SESSION_RETURN;
+    const args = data.subject ? { subject: data.subject } : {};
+    const { title, body } = this.notifications.resolveCopy(templateKey, args);
 
-    await this.notifications.createInApp(data.userId, "COACH", title, body, data.linkUrl);
+    await this.notifications.createFromTemplate(data.userId, "COACH", templateKey, data.linkUrl, {
+      args,
+    });
 
     const prefs = await withServiceContext(this.db, async (tx) =>
       this.preferences.findByUserIdService(tx, data.userId),

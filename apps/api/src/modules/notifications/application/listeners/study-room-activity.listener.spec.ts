@@ -6,7 +6,7 @@ const ACTOR = "u-actor";
 const ROOM = "r1";
 
 describe("StudyRoomActivityListener", () => {
-  let notifications: { createInApp: ReturnType<typeof vi.fn> };
+  let notifications: { createFromTemplate: ReturnType<typeof vi.fn> };
   let rooms: { getNotificationTargets: ReturnType<typeof vi.fn> };
   let usersRepo: { findByIdService: ReturnType<typeof vi.fn> };
   let deliveries: { tryRecord: ReturnType<typeof vi.fn> };
@@ -15,7 +15,7 @@ describe("StudyRoomActivityListener", () => {
   const fakeDb = { transaction: (fn: (tx: unknown) => unknown) => fn({ execute: vi.fn() }) };
 
   beforeEach(() => {
-    notifications = { createInApp: vi.fn(async () => undefined) };
+    notifications = { createFromTemplate: vi.fn(async () => undefined) };
     rooms = {
       getNotificationTargets: vi.fn(async () => ({
         roomName: "Sabah Kuşları",
@@ -39,13 +39,13 @@ describe("StudyRoomActivityListener", () => {
     await fire();
 
     expect(rooms.getNotificationTargets).toHaveBeenCalledWith(ROOM, ACTOR);
-    expect(notifications.createInApp).toHaveBeenCalledTimes(2);
-    for (const call of notifications.createInApp.mock.calls) {
+    expect(notifications.createFromTemplate).toHaveBeenCalledTimes(2);
+    for (const call of notifications.createFromTemplate.mock.calls) {
       expect(["u-b", "u-c"]).toContain(call[0]);
-      expect(call[3]).toContain("Ayşe");
-      expect(call[3]).toContain("Sabah Kuşları");
-      // Straight to the table, not the generic session screen.
-      expect(call[4]).toBe(`/study-session/rooms/${ROOM}`);
+      expect(call[3]).toBe(`/study-session/rooms/${ROOM}`);
+      expect(call[4]).toEqual(
+        expect.objectContaining({ args: { name: "Ayşe", roomName: "Sabah Kuşları" } }),
+      );
     }
   });
 
@@ -57,25 +57,25 @@ describe("StudyRoomActivityListener", () => {
     expect(keys[0]).toContain(ACTOR);
 
     deliveries.tryRecord.mockResolvedValue(false); // second Pomodoro the same day
-    notifications.createInApp.mockClear();
+    notifications.createFromTemplate.mockClear();
     await fire();
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("stays quiet for a table with nobody else at it", async () => {
     rooms.getNotificationTargets.mockResolvedValue({ roomName: "Tek", memberIds: [] });
     await fire();
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("stays quiet when the room vanished between the event and delivery", async () => {
     rooms.getNotificationTargets.mockResolvedValue(null);
     await fire();
-    expect(notifications.createInApp).not.toHaveBeenCalled();
+    expect(notifications.createFromTemplate).not.toHaveBeenCalled();
   });
 
   it("never lets a notification failure escape into the session start", async () => {
-    notifications.createInApp.mockRejectedValue(new Error("db down"));
+    notifications.createFromTemplate.mockRejectedValue(new Error("db down"));
     await expect(fire()).resolves.toBeUndefined();
 
     rooms.getNotificationTargets.mockRejectedValue(new Error("db down"));

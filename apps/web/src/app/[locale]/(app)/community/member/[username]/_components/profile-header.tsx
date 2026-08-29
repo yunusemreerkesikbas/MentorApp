@@ -383,26 +383,19 @@ export function ProfileProgressPanel({
   const level = profile.level;
 
   return (
-    <section className="profile-progress-panel overflow-hidden rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] p-4 text-[var(--color-btn-label)] xl:p-5">
+    <section className="profile-progress-panel overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] p-4 text-[var(--color-main)] xl:p-5">
       {level ? (
         <JourneyLevelProfile level={level} isOwner={isOwner} />
       ) : (
         <>
           <h2 className="text-base font-bold">{t("profile_progress_title")}</h2>
-          <p className="mt-5 text-sm text-[color-mix(in_srgb,var(--color-btn-label)_70%,transparent)]">{t("profile_progress_unavailable")}</p>
+          <p className="mt-5 text-sm text-[var(--color-secondary)]">{t("profile_progress_unavailable")}</p>
         </>
       )}
 
-      <div className="mt-4 border-t border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] pt-3 xl:mt-5 xl:pt-4">
-        <div className="flex items-center justify-between text-xs text-[color-mix(in_srgb,var(--color-btn-label)_65%,transparent)]">
-          <span>{t("stat_streak")}</span>
-          <span className="font-bold tabular-nums text-[var(--color-btn-label)]">{t("stat_streak_days", { count: profile.streak })}</span>
-        </div>
-      </div>
-
       {profile.badges.length > 0 ? (
-        <div className="profile-badge-panel mt-4 border-t border-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] pt-3 xl:mt-5 xl:pt-4">
-          <BadgeStrip badges={profile.badges} detailed compact onDark />
+        <div className="profile-badge-panel mt-4 border-t border-[var(--color-border)] pt-3 xl:mt-5 xl:pt-4">
+          <BadgeStrip badges={profile.badges} detailed compact />
         </div>
       ) : null}
     </section>

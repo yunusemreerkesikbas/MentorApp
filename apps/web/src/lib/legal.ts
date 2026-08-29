@@ -58,7 +58,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kvkk-aydinlatma": {
     slug: "kvkk-aydinlatma",
     status: "DRAFT",
-    updatedAt: "2026-07-31",
+    updatedAt: "2026-08-29",
     tr: {
       title: "KVKK Aydınlatma Metni",
       body: skeleton([
@@ -67,6 +67,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
         "Kişisel Verilerin İşlenme Amaçları",
         "Hukuki Sebepler",
         "Kişisel Verilerin Aktarılması",
+        "Google Ad Manager ve Yurt Dışı Aktarım",
         "Saklama Süresi",
         "İlgili Kişinin Hakları",
         "Başvuru Yöntemi",
@@ -80,6 +81,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
         "Purposes of Processing",
         "Legal Grounds",
         "Data Transfers",
+        "Google Ad Manager and International Transfers",
         "Retention Period",
         "Your Rights",
         "How to Apply",
@@ -90,14 +92,14 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "gizlilik-politikasi": {
     slug: "gizlilik-politikasi",
     status: "DRAFT",
-    updatedAt: "2026-07-31",
+    updatedAt: "2026-08-29",
     tr: {
       title: "Gizlilik Politikası",
       body: skeleton([
         "Topladığımız Veriler",
         "Verilerin Kullanım Amaçları",
-        "Çerezler ve Benzer Teknolojiler",
-        "Üçüncü Taraf Hizmet Sağlayıcılar",
+        "Reklamlar, Çerezler ve Benzer Teknolojiler",
+        "Google Ad Manager, Limited Ads ve Üçüncü Taraf Hizmet Sağlayıcılar",
         "Veri Güvenliği",
         "Haklarınız ve İletişim",
       ], "tr"),
@@ -107,8 +109,8 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
       body: skeleton([
         "Data We Collect",
         "How We Use Data",
-        "Cookies and Similar Technologies",
-        "Third-Party Service Providers",
+        "Advertising, Cookies and Similar Technologies",
+        "Google Ad Manager, Limited Ads and Third-Party Providers",
         "Data Security",
         "Your Rights and Contact",
       ], "en"),

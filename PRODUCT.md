@@ -35,6 +35,8 @@ product
 
 **Voice:** Turkish-first, never shaming. Celebrate effort and consistency, not raw scores. Countdown is calm — not alarm-red. Copy sounds like a patient study partner who remembers your context, not a drill sergeant or a generic chatbot.
 
+**Copy constitution:** dual register (Puhu for delight / unnamed companion for setbacks), *sen* not *siz*, and say-this/not-that examples live in [`docs/copy/voice.md`](docs/copy/voice.md). Read it before adding notification, email, push, or ritual-toast copy.
+
 **Emotional goals:** Relief from loneliness · renewed motivation without pressure · quiet confidence that "someone is walking with me" · safety when asking embarrassing or fragile questions (AI→teacher trust line: raw confessions stay with the AI; only signals reach coaches).
 
 **Visual personality (strategic, not tokens):** Soft and human on a monochrome-forward Nuton base — black primary actions, white surfaces, pastel blob atmosphere, Plus Jakarta Sans warmth. Premium feel through craft and calm, not through saturated "EdTech purple" or SaaS hero metrics.

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { I18nService } from "nestjs-i18n";
 import type {
   DeepAnalysisView,
   EconomyBalance,
@@ -11,12 +12,13 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DeepAnalysisService } from "../application/deep-analysis.service";
+import { resolveEconomyLang } from "../application/economy-lang";
 import { EconomyService } from "../application/economy.service";
 import { InviteService } from "../application/invite.service";
 import { QuestService, type QuestProgressView } from "../application/quest.service";
 import { StreakRescueService } from "../application/streak-rescue.service";
 import { DeepAnalysisDto, EconomyLedgerQueryDto, RedeemInviteDto } from "./economy.dto";
-import { toLedgerEntryView } from "./ledger-entry-view";
+import { toLedgerEntryView, type LedgerCopyFn } from "./ledger-entry-view";
 
 /**
  * User-facing economy reads (W6). Self-scoped (user-context RLS). Gated by the `economy.enabled`
@@ -33,12 +35,18 @@ export class EconomyController {
     private readonly streakRescue: StreakRescueService,
     private readonly deepAnalysis: DeepAnalysisService,
     private readonly config: ConfigRegistryService,
+    private readonly i18n: I18nService,
   ) {}
 
   private async assertEnabled(): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) {
       throw new DomainError(ErrorCode.ECONOMY_DISABLED, HttpStatus.NOT_FOUND);
     }
+  }
+
+  private ledgerCopy(): LedgerCopyFn {
+    const lang = resolveEconomyLang();
+    return (key, args = {}) => String(this.i18n.translate(`economy.${key}`, { lang, args }));
   }
 
   @Get("balance")
@@ -54,7 +62,8 @@ export class EconomyController {
   ): Promise<EconomyLedgerEntryView[]> {
     await this.assertEnabled();
     const rows = await this.economy.getSelfLedger(user.id, query.page, query.pageSize);
-    return rows.map(toLedgerEntryView);
+    const t = this.ledgerCopy();
+    return rows.map((row) => toLedgerEntryView(row, t));
   }
 
   @Get("invite")

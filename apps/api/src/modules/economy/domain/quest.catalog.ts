@@ -10,6 +10,7 @@ import { STREAK_MILESTONES } from "@mentor/core";
  * Static quest catalog (§3 light economy). The single source of truth for quest definitions;
  * per-user completion lives in `user_quest_progress`, reward amounts come from the config registry.
  * Quest ids are STABLE — they key the ledger refType/reason and progress rows.
+ * Student-facing title / badge / ledgerTitle live in `economy.json` `quests.*` (companion register).
  */
 export const QuestType = {
   ONBOARDING: "onboarding",
@@ -31,15 +32,6 @@ export interface QuestDef {
   category: QuestCategory;
   period: QuestPeriod;
   type: QuestType;
-  /** May contain a `{target}` placeholder, resolved at view time from `targetConfigKey`. */
-  title: string;
-  /**
-   * Ledger label, when stripping `{target}` from `title` would leave broken grammar
-   * ("Bu hafta {target} gün aktif ol" → "Bu hafta gün aktif ol"). Ledger rows outlive config, so
-   * the target is never resolved there — see `ledger-entry-view.ts`.
-   */
-  ledgerTitle?: string;
-  badgeLabel: string;
   action: QuestAction;
   rewardUnit: QuestRewardUnit;
   priority: number;
@@ -56,8 +48,6 @@ const streakMilestoneQuest = (days: number, index: number): QuestDef => ({
   category: "milestone",
   period: "once",
   type: QuestType.MILESTONE,
-  title: `${days} günlük ritme ulaş`,
-  badgeLabel: "Kilometre",
   action: "panel",
   rewardUnit: "XP",
   priority: 60 + index,
@@ -70,8 +60,6 @@ const focusSessionMilestoneQuest = (count: number, index: number): QuestDef => (
   category: "milestone",
   period: "once",
   type: QuestType.MILESTONE,
-  title: `${count} odak seansı tamamla`,
-  badgeLabel: "Odak",
   action: "study-session",
   rewardUnit: "XP",
   priority: 70 + index,
@@ -84,8 +72,6 @@ const planTaskMilestoneQuest = (count: number, index: number): QuestDef => ({
   category: "milestone",
   period: "once",
   type: QuestType.MILESTONE,
-  title: `${count} plan görevi tamamla`,
-  badgeLabel: "Plan",
   action: "plan",
   rewardUnit: "XP",
   priority: 80 + index,
@@ -99,8 +85,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "daily_ritual",
     period: "daily",
     type: QuestType.DAILY_RITUAL,
-    title: "Bugünün planından 1 görev tamamla",
-    badgeLabel: "Ritim",
     action: "plan",
     rewardUnit: "XP",
     priority: 10,
@@ -110,8 +94,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "daily_ritual",
     period: "daily",
     type: QuestType.DAILY_RITUAL,
-    title: "1 odak seansı bitir",
-    badgeLabel: "Odak",
     action: "study-session",
     rewardUnit: "XP",
     priority: 20,
@@ -122,8 +104,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "daily_ritual",
     period: "daily",
     type: QuestType.DAILY_RITUAL,
-    title: "Günlük odak hedefine ulaş",
-    badgeLabel: "Odak",
     action: "study-session",
     rewardUnit: "XP",
     priority: 25,
@@ -133,8 +113,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "daily_ritual",
     period: "daily",
     type: QuestType.DAILY_RITUAL,
-    title: "Bugünkü ruh halini işaretle",
-    badgeLabel: "Duygu",
     action: "mood-checkin",
     rewardUnit: "XP",
     priority: 30,
@@ -153,9 +131,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "weekly_ritual",
     period: "weekly",
     type: QuestType.WEEKLY_RITUAL,
-    title: "Bu hafta {target} gün aktif ol",
-    ledgerTitle: "Haftalık aktif gün hedefi",
-    badgeLabel: "Ritim",
     action: "panel",
     rewardUnit: "COIN",
     priority: 35,
@@ -167,8 +142,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "weekly_ritual",
     period: "weekly",
     type: QuestType.WEEKLY_RITUAL,
-    title: "Bu hafta {target} odak seansı tamamla",
-    badgeLabel: "Odak",
     action: "study-session",
     rewardUnit: "XP",
     priority: 40,
@@ -180,8 +153,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "weekly_ritual",
     period: "weekly",
     type: QuestType.WEEKLY_RITUAL,
-    title: "Bu hafta {target} plan görevi tamamla",
-    badgeLabel: "Plan",
     action: "plan",
     rewardUnit: "XP",
     priority: 45,
@@ -194,8 +165,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "weekly_ritual",
     period: "weekly",
     type: QuestType.WEEKLY_RITUAL,
-    title: "Haftanın 7 gününde aktif ol",
-    badgeLabel: "Ritim",
     action: "panel",
     rewardUnit: "XP",
     priority: 48,
@@ -210,8 +179,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "onboarding",
     period: "once",
     type: QuestType.ONBOARDING,
-    title: "Profilini tamamla (sınav seç)",
-    badgeLabel: "Başlangıç",
     action: null,
     rewardUnit: "COIN",
     priority: 110,
@@ -221,8 +188,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "onboarding",
     period: "once",
     type: QuestType.ONBOARDING,
-    title: "E-posta adresini doğrula",
-    badgeLabel: "Başlangıç",
     action: "verify-email",
     rewardUnit: "COIN",
     priority: 120,
@@ -232,8 +197,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "onboarding",
     period: "once",
     type: QuestType.ONBOARDING,
-    title: "İlk aboneliğini başlat",
-    badgeLabel: "Başlangıç",
     action: "subscription",
     rewardUnit: "COIN",
     priority: 130,
@@ -243,8 +206,6 @@ export const QUEST_CATALOG: readonly QuestDef[] = [
     category: "onboarding",
     period: "once",
     type: QuestType.ONBOARDING,
-    title: "Bir davet kodu kullan",
-    badgeLabel: "Başlangıç",
     action: "invite",
     rewardUnit: "COIN",
     priority: 140,

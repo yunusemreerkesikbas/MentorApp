@@ -336,8 +336,11 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
 - **Yıllık sözleşme** → öngörülebilir gelir, mevsimsel B2C dalgalanmasını dengeler.
 - Basit kurum lisansı **Faz 2'ye cash tamponu** olarak öne çekilebilir (taslakta Faz 3'tü).
 
-### Karar: Sponsorlu içerik = "reklam" değil "keşif/öne-çıkarma"
-- Klasik banner/CPM/üçüncü-parti reklam **YAPILMAZ** — kaygılı/kırılgan/parası kısıtlı kitleye sömürücü hisseder, "yoldaşlık" ruhunu (§0) ve güveni çürütür.
+### Karar: Kontrollü reklam + sponsorlu keşif
+- Genel ürün akışına klasik banner/CPM reklamı yayılmaz. İstisna: bilgi merkezi sonunda tek
+  contextual limited banner ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
+  ve STAFF tamamen reklamsızdır; görev/seans/mood/koç akışına reklam girmez. Interstitial, sticky ve
+  app-open reklam yapılmaz. Bu dar sınır gelir ihtiyacı ile "yoldaşlık" güvenini birlikte korur.
 - Bunun yerine **marketplace'in native uzantısı:**
   - **Koç öne çıkarma (boost):** koç görünürlük için öder (reklam değil, lead-gen; komisyonun üstüne biner).
   - **Kurum vitrini:** doğrulanmış profil + "✓ Sponsorlu/Kurumsal" etiketli içerik.

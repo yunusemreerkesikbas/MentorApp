@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Check, Info, Lock, X } from "lucide-react";
+import { Check, Info, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type {
   CommunityLevelView,
@@ -49,7 +49,7 @@ export function JourneyLevelGuide({ level, isOwner }: JourneyLevelGuideProps) {
         type="button"
         onClick={handleOpen}
         aria-label={t("guide_open")}
-        className="absolute right-0 top-0 grid size-11 place-items-center rounded-full text-[var(--color-btn-label)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-btn-label)_10%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="absolute right-0 top-0 grid size-11 place-items-center rounded-full text-[var(--color-secondary)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
         <Info size={19} aria-hidden="true" />
       </button>
@@ -218,18 +218,16 @@ function JourneyLevelGuideDialog({
                           }`}
                         >
                           <JourneyLevelMedallion
-                            tier={item.tier}
                             levelKey={item.key}
                             current={state === "current"}
                             future={state === "future"}
-                            className="size-12"
+                            className="size-16"
                           />
                           <span className="mt-1 line-clamp-1 text-xs font-bold text-[var(--color-main)]">
                             {name}
                           </span>
                           <span className="absolute right-1.5 top-1.5 text-[var(--color-secondary)]">
                             {state === "completed" ? <Check size={13} aria-hidden="true" /> : null}
-                            {state === "future" ? <Lock size={12} aria-hidden="true" /> : null}
                           </span>
                         </button>
                       );
@@ -242,7 +240,6 @@ function JourneyLevelGuideDialog({
 
           <section className="rounded-[var(--radius-card)] bg-[var(--color-soft)] p-5 text-center lg:self-start">
             <JourneyLevelMedallion
-              tier={selectedLevel.tier}
               levelKey={selectedLevel.key}
               current={selectedLevel.tier === level.tier}
               future={selectedLevel.tier > level.tier}

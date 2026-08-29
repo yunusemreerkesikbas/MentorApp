@@ -2,6 +2,29 @@ import { describe, expect, it, vi } from "vitest";
 import { Logger } from "@nestjs/common";
 import { Currency } from "@mentor/types";
 import { QuestService } from "./quest.service";
+import trEconomy from "../../../i18n/locales/tr/economy.json";
+
+interface ProgressRow {
+  id: string;
+  questId: string;
+  periodKey: string;
+  completedAt: Date;
+}
+
+function lookupNested(
+  root: unknown,
+  key: string,
+  args: Record<string, unknown> = {},
+): string {
+  const parts = key.split(".");
+  let current: unknown = root;
+  for (const part of parts) {
+    if (!current || typeof current !== "object") return key;
+    current = (current as Record<string, unknown>)[part];
+  }
+  if (typeof current !== "string") return key;
+  return current.replace(/\{(\w+)\}/g, (_, name: string) => String(args[name] ?? `{${name}}`));
+}
 
 interface ProgressRow {
   id: string;
@@ -114,6 +137,12 @@ function service(options: {
     }),
     publishXpChanged: vi.fn(async () => undefined),
   };
+  const i18n = {
+    translate: vi.fn((key: string, opts?: { args?: Record<string, unknown> }) => {
+      const path = key.startsWith("economy.") ? key.slice("economy.".length) : key;
+      return lookupNested(trEconomy, path, opts?.args ?? {});
+    }),
+  };
 
   return {
     economy,
@@ -128,6 +157,7 @@ function service(options: {
       economy as never,
       quests as never,
       config as never,
+      i18n as never,
     ),
     streak,
   };

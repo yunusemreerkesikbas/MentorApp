@@ -145,6 +145,12 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 4 — seans / masa / buddy / vizyon (2026-08-29)** — İlk ziyaret empty Puhu: `session.history_empty`, `session_room.empty`, `session.buddy_empty` / `buddy_empty_hint`, `vision.empty`, `coach.conversations.history_empty`. Filtre/hata companion: `history_empty_filtered`, `history_error`; vizyon arama `search_empty` / `filter_programs_empty`. `seat_empty` etiket kaldı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: resmi tarih paraphrase yok. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 3 — plan empty (2026-08-28)** — `today_plan.empty_desc`, `plan.empty_desc`, `panel.today_focus_empty` Puhu (“bugün henüz bir iz yok”); `timeline_day_empty` / `pending_empty` companion. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seans geçmişi empty Dalga 3 dışı. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 2 — mood / onboarding / paywall (2026-08-28)** — `coaching.json` mood (SERIOUS_DISTRESS hariç), motivation, nextAction, calibration companion kaydına çekildi: sen, kısa, suçluluk yok. Web `coach` + `coach_chat` + `mood` + `welcome` + `onboarding` + `paywall` + `campaign` TR/EN aynı kılavuz; boş sohbet ve FAB Puhu chrome, form hataları insan cümlesi (`Kaydedilemedi.` kalktı). Kullanım: `docs/copy/voice.md`. Gotcha: distress ve resmi sınav kopyası dokunulmaz; community/analiz empty Dalga 3. İlgili: `apps/web/messages/{tr,en}.json`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
 - **Panel geri sayım ikonu + kaynak satırı (2026-08-24)** — `CountdownCard` (DataCard sarmalayıcı)
   Lucide takvim yerine `public/img/hourglass.svg` kullanır; “Kaynak: ÖSYM ↗” alt satırı kalkar
   (tarih hâlâ caption’da, resmi kaynak Bilgi’de durur). SVG’den beyaz zemin ve gölge elipsi

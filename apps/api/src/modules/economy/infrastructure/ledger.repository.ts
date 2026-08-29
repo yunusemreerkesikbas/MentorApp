@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, isNotNull, isNull, lt, notInArray, sql } from "drizzle-orm";
 import {
   Currency,
   LedgerStatus,
@@ -9,11 +9,13 @@ import {
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { ledgerEntries, users } from "../../../database/schema";
+import { coinGrantReservations, ledgerEntries, users } from "../../../database/schema";
 import { CORRECTION_REASONS, EconomyLedger } from "../domain/economy.constants";
 
 export type LedgerRow = typeof ledgerEntries.$inferSelect;
 export type NewLedgerEntry = typeof ledgerEntries.$inferInsert;
+export type CoinGrantReservation = typeof coinGrantReservations.$inferSelect;
+export type NewCoinGrantReservation = typeof coinGrantReservations.$inferInsert;
 
 export interface Balance {
   xp: number;
@@ -126,6 +128,88 @@ export class LedgerRepository {
           ),
         );
       return rows[0]?.total ?? 0;
+    });
+  }
+
+  /** Active, non-expired reservations consume the same rolling cap as settled organic grants. */
+  async activeCoinReservationAmountSince(
+    userId: string,
+    since: Date,
+    now: Date,
+    exec?: DatabaseTx,
+  ): Promise<number> {
+    return this.onService(exec, async (tx) => {
+      const [row] = await tx
+        .select({ total: sql<number>`coalesce(sum(${coinGrantReservations.amount}), 0)::int` })
+        .from(coinGrantReservations)
+        .where(
+          and(
+            eq(coinGrantReservations.userId, userId),
+            eq(coinGrantReservations.status, "ACTIVE"),
+            gt(coinGrantReservations.expiresAt, now),
+            gte(coinGrantReservations.createdAt, since),
+          ),
+        );
+      return row?.total ?? 0;
+    });
+  }
+
+  async insertCoinReservation(entry: NewCoinGrantReservation, exec?: DatabaseTx): Promise<boolean> {
+    return this.onService(exec, async (tx) => {
+      const inserted = await tx
+        .insert(coinGrantReservations)
+        .values(entry)
+        .onConflictDoNothing()
+        .returning({ id: coinGrantReservations.id });
+      return inserted.length > 0;
+    });
+  }
+
+  async findCoinReservation(
+    source: string,
+    refId: string,
+    exec?: DatabaseTx,
+  ): Promise<CoinGrantReservation | undefined> {
+    return this.onService(exec, async (tx) => {
+      const [row] = await tx
+        .select()
+        .from(coinGrantReservations)
+        .where(
+          and(eq(coinGrantReservations.source, source), eq(coinGrantReservations.refId, refId)),
+        )
+        .limit(1);
+      return row;
+    });
+  }
+
+  async setCoinReservationStatus(
+    source: string,
+    refId: string,
+    status: "SETTLED" | "RELEASED",
+    exec?: DatabaseTx,
+  ): Promise<void> {
+    await this.onService(exec, async (tx) => {
+      const now = new Date();
+      await tx
+        .update(coinGrantReservations)
+        .set(
+          status === "SETTLED"
+            ? { status, settledAt: now }
+            : { status, releasedAt: now },
+        )
+        .where(
+          and(
+            eq(coinGrantReservations.source, source),
+            eq(coinGrantReservations.refId, refId),
+            eq(coinGrantReservations.status, "ACTIVE"),
+          ),
+        );
+    });
+  }
+
+  async eraseCoinReservationsForUser(userId: string): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.delete(coinGrantReservations).where(eq(coinGrantReservations.userId, userId));
     });
   }
 

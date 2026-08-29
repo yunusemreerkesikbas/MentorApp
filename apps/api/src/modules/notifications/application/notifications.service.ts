@@ -15,6 +15,8 @@ import type {
   PushSubscriptionInput,
   UserNotificationDto,
 } from "@mentor/types";
+import type { NotificationCopyKey } from "../domain/notification-copy";
+import { NotificationsCopyService } from "./notifications-copy.service";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { PushSubscriptionRepository } from "../infrastructure/push-subscription.repository";
 import {
@@ -46,6 +48,7 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     private readonly preferences: NotificationPreferencesRepository,
     private readonly userNotifs: UserNotificationRepository,
     private readonly i18n: I18nService,
+    private readonly copy: NotificationsCopyService,
   ) {}
 
   onModuleInit(): void {
@@ -185,6 +188,40 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
 
   // --- In-app notification inbox ---
 
+  resolveCopy(
+    templateKey: NotificationCopyKey,
+    args: Record<string, unknown> = {},
+    lang?: string,
+  ) {
+    return this.copy.resolve(templateKey, args, lang);
+  }
+
+  /**
+   * Resolve catalog copy, persist title/body as a fallback, and store `templateKey` + `args`
+   * so `toDto` can re-localize on read ([docs/copy/voice.md](../../../../../docs/copy/voice.md)).
+   */
+  async createFromTemplate(
+    userId: string,
+    category: NotificationCategory,
+    templateKey: NotificationCopyKey,
+    linkUrl?: string,
+    options?: {
+      args?: Record<string, unknown>;
+      dedupeKey?: string;
+      data?: Record<string, unknown>;
+      notifyRealtime?: boolean;
+      lang?: string;
+    },
+  ): Promise<boolean> {
+    const args = options?.args ?? {};
+    const { title, body } = this.copy.resolve(templateKey, args, options?.lang);
+    return this.createInApp(userId, category, title, body, linkUrl, {
+      dedupeKey: options?.dedupeKey,
+      notifyRealtime: options?.notifyRealtime,
+      data: { ...options?.data, templateKey, args },
+    });
+  }
+
   /** Called by DailyReminderService and future event listeners (SERVICE context). */
   async createInApp(
     userId: string,
@@ -287,6 +324,10 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
           }),
         );
       }
+    } else if (row.data?.templateKey) {
+      const resolved = this.copy.resolveStored(row, I18nContext.current()?.lang);
+      title = resolved.title;
+      body = resolved.body;
     }
     return {
       id: row.id,

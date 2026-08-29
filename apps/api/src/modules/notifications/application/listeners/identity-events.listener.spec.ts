@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { IdentityEventsListener } from "./identity-events.listener";
-import { REALTIME_QUEUE_TTL_MS } from "../notifications.service";
+import { NotificationCopyKey } from "../../domain/notification-copy";
 
 const makeNotifications = () => ({
-  createInApp: vi.fn().mockResolvedValue(undefined),
+  createFromTemplate: vi.fn().mockResolvedValue(undefined),
   pushRealtimeEvent: vi.fn(),
 });
 
@@ -23,12 +23,12 @@ describe("IdentityEventsListener", () => {
       actorDisplayName: "Alice",
       actorUsername: "alice",
     });
-    expect(notifications.createInApp).toHaveBeenCalledWith(
+    expect(notifications.createFromTemplate).toHaveBeenCalledWith(
       "uB",
       "FORUM",
-      expect.any(String),
-      expect.stringContaining("Alice"),
+      NotificationCopyKey.NEW_FOLLOWER,
       "/community/member/alice",
+      expect.objectContaining({ args: { name: "Alice" } }),
     );
   });
 
@@ -39,17 +39,17 @@ describe("IdentityEventsListener", () => {
       actorDisplayName: "Alice",
       actorUsername: null,
     });
-    expect(notifications.createInApp).toHaveBeenCalledWith(
+    expect(notifications.createFromTemplate).toHaveBeenCalledWith(
       "uB",
       "FORUM",
-      expect.any(String),
-      expect.any(String),
+      NotificationCopyKey.NEW_FOLLOWER,
       undefined,
+      expect.objectContaining({ args: { name: "Alice" } }),
     );
   });
 
   it("never throws when the notification write fails (best-effort)", async () => {
-    notifications.createInApp.mockRejectedValueOnce(new Error("db down"));
+    notifications.createFromTemplate.mockRejectedValueOnce(new Error("db down"));
     await expect(
       listener.onUserFollowed({
         recipientId: "uB",
@@ -71,18 +71,17 @@ describe("IdentityEventsListener", () => {
     await listener.onBuddyRequested(buddyEvent);
     await listener.onBuddyAccepted(buddyEvent);
     await listener.onBuddyNudged(buddyEvent);
-    expect(notifications.createInApp).toHaveBeenCalledTimes(3);
-    for (const call of notifications.createInApp.mock.calls) {
+    expect(notifications.createFromTemplate).toHaveBeenCalledTimes(3);
+    for (const call of notifications.createFromTemplate.mock.calls) {
       expect(call[0]).toBe("uB");
       expect(call[1]).toBe("FORUM");
-      expect(call[3]).toContain("Alice");
-      expect(call[4]).toBe("/study-session");
+      expect(call[3]).toBe("/study-session");
+      expect(call[4]).toEqual(expect.objectContaining({ args: { name: "Alice" } }));
     }
   });
 
   it("buddy notifications are best-effort too", async () => {
-    notifications.createInApp.mockRejectedValueOnce(new Error("db down"));
+    notifications.createFromTemplate.mockRejectedValueOnce(new Error("db down"));
     await expect(listener.onBuddyNudged(buddyEvent)).resolves.toBeUndefined();
   });
-
 });

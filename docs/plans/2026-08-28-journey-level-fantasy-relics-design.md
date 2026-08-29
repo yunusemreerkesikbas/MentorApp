@@ -1,7 +1,12 @@
 # Gece Yolculuğu Fantastik Relik Ailesi
 
+> **İPTAL EDİLDİ (2026-08-29).** Bespoke relic ailesi üretilmedi; seviye rozetleri
+> `public/img/levels/{levelKey}.webp` stok görsel setine geçti. Gerekçe ve yeni yaklaşım:
+> [`docs/features/community.md`](../features/community.md) 2026-08-29 girdisi. Aşağısı tarihsel
+> kayıttır, uygulanmaz.
+
 **Tarih:** 2026-08-28  
-**Durum:** Görsel yön onaylandı; üretim kalite kapısı Pusula V3 ile başlar.
+**Durum:** İptal edildi (2026-08-29). Önceki durum: görsel yön onaylandı; üretim kalite kapısı Pusula V3 ile başlar.
 
 ## Amaç
 

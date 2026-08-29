@@ -633,14 +633,12 @@ html:not(.dark) .community-workspace {
   isolation: isolate;
 }
 
+/* Light surface, not `--color-btn`: that token is the CTA fill, and white ink over it tops out
+   at 3.0:1 — below WCAG AA for every text size this panel uses. */
 .profile-progress-panel {
   position: relative;
-  background: var(--color-btn);
-  color: var(--color-btn-label);
-}
-
-.profile-level-medallion--current svg {
-  filter: drop-shadow(0 2px 3px rgb(85 172 238 / 18%));
+  background: var(--color-soft);
+  color: var(--color-main);
 }
 
 @media (min-width: 1280px) {

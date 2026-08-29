@@ -30,7 +30,7 @@ function createToastId(): string {
 
 export interface ToastProviderProps {
   children: React.ReactNode;
-  /** Injected by apps/web to map variants → Puhu / error icon. */
+  /** Injected by apps/web to map variant → status icon. */
   renderLeading?: (variant: ToastRecord["variant"]) => React.ReactNode;
 }
 
@@ -150,9 +150,9 @@ export function ToastProvider({ children, renderLeading }: ToastProviderProps) {
     [show],
   );
 
-  const coach = useCallback(
+  const warning = useCallback(
     (options: Omit<ToastShowOptions, "variant">) =>
-      show({ ...options, variant: "coach" }),
+      show({ ...options, variant: "warning" }),
     [show],
   );
 
@@ -164,10 +164,10 @@ export function ToastProvider({ children, renderLeading }: ToastProviderProps) {
       dismissAll,
       success,
       error,
+      warning,
       info,
-      coach,
     }),
-    [coach, dismiss, dismissAll, error, info, show, success, toasts],
+    [dismiss, dismissAll, error, info, show, success, toasts, warning],
   );
 
   useEffect(() => {

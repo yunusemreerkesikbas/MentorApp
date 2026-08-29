@@ -20,7 +20,7 @@ const context: CoachContext = {
 
 describe("AI prompt locale", () => {
   it("requests English output from every prompt family", () => {
-    const prompts = [
+    const companionPrompts = [
       { system: buildSystemPrompt(context, [], undefined, "en") },
       buildDailyGreetingPrompt(context, "en"),
       buildMoodReflectionPrompt(context, 3, "en"),
@@ -58,6 +58,9 @@ describe("AI prompt locale", () => {
         },
         "en",
       ),
+    ];
+    const prompts = [
+      ...companionPrompts,
       buildPlanAdaptationPrompt({
         source: "PLAN",
         todayIso: "2026-07-22",
@@ -71,6 +74,18 @@ describe("AI prompt locale", () => {
     for (const prompt of prompts) {
       expect(prompt.system).toContain("Write the response in English.");
     }
+    for (const prompt of companionPrompts) {
+      expect(prompt.system).toContain("unnamed exam-prep companion");
+      expect(prompt.system).not.toContain("Sen Mentor uygulamasının");
+      expect(prompt.system).not.toContain("sınav hazırlık koçusun");
+    }
+  });
+
+  it("keeps the Turkish companion persona on the default V1 system prompt", () => {
+    const prompt = buildSystemPrompt(context);
+    expect(prompt).toContain("isimsiz sınav yol arkadaşısın");
+    expect(prompt).toContain("Puhu değilsin");
+    expect(prompt).not.toContain("unnamed exam-prep companion");
   });
 
   it("defaults unsupported languages to Turkish", async () => {

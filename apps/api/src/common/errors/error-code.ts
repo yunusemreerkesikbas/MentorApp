@@ -99,6 +99,10 @@ export const ErrorCode = {
   INVITE_SELF: "INVITE_SELF",
   INVITE_ALREADY_REDEEMED: "INVITE_ALREADY_REDEEMED",
   INVITE_ALREADY_PREMIUM: "INVITE_ALREADY_PREMIUM",
+  // ads — voluntary, privacy-limited inventory and rewarded Coin sessions
+  ADS_NOT_ELIGIBLE: "ADS_NOT_ELIGIBLE",
+  ADS_SESSION_NOT_FOUND: "ADS_SESSION_NOT_FOUND",
+  ADS_SESSION_EXPIRED: "ADS_SESSION_EXPIRED",
   // forum (Phase-2→MVP) — module-prefixed, append-only (workstreams rule)
   FORUM_DISABLED: "FORUM_DISABLED",
   FORUM_ZONE_NOT_FOUND: "FORUM_ZONE_NOT_FOUND",

@@ -9,6 +9,7 @@ import {
 } from "../../coaching/domain/coaching-query.port";
 import { todayIso } from "../../coaching/domain/date.util";
 import { DeliveryTemplate, JobName } from "../domain/notifications.constants";
+import { NotificationCopyKey } from "../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { NotificationsService } from "./notifications.service";
@@ -66,19 +67,20 @@ export class NotebookReviewReminderService {
         continue;
       }
 
-      const title = "Defterin seni bekliyor";
-      const body =
+      const templateKey =
         candidate.dueCount === 1
-          ? "Bir soruya tekrar bakma zamanı. Beş dakika yeter."
-          : `${candidate.dueCount} soruya tekrar bakma zamanı. Beş dakika yeter.`;
+          ? NotificationCopyKey.NOTEBOOK_REVIEW_SINGULAR
+          : NotificationCopyKey.NOTEBOOK_REVIEW_PLURAL;
+      const args = candidate.dueCount === 1 ? {} : { count: candidate.dueCount };
+      const { title, body } = this.notifications.resolveCopy(templateKey, args);
 
       // In-app inbox is its own channel — created regardless of push preference.
-      await this.notifications.createInApp(
+      await this.notifications.createFromTemplate(
         candidate.userId,
         "COACH",
-        title,
-        body,
+        templateKey,
         NOTEBOOK_REVIEW_LINK,
+        { args },
       );
       sent += 1;
 

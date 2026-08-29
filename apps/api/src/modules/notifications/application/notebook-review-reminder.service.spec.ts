@@ -52,13 +52,19 @@ function makeService(options: {
       },
     } as never,
     {
-      createInApp: async (
+      resolveCopy: (_key: string, args: Record<string, unknown> = {}) => ({
+        title: "t",
+        body: typeof args.count === "number" ? `${args.count} due` : "one due",
+      }),
+      createFromTemplate: async (
         userId: string,
         _kind: string,
-        _title: string,
-        body: string,
+        _key: string,
         link: string,
+        options?: { args?: Record<string, unknown> },
       ) => {
+        const body =
+          typeof options?.args?.count === "number" ? `${options.args.count} due` : "one due";
         inApp.push({ userId, body, link });
       },
     } as never,

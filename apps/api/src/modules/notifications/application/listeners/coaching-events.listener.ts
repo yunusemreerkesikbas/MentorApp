@@ -12,6 +12,7 @@ import { DRIZZLE } from "../../../../database/database.constants";
 import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
 import { todayIso } from "../../../coaching/domain/date.util";
+import { NotificationCopyKey, streakMilestoneCopyKey } from "../../domain/notification-copy";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationsService } from "../notifications.service";
 
@@ -26,13 +27,11 @@ export class CoachingEventsListener {
 
   @OnEvent(CoachingEventTopic.STREAK_BROKEN)
   async onStreakBroken(event: StreakBroken): Promise<void> {
-    await this.notifications.createInApp(
-      event.userId,
-      "COACH",
-      "Seriniz sıfırlandı",
-      `${event.previousStreak} günlük seriniz sona erdi. Bugün yeniden başlayabilirsin! 💪`,
-      "/dashboard",
-    ).catch(() => {});
+    await this.notifications
+      .createFromTemplate(event.userId, "COACH", NotificationCopyKey.STREAK_BROKEN, "/dashboard", {
+        args: { days: event.previousStreak },
+      })
+      .catch(() => {});
   }
 
   @OnEvent(CoachingEventTopic.STREAK_MILESTONE)
@@ -47,16 +46,12 @@ export class CoachingEventsListener {
       }),
     ).catch(() => false);
     if (!ok) return;
-    const m = event.milestone;
-    const body =
-      m >= 100
-        ? "Bu inanılmaz bir kararlılık."
-        : m >= 30
-          ? "Otuz gün! Bu düzenlilik sınav başarısının temelidir."
-          : m >= 14
-            ? "İki haftadır düzenli çalışıyorsunuz. Devam edin!"
-            : "7 günlük çalışma serinizi tamamladınız. Harika bir başlangıç!";
-    await this.notifications.createInApp(event.userId, "COACH", `${m} günlük seri! 🔥`, body, "/dashboard").catch(() => {});
+    const key = streakMilestoneCopyKey(event.milestone);
+    await this.notifications
+      .createFromTemplate(event.userId, "COACH", key, "/dashboard", {
+        args: { days: event.milestone },
+      })
+      .catch(() => {});
   }
 
   @OnEvent(CoachingEventTopic.MOOD_LOW)
@@ -71,13 +66,9 @@ export class CoachingEventsListener {
       }),
     ).catch(() => false);
     if (!ok) return;
-    await this.notifications.createInApp(
-      event.userId,
-      "COACH",
-      "Bugün zor bir gün olmuş olabilir",
-      "Moraliniz biraz düşük görünüyor. Küçük bir adım bile yeterli — seninleyiz. 💙",
-      "/dashboard",
-    ).catch(() => {});
+    await this.notifications
+      .createFromTemplate(event.userId, "COACH", NotificationCopyKey.MOOD_LOW, "/dashboard")
+      .catch(() => {});
   }
 
   @OnEvent(CoachingEventTopic.FIRST_SESSION)
@@ -92,13 +83,9 @@ export class CoachingEventsListener {
       }),
     ).catch(() => false);
     if (!ok) return;
-    await this.notifications.createInApp(
-      event.userId,
-      "COACH",
-      "Günün ilk adımı atıldı! ✨",
-      "İlk seans tamamlandı. En zor adım buydu — devam et!",
-      "/study-session",
-    ).catch(() => {});
+    await this.notifications
+      .createFromTemplate(event.userId, "COACH", NotificationCopyKey.FIRST_SESSION, "/study-session")
+      .catch(() => {});
   }
 
   @OnEvent(CoachingEventTopic.PLAN_COMPLETED)
@@ -113,12 +100,10 @@ export class CoachingEventsListener {
       }),
     ).catch(() => false);
     if (!ok) return;
-    await this.notifications.createInApp(
-      event.userId,
-      "PLAN",
-      "Günlük planı tamamladın! ✅",
-      `${event.tasksCount} görevin hepsini bitirdin. Bugün harika gitti.`,
-      "/dashboard",
-    ).catch(() => {});
+    await this.notifications
+      .createFromTemplate(event.userId, "PLAN", NotificationCopyKey.PLAN_COMPLETED, "/dashboard", {
+        args: { count: event.tasksCount },
+      })
+      .catch(() => {});
   }
 }

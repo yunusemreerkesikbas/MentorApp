@@ -1,6 +1,8 @@
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
+
+import { JOURNEY_LEVEL_CATALOG } from "./journey-level-catalog";
 
 const webRoot = process.cwd();
 
@@ -38,6 +40,15 @@ describe("journey-level rendering contract", () => {
     for (const surface of [profile, communitySnapshot, economyBalance]) {
       expect(surface).not.toMatch(/level\.xp\s*\/\s*level\.nextAt/);
       expect(surface).not.toContain("Math.round");
+    }
+  });
+
+  it("ships one badge asset per journey level", () => {
+    for (const { key } of JOURNEY_LEVEL_CATALOG) {
+      expect(
+        existsSync(resolve(webRoot, `public/img/levels/${key}.webp`)),
+        `missing badge artwork for "${key}"`,
+      ).toBe(true);
     }
   });
 

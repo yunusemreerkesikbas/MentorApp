@@ -97,6 +97,10 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-08-29 — Reklam operasyon görünürlüğü** — Ana metrik görünümüne created/rewarded/closed,
+  benzersiz kullanıcı ve dağıtılan Coin özetleri ile Google Ad Manager gelir bağlantısı eklendi.
+  `ads.*` ayarları mevcut katalog ekranında sınır/audit davranışını otomatik kullanır.
+
 - **Duyuru (broadcast) ekranı (APP-053, 2026-08-28)** — `/announcements` sayfası: taslak oluştur
   (başlık/metin/opsiyonel internal link/hedef kitle), listeden gönder veya zamanla, taslağı sil.
   Hedef kitle "Tüm kullanıcılar" veya tek sınav tipi (KPSS/YKS/LGS). Gönderim geri alınamaz olduğu
