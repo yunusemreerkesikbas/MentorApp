@@ -1894,6 +1894,7 @@ export const adRewardSessions = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     rewardedAt: timestamp("rewarded_at", { withTimezone: true }),
     rejectionCode: text("rejection_code"),
+    idempotencyKey: uuid("idempotency_key"),
     providerTransactionId: text("provider_transaction_id"),
     createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
@@ -1901,6 +1902,13 @@ export const adRewardSessions = pgTable(
   (t) => [
     index("ad_reward_sessions_user_status_expiry_idx").on(t.userId, t.status, t.expiresAt),
     index("ad_reward_sessions_user_created_idx").on(t.userId, t.createdAt),
+    index("ad_reward_sessions_status_expiry_idx").on(t.status, t.expiresAt),
+    uniqueIndex("ad_reward_sessions_user_idempotency_unique_idx")
+      .on(t.userId, t.idempotencyKey)
+      .where(sql`${t.idempotencyKey} is not null`),
+    uniqueIndex("ad_reward_sessions_user_active_unique_idx")
+      .on(t.userId, t.placementId)
+      .where(sql`${t.status} = 'CREATED'`),
     uniqueIndex("ad_reward_sessions_provider_tx_unique_idx")
       .on(t.providerTransactionId)
       .where(sql`${t.providerTransactionId} is not null`),

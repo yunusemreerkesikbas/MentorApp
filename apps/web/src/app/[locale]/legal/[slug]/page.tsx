@@ -54,7 +54,7 @@ export default async function LegalPage({ params }: PageProps) {
   );
 
   return (
-    <PublicChrome loginLabel={chrome("login")}>
+    <PublicChrome loginLabel={chrome("login")} panelLabel={chrome("panel")}>
       <main className="mx-auto max-w-3xl px-5 py-10 lg:px-8">
         <h1
           className="text-3xl font-bold"

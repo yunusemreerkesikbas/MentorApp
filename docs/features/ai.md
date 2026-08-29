@@ -102,6 +102,10 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 16 — LLM prompt noktalama (2026-08-29)** — Modele giden V1/V2 ve haftalık recap prompt metinlerinde em dash kalktı; nokta/virgül/iki nokta kuralı eklendi. Persona cümleleri durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod yorumları durdu; recap cache `v7`. İlgili: `ai.constants.ts`, `mentor-v2-prompt.ts`, `weekly-review-prompt.ts`.
+
+- **Yoldaşlık sesi Dalga 13 — koç kapısı / derin analiz hak (2026-08-29)** — Koç erişim kapısı ve derin analiz yetersiz-coin companion hak; “hak kazan” FOMO kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `kazanılmış hak` isim ve `go_earn` CTA durdu. İlgili: `apps/web/messages/{tr,en}.json`, `coach-access-gate.tsx`.
+
 - **Yoldaşlık sesi Dalga 2 — koç sohbeti (2026-08-28)** — Koç sohbeti (LLM + kural fallback) companion kaydına bağlandı; Puhu yalnız chrome'da (boş sohbet, FAB, onboarding, paywall, haftalık recap host). V2 persona TR/EN: sen, kısa cümle, suçluluk yok, Puhu imzası yok, en fazla bir emoji yalnız hafif anda. V1 `coachSystemBase(locale)` EN kullanıcıya artık TR gövde göndermiyor; mood/selam/seans/ghost/vizyon/plan-draft aynı ağız. `coaching.mood.SERIOUS_DISTRESS` ve resmî bilgi kuralları dokunulmadı. Kullanım: `docs/copy/voice.md`. Gotcha: haftalık recap Puhu host'u sohbete sızmaz; V1 bağlam etiketleri (BAĞLAM) hâlâ TR. İlgili: `mentor-v2-prompt.ts`, `ai.constants.ts`, `coaching.json`.
 
 - **Kilit rozetleri (2026-08-22)** — Mood / ghost / günlük selam / seans yansıması web'de kilit

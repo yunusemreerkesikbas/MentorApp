@@ -157,7 +157,10 @@ export function ArticleContent({
         </Card>
         <ArticleTrustFooter />
         <div ref={readSentinel} aria-hidden />
-        <ContextualAdSlot examType={article.family as import("@mentor/types").ExamType} />
+        <ContextualAdSlot
+          contentSlug={article.slug}
+          examType={article.family as import("@mentor/types").ExamType}
+        />
         <Card className="mt-4">
           <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>

@@ -145,6 +145,16 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 19 — hayalet / defter ödül fiili (2026-08-29)** — `ghost.TIED` ve `notebook_pattern.READING` companion: kazanç/öne geç/net kazandırır kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `NEW_RECORD` / `BEAT_PREVIOUS` kişisel rekor durdu; `RUSHING` durdu. İlgili: `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
+- **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Resmî bilgi `UNAVAILABLE` “kontrol edebilirsin” kalktı. `RUSHING` durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). İlgili: `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
+- **Yoldaşlık sesi Dalga 15 — uzun çizgi (2026-08-29)** — Mood/motivasyon/ghost/notebook companion fallback’lerde em dash kalktı. `SERIOUS_DISTRESS` durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). İlgili: `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
+- **Yoldaşlık sesi Dalga 13 — derin analiz hak (2026-08-29)** — `analysis.deep.insufficient` companion: görevlerden hak düşer, “kazanabilirsin” yok. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `go_earn` “Görevlere git” durdu. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Yoldaşlık sesi Dalga 10 — seri kurtarma (2026-08-29)** — Panel teklif companion dondurma (FOMO yok); başarı sheet Puhu “Serin yerinde.” Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `?mockStreakRescueSuccess=1` başarı kopyasını gösterir. İlgili: `apps/web/messages/{tr,en}.json`, `streak-rescue-success.tsx`.
+
 - **Yoldaşlık sesi Dalga 4 — seans / masa / buddy / vizyon (2026-08-29)** — İlk ziyaret empty Puhu: `session.history_empty`, `session_room.empty`, `session.buddy_empty` / `buddy_empty_hint`, `vision.empty`, `coach.conversations.history_empty`. Filtre/hata companion: `history_empty_filtered`, `history_error`; vizyon arama `search_empty` / `filter_programs_empty`. `seat_empty` etiket kaldı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: resmi tarih paraphrase yok. İlgili: `apps/web/messages/{tr,en}.json`.
 
 - **Yoldaşlık sesi Dalga 3 — plan empty (2026-08-28)** — `today_plan.empty_desc`, `plan.empty_desc`, `panel.today_focus_empty` Puhu (“bugün henüz bir iz yok”); `timeline_day_empty` / `pending_empty` companion. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: seans geçmişi empty Dalga 3 dışı. İlgili: `apps/web/messages/{tr,en}.json`.

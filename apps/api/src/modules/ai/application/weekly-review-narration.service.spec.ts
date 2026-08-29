@@ -109,7 +109,7 @@ describe("WeeklyReviewNarrationService", () => {
   let service: WeeklyReviewNarrationService;
 
   it("uses the wrapped-title prompt version", () => {
-    expect(WEEKLY_REVIEW_PROMPT_VERSION).toBe("v6");
+    expect(WEEKLY_REVIEW_PROMPT_VERSION).toBe("v7");
   });
 
   beforeEach(() => {

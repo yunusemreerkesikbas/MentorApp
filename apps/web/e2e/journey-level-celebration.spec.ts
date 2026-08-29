@@ -139,7 +139,7 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   });
 
   const dialog = page.getByRole("dialog", {
-    name: "Seviye 5 · Ritim",
+    name: "Seviye 5 · Nabız",
   });
   await expect(dialog).toBeVisible();
   await expect(
@@ -159,7 +159,7 @@ test("kaçırılan canlı sinyali sonraki açılışta kalıcı kaynaktan toparl
   await page.goto("/profil");
 
   await expect(
-    page.getByRole("dialog", { name: "Seviye 5 · Ritim" }),
+    page.getByRole("dialog", { name: "Seviye 5 · Nabız" }),
   ).toBeVisible();
 });
 

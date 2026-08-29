@@ -67,6 +67,139 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Spotlight sahnesi — hüzme conic-gradient'e geçti (2026-08-29)** — İç içe koni sorununun kökü
+  bulundu: **CSS `clip-path`'i `filter`'dan sonra uygular.** Yani `blur(30px)` koninin sadece içini
+  yumuşatıyordu, siluetini değil — kırpma bulanık sonucu jilet gibi kesiyordu ve blur ne kadar
+  artarsa artsın kenar sert kalıyordu. İki koni bu yüzden ayrı şekiller olarak okunuyordu; maske
+  platosunu düzeltmek de bunu çözmemişti çünkü sorun maskede değildi. `clip-path` tamamen kalktı,
+  koni artık **conic-gradient** ile çiziliyor — açısal gradient'in tanımı gereği kenarı yok, iki
+  wedge tek hacim olarak kaynaşıyor. Kalibrasyonu statik bir harness'ta yaptım; iki tuzak çıktı:
+  (1) conic apex elemanın kenarındayken tüm açısal duraklar tek piksele yığılıp lensin altında
+  parlak bir nokta yapıyor → apex `at 50% -7%` ile yukarı alındı; (2) conic tepeyi **tek bir ışına**
+  yoğunlaştırdığı için, yerini aldığı düz üçgenle aynı nominal alfada çok daha sönük okunuyor →
+  parlak bant tek durak yerine bir açı aralığına yayıldı ve alfalar %30 → %58 (çekirdek) /
+  %13 → %24 (penumbra) yükseltildi. Mesafe maskesi de yumuşatıldı (%72'de 0.16 idi, artık %80'de
+  0.72). İlgili: `spotlight-lamp.tsx`.
+
+- **Spotlight sahnesi — iç içe koni düzeltmesi + hüzme boyu (2026-08-29)** — Çekirdek ve penumbra
+  tek bir hüzme yerine **iç içe iki üçgen** gibi okunuyordu. Sebep: penumbra maskesine ortada
+  `#000 42% → 58%` düz plato koymuşum, yani penumbra tam da çekirdeğin olduğu yerde tam güçteydi ve
+  kendi kenarı ikinci bir sınır çiziyordu. İki maske de artık **platosuz yumuşak çan**, penumbra
+  hiçbir noktada tam siyaha ulaşmıyor — şekil değil pus. **Boy:** hüzme `170vh` ile ekranın çok
+  altına taşıyor, hiçbir yere "inmiyordu"; gölge düşecek zemin kalmıyordu. Penumbra `68vh`,
+  çekirdek `65vh` oldu ve dikey sönüm sona kaydırıldı (`transparent 100%`) — kısa kesilen hüzme
+  havada asılı kalır, sert biten hüzme şekil gibi okunur. 720px'lik ekranda hüzme ~586px'de
+  bitiyor, altında ~134px zemin kalıyor. `--spotlight-floor` 0.16 → **0.24**: gölge aydınlanmamış
+  zeminin üstünde görünmez, düşeceği bir yüzey lazım. Gotcha: rig `y:-30%`'ten iniyor, yani hüzme
+  geometrisini ölçerken rig'in konmuş olduğundan emin ol — inmemiş halde `top` 216px yukarıda
+  çıkıyor. İlgili: `spotlight-lamp.tsx`, `packages/ui/src/theme.css`.
+
+- **Spotlight sahnesi — sıcak çekirdek + penumbra (2026-08-29)** — Hüzme tek düz koni olmaktan
+  çıktı, **iki katman** oldu: geniş/soğuk penumbra (118vw, `blur(26px)`, yeni
+  `--spotlight-penumbra` `#cfd8ec`) ve dar/sıcak çekirdek (54vw, `blur(8px)`,
+  `--spotlight-beam`). Tek renkli koni boyanmış üçgen gibi okunuyordu; gerçek fikstürde filamentin
+  sıcak merkezi dışa doğru daha soluk ve maviye kaçan bir haleye saçılır, iki katmanı aynı renkte
+  tutmak da bu yüzden olmaz. Kenar maskesi ikisinde farklı: çekirdeğin beli daha dar, penumbranınki
+  kademeli. İkisi de rig'in içinde, yani salınım çift için tek `rotate` maliyetinde.
+  **Konumsallık:** hüzmenin parlaklığı artık açıdan bağımsız değil — rig yana savrulunca ışığın
+  yolu uzuyor, `beamThrowFalloff` ile koni sönüyor (merkezde 1, uçlarda 0.55). Fonksiyon saf
+  modülde ve testli; `beamAngleDeg`'te işareti component içinde tekrar yazıp testin dışında
+  bıraktığım hatanın aynısını yapmamak için. İlgili: `spotlight-lamp.tsx`,
+  `spotlight-choreography.ts` (+spec), `packages/ui/src/theme.css`.
+
+- **Spotlight sahnesi — konumsal aydınlatma (2026-08-29)** — Aydınlatma artık *nereye düştüğüne*
+  bağlı. Sahne kökü `--spotlight-x`'i framer'ın motion value'sundan doğrudan yazıyor
+  (`style={{ "--spotlight-x": lightX }}`) — rAF döngüsü yok, kare başına React render yok. Tema
+  bloğunda bu token tanımlıydı ama hiç bağlanmamıştı; asıl işi bu. Fon yazısı **iki kopya** oldu:
+  sönük olan karanlıktaki duvar, parlak olan hüzmeye maskeleniyor, böylece harfler ışık üstünden
+  geçtikçe tek tek aydınlanıyor — eskiden bütün kelime aynı anda parlıyordu. Yer havuzu da sabit
+  ortada durmayı bırakıp rig'i takip ediyor. **Gotcha — kaymayı tahmin etme, geometriden çıkar:**
+  rig tavandan döndüğü için `d` derinliğinde yama `d · tan(açı)` kadar kayar. İlk yazımda yazı için
+  %145, yer için %170 uydurmuştum; ölçünce `x=0.1`'de maske merkezi **-8%** çıktı, yani süpürmenin
+  en dramatik anında aydınlanan yama ekranın tamamen dışındaydı. Doğrusu yazı için ~%40
+  (0.4·H·tan38° ≈ genişliğin %17'si, iki yana), yer için ~%90. Ölçülen son değerler: `x=0.07`'de
+  yazı %32.8 / yer %11.3, `x=0.92`'de %66.8 / %87.8 — hepsi ekran içinde. İlgili:
+  `journey-spotlight-scene.tsx`, `stage-backdrop.tsx`, `packages/ui/src/theme.css`.
+
+- **Spotlight sahnesi — sahne cilası (2026-08-29)** — Dört iyileştirme. **Hüzme:** çıplak
+  `clip-path` düz kenarlar bırakıp ışıktan çok üçgen gibi okunuyordu; yatay `mask-image` +
+  `blur(10px)` ile kenarlar yumuşadı, lensin dibine ayrı bir hale eklendi. **Genişlik:**
+  `SPOTLIGHT_MAX_ANGLE_DEG` 26° → **38°**, hüzme `62vw/560px` → `92vw/860px` — ışık artık komşu
+  rozetlere gerçekten ulaşıyor (Aşama 3'ün amacı buydu, dar açıyla ulaşamıyordu). **Lamba:** kaba
+  üç kutu yerine **inline SVG fikstür** — kablo, kelepçe, yoke, yivli gövde, barndoor kanatları,
+  lens halkası. Bitmap değil, çünkü rig ile dönmesi, `lit` durumuna tepki vermesi ve rengini
+  scoped tema tokenlarından alması gerekiyor; gradient id'leri `useId` ile benzersiz.
+  **Açılış:** zaman çizelgesine `darkHoldMs` eklendi — ekran 1.1s kararıyor, **0.7s bomboş
+  karanlık bekliyor**, sonra rig 0.9s'de iniyor, ancak konduktan sonra lamba yanıp süpürme
+  başlıyor. Lamba için ayrı `lampVisible` durumu var (önce hep monteliydi, karanlık beat'i
+  yoktu). **Gotcha:** süpürme keyframe'leri artık **merkezden değil kenardan** başlıyor —
+  merkezden başlayınca rozet salınımdan *önce* aydınlanıp sonra kararıyordu, yani "ışık rozeti
+  buluyor" değil tersi okunuyordu. Test bunu ayrıca iddia ediyor. İlgili: `spotlight-lamp.tsx`,
+  `spotlight-choreography.ts` (+spec), `journey-spotlight-scene.tsx`.
+
+- **Yoldaşlık sesi Dalga 18 — emek panosu başlığı (2026-08-29)** — Çekmece ve sayfa başlığı “Sıralama” kalktı: “Emek panosu”. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `sort_label` durdu. İlgili: `apps/web/messages/{tr,en}.json`, `effort-board-drawer.tsx`.
+
+- **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Anket `poll_validation_error` companion. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: 2–4 en dash durdu. İlgili: `apps/web/messages/{tr,en}.json`.
+
+- **Spotlight sahnesi — Aşama 2 + 3 (2026-08-29)** — **Kutlama devri:** seviye atlama artık sakin
+  kart yerine sahneyi açıyor. Sahne `mode="replay" | "celebration"` ayrık birleşimi aldı; kutlama
+  modunda eyebrow, "Devam et" CTA'sı, hata satırı ve `busy` davranışı var (`busy` sırasında Escape
+  yutuluyor). **Reduced motion'da eski `JourneyLevelCelebration` kartı devreye giriyor** — zaten
+  sakin, erişilebilir ve aynı acknowledge kontratını taşıyor, bu yüzden silinmedi.
+  `buildCelebrationQueue` sıralaması `achievement 0 → history 1 → levelUp 2 → introduction 3` oldu:
+  sahne lights-out bir devralma olduğu için zaman damgası ne olursa olsun en sona alınıyor, yoksa
+  seri ortada zirve yapıp sessiz kartlarla sönüyordu. Artık türleri gruplar ayırdığı için `tieBreaker`
+  alanı ölü kaldı, silindi. **Aşama 3:** `StageBackdrop` — arkada dev bölüm adı (bölüm *label*'ı değil,
+  o zaten rozetin altında) ve katalogdan gelen komşu seviyeler: önceki soluk-renkli, sonraki kilitli
+  siluet. Işık ortadayken duvar kararıyor, hüzme yana savrulunca duvar aydınlanıyor — takas, solma
+  değil. Dekoratif: 12 seviyenin tamamı zaten guide'da listelendiği için hiçbir bilgi ışık
+  pozisyonuna özel değil. **Gotcha:** fon yazısı `top-1/2`'de duramaz — rozet ve metni birlikte
+  ortalandığı için rozet orta çizginin üstünde kalıyor ve yazı hikâye metnini kesiyordu (ölçüldü:
+  29px binişme); `top-[40%]` ile rozetin arkasına alındı. Ayrıca sahne kapanınca odağı açan öğeye
+  geri vermiyordu, eklendi. İlgili: `stage-backdrop.tsx`, `journey-spotlight-scene.tsx`,
+  `celebration-queue.ts` (+spec), `notification-drawer-shell.tsx`,
+  `e2e/journey-level-celebration.spec.ts` (bayat "Seviye 5 · Ritim" → "Nabız" düzeltildi).
+
+- **Spotlight sahnesi — Aşama 1 (2026-08-29)** — Profil panelindeki rozete dokununca (yalnızca
+  profil sahibi) ekran kararıyor, tavandan bir sahne lambası iniyor, hüzme sarkaç gibi savrulup
+  sönümleniyor ve rozet ışığa girdiğinde parlayarak beliriyor. Yeni klasör:
+  `components/journey-levels/spotlight/`. **Rig bir sarkaç:** kablo, lamba ve hüzme tek grup olarak
+  tavan noktasından döner, böylece tek `rotate` üçünü birden taşır ve yerdeki ışık havuzu bedavaya
+  gelir. Sahnenin tamamı **tek bir sayıdan** türüyor — `lightX` (0..1); süpürme animasyonu, fare
+  takibi ve dokunmatik sürükleme aynı değere yazıyor, `useSpring` yumuşatıyor. `JourneyBadgeStage`
+  bilinçli bir **dikiş yeri**: bugün `CssBadgeRenderer` (düz görsel + eğim, specular, gölge), yarın
+  meshy.ai GLB'leri için `GlbBadgeRenderer` aynı iki prop'la yanına takılır, üstündeki hiçbir dosya
+  değişmez. Tema `packages/ui/src/theme.css` içinde `.journey-spotlight-theme` —
+  `.session-focus-theme` ile aynı DESIGN.md §2.5 istisnası, ışıklar söndüğü için cookie'yi takip
+  etmiyor. Reduced motion'da kararma/iniş/salınım atlanır, lamba yanık gelir; sürükleme çalışmaya
+  devam eder. **Gotcha:** `beamAngleDeg`'in işareti ters kurulursa hüzme imleçten kaçar — CSS
+  pozitif açıda saat yönünde döner ve rig aşağı baktığı için soldaki ışık **pozitif** açı ister.
+  İlk yazımda tersti ve lamba bu fonksiyonu hiç çağırmayıp mantığı elle tekrarladığı için test de
+  yakalamamıştı; ikisi de düzeltildi. İlgili: `spotlight-choreography.ts` (+spec, saf mantık),
+  `spotlight-lamp.tsx`, `css-badge-renderer.tsx`, `journey-badge-stage.tsx`,
+  `journey-spotlight-scene.tsx`, `journey-level-profile.tsx`, `messages/{tr,en}.json`
+  (`spotlight_open`). Aşama 2 (kutlamayı devralma) ve Aşama 3 (komşular + bölüm yazısı) yapılmadı.
+
+- **Yoldaşlık sesi Dalga 14 — başarı koleksiyonu (2026-08-29)** — Koleksiyon chrome Puhu: “Nasıl uyanır?” / “{title} seninle”; `public_empty` “Kazanınca” kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: e2e TR stringleri güncellendi; `locked_aria` durdu. İlgili: `apps/web/messages/{tr,en}.json`, `community-member-profile.spec.ts`.
+
+- **Gece Yolculuğu seviye adlarında çakışma temizliği (2026-08-29)** — İki ad, ürünün kendi
+  sözlüğüyle çarpışıyordu. **İz → Alev**: `iz` ürünün genel "kayıt/eser" kelimesi
+  (*"Bugün henüz bir iz yok"*, *"Paylaşılan bir iz henüz yok"*, profildeki *"Yolculuktan İzler"*
+  başlığı), seviye adı olarak kullanılınca iki anlam karışıyordu; Kıvılcım → Alev ayrıca ışık
+  çerçevesini bir kademe uzatıyor ve rozeti (yanan kuyruklu yıldız) karşılıyor. **Ritim → Nabız**:
+  `rhythm_found` / `rhythm_kept` başarıları ("Ritmi Yakaladın", "Ritmi Korudun") ile birebir aynı
+  kelimeydi; seviye sistemi ile başarı koleksiyonu ayrı okunmalı. Ayrıca Ahenk bölümündeki
+  Döngü/Nabız/Akış üçlüsü üçü de "artık düzenlisin" demek olduğu için ayrışmıyordu; **hikâye
+  metinleri** bilinçli tekrar → kendiliğinden atan nabız → çabasız akış olarak keskinleştirildi
+  (adlar değişmedi). Pusula bilerek korundu: "rota" başarılarıyla aynı alanda ama farklı iş
+  (plan çizmek vs kendi yönünü bulmak) ve setin en güçlü görsel-ad eşleşmesi.
+  **`JourneyLevelKey` değerleri, katalog, types ve 12 asset dosya adı değişmedi** — yalnızca
+  `messages/{tr,en}.json`. Aynı turda `levels.*.destination` (12×2) silindi: "… XP daha" metni
+  kaldırılınca öksüz kalmışlardı ve kodda okuyan yoktu; seviye girdileri artık `name` + `story`.
+  Gotcha: bu yüzden `trail` anahtarı artık "Alev"/"Flame", `rhythm` ise
+  "Nabız"/"Pulse" gösteriyor; kodda anahtar adına bakıp ekrandaki adı tahmin etme.
+  İlgili: `apps/web/messages/{tr,en}.json`, `journey-level-catalog.ts`, [`docs/copy/voice.md`](../copy/voice.md).
+
 - **Yolculuk seviyesi paneli açık yüzeye geçti + redesign (2026-08-29)** —
   `.profile-progress-panel` zemini `--color-btn` (`.community-workspace` içinde `#1d9bf0`) idi.
   Üç sorun birden: (a) `--color-progress` **aynı renk**, yani madalyon halkası görünmüyor, %18 tint
@@ -104,6 +237,8 @@ Data wrapper: `apps/web/src/lib/community.ts`.
   görsellerin arka planı gömülü olduğu için `object-cover` kırpıyor — şeffaflık yok, daire içi renk
   görselden gelir. İlgili: `journey-level-medallion.tsx`, `journey-level-guide.tsx`,
   `journey-level-contract.spec.ts` (asset varlık testi), `apps/web/public/img/levels/`.
+
+- **Yoldaşlık sesi Dalga 12 — sıralama utancı (2026-08-29)** — Emek tahtası empty/you-none Puhu/companion iz; banner’da zirve/podyum/`yerini al`/`öndesin` kalktı, emek duruyor. Liste ve sayfa başlığı durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `rank_banner_top10` katalogda durur, ekranda top3 sonrası percentile/keep. İlgili: `apps/web/messages/{tr,en}.json`, `leaderboard-screen.tsx`.
 
 - **Yoldaşlık sesi Dalga 5 — kaçmış empty + Lütfen (2026-08-29)** — Kaydedilenler / oda medyası / profil aktivitesi / takip listesi / following feed Puhu; `zone_about_empty` companion. `action_failed`, etiket/anket hataları ve `search_no_results*` companion (`Lütfen` kalktı). Hub/feed empty’ye dokunulmadı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `invite_headline` durdu. İlgili: `apps/web/messages/{tr,en}.json`.
 

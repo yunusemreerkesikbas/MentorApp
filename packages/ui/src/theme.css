@@ -422,6 +422,35 @@ html.dark {
   }
 }
 
+/*
+ * Journey spotlight stage — scoped dark moment (DESIGN.md §2.5), same exception as
+ * `.session-focus-theme`. A blacked-out theatre, so it never follows the light/dark cookie:
+ * the whole point is that the house lights went out.
+ *
+ * `--spotlight-x` is the contract every part of the rig reads. The scene writes it once per
+ * frame and the cable, lamp, beam and badge all derive from it — no per-element state.
+ */
+.journey-spotlight-theme {
+  color-scheme: dark;
+  --spotlight-x: 0.5;
+  --spotlight-intensity: 1;
+  --color-main: #f6f6f7;
+  --color-body: #d6d6da;
+  --color-secondary: #9a9aa4;
+  --color-bg: #08090c;
+  --color-surface: #101218;
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-focus-ring: #9ec8f0;
+  /* Warm tungsten, not the app's cool progress blue — a stage lamp is not a UI accent. */
+  --spotlight-beam: #fff4d6;
+  /* Penumbra runs cooler than the core: the filament's warm centre scatters out to a paler,
+     bluer edge, and matching the two makes the cone read as flat paint instead of light. */
+  --spotlight-penumbra: #cfd8ec;
+  /* The lit ground. Needs enough presence for the badge's cast shadow to land on something —
+     a shadow over unlit floor is invisible. */
+  --spotlight-floor: rgba(255, 244, 214, 0.24);
+}
+
 /* Ambient blob drift (DESIGN.md §9) — transform only; very slow. */
 @keyframes mentor-blob-drift {
   0%,

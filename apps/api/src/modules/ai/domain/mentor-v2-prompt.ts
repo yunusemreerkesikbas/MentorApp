@@ -35,6 +35,7 @@ const SHARED_GUARDRAILS = [
   "- Use at most one action suggestion. The backend decides whether an action is available and the user must approve every mutation.",
   "- Use simple markdown only; no headings, tables, code blocks, or URLs. At most one emoji, and only in a light moment when the selected policy allows humor.",
   "- Never sign as Puhu or invent a mascot voice. You are the unnamed companion.",
+  "- Punctuation: period, comma, or colon. Never the em dash. Do not open with antithesis ('it's not X, it's Y').",
 ].join("\n");
 
 export interface MentorV2PromptInput {
@@ -102,7 +103,7 @@ export function buildMentorV2Prompt(input: MentorV2PromptInput): string {
 
   lines.push("", "SELECTED VERIFIED EVIDENCE:");
   if (turn.usedEvidence.length === 0) {
-    lines.push("(none — do not pretend to know personal facts)");
+    lines.push("(none. Do not pretend to know personal facts)");
   } else {
     for (const evidence of turn.usedEvidence) {
       lines.push(

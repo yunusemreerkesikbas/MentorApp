@@ -644,7 +644,7 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
   await page.getByRole("button", { name: "Gönder" }).click();
 
   await expect(
-    page.getByText("Yanıt alınamadı — lütfen tekrar dene."),
+    page.getByText("Yanıt gelmedi. Biraz sonra bir daha deneyelim."),
   ).toBeVisible();
   await expect(composer).toHaveValue("Bu mesajı tekrar deneyeceğim");
   const transcript = page.getByRole("log", { name: "Koç sohbeti" });

@@ -41,15 +41,15 @@
       "title": "Sınav yolunda yalnız değilsin.",
       "title_lead": "Sınav yolunda",
       "title_emphasis": "yalnız değilsin.",
-      "subtitle": "Bilgi platformu değil — seni anlayan, devam ettiren ve yalnız bırakmayan bir yoldaşlık platformu."
+      "subtitle": "Seni anlayan, devam ettiren, yalnız bırakmayan bir yoldaşlık platformu."
     },
     "slide2": {
       "title": "Puhu yolda yanında.",
-      "subtitle": "Plan, kaygı, bugünün adımı. Resmî tarihler editoryal içerikten — asla uydurma."
+      "subtitle": "Plan, kaygı, bugünün adımı. Resmî tarihler editoryal içerikten gelir, asla uydurma."
     },
     "slide3": {
       "title": "Toplulukla birlikte.",
-      "subtitle": "Sorularını sor, deneyim paylaş — sınav yolunda yalnız kalmadan ilerle."
+      "subtitle": "Sorularını sor, deneyim paylaş. Sınav yolunda yalnız kalmadan ilerle."
     }
   },
   "auth": {
@@ -88,7 +88,7 @@
       "subtitle": "E-postana sıfırlama bağlantısı göndeririz.",
       "email": "E-posta",
       "submit": "Sıfırlama bağlantısı gönder",
-      "success": "Bu e-posta kayıtlıysa, şifre sıfırlama bağlantısı gönderildi. Gelen kutunu kontrol et."
+      "success": "Bu e-posta kayıtlıysa sıfırlama bağlantısı yolda. Gelen kutuna bir bak."
     },
     "verify_email": {
       "title": "E-posta doğrulama",
@@ -150,9 +150,9 @@
     "quests_banner_cta": "Devam et",
     "quests_banner_progress": "{completed}/{total} görev",
     "ritual_quest_label": "Bugünkü görev",
-    "quest_reward_single_title": "Görev tamamlandı",
-    "quest_reward_multi_title": "Görevler tamamlandı",
-    "quest_reward_message": "{reward} kazandın",
+    "quest_reward_single_title": "Bu da tamam",
+    "quest_reward_multi_title": "Bunlar da tamam",
+    "quest_reward_message": "{reward} seninle.",
     "metric_plan": "Plan",
     "metric_focus": "Odak",
     "metric_focus_value": "{minutes} dk",
@@ -170,17 +170,17 @@
     "streak_helper": "Bir günü kaçırsan dünyanın sonu değil.",
     "streak_session_cta": "Odak seansına git",
     "freeze_short": "{count} dondurma hakkı",
-    "streak_rescue_hint": "Kaçırılan bir gün serini kısalttı. Coin ile dondurup seriyi geri alabilirsin.",
-    "streak_rescue_modal_title": "Serini kurtaralım mı?",
-    "streak_rescue_cta": "Serini kurtar",
+    "streak_rescue_hint": "Dün boş kaldı. Coin ile dondurursan seri yerinde durur.",
+    "streak_rescue_modal_title": "Günü dondur",
+    "streak_rescue_cta": "Günü dondur",
     "streak_rescue_later": "Şimdilik geç",
-    "streak_rescue_confirm": "Emin misin? {cost} coin harcanacak",
-    "streak_rescue_insufficient_title": "Coin’in yetmiyor",
-    "streak_rescue_insufficient": "Seriyi kurtarmak için {cost} coin gerekiyor. Görevleri tamamlayarak kazanabilirsin.",
+    "streak_rescue_confirm": "{cost} coin düşer.",
+    "streak_rescue_insufficient_title": "Hak yetmiyor",
+    "streak_rescue_insufficient": "Dondurmak için {cost} coin gerekir. Görevlerden hak düşebilir.",
     "streak_rescue_insufficient_cta": "Görevlere bak",
     "streak_rescue_insufficient_ok": "Tamam",
-    "streak_rescue_success_title": "Serin kurtarıldı! 🔥",
-    "streak_rescue_success_message": "Kaçırılan gün donduruldu, serin kaldığı yerden devam ediyor.",
+    "streak_rescue_success_title": "Serin yerinde.",
+    "streak_rescue_success_message": "Kaçırılan gün donduruldu. Yol durmadı.",
     "streak_rescue_error_title": "Seri kurtarılamadı",
     "streak_rescue_error_message": "Bir şey ters gitti. Biraz sonra bir daha deneyelim.",
     "week_mon": "Pzt",
@@ -380,7 +380,7 @@
     "not_authorized": "Bu sayfa için yetkin yok.",
     "sidebar_title": "Mentor",
     "drawer_open": "Kanallar",
-    "board_open": "Sıralama",
+    "board_open": "Emek panosu",
     "board_close": "Kapat",
     "zone_info": "Alan bilgisi",
     "pinned_posts": "Sabitlenmiş",
@@ -435,10 +435,10 @@
     "badge_newcomer_description": "Topluluğa yeni katıldın.",
     "leaderboard_title": "Haftanın emekçileri",
     "leaderboard_you": "Sen",
-    "leaderboard_empty": "Bu hafta henüz kimse XP kazanmadı. İlk sen ol.",
-    "leaderboard_you_none": "Bu hafta henüz XP kazanmadın. Katıl, sıralamada yerini al.",
+    "leaderboard_empty": "Bu hafta henüz bir iz yok. Küçük bir adımla burası uyanır.",
+    "leaderboard_you_none": "Bu hafta henüz bir iz yok. Küçük bir adım yeter.",
     "leaderboard_xp": "{count} XP",
-    "rank_page_title": "Sıralama",
+    "rank_page_title": "Emek panosu",
     "rank_back": "Geri",
     "rank_see_all": "Tümünü gör",
     "rank_window_label": "Zaman aralığı",
@@ -447,20 +447,20 @@
     "rank_alltime": "Tüm zamanlar",
     "rank_new": "yeni",
     "rank_move_up": "Yükseldi",
-    "rank_move_down": "Düştü",
+    "rank_move_down": "Aşağı",
     "rank_move_same": "Aynı",
     "rank_reset": "{time} sonra yenilenir",
     "rank_reset_soon": "Yakında yenilenir",
     "rank_reset_dh": "{days}g {hours}s",
     "rank_reset_hm": "{hours}s {minutes}dk",
-    "rank_you_standing": "Senin durumun",
-    "rank_list_title": "Tüm sıralama",
-    "rank_banner_top1": "Zirvedesin — bu hafta liderlik sende! 🔥",
-    "rank_banner_top3": "Podyumdasın, harika gidiyorsun!",
-    "rank_banner_top10": "İlk 10'dasın — muhteşem gidiyorsun!",
-    "rank_banner_keep": "Bu hafta {xp} XP topladın. Böyle devam!",
-    "rank_banner_first": "Bu hafta ilk XP'ni kazan, sıralamada yerini al.",
-    "rank_percentile": "Katılımcıların %{pct}’inden öndesin",
+    "rank_you_standing": "Senin emeğin",
+    "rank_list_title": "Emek listesi",
+    "rank_banner_top1": "Bu hafta emeğin yanımızda.",
+    "rank_banner_top3": "Bu hafta emeğin burada duruyor.",
+    "rank_banner_top10": "Bu hafta ritmin duruyor.",
+    "rank_banner_keep": "Bu hafta {xp} XP işlendi. Yol durmadı.",
+    "rank_banner_first": "Bu hafta yola çıkınca emeğin burada durur.",
+    "rank_percentile": "Bu hafta emeğin burada. Yalnız değilsin.",
     "hub_nav": "Ana sayfa",
     "hub_eyebrow": "Birlikte devam ediyoruz",
     "hub_title": "Topluluk",
@@ -592,7 +592,7 @@
     "notebook_add_action": "Ben de çözemedim",
     "notebook_added": "Defterinde",
     "notebook_add_title": "Bu soruyu deftere al",
-    "notebook_add_subtitle": "Sadece kendin de çözemediysen ekle — defterin senin zayıf noktalarının haritası, başkalarınınkinin değil.",
+    "notebook_add_subtitle": "Sadece kendin de çözemediysen ekle. Defter senin zayıf noktalarının haritası, başkalarınınkinin değil.",
     "notebook_add_submit": "Deftere ekle",
     "notebook_add_error": "Deftere eklenemedi.",
     "notebook_handoff_title": "Defterinden",
@@ -619,7 +619,7 @@
     "poll_hours": "Saat",
     "poll_minutes": "Dakika",
     "poll_duration_error": "Anket en az 5 dakika sürmeli.",
-    "poll_validation_error": "2–4 farklı seçenek gir ve anket süresini kontrol et.",
+    "poll_validation_error": "2–4 farklı seçenek gir. Anket süresine de bir bak.",
     "poll_remove": "Anketi kaldır",
     "poll_media_conflict_title": "Anket ve ek birlikte kullanılamaz",
     "poll_media_conflict_message": "Anket eklemek için seçtiğin görsel veya dosyalar kaldırılacak.",
@@ -660,7 +660,7 @@
   },
   "mood": {
     "title": "Bugün nasılsın?",
-    "subtitle": "Kısa bir check-in. Yargı yok — buradayım.",
+    "subtitle": "Kısa bir check-in. Yargı yok. Buradayım.",
     "ask_later": "Daha sonra sor",
     "checkin_cta": "Check-in yap",
     "wheel_hint": "Çarkıfeleği çevirmek için sürükle.",
@@ -681,28 +681,28 @@
     "title": "Sınav Koçu",
     "gate": {
       "header_subtitle": "Premium veya kazanılmış hakla sohbet açık.",
-      "rate_limited_subtitle": "Bugünkü hak doldu. Yarın yine buradayım — ya da Premium ile devam.",
+      "rate_limited_subtitle": "Bugünkü hak doldu. Yarın yine buradayım, ya da Premium ile devam.",
       "insufficient_coin_subtitle": "Profilden küçük bir görev, bir davet, ya da Premium. Sohbet orada açılır.",
-      "default_subtitle": "Premium ile sohbet et — ya da profilden küçük bir hak kazan.",
+      "default_subtitle": "Premium ile sohbet et, ya da profilden küçük bir hak.",
       "chip_rate_limited": "Günlük limit",
       "chip_insufficient": "Hak gerekli",
       "chip_premium": "Premium",
       "chip_unavailable": "Şu an kullanılamıyor",
       "heading_rate_limited": "Bugünlük yeterli",
-      "heading_insufficient": "Koç için hak kazan",
+      "heading_insufficient": "Koç için hak",
       "heading_default": "Koçun yanında",
       "upgrade": "Premium'a yükselt",
       "go_profile": "Profilime git",
       "value_plan": "Plana göre kişisel yanıtlar",
-      "value_sources": "Kaynaklı bilgi — uydurma yok",
+      "value_sources": "Kaynaklı bilgi, uydurma yok",
       "value_motivation": "Motivasyon ve çalışma stratejisi",
       "teaser_title": "Koçun neler yapabilir?",
       "teaser_study": "Bugünkü planına göre çalışma önerisi",
       "teaser_anxiety": "Sınav kaygısı için sakin adımlar",
       "teaser_subject": "Konu bazlı strateji ve kaynak yönlendirme",
       "bubble_default": "Sohbet açık olsun diye Premium ya da küçük bir hak yeterli. Buradayım.",
-      "bubble_insufficient": "Profilden görevleri tamamlayarak koçunla konuşma hakkı kazanabilirsin.",
-      "bubble_rate_limited": "Bugünlük yeterli — yarın yine buradayım, sorun değil.",
+      "bubble_insufficient": "Profilden görev veya davet. Sohbet hakkı orada düşer.",
+      "bubble_rate_limited": "Bugünlük yeterli. Yarın yine buradayım, sorun değil.",
       "bubble_dismiss": "Kapat"
     },
     "hub": {
@@ -746,8 +746,8 @@
       "retry": "Tekrar dene"
     },
     "chat": {
-      "empty_hint": "İlk cümleyi sen at — buradayım.",
-      "stream_error": "Yanıt gelmedi — biraz sonra bir daha deneyelim.",
+      "empty_hint": "İlk cümleyi sen at. Buradayım.",
+      "stream_error": "Yanıt gelmedi. Biraz sonra bir daha deneyelim.",
       "history_loading": "Sohbet geçmişin yükleniyor…",
       "history_error": "Sohbet geçmişi şimdi yüklenemedi.",
       "older_history_error": "Daha eski mesajlar yüklenemedi.",
@@ -755,7 +755,7 @@
       "history_new_chat": "Yeni sohbet",
       "load_older": "Daha eski mesajları yükle",
       "remaining_hint": "Kalan mesaj hakkın: {count}",
-      "remaining_hint_zero": "Bugünlük mesaj hakkın doldu — yarın devam."
+      "remaining_hint_zero": "Bugünlük mesaj hakkın doldu. Yarın devam."
     }
   },
   "profile": {
@@ -801,7 +801,7 @@
       "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
       "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
       "name_error": "Ad soyad 2-64 karakter olmalı.",
-      "form_error": "Ad soyad veya kullanıcı adı formatını kontrol et.",
+      "form_error": "Ad soyad ya da kullanıcı adı uymadı.",
       "save_error": "Profil kaydedilemedi.",
       "saved_title": "Profil güncellendi",
       "saved_message": "Profil bilgilerin uygulama içinde güncellendi.",
@@ -939,7 +939,7 @@
     "headline_mood": "Nasıl hissediyorsan, koçun duysun",
     "headline_ghost": "İlerlemen artık bir hikâye",
     "headline_greeting": "Güne koçunla uyan",
-    "headline_session": "Seans bitti — koçun duruyor",
+    "headline_session": "Seans bitti. Koçun duruyor",
     "subtitle": "Planın ve ritüelin sende. Premium’da sohbette, selamda, seans sonunda biri durur.",
     "benefit_coach": "Sohbette, selamda, seans sonunda yanında duran bir koç",
     "benefit_analysis": "Haftalık hikâye, ghost anlatım ve derin analiz",
@@ -1122,7 +1122,7 @@
     "photo_loading": "Fotoğraf erişimi yükleniyor…",
     "photo_signals_window": "Yalnızca son dört denemeye bağlı fotoğraf sinyalleri.",
     "photo_topic_signals_window": "Aktif sınavındaki son 12 denemeye bağlı konu sinyalleri.",
-    "photo_signals_empty_action": "İlk yanlış soru fotoğrafını yukarıdan ekle — birlikte bakarız.",
+    "photo_signals_empty_action": "İlk yanlış soru fotoğrafını yukarıdan ekle. Birlikte bakarız.",
     "back_panel": "← Panele dön",
     "needs_exam_chip": "Sınav türü gerekli",
     "needs_exam_desc": "Profilinden sınav türünü seçmelisin.",
@@ -1141,10 +1141,10 @@
       "label": "Son net",
       "last_net": "Son net: {net}",
       "delta": "Geçen denemeye göre {delta}",
-      "caption": "Kişisel net seyrin — sıralama yok.",
+      "caption": "Kişisel net seyrin. Sıralama yok.",
       "weak_subject": "{subject} ile güçlenelim",
       "new_entry": "Yeni deneme gir",
-      "empty": "Deneme henüz yok — Gir’den ilk netini bırak, burası uyanır."
+      "empty": "Deneme henüz yok. Gir’den ilk netini bırak, burası uyanır."
     },
     "focus": {
       "title": "Çalışma odağın",
@@ -1444,10 +1444,10 @@
       "confirm_cta": "Emin misin? {cost} coin harcanacak",
       "unlocked_chip": "Açıldı",
       "premium_chip": "Premium'a dahil",
-      "unlocked_hint": "Bu haftanın derin analizi hazır — getirip okuyabilirsin.",
+      "unlocked_hint": "Bu haftanın derin analizi hazır. Getirip okuyabilirsin.",
       "fetch_cta": "Derin analizi getir",
       "fetching": "Hazırlanıyor…",
-      "insufficient": "Yeterli coinin yok ({balance}/{cost}). Görev tamamlayarak kazanabilirsin.",
+      "insufficient": "Yeterli coinin yok ({balance}/{cost}). Görevlerden hak düşebilir.",
       "go_earn": "Görevlere git",
       "suggested_title": "Önerilen görev",
       "action_error": "Bir şeyler ters gitti, tekrar deneyebilirsin.",
@@ -1485,14 +1485,14 @@
     "streak_kept": "Serin devam ediyor: {days} gün",
     "streak_started": "Bugün ritmini başlattın",
     "from_plan_task": "\"{title}\" üzerinde çalışıyorsun",
-    "too_short_hint": "Kısa bir deneme — serine sayılmadı, sorun değil.",
+    "too_short_hint": "Kısa bir deneme. Serine sayılmadı, sorun değil.",
     "checkin_title": "Bu seans nasıl geçti?",
     "checkin_note_placeholder": "Seni en çok ne zorladı? (opsiyonel)",
     "checkin_note_subject": "{subject} sende nasıl gitti? (opsiyonel)",
     "checkin_save": "Kaydet",
     "checkin_saved": "Teşekkürler, not aldım 🌱",
     "reflection_loading": "Koçun düşünüyor…",
-    "premium_nudge": "Seans bitti — koçun duruyor",
+    "premium_nudge": "Seans bitti. Koçun duruyor",
     "coach_adaptation_cta": "Bu zor seansın ardından planını koçla hafiflet",
     "reflection_dismiss": "Kapat",
     "mood_1": "Zorlandım",
@@ -1567,7 +1567,7 @@
   "knowledge": {
     "loading": "Yükleniyor…",
     "title": "Bilgi Merkezi",
-    "subtitle": "Resmî bilgi — kaynaklı ve doğrulanmış içerik.",
+    "subtitle": "Resmî bilgi. Kaynaklı ve doğrulanmış içerik.",
     "retry": "Tekrar dene",
     "exam_day": "Sınav günü",
     "days_remaining": "Sınava {days} gün kaldı.",
@@ -1578,7 +1578,7 @@
     "calendar_pending_chip": "Takvim bekleniyor",
     "calendar_pending_desc": "Resmî sınav takvimi henüz yayımlanmadı. Duyurulunca burada durur.",
     "articles_title": "Makaleler",
-    "articles_subtitle": "Editoryal makaleler — okuma ücretsiz",
+    "articles_subtitle": "Editoryal makaleler. Okuma ücretsiz",
     "articles_empty_chip": "Makale henüz yok",
     "articles_empty_desc": "Bu sınav için doğrulanmış makale henüz yok.",
     "source_label": "Kaynak",
@@ -1607,7 +1607,7 @@
     "title_success": "Ödeme başarılı",
     "title_error": "Bir sorun oluştu",
     "desc_success": "Koçun yanında. Premium özellikler kullanıma hazır.",
-    "desc_error": "Ödeme sağlayıcısından onay alamadık. Kart bilgilerini kontrol edip tekrar deneyebilirsin.",
+    "desc_error": "Ödeme sağlayıcısından onay alamadık. Kart bilgilerine bir bakıp tekrar deneyebilirsin.",
     "back_panel": "Panele dön",
     "back_subscription": "Abonelik sayfasına dön"
   },
@@ -1777,12 +1777,12 @@
     "index_status_archived": "Destede değil",
     "entry_delete_confirm": "Kayıt ve fotoğrafı kalıcı olarak silinecek. Bu geri alınamaz.",
     "entry_remove_title": "Bu kartı ne yapalım?",
-    "entry_remove_subtitle": "Sayfadan kaldırmak kaydı silmez — tekrar zamanı geldiğinde yine karşına çıkar.",
+    "entry_remove_subtitle": "Sayfadan kaldırmak kaydı silmez. Tekrar zamanı geldiğinde yine karşına çıkar.",
     "entry_remove_from_page": "Sadece sayfadan kaldır",
     "error_entry_delete": "Kayıt silinemedi.",
     "error_review": "Tekrar kaydedilemedi.",
     "error_place": "Yanlış deftere eklendi ama sayfadaki yeri kaydedilemedi.",
-    "error_page_full": "Bu sayfa doldu — sonraki sayfaya geç.",
+    "error_page_full": "Bu sayfa doldu. Sonraki sayfaya geç.",
     "edit_add_sticker": "Sticker ekle",
     "edit_paper": "Kağıt",
     "edit_undo": "Geri al",
@@ -1798,7 +1798,7 @@
     },
     "card_community_answered": "Toplulukta cevaplandı",
     "stuck_title": "Bu soru seni ikinci kez yakaladı",
-    "stuck_subtitle": "Tek başına uğraşmana gerek yok — toplulukta sorabilirsin.",
+    "stuck_subtitle": "Tek başına uğraşmana gerek yok. Toplulukta sorabilirsin.",
     "stuck_copyright": "Paylaşırken dikkat: yayın denemesi sorusunun fotoğrafı telifli olabilir. Kendi çözüm denemeni ve takıldığın yeri anlatman genelde daha çok işe yarar.",
     "stuck_ask": "Toplulukta sor",
     "stuck_skip": "Şimdilik geç",
@@ -1849,7 +1849,7 @@
     "locked_rate_limited_subtitle": "Bu ay için foto analiz limitine ulaştın. Yeni dönem başladığında tekrar deneyebilirsin.",
     "locked_premium_subtitle": "Yanlış soru fotoğrafını ders bazında sınıflandırmak Premium özelliği.",
     "locked_rate_limited_title": "Aylık limit doldu",
-    "locked_premium_title": "Foto analizi — Premium",
+    "locked_premium_title": "Foto analizi: Premium",
     "locked_unavailable_title": "Foto analizi şu an kapalı",
     "locked_unavailable_subtitle": "Bu özellik geçici olarak kullanılamıyor. Daha sonra yeniden deneyebilirsin.",
     "upgrade": "Premium'a yükselt",
@@ -1874,11 +1874,11 @@
     "followups_label": "Devam soruları",
     "regenerate": "Yanıtı yeniden üret",
     "input_label": "Koçuna mesaj yaz",
-    "input_placeholder": "Ne varsa yaz — buradayım.",
+    "input_placeholder": "Ne varsa yaz. Buradayım.",
     "send": "Gönder",
-    "disclaimer": "Koç resmî sınav tarihi/süreç bilgisi vermez — bunlar için Bilgi Merkezi'ne bak.",
+    "disclaimer": "Koç resmî sınav tarihi/süreç bilgisi vermez. Bunlar için Bilgi Merkezi'ne bak.",
     "transcript_label": "Koç sohbeti",
-    "empty_prompt": "Puhu dinliyor. Plan, kaygı, bugünün adımı — ne varsa.",
+    "empty_prompt": "Puhu dinliyor. Plan, kaygı, bugünün adımı. Ne varsa.",
     "suggestion_1": "Bugün tek adım ne olsun?",
     "suggestion_2": "Kaygı geldi, duralım mı?",
     "suggestion_3": "Bu haftaya küçük bir plan",
@@ -1987,8 +1987,8 @@
     "start_title": "Serini bugün başlat",
     "start_sub": "Tek bir görev bile seriyi başlatır.",
     "active_title": "{count} günlük seri",
-    "active_sub": "Harika gidiyorsun — devam et.",
-    "freeze_note": "{count} dondurma hakkın var — bir günü kaçırsan seri bozulmaz."
+    "active_sub": "Harika gidiyorsun. Devam et.",
+    "freeze_note": "{count} dondurma hakkın var. Bir günü kaçırsan seri bozulmaz."
   },
   "start_session": {
     "title": "Odaklanma zamanı",
@@ -2082,6 +2082,7 @@
     "progress_aria": "{name} seviye ilerlemesi",
     "progress_value": "{current} / {target} XP",
     "complete_message": "Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.",
+    "spotlight_open": "{name} rozetini sahne ışığında gör",
     "guide_open": "Gece Yolculuğu rehberini aç",
     "guide_title": "Gece Yolculuğu",
     "guide_description": "Her ışık, emek verdiğin yolun başka bir dönemini anlatıyor.",
@@ -2119,68 +2120,56 @@
     "levels": {
       "spark": {
         "name": "Kıvılcım",
-        "destination": "Kıvılcım’a",
         "story": "Yolculuğunda ilk ışık yandı."
       },
       "trail": {
-        "name": "İz",
-        "destination": "İz’e",
-        "story": "Attığın adımlar artık bir yol bırakıyor."
+        "name": "Alev",
+        "story": "Kıvılcım tutuştu; artık kolay sönmüyor."
       },
       "compass": {
         "name": "Pusula",
-        "destination": "Pusula’ya",
         "story": "Kendi yönünü bulmaya başladın."
       },
       "cycle": {
         "name": "Döngü",
-        "destination": "Döngü’ye",
-        "story": "Tekrarların sakin bir düzene dönüşüyor."
+        "story": "Aynı şeyleri bilerek tekrarlıyorsun; düzen oturuyor."
       },
       "rhythm": {
-        "name": "Ritim",
-        "destination": "Ritim’e",
-        "story": "Emek, günlerinin doğal bir parçası oluyor."
+        "name": "Nabız",
+        "story": "Tekrarların artık kendiliğinden atıyor."
       },
       "flow": {
         "name": "Akış",
-        "destination": "Akış’a",
-        "story": "Yolculuğunu daha güvenle sürdürüyorsun."
+        "story": "Çabayı artık ayrı bir yük gibi taşımıyorsun."
       },
       "root": {
         "name": "Kök",
-        "destination": "Kök’e",
         "story": "Emeğin geçici bir hevesten daha fazlası."
       },
       "wing": {
         "name": "Kanat",
-        "destination": "Kanat’a",
         "story": "Biriktirdiklerin sana hareket alanı açıyor."
       },
       "horizon": {
         "name": "Ufuk",
-        "destination": "Ufuk’a",
         "story": "Artık yalnız bugünü değil, önündeki yolu görüyorsun."
       },
       "lantern": {
         "name": "Fener",
-        "destination": "Fener’e",
         "story": "Kendi ışığın başkalarının yoluna da eşlik ediyor."
       },
       "star": {
         "name": "Yıldız",
-        "destination": "Yıldız’a",
         "story": "Varlığın yolculuğa yön ve cesaret katıyor."
       },
       "constellation": {
         "name": "Takımyıldız",
-        "destination": "Takımyıldız’a",
         "story": "Tek başına parlamaktan öte, birlikte anlam oluşturuyorsun."
       }
     }
   },
   "economy": {
-    "balance_subtitle": "Kazanılmış hak — nakit değildir; koç sohbeti ve ilerideki özellikler için kullanılır.",
+    "balance_subtitle": "Kazanılmış hak, nakit değildir. Koç sohbeti ve ilerideki özellikler için kullanılır.",
     "balance_title": "Bakiyen",
     "xp": "XP",
     "confirmed": "Onaylı hak",
@@ -2207,7 +2196,7 @@
     "redeem_failed": "Şimdi kaydolmadı.",
     "redeeming": "Kaydediliyor…",
     "use_code": "Kodu kullan",
-    "quests_subtitle": "Günlük ritüelini tamamla, XP kazan. Başlangıç görevleri hak kazandırır.",
+    "quests_subtitle": "Ritüel bugün burada. Başlangıç adımları tamamlanınca hak düşer.",
     "quests_title": "Görevler",
     "quests_progress": "{done}/{total} tamamlandı",
     "quests_percent": "%{percent}",
@@ -2226,13 +2215,13 @@
     "quest_reward_xp": "+{count} XP",
     "quest_progress_count": "{current}/{target}",
     "quest_progress_days": "{current}/{target} gün",
-    "quest_auto_hint": "Tamamladığında otomatik işlenecek.",
+    "quest_auto_hint": "Tamamlanınca hak kendiliğinden işlenir.",
     "quest_action_subscription": "Aboneliğe git",
     "quest_action_invite": "Davet kodu gir"
   },
   "legal": {
     "last_updated": "Son güncelleme: {date}",
-    "draft_title": "TASLAK — hukuki onay bekliyor",
+    "draft_title": "TASLAK: hukuki onay bekliyor",
     "draft_body": "Bu metin henüz hukuki incelemeden geçmemiştir; bağlayıcı değildir ve nihai hâli değildir.",
     "translation_notice": "Bu çeviri yalnızca bilgi amaçlıdır. Bağlayıcı metin, belgenin Türkçe sürümüdür.",
     "footer_heading": "Yasal",
@@ -2250,6 +2239,7 @@
     "trust_badge": "Doğrulanmış içerik",
     "trust_body": "Bu içerik editorial ekibimiz tarafından kaynak gösterilerek doğrulanmıştır. Resmî süreç ve tarihler ilgili kurum kaynaklarından alınır; değişiklik olursa güncellenir.",
     "login": "Giriş yap",
+    "panel": "Panele dön",
     "back_knowledge": "Bilgi Merkezi",
     "back_home": "Ana sayfa",
     "coach_title": "Bu konu kafanı mı kurcalıyor?",
@@ -2297,7 +2287,7 @@
       "avatar_type_error": "Yalnızca JPEG veya PNG yükleyebilirsin.",
       "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
       "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
-      "form_error": "Kullanıcı adı formatını kontrol et.",
+      "form_error": "Kullanıcı adı uymadı.",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
       "continue": "Devam"
     },
@@ -2308,7 +2298,7 @@
     },
     "goal": {
       "title": "Hedefini hatırla",
-      "subtitle": "İsteğe bağlı — neden bu yoldasın?",
+      "subtitle": "İsteğe bağlı. Neden bu yoldasın?",
       "hint": "Sadece hedefin zorunlu; şehir isteğe bağlı.",
       "save": "Kaydet ve devam",
       "skip": "Şimdilik atla",
@@ -2317,7 +2307,7 @@
     "complete": {
       "title": "Yol başlıyor.",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
-      "countdown_teaser": "Sınav geri sayımın panelde — kaynak gösterilmiş resmî takvimden.",
+      "countdown_teaser": "Sınav geri sayımın panelde. Kaynak gösterilmiş resmî takvimden.",
       "map_cta": "Hedefini haritada işaretle →",
       "go_panel": "Panele git"
     }
@@ -2703,22 +2693,22 @@
   "achievements": {
     "showcase_title": "Yolculuktan İzler",
     "showcase_view_all": "Tümünü gör",
-    "showcase_earned_aria": "{title} kazanıldı",
-    "public_empty": "Paylaşılan bir iz henüz yok. Kazanınca burada durur.",
+    "showcase_earned_aria": "{title} seninle",
+    "public_empty": "Paylaşılan bir iz henüz yok. Yanına düşünce burada durur.",
     "collection_title": "Koleksiyonun",
     "collection_count": "{earned} / {total}",
     "collection_progress_aria": "Koleksiyon ilerlemesi",
-    "collection_progress_value": "{earned} / {total} başarı kazanıldı",
+    "collection_progress_value": "{earned} / {total} başarı seninle",
     "next_discovery": "Sıradaki keşif",
-    "suggestion_aria": "Sıradaki keşif: {title}. Nasıl kazanılır?",
+    "suggestion_aria": "Sıradaki keşif: {title}. Nasıl uyanır?",
     "collection_complete_title": "Koleksiyon tamamlandı.",
     "collection_complete_body": "Bütün rozetler seninle; yolculuğun devam ediyor.",
     "locked_aria": "{title} başarısı kilitli",
-    "how_to_earn": "Nasıl kazanılır?",
+    "how_to_earn": "Nasıl uyanır?",
     "progress_label": "İlerlemen",
     "progress_days": "{current} / {target} gün",
-    "earned_on": "{date} tarihinde kazanıldı",
-    "earned": "Kazanıldı",
+    "earned_on": "{date} tarihinde seninle",
+    "earned": "Seninle",
     "locked": "Kilitli",
     "close": "Kapat",
     "celebration_eyebrow": "Yeni bir ışık yandı",
@@ -2781,17 +2771,18 @@
     "label": "Reklam",
     "rewarded": {
       "eyebrow": "İsteğe bağlı reklam görevi",
-      "title": "Reklamı tamamla, {count} Coin kazan",
-      "body": "Bugün {remaining} hakkın kaldı. İstemezsen hiçbir şey kaçırmazsın.",
+      "title": "Reklamı bitirince {count} Coin hak düşer.",
+      "body": "Bugün {remaining} hakkın var. İstemezsen geç.",
       "cta": "Reklamı izle",
       "preparing": "Reklam hazırlanıyor",
       "opening": "Açılıyor…",
-      "success": "Tamamlandı — {count} Coin hesabına eklendi.",
+      "success": "{count} Coin hesabına işlendi.",
       "start_error": "Reklam şu anda açılamadı. Daha sonra tekrar deneyebilirsin.",
-      "complete_error": "Ödül doğrulanamadı. Lütfen tekrar deneme; destek ekibi kaydı inceleyebilir.",
+      "unavailable": "Reklam görevi şu anda hazır değil. Daha sonra yeniden bakabilirsin.",
+      "complete_error": "Hak doğrulanamadı. Tekrar deneme; destek kayda bakar.",
       "cooldown": "Yeni reklam görevi {time} sonrasında hazır olacak.",
       "daily_done": "Bugünkü reklam görevlerini tamamladın. Yarın yeniden gelebilirsin.",
-      "session_active": "Önceki reklam oturumun kapanıyor. Birkaç dakika sonra tekrar kontrol edebilirsin."
+      "session_active": "Önceki reklam oturumun kapanıyor. Birkaç dakika sonra bir daha bak."
     }
   },
   "notifications": {

@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Link } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * Minimal chrome for public, unauthenticated pages (SEO articles, legal documents) — logo + a way
@@ -12,10 +13,15 @@ import { Link } from "@/i18n/navigation";
 export function PublicChrome({
   children,
   loginLabel,
+  panelLabel,
 }: {
   children: ReactNode;
   loginLabel: string;
+  panelLabel: string;
 }) {
+  const { status } = useAuth();
+  const authenticated = status === "authenticated";
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
       <header
@@ -30,13 +36,17 @@ export function PublicChrome({
           >
             Mentor
           </Link>
-          <Link
-            href="/login"
-            className="inline-flex min-h-[44px] items-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{ color: "var(--color-accent)", fontFamily: "var(--font-heading)" }}
-          >
-            {loginLabel}
-          </Link>
+          {status === "loading" ? (
+            <span className="min-h-[44px] min-w-20" aria-hidden="true" />
+          ) : (
+            <Link
+              href={authenticated ? "/dashboard" : "/login"}
+              className="inline-flex min-h-[44px] items-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+              style={{ color: "var(--color-accent)", fontFamily: "var(--font-heading)" }}
+            >
+              {authenticated ? panelLabel : loginLabel}
+            </Link>
+          )}
         </div>
       </header>
       {children}

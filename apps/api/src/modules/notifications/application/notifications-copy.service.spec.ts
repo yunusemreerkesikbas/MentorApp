@@ -63,7 +63,7 @@ describe("NotificationsCopyService", () => {
 
   it("maps email template ids and omits missing greeting/cta", () => {
     const { service } = makeService({
-      "notifications.email.paymentsDunning.subject": "Mentor — Ödeme tamamlanamadı",
+      "notifications.email.paymentsDunning.subject": "Mentor: Ödeme tamamlanamadı",
       "notifications.email.paymentsDunning.body": "Ödeme tamamlanamadı.",
     });
     const email = service.resolveEmail("payments.dunning", { name: "Ada" }, "tr");

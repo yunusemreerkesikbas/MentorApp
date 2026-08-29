@@ -77,6 +77,10 @@
 ### Google Ad Manager (web v1)
 - Ad unit paths: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT` and
   `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT`. Test and production units must be separate.
+- Staging smoke uses Google's official test inventory only:
+  `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT=/6355419/Travel/Europe/France/Paris` and
+  `GAM_DASHBOARD_REWARDED_COIN_AD_UNIT=/22639388115/rewarded_web_example`. Staging may use rewarded
+  rollout `%100`; production stays `%0` until the separate GAM/domain/legal operation is complete.
 - Verify the production domain and publish the real network's `ads.txt`; do not ship a placeholder
   publisher id. Keep all `ads.*` flags off until this is complete.
 - In **Admin → Global settings → Network settings**, turn off Programmatic limited ads. Block adult,
@@ -85,6 +89,9 @@
 - The web loads Google's limited-ads GPT URL only after backend eligibility. EEA/UK/Switzerland stays
   off until a compatible CMP and legal review exist. Update privacy/cookie/foreign-transfer copy
   before rollout; limited ads is not synonymous with “no data processing.”
+- Render Cron (or an operator) calls `POST /v1/internal/cron/expire-ad-reward-sessions` with
+  `X-Cron-Secret` every five minutes. The endpoint runs a bounded, idempotent and multi-instance-safe
+  sweep; AdsModule does not create a second in-process scheduler.
 
 ### Render (hosting)
 - Dockerized service, single region **Frankfurt/EU**. Env variables go into the Render dashboard.

@@ -98,13 +98,13 @@ export function generateStaticParams() {
 
 const META = {
   tr: {
-    title: "Mentor — Sınav Yoldaşın",
+    title: "Mentor: Sınav Yoldaşın",
     description:
       "Sınav hazırlığında seni anlayan, devam ettiren ve yalnız bırakmayan AI koç + topluluk.",
     ogLocale: "tr_TR" as const,
   },
   en: {
-    title: "Mentor — Your Exam Companion",
+    title: "Mentor: Your Exam Companion",
     description:
       "An AI coach + community that understands you, keeps you going, and never leaves you alone on the road to your exam.",
     ogLocale: "en_US" as const,

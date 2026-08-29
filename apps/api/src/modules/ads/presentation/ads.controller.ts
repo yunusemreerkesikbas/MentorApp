@@ -5,7 +5,12 @@ import { ExamType } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Public } from "../../../common/auth/public.decorator";
 import { AdsService } from "../application/ads.service";
-import { AdPlacementParamsDto, AdPlacementQueryDto, CreateAdRewardSessionDto } from "./ads.dto";
+import {
+  AdIdempotencyHeadersDto,
+  AdPlacementParamsDto,
+  AdPlacementQueryDto,
+  CreateAdRewardSessionDto,
+} from "./ads.dto";
 
 @ApiTags("ads")
 @Controller("ads")
@@ -21,6 +26,7 @@ export class AdsController {
   ) {
     return this.ads.getPublicPlacement(
       params.placementId,
+      query.contentSlug ?? null,
       (query.examType as ExamType | undefined) ?? null,
       countryCode ?? null,
     );
@@ -30,10 +36,17 @@ export class AdsController {
   @Get("placements/:placementId")
   placement(
     @Param() params: AdPlacementParamsDto,
+    @Query() query: AdPlacementQueryDto,
     @CurrentUser() user: RequestUser,
     @Headers("cf-ipcountry") countryCode?: string,
   ) {
-    return this.ads.getPlacement(params.placementId, user.id, user.roles, countryCode ?? null);
+    return this.ads.getPlacement(
+      params.placementId,
+      user.id,
+      user.roles,
+      query.contentSlug ?? null,
+      countryCode ?? null,
+    );
   }
 
   @ApiBearerAuth()
@@ -51,10 +64,16 @@ export class AdsController {
   @Post("reward-sessions")
   createRewardSession(
     @Body() dto: CreateAdRewardSessionDto,
+    @Headers() headers: AdIdempotencyHeadersDto,
     @CurrentUser() user: RequestUser,
     @Headers("cf-ipcountry") countryCode?: string,
   ) {
-    return this.ads.createRewardSession(dto.placementId, user, countryCode ?? null);
+    return this.ads.createRewardSession(
+      dto.placementId,
+      user,
+      countryCode ?? null,
+      headers["idempotency-key"],
+    );
   }
 
   @ApiBearerAuth()

@@ -14,7 +14,7 @@ import type {
 import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
-import { JourneyLevelCelebration } from "@/components/journey-levels/journey-level-celebration";
+import { JourneySpotlightScene } from "@/components/journey-levels/spotlight/journey-spotlight-scene";
 import {
   getUnseenAchievements,
   getUnseenJourneyLevelCelebrations,
@@ -319,8 +319,9 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
             onClose={() => void handleCelebrationClose()}
           />
         ) : currentCelebration?.type === "journey-level" ? (
-          <JourneyLevelCelebration
+          <JourneySpotlightScene
             key={`journey-level:${currentCelebration.celebration.id}`}
+            mode="celebration"
             celebration={currentCelebration.celebration}
             busy={celebrationBusy}
             error={journeyCelebrationError}

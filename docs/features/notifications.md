@@ -97,6 +97,8 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Yoldaşlık sesi Dalga 15 — uzun çizgi (2026-08-29)** — Bildirim ve e-posta konularında em dash kalktı (`Mentor: …`). `{name} kabul etti. Artık yol arkadaşın.` (siz yok). Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `SERIOUS_DISTRESS` dokunulmadı. İlgili: `notifications.json`, `notifications-copy.service.spec.ts`.
+
 - **Bildirim ve ritüel sesi Dalga 1 (APP-054, 2026-08-28)** — Öğrenciye giden bildirim, e-posta,
   push ve kutlama/toast metinleri tek bir ses kılavuzuna bağlandı: [`docs/copy/voice.md`](../copy/voice.md)
   (Puhu kutlama/davette, isimsiz yoldaş ciddi anda; her zaman **sen**). Hardcoded TR cümleler

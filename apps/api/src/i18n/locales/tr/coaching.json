@@ -1,14 +1,14 @@
 {
   "mood": {
-    "VERY_LOW": "Bugün ağır, biliyorum. Kendine nazik ol — küçük bir mola da yolun parçası. Buradayım.",
+    "VERY_LOW": "Bugün ağır, biliyorum. Kendine nazik ol. Küçük bir mola da yolun parçası. Buradayım.",
     "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
     "LOW": "Zor günler olur. Bugün tek bir küçük adım yeter, gerisi yarına kalsın. Buradayım.",
-    "OKAY": "Bugün böyle. Elinden geleni yap — bu yeterli. Yanındayım.",
-    "GOOD": "Enerjin yerinde. Bunu bugünün küçük bir adımına taşı — yeter.",
+    "OKAY": "Bugün böyle. Elinden geleni yap, bu yeterli. Yanındayım.",
+    "GOOD": "Enerjin yerinde. Bunu bugünün küçük bir adımına taşı, yeter.",
     "GREAT": "İçinden geliyor bugün. Bu hali tek bir adıma bağla; gerisi gelir."
   },
   "motivation": {
-    "START": "Bugün küçük bir adım at — yeterli. Yanındayım.",
+    "START": "Bugün küçük bir adım at, yeterli. Yanındayım.",
     "GOING": "Ritmin duruyor. Bugün de küçük bir adım yeter. Yanındayım."
   },
   "coachEvidence": {
@@ -90,13 +90,13 @@
     "APPLICATION": "Başvuru bilgisi için yalnız doğrulanmış Bilgi Merkezi kaynaklarını paylaşıyorum.",
     "RESULT_PLACEMENT": "Sonuç ve yerleştirme bilgisi için yalnız doğrulanmış kaynakları paylaşıyorum.",
     "PROCESS": "Resmî süreç için yalnız doğrulanmış Bilgi Merkezi kaynaklarını paylaşıyorum.",
-    "UNAVAILABLE": "Bu konuda doğrulanmış bir kart veya kaynak şu anda mevcut değil. Bilgi Merkezi'ni kontrol edebilirsin."
+    "UNAVAILABLE": "Bu konuda doğrulanmış bir kart veya kaynak şu anda mevcut değil. Bilgi Merkezi'ne bakabilirsin."
   },
   "ghost": {
     "NEW_RECORD": "Yeni rekor! Şimdiye kadarki en iyi netini geçtin. Geçmiş halini resmen geride bıraktın.",
-    "BEAT_PREVIOUS": "Geçen denemeni geçtin — geçmiş halini geride bıraktın. İvme seninle.",
-    "TIED": "Geçen denemenle aynı seviyedesin. İstikrar da bir kazanç; küçük bir adımla öne geç.",
-    "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma — trendine bak, yanındayım."
+    "BEAT_PREVIOUS": "Geçen denemeni geçtin. Geçmiş halini geride bıraktın. İvme seninle.",
+    "TIED": "Geçen denemenle aynı seviyedesin. İstikrar yerinde; küçük bir adım yeter.",
+    "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma. Trendine bak, yanındayım."
   },
   "focus": {
     "PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında en çok öne çıkıyor. İstersen bunu bir sonraki planına ekleyelim.",
@@ -178,8 +178,8 @@
   },
   "notebook_pattern": {
     "KNOWLEDGE_GAP": "Son yanlışlarının çoğu bilmediğin konulardan. Burada tekrar gerçekten işe yarar.",
-    "RUSHING": "Konuyu biliyorsun — yanlışlarının çoğu dikkat hatası. Tekrar etmek yerine yavaşlayıp kontrol etmeyi dene.",
-    "READING": "Yanlışlarının çoğu soruyu yanlış okumaktan. Soru kökünü iki kez okumak burada net kazandırır.",
+    "RUSHING": "Konuyu biliyorsun. Yanlışlarının çoğu dikkat hatası. Tekrar etmek yerine yavaşlayıp kontrol etmeyi dene.",
+    "READING": "Yanlışlarının çoğu soruyu yanlış okumaktan. Soru kökünü iki kez okumak burada işe yarar.",
     "DISTRACTOR": "Çeldiricilere takılıyorsun. Şıkları elemeden önce cevabını kendin kurmayı dene.",
     "TIME_PRESSURE": "Yanlışlarının çoğu zaman baskısından. Soru başına süreni ölçmek iyi bir sonraki adım.",
     "SECOND_GUESSING": "Doğru cevabı bulup değiştiriyorsun. İlk kararına güvenmeyi denemeye değer.",
