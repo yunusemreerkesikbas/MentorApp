@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  NEIGHBOUR_SLOT_X,
+  resolveIdleRecentreMs,
+  resolveSpotlightTravel,
   SPOTLIGHT_CENTER_X,
   SPOTLIGHT_MAX_ANGLE_DEG,
   SPOTLIGHT_SWEEP_KEYFRAMES,
@@ -88,6 +91,43 @@ describe("beamThrowFalloff", () => {
      went 0.32 → 0.45; it guards the "not off" floor, not a particular look. */
   it("stays visible even at full swing", () => {
     expect(beamThrowFalloff(0)).toBeGreaterThan(0.4);
+  });
+});
+
+describe("NEIGHBOUR_SLOT_X", () => {
+  /* Aiming at a slot and asking how lit that slot is must agree. If these drift apart, travelling
+     to a neighbour lights the badge beside the one being travelled to. */
+  it("lands the beam exactly on the neighbour it names", () => {
+    expect(neighbourLightIntensity(NEIGHBOUR_SLOT_X.previous, -1)).toBe(1);
+    expect(neighbourLightIntensity(NEIGHBOUR_SLOT_X.next, 1)).toBe(1);
+  });
+
+  it("keeps both slots on stage", () => {
+    expect(NEIGHBOUR_SLOT_X.previous).toBeGreaterThan(0);
+    expect(NEIGHBOUR_SLOT_X.next).toBeLessThan(1);
+  });
+});
+
+describe("resolveSpotlightTravel", () => {
+  it("zeroes both beats under reduced motion", () => {
+    expect(resolveSpotlightTravel(true)).toEqual({ reachMs: 0, settleMs: 0 });
+  });
+
+  it("reaches before it settles, so the light finds the badge first", () => {
+    const travel = resolveSpotlightTravel(false);
+    expect(travel.reachMs).toBeGreaterThan(0);
+    expect(travel.settleMs).toBeGreaterThan(0);
+  });
+});
+
+describe("resolveIdleRecentreMs", () => {
+  /* Drifting home is movement the student did not ask for — the whole point of the setting. */
+  it("never drifts home under reduced motion", () => {
+    expect(resolveIdleRecentreMs(true)).toBeNull();
+  });
+
+  it("waits long enough not to fight a moving pointer", () => {
+    expect(resolveIdleRecentreMs(false)).toBeGreaterThan(800);
   });
 });
 

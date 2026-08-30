@@ -70,6 +70,8 @@ export interface InfoArticleSummaryDto {
   verifiedAt: string;
   verifiedBy: string;
   updatedAt: string;
+  author: InfoArticleAuthorDto | null;
+  coverImage: InfoArticleCoverImageDto | null;
 }
 
 export type InfoArticleBodyFormat = "MARKDOWN" | "HTML";
@@ -99,8 +101,9 @@ export interface ArticleImageUploadUrlDto {
 export interface InfoArticleDto extends InfoArticleSummaryDto {
   body: string;
   bodyFormat: InfoArticleBodyFormat;
-  author: InfoArticleAuthorDto | null;
-  coverImage: InfoArticleCoverImageDto | null;
+  galleryImages: InfoArticleCoverImageDto[];
+  isFeatured: boolean;
+  featuredUntil: string | null;
   metaDescription: string | null;
 }
 

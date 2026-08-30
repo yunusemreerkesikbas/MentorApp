@@ -16,18 +16,13 @@ interface JourneyLevelMedallionProps {
  */
 export function JourneyLevelMedallion({
   levelKey,
-  current = false,
   future = false,
   className = "size-24",
 }: JourneyLevelMedallionProps) {
   return (
     <span
       data-journey-level-key={levelKey}
-      className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full ${
-        current
-          ? "border-[3px] border-[var(--color-progress)]"
-          : "border-2 border-[var(--color-border)]"
-      } ${className}`}
+      className={`relative inline-grid shrink-0 place-items-center overflow-hidden rounded-full  ${className}`}
     >
       <Image
         src={`/img/levels/${levelKey}.webp`}

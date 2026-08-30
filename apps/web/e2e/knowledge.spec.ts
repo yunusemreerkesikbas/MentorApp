@@ -31,7 +31,22 @@ const article: InfoArticleDto = {
   body: "## Başvuru özeti\n\nDoğrulanmış başvuru rehberi.",
   bodyFormat: "MARKDOWN",
   author: null,
-  coverImage: null,
+  coverImage: {
+    url: "https://cdn.test.local/cover.jpg",
+    alt: "KPSS kapak",
+    width: 1200,
+    height: 675,
+  },
+  galleryImages: [
+    {
+      url: "https://cdn.test.local/gallery.jpg",
+      alt: "KPSS galeri",
+      width: 1200,
+      height: 675,
+    },
+  ],
+  isFeatured: false,
+  featuredUntil: null,
   family: "KPSS",
   category: "APPLICATION",
   metaTitle: "KPSS Başvuru Süreci | Mentor Bilgi Merkezi",
@@ -67,29 +82,22 @@ const calendar: ExamCalendarDto = {
   daysUntilNextEvent: 14,
 };
 
-test("doğrulanmış sınav sürecini kronolojik ve kaynaklı gösterir", async ({
+test("hub aile filtresi, öne çıkan ve sidebar countdown gösterir", async ({
   page,
 }) => {
   const api = await mockKnowledgeApi(page);
   await page.goto("/bilgi");
 
-  const section = page
-    .getByRole("heading", { name: "Sınav süreci", exact: true })
-    .locator("..");
-  const items = section.getByRole("listitem");
-  await expect(items).toHaveText([
-    /Başvuru başlangıcı.*1 Mayıs 2026/,
-    /Başvuru sonu.*15 Mayıs 2026/,
-    /Sınav günü.*12 Temmuz 2026/,
-    /Sonuç tarihi.*1 Ağustos 2026/,
-  ]);
-  await expect(
-    items.first().getByRole("link", { name: /ÖSYM/ }),
-  ).toHaveAttribute("href", "https://www.osym.gov.tr");
-  await expect(items.first()).toContainText("Son doğrulama: 2 Ocak 2026");
-  await expect(items.last()).toContainText(
-    "S\u0131radaki ad\u0131m \u00b7 14 g\u00fcn sonra",
+  await expect(page.getByRole("tab", { name: "KPSS" })).toHaveAttribute(
+    "aria-selected",
+    "true",
   );
+  await expect(page.getByRole("heading", { name: article.title }).first()).toBeVisible();
+  await expect(page.getByText("Mentor Editör")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Başvuru" })).toBeVisible();
+  await expect(page.getByText("12 Temmuz 2026", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bilgi Merkezi" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
 
   const calendarLink = page.getByRole("link", { name: "Takvime ekle" });
   await expect(calendarLink).toHaveAttribute(
@@ -103,6 +111,29 @@ test("doğrulanmış sınav sürecini kronolojik ve kaynaklı gösterir", async 
   );
   expect(calendarContent).not.toContain("EXAM_DATE@mentor");
   expect(api.usersMeCalls).toBe(0);
+  expect(api.unexpected).toEqual([]);
+});
+
+test("konu filtresi ve sayfalama URL query kullanır", async ({ page }) => {
+  const api = await mockKnowledgeApi(page, { articleTotal: 20 });
+  await page.goto("/bilgi");
+
+  await page.getByRole("button", { name: "Başvuru" }).click();
+  await expect(page).toHaveURL(/category=APPLICATION/);
+  await expect
+    .poll(() =>
+      api.requests.some(
+        ({ method, path }) =>
+          method === "GET" &&
+          path.includes("/v1/content/info-articles?") &&
+          path.includes("category=APPLICATION"),
+      ),
+    )
+    .toBe(true);
+
+  await page.getByRole("button", { name: "Sonraki" }).click();
+  await expect(page).toHaveURL(/page=2/);
+  await expect(page).toHaveURL(/category=APPLICATION/);
   expect(api.unexpected).toEqual([]);
 });
 
@@ -140,6 +171,17 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   expect(jsonLd.join(" ")).toContain("Article");
   expect(jsonLd.join(" ")).toContain("BreadcrumbList");
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
+  await expect(page.getByRole("img", { name: "KPSS kapak" })).toBeVisible();
+  await page.getByRole("button", { name: "Sonraki görsel" }).click();
+  await expect(page.getByRole("img", { name: "KPSS galeri" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "WhatsApp ile paylaş" }),
+  ).toHaveAttribute("href", /wa\.me/);
+  await expect(page.getByRole("link", { name: "X ile paylaş" })).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Facebook ile paylaş" }),
+  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Bağlantıyı kopyala" })).toBeVisible();
   await page.getByRole("link", { name: "Koçla konuş" }).click();
 
   await expect
@@ -165,7 +207,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.goto(`/en/knowledge/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Home" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Sign in to ask the Coach" }),
   ).toHaveAttribute("href", "/en/login");
@@ -182,30 +224,26 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const hub = await page.context().newPage();
   const hubApi = await mockKnowledgeApi(hub);
   await hub.goto("/en/knowledge");
-  await expect(
-    hub.getByRole("heading", { name: "Exam process", exact: true }),
-  ).toBeVisible();
-  await expect(hub.getByText("Application", { exact: true })).toBeVisible();
+  await expect(hub.getByRole("tab", { name: "KPSS" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(hub.getByRole("heading", { name: article.title }).first()).toBeVisible();
   await expect(
     hub.getByRole("link", { name: "Add to calendar" }),
-  ).toBeVisible();
-  await expect(
-    hub.getByText("Next step \u00b7 in 14 days", { exact: true }),
   ).toBeVisible();
   expect(hubApi.unexpected).toEqual([]);
 });
 
-test("başarılı refresh sonrası public header giriş yerine panele döner", async ({
+test("oturumlu ziyaretçi detayda app nav görür, public header görmez", async ({
   page,
 }) => {
   const api = await mockKnowledgeApi(page);
 
   await page.goto(`/bilgi/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
-    "href",
-    "/panel",
-  );
+  await expect(page.getByRole("link", { name: "Bilgi" }).first()).toBeVisible();
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
 });
@@ -335,6 +373,7 @@ async function mockKnowledgeApi(
   options: {
     authenticated?: boolean;
     calendar?: ExamCalendarDto;
+    articleTotal?: number;
   } = {},
 ) {
   const authenticated = options.authenticated ?? true;
@@ -385,15 +424,32 @@ async function mockKnowledgeApi(
     }
     if (
       method === "GET" &&
-      path === "/v1/content/exams/by-type/KPSS/calendar"
+      /\/v1\/content\/exams\/by-type\/[A-Z]+\/calendar$/.test(path)
     ) {
       return json(route, options.calendar ?? calendar);
     }
     if (
       method === "GET" &&
-      path.startsWith("/v1/content/info-articles?family=KPSS")
+      path.startsWith("/v1/content/info-articles/featured")
     ) {
-      return json(route, { items: [article], total: 1, page: 1, pageSize: 20 });
+      return json(route, article);
+    }
+    if (
+      method === "GET" &&
+      path.startsWith("/v1/content/info-articles?family=")
+    ) {
+      return json(route, {
+        items: [article],
+        total: options.articleTotal ?? 1,
+        page: Number(url.searchParams.get("page") ?? 1),
+        pageSize: 12,
+      });
+    }
+    if (
+      method === "POST" &&
+      path === `/v1/content/info-articles/${article.slug}/views`
+    ) {
+      return json(route, null, 204);
     }
     if (
       method === "GET" &&

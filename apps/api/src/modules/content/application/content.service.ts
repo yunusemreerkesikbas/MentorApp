@@ -39,10 +39,13 @@ import {
   toExamCandidates,
 } from "../domain/calendar.util";
 import {
+  ARTICLE_FEATURED_DEFAULT_DAYS,
   ARTICLE_IMAGE_MAX_BYTES,
+  ARTICLE_TRENDING_WINDOW_DAYS,
   ExamEventType,
   InfoArticleCategory,
 } from "../domain/content.constants";
+import { isoDaysAgo } from "../domain/date.util";
 import {
   ExamEventRepository,
   type ExamEventRow,
@@ -70,6 +73,7 @@ import {
   toExamCalendarDto,
   toExamSubjectDto,
   toInfoArticleDto,
+  toInfoArticleSummary,
   toPaginatedExams,
   toPaginatedInfoArticles,
   toPublicHolidayDto,
@@ -104,6 +108,15 @@ export interface AdminArticleView {
   coverImageAlt: string | null;
   coverImageWidth: number | null;
   coverImageHeight: number | null;
+  galleryImages: {
+    key: string;
+    url: string;
+    alt: string;
+    width: number;
+    height: number;
+  }[];
+  isFeatured: boolean;
+  featuredUntil: string | null;
   isPublished: boolean;
   publishedAt: string | null;
   createdAt: string;
@@ -134,6 +147,15 @@ function toAdminArticleView(row: InfoArticleRow): AdminArticleView {
     coverImageAlt: row.coverImageAlt,
     coverImageWidth: row.coverImageWidth,
     coverImageHeight: row.coverImageHeight,
+    galleryImages: (row.galleryImages ?? []).map((image) => ({
+      key: image.key,
+      url: "",
+      alt: image.alt,
+      width: image.width,
+      height: image.height,
+    })),
+    isFeatured: row.isFeatured,
+    featuredUntil: row.featuredUntil?.toISOString() ?? null,
     isPublished: row.publishedAt !== null,
     publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
@@ -700,13 +722,60 @@ export class ContentService {
     query: ListInfoArticlesQuery,
   ): Promise<Paginated<InfoArticleSummaryDto>> {
     this.assertValidFamily(query.family);
+    if (query.category) this.assertValidCategory(query.category);
+    const featuredSlug =
+      query.excludeSlug ?? (await this.getFeaturedArticle(query.family))?.slug;
     const { items, total } = await this.articles.listPublishedByFamily(
       this.db,
       query.family,
       query.page,
       query.pageSize,
+      { category: query.category, excludeSlug: featuredSlug },
     );
-    return toPaginatedInfoArticles(items, total, query.page, query.pageSize);
+    return toPaginatedInfoArticles(
+      items,
+      total,
+      query.page,
+      query.pageSize,
+      (key) => this.storage.getPublicUrl(key),
+    );
+  }
+
+  async getFeaturedArticle(
+    family: string,
+  ): Promise<InfoArticleSummaryDto | null> {
+    this.assertValidFamily(family);
+    const now = new Date();
+    const pinned = await this.articles.findActiveFeatured(this.db, family, now);
+    const row =
+      pinned ??
+      (await this.articles.findTrendingByViews(
+        this.db,
+        family,
+        isoDaysAgo(ARTICLE_TRENDING_WINDOW_DAYS, now),
+      )) ??
+      (await this.articles.findNewestWithCover(this.db, family)) ??
+      (await this.articles.findNewestPublished(this.db, family));
+    if (!row) return null;
+    return toInfoArticleSummary(
+      row,
+      row.coverImageKey ? this.storage.getPublicUrl(row.coverImageKey) : null,
+    );
+  }
+
+  async recordArticleView(slug: string): Promise<void> {
+    const validSlug = this.parseArticleSlug(slug);
+    await withServiceContext(this.db, async (tx) => {
+      const row = await this.articles.findBySlug(tx, validSlug);
+      if (!row || !row.publishedAt) {
+        throw new DomainError(
+          ErrorCode.CONTENT_ARTICLE_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+          { slug },
+        );
+      }
+      await this.articles.incrementDailyView(tx, row.id, isoDaysAgo(0));
+    });
   }
 
   async getInfoArticleBySlug(slug: string): Promise<InfoArticleDto> {
@@ -722,6 +791,9 @@ export class ContentService {
     return toInfoArticleDto(
       row,
       row.coverImageKey ? this.storage.getPublicUrl(row.coverImageKey) : null,
+      (row.galleryImages ?? []).map((image) =>
+        this.storage.getPublicUrl(image.key),
+      ),
     );
   }
 
@@ -787,6 +859,10 @@ export class ContentService {
       coverImageUrl: row.coverImageKey
         ? this.storage.getPublicUrl(row.coverImageKey)
         : null,
+      galleryImages: (row.galleryImages ?? []).map((image) => ({
+        ...image,
+        url: this.storage.getPublicUrl(image.key),
+      })),
     };
   }
 
@@ -798,7 +874,7 @@ export class ContentService {
   }
 
   async createArticleImageUploadUrl(
-    purpose: "COVER" | "BODY",
+    purpose: "COVER" | "BODY" | "GALLERY",
     contentType: "image/jpeg" | "image/png" | "image/webp",
   ): Promise<ArticleImageUploadUrlDto> {
     const extension = {
@@ -806,7 +882,8 @@ export class ContentService {
       "image/png": "png",
       "image/webp": "webp",
     }[contentType];
-    const directory = purpose === "COVER" ? "cover" : "body";
+    const directory =
+      purpose === "COVER" ? "cover" : purpose === "GALLERY" ? "gallery" : "body";
     const key = `content/articles/${directory}/${randomUUID()}.${extension}`;
     const signed = await this.storage.createUploadUrl({ key, contentType });
     return {
@@ -854,6 +931,14 @@ export class ContentService {
     coverImageAlt?: string | null;
     coverImageWidth?: number | null;
     coverImageHeight?: number | null;
+    isFeatured?: boolean;
+    featuredDays?: 1 | 3 | 7 | 14;
+    galleryImages?: {
+      key: string;
+      alt: string;
+      width: number;
+      height: number;
+    }[];
     publishedAt?: string | null;
   }): Promise<void> {
     this.assertValidFamily(data.family);
@@ -877,6 +962,17 @@ export class ContentService {
         (existing.title !== data.title ||
           existing.body !== body ||
           existing.bodyFormat !== bodyFormat);
+      const isFeatured = data.isFeatured ?? existing?.isFeatured ?? false;
+      const featuredDays = data.featuredDays ?? ARTICLE_FEATURED_DEFAULT_DAYS;
+      const featuredUntil =
+        data.isFeatured === true
+          ? new Date(Date.now() + featuredDays * 86_400_000)
+          : data.isFeatured === false
+            ? null
+            : (existing?.featuredUntil ?? null);
+      if (data.isFeatured === true) {
+        await this.articles.clearFeaturedInFamily(tx, data.family, data.slug);
+      }
       const row = await this.articles.upsertBySlug(tx, {
         slug: data.slug,
         title: data.title,
@@ -897,6 +993,9 @@ export class ContentService {
         coverImageAlt: data.coverImageAlt ?? null,
         coverImageWidth: data.coverImageWidth ?? null,
         coverImageHeight: data.coverImageHeight ?? null,
+        galleryImages: data.galleryImages ?? existing?.galleryImages ?? [],
+        isFeatured,
+        featuredUntil,
         publishedAt: data.publishedAt ? new Date(data.publishedAt) : null,
       }, Boolean(existing?.publishedAt && contentChanged));
 

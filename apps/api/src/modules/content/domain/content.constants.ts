@@ -53,3 +53,8 @@ export const ContentEventTopic = {
  */
 export const ARTICLE_IMAGE_MAX_BYTES = 5 * 1024 * 1024;
 export const ARTICLE_IMAGE_MIMES = ["image/jpeg", "image/png", "image/webp"] as const;
+export const ARTICLE_IMAGE_PURPOSES = ["COVER", "BODY", "GALLERY"] as const;
+export const ARTICLE_GALLERY_MAX = 4;
+export const ARTICLE_FEATURED_DAYS = [1, 3, 7, 14] as const;
+export const ARTICLE_FEATURED_DEFAULT_DAYS = 7;
+export const ARTICLE_TRENDING_WINDOW_DAYS = 7;

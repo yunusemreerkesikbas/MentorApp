@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, desc, eq, gte, isNotNull, isNull, ne, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
-import { infoArticles } from "../../../database/schema";
+import { infoArticleDailyViews, infoArticles } from "../../../database/schema";
 
 export type InfoArticleRow = typeof infoArticles.$inferSelect;
 export type NewInfoArticle = typeof infoArticles.$inferInsert;
@@ -32,8 +32,14 @@ export class InfoArticleRepository {
     family: string,
     page: number,
     pageSize: number,
+    filters?: { category?: string; excludeSlug?: string },
   ): Promise<{ items: InfoArticleRow[]; total: number }> {
-    const where = and(eq(infoArticles.family, family), isNotNull(infoArticles.publishedAt));
+    const where = and(
+      eq(infoArticles.family, family),
+      isNotNull(infoArticles.publishedAt),
+      filters?.category ? eq(infoArticles.category, filters.category) : undefined,
+      filters?.excludeSlug ? ne(infoArticles.slug, filters.excludeSlug) : undefined,
+    );
     const [items, totalRow] = await Promise.all([
       db
         .select()
@@ -48,6 +54,120 @@ export class InfoArticleRepository {
         .where(where),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
+  async findActiveFeatured(
+    db: Database | DatabaseTx,
+    family: string,
+    now: Date,
+  ): Promise<InfoArticleRow | undefined> {
+    const rows = await db
+      .select()
+      .from(infoArticles)
+      .where(
+        and(
+          eq(infoArticles.family, family),
+          eq(infoArticles.isFeatured, true),
+          isNotNull(infoArticles.publishedAt),
+          gte(infoArticles.featuredUntil, now),
+        ),
+      )
+      .limit(1);
+    return rows[0];
+  }
+
+  async findTrendingByViews(
+    db: Database | DatabaseTx,
+    family: string,
+    sinceDay: string,
+  ): Promise<InfoArticleRow | undefined> {
+    const viewSum = sql<number>`coalesce(sum(${infoArticleDailyViews.count}), 0)`;
+    const rows = await db
+      .select({
+        article: infoArticles,
+        views: sql<number>`${viewSum}::int`,
+      })
+      .from(infoArticles)
+      .leftJoin(
+        infoArticleDailyViews,
+        and(
+          eq(infoArticleDailyViews.articleId, infoArticles.id),
+          gte(infoArticleDailyViews.day, sinceDay),
+        ),
+      )
+      .where(
+        and(eq(infoArticles.family, family), isNotNull(infoArticles.publishedAt)),
+      )
+      .groupBy(infoArticles.id)
+      .having(sql`${viewSum} > 0`)
+      .orderBy(sql`${viewSum} desc`, desc(infoArticles.publishedAt))
+      .limit(1);
+    return rows[0]?.article;
+  }
+
+  async findNewestWithCover(
+    db: Database | DatabaseTx,
+    family: string,
+  ): Promise<InfoArticleRow | undefined> {
+    const rows = await db
+      .select()
+      .from(infoArticles)
+      .where(
+        and(
+          eq(infoArticles.family, family),
+          isNotNull(infoArticles.publishedAt),
+          isNotNull(infoArticles.coverImageKey),
+        ),
+      )
+      .orderBy(desc(infoArticles.publishedAt))
+      .limit(1);
+    return rows[0];
+  }
+
+  async findNewestPublished(
+    db: Database | DatabaseTx,
+    family: string,
+  ): Promise<InfoArticleRow | undefined> {
+    const rows = await db
+      .select()
+      .from(infoArticles)
+      .where(
+        and(eq(infoArticles.family, family), isNotNull(infoArticles.publishedAt)),
+      )
+      .orderBy(desc(infoArticles.publishedAt))
+      .limit(1);
+    return rows[0];
+  }
+
+  async clearFeaturedInFamily(
+    tx: DatabaseTx,
+    family: string,
+    exceptSlug: string,
+  ): Promise<void> {
+    await tx
+      .update(infoArticles)
+      .set({ isFeatured: false, featuredUntil: null })
+      .where(
+        and(
+          eq(infoArticles.family, family),
+          eq(infoArticles.isFeatured, true),
+          ne(infoArticles.slug, exceptSlug),
+        ),
+      );
+  }
+
+  async incrementDailyView(
+    tx: DatabaseTx,
+    articleId: string,
+    day: string,
+  ): Promise<void> {
+    await tx
+      .insert(infoArticleDailyViews)
+      .values({ articleId, day, count: 1 })
+      .onConflictDoUpdate({
+        target: [infoArticleDailyViews.articleId, infoArticleDailyViews.day],
+        set: { count: sql`${infoArticleDailyViews.count} + 1` },
+      });
   }
 
   async upsertBySlug(
@@ -79,6 +199,9 @@ export class InfoArticleRepository {
           coverImageAlt: data.coverImageAlt,
           coverImageWidth: data.coverImageWidth,
           coverImageHeight: data.coverImageHeight,
+          galleryImages: data.galleryImages,
+          isFeatured: data.isFeatured,
+          featuredUntil: data.featuredUntil,
           ...(resetEmbedding ? { embedding: null } : {}),
         },
       })

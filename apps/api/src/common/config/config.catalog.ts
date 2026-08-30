@@ -191,7 +191,7 @@ export const CONFIG_CATALOG = {
   ),
   "ads.rewarded.web.reward_coin": adsCount(5, 1, 50, "Coin granted for one completed web ad."),
   "ads.rewarded.web.daily_limit": adsCount(2, 0, 10, "Completed rewarded ads per user per day."),
-  "ads.rewarded.web.cooldown_seconds": adsCount(900, 0, 86400, "Delay between rewarded ads."),
+  "ads.rewarded.web.cooldown_seconds": adsCount(0, 0, 86400, "Delay between rewarded ads."),
   "ads.rewarded.web.session_ttl_seconds": adsCount(300, 30, 900, "Reward session lifetime."),
   "ads.rewarded.web.rollout_percent": adsCount(0, 0, 100, "Stable Free-user rollout percentage."),
   "ai.enabled": flag(

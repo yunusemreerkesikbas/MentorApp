@@ -67,6 +67,49 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Spotlight sahnesi — merdivende gezinti + ışığın eve dönüşü (2026-08-30)** — Sahne artık kendi
+  `viewedTier`'ını tutuyor; komşu rozetler `<button>` oldu ve tıklanınca **iki vuruşlu** bir geçiş
+  oynuyor: (A) ışık tıklanan rozete savrulur, o aydınlanır ortadaki kararır — DOM değişmez, mevcut
+  `lightX` + konumsal aydınlatma bunu zaten veriyor; (B) tier değişir, ışık merkeze döner, orta grup
+  gittiği yönün tersine süzülüp çıkar ve yenisi o yönden girer. Tier B'nin başında değiştiği için
+  "ışık önce buldu, sonra sahneyi devraldı" gibi okunuyor, çapraz geçiş gibi değil. Zincirleme:
+  her geçişten sonra yeni komşular belirir, 12'si gezilebilir; uçlarda o taraf boş kalır. Kilitli
+  seviyeler gezilebiliyor, hikâye yerine `spotlight_locked` satırı çıkıyor. **Yönelim:** rozet
+  durumu artık öğrencinin gerçek tier'ıyla karşılaştırılıyor (`ownTier`), yani gezerken kendi
+  seviyen vurgu halkasını koruyor — guide'daki mantığın aynısı. **Kutlama modunda gezinti kapalı**
+  (`onTravel` verilmiyor): o an tek bir olayı kutluyor. **Işığın eve dönüşü:** pointer ~1.3s
+  durunca hüzme yumuşakça merkeze süzülüyor; her hareket bekleyen dönüşü iptal ediyor, geçiş
+  sırasında susuyor. Reduced motion'da `resolveIdleRecentreMs` **null** döndürüyor — kendiliğinden
+  sürüklenme, öğrencinin istemediği harekettir ve ayarın bütün amacı budur. Gotcha: `NEIGHBOUR_SLOT_X`
+  ile `neighbourLightIntensity` birbirine test'le bağlandı; ayrışırlarsa ışık gidilen rozetin
+  yanındakini aydınlatır. Bir de `mode="wait"` geçiş sırasında kutuyu boşalttığı için rozet
+  sarmalayıcısına sabit boyut, metin bloğuna `min-h` verildi, yoksa her geçişte layout zıplıyor.
+  İlgili: `journey-spotlight-scene.tsx`, `stage-backdrop.tsx`, `journey-badge-stage.tsx`,
+  `css-badge-renderer.tsx`, `spotlight-choreography.ts` (+spec), `messages/{tr,en}.json`.
+
+  **İlk sürümde üç hata vardı, üçü de kayan geçişi görünmez kılıyordu:**
+  (1) İçerik kabı (`z-20`, `h-full`) tüm ekranı kaplıyor ama `pointer-events-none` değildi —
+  komşu butonlar `z-0`'da altında kaldığı için hiçbir tıklama onlara ulaşmıyordu. Kap kapatıldı,
+  kutlama CTA'sı kendini `pointer-events-auto` ile geri açıyor.
+  (2) Tier değişimi `animate(...).onComplete`'e bağlıydı; kare üretimi duran bir sekmede geçiş asla
+  tamamlanmıyor ve `travellingRef` açık kaldığı için sahne kilitleniyordu. Vuruş sınırları
+  `setTimeout`'a taşındı — animasyonlar görsel, zamanlayıcılar durum makinesi.
+  (3) `AnimatePresence mode="wait"` iki kez birden yanlıştı: takası sırayla oynuyor (önce çıkar,
+  sonra girer — kayma değil, yer değiştirme gibi okunuyor) ve gelen tier'ı çıkan bitene kadar
+  mount etmiyor. Üst üste binen `absolute` çocuklara geçildi; kap boyutu ayrıldı ve kutlama CTA'sı
+  akış dışı kalan metnin üstüne binmemek için kaptan çıkarıldı.
+
+  **Fon yazısı bölüm adından seviye adına geçti.** Bölümler üçerli olduğu için yazı 12 adımda
+  yalnızca 3 kez değişiyordu ve statik hissettiriyordu (bildirilen "değişmiyor" şikâyeti aslında
+  doğru davranıştı — tier 1-2-3 hepsi Uyanış). Artık her adımda değişiyor. Tekrarı önlemek için
+  başlık **"Seviye 3"**e sadeleşti; ad `sr-only` bir span'de duruyor, yani görünen metin kısa ama
+  diyaloğun erişilebilir ismi hâlâ "Seviye 3 · Pusula" — dev yazı `aria-hidden`, tek başına
+  bırakılsa ad ekran okuyucudan tamamen kaybolurdu. Bölüm bilgisi eyebrow'daki `chapters.*.label`
+  ile korunuyor. Yazının kendi `AnimatePresence` geçişi var (fade + hafif ölçek), yoksa her adımda
+  zıplıyordu. Geçiş güçlendirildi: rozet 170px kayıp 0.72'den ölçekleniyor, metin 120px kayıyor
+  (metni ölçeklemek aksaklık gibi okunuyor), süre 0.55s. İkisi de yalnızca transform/opacity —
+  `filter` compositor'dan düşürürdü.
+
 - **Spotlight sahnesi — hüzme conic-gradient'e geçti (2026-08-29)** — İç içe koni sorununun kökü
   bulundu: **CSS `clip-path`'i `filter`'dan sonra uygular.** Yani `blur(30px)` koninin sadece içini
   yumuşatıyordu, siluetini değil — kırpma bulanık sonucu jilet gibi kesiyordu ve blur ne kadar

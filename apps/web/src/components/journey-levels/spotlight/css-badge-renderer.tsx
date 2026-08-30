@@ -9,6 +9,8 @@ import { badgeLightIntensity } from "./spotlight-choreography";
 interface CssBadgeRendererProps {
   levelKey: JourneyLevelKey;
   lightX: MotionValue<number>;
+  current?: boolean;
+  future?: boolean;
   className?: string;
 }
 
@@ -20,7 +22,13 @@ interface CssBadgeRendererProps {
  * ponytail: this is the v1 behind `JourneyBadgeStage`. A GLB renderer slots in beside it later
  * with the same two props; nothing above this file changes.
  */
-export function CssBadgeRenderer({ levelKey, lightX, className }: CssBadgeRendererProps) {
+export function CssBadgeRenderer({
+  levelKey,
+  lightX,
+  current = false,
+  future = false,
+  className,
+}: CssBadgeRendererProps) {
   const intensity = useTransform(lightX, (x) => badgeLightIntensity(x));
   /* Tilt away from the lamp — the far edge of a medal turns out of the light. */
   const rotateY = useTransform(lightX, [0, 1], [16, -16]);
@@ -41,7 +49,12 @@ export function CssBadgeRenderer({ levelKey, lightX, className }: CssBadgeRender
         className="relative size-full will-change-transform [transform-style:preserve-3d]"
         style={{ rotateY, rotateX }}
       >
-        <JourneyLevelMedallion levelKey={levelKey} current className="size-full" />
+        <JourneyLevelMedallion
+          levelKey={levelKey}
+          current={current}
+          future={future}
+          className="size-full"
+        />
 
         <motion.span
           aria-hidden="true"

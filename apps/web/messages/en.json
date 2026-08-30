@@ -1566,8 +1566,6 @@
   },
   "knowledge": {
     "loading": "Loading…",
-    "title": "Knowledge Hub",
-    "subtitle": "Official information. Sourced and verified content.",
     "retry": "Try again",
     "exam_day": "Exam day",
     "days_remaining": "{days} days until the exam.",
@@ -1577,15 +1575,31 @@
     "last_verified_prefix": "Last verified",
     "calendar_pending_chip": "Calendar pending",
     "calendar_pending_desc": "The official exam calendar is not published yet. It will sit here when announced.",
-    "articles_title": "Articles",
-    "articles_subtitle": "Editorial articles. Free to read",
     "articles_empty_chip": "No articles yet",
     "articles_empty_desc": "No verified article for this exam yet.",
     "source_label": "Source",
-    "back_panel": "← Back to Dashboard",
     "no_exam_chip": "Exam type required",
     "no_exam_desc": "Once you pick your target exam in your profile, the official date and articles sit here.",
     "no_exam_cta": "Choose exam type",
+    "families_label": "Exam family",
+    "families": {
+      "kpss": "KPSS",
+      "yks": "YKS",
+      "lgs": "LGS"
+    },
+    "recommended_topics": "Recommended topics",
+    "related_posts": "Related posts",
+    "editor_fallback": "Mentor Editor",
+    "share_title": "Share",
+    "share_whatsapp": "Share on WhatsApp",
+    "share_x": "Share on X",
+    "share_facebook": "Share on Facebook",
+    "share_copy": "Copy link",
+    "share_copied": "Link copied",
+    "pagination_label": "Pagination",
+    "pagination_prev": "Previous",
+    "pagination_next": "Next",
+    "pagination_page": "{page} / {pages}",
     "categories": {
       "application": "Application",
       "exam_process": "Exam process",
@@ -2082,6 +2096,8 @@
     "progress_aria": "{name} level progress",
     "progress_value": "{current} / {target} XP",
     "complete_message": "All the lights are connected; your journey continues.",
+    "spotlight_travel": "Go to {name}",
+    "spotlight_locked": "This light has not been lit yet.",
     "spotlight_open": "See the {name} badge under the stage light",
     "guide_open": "Open the Night Journey guide",
     "guide_title": "Night Journey",
@@ -2249,7 +2265,10 @@
     "coach_seed": "Can you explain \"{title}\" using verified sources?",
     "author_byline": "Author: {name}",
     "published_at": "Published: {date}",
-    "updated_at": "Updated: {date}"
+    "updated_at": "Updated: {date}",
+    "gallery_prev": "Previous image",
+    "gallery_next": "Next image",
+    "gallery_slide": "Image {current} / {total}"
   },
   "analyticsConsent": {
     "title": "Your analytics cookie choice",
@@ -2769,6 +2788,12 @@
   },
   "ads": {
     "label": "Advertisement",
+    "top_banner": {
+      "message": "{count} Coin is waiting in your daily tasks.",
+      "daily_tasks_message": "Today's tasks are waiting for you.",
+      "cta": "Open quests",
+      "close": "Dismiss announcement"
+    },
     "rewarded": {
       "eyebrow": "Optional ad task",
       "title": "Finish the ad. {count} Coin lands as a right.",
@@ -2781,8 +2806,12 @@
       "unavailable": "The ad task is not available right now. You can look again later.",
       "complete_error": "The right could not be confirmed. Don't retry; support can inspect the record.",
       "cooldown": "A new ad task will be ready after {time}.",
-      "daily_done": "You've completed today's ad tasks. You can return tomorrow.",
-      "session_active": "Your previous ad session is closing. Look again in a few minutes."
+      "daily_done": "You've completed today's Coin tasks. You can return tomorrow.",
+      "daily_done_progress": "Today's Coin tasks are complete · {completed}/{completed}",
+      "session_active": "Your previous ad session is closing. Look again in a few minutes.",
+      "quest_title": "Watch a short ad",
+      "quest_badge": "Daily Coin task · {remaining} left",
+      "quest_coin": "{count} Coin"
     }
   },
   "notifications": {

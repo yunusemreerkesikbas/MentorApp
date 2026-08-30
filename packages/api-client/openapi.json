@@ -1901,9 +1901,105 @@
     "/v1/content/info-articles": {
       "get": {
         "operationId": "InfoArticleController_listArticles",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "excludeSlug",
+            "required": false,
+            "in": "query",
+            "schema": {}
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "EXAM_PROCESS",
+                "APPLICATION",
+                "GENERAL"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "family",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "KPSS",
+                "YKS",
+                "LGS"
+              ],
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/info-articles/featured": {
+      "get": {
+        "operationId": "InfoArticleController_getFeatured",
+        "parameters": [
+          {
+            "name": "family",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "KPSS",
+                "YKS",
+                "LGS"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
+    "/v1/content/info-articles/{slug}/views": {
+      "post": {
+        "operationId": "InfoArticleController_recordView",
+        "parameters": [
+          {
+            "name": "slug",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -5616,6 +5712,193 @@
         ]
       }
     },
+    "/v1/ads/public/placements/{placementId}": {
+      "get": {
+        "operationId": "AdsController_publicPlacement",
+        "parameters": [
+          {
+            "name": "cf-ipcountry",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/ads/placements/{placementId}": {
+      "get": {
+        "operationId": "AdsController_placement",
+        "parameters": [
+          {
+            "name": "cf-ipcountry",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/ads/reward-offers/{placementId}": {
+      "get": {
+        "operationId": "AdsController_rewardOffer",
+        "parameters": [
+          {
+            "name": "cf-ipcountry",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/ads/reward-sessions": {
+      "post": {
+        "operationId": "AdsController_createRewardSession",
+        "parameters": [
+          {
+            "name": "cf-ipcountry",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAdRewardSessionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/ads/reward-sessions/{id}/complete": {
+      "post": {
+        "operationId": "AdsController_complete",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/ads/reward-sessions/{id}/close": {
+      "post": {
+        "operationId": "AdsController_close",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ads"
+        ]
+      }
+    },
+    "/v1/internal/cron/expire-ad-reward-sessions": {
+      "post": {
+        "operationId": "AdsInternalController_expireRewardSessions",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "operationId": "AdminUsersController_searchUsers",
@@ -6761,6 +7044,118 @@
         ]
       }
     },
+    "/v1/admin/announcements": {
+      "get": {
+        "operationId": "AdminAnnouncementsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminAnnouncementsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/announcements/{id}/send": {
+      "post": {
+        "operationId": "AdminAnnouncementsController_send",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendAnnouncementDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/announcements/{id}": {
+      "delete": {
+        "operationId": "AdminAnnouncementsController_remove",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/community/summary": {
       "get": {
         "operationId": "CommunityController_getSummary",
@@ -7107,25 +7502,6 @@
     "/v1/buddy/nudge": {
       "post": {
         "operationId": "BuddyController_nudge",
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "buddy"
-        ]
-      }
-    },
-    "/v1/buddy/study-invite": {
-      "post": {
-        "operationId": "BuddyController_studyInvite",
         "parameters": [],
         "responses": {
           "201": {
@@ -7785,6 +8161,10 @@
         "type": "object",
         "properties": {}
       },
+      "CreateAdRewardSessionDto": {
+        "type": "object",
+        "properties": {}
+      },
       "UpdateUserStatusDto": {
         "type": "object",
         "properties": {}
@@ -7834,6 +8214,14 @@
         "properties": {}
       },
       "SetFeaturedThreadDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateAnnouncementDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SendAnnouncementDto": {
         "type": "object",
         "properties": {}
       },

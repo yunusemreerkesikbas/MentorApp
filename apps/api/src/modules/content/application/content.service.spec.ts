@@ -109,6 +109,20 @@ function buildService(overrides?: {
         total: 0,
       }),
     ),
+    findActiveFeatured: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
+    findTrendingByViews: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
+    findNewestWithCover: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
+    findNewestPublished: vi.fn(
+      async (): Promise<InfoArticleRow | undefined> => undefined,
+    ),
+    clearFeaturedInFamily: vi.fn(),
+    incrementDailyView: vi.fn(),
     upsertBySlug: vi.fn(),
     findById: vi.fn(
       async (): Promise<InfoArticleRow | undefined> => undefined,
@@ -260,6 +274,9 @@ function makeArticle(overrides: Partial<InfoArticleRow> = {}): InfoArticleRow {
     coverImageAlt: null,
     coverImageWidth: null,
     coverImageHeight: null,
+    galleryImages: [],
+    isFeatured: false,
+    featuredUntil: null,
     family: "KPSS",
     category: "APPLICATION",
     source: "ÖSYM",
@@ -277,6 +294,115 @@ function makeArticle(overrides: Partial<InfoArticleRow> = {}): InfoArticleRow {
 }
 
 describe("ContentService — info articles", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(NOW);
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("getFeaturedArticle prefers an unexpired pin", async () => {
+    const pinned = makeArticle({
+      slug: "pinned",
+      isFeatured: true,
+      featuredUntil: new Date("2026-06-18T12:00:00.000Z"),
+      coverImageKey: "content/articles/cover/pin.webp",
+      coverImageAlt: "Pin",
+      coverImageWidth: 800,
+      coverImageHeight: 400,
+    });
+    const { service, articles } = buildService();
+    articles.findActiveFeatured.mockResolvedValue(pinned);
+
+    const featured = await service.getFeaturedArticle("KPSS");
+    expect(featured?.slug).toBe("pinned");
+    expect(articles.findTrendingByViews).not.toHaveBeenCalled();
+  });
+
+  it("getFeaturedArticle ignores an expired pin and uses 7-day views", async () => {
+    const trending = makeArticle({
+      slug: "trending",
+      coverImageKey: "content/articles/cover/trend.webp",
+      coverImageAlt: "Trend",
+      coverImageWidth: 800,
+      coverImageHeight: 400,
+    });
+    const { service, articles } = buildService();
+    articles.findActiveFeatured.mockResolvedValue(undefined);
+    articles.findTrendingByViews.mockResolvedValue(trending);
+
+    const featured = await service.getFeaturedArticle("KPSS");
+    expect(featured?.slug).toBe("trending");
+    expect(articles.findTrendingByViews).toHaveBeenCalledWith(
+      expect.anything(),
+      "KPSS",
+      "2026-06-04",
+    );
+    expect(articles.findNewestWithCover).not.toHaveBeenCalled();
+  });
+
+  it("getFeaturedArticle falls back to the newest cover when nothing has views", async () => {
+    const newest = makeArticle({
+      slug: "newest-cover",
+      coverImageKey: "content/articles/cover/new.webp",
+      coverImageAlt: "New",
+      coverImageWidth: 800,
+      coverImageHeight: 400,
+    });
+    const { service, articles } = buildService();
+    articles.findNewestWithCover.mockResolvedValue(newest);
+
+    const featured = await service.getFeaturedArticle("KPSS");
+    expect(featured?.slug).toBe("newest-cover");
+    expect(articles.findNewestPublished).not.toHaveBeenCalled();
+  });
+
+  it("getFeaturedArticle falls back to the newest published article when nothing has a cover", async () => {
+    const newest = makeArticle({ slug: "newest-published" });
+    const { service, articles } = buildService();
+    articles.findNewestPublished.mockResolvedValue(newest);
+
+    const featured = await service.getFeaturedArticle("KPSS");
+    expect(featured?.slug).toBe("newest-published");
+  });
+
+  it("upsertArticle clears the previous pin in the same family", async () => {
+    const { service, articles } = buildService();
+    articles.findBySlug.mockResolvedValue(undefined);
+    articles.upsertBySlug.mockResolvedValue(makeArticle({ isFeatured: true }));
+
+    await service.upsertArticle({
+      slug: "second-pin",
+      title: "T",
+      body: "B",
+      family: "KPSS",
+      category: "GENERAL",
+      source: "ÖSYM",
+      sourceUrl: "https://www.osym.gov.tr",
+      verifiedAt: "2026-06-01T10:00:00.000Z",
+      verifiedBy: "editorial-seed",
+      isFeatured: true,
+      featuredDays: 7,
+    });
+
+    expect(articles.clearFeaturedInFamily).toHaveBeenCalledWith(
+      expect.anything(),
+      "KPSS",
+      "second-pin",
+    );
+    expect(articles.upsertBySlug).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        slug: "second-pin",
+        isFeatured: true,
+        featuredUntil: new Date("2026-06-18T12:00:00.000Z"),
+      }),
+      false,
+    );
+  });
+
   it("listInfoArticles returns published summaries only", async () => {
     const row = makeArticle();
     const { service, articles } = buildService();
