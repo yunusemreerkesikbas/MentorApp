@@ -12,6 +12,8 @@ import type { AdminArticle, ArticleImageUploadUrl } from "@/lib/types";
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 const FAMILIES = ["KPSS", "YKS", "LGS"];
 const CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"];
+const FEATURED_DAYS = [1, 3, 7, 14] as const;
+const GALLERY_MAX = 4;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
 const ACCEPTED_IMAGES = ACCEPTED_IMAGE_TYPES.join(",");
 
@@ -70,9 +72,15 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
         coverImageAlt: initial?.coverImageAlt ?? "",
         coverImageWidth: initial?.coverImageWidth ?? 0,
         coverImageHeight: initial?.coverImageHeight ?? 0,
+        isFeatured: initial?.isFeatured ?? false,
+        featuredDays: 7 as (typeof FEATURED_DAYS)[number],
+        galleryImages: (initial?.galleryImages ?? []).map((image) => ({
+            ...image,
+            url: resolveUploadUrl(image.url),
+        })),
     });
     const [busy, setBusy] = useState(false);
-    const [uploading, setUploading] = useState<"COVER" | "BODY" | null>(null);
+    const [uploading, setUploading] = useState<"COVER" | "BODY" | "GALLERY" | null>(null);
     const [bodyImageAlt, setBodyImageAlt] = useState("");
     const editorConfig = useMemo(() => ({
         toolbarAdaptive: false,
@@ -90,7 +98,7 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
     const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
         setForm((current) => ({ ...current, [key]: event.target.value }));
 
-    const uploadImage = async (file: File, purpose: "COVER" | "BODY") => {
+    const uploadImage = async (file: File, purpose: "COVER" | "BODY" | "GALLERY") => {
         if (file.size > 5 * 1024 * 1024) throw new Error("Görsel en fazla 5 MB olabilir.");
         if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
             throw new Error("Yalnız JPEG, PNG veya WebP yüklenebilir.");
@@ -153,13 +161,54 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
         }
     };
 
+    const uploadGalleryImage = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        event.target.value = "";
+        if (!file) return;
+        if (form.galleryImages.length >= GALLERY_MAX) {
+            await Swal.fire({ icon: "warning", title: "Limit", text: `En fazla ${GALLERY_MAX} ek görsel.` });
+            return;
+        }
+        setUploading("GALLERY");
+        try {
+            const [uploaded, dimensions] = await Promise.all([
+                uploadImage(file, "GALLERY"),
+                imageDimensions(file),
+            ]);
+            setForm((current) => ({
+                ...current,
+                galleryImages: [
+                    ...current.galleryImages,
+                    {
+                        key: uploaded.key,
+                        url: resolveUploadUrl(uploaded.publicUrl),
+                        alt: current.title || "Galeri görseli",
+                        width: dimensions.width,
+                        height: dimensions.height,
+                    },
+                ],
+            }));
+        } catch (error) {
+            await Swal.fire({ icon: "error", title: "Yükleme hatası", text: error instanceof Error ? error.message : "Görsel yüklenemedi." });
+        } finally {
+            setUploading(null);
+        }
+    };
+
     const submit = async (event: FormEvent) => {
         event.preventDefault();
         setBusy(true);
         try {
             await apiClient.post("/admin/content/articles", {
-                ...form,
+                slug: form.slug,
+                title: form.title,
+                family: form.family,
+                category: form.category,
+                body: form.body,
                 bodyFormat: "HTML",
+                source: form.source,
+                sourceUrl: form.sourceUrl,
+                verifiedBy: form.verifiedBy,
                 verifiedAt: new Date(form.verifiedAt).toISOString(),
                 metaTitle: form.metaTitle || undefined,
                 metaDescription: form.metaDescription || undefined,
@@ -170,7 +219,11 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                 coverImageAlt: form.coverImageKey ? form.coverImageAlt : null,
                 coverImageWidth: form.coverImageKey ? form.coverImageWidth : null,
                 coverImageHeight: form.coverImageKey ? form.coverImageHeight : null,
-                coverImageUrl: undefined,
+                isFeatured: form.isFeatured,
+                featuredDays: form.isFeatured ? form.featuredDays : undefined,
+                galleryImages: form.galleryImages.map(({ key, alt, width, height }) => ({
+                    key, alt, width, height,
+                })),
             });
             await Swal.fire({ icon: "success", title: "Kaydedildi", timer: 1100, showConfirmButton: false });
             router.push("/content/articles");
@@ -190,6 +243,30 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                     <div className="col-md-6"><label className="form-label">Başlık</label><input className="form-control" value={form.title} onChange={set("title")} required /></div>
                     <div className="col-md-3"><label className="form-label">Sınav</label><select className="form-select" value={form.family} onChange={set("family")}>{FAMILIES.map((item) => <option key={item}>{item}</option>)}</select></div>
                     <div className="col-md-3"><label className="form-label">Kategori</label><select className="form-select" value={form.category} onChange={set("category")}>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div>
+                    <div className="col-md-3">
+                        <label className="form-label d-block">Öne çıkar</label>
+                        <div className="form-check mt-2">
+                            <input
+                                id="isFeatured"
+                                className="form-check-input"
+                                type="checkbox"
+                                checked={form.isFeatured}
+                                onChange={(event) => setForm((current) => ({ ...current, isFeatured: event.target.checked }))}
+                            />
+                            <label className="form-check-label" htmlFor="isFeatured">Bu ailede öne çıkan yazı</label>
+                        </div>
+                    </div>
+                    <div className="col-md-3">
+                        <label className="form-label">Öne çıkarma süresi</label>
+                        <select
+                            className="form-select"
+                            value={form.featuredDays}
+                            disabled={!form.isFeatured}
+                            onChange={(event) => setForm((current) => ({ ...current, featuredDays: Number(event.target.value) as (typeof FEATURED_DAYS)[number] }))}
+                        >
+                            {FEATURED_DAYS.map((days) => <option key={days} value={days}>{days} gün</option>)}
+                        </select>
+                    </div>
 
                     <div className="col-12">
                         <label className="form-label">Gövde</label>
@@ -207,6 +284,49 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                     <div className="col-md-7">
                         <label className="form-label">Kapak alt metni</label><input className="form-control mb-2" value={form.coverImageAlt} onChange={set("coverImageAlt")} required={Boolean(form.coverImageKey)} />
                         <div className="d-flex gap-2"><label className="btn btn-light mb-0">{uploading === "COVER" ? "Yükleniyor…" : "Kapak yükle"}<input hidden type="file" accept={ACCEPTED_IMAGES} disabled={uploading !== null} onChange={uploadCover} /></label>{form.coverImageKey && <button type="button" className="btn btn-outline-danger" onClick={() => setForm((current) => ({ ...current, coverImageKey: "", coverImageUrl: "", coverImageAlt: "", coverImageWidth: 0, coverImageHeight: 0 }))}>Kaldır</button>}</div>
+                    </div>
+
+                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Ek banner görselleri (slider, en fazla {GALLERY_MAX})</span></div>
+                    <div className="col-12">
+                        <div className="d-flex flex-wrap gap-3">
+                            {form.galleryImages.map((image, index) => (
+                                <div key={image.key} className="border rounded p-2" style={{ width: 180 }}>
+                                    <img src={image.url} alt={image.alt} className="img-fluid rounded mb-2" />
+                                    <input
+                                        className="form-control form-control-sm mb-2"
+                                        value={image.alt}
+                                        onChange={(event) => setForm((current) => ({
+                                            ...current,
+                                            galleryImages: current.galleryImages.map((item, itemIndex) =>
+                                                itemIndex === index ? { ...item, alt: event.target.value } : item,
+                                            ),
+                                        }))}
+                                        placeholder="Alt metin"
+                                        required
+                                    />
+                                    <div className="d-flex gap-1">
+                                        <button type="button" className="btn btn-sm btn-light" disabled={index === 0} onClick={() => setForm((current) => {
+                                            const next = [...current.galleryImages];
+                                            [next[index - 1], next[index]] = [next[index], next[index - 1]];
+                                            return { ...current, galleryImages: next };
+                                        })}>↑</button>
+                                        <button type="button" className="btn btn-sm btn-light" disabled={index === form.galleryImages.length - 1} onClick={() => setForm((current) => {
+                                            const next = [...current.galleryImages];
+                                            [next[index + 1], next[index]] = [next[index], next[index + 1]];
+                                            return { ...current, galleryImages: next };
+                                        })}>↓</button>
+                                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setForm((current) => ({
+                                            ...current,
+                                            galleryImages: current.galleryImages.filter((_, itemIndex) => itemIndex !== index),
+                                        }))}>Sil</button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        <label className="btn btn-light mt-2 mb-0">
+                            {uploading === "GALLERY" ? "Yükleniyor…" : "Ek görsel ekle"}
+                            <input hidden type="file" accept={ACCEPTED_IMAGES} disabled={uploading !== null || form.galleryImages.length >= GALLERY_MAX} onChange={uploadGalleryImage} />
+                        </label>
                     </div>
 
                     <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Yazar (opsiyonel)</span></div>

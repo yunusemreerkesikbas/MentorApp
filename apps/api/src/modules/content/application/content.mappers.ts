@@ -85,8 +85,35 @@ export function toPaginatedExams(
   return { items: items.map(toExamSummary), total, page, pageSize };
 }
 
+function toArticleAuthor(row: InfoArticleRow): InfoArticleSummaryDto["author"] {
+  return row.authorName
+    ? { name: row.authorName, title: row.authorTitle, bio: row.authorBio }
+    : null;
+}
+
+function toCoverImage(
+  row: InfoArticleRow,
+  coverImageUrl: string | null,
+): InfoArticleSummaryDto["coverImage"] {
+  if (
+    !coverImageUrl ||
+    !row.coverImageAlt ||
+    !row.coverImageWidth ||
+    !row.coverImageHeight
+  ) {
+    return null;
+  }
+  return {
+    url: coverImageUrl,
+    alt: row.coverImageAlt,
+    width: row.coverImageWidth,
+    height: row.coverImageHeight,
+  };
+}
+
 export function toInfoArticleSummary(
   row: InfoArticleRow,
+  coverImageUrl: string | null,
 ): InfoArticleSummaryDto {
   return {
     slug: row.slug,
@@ -100,32 +127,27 @@ export function toInfoArticleSummary(
     verifiedAt: row.verifiedAt.toISOString(),
     verifiedBy: row.verifiedBy,
     updatedAt: row.updatedAt.toISOString(),
+    author: toArticleAuthor(row),
+    coverImage: toCoverImage(row, coverImageUrl),
   };
 }
 
 export function toInfoArticleDto(
   row: InfoArticleRow,
   coverImageUrl: string | null,
+  galleryImageUrls: string[],
 ): InfoArticleDto {
   return {
-    ...toInfoArticleSummary(row),
+    ...toInfoArticleSummary(row, coverImageUrl),
     body: row.body,
     bodyFormat: row.bodyFormat as InfoArticleDto["bodyFormat"],
-    author: row.authorName
-      ? { name: row.authorName, title: row.authorTitle, bio: row.authorBio }
-      : null,
-    coverImage:
-      coverImageUrl &&
-      row.coverImageAlt &&
-      row.coverImageWidth &&
-      row.coverImageHeight
-        ? {
-            url: coverImageUrl,
-            alt: row.coverImageAlt,
-            width: row.coverImageWidth,
-            height: row.coverImageHeight,
-          }
-        : null,
+    galleryImages: (row.galleryImages ?? []).flatMap((image, index) => {
+      const url = galleryImageUrls[index];
+      if (!url) return [];
+      return [{ url, alt: image.alt, width: image.width, height: image.height }];
+    }),
+    isFeatured: row.isFeatured,
+    featuredUntil: row.featuredUntil?.toISOString() ?? null,
     metaDescription: row.metaDescription,
   };
 }
@@ -135,8 +157,19 @@ export function toPaginatedInfoArticles(
   total: number,
   page: number,
   pageSize: number,
+  coverUrl: (key: string) => string,
 ): Paginated<InfoArticleSummaryDto> {
-  return { items: items.map(toInfoArticleSummary), total, page, pageSize };
+  return {
+    items: items.map((row) =>
+      toInfoArticleSummary(
+        row,
+        row.coverImageKey ? coverUrl(row.coverImageKey) : null,
+      ),
+    ),
+    total,
+    page,
+    pageSize,
+  };
 }
 
 export function toExamSubjectDto(row: {

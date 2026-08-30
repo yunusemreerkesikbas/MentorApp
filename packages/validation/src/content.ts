@@ -45,8 +45,21 @@ export type ExamSlugParam = z.infer<typeof examSlugParamSchema>;
 
 export const listInfoArticlesQuerySchema = paginationQuerySchema.extend({
   family: z.enum(["KPSS", "YKS", "LGS"]),
+  category: z.enum(["EXAM_PROCESS", "APPLICATION", "GENERAL"]).optional(),
+  excludeSlug: z
+    .string()
+    .trim()
+    .min(1)
+    .max(128)
+    .regex(/^[a-z0-9-]+$/, "invalid_slug")
+    .optional(),
 });
 export type ListInfoArticlesQuery = z.infer<typeof listInfoArticlesQuerySchema>;
+
+export const featuredArticleQuerySchema = z.object({
+  family: z.enum(["KPSS", "YKS", "LGS"]),
+});
+export type FeaturedArticleQuery = z.infer<typeof featuredArticleQuerySchema>;
 
 export const infoArticleSlugParamSchema = z.object({
   slug: z.string().min(1).max(128),
@@ -82,6 +95,8 @@ const EXAM_FAMILIES = ["KPSS", "YKS", "LGS"] as const;
 
 const ARTICLE_CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"] as const;
 export const ARTICLE_BODY_FORMATS = ["MARKDOWN", "HTML"] as const;
+export const ARTICLE_FEATURED_DAYS = [1, 3, 7, 14] as const;
+export const ARTICLE_GALLERY_MAX = 4;
 const EXAM_VARIANTS = ["LISANS", "ONLISANS", "ORTAOGRETIM"] as const;
 const httpUrlSchema = z
   .string()
@@ -131,6 +146,28 @@ export const upsertArticleSchema = z
     coverImageAlt: z.string().trim().min(1).max(300).nullish(),
     coverImageWidth: z.number().int().positive().nullish(),
     coverImageHeight: z.number().int().positive().nullish(),
+    isFeatured: z.boolean().optional(),
+    featuredDays: z.union([
+      z.literal(1),
+      z.literal(3),
+      z.literal(7),
+      z.literal(14),
+    ]).optional(),
+    galleryImages: z
+      .array(
+        z.object({
+          key: z
+            .string()
+            .trim()
+            .startsWith("content/articles/gallery/")
+            .max(500),
+          alt: z.string().trim().min(1).max(300),
+          width: z.number().int().positive(),
+          height: z.number().int().positive(),
+        }),
+      )
+      .max(ARTICLE_GALLERY_MAX)
+      .optional(),
   })
   .superRefine((value, ctx) => {
     const cover = [
@@ -150,7 +187,7 @@ export const upsertArticleSchema = z
 export type UpsertArticle = z.infer<typeof upsertArticleSchema>;
 
 export const articleImageUploadSchema = z.object({
-  purpose: z.enum(["COVER", "BODY"]),
+  purpose: z.enum(["COVER", "BODY", "GALLERY"]),
   contentType: z.enum(["image/jpeg", "image/png", "image/webp"]),
 });
 export type ArticleImageUpload = z.infer<typeof articleImageUploadSchema>;

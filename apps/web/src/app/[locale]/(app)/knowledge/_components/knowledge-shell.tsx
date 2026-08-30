@@ -1,22 +1,45 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "framer-motion";
-import type { ExamCalendarDto, InfoArticleSummaryDto } from "@mentor/types";
-import {
-  ApiClientError,
-  contentControllerCalendarByFamily,
-} from "@mentor/api-client";
-import { Card, Chip, DataCard, SectionHeading } from "@mentor/ui";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import type { ExamCalendarDto, ExamType, InfoArticleSummaryDto } from "@mentor/types";
+import { ApiClientError } from "@mentor/api-client";
+import { Card } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { Link } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
-import { fetchInfoArticlesByFamily } from "@/lib/content-api";
-import { buildExamCalendarIcs } from "@/lib/exam-calendar-export";
-import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import {
+  ARTICLE_CATEGORIES,
+  type ArticleCategory,
+  fetchExamCalendarByFamily,
+  fetchFeaturedArticle,
+  fetchInfoArticlesByFamily,
+} from "@/lib/content-api";
+import { ArticleCard } from "./article-card";
+import { FamilyFilterBar } from "./family-filter-bar";
+import { FeaturedHero } from "./featured-hero";
 import { KnowledgeContentSkeleton } from "./knowledge-content-skeleton";
-import { ExamProcessTimeline } from "./exam-process-timeline";
+import { KnowledgePagination } from "./knowledge-pagination";
+import { KnowledgeSidebar } from "./knowledge-sidebar";
+import {
+  KNOWLEDGE_ARTICLE_GRID_CLASS,
+  KNOWLEDGE_PAGE_CLASS,
+  KNOWLEDGE_SPLIT_CLASS,
+} from "./knowledge-layout";
+
+const PAGE_SIZE = 12;
+
+function parseCategory(value: string | null): ArticleCategory | null {
+  return value && (ARTICLE_CATEGORIES as readonly string[]).includes(value)
+    ? (value as ArticleCategory)
+    : null;
+}
+
+function parsePage(value: string | null): number {
+  const page = Number.parseInt(value ?? "1", 10);
+  return Number.isFinite(page) && page > 1 ? page : 1;
+}
 
 type LoadState =
   | { status: "loading" }
@@ -25,18 +48,47 @@ type LoadState =
   | {
       status: "ready";
       calendar: ExamCalendarDto | null;
+      featured: InfoArticleSummaryDto | null;
       articles: InfoArticleSummaryDto[];
+      related: InfoArticleSummaryDto[];
+      total: number;
     };
 
-/** Knowledge center — verified exam calendar and editorial article guidance. */
+/** Knowledge center — featured editorial feed + sidebar. */
 export function KnowledgeShell() {
   const t = useTranslations("knowledge");
-  const ui = useTranslations("common");
-  const locale = useLocale();
-  const reduceMotion = useReducedMotion();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { status: authStatus, user } = useAuth();
   const examType = user?.examType;
+  const [family, setFamily] = useState<ExamType | null>(null);
+  const category = parseCategory(searchParams.get("category"));
+  const page = parsePage(searchParams.get("page"));
   const [state, setState] = useState<LoadState>({ status: "loading" });
+
+  const replaceQuery = useCallback(
+    (next: { page?: number; category?: ArticleCategory | null }) => {
+      const nextPage = next.page ?? page;
+      const nextCategory = next.category === undefined ? category : next.category;
+      router.replace({
+        pathname: "/knowledge",
+        query: {
+          ...(nextPage > 1 ? { page: String(nextPage) } : {}),
+          ...(nextCategory ? { category: nextCategory } : {}),
+        },
+      });
+    },
+    [category, page, router],
+  );
+
+  useEffect(() => {
+    if (authStatus === "loading") return;
+    if (!examType) {
+      setFamily(null);
+      return;
+    }
+    setFamily((current) => current ?? examType);
+  }, [authStatus, examType]);
 
   const load = useCallback(() => {
     if (authStatus === "loading") return;
@@ -44,18 +96,31 @@ export function KnowledgeShell() {
       setState({ status: "no_exam_type" });
       return;
     }
+    if (!family) return;
 
     setState({ status: "loading" });
     Promise.all([
-      contentControllerCalendarByFamily(examType),
-      fetchInfoArticlesByFamily(examType),
+      fetchExamCalendarByFamily(family),
+      fetchFeaturedArticle(family),
+      fetchInfoArticlesByFamily(family, page, PAGE_SIZE, {
+        category: category ?? undefined,
+      }),
+      fetchInfoArticlesByFamily(family, 1, 4),
     ])
-      .then(([calRes, articlesRes]) => {
-        const calendar = calRes as unknown as ExamCalendarDto | null;
+      .then(([calendar, featured, articlesRes, relatedRes]) => {
+        const relatedPool = relatedRes.items.filter(
+          (article) => article.slug !== featured?.slug,
+        );
+        const sameCategory = featured
+          ? relatedPool.filter((article) => article.category === featured.category)
+          : relatedPool;
         setState({
           status: "ready",
           calendar,
+          featured,
           articles: articlesRes.items,
+          related: (sameCategory.length > 0 ? sameCategory : relatedPool).slice(0, 3),
+          total: articlesRes.total,
         });
       })
       .catch((err: unknown) =>
@@ -69,7 +134,7 @@ export function KnowledgeShell() {
                 : String(err),
         }),
       );
-  }, [authStatus, examType]);
+  }, [authStatus, examType, family, category, page]);
 
   const loadRef = useRef(load);
   useEffect(() => {
@@ -77,41 +142,19 @@ export function KnowledgeShell() {
   }, [load]);
   useEffect(() => {
     loadRef.current();
-  }, [authStatus, examType]);
-
-  const headerMotion = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 8 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" as const },
-        },
-      };
-
-  const gridMotion = reduceMotion
-    ? {}
-    : {
-        initial: "hidden" as const,
-        animate: "show" as const,
-        variants: staggerListVariants,
-      };
+  }, [authStatus, examType, family, category, page]);
 
   if (state.status === "loading") return <KnowledgeContentSkeleton />;
 
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
+      <main className={KNOWLEDGE_PAGE_CLASS}>
         <FormError message={state.message} />
         <button
           type="button"
           onClick={load}
-          className="mt-4 flex min-h-11 items-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
+          className="mt-4 flex min-h-11 items-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
+          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
         >
           {t("retry")}
         </button>
@@ -119,231 +162,63 @@ export function KnowledgeShell() {
     );
   }
 
-  if (state.status === "no_exam_type") {
+  if (state.status === "no_exam_type" || !family) {
     return (
-      <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-        <KnowledgeHeader
-          title={t("title")}
-          subtitle={t("subtitle")}
-          motion={headerMotion}
-        />
+      <main className={KNOWLEDGE_PAGE_CLASS}>
         <ExamTypeGate />
       </main>
     );
   }
 
-  const { calendar, articles } = state;
-  const examDateEvent = calendar?.events.find(
-    (event) => event.type === "EXAM_DATE",
-  );
-  const verifiedLabel = examDateEvent
-    ? new Intl.DateTimeFormat(locale, {
-        day: "numeric",
-        month: "long",
-        year: "numeric",
-      }).format(new Date(examDateEvent.verifiedAt))
-    : null;
-  const calendarIcs = calendar?.nextEvent
-    ? buildExamCalendarIcs(calendar, {
-        locale,
-        calendarName: t("calendar_name"),
-        eventLabels: {
-          APPLICATION_START: t("timeline.application_start"),
-          APPLICATION_END: t("timeline.application_end"),
-          EXAM_DATE: t("timeline.exam_date"),
-          RESULT_DATE: t("timeline.result_date"),
-        },
-        sourcePrefix: t("source_label"),
-        lastVerifiedPrefix: t("last_verified_prefix"),
-      })
-    : null;
-
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
-      <KnowledgeHeader
-        title={t("title")}
-        subtitle={t("subtitle")}
-        motion={headerMotion}
+    <main className={KNOWLEDGE_PAGE_CLASS}>
+      <FamilyFilterBar
+        value={family}
+        onChange={(next) => {
+          setFamily(next);
+          replaceQuery({ page: 1 });
+        }}
       />
 
-      <motion.div className="flex flex-col gap-6" {...gridMotion}>
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          {calendar?.examDateLabel ? (
-            <DataCard
-              label={t("exam_day")}
-              value={calendar.examDateLabel}
-              caption={
-                <>
-                  <span
-                    className="font-semibold"
-                    style={{ color: "var(--color-main)" }}
-                  >
-                    {calendar.exam.name}
-                  </span>
-                  {calendar.daysRemaining !== null ? (
-                    <span className="mt-1 block">
-                      {t("days_remaining", { days: calendar.daysRemaining })}
-                    </span>
-                  ) : null}
-                  {verifiedLabel ? (
-                    <span
-                      className="mt-1 block text-xs"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {t("last_verified", { date: verifiedLabel })}
-                    </span>
-                  ) : null}
-                </>
-              }
-              source={
-                examDateEvent
-                  ? {
-                      label: examDateEvent.source,
-                      url: examDateEvent.sourceUrl,
-                      prefix: ui("source_prefix"),
-                    }
-                  : undefined
-              }
-            />
-          ) : (
-            <Card>
-              <EmptyState
-                chip={t("calendar_pending_chip")}
-                description={t("calendar_pending_desc")}
-              />
-            </Card>
-          )}
-          {calendar && calendarIcs ? (
-            <a
-              href={`data:text/calendar;charset=utf-8,${encodeURIComponent(calendarIcs)}`}
-              download={`${calendar.exam.slug}-takvim.ics`}
-              className="mt-3 flex min-h-11 items-center justify-center rounded-[var(--radius-card)] px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-              style={{
-                border: "1px solid var(--color-border)",
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              {t("calendar_download")}
-            </a>
+      <div className={`mt-6 ${KNOWLEDGE_SPLIT_CLASS}`}>
+        <section>
+          {state.featured ? (
+            <div className="mb-6">
+              <FeaturedHero article={state.featured} />
+            </div>
           ) : null}
-        </motion.div>
-
-        {calendar ? (
-          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-            <ExamProcessTimeline
-              events={calendar.events}
-              nextEvent={calendar.nextEvent}
-              daysUntilNextEvent={calendar.daysUntilNextEvent}
-            />
-          </motion.div>
-        ) : null}
-
-        <motion.section
-          variants={reduceMotion ? undefined : staggerItemVariants}
-        >
-          <SectionHeading subtitle={t("articles_subtitle")}>
-            {t("articles_title")}
-          </SectionHeading>
-          {articles.length === 0 ? (
-            <Card className="mt-4">
+          {state.articles.length === 0 ? (
+            <Card>
               <EmptyState
                 chip={t("articles_empty_chip")}
                 description={t("articles_empty_desc")}
               />
             </Card>
           ) : (
-            <motion.ul
-              className="mt-4 flex flex-col gap-3"
-              initial={reduceMotion ? false : "hidden"}
-              animate={reduceMotion ? undefined : "show"}
-              variants={{
-                hidden: { opacity: 0 },
-                show: { opacity: 1, transition: { staggerChildren: 0.06 } },
-              }}
-            >
-              {articles.map((article) => (
-                <motion.li
-                  key={article.slug}
-                  variants={reduceMotion ? undefined : staggerItemVariants}
-                >
-                  <Link
-                    href={{
-                      pathname: "/knowledge/[slug]",
-                      params: { slug: article.slug },
-                    }}
-                    className="block rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-                  >
-                    <Card className="transition-opacity hover:opacity-90 motion-reduce:transition-none">
-                      <div className="flex flex-wrap items-start justify-between gap-2">
-                        <p
-                          className="text-base font-semibold"
-                          style={{
-                            color: "var(--color-main)",
-                            fontFamily: "var(--font-heading)",
-                          }}
-                        >
-                          {article.title}
-                        </p>
-                        <Chip className="shrink-0 px-3 py-1 text-xs">
-                          {t(`categories.${article.category.toLowerCase()}`)}
-                        </Chip>
-                      </div>
-                      <p
-                        className="mt-2 text-sm"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {t("source_label")}: {article.source}
-                      </p>
-                    </Card>
-                  </Link>
-                </motion.li>
+            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+              {state.articles.map((article) => (
+                <li key={article.slug}>
+                  <ArticleCard article={article} />
+                </li>
               ))}
-            </motion.ul>
+            </ul>
           )}
-        </motion.section>
+          <KnowledgePagination
+            page={page}
+            pageSize={PAGE_SIZE}
+            total={state.total}
+            onPageChange={(next) => replaceQuery({ page: next })}
+          />
+        </section>
 
-        <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
-          <Link
-            href="/dashboard"
-            className="flex min-h-11 items-center justify-center text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {t("back_panel")}
-          </Link>
-        </motion.div>
-      </motion.div>
+        <KnowledgeSidebar
+          calendar={state.calendar}
+          related={state.related}
+          selectedCategory={category}
+          onSelectCategory={(next) => replaceQuery({ category: next, page: 1 })}
+        />
+      </div>
     </main>
-  );
-}
-
-function KnowledgeHeader({
-  title,
-  subtitle,
-  motion: animation,
-}: {
-  title: string;
-  subtitle: string;
-  motion: object;
-}) {
-  return (
-    <motion.header className="mb-6" {...animation}>
-      <h1
-        className="text-2xl font-bold lg:text-3xl"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {title}
-      </h1>
-      <p className="mt-1 text-base" style={{ color: "var(--color-secondary)" }}>
-        {subtitle}
-      </p>
-    </motion.header>
   );
 }
 
@@ -383,7 +258,7 @@ function ExamTypeGate() {
         <EmptyState chip={t("no_exam_chip")} description={t("no_exam_desc")} />
         <Link
           href="/settings"
-          className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none sm:w-auto"
+          className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] px-6 py-3 text-base font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 sm:w-auto"
           style={{
             backgroundColor: "var(--color-btn)",
             boxShadow: "var(--shadow-card)",

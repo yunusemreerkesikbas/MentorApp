@@ -379,6 +379,13 @@ export const examEvents = pgTable(
   ],
 );
 
+export type InfoArticleGalleryImage = {
+  key: string;
+  alt: string;
+  width: number;
+  height: number;
+};
+
 /** Editorial knowledge-center article (A-layer). Public when publishedAt is set. */
 export const infoArticles = pgTable(
   "info_articles",
@@ -409,6 +416,13 @@ export const infoArticles = pgTable(
     metaDescription: text("meta_description"),
     /** pgvector — content only; populated by W3 after ArticlePublished (§4 #6). */
     embedding: vector("embedding", { dimensions: 1536 }),
+    /** Extra banner slides after cover. Slider = [cover, ...gallery]. Max 4 enforced in Zod. */
+    galleryImages: jsonb("gallery_images")
+      .$type<InfoArticleGalleryImage[]>()
+      .notNull()
+      .default(sql`'[]'::jsonb`),
+    isFeatured: boolean("is_featured").notNull().default(false),
+    featuredUntil: timestamp("featured_until", { withTimezone: true }),
     publishedAt: timestamp("published_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -420,6 +434,28 @@ export const infoArticles = pgTable(
   (t) => [
     uniqueIndex("info_articles_slug_unique_idx").on(t.slug),
     index("info_articles_family_category_idx").on(t.family, t.category),
+    uniqueIndex("info_articles_one_featured_per_family_idx")
+      .on(t.family)
+      .where(sql`${t.isFeatured} = true`),
+  ],
+);
+
+/**
+ * Per-article daily detail-view buckets. Featured fallback ranks the last 7 days;
+ * list/hero impressions are never written here.
+ */
+export const infoArticleDailyViews = pgTable(
+  "info_article_daily_views",
+  {
+    articleId: uuid("article_id")
+      .notNull()
+      .references(() => infoArticles.id, { onDelete: "cascade" }),
+    day: date("day").notNull(),
+    count: integer("count").notNull().default(0),
+  },
+  (t) => [
+    primaryKey({ columns: [t.articleId, t.day] }),
+    index("info_article_daily_views_day_idx").on(t.day),
   ],
 );
 

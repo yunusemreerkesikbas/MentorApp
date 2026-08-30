@@ -14,6 +14,7 @@ import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import type {
+  AdRewardOfferView,
   PlanTaskDto,
   PlanTaskStatus,
   QuestProgressView,
@@ -21,6 +22,7 @@ import type {
   StreakRescueView,
   TodayPanelResponse,
 } from "@mentor/types";
+import { AdPlacementId } from "@mentor/types";
 import {
   ApiClientError,
   coachingControllerGetToday,
@@ -38,6 +40,7 @@ import {
 } from "lucide-react";
 
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
+import { TopBanner, type TopBannerItem } from "@/components/top-banner";
 import { CoachNextActionCard } from "@/components/coach-next-action-card";
 import { PuhuImage } from "@/components/puhu-image";
 import { WeeklyRecapTeaser } from "@/components/weekly-recap-teaser";
@@ -57,6 +60,7 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
+import { fetchRewardOffer } from "@/lib/ads";
 import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-banner";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
@@ -69,7 +73,6 @@ import {
 } from "@/lib/weekly-recap";
 
 import { CommunityCard } from "./community-card";
-import { RewardedAdOffer } from "@/components/ads/rewarded-ad-offer";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { useMoodCheckin } from "./mood-checkin";
 import { SoftPromoShell } from "./soft-promo-shell";
@@ -86,6 +89,12 @@ type PanelShellProps = {
 
 const completedStatuses: PlanTaskStatus[] = ["DONE"];
 const getWeeklyRecapServerSnapshot = (): WeeklyRecapTeaserState => "hidden";
+const REWARDED_QUEST_VISIBLE_REASONS = new Set([
+  "ELIGIBLE",
+  "COOLDOWN_ACTIVE",
+  "DAILY_LIMIT_REACHED",
+  "ACTIVE_SESSION_EXISTS",
+]);
 
 function subscribeWeeklyRecapStorage(onStoreChange: () => void) {
   window.addEventListener("storage", onStoreChange);
@@ -95,6 +104,7 @@ function subscribeWeeklyRecapStorage(onStoreChange: () => void) {
 export function PanelShell({ initialData }: PanelShellProps) {
   const t = useTranslations("panel");
   const economyT = useTranslations("economy");
+  const adsT = useTranslations("ads");
   const countdownT = useTranslations("countdown");
   const toast = useMentorToast();
   const { promo } = useMentorDialog();
@@ -131,6 +141,8 @@ export function PanelShell({ initialData }: PanelShellProps) {
     null,
   );
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  const [rewardOffer, setRewardOffer] = useState<AdRewardOfferView | null>(null);
+  const [rewardUnavailable, setRewardUnavailable] = useState(false);
   const [openedWeeklyRecap, setOpenedWeeklyRecap] = useState<string | null>(
     null,
   );
@@ -162,6 +174,32 @@ export function PanelShell({ initialData }: PanelShellProps) {
       : storedWeeklyRecapState;
   const showWeeklyRecap = weeklyRecapState !== "hidden";
 
+  const refreshRewardOffer = useCallback(async () => {
+    try {
+      const offer = await fetchRewardOffer(AdPlacementId.DASHBOARD_REWARDED_COIN);
+      setRewardOffer(offer);
+      return offer;
+    } catch {
+      setRewardOffer(null);
+      return null;
+    }
+  }, []);
+
+  const handleRewardCompleted = useCallback((rewardCoin: number) => {
+    setRewardUnavailable(false);
+    toast.success({
+      title: adsT("rewarded.success", { count: rewardCoin }),
+      duration: 3000,
+    });
+  }, [adsT, toast]);
+  const handleRewardUnavailable = useCallback(() => setRewardUnavailable(true), []);
+  const handleRewardOfferChange = useCallback((offer: AdRewardOfferView) => {
+    setRewardOffer(offer);
+  }, []);
+  const showRewardedQuest = Boolean(
+    rewardOffer && REWARDED_QUEST_VISIBLE_REASONS.has(rewardOffer.reason),
+  );
+
   const openQuestsSheet = useCallback(
     (list: QuestProgressView[]) => {
       sheet.show({
@@ -169,11 +207,30 @@ export function PanelShell({ initialData }: PanelShellProps) {
         layout: "filter",
         bodyScroll: false,
         children: (
-          <EconomyQuestsCard quests={list} onDismiss={sheet.dismissNow} />
+          <EconomyQuestsCard
+            quests={list}
+            onDismiss={sheet.dismissNow}
+            rewardedAd={
+              showRewardedQuest
+                ? {
+                    onCompleted: handleRewardCompleted,
+                    onOfferChange: handleRewardOfferChange,
+                    onUnavailable: handleRewardUnavailable,
+                  }
+                : undefined
+            }
+          />
         ),
       });
     },
-    [economyT, sheet],
+    [
+      economyT,
+      handleRewardCompleted,
+      handleRewardOfferChange,
+      handleRewardUnavailable,
+      sheet,
+      showRewardedQuest,
+    ],
   );
 
   // Best-effort: economy off / error → no rescue modal.
@@ -334,11 +391,25 @@ export function PanelShell({ initialData }: PanelShellProps) {
       .catch(() => {
         if (active) setStreakRescue(null);
       });
+    fetchRewardOffer(AdPlacementId.DASHBOARD_REWARDED_COIN)
+      .then((offer) => {
+        if (active) setRewardOffer(offer);
+      })
+      .catch(() => {
+        if (active) setRewardOffer(null);
+      });
 
     return () => {
       active = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (rewardOffer?.reason !== "COOLDOWN_ACTIVE" || !rewardOffer.cooldownEndsAt) return;
+    const delay = new Date(rewardOffer.cooldownEndsAt).getTime() - Date.now();
+    const timer = window.setTimeout(() => void refreshRewardOffer(), Math.max(0, delay));
+    return () => window.clearTimeout(timer);
+  }, [refreshRewardOffer, rewardOffer?.cooldownEndsAt, rewardOffer?.reason]);
 
   // When free monthly freezes are exhausted and a single gap is buyable, prompt once per
   // break-day (sessionStorage) — no persistent freeze chrome on the rhythm card.
@@ -465,9 +536,41 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const doneCount = data.tasks.filter((task) =>
     completedStatuses.includes(task.status),
   ).length;
+  const topBannerItems: TopBannerItem[] =
+    rewardOffer?.eligible && rewardOffer.adUnitPath && !rewardUnavailable
+      ? [
+          {
+            id: "rewarded-coin",
+            message: adsT("top_banner.message", {
+              count: rewardOffer.rewardCoin * rewardOffer.dailyRemaining,
+            }),
+            action: {
+              kind: "button",
+              label: adsT("top_banner.cta"),
+              onSelect: () => openQuestsSheet(quests ?? []),
+            },
+          },
+        ]
+      : rewardOffer?.reason === "PREMIUM_AD_FREE"
+        ? [
+            {
+              id: "daily-tasks",
+              message: adsT("top_banner.daily_tasks_message"),
+              action: {
+                kind: "button",
+                label: adsT("top_banner.cta"),
+                onSelect: () => openQuestsSheet(quests ?? []),
+              },
+            },
+          ]
+        : [];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">
+      <TopBanner
+        closeLabel={adsT("top_banner.close")}
+        items={topBannerItems}
+      />
       <motion.div
         className="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1.7fr)_minmax(320px,0.85fr)]"
         variants={staggerListVariants}
@@ -600,9 +703,6 @@ export function PanelShell({ initialData }: PanelShellProps) {
           </motion.div>
           <motion.div variants={staggerItemVariants}>
             <CommunityCard />
-          </motion.div>
-          <motion.div variants={staggerItemVariants}>
-            <RewardedAdOffer />
           </motion.div>
         </aside>
       </motion.div>

@@ -10,6 +10,7 @@ import {
   usersControllerResendVerificationEmail,
 } from "@mentor/api-client";
 import type { QuestProgressView } from "@mentor/types";
+import { RewardedAdOffer } from "@/components/ads/rewarded-ad-offer";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 
@@ -17,6 +18,11 @@ interface EconomyQuestsCardProps {
   onDismiss?: () => void;
   onInviteRequested?: () => void;
   quests: QuestProgressView[];
+  rewardedAd?: {
+    onCompleted?: Parameters<typeof RewardedAdOffer>[0]["onCompleted"];
+    onOfferChange?: Parameters<typeof RewardedAdOffer>[0]["onOfferChange"];
+    onUnavailable?: () => void;
+  };
 }
 
 type QuestTabKey = QuestProgressView["category"];
@@ -28,6 +34,7 @@ export function EconomyQuestsCard({
   onDismiss,
   onInviteRequested,
   quests,
+  rewardedAd,
 }: EconomyQuestsCardProps) {
   const translate = useTranslations("economy");
   const profileTranslate = useTranslations("profile");
@@ -49,7 +56,9 @@ export function EconomyQuestsCard({
     key: QuestTabKey;
     label: string;
     quests: QuestProgressView[];
-  }>).filter((tab) => tab.quests.length > 0);
+  }>).filter(
+    (tab) => tab.quests.length > 0 || (tab.key === "daily_ritual" && Boolean(rewardedAd)),
+  );
   const activeTab = questTabs.some((tab) => tab.key === selectedTab)
     ? selectedTab
     : questTabs[0]?.key;
@@ -61,6 +70,7 @@ export function EconomyQuestsCard({
     dailyQuests.find((quest) => !quest.completed && quest.action) ??
     onboardingQuests.find((quest) => !quest.completed && quest.action) ??
     null;
+  const promoteRewardedAd = Boolean(rewardedAd && !nextQuest);
 
   function navigateAfterDismiss(path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/settings") {
     flushSync(() => {
@@ -157,6 +167,8 @@ export function EconomyQuestsCard({
             </span>
             <ArrowRight className="shrink-0 text-[var(--color-main)]" size={18} aria-hidden />
           </button>
+        ) : rewardedAd ? (
+          <RewardedAdOffer {...rewardedAd} variant="promoted" />
         ) : null}
 
         {questTabs.length > 1 ? (
@@ -208,6 +220,11 @@ export function EconomyQuestsCard({
         labelledBy={activeTab ? `quests-tab-${activeTab}` : undefined}
         panelId="quests-panel"
         quests={activeQuests}
+        rewardedAd={
+          activeTab === "daily_ritual" && rewardedAd && !promoteRewardedAd
+            ? rewardedAd
+            : undefined
+        }
         reduceMotion={reduceMotion ?? false}
         resendingVerification={resendingVerification}
         onAction={handleAction}
@@ -222,6 +239,7 @@ function QuestSection({
   labelledBy,
   panelId,
   quests,
+  rewardedAd,
   reduceMotion,
   resendingVerification,
 }: {
@@ -230,10 +248,11 @@ function QuestSection({
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
   panelId?: string;
   quests: QuestProgressView[];
+  rewardedAd?: EconomyQuestsCardProps["rewardedAd"];
   reduceMotion: boolean;
   resendingVerification: boolean;
 }) {
-  if (quests.length === 0) return null;
+  if (quests.length === 0 && !rewardedAd) return null;
   return (
     <section
       aria-labelledby={labelledBy}
@@ -250,6 +269,7 @@ function QuestSection({
           initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 6 }}
           transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }}
         >
+          {rewardedAd ? <RewardedAdOffer {...rewardedAd} variant="list" /> : null}
           {quests.map((quest) => (
             <QuestRow
               key={`${quest.id}:${quest.periodKey}`}
@@ -352,6 +372,7 @@ function QuestRow({
 
   return (
     <li
+      data-testid="daily-quest-row"
       className={`rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] p-3 ${
         quest.completed ? "opacity-55" : ""
       }`}

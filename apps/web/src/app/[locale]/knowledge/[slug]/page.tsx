@@ -2,11 +2,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPathname } from "@/i18n/navigation";
-import { fetchInfoArticleBySlug, infoArticleUrl } from "@/lib/content-api";
+import {
+  fetchExamCalendarByFamily,
+  fetchInfoArticleBySlug,
+  fetchInfoArticlesByFamily,
+  infoArticleUrl,
+} from "@/lib/content-api";
 import { siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
 import { ArticleContent } from "./_components/article-content";
-import { PublicChrome } from "@/components/public-chrome";
+import { ArticleChrome } from "./_components/article-chrome";
 import { PublicFooter } from "@/components/public-footer";
 
 export const revalidate = 3600;
@@ -83,7 +88,21 @@ export default async function PublicArticlePage({ params }: PageProps) {
     month: "long",
     year: "numeric",
   });
-  const translate = await getTranslations("article");
+  const [translate, relatedPage, calendar] = await Promise.all([
+    getTranslations("article"),
+    fetchInfoArticlesByFamily(article.family, 1, 4, {
+      excludeSlug: article.slug,
+      revalidate: 3600,
+    }),
+    fetchExamCalendarByFamily(article.family, { revalidate: 3600 }),
+  ]);
+  const sameCategory = relatedPage.items.filter(
+    (item) => item.category === article.category,
+  );
+  const related = (sameCategory.length > 0 ? sameCategory : relatedPage.items).slice(
+    0,
+    3,
+  );
   const canonical = infoArticleUrl(article.slug);
 
   const articleJsonLd = {
@@ -123,7 +142,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
   };
 
   return (
-    <PublicChrome loginLabel={translate("login")} panelLabel={translate("panel")}>
+    <ArticleChrome loginLabel={translate("login")} footer={<PublicFooter />}>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
@@ -134,11 +153,12 @@ export default async function PublicArticlePage({ params }: PageProps) {
       />
       <ArticleContent
         article={article}
+        related={related}
+        calendar={calendar}
         verifiedLabel={verifiedLabel}
         publishedLabel={publishedLabel}
         updatedLabel={updatedLabel}
       />
-      <PublicFooter />
-    </PublicChrome>
+    </ArticleChrome>
   );
 }

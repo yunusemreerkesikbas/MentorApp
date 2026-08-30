@@ -76,6 +76,19 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-08-30 — Bilgi Merkezi editorial feed** — Hub artık aile sekmeleri (açılışta `examType`),
+  süreli-pin + 7 günlük detay görüntüsü + en yeni kapak ile öne çıkan hero, kart grid, sidebar
+  (önerilen konular / ilgili yazılar / kompakt countdown) ve sayfalama kullanır. Detay: başlık →
+  yazar/kategori/tarih → cover+gallery slider, sağda share. Başlık/subtitle/panele-dön ve süreç
+  timeline kalktı. Kullanım: admin makalede “öne çıkar” + 1/3/7/14 gün ve en fazla 4 ek görsel;
+  `GET /v1/content/info-articles/featured?family=` ve `POST .../:slug/views` (rate-limit, yalnız
+  detay). Hub `?page=` ve `?category=` query kullanır. Gotcha: pin yoksa 7g view, o da yoksa
+  en yeni kapak, kapak da yoksa en yeni yayımlanan yazı öne çıkar (hero kapaksız da render
+  olur). Liste featured’ı otomatik dışlar; kullanıcı yazısı/yorum yok. Oturumlu makale
+  detayı app nav (sol sidebar) kullanır, public header kalkar; içerik kolonu `max-w-3xl`.
+  İlgili:
+  `info-article.repository.ts`, `knowledge-shell.tsx`, `ArticleForm.tsx`, migration `0089`.
+
 - **2026-08-29 — Bilgi makalesi contextual envanteri** — Güven bloğu ve read-complete sentinel
   sonrasında, ürün CTA'sından önce tek limited banner yerleşimi eklendi. No-fill collapse olur;
   sticky/overlay/tekrarlı içerik arası slot yoktur.

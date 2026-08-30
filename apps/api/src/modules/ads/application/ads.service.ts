@@ -180,7 +180,7 @@ export class AdsService {
       this.repo.latestRewarded(userId, placementId),
       this.repo.findActive(userId, placementId, now),
     ]);
-    const cooldownEndsAt = latest?.rewardedAt
+    const cooldownEndsAt = cooldownSeconds > 0 && latest?.rewardedAt
       ? new Date(latest.rewardedAt.getTime() + cooldownSeconds * 1000)
       : null;
     let reason = base.reason;

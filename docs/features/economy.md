@@ -74,6 +74,20 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Ardışık Coin reklam görevi geri bildirimi (2026-08-30)** — Bir rewarded reklam tamamlandığında
+  Coin sonucu kısa toast ile duyurulur; Ads görevi organik quest sayacına eklenmeden backend'deki
+  kalan hakkı yeniden okur. Kalan hak varsa aynı sheet içinde ikinci açık kullanıcı aksiyonu
+  hazırlanır, günlük limitte pasif tamamlandı durumuna geçer. İlgili: `rewarded-ad-offer.tsx`,
+  `panel-shell.tsx`, `docs/features/ads.md`.
+
+- **Dashboard görev sheet'inde ayrı Coin görevi (2026-08-30)** — Rewarded reklam aksiyonu yalnız
+  dashboard kullanımında `EconomyQuestsCard` günlük listesinin ilk sırasında görünür; profil earn
+  hub aynı ortak kartı reklamsız kullanmaya devam eder. Reklam satırı `QuestProgressView` kataloğuna
+  eklenmez ve günlük ritüel yüzdesi, XP veya seriyi değiştirmez; organik sıradaki adım yoksa aynı
+  teklif üst alana yükselir ve listede yinelenmez. Coin grant/limit doğruluğu Ads → Economy public
+  rezervasyon arayüzünde kalır. İlgili: `economy-quests-card.tsx`, `rewarded-ad-offer.tsx`,
+  `docs/features/ads.md`.
+
 - **Yoldaşlık sesi Dalga 19 — hak tavanı (2026-08-29)** — `ECONOMY_LIMIT_EXCEEDED` companion: “Hak sınırı doldu.” / “The rights limit is used up.” Kazanım fiili yok. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod `ECONOMY_LIMIT_EXCEEDED` durdu; günlük/haftalık tavan aynı. İlgili: `apps/api/src/i18n/locales/{tr,en}/errors.json`.
 
 - **Yoldaşlık sesi Dalga 11 — rewarded reklam (2026-08-29)** — `ads.rewarded` companion hak (`Lütfen`/`ödül`/`kazan` kalktı). Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: leaderboard durdu. İlgili: `apps/web/messages/{tr,en}.json`.

@@ -14,7 +14,7 @@ const CONFIG: Record<string, number | boolean> = {
   "ads.placement.dashboard_rewarded_coin.enabled": true,
   "ads.rewarded.web.reward_coin": 5,
   "ads.rewarded.web.daily_limit": 2,
-  "ads.rewarded.web.cooldown_seconds": 900,
+  "ads.rewarded.web.cooldown_seconds": 0,
   "ads.rewarded.web.session_ttl_seconds": 300,
   "ads.rewarded.web.rollout_percent": 100,
 };
@@ -131,6 +131,30 @@ describe("AdsService", () => {
     expect(second.status).toBe("REWARDED");
     expect(economy.reserveCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
     expect(economy.settleCoinGrantInServiceTx).toHaveBeenCalledTimes(1);
+  });
+
+  it("keeps the second daily reward offer eligible immediately after the first completion", async () => {
+    const { service } = setup();
+    const first = await service.createRewardSession(
+      AdPlacementId.DASHBOARD_REWARDED_COIN,
+      { id: "user-1", roles: [], orgId: null },
+      "TR",
+    );
+    await service.completeRewardSession(first.id, "user-1");
+
+    const offer = await service.getRewardOffer(
+      AdPlacementId.DASHBOARD_REWARDED_COIN,
+      "user-1",
+      [],
+      "TR",
+    );
+
+    expect(offer).toMatchObject({
+      eligible: true,
+      reason: "ELIGIBLE",
+      dailyRemaining: 1,
+      cooldownEndsAt: null,
+    });
   });
 
   it("returns the same session when creation is retried with one idempotency key", async () => {

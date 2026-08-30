@@ -1566,8 +1566,6 @@
   },
   "knowledge": {
     "loading": "Yükleniyor…",
-    "title": "Bilgi Merkezi",
-    "subtitle": "Resmî bilgi. Kaynaklı ve doğrulanmış içerik.",
     "retry": "Tekrar dene",
     "exam_day": "Sınav günü",
     "days_remaining": "Sınava {days} gün kaldı.",
@@ -1577,15 +1575,31 @@
     "last_verified_prefix": "Son doğrulama",
     "calendar_pending_chip": "Takvim bekleniyor",
     "calendar_pending_desc": "Resmî sınav takvimi henüz yayımlanmadı. Duyurulunca burada durur.",
-    "articles_title": "Makaleler",
-    "articles_subtitle": "Editoryal makaleler. Okuma ücretsiz",
     "articles_empty_chip": "Makale henüz yok",
     "articles_empty_desc": "Bu sınav için doğrulanmış makale henüz yok.",
     "source_label": "Kaynak",
-    "back_panel": "← Panele dön",
     "no_exam_chip": "Sınav türü gerekli",
     "no_exam_desc": "Profilden hedef sınavını seçince resmî tarih ve makaleler burada durur.",
     "no_exam_cta": "Sınav türünü seç",
+    "families_label": "Sınav ailesi",
+    "families": {
+      "kpss": "KPSS",
+      "yks": "YKS",
+      "lgs": "LGS"
+    },
+    "recommended_topics": "Önerilen konular",
+    "related_posts": "İlgili yazılar",
+    "editor_fallback": "Mentor Editör",
+    "share_title": "Paylaş",
+    "share_whatsapp": "WhatsApp ile paylaş",
+    "share_x": "X ile paylaş",
+    "share_facebook": "Facebook ile paylaş",
+    "share_copy": "Bağlantıyı kopyala",
+    "share_copied": "Bağlantı kopyalandı",
+    "pagination_label": "Sayfalar",
+    "pagination_prev": "Önceki",
+    "pagination_next": "Sonraki",
+    "pagination_page": "{page} / {pages}",
     "categories": {
       "application": "Başvuru",
       "exam_process": "Sınav süreci",
@@ -2082,6 +2096,8 @@
     "progress_aria": "{name} seviye ilerlemesi",
     "progress_value": "{current} / {target} XP",
     "complete_message": "Bütün ışıklar birbirine bağlandı; yolculuğun devam ediyor.",
+    "spotlight_travel": "{name} seviyesine geç",
+    "spotlight_locked": "Bu ışık henüz yanmadı.",
     "spotlight_open": "{name} rozetini sahne ışığında gör",
     "guide_open": "Gece Yolculuğu rehberini aç",
     "guide_title": "Gece Yolculuğu",
@@ -2249,7 +2265,10 @@
     "coach_seed": "\"{title}\" konusunu doğrulanmış kaynaklara dayanarak açıklar mısın?",
     "author_byline": "Yazar: {name}",
     "published_at": "Yayınlandı: {date}",
-    "updated_at": "Güncellendi: {date}"
+    "updated_at": "Güncellendi: {date}",
+    "gallery_prev": "Önceki görsel",
+    "gallery_next": "Sonraki görsel",
+    "gallery_slide": "Görsel {current} / {total}"
   },
   "analyticsConsent": {
     "title": "Analitik çerez tercihin",
@@ -2769,6 +2788,12 @@
   },
   "ads": {
     "label": "Reklam",
+    "top_banner": {
+      "message": "Günlük görevlerinde {count} Coin seni bekliyor.",
+      "daily_tasks_message": "Bugünün görevleri seni bekliyor.",
+      "cta": "Görevleri aç",
+      "close": "Duyuruyu kapat"
+    },
     "rewarded": {
       "eyebrow": "İsteğe bağlı reklam görevi",
       "title": "Reklamı bitirince {count} Coin hak düşer.",
@@ -2781,8 +2806,12 @@
       "unavailable": "Reklam görevi şu anda hazır değil. Daha sonra yeniden bakabilirsin.",
       "complete_error": "Hak doğrulanamadı. Tekrar deneme; destek kayda bakar.",
       "cooldown": "Yeni reklam görevi {time} sonrasında hazır olacak.",
-      "daily_done": "Bugünkü reklam görevlerini tamamladın. Yarın yeniden gelebilirsin.",
-      "session_active": "Önceki reklam oturumun kapanıyor. Birkaç dakika sonra bir daha bak."
+      "daily_done": "Bugünkü Coin görevlerini tamamladın. Yarın yeniden gelebilirsin.",
+      "daily_done_progress": "Bugünkü Coin görevleri tamamlandı · {completed}/{completed}",
+      "session_active": "Önceki reklam oturumun kapanıyor. Birkaç dakika sonra bir daha bak.",
+      "quest_title": "Kısa bir reklam izle",
+      "quest_badge": "Günlük Coin görevi · {remaining} hak kaldı",
+      "quest_coin": "{count} Coin"
     }
   },
   "notifications": {

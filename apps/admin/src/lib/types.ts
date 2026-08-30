@@ -81,6 +81,15 @@ export interface AdminArticle {
     coverImageAlt: string | null;
     coverImageWidth: number | null;
     coverImageHeight: number | null;
+    galleryImages: {
+        key: string;
+        url: string;
+        alt: string;
+        width: number;
+        height: number;
+    }[];
+    isFeatured: boolean;
+    featuredUntil: string | null;
     isPublished: boolean;
     publishedAt: string | null;
     createdAt: string;

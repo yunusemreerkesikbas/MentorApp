@@ -3,6 +3,7 @@ import {
   examFamilyParamSchema,
   examSlugParamSchema,
   geoSearchQuerySchema,
+  featuredArticleQuerySchema,
   infoArticleSlugParamSchema,
   listInfoArticlesQuerySchema,
   listPublicHolidaysQuerySchema,
@@ -17,6 +18,8 @@ export class ExamFamilyParamDto extends createZodDto(examFamilyParamSchema) {}
 export class ExamSlugParamDto extends createZodDto(examSlugParamSchema) {}
 
 export class ListInfoArticlesQueryDto extends createZodDto(listInfoArticlesQuerySchema) {}
+
+export class FeaturedArticleQueryDto extends createZodDto(featuredArticleQuerySchema) {}
 
 export class InfoArticleSlugParamDto extends createZodDto(infoArticleSlugParamSchema) {}
 
