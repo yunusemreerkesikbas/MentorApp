@@ -69,6 +69,23 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **İndirim ödeme yüzeyine geldi (2026-08-30)** — `GET /v1/subscription` yanıtına `discount`
+  eklendi (checkout'ta donmuş liste/indirim/tahsil fiyatı + kalan dönem). `POST
+  /v1/subscription/offers` geçersiz kupon kodunda 422 atıyor — önizleme ve checkout aynı hatayı
+  veriyor. `POST /v1/subscription/checkout` artık `code` kabul ediyor. Detay:
+  [promotions.md](./promotions.md). Gotcha: `promotions.enabled` kapalıyken `discount` her zaman
+  `null` ve davranış birebir eskisi. İlgili: `subscriptions.service.ts`,
+  `subscriptions.controller.ts`, `packages/types/src/payments.ts`.
+
+- **Promosyon motoru bağlandı (2026-08-30)** — Checkout artık liste fiyatını değil, promosyon
+  motorunun ürettiği tutarı sağlayıcıya geçiriyor (`PaymentsPort.plan.chargeAmountMinor`).
+  Webhook tarafında defter satırı ve e-Arşiv faturası `plan.priceMinor` yerine
+  `promotion_redemptions.charged_price_minor` (mutabık kalınan tutar) kullanıyor — indirimli bir
+  abonelikte eski fallback hem defteri hem gelir istatistiğini hem faturayı şişiriyordu.
+  Kullanım + konfigürasyon: [promotions.md](./promotions.md). Gotcha: `promotions.enabled`
+  varsayılanı `false`; kapalıyken davranış birebir eskisi. İlgili: `subscriptions.service.ts`,
+  `shared/ports/payments.port.ts`, `modules/promotions/**`.
+
 - **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Checkout `desc_error` companion: kart “kontrol et” kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). İlgili: `apps/web/messages/{tr,en}.json`.
 
 - **Kampanya banner (2026-08-23)** — Panelde ücretsiz kullanıcıya paylaşılan premium
@@ -115,7 +132,7 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   (kısa metin + yasal linkler); CTA hosted checkout’a gider. Desktop: 480px içerik-yükseklikli
   sheet, tek sabit footer, blur’lu backdrop; iç scrollbar yok (`overflow-hidden`).
   Kopya: ücretsiz = plan/süre/ritüel, premium = AI koç katmanı; fayda maddeleri sohbet+selam+seans,
-  haftalık hikâye/ghost/analiz, foto-konu, plan+vizyon. Utandırma ve uydurma indirim yok.
+  haftalık hikâye/ghost/analiz, foto-konu, plan+vizyon. Utandırma ve **uydurma** indirim yok — hiç var olmamış bir "eski fiyat"ın üstü çizilmez. Gerçek bir promosyon indirimi (bkz. [promotions.md](./promotions.md)) üstü çizili gösterilebilir; o rakam kullanıcının gerçekten ödeyeceği liste fiyatıdır.
   Restore Purchase yok. İlgili: `premium-paywall-modal.tsx`, `theme.css`.
 - **Kilit rozetleri (2026-08-22)** — Mood yansıması, ghost anlatımı, günlük selam ve seans
   yansıması artık kilitliyken görünür kalır; tıklanınca paywall açılır. Politika

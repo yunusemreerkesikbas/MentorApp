@@ -64,6 +64,7 @@ export interface InfoArticleSummaryDto {
   family: string;
   category: string;
   metaTitle: string | null;
+  metaDescription: string | null;
   publishedAt: string | null;
   source: string;
   sourceUrl: string;

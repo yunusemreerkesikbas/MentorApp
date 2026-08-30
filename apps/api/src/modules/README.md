@@ -18,6 +18,7 @@ full layering (domain/application/infrastructure/presentation).
 | `admin` | Lean admin: content editor, user management, refund, metrics, audit, feature flags, config registry | MVP |
 | `economy` | XP/Coin ledger (append-only), quests/invites, abuse shields | Phase 2 |
 | `ads` | Placement policy, limited contextual inventory, rewarded Coin sessions | MVP (web v1) |
+| `promotions` | Coupons, campaigns, automatic discounts; redemption ledger (payments depends on it, never the reverse) | MVP (web) |
 | `forum` | Zone primitive (announcement/chat/qa) + scoped membership; MVP slice 1 = zones + OPEN/REQUEST join (flag `forum.enabled`). Verification/coin/C-layer = Phase 2 | MVP (slice 1) |
 | `community` | Folds into `forum` (mahalle = closed/auto-assign zone variant). Presence/leaderboard (Redis), live study room | Phase 2 |
 | `marketplace` | Coach discovery/commission/chat (to be added) | Phase 3 |

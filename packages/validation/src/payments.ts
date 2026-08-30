@@ -1,8 +1,12 @@
 /** Payments schemas (W4) — shared FE+BE. */
 import { z } from "zod";
+// Leaf import, not the barrel — see the cycle note in promotions.ts.
+import { promotionCodeSchema } from "./promotions.js";
 
 export const checkoutSchema = z.object({
   planId: z.string().min(1).max(64),
+  /** Optional coupon. Re-validated server-side at checkout — the preview call is advisory only. */
+  code: promotionCodeSchema.optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 

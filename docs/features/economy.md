@@ -74,6 +74,18 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+- **Coin kazanımı tam ekran kutlama animasyonu (2026-08-30)** — Görev tamamlandığında, reklam
+  izlendiğinde veya odak seansında coin kazanıldığında standart modal yerine ekranı bulanıklaştıran
+  (`backdrop-blur-md bg-black/70`), adım adım (blur -> coin-bg burst -> 3D Lottie coin -> text) çalışan
+  kutlama katmanı (`CoinCelebration`) eklendi. Merkezde `@lottiefiles/dotlottie-react` ile `coin.json`
+  3D dönen sikke ve parıldayan yıldızlar 60 FPS canvas üzerinde render edilir; `coin-bg.svg` animasyonu
+  tek seferlik (`repeatCount="1"`) patlayıp dağılarak sikkeye ve metinlere odak bırakır. Sağ üste
+  cam efektli kapatma butonu (`✕`) eklenmiştir; `CoinCelebrationProvider` ve `notifyCoinCelebration(amount, label)`
+  ile global event üzerinden decoupled tetiklenir; çoklu tamamlanmalarda coinler batch edilerek tek
+  seferde sunulur; Web Audio tabanlı hafif bir ses eşlik eder ve `prefers-reduced-motion` desteklenir.
+  İlgili: `coin-celebration.tsx`, `coin-celebration-context.tsx`, `coin.json`, `coin-bg.svg`, `coin-sound.ts`,
+  `panel-shell.tsx`, `economy-quests-card.tsx`, `rewarded-ad-offer.tsx`, `session-done-state.tsx`.
+
 - **Ardışık Coin reklam görevi geri bildirimi (2026-08-30)** — Bir rewarded reklam tamamlandığında
   Coin sonucu kısa toast ile duyurulur; Ads görevi organik quest sayacına eklenmeden backend'deki
   kalan hakkı yeniden okur. Kalan hak varsa aynı sheet içinde ikinci açık kullanıcı aksiyonu

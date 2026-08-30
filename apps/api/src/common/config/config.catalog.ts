@@ -27,6 +27,7 @@ export const ConfigCategory = {
   NOTIFICATIONS: "notifications",
   FORUM: "forum",
   ADS: "ads",
+  PROMOTIONS: "promotions",
 } as const;
 
 export const ConfigValueType = {
@@ -177,7 +178,46 @@ const adsCount = (def: number, min: number, max: number, description: string): C
   description,
 });
 
+const promotionsFlag = (def: boolean, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.PROMOTIONS,
+  type: ConfigValueType.BOOLEAN,
+  schema: z.boolean(),
+  default: def,
+  sensitive: true,
+  description,
+});
+
+const promotionsCount = (
+  def: number,
+  min: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
+  category: ConfigCategory.PROMOTIONS,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 export const CONFIG_CATALOG = {
+  "promotions.enabled": promotionsFlag(
+    false,
+    "Global promotions kill-switch — off means every checkout pays the list price.",
+  ),
+  "promotions.max_percent": promotionsCount(
+    50,
+    1,
+    90,
+    "Ceiling on any single discount, percent of list price. Caps FIXED discounts too.",
+  ),
+  "promotions.max_discount_periods": promotionsCount(
+    1,
+    1,
+    24,
+    "How many charges a discount may cover. Keep at 1 until the payment adapter can honour a multi-period intro price; raising it needs no code change.",
+  ),
   "ads.enabled": adsFlag(false, "Global advertising kill-switch."),
   "ads.display.enabled": adsFlag(false, "Enable contextual display inventory."),
   "ads.rewarded.enabled": adsFlag(false, "Enable voluntary rewarded advertising."),

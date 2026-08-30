@@ -25,6 +25,7 @@ import { ForumModule } from "./modules/forum/forum.module";
 import { IdentityModule } from "./modules/identity/identity.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
+import { PromotionsModule } from "./modules/promotions/promotions.module";
 import { StorageModule } from "./shared/storage/storage.module";
 import { buildLoggerConfig } from "./observability/logger.config";
 
@@ -65,6 +66,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     IdentityModule,
     NotificationsModule,
     PaymentsModule,
+    PromotionsModule,
   ],
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },

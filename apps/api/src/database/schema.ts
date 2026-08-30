@@ -3327,3 +3327,127 @@ export const weeklyReviewCompletions = pgTable(
     ),
   ],
 );
+
+/* ============================ Promotions (W4) =============================
+ * Commercial price levers: welcome coupons, seasonal campaigns, activity rewards, win-back.
+ * ONE primitive — a promotion with a `code` is typed by the user, one without is applied
+ * automatically. Eligibility rules are evaluated live (no grant table, no cron); the agreed price
+ * is frozen into `promotion_redemptions` at checkout so a later plan-price edit cannot change what
+ * the user consented to in the ön bilgilendirme formu.
+ * RLS: SERVICE/ADMIN only (redemptions are also self-readable so the app can show the active offer).
+ * ========================================================================= */
+export const promotions = pgTable(
+  "promotions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    /** null = applied automatically; set = the user must type it. Unique among ACTIVE rows only. */
+    code: text("code"),
+    /** Admin-facing name. */
+    name: text("name").notNull(),
+    /** User-facing badge text, per locale (web is bilingual; admin is Turkish-only). */
+    labelTr: text("label_tr").notNull(),
+    labelEn: text("label_en").notNull(),
+    ruleType: text("rule_type").notNull().default("ANYONE"),
+    /** Rule shape: {withinDays} | {days, windowDays} | {} — validated by zod on write. */
+    ruleParams: jsonb("rule_params")
+      .notNull()
+      .default(sql`'{}'::jsonb`),
+    discountType: text("discount_type").notNull(),
+    /** PERCENT → 1..90 · FIXED → kuruş. The runtime ceiling is `promotions.max_percent`. */
+    discountValue: integer("discount_value").notNull(),
+    /** How many charges the discount covers. Capped at runtime by `promotions.max_discount_periods`. */
+    appliesToPeriods: integer("applies_to_periods").notNull().default(1),
+    /** null = every plan. */
+    planIds: text("plan_ids").array(),
+    startsAt: timestamp("starts_at", { withTimezone: true }),
+    endsAt: timestamp("ends_at", { withTimezone: true }),
+    /** null = unlimited. Enforced under an advisory lock, counted from the redemption rows. */
+    maxRedemptions: integer("max_redemptions"),
+    maxRedemptionsPerUser: integer("max_redemptions_per_user").notNull().default(1),
+    isActive: boolean("is_active").notNull().default(true),
+    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // Case-insensitive, and only among active rows: a retired code may be reissued later.
+    uniqueIndex("promotions_active_code_unique_idx")
+      .on(sql`lower(${t.code})`)
+      .where(sql`${t.code} is not null and ${t.isActive}`),
+    index("promotions_active_window_idx").on(t.isActive, t.startsAt, t.endsAt),
+    check("promotions_discount_value_positive", sql`${t.discountValue} > 0`),
+    check(
+      "promotions_percent_bounds",
+      sql`${t.discountType} <> 'PERCENT' or ${t.discountValue} between 1 and 90`,
+    ),
+    check("promotions_periods_positive", sql`${t.appliesToPeriods} >= 1`),
+    check("promotions_per_user_positive", sql`${t.maxRedemptionsPerUser} >= 1`),
+    check(
+      "promotions_max_redemptions_positive",
+      sql`${t.maxRedemptions} is null or ${t.maxRedemptions} > 0`,
+    ),
+    check(
+      "promotions_rule_type_check",
+      sql`${t.ruleType} in ('ANYONE', 'NEW_USER', 'ACTIVE_DAYS', 'WIN_BACK')`,
+    ),
+    check("promotions_discount_type_check", sql`${t.discountType} in ('PERCENT', 'FIXED')`),
+    check(
+      "promotions_window_order",
+      sql`${t.startsAt} is null or ${t.endsAt} is null or ${t.endsAt} > ${t.startsAt}`,
+    ),
+  ],
+);
+
+/**
+ * Redemption ledger — the record of the price the user actually agreed to.
+ * The three money columns are COPIES, never references: `plans.price_minor` is admin-editable, and
+ * the total disclosed in the ön bilgilendirme formu must not move afterwards (TKHK).
+ */
+export const promotionRedemptions = pgTable(
+  "promotion_redemptions",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    promotionId: uuid("promotion_id")
+      .notNull()
+      .references(() => promotions.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    subscriptionId: uuid("subscription_id").references(() => subscriptions.id, {
+      onDelete: "set null",
+    }),
+    planId: text("plan_id").notNull(),
+    listPriceMinor: integer("list_price_minor").notNull(),
+    discountMinor: integer("discount_minor").notNull(),
+    chargedPriceMinor: integer("charged_price_minor").notNull(),
+    /** Decremented on every succeeded charge; at 0 the next renewal is at the list price. */
+    periodsRemaining: integer("periods_remaining").notNull(),
+    status: text("status").notNull().default("RESERVED"),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    // One promotion per subscription — a second checkout for the same sub cannot stack a discount.
+    uniqueIndex("promotion_redemptions_subscription_unique_idx")
+      .on(t.subscriptionId)
+      .where(sql`${t.subscriptionId} is not null`),
+    index("promotion_redemptions_user_promotion_idx").on(t.userId, t.promotionId),
+    index("promotion_redemptions_promotion_status_idx").on(t.promotionId, t.status),
+    check(
+      "promotion_redemptions_price_consistent",
+      sql`${t.chargedPriceMinor} = ${t.listPriceMinor} - ${t.discountMinor}`,
+    ),
+    check("promotion_redemptions_charge_positive", sql`${t.chargedPriceMinor} > 0`),
+    check("promotion_redemptions_discount_positive", sql`${t.discountMinor} > 0`),
+    check("promotion_redemptions_periods_nonnegative", sql`${t.periodsRemaining} >= 0`),
+    check(
+      "promotion_redemptions_status_check",
+      sql`${t.status} in ('RESERVED', 'APPLIED', 'VOIDED')`,
+    ),
+  ],
+);

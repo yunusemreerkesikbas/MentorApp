@@ -121,6 +121,7 @@ export function toInfoArticleSummary(
     family: row.family,
     category: row.category,
     metaTitle: row.metaTitle,
+    metaDescription: row.metaDescription,
     publishedAt: row.publishedAt?.toISOString() ?? null,
     source: row.source,
     sourceUrl: row.sourceUrl,

@@ -9,6 +9,7 @@ import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 import { PremiumPaywallProvider } from "@/lib/premium-paywall";
+import { CoinCelebrationProvider } from "@/lib/coin-celebration-context";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 
 /**
@@ -46,21 +47,23 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <NotificationDrawerShell>
       <PremiumPaywallProvider>
-        <div
-          className="min-h-screen"
-          style={{ backgroundColor: "var(--color-bg)" }}
-        >
-          <AppNav />
+        <CoinCelebrationProvider>
           <div
-            className={
-              hideMobileTabOffset
-                ? "mentor-app-shell min-h-screen"
-                : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
-            }
+            className="min-h-screen"
+            style={{ backgroundColor: "var(--color-bg)" }}
           >
-            {children}
+            <AppNav />
+            <div
+              className={
+                hideMobileTabOffset
+                  ? "mentor-app-shell min-h-screen"
+                  : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
+              }
+            >
+              {children}
+            </div>
           </div>
-        </div>
+        </CoinCelebrationProvider>
       </PremiumPaywallProvider>
     </NotificationDrawerShell>
   );

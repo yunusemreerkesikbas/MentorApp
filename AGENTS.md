@@ -16,7 +16,7 @@ that pain?
   across all exams (KPSS/YKS/LGS). Exams differ only by **content/config** (taxonomy, net
   rule, calendar source). **Do not write a separate "vertical".** KPSS = first seed.
 - **Tone:** Turkish, encouraging, never shaming. Countdown is calm (not alarm-red), no result
-  ranking, no "bottom of the leaderboard".
+  ranking, no "bottom of the leaderboard". Canonical copy constitution: **[`docs/copy/voice.md`](./docs/copy/voice.md)** (dual register Puhu/Companion, sen address, no em dash `—`, no AI slop, no "lütfen", non-monetary hak).
 
 ## 1. Architecture line (locked — §8)
 
@@ -134,7 +134,7 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 
 ## 10. Standards & documentation (binding)
 
-Read the relevant standard before writing code; PR review checks these ([code-review](./docs/standards/code-review.md)):
+- **Standards & documentation (binding):** [`docs/standards/`](./docs/standards/) · Copy constitution: [`docs/copy/voice.md`](./docs/copy/voice.md).
 - **Engineering principles:** [`docs/standards/engineering-principles.md`](./docs/standards/engineering-principles.md) — SOLID/DRY/KISS/YAGNI, no hardcoding/silent fallbacks, edge cases vs over-defensiveness, **logic backend-only**, **backend-localized messages**, Definition of Done (incl. dead-code cleanup)
 - **Code style & naming:** [`docs/standards/code-style.md`](./docs/standards/code-style.md) — file/class/variable/DB/event names, format, imports, git
 - **API design & versioning + service catalog:** [`docs/standards/api.md`](./docs/standards/api.md)

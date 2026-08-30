@@ -16,7 +16,7 @@ import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-repl
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
-import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
+import { fetchQuests, isEconomyDisabled, notifyCoinCelebration } from "@/lib/economy";
 import {
   findNewlyCompletedQuests,
   formatRewardSummary,
@@ -124,6 +124,14 @@ export function SessionDoneState({
         if (questsResult) {
           const completedNow = findNewlyCompletedQuests(questBaseline ?? null, questsResult);
           if (completedNow.length > 0) {
+            const coinEarned = completedNow.reduce(
+              (sum, quest) =>
+                quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
+              0,
+            );
+            if (coinEarned > 0) {
+              notifyCoinCelebration(coinEarned);
+            }
             const rewardSummary = formatRewardSummary(completedNow, economyT);
             if (rewardSummary) {
               toast.success({

@@ -6,7 +6,7 @@ import { Coins } from "lucide-react";
 import { AdPlacementId, type AdRewardOfferView } from "@mentor/types";
 import { completeRewardSession, createRewardSession, closeRewardSession, fetchRewardOffer } from "@/lib/ads";
 import { retryIdempotent } from "@/lib/ad-reward-retry";
-import { notifyEconomyChanged } from "@/lib/economy";
+import { notifyCoinCelebration, notifyEconomyChanged } from "@/lib/economy";
 import { configureLimitedPrivacy, withGpt, type GptEvent, type GptService, type GptSlot } from "@/lib/google-publisher-tag";
 
 const REWARDED_READY_TIMEOUT_MS = 10_000;
@@ -122,6 +122,9 @@ export function RewardedAdOffer({
           void retryIdempotent(() => completeRewardSession(sessionId))
             .then((result) => {
               notifyEconomyChanged();
+              if (result.rewardCoin > 0) {
+                notifyCoinCelebration(result.rewardCoin);
+              }
               completionSucceeded = true;
               onCompleted?.(result.rewardCoin);
               prepareNextOffer();

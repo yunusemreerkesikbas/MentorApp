@@ -322,6 +322,7 @@ const subscription: SubscriptionView = {
     reason: "ACTIVE",
   },
   features: {} as SubscriptionView["features"],
+  discount: null,
 };
 
 const enabledContextualPlacement = {

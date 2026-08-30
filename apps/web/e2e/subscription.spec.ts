@@ -96,6 +96,7 @@ const subscription: SubscriptionView = {
       window: "week",
     },
   },
+  discount: null,
 };
 
 const corsHeaders = {

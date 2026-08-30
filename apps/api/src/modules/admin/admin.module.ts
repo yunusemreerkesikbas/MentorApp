@@ -6,6 +6,7 @@ import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
+import { PromotionsModule } from "../promotions/promotions.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { AdminAuditService } from "./application/admin-audit.service";
@@ -20,6 +21,7 @@ import { AdminEconomyController } from "./presentation/admin-economy.controller"
 import { AdminExamCalendarController } from "./presentation/admin-exam-calendar.controller";
 import { AdminMetricsController } from "./presentation/admin-metrics.controller";
 import { AdminPlansController } from "./presentation/admin-plans.controller";
+import { AdminPromotionsController } from "./presentation/admin-promotions.controller";
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
 import { AdminForumController } from "./presentation/admin-forum.controller";
@@ -39,6 +41,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     EconomyModule,
     ContentModule,
     PaymentsModule,
+    PromotionsModule,
     AiModule,
     AccountModule,
     CoachingModule,
@@ -52,6 +55,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AdminExamCalendarController,
     AdminSubscriptionController,
     AdminPlansController,
+    AdminPromotionsController,
     AdminMetricsController,
     AdminForumController,
     AdminAnnouncementsController,

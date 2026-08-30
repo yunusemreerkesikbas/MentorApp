@@ -41,6 +41,7 @@ branch is presented as PR/merge/release-ready, or earlier when risk/cross-cuttin
 
 **Quality & design**
 - [ ] DESIGN tokens (no magic numbers) · shared types/schemas used (no copy-paste).
+- [ ] **Copy & voice ([`docs/copy/voice.md`](../copy/voice.md)):** dual register (Puhu / Companion), sen address, no em dashes (`—`), no AI slop, no "lütfen / kontrol et", hak not ödül.
 - [ ] **Loading states use page skeletons** (`*-content-skeleton.tsx`) with global `.mentor-skeleton-shimmer` /
   `.mentor-skeleton-enter` only — no spinners or `animate-pulse` for content placeholders.
 - [ ] Critical paths tested; names clear; **dead code removed for the touched scope**; no stray TODO/FIXME.

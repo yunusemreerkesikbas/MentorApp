@@ -4,7 +4,7 @@
   "private": true,
   "description": "Mentor B2C web — Next.js (responsive + SEO wedge). The main MVP product.",
   "scripts": {
-    "dev": "next dev --port 3000",
+    "dev": "rimraf .next/dev && next dev --port 3000",
     "build": "next build",
     "build:map": "node scripts/build-turkey-map.mjs",
     "assets:check:achievements": "node scripts/validate-achievement-assets.mjs",
@@ -12,7 +12,7 @@
     "start": "next start --port 3000",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
+    "test": "node scripts/dev-command.spec.mjs && vitest run",
     "test:e2e": "playwright test",
     "clean": "rimraf .next .turbo"
   },

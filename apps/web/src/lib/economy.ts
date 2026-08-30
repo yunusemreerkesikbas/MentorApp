@@ -84,3 +84,21 @@ export function notifyEconomyChanged(): void {
   if (typeof window === "undefined") return;
   window.dispatchEvent(new Event(ECONOMY_CHANGED_EVENT));
 }
+
+/** Dispatched when a coin award should be celebrated with the full-screen overlay. */
+export const COIN_CELEBRATE_EVENT = "mentor:coin-celebrate";
+
+export interface CoinCelebrateDetail {
+  amount: number;
+  label?: string;
+}
+
+export function notifyCoinCelebration(amount: number, label?: string): void {
+  if (typeof window === "undefined" || amount <= 0) return;
+  window.dispatchEvent(
+    new CustomEvent<CoinCelebrateDetail>(COIN_CELEBRATE_EVENT, {
+      detail: { amount, label },
+    }),
+  );
+}
+

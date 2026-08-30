@@ -1,4 +1,9 @@
-import type { EntitlementDto, PlanDto, SubscriptionDto } from "@mentor/types";
+import type {
+  EntitlementDto,
+  PlanDto,
+  SubscriptionDiscountDto,
+  SubscriptionDto,
+} from "@mentor/types";
 
 export type SubscriptionFactId =
   | "price"
@@ -30,13 +35,16 @@ export function listSubscriptionFacts(input: {
   entitlement: EntitlementDto | undefined;
   subscription: SubscriptionDto | null | undefined;
   plan: PlanDto | null;
+  discount?: SubscriptionDiscountDto | null;
 }): SubscriptionFact[] {
-  const { entitlement, subscription, plan } = input;
+  const { entitlement, subscription, plan, discount } = input;
   const reason = entitlement?.reason ?? "NONE";
   const facts: SubscriptionFact[] = [];
 
   if (plan) {
-    facts.push({ id: "price", priceMinor: plan.priceMinor });
+    // The price row reports what is actually charged. `discount` carries the figures frozen at
+    // checkout, so an admin editing `plan.priceMinor` afterwards cannot rewrite this user's deal.
+    facts.push({ id: "price", priceMinor: discount?.chargedPriceMinor ?? plan.priceMinor });
     facts.push({ id: "billing", periodMonths: plan.periodMonths });
   }
 

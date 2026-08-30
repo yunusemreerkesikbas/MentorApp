@@ -63,6 +63,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Paywall indirim yüzeyi + hoş geldin hediyesi (2026-08-30)** — Paywall modalinde üstü çizili
+  eski fiyat, indirimli fiyat, promosyon rozeti ve katlanabilir kupon alanı. Panelde
+  `WelcomeGiftDialog` (mevcut `promo()` preseti, `PremiumCampaignBanner`'ın yanında, yalnız
+  ücretsiz kullanıcıda) hak edilen kuponu bir kez duyuruyor. Kupon kodu **veriden** geliyor —
+  hiçbir kampanya adı istemcide sabit değil. Kullanım: kural ve kod admin `/promotions`'tan.
+  Gotcha: `PremiumCampaignBanner` hâlâ indirim göstermiyor; DESIGN.md §8.4'teki "no fake discount"
+  satırı o bileşen için aynen geçerli. Modalın üstü çizili fiyatı **gerçek** liste fiyatıdır —
+  uydurma değil (bkz. [payments.md](./payments.md) paywall kuralı). İlgili:
+  `premium-paywall-modal.tsx`, `welcome-gift-dialog.tsx`, `panel-shell.tsx`,
+  `e2e/promotions.spec.ts`.
+
 - **2026-08-29 — Limited GPT altyapısı** — Backend placement kararı sonrası yüklenen singleton GPT
   loader, contextual slot ve gönüllü rewarded Coin kartı eklendi. Reklam hazır olmadan CTA aktif
   olmaz; kapatma/no-fill Coin vermez; tamamlamada ekonomi pill'leri yenilenir.

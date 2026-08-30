@@ -95,11 +95,25 @@ export interface FeaturePolicyDto {
   window: FeaturePolicyWindow;
 }
 
+/**
+ * The promotion still covering this subscription's charges. Prices are the ones frozen at
+ * checkout, so the screen shows what the user actually agreed to pay — not the current list price.
+ */
+export interface SubscriptionDiscountDto {
+  listPriceMinor: number;
+  discountMinor: number;
+  chargedPriceMinor: number;
+  /** Charges still covered. After that the plan renews at `listPriceMinor`. */
+  periodsRemaining: number;
+}
+
 /** GET /v1/subscription response. */
 export interface SubscriptionView {
   subscription: SubscriptionDto | null;
   entitlement: EntitlementDto;
   features: Record<PremiumFeatureId, FeaturePolicyDto>;
+  /** null when the subscription pays the list price. */
+  discount: SubscriptionDiscountDto | null;
 }
 
 /** POST /v1/subscription/checkout response. */

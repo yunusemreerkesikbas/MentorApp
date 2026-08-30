@@ -103,10 +103,29 @@ export class SubscriptionsRepository {
     });
   }
 
-  async create(data: typeof subscriptions.$inferInsert): Promise<SubscriptionRow> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx.insert(subscriptions).values(data).returning();
+  async create(
+    data: typeof subscriptions.$inferInsert,
+    tx?: Exec,
+  ): Promise<SubscriptionRow> {
+    return onServiceTx(this.db, tx, async (exec) => {
+      const rows = await exec.insert(subscriptions).values(data).returning();
       return rows[0]!;
+    });
+  }
+
+  /**
+   * The user's most recent subscription in any state, terminal included — the WIN_BACK signal.
+   * `findOpenForUser` cannot serve this: an EXPIRED row is exactly what we are looking for.
+   */
+  async findLatestForUser(userId: string): Promise<SubscriptionRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(subscriptions)
+        .where(eq(subscriptions.userId, userId))
+        .orderBy(desc(subscriptions.createdAt))
+        .limit(1);
+      return rows[0];
     });
   }
 

@@ -631,6 +631,13 @@
       "when": 1788047667160,
       "tag": "0089_medical_daimon_hellstrom",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1788101081970,
+      "tag": "0090_promotions",
+      "breakpoints": true
     }
   ]
 }

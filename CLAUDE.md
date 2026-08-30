@@ -21,6 +21,7 @@ pnpm build | lint | typecheck
 - First, **AGENTS.md §4 guardrails** (LLM never generates official info, photo categorizes-not-solves,
   coin is non-monetary, no AI on free, AI→teacher trust line, KVKK, org-ready schema).
 - UI values come from **DESIGN.md tokens** (`@mentor/ui`), not magic numbers.
+- **Copy & voice:** follow **[`docs/copy/voice.md`](./docs/copy/voice.md)** (dual register Puhu/Companion, sen, no em dash `—`, no AI slop, no "lütfen/kontrol et", hak not ödül).
 - Per-task skill: `senior-architect` / `senior-backend` / `senior-frontend`.
 - Relevant **standard** before coding: `docs/standards/{backend,frontend,mobile,code-review}.md`.
 - Parallel work: your track's boundaries → `docs/core/workstreams.md` (don't touch other tracks' modules).

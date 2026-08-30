@@ -76,6 +76,8 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-08-30 — Bilgi merkezi öne çıkan (featured) kart redesign** — Öne çıkan makale bileşeni referans tasarıma uygun yatay (sol görsel, sağ başlık + metaDescription + yazar/tarih + share butonu) kart düzenine geçirildi. `metaDescription` özete eklendi; 3'lü grid ile uyumlu hale getirildi. İlgili: `featured-hero.tsx`, `content.mappers.ts`, `packages/types/src/content.ts`.
+
 - **2026-08-30 — Bilgi Merkezi editorial feed** — Hub artık aile sekmeleri (açılışta `examType`),
   süreli-pin + 7 günlük detay görüntüsü + en yeni kapak ile öne çıkan hero, kart grid, sidebar
   (önerilen konular / ilgili yazılar / kompakt countdown) ve sayfalama kullanır. Detay: başlık →
