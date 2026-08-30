@@ -884,6 +884,13 @@
     }
   },
   "subscription": {
+    "trial_consent_discounted": "{trialDays} gün deneme sonrası ilk ödeme {introPrice}, sonraki yenilemeler {renewalPrice} olarak otomatik alınır; istediğim an iptal edebilirim.",
+    "trial_consent_discounted_periods": "{trialDays} gün deneme sonrası ilk {periods} ödeme {introPrice}, sonrasında {renewalPrice} olarak otomatik alınır; istediğim an iptal edebilirim.",
+    "consent_discounted": "İlk ödeme {introPrice}, sonraki yenilemeler {renewalPrice} olarak otomatik alınır; istediğim an iptal edebilirim.",
+    "consent_discounted_periods": "İlk {periods} ödeme {introPrice}, sonrasında {renewalPrice} olarak otomatik alınır; istediğim an iptal edebilirim.",
+    "row_discount": "İndirim",
+    "discount_remaining": "{periods} ödeme daha",
+    "discount_renewal_after": "Sonrasında {price}",
     "loading": "Yükleniyor…",
     "title": "Abonelik",
     "payments_coming_soon": "Paketler hazır. Ödeme açıldığında buradan devam edebilirsin.",
@@ -925,6 +932,17 @@
     "coming_soon": "Çok yakında"
   },
   "paywall": {
+    "price_before": "Eski fiyat",
+    "coupon_toggle": "Kupon kodun var mı?",
+    "coupon_label": "Kupon kodu",
+    "coupon_placeholder": "KOD",
+    "coupon_apply": "Uygula",
+    "coupon_clear": "Kaldır",
+    "coupon_applied": "Kupon uygulandı",
+    "welcome_title": "Hoş geldin hediyen hazır",
+    "welcome_body_code": "{label}. Ödeme ekranında {code} kodunu kullan.",
+    "welcome_body_auto": "{label} ilk ödemende otomatik uygulanır.",
+    "welcome_cta": "Premium’a bak",
     "brand": "Mentor",
     "badge_premium": "Premium",
     "badge_value": "Önerilen",
@@ -2233,7 +2251,10 @@
     "quest_progress_days": "{current}/{target} gün",
     "quest_auto_hint": "Tamamlanınca hak kendiliğinden işlenir.",
     "quest_action_subscription": "Aboneliğe git",
-    "quest_action_invite": "Davet kodu gir"
+    "quest_action_invite": "Davet kodu gir",
+    "celebration_coin_reward": "+{count} Coin",
+    "celebration_close": "Kapat",
+    "celebration_subtitle": "Emeklerine sağlık, coinlerin seninle!"
   },
   "legal": {
     "last_updated": "Son güncelleme: {date}",

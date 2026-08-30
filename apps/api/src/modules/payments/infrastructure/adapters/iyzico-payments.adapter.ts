@@ -33,7 +33,19 @@ export class IyzicoPaymentsAdapter implements PaymentsPort {
     // Planned call: POST {IYZICO_BASE_URL}/v2/subscription/checkoutform/initialize
     //   { pricingPlanReferenceCode, customer{email}, callbackUrl: req.returnUrl }
     // → { checkoutFormContent | paymentPageUrl, referenceCode }
-    this.notVerified("createCheckout", { planId: req.plan.id });
+    //
+    // ⚠️ OPEN DECISION for whoever implements this: the Subscription API bills whatever the
+    // `pricingPlanReferenceCode` says, so it has no natural slot for a per-checkout
+    // `chargeAmountMinor`. Either (a) mint/reuse an iyzico pricing plan per discounted price and
+    // move the subscriber to the list plan after `discountPeriods`, or (b) drive the first charge
+    // through the one-off checkout form (which does carry basketItems) and subscribe afterwards.
+    // Until one is built, honouring a discount is impossible — so this must keep FAILING rather
+    // than quietly charging `priceMinor` after the user agreed to `chargeAmountMinor`.
+    this.notVerified("createCheckout", {
+      planId: req.plan.id,
+      chargeAmountMinor: req.plan.chargeAmountMinor,
+      discountPeriods: req.plan.discountPeriods,
+    });
   }
 
   async cancel(providerRef: string): Promise<void> {

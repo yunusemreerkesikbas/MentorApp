@@ -7,7 +7,7 @@
     "dev": "next dev --port 3002",
     "build": "next build",
     "start": "next start --port 3002",
-    "lint": "next lint --dir src/lib --dir src/contentApi --dir src/components/shared --dir src/app/login --dir \"src/app/(general)/content\" --dir \"src/app/(general)/users\" --dir \"src/app/(general)/audit-log\" --dir \"src/app/(general)/config\" --dir src/app/page.tsx --dir \"src/app/(general)/layout.tsx\"",
+    "lint": "next lint --dir src/lib --dir src/contentApi --dir src/components/shared --dir src/app/login --dir \"src/app/(general)/content\" --dir \"src/app/(general)/users\" --dir \"src/app/(general)/audit-log\" --dir \"src/app/(general)/config\" --dir \"src/app/(general)/promotions\" --dir src/app/page.tsx --dir \"src/app/(general)/layout.tsx\"",
     "typecheck": "tsc --noEmit -p tsconfig.typecheck.json"
   },
   "dependencies": {

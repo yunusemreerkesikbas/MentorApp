@@ -33,7 +33,18 @@ export interface CheckoutRequest {
   userEmail: string;
   plan: {
     id: string;
+    /** Catalog list price — the "before" number, unchanged by any promotion. */
     priceMinor: number;
+    /**
+     * What to charge for the periods this checkout covers. Equals `priceMinor` without a discount.
+     * An adapter that cannot bill a per-checkout amount MUST reject rather than silently charge
+     * the list price: the user consented to this figure in the ön bilgilendirme formu.
+     */
+    chargeAmountMinor: number;
+    /** What to charge once `discountPeriods` is exhausted — always the list price today. */
+    renewalAmountMinor: number;
+    /** How many charges `chargeAmountMinor` covers. 0 = no discount. */
+    discountPeriods: number;
     currency: string;
     periodMonths: number;
     trialDays: number;

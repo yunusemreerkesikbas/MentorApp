@@ -40,6 +40,7 @@
 - The backend returns user-facing messages **already localized** (per `Accept-Language`) as a human `message`
   **plus** a stable machine `code` (`ApiError` / success payload). **FE/mobile display `message` directly** — no
   hardcoded business/validation copy on the client.
+- **Copy constitution ([`docs/copy/voice.md`](../copy/voice.md)):** all user-facing text (API messages, notifications, web/mobile chrome) strictly follows the dual register (Puhu for celebration/empties/chrome vs. Companion for coach chat/errors/forms/rights), addresses the student as **sen** (formal *siz* banned), avoids AI slop/antithesis cliches, bans em dashes (`—`) in student copy (use period, comma, colon; en dash `2–4` for ranges only), bans "lütfen kontrol ediniz" / form-command "kontrol et", and treats coin as non-monetary **hak** (not ödül).
 - Validation messages also come localized from the backend (the Zod layer maps to localized strings).
 - FE/mobile own **only static chrome copy** (labels, buttons, nav). MVP is single-language (Turkish); when
   multi-language arrives, the client gets its own i18n catalog for chrome — but **dynamic/business messages stay

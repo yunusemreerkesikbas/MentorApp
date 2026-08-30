@@ -302,3 +302,32 @@ export interface AdminAnnouncement {
     recipientCount: number;
     createdAt: string;
 }
+
+
+// GET /admin/promotions — coupons, campaigns and automatic discounts (W4 promotions).
+export type PromotionRuleType = "ANYONE" | "NEW_USER" | "ACTIVE_DAYS" | "WIN_BACK";
+export type PromotionDiscountType = "PERCENT" | "FIXED";
+
+export interface AdminPromotion {
+    id: string;
+    /** null = otomatik uygulanır; dolu = kullanıcı kodu yazar. */
+    code: string | null;
+    name: string;
+    labelTr: string;
+    labelEn: string;
+    ruleType: PromotionRuleType;
+    ruleParams: Record<string, unknown>;
+    discountType: PromotionDiscountType;
+    /** PERCENT → yüzde · FIXED → kuruş. */
+    discountValue: number;
+    appliesToPeriods: number;
+    planIds: string[] | null;
+    startsAt: string | null;
+    endsAt: string | null;
+    maxRedemptions: number | null;
+    maxRedemptionsPerUser: number;
+    isActive: boolean;
+    /** İptal edilmemiş kullanım sayısı — global limitin saydığı değer. */
+    redeemedCount: number;
+    createdAt: string;
+}

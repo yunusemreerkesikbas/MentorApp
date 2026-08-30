@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Çalışılmış gün sinyali dışa açıldı (2026-08-30)** — `StreakService.listActiveDatesSince(userId,
+  windowDays)`: son N günün çalışılmış tarihleri (≥1 tamamlanmış seans VEYA ≥1 biten görev), türetme
+  yapmadan. İlk tüketici promotions (`ACTIVE_DAYS` indirim kuralı). Yeni sorgu yok — mevcut
+  `DailyActivityRepository.listActiveDatesSince` sarmalayıcısı. Kullanım: `CoachingModule` zaten
+  `StreakService`'i export ediyor, import yeterli. Gotcha: `daily_activity` **çalışılan** günü
+  tutar, ziyaret edileni değil — "siteyi açtı" diye bir sinyal yok ve olmamalı (roadmap §3).
+  İlgili: `streak.service.ts`, [promotions.md](./promotions.md).
+
 - **Yoldaşlık sesi Dalga 19 — hayalet / defter ödül fiili (2026-08-29)** — `ghost.TIED` ve `notebook_pattern.READING` companion: kazanç/öne geç/net kazandırır kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `NEW_RECORD` / `BEAT_PREVIOUS` kişisel rekor durdu; `RUSHING` durdu. İlgili: `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
 
 - **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Resmî bilgi `UNAVAILABLE` “kontrol edebilirsin” kalktı. `RUSHING` durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). İlgili: `apps/api/src/i18n/locales/{tr,en}/coaching.json`.

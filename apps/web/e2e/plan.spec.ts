@@ -312,6 +312,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       reason: options.premium === false ? "NONE" : "ACTIVE",
     },
     features: {} as SubscriptionView["features"],
+    discount: null,
   };
 
   await page.addInitScript((scale: string | null) => {

@@ -884,6 +884,13 @@
     }
   },
   "subscription": {
+    "trial_consent_discounted": "After the {trialDays}-day trial the first payment is {introPrice}, then {renewalPrice} is charged automatically; I can cancel any time.",
+    "trial_consent_discounted_periods": "After the {trialDays}-day trial the first {periods} payments are {introPrice}, then {renewalPrice} is charged automatically; I can cancel any time.",
+    "consent_discounted": "The first payment is {introPrice}, then {renewalPrice} is charged automatically; I can cancel any time.",
+    "consent_discounted_periods": "The first {periods} payments are {introPrice}, then {renewalPrice} is charged automatically; I can cancel any time.",
+    "row_discount": "Discount",
+    "discount_remaining": "{periods} more payments",
+    "discount_renewal_after": "Then {price}",
     "loading": "Loading…",
     "title": "Subscription",
     "payments_coming_soon": "Plans are ready. You can continue here when payments open.",
@@ -925,6 +932,17 @@
     "coming_soon": "Coming soon"
   },
   "paywall": {
+    "price_before": "Previous price",
+    "coupon_toggle": "Have a coupon code?",
+    "coupon_label": "Coupon code",
+    "coupon_placeholder": "CODE",
+    "coupon_apply": "Apply",
+    "coupon_clear": "Remove",
+    "coupon_applied": "Coupon applied",
+    "welcome_title": "Your welcome gift is ready",
+    "welcome_body_code": "{label}. Use the code {code} at checkout.",
+    "welcome_body_auto": "{label} is applied automatically on your first payment.",
+    "welcome_cta": "See Premium",
     "brand": "Mentor",
     "badge_premium": "Premium",
     "badge_value": "Recommended",
@@ -2233,7 +2251,10 @@
     "quest_progress_days": "{current}/{target} days",
     "quest_auto_hint": "When it's done, the right lands on its own.",
     "quest_action_subscription": "Go to subscription",
-    "quest_action_invite": "Enter invite code"
+    "quest_action_invite": "Enter invite code",
+    "celebration_coin_reward": "+{count} Coin",
+    "celebration_close": "Close",
+    "celebration_subtitle": "Well earned! Your coins are with you."
   },
   "legal": {
     "last_updated": "Last updated: {date}",

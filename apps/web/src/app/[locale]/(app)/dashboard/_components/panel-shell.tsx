@@ -48,6 +48,7 @@ import { Link } from "@/i18n/navigation";
 import {
   fetchQuests,
   fetchStreakRescue,
+  notifyCoinCelebration,
   notifyEconomyChanged,
   purchaseStreakRescue,
 } from "@/lib/economy";
@@ -62,6 +63,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { fetchRewardOffer } from "@/lib/ads";
 import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-banner";
+import { WelcomeGiftDialog } from "@/components/premium/welcome-gift-dialog";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
@@ -256,6 +258,14 @@ export function PanelShell({ initialData }: PanelShellProps) {
         setQuests(nextQuests);
 
         if (completedNow.length > 0) {
+          const coinEarned = completedNow.reduce(
+            (sum, quest) =>
+              quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
+            0,
+          );
+          if (coinEarned > 0) {
+            notifyCoinCelebration(coinEarned);
+          }
           const rewardSummary = formatRewardSummary(completedNow, economyT);
           if (!rewardSummary) return;
           toast.success({
@@ -698,6 +708,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
             )}
           </motion.div>
           <PremiumCampaignBanner />
+          <WelcomeGiftDialog />
           <motion.div variants={staggerItemVariants}>
             <VisionBoardCard />
           </motion.div>

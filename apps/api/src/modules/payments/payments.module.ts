@@ -3,7 +3,9 @@ import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { INVOICE_PORT } from "../../shared/ports/invoice.port";
 import { PAYMENTS_PORT } from "../../shared/ports/payments.port";
+import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
+import { PromotionsModule } from "../promotions/promotions.module";
 import { EntitlementService } from "./application/entitlement.service";
 import { FeaturePolicyService } from "./application/feature-policy.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
@@ -27,7 +29,7 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
  * Exports the premium gate consumed by W3/W6 (EntitlementService + PremiumGuard).
  */
 @Module({
-  imports: [IdentityModule],
+  imports: [IdentityModule, PromotionsModule, CoachingModule],
   controllers: [SubscriptionsController, PaymentsWebhookController],
   providers: [
     PlansRepository,

@@ -1,7 +1,7 @@
 "use client";
 import { ArrowRight, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -13,6 +13,8 @@ import type { QuestProgressView } from "@mentor/types";
 import { RewardedAdOffer } from "@/components/ads/rewarded-ad-offer";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { notifyCoinCelebration } from "@/lib/economy";
+import { findNewlyCompletedQuests } from "@/lib/economy-quest-utils";
 
 interface EconomyQuestsCardProps {
   onDismiss?: () => void;
@@ -43,6 +45,23 @@ export function EconomyQuestsCard({
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
   const [selectedTab, setSelectedTab] = useState<QuestTabKey>("daily_ritual");
+  const prevQuestsRef = useRef<QuestProgressView[] | null>(null);
+
+  useEffect(() => {
+    if (prevQuestsRef.current) {
+      const completedNow = findNewlyCompletedQuests(prevQuestsRef.current, quests);
+      const coinEarned = completedNow.reduce(
+        (sum, quest) =>
+          quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
+        0,
+      );
+      if (coinEarned > 0) {
+        notifyCoinCelebration(coinEarned);
+      }
+    }
+    prevQuestsRef.current = quests;
+  }, [quests]);
+
   const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
   const weeklyQuests = quests.filter((quest) => quest.category === "weekly_ritual");
   const milestoneQuests = quests.filter((quest) => quest.category === "milestone");

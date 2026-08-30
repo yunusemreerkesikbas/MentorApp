@@ -109,3 +109,4 @@ export * from "./payments.js";
 export * from "./notifications.js";
 export * from "./preference-simulation.js";
 export * from "./ads.js";
+export * from "./promotions.js";

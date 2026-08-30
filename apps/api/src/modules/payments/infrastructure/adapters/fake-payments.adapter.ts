@@ -34,10 +34,12 @@ export class FakePaymentsAdapter implements PaymentsPort {
 
   async createCheckout(req: CheckoutRequest): Promise<CheckoutResult> {
     const providerRef = `fake_${randomUUID()}`;
-    // The "payment page" is simply the return URL with a success flag.
+    // The "payment page" is simply the return URL with a success flag. The amount is echoed so a
+    // local/e2e run can sign a renewal webhook with the SAME figure the discount produced.
     const url = new URL(req.returnUrl);
     url.searchParams.set("status", "success");
     url.searchParams.set("ref", providerRef);
+    url.searchParams.set("amount", String(req.plan.chargeAmountMinor));
     return { checkoutUrl: url.toString(), providerRef };
   }
 

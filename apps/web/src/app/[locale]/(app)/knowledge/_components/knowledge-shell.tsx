@@ -195,7 +195,7 @@ export function KnowledgeShell() {
               />
             </Card>
           ) : (
-            <ul className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
+            <ul className={KNOWLEDGE_ARTICLE_GRID_CLASS}>
               {state.articles.map((article) => (
                 <li key={article.slug}>
                   <ArticleCard article={article} />

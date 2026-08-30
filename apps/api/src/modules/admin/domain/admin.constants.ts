@@ -31,6 +31,8 @@ export const AuditAction = {
   ANNOUNCEMENT_CREATE: "announcement.create",
   ANNOUNCEMENT_SEND: "announcement.send",
   ANNOUNCEMENT_DELETE: "announcement.delete",
+  PROMOTION_CREATE: "promotion.create",
+  PROMOTION_UPDATE: "promotion.update",
 } as const;
 export type AuditAction = (typeof AuditAction)[keyof typeof AuditAction];
 
@@ -47,5 +49,6 @@ export const AuditTargetType = {
   FORUM_TAG_SUGGESTION: "forum-tag-suggestion",
   FORUM_THREAD: "forum-thread",
   ANNOUNCEMENT: "announcement",
+  PROMOTION: "promotion",
 } as const;
 export type AuditTargetType = (typeof AuditTargetType)[keyof typeof AuditTargetType];

@@ -75,6 +75,7 @@ type LoadState =
 export function SubscriptionShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("subscription");
+  const tPaywall = useTranslations("paywall");
   const tLegal = useTranslations("legal");
   const locale = useLocale();
   const searchParams = useSearchParams();
@@ -223,10 +224,12 @@ export function SubscriptionShell() {
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
   const plan = sub ? (plans.find((item) => item.id === sub.planId) ?? null) : null;
+  const discount = view?.discount ?? null;
   const facts = listSubscriptionFacts({
     entitlement: ent,
     subscription: sub,
     plan,
+    discount,
   });
   const reason = ent?.reason ?? "NONE";
   const heroTitle = plan?.name ?? (ent?.isPremium ? t("chip_premium") : t("chip_free"));
@@ -273,19 +276,44 @@ export function SubscriptionShell() {
                   {heroTitle}
                 </p>
                 {plan ? (
-                  <p
-                    className="mt-1 text-2xl font-bold tabular-nums"
-                    style={{ color: "var(--color-main)" }}
-                  >
-                    {formatPrice(plan.priceMinor, locale)}
-                    <span
-                      className="text-sm font-normal"
-                      style={{ color: "var(--color-secondary)" }}
+                  <>
+                    {discount ? (
+                      <p className="mt-1 text-xs font-semibold">
+                        <span className="sr-only">{tPaywall("price_before")}: </span>
+                        <s
+                          className="tabular-nums"
+                          style={{ color: "var(--color-secondary)" }}
+                        >
+                          {formatPrice(discount.listPriceMinor, locale)}
+                        </s>
+                      </p>
+                    ) : null}
+                    <p
+                      className={`text-2xl font-bold tabular-nums ${discount ? "mt-0.5" : "mt-1"}`}
+                      style={{ color: "var(--color-main)" }}
                     >
-                      {" "}
-                      {t("period_suffix", { months: plan.periodMonths })}
-                    </span>
-                  </p>
+                      {formatPrice(discount?.chargedPriceMinor ?? plan.priceMinor, locale)}
+                      <span
+                        className="text-sm font-normal"
+                        style={{ color: "var(--color-secondary)" }}
+                      >
+                        {" "}
+                        {t("period_suffix", { months: plan.periodMonths })}
+                      </span>
+                    </p>
+                    {discount ? (
+                      <p
+                        className="mt-1 text-xs"
+                        style={{ color: "var(--color-secondary)" }}
+                      >
+                        {t("discount_remaining", { periods: discount.periodsRemaining })}
+                        {" · "}
+                        {t("discount_renewal_after", {
+                          price: formatPrice(discount.listPriceMinor, locale),
+                        })}
+                      </p>
+                    ) : null}
+                  </>
                 ) : null}
               </div>
               {heroChip ? (

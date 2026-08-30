@@ -7,6 +7,8 @@ import {
   type CheckoutSession,
   type EntitlementDto,
   type PlanDto,
+  type PromotionIneligibleReason,
+  type PromotionOffersView,
   type SubscriptionDto,
   type SubscriptionView,
 } from "@mentor/types";
@@ -39,8 +41,30 @@ import {
   type PlanRow,
   type SubscriptionRow,
 } from "../infrastructure/payments.repositories";
+import {
+  PromotionsService,
+  toOfferView,
+  type PromotionUserContext,
+} from "../../promotions/application/promotions.service";
+import { StreakService } from "../../coaching/application/streak.service";
 import { EntitlementService } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
+
+/** Identity-owned fields the promotion rules need; the controller crosses that seam, not us. */
+export interface CheckoutUser {
+  id: string;
+  email: string;
+  createdAt: Date;
+  orgId?: string | null;
+}
+
+/** A code the user typed that did not stick must fail loudly, never fall back to the list price. */
+const PROMOTION_ERROR_BY_REASON: Partial<Record<PromotionIneligibleReason, ErrorCode>> = {
+  DISABLED: ErrorCode.PROMOTION_DISABLED,
+  NOT_FOUND: ErrorCode.PROMOTION_NOT_FOUND,
+  EXPIRED: ErrorCode.PROMOTION_EXPIRED,
+  EXHAUSTED: ErrorCode.PROMOTION_EXHAUSTED,
+};
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -53,7 +77,13 @@ interface DomainEmit {
 /** Post-commit side-effects of a webhook apply (never run inside the tx → rollback emits nothing). */
 export interface WebhookSideEffects {
   emits: DomainEmit[];
-  invoice?: { sub: SubscriptionRow; event: ProviderEvent; plan: PlanRow | undefined };
+  invoice?: {
+    sub: SubscriptionRow;
+    event: ProviderEvent;
+    plan: PlanRow | undefined;
+    /** Price agreed at checkout — the invoice must show what was charged, not the list price. */
+    expectedMinor: number;
+  };
 }
 
 /** One billing-ledger row as exposed to the admin (no raw provider payload). */
@@ -120,6 +150,8 @@ export class SubscriptionsService {
     private readonly eventsRepo: PaymentEventsRepository,
     private readonly entitlement: EntitlementService,
     private readonly featurePolicy: FeaturePolicyService,
+    private readonly promotions: PromotionsService,
+    private readonly streaks: StreakService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService<Env, true>,
     @Inject(PAYMENTS_PORT) private readonly provider: PaymentsPort,
@@ -157,10 +189,20 @@ export class SubscriptionsService {
       this.entitlement.getEntitlement(userId, rolesHint),
       this.featurePolicy.listPolicies(),
     ]);
+    // Depends on `sub`, so it cannot join the Promise.all above.
+    const redemption = sub ? await this.promotions.findActiveForSubscription(sub.id) : undefined;
     return {
       subscription: sub ? toSubscriptionDto(sub) : null,
       entitlement,
       features,
+      discount: redemption
+        ? {
+            listPriceMinor: redemption.listPriceMinor,
+            discountMinor: redemption.discountMinor,
+            chargedPriceMinor: redemption.chargedPriceMinor,
+            periodsRemaining: redemption.periodsRemaining,
+          }
+        : null,
     };
   }
 
@@ -285,7 +327,77 @@ export class SubscriptionsService {
    * Start checkout (§7): one open subscription per user; trial only ONCE per user —
    * a returning (expired) subscriber re-subscribes without a trial.
    */
-  async checkout(user: { id: string; email: string }, planId: string): Promise<CheckoutSession> {
+  /** Build the signals promotion rules read. Every one is payments- or identity-owned. */
+  private async promotionContext(
+    user: CheckoutUser,
+    hadAnySubscription: boolean,
+    lastSubscriptionStatus: string | null,
+  ): Promise<PromotionUserContext> {
+    return {
+      userId: user.id,
+      orgId: user.orgId ?? null,
+      userCreatedAt: user.createdAt,
+      hadAnySubscription,
+      lastSubscriptionStatus,
+    };
+  }
+
+  /**
+   * Studied days for an ACTIVE_DAYS rule. Passed as a thunk so it only runs when a live rule needs
+   * it — most checkouts never touch coaching at all. `daily_activity` is coaching-owned, so this
+   * goes through its public service; payments never queries that table.
+   */
+  private activeDatesSupplier(userId: string) {
+    return (windowDays: number) => this.streaks.listActiveDatesSince(userId, windowDays);
+  }
+
+  /**
+   * A code the user typed that did not stick is an error, not a silent fallback to the list price —
+   * on the preview AND at checkout, so the message they see while typing is the one that would
+   * have stopped the purchase. Localized by the API; the client just displays it.
+   */
+  private rejectCode(reason: PromotionIneligibleReason | null): never {
+    throw new DomainError(
+      (reason && PROMOTION_ERROR_BY_REASON[reason]) ?? ErrorCode.PROMOTION_NOT_ELIGIBLE,
+      HttpStatus.UNPROCESSABLE_ENTITY,
+      reason ? { reason } : undefined,
+    );
+  }
+
+  /** Per-plan price after promotions. Advisory: checkout re-resolves and re-checks under locks. */
+  async resolveOffers(
+    user: CheckoutUser,
+    code?: string,
+    locale?: string,
+  ): Promise<PromotionOffersView> {
+    const [planRows, hadAny, latest] = await Promise.all([
+      this.plansRepo.findActive(),
+      this.subsRepo.hasAnyForUser(user.id),
+      this.subsRepo.findLatestForUser(user.id),
+    ]);
+    const resolved = await this.promotions.resolveOffers({
+      context: await this.promotionContext(user, hadAny, latest?.status ?? null),
+      plans: planRows.map((row) => ({ id: row.id, priceMinor: row.priceMinor })),
+      activeDates: this.activeDatesSupplier(user.id),
+      code,
+      locale,
+    });
+    const entries = Object.values(resolved.offers);
+    if (code && !entries.some((offer) => offer.promotionId)) {
+      this.rejectCode(entries[0]?.reason ?? null);
+    }
+    const offers: PromotionOffersView["offers"] = {};
+    for (const [planId, offer] of Object.entries(resolved.offers)) {
+      offers[planId] = toOfferView(offer);
+    }
+    return { offers, available: resolved.available };
+  }
+
+  async checkout(
+    user: CheckoutUser,
+    planId: string,
+    code?: string,
+  ): Promise<CheckoutSession> {
     if (this.config.get("PAYMENTS_PROVIDER", { infer: true }) === "disabled") {
       throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
     }
@@ -298,6 +410,8 @@ export class SubscriptionsService {
       // An abandoned, never-confirmed INCOMPLETE checkout must not lock the user out forever —
       // discard it and let this checkout proceed. Any granting status is a real open subscription.
       if (open.status === SubscriptionStatus.INCOMPLETE) {
+        // Release the promotion seat that abandoned checkout was holding before the row goes.
+        await this.promotions.voidForSubscription(open.id);
         await this.subsRepo.deleteById(open.id);
       } else {
         throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
@@ -307,6 +421,18 @@ export class SubscriptionsService {
     const hadAny = await this.subsRepo.hasAnyForUser(user.id);
     const withTrial = !hadAny && plan.trialDays > 0;
 
+    const latest = await this.subsRepo.findLatestForUser(user.id);
+    const offers = await this.promotions.resolveOffers({
+      context: await this.promotionContext(user, hadAny, latest?.status ?? null),
+      plans: [{ id: plan.id, priceMinor: plan.priceMinor }],
+      activeDates: this.activeDatesSupplier(user.id),
+      code,
+    });
+    const offer = offers.offers[plan.id]!;
+    // Silently charging the list price after the user asked for a specific code would break the
+    // pre-purchase disclosure they are about to consent to.
+    if (code && !offer.promotionId) this.rejectCode(offer.reason);
+
     const appUrl = this.config.get("APP_URL", { infer: true });
     const { checkoutUrl, providerRef } = await this.provider.createCheckout({
       userId: user.id,
@@ -314,6 +440,9 @@ export class SubscriptionsService {
       plan: {
         id: plan.id,
         priceMinor: plan.priceMinor,
+        chargeAmountMinor: offer.chargedPriceMinor,
+        renewalAmountMinor: offer.renewalPriceMinor,
+        discountPeriods: offer.summary?.appliesToPeriods ?? 0,
         currency: plan.currency,
         periodMonths: plan.periodMonths,
         trialDays: withTrial ? plan.trialDays : 0,
@@ -335,15 +464,30 @@ export class SubscriptionsService {
         : SubscriptionStatus.ACTIVE
       : SubscriptionStatus.INCOMPLETE;
     try {
-      await this.subsRepo.create({
-        userId: user.id,
-        planId: plan.id,
-        status: initialStatus,
-        provider: this.provider.provider,
-        providerRef,
-        trialEndsAt,
-        currentPeriodStart: now,
-        currentPeriodEnd: periodEnd,
+      // One commit: a redemption without a subscription would hold a promotion seat forever, and a
+      // subscription without one would renew at the list price the user never agreed to.
+      // The provider call above stays OUTSIDE — external HTTP must never run inside a transaction.
+      await withServiceContext(this.db, async (tx) => {
+        const sub = await this.subsRepo.create(
+          {
+            userId: user.id,
+            planId: plan.id,
+            status: initialStatus,
+            provider: this.provider.provider,
+            providerRef,
+            trialEndsAt,
+            currentPeriodStart: now,
+            currentPeriodEnd: periodEnd,
+          },
+          tx,
+        );
+        await this.promotions.reserve({
+          tx,
+          offer,
+          userId: user.id,
+          orgId: user.orgId ?? null,
+          subscriptionId: sub.id,
+        });
       });
     } catch (err) {
       // Concurrent double-checkout hit the partial-unique index (one open sub per user)
@@ -405,6 +549,8 @@ export class SubscriptionsService {
           { status: isTrial ? SubscriptionStatus.TRIALING : SubscriptionStatus.ACTIVE },
           tx,
         );
+        // The discount stops being provisional once the provider confirms the checkout.
+        await this.promotions.markApplied(sub.id, tx);
         return {
           emits: [
             {
@@ -443,12 +589,17 @@ export class SubscriptionsService {
           },
           tx,
         );
+        // The price frozen at checkout — NOT plan.priceMinor, which the admin may have edited
+        // since, and which on a discounted subscription would overstate both the append-only
+        // ledger (and every revenue stat derived from it) and the e-Arşiv invoice.
+        const redemption = await this.promotions.findActiveForSubscription(sub.id, tx);
+        const expectedMinor = redemption?.chargedPriceMinor ?? plan?.priceMinor ?? 0;
         await this.eventsRepo.appendTransaction(
           {
             subscriptionId: sub.id,
             userId: sub.userId,
             type: TxType.RENEWAL,
-            amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
+            amountMinor: event.amountMinor ?? expectedMinor,
             currency: plan?.currency ?? "TRY",
             status: TxStatus.SUCCEEDED,
             providerEventId: event.eventId,
@@ -456,6 +607,9 @@ export class SubscriptionsService {
           },
           tx,
         );
+        // Burn one covered charge; at zero the next renewal falls back to the list price.
+        // Guarded inside the repository, so a replayed webhook cannot double-decrement.
+        if (redemption) await this.promotions.consumePeriod(sub.id, tx);
         return {
           emits: [
             {
@@ -463,17 +617,20 @@ export class SubscriptionsService {
               payload: new SubscriptionActivated(sub.userId, sub.id, sub.planId),
             },
           ],
-          invoice: { sub, event, plan },
+          invoice: { sub, event, plan, expectedMinor },
         };
       }
       case "payment_failed": {
         await this.subsRepo.update(sub.id, { status: SubscriptionStatus.PAST_DUE }, tx);
+        // A failed charge does NOT consume a discount period — only a succeeded one does.
+        const failedFor = await this.promotions.findActiveForSubscription(sub.id, tx);
         await this.eventsRepo.appendTransaction(
           {
             subscriptionId: sub.id,
             userId: sub.userId,
             type: TxType.RENEWAL,
-            amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
+            amountMinor:
+              event.amountMinor ?? failedFor?.chargedPriceMinor ?? plan?.priceMinor ?? 0,
             currency: plan?.currency ?? "TRY",
             status: TxStatus.FAILED,
             providerEventId: event.eventId,
@@ -521,7 +678,12 @@ export class SubscriptionsService {
   async runSideEffects(effects: WebhookSideEffects): Promise<void> {
     for (const e of effects.emits) this.events.emit(e.topic, e.payload);
     if (effects.invoice) {
-      await this.issueInvoiceSafely(effects.invoice.sub, effects.invoice.event, effects.invoice.plan);
+      await this.issueInvoiceSafely(
+        effects.invoice.sub,
+        effects.invoice.event,
+        effects.invoice.plan,
+        effects.invoice.expectedMinor,
+      );
     }
   }
 
@@ -530,13 +692,17 @@ export class SubscriptionsService {
     sub: SubscriptionRow,
     event: ProviderEvent,
     plan: PlanRow | undefined,
+    expectedMinor: number,
   ): Promise<void> {
-    if (!event.amountMinor && !plan?.priceMinor) return; // nothing charged
+    const amountMinor = event.amountMinor ?? expectedMinor;
+    // `expectedMinor` is floored by MIN_CHARGE_MINOR on any discounted subscription, so a
+    // promotion can never make this branch swallow an invoice that is legally required.
+    if (!amountMinor) return; // nothing charged
     try {
       await this.invoices.issueForCharge({
         userId: sub.userId,
         userEmail: "", // resolved by the real integrator via identity lookup later
-        amountMinor: event.amountMinor ?? plan?.priceMinor ?? 0,
+        amountMinor,
         currency: plan?.currency ?? "TRY",
         description: plan?.name ?? sub.planId,
         providerEventId: event.eventId,

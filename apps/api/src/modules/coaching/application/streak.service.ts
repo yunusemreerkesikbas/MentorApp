@@ -59,6 +59,22 @@ export class StreakService {
     });
   }
 
+  /**
+   * Distinct studied days (yyyy-mm-dd) in the last `windowDays`, for callers outside coaching.
+   *
+   * "Studied" means the same thing it means for streaks: at least one completed focus session OR
+   * one finished plan task. Presence is deliberately NOT a studied day (roadmap §3, "no reward for
+   * mere activity") — this signal is not farmable by leaving a tab open.
+   *
+   * Read-only and derivation-free: consumers (promotions) apply their own window and threshold.
+   */
+  listActiveDatesSince(userId: string, windowDays: number): Promise<string[]> {
+    const since = addDays(todayIso(), -Math.max(0, windowDays - 1));
+    return withUserContext(this.db, { userId }, (tx) =>
+      this.activity.listActiveDatesSince(tx, userId, since),
+    );
+  }
+
   /** Read-only live evidence for the AI boundary; derives without persisting or emitting events. */
   getCoachEvidence(userId: string): Promise<{
     currentStreak: number;

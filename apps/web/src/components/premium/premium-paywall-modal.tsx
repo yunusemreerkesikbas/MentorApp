@@ -4,8 +4,13 @@ import { useEffect, useId, useState, useSyncExternalStore, type ComponentType } 
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
-import { CalendarDays, Camera, MessageCircle, Sparkles, X } from "lucide-react";
-import type { PlanDto, PremiumFeatureId, SubscriptionView } from "@mentor/types";
+import { CalendarDays, Camera, MessageCircle, Sparkles, Tag, X } from "lucide-react";
+import type {
+  PlanDto,
+  PremiumFeatureId,
+  PromotionOffersView,
+  SubscriptionView,
+} from "@mentor/types";
 import {
   staggerItemVariants,
   staggerListVariants,
@@ -19,6 +24,11 @@ import {
 import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
+import { fetchPromotionOffers } from "@/lib/promotions";
+
+function apiMessage(err: unknown): string {
+  return err instanceof ApiClientError || err instanceof Error ? err.message : String(err);
+}
 
 function formatPrice(minor: number, locale: string): string {
   return (minor / 100).toLocaleString(locale === "en" ? "en-GB" : "tr-TR", {
@@ -99,6 +109,12 @@ export function PremiumPaywallModal({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [offers, setOffers] = useState<PromotionOffersView | null>(null);
+  const [couponOpen, setCouponOpen] = useState(false);
+  const [couponInput, setCouponInput] = useState("");
+  const [appliedCode, setAppliedCode] = useState<string | null>(null);
+  const [couponBusy, setCouponBusy] = useState(false);
+  const [couponError, setCouponError] = useState<string | null>(null);
 
   useEffect(() => {
     document.documentElement.classList.add("mentor-dialog-open");
@@ -120,12 +136,15 @@ export function PremiumPaywallModal({
     Promise.all([
       subscriptionsControllerListPlans(),
       subscriptionsControllerGetMine(),
+      // Automatic offers only — a coupon the user types is a separate, explicit request.
+      fetchPromotionOffers().catch(() => null),
     ])
-      .then(([planRows, subscriptionView]) => {
+      .then(([planRows, subscriptionView, promotionOffers]) => {
         if (!active) return;
         const nextPlans = planRows as unknown as PlanDto[];
         setPlans(nextPlans);
         setView(subscriptionView as unknown as SubscriptionView);
+        setOffers(promotionOffers);
         setSelectedId(nextPlans[0]?.id ?? null);
       })
       .catch((err: unknown) => {
@@ -148,6 +167,9 @@ export function PremiumPaywallModal({
 
   const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
   const selected = plans.find((plan) => plan.id === selectedId) ?? plans[0];
+  const selectedOffer = selected ? offers?.offers[selected.id] : undefined;
+  const selectedDiscount =
+    selectedOffer && selectedOffer.discountMinor > 0 ? selectedOffer : undefined;
   const featuredPeriod = Math.max(0, ...plans.map((plan) => plan.periodMonths));
   const showValueBadge = plans.length > 1 && featuredPeriod > 1;
 
@@ -158,6 +180,7 @@ export function PremiumPaywallModal({
     try {
       const session = (await subscriptionsControllerCheckout({
         planId: selected.id,
+        ...(appliedCode ? { code: appliedCode } : {}),
       })) as unknown as { checkoutUrl: string };
       window.location.assign(session.checkoutUrl);
     } catch (err) {
@@ -172,7 +195,127 @@ export function PremiumPaywallModal({
     }
   }
 
+  async function applyCoupon() {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) return;
+    setCouponBusy(true);
+    setCouponError(null);
+    try {
+      // The API rejects an unusable code with the same localized error checkout would raise,
+      // so what the user reads here is exactly what would have stopped the purchase.
+      setOffers(await fetchPromotionOffers(code));
+      setAppliedCode(code);
+    } catch (err) {
+      setCouponError(apiMessage(err));
+    } finally {
+      setCouponBusy(false);
+    }
+  }
+
+  async function clearCoupon() {
+    setAppliedCode(null);
+    setCouponInput("");
+    setCouponError(null);
+    setOffers(await fetchPromotionOffers().catch(() => null));
+  }
+
   if (!mounted) return null;
+
+  const trialDays = selected?.trialDays ?? 0;
+  /**
+   * The pre-purchase disclosure (ön bilgilendirme formu) must state the ACTUAL total charged and,
+   * when only the first period is discounted, the price of every renewal after it.
+   *
+   * ponytail: the trial half mirrors the existing `trialDays > 0` check. The client still cannot
+   * tell whether a returning subscriber is trial-eligible — a pre-existing gap this does not widen.
+   */
+  const consentText = selectedDiscount
+    ? tSub(
+        selectedDiscount.promotion && selectedDiscount.promotion.appliesToPeriods > 1
+          ? trialDays > 0
+            ? "trial_consent_discounted_periods"
+            : "consent_discounted_periods"
+          : trialDays > 0
+            ? "trial_consent_discounted"
+            : "consent_discounted",
+        {
+          trialDays,
+          periods: selectedDiscount.promotion?.appliesToPeriods ?? 1,
+          introPrice: formatPrice(selectedDiscount.chargedPriceMinor, locale),
+          renewalPrice: formatPrice(selectedDiscount.renewalPriceMinor, locale),
+        },
+      )
+    : tSub("trial_consent");
+
+  const couponField = appliedCode ? (
+    <div
+      className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-xs"
+      style={{ backgroundColor: "var(--color-surface-container)" }}
+    >
+      <span
+        className="flex items-center gap-2 font-semibold"
+        style={{ color: "var(--color-main)" }}
+      >
+        <Tag size={16} aria-hidden />
+        {t("coupon_applied")}: {appliedCode}
+      </span>
+      <button
+        type="button"
+        onClick={() => void clearCoupon()}
+        className="min-h-11 px-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {t("coupon_clear")}
+      </button>
+    </div>
+  ) : couponOpen ? (
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-2">
+        <input
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          aria-label={t("coupon_label")}
+          placeholder={t("coupon_placeholder")}
+          value={couponInput}
+          onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              void applyCoupon();
+            }
+          }}
+          maxLength={32}
+          className="min-h-11 flex-1 rounded-[var(--radius-card)] border px-3 text-sm uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            backgroundColor: "var(--color-bg)",
+            borderColor: "var(--color-border)",
+            color: "var(--color-main)",
+          }}
+        />
+        <Button
+          variant="secondary"
+          className="!min-h-11 !px-4 !py-2 !text-sm"
+          busy={couponBusy}
+          disabled={couponInput.trim().length === 0}
+          onClick={() => void applyCoupon()}
+        >
+          {t("coupon_apply")}
+        </Button>
+      </div>
+      <FormError message={couponError} />
+    </div>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setCouponOpen(true)}
+      className="flex min-h-11 items-center gap-2 self-start text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      style={{ color: "var(--color-secondary)" }}
+    >
+      <Tag size={16} aria-hidden />
+      {t("coupon_toggle")}
+    </button>
+  );
 
   const footer = (
     <motion.div
@@ -181,6 +324,8 @@ export function PremiumPaywallModal({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
     >
+      {purchaseEnabled ? couponField : null}
+
       {purchaseEnabled ? (
         <label
           className="flex min-h-11 items-start gap-3 text-[10px] leading-relaxed"
@@ -193,7 +338,7 @@ export function PremiumPaywallModal({
             className="mt-1 size-5 shrink-0 rounded accent-[var(--color-btn)]"
           />
           <span>
-            {tSub("trial_consent")}
+            {consentText}
             <span
               className="mt-2 block text-xs"
               style={{ color: "var(--color-secondary)" }}
@@ -408,6 +553,9 @@ export function PremiumPaywallModal({
           >
             {plans.map((plan) => {
               const selectedPlan = plan.id === selected?.id;
+              const cardOffer = offers?.offers[plan.id];
+              const planOffer =
+                cardOffer && cardOffer.discountMinor > 0 ? cardOffer : undefined;
               const isFeatured =
                 showValueBadge && plan.periodMonths === featuredPeriod;
               const periodLabel =
@@ -452,14 +600,25 @@ export function PremiumPaywallModal({
                   >
                     {plan.name}
                   </p>
+                  {planOffer ? (
+                    <p className="mt-2 text-xs font-semibold leading-tight">
+                      <span className="sr-only">{t("price_before")}: </span>
+                      <s
+                        className="tabular-nums"
+                        style={{ color: "var(--color-secondary)" }}
+                      >
+                        {formatPrice(planOffer.listPriceMinor, locale)}
+                      </s>
+                    </p>
+                  ) : null}
                   <p
-                    className="mt-2 text-xl font-bold tabular-nums leading-tight"
+                    className={`text-xl font-bold tabular-nums leading-tight ${planOffer ? "mt-0.5" : "mt-2"}`}
                     style={{
                       color: "var(--color-main)",
                       fontFamily: "var(--font-heading)",
                     }}
                   >
-                    {formatPrice(plan.priceMinor, locale)}
+                    {formatPrice(planOffer?.chargedPriceMinor ?? plan.priceMinor, locale)}
                     <span
                       className="text-sm font-semibold"
                       style={{ color: "var(--color-secondary)" }}
@@ -467,6 +626,14 @@ export function PremiumPaywallModal({
                       {periodLabel}
                     </span>
                   </p>
+                  {planOffer?.promotion ? (
+                    <p
+                      className="mt-1 text-xs font-semibold"
+                      style={{ color: "var(--color-success)" }}
+                    >
+                      {planOffer.promotion.label}
+                    </p>
+                  ) : null}
                 </motion.button>
               );
             })}
