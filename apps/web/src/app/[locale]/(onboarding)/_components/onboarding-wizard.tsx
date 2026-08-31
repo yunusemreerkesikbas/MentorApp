@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { ExamType } from "@mentor/types";
 import { useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { trackProductEvent } from "@/lib/analytics";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { CompleteStep } from "./steps/complete-step";
 import { ExamStep } from "./steps/exam-step";
@@ -19,6 +20,7 @@ const SESSION_KEY = "mentor_onboarding";
 export function OnboardingWizard() {
   const { user } = useAuth();
   const router = useRouter();
+  const completeTracked = useRef(false);
   const [step, setStep] = useState<Step>(0);
   const [examType, setExamType] = useState<ExamType | null>(
     user?.examType ?? null,
@@ -27,7 +29,10 @@ export function OnboardingWizard() {
 
   useEffect(() => {
     if (user && !hasCompletedOnboarding(user)) {
-      sessionStorage.setItem(SESSION_KEY, "1");
+      if (!sessionStorage.getItem(SESSION_KEY)) {
+        sessionStorage.setItem(SESSION_KEY, "1");
+        trackProductEvent("tutorial_begin", {});
+      }
       return;
     }
     if (!sessionStorage.getItem(SESSION_KEY)) {
@@ -38,6 +43,10 @@ export function OnboardingWizard() {
   if (!user) return null;
 
   function finishOnboarding() {
+    if (!completeTracked.current) {
+      completeTracked.current = true;
+      trackProductEvent("tutorial_complete", {});
+    }
     sessionStorage.removeItem(SESSION_KEY);
   }
 

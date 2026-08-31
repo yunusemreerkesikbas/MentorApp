@@ -8,7 +8,30 @@ export const publicApiBase = apiBaseUrl;
 
 /** Public site origin (canonical URLs, sitemap, robots). No trailing slash. */
 export function siteUrl(): string {
-  return (process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const configured = process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (!configured) {
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NEXT_PUBLIC_SITE_URL is required in production");
+    }
+    return "http://localhost:3000";
+  }
+
+  const url = new URL(configured);
+  if (process.env.NODE_ENV === "production") {
+    if (url.protocol !== "https:") {
+      throw new Error("NEXT_PUBLIC_SITE_URL must use HTTPS in production");
+    }
+    if (
+      url.pathname !== "/" ||
+      url.search ||
+      url.hash ||
+      url.username ||
+      url.password
+    ) {
+      throw new Error("NEXT_PUBLIC_SITE_URL must be a bare origin in production");
+    }
+  }
+  return url.origin;
 }
 
 /** Canonical (TR) URL for a public QA question. */

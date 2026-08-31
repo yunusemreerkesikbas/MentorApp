@@ -97,6 +97,18 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Kampanya duyurusu = mevcut announcement akışı (2026-08-31)** — Promosyon modülü için ayrı bir
+  bildirim fan-out'u **yazılmadı**. Gerekçe üç katmanlı: (1) promosyon uygunluğu canlı hesaplanıyor,
+  grant tablosu yok → "kimler uygun?" her kural tipi için ayrı ters sorgu ister; (2)
+  `AdminPromotionsController` FINANCE, `AdminAnnouncementsController` SUPER_ADMIN — promosyon
+  formuna "duyur" kutusu rol sınırını delerdi; (3) "kampanya bitiyor" hatırlatması
+  [`voice.md`](../copy/voice.md)'nin FOMO yasağına takılıyor. Kampanya duyurusu gerektiğinde
+  SUPER_ADMIN `/announcements`'tan yazar, `linkUrl: "/abonelik"` verir; `SYSTEM` bildirimi zil +
+  SSE + çekmece üzerinden sıfır ek kodla çalışır. Kullanıcı tarafında keşif yükünü panel
+  promosyon şeridi taşıyor. Gotcha: **indirim e-postası İYS kapsamındadır** — bu modülde
+  pazarlama/işlem ayrımı, onay kolonu ve unsubscribe yok; eklenmeden promosyon e-postası atılmamalı.
+  İlgili: [promotions.md](./promotions.md), `announcement.service.ts`.
+
 - **Yoldaşlık sesi Dalga 15 — uzun çizgi (2026-08-29)** — Bildirim ve e-posta konularında em dash kalktı (`Mentor: …`). `{name} kabul etti. Artık yol arkadaşın.` (siz yok). Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `SERIOUS_DISTRESS` dokunulmadı. İlgili: `notifications.json`, `notifications-copy.service.spec.ts`.
 
 - **Bildirim ve ritüel sesi Dalga 1 (APP-054, 2026-08-28)** — Öğrenciye giden bildirim, e-posta,

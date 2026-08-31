@@ -4,14 +4,9 @@ import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-publi
 import { fetchInfoArticlesByFamily, infoArticleUrl } from "@/lib/content-api";
 import { publishedLegalDocs } from "@/lib/legal";
 
-/** Sitemap: landing + indexable QA questions (TR canonical URLs). Best-effort if the API is down. */
+/** Sitemap: canonical public content only. Best-effort if the API is down. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: MetadataRoute.Sitemap = [
-    {
-      url: `${siteUrl()}${getPathname({ locale: "tr", href: "/" })}`,
-      changeFrequency: "weekly",
-      priority: 1,
-    },
     // Only FINAL documents — a DRAFT is noindex, so advertising it would contradict the page.
     ...publishedLegalDocs().map((doc) => ({
       url: `${siteUrl()}${getPathname({ locale: "tr", href: { pathname: "/legal/[slug]" as const, params: { slug: doc.slug } } })}`,
@@ -46,7 +41,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       });
     }
   } catch {
-    // Unexpected build-time failure → keep the always-valid landing entry.
+    // Unexpected build-time failure → keep the always-valid legal entries.
   }
   return entries;
 }

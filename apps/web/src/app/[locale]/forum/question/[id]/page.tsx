@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getTranslations, setRequestLocale } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
-import { fetchPublicQuestion, questionUrl } from "@/lib/forum-public";
+import { fetchPublicQuestion, questionUrl, siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
+import { buildQuestionStructuredData } from "@/lib/structured-data";
 
 export const revalidate = 3600;
 
@@ -14,14 +15,30 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const q = await fetchPublicQuestion(id);
   if (!q) return { title: "Mentor", robots: { index: false, follow: false } };
   const title = `${q.title} | Mentor Topluluk`;
-  const description = q.body.slice(0, 155);
+  const description = q.body.replace(/\s+/g, " ").trim().slice(0, 155);
+  const canonical = questionUrl(id);
+  const fallbackImage = `${siteUrl()}/mascot/puhu/puhu-default.png`;
   return {
     title,
     description,
     // Only the Turkish page is indexed; EN canonicalizes to TR (content is Turkish).
     robots: { index: locale === "tr", follow: true },
-    alternates: { canonical: questionUrl(id) },
-    openGraph: { title, description, type: "article" },
+    alternates: { canonical },
+    openGraph: {
+      title,
+      description,
+      type: "article",
+      url: canonical,
+      siteName: "Mentor",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      images: [{ url: fallbackImage, alt: "Mentor" }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+      images: [fallbackImage],
+    },
   };
 }
 
@@ -33,24 +50,10 @@ export default async function PublicQuestionPage({ params }: PageProps) {
 
   const t = await getTranslations("community");
   const tAuth = await getTranslations("article");
-  const accepted = q.answers.find((a) => a.isAccepted);
-  const suggested = q.answers.filter((a) => !a.isAccepted);
-
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "QAPage",
-    mainEntity: {
-      "@type": "Question",
-      name: q.title,
-      text: q.body,
-      answerCount: q.answers.length,
-      datePublished: q.createdAt,
-      ...(accepted ? { acceptedAnswer: { "@type": "Answer", text: accepted.body } } : {}),
-      ...(suggested.length
-        ? { suggestedAnswer: suggested.map((a) => ({ "@type": "Answer", text: a.body })) }
-        : {}),
-    },
-  };
+  const jsonLd = buildQuestionStructuredData({
+    question: q,
+    canonical: questionUrl(id),
+  });
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
@@ -103,6 +106,7 @@ export default async function PublicQuestionPage({ params }: PageProps) {
           {q.answers.map((a) => (
             <div
               key={a.id}
+              id={`answer-${a.id}`}
               className="rounded-[var(--radius-card)] border border-white p-6"
               style={{ backgroundColor: a.isAccepted ? "#ffffff" : "rgba(255,255,255,0.5)", boxShadow: "var(--shadow-card)" }}
             >

@@ -24,7 +24,9 @@ import {
 import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
-import { fetchPromotionOffers } from "@/lib/promotions";
+import { trackProductEvent } from "@/lib/analytics";
+import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
+import { fetchAutoPromotionOffers, fetchPromotionOffers } from "@/lib/promotions";
 
 function apiMessage(err: unknown): string {
   return err instanceof ApiClientError || err instanceof Error ? err.message : String(err);
@@ -137,7 +139,8 @@ export function PremiumPaywallModal({
       subscriptionsControllerListPlans(),
       subscriptionsControllerGetMine(),
       // Automatic offers only — a coupon the user types is a separate, explicit request.
-      fetchPromotionOffers().catch(() => null),
+      // Deduped: the dashboard banner and the welcome dialog want the same payload on this render.
+      fetchAutoPromotionOffers(),
     ])
       .then(([planRows, subscriptionView, promotionOffers]) => {
         if (!active) return;
@@ -177,6 +180,10 @@ export function PremiumPaywallModal({
     if (!selected) return;
     setError(null);
     setBusy(true);
+    trackProductEvent(
+      "begin_checkout",
+      buildBeginCheckoutParams(selected, selectedDiscount?.chargedPriceMinor),
+    );
     try {
       const session = (await subscriptionsControllerCheckout({
         planId: selected.id,
@@ -216,7 +223,7 @@ export function PremiumPaywallModal({
     setAppliedCode(null);
     setCouponInput("");
     setCouponError(null);
-    setOffers(await fetchPromotionOffers().catch(() => null));
+    setOffers(await fetchAutoPromotionOffers());
   }
 
   if (!mounted) return null;
@@ -546,7 +553,8 @@ export function PremiumPaywallModal({
 
         {!loading && plans.length > 0 ? (
           <motion.div
-            className="mt-5 grid grid-cols-2 gap-3 lg:mt-4"
+            // One plan must not sit in a half-width column (the catalog is monthly-only today).
+            className={`mt-5 grid gap-3 lg:mt-4 ${plans.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
             variants={reduceMotion ? undefined : staggerListVariants}
             initial={reduceMotion ? false : "hidden"}
             animate="show"

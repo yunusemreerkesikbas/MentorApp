@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import type { ReactNode } from "react";
-import { setRequestLocale } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { pickMessages } from "@/i18n/scoped-messages";
 import { OnboardingGuard } from "./_components/onboarding-guard";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 export default async function OnboardingLayout({
   children,
@@ -11,5 +18,15 @@ export default async function OnboardingLayout({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <OnboardingGuard>{children}</OnboardingGuard>;
+  const messages = pickMessages(await getMessages(), [
+    "onboarding",
+    "profile",
+    "vision",
+    "common",
+  ]);
+  return (
+    <NextIntlClientProvider messages={messages}>
+      <OnboardingGuard>{children}</OnboardingGuard>
+    </NextIntlClientProvider>
+  );
 }

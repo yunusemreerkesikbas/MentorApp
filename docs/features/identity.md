@@ -321,6 +321,23 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   hesaplarda çalışmaz). Dosyalar: `modules/account/*`, `users.repository.ts`, `users.service.ts`,
   `identity.constants.ts`, `admin-users.service.ts`(+spec), `delete-account-card.tsx`.
 
+### 2026-08-31 — Private-route indexing and minimal activation analytics
+
+- Auth and onboarding layouts now expose `noindex, nofollow` metadata from server layouts and send
+  only the client translation namespaces they use. The authenticated app shell was split into a
+  metadata-capable server layout and the existing client auth/navigation shell without changing
+  refresh, guard or navigation behavior.
+- Successful email/password login and signup emit consent-gated GA4 `login` / `sign_up` events with
+  `method: "email"`. Onboarding emits `tutorial_begin` once when an incomplete authenticated user
+  enters and `tutorial_complete` once at the final action. Google OAuth is intentionally not
+  instrumented because the frontend has no trustworthy success contract that distinguishes login
+  from signup. No event is queued before consent.
+- Usage: no caller action is required; the events follow the existing identity UI. Gotcha: enabling
+  analytics in the signup checkbox happens before the successful signup request, so a successful
+  completion can be measured while a rejected or failed request emits no `sign_up`. Related:
+  `(auth)/{layout,login,signup}`, `(onboarding)/{layout,_components/onboarding-wizard.tsx}`,
+  `(app)/{layout,app-shell}.tsx`, `lib/analytics.ts`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

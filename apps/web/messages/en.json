@@ -932,6 +932,8 @@
     "coming_soon": "Coming soon"
   },
   "paywall": {
+    "banner_message": "{label} is waiting for you.",
+    "banner_cta": "See Premium",
     "price_before": "Previous price",
     "coupon_toggle": "Have a coupon code?",
     "coupon_label": "Coupon code",

@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { fetchPromotionOffers, pickWelcomeGift } from "@/lib/promotions";
+import { fetchAutoPromotionOffers, pickWelcomeGift } from "@/lib/promotions";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
 
 /**
@@ -52,7 +52,7 @@ export function WelcomeGiftDialog() {
       // `fetchSubscriptionView` is deduped, so this rides the request the rail already makes.
       const [view, offers] = await Promise.all([
         fetchSubscriptionView(),
-        fetchPromotionOffers().catch(() => null),
+        fetchAutoPromotionOffers(),
       ]);
       if (cancelled || !offers) return;
       if (view?.entitlement.isPremium !== false) return; // Premium (or unknown) — nothing to offer.

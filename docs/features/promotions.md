@@ -11,8 +11,16 @@
   IAP Faz 2'de gelirse kupon o yolda **uygulanmaz** (roadmap:742 hibrit kararı hâlâ açık).
 - **Uydurma indirim hâlâ yok.** Değişen kural: *gerçek* bir promosyon indirimi üstü çizili
   gösterilebilir. Hiç var olmamış bir "eski fiyat" uydurmak hâlâ yasak.
-- Bu sürümde yok: bildirim fan-out'u ("indirim kazandın"), TopBanner duyurusu, sepet-terk
-  e-postası, kullanıcı bazlı hatalı-kod kilidi.
+- **İndirim e-postası yok** ve yakın planda da yok. TR'de ticari elektronik ileti sayılır: İYS
+  kaydı + açık onay + ret hakkı gerekir, kodda hiçbiri yok (pazarlama/işlem ayrımı yok, onay
+  kolonu yok, unsubscribe yok, Postmark `MessageStream` sabit). Ayrı bir altyapı işi.
+- **"İndirim kazandın" fan-out'u yok.** Uygunluk canlı hesaplanıyor (grant tablosu yok), yani
+  "kimler uygun?" her kural tipi için ayrı ters sorgu ister. Keşif sorununu TopBanner çözüyor:
+  kullanıcının kendi oturumundaki hesaplamaya biniyor.
+- **"Kampanya bitiyor" hatırlatması yok** — ticari olarak en güçlü bildirim, ama
+  [`docs/copy/voice.md`](../copy/voice.md) kayıp-kaçınma/FOMO'yu yasaklıyor.
+- Bu sürümde yok: sepet-terk e-postası (iyzico'ya bağımlı — `fake` sağlayıcı `INCOMPLETE` satır
+  üretmiyor), kullanıcı bazlı hatalı-kod kilidi.
 
 ## Mimari
 
@@ -104,7 +112,53 @@ Açılış sırası: migration → `promotions.enabled = true` → admin `/promo
 **Gotcha:** katalog varsayılanını değiştirmek mevcut DB override'ını ezmez — var olan ortamlarda
 anahtarı yeniden kaydetmek gerekir (ads modülüyle aynı tuzak).
 
+## Kampanya duyurusu iş akışı
+
+Promosyon modülünün kendi fan-out'u **yok** (yukarıdaki gerekçeler). Bir kampanyayı duyurmak
+gerektiğinde mevcut duyuru sistemi kullanılır:
+
+1. FINANCE admin `/promotions`'tan promosyonu oluşturur ve yayına alır.
+2. SUPER_ADMIN `/announcements`'tan duyuruyu yazar — hedef kitle (`ALL` / `EXAM_TYPE`),
+   zamanlama ve alıcı sayısı hepsi hazır. `linkUrl: "/abonelik"` verilir.
+3. Duyuru `SYSTEM` kategorisinde uygulama içi bildirime düşer: zil rozeti, SSE ile canlı,
+   çekmecede satır, tıklayınca abonelik ekranı. **Sıfır ek kod.**
+
+Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyuru iletişim işidir
+(SUPER_ADMIN). Promosyon formuna "duyur" kutusu koymak bu sınırı delerdi.
+
 ## Geliştirmeler (timeline)
+
+- **Ticari yüzeyler koordine edildi (2026-08-31)** — Promosyon şeridi yayındayken sağ raydaki
+  `PremiumCampaignBanner` çekiliyor: şerit **gerçek ve belirli** bir indirim taşıyor, ray kartı ise
+  genel deneme daveti — ikisi aynı anda tek bir ücretsiz kullanıcıya iki ayrı ticari ask demekti.
+  `bannerPromotion` artık üç durumlu (`undefined` = teklifler henüz çözülmedi), böylece ray kartı
+  önce görünüp sonra kaybolmuyor. TopBanner kapatması da item bazlı oldu, yani görev duyurusunu
+  kapatmak promosyonu artık susturmuyor (bkz. [web-shell.md](./web-shell.md)).
+  Kullanım: yüzey önceliği modal (bir kez) > şerit (belirli teklif) > ray kartı (genel).
+  Gotcha: hoş geldin modalı ile şerit hâlâ aynı yüklemede birlikte çıkabilir — modal portal olarak
+  şeridin üstünde durduğu ve cihaz başına bir kez göründüğü için bilinçli olarak bırakıldı.
+  İlgili: `panel-shell.tsx`, `premium-campaign-banner.tsx`, `top-banner.tsx`,
+  `e2e/promotion-banner.spec.ts`.
+
+- **2026-08-31 — Panel promosyon şeridi (Faz 4)** — İndirim artık paywall'ı açmayan kullanıcıya da
+  görünüyor: panelde `TopBanner`'a üçüncü item eklendi (`pickBannerPromotion`, saf + testli).
+  Gate `!isPremium` ve gerçek indirim; etiket sunucudan (`labelTr`/`labelEn`), hiçbir kampanya adı
+  istemcide sabit değil. Kopya `paywall.banner_*` altında — **`ads.*` değil**, çünkü TopBanner
+  reklam bileşeni değil ([ads.md](./ads.md)). Sıra: **promosyon önce** (kampanyanın bitiş tarihi
+  var, görevler her gün duruyor) — bu, çoklu-item rotasyonunu **ilk kez** canlıya çıkardı.
+  `fetchAutoPromotionOffers()` eklendi: banner, hoş geldin modalı ve paywall aynı render'daki
+  kodsuz çağrıyı paylaşıyor (`subscription-view.ts` deseni; yalnız eşzamanlı çağrılar birleşir).
+  Ayrıca katalog aylık-tek plana indiği için paywall ve `/abonelik` ızgaraları tek planda tam
+  genişliğe geçti (önceden yarım kolonda kalıyordu).
+  Kullanım: admin `/promotions`'tan kodsuz promosyon → panelde şerit → CTA paywall'ı açar.
+  Gotcha (**2026-08-31'de giderildi**, üstteki girdiye bakın): kapatma anahtarı
+  (`mentor.dashboard-top-banner.dismissed.v1`) **tüm** item'ları birden gizliyordu — görev şeridini
+  kapatan kullanıcı o sekmede promosyonu da göremiyordu.
+  Bir diğeri (**kısmen giderildi**): aynı ücretsiz kullanıcıda hoş geldin modalı + sağ ray kampanya
+  kartı + şerit üst üste gelebiliyordu; ray kartı artık şerit yayındayken çekiliyor, modal
+  bilinçli olarak bırakıldı.
+  İlgili: `lib/promotions.ts`, `panel-shell.tsx`, `premium-paywall-modal.tsx`,
+  `subscription-shell.tsx`, `e2e/promotion-banner.spec.ts`.
 
 - **2026-08-30 — `ACTIVE_DAYS` canlıya alındı + para yolu e2e (Faz 3)** — Kuralın sinyali bağlandı:
   `StreakService.listActiveDatesSince(userId, windowDays)` eklendi (yeni sorgu yok, mevcut

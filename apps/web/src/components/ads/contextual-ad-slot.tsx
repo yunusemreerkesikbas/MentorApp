@@ -1,11 +1,13 @@
 "use client";
 
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AdPlacementId, type ExamType } from "@mentor/types";
 import { useAuth } from "@/lib/auth-context";
 import { fetchAdPlacement, fetchPublicAdPlacement } from "@/lib/ads";
 import { configureLimitedPrivacy, withGpt, type GptEvent, type GptSlot } from "@/lib/google-publisher-tag";
+
+const AD_LAZY_LOAD_ROOT_MARGIN = "300px";
 
 export function ContextualAdSlot({
   placementId = AdPlacementId.KNOWLEDGE_ARTICLE_END,
@@ -16,10 +18,27 @@ export function ContextualAdSlot({
   const t = useTranslations("ads");
   const reactId = useId();
   const slotId = `mentor-ad-${reactId.replaceAll(":", "")}`;
+  const containerRef = useRef<HTMLElement>(null);
+  const [nearViewport, setNearViewport] = useState(false);
   const [renderState, setRenderState] = useState<"idle" | "loading" | "filled" | "empty">("idle");
 
   useEffect(() => {
-    if (status === "loading") return;
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (!entries.some((entry) => entry.isIntersecting)) return;
+        setNearViewport(true);
+        observer.disconnect();
+      },
+      { rootMargin: AD_LAZY_LOAD_ROOT_MARGIN },
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!nearViewport || status === "loading") return;
     let cancelled = false;
     let slot: GptSlot | null = null;
     let removeRenderListener: (() => void) | null = null;
@@ -54,10 +73,23 @@ export function ContextualAdSlot({
       removeRenderListener?.();
       if (slot && window.googletag) window.googletag.destroySlots([slot]);
     };
-  }, [contentSlug, examType, placementId, slotId, status]);
+  }, [contentSlug, examType, nearViewport, placementId, slotId, status]);
+
+  const hidden = renderState === "empty";
+  const visible = renderState === "loading" || renderState === "filled";
 
   return (
-    <aside aria-label={t("label")} className={renderState === "idle" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
+    <aside
+      ref={containerRef}
+      aria-label={t("label")}
+      className={
+        hidden
+          ? "hidden"
+          : visible
+            ? "my-4 flex flex-col items-center"
+            : "my-4 min-h-px"
+      }
+    >
       <span className={renderState === "filled" ? "mb-1 text-[10px] uppercase tracking-widest text-[var(--color-secondary)]" : "sr-only"}>{t("label")}</span>
       <div id={slotId} className="min-h-[90px] max-w-full overflow-hidden" />
     </aside>

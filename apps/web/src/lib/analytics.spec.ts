@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   ANALYTICS_CONSENT_KEY,
+  toWebVitalAnalyticsParams,
   trackArticleEvent,
   trackCoachEvent,
   trackCommunityEvent,
+  trackProductEvent,
   trackWeeklyRecapEvent,
 } from "./analytics";
 
@@ -45,6 +47,112 @@ describe("article analytics", () => {
     trackArticleEvent("article_source_click", params);
 
     expect(dataLayer).toEqual([["event", "article_source_click", params]]);
+  });
+});
+
+describe("product analytics", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("does not queue funnel events before explicit consent", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: { getItem: vi.fn(() => null) },
+      dataLayer,
+    });
+
+    trackProductEvent("sign_up", { method: "email" });
+    trackProductEvent("tutorial_begin", {});
+
+    expect(dataLayer).toEqual([]);
+  });
+
+  it("queues the minimal decision funnel after consent", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn((key: string) =>
+          key === ANALYTICS_CONSENT_KEY ? "accepted" : null,
+        ),
+      },
+      dataLayer,
+    });
+
+    trackProductEvent("login", { method: "email" });
+    trackProductEvent("tutorial_complete", {});
+    trackProductEvent("begin_checkout", {
+      currency: "TRY",
+      value: 299,
+      items: [
+        {
+          item_id: "premium-monthly",
+          item_name: "Premium Aylık",
+          item_category: "subscription",
+          price: 299,
+          quantity: 1,
+        },
+      ],
+    });
+
+    expect(dataLayer).toEqual([
+      ["event", "login", { method: "email" }],
+      ["event", "tutorial_complete", {}],
+      [
+        "event",
+        "begin_checkout",
+        {
+          currency: "TRY",
+          value: 299,
+          items: [
+            {
+              item_id: "premium-monthly",
+              item_name: "Premium Aylık",
+              item_category: "subscription",
+              price: 299,
+              quantity: 1,
+            },
+          ],
+        },
+      ],
+    ]);
+  });
+
+  it("normalizes supported Web Vitals to integer GA4 values", () => {
+    expect(
+      toWebVitalAnalyticsParams({
+        name: "CLS",
+        value: 0.0874,
+        rating: "good",
+        navigationType: "navigate",
+      }),
+    ).toEqual({
+      metric_name: "CLS",
+      metric_value: 87,
+      metric_rating: "good",
+      navigation_type: "navigate",
+    });
+    expect(
+      toWebVitalAnalyticsParams({
+        name: "LCP",
+        value: 2450.6,
+        rating: "good",
+        navigationType: "reload",
+      }),
+    ).toEqual({
+      metric_name: "LCP",
+      metric_value: 2451,
+      metric_rating: "good",
+      navigation_type: "reload",
+    });
+    expect(
+      toWebVitalAnalyticsParams({
+        name: "FID",
+        value: 12,
+        rating: "good",
+        navigationType: "navigate",
+      }),
+    ).toBeNull();
   });
 });
 

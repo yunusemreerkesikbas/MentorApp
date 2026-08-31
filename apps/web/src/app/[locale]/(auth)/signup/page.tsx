@@ -7,6 +7,7 @@ import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
+import { trackProductEvent } from "@/lib/analytics";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 import {
@@ -58,6 +59,7 @@ export default function SignupPage() {
         password: String(data.get("password")),
         kvkkAccepted: true,
       });
+      trackProductEvent("sign_up", { method: "email" });
       exitThen(() => {
         // @ts-expect-error -- a validated internal path, transported as a plain string.
         router.push(postAuthDestination(user, readAuthNextParam()));
