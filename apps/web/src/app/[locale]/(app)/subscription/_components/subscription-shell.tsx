@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations, useLocale } from "next-intl";
 import { useSearchParams } from "next/navigation";
-import type { PlanDto, SubscriptionView } from "@mentor/types";
+import type { PlanDto, PromotionOffersView, SubscriptionView } from "@mentor/types";
 import {
   ApiClientError,
   subscriptionsControllerCancel,
@@ -16,6 +16,9 @@ import { Button, Card, Chip } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
+import { trackProductEvent } from "@/lib/analytics";
+import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
+import { fetchAutoPromotionOffers } from "@/lib/promotions";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import {
   COACH_RETURN_TO_STORAGE_KEY,
@@ -69,7 +72,12 @@ function formatDate(iso: string, locale: string): string {
 type LoadState =
   | { status: "loading" }
   | { status: "error"; message: string }
-  | { status: "ready"; plans: PlanDto[]; view: SubscriptionView };
+  | {
+      status: "ready";
+      plans: PlanDto[];
+      view: SubscriptionView;
+      offers: PromotionOffersView | null;
+    };
 
 /** Subscription hub — facts list, trial consent (§7), plan catalog, cancel. */
 export function SubscriptionShell() {
@@ -100,13 +108,19 @@ export function SubscriptionShell() {
     Promise.all([
       subscriptionsControllerListPlans(),
       subscriptionsControllerGetMine(),
+      fetchAutoPromotionOffers(),
     ])
-      .then(([p, v]) => {
+      .then(([p, v, offers]) => {
         if (!active) return;
         const plans = p as unknown as PlanDto[];
         const subscriptionView = v as unknown as SubscriptionView;
         setView(subscriptionView);
-        setLoadState({ status: "ready", plans, view: subscriptionView });
+        setLoadState({
+          status: "ready",
+          plans,
+          view: subscriptionView,
+          offers,
+        });
       })
       .catch((err: unknown) => {
         if (!active) return;
@@ -128,6 +142,12 @@ export function SubscriptionShell() {
   async function checkout(plan: PlanDto) {
     setError(null);
     setBusy(true);
+    const offer =
+      loadState.status === "ready" ? loadState.offers?.offers[plan.id] : undefined;
+    trackProductEvent(
+      "begin_checkout",
+      buildBeginCheckoutParams(plan, offer?.chargedPriceMinor),
+    );
     try {
       const session = (await subscriptionsControllerCheckout({
         planId: plan.id,
@@ -167,6 +187,7 @@ export function SubscriptionShell() {
           status: "ready",
           plans: loadState.plans,
           view: updated,
+          offers: loadState.offers,
         });
       }
       await info({
@@ -399,7 +420,8 @@ export function SubscriptionShell() {
             </motion.div>
 
             <motion.div
-              className="grid gap-4 sm:grid-cols-2"
+              // One plan must not sit in a half-width column (the catalog is monthly-only today).
+              className={`grid gap-4 ${plans.length > 1 ? "sm:grid-cols-2" : ""}`}
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
               {plans.map((catalogPlan) => (

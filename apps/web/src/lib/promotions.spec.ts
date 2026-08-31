@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { PromotionOffersView, PromotionSummary } from "@mentor/types";
-import { pickWelcomeGift } from "./promotions";
+import { pickBannerPromotion, pickWelcomeGift } from "./promotions";
 
 function summary(overrides: Partial<PromotionSummary> = {}): PromotionSummary {
   return {
@@ -59,5 +59,57 @@ describe("pickWelcomeGift", () => {
       offers({ available: [summary({ code: "YAZ2026", label: "Yaz indirimi" })] }),
     );
     expect(gift).toMatchObject({ code: "YAZ2026", label: "Yaz indirimi" });
+  });
+});
+
+describe("pickBannerPromotion", () => {
+  it("says nothing when no promotion applies", () => {
+    expect(pickBannerPromotion(offers({}), false)).toBeNull();
+  });
+
+  it("never nudges a Premium user", () => {
+    const withDiscount = offers({ applied: summary({ label: "Ağustos kampanyası" }) });
+    expect(pickBannerPromotion(withDiscount, true)).toBeNull();
+  });
+
+  it("advertises an applied discount", () => {
+    const gift = pickBannerPromotion(offers({ applied: summary({ label: "Ağustos" }) }), false);
+    expect(gift).toMatchObject({ label: "Ağustos" });
+  });
+
+  it("ignores a coupon the user has not typed yet — that is the welcome dialog's job", () => {
+    const waiting = offers({ available: [summary({ code: "HOSGELDIN" })] });
+    expect(pickBannerPromotion(waiting, false)).toBeNull();
+  });
+
+  it("picks the largest discount across plans", () => {
+    const many: PromotionOffersView = {
+      available: [],
+      offers: {
+        "premium-monthly": {
+          planId: "premium-monthly",
+          listPriceMinor: 24900,
+          discountMinor: 2490,
+          chargedPriceMinor: 22410,
+          renewalPriceMinor: 24900,
+          promotion: summary({ label: "Küçük" }),
+          reason: null,
+        },
+        "premium-3m": {
+          planId: "premium-3m",
+          listPriceMinor: 59900,
+          discountMinor: 11980,
+          chargedPriceMinor: 47920,
+          renewalPriceMinor: 59900,
+          promotion: summary({ label: "Büyük" }),
+          reason: null,
+        },
+      },
+    };
+    expect(pickBannerPromotion(many, false)?.label).toBe("Büyük");
+  });
+
+  it("survives a failed offers fetch", () => {
+    expect(pickBannerPromotion(null, false)).toBeNull();
   });
 });

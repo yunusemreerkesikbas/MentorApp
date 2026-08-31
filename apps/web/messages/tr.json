@@ -932,6 +932,8 @@
     "coming_soon": "Çok yakında"
   },
   "paywall": {
+    "banner_message": "{label} seni bekliyor.",
+    "banner_cta": "Premium’a bak",
     "price_before": "Eski fiyat",
     "coupon_toggle": "Kupon kodun var mı?",
     "coupon_label": "Kupon kodu",

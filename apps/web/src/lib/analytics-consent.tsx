@@ -79,6 +79,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
     setGaDisabled(true);
     clearGaCookies();
     setConsent("rejected");
+    window.dispatchEvent(new Event("mentor:analytics-rejected"));
   };
 
   const initializeGa = () => {
@@ -87,6 +88,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
     window.gtag = (...args: unknown[]) => window.dataLayer?.push(args);
     window.gtag("js", new Date());
     window.gtag("config", measurementId, { anonymize_ip: true });
+    window.dispatchEvent(new Event("mentor:analytics-ready"));
   };
 
   return (

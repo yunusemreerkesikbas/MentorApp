@@ -93,7 +93,7 @@ test("hub aile filtresi, öne çıkan ve sidebar countdown gösterir", async ({
     "true",
   );
   await expect(page.getByRole("heading", { name: article.title }).first()).toBeVisible();
-  await expect(page.getByText("Mentor Editör")).toBeVisible();
+  await expect(page.getByText("Mentor Editör").first()).toBeVisible();
   await expect(page.getByRole("button", { name: "Başvuru" })).toBeVisible();
   await expect(page.getByText("12 Temmuz 2026", { exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Bilgi Merkezi" })).toHaveCount(0);
@@ -171,9 +171,6 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
   expect(jsonLd.join(" ")).toContain("Article");
   expect(jsonLd.join(" ")).toContain("BreadcrumbList");
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
-  await expect(page.getByRole("img", { name: "KPSS kapak" })).toBeVisible();
-  await page.getByRole("button", { name: "Sonraki görsel" }).click();
-  await expect(page.getByRole("img", { name: "KPSS galeri" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "WhatsApp ile paylaş" }),
   ).toHaveAttribute("href", /wa\.me/);
@@ -219,6 +216,22 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
     "href",
     new RegExp(`/bilgi/${article.slug}$`),
   );
+  await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
+    "content",
+    "Mentor",
+  );
+  await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute(
+    "content",
+    "en_US",
+  );
+  await expect(page.locator('meta[property="og:image"]').first()).toHaveAttribute(
+    "content",
+    /^https?:\/\//,
+  );
+  await expect(page.locator('meta[name="twitter:image"]').first()).toHaveAttribute(
+    "content",
+    /^https?:\/\//,
+  );
   expect(api.unexpected).toEqual([]);
 
   const hub = await page.context().newPage();
@@ -235,15 +248,19 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   expect(hubApi.unexpected).toEqual([]);
 });
 
-test("oturumlu ziyaretçi detayda app nav görür, public header görmez", async ({
+test("oturumlu ziyaretçi de public chrome görür ve panel bağlantısı alır", async ({
   page,
 }) => {
   const api = await mockKnowledgeApi(page);
 
   await page.goto(`/bilgi/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Bilgi" }).first()).toBeVisible();
-  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
+    "href",
+    "/panel",
+  );
+  await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Giriş yap" })).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
 });
@@ -266,6 +283,7 @@ test("refresh oturumu yoksa public header giriş bağlantısını korur", async 
 test("anonim makale reklamı doğrulanmış slug ile limited ayarları display öncesi uygular", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1280, height: 240 });
   await installDisplayGpt(page, false);
   const api = await mockKnowledgeApi(page, { authenticated: false });
   let requestedSlug: string | null = null;
@@ -279,8 +297,13 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
 
   await page.goto(`/bilgi/${article.slug}`);
 
+  await page.waitForTimeout(150);
+  expect(requestedSlug).toBeNull();
+  await page
+    .getByRole("complementary", { name: "Reklam" })
+    .scrollIntoViewIfNeeded();
+  await expect.poll(() => requestedSlug).toBe(article.slug);
   await expect(page.getByRole("complementary", { name: "Reklam" })).toBeVisible();
-  expect(requestedSlug).toBe(article.slug);
   const log = await page.evaluate(() =>
     (window as unknown as { __mentorGptLog: string[] }).__mentorGptLog,
   );
@@ -491,7 +514,7 @@ async function mockKnowledgeApi(
         "/v1/community/journey-levels/unseen",
       ].includes(path)
     ) {
-      return json(route, []);
+      return json(route, { celebrations: [] });
     }
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, subscription);

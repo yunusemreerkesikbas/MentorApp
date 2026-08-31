@@ -187,6 +187,27 @@ pnpm --filter @mentor/api-client generate
   without `NEXT_PUBLIC_GA_MEASUREMENT_ID` neither banner nor GA script render. Related:
   `apps/web/src/lib/analytics-consent.tsx`, cookie-preferences page.
 
+### 2026-08-31 — Public content SEO contract and server-first article
+
+- Turkish info articles and public Q&A pages are the only content surfaces advertised to crawlers;
+  the temporary welcome page was removed from the sitemap. Article metadata now carries the Turkish
+  canonical, cover image, complete `Article` publisher identity and a public `Mentor > Article`
+  breadcrumb. Q&A JSON-LD carries question/answer dates and stable answer anchors without inventing
+  author identities. Inline JSON-LD always goes through the `<`-escaping serializer.
+- Public article detail is server-first: title, editorial metadata, body, related content and exam
+  calendar render on the server. Anonymous and authenticated readers share the public chrome;
+  session state changes only the dashboard/login link and Coach CTA. Gallery/share, view/read
+  analytics and the contextual ad remain client islands. GPT is requested only when the ad slot
+  approaches the viewport.
+- Usage: publish a Turkish article or public question through the existing content/forum flows; no
+  new public hub or API was added. English article copies stay `noindex, follow` and canonicalize to
+  Turkish. Gotcha: Playwright browser routing cannot replace server-side article fetches, so public
+  article E2E assertions use seeded content while JSON-LD contracts remain deterministic unit tests.
+- Build evidence: article client-reference JS is 380.1 KiB versus the 938.2 KiB baseline (59.5%
+  lower); article messages are 3.9 KiB TR / 3.6 KiB EN. Related:
+  `knowledge/[slug]/{page,_components/*}`, `forum/question/[id]/page.tsx`,
+  `lib/{structured-data,json-ld}.ts`, `e2e/knowledge.spec.ts`.
+
 ## Gotchas / Known issues
 
 - **Never generate official dates/process copy via LLM or coaching code** — only editorial seed/admin

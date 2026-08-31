@@ -27,6 +27,58 @@ export interface ArticleAnalyticsParams {
   locale: string;
 }
 
+type WebVitalName = "CLS" | "FCP" | "INP" | "LCP" | "TTFB";
+type WebVitalRating = "good" | "needs-improvement" | "poor";
+
+export interface ProductAnalyticsParams {
+  login: { method: "email" };
+  sign_up: { method: "email" };
+  tutorial_begin: Record<string, never>;
+  tutorial_complete: Record<string, never>;
+  begin_checkout: {
+    currency: "TRY";
+    value: number;
+    items: Array<{
+      item_id: string;
+      item_name: string;
+      item_category: "subscription";
+      price: number;
+      quantity: 1;
+    }>;
+  };
+  web_vital: {
+    metric_name: WebVitalName;
+    metric_value: number;
+    metric_rating: WebVitalRating;
+    navigation_type: string;
+  };
+}
+export type ProductAnalyticsEvent = keyof ProductAnalyticsParams;
+
+const WEB_VITAL_NAMES = new Set<WebVitalName>([
+  "CLS",
+  "FCP",
+  "INP",
+  "LCP",
+  "TTFB",
+]);
+
+export function toWebVitalAnalyticsParams(metric: {
+  name: string;
+  value: number;
+  rating: WebVitalRating;
+  navigationType: string;
+}): ProductAnalyticsParams["web_vital"] | null {
+  if (!WEB_VITAL_NAMES.has(metric.name as WebVitalName)) return null;
+  const name = metric.name as WebVitalName;
+  return {
+    metric_name: name,
+    metric_value: Math.round(name === "CLS" ? metric.value * 1000 : metric.value),
+    metric_rating: metric.rating,
+    navigation_type: metric.navigationType,
+  };
+}
+
 export interface CoachAnalyticsParams {
   coach_hub_view: {
     access_mode: CoachAccessMode;
@@ -173,6 +225,14 @@ function trackEvent(event: string, params: object): void {
 export function trackArticleEvent(
   event: ArticleAnalyticsEvent,
   params: ArticleAnalyticsParams,
+): void {
+  trackEvent(event, params);
+}
+
+/** Consent-gated acquisition, activation and real-user performance events. */
+export function trackProductEvent<Event extends ProductAnalyticsEvent>(
+  event: Event,
+  params: ProductAnalyticsParams[Event],
 ): void {
   trackEvent(event, params);
 }

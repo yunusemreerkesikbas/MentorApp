@@ -63,6 +63,27 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **TopBanner kapatması item bazlı oldu (2026-08-31)** — Kapatma anahtarı tek bir boolean'dı
+  (`dismissed.v1` = `"1"`), yani görev duyurusunu kapatan kullanıcı promosyon şeridini de
+  susturuyordu. Artık `dismissed.v2` kapatılan **item id'lerinin** JSON dizisi; kapatma butonu
+  yalnız ekranda duran duyuruyu kaldırır, kalanlar yerinde durur. Ayrıştırma
+  `parseDismissedIds()` içinde saf fonksiyon ve testli — sessionStorage güvenilmez girdi (bozuk
+  JSON, elle düzenleme, eski v1 değeri) ve hiçbiri panelde exception'a dönmemeli.
+  Kullanım: yeni duyuru eklerken `TopBannerItem.id`'yi kalıcı ve anlamlı seç; kapatma o id'ye
+  yazılıyor. Gotcha: v1 → v2 geçişi anahtar adı bump'ı ile yapıldı, migration yok — eski değer
+  sekmeyle birlikte ölüyor. Bir diğeri: rotasyon (5 sn) artık gerçekten iki item'la çalışıyor,
+  kapatma sonrası indeks 0'a alınıyor ki sıradaki duyuru atlanmasın.
+  İlgili: `top-banner.tsx`, `lib/top-banner-state.ts`, `e2e/promotion-banner.spec.ts`.
+
+- **TopBanner promosyon item'ı + rotasyon canlıya çıktı (2026-08-31)** — Şerit bugüne dek hep 0
+  veya 1 item veriyordu; promosyon item'ı ile **çoklu item rotasyonu ilk kez** çalışıyor (5 sn,
+  hover/focus'ta duruyor, `AnimatePresence mode="wait"`). Sıra promosyon → görev. Item yalnız
+  ücretsiz kullanıcıda ve gerçek indirim varken çıkar; CTA paywall'ı açar. Ayrıca tek planlı
+  katalogda paywall ve `/abonelik` plan ızgaraları tam genişliğe geçti.
+  Kullanım: `panel-shell.tsx` içinde `promotionBannerItems` + `questBannerItems` birleştiriliyor.
+  Gotcha: kapatma anahtarı ortak — bir item'ı kapatmak hepsini gizler. İlgili: `top-banner.tsx`,
+  `panel-shell.tsx`, `e2e/promotion-banner.spec.ts`, [promotions.md](./promotions.md).
+
 - **Paywall indirim yüzeyi + hoş geldin hediyesi (2026-08-30)** — Paywall modalinde üstü çizili
   eski fiyat, indirimli fiyat, promosyon rozeti ve katlanabilir kupon alanı. Panelde
   `WelcomeGiftDialog` (mevcut `promo()` preseti, `PremiumCampaignBanner`'ın yanında, yalnız
@@ -578,6 +599,33 @@ http://localhost:3000/panel               # daily ritual hub
   badge görünür durumdaysa tınıyı yeniden dener.
   İlgili dosyalar: `components/achievements/achievement-celebration.tsx`,
   `lib/achievement-sound.ts`, `messages/{tr,en}.json`.
+
+### 2026-08-31 — SEO, route budgets and consent-gated measurement foundation
+
+- Production now requires `NEXT_PUBLIC_SITE_URL` to be a valid HTTPS origin; an absent or invalid
+  value fails the build instead of emitting localhost canonicals. Root metadata includes
+  `metadataBase`, site identity, Open Graph/Twitter defaults and the existing Puhu asset as the
+  fallback share image. Welcome is `noindex, follow`; auth, onboarding, app, room join and cookie
+  preferences are `noindex, nofollow`. `robots.txt` allows crawling so route-level directives are
+  visible, and advertises the sitemap.
+- Root loads only Plus Jakarta Sans. The ten vision-board families moved to the board layout, so
+  ordinary public routes preload two font files (48.9 KiB) while the board keeps its intentional 26.
+  Client translation payloads are route-scoped: root consent 0.7 KiB, welcome 0.7 KiB, article
+  3.6–3.9 KiB; the authenticated app intentionally keeps the full catalog. Dashboard referenced JS
+  is 1,236.1 KiB versus the ~1,225 KiB baseline (under 1% change, below the 5% guardrail).
+- GA4 continues to load only after local explicit consent; rejection causes no Google script or
+  cookieless ping. The typed product map adds email `login`/`sign_up`, tutorial begin/complete,
+  plan-valued `begin_checkout` and LCP/INP/CLS/FCP/TTFB `web_vital`. Enhanced Measurement owns SPA
+  page views; do not add a second manual `page_view`. Vitals observed before a first acceptance stay
+  in memory only and flush after GA initialization; rejection clears them. Checkout values use the
+  selected plan's resolved automatic promotion offer. Post-release, verify one page view per route in
+  DebugView and register Web Vital parameters as GA4 custom dimensions/metrics.
+- Gotcha: `next start` and `next dev` must not share the same `.next` directory during artifact/E2E
+  verification. The build gate is production build plus scoped unit/E2E checks; Next 16's existing
+  `experimental.turbo` and middleware deprecation warnings remain a separate compatibility task.
+  Related: `[locale]/layout.tsx`, `(app)/{layout,app-shell}.tsx`,
+  `i18n/scoped-messages.ts`, `lib/analytics.ts`, `lib/analytics-consent.tsx`,
+  `components/web-vitals-reporter.tsx`, `e2e/{routing,analytics-consent}.spec.ts`.
 
 ## Gotchas / Known issues
 

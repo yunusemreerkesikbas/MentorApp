@@ -17,6 +17,7 @@ import type {
   AdRewardOfferView,
   PlanTaskDto,
   PlanTaskStatus,
+  PromotionSummary,
   QuestProgressView,
   SessionPresetDto,
   StreakRescueView,
@@ -66,6 +67,8 @@ import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-ban
 import { WelcomeGiftDialog } from "@/components/premium/welcome-gift-dialog";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
+import { fetchAutoPromotionOffers, pickBannerPromotion } from "@/lib/promotions";
+import { fetchSubscriptionView } from "@/lib/subscription-view";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { StreakRescueSuccess } from "@/components/streak-rescue-success";
@@ -107,9 +110,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const t = useTranslations("panel");
   const economyT = useTranslations("economy");
   const adsT = useTranslations("ads");
+  const paywallT = useTranslations("paywall");
   const countdownT = useTranslations("countdown");
   const toast = useMentorToast();
   const { promo } = useMentorDialog();
+  const { openPaywall } = usePremiumPaywall();
   const sheet = useMentorBottomSheet();
   const { tryCelebrate, previewCelebrate, celebration } =
     useStreakCelebration();
@@ -143,6 +148,10 @@ export function PanelShell({ initialData }: PanelShellProps) {
     null,
   );
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
+  /** `undefined` = offers still resolving · `null` = nothing to advertise · summary = a real discount. */
+  const [bannerPromotion, setBannerPromotion] = useState<PromotionSummary | null | undefined>(
+    undefined,
+  );
   const [rewardOffer, setRewardOffer] = useState<AdRewardOfferView | null>(null);
   const [rewardUnavailable, setRewardUnavailable] = useState(false);
   const [openedWeeklyRecap, setOpenedWeeklyRecap] = useState<string | null>(
@@ -408,6 +417,15 @@ export function PanelShell({ initialData }: PanelShellProps) {
       .catch(() => {
         if (active) setRewardOffer(null);
       });
+    // Both requests are deduped module-side, so the welcome dialog and the paywall share them.
+    void Promise.all([fetchSubscriptionView(), fetchAutoPromotionOffers()]).then(
+      ([view, offers]) => {
+        if (!active) return;
+        setBannerPromotion(
+          pickBannerPromotion(offers, view?.entitlement.isPremium !== false),
+        );
+      },
+    );
 
     return () => {
       active = false;
@@ -546,7 +564,21 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const doneCount = data.tasks.filter((task) =>
     completedStatuses.includes(task.status),
   ).length;
-  const topBannerItems: TopBannerItem[] =
+  // A campaign ends; quests are there every day. So the promotion leads the rotation.
+  const promotionBannerItems: TopBannerItem[] = bannerPromotion
+    ? [
+        {
+          id: "promotion",
+          message: paywallT("banner_message", { label: bannerPromotion.label }),
+          action: {
+            kind: "button",
+            label: paywallT("banner_cta"),
+            onSelect: () => openPaywall(),
+          },
+        },
+      ]
+    : [];
+  const questBannerItems: TopBannerItem[] =
     rewardOffer?.eligible && rewardOffer.adUnitPath && !rewardUnavailable
       ? [
           {
@@ -574,6 +606,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
             },
           ]
         : [];
+  const topBannerItems: TopBannerItem[] = [...promotionBannerItems, ...questBannerItems];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">
@@ -707,7 +740,13 @@ export function PanelShell({ initialData }: PanelShellProps) {
               <CountdownPlaceholder />
             )}
           </motion.div>
-          <PremiumCampaignBanner />
+          {/*
+            One commercial ask at a time. The top strip carries a specific, real discount; this
+            rail card is the generic trial nudge, so it stands down whenever the strip is live.
+            While offers are still resolving (`undefined`) neither renders, so the card cannot
+            flash in and then disappear.
+          */}
+          {bannerPromotion === null ? <PremiumCampaignBanner /> : null}
           <WelcomeGiftDialog />
           <motion.div variants={staggerItemVariants}>
             <VisionBoardCard />

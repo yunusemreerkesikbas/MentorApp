@@ -49,11 +49,36 @@ test("sitemap ve robots yalnız geçerli localized kökleri yayınlar", async ({
   request,
 }) => {
   const sitemap = await (await request.get("/sitemap.xml")).text();
-  expect(sitemap).toContain("<loc>http://localhost:3000/</loc>");
-  expect(sitemap).not.toContain("localhost:3000/tr");
-  expect(sitemap).not.toContain("localhost:3000/en");
+  const locations = [...sitemap.matchAll(/<loc>([^<]+)<\/loc>/g)].map(
+    ([, location]) => new URL(location).pathname,
+  );
+  expect(locations).not.toContain("/");
+  expect(locations).not.toContain("/tr");
+  expect(locations).not.toContain("/en");
 
   const robots = await (await request.get("/robots.txt")).text();
-  expect(robots).toContain("Disallow: /panel");
-  expect(robots).toContain("Disallow: /en/dashboard");
+  expect(robots).toContain("Allow: /");
+  expect(robots).not.toContain("Disallow:");
+  expect(robots).toMatch(/Sitemap: https?:\/\/[^\s]+\/sitemap\.xml/);
+});
+
+test("welcome ve private yüzeyler noindex direktifini crawler'a gösterir", async ({
+  request,
+}) => {
+  const welcome = await (await request.get("/")).text();
+  expect(welcome).toMatch(
+    /<meta name="robots" content="noindex, follow"/i,
+  );
+
+  for (const path of [
+    "/giris",
+    "/masaya-katil",
+    "/cerez-tercihleri",
+    "/panel",
+  ]) {
+    const html = await (await request.get(path)).text();
+    expect(html, `${path} robots metadata`).toMatch(
+      /<meta name="robots" content="noindex, nofollow"/i,
+    );
+  }
 });

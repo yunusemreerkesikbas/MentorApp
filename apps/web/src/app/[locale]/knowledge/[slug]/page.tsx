@@ -1,17 +1,22 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
-import { getPathname } from "@/i18n/navigation";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
 import {
   fetchExamCalendarByFamily,
   fetchInfoArticleBySlug,
   fetchInfoArticlesByFamily,
   infoArticleUrl,
 } from "@/lib/content-api";
+import { pickMessages } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
+import {
+  buildArticleStructuredData,
+  buildBreadcrumbStructuredData,
+} from "@/lib/structured-data";
 import { ArticleContent } from "./_components/article-content";
-import { ArticleChrome } from "./_components/article-chrome";
+import { PublicChrome } from "@/components/public-chrome";
 import { PublicFooter } from "@/components/public-footer";
 
 export const revalidate = 3600;
@@ -31,6 +36,8 @@ export async function generateMetadata({
   const title = article.metaTitle ?? `${article.title} | Mentor Bilgi Merkezi`;
   const description = article.metaDescription ?? undefined;
   const canonical = infoArticleUrl(article.slug);
+  const origin = siteUrl();
+  const fallbackImage = `${origin}/mascot/puhu/puhu-default.png`;
   const image = article.coverImage
     ? {
         url: article.coverImage.url,
@@ -49,7 +56,9 @@ export async function generateMetadata({
       description,
       type: "article",
       url: canonical,
-      images: image ? [image] : undefined,
+      siteName: "Mentor",
+      locale: locale === "en" ? "en_US" : "tr_TR",
+      images: image ? [image] : [{ url: fallbackImage, alt: "Mentor" }],
       publishedTime: article.publishedAt ?? undefined,
       modifiedTime: article.updatedAt,
     },
@@ -57,7 +66,7 @@ export async function generateMetadata({
       card: image ? "summary_large_image" : "summary",
       title,
       description,
-      images: image ? [image.url] : undefined,
+      images: [image?.url ?? fallbackImage],
     },
   };
 }
@@ -88,8 +97,9 @@ export default async function PublicArticlePage({ params }: PageProps) {
     month: "long",
     year: "numeric",
   });
-  const [translate, relatedPage, calendar] = await Promise.all([
+  const [translate, messages, relatedPage, calendar] = await Promise.all([
     getTranslations("article"),
+    getMessages(),
     fetchInfoArticlesByFamily(article.family, 1, 4, {
       excludeSlug: article.slug,
       revalidate: 3600,
@@ -105,60 +115,47 @@ export default async function PublicArticlePage({ params }: PageProps) {
   );
   const canonical = infoArticleUrl(article.slug);
 
-  const articleJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: article.title,
-    description: article.metaDescription ?? undefined,
-    image: article.coverImage?.url,
-    datePublished: article.publishedAt ?? undefined,
-    dateModified: article.updatedAt,
-    mainEntityOfPage: { "@type": "WebPage", "@id": canonical },
-    inLanguage: "tr-TR",
-    publisher: { "@type": "Organization", name: "Mentor", url: siteUrl() },
-    citation: article.sourceUrl,
-    author: article.author
-      ? { "@type": "Person", name: article.author.name }
-      : undefined,
-  };
-  const breadcrumbJsonLd = {
-    "@context": "https://schema.org",
-    "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: translate("back_home"),
-        item: `${siteUrl()}${getPathname({ locale: "tr", href: "/" })}`,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: translate("back_knowledge"),
-        item: `${siteUrl()}${getPathname({ locale: "tr", href: "/knowledge" })}`,
-      },
-      { "@type": "ListItem", position: 3, name: article.title, item: canonical },
-    ],
-  };
+  const origin = siteUrl();
+  const articleJsonLd = buildArticleStructuredData({
+    article,
+    canonical,
+    siteOrigin: origin,
+    publisherLogoUrl: `${origin}/mascot/puhu/puhu-default.png`,
+  });
+  const breadcrumbJsonLd = buildBreadcrumbStructuredData({
+    homeName: "Mentor",
+    homeUrl: origin,
+    pageName: article.title,
+    pageUrl: canonical,
+  });
 
   return (
-    <ArticleChrome loginLabel={translate("login")} footer={<PublicFooter />}>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbJsonLd) }}
-      />
-      <ArticleContent
-        article={article}
-        related={related}
-        calendar={calendar}
-        verifiedLabel={verifiedLabel}
-        publishedLabel={publishedLabel}
-        updatedLabel={updatedLabel}
-      />
-    </ArticleChrome>
+    <NextIntlClientProvider
+      messages={pickMessages(messages, ["article", "knowledge", "ads"])}
+    >
+      <PublicChrome
+        loginLabel={translate("login")}
+        panelLabel={translate("panel")}
+      >
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
+        />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbJsonLd) }}
+        />
+        <ArticleContent
+          article={article}
+          related={related}
+          calendar={calendar}
+          locale={locale}
+          verifiedLabel={verifiedLabel}
+          publishedLabel={publishedLabel}
+          updatedLabel={updatedLabel}
+        />
+        <PublicFooter />
+      </PublicChrome>
+    </NextIntlClientProvider>
   );
 }

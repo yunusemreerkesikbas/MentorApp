@@ -1,11 +1,9 @@
-"use client";
-
-import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 import { Card } from "@mentor/ui";
 
 /** Editorial trust footer — guardrail §4 #1 (verified source, not LLM-generated). */
-export function ArticleTrustFooter() {
-  const translate = useTranslations("article");
+export async function ArticleTrustFooter() {
+  const translate = await getTranslations("article");
   return (
     <footer className="mt-8">
       <Card className="!bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)]">

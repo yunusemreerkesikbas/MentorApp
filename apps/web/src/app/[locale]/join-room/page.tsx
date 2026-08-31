@@ -1,6 +1,13 @@
+import type { Metadata } from "next";
 import { Suspense } from "react";
-import { setRequestLocale } from "next-intl/server";
+import { NextIntlClientProvider } from "next-intl";
+import { getMessages, setRequestLocale } from "next-intl/server";
+import { pickMessages } from "@/i18n/scoped-messages";
 import { RoomJoinShell } from "./_components/room-join-shell";
+
+export const metadata: Metadata = {
+  robots: { index: false, follow: false },
+};
 
 /**
  * `/masaya-katil?kod=…` — the landing page for a shared invite link.
@@ -16,9 +23,12 @@ export default async function JoinRoomPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
+  const messages = pickMessages(await getMessages(), ["session_room"]);
   return (
-    <Suspense>
-      <RoomJoinShell />
-    </Suspense>
+    <NextIntlClientProvider messages={messages}>
+      <Suspense>
+        <RoomJoinShell />
+      </Suspense>
+    </NextIntlClientProvider>
   );
 }

@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useMemo,
   useState,
   useSyncExternalStore,
   type ComponentProps,
@@ -10,17 +11,29 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
-import { advanceTopBannerIndex } from "@/lib/top-banner-state";
+import {
+  advanceTopBannerIndex,
+  parseDismissedIds,
+  serializeDismissedIds,
+} from "@/lib/top-banner-state";
 
-const DISMISS_KEY = "mentor.dashboard-top-banner.dismissed.v1";
+/**
+ * v2 holds a JSON array of dismissed item ids; v1 held a single "1" meaning "hide everything".
+ * The bump IS the migration — a stale v1 value is simply ignored, and it dies with the tab anyway.
+ */
+const DISMISS_KEY = "mentor.dashboard-top-banner.dismissed.v2";
 const DEFAULT_ROTATION_INTERVAL_MS = 5_000;
-const subscribeDismissed = () => () => undefined;
 
-function readDismissed(): boolean {
+/** Nothing external ever mutates this; the hook is here purely for a hydration-safe first paint. */
+const subscribeHydrated = () => () => undefined;
+const getHydratedSnapshot = () => true;
+const getServerHydratedSnapshot = () => false;
+
+function readDismissedIds(): ReadonlySet<string> {
   try {
-    return sessionStorage.getItem(DISMISS_KEY) === "1";
+    return parseDismissedIds(sessionStorage.getItem(DISMISS_KEY));
   } catch {
-    return false;
+    return parseDismissedIds(null);
   }
 }
 
@@ -46,35 +59,46 @@ export function TopBanner({
   rotationIntervalMs = DEFAULT_ROTATION_INTERVAL_MS,
 }: TopBannerProps) {
   const reduceMotion = useReducedMotion();
-  const storedDismissed = useSyncExternalStore(
-    subscribeDismissed,
-    readDismissed,
-    () => true,
+  // Rendered empty on the server and on the hydrating pass, so a dismissal stored in this tab
+  // never flashes the banner before React catches up.
+  const hydrated = useSyncExternalStore(
+    subscribeHydrated,
+    getHydratedSnapshot,
+    getServerHydratedSnapshot,
   );
-  const [dismissedNow, setDismissedNow] = useState(false);
+  const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(readDismissedIds);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [paused, setPaused] = useState(false);
-  const safeIndex = items.length > 0 ? currentIndex % items.length : 0;
-  const currentItem = items[safeIndex];
+
+  // Closing one announcement must not silence the others — each item is dismissed on its own id.
+  const visibleItems = useMemo(
+    () => items.filter((item) => !dismissedIds.has(item.id)),
+    [dismissedIds, items],
+  );
+  const safeIndex = visibleItems.length > 0 ? currentIndex % visibleItems.length : 0;
+  const currentItem = visibleItems[safeIndex];
 
   useEffect(() => {
-    if (items.length <= 1 || paused || storedDismissed || dismissedNow) return;
+    if (visibleItems.length <= 1 || paused || !hydrated) return;
     const timer = window.setInterval(() => {
-      setCurrentIndex((index) => advanceTopBannerIndex(index, items.length));
+      setCurrentIndex((index) => advanceTopBannerIndex(index, visibleItems.length));
     }, rotationIntervalMs);
     return () => window.clearInterval(timer);
-  }, [dismissedNow, items.length, paused, rotationIntervalMs, storedDismissed]);
+  }, [hydrated, paused, rotationIntervalMs, visibleItems.length]);
 
-  if (storedDismissed || dismissedNow || !currentItem) return null;
-
-  function handleDismiss() {
-    setDismissedNow(true);
+  function dismissItem(id: string) {
+    const next = new Set(dismissedIds).add(id);
+    setDismissedIds(next);
+    // Land on the item that slid into this slot rather than skipping one.
+    setCurrentIndex(0);
     try {
-      sessionStorage.setItem(DISMISS_KEY, "1");
+      sessionStorage.setItem(DISMISS_KEY, serializeDismissedIds(next));
     } catch {
-      // In-memory state still dismisses the banner when storage is unavailable.
+      // In-memory state still hides it when storage is unavailable.
     }
   }
+
+  if (!hydrated || !currentItem) return null;
 
   const actionClassName =
     "scroll-mt-20 cursor-pointer shrink-0 rounded-[var(--radius-card)] px-2 py-1 font-bold text-[var(--color-main)] underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
@@ -123,7 +147,7 @@ export function TopBanner({
       <button
         aria-label={closeLabel}
         className="scroll-mt-20 grid size-11 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none hover:text-[var(--color-main)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        onClick={handleDismiss}
+        onClick={() => dismissItem(currentItem.id)}
         type="button"
       >
         <X aria-hidden size={18} />
