@@ -85,11 +85,14 @@ const getServerMountedSnapshot = () => false;
 
 interface PremiumPaywallModalProps {
   sourceFeature?: PremiumFeatureId;
+  /** Coupon handed over by a campaign surface — applied on open, never trusted blindly. */
+  initialCode?: string;
   onClose: () => void;
 }
 
 export function PremiumPaywallModal({
   sourceFeature,
+  initialCode,
   onClose,
 }: PremiumPaywallModalProps) {
   const t = useTranslations("paywall");
@@ -135,19 +138,32 @@ export function PremiumPaywallModal({
 
   useEffect(() => {
     let active = true;
+    /**
+     * With a handed-over coupon, resolve WITH it and remember it as applied. A stale or
+     * now-ineligible code must not break the paywall, so a rejection falls back to the automatic
+     * offer and the user simply sees the list price — never an error blocking a purchase.
+     */
+    const loadOffers = initialCode
+      ? fetchPromotionOffers(initialCode)
+          .then((resolved) => ({ resolved, applied: initialCode }))
+          .catch(async () => ({ resolved: await fetchAutoPromotionOffers(), applied: null }))
+      : fetchAutoPromotionOffers().then((resolved) => ({ resolved, applied: null }));
+
     Promise.all([
       subscriptionsControllerListPlans(),
       subscriptionsControllerGetMine(),
-      // Automatic offers only — a coupon the user types is a separate, explicit request.
-      // Deduped: the dashboard banner and the welcome dialog want the same payload on this render.
-      fetchAutoPromotionOffers(),
+      loadOffers,
     ])
       .then(([planRows, subscriptionView, promotionOffers]) => {
         if (!active) return;
         const nextPlans = planRows as unknown as PlanDto[];
         setPlans(nextPlans);
         setView(subscriptionView as unknown as SubscriptionView);
-        setOffers(promotionOffers);
+        setOffers(promotionOffers.resolved);
+        if (promotionOffers.applied) {
+          setAppliedCode(promotionOffers.applied);
+          setCouponOpen(true);
+        }
         setSelectedId(nextPlans[0]?.id ?? null);
       })
       .catch((err: unknown) => {
@@ -166,7 +182,9 @@ export function PremiumPaywallModal({
     return () => {
       active = false;
     };
-  }, []);
+    // The modal mounts fresh on every open and the provider sets `initialCode` before mounting,
+    // so this runs once per open — it is not a live subscription to the prop.
+  }, [initialCode]);
 
   const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
   const selected = plans.find((plan) => plan.id === selectedId) ?? plans[0];

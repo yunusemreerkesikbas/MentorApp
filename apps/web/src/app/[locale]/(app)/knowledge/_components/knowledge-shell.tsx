@@ -61,7 +61,8 @@ export function KnowledgeShell() {
   const searchParams = useSearchParams();
   const { status: authStatus, user } = useAuth();
   const examType = user?.examType;
-  const [family, setFamily] = useState<ExamType | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState<ExamType | null>(null);
+  const family = examType ? (selectedFamily ?? examType) : null;
   const category = parseCategory(searchParams.get("category"));
   const page = parsePage(searchParams.get("page"));
   const [state, setState] = useState<LoadState>({ status: "loading" });
@@ -80,15 +81,6 @@ export function KnowledgeShell() {
     },
     [category, page, router],
   );
-
-  useEffect(() => {
-    if (authStatus === "loading") return;
-    if (!examType) {
-      setFamily(null);
-      return;
-    }
-    setFamily((current) => current ?? examType);
-  }, [authStatus, examType]);
 
   const load = useCallback(() => {
     if (authStatus === "loading") return;
@@ -175,7 +167,7 @@ export function KnowledgeShell() {
       <FamilyFilterBar
         value={family}
         onChange={(next) => {
-          setFamily(next);
+          setSelectedFamily(next);
           replaceQuery({ page: 1 });
         }}
       />

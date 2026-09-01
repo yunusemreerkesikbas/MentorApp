@@ -13,6 +13,12 @@ import { PremiumPaywallModal } from "@/components/premium/premium-paywall-modal"
 
 export interface PaywallOpenOptions {
   sourceFeature?: PremiumFeatureId;
+  /**
+   * A coupon to apply on open, so a campaign surface can hand the user straight to a discounted
+   * paywall instead of asking them to retype what it just showed them. Advisory: the paywall
+   * re-resolves it server-side and falls back to the list price if it no longer applies.
+   */
+  code?: string;
 }
 
 interface PremiumPaywallContextValue {
@@ -27,9 +33,11 @@ const PremiumPaywallContext = createContext<PremiumPaywallContextValue | null>(
 export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(false);
   const [sourceFeature, setSourceFeature] = useState<PremiumFeatureId | undefined>();
+  const [code, setCode] = useState<string | undefined>();
 
   const openPaywall = useCallback((options?: PaywallOpenOptions) => {
     setSourceFeature(options?.sourceFeature);
+    setCode(options?.code);
     setOpen(true);
   }, []);
 
@@ -48,6 +56,7 @@ export function PremiumPaywallProvider({ children }: { children: ReactNode }) {
       {open ? (
         <PremiumPaywallModal
           sourceFeature={sourceFeature}
+          initialCode={code}
           onClose={closePaywall}
         />
       ) : null}

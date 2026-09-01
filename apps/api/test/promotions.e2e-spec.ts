@@ -13,6 +13,7 @@ const SECRET = "test-payments-webhook-secret"; // matches vitest env
 // so a reused id would be treated as a replay and silently not applied.
 const RUN = Date.now();
 const evt = (name: string) => `evt_promo_${name}_${RUN}`;
+const CRON_SECRET = `promo-cron-secret-for-e2e-${RUN}-only`;
 
 const LIST_PRICE = 24_900; // premium-monthly, seeded by migration 0003
 const CHARGED = 19_920; // 20% off, Math.round(24900 * 0.2) = 4980
@@ -135,6 +136,7 @@ describe("promotions (e2e)", () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    process.env.CRON_SECRET = CRON_SECRET;
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -386,6 +388,51 @@ describe("promotions (e2e)", () => {
       .set(auth(token))
       .send({ code });
     expect(second.status).toBe(422);
+  });
+
+  it("retires a lapsed subscription and only then honours WIN_BACK", async () => {
+    // Regression lock. Nothing except the provider cancel webhook writes EXPIRED, so before the
+    // sweeper existed a subscription that simply ran out stayed ACTIVE forever and the WIN_BACK
+    // rule silently matched nobody.
+    const code = `WINBACK${RUN}`;
+    await seedPromotion({ code, ruleType: "WIN_BACK" });
+    const { token, userId } = buyer;
+
+    await request(app.getHttpServer())
+      .post("/v1/subscription/checkout")
+      .set(auth(token))
+      .send({ planId: "premium-monthly" });
+
+    // Wind the paid period into the past — exactly what a lapse looks like in the table.
+    await serviceQuery(
+      `update subscriptions
+          set status = 'ACTIVE', trial_ends_at = null,
+              current_period_end = now() - interval '10 days'
+        where user_id = $1`,
+      [userId],
+    );
+
+    const sweep = await request(app.getHttpServer())
+      .post("/v1/internal/cron/expire-subscriptions")
+      .set("x-cron-secret", CRON_SECRET);
+    expect(sweep.status).toBe(201);
+
+    const row = await serviceQuery("select status from subscriptions where user_id = $1", [userId]);
+    expect(row.rows[0].status).toBe("EXPIRED");
+
+    // The discount now actually applies — this assertion fails on the pre-sweeper code.
+    const offers = await request(app.getHttpServer())
+      .post("/v1/subscription/offers")
+      .set(auth(token))
+      .send({ code });
+    expect(offers.status).toBe(200);
+    expect(offers.body.offers["premium-monthly"].chargedPriceMinor).toBe(CHARGED);
+    await retireAll();
+  });
+
+  it("rejects an unauthenticated expiry sweep", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/internal/cron/expire-subscriptions");
+    expect(res.status).toBe(401);
   });
 
   it("never lets a promotion drive the charge to zero", async () => {

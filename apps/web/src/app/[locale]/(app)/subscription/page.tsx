@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { SubscriptionShell } from "./_components/subscription-shell";
 
 export default async function SubscriptionPage({

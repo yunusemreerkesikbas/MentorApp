@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: "Plus Jakarta Sans", system-ui, sans-serif; }
+    a { color: #bea1fe; } a:hover { color: #d3c0ff; }
+  </style>
+</helmet>
+
+<div style="position: relative; width: 448px; height: 640px; border-radius: 24px; overflow: hidden; background: #12141a; display: flex; flex-direction: column;">
+
+  <div style="position: absolute; left: 50%; top: -40px; width: 300px; height: 420px; transform: translateX(-50%); background: linear-gradient(180deg, rgba(190,161,254,.34) 0%, rgba(190,161,254,.10) 46%, rgba(190,161,254,0) 82%); clip-path: polygon(34% 0%, 66% 0%, 100% 100%, 0% 100%); pointer-events: none;"></div>
+  <div style="position: absolute; left: 50%; top: 236px; width: 240px; height: 44px; transform: translateX(-50%); border-radius: 999px; background: radial-gradient(ellipse 50% 50% at 50% 50%, rgba(190,161,254,.30) 0%, rgba(190,161,254,0) 72%); pointer-events: none;"></div>
+
+  <div style="position: absolute; right: 12px; top: 12px; z-index: 3; display: grid; place-items: center; width: 44px; height: 44px; border-radius: 999px; background: rgba(255,255,255,.1);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#f4f4f5" stroke-width="2.25" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+  </div>
+
+  <div style="position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; padding: 52px 28px 0;">
+
+    <img src="gift-premium.svg" alt="" style="width: 156px; height: 156px; object-fit: contain;">
+
+    <p style="margin: 10px 0 0; font-size: 12px; font-weight: 700; letter-spacing: .18em; text-transform: uppercase; color: #bea1fe;">Sana özel</p>
+
+    <h2 style="margin: 8px 0 0; font-size: 30px; font-weight: 800; line-height: 1.15; text-align: center; text-wrap: balance; color: #f4f4f5;">Hoş geldin hediyen</h2>
+
+    <div style="display: flex; align-items: baseline; justify-content: center; gap: 8px; margin-top: 12px;">
+      <span style="font-size: 15px; font-weight: 600; color: #a1a1aa; text-decoration: line-through;">₺249,00</span>
+      <span style="font-size: 26px; font-weight: 800; color: #f4f4f5;">₺199,20</span>
+      <span style="font-size: 13px; font-weight: 600; color: #a1a1aa;">/ay</span>
+      <span style="margin-left: 4px; border-radius: 999px; background: rgba(190,161,254,.16); color: #bea1fe; padding: 5px 10px; font-size: 12px; font-weight: 800; letter-spacing: .02em;">%20</span>
+    </div>
+
+    <div style="position: relative; display: flex; align-items: stretch; width: 100%; min-height: 84px; margin-top: 22px; border-radius: 16px; background: rgba(255,255,255,.07); outline: 1px solid rgba(255,255,255,.14); outline-offset: -1px; -webkit-mask-image: radial-gradient(circle 9px at 0 50%, transparent 9px, #000 9.5px), radial-gradient(circle 9px at 100% 50%, transparent 9px, #000 9.5px); mask-image: radial-gradient(circle 9px at 0 50%, transparent 9px, #000 9.5px), radial-gradient(circle 9px at 100% 50%, transparent 9px, #000 9.5px); -webkit-mask-composite: source-in; mask-composite: intersect;">
+      <div style="display: flex; flex-direction: column; justify-content: center; flex: 1 1 0; min-width: 0; padding: 14px 12px 14px 24px;">
+        <p style="margin: 0; font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #a1a1aa;">Kupon kodun</p>
+        <p style="margin: 4px 0 0; font-size: 21px; font-weight: 800; letter-spacing: .09em; color: #f4f4f5;">HOSGELDIN</p>
+      </div>
+      <div style="width: 1px; flex-shrink: 0; margin: 14px 0; border-left: 1px dashed rgba(255,255,255,.28);"></div>
+      <div style="display: flex; align-items: center; flex-shrink: 0; padding: 10px 16px 10px 12px;">
+        <span style="display: flex; align-items: center; gap: 7px; border-radius: 999px; background: #f4f4f5; color: #12141a; padding: 10px 15px; font-size: 13px; font-weight: 700;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+          Kopyala
+        </span>
+      </div>
+    </div>
+
+    <p style="margin: 14px 0 0; max-width: 22rem; font-size: 14px; font-weight: 500; line-height: 1.5; text-align: center; color: #a1a1aa;">İlk ödemende geçerli. İstediğin an iptal edebilirsin.</p>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="position: relative; z-index: 1; display: flex; flex-direction: column; gap: 8px; padding: 20px 28px 24px;">
+    <button style="display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; min-height: 56px; border: 0; border-radius: 10px; background: #f4f4f5; color: #12141a; font-family: inherit; font-size: 16px; font-weight: 700; cursor: pointer;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12 5 5L20 7"/></svg>
+      Uygula ve devam et
+    </button>
+    <button style="width: 100%; min-height: 44px; border: 0; background: transparent; color: #a1a1aa; font-family: inherit; font-size: 14px; font-weight: 600; cursor: pointer;">Sonra bakarım</button>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -124,6 +124,11 @@
       "register": "puhu",
       "title": "Masada biri var",
       "body": "{name}, {roomName} masasına oturdu. Sen de katılabilirsin."
+    },
+    "winBackOffer": {
+      "register": "companion",
+      "title": "Aboneliğin sona erdi",
+      "body": "Dönmek istediğinde {label} seni bekliyor."
     }
   },
   "email": {

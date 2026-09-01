@@ -42,3 +42,29 @@ export function computeDiscount(
     chargedPriceMinor: listPriceMinor - discountMinor,
   };
 }
+
+/**
+ * The discount magnitude a campaign can HONESTLY advertise, across every plan it covers.
+ *
+ * The admin's entry is not it: {@link computeDiscount} clamps against `promotions.max_percent`,
+ * so a 70% promotion under a 50% ceiling gives 50 — advertising 70 would be a false price claim.
+ *
+ * PERCENT clamps proportionally, so the answer is plan-independent. FIXED does not: the same
+ * lira amount is a different share of each plan, so the ceiling can bite on a cheap plan and not
+ * on an expensive one. Taking the MINIMUM across covered plans keeps the promise true whichever
+ * plan the user ends up choosing.
+ */
+export function advertisedDiscountValue(
+  type: PromotionDiscountType,
+  value: number,
+  maxPercent: number,
+  coveredPriceMinors: readonly number[],
+): number {
+  if (type === PromotionDiscountType.PERCENT) return Math.min(value, maxPercent);
+  if (coveredPriceMinors.length === 0) return value;
+  return Math.min(
+    ...coveredPriceMinors.map(
+      (price) => computeDiscount(price, type, value, maxPercent).discountMinor,
+    ),
+  );
+}

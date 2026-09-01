@@ -1,10 +1,11 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, gte, lte, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { paymentTransactions, paymentWebhookEvents, plans, subscriptions } from "../../../database/schema";
 import { SubscriptionStatus } from "@mentor/types";
+import { GRACE_PERIOD_DAYS } from "../domain/payments.constants";
 import type { TxStatus, TxType } from "../domain/payments.constants";
 
 export type PlanRow = typeof plans.$inferSelect;
@@ -25,6 +26,7 @@ function onServiceTx<T>(
 }
 
 const TERMINAL = [SubscriptionStatus.EXPIRED];
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 @Injectable()
 export class PlansRepository {
@@ -126,6 +128,50 @@ export class SubscriptionsRepository {
         .orderBy(desc(subscriptions.createdAt))
         .limit(1);
       return rows[0];
+    });
+  }
+
+  /**
+   * Keyset page of rows whose paid time may have run out — the expiry sweeper's candidate set.
+   *
+   * The SQL predicate is deliberately WIDER than the real rule: it uses the longest possible
+   * cut-off (period end + dunning grace) so no row is missed, and the caller confirms each one
+   * with `hasRunOut` before writing. Narrowing the rule here would fork it from
+   * `computeEntitlement`, which is the thing we are trying not to do.
+   */
+  async listMaybeRanOut(now: Date, limit: number, afterId: string | null): Promise<SubscriptionRow[]> {
+    const graceCutoff = new Date(now.getTime() - GRACE_PERIOD_DAYS * DAY_MS);
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            notInArray(subscriptions.status, [
+              SubscriptionStatus.EXPIRED,
+              SubscriptionStatus.INCOMPLETE,
+            ]),
+            lte(subscriptions.currentPeriodEnd, graceCutoff),
+            afterId ? gt(subscriptions.id, afterId) : undefined,
+          ),
+        )
+        .orderBy(asc(subscriptions.id))
+        .limit(limit),
+    );
+  }
+
+  /**
+   * Retire one row. Guarded on the status we read, so a concurrent webhook that already moved it
+   * wins and the sweeper writes nothing. Returns false when the row moved on.
+   */
+  async markExpired(id: string, fromStatus: string, tx?: Exec): Promise<boolean> {
+    return onServiceTx(this.db, tx, async (exec) => {
+      const rows = await exec
+        .update(subscriptions)
+        .set({ status: SubscriptionStatus.EXPIRED, updatedAt: new Date() })
+        .where(and(eq(subscriptions.id, id), eq(subscriptions.status, fromStatus)))
+        .returning({ id: subscriptions.id });
+      return rows.length > 0;
     });
   }
 

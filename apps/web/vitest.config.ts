@@ -13,6 +13,11 @@ export default defineConfig({
     globals: true,
     environment: "node",
     include: ["src/**/*.spec.ts"],
+    server: {
+      // next-intl v4 is ESM-only. Keep it in Vite's transform pipeline so package
+      // subpaths such as next/navigation resolve through Next's exports map.
+      deps: { inline: ["next-intl"] },
+    },
   },
   resolve: {
     alias: {

@@ -40,6 +40,30 @@ export class EntitlementService {
   }
 }
 
+/**
+ * Did this user have premium and lose it? The WIN_BACK signal.
+ *
+ * Delegates to {@link computeEntitlement} so it can never disagree with what the user is shown.
+ * INCOMPLETE is excluded: it grants no premium, but that user is mid-checkout and has lost
+ * nothing — there is nothing to win back.
+ */
+export function hasLostAccess(sub: SubscriptionRow | null, now: Date): boolean {
+  if (!sub || sub.status === SubscriptionStatus.INCOMPLETE) return false;
+  return !computeEntitlement(sub, now).isPremium;
+}
+
+/**
+ * May the sweeper retire this row?
+ *
+ * A NARROWER question than {@link hasLostAccess}: an already-EXPIRED row is terminal, so it is not
+ * sweepable — even though its owner has very much lost access. Keeping the two apart is what makes
+ * the sweep idempotent without also blinding the win-back rule.
+ */
+export function hasRunOut(sub: SubscriptionRow, now: Date): boolean {
+  if (sub.status === SubscriptionStatus.EXPIRED) return false;
+  return hasLostAccess(sub, now);
+}
+
 /** Exported pure function — unit-testable without DB. */
 export function computeEntitlement(sub: SubscriptionRow | null, now: Date): EntitlementDto {
   const free = (reason: string): EntitlementDto => ({

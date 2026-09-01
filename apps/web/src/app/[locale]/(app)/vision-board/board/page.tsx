@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { BoardEditorShell } from "./_components/board-editor-shell";
 
 /** Collage editor for the goal set on `/hedef`. Optional — the goal works without a board. */

@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { redirect } from "@/i18n/navigation";
 
 /** `/coach` → new-chat landing on `/coach/chat` (history opens from the chat header). */

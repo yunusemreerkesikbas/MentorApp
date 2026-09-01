@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeEntitlement } from "./entitlement.service";
+import { computeEntitlement, hasLostAccess, hasRunOut } from "./entitlement.service";
 import type { SubscriptionRow } from "../infrastructure/payments.repositories";
 
 const NOW = new Date("2026-06-10T12:00:00Z");
@@ -78,5 +78,60 @@ describe("computeEntitlement (state matrix)", () => {
       computeEntitlement(sub({ status: "CANCELED", currentPeriodEnd: days(-1) }), NOW).isPremium,
     ).toBe(false);
     expect(computeEntitlement(sub({ status: "EXPIRED" }), NOW).isPremium).toBe(false);
+  });
+});
+
+describe("hasRunOut (expiry sweeper predicate)", () => {
+  it("retires a subscription whose paid period has passed", () => {
+    expect(hasRunOut(sub({ status: "ACTIVE", currentPeriodEnd: days(-1) }), NOW)).toBe(true);
+    expect(hasRunOut(sub({ status: "CANCELED", currentPeriodEnd: days(-1) }), NOW)).toBe(true);
+    expect(
+      hasRunOut(sub({ status: "TRIALING", trialEndsAt: days(-1), currentPeriodEnd: days(-1) }), NOW),
+    ).toBe(true);
+  });
+
+  it("leaves a live subscription alone", () => {
+    expect(hasRunOut(sub({ status: "ACTIVE", currentPeriodEnd: days(5) }), NOW)).toBe(false);
+    expect(hasRunOut(sub({ status: "CANCELED", currentPeriodEnd: days(5) }), NOW)).toBe(false);
+  });
+
+  it("respects the dunning grace before retiring a PAST_DUE row", () => {
+    // GRACE_PERIOD_DAYS = 3: still premium at -2 days, gone at -4.
+    expect(hasRunOut(sub({ status: "PAST_DUE", currentPeriodEnd: days(-2) }), NOW)).toBe(false);
+    expect(hasRunOut(sub({ status: "PAST_DUE", currentPeriodEnd: days(-4) }), NOW)).toBe(true);
+  });
+
+  it("never touches an INCOMPLETE checkout", () => {
+    // Grants no premium, but it is a verification gate — checkout deletes it, the sweeper must not
+    // retire it, or a user mid-payment would be locked out of retrying.
+    expect(hasRunOut(sub({ status: "INCOMPLETE", currentPeriodEnd: days(-9) }), NOW)).toBe(false);
+  });
+
+  it("is idempotent — an already-EXPIRED row is not swept again", () => {
+    expect(hasRunOut(sub({ status: "EXPIRED", currentPeriodEnd: days(-9) }), NOW)).toBe(false);
+  });
+});
+
+describe("hasLostAccess (WIN_BACK signal)", () => {
+  it("counts an already-retired subscription — unlike the sweeper predicate", () => {
+    // The distinction that matters: hasRunOut says "do not sweep again", hasLostAccess says
+    // "this user did lose premium". Conflating them silently kills the win-back rule.
+    const retired = sub({ status: "EXPIRED", currentPeriodEnd: days(-9) });
+    expect(hasRunOut(retired, NOW)).toBe(false);
+    expect(hasLostAccess(retired, NOW)).toBe(true);
+  });
+
+  it("counts a subscription that quietly lapsed while still reading ACTIVE", () => {
+    expect(hasLostAccess(sub({ status: "ACTIVE", currentPeriodEnd: days(-1) }), NOW)).toBe(true);
+  });
+
+  it("rejects a user who still has access, cancelled-but-in-period included", () => {
+    expect(hasLostAccess(sub({ status: "ACTIVE", currentPeriodEnd: days(5) }), NOW)).toBe(false);
+    expect(hasLostAccess(sub({ status: "CANCELED", currentPeriodEnd: days(5) }), NOW)).toBe(false);
+  });
+
+  it("rejects a user mid-checkout and one who never subscribed", () => {
+    expect(hasLostAccess(sub({ status: "INCOMPLETE" }), NOW)).toBe(false);
+    expect(hasLostAccess(null, NOW)).toBe(false);
   });
 });

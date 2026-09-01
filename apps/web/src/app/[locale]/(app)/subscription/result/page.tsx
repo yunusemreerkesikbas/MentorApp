@@ -1,5 +1,6 @@
+import { setRequestLocale } from "@/i18n/locale";
 import { Suspense } from "react";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { CheckoutResultContent } from "./_components/checkout-result-content";
 
 export default async function CheckoutResultPage({

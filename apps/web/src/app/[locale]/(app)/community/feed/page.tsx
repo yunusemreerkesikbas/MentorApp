@@ -1,5 +1,5 @@
+import { setRequestLocale } from "@/i18n/locale";
 import { Suspense } from "react";
-import { setRequestLocale } from "next-intl/server";
 import { FeedShell } from "./_components/feed-shell";
 
 export default async function FeedPage({ params }: { params: Promise<{ locale: string }> }) {

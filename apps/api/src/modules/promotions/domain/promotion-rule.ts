@@ -2,9 +2,6 @@ import { PromotionRuleType } from "@mentor/types";
 
 const DAY_MS = 86_400_000;
 
-/** Statuses a returning subscriber can be won back from. */
-const REACTIVATABLE_STATUSES = new Set(["EXPIRED", "CANCELED"]);
-
 /** yyyy-mm-dd in UTC — matches how coaching writes `daily_activity.activity_date` (its date.util). */
 function isoDate(date: Date): string {
   return date.toISOString().slice(0, 10);
@@ -23,8 +20,15 @@ export interface PromotionRuleContext {
   userCreatedAt: Date;
   /** Has the user EVER had a subscription row? Payments-owned (same signal as trial-once). */
   hadAnySubscription: boolean;
-  /** Most recent subscription status, or null when there never was one. */
-  lastSubscriptionStatus: string | null;
+  /**
+   * Had a subscription and no longer has premium — the WIN_BACK signal.
+   *
+   * DERIVED, never the raw `subscriptions.status`: a subscription that simply ran out still reads
+   * `ACTIVE` in the table (nothing writes EXPIRED except the provider's cancel webhook), so the
+   * raw status would miss exactly the population this rule exists for. It also correctly excludes
+   * a user who cancelled but is still inside the paid period — they have not lost anything yet.
+   */
+  lostPremiumAccess: boolean;
   /**
    * Distinct studied days (yyyy-mm-dd) already fetched for the widest candidate window.
    * Coaching-owned (`daily_activity`) — read via CoachingModule's public service, never directly.
@@ -67,10 +71,7 @@ export function evaluateRule(
     }
 
     case PromotionRuleType.WIN_BACK:
-      return (
-        ctx.lastSubscriptionStatus !== null &&
-        REACTIVATABLE_STATUSES.has(ctx.lastSubscriptionStatus)
-      );
+      return ctx.lostPremiumAccess;
 
     case PromotionRuleType.ACTIVE_DAYS:
       return (

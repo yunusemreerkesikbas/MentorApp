@@ -1,7 +1,8 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
-import { pickMessages } from "@/i18n/scoped-messages";
+import { getMessages } from "next-intl/server";
+import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { WelcomeShell } from "./_components/welcome/welcome-shell";
 
 export const metadata: Metadata = {
@@ -15,7 +16,7 @@ export default async function Home({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const messages = pickMessages(await getMessages(), ["welcome"]);
+  const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.welcome);
   return (
     <NextIntlClientProvider messages={messages}>
       <WelcomeShell />

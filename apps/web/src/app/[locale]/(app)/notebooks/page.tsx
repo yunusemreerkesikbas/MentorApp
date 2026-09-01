@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { NotebooksShell } from "./_components/notebooks-shell";
 
 export default async function NotebooksPage({

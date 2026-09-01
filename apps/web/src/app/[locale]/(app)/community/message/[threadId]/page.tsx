@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { MessageShell } from "./_components/message-shell";
 
 export default async function MessagePage({

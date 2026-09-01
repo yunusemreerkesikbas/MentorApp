@@ -1,8 +1,9 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
-import { pickMessages } from "@/i18n/scoped-messages";
+import { getMessages } from "next-intl/server";
+import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { RoomJoinShell } from "./_components/room-join-shell";
 
 export const metadata: Metadata = {
@@ -23,7 +24,7 @@ export default async function JoinRoomPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const messages = pickMessages(await getMessages(), ["session_room"]);
+  const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.joinRoom);
   return (
     <NextIntlClientProvider messages={messages}>
       <Suspense>

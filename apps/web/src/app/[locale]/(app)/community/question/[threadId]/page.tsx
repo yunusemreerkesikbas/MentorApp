@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { QuestionShell } from "./_components/question-shell";
 
 export default async function QuestionPage({

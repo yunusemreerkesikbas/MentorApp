@@ -97,6 +97,20 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Geri kazanım bildirimi + kampanya kapatma anahtarı (2026-09-01)** — İlk ticari bildirim:
+  `SUBSCRIPTION_EXPIRED` olayını dinleyen `PromotionEventsListener`, o kullanıcı için gerçekten bir
+  indirim varsa (`SubscriptionsService.findWinBackOffer` — tek çağrı, tarama yok) in-app + push
+  gönderiyor. Uygulamayı artık açmayan kullanıcıya ulaşan tek promosyon yüzeyi.
+  `notification_preferences.campaigns_enabled` eklendi (migration `0091_campaign_preference`):
+  ticari mesajın **her kanalını**, in-app kutusu dahil, kapatıyor.
+  Kullanım: profil → Bildirim ayarları → "Kampanya bildirimleri".
+  Gotcha: "in-app her zaman yazılır" kuralı işlemsel hatırlatmalar için geçerli, ticari mesaj için
+  değil — yeni bir kampanya bildirimi eklerken `campaignsEnabled` kontrolünü atlama. Bir diğeri:
+  **e-posta bilinçli olarak yok** — indirim e-postası 6563 kapsamında ticari elektronik ileti,
+  İYS kaydı + açık onay + ret hakkı gerekiyor ve hiçbiri kodda yok (bkz. promotions.md).
+  Not: `NotificationsModule` artık `PaymentsModule`'ü import ediyor; ters yön yok, döngü yok.
+  İlgili: `promotion-events.listener.ts`, `notification-copy.ts`, `notification-settings.tsx`.
+
 - **Kampanya duyurusu = mevcut announcement akışı (2026-08-31)** — Promosyon modülü için ayrı bir
   bildirim fan-out'u **yazılmadı**. Gerekçe üç katmanlı: (1) promosyon uygunluğu canlı hesaplanıyor,
   grant tablosu yok → "kimler uygun?" her kural tipi için ayrı ters sorgu ister; (2)

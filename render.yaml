@@ -152,3 +152,22 @@ services:
           type: web
           name: mentor-api
           envVarKey: CRON_SECRET
+  - type: cron
+    name: mentor-expire-subscriptions
+    runtime: node
+    region: frankfurt
+    plan: starter
+    schedule: "30 3 * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/expire-subscriptions" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-api
+          envVarKey: CRON_SECRET

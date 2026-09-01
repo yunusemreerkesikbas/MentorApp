@@ -68,10 +68,12 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
       chargedPriceMinor: 19920,
       renewalPriceMinor: 24900,
       promotion: {
+        id: "promo-paywall-1",
         code: "HOSGELDIN",
         label: "Hoş geldin hediyesi",
         discountType: "PERCENT",
         discountValue: 20,
+        planNames: null,
         appliesToPeriods: 1,
         endsAt: null,
       },
@@ -96,8 +98,8 @@ interface Options {
 async function mockPaywall(page: Page, options: Options = {}) {
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
-    // Keep the welcome-gift dialog out of the way; it has its own test below.
-    window.localStorage.setItem("mentor.welcome-gift.seen.v1", "1");
+    // Keep the promotion dialog out of the way; the banner spec covers it.
+    window.localStorage.setItem("mentor.promotion-dialog.seen.v1", '["seeded"]');
   });
 
   await page.route("http://localhost:3001/v1/**", async (route) => {

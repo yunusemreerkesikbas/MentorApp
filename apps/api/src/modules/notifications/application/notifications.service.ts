@@ -169,19 +169,23 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
       return {
         emailEnabled: row.emailEnabled,
         pushEnabled: row.pushEnabled,
+        campaignsEnabled: row.campaignsEnabled,
       };
     });
   }
 
   async updatePreferences(
     userId: string,
-    patch: Partial<Pick<NotificationPreferencesDto, "emailEnabled" | "pushEnabled">>,
+    patch: Partial<
+      Pick<NotificationPreferencesDto, "emailEnabled" | "pushEnabled" | "campaignsEnabled">
+    >,
   ): Promise<NotificationPreferencesDto> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.preferences.update(tx, userId, patch);
       return {
         emailEnabled: row.emailEnabled,
         pushEnabled: row.pushEnabled,
+        campaignsEnabled: row.campaignsEnabled,
       };
     });
   }

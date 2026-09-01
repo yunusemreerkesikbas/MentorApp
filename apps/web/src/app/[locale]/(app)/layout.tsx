@@ -1,7 +1,8 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, setRequestLocale } from "next-intl/server";
+import { getMessages } from "next-intl/server";
 import { AppShell } from "./app-shell";
 
 export const metadata: Metadata = {

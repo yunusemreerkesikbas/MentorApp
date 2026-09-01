@@ -1665,6 +1665,13 @@ export const notificationPreferences = pgTable("notification_preferences", {
     .references(() => users.id, { onDelete: "cascade" }),
   emailEnabled: boolean("email_enabled").notNull().default(true),
   pushEnabled: boolean("push_enabled").notNull().default(true),
+  /**
+   * Commercial messages (campaigns, discounts). Silences EVERY channel including the in-app inbox
+   * — the "in-app is always written" rule is right for transactional reminders and wrong for a
+   * commercial ask. Default on: promotional push is outside İYS (it registers only e-mail and
+   * phone), so opt-out is the applicable model, but the user must have a switch.
+   */
+  campaignsEnabled: boolean("campaigns_enabled").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

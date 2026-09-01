@@ -35,17 +35,27 @@ export function fetchAutoPromotionOffers(): Promise<PromotionOffersView | null> 
 }
 
 /**
- * The promotion to announce in the welcome dialog, or null when there is nothing to celebrate.
+ * The promotion worth interrupting the user with, or null when there is nothing new to say.
  *
  * A coded promotion wins: it is the one the user has to DO something about (type the code), so it
- * is the one worth interrupting them for. A code-less promotion is already applied on the paywall,
- * and is announced only when no coded one is waiting. Either way the code and its label come from
- * the API — nothing about a specific campaign is hardcoded in the client.
+ * is the one worth a modal. A code-less promotion is already applied on the paywall and is
+ * announced only when no coded one is waiting.
+ *
+ * `seen` holds campaign ids already shown on this device, so a second campaign gets its own single
+ * appearance instead of being swallowed by a one-time flag. Copy comes entirely from the
+ * promotion's own label — nothing about a specific campaign is hardcoded in the client.
  */
-export function pickWelcomeGift(offers: PromotionOffersView): PromotionSummary | null {
-  const waiting = offers.available[0];
+export function pickPromotionForDialog(
+  offers: PromotionOffersView,
+  seen: ReadonlySet<string>,
+): PromotionSummary | null {
+  const waiting = offers.available.find((promotion) => !seen.has(promotion.id));
   if (waiting) return waiting;
-  return Object.values(offers.offers).find((offer) => offer.promotion)?.promotion ?? null;
+  return (
+    Object.values(offers.offers)
+      .map((offer) => offer.promotion)
+      .find((promotion) => promotion != null && !seen.has(promotion.id)) ?? null
+  );
 }
 
 /**

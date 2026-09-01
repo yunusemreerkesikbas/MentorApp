@@ -6,7 +6,7 @@ export default createMiddleware(routing);
 export const config = {
   // Match all pathnames except for
   // - /api/ routes
-  // - /_next/ (Next.js internals)
+  // - /_next/ and /_vercel/ internals
   // - /favicon.ico, /sw.js, /manifest.json, etc. (static files)
   matcher: ["/((?!api|_next|_vercel|.*\\..*).*)"],
 };

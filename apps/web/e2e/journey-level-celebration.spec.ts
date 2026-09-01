@@ -50,7 +50,7 @@ test.beforeEach(async ({ page }) => {
       onmessage: ((event: MessageEvent) => void) | null = null;
       onerror: (() => void) | null = null;
 
-      constructor(_url: string) {
+      constructor() {
         const testWindow = window as typeof window & {
           __journeyEventSources?: TestEventSource[];
         };

@@ -1,4 +1,7 @@
 import type { AbstractIntlMessages } from "next-intl";
+import routeMessageScopes from "./route-message-scopes.json";
+
+export const ROUTE_MESSAGE_SCOPES = routeMessageScopes;
 
 export function pickMessages(
   messages: AbstractIntlMessages,

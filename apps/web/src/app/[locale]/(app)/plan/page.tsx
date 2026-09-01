@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { PlanShell } from "./_components/plan-shell";
 
 export default async function PlanPage({

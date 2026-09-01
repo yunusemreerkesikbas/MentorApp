@@ -29,6 +29,8 @@ jobs:
     env:
       # e2e tests connect here (the `mentor` db is enough — they only need a reachable DB).
       TEST_DATABASE_URL: postgres://mentor:mentor@localhost:5432/mentor
+      NEXT_PUBLIC_SITE_URL: https://mentor.example
+      NEXT_PUBLIC_GA_MEASUREMENT_ID: G-CI0000000
 
     steps:
       - uses: actions/checkout@v4
@@ -51,6 +53,18 @@ jobs:
 
       - name: Build
         run: pnpm build
+
+      - name: Enforce web performance budgets
+        run: pnpm --filter @mentor/web check:budgets
+
+      - name: Upload web performance budget report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: web-performance-budget-report
+          path: apps/web/.next/web-performance-budget-report.json
+          if-no-files-found: ignore
+          retention-days: 7
 
       - name: Test
         run: pnpm test

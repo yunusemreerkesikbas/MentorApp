@@ -1,5 +1,5 @@
+import { setRequestLocale } from "@/i18n/locale";
 import { Suspense } from "react";
-import { setRequestLocale } from "next-intl/server";
 import { CoachChatShell } from "../_components/coach-chat-shell";
 import { CoachChatSkeleton } from "../_components/coach-content-skeleton";
 

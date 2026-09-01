@@ -638,6 +638,13 @@
       "when": 1788101081970,
       "tag": "0090_promotions",
       "breakpoints": true
+    },
+    {
+      "idx": 91,
+      "version": "7",
+      "when": 1788210754099,
+      "tag": "0091_campaign_preference",
+      "breakpoints": true
     }
   ]
 }

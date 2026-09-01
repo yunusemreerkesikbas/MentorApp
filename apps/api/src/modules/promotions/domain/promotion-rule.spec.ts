@@ -10,7 +10,7 @@ function ctx(overrides: Partial<PromotionRuleContext> = {}): PromotionRuleContex
     now: NOW,
     userCreatedAt: NOW,
     hadAnySubscription: false,
-    lastSubscriptionStatus: null,
+    lostPremiumAccess: false,
     activeDates: [],
     ...overrides,
   };
@@ -62,16 +62,18 @@ describe("evaluateRule", () => {
   });
 
   describe("WIN_BACK", () => {
-    it.each(["EXPIRED", "CANCELED"])("qualifies a %s subscriber", (status) => {
-      expect(
-        evaluateRule(PromotionRuleType.WIN_BACK, {}, ctx({ lastSubscriptionStatus: status })),
-      ).toBe(true);
+    it("qualifies a subscriber who lost premium access", () => {
+      expect(evaluateRule(PromotionRuleType.WIN_BACK, {}, ctx({ lostPremiumAccess: true }))).toBe(
+        true,
+      );
     });
 
-    it.each(["ACTIVE", "TRIALING", "PAST_DUE", "INCOMPLETE"])("rejects a %s subscriber", (status) => {
-      expect(
-        evaluateRule(PromotionRuleType.WIN_BACK, {}, ctx({ lastSubscriptionStatus: status })),
-      ).toBe(false);
+    it("rejects a subscriber who still has access", () => {
+      // Includes the user who cancelled but is still inside the paid period — they have not
+      // lost anything yet, so there is nothing to win back.
+      expect(evaluateRule(PromotionRuleType.WIN_BACK, {}, ctx({ lostPremiumAccess: false }))).toBe(
+        false,
+      );
     });
 
     it("rejects a user who never subscribed", () => {

@@ -1,0 +1,47 @@
+{
+  "pages": [
+    { "id": "page-1", "name": "Seçilen yön" },
+    { "id": "page-2", "name": "Elenen yönler" }
+  ],
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 448, "h": 600, "page": "page-1", "title": "Kampanya modalı · kodlu" },
+    { "file": "KodsuzKampanya.dc.html", "x": 528, "y": 0, "w": 448, "h": 520, "page": "page-1", "title": "Kodsuz + tek plana kısıtlı" },
+    { "file": "Bilet.dc.html", "x": 0, "y": 0, "w": 448, "h": 640, "page": "page-2", "title": "A · Bilet (elendi)" },
+    { "file": "Sahne.dc.html", "x": 528, "y": 0, "w": 448, "h": 640, "page": "page-2", "title": "C · Sahne (elendi)" }
+  ],
+  "annotations": [
+    {
+      "id": "note-secilen",
+      "x": 0,
+      "y": -232,
+      "w": 448,
+      "page": "page-1",
+      "text": "SEÇİLEN · B EDİTORYAL\n\nKahraman oran, fiyat değil. Fiyat satırı kaldırıldı:\n\n• Kullanıcının henüz yapmadığı plan seçimini varsayıyordu\n• planIds bir kampanyayı tek plana kısıtlayabiliyor — o zaman gösterilen fiyat yanlış\n• Üçüncü plan eklendiğinde \"hangi fiyat?\" sorusunun cevabı yok\n\nOran plan-bağımsız; fiyat paywall'da, ön bilgilendirmenin yanında kalıyor."
+    },
+    {
+      "id": "note-kodsuz",
+      "x": 528,
+      "y": -232,
+      "w": 448,
+      "page": "page-1",
+      "text": "İKİ DURUM BİR ARADA\n\nKodsuz kampanya: bilet düşer (gösterilecek kod yok), CTA \"Premium'a bak\" olur.\n\nTek plana kısıtlı: kapsam satırı bunu söyler. Fiyat gösterseydik burada düpedüz yanlış olurdu — aylık fiyatı yazıp 3 aylıkta geçerli bir kampanyayı anlatmak gibi."
+    },
+    {
+      "id": "note-api",
+      "x": 0,
+      "y": 660,
+      "w": 976,
+      "page": "page-1",
+      "text": "UYGULAMADAN ÖNCE: API'nin EFEKTİF oranı göndermesi gerekiyor\n\ntoSummary ham promotions.discount_value'yu gönderiyor; gerçek indirimi computeDiscount promotions.max_percent ile kırpıyor. DB yüzdeye 1..90 izin veriyor, config tavanı varsayılan 50.\n\nAdmin %70 girerse modal \"%70\" der, checkout %50 uygular. Hata bugün uykuda — hiçbir yüzey discountValue'yu göstermiyor. Bu tasarımın kahramanı dev oran olduğu için canlanır."
+    },
+    {
+      "id": "note-elenen",
+      "x": 0,
+      "y": -160,
+      "w": 976,
+      "page": "page-2",
+      "text": "Referans için duruyor. A · Bilet davet kartıyla karışma riski taşıyordu; C · Sahne en dramatik ama koyu-öncelikliydi. İkisinde de fiyat satırı vardı — seçilen yönde kaldırıldığı gibi burada da kaldırılması gerekirdi."
+    }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
+}

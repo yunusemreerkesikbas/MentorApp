@@ -37,9 +37,8 @@ export function CoinCelebration({
   const [renderKey] = useState(() => Date.now());
 
   // Step-by-step progression: "blur" -> "bg" -> "coin" -> "text"
-  const [stage, setStage] = useState<CelebrationStage>(() =>
-    reduceMotion ? "text" : "blur",
-  );
+  const [stage, setStage] = useState<CelebrationStage>("blur");
+  const visibleStage: CelebrationStage = reduceMotion ? "text" : stage;
 
   // Lock body scroll and register Escape listener
   useEffect(() => {
@@ -58,7 +57,6 @@ export function CoinCelebration({
   // Step-by-step timer choreography
   useEffect(() => {
     if (reduceMotion) {
-      setStage("text");
       void playCoinChime();
       return;
     }
@@ -98,9 +96,9 @@ export function CoinCelebration({
   if (typeof document === "undefined") return null;
 
   // Single-shot burst only active during "bg" and initial "coin" entrance
-  const showBgBurst = stage === "bg" || stage === "coin";
-  const showCoin = stage === "coin" || stage === "text";
-  const showText = stage === "text";
+  const showBgBurst = visibleStage === "bg" || visibleStage === "coin";
+  const showCoin = visibleStage === "coin" || visibleStage === "text";
+  const showText = visibleStage === "text";
 
   const content = (
     <div
@@ -143,7 +141,7 @@ export function CoinCelebration({
         onClick={onClose}
       >
         {/* Soft golden ambient radial glow behind everything */}
-        {stage !== "blur" ? (
+        {visibleStage !== "blur" ? (
           <motion.div
             className="absolute size-72 sm:size-88 rounded-full blur-3xl opacity-45 pointer-events-none"
             initial={{ opacity: 0, scale: 0.6 }}

@@ -1,5 +1,5 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
-import { setRequestLocale } from "next-intl/server";
 import { OnboardingWizard } from "../_components/onboarding-wizard";
 
 export const metadata: Metadata = {
