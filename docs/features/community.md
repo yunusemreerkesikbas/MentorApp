@@ -67,6 +67,15 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Spotlight kutlamasında odak iadesi kararlılaştırıldı (2026-09-02)** — Kutlama sırasında
+  `busy` veya hata state'i değiştiğinde parent'ın yeni `onClose` callback'i focus-trap effect'ini
+  söküp yeniden kuruyor, böylece kapanışta sayfadaki önceki kontrol yerine artık DOM'dan kaldırılmış
+  dialog elementi saklanabiliyordu. Callback güncelliği artık ref üzerinden korunuyor; trap yalnız
+  sahne mount/unmount olduğunda kurulduğu için Escape ve kapanış sonrası odak iadesi mobil/masaüstünde
+  aynı çalışıyor. Kullanım değişmedi. Gotcha: modal focus-trap effect'lerini inline callback
+  kimliğine bağlama; callback'i ref'te güncel tut. İlgili: `journey-spotlight-scene.tsx`,
+  `e2e/journey-level-celebration.spec.ts`.
+
 - **Spotlight sahnesi — merdivende gezinti + ışığın eve dönüşü (2026-08-30)** — Sahne artık kendi
   `viewedTier`'ını tutuyor; komşu rozetler `<button>` oldu ve tıklanınca **iki vuruşlu** bir geçiş
   oynuyor: (A) ışık tıklanan rozete savrulur, o aydınlanır ortadaki kararır — DOM değişmez, mevcut

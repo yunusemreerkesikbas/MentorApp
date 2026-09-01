@@ -62,14 +62,21 @@ export function pickPromotionForDialog(
  * The promotion to advertise on the dashboard banner, or null when there is nothing honest to say.
  *
  * Premium users are never shown a commercial nudge (same rule as `PremiumCampaignBanner` and the
- * ads placements). Only an offer with a REAL discount qualifies — a coded promotion the user has
- * not typed yet is the welcome dialog's job, not the banner's, so it is deliberately ignored here.
+ * ads placements).
+ *
+ * Priority mirrors `pickPromotionForDialog` on purpose: a coded promotion wins, because it is the
+ * one the user still has to act on. The two surfaces would otherwise disagree about which campaign
+ * is "the" campaign — and the strip is where a dismissed modal leaves its campaign behind, so it
+ * has to be able to carry a coded one at all. `available` is the API's list of coded promotions
+ * this user already qualifies for, so advertising one is not a guess.
  */
 export function pickBannerPromotion(
   offers: PromotionOffersView | null,
   isPremium: boolean,
 ): PromotionSummary | null {
   if (!offers || isPremium) return null;
+  const waiting = offers.available[0];
+  if (waiting) return waiting;
   let best: { discountMinor: number; promotion: PromotionSummary } | null = null;
   for (const offer of Object.values(offers.offers)) {
     if (!offer.promotion || offer.discountMinor <= 0) continue;

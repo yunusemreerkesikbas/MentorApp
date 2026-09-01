@@ -317,13 +317,23 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
   context,
 }) => {
   await installDisplayGpt(page, true);
-  await mockKnowledgeApi(page, { authenticated: false });
+  const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.route(
     "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
     (route) => json(route, enabledContextualPlacement),
   );
   await page.goto(`/bilgi/${article.slug}`);
-  await expect(page.getByRole("complementary", { name: "Reklam" })).toBeHidden();
+  const adSlot = page.locator('aside[aria-label="Reklam"]');
+  await expect
+    .poll(() =>
+      api.requests.some(
+        ({ method, path }) =>
+          method === "POST" && path === "/v1/auth/refresh",
+      ),
+    )
+    .toBe(true);
+  await adSlot.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await expect(adSlot).toBeHidden();
 
   const premiumPage = await context.newPage();
   let gptRequests = 0;

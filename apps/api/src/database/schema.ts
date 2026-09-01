@@ -3356,6 +3356,17 @@ export const promotions = pgTable(
     /** User-facing badge text, per locale (web is bilingual; admin is Turkish-only). */
     labelTr: text("label_tr").notNull(),
     labelEn: text("label_en").notNull(),
+    /**
+     * Per-campaign copy for the announcement modal, per locale. All four are nullable: a campaign
+     * that leaves them empty falls back to the client's default wording, so a new campaign needs no
+     * deploy to speak in its own voice. Deliberately NOT admin-managed: the scope line ("valid on
+     * all plans") is derived from `planIds`, and the CTA depends on whether there is a code to
+     * apply -- hand-written versions of either could promise what checkout will not honour.
+     */
+    eyebrowTr: text("eyebrow_tr"),
+    eyebrowEn: text("eyebrow_en"),
+    descriptionTr: text("description_tr"),
+    descriptionEn: text("description_en"),
     ruleType: text("rule_type").notNull().default("ANYONE"),
     /** Rule shape: {withinDays} | {days, windowDays} | {} — validated by zod on write. */
     ruleParams: jsonb("rule_params")

@@ -148,9 +148,14 @@ function SpotlightStage(
   /* Read inside the key handler, which is registered once — a ref keeps it current without
      re-binding the listener on every acknowledge state change. */
   const busyRef = useRef(busy);
+  const closeRef = useRef(onClose);
   useEffect(() => {
     busyRef.current = busy;
   }, [busy]);
+
+  useEffect(() => {
+    closeRef.current = onClose;
+  }, [onClose]);
 
   const name = t(`levels.${levelKey}.name` as LevelCopyKey);
   const story = t(`levels.${levelKey}.story` as LevelCopyKey);
@@ -177,7 +182,7 @@ function SpotlightStage(
         /* An acknowledge is in flight; swallowing Escape keeps the request and the UI in step. */
         if (busyRef.current) return;
         event.preventDefault();
-        onClose();
+        closeRef.current();
         return;
       }
       if (event.key !== "Tab") return;
@@ -210,7 +215,7 @@ function SpotlightStage(
          auto-fired celebration. Same contract as the card this replaced. */
       window.requestAnimationFrame(() => previousFocus?.focus());
     };
-  }, [onClose]);
+  }, []);
 
   /* Once the beam settles the copy and CTA are on screen, so focus can land somewhere useful. */
   useEffect(() => {

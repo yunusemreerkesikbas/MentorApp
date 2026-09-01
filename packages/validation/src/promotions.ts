@@ -47,6 +47,14 @@ const promotionFields = {
   name: z.string().trim().min(1).max(80),
   labelTr: z.string().trim().min(1).max(60),
   labelEn: z.string().trim().min(1).max(60),
+  /**
+   * Optional per-campaign modal copy. Blank falls back to the client default, so these stay
+   * nullish rather than defaulting to a string nobody wrote.
+   */
+  eyebrowTr: z.string().trim().min(1).max(40).nullish(),
+  eyebrowEn: z.string().trim().min(1).max(40).nullish(),
+  descriptionTr: z.string().trim().min(1).max(200).nullish(),
+  descriptionEn: z.string().trim().min(1).max(200).nullish(),
   ruleType: promotionRuleTypeSchema,
   ruleParams: promotionRuleParamsSchema.default({}),
   discountType: promotionDiscountTypeSchema,
