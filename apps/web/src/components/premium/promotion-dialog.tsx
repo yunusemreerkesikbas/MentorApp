@@ -58,6 +58,20 @@ export function PromotionDialog() {
       // Nothing new to announce — leave the record untouched and check again next visit.
       if (!next) return;
 
+      // The dashboard fires several one-shot surfaces on mount — the mood check-in, a journey
+      // level celebration — and none of them know about each other. This one is the only
+      // COMMERCIAL nudge among them, so it is the one that stands down: an earned moment must not
+      // be buried under an ad. Checked here, after the fetches, because that is the moment we
+      // would actually take the screen.
+      //
+      // Standing down deliberately does NOT record the campaign as seen: it gets its single
+      // appearance on the next visit instead of being silently spent.
+      //
+      // ponytail: reads the DOM instead of a modal registry. Every modal in the app already
+      // carries `role="dialog" aria-modal="true"`, so there is nothing to keep in sync. Build the
+      // registry if two surfaces ever need to negotiate priority rather than just yield.
+      if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
+
       writeIdSet("local", SEEN_KEY, new Set(seen).add(next.id));
       setPromotion(next);
     })();

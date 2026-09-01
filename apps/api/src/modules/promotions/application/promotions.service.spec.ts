@@ -18,6 +18,10 @@ function promo(overrides: Partial<PromotionRow> = {}): PromotionRow {
     name: "Test",
     labelTr: "Test kampanyası",
     labelEn: "Test campaign",
+    eyebrowTr: null,
+    eyebrowEn: null,
+    descriptionTr: null,
+    descriptionEn: null,
     ruleType: "ANYONE",
     ruleParams: {},
     discountType: "PERCENT",
@@ -277,6 +281,36 @@ describe("PromotionsService advertised magnitude and scope", () => {
     // The monthly plan gets no discount at all, so the scope shows up on the plan that does.
     expect(resolved.offers[MONTHLY.id]!.summary).toBeNull();
     expect(resolved.offers[QUARTERLY.id]!.summary?.planNames).toEqual(["Premium 3 Aylık"]);
+  });
+
+  it("localizes the admin-written modal copy", async () => {
+    const written = promo({
+      eyebrowTr: "Yaza özel",
+      eyebrowEn: "Summer only",
+      descriptionTr: "Ağustos boyunca geçerli.",
+      descriptionEn: "Valid through August.",
+    });
+
+    const tr = await summaryFor(makeService({ live: [written] }));
+    expect(tr.eyebrow).toBe("Yaza özel");
+    expect(tr.description).toBe("Ağustos boyunca geçerli.");
+
+    const harness = makeService({ live: [written] });
+    const en = await harness.service.resolveOffers({
+      context: context(),
+      plans: [MONTHLY],
+      now: NOW,
+      locale: "en",
+    });
+    expect(en.offers[MONTHLY.id]!.summary?.eyebrow).toBe("Summer only");
+    expect(en.offers[MONTHLY.id]!.summary?.description).toBe("Valid through August.");
+  });
+
+  it("returns null copy when the admin left it blank, so the client uses its default", async () => {
+    // Empty must not become "" — the card branches on null to fall back to its own wording.
+    const summary = await summaryFor(makeService({ live: [promo()] }));
+    expect(summary.eyebrow).toBeNull();
+    expect(summary.description).toBeNull();
   });
 
   it("carries the same clamped magnitude on a waiting coupon", async () => {

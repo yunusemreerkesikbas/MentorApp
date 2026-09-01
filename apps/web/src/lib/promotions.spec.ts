@@ -7,6 +7,8 @@ function summary(overrides: Partial<PromotionSummary> = {}): PromotionSummary {
     id: "promo-1",
     code: null,
     label: "Hoş geldin hediyesi",
+    eyebrow: null,
+    description: null,
     discountType: "PERCENT",
     discountValue: 20,
     planNames: null,
@@ -107,9 +109,18 @@ describe("pickBannerPromotion", () => {
     expect(gift).toMatchObject({ label: "Ağustos" });
   });
 
-  it("ignores a coupon the user has not typed yet — that is the welcome dialog's job", () => {
+  it("carries a coupon the user has not typed yet, so a dismissed modal leaves it behind", () => {
     const waiting = offers({ available: [summary({ code: "HOSGELDIN" })] });
-    expect(pickBannerPromotion(waiting, false)).toBeNull();
+    expect(pickBannerPromotion(waiting, false)).toMatchObject({ code: "HOSGELDIN" });
+  });
+
+  it("prefers the coupon over an applied discount, matching the modal's own priority", () => {
+    // Both surfaces must agree on which campaign is "the" campaign.
+    const both = offers({
+      applied: summary({ id: "auto", label: "Otomatik" }),
+      available: [summary({ id: "coded", code: "HOSGELDIN" })],
+    });
+    expect(pickBannerPromotion(both, false)).toMatchObject({ id: "coded" });
   });
 
   it("picks the largest discount across plans", () => {

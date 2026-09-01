@@ -104,15 +104,30 @@ export function TopBanner({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="min-w-0 flex-1 overflow-hidden" aria-live="off">
-        <AnimatePresence initial={false} mode="wait">
+      {/*
+        Items turn like the faces of a cube: the outgoing line tips away over the top edge while
+        the next one rides in from underneath. Both faces are on screen at once, so the presence
+        mode stays "sync" and each face is absolutely positioned inside a fixed-height, clipped
+        stage. `perspective` lives on the stage - on the face itself it would flatten the rotation.
+      */}
+      <div
+        className="relative h-11 min-w-0 flex-1 overflow-hidden"
+        style={{ perspective: "700px" }}
+        aria-live="off"
+      >
+        <AnimatePresence initial={false}>
           <motion.div
             key={currentItem.id}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex min-w-0 items-center justify-center gap-2 text-sm"
-            exit={{ opacity: 0, x: reduceMotion ? 0 : -8 }}
-            initial={{ opacity: reduceMotion ? 1 : 0, x: reduceMotion ? 0 : 8 }}
-            transition={reduceMotion ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}
+            className="absolute inset-0 flex min-w-0 items-center justify-center gap-2 text-sm"
+            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
+            initial={
+              reduceMotion ? { opacity: 0 } : { rotateX: -90, y: "100%", opacity: 0 }
+            }
+            animate={{ rotateX: 0, y: "0%", opacity: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { rotateX: 90, y: "-100%", opacity: 0 }}
+            transition={
+              reduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
+            }
           >
             <span className="truncate font-semibold text-[var(--color-body)]">
               {currentItem.message}

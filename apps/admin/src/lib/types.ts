@@ -315,6 +315,11 @@ export interface AdminPromotion {
     name: string;
     labelTr: string;
     labelEn: string;
+    /** Kampanya modalının üst etiketi ve açıklaması. Boş = uygulama kendi varsayılanını kullanır. */
+    eyebrowTr: string | null;
+    eyebrowEn: string | null;
+    descriptionTr: string | null;
+    descriptionEn: string | null;
     ruleType: PromotionRuleType;
     ruleParams: Record<string, unknown>;
     discountType: PromotionDiscountType;

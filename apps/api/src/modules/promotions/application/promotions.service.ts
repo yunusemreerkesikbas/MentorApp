@@ -100,6 +100,8 @@ function toSummary(
     id: row.id,
     code: row.code,
     label: locale === "en" ? row.labelEn : row.labelTr,
+    eyebrow: (locale === "en" ? row.eyebrowEn : row.eyebrowTr) ?? null,
+    description: (locale === "en" ? row.descriptionEn : row.descriptionTr) ?? null,
     discountType: row.discountType as PromotionDiscountType,
     discountValue: advertisedDiscountValue(
       row.discountType as PromotionDiscountType,
@@ -500,6 +502,10 @@ export interface AdminPromotionDto {
   name: string;
   labelTr: string;
   labelEn: string;
+  eyebrowTr: string | null;
+  eyebrowEn: string | null;
+  descriptionTr: string | null;
+  descriptionEn: string | null;
   ruleType: string;
   ruleParams: Record<string, unknown>;
   discountType: string;
@@ -523,6 +529,10 @@ function toAdminDto(row: PromotionRow, redeemedCount: number): AdminPromotionDto
     name: row.name,
     labelTr: row.labelTr,
     labelEn: row.labelEn,
+    eyebrowTr: row.eyebrowTr,
+    eyebrowEn: row.eyebrowEn,
+    descriptionTr: row.descriptionTr,
+    descriptionEn: row.descriptionEn,
     ruleType: row.ruleType,
     ruleParams: (row.ruleParams ?? {}) as Record<string, unknown>,
     discountType: row.discountType,

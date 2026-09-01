@@ -978,7 +978,8 @@
     "coupon_copied": "Kopyalandı",
     "coupon_copy_failed": "Kopyalanamadı",
     "promotion_apply_cta": "Uygula ve devam et",
-    "promotion_dismiss": "Sonra bakarım"
+    "promotion_dismiss": "Sonra bakarım",
+    "valid_until": "{date} tarihine kadar geçerli"
   },
   "campaign": {
     "eyebrow": "7 gün ücretsiz deneme",

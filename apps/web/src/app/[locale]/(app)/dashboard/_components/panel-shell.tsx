@@ -573,7 +573,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
           action: {
             kind: "button",
             label: paywallT("banner_cta"),
-            onSelect: () => openPaywall(),
+            // Same hand-over as the modal: a coded campaign reaches checkout without retyping.
+            onSelect: () =>
+              openPaywall(bannerPromotion.code ? { code: bannerPromotion.code } : undefined),
           },
         },
       ]

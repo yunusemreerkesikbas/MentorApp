@@ -131,6 +131,63 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **Kampanya modalı başka bir modalın üstüne binmiyor (2026-09-02)** — Panel açılışta birden fazla
+  tek-seferlik yüzey tetikliyor: mood check-in (`dialog-panel`), seviye kutlaması
+  (`journey-spotlight-scene`) ve kampanya modalı. Hiçbiri diğerini bilmiyordu, üçü üst üste
+  biniyordu. Çözüm tek yönlü: **ticari olan geri çekiliyor** — `PromotionDialog` göstermeden hemen
+  önce ekranda `[role="dialog"][aria-modal="true"]` var mı diye bakıyor, varsa hiç açılmıyor.
+  Geri çekilmek kampanyayı **görülmüş saymıyor**, yani tek gösterimi harcanmıyor, bir sonraki
+  ziyarete kalıyor. DOM'a bakıyor, modal kaydına değil: her modal zaten bu iki niteliği taşıyor,
+  senkronda tutulacak ayrı bir liste yok (`ponytail:` notu dosyada).
+  Geçerlilik damgası tek cümleye indi ve soluklaştı: "30 Eylül tarihine kadar geçerli",
+  `--color-secondary`. Ayrı `GEÇERLİLİK` etiketi ve `validity_label` anahtarı kaldırıldı.
+  İlgili: `promotion-dialog.tsx`, `promotion-card.tsx`, `messages/{tr,en}.json`.
+
+- **Şerit kampanyayı devralıyor, küp dönüşü (2026-09-02)** — `pickBannerPromotion` artık kodlu
+  kampanyaları da (`offers.available`) dikkate alıyor ve önceliği `pickPromotionForDialog` ile
+  aynı: kupon önce, otomatik indirim sonra. Önceden kodlu kampanya bilerek dışarıda bırakılmıştı,
+  sonuç olarak **modal kapatılınca kampanya tamamen kayboluyordu**; artık şeritte duruyor. Şerit
+  CTA'sı da kodu `openPaywall({ code })` ile devrediyor, modaldaki davranışın aynısı.
+  TopBanner geçişi küp yüzü gibi dönüyor: sabit yükseklikli, `perspective` verilmiş bir sahne
+  içinde iki yüz aynı anda mutlak konumlu duruyor (`AnimatePresence` "sync"), çıkan yüz üst
+  kenardan devriliyor, giren yüz alttan geliyor. `useReducedMotion` açıkken sadece opaklık.
+  Gotcha: migration `0092_promotion_copy` geliştirme veritabanına uygulanmadan
+  `POST /v1/subscription/offers` **500** dönüyor — repository satırın tüm kolonlarını seçtiği için
+  `eyebrow_tr` yoksa sorgu patlıyor. `apps/api` içinden `npx drizzle-kit migrate`.
+  İlgili: `lib/promotions.ts`, `top-banner.tsx`, `panel-shell.tsx`, `e2e/promotion-banner.spec.ts`.
+
+- **Kampanya modalı: adminden yönetilen metin, bilet, hareket, süre (2026-09-02)** —
+  Migration `0092_promotion_copy` dört nullable kolon ekliyor: `eyebrow_tr/en`, `description_tr/en`.
+  `PromotionSummary` bunları lokalize edilmiş `eyebrow` / `description` olarak taşıyor; boşsa `null`
+  dönüyor ve istemci kendi varsayılan metnine düşüyor. Yani yeni bir kampanya kendi sesiyle
+  konuşmak için deploy istemiyor.
+  **Kapsam satırı ve CTA bilinçli olarak adminden yönetilmiyor**: kapsam `planNames`'ten türetiliyor
+  (tek plana özel bir indirim elle "tüm planlarda geçerli" yazılabilirdi) ve CTA kodun varlığına
+  bağlı davranışsal bir metin. İkisi de yanlış vaat üretebilecek alanlar.
+  Bilet kenarı artık tırtıklı: iki dikey kenarda 22 px'te bir yarım daire ısıran, **iç içe iki
+  maskeli katman** (dış katman çerçeve rengi, iç katman zemin, aynı maske `1.5px` kaydırılmış).
+  Eski `outline` + tek çift çentik çözümü maskenin çerçeveyi de kesmesi yüzünden çentik ağzında
+  çerçeveyi kaybediyordu.
+  Animasyonda asıl eksik olan **çıkış** kapandı: kart `open` state'i ile `AnimatePresence` içinde
+  duruyor, gerçek `onClose`/`onContinue` `onExitComplete`'te çalışıyor — önceden parent anında
+  unmount ettiği için modal aniden yok oluyordu. Elle yazılan gecikmeler `variants` +
+  `staggerChildren` ile değişti; kopyala butonunun ikon/etiket değişimi de artık geçişli.
+  Mobilde içerik kolonundaki `flex-1` boşluk kaldırıldı ve kolon `justify-center` oldu — hediye
+  ikonundan bilete kadar her şey tek blok okunuyor; rakam `clamp(84px,26vw,116px)` ile akışkan.
+  **Süreli kampanya artık süresini söylüyor**: `endsAt` doluysa biletin altında eğik bir
+  "geçerlilik damgası" çıkıyor (`data-testid="promotion-validity"`). Geri sayım ya da "son şans"
+  yok — [voice.md](../copy/voice.md) kayıp-kaçınmayı yasaklıyor, damga düz bilgi veriyor.
+  Kullanım: admin `/promotions` formunda "Modal üst etiketi" ve "Modal açıklaması" alanları; boş
+  bırakılırsa uygulama kendi metnini kullanır.
+  Gotcha: `NEXT_PUBLIC_SITE_URL` olmadan `pnpm --filter @mentor/web build` düşüyor ve **pnpm
+  filtresi kabuktan gelen env değişkenini alt sürece geçirmiyor** — e2e için `apps/web` içinden
+  `NEXT_PUBLIC_SITE_URL=https://... npx next build` çalıştırıp `next start`'ı da aynı değişkenle
+  başlatmak gerekiyor, aksi halde `/panel` "This page couldn't load" veriyor ve testler yanıltıcı
+  şekilde toplu düşüyor.
+  İlgili: `promotion-card.tsx`, `promotions.service.ts` (`toSummary`, `toAdminDto`),
+  `packages/{types,validation}/src/promotions.ts`, `PromotionForm.tsx`,
+  `messages/{tr,en}.json`, `e2e/promotion-banner.spec.ts`.
+
 - **Kampanya modalı: bir kez, kampanya başına (2026-09-01)** — `WelcomeGiftDialog` →
   `PromotionDialog`. Tek `seen` bayrağı yerine **görülmüş kampanya id kümesi**, yani ikinci bir
   kampanya birincinin bayrağı tarafından yutulmuyor. Bunun için `PromotionSummary`'ye `id` eklendi

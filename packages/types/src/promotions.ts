@@ -70,6 +70,15 @@ export interface PromotionSummary {
   code: string | null;
   /** Localized badge text ("Hoş geldin hediyesi"). */
   label: string;
+  /**
+   * Per-campaign copy for the announcement modal, already localized. `null` means the campaign
+   * left it blank and the client should use its own default wording.
+   *
+   * Only these two are admin-written. The scope line is derived from `planNames` and the CTA from
+   * `code`, because a hand-written version of either could promise what checkout will not honour.
+   */
+  eyebrow: string | null;
+  description: string | null;
   discountType: PromotionDiscountType;
   /**
    * The magnitude actually applied, NOT the admin's raw entry — percent for PERCENT, kuruş for

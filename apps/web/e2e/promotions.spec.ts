@@ -71,6 +71,8 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
         id: "promo-paywall-1",
         code: "HOSGELDIN",
         label: "Hoş geldin hediyesi",
+        eyebrow: null,
+        description: null,
         discountType: "PERCENT",
         discountValue: 20,
         planNames: null,

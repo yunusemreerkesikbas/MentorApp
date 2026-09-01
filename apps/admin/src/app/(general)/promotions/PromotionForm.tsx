@@ -46,6 +46,10 @@ interface FormState {
     name: string;
     labelTr: string;
     labelEn: string;
+    eyebrowTr: string;
+    eyebrowEn: string;
+    descriptionTr: string;
+    descriptionEn: string;
     code: string;
     ruleType: PromotionRuleType;
     withinDays: string;
@@ -62,12 +66,21 @@ interface FormState {
     isActive: boolean;
 }
 
+function blankToNull(value: string): string | null {
+    const trimmed = value.trim();
+    return trimmed === "" ? null : trimmed;
+}
+
 function seed(initial?: AdminPromotion | null): FormState {
     const params = (initial?.ruleParams ?? {}) as Record<string, number | undefined>;
     return {
         name: initial?.name ?? "",
         labelTr: initial?.labelTr ?? "",
         labelEn: initial?.labelEn ?? "",
+        eyebrowTr: initial?.eyebrowTr ?? "",
+        eyebrowEn: initial?.eyebrowEn ?? "",
+        descriptionTr: initial?.descriptionTr ?? "",
+        descriptionEn: initial?.descriptionEn ?? "",
         code: initial?.code ?? "",
         ruleType: initial?.ruleType ?? "ANYONE",
         withinDays: String(params.withinDays ?? 7),
@@ -114,6 +127,11 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
             name: form.name.trim(),
             labelTr: form.labelTr.trim(),
             labelEn: form.labelEn.trim(),
+            // Blank clears the column: the app then falls back to its own default wording.
+            eyebrowTr: blankToNull(form.eyebrowTr),
+            eyebrowEn: blankToNull(form.eyebrowEn),
+            descriptionTr: blankToNull(form.descriptionTr),
+            descriptionEn: blankToNull(form.descriptionEn),
             code: form.code.trim() === "" ? null : form.code.trim().toUpperCase(),
             ruleType: form.ruleType,
             ruleParams: ruleParams(),
@@ -203,6 +221,61 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
                                         />
                                     </div>
                                 </div>
+
+                                <div className="row">
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Modal üst etiketi (TR)</label>
+                                        <input
+                                            className="form-control"
+                                            value={form.eyebrowTr}
+                                            onChange={set("eyebrowTr")}
+                                            maxLength={40}
+                                            placeholder="Sana özel"
+                                        />
+                                    </div>
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Modal üst etiketi (EN)</label>
+                                        <input
+                                            className="form-control"
+                                            value={form.eyebrowEn}
+                                            onChange={set("eyebrowEn")}
+                                            maxLength={40}
+                                            placeholder="Just for you"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="row">
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Modal açıklaması (TR)</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={form.descriptionTr}
+                                            onChange={set("descriptionTr")}
+                                            maxLength={200}
+                                            placeholder="Kampanyayı anlatan bir iki cümle."
+                                        />
+                                    </div>
+                                    <div className="col-md-6 mb-3">
+                                        <label className="form-label">Modal açıklaması (EN)</label>
+                                        <textarea
+                                            className="form-control"
+                                            rows={2}
+                                            value={form.descriptionEn}
+                                            onChange={set("descriptionEn")}
+                                            maxLength={200}
+                                            placeholder="A sentence or two about the campaign."
+                                        />
+                                    </div>
+                                </div>
+
+                                <p className="text-muted small mb-3">
+                                    Üst etiket ve açıklama boş bırakılırsa uygulama kendi
+                                    varsayılan metnini kullanır. İndirimin hangi planlarda geçerli
+                                    olduğunu anlatan satır ile buton yazısı kampanyadan türetilir,
+                                    elle yazılamaz.
+                                </p>
 
                                 <div className="mb-1">
                                     <label className="form-label">Kupon kodu</label>

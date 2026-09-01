@@ -68,6 +68,8 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
         id: "promo-banner-1",
         code: null,
         label: "Hoş geldin hediyesi",
+        eyebrow: null,
+        description: null,
         discountType: "PERCENT",
         discountValue: 20,
         planNames: null,
@@ -106,6 +108,8 @@ const CODED_CAMPAIGN: PromotionOffersView = {
       id: "promo-coded-1",
       code: "HOSGELDIN",
       label: "Hoş geldin hediyen",
+      eyebrow: null,
+      description: null,
       discountType: "PERCENT",
       discountValue: 20,
       planNames: null,
@@ -413,6 +417,111 @@ test("kuponlu kampanyada bilet çıkar ve kod paywall'a devredilir", async ({ pa
   // The user never retypes it: the paywall re-resolves offers WITH the handed-over code.
   await expect(page.getByTestId("premium-paywall")).toContainText("Kupon uygulandı: HOSGELDIN");
   expect(codes).toContain("HOSGELDIN");
+});
+
+test("kampanya kendi metnini yazdıysa modal onu gösterir", async ({ page }) => {
+  const written: PromotionOffersView = {
+    offers: {
+      "premium-monthly": {
+        ...DISCOUNTED_OFFERS.offers["premium-monthly"]!,
+        promotion: {
+          ...DISCOUNTED_OFFERS.offers["premium-monthly"]!.promotion!,
+          id: "promo-written",
+          eyebrow: "Yaza özel",
+          description: "Ağustos boyunca tüm planlarda geçerli bir indirim.",
+        },
+      },
+    },
+    available: [],
+  };
+  await mockDashboard(page, { offers: written, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  const card = page.getByTestId("promotion-card");
+  // Admin copy replaces the default eyebrow, so a new campaign needs no deploy to speak for itself.
+  await expect(card).toContainText("Yaza özel");
+  await expect(card).not.toContainText("Sana özel");
+  await expect(card).toContainText("Ağustos boyunca tüm planlarda geçerli bir indirim.");
+  // Derived, never admin-written: the scope line still comes from the resolved plans.
+  await expect(card).toContainText("Tüm planlarda geçerli.");
+});
+
+test("süreli kampanya geçerlilik damgasını gösterir", async ({ page }) => {
+  const dated: PromotionOffersView = {
+    offers: {
+      "premium-monthly": {
+        ...DISCOUNTED_OFFERS.offers["premium-monthly"]!,
+        promotion: {
+          ...DISCOUNTED_OFFERS.offers["premium-monthly"]!.promotion!,
+          id: "promo-dated",
+          endsAt: "2026-10-31T20:59:59.000Z",
+        },
+      },
+    },
+    available: [],
+  };
+  await mockDashboard(page, { offers: dated, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  const stamp = page.getByTestId("promotion-validity");
+  await expect(stamp).toHaveText("31 Ekim tarihine kadar geçerli");
+  // Plain fact, no countdown: voice.md rules out loss aversion on commercial surfaces.
+  await expect(stamp).not.toContainText("son");
+});
+
+test("süresiz kampanyada damga çıkmaz", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  await expect(page.getByTestId("promotion-card")).toBeVisible();
+  await expect(page.getByTestId("promotion-validity")).toHaveCount(0);
+});
+
+test("modal kapanınca kampanya şeride devrediliyor", async ({ page }) => {
+  const codes: (string | undefined)[] = [];
+  await mockDashboard(page, { offers: CODED_CAMPAIGN, seenCampaigns: [], captureCodes: codes });
+  await page.goto("/panel");
+
+  const card = page.getByTestId("promotion-card");
+  await expect(card).toBeVisible();
+  await card.getByRole("button", { name: "Sonra bakarım" }).click();
+  await expect(card).toHaveCount(0);
+
+  // The campaign must not disappear with the modal: the strip is where it lives afterwards.
+  const strip = page.getByTestId("dashboard-top-banner");
+  await expect(strip).toContainText("Hoş geldin hediyen");
+
+  // And the strip hands the code over too, exactly like the modal does.
+  await strip.getByRole("button", { name: /Premium/ }).click();
+  await expect(page.getByTestId("premium-paywall")).toContainText("Kupon uygulandı: HOSGELDIN");
+  expect(codes).toContain("HOSGELDIN");
+});
+
+test("başka bir modal açıkken kampanya modalı devreye girmez", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, seenCampaigns: [] });
+  // Stands in for the mood check-in / level celebration: any modal already owning the screen.
+  // Init scripts re-run on every navigation, so the flag keeps the rival on the FIRST load only —
+  // the reload below has to find a clear screen for the second half of this test to mean anything.
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("rival-shown") === "1") return;
+    sessionStorage.setItem("rival-shown", "1");
+    const rival = document.createElement("div");
+    rival.setAttribute("role", "dialog");
+    rival.setAttribute("aria-modal", "true");
+    rival.setAttribute("data-testid", "rival-dialog");
+    rival.textContent = "Bugün nasılsın?";
+    window.addEventListener("DOMContentLoaded", () => document.body.append(rival));
+  });
+  await page.goto("/panel");
+
+  await expect(page.getByTestId("rival-dialog")).toBeVisible();
+  // A commercial nudge never buries an earned moment.
+  await expect(page.getByTestId("promotion-card")).toHaveCount(0);
+
+  // Standing down must not spend the campaign's single appearance.
+  await page.reload();
+  await expect(page.getByTestId("rival-dialog")).toHaveCount(0);
+  await expect(page.getByTestId("promotion-card")).toBeVisible();
 });
 
 test("aynı kampanya ikinci yüklemede modal açmaz", async ({ page }) => {

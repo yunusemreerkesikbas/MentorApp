@@ -978,7 +978,8 @@
     "coupon_copied": "Copied",
     "coupon_copy_failed": "Copy failed",
     "promotion_apply_cta": "Apply and continue",
-    "promotion_dismiss": "Maybe later"
+    "promotion_dismiss": "Maybe later",
+    "valid_until": "Valid until {date}"
   },
   "campaign": {
     "eyebrow": "7-day free trial",
