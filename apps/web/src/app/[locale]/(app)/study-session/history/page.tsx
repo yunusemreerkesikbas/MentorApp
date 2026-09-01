@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { redirect } from "@/i18n/navigation";
 
 /** `/seans/gecmis` folded into the session sidebar — keep the URL for old bookmarks. */

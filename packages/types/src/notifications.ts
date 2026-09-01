@@ -2,6 +2,8 @@
 export interface NotificationPreferencesDto {
   emailEnabled: boolean;
   pushEnabled: boolean;
+  /** Commercial messages (campaigns, discounts) — off silences every channel, inbox included. */
+  campaignsEnabled: boolean;
 }
 
 export interface PushSubscriptionKeysDto {

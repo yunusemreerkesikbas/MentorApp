@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { Suspense } from "react";
 import { PanelShell } from "./_components/panel-shell";
 

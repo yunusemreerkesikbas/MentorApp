@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { LeaderboardScreen } from "./_components/leaderboard-screen";
 
 export default async function LeaderboardPage({

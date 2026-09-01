@@ -8,8 +8,8 @@ import {
 } from "./promotions.service";
 
 const NOW = new Date("2026-08-30T12:00:00Z");
-const MONTHLY = { id: "premium-monthly", priceMinor: 24_900 };
-const QUARTERLY = { id: "premium-3m", priceMinor: 59_900 };
+const MONTHLY = { id: "premium-monthly", name: "Premium Aylık", priceMinor: 24_900 };
+const QUARTERLY = { id: "premium-3m", name: "Premium 3 Aylık", priceMinor: 59_900 };
 
 function promo(overrides: Partial<PromotionRow> = {}): PromotionRow {
   return {
@@ -42,7 +42,7 @@ function context(overrides: Partial<PromotionUserContext> = {}): PromotionUserCo
     orgId: null,
     userCreatedAt: NOW,
     hadAnySubscription: false,
-    lastSubscriptionStatus: null,
+    lostPremiumAccess: false,
     ...overrides,
   };
 }
@@ -232,6 +232,61 @@ describe("PromotionsService.resolveOffers", () => {
   it("reports a per-user quota that is already spent", async () => {
     const harness = makeService({ byCode: promo({ code: "BIRKEZ" }), userUsed: 1 });
     expect((await resolveMonthly(harness, { code: "BIRKEZ" })).reason).toBe("USER_LIMIT_REACHED");
+  });
+});
+
+describe("PromotionsService advertised magnitude and scope", () => {
+  async function summaryFor(harness: Harness) {
+    const resolved = await harness.service.resolveOffers({
+      context: context(),
+      plans: [MONTHLY, QUARTERLY],
+      now: NOW,
+    });
+    return resolved.offers[MONTHLY.id]!.summary!;
+  }
+
+  it("advertises the CLAMPED percentage, never the admin's raw entry", async () => {
+    // The DB allows 1..90 while promotions.max_percent defaults to 50. Surfacing 70 here would
+    // promise a discount checkout does not give — a false price claim on a commercial surface.
+    const harness = makeService({ live: [promo({ discountValue: 70 })], maxPercent: 50 });
+    expect((await summaryFor(harness)).discountValue).toBe(50);
+  });
+
+  it("advertises a fixed amount no covered plan clamps below", async () => {
+    // 15 000 kuruş is unclamped on the 59 900 plan but hits the 50% ceiling on the 24 900 one.
+    const harness = makeService({
+      live: [promo({ discountType: "FIXED", discountValue: 15_000 })],
+      maxPercent: 50,
+    });
+    expect((await summaryFor(harness)).discountValue).toBe(12_450);
+  });
+
+  it("reports no plan scope when the promotion covers every plan", async () => {
+    const harness = makeService({ live: [promo({ planIds: null })] });
+    // null is the signal for "all plans" — the client says so instead of naming a price.
+    expect((await summaryFor(harness)).planNames).toBeNull();
+  });
+
+  it("names the covered plans when the promotion is scoped", async () => {
+    const harness = makeService({ live: [promo({ planIds: ["premium-3m"] })] });
+    const resolved = await harness.service.resolveOffers({
+      context: context(),
+      plans: [MONTHLY, QUARTERLY],
+      now: NOW,
+    });
+    // The monthly plan gets no discount at all, so the scope shows up on the plan that does.
+    expect(resolved.offers[MONTHLY.id]!.summary).toBeNull();
+    expect(resolved.offers[QUARTERLY.id]!.summary?.planNames).toEqual(["Premium 3 Aylık"]);
+  });
+
+  it("carries the same clamped magnitude on a waiting coupon", async () => {
+    const harness = makeService({ coded: [promo({ code: "BUYUK", discountValue: 80 })], maxPercent: 50 });
+    const resolved = await harness.service.resolveOffers({
+      context: context(),
+      plans: [MONTHLY],
+      now: NOW,
+    });
+    expect(resolved.available[0]?.discountValue).toBe(50);
   });
 });
 

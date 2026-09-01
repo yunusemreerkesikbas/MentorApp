@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 
 import { ProfileShell } from "../profile/_components/profile-shell";
 

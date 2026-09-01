@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { ZoneShell } from "./_components/zone-shell";
 
 export default async function ZonePage({

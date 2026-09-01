@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import { PromotionDiscountType } from "@mentor/types";
-import { MIN_CHARGE_MINOR, computeDiscount } from "./promotion-price";
+import {
+  MIN_CHARGE_MINOR,
+  advertisedDiscountValue,
+  computeDiscount,
+} from "./promotion-price";
 
 const MONTHLY = 24_900; // 249,00 ₺ — the seeded premium-monthly price
 const NO_CAP = 90;
@@ -63,5 +67,40 @@ describe("computeDiscount", () => {
         }
       }
     }
+  });
+});
+
+describe("advertisedDiscountValue", () => {
+  it("clamps a percentage to the configured ceiling", () => {
+    // Admin may enter up to 90 (DB CHECK) while the ceiling defaults to 50 — advertising the raw
+    // entry would promise a discount checkout does not give.
+    expect(advertisedDiscountValue(PromotionDiscountType.PERCENT, 70, 50, [MONTHLY])).toBe(50);
+  });
+
+  it("leaves a percentage under the ceiling alone", () => {
+    expect(advertisedDiscountValue(PromotionDiscountType.PERCENT, 20, 50, [MONTHLY])).toBe(20);
+  });
+
+  it("ignores plan prices for a percentage — the clamp is proportional", () => {
+    expect(advertisedDiscountValue(PromotionDiscountType.PERCENT, 20, 50, [])).toBe(20);
+    expect(advertisedDiscountValue(PromotionDiscountType.PERCENT, 20, 50, [999, MONTHLY])).toBe(20);
+  });
+
+  it("takes the worst case across covered plans for a fixed amount", () => {
+    // 15 000 kuruş off: unclamped on the 59 900 plan, clamped to 50% (12 450) on the 24 900 one.
+    // Advertising 15 000 would overstate what the cheaper plan actually gives.
+    expect(
+      advertisedDiscountValue(PromotionDiscountType.FIXED, 15_000, 50, [MONTHLY, 59_900]),
+    ).toBe(12_450);
+  });
+
+  it("keeps a fixed amount that no covered plan clamps", () => {
+    expect(advertisedDiscountValue(PromotionDiscountType.FIXED, 5_000, 50, [MONTHLY, 59_900])).toBe(
+      5_000,
+    );
+  });
+
+  it("falls back to the entered amount when no plan is covered", () => {
+    expect(advertisedDiscountValue(PromotionDiscountType.FIXED, 5_000, 50, [])).toBe(5_000);
   });
 });

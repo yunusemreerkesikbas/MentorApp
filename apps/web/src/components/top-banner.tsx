@@ -11,11 +11,8 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
-import {
-  advanceTopBannerIndex,
-  parseDismissedIds,
-  serializeDismissedIds,
-} from "@/lib/top-banner-state";
+import { readIdSet, writeIdSet } from "@/lib/seen-ids";
+import { advanceTopBannerIndex } from "@/lib/top-banner-state";
 
 /**
  * v2 holds a JSON array of dismissed item ids; v1 held a single "1" meaning "hide everything".
@@ -30,11 +27,7 @@ const getHydratedSnapshot = () => true;
 const getServerHydratedSnapshot = () => false;
 
 function readDismissedIds(): ReadonlySet<string> {
-  try {
-    return parseDismissedIds(sessionStorage.getItem(DISMISS_KEY));
-  } catch {
-    return parseDismissedIds(null);
-  }
+  return readIdSet("session", DISMISS_KEY);
 }
 
 type TopBannerAction =
@@ -91,11 +84,7 @@ export function TopBanner({
     setDismissedIds(next);
     // Land on the item that slid into this slot rather than skipping one.
     setCurrentIndex(0);
-    try {
-      sessionStorage.setItem(DISMISS_KEY, serializeDismissedIds(next));
-    } catch {
-      // In-memory state still hides it when storage is unavailable.
-    }
+    writeIdSet("session", DISMISS_KEY, next);
   }
 
   if (!hydrated || !currentItem) return null;

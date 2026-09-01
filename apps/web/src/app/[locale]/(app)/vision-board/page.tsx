@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { VisionBoardShell } from "./_components/vision-board-shell";
 
 /** Vision/goal board edit page — reached from the panel card (not a nav tab). */

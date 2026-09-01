@@ -12,7 +12,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { DatabaseTx } from "../../../database/drizzle";
-import { computeDiscount } from "../domain/promotion-price";
+import { advertisedDiscountValue, computeDiscount } from "../domain/promotion-price";
 import { evaluateRule, type PromotionRuleContext } from "../domain/promotion-rule";
 import {
   PromotionRepository,
@@ -31,7 +31,8 @@ export interface PromotionUserContext {
   userCreatedAt: Date;
   /** Has the user EVER had a subscription row? Same signal payments uses for trial-once. */
   hadAnySubscription: boolean;
-  lastSubscriptionStatus: string | null;
+  /** Had a subscription and no longer has premium — the WIN_BACK signal. Derived by payments. */
+  lostPremiumAccess: boolean;
 }
 
 /**
@@ -43,6 +44,8 @@ export const MAX_ACTIVITY_WINDOW_DAYS = 90;
 
 export interface PromotionPlanInput {
   id: string;
+  /** Display name — a promotion states which PLANS it covers, never a price. */
+  name: string;
   priceMinor: number;
 }
 
@@ -78,12 +81,33 @@ export interface ResolvedOffers {
   available: PromotionSummary[];
 }
 
-function toSummary(row: PromotionRow, locale: string | undefined): PromotionSummary {
+/**
+ * The user-facing half of a promotion.
+ *
+ * Two fields are deliberately NOT copies of the row. `discountValue` is what checkout will really
+ * apply (clamped), because a surface that advertises the admin's raw entry can promise a discount
+ * the user never gets. `planNames` states the SCOPE instead of a price: a price would presuppose
+ * a plan the user has not chosen and would be outright wrong for a `planIds`-scoped campaign.
+ */
+function toSummary(
+  row: PromotionRow,
+  locale: string | undefined,
+  maxPercent: number,
+  plans: readonly PromotionPlanInput[],
+): PromotionSummary {
+  const covered = row.planIds === null ? plans : plans.filter((p) => row.planIds!.includes(p.id));
   return {
+    id: row.id,
     code: row.code,
     label: locale === "en" ? row.labelEn : row.labelTr,
     discountType: row.discountType as PromotionDiscountType,
-    discountValue: row.discountValue,
+    discountValue: advertisedDiscountValue(
+      row.discountType as PromotionDiscountType,
+      row.discountValue,
+      maxPercent,
+      covered.map((p) => p.priceMinor),
+    ),
+    planNames: row.planIds === null ? null : covered.map((p) => p.name),
     appliesToPeriods: row.appliesToPeriods,
     endsAt: row.endsAt?.toISOString() ?? null,
   };
@@ -128,7 +152,7 @@ export class PromotionsService {
         now,
         userCreatedAt: input.context.userCreatedAt,
         hadAnySubscription: input.context.hadAnySubscription,
-        lastSubscriptionStatus: input.context.lastSubscriptionStatus,
+        lostPremiumAccess: input.context.lostPremiumAccess,
         activeDates: needsActivity ? await activity! : [],
       };
     };
@@ -136,16 +160,19 @@ export class PromotionsService {
     const enabled = await this.config.get("promotions.enabled");
     if (!enabled) return this.listPrices(input.plans, input.code ? "DISABLED" : null);
 
+    // Needed by both branches below: the waiting-coupon list advertises a magnitude too, and it
+    // has to be the clamped one there as well.
+    const maxPercent = await this.config.get("promotions.max_percent");
+
     const { candidates, rejection } = await this.findCandidates(input.code, now);
     if (rejection) return this.listPrices(input.plans, rejection);
     if (candidates.length === 0) {
       return {
         ...this.listPrices(input.plans, null),
-        available: await this.available(input, now, ruleContextFor),
+        available: await this.available(input, now, maxPercent, ruleContextFor),
       };
     }
 
-    const maxPercent = await this.config.get("promotions.max_percent");
     const ruleContext = await ruleContextFor(candidates);
 
     // ponytail: quota counts run per candidate, un-cached. The live catalog is a handful of rows;
@@ -165,6 +192,7 @@ export class PromotionsService {
     for (const plan of input.plans) {
       offers[plan.id] = this.bestOfferForPlan(
         plan,
+        input.plans,
         eligible,
         maxPercent,
         input.locale,
@@ -172,7 +200,7 @@ export class PromotionsService {
         input.code ? lastReason ?? "PLAN_MISMATCH" : null,
       );
     }
-    return { offers, available: await this.available(input, now, ruleContextFor) };
+    return { offers, available: await this.available(input, now, maxPercent, ruleContextFor) };
   }
 
   /**
@@ -183,6 +211,7 @@ export class PromotionsService {
   private async available(
     input: ResolveOffersInput,
     now: Date,
+    maxPercent: number,
     ruleContextFor: (candidates: readonly PromotionRow[]) => Promise<PromotionRuleContext>,
   ): Promise<PromotionSummary[]> {
     if (input.code) return [];
@@ -193,7 +222,7 @@ export class PromotionsService {
     const summaries: PromotionSummary[] = [];
     for (const promotion of coded) {
       if (await this.disqualify(promotion, ruleContext, input.context.userId)) continue;
-      summaries.push(toSummary(promotion, input.locale));
+      summaries.push(toSummary(promotion, input.locale, maxPercent, input.plans));
     }
     return summaries;
   }
@@ -396,6 +425,7 @@ export class PromotionsService {
    */
   private bestOfferForPlan(
     plan: PromotionPlanInput,
+    plans: readonly PromotionPlanInput[],
     eligible: readonly PromotionRow[],
     maxPercent: number,
     locale: string | undefined,
@@ -432,7 +462,7 @@ export class PromotionsService {
       // Once the covered periods run out the plan renews at its list price.
       renewalPriceMinor: plan.priceMinor,
       promotionId: best.promotion.id,
-      summary: toSummary(best.promotion, locale),
+      summary: toSummary(best.promotion, locale, maxPercent, plans),
       reason: null,
     };
   }

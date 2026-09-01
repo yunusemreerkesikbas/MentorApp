@@ -60,12 +60,33 @@ export type PromotionIneligibleReason =
 
 /** The user-facing half of a resolved promotion — enough to render the badge and the legal copy. */
 export interface PromotionSummary {
+  /**
+   * Campaign identity, so a client can remember "already shown this one" across campaigns.
+   * Inert on the wire: no endpoint accepts a promotion id — offers and checkout take a `code` —
+   * so it grants nothing, it only lets the UI tell two campaigns apart.
+   */
+  id: string;
   /** null for an automatically applied promotion. */
   code: string | null;
   /** Localized badge text ("Hoş geldin hediyesi"). */
   label: string;
   discountType: PromotionDiscountType;
+  /**
+   * The magnitude actually applied, NOT the admin's raw entry — percent for PERCENT, kuruş for
+   * FIXED. `computeDiscount` clamps every discount against `promotions.max_percent` (the DB allows
+   * 1..90, the ceiling defaults to 50), so advertising the raw value would promise a discount
+   * checkout does not give. For FIXED this is the worst case across every plan the promotion
+   * covers, so it stays true whichever plan the user picks.
+   */
   discountValue: number;
+  /**
+   * Plans the promotion covers, by display name — `null` means every active plan.
+   *
+   * A promotion surface must never state a PRICE: it would presuppose a plan the user has not
+   * chosen yet, and `planIds` can scope a campaign to one plan, which would make that price
+   * simply wrong. Naming the scope is plan-count-proof; the paywall does the pricing.
+   */
+  planNames: string[] | null;
   /** How many charges the discount covers. 1 = the first charge only. */
   appliesToPeriods: number;
   endsAt: string | null;

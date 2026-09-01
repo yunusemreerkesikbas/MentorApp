@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { WeeklyRecapShell } from "./_components/weekly-recap-shell";
 
 export default async function WeeklyRecapPage({

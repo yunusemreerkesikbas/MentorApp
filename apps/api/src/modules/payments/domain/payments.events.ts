@@ -9,6 +9,8 @@ export const PaymentsEventTopic = {
   SUBSCRIPTION_CANCELED: "payments.subscription.canceled",
   PAYMENT_FAILED: "payments.payment.failed",
   PAYMENT_REFUNDED: "payments.payment.refunded",
+  /** Access actually ended (sweeper). Distinct from CANCELED, which still has paid time left. */
+  SUBSCRIPTION_EXPIRED: "payments.subscription.expired",
 } as const;
 
 export class SubscriptionActivated {
@@ -41,5 +43,13 @@ export class PaymentRefunded {
     readonly userId: string,
     readonly subscriptionId: string,
     readonly amountMinor: number,
+  ) {}
+}
+
+export class SubscriptionExpired {
+  constructor(
+    readonly userId: string,
+    readonly subscriptionId: string,
+    readonly planId: string,
   ) {}
 }

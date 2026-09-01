@@ -1,14 +1,15 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
-import { getMessages, getTranslations, setRequestLocale } from "next-intl/server";
+import { getMessages, getTranslations } from "next-intl/server";
 import {
   fetchExamCalendarByFamily,
   fetchInfoArticleBySlug,
   fetchInfoArticlesByFamily,
   infoArticleUrl,
 } from "@/lib/content-api";
-import { pickMessages } from "@/i18n/scoped-messages";
+import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";
 import {
@@ -131,7 +132,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
 
   return (
     <NextIntlClientProvider
-      messages={pickMessages(messages, ["article", "knowledge", "ads"])}
+      messages={pickMessages(messages, ROUTE_MESSAGE_SCOPES.article)}
     >
       <PublicChrome
         loginLabel={translate("login")}

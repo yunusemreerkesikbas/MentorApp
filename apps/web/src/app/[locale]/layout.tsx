@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import { notFound } from "next/navigation";
-import { NextIntlClientProvider } from "next-intl";
+import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
 import { BackgroundBlobs } from "@mentor/ui";
 import { routing } from "@/i18n/routing";
-import { pickMessages } from "@/i18n/scoped-messages";
+import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { APP_SIDEBAR_BOOTSTRAP_SCRIPT } from "@/lib/app-sidebar";
 import { siteUrl } from "@/lib/forum-public";
 import { THEME_BOOTSTRAP_SCRIPT } from "@/lib/theme";
@@ -96,9 +96,9 @@ export default async function LocaleLayout({
 }) {
   const { locale } = await params;
   // Reject unknown first segments (e.g. /xyz) instead of rendering them as the default locale.
-  if (!(routing.locales as readonly string[]).includes(locale)) notFound();
+  if (!hasLocale(routing.locales, locale)) notFound();
   setRequestLocale(locale);
-  const messages = pickMessages(await getMessages(), ["analyticsConsent"]);
+  const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.root);
 
   return (
     <html

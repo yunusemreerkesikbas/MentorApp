@@ -64,7 +64,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { fetchRewardOffer } from "@/lib/ads";
 import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-banner";
-import { WelcomeGiftDialog } from "@/components/premium/welcome-gift-dialog";
+import { PromotionDialog } from "@/components/premium/promotion-dialog";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchAutoPromotionOffers, pickBannerPromotion } from "@/lib/promotions";
@@ -747,7 +747,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
             flash in and then disappear.
           */}
           {bannerPromotion === null ? <PremiumCampaignBanner /> : null}
-          <WelcomeGiftDialog />
+          <PromotionDialog />
           <motion.div variants={staggerItemVariants}>
             <VisionBoardCard />
           </motion.div>

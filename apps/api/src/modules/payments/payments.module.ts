@@ -8,6 +8,7 @@ import { IdentityModule } from "../identity/identity.module";
 import { PromotionsModule } from "../promotions/promotions.module";
 import { EntitlementService } from "./application/entitlement.service";
 import { FeaturePolicyService } from "./application/feature-policy.service";
+import { SubscriptionMaintenanceService } from "./application/subscription-maintenance.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
 import { WebhookService } from "./application/webhook.service";
 import { DisabledPaymentsAdapter } from "./infrastructure/adapters/disabled-payments.adapter";
@@ -19,6 +20,7 @@ import {
   PlansRepository,
   SubscriptionsRepository,
 } from "./infrastructure/payments.repositories";
+import { PaymentsInternalController } from "./presentation/payments-internal.controller";
 import { PaymentsWebhookController } from "./presentation/payments-webhook.controller";
 import { PremiumGuard } from "./presentation/premium.guard";
 import { SubscriptionsController } from "./presentation/subscriptions.controller";
@@ -30,12 +32,17 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
  */
 @Module({
   imports: [IdentityModule, PromotionsModule, CoachingModule],
-  controllers: [SubscriptionsController, PaymentsWebhookController],
+  controllers: [
+    SubscriptionsController,
+    PaymentsWebhookController,
+    PaymentsInternalController,
+  ],
   providers: [
     PlansRepository,
     SubscriptionsRepository,
     PaymentEventsRepository,
     SubscriptionsService,
+    SubscriptionMaintenanceService,
     FeaturePolicyService,
     EntitlementService,
     WebhookService,

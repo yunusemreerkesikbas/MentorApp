@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import enMessages from "../../messages/en.json";
 import trMessages from "../../messages/tr.json";
-import { pickMessages } from "./scoped-messages";
+import { pickMessages, ROUTE_MESSAGE_SCOPES } from "./scoped-messages";
 
 describe("pickMessages", () => {
   const messages = {
@@ -22,15 +22,7 @@ describe("pickMessages", () => {
   });
 
   it("keeps scoped route namespaces mirrored in TR and EN", () => {
-    const routeNamespaces = [
-      ["analyticsConsent"],
-      ["welcome"],
-      ["article", "knowledge", "ads"],
-      ["auth", "common"],
-      ["onboarding", "profile", "vision", "common"],
-    ] as const;
-
-    for (const namespaces of routeNamespaces) {
+    for (const namespaces of Object.values(ROUTE_MESSAGE_SCOPES)) {
       const tr = pickMessages(trMessages, namespaces);
       const en = pickMessages(enMessages, namespaces);
       expect(Object.keys(en)).toEqual(Object.keys(tr));
@@ -44,13 +36,11 @@ describe("pickMessages", () => {
 
   it("keeps welcome and article client message payloads inside their budgets", () => {
     for (const messagesByLocale of [trMessages, enMessages]) {
-      const welcome = pickMessages(messagesByLocale, ["welcome"]);
-      const article = pickMessages(messagesByLocale, [
-        "article",
-        "knowledge",
-        "ads",
-      ]);
+      const root = pickMessages(messagesByLocale, ROUTE_MESSAGE_SCOPES.root);
+      const welcome = pickMessages(messagesByLocale, ROUTE_MESSAGE_SCOPES.welcome);
+      const article = pickMessages(messagesByLocale, ROUTE_MESSAGE_SCOPES.article);
 
+      expect(Buffer.byteLength(JSON.stringify(root))).toBeLessThanOrEqual(1_024);
       expect(Buffer.byteLength(JSON.stringify(welcome))).toBeLessThanOrEqual(2_048);
       expect(Buffer.byteLength(JSON.stringify(article))).toBeLessThanOrEqual(6_144);
     }

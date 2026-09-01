@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { ManageShell } from "./_components/manage-shell";
 
 export default async function ManagePage({

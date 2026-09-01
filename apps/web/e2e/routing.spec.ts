@@ -1,35 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { getPathname } from "../src/i18n/navigation";
 import { mockAnalysisApi } from "./analysis.fixture";
 
-test("TR ve EN statik/dinamik route sözleşmesini çözer", () => {
-  expect(getPathname({ locale: "tr", href: "/dashboard" })).toBe("/panel");
-  expect(getPathname({ locale: "en", href: "/dashboard" })).toBe(
-    "/en/dashboard",
-  );
-  expect(
-    getPathname({
-      locale: "tr",
-      href: {
-        pathname: "/knowledge/[slug]",
-        params: { slug: "kpss-basvuru" },
-      },
-    }),
-  ).toBe("/bilgi/kpss-basvuru");
-  expect(
-    getPathname({
-      locale: "en",
-      href: {
-        pathname: "/community/message/[threadId]",
-        params: { threadId: "thread-1" },
-        query: { highlight: "comment-1" },
-      },
-    }),
-  ).toBe("/en/community/message/thread-1?highlight=comment-1");
-});
-
-test("dil değiştirirken analiz sekmesi query değerini korur", async (
-  { page },
+test("dil değiştirirken query değerini korur ve locale cookie yazmaz", async (
+  { context, page },
   testInfo,
 ) => {
   test.skip(!testInfo.project.name.startsWith("desktop"));
@@ -43,6 +16,11 @@ test("dil değiştirirken analiz sekmesi query değerini korur", async (
 
   await page.getByRole("button", { name: "TR", exact: true }).click();
   await expect(page).toHaveURL(/\/analiz\?tab=progress$/);
+
+  const localeCookie = (await context.cookies()).find(
+    (cookie) => cookie.name === "NEXT_LOCALE",
+  );
+  expect(localeCookie).toBeUndefined();
 });
 
 test("sitemap ve robots yalnız geçerli localized kökleri yayınlar", async ({

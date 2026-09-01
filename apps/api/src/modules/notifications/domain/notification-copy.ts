@@ -25,6 +25,8 @@ export const NotificationCopyKey = {
   BUDDY_NUDGED: "buddyNudged",
   BUDDY_FIRST_SESSION: "buddyFirstSession",
   STUDY_ROOM_SESSION_STARTED: "studyRoomSessionStarted",
+  /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
+  WIN_BACK_OFFER: "winBackOffer",
 } as const;
 
 export type NotificationCopyKey =

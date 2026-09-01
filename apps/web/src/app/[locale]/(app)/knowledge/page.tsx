@@ -1,5 +1,5 @@
+import { setRequestLocale } from "@/i18n/locale";
 import { Suspense } from "react";
-import { setRequestLocale } from "next-intl/server";
 import { KnowledgeContentSkeleton } from "./_components/knowledge-content-skeleton";
 import { KnowledgeShell } from "./_components/knowledge-shell";
 

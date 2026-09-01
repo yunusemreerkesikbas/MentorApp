@@ -14,9 +14,12 @@
 - **İndirim e-postası yok** ve yakın planda da yok. TR'de ticari elektronik ileti sayılır: İYS
   kaydı + açık onay + ret hakkı gerekir, kodda hiçbiri yok (pazarlama/işlem ayrımı yok, onay
   kolonu yok, unsubscribe yok, Postmark `MessageStream` sabit). Ayrı bir altyapı işi.
-- **"İndirim kazandın" fan-out'u yok.** Uygunluk canlı hesaplanıyor (grant tablosu yok), yani
+- **Toplu "indirim kazandın" fan-out'u yok.** Uygunluk canlı hesaplanıyor (grant tablosu yok), yani
   "kimler uygun?" her kural tipi için ayrı ters sorgu ister. Keşif sorununu TopBanner çözüyor:
   kullanıcının kendi oturumundaki hesaplamaya biniyor.
+  **Tek istisna geri kazanım**, ve tarama olmadığı için istisna: `SUBSCRIPTION_EXPIRED` olayı tek
+  kullanıcı getiriyor, onun için tek `resolveOffers` çağrılıyor. Uygulamayı artık açmayana ulaşan
+  tek yüzey (bkz. [notifications.md](./notifications.md)).
 - **"Kampanya bitiyor" hatırlatması yok** — ticari olarak en güçlü bildirim, ama
   [`docs/copy/voice.md`](../copy/voice.md) kayıp-kaçınma/FOMO'yu yasaklıyor.
 - Bu sürümde yok: sepet-terk e-postası (iyzico'ya bağımlı — `fake` sağlayıcı `INCOMPLETE` satır
@@ -127,6 +130,35 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 (SUPER_ADMIN). Promosyon formuna "duyur" kutusu koymak bu sınırı delerdi.
 
 ## Geliştirmeler (timeline)
+
+- **Kampanya modalı: bir kez, kampanya başına (2026-09-01)** — `WelcomeGiftDialog` →
+  `PromotionDialog`. Tek `seen` bayrağı yerine **görülmüş kampanya id kümesi**, yani ikinci bir
+  kampanya birincinin bayrağı tarafından yutulmuyor. Bunun için `PromotionSummary`'ye `id` eklendi
+  (wire'da atıl: hiçbir endpoint promosyon id'si kabul etmiyor — offers ve checkout `code` alıyor —
+  yani sadece iki kampanyayı ayırt etmeye yarıyor).
+  **Modalın başlığı artık promosyonun kendi `label`'ı**: admin kampanyayı adlandırıyor, istemcide
+  hiçbir kampanya adı yok. `paywall.welcome_*` anahtarları emekli edildi.
+  Kullanım: admin `/promotions`'tan yeni kampanya → uygun ücretsiz kullanıcı panelde bir kez modal
+  görüyor, CTA paywall'ı açıyor.
+  Gotcha: effect **ref ile bir-kez** korunuyor, `cancelled` bayrağıyla değil. StrictMode'da effect
+  koş→temizle→koş yapıyor; per-run `cancelled` bayrağını İLK temizlik set ediyor ama o koşunun
+  diyaloğu ekranda kalıyor, sonuçta kullanıcının tıklaması vazgeçmiş bir closure'a düşüyor ve
+  **CTA sessizce hiçbir şey yapmıyordu**. Aynı desen eski `WelcomeGiftDialog`'da da vardı.
+  Bir diğeri: `localStorage`, yani depolama temizlenirse tekrar çıkabilir — promosyonun kendi
+  kullanıcı limiti sunucuda gerçek korumayı sağlıyor.
+  İlgili: `promotion-dialog.tsx`, `lib/promotions.ts`, `lib/seen-ids.ts`,
+  `e2e/promotion-banner.spec.ts`.
+
+- **Geri kazanım kanalı açıldı, WIN_BACK gerçekten çalışıyor (2026-09-01)** — Faz 1'de yazılan
+  `WIN_BACK` kuralı bugüne kadar **ölüydü**: `promotionContext` `lastSubscriptionStatus`'a ham DB
+  durumunu veriyordu, ama süresi dolan abonelik tabloda `ACTIVE` kaldığı için kural hiç eşleşmiyordu.
+  Alan `lostPremiumAccess: boolean` olarak değiştirildi ve `hasLostAccess` ile türetiliyor; adı
+  artık ne sorduğunu söylüyor. Süre dolma süpürücüsü için bkz. [payments.md](./payments.md).
+  Kullanım: admin `/promotions` → kural "Geri kazanım". Aboneliği biten kullanıcı hem indirimi
+  paywall'da görüyor hem de bildirim alıyor.
+  Gotcha: kural artık "iptal etti ama dönemi sürüyor" kullanıcısını doğru şekilde **dışarıda**
+  bırakıyor — henüz bir şey kaybetmediler.
+  İlgili: `promotion-rule.ts`, `subscriptions.service.ts`, [notifications.md](./notifications.md).
 
 - **Ticari yüzeyler koordine edildi (2026-08-31)** — Promosyon şeridi yayındayken sağ raydaki
   `PremiumCampaignBanner` çekiliyor: şerit **gerçek ve belirli** bir indirim taşıyor, ray kartı ise

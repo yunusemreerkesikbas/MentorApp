@@ -8,6 +8,7 @@ import { EMAIL_PORT } from "../../shared/ports/email.port";
 import { JOB_QUEUE_PORT } from "../../shared/ports/job-queue.port";
 import { PUSH_PORT } from "../../shared/ports/push.port";
 import { CoachingModule } from "../coaching/coaching.module";
+import { PaymentsModule } from "../payments/payments.module";
 import { IdentityModule } from "../identity/identity.module";
 import { DailyReminderService } from "./application/daily-reminder.service";
 import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
@@ -25,6 +26,7 @@ import { IdentityEventsListener } from "./application/listeners/identity-events.
 import { JourneyLevelEventsListener } from "./application/listeners/journey-level-events.listener";
 import { AchievementEventsListener } from "./application/listeners/achievement-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
+import { PromotionEventsListener } from "./application/listeners/promotion-events.listener";
 import { AnnouncementService } from "./application/announcement.service";
 import { NotificationsCopyService } from "./application/notifications-copy.service";
 import { NotificationsService } from "./application/notifications.service";
@@ -47,7 +49,7 @@ import { NotificationsController } from "./presentation/notifications.controller
  */
 @Global()
 @Module({
-  imports: [IdentityModule, CoachingModule],
+  imports: [IdentityModule, CoachingModule, PaymentsModule],
   controllers: [CronController, NotificationsController],
   providers: [
     JobRepository,
@@ -66,6 +68,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     NotebookReviewReminderService,
     SessionReturnReminderService,
     PaymentsEventsListener,
+    PromotionEventsListener,
     CoachingEventsListener,
     BuddyActivityListener,
     StudyRoomActivityListener,

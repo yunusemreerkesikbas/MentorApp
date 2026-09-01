@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { RoomShell } from "../../_components/room-shell";
 
 /** `/seans/masa/[id]` — the shared table: seats, live presence, and the invite code. */

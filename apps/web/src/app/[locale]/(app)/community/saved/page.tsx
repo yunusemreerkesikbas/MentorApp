@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { SavedProfileRedirect } from "./_components/saved-profile-redirect";
 
 export default async function SavedPage({ params }: { params: Promise<{ locale: string }> }) {

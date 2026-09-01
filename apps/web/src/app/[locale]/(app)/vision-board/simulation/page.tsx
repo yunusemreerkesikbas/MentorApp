@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { SimulationShell } from "./_components/simulation-shell";
 
 export default async function PreferenceSimulationPage({

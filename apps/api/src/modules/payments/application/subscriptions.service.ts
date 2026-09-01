@@ -8,6 +8,7 @@ import {
   type EntitlementDto,
   type PlanDto,
   type PromotionIneligibleReason,
+  type PromotionOfferView,
   type PromotionOffersView,
   type SubscriptionDto,
   type SubscriptionView,
@@ -45,9 +46,10 @@ import {
   PromotionsService,
   toOfferView,
   type PromotionUserContext,
+  type ResolvedOffer,
 } from "../../promotions/application/promotions.service";
 import { StreakService } from "../../coaching/application/streak.service";
-import { EntitlementService } from "./entitlement.service";
+import { EntitlementService, hasLostAccess } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
 
 /** Identity-owned fields the promotion rules need; the controller crosses that seam, not us. */
@@ -331,14 +333,17 @@ export class SubscriptionsService {
   private async promotionContext(
     user: CheckoutUser,
     hadAnySubscription: boolean,
-    lastSubscriptionStatus: string | null,
+    latest: SubscriptionRow | undefined,
   ): Promise<PromotionUserContext> {
     return {
       userId: user.id,
       orgId: user.orgId ?? null,
       userCreatedAt: user.createdAt,
       hadAnySubscription,
-      lastSubscriptionStatus,
+      // DERIVED, not `latest.status`: nothing writes EXPIRED except the provider's cancel webhook,
+      // so a subscription that simply lapsed still reads ACTIVE and the raw status would miss
+      // exactly the users WIN_BACK exists for. `hasRunOut` is the same rule the sweeper uses.
+      lostPremiumAccess: hasLostAccess(latest ?? null, new Date()),
     };
   }
 
@@ -376,8 +381,8 @@ export class SubscriptionsService {
       this.subsRepo.findLatestForUser(user.id),
     ]);
     const resolved = await this.promotions.resolveOffers({
-      context: await this.promotionContext(user, hadAny, latest?.status ?? null),
-      plans: planRows.map((row) => ({ id: row.id, priceMinor: row.priceMinor })),
+      context: await this.promotionContext(user, hadAny, latest),
+      plans: planRows.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
       activeDates: this.activeDatesSupplier(user.id),
       code,
       locale,
@@ -391,6 +396,44 @@ export class SubscriptionsService {
       offers[planId] = toOfferView(offer);
     }
     return { offers, available: resolved.available };
+  }
+
+  /**
+   * The best discount a lapsed subscriber would get by coming back now, or null.
+   *
+   * Narrow seam for the win-back notification: a listener must not have to assemble a checkout
+   * context. Returns null unless the user genuinely lost access AND a promotion applies, so the
+   * caller can stay silent rather than send a commercial message with nothing behind it.
+   */
+  async findWinBackOffer(userId: string): Promise<PromotionOfferView | null> {
+    const [planRows, latest] = await Promise.all([
+      this.plansRepo.findActive(),
+      this.subsRepo.findLatestForUser(userId),
+    ]);
+    // hasLostAccess, not hasRunOut: by the time the win-back event fires the row is already
+    // EXPIRED, which the sweeper's narrower predicate deliberately ignores.
+    if (!latest || !hasLostAccess(latest, new Date())) return null;
+
+    const resolved = await this.promotions.resolveOffers({
+      context: {
+        userId,
+        orgId: null,
+        // A lapsed subscriber can never satisfy NEW_USER — `hadAnySubscription` short-circuits it —
+        // so the exact signup date cannot change the outcome and we skip the identity round trip.
+        userCreatedAt: latest.createdAt,
+        hadAnySubscription: true,
+        lostPremiumAccess: true,
+      },
+      plans: planRows.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
+      activeDates: this.activeDatesSupplier(userId),
+    });
+
+    let best: ResolvedOffer | null = null;
+    for (const offer of Object.values(resolved.offers)) {
+      if (!offer.promotionId || offer.discountMinor <= 0) continue;
+      if (!best || offer.discountMinor > best.discountMinor) best = offer;
+    }
+    return best ? toOfferView(best) : null;
   }
 
   async checkout(
@@ -423,8 +466,8 @@ export class SubscriptionsService {
 
     const latest = await this.subsRepo.findLatestForUser(user.id);
     const offers = await this.promotions.resolveOffers({
-      context: await this.promotionContext(user, hadAny, latest?.status ?? null),
-      plans: [{ id: plan.id, priceMinor: plan.priceMinor }],
+      context: await this.promotionContext(user, hadAny, latest),
+      plans: [{ id: plan.id, name: plan.name, priceMinor: plan.priceMinor }],
       activeDates: this.activeDatesSupplier(user.id),
       code,
     });

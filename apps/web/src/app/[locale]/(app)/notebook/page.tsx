@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { NotebookShell } from "./_components/notebook-shell";
 
 /** Mistake notebook ("yanlış defteri") — its own route, reached from the nav. */

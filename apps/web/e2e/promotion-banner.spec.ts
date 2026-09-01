@@ -65,10 +65,12 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
       chargedPriceMinor: 19920,
       renewalPriceMinor: 24900,
       promotion: {
+        id: "promo-banner-1",
         code: null,
         label: "Hoş geldin hediyesi",
         discountType: "PERCENT",
         discountValue: 20,
+        planNames: null,
         appliesToPeriods: 1,
         endsAt: null,
       },
@@ -76,6 +78,41 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
     },
   },
   available: [],
+};
+
+const PROMO_ID = "promo-banner-1";
+const RIVAL_ID = "promo-banner-2";
+
+/** A different campaign, to prove the "once" is per campaign and not a single global flag. */
+const SECOND_CAMPAIGN: PromotionOffersView = {
+  offers: {
+    "premium-monthly": {
+      ...DISCOUNTED_OFFERS.offers["premium-monthly"]!,
+      promotion: {
+        ...DISCOUNTED_OFFERS.offers["premium-monthly"]!.promotion!,
+        id: RIVAL_ID,
+        label: "Eylül kampanyası",
+      },
+    },
+  },
+  available: [],
+};
+
+/** Coded campaign: exercises the ticket and the coupon hand-over to the paywall. */
+const CODED_CAMPAIGN: PromotionOffersView = {
+  offers: { ...LIST_PRICE_OFFERS.offers },
+  available: [
+    {
+      id: "promo-coded-1",
+      code: "HOSGELDIN",
+      label: "Hoş geldin hediyen",
+      discountType: "PERCENT",
+      discountValue: 20,
+      planNames: null,
+      appliesToPeriods: 1,
+      endsAt: null,
+    },
+  ],
 };
 
 const today: TodayPanelResponse = {
@@ -107,23 +144,27 @@ interface Options {
   premium?: boolean;
   /** Serve the rewarded-coin offer too, so the strip has a second item and rotates. */
   rewardedItem?: boolean;
+  /** Campaign ids already shown on this device. Default suppresses the dialog entirely. */
+  seenCampaigns?: string[];
+  /** Collects every code the client sends to /offers, to prove the hand-over happened. */
+  captureCodes?: (string | undefined)[];
 }
 
 async function mockDashboard(page: Page, options: Options = {}) {
-  await page.addInitScript(() => {
+  await page.addInitScript((seen: string) => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
     window.localStorage.setItem(
       "mentor_mood_prompt_deferred_date",
       new Date().toISOString().slice(0, 10),
     );
-    // Without this the welcome dialog opens a modal over the strip.
-    window.localStorage.setItem("mentor.welcome-gift.seen.v1", "1");
+    // Suppresses the promotion dialog so it does not open a modal over the strip.
+    window.localStorage.setItem("mentor.promotion-dialog.seen.v1", seen);
     window.sessionStorage.setItem(
       "mentor_panel_welcome_date",
       new Date().toISOString().slice(0, 10),
     );
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
-  });
+  }, JSON.stringify(options.seenCampaigns ?? [PROMO_ID, RIVAL_ID]));
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
@@ -152,6 +193,11 @@ async function mockDashboard(page: Page, options: Options = {}) {
       });
     }
     if (method === "POST" && path === "/v1/subscription/offers") {
+      const body = request.postDataJSON() as { code?: string } | null;
+      options.captureCodes?.push(body?.code);
+      if (body?.code) {
+        return json(route, { ...DISCOUNTED_OFFERS, available: [] });
+      }
       return json(route, options.offers ?? LIST_PRICE_OFFERS);
     }
     if (method === "GET" && path === "/v1/ads/reward-offers/dashboard.rewarded.coin") {
@@ -311,3 +357,85 @@ function json(route: Route, body: unknown, status = 200) {
     body: body == null ? "" : JSON.stringify(body),
   });
 }
+
+test("kampanya modalı oranı ve kapsamı gösterir, fiyat göstermez", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  const card = page.getByTestId("promotion-card");
+  // The title IS the promotion label — no campaign name is hardcoded in the client.
+  await expect(card).toContainText("Hoş geldin hediyesi");
+  await expect(card).toContainText("%20");
+  // Scope, not price: a price would presuppose a plan the user has not chosen.
+  await expect(card).toContainText("Tüm planlarda geçerli.");
+  await expect(card).toContainText("Ödemende otomatik uygulanır, kod gerekmez.");
+  await expect(card).not.toContainText("₺");
+
+  await card.getByRole("button", { name: "Premium’a bak" }).click();
+  await expect(page.getByTestId("premium-paywall")).toBeVisible();
+});
+
+test("kısıtlı kampanya hangi planda geçerli olduğunu söyler", async ({ page }) => {
+  const scoped: PromotionOffersView = {
+    offers: {
+      "premium-monthly": {
+        ...DISCOUNTED_OFFERS.offers["premium-monthly"]!,
+        promotion: {
+          ...DISCOUNTED_OFFERS.offers["premium-monthly"]!.promotion!,
+          id: "promo-scoped",
+          planNames: ["Premium 3 Aylık"],
+        },
+      },
+    },
+    available: [],
+  };
+  await mockDashboard(page, { offers: scoped, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  // This is the case where showing a price would have been outright wrong.
+  await expect(page.getByTestId("promotion-card")).toContainText(
+    "Yalnız Premium 3 Aylık için geçerli.",
+  );
+});
+
+test("kuponlu kampanyada bilet çıkar ve kod paywall'a devredilir", async ({ page }) => {
+  const codes: (string | undefined)[] = [];
+  await mockDashboard(page, { offers: CODED_CAMPAIGN, seenCampaigns: [], captureCodes: codes });
+  await page.goto("/panel");
+
+  const card = page.getByTestId("promotion-card");
+  await expect(card).toContainText("Kupon kodun");
+  await expect(card).toContainText("HOSGELDIN");
+
+  await card.getByRole("button", { name: "Uygula ve devam et" }).click();
+  await expect(page.getByTestId("premium-paywall")).toBeVisible();
+
+  // The user never retypes it: the paywall re-resolves offers WITH the handed-over code.
+  await expect(page.getByTestId("premium-paywall")).toContainText("Kupon uygulandı: HOSGELDIN");
+  expect(codes).toContain("HOSGELDIN");
+});
+
+test("aynı kampanya ikinci yüklemede modal açmaz", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, seenCampaigns: [] });
+  await page.goto("/panel");
+  await expect(page.getByTestId("promotion-card")).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByTestId("promotion-card")).toHaveCount(0);
+});
+
+test("yeni bir kampanya kendi bir kezini alır", async ({ page }) => {
+  // The whole reason for keying on campaign id: a single "seen" flag would swallow this one.
+  await mockDashboard(page, { offers: SECOND_CAMPAIGN, seenCampaigns: [PROMO_ID] });
+  await page.goto("/panel");
+
+  await expect(page.getByTestId("promotion-card")).toContainText("Eylül kampanyası");
+});
+
+test("premium kullanıcıya kampanya modalı açılmaz", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, premium: true, seenCampaigns: [] });
+  await page.goto("/panel");
+
+  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  await expect(page.getByTestId("promotion-card")).toHaveCount(0);
+});

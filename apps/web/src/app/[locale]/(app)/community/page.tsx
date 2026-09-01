@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { HubShell } from "./_components/hub-shell";
 
 export default async function CommunityPage({

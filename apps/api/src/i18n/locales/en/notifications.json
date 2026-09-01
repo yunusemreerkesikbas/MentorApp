@@ -124,6 +124,11 @@
       "register": "puhu",
       "title": "Someone sat down",
       "body": "{name} sat at {roomName}. You can join too."
+    },
+    "winBackOffer": {
+      "register": "companion",
+      "title": "Your subscription has ended",
+      "body": "{label} is here whenever you want to come back."
     }
   },
   "email": {

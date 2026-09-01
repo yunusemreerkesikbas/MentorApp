@@ -1,0 +1,8 @@
+{
+  "root": ["analyticsConsent"],
+  "welcome": ["welcome"],
+  "article": ["article", "knowledge", "ads"],
+  "auth": ["auth", "common"],
+  "onboarding": ["onboarding", "profile", "vision", "common"],
+  "joinRoom": ["session_room"]
+}

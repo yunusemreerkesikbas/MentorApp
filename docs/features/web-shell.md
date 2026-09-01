@@ -63,6 +63,28 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **APP-059 güvenli dev ve bloklayıcı performans kapıları (2026-09-01)** — Varsayılan web `dev`
+  komutu artık cache silmeden başlar; yalnız kapalı bir sunucuda istisnai kurtarma gerektiğinde
+  `dev:clean` kullanılır. Production build sonrasında `check:budgets`, client-reference ve build/font
+  manifestlerini okuyup chunk'ları benzersizleştirir; route-attributable JS ile ortak runtime dahil
+  toplam JS'yi ayrı ölçer. Kapılar: makale 704/985 KiB, dashboard 715/1287 KiB, makale font preload
+  2, root/welcome/article mesajları 1024/2048/6144 byte. Sonuç
+  `.next/web-performance-budget-report.json` ve GitHub step summary'ye yazılır; manifest/chunk
+  eksikliği veya tek byte aşım CI'ı düşürür. Route scope'ları tek
+  `i18n/route-message-scopes.json` sözleşmesinden okunur. Kullanım: production build'den sonra
+  `pnpm --filter @mentor/web check:budgets`. Gotcha: script yalnız production `.next` artefaktını
+  ölçer; dev çıktısı bütçe kanıtı değildir. İlgili: `scripts/web-performance-budgets*.mjs`,
+  `scripts/check-web-performance-budgets.mjs`, `package.json`, `.github/workflows/ci.yml`.
+
+- **Görülmüş-id yardımcısı ortaklaştı (2026-09-01)** — TopBanner'ın item bazlı kapatması ile
+  kampanya modalının "kampanya başına bir kez"i aynı şeyi yapıyor: Web Storage'da bir id kümesi
+  tutmak. Ayrıştırma/serileştirme `lib/seen-ids.ts`'e taşındı (`parseIdSet`, `serializeIdSet`,
+  `readIdSet`, `writeIdSet`); `top-banner-state.ts` yalnız rotasyonu tutuyor.
+  Kullanım: yeni bir "bir kez göster" yüzeyi için `readIdSet`/`writeIdSet` kullan, kendi try/catch'ini
+  yazma. Gotcha: storage güvenilmez girdi — bozuk JSON, elle düzenleme, gizli pencerede erişimin
+  kendisinin throw etmesi. Hepsi "hiçbir şey görülmemiş"e düşüyor; yüzeyin tekrar çıkması zararsız,
+  panelin boot'ta patlaması değil. İlgili: `seen-ids.ts`, `top-banner.tsx`, `promotion-dialog.tsx`.
+
 - **TopBanner kapatması item bazlı oldu (2026-08-31)** — Kapatma anahtarı tek bir boolean'dı
   (`dismissed.v1` = `"1"`), yani görev duyurusunu kapatan kullanıcı promosyon şeridini de
   susturuyordu. Artık `dismissed.v2` kapatılan **item id'lerinin** JSON dizisi; kapatma butonu
@@ -620,9 +642,9 @@ http://localhost:3000/panel               # daily ritual hub
   in memory only and flush after GA initialization; rejection clears them. Checkout values use the
   selected plan's resolved automatic promotion offer. Post-release, verify one page view per route in
   DebugView and register Web Vital parameters as GA4 custom dimensions/metrics.
-- Gotcha: `next start` and `next dev` must not share the same `.next` directory during artifact/E2E
-  verification. The build gate is production build plus scoped unit/E2E checks; Next 16's existing
-  `experimental.turbo` and middleware deprecation warnings remain a separate compatibility task.
+- Gotcha: run `dev:clean` only after stopping the active dev server; the default `dev` never removes
+  another process's manifests. Production build plus the blocking budget script is the artifact gate;
+  next-intl Turbopack and middleware deprecation warnings were removed by APP-059.
   Related: `[locale]/layout.tsx`, `(app)/{layout,app-shell}.tsx`,
   `i18n/scoped-messages.ts`, `lib/analytics.ts`, `lib/analytics-consent.tsx`,
   `components/web-vitals-reporter.tsx`, `e2e/{routing,analytics-consent}.spec.ts`.
@@ -638,10 +660,9 @@ http://localhost:3000/panel               # daily ritual hub
   (`subject-picker.tsx` vb.) hayalet `Property 'value' does not exist` hataları. CI bunu hiç görmez
   (sıra `lint → typecheck → build`, checkout temiz). Lokalde takılırsanız:
   `rm -rf apps/web/.next/types` ya da typecheck'i build'den önce koşturun.
-- **`apps/web`'de test runner yok.** `src/lib/*.spec.ts` dosyaları (weekly-recap, analytics,
-  plan-calendar-layout…) **hiç koşmuyor** — pakette vitest bağımlılığı ve `test` script'i yok.
-  Web tarafına gerçek bir invariant koyacaksanız build-time kontrolü tercih edin (yasal registry
-  böyle yapıyor) ya da önce vitest'i kurun. _(Backlog: bu orphan spec'leri ya çalıştır ya sil.)_
+- **Web test sözleşmesi iki katmanlıdır.** `src/**/*.spec.ts` Vitest ile, script sözleşmeleri ise
+  Node test runner ile `pnpm --filter @mentor/web test` altında çalışır. Route/browser davranışı
+  Playwright E2E'ye aittir; performans eşikleri ayrıca production build sonrası bloklayıcıdır.
 - **Public footer yüzey bazlı mount edilir**, ortak locale layout'una değil — authenticated app'te
   alt navigasyon var, footer onunla çakışır. Yeni bir public sayfa eklerken `PublicFooter`'ı
   elle koymak gerekir.

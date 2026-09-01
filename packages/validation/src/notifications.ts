@@ -20,10 +20,15 @@ export const updateNotificationPreferencesSchema = z
   .object({
     emailEnabled: z.boolean().optional(),
     pushEnabled: z.boolean().optional(),
+    campaignsEnabled: z.boolean().optional(),
   })
-  .refine((v) => v.emailEnabled !== undefined || v.pushEnabled !== undefined, {
-    message: "At least one preference field is required.",
-  });
+  .refine(
+    (v) =>
+      v.emailEnabled !== undefined ||
+      v.pushEnabled !== undefined ||
+      v.campaignsEnabled !== undefined,
+    { message: "At least one preference field is required." },
+  );
 export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;

@@ -69,6 +69,22 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Süre dolma süpürücüsü + yayındaki WIN_BACK hatası (2026-09-01)** — `EXPIRED` yazan tek yer
+  `subscription_canceled` webhook'uydu ve payments'ta cron yoktu, yani **süresi doğal dolan abonelik
+  tabloda sonsuza kadar `ACTIVE` kalıyordu**. İki sonucu vardı: kullanıcı bir daha satın alamıyordu
+  (`findOpenForUser` bayat satırı hâlâ açık sayıyor) ve `WIN_BACK` indirim kuralı hiç eşleşmiyordu.
+  Yeni `POST /v1/internal/cron/expire-subscriptions` (`CronSecretGuard`, `render.yaml` girdisi,
+  günlük 03:30) satırları emekli edip `SUBSCRIPTION_EXPIRED` yayıyor.
+  Kullanım: sweeper yüklemi `hasRunOut`, kural `computeEntitlement`'a devrediyor — süpürücü ile
+  kullanıcıya gösterilen entitlement asla ayrışamaz.
+  Gotcha: **`hasRunOut` ile `hasLostAccess` farklı sorular.** Birincisi "süpürücü emekli etsin mi?"
+  (zaten-EXPIRED'a hayır, süpürme idempotent kalsın diye), ikincisi "kullanıcı erişimi kaybetti mi?"
+  (zaten-EXPIRED'a evet). İkisini birleştirmek WIN_BACK'i ve geri kazanım bildirimini sessizce
+  öldürüyor — e2e'de regresyon kilidi var. Bir diğeri: bu, modülün belgelenmiş "webhook-driven
+  (no cron)" kararının tek istisnası.
+  İlgili: `subscription-maintenance.service.ts`, `payments-internal.controller.ts`,
+  `entitlement.service.ts`, `render.yaml`, `test/promotions.e2e-spec.ts`.
+
 - **İndirim ödeme yüzeyine geldi (2026-08-30)** — `GET /v1/subscription` yanıtına `discount`
   eklendi (checkout'ta donmuş liste/indirim/tahsil fiyatı + kalan dönem). `POST
   /v1/subscription/offers` geçersiz kupon kodunda 422 atıyor — önizleme ve checkout aynı hatayı

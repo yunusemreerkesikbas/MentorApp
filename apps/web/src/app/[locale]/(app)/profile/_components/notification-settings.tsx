@@ -1,5 +1,5 @@
 "use client";
-import { Bell, Mail, Smartphone } from "lucide-react";
+import { Bell, Mail, Smartphone, Tag } from "lucide-react";
 
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
@@ -17,6 +17,7 @@ export function NotificationSettings() {
   const t = useTranslations("profile.notifications");
   const [emailEnabled, setEmailEnabled] = useState(true);
   const [pushEnabled, setPushEnabled] = useState(true);
+  const [campaignsEnabled, setCampaignsEnabled] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -29,6 +30,7 @@ export function NotificationSettings() {
         const prefs = res as unknown as NotificationPreferencesDto;
         setEmailEnabled(prefs.emailEnabled);
         setPushEnabled(prefs.pushEnabled);
+        setCampaignsEnabled(prefs.campaignsEnabled);
       })
       .catch((err) => {
         if (!active) return;
@@ -53,11 +55,14 @@ export function NotificationSettings() {
       const prefs = res as unknown as NotificationPreferencesDto;
       setEmailEnabled(prefs.emailEnabled);
       setPushEnabled(prefs.pushEnabled);
+      setCampaignsEnabled(prefs.campaignsEnabled);
     } catch (err) {
       if (rollback.emailEnabled !== undefined)
         setEmailEnabled(rollback.emailEnabled);
       if (rollback.pushEnabled !== undefined)
         setPushEnabled(rollback.pushEnabled);
+      if (rollback.campaignsEnabled !== undefined)
+        setCampaignsEnabled(rollback.campaignsEnabled);
       setError(err instanceof ApiClientError ? err.message : t("save_error"));
     } finally {
       setSaving(false);
@@ -112,6 +117,26 @@ export function NotificationSettings() {
             const prev = pushEnabled;
             setPushEnabled(next);
             void savePreferences({ pushEnabled: next }, { pushEnabled: prev });
+          }}
+        />
+        {/*
+          Commercial messages, unlike the two reminder channels above. Off silences every channel
+          for them — the inbox included — because "in-app is always written" is a rule for
+          transactional reminders, not for a campaign.
+        */}
+        <ToggleRow
+          checked={campaignsEnabled}
+          description={t("campaigns_desc")}
+          disabled={saving}
+          icon={<Tag size={20} aria-hidden />}
+          label={t("campaigns")}
+          onChange={(next) => {
+            const prev = campaignsEnabled;
+            setCampaignsEnabled(next);
+            void savePreferences(
+              { campaignsEnabled: next },
+              { campaignsEnabled: prev },
+            );
           }}
         />
       </div>

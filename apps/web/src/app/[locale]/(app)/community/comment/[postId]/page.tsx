@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { CommentShell } from "./_components/comment-shell";
 
 export default async function CommentPage({

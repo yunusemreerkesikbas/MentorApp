@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { AnalysisShell } from "./_components/analysis-shell";
 
 export default async function AnalysisPage({

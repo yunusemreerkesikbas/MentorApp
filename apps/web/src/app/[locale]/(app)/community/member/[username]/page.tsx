@@ -1,4 +1,4 @@
-import { setRequestLocale } from "next-intl/server";
+import { setRequestLocale } from "@/i18n/locale";
 import { ProfileShell } from "./_components/profile-shell";
 
 export default async function ProfilePage({

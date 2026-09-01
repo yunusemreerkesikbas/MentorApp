@@ -1,6 +1,7 @@
+import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getTranslations, setRequestLocale } from "next-intl/server";
+import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { fetchPublicQuestion, questionUrl, siteUrl } from "@/lib/forum-public";
 import { jsonLdHtml } from "@/lib/json-ld";

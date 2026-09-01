@@ -1,13 +1,15 @@
 import { describe, expect, it } from "vitest";
 import type { PromotionOffersView, PromotionSummary } from "@mentor/types";
-import { pickBannerPromotion, pickWelcomeGift } from "./promotions";
+import { pickBannerPromotion, pickPromotionForDialog } from "./promotions";
 
 function summary(overrides: Partial<PromotionSummary> = {}): PromotionSummary {
   return {
+    id: "promo-1",
     code: null,
     label: "Hoş geldin hediyesi",
     discountType: "PERCENT",
     discountValue: 20,
+    planNames: null,
     appliesToPeriods: 1,
     endsAt: null,
     ...overrides,
@@ -34,31 +36,59 @@ function offers(input: {
   };
 }
 
-describe("pickWelcomeGift", () => {
+const NOTHING_SEEN: ReadonlySet<string> = new Set<string>();
+
+describe("pickPromotionForDialog", () => {
   it("announces nothing when no promotion applies", () => {
-    expect(pickWelcomeGift(offers({}))).toBeNull();
+    expect(pickPromotionForDialog(offers({}), NOTHING_SEEN)).toBeNull();
   });
 
   it("prefers a coded promotion — it is the one the user must act on", () => {
-    const gift = pickWelcomeGift(
+    const gift = pickPromotionForDialog(
       offers({
-        available: [summary({ code: "HOSGELDIN" })],
-        applied: summary({ label: "Otomatik kampanya" }),
+        available: [summary({ id: "coded", code: "HOSGELDIN" })],
+        applied: summary({ id: "auto", label: "Otomatik kampanya" }),
       }),
+      NOTHING_SEEN,
     );
     expect(gift?.code).toBe("HOSGELDIN");
   });
 
   it("falls back to the automatically applied promotion", () => {
-    const gift = pickWelcomeGift(offers({ applied: summary({ label: "Ağustos kampanyası" }) }));
+    const gift = pickPromotionForDialog(
+      offers({ applied: summary({ label: "Ağustos kampanyası" }) }),
+      NOTHING_SEEN,
+    );
     expect(gift).toMatchObject({ code: null, label: "Ağustos kampanyası" });
   });
 
   it("carries the code and label straight from the API, never a hardcoded campaign", () => {
-    const gift = pickWelcomeGift(
+    const gift = pickPromotionForDialog(
       offers({ available: [summary({ code: "YAZ2026", label: "Yaz indirimi" })] }),
+      NOTHING_SEEN,
     );
     expect(gift).toMatchObject({ code: "YAZ2026", label: "Yaz indirimi" });
+  });
+
+  it("stays quiet about a campaign already shown on this device", () => {
+    const shown = offers({ available: [summary({ id: "promo-1" })] });
+    expect(pickPromotionForDialog(shown, new Set(["promo-1"]))).toBeNull();
+  });
+
+  it("still announces a NEW campaign after an earlier one was seen", () => {
+    // The whole point of keying on campaign id: a single "seen" flag would swallow this one.
+    const next = offers({
+      available: [summary({ id: "old" }), summary({ id: "new", label: "Eylül kampanyası" })],
+    });
+    expect(pickPromotionForDialog(next, new Set(["old"]))?.id).toBe("new");
+  });
+
+  it("falls through to an unseen automatic promotion when the coded one is seen", () => {
+    const mixed = offers({
+      available: [summary({ id: "coded", code: "ESKI" })],
+      applied: summary({ id: "auto", label: "Otomatik" }),
+    });
+    expect(pickPromotionForDialog(mixed, new Set(["coded"]))?.id).toBe("auto");
   });
 });
 
