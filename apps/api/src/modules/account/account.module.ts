@@ -4,6 +4,7 @@ import { AdsModule } from "../ads/ads.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { IdentityModule } from "../identity/identity.module";
+import { MentorshipModule } from "../mentorship/mentorship.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { AccountErasureService } from "./application/account-erasure.service";
 import { AccountController } from "./presentation/account.controller";
@@ -19,7 +20,15 @@ import { AccountController } from "./presentation/account.controller";
  */
 @Module({
   // NotificationsModule is @Global — its NotificationsErasureService resolves without an import here.
-  imports: [IdentityModule, AiModule, AdsModule, CoachingModule, PaymentsModule, ForumModule],
+  imports: [
+    IdentityModule,
+    AiModule,
+    AdsModule,
+    CoachingModule,
+    PaymentsModule,
+    ForumModule,
+    MentorshipModule,
+  ],
   controllers: [AccountController],
   providers: [AccountErasureService],
   exports: [AccountErasureService],

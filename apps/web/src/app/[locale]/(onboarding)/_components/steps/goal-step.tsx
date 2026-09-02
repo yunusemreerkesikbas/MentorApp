@@ -70,7 +70,7 @@ export function GoalStep({
     >
       <form
         id={GOAL_FORM_ID}
-        className="flex flex-col gap-4"
+        className="mx-auto flex w-full max-w-xl flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSave();

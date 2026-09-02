@@ -118,5 +118,14 @@
   "COACHING_PREFERENCE_SCORE_TYPE_MISMATCH": "Bu programı karşılaştırmak için ilgili puan türünde bir başarı sırası gerekiyor.",
   "SCENARIO_REVISION_CONFLICT": "Tercih taslağın başka bir sekmede değişti. Güncel taslağı açıp yeniden dene.",
   "CONTENT_PROGRAM_DATASET_UNAVAILABLE": "Doğrulanmış güncel YKS program verisi henüz hazır değil.",
-  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "Bu üniversite için doğrulanmış kampüs turu henüz hazır değil."
+  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "Bu üniversite için doğrulanmış kampüs turu henüz hazır değil.",
+  "MENTORSHIP_DISABLED": "Koçluk şu anda kullanıma kapalı.",
+  "MENTORSHIP_LINK_NOT_FOUND": "Böyle bir koç bağlantısı yok.",
+  "MENTORSHIP_INVITE_INVALID": "Bu davet kodu geçerli değil.",
+  "MENTORSHIP_INVITE_EXPIRED": "Bu davet kodunun süresi dolmuş. Koçundan yeni bir kod iste.",
+  "MENTORSHIP_ALREADY_LINKED": "Zaten aktif bir koçun var. Yeni bir koça bağlanmadan önce mevcut bağlantını sonlandır.",
+  "MENTORSHIP_STUDENT_QUOTA_EXCEEDED": "Bu koçun öğrenci kontenjanı dolu.",
+  "MENTORSHIP_SELF_LINK": "Kendine koç olamazsın.",
+  "COACHING_TASK_COACH_ASSIGNED": "Koçunun verdiği görevi düzenleyemezsin. Tamamlayabilir ya da silebilirsin.",
+  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "Bu kadar ileri bir tarihe ödev veremezsin."
 }

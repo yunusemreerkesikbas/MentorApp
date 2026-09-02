@@ -32,7 +32,7 @@ export function KpssLevelStep({ user, onSaved, onBack }: { user: AuthUser; onSav
   return (
     <OnboardingStepLayout step={3} title={t("title")} onBack={onBack} primaryLabel={t("continue")} onPrimary={() => void save()} primaryBusy={saving} primaryDisabled={!selected || saving}>
       <FormError message={error} />
-      <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div role="radiogroup" aria-label={t("title")} className="mx-auto grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
         {OPTIONS.map((value) => <OptionButton key={value} label={examCopy(`variant.${value}`)} active={selected === value} disabled={saving} onClick={() => setSelected(value)} />)}
       </div>
     </OnboardingStepLayout>

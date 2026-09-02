@@ -118,5 +118,14 @@
   "COACHING_PREFERENCE_SCORE_TYPE_MISMATCH": "A rank for this program's score type is required for comparison.",
   "SCENARIO_REVISION_CONFLICT": "Your preference draft changed in another tab. Reload it and try again.",
   "CONTENT_PROGRAM_DATASET_UNAVAILABLE": "A verified current YKS programme dataset is not available yet.",
-  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "A verified campus tour is not available for this university yet."
+  "CONTENT_CAMPUS_EXPERIENCE_NOT_FOUND": "A verified campus tour is not available for this university yet.",
+  "MENTORSHIP_DISABLED": "Coaching is switched off right now.",
+  "MENTORSHIP_LINK_NOT_FOUND": "There is no such coach link.",
+  "MENTORSHIP_INVITE_INVALID": "That invite code isn't valid.",
+  "MENTORSHIP_INVITE_EXPIRED": "That invite code has expired. Ask your coach for a new one.",
+  "MENTORSHIP_ALREADY_LINKED": "You already have an active coach. End that link before joining a new one.",
+  "MENTORSHIP_STUDENT_QUOTA_EXCEEDED": "This coach's student roster is full.",
+  "MENTORSHIP_SELF_LINK": "You can't coach yourself.",
+  "COACHING_TASK_COACH_ASSIGNED": "You can't edit a task your coach assigned. You can complete it or delete it.",
+  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "You can't assign a task that far ahead."
 }

@@ -18,6 +18,7 @@
 | Economy | `modules/economy` | ✅ | [economy.md](./economy.md) |
 | Ads | `modules/ads` | 🟡 | [ads.md](./ads.md) |
 | Forum | `modules/forum` | ✅ | [forum.md](./forum.md) |
+| Mentorship (human coach) | `modules/mentorship` | 🟡 | [mentorship.md](./mentorship.md) |
 
 ## Cross-cutting
 
@@ -29,7 +30,8 @@
 
 ## Phase 2/3 (not yet built)
 
-`community` · `marketplace` — no code or devnote coverage yet. Documented here when development starts.
+`marketplace` — no code coverage yet. Documented here when development starts.
+(`community` and `mentorship` have started; see the tables above.)
 
 ## How to add entries
 

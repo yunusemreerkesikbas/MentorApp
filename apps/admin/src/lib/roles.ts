@@ -1,7 +1,7 @@
 // Admin panel RBAC helpers (§9). Mirrors the API: ADMIN/SUPER_ADMIN are the umbrella (see anything);
 // scoped sub-roles (EDITOR/SUPPORT/FINANCE/MODERATOR) match the item's declared roles.
 // Role lists derive from @mentor/types so the FE never drifts from the API's authz contract.
-import { UserRole, ASSIGNABLE_ADMIN_ROLES } from "@mentor/types";
+import { UserRole, ASSIGNABLE_ROLES as ASSIGNABLE_ROLES_CONTRACT } from "@mentor/types";
 
 /** Full-access roles that satisfy any gate (mirror of the API guard umbrella). */
 export const FULL_ACCESS_ROLES: readonly string[] = [UserRole.ADMIN, UserRole.SUPER_ADMIN];
@@ -16,8 +16,12 @@ export const ADMIN_PANEL_ROLES: readonly string[] = [
   UserRole.MODERATOR,
 ];
 
-/** Sub-roles a SUPER_ADMIN may assign from the UI — the single source of truth is @mentor/types. */
-export const ASSIGNABLE_ROLES = ASSIGNABLE_ADMIN_ROLES;
+/**
+ * Roles a SUPER_ADMIN may assign from the UI — the single source of truth is @mentor/types.
+ * Includes COACH (W8): assignable here, but absent from ADMIN_PANEL_ROLES above, so granting it
+ * never lets that user into this panel (§9 "delegated authority is not admin access").
+ */
+export const ASSIGNABLE_ROLES = ASSIGNABLE_ROLES_CONTRACT;
 
 const has = (userRoles: readonly string[] | undefined, set: readonly string[]): boolean =>
   (userRoles ?? []).some((r) => set.includes(r));

@@ -15,6 +15,7 @@ PARTIAL W1 content → [features/content.md](../features/content.md) · W2 coach
 DONE  W5 notifications → [features/notifications.md](../features/notifications.md)
 PARTIAL W6 admin → [features/admin.md](../features/admin.md) + [features/economy.md](../features/economy.md)
 ACTIVE W7 forum/community → [features/forum.md](../features/forum.md) + [features/community.md](../features/community.md)
+ACTIVE W8 mentorship (Faz 2 pull-forward) → [features/mentorship.md](../features/mentorship.md)
 NEXT  batch B: W3 ai → [features/ai.md](../features/ai.md) · W6 remaining slices
 ```
 `identity` is the prerequisite for everything (auth guards, RequestContext.userId, RLS policies,
@@ -33,6 +34,7 @@ users/orgs tables). Do it solo; parallelism starts after.
 | **W5 — Notifications + Queue** | JobQueuePort cron adapter/runner, web push, email (Postmark), scheduled jobs | `modules/notifications/**` · queue adapter |
 | **W6 — Admin** | admin module (content editor, users, refund, metrics, flags, audit) + **light economy** (earned AI right: invite/quest, coin ledger) · **STAFF role assignment endpoint + audit** (entitlement mechanism already live in W4 — until then assignment is manual SQL, see devnote 0015) | `modules/admin/**`, `modules/economy/**` · `apps/admin/**` |
 | **W7 — Forum / Community** | Topluluk hub, discovery feed/search, curated tags, positive helpful votes, forum edit policy, public-safe social discovery, kalıcı achievement koleksiyonu | `modules/forum/**` · `modules/community/**` · `web: (app)/community/**` · community/forum contracts in `packages/{types,validation}`. `community`, kendi `user_achievements` tablosunun sahibidir; coaching/forum verisini yalnız event ve export edilen toplu kanıt servisleriyle tüketir. Admin exception: only `apps/admin/(general)/forum/**` and matching audited forum controller, coordinated with W6. |
+| **W8 — Mentorship (koç)** | Human coach↔student link (invite code, double opt-in, ending), roster, rule-based risk triage, student report, coach-assigned plan tasks | `modules/mentorship/**` · `web: [locale]/(coach)/**` + student `my-coach` / `coach-invitation` routes · `mentorship` contracts in `packages/{types,validation}`. Owns the `coach_students` + `mentorship_*` schema block (identity keeps the table declarations in its W0 comment block). Never reads another module's tables: coaching data arrives through coaching's exported aggregate services, identity display names through `UsersService.listDisplayIdentities`. |
 
 **Cross-track dependencies (consume via contracts, don't block):**
 - W3 needs W1 (RAG source) + W2 (behavior data) + W4 (entitlement) → starts against **ports/stubs**, wires real impls when merged.
@@ -43,6 +45,10 @@ users/orgs tables). Do it solo; parallelism starts after.
   FK or cross-module table access is permitted. Migration `0065` is the coordinated shared-schema touch.
 - W6 admin edits W1 content + views W4 payments → consumes their **public services**; stub until available.
 - W5 is consumed by all via `JobQueuePort` (already defined) — others enqueue, only W5 implements the runner.
+- W8 needs W0 (display-identity seam) and later W2 (aggregate evidence + the `PlanService` write seam).
+  W2 alone writes `plan_tasks`; W8 calls its public service and never its tables. Neither W0 nor W2 imports W8.
+  `MentorshipLinkService.requireActiveLink` is the only authorization gate for coach→student data — any
+  new cross-module read on a coach's behalf goes through it, never around it.
 
 ## 2. Shared surfaces — touch rules
 

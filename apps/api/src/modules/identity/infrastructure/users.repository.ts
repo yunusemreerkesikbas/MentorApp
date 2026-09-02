@@ -16,6 +16,13 @@ export interface CohortPeer {
   avatarStorageKey: string | null;
 }
 
+/** Display-only identity for cross-module people lists (no email, no status, no PII). */
+export interface DisplayIdentity {
+  userId: string;
+  displayName: string;
+  username: string | null;
+}
+
 export interface PublicUserSearchRow {
   id: string;
   displayName: string;
@@ -187,6 +194,27 @@ export class UsersRepository {
         .where(
           and(inArray(users.id, ids), eq(users.status, "ACTIVE"), isNotNull(users.username)),
         ),
+    );
+  }
+
+  /**
+   * Service-scoped display identity for a set of ids (mentorship roster, W8).
+   *
+   * Unlike {@link listPublicByIds} this keeps SUSPENDED/BANNED users and users without a username:
+   * a coach's roster row must not silently vanish because the student was suspended or never
+   * picked a handle. Display fields only — email and every other PII stays inside identity.
+   */
+  async listDisplayByIds(ids: string[]): Promise<DisplayIdentity[]> {
+    if (ids.length === 0) return [];
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: users.id,
+          displayName: sql<string>`coalesce(${users.displayName}, '')`,
+          username: sql<string | null>`${users.username}`,
+        })
+        .from(users)
+        .where(inArray(users.id, ids)),
     );
   }
 

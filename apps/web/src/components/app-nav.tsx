@@ -11,13 +11,14 @@ import {
   PanelLeft,
   Settings,
   Users,
+  UsersRound,
 } from "lucide-react";
 
 import { useEffect, useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { AuthUser, EconomyBalance, SubscriptionView } from "@mentor/types";
+import { UserRole, type AuthUser, type EconomyBalance, type SubscriptionView } from "@mentor/types";
 import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
@@ -78,6 +79,16 @@ const NAV_ITEMS = [
     sidebarOnly: true,
   },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
+  /* Human-coach surface (W8). Sidebar-only and role-gated: the mobile tab pill is a student
+     surface, and a coach does roster work at a desk. `/students` (TR `/kocluk`) is NOT `/coach`, which
+     is the AI companion chat above. */
+  {
+    href: "/students",
+    labelKey: "students",
+    icon: UsersRound,
+    sidebarOnly: true,
+    roles: [UserRole.COACH],
+  },
   {
     href: "/settings",
     labelKey: "settings",
@@ -92,6 +103,20 @@ const TAB_ITEMS = NAV_ITEMS.filter(
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
 );
+
+/**
+ * An item with no `roles` is open to everyone; otherwise the user must hold one of them.
+ * This is presentation only — every gated surface re-checks server-side.
+ */
+function visibleTo(
+  items: readonly (typeof NAV_ITEMS)[number][],
+  roles: readonly string[] | undefined,
+) {
+  return items.filter(
+    (item) =>
+      !("roles" in item) || item.roles.some((role) => (roles ?? []).includes(role)),
+  );
+}
 
 const sidebarIconBtn =
   "inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-main)] transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
@@ -212,6 +237,7 @@ function DesktopSidebar({
 }) {
   const t = useTranslations("nav");
   const forceCollapsed = isBoardEditorPath(pathname);
+  const sidebarItems = visibleTo(SIDEBAR_ITEMS, user?.roles);
   const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
   const [sessionOverride, setSessionOverride] = useState<{
@@ -268,7 +294,7 @@ function DesktopSidebar({
           </button>
         )}
         <div className="flex flex-col items-center gap-1">
-          {SIDEBAR_ITEMS.map((item) => (
+          {sidebarItems.map((item) => (
             <CollapsedNavLink
               key={item.href}
               item={item}
@@ -321,7 +347,7 @@ function DesktopSidebar({
         ) : null}
 
         <div className="mt-2 flex flex-col gap-1">
-          {SIDEBAR_ITEMS.map((item) => (
+          {sidebarItems.map((item) => (
             <NavLink
               key={item.href}
               item={item}

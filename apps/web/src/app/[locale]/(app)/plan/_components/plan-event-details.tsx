@@ -4,6 +4,7 @@ import { Clock, Pencil, Trash2 } from "lucide-react";
 import type { PlanTaskDto } from "@mentor/types";
 import { useLocale, useTranslations } from "next-intl";
 import { planEventColor } from "@/lib/plan-event-colors";
+import { isCoachAssigned } from "@/lib/plan-task-permissions";
 import { formatDateLabel, formatTimeRange } from "./plan-utils";
 
 /**
@@ -28,6 +29,8 @@ export function PlanEventDetails({
   const locale = useLocale();
   const color = planEventColor(task.subject);
   const range = formatTimeRange(task.startTime, task.endTime);
+  // Second edit surface on this screen; same rule as the row menu (lib/plan-task-permissions).
+  const editable = !isCoachAssigned(task);
   const when = `${formatDateLabel(task.taskDate, locale, t("today"), { alwaysFull: true })}, ${range ?? t("all_day")}`;
 
   return (
@@ -65,6 +68,7 @@ export function PlanEventDetails({
 
       {!readOnly ? (
         <div className="flex gap-3">
+          {editable ? (
           <button
             type="button"
             onClick={onEdit}
@@ -78,6 +82,7 @@ export function PlanEventDetails({
             <Pencil size={16} strokeWidth={2} aria-hidden />
             {t("task_action_edit")}
           </button>
+          ) : null}
           <button
             type="button"
             onClick={onDelete}

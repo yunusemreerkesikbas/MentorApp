@@ -129,6 +129,26 @@
       "register": "companion",
       "title": "Aboneliğin sona erdi",
       "body": "Dönmek istediğinde {label} seni bekliyor."
+    },
+    "mentorshipStudentJoined": {
+      "register": "companion",
+      "title": "Yeni öğrencin var",
+      "body": "{name} davetini kabul etti."
+    },
+    "mentorshipAssignedSingular": {
+      "register": "companion",
+      "title": "Koçundan bir görev",
+      "body": "{name} planına bir görev ekledi."
+    },
+    "mentorshipAssignedPlural": {
+      "register": "companion",
+      "title": "Koçundan görevler",
+      "body": "{name} planına {count} görev ekledi."
+    },
+    "mentorshipLinkEnded": {
+      "register": "companion",
+      "title": "Koçluk bağlantısı sona erdi",
+      "body": "{name} ile bağlantın kapandı."
     }
   },
   "email": {

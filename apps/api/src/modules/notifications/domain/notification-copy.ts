@@ -25,6 +25,10 @@ export const NotificationCopyKey = {
   BUDDY_NUDGED: "buddyNudged",
   BUDDY_FIRST_SESSION: "buddyFirstSession",
   STUDY_ROOM_SESSION_STARTED: "studyRoomSessionStarted",
+  MENTORSHIP_STUDENT_JOINED: "mentorshipStudentJoined",
+  MENTORSHIP_ASSIGNED_SINGULAR: "mentorshipAssignedSingular",
+  MENTORSHIP_ASSIGNED_PLURAL: "mentorshipAssignedPlural",
+  MENTORSHIP_LINK_ENDED: "mentorshipLinkEnded",
   /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
   WIN_BACK_OFFER: "winBackOffer",
 } as const;

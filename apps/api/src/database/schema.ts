@@ -139,7 +139,21 @@ export const users = pgTable(
   ],
 );
 
-/** Coach↔student link (§11) — schema-ready for Phase 2 BYOS/marketplace, unused in MVP. */
+/**
+ * Coach↔student link (§11) — the HUMAN coach relation, owned by the W8 mentorship module.
+ *
+ * Not to be confused with the `coach_conversations` / `coach_profiles` / `coach_messages` /
+ * `coach_memory*` tables further down: those are the AI companion (W3). This table predates the
+ * naming split and keeps its name; every NEW human-coach table is `mentorship_*`.
+ *
+ * Double opt-in (§9, KVKK): the coach issues an invite code (their consent), the student redeems
+ * it (theirs) → the row is written straight to ACTIVE. PENDING stays reserved for the Phase-3
+ * marketplace flow, where the row exists before either side confirms.
+ *
+ * No RLS policy — cross-user relation, like `buddy_pairs` / `study_room_members`. Reads and writes
+ * go through SERVICE context and are scoped in the application layer by
+ * `MentorshipLinkService.requireActiveLink`, the single authorization gate.
+ */
 export const coachStudents = pgTable(
   "coach_students",
   {
@@ -152,10 +166,14 @@ export const coachStudents = pgTable(
     studentId: uuid("student_id")
       .notNull()
       .references(() => users.id),
-    /** PENDING | ACTIVE | ENDED (double opt-in — §9). */
+    /** PENDING | ACTIVE | ENDED (MentorshipLinkStatus). */
     status: text("status").notNull().default("PENDING"),
-    /** INVITE | MARKETPLACE (§11). */
+    /** INVITE | MARKETPLACE (MentorshipLinkSource). */
     source: text("source").notNull().default("INVITE"),
+    acceptedAt: timestamp("accepted_at", { withTimezone: true }),
+    endedAt: timestamp("ended_at", { withTimezone: true }),
+    /** Who ended it — either party may (`users.id`); null while the link lives. */
+    endedBy: uuid("ended_by").references(() => users.id),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -163,7 +181,48 @@ export const coachStudents = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [uniqueIndex("coach_students_pair_idx").on(t.coachId, t.studentId)],
+  (t) => [
+    uniqueIndex("coach_students_pair_idx").on(t.coachId, t.studentId),
+    index("coach_students_student_idx").on(t.studentId),
+    index("coach_students_coach_status_idx").on(t.coachId, t.status),
+    /** One active coach per student (MVP §9: independent OR one org, never several at once). */
+    uniqueIndex("coach_students_one_active_coach_idx")
+      .on(t.studentId)
+      .where(sql`status = 'ACTIVE'`),
+    check(
+      "coach_students_status_chk",
+      sql`${t.status} in ('PENDING', 'ACTIVE', 'ENDED')`,
+    ),
+    check(
+      "coach_students_source_chk",
+      sql`${t.source} in ('INVITE', 'MARKETPLACE')`,
+    ),
+  ],
+);
+
+/**
+ * The coach's single rotating invite code (one row per coach — mirrors `invites`).
+ *
+ * No `max_uses` counter: the abuse bound is already the coach's active-student quota
+ * (`mentorship.coach.max_active_students`), and a second counter would only be a second thing to
+ * keep correct. Rotating = update in place, which invalidates the previous code.
+ */
+export const mentorshipInviteCodes = pgTable(
+  "mentorship_invite_codes",
+  {
+    coachId: uuid("coach_id")
+      .primaryKey()
+      .references(() => users.id, { onDelete: "cascade" }),
+    code: text("code").notNull(),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [uniqueIndex("mentorship_invite_codes_code_unique_idx").on(t.code)],
 );
 
 /**
@@ -894,7 +953,13 @@ export const planTasks = pgTable(
     endTime: time("end_time"),
     /** Optional free-text note shown in the calendar event preview. */
     description: text("description"),
-    /** Structural cross-module provenance; no FK to AI/forum tables. */
+    /**
+     * Structural cross-module provenance; no FK to AI/forum/mentorship tables.
+     *
+     * `MENTORSHIP` (a human coach's assignment, W8) carries `origin_ref_id = coach_students.id`
+     * and NO meta: the coach's name is resolved at read time rather than copied into jsonb, so
+     * KVKK erasure has no duplicate to chase.
+     */
     originType: text("origin_type"),
     originRefId: uuid("origin_ref_id"),
     originMeta: jsonb("origin_meta").$type<
@@ -924,6 +989,8 @@ export const planTasks = pgTable(
         (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
         or
         (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH') and ${t.originRefId} is not null and ${t.originMeta} is not null)
+        or
+        (${t.originType} = 'MENTORSHIP' and ${t.originRefId} is not null and ${t.originMeta} is null)
       )`,
     ),
   ],

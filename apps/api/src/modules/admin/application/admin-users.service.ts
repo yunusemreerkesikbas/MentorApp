@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import { ASSIGNABLE_ADMIN_ROLES, UserRole } from "@mentor/types";
+import { ASSIGNABLE_ROLES, UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
 import { AccountErasureService } from "../../account/application/account-erasure.service";
@@ -91,8 +91,8 @@ export class AdminUsersService {
   }
 
   /**
-   * Grant a fine admin sub-role (§9). Allowlist-guarded: only EDITOR/SUPPORT/FINANCE/MODERATOR are
-   * API-assignable — never SUPER_ADMIN/ADMIN (no privilege escalation) or STAFF (own endpoint).
+   * Grant an API-assignable role (§9): the fine admin sub-roles plus COACH (W8 curation).
+   * Allowlist-guarded — never SUPER_ADMIN/ADMIN (no privilege escalation) or STAFF (own endpoint).
    * Idempotent. Caller gates with @Roles(SUPER_ADMIN) + audits.
    */
   async grantRole(userId: string, role: string): Promise<RoleChangeResult> {
@@ -107,7 +107,7 @@ export class AdminUsersService {
   }
 
   private assertAssignable(role: string): void {
-    if (!(ASSIGNABLE_ADMIN_ROLES as readonly string[]).includes(role)) {
+    if (!(ASSIGNABLE_ROLES as readonly string[]).includes(role)) {
       throw new DomainError(ErrorCode.ADMIN_ROLE_NOT_ASSIGNABLE, HttpStatus.BAD_REQUEST, { role });
     }
   }

@@ -16,7 +16,7 @@ import type {
 } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
-import { withUserContext } from "../../../database/rls";
+import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { addDays, todayIso } from "../domain/date.util";
@@ -214,6 +214,69 @@ export class PlanService {
   }
 
   /**
+   * W8 erasure seam: forget that these links ever assigned anything.
+   *
+   * Called when a coach's account is erased. Without it the student keeps tasks badged
+   * "from your coach" that they can never edit, pointing at a link row that is gone.
+   */
+  async clearMentorshipOrigin(linkIds: string[]): Promise<number> {
+    if (linkIds.length === 0) return 0;
+    return withServiceContext(this.db, (tx) =>
+      this.tasks.clearMentorshipOrigin(tx, linkIds),
+    );
+  }
+
+  /**
+   * W8 public seam: a HUMAN coach assigns tasks over an active mentorship link.
+   *
+   * This is the deliberate exception to the "never written without the user confirming" rule that
+   * governs {@link createFromCommunityCoach} and {@link createFromAiCoach}. The reasoning is not
+   * that assignment is safer, but that the consent already happened somewhere else: the student
+   * accepted this coach explicitly, and can end the link or delete any task at any moment. An AI
+   * suggestion has no such standing act behind it.
+   *
+   * The caller (W8) MUST have passed `MentorshipLinkService.requireActiveLink` first; this method
+   * trusts `linkId` and writes it as the provenance. All-or-nothing, like {@link createMany}.
+   */
+  async createFromMentorship(
+    studentId: string,
+    inputs: CreatePlanTaskInput[],
+    linkId: string,
+  ): Promise<PlanTaskDto[]> {
+    const withDates = inputs.map((input) => ({
+      ...input,
+      taskDate: input.taskDate ?? todayIso(),
+    }));
+    for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
+    const result = await withUserContext(this.db, { userId: studentId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, studentId);
+      const rows = [];
+      for (const input of withDates) {
+        rows.push(
+          await this.tasks.create(tx, {
+            userId: studentId,
+            taskDate: input.taskDate,
+            title: input.title,
+            subject: input.subject ?? null,
+            startTime: input.startTime ?? null,
+            endTime: input.endTime ?? null,
+            description: input.description ?? null,
+            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+            originType: "MENTORSHIP",
+            originRefId: linkId,
+            originMeta: null,
+          }),
+        );
+      }
+      return rows.map(toPlanTaskDto);
+    });
+    if (result.length > 0) {
+      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(studentId));
+    }
+    return result;
+  }
+
+  /**
    * User-confirmed batch add (e.g. an accepted coach draft — the AI itself never writes here,
    * workstreams §2). All-or-nothing: every date is validated first, then one tx writes all rows.
    */
@@ -252,15 +315,21 @@ export class PlanService {
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
       return {
         window: { from, to },
+        // The revision still covers EVERY row (including coach-assigned ones), so a concurrent
+        // change to one of them still invalidates the adaptation the user is looking at.
         planRevision: buildPlanRevision(rows),
-        tasks: rows.map(({ id, taskDate, title, subject, status, sortOrder }) => ({
-          id,
-          taskDate,
-          title,
-          subject,
-          status,
-          sortOrder,
-        })),
+        // …but coach-assigned tasks are not offered as adaptation candidates: moving one would
+        // change a date the coach set and reported on. See assertMentorshipTaskEditable.
+        tasks: rows
+          .filter((row) => row.originType !== "MENTORSHIP")
+          .map(({ id, taskDate, title, subject, status, sortOrder }) => ({
+            id,
+            taskDate,
+            title,
+            subject,
+            status,
+            sortOrder,
+          })),
       };
     });
   }
@@ -337,6 +406,14 @@ export class PlanService {
         ) {
           throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
         }
+        // The snapshot never offers these, so reaching here means a hand-crafted request.
+        // Same rule as a direct edit: a coach's assignment keeps the date the coach gave it.
+        if (row.originType === "MENTORSHIP") {
+          throw new DomainError(
+            ErrorCode.COACHING_TASK_COACH_ASSIGNED,
+            HttpStatus.FORBIDDEN,
+          );
+        }
         assertDate(change.toDate);
         movedIds.add(row.id);
         pendingByDate.set(row.taskDate, (pendingByDate.get(row.taskDate) ?? 1) - 1);
@@ -411,6 +488,7 @@ export class PlanService {
         throw new DomainError(ErrorCode.COACHING_TASK_NOT_FOUND, HttpStatus.NOT_FOUND);
       }
       this.assertTaskDateMutable(existing.taskDate);
+      this.assertMentorshipTaskEditable(existing.originType, input);
       const updated = await this.tasks.update(tx, userId, id, {
         ...(input.title !== undefined && { title: input.title }),
         ...(input.subject !== undefined && { subject: input.subject }),
@@ -461,7 +539,27 @@ export class PlanService {
     });
   }
 
-/** Past calendar days are view-only — prevents retroactive streak/plan edits. */
+  /**
+   * A coach's assignment is theirs to word: the student may tick it off or delete it, but not
+   * rewrite it. Editing the title or the date would make the coach's report quietly untrue, which
+   * is the one thing a tracking tool must not allow. Deleting stays open on purpose — the plan is
+   * still the student's own, and a task they cannot remove holds it hostage.
+   */
+  private assertMentorshipTaskEditable(
+    originType: string | null,
+    input: UpdatePlanTaskInput,
+  ): void {
+    if (originType !== "MENTORSHIP") return;
+    const touchesMoreThanStatus = (
+      // `taskDate` is absent from updatePlanTaskSchema, so it can never arrive here.
+      ["title", "subject", "startTime", "endTime", "description", "sortOrder"] as const
+    ).some((field) => (input as Record<string, unknown>)[field] !== undefined);
+    if (touchesMoreThanStatus) {
+      throw new DomainError(ErrorCode.COACHING_TASK_COACH_ASSIGNED, HttpStatus.FORBIDDEN);
+    }
+  }
+
+  /** Past calendar days are view-only — prevents retroactive streak/plan edits. */
   private assertTaskDateMutable(taskDate: string): void {
     if (taskDate < todayIso()) {
       throw new DomainError(ErrorCode.COACHING_TASK_DATE_READONLY, HttpStatus.FORBIDDEN);

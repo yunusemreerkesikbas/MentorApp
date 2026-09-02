@@ -727,7 +727,9 @@ http://localhost:3000/panel               # daily ritual hub
 
 - The first-visit welcome is now a four-scene, manually advanced journey covering Puhu, the coach,
   today's small step, and community. Skip opens the final account choice instead of leaving the
-  journey. The intro choreography can be completed immediately and respects reduced motion.
+  journey. The intro choreography can be completed immediately and respects reduced motion. Its
+  composition follows a top-copy / lower-scene rhythm so generated 3D art can replace the fallback
+  without moving the CTA or progress controls.
 - Desktop auth now uses a Puhu narrative + existing-form split; mobile retains the bottom sheet and
   hanging Puhu. Successful auth sends the sheet upward before navigation. A locale-level cloud
   provider keeps the onboarding completion cover alive across the dashboard or pending-invite route.

@@ -8,11 +8,14 @@ import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 export function PlanTaskMenu({
   taskTitle,
   disabled,
+  editable = true,
   onEdit,
   onDelete,
 }: {
   taskTitle: string;
   disabled?: boolean;
+  /** False for a coach-assigned task: the API refuses the edit, so offering it would only lie. */
+  editable?: boolean;
   onEdit: () => void;
   onDelete: () => void;
 }) {
@@ -38,7 +41,9 @@ export function PlanTaskMenu({
         </button>
       )}
     >
-      <PopoverMenuItem onClick={onEdit}>{t("task_action_edit")}</PopoverMenuItem>
+      {editable ? (
+        <PopoverMenuItem onClick={onEdit}>{t("task_action_edit")}</PopoverMenuItem>
+      ) : null}
       <PopoverMenuItem danger onClick={onDelete}>
         {t("task_action_delete")}
       </PopoverMenuItem>

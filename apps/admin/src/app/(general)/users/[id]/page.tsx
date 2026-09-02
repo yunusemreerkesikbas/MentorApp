@@ -320,7 +320,7 @@ export default function UserDetailPage() {
                                 <div className="card stretch stretch-full">
                                     <div className="card-header"><h6 className="mb-0">Roller</h6></div>
                                     <div className="card-body d-flex flex-column gap-2">
-                                        <div className="fs-12 text-muted mb-1">Alt-rol ver/al (SUPER_ADMIN). STAFF kullanıcı listesinden yönetilir.</div>
+                                        <div className="fs-12 text-muted mb-1">Rol ver/al (SUPER_ADMIN). COACH panel erişimi vermez, yalnız koçluk yüzeyini açar. STAFF kullanıcı listesinden yönetilir.</div>
                                         {ASSIGNABLE_ROLES.map((role) => {
                                             const has = user.roles.includes(role);
                                             return (

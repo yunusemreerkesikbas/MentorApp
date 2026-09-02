@@ -13,6 +13,7 @@ describe("AccountErasureService", () => {
   let eraseCoaching: ReturnType<typeof vi.fn>;
   let eraseForum: ReturnType<typeof vi.fn>;
   let eraseSocial: ReturnType<typeof vi.fn>;
+  let eraseMentorship: ReturnType<typeof vi.fn>;
   let eraseNotifications: ReturnType<typeof vi.fn>;
   let deleteObject: ReturnType<typeof vi.fn>;
   let service: AccountErasureService;
@@ -30,6 +31,7 @@ describe("AccountErasureService", () => {
     eraseCoaching = vi.fn(async () => undefined);
     eraseForum = vi.fn(async () => undefined);
     eraseSocial = vi.fn(async () => undefined);
+    eraseMentorship = vi.fn(async () => undefined);
     eraseNotifications = vi.fn(async () => undefined);
     deleteObject = vi.fn(async () => undefined);
     service = new AccountErasureService(
@@ -41,6 +43,7 @@ describe("AccountErasureService", () => {
       { eraseUserData: eraseCoaching } as never,
       { eraseUserData: eraseForum } as never,
       { eraseUserData: eraseSocial } as never,
+      { eraseUserData: eraseMentorship } as never,
       { eraseUserData: eraseNotifications } as never,
       { deleteObject } as never,
     );
@@ -55,6 +58,7 @@ describe("AccountErasureService", () => {
     expect(eraseCoaching).toHaveBeenCalledWith(USER);
     expect(eraseForum).toHaveBeenCalledWith(USER);
     expect(eraseSocial).toHaveBeenCalledWith(USER);
+    expect(eraseMentorship).toHaveBeenCalledWith(USER);
     expect(eraseNotifications).toHaveBeenCalledWith(USER);
     expect(anonymizeAccount).toHaveBeenCalledWith(USER, "DELETED");
     expect(revokeAllForUser).toHaveBeenCalledWith(USER);
