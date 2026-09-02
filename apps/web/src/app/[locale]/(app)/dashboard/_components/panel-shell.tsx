@@ -67,7 +67,11 @@ import { PremiumCampaignBanner } from "@/components/premium/premium-campaign-ban
 import { PromotionDialog } from "@/components/premium/promotion-dialog";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { fetchAutoPromotionOffers, pickBannerPromotion } from "@/lib/promotions";
+import {
+  fetchAutoPromotionOffers,
+  formatPromotionMagnitude,
+  pickBannerPromotion,
+} from "@/lib/promotions";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
@@ -116,6 +120,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const { promo } = useMentorDialog();
   const { openPaywall } = usePremiumPaywall();
   const sheet = useMentorBottomSheet();
+  const locale = useLocale();
   const { tryCelebrate, previewCelebrate, celebration } =
     useStreakCelebration();
   const searchParams = useSearchParams();
@@ -569,7 +574,14 @@ export function PanelShell({ initialData }: PanelShellProps) {
     ? [
         {
           id: "promotion",
-          message: paywallT("banner_message", { label: bannerPromotion.label }),
+          // Leads with the size of the discount: the campaign NAME means nothing to someone who
+          // has not opened the modal, and the strip truncates, so the informative half goes first.
+          message: paywallT("banner_message", {
+            amount: formatPromotionMagnitude(bannerPromotion, locale, (value) =>
+              paywallT("discount_percent", { value }),
+            ),
+            label: bannerPromotion.label,
+          }),
           action: {
             kind: "button",
             label: paywallT("banner_cta"),

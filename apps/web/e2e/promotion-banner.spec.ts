@@ -250,7 +250,7 @@ async function mockDashboard(page: Page, options: Options = {}) {
   });
 }
 
-const PROMO_TEXT = "Hoş geldin hediyesi seni bekliyor.";
+const PROMO_TEXT = "%20 indirim seni bekliyor: Hoş geldin hediyesi";
 const QUEST_TEXT = "Günlük görevlerinde 10 Coin seni bekliyor.";
 
 test("indirimli ücretsiz kullanıcı panelde promosyon şeridini görür", async ({ page }) => {
@@ -260,7 +260,7 @@ test("indirimli ücretsiz kullanıcı panelde promosyon şeridini görür", asyn
   const banner = page.getByTestId("dashboard-top-banner");
   await expect(banner).toContainText(PROMO_TEXT);
 
-  await banner.getByRole("button", { name: "Premium’a bak" }).click();
+  await banner.getByRole("button", { name: "Şimdi yükselt" }).click();
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
 });
 
@@ -492,7 +492,7 @@ test("modal kapanınca kampanya şeride devrediliyor", async ({ page }) => {
   await expect(strip).toContainText("Hoş geldin hediyen");
 
   // And the strip hands the code over too, exactly like the modal does.
-  await strip.getByRole("button", { name: /Premium/ }).click();
+  await strip.getByRole("button", { name: "Şimdi yükselt" }).click();
   await expect(page.getByTestId("premium-paywall")).toContainText("Kupon uygulandı: HOSGELDIN");
   expect(codes).toContain("HOSGELDIN");
 });

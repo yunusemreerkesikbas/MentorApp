@@ -1,23 +1,31 @@
 "use client";
-import { ArrowLeft } from "lucide-react";
 
 import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@mentor/ui";
 import { DashProgress } from "@/components/dash-progress";
-import type { PuhuVariant } from "@/components/puhu-image";
-import { PuhuImage } from "@/components/puhu-image";
+import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
+import { WELCOME_SCENE_ASSETS } from "@/lib/onboarding-assets";
+import type { WelcomeSlideKey } from "./welcome-flow";
+import { WelcomeIntroPuhu } from "./welcome-intro-puhu";
 
-const TOTAL = 3;
+const TOTAL = 4;
+const FALLBACK_VARIANT: Record<Exclude<WelcomeSlideKey, "intro">, PuhuVariant> = {
+  coach: "encouraging",
+  dailyStep: "proud",
+  community: "host",
+};
 
-/** Pre-auth welcome slide chrome — onboarding centered mode parity. */
 export function WelcomeSlideLayout({
   step,
+  slideKey,
   title,
   subtitle,
-  mascot,
-  heroSrc,
+  introComplete,
+  onIntroComplete,
+  transitioningToAuth,
   onBack,
   onSkip,
   skipLabel,
@@ -27,145 +35,91 @@ export function WelcomeSlideLayout({
   onSecondary,
 }: {
   step: number;
+  slideKey: WelcomeSlideKey;
   title: string;
   subtitle: string;
-  mascot: PuhuVariant;
-  /** Full-bleed poster; slogan lives in the art when set. */
-  heroSrc?: string;
+  introComplete: boolean;
+  onIntroComplete: () => void;
+  transitioningToAuth: boolean;
   onBack?: () => void;
   onSkip?: () => void;
-  skipLabel?: string;
-  primaryLabel?: string;
-  onPrimary?: () => void;
+  skipLabel: string;
+  primaryLabel: string;
+  onPrimary: () => void;
   secondaryLabel?: string;
   onSecondary?: () => void;
 }) {
   const t = useTranslations("welcome");
   const reduceMotion = useReducedMotion();
-  const isHero = Boolean(heroSrc);
+  const sceneSrc = slideKey === "intro" ? null : WELCOME_SCENE_ASSETS?.[slideKey];
 
-  const fade = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 10 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" as const },
-        },
-      };
-
-  const topBar = (
-    <div className="flex h-11 shrink-0 items-center justify-between">
-      {onBack ? (
-        <button
-          type="button"
-          onClick={onBack}
-          aria-label={t("back_aria")}
-          className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{ color: "var(--color-main)" }}
-        >
-          <ArrowLeft size={24} strokeWidth={2} aria-hidden />
-        </button>
-      ) : (
-        <div className="min-w-11" aria-hidden />
-      )}
-      {onSkip && skipLabel ? (
-        <button
-          type="button"
-          onClick={onSkip}
-          className="min-h-11 cursor-pointer px-1 text-sm font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-        >
-          {skipLabel}
-        </button>
-      ) : (
-        <div className="min-w-11" aria-hidden />
-      )}
-    </div>
-  );
-
-  const footer = (
-    <>
-      <DashProgress
-        step={step}
-        total={TOTAL}
-        ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })}
-      />
-      {primaryLabel && onPrimary ? (
-        <div className="mt-6 w-full">
-          <Button type="button" fullWidth onClick={onPrimary}>
-            {primaryLabel}
-          </Button>
-        </div>
-      ) : null}
-      {secondaryLabel && onSecondary ? (
-        <div className="mt-3 w-full">
-          <Button type="button" fullWidth variant="secondary" onClick={onSecondary}>
-            {secondaryLabel}
-          </Button>
-        </div>
-      ) : null}
-    </>
-  );
-
-  if (isHero) {
-    return (
-      <main className="relative min-h-screen w-full overflow-hidden">
-        <Image
-          src={heroSrc!}
-          alt=""
-          fill
-          priority
-          sizes="100vw"
-          className="object-cover object-center"
-        />
-        {/* Soft bottom into white so pagination + CTA stay readable */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-[42%]"
-          style={{
-            background:
-              "linear-gradient(to bottom, transparent 0%, var(--color-bg) 72%)",
-          }}
-          aria-hidden
-        />
-        <motion.div
-          className="relative z-10 flex min-h-screen w-full flex-col px-5 pb-8 pt-8"
-          {...fade}
-        >
-          {topBar}
-          <h1 className="sr-only">{title}</h1>
-          <div className="mt-auto w-full max-w-md mx-auto">{footer}</div>
-        </motion.div>
-      </main>
-    );
+  function finishIntro() {
+    if (slideKey === "intro" && !introComplete) onIntroComplete();
   }
 
   return (
     <main
-      className="flex min-h-screen w-full flex-col px-5"
+      className="min-h-dvh overflow-hidden px-5"
       style={{ backgroundColor: "var(--color-bg)" }}
+      onPointerDownCapture={finishIntro}
+      onKeyDownCapture={finishIntro}
     >
-      <motion.div className="mx-auto flex w-full max-w-md flex-1 flex-col py-8" {...fade}>
-        {topBar}
-        <div className="flex flex-1 flex-col items-center justify-center">
-          <div className="mb-5 flex justify-center">
-            <PuhuImage variant={mascot} size={140} priority />
+      <motion.div
+        className={`mx-auto grid min-h-dvh w-full max-w-5xl grid-cols-1 transition-[grid-template-columns,gap] duration-300 lg:items-center ${transitioningToAuth ? "lg:grid-cols-[minmax(0,1fr)_23.4375rem] lg:gap-12" : "lg:grid-cols-1"}`}
+        animate={transitioningToAuth ? { opacity: 0.96 } : { opacity: 1 }}
+      >
+        <section className="mx-auto flex min-h-dvh w-full max-w-md flex-col py-6 sm:py-8">
+          <div className="flex h-11 shrink-0 items-center justify-between">
+            {onBack ? (
+              <button type="button" onClick={onBack} aria-label={t("back_aria")} className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-card)] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2">
+                <ArrowLeft size={24} aria-hidden />
+              </button>
+            ) : <span className="min-w-11" aria-hidden />}
+            {onSkip ? (
+              <button type="button" onClick={onSkip} className="min-h-11 rounded-[var(--radius-control)] px-2 text-sm font-bold text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2">
+                {skipLabel}
+              </button>
+            ) : null}
           </div>
-          <h1
-            className="text-center text-xl font-semibold leading-snug lg:text-2xl"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            {title}
-          </h1>
-          <p
-            className="mt-3 max-w-sm text-center text-base leading-relaxed"
-            style={{ color: "var(--color-body)", fontFamily: "var(--font-body)" }}
-          >
-            {subtitle}
-          </p>
-        </div>
-        <div className="mt-6 w-full">{footer}</div>
+
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={slideKey}
+              className="flex flex-1 flex-col items-center justify-center py-5 text-center"
+              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
+              transition={{ duration: reduceMotion ? 0.12 : 0.3, ease: "easeOut" }}
+            >
+              <div className="mb-6 flex h-64 w-full items-center justify-center sm:h-72">
+                {slideKey === "intro" ? (
+                  <WelcomeIntroPuhu completed={introComplete} onComplete={onIntroComplete} />
+                ) : sceneSrc ? (
+                  <div className="relative h-full w-full">
+                    <Image src={sceneSrc} alt="" fill sizes="(max-width: 768px) 90vw, 448px" className="object-contain" aria-hidden />
+                  </div>
+                ) : (
+                  <PuhuImage variant={FALLBACK_VARIANT[slideKey]} size={220} priority={step === 1} />
+                )}
+              </div>
+              <motion.div animate={{ opacity: introComplete ? 1 : 0, y: introComplete ? 0 : 8 }} transition={{ duration: 0.25 }} aria-hidden={!introComplete}>
+                <h1 className="text-2xl font-semibold leading-tight text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>
+                <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>
+              </motion.div>
+            </motion.div>
+          </AnimatePresence>
+
+          <div className="mt-auto w-full" aria-hidden={!introComplete}>
+            <DashProgress step={step} total={TOTAL} ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })} />
+            <div className="mt-6">
+              <Button type="button" fullWidth disabled={!introComplete || transitioningToAuth} onClick={onPrimary}>{primaryLabel}</Button>
+            </div>
+            {secondaryLabel && onSecondary ? (
+              <div className="mt-3"><Button type="button" fullWidth variant="secondary" disabled={transitioningToAuth} onClick={onSecondary}>{secondaryLabel}</Button></div>
+            ) : null}
+          </div>
+        </section>
+        {transitioningToAuth ? <div className="hidden h-[32rem] rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] lg:block" aria-hidden /> : null}
       </motion.div>
     </main>
   );

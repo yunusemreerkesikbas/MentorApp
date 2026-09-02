@@ -722,3 +722,16 @@ http://localhost:3000/panel               # daily ritual hub
   link. This applies to knowledge and legal pages that share the public chrome.
 - Related files: `components/public-chrome.tsx`, `knowledge/[slug]/page.tsx`, `legal/[slug]/page.tsx`,
   `messages/{tr,en}.json`, `e2e/knowledge.spec.ts`.
+
+### 2026-09-02 — Puhu-led welcome and route transition
+
+- The first-visit welcome is now a four-scene, manually advanced journey covering Puhu, the coach,
+  today's small step, and community. Skip opens the final account choice instead of leaving the
+  journey. The intro choreography can be completed immediately and respects reduced motion.
+- Desktop auth now uses a Puhu narrative + existing-form split; mobile retains the bottom sheet and
+  hanging Puhu. Successful auth sends the sheet upward before navigation. A locale-level cloud
+  provider keeps the onboarding completion cover alive across the dashboard or pending-invite route.
+- Custom 3D scenes and motion frames are opt-in through `lib/onboarding-assets.ts`; existing Puhu and
+  CSS clouds remain safe fallbacks until the complete asset set is delivered. Related:
+  `_components/welcome/*`, `(auth)/_components/auth-shell.tsx`, `lib/cloud-transition.tsx`,
+  `public/visuals/onboarding/README.md`, `messages/{tr,en}.json`.

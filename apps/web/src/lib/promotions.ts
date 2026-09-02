@@ -1,5 +1,43 @@
-import type { PromotionOffersView, PromotionSummary } from "@mentor/types";
+import {
+  PromotionDiscountType,
+  type PromotionOffersView,
+  type PromotionSummary,
+} from "@mentor/types";
 import { http } from "@mentor/api-client";
+
+/**
+ * How big the discount is, written the same way on every surface.
+ *
+ * The figure is `summary.discountValue`, which the API clamps to what checkout will really apply,
+ * so printing it is a promise the purchase keeps. For a FIXED campaign it is the worst case across
+ * every plan the campaign covers, which is what makes it safe to state before a plan is chosen.
+ *
+ * `percent` is injected rather than formatted here because the percent sign sits on a different
+ * side of the number per locale, and that shape already lives in the `paywall.discount_percent`
+ * message. Currency is `Intl`'s job either way.
+ */
+export function formatPromotionMagnitude(
+  promotion: PromotionSummary,
+  locale: string,
+  percent: (value: number) => string,
+): string {
+  if (promotion.discountType === PromotionDiscountType.PERCENT) {
+    return percent(promotion.discountValue);
+  }
+  // Rounded DOWN, never to nearest: 124,50 TL rounded to nearest prints "125 TL off" and the
+  // charge is 50 kurus smaller than advertised. Every other figure in this feature errs the same
+  // way (the percent clamp, the worst-case across plans), so a stated discount is never bigger
+  // than the applied one. Sub-lira discounts keep their kurus rather than collapsing to zero.
+  const lira = Math.floor(promotion.discountValue / 100);
+  const tag = locale === "en" ? "en-GB" : "tr-TR";
+  return lira > 0
+    ? lira.toLocaleString(tag, { style: "currency", currency: "TRY", maximumFractionDigits: 0 })
+    : (promotion.discountValue / 100).toLocaleString(tag, {
+        style: "currency",
+        currency: "TRY",
+        minimumFractionDigits: 2,
+      });
+}
 
 /**
  * Per-plan price after promotions, plus any coded promotion the user already qualifies for.

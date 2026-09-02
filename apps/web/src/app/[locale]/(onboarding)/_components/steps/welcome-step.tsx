@@ -14,7 +14,7 @@ export function WelcomeStep({
 
   return (
     <OnboardingStepLayout
-      step={0}
+      step={null}
       mascot="encouraging"
       title={t("title", { name: displayName })}
       subtitle={t("subtitle")}

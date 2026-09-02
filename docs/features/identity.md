@@ -338,6 +338,20 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   `(auth)/{layout,login,signup}`, `(onboarding)/{layout,_components/onboarding-wizard.tsx}`,
   `(app)/{layout,app-shell}.tsx`, `lib/analytics.ts`.
 
+### 2026-09-02 — Conversational post-signup onboarding
+
+- Post-signup questions now use named steps with a fixed five-part progress model: required username,
+  optional avatar, required exam, conditional required KPSS level, and optional one-line goal. YKS/LGS
+  paths jump over the KPSS segment; avatar and goal expose “Şimdilik geç”. Choices advance only after
+  explicit confirmation.
+- Puhu and a polite live speech bubble share one `max-w-3xl` responsive stage. Focus makes Puhu look
+  toward the active control, step changes move focus to the new prompt, and reduced-motion keeps the
+  flow usable without choreography. Completion automatically preserves a pending room invite or opens
+  the personalized dashboard through the cloud transition.
+- Existing user update, signed avatar upload, vision upsert, and tutorial analytics contracts are
+  unchanged. Related: `(onboarding)/_components/{onboarding-wizard,onboarding-step-layout,onboarding-flow}.tsx`,
+  `(onboarding)/_components/steps/*`, `messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

@@ -7,10 +7,12 @@ import {
   useLayoutEffect,
   useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
 import { useTranslations } from "next-intl";
 import { CircularBackLink } from "@/components/circular-back-link";
+import { PuhuImage } from "@/components/puhu-image";
 import { usePathname } from "@/i18n/navigation";
 import { authShellShowsBack, authShellShowsHang } from "@/lib/auth-paths";
 import { HANG_OVERHANG_PX } from "./auth-hang-choreography";
@@ -53,7 +55,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
   const hangTravel = showHang ? HANG_OVERHANG_PX : 0;
   const panelRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
-  const [open, setOpen] = useState(false);
+  const [phase, setPhase] = useState<"entering" | "open" | "exiting">("entering");
   const [animated, setAnimated] = useState(false);
 
   useLayoutEffect(() => {
@@ -65,10 +67,10 @@ export function AuthShell({ children }: { children: ReactNode }) {
     const outer = requestAnimationFrame(() => {
       setAnimated(true);
       if (reduce) {
-        setOpen(true);
+        setPhase("open");
         return;
       }
-      inner = requestAnimationFrame(() => setOpen(true));
+      inner = requestAnimationFrame(() => setPhase("open"));
     });
     return () => {
       cancelAnimationFrame(outer);
@@ -83,7 +85,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
     closingRef.current = true;
     const el = panelRef.current;
     if (el) measureTravel(el, hangTravel);
-    setOpen(false);
+    setPhase("exiting");
     const ms = readCloseMs(el);
     if (ms <= 0) {
       navigate();
@@ -95,18 +97,24 @@ export function AuthShell({ children }: { children: ReactNode }) {
   return (
     <AuthSheetExitContext.Provider value={exitThen}>
       <main
-        className={`flex min-h-dvh w-full flex-col justify-end overflow-hidden lg:items-center lg:justify-center lg:px-5 ${showHang ? "lg:pb-8" : "lg:py-8"}`}
-        style={showHang ? { paddingTop: HANG_OVERHANG_PX } : undefined}
+        className="auth-shell flex min-h-dvh w-full flex-col justify-end overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_23.4375rem] lg:items-center lg:gap-12 lg:px-10 lg:py-8 xl:gap-20"
+        data-hang={showHang ? "true" : "false"}
+        style={showHang ? { "--auth-hang-overhang": `${HANG_OVERHANG_PX}px` } as CSSProperties : undefined}
       >
+        <section className="hidden min-w-0 flex-col items-center justify-center text-center lg:flex" aria-label={t("narrative_label")}>
+          <PuhuImage variant="encouraging" size={300} priority />
+          <h1 className="mt-6 text-3xl font-semibold text-[var(--color-main)]" style={{ fontFamily: "var(--font-heading)" }}>{t("narrative_title")}</h1>
+          <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--color-body)]">{t("narrative_body")}</p>
+        </section>
         <div
           ref={panelRef}
           className="auth-sheet relative isolate w-full max-h-[90dvh] overflow-visible lg:max-h-[82dvh] lg:max-w-[23.4375rem]"
           data-animated={animated ? "true" : "false"}
-          data-open={open ? "true" : "false"}
+          data-phase={phase}
           onFocusCapture={hang.onFocusCapture}
           onBlurCapture={hang.onBlurCapture}
         >
-          {hang.back}
+          <span className="contents lg:hidden">{hang.back}</span>
           <div
             className={`relative z-[1] flex max-h-[inherit] w-full flex-col overflow-hidden bg-[var(--color-surface)] max-lg:rounded-t-[16px] lg:rounded-[var(--radius-card)] lg:border lg:border-[var(--color-border)] ${showHang ? "shadow-[var(--shadow-card)]" : "max-lg:shadow-[0px_-4px_10px_rgba(37,73,150,0.10)] lg:shadow-[var(--shadow-card)]"}`}
           >
@@ -138,7 +146,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
               {children}
             </div>
           </div>
-          {hang.front}
+          <span className="contents lg:hidden">{hang.front}</span>
         </div>
       </main>
     </AuthSheetExitContext.Provider>

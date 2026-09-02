@@ -15,6 +15,7 @@ import { DialogProviderShell } from "@/lib/dialog-provider-shell";
 import { BottomSheetProviderShell } from "@/lib/bottom-sheet-provider-shell";
 import { AnalyticsConsentProvider } from "@/lib/analytics-consent";
 import { WebVitalsReporter } from "@/components/web-vitals-reporter";
+import { CloudTransitionProvider } from "@/lib/cloud-transition";
 import "../globals.css";
 
 /* DESIGN.md §3 — one smooth UI family for headings + body. latin-ext covers Turkish glyphs
@@ -120,7 +121,9 @@ export default async function LocaleLayout({
               <BottomSheetProviderShell>
                 <AnalyticsConsentProvider>
                   <WebVitalsReporter />
-                  <AuthProvider>{children}</AuthProvider>
+                  <AuthProvider>
+                    <CloudTransitionProvider>{children}</CloudTransitionProvider>
+                  </AuthProvider>
                 </AnalyticsConsentProvider>
               </BottomSheetProviderShell>
             </DialogProviderShell>

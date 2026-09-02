@@ -38,23 +38,30 @@
     "register": "Kayıt ol",
     "login": "Giriş yap",
     "slide1": {
-      "title": "Sınav yolunda yalnız değilsin.",
-      "title_lead": "Sınav yolunda",
-      "title_emphasis": "yalnız değilsin.",
-      "subtitle": "Seni anlayan, devam ettiren, yalnız bırakmayan bir yoldaşlık platformu."
+      "title": "Selam, ben Puhu.",
+      "title_lead": "Selam, ben",
+      "title_emphasis": "Puhu.",
+      "subtitle": "Sınav yolunda birlikte ilerleyelim."
     },
     "slide2": {
-      "title": "Puhu yolda yanında.",
-      "subtitle": "Plan, kaygı, bugünün adımı. Resmî tarihler editoryal içerikten gelir, asla uydurma."
+      "title": "Zorlandığında buradayım.",
+      "subtitle": "Ne varsa anlat. Bir sonraki adımı birlikte bulalım."
     },
     "slide3": {
-      "title": "Toplulukla birlikte.",
-      "subtitle": "Sorularını sor, deneyim paylaş. Sınav yolunda yalnız kalmadan ilerle."
+      "title": "Bugünün küçük adımı.",
+      "subtitle": "Her şeyi bir anda değil, bugün yapabileceğin kadarını."
+    },
+    "slide4": {
+      "title": "Bu yolu tek başına yürümeyeceksin.",
+      "subtitle": "Aynı sınava hazırlananlarla çalış, paylaş ve birbirine güç ver."
     }
   },
   "auth": {
     "shell": {
-      "back_login": "Girişe dön"
+      "back_login": "Girişe dön",
+      "narrative_label": "Puhu ile sınav yolculuğu",
+      "narrative_title": "Yolculuğun burada başlıyor.",
+      "narrative_body": "Puhu, bugünün küçük adımını bulman ve yalnız kalmadan ilerlemen için yanında."
     },
     "login": {
       "title": "Giriş yap",
@@ -934,8 +941,8 @@
     "coming_soon": "Çok yakında"
   },
   "paywall": {
-    "banner_message": "{label} seni bekliyor.",
-    "banner_cta": "Premium’a bak",
+    "banner_message": "{amount} indirim seni bekliyor: {label}",
+    "banner_cta": "Şimdi yükselt",
     "price_before": "Eski fiyat",
     "coupon_toggle": "Kupon kodun var mı?",
     "coupon_label": "Kupon kodun",
@@ -2326,21 +2333,23 @@
     "progress_aria": "Onboarding adımı {current} / {total}",
     "progress_label": "Adım {current} / {total}",
     "welcome": {
-      "title": "Merhaba, {name}!",
-      "subtitle": "Uzun yolda yanındayız. Küçük adımlarla gideriz.",
+      "title": "Şimdi seni biraz tanıyalım.",
+      "subtitle": "Birkaç kısa cevapla panelini sana göre hazırlayacağım.",
       "continue": "Devam"
     },
     "profile": {
-      "title": "Seni nasıl çağıralım?",
+      "title": "Toplulukta seni hangi kullanıcı adıyla tanıyalım?",
       "username_label": "Kullanıcı adı",
       "username_placeholder": "ornek_kullanici",
       "username_hint": "3-24 karakter · küçük harf, rakam ve alt çizgi.",
       "avatar_label": "Profil fotoğrafı",
+      "avatar_title": "Bir profil fotoğrafı eklemek ister misin?",
       "avatar_change": "Fotoğraf seç",
       "avatar_remove": "Kaldır",
       "avatar_type_error": "Yalnızca JPEG veya PNG yükleyebilirsin.",
       "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
       "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
+      "skip": "Şimdilik geç",
       "form_error": "Kullanıcı adı uymadı.",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
       "continue": "Devam"
@@ -2350,16 +2359,21 @@
       "continue": "Devam",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
+    "kpss_level": {
+      "title": "KPSS’nin hangi düzeyine hazırlanıyorsun?",
+      "continue": "Devam",
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+    },
     "goal": {
-      "title": "Hedefini hatırla",
-      "subtitle": "İsteğe bağlı. Neden bu yoldasın?",
-      "hint": "Sadece hedefin zorunlu; şehir isteğe bağlı.",
-      "save": "Kaydet ve devam",
-      "skip": "Şimdilik atla",
+      "title": "Bu yolun sonunda ne var?",
+      "subtitle": "İstersen tek cümleyle yaz.",
+      "hint": "Hedef panonu daha sonra ayrıntılandırabilirsin.",
+      "save": "Devam et",
+      "skip": "Şimdilik geç",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
     "complete": {
-      "title": "Yol başlıyor.",
+      "title": "Hazırız. İlk adımın seni bekliyor.",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
       "countdown_teaser": "Sınav geri sayımın panelde. Kaynak gösterilmiş resmî takvimden.",
       "map_cta": "Hedefini haritada işaretle →",

@@ -1,78 +1,41 @@
 "use client";
 
+import { useEffect, useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { ExamType } from "@mentor/types";
-import { Chip } from "@mentor/ui";
+import { PuhuImage } from "@/components/puhu-image";
 import { useRouter } from "@/i18n/navigation";
+import { useCloudTransition } from "@/lib/cloud-transition";
 import { consumePendingInvite } from "@/lib/pending-invite";
-import { OnboardingStepLayout } from "../onboarding-step-layout";
-import type { GoalSummary } from "./goal-step";
+import { onboardingDestination } from "../onboarding-flow";
 
-export function CompleteStep({
-  examType,
-  goal,
-  onFinish,
-  onBack,
-}: {
-  examType: ExamType;
-  goal: GoalSummary | null;
-  onFinish: () => void;
-  onBack: () => void;
-}) {
+export function CompleteStep({ onFinish }: { onFinish: () => void }) {
   const t = useTranslations("onboarding.complete");
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
+  const { startCloudTransition } = useCloudTransition();
+  const started = useRef(false);
 
-  function handleGoPanel() {
+  useEffect(() => {
+    if (started.current) return;
+    started.current = true;
     onFinish();
-    // An invite link followed before signing up resumes here: the query string did not survive
-    // signup → onboarding, but the parked path did, so the newcomer lands at the table that
-    // brought them rather than on a panel that means nothing to them yet.
-    const pendingInvite = consumePendingInvite();
-    // @ts-expect-error -- a validated internal path, transported as a plain string.
-    router.push(pendingInvite ?? "/dashboard");
-  }
-
-  /**
-   * The goal map lives on the panel, not in onboarding — it would put ~60KB and an 81-way decision
-   * in front of a user who hasn't seen the product yet. This is its discovery path: without it the
-   * map is a feature nobody stumbles into.
-   */
-  function handleGoMap() {
-    onFinish();
-    router.push("/vision-board");
-  }
+    const destination = onboardingDestination(consumePendingInvite());
+    const timer = window.setTimeout(() => {
+      startCloudTransition(() => {
+        // @ts-expect-error validated internal destination may be transported as a string.
+        router.replace(destination);
+      });
+    }, reduceMotion ? 250 : 1_100);
+    return () => window.clearTimeout(timer);
+  }, [onFinish, reduceMotion, router, startCloudTransition]);
 
   return (
-    <OnboardingStepLayout
-      step={3}
-      layout="centered"
-      mascot="happy"
-      title={t("title")}
-      subtitle={t("subtitle")}
-      onBack={onBack}
-      primaryLabel={t("go_panel")}
-      onPrimary={handleGoPanel}
-    >
-      <div className="flex flex-wrap gap-2">
-        <Chip>{examType}</Chip>
-        {goal ? (
-          <>
-            <Chip>{goal.goalTitle}</Chip>
-            {goal.targetCity ? <Chip>{goal.targetCity}</Chip> : null}
-          </>
-        ) : null}
-      </div>
-      <p className="text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
-        {t("countdown_teaser")}
-      </p>
-      <button
-        type="button"
-        onClick={handleGoMap}
-        className="w-fit cursor-pointer text-sm font-semibold underline transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-        style={{ color: "var(--color-main)" }}
-      >
-        {t("map_cta")}
-      </button>
-    </OnboardingStepLayout>
+    <main className="flex min-h-dvh items-center justify-center px-5 text-center">
+      <motion.div initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reduceMotion ? 0.12 : 0.4, ease: "easeOut" }}>
+        <PuhuImage variant="happy" size={220} priority />
+        <h1 className="mt-6 text-2xl font-semibold text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{t("title")}</h1>
+      </motion.div>
+    </main>
   );
 }
