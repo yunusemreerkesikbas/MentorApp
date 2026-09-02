@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gte, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
 
@@ -168,6 +168,29 @@ export class PlanTaskRepository {
       .where(and(eq(planTasks.id, id), eq(planTasks.userId, userId)))
       .returning({ id: planTasks.id });
     return rows.length > 0;
+  }
+
+  /**
+   * Strip the mentorship provenance from tasks that point at links being erased.
+   *
+   * Cross-user by nature: the rows belong to the STUDENTS of the coach being erased, so the caller
+   * opens a SERVICE context. `origin_ref_id` is a soft ref with no FK, so nothing else would clear
+   * it, and a dangling one would keep the task badged and uneditable forever for a coach who no
+   * longer exists. The task itself stays — it is the student's work, not the coach's.
+   */
+  async clearMentorshipOrigin(tx: DatabaseTx, linkIds: string[]): Promise<number> {
+    if (linkIds.length === 0) return 0;
+    const rows = await tx
+      .update(planTasks)
+      .set({ originType: null, originRefId: null, originMeta: null })
+      .where(
+        and(
+          eq(planTasks.originType, "MENTORSHIP"),
+          inArray(planTasks.originRefId, linkIds),
+        ),
+      )
+      .returning({ id: planTasks.id });
+    return rows.length;
   }
 
   /** Count of DONE tasks for a date — the source for `daily_activity.tasks_done`. */

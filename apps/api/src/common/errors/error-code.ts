@@ -149,6 +149,9 @@ export const ErrorCode = {
   MENTORSHIP_ALREADY_LINKED: "MENTORSHIP_ALREADY_LINKED",
   MENTORSHIP_STUDENT_QUOTA_EXCEEDED: "MENTORSHIP_STUDENT_QUOTA_EXCEEDED",
   MENTORSHIP_SELF_LINK: "MENTORSHIP_SELF_LINK",
+  MENTORSHIP_ASSIGNMENT_TOO_FAR: "MENTORSHIP_ASSIGNMENT_TOO_FAR",
+  /** Coaching-owned: a coach-assigned plan task may be completed or deleted, not rewritten. */
+  COACHING_TASK_COACH_ASSIGNED: "COACHING_TASK_COACH_ASSIGNED",
 } as const;
 
 export type ErrorCode = (typeof ErrorCode)[keyof typeof ErrorCode];

@@ -101,13 +101,13 @@ export const MentorshipRiskFlag = {
 export type MentorshipRiskFlagId =
   (typeof MentorshipRiskFlag)[keyof typeof MentorshipRiskFlag];
 
-/** One roster row: who the student is, how they are doing, what needs attention. */
-export interface MentorshipRosterRowDto {
-  linkId: string;
-  studentId: string;
-  studentDisplayName: string;
-  studentUsername: string | null;
-  acceptedAt: string | null;
+/**
+ * The numbers on a roster row. Separated from the row on purpose: an ENDED link carries `null`
+ * here, so "a coach who no longer follows this student sees no data" is enforced by the type
+ * rather than remembered by whoever edits the mapper next. Ending a link revokes consent, and
+ * revoked consent has to stop the data, not just the badge.
+ */
+export interface MentorshipRosterMetricsDto {
   lastActiveDate: string | null;
   currentStreak: number;
   focusMinutes7d: number;
@@ -118,6 +118,20 @@ export interface MentorshipRosterRowDto {
   latestMockNet: number | null;
   latestMockAt: string | null;
   moodLevel7dAvg: number | null;
+}
+
+/** One roster row: who the student is, how they are doing, what needs attention. */
+export interface MentorshipRosterRowDto {
+  linkId: string;
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  status: MentorshipLinkStatus;
+  acceptedAt: string | null;
+  endedAt: string | null;
+  /** Null for an ENDED link — the coach's window onto this student is closed. */
+  metrics: MentorshipRosterMetricsDto | null;
+  /** Always empty for an ENDED link (no data to triage, and nothing to act on). */
   riskFlags: MentorshipRiskFlagId[];
 }
 

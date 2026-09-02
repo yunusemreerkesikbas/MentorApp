@@ -1,4 +1,5 @@
 import {
+  createMentorshipAssignmentsSchema,
   listMentorshipStudentsQuerySchema,
   mentorshipInviteCodeParamSchema,
   mentorshipStudentParamSchema,
@@ -10,3 +11,6 @@ export class ListMentorshipStudentsQueryDto extends createZodDto(
   listMentorshipStudentsQuerySchema,
 ) {}
 export class MentorshipStudentParamDto extends createZodDto(mentorshipStudentParamSchema) {}
+export class CreateMentorshipAssignmentsDto extends createZodDto(
+  createMentorshipAssignmentsSchema,
+) {}

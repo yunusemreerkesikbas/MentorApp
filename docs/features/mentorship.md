@@ -28,6 +28,10 @@ chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel.
   §4 #7, "org/coach-ready from day one") and has always meant the human relation. Renaming an empty
   table to match a namespace would cost a risky migration and a drizzle snapshot divergence for no
   behavioural gain. Everything *new* is `mentorship_*`.
+- **Ending a link stops the data, not just the badge.** The roster's metrics live in a nullable
+  `metrics` sub-object that is `null` for any non-ACTIVE link, so "a coach who no longer follows
+  this student sees no numbers" is enforced by the DTO shape rather than remembered by whoever
+  edits the mapper next. `listCohortSnapshots` is called only with the ACTIVE students' ids.
 - **One authorization gate.** `MentorshipLinkService.requireActiveLink(coachId, studentId)` is the
   single door for every coach→student read and write. It is a **service, not a guard**, on purpose:
   `RolesGuard` lets ADMIN/SUPER_ADMIN satisfy any `@Roles()` (`roles.guard.ts:24`), so a
@@ -90,13 +94,14 @@ DELETE /v1/mentorship/my-coach                      -> 204
 | `GET/POST /v1/mentorship/invite-code` | Read or rotate the coach's single invite code (`@Roles(COACH)`) |
 | `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
 | `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
+| `POST /v1/mentorship/students/:studentId/assignments` | Assign plan tasks (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
 | `DELETE /v1/mentorship/my-coach` | Student revokes consent, unilaterally (KVKK) |
 
-Error codes: `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
+Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
 `MENTORSHIP_INVITE_EXPIRED` · `MENTORSHIP_ALREADY_LINKED` · `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` ·
 `MENTORSHIP_SELF_LINK`.
 
@@ -145,6 +150,55 @@ flag that cries wolf costs the coach more than it gives.
   `packages/types/src/mentorship.ts`, `packages/validation/src/mentorship.ts`,
   `apps/api/test/mentorship.e2e-spec.ts`, `apps/admin/src/lib/roles.ts`.
 
+- **Code review düzeltmeleri — W8 (2026-09-02)** — Üç dilimin gözden geçirilmesinde çıkan
+  bulgular kapatıldı.
+  **(1) Bloklayıcı:** `?status=ENDED` roster'ı, bağı sonlanmış öğrencilerin **güncel** metriklerini
+  döndürüyordu; koç bağlantıyı bitirip "Geçmiş" sekmesinden izlemeye devam edebiliyordu. Bu hem
+  `/kocum` ekranındaki söze ("verilerine erişimi hemen kapanır") hem KVKK'da rızanın geri
+  çekilebilirliğine aykırıydı. Metrikler artık `MentorshipRosterRowDto.metrics` alt nesnesinde ve
+  ACTIVE olmayan bağda `null`. Kaçıran test de düzeltildi: adı "closes the coach's access
+  immediately" idi ama yalnız satır sayısına bakıyordu.
+  **(2)** Silinen koç, öğrencilerinde düzenlenemez görevler bırakıyordu: `plan_tasks.origin_ref_id`
+  FK'sız soft ref olduğu için bağ silinince rozet ve 403 kilidi kalıyordu. Erasure artık
+  `PlanService.clearMentorshipOrigin` ile o görevlerin provenance'ını temizliyor; görevin kendisi
+  öğrencinin emeği olduğu için duruyor.
+  **(3)** Kota check-then-act idi; sayım ve insert ayrı transaction'lardaydı, aynı kodu eşzamanlı
+  kullanan iki öğrenci ikisi de geçebiliyordu. Artık tek transaction, koç üzerinde
+  `pg_advisory_xact_lock`. Davet kodunun kendi sayacı olmadığı için kotanın gerçek bir sınır olması
+  gerekiyordu.
+  **Düşükler:** ödev şeması `description` kabul etmiyor (`.strict()` — sessizce kırpmak yerine
+  reddediyor, koç geri okuyamayacağı bir not yazamaz) · ödev tarihine ufuk sınırı
+  (`MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD = 120`) · `POST /assignments` throttle (20/dk) ·
+  düzenleme kilidindeki ölü `taskDate` alanı kaldırıldı.
+  **Gotcha:** `mentorshipAssignmentTaskSchema` `.strict()`; bilinmeyen alan 400 döner. Zod
+  varsayılanı sessiz kırpmadır ve o, checklist'in yasakladığı sessiz fallback olurdu.
+  **İlgili:** `mentorship-roster.service.ts`, `domain/risk-flags.ts` (`compareByRisk` artık
+  `metrics` üzerinden), `mentorship-link.repository.ts` (`acceptInvite` kota+upsert tek tx),
+  `mentorship-erasure.service.ts`, `packages/validation/src/{coaching,mentorship}.ts`.
+
+- **Koç ödev ataması (APP-065, 2026-09-02)** — Ayrı bir ödev tablosu YOK: ödev,
+  `origin_type = 'MENTORSHIP'` taşıyan bir `plan_tasks` satırı. Böylece öğrencinin her sabah
+  açtığı ekranda beliriyor ve `daily_activity`, streak, panel, bildirim entegrasyonu bedava
+  geliyor. Paralel bir yapılacaklar listesi günlük döngüyü ikiye böler ve "yaptın mı" sorusunun
+  iki cevabı olurdu. Migration `0094_w8_mentorship_plan_origin`.
+  **Kullanım:** koç, öğrenci raporunun üstündeki "Ödev ver" formundan başlık + ders + tarih
+  giriyor; `POST /v1/mentorship/students/:id/assignments`. Öğrenci görevi `/plan`'da "Koçundan"
+  rozetiyle görüyor.
+  **Gotchas:** (1) Öğrenci görevi **tamamlar ve siler ama düzenleyemez**
+  (`COACHING_TASK_COACH_ASSIGNED`, 403): başlığı değiştirebilseydi koçun raporu sessizce yalan
+  söylerdi. Silme bilerek açık — plan hâlâ öğrencinin kendi planı. (2) Bu kural iki arayüz
+  yüzeyinde birden geçerli (satır menüsü + takvim etkinlik sayfası); ikisi de
+  `lib/plan-task-permissions.ts`'teki tek yüklemi kullanıyor, birbirinden ayrışmasın diye.
+  (3) `origin_meta` **null** — koçun adı jsonb'ye kopyalanmıyor, okuma anında çözülüyor; KVKK
+  silmesinde kovalanacak ikinci bir kopya kalmıyor. (4) `NotificationCategory` genişledi;
+  web'de üç haritanın (ikon/renk/fallback) hepsi güncellenmeli, tip sistemi zaten zorluyor.
+  (5) Rapor "atandı ama silindi"yi göstermez; olay logu backlog'da.
+  **İlgili:** `modules/mentorship/application/mentorship-assignment.service.ts`,
+  `modules/coaching/application/plan.service.ts` (`createFromMentorship`,
+  `assertMentorshipTaskEditable`), `apps/web/src/lib/plan-task-permissions.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/assign-task-form.tsx`,
+  `modules/notifications/application/listeners/mentorship-events.listener.ts`.
+
 - **Koç roster'ı, risk triyajı ve öğrenci raporu (APP-064, 2026-09-02)** — Dilim 1'in kimlik-only
   listesi gerçek panele dönüştü: `GET /v1/mentorship/students` artık aktivite/deneme/plan/mod
   agregalarını ve kural-temelli risk flag'lerini en kötü üstte sıralı döndürüyor;
@@ -171,6 +225,13 @@ flag that cries wolf costs the coach more than it gives.
   freshly granted COACH sees the surface only after their next refresh or login.
 - **Empty 200, not `null` JSON.** `GET /invite-code` and `GET /my-coach` return an empty body when
   there is nothing. The shared `http()` client already tolerates this (`res.json().catch(…)`).
+- **Three ways to change a task, not two.** Besides the row menu and the calendar sheet, the AI
+  plan adaptation (`POST /v1/plan-tasks/adapt`) can MOVE a task to another day. Coach-assigned
+  tasks are filtered out of the adaptation snapshot so they are never proposed, and the apply path
+  refuses them outright (`COACHING_TASK_COACH_ASSIGNED`). Any future writer of `plan_tasks` has to
+  answer the same question: would this change a date or a wording the coach reported on?
+- **Two edit surfaces on the plan screen.** The row menu and the calendar event sheet both offer
+  editing; both must consult `isCoachAssigned`. A third surface would need the same call.
 - **The gate is easy to forget.** Any future service reading student data on a coach's behalf must
   call `requireActiveLink` first. It is exported from `MentorshipModule` for exactly that reason.
 - **Erasure deletes links, it does not anonymize them.** A relation is a fact about two people;
@@ -179,7 +240,9 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Backlog
 
-- Coach-assigned homework via `plan_tasks` origin `MENTORSHIP` (slice 3).
+- Append-only assignment event log, so the report can show "assigned but deleted". Today a deleted
+  assignment simply disappears; the coach sees the living plan, not its history.
+- Bulk assignment / a week composer. The API already takes an array (max 21); only the form is single-task.
 - AI "smart brief" on top of the rule-based triage (roadmap §9). The rules stay as the floor.
 - Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
 - Notifications on link accepted/ended (`NotificationCategory.MENTORSHIP`).

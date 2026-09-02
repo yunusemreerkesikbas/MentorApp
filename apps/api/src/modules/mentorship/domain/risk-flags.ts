@@ -74,18 +74,29 @@ export function evaluateRiskFlags(
  * severity the coach sees whoever has been quiet longest.
  */
 export function compareByRisk(
-  a: { riskFlags: MentorshipRiskFlagId[]; lastActiveDate: string | null },
-  b: { riskFlags: MentorshipRiskFlagId[]; lastActiveDate: string | null },
+  a: RiskSortable,
+  b: RiskSortable,
 ): number {
   const weight = (flags: MentorshipRiskFlagId[]): number =>
     flags.length === 0 ? SEVERITY.length : SEVERITY.indexOf(flags[0]!);
   const byWeight = weight(a.riskFlags) - weight(b.riskFlags);
   if (byWeight !== 0) return byWeight;
+  // A row with no metrics (an ended link) has nothing to rank on; keep it after the live ones.
+  const aLast = a.metrics === null ? undefined : a.metrics.lastActiveDate;
+  const bLast = b.metrics === null ? undefined : b.metrics.lastActiveDate;
+  if (aLast === undefined && bLast === undefined) return 0;
+  if (aLast === undefined) return 1;
+  if (bLast === undefined) return -1;
   // null (never active) sorts first — the student who never started needs the coach most.
-  if (a.lastActiveDate === b.lastActiveDate) return 0;
-  if (a.lastActiveDate === null) return -1;
-  if (b.lastActiveDate === null) return 1;
-  return a.lastActiveDate < b.lastActiveDate ? -1 : 1;
+  if (aLast === bLast) return 0;
+  if (aLast === null) return -1;
+  if (bLast === null) return 1;
+  return aLast < bLast ? -1 : 1;
+}
+
+interface RiskSortable {
+  riskFlags: MentorshipRiskFlagId[];
+  metrics: { lastActiveDate: string | null } | null;
 }
 
 /** Whole days between two `yyyy-mm-dd` strings. UTC, matching the rest of coaching's day math. */

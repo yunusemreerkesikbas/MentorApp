@@ -54,35 +54,43 @@ export class MentorshipRosterService {
     const { rows, total } = await this.links.listByCoach(coachId, status, page, pageSize);
     if (rows.length === 0) return { items: [], total, page, pageSize };
 
-    const studentIds = rows.map((row) => row.studentId);
+    // Only ACTIVE links get metrics. Ending a link revokes consent, so the history tab shows that
+    // the relationship existed and nothing about how the student is doing now.
+    const activeStudentIds = rows
+      .filter((row) => row.status === "ACTIVE")
+      .map((row) => row.studentId);
     const [people, snapshots, thresholds] = await Promise.all([
-      this.users.listDisplayIdentities(studentIds),
-      this.evidence.listCohortSnapshots(studentIds, now),
+      this.users.listDisplayIdentities(rows.map((row) => row.studentId)),
+      this.evidence.listCohortSnapshots(activeStudentIds, now),
       this.thresholds(),
     ]);
     const today = todayIso(now);
 
     const items = rows.map((link): MentorshipRosterRowDto => {
       const person = people.get(link.studentId);
-      const snapshot = snapshots.get(link.studentId)!;
+      const snapshot = snapshots.get(link.studentId);
       return {
         linkId: link.id,
         studentId: link.studentId,
         studentDisplayName: person?.displayName ?? "",
         studentUsername: person?.username ?? null,
+        status: link.status as MentorshipLinkStatus,
         acceptedAt: link.acceptedAt?.toISOString() ?? null,
-        lastActiveDate: snapshot.lastActiveDate,
-        currentStreak: snapshot.currentStreak,
-        focusMinutes7d: snapshot.focusMinutes7d,
-        sessions7d: snapshot.sessions7d,
-        activeDays7d: snapshot.activeDays7d,
-        planCompletionRate7d: snapshot.planCompletionRate7d,
-        latestMockNet: snapshot.latestMockNet,
-        latestMockAt: snapshot.latestMockAt,
-        moodLevel7dAvg: snapshot.moodLevel7dAvg,
-        // An ended link is history: flagging a student the coach no longer follows is noise.
-        riskFlags:
-          link.status === "ACTIVE" ? evaluateRiskFlags(snapshot, thresholds, today) : [],
+        endedAt: link.endedAt?.toISOString() ?? null,
+        metrics: snapshot
+          ? {
+              lastActiveDate: snapshot.lastActiveDate,
+              currentStreak: snapshot.currentStreak,
+              focusMinutes7d: snapshot.focusMinutes7d,
+              sessions7d: snapshot.sessions7d,
+              activeDays7d: snapshot.activeDays7d,
+              planCompletionRate7d: snapshot.planCompletionRate7d,
+              latestMockNet: snapshot.latestMockNet,
+              latestMockAt: snapshot.latestMockAt,
+              moodLevel7dAvg: snapshot.moodLevel7dAvg,
+            }
+          : null,
+        riskFlags: snapshot ? evaluateRiskFlags(snapshot, thresholds, today) : [],
       };
     });
     items.sort(compareByRisk);

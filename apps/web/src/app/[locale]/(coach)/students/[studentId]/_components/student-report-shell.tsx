@@ -10,6 +10,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endStudentLink, fetchStudentReport } from "@/lib/mentorship";
+import { AssignTaskForm } from "./assign-task-form";
 import {
   formatDate,
   formatMood,
@@ -40,21 +41,16 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
     [toast, common],
   );
 
-  useEffect(() => {
-    let active = true;
+  const load = useCallback(() => {
     fetchStudentReport(studentId)
-      .then((data) => {
-        if (active) setReport(data);
-      })
+      .then(setReport)
       .catch((err: unknown) => {
-        if (!active) return;
         setFailed(true);
         showError(err);
       });
-    return () => {
-      active = false;
-    };
   }, [studentId, showError]);
+
+  useEffect(load, [load]);
 
   async function endLink() {
     if (!report) return;
@@ -138,6 +134,12 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
           )}
         </div>
       </div>
+
+      <AssignTaskForm
+        studentId={studentId}
+        studentName={report.studentDisplayName}
+        onAssigned={load}
+      />
 
       <Card>
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>

@@ -58,7 +58,7 @@ export const PLAN_TASK_DESCRIPTION_MAX = 2000;
  * `startTime` null/absent = all-day item. `endTime` requires a `startTime` and must be later —
  * mirrors the `plan_tasks_time_range_chk` DB constraint (both sides, never one).
  */
-function refinePlanTaskTimes(
+export function refinePlanTaskTimes(
   value: { startTime?: string | null; endTime?: string | null },
   ctx: z.RefinementCtx,
 ): void {
@@ -81,19 +81,24 @@ function refinePlanTaskTimes(
   }
 }
 
-export const createPlanTaskSchema = z
-  .object({
-    /** Defaults to the server's "today" when omitted. */
-    taskDate: isoDateSchema.optional(),
-    title: z.string().trim().min(1).max(200),
-    subject: z.string().trim().min(1).max(80).nullish(),
-    /** Null/absent = all-day. */
-    startTime: hhmmSchema.nullish(),
-    endTime: hhmmSchema.nullish(),
-    description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
-    sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
-  })
-  .superRefine(refinePlanTaskTimes);
+/**
+ * The plan-task field set, before the time cross-check. Exported as a plain object schema so other
+ * surfaces can narrow it (the mentorship assignment drops `description`) — a `ZodEffects` cannot
+ * be `.omit()`-ed, which is why the refine is applied separately below.
+ */
+export const planTaskFieldsSchema = z.object({
+  /** Defaults to the server's "today" when omitted. */
+  taskDate: isoDateSchema.optional(),
+  title: z.string().trim().min(1).max(200),
+  subject: z.string().trim().min(1).max(80).nullish(),
+  /** Null/absent = all-day. */
+  startTime: hhmmSchema.nullish(),
+  endTime: hhmmSchema.nullish(),
+  description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
+  sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
+});
+
+export const createPlanTaskSchema = planTaskFieldsSchema.superRefine(refinePlanTaskTimes);
 export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 
 /** POST /v1/plan-tasks/bulk — user-confirmed batch add (e.g. accepted coach draft). */

@@ -46,17 +46,16 @@ function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {})
     findActiveByStudent: vi.fn(async (studentId: string) =>
       rows.find((r) => r.studentId === studentId && r.status === "ACTIVE"),
     ),
-    countActiveByCoach: vi.fn(
-      async (coachId: string) =>
-        rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE").length,
-    ),
     listByCoach: vi.fn(async (coachId: string, status: string) => {
       const matched = rows.filter((r) => r.coachId === coachId && r.status === status);
       return { rows: matched, total: matched.length };
     }),
-    acceptInvite: vi.fn(async (coachId: string, studentId: string) => {
+    // Mirrors the repository contract: quota + upsert inside one transaction.
+    acceptInvite: vi.fn(async (coachId: string, studentId: string, maxActive: number) => {
+      const active = rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE").length;
+      if (active >= maxActive) return "QUOTA_FULL";
       const existing = rows.find((r) => r.coachId === coachId && r.studentId === studentId);
-      if (existing && existing.status !== "ENDED") return undefined; // setWhere skipped the update
+      if (existing && existing.status !== "ENDED") return "ALREADY_ACTIVE";
       if (existing) {
         existing.status = "ACTIVE";
         existing.endedAt = null;
@@ -75,7 +74,6 @@ function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {})
       row.endedBy = endedBy;
       return row;
     }),
-    findById: vi.fn(),
     purgeForUser: vi.fn(),
   };
 

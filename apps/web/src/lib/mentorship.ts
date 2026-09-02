@@ -5,6 +5,7 @@ import type {
   MentorshipStudentReportDto,
   MyCoachDto,
   Paginated,
+  PlanTaskDto,
 } from "@mentor/types";
 import { http } from "@mentor/api-client";
 
@@ -47,6 +48,17 @@ export async function fetchStudentReport(
   return (await http<MentorshipStudentReportDto>(
     `/v1/mentorship/students/${encodeURIComponent(studentId)}`,
   )) as MentorshipStudentReportDto;
+}
+
+/** Assign plan tasks to a student. They land in the student's own plan screen, badged. */
+export async function assignTasks(
+  studentId: string,
+  tasks: { title: string; subject?: string | null; taskDate?: string }[],
+): Promise<PlanTaskDto[]> {
+  return (await http<PlanTaskDto[]>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/assignments`,
+    { method: "POST", body: JSON.stringify({ tasks }) },
+  )) as PlanTaskDto[];
 }
 
 export async function endStudentLink(studentId: string): Promise<void> {

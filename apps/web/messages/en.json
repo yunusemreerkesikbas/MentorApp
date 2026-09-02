@@ -1117,7 +1117,8 @@
     "time_invalid": "End time must be after the start time.",
     "description": "Description",
     "description_placeholder": "A short note (optional)",
-    "new_event_title": "New event"
+    "new_event_title": "New event",
+    "coach_assigned": "From your coach"
   },
   "analysis": {
     "notebook_handoff": "This mock exam had {count} wrong answers. You decide which ones are worth filing.",
@@ -2974,6 +2975,16 @@
     "guard_body": "Without a coach account you cannot come in here.",
     "guard_back": "Back to the panel",
     "loading": "Loading",
-    "confirm_cancel": "Never mind"
+    "confirm_cancel": "Never mind",
+    "assign_title": "Assign a task",
+    "assign_body": "What you assign appears in the student's own plan screen.",
+    "assign_task_title": "Task",
+    "assign_subject": "Subject (optional)",
+    "assign_date": "Date",
+    "assign_action": "Add to their plan",
+    "assign_done_title": "Task added",
+    "assign_done_body": "{name} will see it in their plan.",
+    "ended_on": "Ended on {date}. Your access to their data is closed.",
+    "ended_no_access": "The link ended. Your access to their data is closed."
   }
 }

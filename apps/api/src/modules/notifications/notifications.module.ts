@@ -23,6 +23,7 @@ import { StudyRoomActivityListener } from "./application/listeners/study-room-ac
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
 import { ForumEventsListener } from "./application/listeners/forum-events.listener";
 import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
+import { MentorshipEventsListener } from "./application/listeners/mentorship-events.listener";
 import { JourneyLevelEventsListener } from "./application/listeners/journey-level-events.listener";
 import { AchievementEventsListener } from "./application/listeners/achievement-events.listener";
 import { PaymentsEventsListener } from "./application/listeners/payments-events.listener";
@@ -70,6 +71,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     PaymentsEventsListener,
     PromotionEventsListener,
     CoachingEventsListener,
+    MentorshipEventsListener,
     BuddyActivityListener,
     StudyRoomActivityListener,
     ForumEventsListener,

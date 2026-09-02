@@ -120,7 +120,7 @@ describe("evaluateRiskFlags", () => {
 
 describe("compareByRisk", () => {
   const row = (riskFlags: string[], lastActiveDate: string | null) =>
-    ({ riskFlags, lastActiveDate }) as never;
+    ({ riskFlags, metrics: { lastActiveDate } }) as never;
 
   it("puts flagged students ahead of unflagged ones", () => {
     const rows = [
@@ -142,7 +142,18 @@ describe("compareByRisk", () => {
       row([MentorshipRiskFlag.INACTIVE], "2026-09-01"),
     ];
     rows.sort(compareByRisk);
-    expect((rows[0] as { lastActiveDate: string }).lastActiveDate).toBe("2026-09-01");
+    expect((rows[0] as { metrics: { lastActiveDate: string } }).metrics.lastActiveDate).toBe(
+      "2026-09-01",
+    );
+  });
+
+  it("sinks a row with no metrics (an ended link) below the live ones", () => {
+    const rows = [
+      { riskFlags: [], metrics: null } as never,
+      row([], "2026-09-01"),
+    ];
+    rows.sort(compareByRisk);
+    expect((rows[0] as { metrics: unknown }).metrics).not.toBeNull();
   });
 
   it("puts a student who never started at the very top of their severity band", () => {
@@ -151,6 +162,8 @@ describe("compareByRisk", () => {
       row([MentorshipRiskFlag.INACTIVE], null),
     ];
     rows.sort(compareByRisk);
-    expect((rows[0] as { lastActiveDate: string | null }).lastActiveDate).toBeNull();
+    expect(
+      (rows[0] as { metrics: { lastActiveDate: string | null } }).metrics.lastActiveDate,
+    ).toBeNull();
   });
 });

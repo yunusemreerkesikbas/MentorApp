@@ -953,7 +953,13 @@ export const planTasks = pgTable(
     endTime: time("end_time"),
     /** Optional free-text note shown in the calendar event preview. */
     description: text("description"),
-    /** Structural cross-module provenance; no FK to AI/forum tables. */
+    /**
+     * Structural cross-module provenance; no FK to AI/forum/mentorship tables.
+     *
+     * `MENTORSHIP` (a human coach's assignment, W8) carries `origin_ref_id = coach_students.id`
+     * and NO meta: the coach's name is resolved at read time rather than copied into jsonb, so
+     * KVKK erasure has no duplicate to chase.
+     */
     originType: text("origin_type"),
     originRefId: uuid("origin_ref_id"),
     originMeta: jsonb("origin_meta").$type<
@@ -983,6 +989,8 @@ export const planTasks = pgTable(
         (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
         or
         (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH') and ${t.originRefId} is not null and ${t.originMeta} is not null)
+        or
+        (${t.originType} = 'MENTORSHIP' and ${t.originRefId} is not null and ${t.originMeta} is null)
       )`,
     ),
   ],

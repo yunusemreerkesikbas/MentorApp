@@ -17,6 +17,8 @@ export type SessionPresetId = "25_5" | "50_10" | "custom";
 export const PlanTaskOriginType = {
   COMMUNITY_COACH: "COMMUNITY_COACH",
   AI_COACH: "AI_COACH",
+  /** Assigned by a HUMAN coach over an active mentorship link (W8). Not the AI. */
+  MENTORSHIP: "MENTORSHIP",
 } as const;
 export type PlanTaskOriginType =
   (typeof PlanTaskOriginType)[keyof typeof PlanTaskOriginType];
@@ -36,9 +38,20 @@ export interface AiCoachPlanTaskOriginDto {
   coachMessageId: string;
 }
 
+/**
+ * Assigned by the student's human coach. Only the link id travels: the student has at most one
+ * active coach, so the UI says "from your coach" and looks the name up once from
+ * `GET /v1/mentorship/my-coach` if it wants to name them.
+ */
+export interface MentorshipPlanTaskOriginDto {
+  type: typeof PlanTaskOriginType.MENTORSHIP;
+  linkId: string;
+}
+
 export type PlanTaskOriginDto =
   | CommunityCoachPlanTaskOriginDto
-  | AiCoachPlanTaskOriginDto;
+  | AiCoachPlanTaskOriginDto
+  | MentorshipPlanTaskOriginDto;
 
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {

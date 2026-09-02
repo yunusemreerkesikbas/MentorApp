@@ -1,5 +1,13 @@
 "use client";
-import { Award, Brain, FileText, ListCheck, Megaphone, MessageCircle } from "lucide-react";
+import {
+  Award,
+  Brain,
+  FileText,
+  ListCheck,
+  Megaphone,
+  MessageCircle,
+  UserRound,
+} from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
@@ -39,6 +47,7 @@ const ICON_BY_CATEGORY = {
   CONTENT: FileText,
   FORUM: MessageCircle,
   ACHIEVEMENT: Award,
+  MENTORSHIP: UserRound,
   SYSTEM: Megaphone,
 };
 
@@ -53,6 +62,7 @@ const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   CONTENT: "var(--color-secondary)",
   FORUM: "var(--color-progress)",
   ACHIEVEMENT: "var(--color-star)",
+  MENTORSHIP: "var(--color-chip-text)",
   SYSTEM: "var(--color-main)",
 };
 
@@ -76,6 +86,9 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
   CONTENT: "/knowledge",
   FORUM: "/community",
   ACHIEVEMENT: "/community",
+  /* Every mentorship notification ships an explicit linkUrl; this only catches a malformed row,
+     and /my-coach is the safe landing for either party (a coach sees their own link screen). */
+  MENTORSHIP: "/my-coach",
   SYSTEM: "/dashboard",
 };
 

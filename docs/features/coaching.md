@@ -145,6 +145,34 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **`PlanService.clearMentorshipOrigin` (2026-09-02)** — W8 erasure seam'i. Bir koç hesabı KVKK ile
+  silindiğinde `coach_students` satırları gidiyor, ama `plan_tasks.origin_ref_id` FK'sız soft ref
+  olduğu için öğrencinin ödevleri `origin_type='MENTORSHIP'` olarak kalıyor ve API onları düzenlemeye
+  kapalı tutmaya devam ediyordu. Bu metod o satırların provenance'ını (`origin_type/ref/meta`)
+  temizliyor. **Kullanım:** `MentorshipErasureService` çağırıyor; silinen bağ id'lerini alıp
+  geçiyor. **Gotcha:** cross-user bir yazma (satırlar ÖĞRENCİlere ait), bu yüzden
+  `withServiceContext` içinde koşuyor; görev satırı silinmiyor, yalnız kaynağı unutuluyor.
+  **İlgili:** `application/plan.service.ts`, `infrastructure/plan-task.repository.ts`,
+  [`mentorship.md`](./mentorship.md).
+
+- **`PlanService.createFromMentorship` + koç-ataması düzenleme kilidi (APP-065, 2026-09-02)** —
+  İnsan koçun (W8) ödev yazdığı public seam. `plan_tasks` yazma hakkı W2'de kalıyor; W8 bu metodu
+  çağırıyor, tabloya dokunmuyor. `origin_type='MENTORSHIP'`, `origin_ref_id=coach_students.id`,
+  `origin_meta` null (migration `0094`).
+  **Kullanım:** çağıran, `MentorshipLinkService.requireActiveLink`'i geçmiş olmalı; metod verilen
+  `linkId`'ye güvenir. `createMany` gibi all-or-nothing.
+  **Gotchas:** (1) Bu, `createFromAiCoach`/`createFromCommunityCoach`'taki "kullanıcı onaylamadan
+  yazılmaz" kuralının **bilinçli istisnası** — gerekçe atamanın daha güvenli olması değil, rızanın
+  başka yerde alınmış olması: öğrenci bu koçu açıkça kabul etti, bağı ve görevi istediği an
+  kaldırabilir. AI önerisinin arkasında böyle bir irade beyanı yok. (2) `update`, MENTORSHIP
+  görevlerinde yalnız `status` değişimine izin verir; başlık/tarih/ders denemesi
+  `COACHING_TASK_COACH_ASSIGNED` (403). `delete` serbest. (3) Aynı kural **plan uyarlamasında da**
+  geçerli: `getAdaptationSnapshot` koç görevlerini aday listesinden çıkarır (AI hiç önermez) ve
+  `applyAdaptation`'ın MOVE yolu elle hazırlanmış bir isteği reddeder. `planRevision` yine TÜM
+  satırlardan hesaplanır, yoksa koç görevindeki eşzamanlı bir değişiklik uyarlamayı geçersiz
+  kılmazdı. **İlgili:**
+  `application/plan.service.ts`, `application/coaching.mappers.ts`, [`mentorship.md`](./mentorship.md).
+
 - **Koç agrega sınırı — `CohortEvidenceService` (APP-064, 2026-09-02)** — İnsan koçun (W8) öğrenci
   verisine bakabildiği TEK kapı. `CoachEvidenceService`'in kardeşi: o AI için tek kullanıcıya
   lokalize düzyazı üretir, bu koç için N öğrenciye sayı üretir. `listCohortSnapshots(ids)` roster

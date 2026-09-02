@@ -1117,7 +1117,8 @@
     "time_invalid": "Bitiş saati başlangıçtan sonra olmalı.",
     "description": "Açıklama",
     "description_placeholder": "Kısa bir not (isteğe bağlı)",
-    "new_event_title": "Yeni etkinlik"
+    "new_event_title": "Yeni etkinlik",
+    "coach_assigned": "Koçundan"
   },
   "analysis": {
     "notebook_handoff": "Bu denemede {count} yanlış var. Hangilerini deftere alacağına sen karar ver.",
@@ -2974,6 +2975,16 @@
     "guard_body": "Koç hesabın yoksa buraya giremezsin.",
     "guard_back": "Panele dön",
     "loading": "Yükleniyor",
-    "confirm_cancel": "Vazgeç"
+    "confirm_cancel": "Vazgeç",
+    "assign_title": "Ödev ver",
+    "assign_body": "Verdiğin görev öğrencinin kendi plan ekranında belirir.",
+    "assign_task_title": "Görev",
+    "assign_subject": "Ders (isteğe bağlı)",
+    "assign_date": "Tarih",
+    "assign_action": "Planına ekle",
+    "assign_done_title": "Görev eklendi",
+    "assign_done_body": "{name} planında görecek.",
+    "ended_on": "{date} tarihinde sonlandı. Verilerine erişimin kapalı.",
+    "ended_no_access": "Bağlantı sonlandı. Verilerine erişimin kapalı."
   }
 }

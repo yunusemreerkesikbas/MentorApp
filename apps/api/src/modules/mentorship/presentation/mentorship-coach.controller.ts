@@ -1,4 +1,15 @@
-import { Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Query } from "@nestjs/common";
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  Post,
+  Query,
+} from "@nestjs/common";
+import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   UserRole,
@@ -7,13 +18,19 @@ import {
   type MentorshipRosterRowDto,
   type MentorshipStudentReportDto,
   type Paginated,
+  type PlanTaskDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
+import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
 import { MentorshipInviteService } from "../application/mentorship-invite.service";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipRosterService } from "../application/mentorship-roster.service";
-import { ListMentorshipStudentsQueryDto, MentorshipStudentParamDto } from "./mentorship.dto";
+import {
+  CreateMentorshipAssignmentsDto,
+  ListMentorshipStudentsQueryDto,
+  MentorshipStudentParamDto,
+} from "./mentorship.dto";
 
 /**
  * The coach's side of the mentorship surface (W8).
@@ -31,6 +48,7 @@ export class MentorshipCoachController {
     private readonly links: MentorshipLinkService,
     private readonly invites: MentorshipInviteService,
     private readonly roster: MentorshipRosterService,
+    private readonly assignments: MentorshipAssignmentService,
   ) {}
 
   @Get("invite-code")
@@ -67,6 +85,18 @@ export class MentorshipCoachController {
     @Param() params: MentorshipStudentParamDto,
   ): Promise<MentorshipStudentReportDto> {
     return this.roster.getStudentReport(user.id, params.studentId);
+  }
+
+  /** Assign plan tasks. They land in the student's own plan screen, badged as coach-assigned. */
+  @Post("students/:studentId/assignments")
+  // 21 tasks per call is the schema cap; this caps the calls, so a coach cannot flood a plan.
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  assign(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+    @Body() dto: CreateMentorshipAssignmentsDto,
+  ): Promise<PlanTaskDto[]> {
+    return this.assignments.assign(user.id, params.studentId, dto);
   }
 
   @Delete("students/:studentId")

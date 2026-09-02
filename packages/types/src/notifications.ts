@@ -24,6 +24,8 @@ export type NotificationCategory =
   | "CONTENT"
   | "FORUM"
   | "ACHIEVEMENT"
+  /** Human coach relationship: invite accepted, homework assigned, link ended (W8). */
+  | "MENTORSHIP"
   /** Team-authored broadcast from the admin panel (W5 announcements). */
   | "SYSTEM";
 

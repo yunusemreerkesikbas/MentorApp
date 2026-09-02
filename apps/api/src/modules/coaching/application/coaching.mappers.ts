@@ -38,6 +38,10 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
 
 function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {
   const meta = row.originMeta;
+  // A human coach's assignment: ref id only, no meta (see the schema comment on origin_type).
+  if (row.originType === "MENTORSHIP" && row.originRefId) {
+    return { type: "MENTORSHIP", linkId: row.originRefId };
+  }
   if (
     row.originType === "AI_COACH" &&
     row.originRefId &&

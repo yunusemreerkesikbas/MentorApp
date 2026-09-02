@@ -418,6 +418,20 @@ describe("PlanService plan adaptations", () => {
         createdAt: new Date("2026-07-21T09:00:00Z"),
         updatedAt: new Date("2026-07-21T09:00:00Z"),
       },
+      {
+        id: "t3-coach",
+        userId: USER,
+        taskDate: TODAY,
+        title: "Koçun verdiği ödev",
+        subject: "Coğrafya",
+        status: "PENDING",
+        sortOrder: 9,
+        originType: "MENTORSHIP",
+        originRefId: "link-1",
+        originMeta: null,
+        createdAt: new Date("2026-07-21T09:00:00Z"),
+        updatedAt: new Date("2026-07-21T09:00:00Z"),
+      },
     ]);
     service = new PlanService(fakeDb, planRepo as never, makeActivityFake() as never, {
       emit: () => {},
@@ -429,6 +443,39 @@ describe("PlanService plan adaptations", () => {
     expect(snapshot.window).toEqual({ from: TODAY, to: addDays(TODAY, 6) });
     expect(snapshot.tasks.map((task) => task.id)).toEqual(["t1", "t2"]);
     expect(snapshot.planRevision).toMatch(/^[a-f0-9]{64}$/);
+  });
+
+  it("never offers a coach-assigned task as an adaptation candidate", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    expect(snapshot.tasks.map((task) => task.id)).not.toContain("t3-coach");
+  });
+
+  it("still hashes coach-assigned rows into the revision, so a change to one invalidates it", async () => {
+    const before = (await service.getAdaptationSnapshot(USER)).planRevision;
+    const coachTask = planRepo.rows.find((row) => row.id === "t3-coach")!;
+    coachTask.updatedAt = new Date("2026-07-22T09:00:00Z");
+    expect((await service.getAdaptationSnapshot(USER)).planRevision).not.toBe(before);
+  });
+
+  it("refuses a hand-crafted move of a coach-assigned task", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    await expect(
+      service.applyAdaptation(USER, {
+        planRevision: snapshot.planRevision,
+        changes: [
+          {
+            kind: "MOVE",
+            taskId: "t3-coach",
+            title: "Koçun verdiği ödev",
+            subject: "Coğrafya",
+            fromDate: TODAY,
+            toDate: addDays(TODAY, 1),
+          },
+        ],
+      }),
+    ).rejects.toMatchObject({ code: "COACHING_TASK_COACH_ASSIGNED", httpStatus: 403 });
+    // …and the task did not move.
+    expect(planRepo.rows.find((row) => row.id === "t3-coach")!.taskDate).toBe(TODAY);
   });
 
   it("atomically moves pending tasks and adds selected tasks", async () => {

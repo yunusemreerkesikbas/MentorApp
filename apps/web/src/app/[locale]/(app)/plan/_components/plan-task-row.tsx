@@ -1,5 +1,5 @@
 "use client";
-import { ArrowRight, Check, MessageCircle, X } from "lucide-react";
+import { ArrowRight, Check, MessageCircle, UserRound, X } from "lucide-react";
 
 import { useState } from "react";
 import type { CommunityCoachPlanTaskOriginDto, PlanTaskDto } from "@mentor/types";
@@ -12,6 +12,7 @@ import {
 } from "@/lib/community-coach-bridge";
 import { getForumCoachBridge } from "@/lib/forum";
 import { buildStudySessionHrefFromPlanTask } from "@/lib/plan-study-session-link";
+import { isCoachAssigned } from "@/lib/plan-task-permissions";
 import { PlanTaskMenu } from "./plan-task-menu";
 
 export function PlanTaskRow({
@@ -40,6 +41,8 @@ export function PlanTaskRow({
   const done = task.status === "DONE";
   const communityOrigin =
     task.origin?.type === "COMMUNITY_COACH" ? task.origin : null;
+  // A human coach assigned this. The student may tick it off or delete it, but not reword it.
+  const coachAssigned = isCoachAssigned(task);
   const [sourceState, setSourceState] = useState<
     "ready" | "checking" | "unavailable"
   >("ready");
@@ -132,6 +135,15 @@ export function PlanTaskRow({
               {task.subject}
             </span>
           ) : null}
+          {coachAssigned ? (
+            <span
+              className={`inline-flex items-center gap-1 font-bold ${dense ? "text-[10px] max-lg:text-[9px]" : "text-[10px]"}`}
+              style={{ color: "var(--color-progress)" }}
+            >
+              <UserRound size={dense ? 11 : 12} strokeWidth={2.4} aria-hidden />
+              {t("coach_assigned")}
+            </span>
+          ) : null}
           {!done && !readOnly ? (
             <Link
               href={buildStudySessionHrefFromPlanTask(task)}
@@ -176,6 +188,7 @@ export function PlanTaskRow({
         <PlanTaskMenu
           taskTitle={task.title}
           disabled={busy}
+          editable={!coachAssigned}
           onEdit={onEdit}
           onDelete={onDelete}
         />

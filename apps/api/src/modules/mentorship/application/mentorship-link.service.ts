@@ -93,11 +93,12 @@ export class MentorshipLinkService {
     if (await this.links.findActiveByStudent(studentId)) {
       throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
     }
-    await this.assertQuota(coachId);
+    const maxActiveStudents = await this.config.get("mentorship.coach.max_active_students");
 
-    let link: MentorshipLinkRow | undefined;
+    let outcome: Awaited<ReturnType<MentorshipLinkRepository["acceptInvite"]>>;
     try {
-      link = await this.links.acceptInvite(coachId, studentId);
+      // Quota + insert in one transaction — see the repository comment on why it cannot be split.
+      outcome = await this.links.acceptInvite(coachId, studentId, maxActiveStudents);
     } catch (err) {
       // A concurrent accept won the partial unique index (one ACTIVE coach per student).
       if (isUniqueViolation(err)) {
@@ -105,8 +106,13 @@ export class MentorshipLinkService {
       }
       throw err;
     }
-    // setWhere skipped the update: a row exists that is not ENDED, i.e. this pair is already live.
-    if (!link) throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
+    if (outcome === "QUOTA_FULL") {
+      throw new DomainError(ErrorCode.MENTORSHIP_STUDENT_QUOTA_EXCEEDED, HttpStatus.CONFLICT);
+    }
+    if (outcome === "ALREADY_ACTIVE") {
+      throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
+    }
+    const link = outcome;
 
     const people = await this.users.listDisplayIdentities([coachId, studentId]);
     this.events.emit(
@@ -187,18 +193,6 @@ export class MentorshipLinkService {
         actor?.displayName ?? "",
       ),
     );
-  }
-
-  /**
-   * Free active-student quota. Exceeding it is an error, not a paywall: seat billing is a later
-   * decision, and a paywall now would promise a purchase flow that does not exist.
-   */
-  private async assertQuota(coachId: string): Promise<void> {
-    const max = await this.config.get("mentorship.coach.max_active_students");
-    const active = await this.links.countActiveByCoach(coachId);
-    if (active >= max) {
-      throw new DomainError(ErrorCode.MENTORSHIP_STUDENT_QUOTA_EXCEEDED, HttpStatus.CONFLICT);
-    }
   }
 
   private async findPerson(userId: string): Promise<DisplayPerson | undefined> {

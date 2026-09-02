@@ -180,9 +180,10 @@ describe("mentorship (e2e)", () => {
   it("carries the roster metrics a coach acts on", async () => {
     const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
     const row = roster.body.items[0];
+    expect(row.studentId).toBe(userId.student);
+    expect(row.status).toBe("ACTIVE");
     // A brand-new student has done nothing yet — the row must still say so in numbers.
-    expect(row).toMatchObject({
-      studentId: userId.student,
+    expect(row.metrics).toMatchObject({
       currentStreak: 0,
       sessions7d: 0,
       focusMinutes7d: 0,
@@ -311,6 +312,29 @@ describe("mentorship (e2e)", () => {
       .set(auth("coach"));
     expect(history.body.total).toBe(1);
 
+    // The point of the test, and what an earlier version of it missed: the history row proves the
+    // relationship existed and says NOTHING about how the student is doing now. Revoked consent
+    // has to stop the data, not just the badge.
+    const ended = history.body.items[0];
+    expect(ended.status).toBe("ENDED");
+    expect(ended.endedAt).not.toBeNull();
+    expect(ended.metrics).toBeNull();
+    expect(ended.riskFlags).toEqual([]);
+    for (const leaked of [
+      "lastActiveDate",
+      "currentStreak",
+      "focusMinutes7d",
+      "latestMockNet",
+      "moodLevel7dAvg",
+    ]) {
+      expect(JSON.stringify(ended)).not.toContain(leaked);
+    }
+
+    // The report stays shut too.
+    expect(
+      (await http().get(`/v1/mentorship/students/${userId.student}`).set(auth("coach"))).status,
+    ).toBe(404);
+
     // Ending is idempotent from the student's side: there is nothing left to end.
     expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(404);
   });
@@ -326,6 +350,101 @@ describe("mentorship (e2e)", () => {
     expect(roster.body.total).toBe(1);
     const history = await http().get("/v1/mentorship/students?status=ENDED").set(auth("coach"));
     expect(history.body.total).toBe(0);
+  });
+
+  describe("coach-assigned homework", () => {
+    let taskId = "";
+
+    it("lands in the student's own plan, badged with its origin", async () => {
+      const assign = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "Paragraf 20 soru", subject: "Türkçe" }] });
+      expect(assign.status).toBe(201);
+      expect(assign.body).toHaveLength(1);
+      taskId = assign.body[0].id;
+      expect(assign.body[0].origin).toMatchObject({ type: "MENTORSHIP" });
+
+      // The student sees it in the plan screen they already open — no second to-do list.
+      const plan = await http().get("/v1/plan-tasks").set(auth("student"));
+      const mine = plan.body.items.find((t: { id: string }) => t.id === taskId);
+      expect(mine).toMatchObject({ title: "Paragraf 20 soru", status: "PENDING" });
+      expect(mine.origin.type).toBe("MENTORSHIP");
+    });
+
+    it("refuses a coach who holds no link to the student", async () => {
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach2"))
+        .send({ tasks: [{ title: "Sızıntı" }] });
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("MENTORSHIP_LINK_NOT_FOUND");
+    });
+
+    it("lets the student complete it", async () => {
+      const done = await http()
+        .patch(`/v1/plan-tasks/${taskId}`)
+        .set(auth("student"))
+        .send({ status: "DONE" });
+      expect(done.status).toBe(200);
+      expect(done.body.status).toBe("DONE");
+    });
+
+    it("stops the student rewriting it — the coach's report must stay true", async () => {
+      const edit = await http()
+        .patch(`/v1/plan-tasks/${taskId}`)
+        .set(auth("student"))
+        .send({ title: "Bunu ben yazdım" });
+      expect(edit.status).toBe(403);
+      expect(edit.body.code).toBe("COACHING_TASK_COACH_ASSIGNED");
+    });
+
+    it("shows up as a task title in the coach's report, and counts toward completion", async () => {
+      const report = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach"));
+      expect(report.body.planTasks).toContainEqual({
+        taskDate: expect.any(String),
+        title: "Paragraf 20 soru",
+        subject: "Türkçe",
+        status: "DONE",
+      });
+      expect(report.body.planCompletionRate7d).toBe(1);
+    });
+
+    it("still lets the student delete it — the plan stays theirs", async () => {
+      expect(
+        (await http().delete(`/v1/plan-tasks/${taskId}`).set(auth("student"))).status,
+      ).toBe(204);
+    });
+
+    it("refuses an assignment beyond the horizon", async () => {
+      const farOff = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "Çok uzak", taskDate: farOff }] });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("MENTORSHIP_ASSIGNMENT_TOO_FAR");
+    });
+
+    it("refuses a description — that box is the student's own note", async () => {
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "Not denemesi", description: "koçtan not" }] });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("rejects a task the student could not have written themselves", async () => {
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "" }] });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_ERROR");
+    });
   });
 
   it("closes every door when the flag is off", async () => {

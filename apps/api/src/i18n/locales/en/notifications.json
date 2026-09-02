@@ -129,6 +129,26 @@
       "register": "companion",
       "title": "Your subscription has ended",
       "body": "{label} is here whenever you want to come back."
+    },
+    "mentorshipStudentJoined": {
+      "register": "companion",
+      "title": "You have a new student",
+      "body": "{name} accepted your invite."
+    },
+    "mentorshipAssignedSingular": {
+      "register": "companion",
+      "title": "A task from your coach",
+      "body": "{name} added a task to your plan."
+    },
+    "mentorshipAssignedPlural": {
+      "register": "companion",
+      "title": "Tasks from your coach",
+      "body": "{name} added {count} tasks to your plan."
+    },
+    "mentorshipLinkEnded": {
+      "register": "companion",
+      "title": "The coaching link ended",
+      "body": "Your link with {name} is closed."
     }
   },
   "email": {

@@ -2,6 +2,7 @@ import { Module } from "@nestjs/common";
 import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MentorshipErasureService } from "./application/mentorship-erasure.service";
+import { MentorshipAssignmentService } from "./application/mentorship-assignment.service";
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
 import { MentorshipLinkService } from "./application/mentorship-link.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
@@ -24,6 +25,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipLinkService,
     MentorshipInviteService,
     MentorshipRosterService,
+    MentorshipAssignmentService,
     MentorshipErasureService,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,

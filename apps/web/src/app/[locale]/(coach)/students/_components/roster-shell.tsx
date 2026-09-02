@@ -203,7 +203,10 @@ function StudentCard({
   clickable: boolean;
 }) {
   const t = useTranslations("mentorship");
-  const last = relativeDay(row.lastActiveDate);
+  // `metrics` is null once the link ends: the coach's window onto this student is closed, and the
+  // card shows only that the relationship existed.
+  const metrics = row.metrics;
+  const last = relativeDay(metrics?.lastActiveDate ?? null);
   const lastLabel =
     last.kind === "never"
       ? t("value_never")
@@ -228,21 +231,29 @@ function StudentCard({
             )}
           </div>
         </div>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
-          <Metric label={t("metric_last_active")} value={lastLabel} />
-          <Metric
-            label={t("metric_focus_7d")}
-            value={t("value_minutes", { count: row.focusMinutes7d })}
-          />
-          <Metric
-            label={t("metric_plan_completion")}
-            value={formatRate(row.planCompletionRate7d, locale) ?? t("value_none")}
-          />
-          <Metric
-            label={t("metric_latest_net")}
-            value={formatNet(row.latestMockNet, locale) ?? t("value_none")}
-          />
-        </dl>
+        {metrics ? (
+          <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+            <Metric label={t("metric_last_active")} value={lastLabel} />
+            <Metric
+              label={t("metric_focus_7d")}
+              value={t("value_minutes", { count: metrics.focusMinutes7d })}
+            />
+            <Metric
+              label={t("metric_plan_completion")}
+              value={formatRate(metrics.planCompletionRate7d, locale) ?? t("value_none")}
+            />
+            <Metric
+              label={t("metric_latest_net")}
+              value={formatNet(metrics.latestMockNet, locale) ?? t("value_none")}
+            />
+          </dl>
+        ) : (
+          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+            {row.endedAt
+              ? t("ended_on", { date: formatDate(row.endedAt, locale) })
+              : t("ended_no_access")}
+          </p>
+        )}
       </div>
     </Card>
   );

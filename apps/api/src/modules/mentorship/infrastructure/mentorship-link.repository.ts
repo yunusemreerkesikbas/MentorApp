@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, desc, eq, or } from "drizzle-orm";
+import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -35,13 +35,6 @@ export class MentorshipLinkRepository {
     });
   }
 
-  findById(linkId: string): Promise<MentorshipLinkRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx.select().from(coachStudents).where(eq(coachStudents.id, linkId)).limit(1);
-      return rows[0];
-    });
-  }
-
   /** The student's current coach, if any. The partial unique index guarantees at most one. */
   findActiveByStudent(studentId: string): Promise<MentorshipLinkRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -51,16 +44,6 @@ export class MentorshipLinkRepository {
         .where(and(eq(coachStudents.studentId, studentId), eq(coachStudents.status, "ACTIVE")))
         .limit(1);
       return rows[0];
-    });
-  }
-
-  countActiveByCoach(coachId: string): Promise<number> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .select({ n: count() })
-        .from(coachStudents)
-        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
-      return rows[0]?.n ?? 0;
     });
   }
 
@@ -86,12 +69,33 @@ export class MentorshipLinkRepository {
 
   /**
    * Accept an invite: create the ACTIVE link, or revive an ENDED one between the same pair.
+   *
+   * The quota check lives INSIDE this transaction, behind an advisory lock on the coach. Checking
+   * it in the service first would be check-then-act: two students redeeming the same code at once
+   * would both read a count below the cap and both get in. Since the invite code has no use
+   * counter of its own, the quota is the only bound it has, so it has to be a real one.
+   *
    * The `coach_students_pair_idx` unique makes a plain insert fail on a re-link, so this upserts.
-   * Returns undefined when the partial unique index rejects a second active coach (race-safe).
+   * Returns `"QUOTA_FULL"` when the cap is reached and `"ALREADY_ACTIVE"` when `setWhere` skipped
+   * the update (a row exists that is not ENDED).
    */
-  acceptInvite(coachId: string, studentId: string): Promise<MentorshipLinkRow | undefined> {
+  acceptInvite(
+    coachId: string,
+    studentId: string,
+    maxActiveStudents: number,
+  ): Promise<MentorshipLinkRow | "QUOTA_FULL" | "ALREADY_ACTIVE"> {
     const now = new Date();
     return withServiceContext(this.db, async (tx) => {
+      // Serialize concurrent redemptions of one coach's code; released at commit.
+      await tx.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
+      );
+      const active = await tx
+        .select({ n: count() })
+        .from(coachStudents)
+        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
+      if ((active[0]?.n ?? 0) >= maxActiveStudents) return "QUOTA_FULL";
+
       const rows = await tx
         .insert(coachStudents)
         .values({ coachId, studentId, status: "ACTIVE", source: "INVITE", acceptedAt: now })
@@ -103,7 +107,7 @@ export class MentorshipLinkRepository {
           setWhere: eq(coachStudents.status, "ENDED"),
         })
         .returning();
-      return rows[0];
+      return rows[0] ?? "ALREADY_ACTIVE";
     });
   }
 
@@ -124,12 +128,14 @@ export class MentorshipLinkRepository {
    * KVKK erasure: drop every link the user is part of, and blank an `ended_by` that points at them
    * (erasure anonymizes the `users` row rather than deleting it, so no FK cascade fires).
    */
-  async purgeForUser(userId: string): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async purgeForUser(userId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
       await tx.update(coachStudents).set({ endedBy: null }).where(eq(coachStudents.endedBy, userId));
-      await tx
+      const deleted = await tx
         .delete(coachStudents)
-        .where(or(eq(coachStudents.coachId, userId), eq(coachStudents.studentId, userId)));
+        .where(or(eq(coachStudents.coachId, userId), eq(coachStudents.studentId, userId)))
+        .returning({ id: coachStudents.id });
+      return deleted.map((row) => row.id);
     });
   }
 }
