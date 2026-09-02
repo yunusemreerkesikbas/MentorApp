@@ -88,7 +88,8 @@ DELETE /v1/mentorship/my-coach                      -> 204
 | Endpoint | Purpose |
 |---|---|
 | `GET/POST /v1/mentorship/invite-code` | Read or rotate the coach's single invite code (`@Roles(COACH)`) |
-| `GET /v1/mentorship/students` | Roster, ACTIVE by default; `?status=ENDED` for history |
+| `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
+| `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
@@ -100,7 +101,26 @@ Error codes: `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP
 `MENTORSHIP_SELF_LINK`.
 
 Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_active_students`
-(20) · `mentorship.invite_code.ttl_days` (14).
+(20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
+`mentorship.risk.plan_completion_floor` (0.5) · `mentorship.risk.low_mood_ceiling` (2).
+
+## Risk triage
+
+Rule-based, not AI. Roadmap §9 calls the AI brief a later layer, and a coach acting on a
+hallucinated "this student is struggling" is worse than no signal. Rules live in
+`domain/risk-flags.ts` (pure, 18 unit tests); thresholds are config, so they calibrate from live
+data without a deploy.
+
+| Flag | Fires when | Threshold key |
+|---|---|---|
+| `INACTIVE` | No completed session or done task for longer than the idle window (a student who never started counts) | `mentorship.risk.inactive_days` |
+| `LOW_MOOD` | Weekly mean check-in at or below the ceiling | `mentorship.risk.low_mood_ceiling` |
+| `NET_DROP` | Latest mock net strictly below the mean of the three before it | — |
+| `PLAN_SLIPPING` | Weekly plan completion below the floor | `mentorship.risk.plan_completion_floor` |
+
+Two silences are deliberately NOT flagged: a student who planned nothing (`planCompletionRate7d`
+is null, not zero) and one who never checked in. Absence of data is not evidence of trouble, and a
+flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
@@ -125,6 +145,26 @@ Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_
   `packages/types/src/mentorship.ts`, `packages/validation/src/mentorship.ts`,
   `apps/api/test/mentorship.e2e-spec.ts`, `apps/admin/src/lib/roles.ts`.
 
+- **Koç roster'ı, risk triyajı ve öğrenci raporu (APP-064, 2026-09-02)** — Dilim 1'in kimlik-only
+  listesi gerçek panele dönüştü: `GET /v1/mentorship/students` artık aktivite/deneme/plan/mod
+  agregalarını ve kural-temelli risk flag'lerini en kötü üstte sıralı döndürüyor;
+  `GET /v1/mentorship/students/:studentId` tek öğrenci raporunu veriyor. Web tarafında `(coach)`
+  route group'u (TR `/kocluk`), öğrenci tarafında `/kocum` şeffaflık ekranı ve `/kocluk-daveti`
+  onay akışı.
+  **Kullanım:** koç sidebar'da "Öğrencilerim" item'ını görür (rol-koşullu; `apps/web`'de rol ilk kez
+  burada okunuyor). Öğrenci `/kocum`'da koçunun tam olarak neyi görüp neyi göremediğini okur;
+  liste API'nin `dataScope` alanından gelir, arayüzde sabit değildir.
+  **Gotchas:** (1) `(coach)` grubu `(app)`'ten hiçbir şey import etmez — roadmap §9'daki
+  `apps/panel` taşıması bu tek yönlü ok sayesinde kopyala-yapıştır kalır. (2) Route group URL'e
+  girmez: klasör `(coach)/students` olduğu için dahili yol `/students`, TR URL'i `pathnames`
+  üzerinden `/kocluk`. `/koc` (AI koç sohbeti) ile çakışmaz. (3) `?code=` yalnızca alanı doldurur;
+  ne sorgu atar ne kabul eder. Birinin gönderdiği linke tıklamak rıza değildir. (4) Risk chip'leri
+  `normal-case` ile render edilir; `Chip` varsayılan olarak her kelimeyi büyütür ve "Plan Aksıyor"
+  Türkçede hata gibi okunur. (5) Roster sıralaması sayfa içindedir, kohort genelinde değil.
+  **İlgili:** `apps/web/src/app/[locale]/(coach)/**`, `apps/web/src/app/[locale]/(app)/{my-coach,coach-invitation}/**`,
+  `apps/web/src/lib/mentorship.ts`, `modules/mentorship/{domain/risk-flags.ts,application/mentorship-roster.service.ts}`,
+  [`coaching.md`](./coaching.md) (`CohortEvidenceService`).
+
 ## Gotchas / Known issues
 
 - **Role changes need a re-login.** `TokenService.loadPrincipal` re-reads roles on refresh, so a
@@ -139,8 +179,9 @@ Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_
 
 ## Backlog
 
-- Roster metrics + risk triage + student report (slice 2) — `CohortEvidenceService` in coaching.
 - Coach-assigned homework via `plan_tasks` origin `MENTORSHIP` (slice 3).
+- AI "smart brief" on top of the rule-based triage (roadmap §9). The rules stay as the floor.
+- Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
 - Notifications on link accepted/ended (`NotificationCategory.MENTORSHIP`).
 - Seat billing beyond the free quota; the quota knob is already in the config registry.
 - Coach vetting queue (application + document). Today: manual, curated role grant.

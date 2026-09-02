@@ -83,3 +83,71 @@ export interface MentorshipStudentDto {
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
 }
+
+/**
+ * Rule-based triage flags (roadmap §9 "smart brief" — the deterministic first version; the AI layer
+ * is a later slice). Ordered worst-first in `MENTORSHIP_RISK_SEVERITY`; the roster sorts by it.
+ */
+export const MentorshipRiskFlag = {
+  /** No completed session and no done task for longer than the configured idle window. */
+  INACTIVE: "INACTIVE",
+  /** Mean mood check-in over the last week at or below the low-mood ceiling. */
+  LOW_MOOD: "LOW_MOOD",
+  /** Latest mock net below the mean of the three attempts before it. */
+  NET_DROP: "NET_DROP",
+  /** Fewer than the floor share of the last week's planned tasks completed. */
+  PLAN_SLIPPING: "PLAN_SLIPPING",
+} as const;
+export type MentorshipRiskFlagId =
+  (typeof MentorshipRiskFlag)[keyof typeof MentorshipRiskFlag];
+
+/** One roster row: who the student is, how they are doing, what needs attention. */
+export interface MentorshipRosterRowDto {
+  linkId: string;
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  acceptedAt: string | null;
+  lastActiveDate: string | null;
+  currentStreak: number;
+  focusMinutes7d: number;
+  sessions7d: number;
+  activeDays7d: number;
+  /** 0..1; null when the student planned nothing (silence, not failure). */
+  planCompletionRate7d: number | null;
+  latestMockNet: number | null;
+  latestMockAt: string | null;
+  moodLevel7dAvg: number | null;
+  riskFlags: MentorshipRiskFlagId[];
+}
+
+/** The single-student report. Numbers, dates, statuses and task headings — never free text. */
+export interface MentorshipStudentReportDto {
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  acceptedAt: string | null;
+  riskFlags: MentorshipRiskFlagId[];
+  activity: {
+    lastActiveDate: string | null;
+    currentStreak: number;
+    longestStreak: number;
+    sessions7d: number;
+    focusMinutes7d: number;
+    activeDays7d: number;
+    sessions28d: number;
+    focusMinutes28d: number;
+    activeDays28d: number;
+  };
+  planCompletionRate7d: number | null;
+  mockTrend: { takenAt: string; totalNet: number; publisherName: string | null }[];
+  latestMockSubjects: {
+    subjectRef: string;
+    correct: number;
+    wrong: number;
+    blank: number;
+    net: number;
+  }[];
+  planTasks: { taskDate: string; title: string; subject: string | null; status: string }[];
+  moodTrend: { date: string; level: number }[];
+}

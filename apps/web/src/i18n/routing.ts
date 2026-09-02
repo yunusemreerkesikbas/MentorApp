@@ -43,6 +43,19 @@ export const routing = defineRouting({
      */
     "/join-room": { tr: "/masaya-katil", en: "/join-room" },
     "/coach": { tr: "/koc", en: "/coach" },
+    /**
+     * The HUMAN coach surface (W8). `/koc` above is the AI companion chat — these must never
+     * collide, hence `/kocluk` ("coaching") for the roster and `/kocum` ("my coach") for the
+     * student's transparency view.
+     */
+    "/students": { tr: "/kocluk", en: "/coaching/students" },
+    "/students/[studentId]": {
+      tr: "/kocluk/[studentId]",
+      en: "/coaching/students/[studentId]",
+    },
+    "/my-coach": { tr: "/kocum", en: "/my-coach" },
+    "/coach-invitation": { tr: "/kocluk-daveti", en: "/coach-invitation" },
+
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },
     "/analysis/recap": {

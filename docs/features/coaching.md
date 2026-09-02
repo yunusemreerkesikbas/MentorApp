@@ -145,6 +145,21 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Koç agrega sınırı — `CohortEvidenceService` (APP-064, 2026-09-02)** — İnsan koçun (W8) öğrenci
+  verisine bakabildiği TEK kapı. `CoachEvidenceService`'in kardeşi: o AI için tek kullanıcıya
+  lokalize düzyazı üretir, bu koç için N öğrenciye sayı üretir. `listCohortSnapshots(ids)` roster
+  için altı batch sorgu (kohort boyutundan bağımsız), `getStudentReport(id)` tek öğrenci detayı.
+  Sözleşme `domain/cohort-evidence.ts`'te ve neyin **dışarıda bırakıldığını** tek tek sayıyor.
+  **Kullanım:** `CoachingModule` export ediyor; W8 `MentorshipRosterService` tüketiyor. Çağırandan
+  önce `MentorshipLinkService.requireActiveLink` geçilmiş olmalı — repository verilen id'lere güvenir.
+  **Gotchas:** (1) `select *` yasak, her kolon açıkça sayılıyor; yeni bir serbest metin kolonu bu
+  yüzden kazara koça sızamaz. (2) `planCompletionRate7d` hiç plan yoksa **null**, sıfır değil —
+  planlamamış öğrenci başarısız olmuş sayılmaz. (3) `previousMockNetAvg` son denemeden önceki üç
+  denemenin ortalaması, pencere fonksiyonuyla aynı sorguda; ilk denemede null. (4) Sentinel testi
+  (`cohort-evidence.service.spec.ts`) fake satırlara `struggleNote` gibi alanlar koyup çıktıda
+  geçmediğini doğruluyor. **İlgili:** `modules/coaching/{domain/cohort-evidence.ts,application/cohort-evidence.service.ts,infrastructure/cohort-evidence.repository.ts}`,
+  [`mentorship.md`](./mentorship.md).
+
 - **Çalışılmış gün sinyali dışa açıldı (2026-08-30)** — `StreakService.listActiveDatesSince(userId,
   windowDays)`: son N günün çalışılmış tarihleri (≥1 tamamlanmış seans VEYA ≥1 biten görev), türetme
   yapmadan. İlk tüketici promotions (`ACTIVE_DAYS` indirim kuralı). Yeni sorgu yok — mevcut

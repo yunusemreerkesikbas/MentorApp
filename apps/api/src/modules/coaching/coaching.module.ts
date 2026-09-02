@@ -19,6 +19,8 @@ import { WeeklyReviewCompletionService } from "./application/weekly-review-compl
 import { PreferenceSimulationService } from "./application/preference-simulation.service";
 import { CoachingErasureService } from "./application/coaching-erasure.service";
 import { CoachEvidenceService } from "./application/coach-evidence.service";
+import { CohortEvidenceService } from "./application/cohort-evidence.service";
+import { CohortEvidenceRepository } from "./infrastructure/cohort-evidence.repository";
 import { CoachingAchievementEvidenceService } from "./application/coaching-achievement-evidence.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
@@ -84,6 +86,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     PreferenceSimulationService,
     CoachingErasureService,
     CoachEvidenceService,
+    CohortEvidenceService,
     CoachingAchievementEvidenceService,
     CoachingErasureRepository,
     PlanTaskRepository,
@@ -97,6 +100,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     StreakFreezeRepository,
     MoodCheckinRepository,
     VisionBoardRepository,
+    CohortEvidenceRepository,
     WeeklyReviewRepository,
     WeeklyReviewCompletionRepository,
     PreferenceScenarioRepository,
@@ -109,6 +113,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     COACHING_QUERY_PORT,
     CoachingErasureService,
     CoachEvidenceService,
+    CohortEvidenceService,
     CoachingAchievementEvidenceService,
     DailyQuestSignalService,
     MistakeNotebookService,

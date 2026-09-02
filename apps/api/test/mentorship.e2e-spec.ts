@@ -177,20 +177,73 @@ describe("mentorship (e2e)", () => {
     expect(other.body.total).toBe(0);
   });
 
+  it("carries the roster metrics a coach acts on", async () => {
+    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const row = roster.body.items[0];
+    // A brand-new student has done nothing yet — the row must still say so in numbers.
+    expect(row).toMatchObject({
+      studentId: userId.student,
+      currentStreak: 0,
+      sessions7d: 0,
+      focusMinutes7d: 0,
+      activeDays7d: 0,
+      planCompletionRate7d: null,
+      latestMockNet: null,
+      moodLevel7dAvg: null,
+    });
+    // …and be flagged, because "never started" is exactly what a coach needs surfaced.
+    expect(row.riskFlags).toContain("INACTIVE");
+  });
+
+  it("serves the single-student report behind the same gate", async () => {
+    const report = await http()
+      .get(`/v1/mentorship/students/${userId.student}`)
+      .set(auth("coach"));
+    expect(report.status).toBe(200);
+    expect(report.body).toMatchObject({
+      studentId: userId.student,
+      studentDisplayName: "W8 student",
+      planCompletionRate7d: null,
+    });
+    expect(report.body.activity).toMatchObject({ currentStreak: 0, longestStreak: 0 });
+    expect(report.body.mockTrend).toEqual([]);
+    expect(report.body.planTasks).toEqual([]);
+    expect(report.body.moodTrend).toEqual([]);
+
+    // A coach with no link to this student reaches nothing, report included.
+    const foreign = await http()
+      .get(`/v1/mentorship/students/${userId.student}`)
+      .set(auth("coach2"));
+    expect(foreign.status).toBe(404);
+
+    // Nor does an admin, who passes @Roles(COACH) but holds no link.
+    const admin = await http()
+      .get(`/v1/mentorship/students/${userId.student}`)
+      .set(auth("admin"));
+    expect(admin.status).toBe(404);
+  });
+
   it("never leaks a student's PII or free text through the coach surface", async () => {
     const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
-    const body = JSON.stringify(roster.body);
+    const report = await http()
+      .get(`/v1/mentorship/students/${userId.student}`)
+      .set(auth("coach"));
     // Sentinel: an accidental `...row` spread or a widened select would surface one of these.
-    for (const forbidden of [
-      "email",
-      "passwordHash",
-      "struggleNote",
-      "aiReflection",
-      "bio",
-      "kvkkAcceptedAt",
-      "@test.local",
-    ]) {
-      expect(body).not.toContain(forbidden);
+    for (const body of [JSON.stringify(roster.body), JSON.stringify(report.body)]) {
+      for (const forbidden of [
+        "email",
+        "passwordHash",
+        "struggleNote",
+        "aiReflection",
+        "sessionMood",
+        "aiGhostNarration",
+        "description",
+        "bio",
+        "kvkkAcceptedAt",
+        "@test.local",
+      ]) {
+        expect(body).not.toContain(forbidden);
+      }
     }
   });
 

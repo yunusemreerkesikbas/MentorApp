@@ -161,6 +161,15 @@ const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef => ({
   description,
 });
 
+const mentorshipRatio = (def: number, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.MENTORSHIP,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().min(0).max(1),
+  default: def,
+  sensitive: false,
+  description,
+});
+
 const mentorshipCount = (
   def: number,
   min: number,
@@ -309,6 +318,22 @@ export const CONFIG_CATALOG = {
     1,
     365,
     "How long a coach's invite code stays redeemable before it must be rotated.",
+  ),
+  "mentorship.risk.inactive_days": mentorshipCount(
+    3,
+    1,
+    60,
+    "Days without a completed session or a done task before a student is flagged INACTIVE.",
+  ),
+  "mentorship.risk.plan_completion_floor": mentorshipRatio(
+    0.5,
+    "Share (0-1) of the last week's planned tasks below which a student is flagged PLAN_SLIPPING.",
+  ),
+  "mentorship.risk.low_mood_ceiling": mentorshipCount(
+    2,
+    1,
+    5,
+    "Weekly mean mood check-in (1-5) at or below which a student is flagged LOW_MOOD.",
   ),
   "identity.verification_email.resend_limit": identityCount(
     1,

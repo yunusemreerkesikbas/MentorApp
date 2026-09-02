@@ -4,5 +4,6 @@
   "article": ["article", "knowledge", "ads"],
   "auth": ["auth", "common"],
   "onboarding": ["onboarding", "profile", "vision", "common"],
-  "joinRoom": ["session_room"]
+  "joinRoom": ["session_room"],
+  "coaching": ["mentorship", "common", "nav"]
 }

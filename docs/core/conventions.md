@@ -37,6 +37,7 @@
 | APP-013 | Docs refactor: devnotes → features/ + core/ consolidation |
 | APP-014…APP-062 | Registry gap — recorded in the matching `docs/features/*.md` timelines and `core/mvp-status.md`, not here |
 | APP-063 | W8 mentorship slice 1: coach↔student link (invite code, double opt-in, roster, transparency view) + COACH role assignment |
+| APP-064 | W8 mentorship slice 2: roster + rule-based risk triage + student report + `(coach)` web surface |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)
