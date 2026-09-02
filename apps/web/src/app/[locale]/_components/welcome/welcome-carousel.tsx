@@ -1,58 +1,60 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
+import { ONBOARDING_MOTION } from "@/lib/onboarding-assets";
 import { markWelcomeSeen } from "@/lib/welcome-seen";
+import {
+  WELCOME_SLIDES,
+  isFinalWelcomeStep,
+  nextWelcomeStep,
+  previousWelcomeStep,
+  welcomeSkipStep,
+  type WelcomeStep,
+} from "./welcome-flow";
 import { WelcomeSlideLayout } from "./welcome-slide-layout";
-
-const SLIDES = [
-  {
-    mascot: "encouraging" as const,
-    copyKey: "slide1",
-    heroSrc: "/img/welcome-hero.png",
-  },
-  { mascot: "default" as const, copyKey: "slide2" },
-  { mascot: "happy" as const, copyKey: "slide3" },
-];
 
 export function WelcomeCarousel() {
   const t = useTranslations("welcome");
   const router = useRouter();
-  const [step, setStep] = useState(0);
+  const authTimer = useRef<number | null>(null);
+  const [step, setStep] = useState<WelcomeStep>(0);
+  const [introComplete, setIntroComplete] = useState(false);
+  const [authTarget, setAuthTarget] = useState<"/login" | "/signup" | null>(null);
 
-  const slide = SLIDES[step];
-  const isLast = step === SLIDES.length - 1;
+  useEffect(() => () => {
+    if (authTimer.current) window.clearTimeout(authTimer.current);
+  }, []);
 
-  function handleSkip() {
+  const completeIntro = useCallback(() => setIntroComplete(true), []);
+
+  function openAuth(target: "/login" | "/signup") {
+    if (authTarget) return;
     markWelcomeSeen();
-    router.push("/login");
+    setAuthTarget(target);
+    authTimer.current = window.setTimeout(() => router.push(target), ONBOARDING_MOTION.authSplitMs);
   }
 
-  function handleRegister() {
-    markWelcomeSeen();
-    router.push("/signup");
-  }
-
-  function handleLogin() {
-    markWelcomeSeen();
-    router.push("/login");
-  }
+  const slide = WELCOME_SLIDES[step];
+  const isLast = isFinalWelcomeStep(step);
 
   return (
     <WelcomeSlideLayout
       step={step}
-      mascot={slide.mascot}
-      heroSrc={"heroSrc" in slide ? slide.heroSrc : undefined}
+      slideKey={slide.key}
       title={t(`${slide.copyKey}.title`)}
       subtitle={t(`${slide.copyKey}.subtitle`)}
-      onBack={step > 0 ? () => setStep((s) => s - 1) : undefined}
+      introComplete={step !== 0 || introComplete}
+      onIntroComplete={completeIntro}
+      transitioningToAuth={authTarget !== null}
+      onBack={step > 0 ? () => setStep(previousWelcomeStep(step)) : undefined}
       skipLabel={t("skip")}
-      onSkip={handleSkip}
+      onSkip={() => setStep(welcomeSkipStep())}
       primaryLabel={isLast ? t("register") : t("continue")}
-      onPrimary={isLast ? handleRegister : () => setStep((s) => s + 1)}
+      onPrimary={isLast ? () => openAuth("/signup") : () => setStep(nextWelcomeStep(step))}
       secondaryLabel={isLast ? t("login") : undefined}
-      onSecondary={isLast ? handleLogin : undefined}
+      onSecondary={isLast ? () => openAuth("/login") : undefined}
     />
   );
 }

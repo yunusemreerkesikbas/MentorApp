@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { PromotionOffersView, PromotionSummary } from "@mentor/types";
-import { pickBannerPromotion, pickPromotionForDialog } from "./promotions";
+import {
+  formatPromotionMagnitude,
+  pickBannerPromotion,
+  pickPromotionForDialog,
+} from "./promotions";
 
 function summary(overrides: Partial<PromotionSummary> = {}): PromotionSummary {
   return {
@@ -152,5 +156,48 @@ describe("pickBannerPromotion", () => {
 
   it("survives a failed offers fetch", () => {
     expect(pickBannerPromotion(null, false)).toBeNull();
+  });
+});
+
+describe("formatPromotionMagnitude", () => {
+  // The percent sign sits on the other side of the number in English, so the shape stays in i18n.
+  const percent = (value: number) => `%${value}`;
+
+  it("hands a percentage to the caller's own message", () => {
+    const written = formatPromotionMagnitude(
+      summary({ discountType: "PERCENT", discountValue: 20 }),
+      "tr",
+      percent,
+    );
+    expect(written).toBe("%20");
+  });
+
+  it("rounds a fixed amount DOWN, so the figure is never bigger than the charge", () => {
+    // 124,50 TL to nearest would print 125 TL and overstate the discount by 50 kurus.
+    const written = formatPromotionMagnitude(
+      summary({ discountType: "FIXED", discountValue: 12_450 }),
+      "tr",
+      percent,
+    );
+    expect(written).toContain("124");
+    // Money is integer minor units everywhere; only the display divides.
+    expect(written).not.toContain("12450");
+  });
+
+  it("keeps the kurus rather than collapsing a sub-lira discount to zero", () => {
+    const written = formatPromotionMagnitude(
+      summary({ discountType: "FIXED", discountValue: 50 }),
+      "tr",
+      percent,
+    );
+    expect(written).toContain("0,50");
+  });
+
+  it("is the same call on the strip and in the modal", () => {
+    // Two surfaces printing the same campaign differently would read as two different offers.
+    const promotion = summary({ discountType: "FIXED", discountValue: 5_000 });
+    expect(formatPromotionMagnitude(promotion, "tr", percent)).toBe(
+      formatPromotionMagnitude(promotion, "tr", percent),
+    );
   });
 });

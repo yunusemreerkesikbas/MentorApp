@@ -131,6 +131,22 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **Şerit metni: oran önde, "Şimdi yükselt" (2026-09-02)** — `banner_message` artık indirimin
+  büyüklüğüyle başlıyor: "%20 indirim seni bekliyor: Hoşgeldin Hediyesi". Şeridin daha önce
+  taşıdığı tek bilgi kampanya adıydı, ki modalı hiç görmemiş biri için hiçbir anlamı yok. Oranı
+  yazmak artık dürüst, çünkü `discountValue` kırpılmış (gerçekten uygulanan) değer. `banner_cta`
+  "Premium'a bak" yerine "Şimdi yükselt" (ürün kararı).
+  Büyüklüğün nasıl yazıldığı tek yere taşındı: `formatPromotionMagnitude(promotion, locale, percent)`.
+  Yüzde biçimi i18n'de kalıyor (işaret İngilizce'de sayının diğer tarafında), para birimini `Intl`
+  yapıyor. Modal ve şerit aynı çağrıyı kullanıyor — iki yüzeyin aynı kampanyayı farklı yazması iki
+  ayrı teklif gibi okunurdu.
+  Bu sırada bir yuvarlama hatası çıktı ve düzeltildi: `maximumFractionDigits: 0` sabit tutarlı bir
+  indirimde 124,50 ₺'yi **yukarı** yuvarlayıp "₺125 indirim" yazıyordu, yani tahsilat ilan edilenden
+  küçük kalıyordu. Artık aşağı yuvarlanıyor (bir lira altındaki indirim kuruşunu koruyor) — yüzde
+  tavanı ve planlar arası en kötü durum ile aynı yön: ilan edilen indirim hiçbir zaman uygulanandan
+  büyük olamaz.
+  İlgili: `lib/promotions.ts`, `promotion-card.tsx`, `panel-shell.tsx`, `messages/{tr,en}.json`.
+
 - **Kampanya modalı başka bir modalın üstüne binmiyor (2026-09-02)** — Panel açılışta birden fazla
   tek-seferlik yüzey tetikliyor: mood check-in (`dialog-panel`), seviye kutlaması
   (`journey-spotlight-scene`) ve kampanya modalı. Hiçbiri diğerini bilmiyordu, üçü üst üste

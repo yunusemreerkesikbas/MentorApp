@@ -1,28 +1,19 @@
 "use client";
-import { ArrowLeft } from "lucide-react";
 
-import { useTranslations } from "next-intl";
+import Image from "next/image";
+import { ArrowLeft } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import type { ReactNode } from "react";
+import { useEffect, useRef, useState, type FocusEvent, type ReactNode } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
-import type { PuhuVariant } from "@/components/puhu-image";
-import { PuhuImage } from "@/components/puhu-image";
+import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
 import { OnboardingProgress } from "./onboarding-progress";
 
-type LayoutMode = "centered" | "split";
-
-/**
- * Mentor onboarding chrome — Nuton-inspired rhythm on DESIGN.md tokens.
- * `centered`: hero-only steps (welcome) — single column, viewport-centered.
- * `split`: form steps — mobile centered stack; desktop 2-col hero + card.
- */
 export function OnboardingStepLayout({
   step,
   title,
   subtitle,
-  mascot,
   children,
-  layout,
   primaryLabel,
   onPrimary,
   primaryBusy,
@@ -32,17 +23,16 @@ export function OnboardingStepLayout({
   skipLabel,
   onSkip,
 }: {
-  step: number;
+  step: number | null;
   title: string;
   subtitle?: string;
-  mascot: PuhuVariant;
+  mascot?: string;
+  layout?: string;
   children?: ReactNode;
-  layout?: LayoutMode;
   primaryLabel?: string;
   onPrimary?: () => void;
   primaryBusy?: boolean;
   primaryDisabled?: boolean;
-  /** When set, primary button submits this form id (Enter key support). */
   primaryFormId?: string;
   onBack?: () => void;
   skipLabel?: string;
@@ -50,183 +40,89 @@ export function OnboardingStepLayout({
 }) {
   const t = useTranslations("onboarding");
   const reduceMotion = useReducedMotion();
-  const mode: LayoutMode = layout ?? (children ? "split" : "centered");
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  const [speaking, setSpeaking] = useState(false);
+  const [mouthClosed, setMouthClosed] = useState(false);
+  const [blinking, setBlinking] = useState(false);
+  const [lookingDown, setLookingDown] = useState(false);
 
-  const fade = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 10 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.3, ease: "easeOut" as const },
-        },
-      };
+  useEffect(() => {
+    titleRef.current?.focus();
+    if (reduceMotion) return;
+    let mouthTimer = 0;
+    let speechTimer = 0;
+    let blinkTimer = 0;
+    const frame = window.requestAnimationFrame(() => {
+      setSpeaking(true);
+      setMouthClosed(true);
+      mouthTimer = window.setInterval(() => setMouthClosed((value) => !value), 150);
+      speechTimer = window.setTimeout(() => {
+        window.clearInterval(mouthTimer);
+        setSpeaking(false);
+        setBlinking(true);
+      }, 900);
+      blinkTimer = window.setTimeout(() => setBlinking(false), 1_060);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      window.clearInterval(mouthTimer);
+      window.clearTimeout(speechTimer);
+      window.clearTimeout(blinkTimer);
+    };
+  }, [title, reduceMotion]);
 
-  const backControl = onBack ? (
-    <button
-      type="button"
-      onClick={onBack}
-      aria-label={t("back_aria")}
-      className="-ms-2.5 flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none lg:ms-0"
-      style={{ color: "var(--color-main)" }}
-    >
-      <ArrowLeft size={24} strokeWidth={2} aria-hidden />
-    </button>
-  ) : (
-    <div className="min-h-11 min-w-11" aria-hidden />
-  );
-
-  const skipControl =
-    onSkip && skipLabel ? (
-      <button
-        type="button"
-        onClick={onSkip}
-        className="-me-1 min-h-11 cursor-pointer px-1 text-sm font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none lg:me-0"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
-      >
-        {skipLabel}
-      </button>
-    ) : (
-      <div className="min-h-11 min-w-11" aria-hidden />
-    );
-
-  const topBar = (
-    <div className="flex h-11 shrink-0 items-center justify-between">
-      {backControl}
-      {skipControl}
-    </div>
-  );
-
-  const heroBlock = (
-    <>
-      <div
-        className={
-          mode === "centered"
-            ? "mb-5 flex justify-center"
-            : "mb-4 flex justify-center lg:mb-6 lg:justify-start"
-        }
-      >
-        <PuhuImage
-          variant={mascot}
-          size={mode === "centered" ? 140 : 150}
-          priority
-        />
-      </div>
-      <h1
-        className={
-          mode === "centered"
-            ? "text-center text-xl font-semibold leading-snug lg:text-2xl"
-            : "text-center text-xl font-semibold leading-snug lg:text-left lg:text-2xl"
-        }
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
-        {title}
-      </h1>
-      {subtitle ? (
-        <p
-          className={
-            mode === "centered"
-              ? "mt-3 text-center text-base leading-relaxed"
-              : "mt-3 max-w-sm text-center text-base leading-relaxed lg:max-w-md lg:text-left"
-          }
-          style={{ color: "var(--color-body)", fontFamily: "var(--font-body)" }}
-        >
-          {subtitle}
-        </p>
-      ) : null}
-    </>
-  );
-
-  const progressBlock = (
-    <div className="mt-6 w-full">
-      <OnboardingProgress step={step} />
-    </div>
-  );
-
-  const childrenBlock = children ? (
-    <div
-      className={
-        mode === "centered"
-          ? "mt-5 flex w-full flex-col gap-3"
-          : "flex flex-col gap-4 rounded-[var(--radius-card)] p-5 lg:p-6"
-      }
-      style={
-        mode === "centered"
-          ? undefined
-          : {
-              backgroundColor:
-                "color-mix(in srgb, var(--color-surface) 55%, transparent)",
-              boxShadow: "var(--shadow-card)",
-              border: "1px solid var(--color-border)",
-            }
-      }
-    >
-      {children}
-    </div>
-  ) : null;
-
-  const ctaBlock =
-    primaryLabel && (onPrimary || primaryFormId) ? (
-      <div className="mt-6 w-full">
-        <Button
-          type={primaryFormId ? "submit" : "button"}
-          form={primaryFormId}
-          fullWidth
-          busy={primaryBusy}
-          disabled={primaryDisabled}
-          onClick={primaryFormId ? undefined : onPrimary}
-        >
-          {primaryLabel}
-        </Button>
-      </div>
-    ) : null;
-
-  if (mode === "centered") {
-    return (
-      <main className="flex min-h-screen w-full flex-col px-5">
-        <motion.div
-          className="mx-auto flex w-full max-w-md flex-1 flex-col py-8"
-          {...fade}
-        >
-          {topBar}
-          <div className="flex flex-1 flex-col items-center justify-center">
-            {heroBlock}
-            {childrenBlock}
-            {progressBlock}
-            {ctaBlock}
-          </div>
-        </motion.div>
-      </main>
-    );
+  function handleFocus(event: FocusEvent<HTMLElement>) {
+    const target = event.target;
+    setLookingDown(target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement || target instanceof HTMLButtonElement);
   }
 
   return (
-    <main className="flex min-h-screen w-full flex-col px-5">
+    <main className="min-h-dvh w-full px-4 sm:px-5" onFocusCapture={handleFocus} onBlurCapture={() => setLookingDown(false)}>
       <motion.div
-        className="mx-auto flex w-full max-w-sm flex-1 flex-col py-8 lg:grid lg:max-w-none lg:w-fit lg:grid-cols-[17.5rem_22rem] lg:grid-rows-[auto_1fr] lg:content-start lg:gap-x-6 lg:gap-y-8 lg:py-10 xl:gap-x-8"
-        {...fade}
+        className="mx-auto flex min-h-dvh w-full max-w-3xl flex-col py-6 sm:py-8"
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: reduceMotion ? 0.12 : 0.3, ease: "easeOut" }}
       >
-        {/* Mobile: single full-width top bar */}
-        <div className="lg:hidden">{topBar}</div>
+        <header className="flex min-h-11 items-center gap-3">
+          {onBack ? (
+            <button type="button" onClick={onBack} aria-label={t("back_aria")} className="flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-card)] text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2">
+              <ArrowLeft size={24} aria-hidden />
+            </button>
+          ) : <span className="min-w-11" aria-hidden />}
+          {step !== null ? <div className="flex-1"><OnboardingProgress step={step} /></div> : <div className="flex-1" />}
+          {onSkip && skipLabel ? (
+            <button type="button" onClick={onSkip} className="min-h-11 rounded-[var(--radius-control)] px-2 text-sm font-bold text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2">{skipLabel}</button>
+          ) : <span className="min-w-11" aria-hidden />}
+        </header>
 
-        {/* Desktop: back/skip sit in the same columns as hero/form */}
-        <div className="hidden h-11 items-center justify-start lg:col-start-1 lg:row-start-1 lg:flex">
-          {backControl}
-        </div>
-        <div className="hidden h-11 items-center justify-end lg:col-start-2 lg:row-start-1 lg:flex">
-          {skipControl}
-        </div>
+        <section className="mt-6 flex items-start gap-3 sm:gap-5">
+          <motion.div className="relative mt-1 size-20 shrink-0 sm:size-28" animate={speaking && !reduceMotion ? { y: [0, -2, 0] } : { y: 0 }} transition={{ duration: 0.3, repeat: speaking ? 2 : 0 }}>
+            <Image
+              src={lookingDown ? PUHU_MOTION_FRAMES.lookDown : blinking ? PUHU_MOTION_FRAMES.blink : speaking && mouthClosed ? PUHU_MOTION_FRAMES.talkClosed : PUHU_MOTION_FRAMES.default}
+              alt=""
+              fill
+              priority
+              sizes="112px"
+              className="object-contain"
+              aria-hidden
+            />
+          </motion.div>
+          <div className="relative min-w-0 flex-1 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5" aria-live="polite">
+            <span className="absolute -left-2 top-8 size-4 rotate-45 border-b border-l border-[var(--color-border)] bg-[var(--color-surface)]" aria-hidden />
+            <motion.h1 ref={titleRef} tabIndex={-1} className="text-xl font-semibold leading-snug text-[var(--color-main)] outline-none sm:text-2xl" style={{ fontFamily: "var(--font-heading)" }} initial={reduceMotion ? undefined : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24 }}>
+              {title}
+            </motion.h1>
+            {subtitle ? <motion.p className="mt-2 text-sm leading-relaxed text-[var(--color-body)] sm:text-base" initial={reduceMotion ? undefined : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: reduceMotion ? 0 : 0.2, duration: 0.24 }}>{subtitle}</motion.p> : null}
+          </div>
+        </section>
 
-        <div className="mt-6 flex flex-col items-center lg:col-start-1 lg:row-start-2 lg:mt-0 lg:items-start lg:self-center">
-          {heroBlock}
-        </div>
-
-        <div className="mt-6 flex w-full flex-col lg:col-start-2 lg:row-start-2 lg:mt-0 lg:self-center">
-          {childrenBlock}
-          {progressBlock}
-          {ctaBlock}
-        </div>
+        <section className="mt-6 flex flex-1 flex-col">{children}</section>
+        {primaryLabel && (onPrimary || primaryFormId) ? (
+          <div className="sticky bottom-0 mt-6 bg-[linear-gradient(to_bottom,transparent,var(--color-bg)_25%)] pb-[max(1rem,env(safe-area-inset-bottom))] pt-5">
+            <Button type={primaryFormId ? "submit" : "button"} form={primaryFormId} fullWidth busy={primaryBusy} disabled={primaryDisabled} onClick={primaryFormId ? undefined : onPrimary}>{primaryLabel}</Button>
+          </div>
+        ) : null}
       </motion.div>
     </main>
   );

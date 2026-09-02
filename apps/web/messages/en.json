@@ -38,23 +38,30 @@
     "register": "Sign up",
     "login": "Sign in",
     "slide1": {
-      "title": "You're not alone on the road to your exam.",
-      "title_lead": "On the exam road",
-      "title_emphasis": "you're not alone.",
-      "subtitle": "A companionship platform that understands you, keeps you going, and never leaves you alone."
+      "title": "Hi, I'm Puhu.",
+      "title_lead": "Hi, I'm",
+      "title_emphasis": "Puhu.",
+      "subtitle": "Let's take the road to your exam together."
     },
     "slide2": {
-      "title": "Puhu walks with you.",
-      "subtitle": "Plan, worry, today's step. Official dates come from editorial content, never made up."
+      "title": "I'm here when it gets hard.",
+      "subtitle": "Tell me what's on your mind. We'll find the next step together."
     },
     "slide3": {
-      "title": "Together with the community.",
-      "subtitle": "Ask questions, share experiences. Move forward without feeling alone on your exam journey."
+      "title": "Today's small step.",
+      "subtitle": "Not everything at once. Just what you can do today."
+    },
+    "slide4": {
+      "title": "You won't walk this road alone.",
+      "subtitle": "Study, share, and support each other with people preparing for the same exam."
     }
   },
   "auth": {
     "shell": {
-      "back_login": "Back to sign in"
+      "back_login": "Back to sign in",
+      "narrative_label": "Your exam journey with Puhu",
+      "narrative_title": "Your journey starts here.",
+      "narrative_body": "Puhu is beside you to find today's small step and help you move forward without feeling alone."
     },
     "login": {
       "title": "Sign in",
@@ -934,8 +941,8 @@
     "coming_soon": "Coming soon"
   },
   "paywall": {
-    "banner_message": "{label} is waiting for you.",
-    "banner_cta": "See Premium",
+    "banner_message": "{amount} off is waiting for you: {label}",
+    "banner_cta": "Upgrade now",
     "price_before": "Previous price",
     "coupon_toggle": "Have a coupon code?",
     "coupon_label": "Your coupon code",
@@ -2326,21 +2333,23 @@
     "progress_aria": "Onboarding step {current} of {total}",
     "progress_label": "Step {current} of {total}",
     "welcome": {
-      "title": "Hello, {name}!",
-      "subtitle": "We're with you on the long road. We take small steps.",
+      "title": "Let's get to know you a little.",
+      "subtitle": "A few short answers will help me prepare your dashboard for you.",
       "continue": "Continue"
     },
     "profile": {
-      "title": "What should we call you?",
+      "title": "What username should the community know you by?",
       "username_label": "Username",
       "username_placeholder": "example_user",
       "username_hint": "3-24 characters · lowercase letters, numbers, and underscore.",
       "avatar_label": "Profile photo",
+      "avatar_title": "Would you like to add a profile photo?",
       "avatar_change": "Choose photo",
       "avatar_remove": "Remove",
       "avatar_type_error": "You can only upload JPEG or PNG.",
       "avatar_too_big": "Profile photo must be under 2 MB.",
       "avatar_upload_error": "Could not upload profile photo.",
+      "skip": "Skip for now",
       "form_error": "Username doesn't match.",
       "save_error": "It didn't save just now. Let's try again in a moment.",
       "continue": "Continue"
@@ -2350,16 +2359,21 @@
       "continue": "Continue",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
+    "kpss_level": {
+      "title": "Which KPSS level are you preparing for?",
+      "continue": "Continue",
+      "save_error": "It didn't save just now. Let's try again in a moment."
+    },
     "goal": {
-      "title": "Remember your goal",
-      "subtitle": "Optional. Why are you on this path?",
-      "hint": "Only your goal is required; city is optional.",
-      "save": "Save and continue",
+      "title": "What is waiting at the end of this road?",
+      "subtitle": "Write it in one sentence if you like.",
+      "hint": "You can add more detail to your goal board later.",
+      "save": "Continue",
       "skip": "Skip for now",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
     "complete": {
-      "title": "The road starts here.",
+      "title": "We're ready. Your first step is waiting.",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
       "countdown_teaser": "Your exam countdown is on the dashboard. From the verified official calendar.",
       "map_cta": "Mark your goal on the map →",

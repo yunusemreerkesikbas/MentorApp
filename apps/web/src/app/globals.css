@@ -6,6 +6,7 @@
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
 html {
   --font-heading: var(--font-body);
+  --z-route-transition: 80;
   /* Keep in sync with APP_SIDEBAR_*_PX in app-sidebar.ts */
   --app-sidebar-width: 240px;
   scrollbar-gutter: stable;
@@ -353,6 +354,7 @@ html.mentor-sheet-open {
 }
 
 /* Auth sheet — slide by measured height; transition starts only after travel is set. */
+.auth-shell[data-hang="true"] { padding-top: var(--auth-hang-overhang); }
 .auth-sheet {
   --auth-sheet-travel: 100vh;
   --auth-sheet-open-dur: 680ms;
@@ -361,21 +363,25 @@ html.mentor-sheet-open {
   width: 100%;
   transform: translate3d(0, var(--auth-sheet-travel), 0);
 }
-.auth-sheet[data-animated="true"][data-open="true"] {
+.auth-sheet[data-animated="true"][data-phase="open"] {
   transform: translate3d(0, 0, 0);
   transition: transform var(--auth-sheet-open-dur) var(--auth-sheet-ease);
 }
-.auth-sheet[data-animated="true"][data-open="false"] {
-  transform: translate3d(0, var(--auth-sheet-travel), 0);
+.auth-sheet[data-animated="true"][data-phase="exiting"] {
+  transform: translate3d(0, calc(var(--auth-sheet-travel) * -1), 0);
   transition: transform var(--auth-sheet-close-dur) var(--auth-sheet-ease);
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-sheet,
-  .auth-sheet[data-animated="true"][data-open="true"],
-  .auth-sheet[data-animated="true"][data-open="false"] {
+  .auth-sheet[data-animated="true"][data-phase="open"],
+  .auth-sheet[data-animated="true"][data-phase="exiting"] {
     transform: none !important;
     transition: none !important;
   }
+}
+@media (min-width: 64rem) {
+  .auth-shell[data-hang="true"] { padding-top: 2rem; }
+  .auth-sheet { --auth-sheet-travel: 2rem; }
 }
 
 /* Plan date sheet — react-day-picker overrides (DESIGN.md tokens) */

@@ -14,7 +14,6 @@ const GOAL_FORM_ID = "onboarding-goal-form";
 
 export type GoalSummary = {
   goalTitle: string;
-  targetCity: string | null;
 };
 
 export function GoalStep({
@@ -29,7 +28,6 @@ export function GoalStep({
   const t = useTranslations("onboarding.goal");
   const vision = useTranslations("vision");
   const [goalTitle, setGoalTitle] = useState("");
-  const [targetCity, setTargetCity] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -43,13 +41,10 @@ export function GoalStep({
     try {
       await coachingControllerUpsertVision({
         goalTitle: trimmedGoal,
-        targetCity: targetCity.trim() || null,
+        targetCity: null,
         motivation: null,
       });
-      onSaved({
-        goalTitle: trimmedGoal,
-        targetCity: targetCity.trim() || null,
-      });
+      onSaved({ goalTitle: trimmedGoal });
     } catch (err) {
       setError(
         err instanceof ApiClientError ? err.body.message : t("save_error"),
@@ -61,7 +56,7 @@ export function GoalStep({
 
   return (
     <OnboardingStepLayout
-      step={2}
+      step={4}
       mascot="proud"
       title={t("title")}
       subtitle={t("subtitle")}
@@ -94,22 +89,7 @@ export function GoalStep({
             placeholder={vision("goal_placeholder")}
             onChange={(e) => setGoalTitle(e.target.value)}
           />
-          <p
-            className="text-xs leading-relaxed"
-            style={{ color: "var(--color-secondary)", fontFamily: "var(--font-body)" }}
-          >
-            {t("hint")}
-          </p>
         </div>
-
-        <TextField
-          label={vision("city_label")}
-          value={targetCity}
-          maxLength={80}
-          disabled={saving}
-          placeholder={vision("city_placeholder")}
-          onChange={(e) => setTargetCity(e.target.value)}
-        />
       </form>
     </OnboardingStepLayout>
   );

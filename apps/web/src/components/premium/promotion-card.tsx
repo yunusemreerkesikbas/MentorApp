@@ -5,8 +5,9 @@ import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion, type Variants } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import { Check, Copy, X } from "lucide-react";
-import { PromotionDiscountType, type PromotionSummary } from "@mentor/types";
+import type { PromotionSummary } from "@mentor/types";
 import { Button } from "@mentor/ui";
+import { formatPromotionMagnitude } from "@/lib/promotions";
 import { useIsMounted } from "@/lib/use-is-mounted";
 
 interface PromotionCardProps {
@@ -140,14 +141,9 @@ export function PromotionCard({ promotion, onClose, onContinue }: PromotionCardP
 
   if (!mounted) return null;
 
-  const magnitude =
-    promotion.discountType === PromotionDiscountType.PERCENT
-      ? t("discount_percent", { value: promotion.discountValue })
-      : (promotion.discountValue / 100).toLocaleString(locale === "en" ? "en-GB" : "tr-TR", {
-          style: "currency",
-          currency: "TRY",
-          maximumFractionDigits: 0,
-        });
+  const magnitude = formatPromotionMagnitude(promotion, locale, (value) =>
+    t("discount_percent", { value }),
+  );
 
   const scope =
     promotion.planNames === null
