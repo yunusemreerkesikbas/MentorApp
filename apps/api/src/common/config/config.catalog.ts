@@ -28,6 +28,7 @@ export const ConfigCategory = {
   FORUM: "forum",
   ADS: "ads",
   PROMOTIONS: "promotions",
+  MENTORSHIP: "mentorship",
 } as const;
 
 export const ConfigValueType = {
@@ -144,6 +145,29 @@ const coachingCount = (
   description: string,
 ): ConfigEntryDef => ({
   category: ConfigCategory.COACHING,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: false,
+  description,
+});
+
+const mentorshipFlag = (def: boolean, description: string): ConfigEntryDef => ({
+  category: ConfigCategory.MENTORSHIP,
+  type: ConfigValueType.BOOLEAN,
+  schema: z.boolean(),
+  default: def,
+  sensitive: false,
+  description,
+});
+
+const mentorshipCount = (
+  def: number,
+  min: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
+  category: ConfigCategory.MENTORSHIP,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(min).max(max),
   default: def,
@@ -269,6 +293,22 @@ export const CONFIG_CATALOG = {
   "coaching.study_rooms.enabled": flag(
     false,
     "Gate for themed invite-code study rooms (masa) on the session screen.",
+  ),
+  "mentorship.enabled": mentorshipFlag(
+    false,
+    "Gate for the human coach surface (coach roster, invite codes, assignments). Off = W8 endpoints 403.",
+  ),
+  "mentorship.coach.max_active_students": mentorshipCount(
+    20,
+    1,
+    500,
+    "Free active-student quota per coach. Also the invite-code abuse bound (no separate use counter).",
+  ),
+  "mentorship.invite_code.ttl_days": mentorshipCount(
+    14,
+    1,
+    365,
+    "How long a coach's invite code stays redeemable before it must be rotated.",
   ),
   "identity.verification_email.resend_limit": identityCount(
     1,
@@ -689,6 +729,7 @@ export const FeatureFlag = {
   SIGNUP_ENABLED: "signup.enabled",
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
+  MENTORSHIP_ENABLED: "mentorship.enabled",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {

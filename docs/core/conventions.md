@@ -35,6 +35,8 @@
 | APP-011 | Web i18n: next-intl TR/EN (URL-based, 14 namespaces, ~290 keys, static render) |
 | APP-012 | Forum slice 6: SEO (public QA pages, JSON-LD, sitemap, XSS fix) + mvp-status update |
 | APP-013 | Docs refactor: devnotes → features/ + core/ consolidation |
+| APP-014…APP-062 | Registry gap — recorded in the matching `docs/features/*.md` timelines and `core/mvp-status.md`, not here |
+| APP-063 | W8 mentorship slice 1: coach↔student link (invite code, double opt-in, roster, transparency view) + COACH role assignment |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)

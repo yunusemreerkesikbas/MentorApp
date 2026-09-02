@@ -23,6 +23,7 @@ import { ContentModule } from "./modules/content/content.module";
 import { EconomyModule } from "./modules/economy/economy.module";
 import { ForumModule } from "./modules/forum/forum.module";
 import { IdentityModule } from "./modules/identity/identity.module";
+import { MentorshipModule } from "./modules/mentorship/mentorship.module";
 import { NotificationsModule } from "./modules/notifications/notifications.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { PromotionsModule } from "./modules/promotions/promotions.module";
@@ -64,6 +65,7 @@ import { buildLoggerConfig } from "./observability/logger.config";
     EconomyModule,
     ForumModule,
     IdentityModule,
+    MentorshipModule,
     NotificationsModule,
     PaymentsModule,
     PromotionsModule,

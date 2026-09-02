@@ -12,7 +12,7 @@ import {
   extensionForAvatarMime,
   isValidAvatarStorageKey,
 } from "../domain/avatar";
-import { UsersRepository } from "../infrastructure/users.repository";
+import { UsersRepository, type DisplayIdentity } from "../infrastructure/users.repository";
 import { toAuthUser } from "./auth.service";
 
 /** Admin metrics: user-base snapshot (W6). */
@@ -87,6 +87,17 @@ export class UsersService {
       username: row.username,
       avatarUrl: row.avatarStorageKey ? this.storage.getPublicUrl(row.avatarStorageKey) : null,
     }));
+  }
+
+  /**
+   * Display identity for a set of ids, keyed by id (mentorship roster, W8).
+   *
+   * The public seam W8 uses instead of reading `users` — display name + handle, nothing else.
+   * Ids with no row are simply absent from the map; callers decide how to render a gap.
+   */
+  async listDisplayIdentities(userIds: string[]): Promise<Map<string, DisplayIdentity>> {
+    const rows = await this.usersRepo.listDisplayByIds(userIds);
+    return new Map(rows.map((row) => [row.userId, row]));
   }
 
   /** Admin metrics dashboard (W6) — read-only user-base aggregate. */

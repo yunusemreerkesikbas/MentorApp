@@ -346,8 +346,10 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   explicit confirmation.
 - Puhu and a polite live speech bubble share one `max-w-3xl` responsive stage. Focus makes Puhu look
   toward the active control, step changes move focus to the new prompt, and reduced-motion keeps the
-  flow usable without choreography. Completion automatically preserves a pending room invite or opens
-  the personalized dashboard through the cloud transition.
+  flow usable without choreography. The question row stays reference-dense while forms and CTAs use
+  a shared `max-w-xl` measure; desktop actions remain attached to the form and mobile actions stay in
+  the safe thumb area. Completion automatically preserves a pending room invite or opens the
+  personalized dashboard through the cloud transition.
 - Existing user update, signed avatar upload, vision upsert, and tutorial analytics contracts are
   unchanged. Related: `(onboarding)/_components/{onboarding-wizard,onboarding-step-layout,onboarding-flow}.tsx`,
   `(onboarding)/_components/steps/*`, `messages/{tr,en}.json`.

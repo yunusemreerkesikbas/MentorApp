@@ -85,33 +85,38 @@ export function WelcomeSlideLayout({
           <AnimatePresence mode="wait">
             <motion.div
               key={slideKey}
-              className="flex flex-1 flex-col items-center justify-center py-5 text-center"
+              className="flex min-h-0 flex-1 flex-col py-4"
               initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
               transition={{ duration: reduceMotion ? 0.12 : 0.3, ease: "easeOut" }}
             >
-              <div className="mb-6 flex h-64 w-full items-center justify-center sm:h-72">
+              <motion.div
+                className="mt-3 text-left sm:mt-5"
+                animate={{ opacity: introComplete ? 1 : 0, y: introComplete ? 0 : 8 }}
+                transition={{ duration: 0.25 }}
+                aria-hidden={!introComplete}
+              >
+                <h1 className="text-balance text-[1.625rem] font-semibold leading-tight text-[var(--color-main)] sm:text-[2rem]" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>
+                <p className="mt-3 max-w-sm text-pretty text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>
+              </motion.div>
+              <div className="flex min-h-0 flex-1 items-center justify-center py-5 sm:py-7">
                 {slideKey === "intro" ? (
                   <WelcomeIntroPuhu completed={introComplete} onComplete={onIntroComplete} />
                 ) : sceneSrc ? (
-                  <div className="relative h-full w-full">
+                  <div className="relative h-full max-h-[23rem] min-h-64 w-full">
                     <Image src={sceneSrc} alt="" fill sizes="(max-width: 768px) 90vw, 448px" className="object-contain" aria-hidden />
                   </div>
                 ) : (
-                  <PuhuImage variant={FALLBACK_VARIANT[slideKey]} size={220} priority={step === 1} />
+                  <PuhuImage variant={FALLBACK_VARIANT[slideKey]} size={250} priority={step === 1} />
                 )}
               </div>
-              <motion.div animate={{ opacity: introComplete ? 1 : 0, y: introComplete ? 0 : 8 }} transition={{ duration: 0.25 }} aria-hidden={!introComplete}>
-                <h1 className="text-2xl font-semibold leading-tight text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>
-                <p className="mx-auto mt-3 max-w-sm text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>
-              </motion.div>
             </motion.div>
           </AnimatePresence>
 
           <div className="mt-auto w-full" aria-hidden={!introComplete}>
             <DashProgress step={step} total={TOTAL} ariaLabel={t("progress_aria", { current: step + 1, total: TOTAL })} />
-            <div className="mt-6">
+            <div className="mt-5">
               <Button type="button" fullWidth disabled={!introComplete || transitioningToAuth} onClick={onPrimary}>{primaryLabel}</Button>
             </div>
             {secondaryLabel && onSecondary ? (

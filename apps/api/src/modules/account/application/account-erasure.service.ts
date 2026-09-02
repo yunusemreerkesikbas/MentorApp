@@ -6,6 +6,7 @@ import { AdsErasureService } from "../../ads/application/ads-erasure.service";
 import { CoachingErasureService } from "../../coaching/application/coaching-erasure.service";
 import { ForumErasureService } from "../../forum/application/forum-erasure.service";
 import { SocialErasureService } from "../../identity/application/social-erasure.service";
+import { MentorshipErasureService } from "../../mentorship/application/mentorship-erasure.service";
 import { TokenService } from "../../identity/application/token.service";
 import { UsersService } from "../../identity/application/users.service";
 import { NotificationsErasureService } from "../../notifications/application/notifications-erasure.service";
@@ -45,6 +46,7 @@ export class AccountErasureService {
     private readonly coachingErasure: CoachingErasureService,
     private readonly forumErasure: ForumErasureService,
     private readonly socialErasure: SocialErasureService,
+    private readonly mentorshipErasure: MentorshipErasureService,
     private readonly notificationsErasure: NotificationsErasureService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
   ) {}
@@ -62,6 +64,7 @@ export class AccountErasureService {
     await this.coachingErasure.eraseUserData(userId);
     await this.forumErasure.eraseUserData(userId);
     await this.socialErasure.eraseUserData(userId);
+    await this.mentorshipErasure.eraseUserData(userId);
     await this.notificationsErasure.eraseUserData(userId);
 
     // 3. Identity row (identity owns `users`) + kill every session.

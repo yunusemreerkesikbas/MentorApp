@@ -40,6 +40,18 @@ export const ASSIGNABLE_ADMIN_ROLES = [
   UserRole.MODERATOR,
 ] as const;
 
+/**
+ * Every role a SUPER_ADMIN may hand out through the API: the admin sub-roles plus COACH.
+ *
+ * COACH is deliberately NOT an admin sub-role — it grants no admin-panel access (see
+ * `ADMIN_PANEL_ROLES` in the admin app) and no platform-wide read. It only opens the mentorship
+ * surface, and there only over students who explicitly opted in. It lives here because it shares
+ * the same handing-out mechanics: SUPER_ADMIN only, audited, idempotent, no privilege escalation.
+ *
+ * Coach onboarding is curation, not open registration (roadmap §5) — this is the curation step.
+ */
+export const ASSIGNABLE_ROLES = [...ASSIGNABLE_ADMIN_ROLES, UserRole.COACH] as const;
+
 // --- Exam-agnostic core (§0): exams differ only by content/config ---
 export const ExamType = {
   KPSS: "KPSS",
@@ -109,4 +121,5 @@ export * from "./payments.js";
 export * from "./notifications.js";
 export * from "./preference-simulation.js";
 export * from "./ads.js";
+export * from "./mentorship.js";
 export * from "./promotions.js";

@@ -32,7 +32,7 @@ export function ExamStep({ user, onSaved, onBack }: { user: AuthUser; onSaved: (
   return (
     <OnboardingStepLayout step={2} title={t("title")} onBack={onBack} primaryLabel={t("continue")} onPrimary={() => void save()} primaryBusy={saving} primaryDisabled={!selected || saving}>
       <FormError message={error} />
-      <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+      <div role="radiogroup" aria-label={t("title")} className="mx-auto grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
         {OPTIONS.map((value) => <OptionButton key={value} label={value} active={selected === value} disabled={saving} onClick={() => setSelected(value)} />)}
       </div>
     </OnboardingStepLayout>
@@ -43,7 +43,10 @@ export function OptionButton({ label, active, disabled, onClick }: { label: stri
   const reduceMotion = useReducedMotion();
   return (
     <motion.button type="button" role="radio" aria-checked={active} disabled={disabled} onClick={onClick} className="flex min-h-14 w-full items-center justify-between gap-3 rounded-[var(--radius-card)] px-4 py-3 text-left font-bold text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 disabled:opacity-60" style={{ border: active ? "2px solid var(--color-main)" : "1px solid var(--color-border)", backgroundColor: active ? "color-mix(in srgb, var(--color-chip) 25%, var(--color-surface))" : "var(--color-surface)" }} animate={reduceMotion ? undefined : { scale: active ? 1.015 : 1 }}>
-      {label}<span aria-hidden>{active ? "✓" : ""}</span>
+      {label}
+      <span className="flex size-5 shrink-0 items-center justify-center rounded-full border border-[var(--color-secondary)]" aria-hidden>
+        {active ? <span className="size-2.5 rounded-full bg-[var(--color-main)]" /> : null}
+      </span>
     </motion.button>
   );
 }
