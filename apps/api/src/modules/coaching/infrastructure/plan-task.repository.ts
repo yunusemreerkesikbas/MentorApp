@@ -177,12 +177,16 @@ export class PlanTaskRepository {
    * opens a SERVICE context. `origin_ref_id` is a soft ref with no FK, so nothing else would clear
    * it, and a dangling one would keep the task badged and uneditable forever for a coach who no
    * longer exists. The task itself stays — it is the student's work, not the coach's.
+   *
+   * `coachNote` goes with the provenance, and not only for tidiness:
+   * `plan_tasks_coach_note_origin_chk` forbids a note on an origin-less row, so leaving it here
+   * would turn every coach erasure into a constraint violation.
    */
   async clearMentorshipOrigin(tx: DatabaseTx, linkIds: string[]): Promise<number> {
     if (linkIds.length === 0) return 0;
     const rows = await tx
       .update(planTasks)
-      .set({ originType: null, originRefId: null, originMeta: null })
+      .set({ originType: null, originRefId: null, originMeta: null, coachNote: null })
       .where(
         and(
           eq(planTasks.originType, "MENTORSHIP"),

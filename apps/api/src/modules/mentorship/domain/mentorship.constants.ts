@@ -24,6 +24,8 @@ export const MentorshipEventTopic = {
   LINK_ACCEPTED: "mentorship.link.accepted",
   LINK_ENDED: "mentorship.link.ended",
   ASSIGNMENTS_CREATED: "mentorship.assignments.created",
+  ASSIGNMENT_DROPPED: "mentorship.assignment.dropped",
+  ASSIGNMENT_PROGRESSED: "mentorship.assignment.progressed",
 } as const;
 
 /** A student accepted a coach's invite. Carries display names so listeners need no extra lookup. */
@@ -58,5 +60,35 @@ export class MentorshipLinkEnded {
     readonly studentId: string,
     readonly endedBy: string,
     readonly actorDisplayName: string,
+  ) {}
+}
+
+/**
+ * The student removed an assignment from their plan. They are allowed to (the plan is theirs), but
+ * the coach's report simply stops showing it — so without this the report quietly becomes untrue.
+ * Carries the title because it is the one thing that no longer exists to look up.
+ */
+export class MentorshipAssignmentDropped {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly studentDisplayName: string,
+    readonly taskTitle: string,
+    readonly taskDate: string,
+  ) {}
+}
+
+/**
+ * The student completed an assignment. No title and no count: the notification is deduped to one
+ * per student per day, so anything more specific than "a task" would be true only the first time.
+ */
+export class MentorshipAssignmentProgressed {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly studentDisplayName: string,
+    readonly taskDate: string,
   ) {}
 }

@@ -182,6 +182,20 @@ export function PlanTaskRow({
             </button>
           ) : null}
         </div>
+        {/* The coach's instruction belongs on the row, not behind a tap: a note the student never
+            sees is a note the coach only thinks they sent. */}
+        {task.coachNote ? (
+          <p
+            className={`border-l-2 pl-2 ${dense ? "mt-1 text-[11px] max-lg:text-[10px]" : "mt-1.5 text-xs"}`}
+            style={{
+              borderColor: "var(--color-progress)",
+              color: done ? "var(--color-secondary)" : "var(--color-body)",
+              fontFamily: "var(--font-body)",
+            }}
+          >
+            {task.coachNote}
+          </p>
+        ) : null}
       </div>
 
       {!readOnly ? (

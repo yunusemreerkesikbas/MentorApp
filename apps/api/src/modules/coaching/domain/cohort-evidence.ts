@@ -15,6 +15,13 @@
  *   subscriptions.*                                             — the coach is not the biller
  *
  * A coach gets performance, activity and actionable flags. A student's words stay with the student.
+ *
+ * ONE EXCEPTION, and why it is not one:
+ *   plan_tasks.coach_note — the coach's OWN words, written by them, read back by them, and only on
+ *   rows their own live link authored. It is a separate column from `description` for exactly this
+ *   reason. The rule was never "no free text on plan_tasks"; it is "the student's words stay with
+ *   the student". `description` remains absent, and `coach_note` is projected only where
+ *   `origin_ref_id` matches the reading coach's link — a coach never reads a previous coach's note.
  */
 
 /** One roster row. Computed for N students in a fixed number of batch queries, never per student. */
@@ -64,12 +71,18 @@ export interface StudentReportSnapshot {
     blank: number;
     net: number;
   }[];
-  /** Titles only. `description` is the student's own note and does not travel. */
+  /**
+   * Headings and taxonomy labels. `description` is the student's own note and does not travel;
+   * `coachNote` does, but only on rows the READING coach's link authored (see the header).
+   */
   planTasks: {
     taskDate: string;
     title: string;
     subject: string | null;
+    topic: string | null;
     status: string;
+    assignedByCoach: boolean;
+    coachNote: string | null;
   }[];
   /** Level only (1..5). The optional note next to it in `mood_checkins` never leaves the student. */
   moodTrend: { date: string; level: number }[];

@@ -1,18 +1,22 @@
-export const CUSTOM_ONBOARDING_ASSETS_READY = false;
-
-const DEFAULT_PUHU = "/mascot/puhu/puhu-default.png";
-
-export const PUHU_MOTION_FRAMES = {
-  default: DEFAULT_PUHU,
-  gazeLeft: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/gaze-left.png" : DEFAULT_PUHU,
-  gazeRight: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/gaze-right.png" : DEFAULT_PUHU,
-  blink: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/blink.png" : DEFAULT_PUHU,
-  wave: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/wave.png" : DEFAULT_PUHU,
-  talkClosed: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/talk-closed.png" : DEFAULT_PUHU,
-  lookDown: CUSTOM_ONBOARDING_ASSETS_READY ? "/mascot/puhu/motion/look-down.png" : DEFAULT_PUHU,
+export const ONBOARDING_ASSET_READINESS = {
+  puhuMotion: true,
+  welcomeScenes: false,
+  clouds: false,
 } as const;
 
-export const WELCOME_SCENE_ASSETS = CUSTOM_ONBOARDING_ASSETS_READY
+const PUHU_MOTION_ROOT = "/mascot/puhu/motion";
+
+export const PUHU_MOTION_FRAMES = {
+  default: `${PUHU_MOTION_ROOT}/rest.png`,
+  gazeLeft: `${PUHU_MOTION_ROOT}/gaze-left.png`,
+  gazeRight: `${PUHU_MOTION_ROOT}/gaze-right.png`,
+  blink: `${PUHU_MOTION_ROOT}/blink.png`,
+  wave: `${PUHU_MOTION_ROOT}/wave.png`,
+  talkClosed: `${PUHU_MOTION_ROOT}/talk-closed.png`,
+  lookDown: `${PUHU_MOTION_ROOT}/look-down.png`,
+} as const;
+
+export const WELCOME_SCENE_ASSETS = ONBOARDING_ASSET_READINESS.welcomeScenes
   ? {
       coach: "/visuals/onboarding/coach.png",
       dailyStep: "/visuals/onboarding/daily-step.png",
@@ -20,7 +24,7 @@ export const WELCOME_SCENE_ASSETS = CUSTOM_ONBOARDING_ASSETS_READY
     }
   : null;
 
-export const CLOUD_ASSETS = CUSTOM_ONBOARDING_ASSETS_READY
+export const CLOUD_ASSETS = ONBOARDING_ASSET_READINESS.clouds
   ? {
       left: "/visuals/onboarding/cloud-left.png",
       right: "/visuals/onboarding/cloud-right.png",

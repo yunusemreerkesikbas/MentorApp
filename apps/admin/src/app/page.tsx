@@ -1,4 +1,4 @@
-import PageHeader from '@/components/shared/pageHeader/PageHeader'
+import { AdminPageHeader } from '@/components/shared/admin/AdminPageHeader'
 import DuplicateLayout from './duplicateLayout'
 import HomeCards from './HomeCards'
 import MetricsCards from './MetricsCards'
@@ -12,7 +12,7 @@ import CoachFeedbackCards from './CoachFeedbackCards'
 const Home = () => {
     return (
         <DuplicateLayout>
-            <PageHeader>{null}</PageHeader>
+            <AdminPageHeader title="Panel" breadcrumbs={[{ label: 'Panel' }]} />
             <div className="main-content">
                 <MetricsCards />
                 <AiCostCards />

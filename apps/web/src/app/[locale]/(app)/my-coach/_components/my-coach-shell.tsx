@@ -142,6 +142,10 @@ export function DataScopeCard({ scope }: { scope: readonly string[] }) {
             <li key={key}>{t(`scope_${key}`)}</li>
           ))}
         </ul>
+        {/* What the coach can WRITE, not see — so it sits beside the list, not inside it. */}
+        <p className="mt-3 text-sm" style={{ color: "var(--color-secondary)" }}>
+          {t("scope_coach_writes")}
+        </p>
       </Card>
       <Card>
         <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-main)" }}>

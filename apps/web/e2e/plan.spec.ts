@@ -36,6 +36,8 @@ const task: PlanTaskDto = {
   startTime: null,
   endTime: null,
   description: null,
+  topic: null,
+  coachNote: null,
   origin: null,
 };
 
@@ -85,6 +87,33 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
       changes: readyPreview.changes,
     },
   ]);
+});
+
+test("koç notunu görevin altında, öğrencinin kendi notundan ayrı gösterir", async ({
+  page,
+}) => {
+  // Two authors, two boxes: the coach's instruction is rendered as theirs and the student's own
+  // description stays where it was. A note the student never sees is a note the coach only
+  // thinks they sent, so it belongs on the row rather than behind a tap.
+  await mockPlanApi(page, {
+    // The adaptation route is never hit here; the harness just requires a body for it.
+    preview: readyPreview,
+    tasks: [
+      {
+        ...task,
+        subject: "Türkçe",
+        topic: "Paragraf",
+        coachNote: "Netin düştü, bu hafta paragrafa ağırlık ver.",
+        origin: { type: "MENTORSHIP", linkId: "44444444-4444-4444-8444-444444444444" },
+      },
+    ],
+  });
+  await page.goto("/plan");
+
+  await expect(page.getByText("Koçundan")).toBeVisible();
+  await expect(
+    page.getByText("Netin düştü, bu hafta paragrafa ağırlık ver."),
+  ).toBeVisible();
 });
 
 test("Free kullanıcıyı LLM isteği yapmadan aboneliğe yönlendirir", async ({
@@ -159,6 +188,8 @@ const timedTask: PlanTaskDto = {
   startTime: "13:00",
   endTime: "14:30",
   description: "Problemler + hız",
+  topic: null,
+  coachNote: null,
   origin: null,
 };
 
@@ -261,6 +292,8 @@ test.describe("Takvim", () => {
       startTime: "09:00",
       endTime: "10:30",
       description: "Sayısal bölüm",
+      topic: null,
+      coachNote: null,
     });
   });
 
@@ -365,6 +398,8 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
           startTime: null,
           endTime: null,
           description: null,
+          topic: null,
+          coachNote: null,
           ...body,
         },
         201,

@@ -14,7 +14,9 @@ student's. There is no separate coach-approval step, and no student is ever link
 From that link the coach gets, in this slice, a roster. The metrics and the report arrive with the
 next slice; the assignment surface with the one after. What the coach can *ever* see is already
 fixed and shipped as a contract: `MENTORSHIP_DATA_SCOPE` in `@mentor/types`, rendered verbatim on
-the consent screen and on the student's `/my-coach` view.
+the consent screen and on the student's `/my-coach` view. The one thing a coach *writes* into the
+student's world is an assignment, and `plan_tasks.coach_note` carries their instruction with it —
+their words, read back only to them, never mixed into the student's own `description`.
 
 Communication is deliberately absent. In Phase 2 the coach and student talk off-platform; in-app
 chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel.
@@ -94,7 +96,7 @@ DELETE /v1/mentorship/my-coach                      -> 204
 | `GET/POST /v1/mentorship/invite-code` | Read or rotate the coach's single invite code (`@Roles(COACH)`) |
 | `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
 | `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
-| `POST /v1/mentorship/students/:studentId/assignments` | Assign plan tasks (gate applies) |
+| `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
@@ -107,7 +109,12 @@ Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTOR
 
 Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_active_students`
 (20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
-`mentorship.risk.plan_completion_floor` (0.5) · `mentorship.risk.low_mood_ceiling` (2).
+`mentorship.risk.plan_completion_floor` (0.5) · `mentorship.risk.low_mood_ceiling` (2) ·
+`mentorship.risk_digest.enabled` (flag, default **false**) ·
+`mentorship.risk_digest.repeat_after_days` (7).
+
+Cron: `POST /v1/internal/cron/dispatch-mentorship-risk-digest` (`CronSecretGuard`, 07:00 UTC) —
+the coach's daily risk digest. Only pairs the previous digest did not carry are worth sending.
 
 ## Risk triage
 
@@ -128,6 +135,75 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Koçun günlük müdahale uyarısı (APP-067, 2026-09-03)** — Risk triyajı bugüne kadar yalnız
+  *pull* idi: koç panele girmedikçe hiçbir şey duymuyordu, ve 20 öğrencili bir koç haftada iki kez
+  girerse "3 gün inaktif" sinyali ölü doğuyordu. Roadmap §9'un istediği veri-tetikli müdahale
+  uyarısı artık cron'la gidiyor: `POST /v1/internal/cron/dispatch-mentorship-risk-digest`,
+  `render.yaml`'da `"0 7 * * *"` UTC (= 10:00 TRT). In-app her zaman, e-posta
+  `notification_preferences.email_enabled`'a saygılı; **push yok** (koçun gününü bölmemeli).
+  **Yalnız YENİ haber gider.** Birim `studentId:FLAG` çifti; bugünün kümesinde son özetin
+  taşımadığı bir çift varsa gönderilir. Aksi halde on gündür sessiz olan öğrenci her sabah ping
+  atardı ve üçüncü sabah koç okumayı bırakırdı. **İyileşme bildirilmez** — haber yokluğu iyi
+  haberdir, roster zaten gösterir. Kronik durum `mentorship.risk_digest.repeat_after_days` (7)
+  sonra bir kez hatırlatılır.
+  **Kullanım:** `mentorship.risk_digest.enabled` **varsayılan kapalı** ve `mentorship.enabled`'dan
+  ayrı — koç yüzeyini açıp toplu e-postayı kapalı tutabilmek ilk canlıya çıkışta istenecek şey.
+  Admin config ekranından (veya `PATCH /v1/admin/config/mentorship.risk_digest.enabled`) açılır.
+  **Gotchas:** (1) Baseline'ı **yeni bir tablo değil**, bir önceki özetin kendi
+  `user_notifications.data.pairs` alanı tutuyor. Bildirim zaten "bu kişiye ne söyledik"in
+  append-only kaydı; ikinci bir depo yalnız doğru tutulacak ikinci bir şey ve KVKK silmesinde
+  kovalanacak üçüncü bir kopya olurdu. (2) Tek dedupe mekanizması in-app satırın `dedupeKey`'i:
+  `createFromTemplate` satır zaten varsa **false** döner ve e-posta o false ile durur — cron iki
+  kez koşarsa ikinci e-posta çıkmaz. `notification_deliveries` bu akışta kullanılmıyor
+  (`DailyReminderService`'in iki ayrı dedupe'lu deseni bilerek kopyalanmadı). (3) **Flag adı
+  kopyada geçmez** — "INACTIVE" gelen kutusunda teşhis gibi okunur; kopya isim taşır, rozet
+  bağlamıyla raporda kalır (§0). (4) `repeat_after_days` düşürülürse eski baseline'lar bir anda
+  bayatlar ve ertesi sabah herkese özet gider. (5) Risk mantığı W8'de kaldı:
+  `MENTORSHIP_QUERY_PORT` (`coaching-query.port.ts`'in birebir kardeşi) yalnız "kimin haberi var"ı
+  taşıyor, W5 bir flag'in ne demek olduğunu hiç öğrenmiyor.
+  **İlgili:** `modules/mentorship/{domain/mentorship-query.port.ts,infrastructure/mentorship-query.adapter.ts}`,
+  `modules/notifications/application/mentorship-risk-digest.service.ts`,
+  `modules/notifications/infrastructure/user-notification.repository.ts` (`findLatestByTemplateKey`),
+  `modules/notifications/presentation/cron.controller.ts`, `render.yaml`,
+  `apps/api/src/i18n/locales/{tr,en}/notifications.json`, [`notifications.md`](./notifications.md).
+
+- **Haftalık ödev bestecisi, konu ataması ve koç yönergesi (APP-066, 2026-09-03)** — API üç
+  dilimdir dizi kabul ediyordu (`max(21)`), ama form tek görevlikti; koç haftalık program
+  veremiyordu. Form artık bir besteci: gün seç → görev ekle → hepsi **tek POST** ile yazılır
+  (all-or-nothing, `createFromMentorship` tek tx). 21 tavanı yeniden tanımlanmadı, şemanın tavanı
+  UI kısıtı olarak yüzeye çıktı — ikisi ayrışamaz. Ayrıca `plan_tasks`'a iki soft-ref kolon:
+  `topic` (`subject`'in birebir kardeşi) ve `coach_note`. Migration `0095_w8_plan_task_topic_coach_note`.
+  **Kullanım:** koç öğrenci raporunun üstündeki formda ders seçer → o dersin konuları gelir →
+  başlık + (isteğe bağlı) konu + (isteğe bağlı) not girip güne ekler. Konu listesi **öğrencinin**
+  sınavından gelir (`studentExamType`, yeni `useExamTopicTaxonomy` hook'u); koçun kendi sınavını
+  okumak yanlış liste üretirdi. Rapor artık satır başına `assignedByCoach` + `coachNote` taşıyor ve
+  altında konu bazlı ilerleme (en düşük tamamlama üstte) gösteriyor.
+  **Güven çizgisi:** `coach_note` sözleşmeyi bozmuyor, çünkü koçun **kendi** sözü — koç yazıyor,
+  öğrenci görüyor, koç raporda geri okuyor. `description` (öğrencinin kutusu) hâlâ koça kapalı;
+  ikisi ayrı kolon olmasının sebebi tam olarak bu. `cohort-evidence.ts` başlığına "ONE EXCEPTION,
+  and why it is not one" şerhi eklendi. `MENTORSHIP_DATA_SCOPE`'a **`EXAM_TRACK`** eklendi:
+  öğrencinin sınavı davranış değil profil verisi, kapsam listesi onu saymadan eksik anlatırdı
+  (`mentorship.enabled` kapalı ve üretimde bağ yokken maliyeti sıfır olan tek an buydu).
+  **Gotchas:** (1) `coach_note` yalnız **okuyan koçun kendi link'inin** yazdığı satırlarda dönüyor
+  (`case when origin_ref_id = :linkId …`); aksi halde bağ bitip yeni koç bağlandığında öncekinin
+  notunu okurdu — e2e'de test edilen gerçek bir sızıntıydı. (2) `plan_tasks_coach_note_origin_chk`
+  koç notunu origin'siz satırda yasaklıyor; bu yüzden `clearMentorshipOrigin` ve KVKK silme
+  `coachNote: null` yazmak **zorunda** — unutulursa erasure 500 verir. Sessiz veri kalıntısı yerine
+  gürültülü hata, istenen bu. (3) `plan_tasks_topic_requires_subject_chk` + `refinePlanTaskTaxonomy`:
+  konu, dersi olmayan dalsız bir etiket olamaz (`topics.subject_id` NOT NULL). Kural DB'de ve
+  Zod'da birlikte duruyor, tek tarafta değil. (4) `topic` **`updatePlanTaskSchema`'ya eklenmedi**:
+  öğrenci plan formunda konu seçici yok, eklenirse `assertMentorshipTaskEditable`'ın yasak alan
+  listesine de girmesi gerekirdi — tuzak hiç açılmadı. (5) `PlanAdaptationSnapshotTask`'a
+  `coachNote`/`topic` **eklenmemeli**, yoksa koçun notu LLM'e gider.
+  **İlgili:** `apps/api/drizzle/0095_w8_plan_task_topic_coach_note.sql`,
+  `modules/coaching/{domain/cohort-evidence.ts,infrastructure/cohort-evidence.repository.ts}`
+  (`planTaskTitles` → `planTaskRows`), `modules/coaching/application/plan.service.ts`
+  (`MentorshipAssignmentInput`), `modules/mentorship/application/mentorship-roster.service.ts`,
+  `packages/validation/src/{coaching,mentorship}.ts`,
+  `apps/web/src/lib/use-exam-topic-taxonomy.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/assign-task-form.tsx`,
+  [`coaching.md`](./coaching.md).
 
 - **Koç↔öğrenci bağı — W8 dilim 1 (APP-063, 2026-09-02)** — `UserRole.COACH` ve `coach_students`
   0001'den beri şemada duruyordu ama hiç kullanılmıyordu; bu dilim onları çalıştırdı. Davet kodu
@@ -242,10 +318,8 @@ flag that cries wolf costs the coach more than it gives.
 
 - Append-only assignment event log, so the report can show "assigned but deleted". Today a deleted
   assignment simply disappears; the coach sees the living plan, not its history.
-- Bulk assignment / a week composer. The API already takes an array (max 21); only the form is single-task.
 - AI "smart brief" on top of the rule-based triage (roadmap §9). The rules stay as the floor.
 - Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
-- Notifications on link accepted/ended (`NotificationCategory.MENTORSHIP`).
 - Seat billing beyond the free quota; the quota knob is already in the config registry.
 - Coach vetting queue (application + document). Today: manual, curated role grant.
 - Minors: KVKK parental consent for under-18 students. `users` carries no birth date; this slice

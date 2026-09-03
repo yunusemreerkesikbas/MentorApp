@@ -1,17 +1,27 @@
 "use client";
 
 import Link from "next/link";
-import PageHeader from "@/components/shared/pageHeader/PageHeader";
+import { FiArrowLeft } from "react-icons/fi";
+import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
 import PromotionForm from "../PromotionForm";
 
 export default function NewPromotionPage() {
     return (
         <>
-            <PageHeader>
-                <Link href="/promotions" className="btn btn-light">
-                    ← Kampanyalar
-                </Link>
-            </PageHeader>
+            <AdminPageHeader
+                title="Yeni kampanya"
+                breadcrumbs={[
+                    { label: "Panel", href: "/" },
+                    { label: "Kampanyalar", href: "/promotions" },
+                    { label: "Yeni kampanya" },
+                ]}
+                actions={
+                    <Link href="/promotions" className="btn btn-light">
+                        <FiArrowLeft aria-hidden="true" />
+                        <span>Kampanyalara dön</span>
+                    </Link>
+                }
+            />
             <PromotionForm />
         </>
     );

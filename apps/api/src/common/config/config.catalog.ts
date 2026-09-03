@@ -335,6 +335,16 @@ export const CONFIG_CATALOG = {
     5,
     "Weekly mean mood check-in (1-5) at or below which a student is flagged LOW_MOOD.",
   ),
+  "mentorship.risk_digest.enabled": mentorshipFlag(
+    false,
+    "Gate for the coach's daily risk digest (in-app + email). Separate from mentorship.enabled so the coach surface can open before anyone gets bulk mail.",
+  ),
+  "mentorship.risk_digest.repeat_after_days": mentorshipCount(
+    7,
+    1,
+    90,
+    "How long a already-reported risk stays quiet before it is worth repeating. Lowering it makes every stale baseline expire at once, so the next run mails everybody.",
+  ),
   "identity.verification_email.resend_limit": identityCount(
     1,
     100,

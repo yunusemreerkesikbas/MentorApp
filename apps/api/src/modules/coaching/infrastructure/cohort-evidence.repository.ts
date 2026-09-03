@@ -96,7 +96,7 @@ export class CohortEvidenceRepository {
     );
   }
 
-  /** Planned vs done since `sinceDate`. Counts only — titles come from {@link planTaskTitles}. */
+  /** Planned vs done since `sinceDate`. Counts only — titles come from {@link planTaskRows}. */
   planTotalsSince(
     studentIds: string[],
     sinceDate: string,
@@ -225,21 +225,44 @@ export class CohortEvidenceRepository {
     );
   }
 
-  /** Titles, dates and status. `description` is absent on purpose — it is the student's own note. */
-  planTaskTitles(
+  /**
+   * Headings, taxonomy labels and status. `description` is absent on purpose — it is the student's
+   * own note.
+   *
+   * `coachNote` and `assignedByCoach` are resolved against `mentorshipLinkId`, not against
+   * "is this a MENTORSHIP row": a task assigned by a PREVIOUS coach still carries their note, and
+   * projecting it unconditionally would hand it to whoever holds the link today. When no link id
+   * is supplied (any non-mentorship caller) both collapse to null/false.
+   */
+  planTaskRows(
     studentId: string,
     sinceDate: string,
     limit: number,
+    mentorshipLinkId?: string,
   ): Promise<
-    { taskDate: string; title: string; subject: string | null; status: string }[]
+    {
+      taskDate: string;
+      title: string;
+      subject: string | null;
+      topic: string | null;
+      status: string;
+      assignedByCoach: boolean;
+      coachNote: string | null;
+    }[]
   > {
+    const mine = mentorshipLinkId
+      ? sql<boolean>`${planTasks.originType} = 'MENTORSHIP' and ${planTasks.originRefId} = ${mentorshipLinkId}`
+      : sql<boolean>`false`;
     return withServiceContext(this.db, (tx) =>
       tx
         .select({
           taskDate: planTasks.taskDate,
           title: planTasks.title,
           subject: planTasks.subject,
+          topic: planTasks.topic,
           status: planTasks.status,
+          assignedByCoach: mine,
+          coachNote: sql<string | null>`case when ${mine} then ${planTasks.coachNote} end`,
         })
         .from(planTasks)
         .where(and(eq(planTasks.userId, studentId), gte(planTasks.taskDate, sinceDate)))

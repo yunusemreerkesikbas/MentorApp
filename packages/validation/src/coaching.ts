@@ -81,16 +81,44 @@ export function refinePlanTaskTimes(
   }
 }
 
+/** Long enough for the wordiest KPSS/YKS topic name; `topics.name` itself is unbounded. */
+export const PLAN_TASK_TOPIC_MAX = 160;
+
+/**
+ * A topic is a leaf of a subject (`topics.subject_id` is NOT NULL), so a topic without a subject
+ * is a branchless label that would silently vanish from any per-subject grouping. Mirrors the
+ * `plan_tasks_topic_requires_subject_chk` DB constraint (both sides, never one).
+ */
+export function refinePlanTaskTaxonomy(
+  value: { subject?: string | null; topic?: string | null },
+  ctx: z.RefinementCtx,
+): void {
+  const { subject, topic } = value;
+  if (topic === undefined || topic === null) return;
+  if (subject === undefined || subject === null) {
+    ctx.addIssue({
+      code: "custom",
+      message: "topic_without_subject",
+      path: ["topic"],
+    });
+  }
+}
+
 /**
  * The plan-task field set, before the time cross-check. Exported as a plain object schema so other
  * surfaces can narrow it (the mentorship assignment drops `description`) — a `ZodEffects` cannot
  * be `.omit()`-ed, which is why the refine is applied separately below.
+ *
+ * NOTE for future editors: `mentorshipAssignmentTaskSchema` builds on this set, so every field
+ * added here becomes writable BY A COACH unless it is explicitly `.omit()`-ed there.
  */
 export const planTaskFieldsSchema = z.object({
   /** Defaults to the server's "today" when omitted. */
   taskDate: isoDateSchema.optional(),
   title: z.string().trim().min(1).max(200),
   subject: z.string().trim().min(1).max(80).nullish(),
+  /** Soft ref to the content topic taxonomy; requires `subject` (see refinePlanTaskTaxonomy). */
+  topic: z.string().trim().min(1).max(PLAN_TASK_TOPIC_MAX).nullish(),
   /** Null/absent = all-day. */
   startTime: hhmmSchema.nullish(),
   endTime: hhmmSchema.nullish(),
@@ -98,7 +126,9 @@ export const planTaskFieldsSchema = z.object({
   sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
 });
 
-export const createPlanTaskSchema = planTaskFieldsSchema.superRefine(refinePlanTaskTimes);
+export const createPlanTaskSchema = planTaskFieldsSchema
+  .superRefine(refinePlanTaskTimes)
+  .superRefine(refinePlanTaskTaxonomy);
 export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 
 /** POST /v1/plan-tasks/bulk — user-confirmed batch add (e.g. accepted coach draft). */

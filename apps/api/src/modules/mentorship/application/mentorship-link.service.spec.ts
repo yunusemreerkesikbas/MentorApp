@@ -177,6 +177,7 @@ describe("MentorshipLinkService", () => {
         "MOCK_EXAMS",
         "PLAN_TASK_TITLES",
         "MOOD_LEVEL",
+        "EXAM_TRACK",
       ]);
       expect(emitted).toHaveLength(1);
       expect(emitted[0]!.topic).toBe(MentorshipEventTopic.LINK_ACCEPTED);
@@ -292,6 +293,7 @@ describe("MentorshipLinkService", () => {
         "MOCK_EXAMS",
         "PLAN_TASK_TITLES",
         "MOOD_LEVEL",
+        "EXAM_TRACK",
       ]);
     });
 

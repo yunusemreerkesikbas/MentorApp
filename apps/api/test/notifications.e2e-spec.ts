@@ -38,6 +38,24 @@ describe("notifications queue (e2e)", () => {
     expect(res.status).toBe(401);
   });
 
+  it("the mentorship risk digest is behind the cron secret too", async () => {
+    const res = await request(app.getHttpServer()).post(
+      "/v1/internal/cron/dispatch-mentorship-risk-digest",
+    );
+    expect(res.status).toBe(401);
+  });
+
+  it("the risk digest does nothing at all while its flag is off", async () => {
+    // Its own flag, not `mentorship.enabled`: the coach surface can open long before anyone
+    // starts receiving bulk mail about their students.
+    const res = await request(app.getHttpServer())
+      .post("/v1/internal/cron/dispatch-mentorship-risk-digest")
+      .set("x-cron-secret", cronSecret);
+    expect(res.status).toBeGreaterThanOrEqual(200);
+    expect(res.status).toBeLessThan(300);
+    expect(res.body).toEqual({ sent: 0, skipped: 0 });
+  });
+
   it("enqueue + cron completes send-email job", async () => {
     const queue = app.get<JobQueuePort>(JOB_QUEUE_PORT);
     const { jobId } = await queue.enqueue(JobName.SEND_EMAIL, {

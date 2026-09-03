@@ -945,14 +945,28 @@ export const planTasks = pgTable(
     title: text("title").notNull(),
     /** Nullable SOFT ref → content subject slug/name (no FK). */
     subject: text("subject"),
+    /**
+     * Nullable SOFT ref → content topic name (no FK); `subject`'s exact sibling.
+     * Requires `subject` (plan_tasks_topic_requires_subject_chk): `topics.subject_id` is NOT NULL,
+     * so a branchless leaf label would silently vanish from any per-subject grouping.
+     */
+    topic: text("topic"),
     /** PENDING | DONE (PlanTaskStatus). */
     status: text("status").notNull().default("PENDING"),
     /** Wall-clock start on `task_date`; NULL = all-day item (every pre-calendar row). */
     startTime: time("start_time"),
     /** Wall-clock end; requires `start_time` and must be later (plan_tasks_time_range_chk). */
     endTime: time("end_time"),
-    /** Optional free-text note shown in the calendar event preview. */
+    /** Optional free-text note shown in the calendar event preview. THE STUDENT'S own words. */
     description: text("description"),
+    /**
+     * The COACH's own instruction on an assignment. A separate column from `description` on
+     * purpose: two people's words must not share one box. The coach writes it, the student reads
+     * it, and the coach reads it back in their report — which is why, unlike `description`, it
+     * does not cross the AI→teacher trust line (see coaching/domain/cohort-evidence.ts).
+     * Only a MENTORSHIP-origin row may carry one (plan_tasks_coach_note_origin_chk).
+     */
+    coachNote: text("coach_note"),
     /**
      * Structural cross-module provenance; no FK to AI/forum/mentorship tables.
      *
@@ -992,6 +1006,17 @@ export const planTasks = pgTable(
         or
         (${t.originType} = 'MENTORSHIP' and ${t.originRefId} is not null and ${t.originMeta} is null)
       )`,
+    ),
+    // Only a coach writes a coach note. An invariant in the database, not a hope in a service:
+    // it also makes W8 erasure (clearMentorshipOrigin) fail loudly if it forgets to clear the
+    // note, instead of leaving an orphaned instruction on a task with no coach.
+    check(
+      "plan_tasks_coach_note_origin_chk",
+      sql`${t.coachNote} is null or ${t.originType} = 'MENTORSHIP'`,
+    ),
+    check(
+      "plan_tasks_topic_requires_subject_chk",
+      sql`${t.topic} is null or ${t.subject} is not null`,
     ),
   ],
 );

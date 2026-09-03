@@ -106,9 +106,12 @@ export class MentorshipRosterService {
     await this.linkService.assertEnabled();
     const link = await this.linkService.requireActiveLink(coachId, studentId);
 
-    const [person, report, snapshots, thresholds] = await Promise.all([
+    // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
+    // previous coach on a task that outlived their link must not be readable by the current one.
+    const [person, profile, report, snapshots, thresholds] = await Promise.all([
       this.users.listDisplayIdentities([studentId]),
-      this.evidence.getStudentReport(studentId, now),
+      this.users.getDiscoveryProfile(studentId),
+      this.evidence.getStudentReport(studentId, now, link.id),
       this.evidence.listCohortSnapshots([studentId], now),
       this.thresholds(),
     ]);
@@ -119,6 +122,8 @@ export class MentorshipRosterService {
       studentDisplayName: person.get(studentId)?.displayName ?? "",
       studentUsername: person.get(studentId)?.username ?? null,
       acceptedAt: link.acceptedAt?.toISOString() ?? null,
+      // Scope key EXAM_TRACK: the coach needs it to offer topics from the right taxonomy.
+      studentExamType: profile.examType,
       riskFlags: evaluateRiskFlags(snapshot, thresholds, todayIso(now)),
       ...report,
     };

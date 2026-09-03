@@ -12,6 +12,7 @@ export const CoachingEventTopic = {
   PLAN_COMPLETED:    "coaching.plan-completed",
   PLAN_TASK_COMPLETED: "coaching.plan-task-completed",
   PLAN_TASK_CREATED: "coaching.plan-task-created",
+  PLAN_TASK_DELETED: "coaching.plan-task-deleted",
   PLAN_ADAPTED: "coaching.plan-adapted",
   VISION_BOARD_SAVED: "coaching.vision-board-saved",
   MOCK_EXAM_CREATED: "coaching.mock-exam-created",
@@ -58,10 +59,38 @@ export class DailyPlanCompleted {
   constructor(readonly userId: string, readonly tasksCount: number) {}
 }
 
+/**
+ * A plan task was ticked off — by the user, or automatically by a session that was seated at it.
+ *
+ * The provenance fields travel with the event so a consumer can tell whose task this was without
+ * reading `plan_tasks` (W2 owns that table). They are REQUIRED, not defaulted: a default would let
+ * a new emit site quietly report "no origin" for a coach's assignment, and a silent wrong answer
+ * is exactly what the no-silent-fallback rule exists to prevent.
+ */
 export class PlanTaskCompleted {
   constructor(
     readonly userId: string,
     readonly taskId: string,
+    readonly taskDate: string,
+    readonly originType: string | null,
+    readonly originRefId: string | null,
+  ) {}
+}
+
+/**
+ * A plan task was removed by its owner. Emitted unconditionally — whether anyone cares that this
+ * particular task is gone is the consumer's question, not the emitter's.
+ *
+ * Carries the title because it is the one thing that no longer exists to look up afterwards.
+ */
+export class PlanTaskDeleted {
+  constructor(
+    readonly userId: string,
+    readonly taskId: string,
+    readonly taskDate: string,
+    readonly title: string,
+    readonly originType: string | null,
+    readonly originRefId: string | null,
   ) {}
 }
 

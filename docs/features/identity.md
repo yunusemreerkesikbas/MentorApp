@@ -354,6 +354,17 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   unchanged. Related: `(onboarding)/_components/{onboarding-wizard,onboarding-step-layout,onboarding-flow}.tsx`,
   `(onboarding)/_components/steps/*`, `messages/{tr,en}.json`.
 
+### 2026-09-03 — Transparent Puhu motion sources
+
+- Added the complete seven-frame onboarding motion set (`rest`, both gaze directions, blink,
+  `talk-closed`, `look-down`, and `wave`) as consistently aligned 1024×1024 RGBA PNGs. The supplied
+  magenta backgrounds were converted to real alpha and low-opacity edge residue was removed; the
+  checkerboard-rendered alternatives were not used because the pattern was baked into the feathers.
+- Motion readiness is now independent from the still-missing welcome scenes and cloud layers, so Puhu
+  choreography is enabled without prematurely enabling fallback-free scene art. A focused asset test
+  protects distinct paths, dimensions, and PNG alpha support. Related: `public/mascot/puhu/motion/*.png`,
+  `src/lib/onboarding-assets.ts`, `src/lib/onboarding-assets.spec.ts`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

@@ -96,6 +96,10 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
     );
   }
 
+  // Derived in the browser, not on the server: the rows are already on the wire, so a
+  // `topicProgress[]` aggregate would be a second query for arithmetic we can do here.
+  const topicProgress = summarizeTopics(report.planTasks);
+
   const last = relativeDay(report.activity.lastActiveDate);
   const lastLabel =
     last.kind === "never"
@@ -138,6 +142,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
       <AssignTaskForm
         studentId={studentId}
         studentName={report.studentDisplayName}
+        studentExamType={report.studentExamType}
         onAssigned={load}
       />
 
@@ -261,27 +266,69 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
             {t("report_plan_empty")}
           </p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-3">
             {report.planTasks.map((task, index) => (
-              <li
-                key={`${task.taskDate}-${index}`}
-                className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
-              >
-                <span style={{ color: "var(--color-main)" }}>
-                  {task.title}
-                  {task.subject ? (
-                    <span style={{ color: "var(--color-secondary)" }}> · {task.subject}</span>
-                  ) : null}
-                </span>
-                <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-                  {formatDate(`${task.taskDate}T00:00:00.000Z`, locale)} ·{" "}
-                  {t(`task_status_${task.status === "DONE" ? "DONE" : "PENDING"}`)}
-                </span>
+              <li key={`${task.taskDate}-${index}`} className="text-sm">
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                  <span style={{ color: "var(--color-main)" }}>
+                    {task.title}
+                    {task.subject ? (
+                      <span style={{ color: "var(--color-secondary)" }}>
+                        {" · "}
+                        {task.subject}
+                        {task.topic ? ` › ${task.topic}` : ""}
+                      </span>
+                    ) : null}
+                  </span>
+                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                    {task.assignedByCoach ? `${t("report_plan_from_you")} · ` : ""}
+                    {formatDate(`${task.taskDate}T00:00:00.000Z`, locale)} ·{" "}
+                    {t(`task_status_${task.status === "DONE" ? "DONE" : "PENDING"}`)}
+                  </span>
+                </div>
+                {task.coachNote ? (
+                  <p
+                    className="mt-1 border-l-2 pl-2 text-xs"
+                    style={{
+                      borderColor: "var(--color-border)",
+                      color: "var(--color-secondary)",
+                    }}
+                  >
+                    {task.coachNote}
+                  </p>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
       </Card>
+
+      {topicProgress.length > 0 ? (
+        <Card>
+          <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+            {t("report_topic_progress")}
+          </h2>
+          <p className="mb-3 text-sm" style={{ color: "var(--color-secondary)" }}>
+            {t("report_topic_progress_body")}
+          </p>
+          <ul className="flex flex-col gap-2">
+            {topicProgress.map((row) => (
+              <li
+                key={`${row.subject}-${row.topic}`}
+                className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
+              >
+                <span style={{ color: "var(--color-main)" }}>
+                  <span style={{ color: "var(--color-secondary)" }}>{row.subject} › </span>
+                  {row.topic}
+                </span>
+                <span className="text-xs font-medium" style={{ color: "var(--color-secondary)" }}>
+                  {t("report_topic_progress_count", { done: row.done, total: row.total })}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      ) : null}
 
       <Card>
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
@@ -311,6 +358,27 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         </Button>
       </div>
     </div>
+  );
+}
+
+/**
+ * Done-vs-total per topic, worst first — "where is this student actually stuck".
+ * Only rows that carry a topic take part; an untagged task says nothing about a topic.
+ */
+function summarizeTopics(
+  tasks: MentorshipStudentReportDto["planTasks"],
+): { subject: string; topic: string; done: number; total: number }[] {
+  const rows = new Map<string, { subject: string; topic: string; done: number; total: number }>();
+  for (const task of tasks) {
+    if (!task.topic || !task.subject) continue;
+    const key = `${task.subject} ${task.topic}`;
+    const row = rows.get(key) ?? { subject: task.subject, topic: task.topic, done: 0, total: 0 };
+    row.total += 1;
+    if (task.status === "DONE") row.done += 1;
+    rows.set(key, row);
+  }
+  return [...rows.values()].sort(
+    (a, b) => a.done / a.total - b.done / b.total || b.total - a.total,
   );
 }
 

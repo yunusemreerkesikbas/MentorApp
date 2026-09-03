@@ -72,6 +72,8 @@ const pendingToday: TodayPanelResponse = {
       startTime: null,
       endTime: null,
       description: null,
+      topic: null,
+      coachNote: null,
       origin: null,
     },
   ],
