@@ -158,7 +158,7 @@
     "mentorshipAssignmentDropped": {
       "register": "companion",
       "title": "{name} bir ödevi planından çıkardı",
-      "body": "\"{title}\" ({date}) artık planında değil. Raporun bunu göstermeyecek."
+      "body": "\"{title}\" artık planında değil. Raporun bunu göstermeyecek."
     },
     "mentorshipAssignmentProgressed": {
       "register": "companion",

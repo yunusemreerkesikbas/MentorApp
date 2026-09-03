@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import Link from "next/link";
 import Swal from "sweetalert2";
+import { FiPlus } from "react-icons/fi";
 import type {
     ForumFeaturedAdminView,
     ForumCoachIntent,
@@ -13,7 +14,11 @@ import type {
     Paginated,
     ZoneView,
 } from "@mentor/types";
-import PageHeader from "@/components/shared/pageHeader/PageHeader";
+import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { DataTableShell } from "@/components/shared/admin/DataTableShell";
+import { FormSection } from "@/components/shared/admin/FormSection";
+import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import { JOIN_POLICY_LABELS, ZONE_TYPE_LABELS } from "./ZoneForm";
 
@@ -78,13 +83,9 @@ export default function ForumManagementPage() {
 
     return (
         <>
-            <PageHeader>
-                <Link href="/forum/new" className="btn btn-primary btn-sm">
-                    + Yeni oda
-                </Link>
-            </PageHeader>
+            <AdminPageHeader title="Topluluk" breadcrumbs={[{ label: "Panel", href: "/" }, { label: "Topluluk" }]} actions={<Link href="/forum/new" className="btn btn-primary"><FiPlus aria-hidden="true" /> Yeni oda</Link>} />
             <div className="main-content">
-                {loading && <div className="text-center py-5">Yükleniyor…</div>}
+                {loading && <AsyncState status="loading" title="Topluluk verileri yükleniyor" />}
                 {!loading && error && (
                     <div className="alert alert-warning d-flex align-items-center justify-content-between">
                         <span>Bazı topluluk verileri yüklenemedi.</span>
@@ -114,17 +115,7 @@ function TagSuggestionManager({
     onChanged: () => Promise<void>;
 }) {
     return (
-        <section className="card stretch stretch-full mb-4">
-            <div className="card-header">
-                <div>
-                    <h5 className="mb-1">Bekleyen etiket önerileri</h5>
-                    <p className="mb-0 fs-12 text-muted">
-                        Onaylanan öneri havuza eklenir; kullanıcının mevcut sorusuna geriye dönük bağlanmaz.
-                    </p>
-                </div>
-                <span className="badge bg-soft-primary text-primary">{suggestions.length}</span>
-            </div>
-            <div className="card-body">
+        <FormSection title={`Bekleyen etiket önerileri (${suggestions.length})`} hint="Onaylanan öneri havuza eklenir; kullanıcının mevcut sorusuna geriye dönük bağlanmaz.">
                 {suggestions.length === 0 ? (
                     <p className="mb-0 text-muted">Değerlendirilecek etiket önerisi yok.</p>
                 ) : (
@@ -138,8 +129,7 @@ function TagSuggestionManager({
                         ))}
                     </div>
                 )}
-            </div>
-        </section>
+        </FormSection>
     );
 }
 
@@ -302,17 +292,9 @@ function FeaturedEditor({
     };
 
     return (
-        <section className="card stretch stretch-full mb-4">
-            <div className="card-header">
-                <div>
-                    <h5 className="mb-1">Öne çıkan tartışma</h5>
-                    <p className="mb-0 fs-12 text-muted">
-                        Manuel seçim yoksa sistem son yedi gündeki etkileşimlerden güvenli bir fallback seçer.
-                    </p>
-                </div>
-                {value && <span className="badge bg-soft-success text-success">Aktif</span>}
-            </div>
-            <form className="card-body" onSubmit={save}>
+        <FormSection title="Öne çıkan tartışma" hint="Manuel seçim yoksa sistem son yedi gündeki etkileşimlerden güvenli bir seçim yapar.">
+            {value ? <div className="mb-3"><StatusBadge tone="success">Aktif</StatusBadge></div> : null}
+            <form onSubmit={save}>
                 <div className="row g-3 align-items-start">
                     <div className="col-lg-7">
                         {selectedThread ? (
@@ -430,7 +412,7 @@ function FeaturedEditor({
                     </div>
                 )}
             </form>
-        </section>
+        </FormSection>
     );
 }
 
@@ -615,7 +597,7 @@ function TagManager({
                                     />
                                 </td>
                                 <td>{tag.examType ?? <span className="text-muted">Genel</span>}</td>
-                                <td style={{ minWidth: 190 }}>
+                                <td className="admin-forum-intent-cell">
                                     <select
                                         className="form-select form-select-sm"
                                         value={tag.coachIntent ?? ""}
@@ -632,7 +614,7 @@ function TagManager({
                                     </select>
                                 </td>
                                 <td>
-                                    <div className="form-check form-switch">
+                                    <div className="d-flex align-items-center gap-2"><div className="form-check form-switch mb-0">
                                         <input
                                             type="checkbox"
                                             className="form-check-input"
@@ -641,7 +623,7 @@ function TagManager({
                                             aria-label={`${tag.name} aktiflik durumu`}
                                             onChange={(event) => void update(tag, { isActive: event.target.checked })}
                                         />
-                                    </div>
+                                    </div><StatusBadge tone={tag.isActive ? "success" : "neutral"}>{tag.isActive ? "Aktif" : "Pasif"}</StatusBadge></div>
                                 </td>
                             </tr>
                         ))}
@@ -667,7 +649,7 @@ function InlineTagInput({
     }, [value]);
 
     return (
-        <div className="input-group input-group-sm" style={{ minWidth: 180 }}>
+        <div className="input-group input-group-sm admin-inline-tag-input">
             <input
                 className="form-control"
                 value={draft}
@@ -689,15 +671,8 @@ function InlineTagInput({
 
 function ZoneTable({ zones }: { zones: ZoneView[] }) {
     return (
-        <section className="card stretch stretch-full">
-            <div className="card-header">
-                <div>
-                    <h5 className="mb-1">Topluluk odaları</h5>
-                    <p className="mb-0 fs-12 text-muted">Sohbet, duyuru ve soru-cevap alanları.</p>
-                </div>
-            </div>
-            <div className="table-responsive">
-                <table className="table table-hover mb-0">
+        <DataTableShell toolbar={<div><h2 className="h6 mb-1">Topluluk odaları</h2><p className="mb-0 fs-12 text-muted">Sohbet, duyuru ve soru-cevap alanları.</p></div>} state={zones.length === 0 ? <AsyncState status="empty" title="Henüz oda yok" description="Topluluğun ilk odasını oluşturabilirsiniz." action={<Link href="/forum/new" className="btn btn-primary"><FiPlus aria-hidden="true" /> Yeni oda</Link>} /> : undefined}>
+                <table className="table table-hover mb-0 forum-zones-table">
                     <thead>
                         <tr>
                             <th>Tür</th>
@@ -710,19 +685,12 @@ function ZoneTable({ zones }: { zones: ZoneView[] }) {
                         </tr>
                     </thead>
                     <tbody>
-                        {zones.length === 0 && (
-                            <tr>
-                                <td colSpan={7} className="text-center py-4 text-muted">
-                                    Henüz oda yok. <Link href="/forum/new">İlkini oluştur →</Link>
-                                </td>
-                            </tr>
-                        )}
                         {zones.map((zone) => (
                             <tr key={zone.id}>
                                 <td>
-                                    <span className="badge bg-soft-primary text-primary">
+                                    <StatusBadge tone="info">
                                         {ZONE_TYPE_LABELS[zone.type] ?? zone.type}
-                                    </span>
+                                    </StatusBadge>
                                 </td>
                                 <td>{zone.title}</td>
                                 <td><code className="fs-12">{zone.slug}</code></td>
@@ -734,8 +702,7 @@ function ZoneTable({ zones }: { zones: ZoneView[] }) {
                         ))}
                     </tbody>
                 </table>
-            </div>
-        </section>
+        </DataTableShell>
     );
 }
 

@@ -67,9 +67,18 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
       else byCoach.set(pair.coachId, [student]);
     }
 
+    // Resolved in parallel, not one await per iteration: everything above this line is batched,
+    // and a sequential lookup here would put the coach count back into the round-trip budget.
+    const withContacts = await Promise.all(
+      [...byCoach].map(async ([coachId, students]) => ({
+        coachId,
+        students,
+        contact: await this.users.getNotificationContact(coachId),
+      })),
+    );
+
     const candidates: CoachRiskDigestCandidate[] = [];
-    for (const [coachId, students] of byCoach) {
-      const contact = await this.users.getNotificationContact(coachId);
+    for (const { coachId, students, contact } of withContacts) {
       // A coach with no contact row is an erased or broken account; skip rather than half-send.
       if (!contact) continue;
       candidates.push({

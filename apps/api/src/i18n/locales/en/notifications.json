@@ -158,7 +158,7 @@
     "mentorshipAssignmentDropped": {
       "register": "companion",
       "title": "{name} removed an assignment",
-      "body": "\"{title}\" ({date}) is no longer in their plan. Your report will not show it."
+      "body": "\"{title}\" is no longer in their plan. Your report will not show it."
     },
     "mentorshipAssignmentProgressed": {
       "register": "companion",

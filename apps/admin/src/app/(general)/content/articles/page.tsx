@@ -1,103 +1,41 @@
 'use client'
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { FiEdit2, FiEye, FiEyeOff, FiPlus } from "react-icons/fi";
 import Swal from "sweetalert2";
-import PageHeader from "@/components/shared/pageHeader/PageHeader";
+import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { DataTableShell } from "@/components/shared/admin/DataTableShell";
+import { IconAction } from "@/components/shared/admin/IconAction";
+import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AdminArticle } from "@/lib/types";
 
-// Admin knowledge-center article list (W6). Drafts included; publish/unpublish inline.
+type ArticleFilter = "all" | "published" | "draft";
+
 export default function ArticlesPage() {
     const [items, setItems] = useState<AdminArticle[]>([]);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
     const [busy, setBusy] = useState<string | null>(null);
-
-    const load = useCallback(async () => {
-        setLoading(true);
-        try {
-            const { data } = await apiClient.get<{ items: AdminArticle[] }>("/admin/content/articles", {
-                params: { pageSize: 50 },
-            });
-            setItems(data.items);
-        } catch {
-            setItems([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []);
-
-    useEffect(() => { load(); }, [load]);
-
-    const toggle = async (a: AdminArticle) => {
-        const action = a.isPublished ? "unpublish" : "publish";
-        const confirm = await Swal.fire({
-            title: a.isPublished ? "Yayından kaldırılsın mı?" : "Yayınlansın mı?",
-            text: a.slug,
-            icon: "question",
-            showCancelButton: true,
-            confirmButtonText: "Evet",
-            cancelButtonText: "Vazgeç",
-        });
+    const [filter, setFilter] = useState<ArticleFilter>("all");
+    const load = useCallback(async () => { setLoading(true); setError(false); try { const { data } = await apiClient.get<{ items: AdminArticle[] }>("/admin/content/articles", { params: { pageSize: 50 } }); setItems(data.items); } catch { setItems([]); setError(true); } finally { setLoading(false); } }, []);
+    useEffect(() => { void load(); }, [load]);
+    const visibleItems = useMemo(() => items.filter((article) => filter === "all" || (filter === "published" ? article.isPublished : !article.isPublished)), [filter, items]);
+    const toggle = async (article: AdminArticle) => {
+        const action = article.isPublished ? "unpublish" : "publish";
+        const confirm = await Swal.fire({ title: article.isPublished ? "Yayından kaldırılsın mı?" : "Yayınlansın mı?", text: article.slug, icon: "question", showCancelButton: true, confirmButtonText: "Evet", cancelButtonText: "Vazgeç" });
         if (!confirm.isConfirmed) return;
-        setBusy(a.slug);
-        try {
-            const { data } = await apiClient.post<AdminArticle>(`/admin/content/articles/${a.slug}/${action}`);
-            setItems((prev) => prev.map((x) => (x.slug === data.slug ? data : x)));
-        } catch (err) {
-            const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "İşlem başarısız.";
-            Swal.fire({ icon: "error", title: "Hata", text: message });
-        } finally {
-            setBusy(null);
-        }
+        setBusy(article.slug);
+        try { const { data } = await apiClient.post<AdminArticle>(`/admin/content/articles/${article.slug}/${action}`); setItems((current) => current.map((item) => item.slug === data.slug ? data : item)); }
+        catch (requestError) { const message = (requestError as { response?: { data?: { message?: string } } })?.response?.data?.message ?? "İşlem başarısız."; await Swal.fire({ icon: "error", title: "Hata", text: message }); }
+        finally { setBusy(null); }
     };
-
-    return (
-        <>
-            <PageHeader>
-                <Link href="/content/articles/new" className="btn btn-primary">+ Yeni makale</Link>
-            </PageHeader>
-            <div className="main-content">
-                <div className="card stretch stretch-full">
-                    <div className="card-body p-0">
-                        <div className="table-responsive">
-                            <table className="table table-hover mb-0">
-                                <thead>
-                                    <tr><th>Başlık</th><th>Slug</th><th>Sınav</th><th>Kategori</th><th>Durum</th><th className="text-end">İşlem</th></tr>
-                                </thead>
-                                <tbody>
-                                    {loading && <tr><td colSpan={6} className="text-center py-4">Yükleniyor…</td></tr>}
-                                    {!loading && items.length === 0 && <tr><td colSpan={6} className="text-center py-4 text-muted">Makale yok.</td></tr>}
-                                    {!loading && items.map((a) => (
-                                        <tr key={a.id}>
-                                            <td>{a.title}</td>
-                                            <td className="fs-12 text-muted">{a.slug}</td>
-                                            <td>{a.family}</td>
-                                            <td className="fs-12">{a.category}</td>
-                                            <td>
-                                                {a.isPublished
-                                                    ? <span className="badge bg-soft-success text-success">Yayında</span>
-                                                    : <span className="badge bg-soft-secondary text-secondary">Taslak</span>}
-                                            </td>
-                                            <td className="text-end">
-                                                <div className="d-inline-flex gap-2">
-                                                    <Link href={`/content/articles/${a.slug}`} className="btn btn-sm btn-light">Düzenle</Link>
-                                                    <button
-                                                        className={`btn btn-sm ${a.isPublished ? "btn-outline-danger" : "btn-outline-success"}`}
-                                                        disabled={busy === a.slug}
-                                                        onClick={() => toggle(a)}
-                                                    >
-                                                        {busy === a.slug ? "…" : a.isPublished ? "Yayından kaldır" : "Yayınla"}
-                                                    </button>
-                                                </div>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
+    const state = loading ? <AsyncState status="loading" title="Makaleler yükleniyor" /> : error ? <AsyncState status="error" title="Makaleler yüklenemedi" description="Bağlantıyı kontrol edip yeniden deneyin." onRetry={() => void load()} /> : items.length === 0 ? <AsyncState status="empty" title="Henüz makale yok" description="Bilgi merkezinin ilk makalesini oluşturun." action={<Link href="/content/articles/new" className="btn btn-primary"><FiPlus aria-hidden="true" /> Yeni makale</Link>} /> : visibleItems.length === 0 ? <AsyncState status="empty" title="Bu durumda makale yok" description="Başka bir filtre seçebilirsiniz." /> : undefined;
+    return <>
+        <AdminPageHeader title="Makaleler" breadcrumbs={[{ label: "Panel", href: "/" }, { label: "Makaleler" }]} actions={<Link href="/content/articles/new" className="btn btn-primary"><FiPlus aria-hidden="true" /> Yeni makale</Link>} />
+        <div className="main-content"><DataTableShell state={state} toolbar={<div className="admin-table-toolbar-content"><div><h2 className="h6 mb-1">Bilgi merkezi</h2><span className="text-muted fs-12">{items.length} makale</span></div><div className="admin-filter-group" role="group" aria-label="Yayın durumu filtresi">{([['all', 'Tümü'], ['published', 'Yayında'], ['draft', 'Taslak']] as const).map(([value, label]) => <button key={value} type="button" className={`btn btn-sm ${filter === value ? "btn-primary" : "btn-light"}`} aria-pressed={filter === value} onClick={() => setFilter(value)}>{label}</button>)}</div></div>}>
+            <table className="table table-hover mb-0 article-table"><thead><tr><th>Makale</th><th>Kapsam</th><th>Doğrulama</th><th>Güncelleme</th><th>Durum</th><th className="text-end">İşlemler</th></tr></thead><tbody>{visibleItems.map((article) => <tr key={article.id}><td><div className="admin-table-primary">{article.title}<span>{article.slug}</span></div></td><td>{article.family}<span className="admin-table-secondary">{article.category}</span></td><td>{article.verifiedBy}<span className="admin-table-secondary">{new Date(article.verifiedAt).toLocaleDateString("tr-TR")}</span></td><td>{new Date(article.updatedAt).toLocaleDateString("tr-TR")}</td><td><StatusBadge tone={article.isPublished ? "success" : "neutral"}>{article.isPublished ? "Yayında" : "Taslak"}</StatusBadge>{article.isFeatured ? <span className="admin-table-secondary">Öne çıkan</span> : null}</td><td className="text-end"><div className="d-inline-flex gap-2"><IconAction href={`/content/articles/${article.slug}`} label="Makaleyi düzenle" icon={<FiEdit2 aria-hidden="true" />} /><IconAction label={article.isPublished ? "Yayından kaldır" : "Yayınla"} icon={article.isPublished ? <FiEyeOff aria-hidden="true" /> : <FiEye aria-hidden="true" />} tone={article.isPublished ? "danger" : "success"} busy={busy === article.slug} onClick={() => void toggle(article)} /></div></td></tr>)}</tbody></table>
+        </DataTableShell></div>
+    </>;
 }

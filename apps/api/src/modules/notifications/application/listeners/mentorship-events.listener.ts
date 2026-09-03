@@ -8,6 +8,7 @@ import {
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
 } from "../../../mentorship/domain/mentorship.constants";
+import { todayIso } from "../../../coaching/domain/date.util";
 import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationsService } from "../notifications.service";
 
@@ -68,15 +69,19 @@ export class MentorshipEventsListener {
         "MENTORSHIP",
         NotificationCopyKey.MENTORSHIP_ASSIGNMENT_DROPPED,
         `/students/${event.studentId}`,
-        { args: { name: event.studentDisplayName, title: event.taskTitle, date: event.taskDate } },
+        { args: { name: event.studentDisplayName, title: event.taskTitle } },
       )
       .catch(() => {});
   }
 
   /**
-   * At most one per student per day (`dedupeKey`), and deliberately vague about how many: a coach
-   * with twenty students would otherwise get a completion storm every evening. "A task" is true on
-   * the first completion and still true after the dedupe drops the rest.
+   * At most one per student per day, and deliberately vague about how many: a coach with twenty
+   * students would otherwise get a completion storm every evening. "A task" is true on the first
+   * completion and still true after the dedupe drops the rest.
+   *
+   * The key is TODAY — the day the coach is being told — not the task's own `taskDate`. Keying on
+   * the scheduled date meant a student clearing a week the coach had composed (7 different dates)
+   * got 7 distinct keys and sent 7 notifications in one evening: precisely the storm this prevents.
    */
   @OnEvent(MentorshipEventTopic.ASSIGNMENT_PROGRESSED)
   async onAssignmentProgressed(event: MentorshipAssignmentProgressed): Promise<void> {
@@ -88,7 +93,7 @@ export class MentorshipEventsListener {
         `/students/${event.studentId}`,
         {
           args: { name: event.studentDisplayName },
-          dedupeKey: `mentorship-progress:${event.studentId}:${event.taskDate}`,
+          dedupeKey: `mentorship-progress:${event.studentId}:${todayIso()}`,
         },
       )
       .catch(() => {});

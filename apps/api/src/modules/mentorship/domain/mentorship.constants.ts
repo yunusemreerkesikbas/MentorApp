@@ -75,13 +75,17 @@ export class MentorshipAssignmentDropped {
     readonly studentId: string,
     readonly studentDisplayName: string,
     readonly taskTitle: string,
-    readonly taskDate: string,
   ) {}
 }
 
 /**
  * The student completed an assignment. No title and no count: the notification is deduped to one
- * per student per day, so anything more specific than "a task" would be true only the first time.
+ * per student per DELIVERY day, so anything more specific than "a task" would be true only the
+ * first time.
+ *
+ * Deliberately carries no date. The dedupe window is the day the coach is told, not the day the
+ * task was scheduled for — keying on the latter let a student clearing a week's backlog in one
+ * evening produce one notification per scheduled day, which is the storm the dedupe exists to stop.
  */
 export class MentorshipAssignmentProgressed {
   constructor(
@@ -89,6 +93,5 @@ export class MentorshipAssignmentProgressed {
     readonly coachId: string,
     readonly studentId: string,
     readonly studentDisplayName: string,
-    readonly taskDate: string,
   ) {}
 }

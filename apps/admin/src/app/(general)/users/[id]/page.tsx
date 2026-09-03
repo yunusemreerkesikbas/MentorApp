@@ -2,8 +2,12 @@
 import { useCallback, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { FiArrowLeft } from "react-icons/fi";
 import Swal from "sweetalert2";
-import PageHeader from "@/components/shared/pageHeader/PageHeader";
+import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { FormSection } from "@/components/shared/admin/FormSection";
+import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { ASSIGNABLE_ROLES, isFullAccess } from "@/lib/roles";
@@ -11,21 +15,21 @@ import type { AdminUserDetail, AdminEconomyOverview, AdminSubscriptionView } fro
 
 type Status = "ACTIVE" | "SUSPENDED" | "BANNED";
 
-const statusBadge: Record<string, string> = {
-    ACTIVE: "bg-soft-success text-success",
-    SUSPENDED: "bg-soft-warning text-warning",
-    BANNED: "bg-soft-danger text-danger",
-};
-
-const subBadge: Record<string, string> = {
-    TRIALING: "bg-soft-info text-info",
-    ACTIVE: "bg-soft-success text-success",
-    PAST_DUE: "bg-soft-warning text-warning",
-    CANCELED: "bg-soft-secondary text-secondary",
-    EXPIRED: "bg-soft-danger text-danger",
-};
-
 const fmtTry = (minor: number) => `${(minor / 100).toFixed(2)} ₺`;
+
+const subscriptionStatusLabel = (status: string) => ({
+    TRIALING: "Deneme",
+    ACTIVE: "Aktif",
+    PAST_DUE: "Ödeme bekliyor",
+    CANCELED: "İptal edildi",
+    EXPIRED: "Süresi doldu",
+}[status] ?? status);
+
+const transactionStatusLabel = (status: string) => ({
+    SUCCEEDED: "Başarılı",
+    FAILED: "Başarısız",
+    REFUNDED: "İade edildi",
+}[status] ?? status);
 
 // Admin user detail (W6): identity fields + graduated status (suspend/ban/reactivate) + KVKK
 // export/anonymize. All mutations audited server-side; admins can't act on their own account.
@@ -34,15 +38,18 @@ export default function UserDetailPage() {
     const id = params.id;
     const [user, setUser] = useState<AdminUserDetail | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [busy, setBusy] = useState(false);
 
     const load = useCallback(async () => {
         setLoading(true);
+        setLoadError(false);
         try {
             const { data } = await apiClient.get<AdminUserDetail>(`/admin/users/${id}`);
             setUser(data);
         } catch {
             setUser(null);
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -52,16 +59,23 @@ export default function UserDetailPage() {
 
     // ---- economy (W6) ----
     const [econ, setEcon] = useState<AdminEconomyOverview | null>(null);
+    const [econLoading, setEconLoading] = useState(true);
+    const [econError, setEconError] = useState(false);
     const [adjUnit, setAdjUnit] = useState<"XP" | "COIN">("COIN");
     const [adjAmount, setAdjAmount] = useState("");
     const [adjReason, setAdjReason] = useState("");
 
     const loadEcon = useCallback(async () => {
+        setEconLoading(true);
+        setEconError(false);
         try {
             const { data } = await apiClient.get<AdminEconomyOverview>(`/admin/users/${id}/economy`);
             setEcon(data);
         } catch {
             setEcon(null);
+            setEconError(true);
+        } finally {
+            setEconLoading(false);
         }
     }, [id]);
 
@@ -107,15 +121,22 @@ export default function UserDetailPage() {
 
     // ---- subscription (W6) ----
     const [sub, setSub] = useState<AdminSubscriptionView | null>(null);
+    const [subLoading, setSubLoading] = useState(true);
+    const [subError, setSubError] = useState(false);
     const [refundAmount, setRefundAmount] = useState(""); // kuruş
     const [refundReason, setRefundReason] = useState("");
 
     const loadSub = useCallback(async () => {
+        setSubLoading(true);
+        setSubError(false);
         try {
             const { data } = await apiClient.get<AdminSubscriptionView>(`/admin/users/${id}/subscription`);
             setSub(data);
         } catch {
             setSub(null);
+            setSubError(true);
+        } finally {
+            setSubLoading(false);
         }
     }, [id]);
 
@@ -268,22 +289,18 @@ export default function UserDetailPage() {
 
     return (
         <>
-            <PageHeader>
-                <Link href="/users" className="btn btn-light">← Kullanıcılar</Link>
-            </PageHeader>
+            <AdminPageHeader title="Kullanıcı detayı" breadcrumbs={[{ label: "Panel", href: "/" }, { label: "Kullanıcılar", href: "/users" }, { label: user?.displayName ?? "Detay" }]} actions={<Link href="/users" className="btn btn-light"><FiArrowLeft aria-hidden="true" /> Kullanıcılar</Link>} />
             <div className="main-content">
-                {loading && <div className="text-center py-5">Yükleniyor…</div>}
-                {!loading && !user && <div className="text-center py-5 text-muted">Kullanıcı bulunamadı.</div>}
+                {loading && <AsyncState status="loading" title="Kullanıcı yükleniyor" />}
+                {!loading && loadError && <AsyncState status="error" title="Kullanıcı yüklenemedi" description="Kayıt bulunamadı veya bağlantı kurulamadı." onRetry={() => void load()} />}
                 {!loading && user && (
                     <div className="row g-4">
                         <div className="col-lg-7">
-                            <div className="card stretch stretch-full">
-                                <div className="card-header"><h5 className="mb-0">{user.displayName}</h5></div>
-                                <div className="card-body">
+                            <FormSection title={user.displayName || "Kullanıcı bilgileri"}>
                                     <dl className="row mb-0">
                                         <dt className="col-4 text-muted fs-12">E-posta</dt><dd className="col-8">{user.email}</dd>
                                         <dt className="col-4 text-muted fs-12">Durum</dt>
-                                        <dd className="col-8"><span className={`badge ${statusBadge[user.status] ?? "bg-soft-secondary text-secondary"}`}>{user.status}</span></dd>
+                                        <dd className="col-8"><StatusBadge tone={user.status === "ACTIVE" ? "success" : user.status === "SUSPENDED" ? "warning" : user.status === "BANNED" ? "danger" : "neutral"}>{user.status === "ACTIVE" ? "Aktif" : user.status === "SUSPENDED" ? "Askıda" : user.status === "BANNED" ? "Yasaklı" : user.status}</StatusBadge></dd>
                                         <dt className="col-4 text-muted fs-12">Roller</dt>
                                         <dd className="col-8">{user.roles.map((r) => <span key={r} className="badge bg-soft-primary text-primary me-1">{r}</span>)}</dd>
                                         <dt className="col-4 text-muted fs-12">STAFF</dt><dd className="col-8">{user.isStaff ? "Evet" : "Hayır"}</dd>
@@ -291,13 +308,11 @@ export default function UserDetailPage() {
                                         <dt className="col-4 text-muted fs-12">E-posta doğrulandı</dt><dd className="col-8">{user.emailVerified ? "Evet" : "Hayır"}</dd>
                                         <dt className="col-4 text-muted fs-12">Kayıt</dt><dd className="col-8">{new Date(user.createdAt).toLocaleString("tr-TR")}</dd>
                                     </dl>
-                                </div>
-                            </div>
+                            </FormSection>
                         </div>
                         <div className="col-lg-5">
-                            <div className="card stretch stretch-full mb-4">
-                                <div className="card-header"><h6 className="mb-0">Durum yönetimi</h6></div>
-                                <div className="card-body d-flex flex-column gap-2">
+                            <FormSection title="Durum yönetimi">
+                                <div className="d-flex flex-column gap-2">
                                     {user.status !== "SUSPENDED" && (
                                         <button className="btn btn-outline-warning" disabled={busy} onClick={() => changeStatus("SUSPENDED", "Askıya al")}>Askıya al</button>
                                     )}
@@ -308,14 +323,13 @@ export default function UserDetailPage() {
                                         <button className="btn btn-outline-success" disabled={busy} onClick={() => changeStatus("ACTIVE", "Yeniden aktifleştir")}>Yeniden aktifleştir</button>
                                     )}
                                 </div>
-                            </div>
-                            <div className="card stretch stretch-full mb-4">
-                                <div className="card-header"><h6 className="mb-0">KVKK</h6></div>
-                                <div className="card-body d-flex flex-column gap-2">
+                            </FormSection>
+                            <FormSection title="KVKK" hint="Anonimleştirme kişisel verileri temizler, hesabı yasaklar ve geri alınamaz.">
+                                <div className="d-flex flex-column gap-2">
                                     <button className="btn btn-outline-primary" onClick={exportData}>Verileri dışa aktar (JSON)</button>
                                     <button className="btn btn-danger" disabled={busy} onClick={anonymize}>Anonimleştir (silme hakkı)</button>
                                 </div>
-                            </div>
+                            </FormSection>
                             {canManageRoles && (
                                 <div className="card stretch stretch-full">
                                     <div className="card-header"><h6 className="mb-0">Roller</h6></div>
@@ -352,19 +366,22 @@ export default function UserDetailPage() {
                                     )}
                                 </div>
                                 <div className="card-body">
+                                    {econLoading ? <AsyncState status="loading" title="Ekonomi verileri yükleniyor" size="compact" /> : null}
+                                    {!econLoading && econError ? <AsyncState status="error" title="Ekonomi verileri yüklenemedi" size="compact" onRetry={() => void loadEcon()} /> : null}
+                                    {!econLoading && !econError ? <>
                                     <div className="d-flex flex-wrap align-items-end gap-2 mb-3">
                                         <div>
                                             <label className="form-label fs-12 mb-1">Birim</label>
-                                            <select className="form-select form-select-sm" value={adjUnit} onChange={(e) => setAdjUnit(e.target.value as "XP" | "COIN")} style={{ width: 110 }}>
+                                            <select className="form-select form-select-sm admin-user-unit" value={adjUnit} onChange={(e) => setAdjUnit(e.target.value as "XP" | "COIN")}>
                                                 <option value="COIN">COIN</option>
                                                 <option value="XP">XP</option>
                                             </select>
                                         </div>
                                         <div>
                                             <label className="form-label fs-12 mb-1">Miktar (±)</label>
-                                            <input className="form-control form-control-sm" type="number" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} style={{ width: 120 }} />
+                                            <input className="form-control form-control-sm admin-user-amount" type="number" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} />
                                         </div>
-                                        <div className="flex-fill" style={{ minWidth: 180 }}>
+                                        <div className="flex-fill admin-user-reason">
                                             <label className="form-label fs-12 mb-1">Sebep</label>
                                             <input className="form-control form-control-sm" value={adjReason} onChange={(e) => setAdjReason(e.target.value)} placeholder="örn. destek düzeltmesi" />
                                         </div>
@@ -402,6 +419,7 @@ export default function UserDetailPage() {
                                             </div>
                                         </div>
                                     )}
+                                    </> : null}
                                 </div>
                             </div>
                         </div>
@@ -412,7 +430,7 @@ export default function UserDetailPage() {
                                     {sub && (
                                         <div className="d-flex gap-3 fs-12 align-items-center">
                                             {sub.subscription
-                                                ? <span>Durum: <span className={`badge ${subBadge[sub.subscription.status] ?? "bg-soft-secondary text-secondary"}`}>{sub.subscription.status}</span></span>
+                                                ? <span>Durum: <StatusBadge tone={sub.subscription.status === "ACTIVE" ? "success" : sub.subscription.status === "TRIALING" ? "info" : sub.subscription.status === "PAST_DUE" ? "warning" : sub.subscription.status === "EXPIRED" ? "danger" : "neutral"}>{subscriptionStatusLabel(sub.subscription.status)}</StatusBadge></span>
                                                 : <span className="text-muted">Abonelik yok</span>}
                                             <span>Premium: <strong>{sub.entitlement.isPremium ? "Evet" : "Hayır"}</strong>
                                                 {sub.entitlement.validUntil ? <span className="text-muted"> · {new Date(sub.entitlement.validUntil).toLocaleDateString("tr-TR")}</span> : null}</span>
@@ -420,6 +438,9 @@ export default function UserDetailPage() {
                                     )}
                                 </div>
                                 <div className="card-body">
+                                    {subLoading ? <AsyncState status="loading" title="Abonelik verileri yükleniyor" size="compact" /> : null}
+                                    {!subLoading && subError ? <AsyncState status="error" title="Abonelik verileri yüklenemedi" size="compact" onRetry={() => void loadSub()} /> : null}
+                                    {!subLoading && !subError ? <>
                                     <dl className="row mb-3">
                                         <dt className="col-3 text-muted fs-12">Plan</dt>
                                         <dd className="col-9">{sub?.plan ? `${sub.plan.name} · ${fmtTry(sub.plan.priceMinor)} / ${sub.plan.periodMonths} ay` : "—"}</dd>
@@ -434,9 +455,9 @@ export default function UserDetailPage() {
                                             <>
                                                 <div>
                                                     <label className="form-label fs-12 mb-1">İade tutarı (kuruş)</label>
-                                                    <input className="form-control form-control-sm" type="number" min={1} value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} style={{ width: 150 }} placeholder="örn. 24900" />
+                                                    <input className="form-control form-control-sm admin-user-refund" type="number" min={1} value={refundAmount} onChange={(e) => setRefundAmount(e.target.value)} placeholder="örn. 24900" />
                                                 </div>
-                                                <div className="flex-fill" style={{ minWidth: 180 }}>
+                                                <div className="flex-fill admin-user-reason">
                                                     <label className="form-label fs-12 mb-1">İade sebebi</label>
                                                     <input className="form-control form-control-sm" value={refundReason} onChange={(e) => setRefundReason(e.target.value)} placeholder="örn. müşteri talebi" />
                                                 </div>
@@ -460,12 +481,13 @@ export default function UserDetailPage() {
                                                         <td className="text-nowrap fs-12">{new Date(t.createdAt).toLocaleString("tr-TR")}</td>
                                                         <td className="fs-12">{t.type}</td>
                                                         <td className={t.amountMinor < 0 ? "text-danger" : "text-success"}>{t.amountMinor > 0 ? "+" : ""}{fmtTry(t.amountMinor)}</td>
-                                                        <td className="fs-12">{t.status}</td>
+                                                        <td className="fs-12">{transactionStatusLabel(t.status)}</td>
                                                     </tr>
                                                 ))}
                                             </tbody>
                                         </table>
                                     </div>
+                                    </> : null}
                                 </div>
                             </div>
                         </div>

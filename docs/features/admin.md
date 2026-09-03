@@ -97,6 +97,96 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-03 — Admin metin tutarlılığı geçişi** — Aktif menüdeki İngilizce “Audit Log” adı
+  “İşlem Geçmişi” olarak güncellendi; makale kategori seçenekleri ve kullanıcı abonelik/ödeme
+  durumları backend enum kodları yerine Türkçe operasyon metinleriyle gösterilir. Kullanım ve
+  gotcha: filtre, form ve API payload değerleri aynı enum kodlarını göndermeye devam eder; değişiklik
+  yalnız sunum katmanındadır. İlgili: `utils/fackData/menuList.ts`,
+  `app/(general)/content/articles/ArticleForm.tsx`, `app/(general)/users/[id]/page.tsx`.
+
+- **2026-09-03 — Makale editörü yoğun ekran iyileştirmesi** — Tek ve uzun form kartı; içerik ve
+  sınıflandırma, görseller, yazar, kaynak/doğrulama, arama görünümü ve yayın ayarları olarak ayrıldı.
+  Yazım ile medya alanları ana kolonda, doğrulama/SEO/öne çıkarma ve kaydetme eylemleri geniş ekranda
+  sticky kontrol rayında sunulur; mobilde doğal akışa döner. Form görsel yükleme ve kaydetme boyunca
+  erişilebilir busy durumunu aktarır, meta alanlarında görünen sayaçlarla uyumlu karakter sınırları
+  uygulanır. Kullanım: içerik solda hazırlanır; kaynak güven hattı tamamlandıktan sonra sağ raydan
+  oluşturulur veya güncellenir. Gotcha: Jodit lazy-load, görsel upload, alt metin zorunluluğu,
+  HTML/payload, doğrulama ve yayınlama sözleşmeleri değişmedi. İlgili:
+  `app/(general)/content/articles/ArticleForm.tsx`.
+
+- **2026-09-03 — Kullanıcı detayı operasyon ekranı iyileştirmesi** — Kimlik, hesap durumu ve
+  KVKK alanları ortak `FormSection` düzenine geçirildi; hesap ve abonelik durumları ortak
+  `StatusBadge` ile renge ek olarak Türkçe metinle aktarılır. Ekonomi ve abonelik verileri için
+  birbirinden bağımsız loading, gerçek API hatası ve yeniden deneme durumları eklendi; veri hazır
+  olmadan bakiye, düzeltme, iade ve iptal kontrolleri gösterilmez. Kullanım: kullanıcı kimliği
+  yüklendikten sonra her operasyon bölümü kendi isteğini tamamlar; başarısız bölüm diğer yönetim
+  araçlarını engellemeden yeniden yüklenebilir. Gotcha: ledger, kuruş hesabı, abonelik/KVKK
+  onayları, yetki kontrolleri ve API sözleşmeleri değişmedi. İlgili:
+  `app/(general)/users/[id]/page.tsx`, `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Topluluk/Forum yoğun ekran dalgası** — `/forum` yönetim ekranı açık Türkçe
+  `AdminPageHeader`, ortak `AsyncState`, `FormSection`, `DataTableShell` ve `StatusBadge`
+  parçalarına geçirildi; yeni oda ekranı da açık başlık, breadcrumb ve geri eylemi kullanır. Öne
+  çıkan tartışma ile bekleyen etiket önerileri ayrı operasyon bölümleri olarak sunulur; oda listesi
+  gerçek boş durum ve oluşturma eylemi gösterir. Etiket aktifliği switch yanında metinle de aktarılır.
+  Kullanım: öneriler aynı satırda düzenlenip onaylanır/reddedilir; öne çıkan tartışma aranıp süreyle
+  kaydedilir; etiketler ve odalar mevcut bölümlerden yönetilir. Gotcha: dört bağımsız istek paralel
+  kalır ve kısmi hata başarılı verileri gizlemez; moderasyon yetkileri, arama debounce'u, fallback
+  seçimi ve server-side audit sözleşmeleri değişmedi. İlgili: `app/(general)/forum/*`,
+  `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Duyurular redesign dalgası** — `/announcements` taslak oluşturma ve gönderim
+  akışı açık Türkçe `AdminPageHeader`, ortak `FormSection`, `FieldLabel`, `DataTableShell`,
+  `AsyncState`, `StatusBadge` ve `IconAction` parçalarına geçirildi. Uzun yazım rehberi bilgi
+  ipucuna taşındı; bildirimin yalnız uygulama içi olduğu ve taslağın ayrıca gönderilmesi gerektiği
+  görünür tutuldu. Loading, API error/retry ve boş liste durumları ayrıldı; alan sayaçları, busy
+  durumları ve erişilebilir ikon aksiyonları eklendi. Kullanım: form taslak oluşturur; isteğe bağlı
+  gönderim zamanı seçildikten sonra listeden ilgili taslağın gönder aksiyonu onaylanır. Gotcha:
+  gönderim geri alınamaz, zaman alanı gönderilen taslağa uygulanır; hedef kitle, queue, silme/gönderme
+  onayları ve server-side audit sözleşmeleri değişmedi. İlgili: `app/(general)/announcements/page.tsx`,
+  `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Audit Log redesign dalgası** — `/audit-log` salt okunur kayıt görünümü açık
+  başlık/breadcrumb, ortak `DataTableShell`, `AsyncState`, `InfoHint` ve `StatusBadge` parçalarına
+  geçirildi. Yüklenmiş kayıtlar eylem, hedef, aktör veya IP üzerinden gecikmeli client-side aramayla
+  süzülebilir; loading, API error/retry, boş kayıt ve boş arama sonucu ayrı gösterilir. Önceki yalnız
+  rol değişimini okuyabilen hücre yerine bütün `before`/`after` snapshot'ları erişilebilir açılır
+  detayda gösterilir. Kullanım: satırdaki “Önce / sonra” özeti açılarak ham audit farkı incelenir.
+  Gotcha: sıralama, kayıt kapsamı, endpoint ve append-only server davranışı değişmedi; JSON detayları
+  geniş tabloda kendi alanında kayar. İlgili: `app/(general)/audit-log/page.tsx`,
+  `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Planlar redesign dalgası** — `/plans` satır içi düzenleme akışı açık Türkçe
+  `AdminPageHeader`, ortak `DataTableShell`, `AsyncState`, `InfoHint` ve `StatusBadge` bileşenlerine
+  geçirildi. Tümü/Aktif/Pasif filtresi, erişilebilir alan etiketleri, kaydetme busy durumu ve gerçek
+  API error/retry/empty sunumu eklendi. Fiyatın yalnız yeni checkout'lara uygulanması ve dönem
+  uzunluğunun kilitli olması karar etkileyen bilgi olarak görünür kalır. Kullanım: plan adı, kuruş
+  fiyatı, deneme günü ve aktiflik satırda düzenlenip aynı satırdaki Kaydet ile gönderilir. Gotcha:
+  dönem, fiyatın kuruş cinsinden payload'ı, sunucu doğrulaması, başarısız kayıtta yeniden yükleme ve
+  server-side audit davranışı değişmedi; geniş tablo mobilde kendi alanında kayar. İlgili:
+  `app/(general)/plans/page.tsx`, `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Kullanıcılar redesign dalgası** — `/users` listesi açık Türkçe başlık ve
+  breadcrumb, ortak `DataTableShell`, `AsyncState`, `StatusBadge` ve `IconAction` bileşenlerine
+  geçirildi. Arama tablo toolbar'ına alındı; ilk yükleme, arama sonucu boş, gerçek API hatası ve
+  yeniden deneme birbirinden ayrıldı. Kullanıcı detayı ortak başlık ve async hata sunumunu kullanır;
+  hesap durumu yalnız renkle değil Türkçe metinle de aktarılır. Kullanım: detay ikonuyla kullanıcı
+  operasyonlarına gidilir; STAFF erişimi ayrı kalkan aksiyonundan onaylanarak verilir veya kaldırılır.
+  Gotcha: STAFF Premium yetkisi, rol/durum, bakiye, iade, abonelik, KVKK onayları ve server-side audit
+  davranışları değişmedi; riskli detay eylemleri yazılı kalır. İlgili: `app/(general)/users/*`,
+  `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Makaleler redesign dalgası** — `/content/articles` listesi Türkçe
+  `AdminPageHeader`, yayın durumu filtresi, ortak `DataTableShell`, `StatusBadge`, erişilebilir
+  ikon aksiyonları ve loading/error/retry/empty durumlarına geçirildi. Liste; makale kimliği,
+  kapsamı, doğrulayan kişi/tarih, güncelleme ve yayın durumunu taranabilir gruplar halinde gösterir.
+  Yeni/düzenle ekranları ortak form kartını ve alan bilgi ipuçlarını kullanır; resmî kaynak ve
+  doğrulama gereksinimi güven hattı olduğu için görünür uyarı olarak korunur. Kullanım: kaydetme
+  editör içeriğini günceller, yayınlama/yayından kaldırma yalnız liste satırındaki ayrı aksiyondan
+  yapılır. Gotcha: Jodit lazy-load, doğrudan görsel yükleme, alt metin/dimensions, HTML sanitizasyonu,
+  payload ve audit sözleşmeleri değişmedi; geniş liste mobilde kendi alanında kayar. İlgili:
+  `app/(general)/content/articles/*`, `themes/mentor/_admin-core.scss`.
+
 - **2026-09-03 — Sınavlar ve resmi takvim redesign dalgası** — `/content/exams` listesi açık
   Türkçe başlık/breadcrumb, Güncel-Arşiv filtresi, ortak `DataTableShell`, `StatusBadge`, ikon
   aksiyonu ve loading/error/retry/empty durumlarına geçirildi. Yeni ve düzenle ekranları sınav

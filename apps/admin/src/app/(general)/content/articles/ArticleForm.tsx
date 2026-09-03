@@ -6,12 +6,18 @@ import dynamic from "next/dynamic";
 import { useMemo, useState, type ChangeEvent, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import { FieldLabel } from "@/components/shared/admin/FieldLabel";
+import { FormSection } from "@/components/shared/admin/FormSection";
 import apiClient from "@/lib/apiClient";
 import type { AdminArticle, ArticleImageUploadUrl } from "@/lib/types";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 const FAMILIES = ["KPSS", "YKS", "LGS"];
-const CATEGORIES = ["EXAM_PROCESS", "APPLICATION", "GENERAL"];
+const CATEGORIES = [
+    { value: "EXAM_PROCESS", label: "Sınav süreci" },
+    { value: "APPLICATION", label: "Başvuru" },
+    { value: "GENERAL", label: "Genel" },
+] as const;
 const FEATURED_DAYS = [1, 3, 7, 14] as const;
 const GALLERY_MAX = 4;
 const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -236,38 +242,15 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
     };
 
     return (
-        <form onSubmit={submit} className="card stretch stretch-full">
-            <div className="card-body">
+        <form onSubmit={submit} aria-busy={busy || uploading !== null}>
+            <div className="row g-4 align-items-start">
+                <div className="col-xl-8">
+            <FormSection title="İçerik ve sınıflandırma" hint="Makalenin adresini, kapsamını ve okuyucuya sunulacak ana içeriği yönetin.">
                 <div className="row g-3">
-                    <div className="col-md-6"><label className="form-label">Slug</label><input className="form-control" value={form.slug} onChange={set("slug")} disabled={editing} required placeholder="kpss-basvuru-rehberi" /></div>
-                    <div className="col-md-6"><label className="form-label">Başlık</label><input className="form-control" value={form.title} onChange={set("title")} required /></div>
+                    <div className="col-md-6"><FieldLabel htmlFor="article-slug" label="Slug" required hint="Makalenin kalıcı adresidir. Düzenleme sırasında değiştirilemez." /><input id="article-slug" className="form-control" value={form.slug} onChange={set("slug")} disabled={editing} required placeholder="kpss-basvuru-rehberi" /></div>
+                    <div className="col-md-6"><FieldLabel htmlFor="article-title" label="Başlık" required /><input id="article-title" className="form-control" value={form.title} onChange={set("title")} required /></div>
                     <div className="col-md-3"><label className="form-label">Sınav</label><select className="form-select" value={form.family} onChange={set("family")}>{FAMILIES.map((item) => <option key={item}>{item}</option>)}</select></div>
-                    <div className="col-md-3"><label className="form-label">Kategori</label><select className="form-select" value={form.category} onChange={set("category")}>{CATEGORIES.map((item) => <option key={item}>{item}</option>)}</select></div>
-                    <div className="col-md-3">
-                        <label className="form-label d-block">Öne çıkar</label>
-                        <div className="form-check mt-2">
-                            <input
-                                id="isFeatured"
-                                className="form-check-input"
-                                type="checkbox"
-                                checked={form.isFeatured}
-                                onChange={(event) => setForm((current) => ({ ...current, isFeatured: event.target.checked }))}
-                            />
-                            <label className="form-check-label" htmlFor="isFeatured">Bu ailede öne çıkan yazı</label>
-                        </div>
-                    </div>
-                    <div className="col-md-3">
-                        <label className="form-label">Öne çıkarma süresi</label>
-                        <select
-                            className="form-select"
-                            value={form.featuredDays}
-                            disabled={!form.isFeatured}
-                            onChange={(event) => setForm((current) => ({ ...current, featuredDays: Number(event.target.value) as (typeof FEATURED_DAYS)[number] }))}
-                        >
-                            {FEATURED_DAYS.map((days) => <option key={days} value={days}>{days} gün</option>)}
-                        </select>
-                    </div>
-
+                    <div className="col-md-3"><FieldLabel htmlFor="article-category" label="Kategori" required /><select id="article-category" className="form-select" value={form.category} onChange={set("category")}>{CATEGORIES.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}</select></div>
                     <div className="col-12">
                         <label className="form-label">Gövde</label>
                         <JoditEditor value={form.body} config={editorConfig} onBlur={(body) => setForm((current) => ({ ...current, body }))} />
@@ -277,20 +260,25 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                         </div>
                     </div>
 
-                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Kapak ve sosyal paylaşım görseli</span></div>
+                </div>
+            </FormSection>
+
+            <FormSection title="Görseller" hint="Kapak görseli paylaşım önizlemelerinde kullanılır. Tüm görseller açıklayıcı alt metin taşımalıdır.">
+                <div className="row g-3">
+                    <div className="col-12"><h3 className="h6 mb-0">Kapak ve sosyal paylaşım görseli</h3></div>
                     <div className="col-md-5">
-                        {form.coverImageUrl ? <img src={form.coverImageUrl} alt={form.coverImageAlt || "Kapak önizlemesi"} className="img-fluid rounded border mb-2" style={{ maxHeight: 220 }} /> : <div className="border rounded p-4 text-muted">Kapak yüklenmedi</div>}
+                        {form.coverImageUrl ? <img src={form.coverImageUrl} alt={form.coverImageAlt || "Kapak önizlemesi"} className="img-fluid rounded border mb-2 admin-article-cover-preview" /> : <div className="border rounded p-4 text-muted">Kapak yüklenmedi</div>}
                     </div>
                     <div className="col-md-7">
                         <label className="form-label">Kapak alt metni</label><input className="form-control mb-2" value={form.coverImageAlt} onChange={set("coverImageAlt")} required={Boolean(form.coverImageKey)} />
                         <div className="d-flex gap-2"><label className="btn btn-light mb-0">{uploading === "COVER" ? "Yükleniyor…" : "Kapak yükle"}<input hidden type="file" accept={ACCEPTED_IMAGES} disabled={uploading !== null} onChange={uploadCover} /></label>{form.coverImageKey && <button type="button" className="btn btn-outline-danger" onClick={() => setForm((current) => ({ ...current, coverImageKey: "", coverImageUrl: "", coverImageAlt: "", coverImageWidth: 0, coverImageHeight: 0 }))}>Kaldır</button>}</div>
                     </div>
 
-                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Ek banner görselleri (slider, en fazla {GALLERY_MAX})</span></div>
+                    <div className="col-12"><hr className="my-1" /><h3 className="h6 mb-0">Ek banner görselleri <span className="text-muted fw-normal">({form.galleryImages.length}/{GALLERY_MAX})</span></h3></div>
                     <div className="col-12">
                         <div className="d-flex flex-wrap gap-3">
                             {form.galleryImages.map((image, index) => (
-                                <div key={image.key} className="border rounded p-2" style={{ width: 180 }}>
+                                <div key={image.key} className="border rounded p-2 admin-article-gallery-item">
                                     <img src={image.url} alt={image.alt} className="img-fluid rounded mb-2" />
                                     <input
                                         className="form-control form-control-sm mb-2"
@@ -329,23 +317,50 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                         </label>
                     </div>
 
-                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Yazar (opsiyonel)</span></div>
+                </div>
+            </FormSection>
+
+            <FormSection title="Yazar" hint="Yazar bilgisi verilmezse makale kurumsal içerik olarak gösterilir.">
+                <div className="row g-3">
                     <div className="col-md-4"><label className="form-label">Ad soyad</label><input className="form-control" value={form.authorName} onChange={set("authorName")} /></div>
                     <div className="col-md-4"><label className="form-label">Unvan</label><input className="form-control" value={form.authorTitle} onChange={set("authorTitle")} /></div>
                     <div className="col-md-4"><label className="form-label">Kısa biyografi</label><input className="form-control" value={form.authorBio} onChange={set("authorBio")} /></div>
+                </div>
+            </FormSection>
+                </div>
 
-                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">Güven bilgisi (zorunlu)</span></div>
-                    <div className="col-md-4"><label className="form-label">Kaynak</label><input className="form-control" value={form.source} onChange={set("source")} required placeholder="ÖSYM" /></div>
-                    <div className="col-md-4"><label className="form-label">Kaynak URL</label><input className="form-control" type="url" value={form.sourceUrl} onChange={set("sourceUrl")} required /></div>
-                    <div className="col-md-4"><label className="form-label">Doğrulayan</label><input className="form-control" value={form.verifiedBy} onChange={set("verifiedBy")} required /></div>
-                    <div className="col-md-4"><label className="form-label">Doğrulama tarihi</label><input className="form-control" type="datetime-local" value={form.verifiedAt} onChange={set("verifiedAt")} required /></div>
+                <div className="col-xl-4">
+                    <div className="admin-form-rail">
+            <FormSection title="Kaynak ve doğrulama" hint="Resmî süreç ve tarih bilgileri serbest metin olarak üretilemez; doğrulanmış kaynağa dayanmalıdır.">
+                <div className="alert alert-warning" role="note"><strong>Doğrulama zorunlu.</strong> Kaynak bağlantısı ve doğrulayan kişi yayın güven hattının parçasıdır.</div>
+                <div className="row g-3">
+                    <div className="col-12"><FieldLabel htmlFor="article-source" label="Kaynak" required /><input id="article-source" className="form-control" value={form.source} onChange={set("source")} required placeholder="ÖSYM" /></div>
+                    <div className="col-12"><FieldLabel htmlFor="article-source-url" label="Kaynak bağlantısı" required /><input id="article-source-url" className="form-control" type="url" value={form.sourceUrl} onChange={set("sourceUrl")} required /></div>
+                    <div className="col-12"><FieldLabel htmlFor="article-verifier" label="Doğrulayan" required /><input id="article-verifier" className="form-control" value={form.verifiedBy} onChange={set("verifiedBy")} required /></div>
+                    <div className="col-12"><FieldLabel htmlFor="article-verified-at" label="Doğrulama tarihi" required /><input id="article-verified-at" className="form-control" type="datetime-local" value={form.verifiedAt} onChange={set("verifiedAt")} required /></div>
+                </div>
+            </FormSection>
 
-                    <div className="col-12"><hr className="my-1" /><span className="fs-12 text-muted">SEO ve paylaşım önizlemesi</span></div>
-                    <div className="col-md-6"><label className="form-label">Meta başlık <span className="text-muted">{form.metaTitle.length}/60</span></label><input className="form-control" value={form.metaTitle} onChange={set("metaTitle")} /></div>
-                    <div className="col-md-6"><label className="form-label">Meta açıklama <span className="text-muted">{form.metaDescription.length}/160</span></label><textarea className="form-control" rows={3} value={form.metaDescription} onChange={set("metaDescription")} /></div>
+            <FormSection title="Arama görünümü" hint="Boş bırakılan alanlarda makale başlığı ve varsayılan açıklama kullanılır.">
+                <div className="row g-3">
+                    <div className="col-12"><label className="form-label">Meta başlık <span className="text-muted">{form.metaTitle.length}/60</span></label><input className="form-control" value={form.metaTitle} onChange={set("metaTitle")} maxLength={60} /></div>
+                    <div className="col-12"><label className="form-label">Meta açıklama <span className="text-muted">{form.metaDescription.length}/160</span></label><textarea className="form-control" rows={3} value={form.metaDescription} onChange={set("metaDescription")} maxLength={160} /></div>
                     <div className="col-12"><div className="border rounded p-3"><div className="text-primary fs-5">{form.metaTitle || form.title || "Makale başlığı"}</div><div className="text-success fs-12">mentor.app/tr/bilgi/{form.slug || "makale-slug"}</div><p className="mb-0 text-muted">{form.metaDescription || "Arama ve sosyal paylaşım açıklaması burada görünür."}</p></div></div>
                 </div>
-                <div className="mt-3 d-flex gap-2"><button type="submit" className="btn btn-primary" disabled={busy || uploading !== null}>{editing ? "Güncelle" : "Oluştur"}</button><button type="button" className="btn btn-light" onClick={() => router.push("/content/articles")}>İptal</button></div>
+            </FormSection>
+
+            <FormSection title="Yayın ayarları" footer={<div className="d-grid gap-2"><button type="submit" className="btn btn-primary admin-submit-button" disabled={busy || uploading !== null}>{busy ? <><span className="spinner-border spinner-border-sm" aria-hidden="true" /> Kaydediliyor…</> : editing ? "Makaleyi güncelle" : "Makaleyi oluştur"}</button><button type="button" className="btn btn-light" disabled={busy} onClick={() => router.push("/content/articles")}>Vazgeç</button></div>}>
+                <div className="admin-publish-control">
+                    <div><strong>Öne çıkar</strong><span>Bu sınav ailesinin öne çıkan yazısı olur.</span></div>
+                    <div className="form-check form-switch mb-0"><input id="isFeatured" className="form-check-input" type="checkbox" role="switch" checked={form.isFeatured} onChange={(event) => setForm((current) => ({ ...current, isFeatured: event.target.checked }))} /></div>
+                </div>
+                <div className="mt-3">
+                    <FieldLabel htmlFor="featured-days" label="Öne çıkarma süresi" />
+                    <select id="featured-days" className="form-select" value={form.featuredDays} disabled={!form.isFeatured} onChange={(event) => setForm((current) => ({ ...current, featuredDays: Number(event.target.value) as (typeof FEATURED_DAYS)[number] }))}>{FEATURED_DAYS.map((days) => <option key={days} value={days}>{days} gün</option>)}</select>
+                </div>
+            </FormSection>
+                    </div>
+                </div>
             </div>
         </form>
     );

@@ -76,7 +76,7 @@ export const menuList: MenuItem[] = [
     },
     {
         id: 2,
-        name: "Audit Log",
+        name: "İşlem Geçmişi",
         path: "/audit-log",
         icon: "feather-file-text",
         dropdownMenu: false,

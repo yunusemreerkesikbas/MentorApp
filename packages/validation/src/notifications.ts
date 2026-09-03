@@ -33,12 +33,21 @@ export type UpdateNotificationPreferencesInput = z.infer<
   typeof updateNotificationPreferencesSchema
 >;
 
+/**
+ * Must list every `NotificationCategory` in `@mentor/types` (packages/types/src/notifications.ts).
+ * `NotificationsService.toDto` parses every stored row's category through this schema on every
+ * read, so a category missing here doesn't just reject a `?category=` filter — it 500s
+ * `GET /v1/notifications` outright for anyone with a row of that category in their inbox. That gap
+ * is exactly how `MENTORSHIP` went unnoticed since APP-063: the route had no test that put a
+ * MENTORSHIP-category row in an inbox and then read it back (mentorship.e2e-spec.ts now does).
+ */
 export const notificationCategorySchema = z.enum([
   "COACH",
   "PLAN",
   "CONTENT",
   "FORUM",
   "ACHIEVEMENT",
+  "MENTORSHIP",
   "SYSTEM",
 ]);
 export type NotificationCategoryInput = z.infer<typeof notificationCategorySchema>;

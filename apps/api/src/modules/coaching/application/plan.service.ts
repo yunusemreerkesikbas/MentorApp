@@ -49,6 +49,12 @@ import { toPlanTaskDto } from "./coaching.mappers";
  */
 export type MentorshipAssignmentInput = Omit<CreatePlanTaskInput, "description"> & {
   coachNote?: string | null;
+  /**
+   * `Omit` alone would not stop a caller passing a `description` — a value typed
+   * `CreatePlanTaskInput` stays assignable to the omitted type, and the field would then be
+   * dropped in silence at the write below. `never` makes that a compile error instead.
+   */
+  description?: never;
 };
 
 /**
@@ -514,6 +520,11 @@ export class PlanService {
       const updated = await this.tasks.update(tx, userId, id, {
         ...(input.title !== undefined && { title: input.title }),
         ...(input.subject !== undefined && { subject: input.subject }),
+        // A topic is a leaf of a subject (`plan_tasks_topic_requires_subject_chk`), so clearing the
+        // subject clears the topic with it. Without this the UPDATE lands a `topic` with no
+        // `subject` and Postgres rejects the whole request with an opaque 400 — for an edit the
+        // user is entitled to make.
+        ...(input.subject === null && { topic: null }),
         ...(input.status !== undefined && { status: input.status }),
         ...(input.startTime !== undefined && { startTime: input.startTime }),
         ...(input.endTime !== undefined && { endTime: input.endTime }),

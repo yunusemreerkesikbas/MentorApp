@@ -1,77 +1,52 @@
 'use client'
-import { useEffect, useState } from "react";
-import PageHeader from "@/components/shared/pageHeader/PageHeader";
+
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from "react";
+import { FiSearch } from "react-icons/fi";
+import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { DataTableShell } from "@/components/shared/admin/DataTableShell";
+import { InfoHint } from "@/components/shared/admin/InfoHint";
+import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AuditEntry } from "@/lib/types";
 
-// Admin audit log (W6, §9): newest-first trail of every admin mutation (who/what/when).
-// Read-only — the trail is append-only on the server (no edit/delete).
+function formatDate(iso: string) {
+    return new Date(iso).toLocaleString("tr-TR");
+}
+
+function formatSnapshot(value: unknown) {
+    if (value === null || value === undefined) return "Kayıt yok";
+    return JSON.stringify(value, null, 2);
+}
+
 export default function AuditLogPage() {
     const [entries, setEntries] = useState<AuditEntry[]>([]);
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(false);
+    const [query, setQuery] = useState("");
+    const deferredQuery = useDeferredValue(query.trim().toLocaleLowerCase("tr-TR"));
 
-    useEffect(() => {
-        let active = true;
+    const load = useCallback(async () => {
         setLoading(true);
-        apiClient
-            .get<AuditEntry[]>("/admin/audit-log")
-            .then(({ data }) => { if (active) setEntries(data); })
-            .catch(() => { if (active) setEntries([]); })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
+        setError(false);
+        try { const { data } = await apiClient.get<AuditEntry[]>("/admin/audit-log"); setEntries(data); }
+        catch { setEntries([]); setError(true); }
+        finally { setLoading(false); }
     }, []);
 
-    const fmt = (iso: string) => new Date(iso).toLocaleString("tr-TR");
-    const diff = (e: AuditEntry) => {
-        const roles = (v: unknown) => (v as { roles?: string[] } | null)?.roles?.join(", ") ?? "—";
-        return `${roles(e.before)} → ${roles(e.after)}`;
-    };
+    useEffect(() => { void load(); }, [load]);
 
-    return (
-        <>
-            <PageHeader>{null}</PageHeader>
-            <div className="main-content">
-                <div className="row">
-                    <div className="col-12">
-                        <div className="card stretch stretch-full">
-                            <div className="card-body p-0">
-                                <div className="table-responsive">
-                                    <table className="table table-hover mb-0">
-                                        <thead>
-                                            <tr>
-                                                <th>Tarih</th>
-                                                <th>Eylem</th>
-                                                <th>Hedef</th>
-                                                <th>Değişim</th>
-                                                <th>Yapan (actor)</th>
-                                                <th>IP</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {loading && (
-                                                <tr><td colSpan={6} className="text-center py-4">Yükleniyor…</td></tr>
-                                            )}
-                                            {!loading && entries.length === 0 && (
-                                                <tr><td colSpan={6} className="text-center py-4 text-muted">Kayıt yok.</td></tr>
-                                            )}
-                                            {!loading && entries.map((e) => (
-                                                <tr key={e.id}>
-                                                    <td className="text-nowrap">{fmt(e.createdAt)}</td>
-                                                    <td><span className="badge bg-soft-primary text-primary">{e.action}</span></td>
-                                                    <td className="text-nowrap">{e.targetType ?? "—"} {e.targetId ? `· ${e.targetId.slice(0, 8)}` : ""}</td>
-                                                    <td className="fs-12">{diff(e)}</td>
-                                                    <td className="fs-12 text-nowrap">{e.actorUserId.slice(0, 8)}</td>
-                                                    <td className="fs-12">{e.ip ?? "—"}</td>
-                                                </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    );
+    const visibleEntries = useMemo(() => {
+        if (!deferredQuery) return entries;
+        return entries.filter((entry) => [entry.action, entry.targetType, entry.targetId, entry.actorUserId, entry.ip].some((value) => value?.toLocaleLowerCase("tr-TR").includes(deferredQuery)));
+    }, [deferredQuery, entries]);
+
+    const state = loading ? <AsyncState status="loading" title="Audit kayıtları yükleniyor" /> : error ? <AsyncState status="error" title="Audit kayıtları yüklenemedi" description="Bağlantıyı kontrol edip yeniden deneyin." onRetry={() => void load()} /> : entries.length === 0 ? <AsyncState status="empty" title="Henüz audit kaydı yok" description="Yönetim işlemleri gerçekleştikçe kayıtlar burada görünür." /> : visibleEntries.length === 0 ? <AsyncState status="empty" title="Aramayla eşleşen kayıt yok" description="Eylem, hedef veya aktör bilgisini değiştirerek yeniden deneyin." /> : undefined;
+
+    return <>
+        <AdminPageHeader title="İşlem geçmişi" breadcrumbs={[{ label: "Panel", href: "/" }, { label: "İşlem geçmişi" }]} />
+        <div className="main-content"><DataTableShell state={state} toolbar={<div className="admin-table-toolbar-content"><div><div className="d-flex align-items-center gap-2"><h2 className="h6 mb-0">İşlem geçmişi</h2><InfoHint label="Audit kayıtları hakkında bilgi" content="Kayıtlar en yeniden eskiye sıralanır ve yalnız görüntülenebilir. Değişiklikler server tarafında append-only olarak saklanır." /></div><span className="text-muted fs-12">{visibleEntries.length} kayıt</span></div><div className="admin-table-search"><label className="visually-hidden" htmlFor="audit-search">Audit kayıtlarında ara</label><span className="input-group"><span className="input-group-text"><FiSearch aria-hidden="true" /></span><input id="audit-search" type="search" className="form-control" placeholder="Eylem, hedef veya aktör ara" value={query} onChange={(event) => setQuery(event.target.value)} /></span></div></div>}>
+            <table className="table table-hover align-middle mb-0 audit-table"><thead><tr><th>Tarih</th><th>Eylem</th><th>Hedef</th><th>Değişiklik</th><th>Aktör</th><th>IP adresi</th></tr></thead><tbody>{visibleEntries.map((entry) => <tr key={entry.id}><td className="text-nowrap">{formatDate(entry.createdAt)}</td><td><StatusBadge tone="info">{entry.action}</StatusBadge></td><td>{entry.targetType ?? "Hedef yok"}<span className="admin-table-secondary font-monospace">{entry.targetId ?? "—"}</span></td><td><details className="admin-audit-details"><summary>Önce / sonra</summary><div className="admin-audit-snapshots"><div><strong>Önce</strong><pre>{formatSnapshot(entry.before)}</pre></div><div><strong>Sonra</strong><pre>{formatSnapshot(entry.after)}</pre></div></div></details></td><td><span className="font-monospace fs-12">{entry.actorUserId}</span></td><td><span className="font-monospace fs-12">{entry.ip ?? "—"}</span></td></tr>)}</tbody></table>
+        </DataTableShell></div>
+    </>;
 }

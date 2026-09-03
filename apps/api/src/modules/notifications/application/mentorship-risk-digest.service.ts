@@ -19,9 +19,6 @@ import { NotificationsService } from "./notifications.service";
 /** Where the digest lands: the roster, already sorted worst-first. */
 export const MENTORSHIP_RISK_DIGEST_LINK = "/students";
 
-/** At most this many names in the copy; the rest become "and N more". */
-const NAMES_IN_COPY = 2;
-
 /**
  * The morning nudge that turns rule-based triage from a screen you must remember to open into
  * something that reaches the coach (roadmap §9: "veri-tetikli müdahale uyarısı").
@@ -71,6 +68,12 @@ export class MentorshipRiskDigestService {
       }
 
       const args = this.copyArgs(candidate);
+      // Every name resolved empty (erased or broken identity rows): a digest that says "0 students"
+      // and names nobody is worse than silence.
+      if (!args.names) {
+        skipped += 1;
+        continue;
+      }
       // In-app is its own channel and always created; its dedupe key is also the email's gate.
       const created = await this.notifications.createFromTemplate(
         candidate.coachId,
@@ -131,12 +134,15 @@ export class MentorshipRiskDigestService {
   /**
    * Names, not flags. "INACTIVE" reads as a diagnosis when it lands in a coach's inbox, and the
    * roster's own chip says it better in context (§0 — never accusatory).
+   *
+   * Every name is listed, with no cap. A cap needs an "and N more" clause, and the copy has no
+   * conditional form to hold one — the earlier `{rest}` arg was computed and never rendered, so a
+   * digest about five students named two and silently dropped three while the title still said
+   * five. The list stays short on its own: only NEW flags reach here, never the standing ones.
    */
   private copyArgs(candidate: CoachRiskDigestCandidate): Record<string, unknown> {
     const names = candidate.students.map((student) => student.displayName).filter(Boolean);
-    const shown = names.slice(0, NAMES_IN_COPY).join(", ");
-    const rest = names.length - Math.min(names.length, NAMES_IN_COPY);
-    return { count: candidate.students.length, names: shown, rest };
+    return { count: names.length, names: names.join(", ") };
   }
 }
 
