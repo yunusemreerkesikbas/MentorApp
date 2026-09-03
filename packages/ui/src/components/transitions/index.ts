@@ -31,4 +31,7 @@ export type { CheckBoxProps } from "./check-box.js";
 export { SlidingTabs } from "./sliding-tabs.js";
 export type { SlidingTabsProps, SlidingTabItem } from "./sliding-tabs.js";
 
+export { Toggle } from "./toggle.js";
+export type { ToggleProps } from "./toggle.js";
+
 export { forceReflow, prefersReducedMotion, readCssMs } from "./motion-utils.js";

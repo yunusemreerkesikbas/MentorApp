@@ -130,4 +130,14 @@
   --t-check-delay: 0ms;
   --t-check-uncheck: var(--duration-quick);
   --t-check-ease: var(--ease-smooth-out);
+
+  /* Toggle — no bounce overshoot (DESIGN.md §9) */
+  --toggle-dur: var(--duration-medium);
+  --toggle-travel: 1.25rem;
+  --toggle-track: var(--duration-quick);
+  --toggle-ease: var(--ease-smooth-out);
+  --toggle-on-bg: var(--color-btn);
+  --toggle-off-bg: color-mix(in srgb, var(--color-main) 15%, transparent);
+  --toggle-thumb-on: var(--color-btn-label);
+  --toggle-thumb-off: var(--color-surface);
 }

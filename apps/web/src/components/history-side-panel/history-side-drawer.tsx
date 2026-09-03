@@ -16,6 +16,8 @@ export interface HistorySideDrawerProps {
   footer?: ReactNode;
   headerActions?: ReactNode;
   testId?: string;
+  variant?: "default" | "liquid";
+  className?: string;
 }
 
 /**
@@ -29,12 +31,15 @@ export function HistorySideDrawer({
   footer,
   headerActions,
   testId = "history-side-drawer",
+  variant = "default",
+  className,
 }: HistorySideDrawerProps) {
   const tClose = useTranslations("common.bottom_sheet");
   const titleId = useId();
   const panelRef = useRef<HTMLDivElement>(null);
   const mounted = useIsMounted();
   const [closing, setClosing] = useState(false);
+  const isLiquid = variant === "liquid";
 
   useEffect(() => {
     if (open) {
@@ -99,18 +104,24 @@ export function HistorySideDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         className={[
-          "fixed inset-y-0 left-0 z-[81] flex w-[min(85vw,20rem)] flex-col bg-[var(--color-surface)]",
-          "rounded-r-[16px] shadow-[8px_0_24px_rgba(0,0,0,0.10)] sm:w-[20rem]",
+          "fixed inset-y-0 left-0 z-[81] flex w-[min(85vw,20rem)] flex-col",
+          isLiquid
+            ? "session-liquid-drawer rounded-r-[20px]"
+            : "bg-[var(--color-surface)] rounded-r-[16px] shadow-[8px_0_24px_rgba(0,0,0,0.10)]",
+          "sm:w-[20rem]",
           closing ? "animate-drawer-left-out" : "animate-drawer-left-in",
-        ].join(" ")}
+          className,
+        ]
+          .filter(Boolean)
+          .join(" ")}
       >
         <div className="relative flex min-h-0 flex-1 flex-col">
           <button
             type="button"
             onClick={handleClose}
             aria-label={tClose("close")}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: "var(--color-secondary)" }}
+            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: isLiquid ? "#ffffff" : "var(--color-secondary)" }}
           >
             <X size={18} aria-hidden />
           </button>
@@ -119,6 +130,7 @@ export function HistorySideDrawer({
             titleId={titleId}
             headerActions={headerActions}
             footer={footer}
+            variant={variant}
           >
             {children}
           </HistorySidePanel>

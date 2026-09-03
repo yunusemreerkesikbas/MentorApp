@@ -4125,3 +4125,21 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
     - History Side Panel'deki mor yerel `<select>` yerine token uyumlu `HistoryFilterSelect` entegre edildi.
   - **Kullanım:** Sahne kartları için `.session-liquid-card`, haplar için `.session-liquid-pill`, birincil eylemler için `.session-liquid-btn-obsidian`.
   - **İlgili dosyalar:** `packages/ui/src/theme.css`, `session-chrome-pill.ts`, `study-session-shell.tsx`, `session-focus-goal-card.tsx`, `session-room-list.tsx`, `session-buddy-card.tsx`, `packages/ui/src/components/circular-timer-ring.tsx`, `session-timer-ring.tsx`, `session-controls.tsx`.
+
+- **2026-09-04 — HistorySidePanel, HistorySideRail ve Drawer Liquid Glass Dönüşümü.**
+  - **Ne yapıldı:** Sol geçmiş paneli (`HistorySidePanel`), masaüstü rayı (`HistorySideRail`) ve mobil çekmecesi (`HistorySideDrawer`), opak gri sütun görünümünden arındırılarak sahneyle 100% bütünleşen **Liquid Glass** mimarisine geçirildi.
+    - `packages/ui/src/theme.css` içine `.session-liquid-rail` ve `.session-liquid-drawer` sınıfları eklendi (`backdrop-filter: blur(28px) saturate(190%)`, şeffaf sıvı gradyan, narin beyaz kenarlık ışıması ve scoped `--color-main: #ffffff` değişkenleri).
+    - `HistorySidePanel`, `HistorySideRail`, `HistorySideDrawer` ve `HistoryFilterSelect` bileşenlerine `variant?: "default" | "liquid"` desteği getirildi.
+    - `HistoryFilterSelect` tetikleyici butonu sıvı cam kapsüle (`session-liquid-pill`), açılır menüsü ise buzlu cam karta (`session-liquid-card`) ve parıltılı beyaz seçeneğe bağlandı.
+    - `SessionHistory` bileşeni `variant="liquid"` ile tarih başlıkları (`rgba(255,255,255,0.72)`), seans satırları ve "Daha fazla göster" butonu için sıvı cam kontrastına kavuşturuldu.
+  - **İlgili dosyalar:** `packages/ui/src/theme.css`, `history-side-panel.tsx`, `history-side-rail.tsx`, `history-side-drawer.tsx`, `history-filter-select.tsx`, `popover-menu.tsx`, `session-history.tsx`, `study-session-shell.tsx`.
+
+- **2026-09-04 — StudySessionShell Modüler Refactoring & Üst Bar Yan Yana Hizalama.**
+  - **Ne yapıldı:** 800+ satırlık monolitik `StudySessionShell` bileşeni modüler alt bileşenlere ayrıştırıldı ve üst bardaki 3 butonun (`Ders seç`, `Kafe`, `Sessiz`) 2 satıra kırılma sorunu çözüldü.
+    - `session-top-bar.tsx` oluşturuldu: Üst bar `max-w-2xl` konteyner ve `flex-nowrap` ile tüm butonlar (`SessionSubjectPicker`, `RoomThemeSwitcher + PlainToggle`, `SessionAmbientPicker`) tek satırda yan yana hizalandı.
+    - `session-setup-summary.tsx` oluşturuldu: 3 istatistikli (Odak, Mola, Tahmini Bitiş) Liquid Glass özet kartı ayrıştırıldı.
+    - `session-focus-view.tsx` oluşturuldu: Aktif odaklanma ve mola tam ekran sahnesi (`SessionFocusBackdrop`, durum başlığı, sayaç halkası, kontroller) izole edildi.
+    - `session-params.ts` oluşturuldu: URL parametre ayrıştırıcıları ve oturum kurtarma yardımcı fonksiyonları ayrıştırıldı.
+    - `study-session-shell.tsx` sadeleştirilerek okunabilirliği ve bakım kolaylığı artırıldı.
+  - **Kullanım:** `SessionTopBar`, `SessionSetupSummary` ve `SessionFocusView` bileşenleri `study-session` içinde deklaratif olarak kullanılır.
+  - **İlgili dosyalar:** `session-top-bar.tsx`, `session-setup-summary.tsx`, `session-focus-view.tsx`, `session-params.ts`, `study-session-shell.tsx`.

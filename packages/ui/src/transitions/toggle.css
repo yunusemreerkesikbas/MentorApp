@@ -1,0 +1,80 @@
+.t-toggle {
+  position: relative;
+  display: inline-flex;
+  width: 3rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  appearance: none;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0;
+  cursor: pointer;
+  background: var(--toggle-off-bg);
+  transition: background var(--toggle-track) var(--toggle-ease);
+}
+
+.t-toggle[data-on="true"] {
+  background: var(--toggle-on-bg);
+}
+
+.t-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.t-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.t-toggle-thumb {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--toggle-thumb-off);
+  translate: 0 0;
+  will-change: translate;
+  transition: background var(--toggle-track) var(--toggle-ease);
+}
+
+.t-toggle[data-on="true"] .t-toggle-thumb {
+  translate: var(--toggle-travel) 0;
+  background: var(--toggle-thumb-on);
+}
+
+.t-toggle.is-init[data-on="true"] .t-toggle-thumb {
+  animation: t-toggle-on var(--toggle-dur) var(--toggle-ease) both;
+}
+
+.t-toggle.is-init[data-on="false"] .t-toggle-thumb {
+  animation: t-toggle-off var(--toggle-dur) var(--toggle-ease) both;
+}
+
+@keyframes t-toggle-on {
+  0% {
+    translate: 0 0;
+  }
+  100% {
+    translate: var(--toggle-travel) 0;
+  }
+}
+
+@keyframes t-toggle-off {
+  0% {
+    translate: var(--toggle-travel) 0;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-toggle,
+  .t-toggle-thumb {
+    transition: none !important;
+    animation: none !important;
+  }
+}

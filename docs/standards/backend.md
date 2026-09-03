@@ -11,6 +11,16 @@
 - [ ] The domain layer **knows no framework** (doesn't import NestJS/Drizzle). Infrastructure is outermost,
   plugged in via a port.
 
+## Modularity & file size limits (binding)
+- [ ] **Proactive decomposition during development:** Do NOT allow backend services, controllers, or repositories to swell into monolithic God-classes (500+ lines). Decompose into focused sub-units *during development*, not as an afterthought.
+- [ ] **Target threshold:** Individual service, controller, or repository files should stay under **250–300 lines**. When approaching or exceeding this threshold, split immediately into cohesive sub-units.
+- [ ] **What to extract on backend:**
+  - **Sub-services & domain services:** Specialized domain concerns (e.g. calculation engines, state transition managers, session completion processors).
+  - **Strategy & handler classes:** Multiple branching workflows (e.g. payment providers, reward strategies, notification channels, event handlers) must be extracted into Strategy / Handler classes rather than massive switch/if-else blocks inside one service.
+  - **Query builders & repository helpers:** Complex multi-table joins, aggregations, or filters belong in dedicated query objects, scopes, or sub-repositories.
+  - **DTO & entity mappers:** Pure serialization, response transformation, and param mapping belong in dedicated mapper files, not inlined across controllers and services.
+  - **Thin controllers:** Controllers remain strictly lean HTTP adapters (routing, DTO validation, calling services). No business logic or multi-step coordination in controllers.
+
 ## Data access
 - [ ] DB is accessed **only via a repository** (controllers/services don't write raw SQL).
 - [ ] **Single driver:** `pg` Pool (`drizzle-orm/node-postgres`). RLS-session work uses `withUserContext`
@@ -58,5 +68,5 @@
 - [ ] No merge unless `pnpm typecheck && lint && build` is green.
 
 ## Don't
-- ❌ Direct cross-module table/repo access · ❌ business logic/SQL in controllers · ❌ synchronous LLM calls ·
+- ❌ Direct cross-module table/repo access · ❌ business logic/SQL in controllers · ❌ monolithic bloated services/controllers (>250–300 lines without decomposition) · ❌ synchronous LLM calls ·
   ❌ raw `any` · ❌ schema change without a migration.

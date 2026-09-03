@@ -75,13 +75,18 @@ function groupByDay(items: StudySessionDto[]): { key: string; items: StudySessio
   return groups;
 }
 
+export interface SessionHistoryProps {
+  variant?: "default" | "liquid";
+}
+
 /**
  * Finalized sessions for the /study-session history rail / drawer.
  * Pagination and date/subject filters stay inside the sidebar — there is no history page.
  */
-export function SessionHistory() {
+export function SessionHistory({ variant = "liquid" }: SessionHistoryProps = {}) {
   const t = useTranslations("session");
   const locale = useLocale();
+  const isLiquid = variant === "liquid";
   const [sessions, setSessions] = useState<StudySessionDto[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -185,6 +190,7 @@ export function SessionHistory() {
             label: t(`history_date_${preset}`),
           }))}
           testId="history-filter-date"
+          variant={variant}
         />
         {filterSubjects.length > 0 ? (
           <HistoryFilterSelect
@@ -196,6 +202,7 @@ export function SessionHistory() {
               ...filterSubjects.map((subject) => ({ value: subject, label: subject })),
             ]}
             testId="history-filter-subject"
+            variant={variant}
           />
         ) : null}
       </div>
@@ -209,23 +216,36 @@ export function SessionHistory() {
               style={skeletonStaggerStyle(index)}
             >
               <div className="flex flex-col gap-1.5">
-                <Skeleton className="h-3.5 w-24 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
+                <Skeleton
+                  className={`h-3.5 w-24 rounded-[var(--radius-card)] ${isLiquid ? "bg-white/15" : ""}`}
+                />
+                <Skeleton
+                  className={`h-3 w-16 rounded-[var(--radius-card)] ${isLiquid ? "bg-white/10" : ""}`}
+                />
               </div>
-              <Skeleton className="h-3 w-12 justify-self-end rounded-[var(--radius-card)]" />
+              <Skeleton
+                className={`h-3 w-12 justify-self-end rounded-[var(--radius-card)] ${isLiquid ? "bg-white/10" : ""}`}
+              />
             </div>
           ))}
         </div>
       ) : null}
 
       {state === "error" ? (
-        <p className="px-1 py-2 text-sm" style={{ color: "var(--color-secondary)" }} role="status">
+        <p
+          className="px-1 py-2 text-sm"
+          style={{ color: isLiquid ? "rgba(255, 255, 255, 0.72)" : "var(--color-secondary)" }}
+          role="status"
+        >
           {t("history_error")}
         </p>
       ) : null}
 
       {state === "ready" && sessions.length === 0 ? (
-        <p className="px-1 py-2 text-sm" style={{ color: "var(--color-secondary)" }}>
+        <p
+          className="px-1 py-2 text-sm"
+          style={{ color: isLiquid ? "rgba(255, 255, 255, 0.72)" : "var(--color-secondary)" }}
+        >
           {filtersActive ? t("history_empty_filtered") : t("history_empty")}
         </p>
       ) : null}
@@ -237,7 +257,10 @@ export function SessionHistory() {
               <section key={group.key} className="flex flex-col gap-0.5">
                 <h3
                   className="px-2.5 pb-0.5 text-[11px] font-bold uppercase tracking-wide"
-                  style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
+                  style={{
+                    color: isLiquid ? "rgba(255, 255, 255, 0.72)" : "var(--color-secondary)",
+                    fontFamily: "var(--font-heading)",
+                  }}
                 >
                   {dayLabel(group.key, locale, t)}
                 </h3>
@@ -264,7 +287,11 @@ export function SessionHistory() {
             ))}
           </div>
           {loadMoreError ? (
-            <p className="px-1 text-sm" style={{ color: "var(--color-secondary)" }} role="status">
+            <p
+              className="px-1 text-sm"
+              style={{ color: isLiquid ? "rgba(255, 255, 255, 0.72)" : "var(--color-secondary)" }}
+              role="status"
+            >
               {t("history_load_more_error")}
             </p>
           ) : null}
@@ -276,8 +303,15 @@ export function SessionHistory() {
               type="button"
               disabled={loadingMore}
               onClick={() => void loadMore()}
-              className="mt-1 inline-flex min-h-9 cursor-pointer items-center justify-center gap-1 self-center rounded-full px-3 text-xs font-bold transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
-              style={{ color: "var(--color-secondary)" }}
+              className={[
+                "mt-1 inline-flex min-h-9 cursor-pointer items-center justify-center gap-1 self-center rounded-full px-3 text-xs font-bold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none",
+                isLiquid
+                  ? "hover:bg-white/10 hover:text-white"
+                  : "hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)]",
+              ].join(" ")}
+              style={{
+                color: isLiquid ? "rgba(255, 255, 255, 0.75)" : "var(--color-secondary)",
+              }}
             >
               {t("history_load_more")}
               <ChevronDown

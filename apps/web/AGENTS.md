@@ -9,6 +9,7 @@
   shimmer/enter animation uses **global** classes only (`.mentor-skeleton-shimmer`, `.mentor-skeleton-enter`
   via `@mentor/ui` `Skeleton` / `SkeletonGroup`) — see [`docs/standards/frontend.md`](../../docs/standards/frontend.md) § Loading skeletons.
 - All React/Next.js code follows the **`vercel-react-best-practices`** skill (priority: async-waterfall → bundle → server).
+- **Component modularity & size discipline:** Components must NOT swell into giant files (500+ lines). Proactively break components into subcomponents *during development* when approaching ~250–300 lines or accumulating multiple concerns (view phases, toolbars, setup cards, param parsers). Shells orchestrate; subcomponents render (see [`docs/standards/frontend.md`](../../docs/standards/frontend.md)).
 - Data comes from the **single API**: `@mentor/api-client` (NestJS `/v1`). Don't build a separate backend/route logic.
 - Server component by default; client only when needed. Turkish tone (§0), accessibility.
 - **Unit tests:** `pnpm --filter @mentor/web test` (Vitest, `src/**/*.spec.ts`, Node env — pure logic

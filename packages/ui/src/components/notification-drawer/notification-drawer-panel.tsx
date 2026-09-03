@@ -5,6 +5,7 @@ import type * as React from "react";
 import { createPortal } from "react-dom";
 import { useEffect, useRef, useState } from "react";
 import type { NotificationCategory, UserNotificationDto } from "@mentor/types";
+import { SlidingTabs } from "../transitions/sliding-tabs.js";
 import { NotificationDrawerItem } from "./notification-drawer-item.js";
 import type {
   NotificationDrawerDesktopSide,
@@ -246,47 +247,22 @@ export function NotificationDrawerPanel({
           </div>
         </div>
 
-        {/* Tabs */}
-        <div
-          role="tablist"
-          aria-label={labels.title}
-          className="flex shrink-0 border-b px-4"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--color-main) 10%, transparent)",
-          }}
-        >
-          {TABS.map((tab) => {
-            const isActive = activeTab === tab.id;
-            return (
-              <button
-                key={tab.id}
-                onClick={() => onTabChange(tab.id)}
-                className="relative mr-5 py-3 text-[11px] font-bold uppercase tracking-widest transition-colors last:mr-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
-                style={{
-                  fontFamily: "var(--font-heading)",
-                  color: isActive
-                    ? "var(--color-main)"
-                    : "var(--color-secondary)",
-                }}
-                aria-selected={isActive}
-                role="tab"
-              >
-                {labels[tab.labelKey] as string}
-                {isActive && (
-                  <span
-                    aria-hidden
-                    className="absolute inset-x-0 -bottom-px h-0.5"
-                    style={{ backgroundColor: "var(--color-main)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
+        <SlidingTabs
+          variant="underline"
+          className="shrink-0"
+          ariaLabel={labels.title}
+          idPrefix="notification-drawer-tab"
+          value={activeTab}
+          onChange={(id) => onTabChange(id as NotificationTab)}
+          items={TABS.map((tab) => ({
+            id: tab.id,
+            label: labels[tab.labelKey] as string,
+            panelId: "notification-drawer-panel",
+          }))}
+        />
 
-        {/* Notification list */}
         <div
+          id="notification-drawer-panel"
           className="flex-1 overflow-y-auto overscroll-contain"
           style={{ scrollbarWidth: "none" }}
           role="tabpanel"

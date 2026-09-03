@@ -13,6 +13,9 @@
 - **KISS:** the simplest thing that works. No cleverness without a clear payoff.
 - **YAGNI:** build for the **current phase** (§10). No speculative abstractions/flags/layers (ties to AGENTS §5:
   add a pattern only when you feel the pain).
+- **Modularity & File Size Discipline (FE + BE):** Small, manageable units. Neither frontend components nor backend services/controllers must swell into monolithic files (500+ lines). Proactively decompose into sub-units *during development* when approaching the **250–300 lines** target.
+  - **Frontend:** Shells orchestrate; distinct view stages (`*FocusView`, `*DoneState`), toolbars, and complex cards become subcomponents; param parsers become pure helpers (`*-params.ts`).
+  - **Backend:** Controllers stay thin HTTP adapters; services extract domain calculators, strategies/handlers for branching workflows, query builders for complex queries, and dedicated DTO mappers.
 
 ## 2. No hardcoding / no needless fallbacks
 - **Tunable values** (caps, prices, thresholds, rate-limits) → central **config registry** (§9), never inline literals.
@@ -50,6 +53,7 @@
 - [ ] Edge/negative cases handled (not just the happy path).
 - [ ] No business logic on FE/mobile; user-facing messages come from the backend.
 - [ ] No hardcoded tunables / silent fallbacks; no magic numbers (DESIGN tokens / config registry).
+- [ ] Code modularity preserved (<250–300 lines target; FE components decomposed into subcomponents, BE services/controllers decomposed into sub-services/strategies during development).
 - [ ] **Dead code removed for the touched scope** — unused vars/imports/branches/files, no commented-out code.
 - [ ] Tests for the logic (backend use-cases); CI green (lint/typecheck/build).
 - [ ] No stray `TODO/FIXME` without a tracked reference.

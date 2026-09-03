@@ -51,6 +51,16 @@ render the screen skeleton component instead of empty content.
 **Do not:** put screen-specific skeleton shapes in `@mentor/ui`; duplicate shimmer CSS in `globals.css`; use
 spinners for content placeholders (button `LoaderCircle` for in-flight actions is still OK).
 
+## Component modularity & size limits (binding)
+- [ ] **Proactive decomposition during development:** Do NOT let components swell into monolithic files (500+ lines). Split into subcomponents *while developing*, not as a post-facto cleanup.
+- [ ] **Target threshold:** Individual component files should stay under **250–300 lines**. When a component approaches or exceeds this range, or begins accumulating multiple distinct concerns, decompose it immediately.
+- [ ] **What to extract into subcomponents:**
+  - **View phases / stages:** Distinct visual states (e.g. `*FocusView`, `*DoneState`, `*SetupSummary`, `*ReviewModal`).
+  - **Toolbars & scenery:** Navigation, context pickers, and mode switchers (e.g. `*TopBar`, `*ActionsRail`).
+  - **Complex cards & panels:** Embedded stats cards, goal summaries, or preview trays.
+  - **Pure parameter / state helpers:** URL search param parsers, storage readers, and initialization helpers go into adjacent `*-params.ts` or `use-*-state.ts` utility files.
+- [ ] **Orchestrator shell pattern:** The parent page / shell component should be a clean orchestrator managing top-level lifecycle, data flow, and layout coordination — not a dumping ground for inline JSX.
+
 ## Forms & state
 - [ ] Form validation with **shared Zod** (`@mentor/validation`) — same schema as BE.
 - [ ] Minimal state: **derive during render** what's derivable (don't store via effects). No needless `useEffect`.
@@ -79,6 +89,6 @@ spinners for content placeholders (button `LoaderCircle` for in-flight actions i
   (next-intl 3.x writes it to the wrong key) — see [i18n feature doc](../features/i18n.md).
 
 ## Don't
-- ❌ off-DESIGN magic numbers/colors · ❌ `bg-white` / `#fff` / `dark:bg-black` instead of tokens · ❌ needless client components · ❌ barrel imports · ❌ derived state in
+- ❌ off-DESIGN magic numbers/colors · ❌ `bg-white` / `#fff` / `dark:bg-black` instead of tokens · ❌ monolithic bloated components (>250–300 lines without subcomponent decomposition) · ❌ needless client components · ❌ barrel imports · ❌ derived state in
   effects · ❌ bypassing api-client with direct `fetch` · ❌ hardcoded TR strings · ❌ `next/link`·`next/navigation`
   for in-app navigation (use `@/i18n/navigation`).

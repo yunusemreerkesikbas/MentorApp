@@ -133,6 +133,16 @@
   --t-check-delay: 0ms;
   --t-check-uncheck: var(--duration-quick);
   --t-check-ease: var(--ease-smooth-out);
+
+  /* Toggle — no bounce overshoot (DESIGN.md §9) */
+  --toggle-dur: var(--duration-medium);
+  --toggle-travel: 1.25rem;
+  --toggle-track: var(--duration-quick);
+  --toggle-ease: var(--ease-smooth-out);
+  --toggle-on-bg: var(--color-btn);
+  --toggle-off-bg: color-mix(in srgb, var(--color-main) 15%, transparent);
+  --toggle-thumb-on: var(--color-btn-label);
+  --toggle-thumb-off: var(--color-surface);
 }
 
 /* === digit-pop-in.css === */
@@ -813,9 +823,127 @@
   pointer-events: none;
 }
 
+/* Underline variant — notification drawer chrome (sliding bar, not pill). */
+.t-tabs.t-tabs--underline {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  padding: 0 1rem;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-main) 10%, transparent);
+}
+
+.t-tabs.t-tabs--underline .t-tab {
+  margin-right: 1.25rem;
+  min-height: 2.75rem;
+  padding: 0.75rem 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.t-tabs.t-tabs--underline .t-tab:last-child {
+  margin-right: 0;
+}
+
+.t-tabs.t-tabs--underline .t-tabs-pill {
+  top: auto;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--tabs-pill-bg, var(--color-main));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .t-tabs-pill,
   .t-tab {
     transition: none !important;
+  }
+}
+
+/* === toggle.css === */
+.t-toggle {
+  position: relative;
+  display: inline-flex;
+  width: 3rem;
+  height: 1.75rem;
+  flex-shrink: 0;
+  appearance: none;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0;
+  cursor: pointer;
+  background: var(--toggle-off-bg);
+  transition: background var(--toggle-track) var(--toggle-ease);
+}
+
+.t-toggle[data-on="true"] {
+  background: var(--toggle-on-bg);
+}
+
+.t-toggle:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.t-toggle:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.t-toggle-thumb {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 9999px;
+  background: var(--toggle-thumb-off);
+  translate: 0 0;
+  will-change: translate;
+  transition: background var(--toggle-track) var(--toggle-ease);
+}
+
+.t-toggle[data-on="true"] .t-toggle-thumb {
+  translate: var(--toggle-travel) 0;
+  background: var(--toggle-thumb-on);
+}
+
+.t-toggle.is-init[data-on="true"] .t-toggle-thumb {
+  animation: t-toggle-on var(--toggle-dur) var(--toggle-ease) both;
+}
+
+.t-toggle.is-init[data-on="false"] .t-toggle-thumb {
+  animation: t-toggle-off var(--toggle-dur) var(--toggle-ease) both;
+}
+
+@keyframes t-toggle-on {
+  0% {
+    translate: 0 0;
+  }
+  100% {
+    translate: var(--toggle-travel) 0;
+  }
+}
+
+@keyframes t-toggle-off {
+  0% {
+    translate: var(--toggle-travel) 0;
+  }
+  100% {
+    translate: 0 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-toggle,
+  .t-toggle-thumb {
+    transition: none !important;
+    animation: none !important;
   }
 }
