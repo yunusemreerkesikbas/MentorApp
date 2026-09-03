@@ -106,7 +106,7 @@ describe("account erasure (e2e)", () => {
     await request(app.getHttpServer())
       .post("/v1/plan-tasks")
       .set(asA)
-      .send({ title: "Erasure görevi", taskDate: today })
+      .send({ title: "Erasure görevi", taskDate: today, description: "gizli plan notu" })
       .expect(201);
     await request(app.getHttpServer())
       .post("/v1/coaching/mood-checkins")
@@ -292,10 +292,11 @@ describe("account erasure (e2e)", () => {
   it("coaching: free text is scrubbed, analytic rows survive (regression)", async () => {
     // Coaching keeps the numbers (analytic value) and scrubs everything the user typed.
     const task = await svc(async (c) => {
-      const res = await c.query("select title from plan_tasks where user_id=$1", [idA]);
+      const res = await c.query("select title, description from plan_tasks where user_id=$1", [idA]);
       return res.rows[0];
     });
     expect(task.title).toBe("Silinmiş görev");
+    expect(task.description).toBeNull();
     const mood = await svc(async (c) => {
       const res = await c.query(
         "select struggle_note, ai_reflection from mood_checkins where user_id=$1",

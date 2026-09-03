@@ -145,6 +145,13 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **KVKK erasure — `plan_tasks.description` de siliniyor (2026-09-03)** — `CoachingErasureRepository`
+  `plan_tasks`'ı sadece `title: ERASED_TASK_TITLE` ile scrub ediyordu; öğrencinin kendi serbest metin
+  notu olan `description` erasure'dan sağ çıkıyordu. Oysa bu, `study_sessions.struggleNote` ile aynı
+  sınıf veri ve `domain/cohort-evidence.ts` trust-line kontratında "DELIBERATELY ABSENT" olarak
+  adı geçiyor. Gözden kaçmış — `.set(...)` çağrısına `description: null` eklendi.
+  **İlgili:** `infrastructure/coaching-erasure.repository.ts`, `apps/api/test/account-erasure.e2e-spec.ts`.
+
 - **`PlanService.clearMentorshipOrigin` (2026-09-02)** — W8 erasure seam'i. Bir koç hesabı KVKK ile
   silindiğinde `coach_students` satırları gidiyor, ama `plan_tasks.origin_ref_id` FK'sız soft ref
   olduğu için öğrencinin ödevleri `origin_type='MENTORSHIP'` olarak kalıyor ve API onları düzenlemeye
