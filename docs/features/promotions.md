@@ -131,6 +131,23 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **e2e suite'i yarım kalan koşudan korunuyor (2026-09-02)** — `promotions.e2e-spec.ts` temizliği
+  yalnız `afterAll`'daydı; koşu yarıda kesilince (Ctrl+C, çöken başka bir spec) ektiği promosyon
+  paylaşılan `mentor_test` veritabanında `is_active = true` kalıyor, sonraki her koşuda "tek
+  teklif" bekleyen test iki teklif görüyordu (`expected […] to have a length of 1 but got 2`).
+  Yerelde 124 birikmiş `e2e %` satırı vardı. Aynı zafiyet `config_overrides`'ta daha sinsiydi:
+  `ads.*`, `promotions.*` ve `identity.google_oauth.enabled` açık kalmakla kalmıyor, bir sonraki
+  koşu bunları "önceki değer" sanıp `afterAll`'da kalıcı olarak geri yazıyordu.
+  Çözüm spec'lerde değil, **`test/global-setup.ts`'te**: migration'lardan hemen sonra, tek
+  transaction'da `config_overrides` boşaltılıyor ve `name like 'e2e %'` promosyonlar emekliye
+  ayrılıyor. Tek yer, tüm spec'ler; her koşu temiz başlıyor.
+  Kullanım: yok, sadece test hijyeni — `pnpm --filter @mentor/api exec vitest run` yeter.
+  Gotcha: temizlik `SERVICE` rolüyle yapılmalı, `config_overrides` FORCE RLS altında ve rol
+  ayarlanmazsa `delete` sessizce sıfır satır siler. İkincisi, promosyon temizliği
+  `seedPromotion`'ın `e2e <run> …` isim şablonuna dayanıyor; şablon değişirse `like` de
+  değişmeli. Migration'lar iki tabloyu da hiç doldurmuyor, bu yüzden toptan temizlik güvenli.
+  İlgili: `apps/api/test/global-setup.ts`, [ads.md](./ads.md), [identity.md](./identity.md).
+
 - **Şerit metni: oran önde, "Şimdi yükselt" (2026-09-02)** — `banner_message` artık indirimin
   büyüklüğüyle başlıyor: "%20 indirim seni bekliyor: Hoşgeldin Hediyesi". Şeridin daha önce
   taşıdığı tek bilgi kampanya adıydı, ki modalı hiç görmemiş biri için hiçbir anlamı yok. Oranı
