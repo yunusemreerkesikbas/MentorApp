@@ -29,6 +29,24 @@ describe("mentorship (e2e)", () => {
   const isoDaysFromNow = (n: number) =>
     new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
+  /**
+   * Poll one person's inbox for a notification matching `match`. The mentorship feedback listener
+   * runs off a fire-and-forget `emit`, so its write can land a beat after the request that
+   * triggered it returns — same reasoning as the `process-jobs` polling test.
+   */
+  const pollForNotification = async (
+    who: string,
+    match: (n: { body: string; linkUrl: string | null }) => boolean,
+  ): Promise<{ body: string; linkUrl: string | null } | undefined> => {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const inbox = await http().get("/v1/notifications").set(auth(who));
+      const found = inbox.body.items.find(match);
+      if (found) return found;
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+    return undefined;
+  };
+
   const svc = async (fn: (c: import("pg").PoolClient) => Promise<void>) => {
     const c = await pool.connect();
     try {
@@ -429,21 +447,42 @@ describe("mentorship (e2e)", () => {
     it("but tells the coach, so their report does not quietly lie", async () => {
       // The report shows the living plan, not its history. Without this the assignment would
       // simply never be mentioned again and the coach would read its absence as "never assigned".
-      const inbox = await http().get("/v1/notifications").set(auth("coach"));
-      expect(inbox.status).toBe(200);
-      const dropped = inbox.body.items.find((n: { body: string }) =>
-        n.body.includes("Paragraf 20 soru"),
+      //
+      // `events.emit` is fire-and-forget (MentorshipEventsListener's own comment: "every send is
+      // best-effort"), so the listener chain — link lookup, identity lookup, the notification
+      // write — lands after the DELETE response, not inside it. Poll instead of asserting once,
+      // same pattern as the process-jobs cron test below.
+      const dropped = await pollForNotification(
+        "coach",
+        (n) => n.body.includes("Paragraf 20 soru"),
       );
       expect(dropped).toBeDefined();
-      expect(dropped.linkUrl).toBe(`/students/${userId.student}`);
+      expect(dropped!.linkUrl).toBe(`/students/${userId.student}`);
     });
 
-    it("tells the coach about a completion, at most once a day per student", async () => {
+    it("told the coach once when the student first completed one", async () => {
+      // The earlier "lets the student complete it" case already produced this evening's single
+      // progress notification; assert it landed before the next case leans on that fact.
+      const progressed = await pollForNotification("coach", (n) =>
+        n.linkUrl === `/students/${userId.student}` && n.body.includes("verdiğin bir görevi"),
+      );
+      expect(progressed).toBeDefined();
+    });
+
+    it("collapses a whole multi-day backlog into that same one notification", async () => {
+      // The regression guarded here: the dedupe key used to carry the task's SCHEDULED date, so a
+      // student clearing a coach-composed week (7 different dates in one evening) opened 7 distinct
+      // slots and sent 7 notifications — the exact storm the dedupe exists to prevent. The key is
+      // now the delivery day, so tasks spread across days collapse into the one already sent.
       const assign = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
         .send({
-          tasks: [{ title: "Bugün birinci" }, { title: "Bugün ikinci" }],
+          tasks: [
+            { title: "Bugün biriken", taskDate: isoDaysFromNow(0) },
+            { title: "Yarın biriken", taskDate: isoDaysFromNow(1) },
+            { title: "Öbür gün biriken", taskDate: isoDaysFromNow(2) },
+          ],
         });
       expect(assign.status).toBe(201);
 
@@ -456,11 +495,10 @@ describe("mentorship (e2e)", () => {
         expect(done.status).toBe(200);
       }
 
-      // Two completions on the same day, one notification: a coach with twenty students would
-      // otherwise get a completion storm every evening.
-      const after = (await http().get("/v1/notifications").set(auth("coach"))).body.items;
-      expect(after.length).toBe(before + 1);
-      expect(after[0].linkUrl).toBe(`/students/${userId.student}`);
+      // Give the fire-and-forget listener chain room to land anything it was going to land.
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      const after = (await http().get("/v1/notifications").set(auth("coach"))).body.items.length;
+      expect(after).toBe(before);
     });
 
     it("refuses an assignment beyond the horizon", async () => {

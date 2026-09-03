@@ -49,7 +49,6 @@ export class PlanTaskFeedbackListener {
           event.userId,
           displayName,
           event.title,
-          event.taskDate,
         ),
       ),
     );
@@ -61,13 +60,9 @@ export class PlanTaskFeedbackListener {
     await this.forward(event, (link, displayName) =>
       this.events.emit(
         MentorshipEventTopic.ASSIGNMENT_PROGRESSED,
-        new MentorshipAssignmentProgressed(
-          link.id,
-          link.coachId,
-          event.userId,
-          displayName,
-          event.taskDate,
-        ),
+        // No date travels: the notification is deduped on the day the coach is told, not on the
+        // day the task was scheduled for (see MentorshipEventsListener.onAssignmentProgressed).
+        new MentorshipAssignmentProgressed(link.id, link.coachId, event.userId, displayName),
       ),
     );
   }
@@ -84,9 +79,13 @@ export class PlanTaskFeedbackListener {
   ): Promise<void> {
     if (event.originType !== "MENTORSHIP" || !event.originRefId) return;
     try {
-      const link = await this.links.findById(event.originRefId);
+      // Both lookups are needed whenever the link is live, which is the overwhelmingly common
+      // case, so they go in parallel rather than paying two serial round trips per completion.
+      const [link, people] = await Promise.all([
+        this.links.findById(event.originRefId),
+        this.users.listDisplayIdentities([event.userId]),
+      ]);
       if (!link || link.status !== "ACTIVE") return;
-      const people = await this.users.listDisplayIdentities([event.userId]);
       emit(link, people.get(event.userId)?.displayName ?? "");
     } catch (err) {
       // Logged, not swallowed silently: the plan change already committed, so throwing here would

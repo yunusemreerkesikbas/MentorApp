@@ -136,6 +136,83 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Code review düzeltmeleri — W8 üç dilim (2026-09-03)** — Üç PR'ın (besteci · risk özeti · geri
+  bildirim döngüsü) max-effort incelemesinde çıkan yedi bulgu kapatıldı.
+  **(1) Bloklayıcı:** tamamlama bildiriminin dedupe anahtarı görevin **planlandığı** günü
+  taşıyordu (`mentorship-progress:{studentId}:{taskDate}`). Haftalık besteci 7 farklı tarihe görev
+  yazdığı için, birikmiş haftayı bir akşamda bitiren öğrenci koça **7 ayrı bildirim** gönderiyordu
+  — dedupe'un önlemek için var olduğu "completion storm"un ta kendisi. Anahtar artık teslim günü
+  (`todayIso()`), ve `MentorshipAssignmentProgressed` hiç tarih taşımıyor: çökme yapısal.
+  **(2)** `plan_tasks.topic` artık `planTaskFieldsSchema`'da olduğu için öğrenci kendi görevine de
+  konu yazabiliyordu; ardından `PATCH {subject: null}` göndermek `plan_tasks_topic_requires_subject_chk`
+  ihlaline ve meşru bir düzenleme için açıklamasız 400'e yol açıyordu. `update()` artık `subject`
+  null'a çekilirken `topic`'i de temizliyor. `refinePlanTaskTaxonomy`'nin "her iki tarafta" sözü
+  yalnız create yollarında tutuluyordu.
+  **(3)** Risk özeti `{rest}` argümanını hesaplayıp hiçbir kopyada render etmiyordu: 5 öğrencilik
+  bir özet başlıkta "5" deyip gövdede 2 isim sayıyor, kalan 3'ü sessizce düşürüyordu. Artık isim
+  sınırı yok (dedupe zaten yalnız **yeni** işaretleri gönderdiği için liste kısa kalıyor) ve
+  `count` isim sayısıyla birebir; hiç isim çözülemezse bildirim hiç gönderilmiyor.
+  **(4)** `MentorshipQueryAdapter` koç başına sıralı `getNotificationContact` çağırıyordu (N+1);
+  metodun geri kalanı batch'liyken. `Promise.all`'a alındı.
+  **(5)** `MentorshipAssignmentInput`'taki `Omit<…, "description">` bir çağıranın `description`
+  geçmesini **engellemiyor** (TS'te omit edilmiş tip hâlâ atanabilir), alan da yazımda sessizce
+  düşüyordu — checklist'in yasakladığı sessiz fallback. `description?: never` ile derleme hatası.
+  **(6)** Düşürülen ödev bildirimi Türkçe metne ham ISO tarih (`2026-09-10`) basıyordu; tarih
+  kopyadan çıkarıldı (başlık görevi zaten tanımlıyor).
+  **(7)** `PlanTaskFeedbackListener` link ve kimlik sorgularını sıralı yapıyordu → `Promise.all`.
+  **Kapsam dışı bırakılan:** `0095`'teki iki CHECK `NOT VALID` olmadan eklenmiş (büyük tabloda
+  ACCESS EXCLUSIVE kilit + tam tarama). Migration **zaten uygulandığı** için dosyayı düzenlemek
+  `docs/standards/backend.md`'deki "migrations are forward-only" kuralını çiğner ve drizzle'ın
+  hash'ini bozar. Bunun yerine kural backend standardına yazıldı (yeni madde), gelecekteki
+  migration'lar için bağlayıcı.
+  **Gotchas:** (1) Tamamlama dedupe'u artık **teslim gününe** göre; bir testin "yarına ata ki kendi
+  slotunu alsın" hilesi geçersiz — e2e bunun yerine çok-günlü birikmenin tek bildirime çöktüğünü
+  doğruluyor. (2) `count` artık `students.length` değil `names.length`; isimsiz kimlikler sayıya
+  da girmiyor ki başlık ile gövde çelişmesin.
+  **İlgili:** `modules/notifications/application/listeners/mentorship-events.listener.ts`,
+  `modules/mentorship/domain/mentorship.constants.ts`,
+  `modules/mentorship/application/plan-task-feedback.listener.ts`,
+  `modules/coaching/application/plan.service.ts`,
+  `modules/mentorship/infrastructure/mentorship-query.adapter.ts`,
+  `modules/notifications/application/mentorship-risk-digest.service.ts`,
+  [`backend.md`](../standards/backend.md).
+
+- **Geri bildirim döngüsü — silme ve tamamlama koça geri gider (APP-068, 2026-09-03)** — Öğrenci
+  koç ödevini silebiliyordu (bilerek açık — plan hâlâ öğrencinin) ama koç bunu asla öğrenmiyordu;
+  rapor "atandı ama silindi"yi göstermeden sessizce eksik kalıyordu. Artık ikisi de koça gidiyor.
+  **Yeni tablo yok** — kayıt `user_notifications`'ın kendisi, zaten append-only.
+  Zincir: `PlanService` (`plan_tasks`'ın sahibi) koşulsuz `PlanTaskDeleted`/genişletilmiş
+  `PlanTaskCompleted` yayar → W8'in yeni `PlanTaskFeedbackListener`'ı `origin_ref_id`'yi
+  `coach_students`'a çevirip ACTIVE ise mentorship olayına dönüştürür → mevcut
+  `MentorshipEventsListener` teslim eder. Desen `coaching/application/notebook-forum.listener.ts`
+  ile birebir aynı — coaching bir link'in ne olduğunu hiç öğrenmiyor.
+  **Politika:** silme **dedupe'suz** (nadir, her biri raporun artık göstermeyeceği ayrı bir olgu;
+  başlık koçun kendi yazdığı için geri okumak güven çizgisine dokunmuyor). Tamamlama **günde bir,
+  `(studentId, taskDate)` dedupe'lu, başlıksız** (`mentorship-progress:...`) — 20 öğrencili koçta
+  akşam tamamlama fırtınası olmasın diye.
+  **Gotchas:** (1) `PlanTaskCompleted`'a **default değer verilmedi** — `taskDate`/`originType`/
+  `originRefId` zorunlu; sessiz fallback olurdu. İki emit yeri var (`plan.service.ts`,
+  `session.service.ts` — seans plan görevini otomatik DONE yapıyor, o da gerçek iş olduğu için
+  bildirim doğru). (2) `events.emit` senkron ama dinleyici zinciri async — best-effort'un bedeli:
+  bir yazma isteğinin yanıtı döndüğü anda bildirim henüz DB'de olmayabilir (e2e'de polling ile
+  test edildi, `process-jobs` cron testiyle aynı desen). (3) **Erasure `PlanService.remove()`'dan
+  geçmiyor** (`coaching-erasure.repository.ts` toplu `update` kullanıyor) — bu yüzden silinen bir
+  hesabın koçuna yüz bildirim gitmiyor; bu bağımlılık `remove()`'un doc yorumunda işaretli, ileride
+  erasure'ı `remove()` üzerinden geçirecek bir refactor bunu kırar. (4) ENDED bağ kuralı event
+  tarafında da geçerli: bağ bittikten sonra öğrencinin eski koç görevini silmesi/tamamlaması eski
+  koça bildirim göndermez — "metrics null" kuralının event karşılığı.
+  **Yan bulgu, aynı PR'da düzeltildi:** `notificationCategorySchema` (packages/validation) Zod
+  enum'unda `MENTORSHIP` hiç yoktu — APP-063'ten beri, `NotificationCategory` tipinde vardı ve
+  `createFromTemplate(..., "MENTORSHIP", ...)` her yerde kullanılıyordu ama `GET /v1/notifications`
+  bugüne kadar hiç e2e test edilmemişti. Sonuç: kutusunda **herhangi bir** MENTORSHIP bildirimi
+  olan biri (link kabulünden beri her koç) kutusunu her açtığında 500 alıyordu. Enum'a eklendi;
+  regresyon artık mentorship.e2e-spec.ts'in bu PR'daki testleriyle kapalı.
+  **İlgili:** `modules/coaching/domain/coaching.events.ts` (`PlanTaskDeleted`, genişletilmiş
+  `PlanTaskCompleted`), `modules/coaching/application/{plan,session}.service.ts`,
+  `modules/mentorship/{domain/mentorship.constants.ts,application/plan-task-feedback.listener.ts,infrastructure/mentorship-link.repository.ts}` (`findById`),
+  `modules/notifications/application/listeners/mentorship-events.listener.ts`,
+  `packages/validation/src/notifications.ts`.
+
 - **Koçun günlük müdahale uyarısı (APP-067, 2026-09-03)** — Risk triyajı bugüne kadar yalnız
   *pull* idi: koç panele girmedikçe hiçbir şey duymuyordu, ve 20 öğrencili bir koç haftada iki kez
   girerse "3 gün inaktif" sinyali ölü doğuyordu. Roadmap §9'un istediği veri-tetikli müdahale

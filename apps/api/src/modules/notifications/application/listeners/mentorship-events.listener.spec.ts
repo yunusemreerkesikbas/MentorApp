@@ -7,6 +7,7 @@ import {
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
 } from "../../../mentorship/domain/mentorship.constants";
+import { todayIso } from "../../../coaching/domain/date.util";
 
 const LINK = "11111111-1111-4111-8111-111111111111";
 const COACH = "22222222-2222-4222-8222-222222222222";
@@ -56,10 +57,10 @@ describe("MentorshipEventsListener", () => {
   it("carries the coach's own wording back when their assignment is dropped", async () => {
     const { listener, sent } = setup();
     await listener.onAssignmentDropped(
-      new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "Paragraf 20 soru", "2026-09-10"),
+      new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "Paragraf 20 soru"),
     );
     expect(sent[0]).toMatchObject({ userId: COACH, linkUrl: `/students/${STUDENT}` });
-    expect(sent[0]!.options?.args).toMatchObject({ title: "Paragraf 20 soru" });
+    expect(sent[0]!.options?.args).toEqual({ name: "Ayşe", title: "Paragraf 20 soru" });
     // Undeduped on purpose: three removals are three facts, not one.
     expect(sent[0]!.options?.dedupeKey).toBeUndefined();
   });
@@ -67,11 +68,26 @@ describe("MentorshipEventsListener", () => {
   it("collapses completions to one per student per day", async () => {
     const { listener, sent } = setup();
     await listener.onAssignmentProgressed(
-      new MentorshipAssignmentProgressed(LINK, COACH, STUDENT, "Ayşe", "2026-09-10"),
+      new MentorshipAssignmentProgressed(LINK, COACH, STUDENT, "Ayşe"),
     );
-    expect(sent[0]!.options?.dedupeKey).toBe(`mentorship-progress:${STUDENT}:2026-09-10`);
+    // Keyed on the day the coach is told, NOT on the task's own date.
+    expect(sent[0]!.options?.dedupeKey).toBe(`mentorship-progress:${STUDENT}:${todayIso()}`);
     // No count and no title: after the dedupe drops the rest, anything specific would be a lie.
     expect(sent[0]!.options?.args).toEqual({ name: "Ayşe" });
+  });
+
+  it("gives a whole week's backlog ONE key, however many days it spans", async () => {
+    // The regression this replaces: the key used to carry the task's scheduled date, so a student
+    // clearing a coach-composed week (7 distinct dates) produced 7 keys and 7 notifications in one
+    // evening. The event no longer carries a date at all, so the collapse is structural.
+    const { listener, sent } = setup();
+    for (let i = 0; i < 7; i++) {
+      await listener.onAssignmentProgressed(
+        new MentorshipAssignmentProgressed(LINK, COACH, STUDENT, "Ayşe"),
+      );
+    }
+    const keys = new Set(sent.map((s) => s.options?.dedupeKey));
+    expect(keys.size).toBe(1);
   });
 
   it("tells only the other party when a link ends", async () => {
@@ -89,7 +105,7 @@ describe("MentorshipEventsListener", () => {
     notifications.createFromTemplate.mockRejectedValueOnce(new Error("inbox down") as never);
     await expect(
       listener.onAssignmentDropped(
-        new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "X", "2026-09-10"),
+        new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "X"),
       ),
     ).resolves.toBeUndefined();
   });

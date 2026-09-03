@@ -246,6 +246,103 @@
 	min-width: 920px;
 }
 
+.article-table {
+	min-width: 920px;
+}
+
+.users-table {
+	min-width: 820px;
+}
+
+.plans-table {
+	min-width: 880px;
+
+	.form-control {
+		min-width: 150px;
+	}
+}
+
+.audit-table {
+	min-width: 1080px;
+}
+
+.announcements-table {
+	min-width: 960px;
+
+	.admin-table-primary span {
+		max-width: 62ch;
+		white-space: normal;
+	}
+}
+
+.forum-zones-table {
+	min-width: 900px;
+}
+
+.admin-forum-intent-cell {
+	min-width: 190px;
+}
+
+.admin-inline-tag-input {
+	min-width: 180px;
+}
+
+.admin-user-unit { width: 110px; }
+.admin-user-amount { width: 120px; }
+.admin-user-refund { width: 150px; }
+.admin-user-reason { min-width: 180px; }
+
+.admin-audit-details {
+	summary {
+		color: $primary;
+		font-weight: $font-600;
+		cursor: pointer;
+	}
+}
+
+.admin-audit-snapshots {
+	display: grid;
+	width: min(680px, 70vw);
+	margin-top: 12px;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+
+	pre {
+		max-height: 240px;
+		margin: 6px 0 0;
+		padding: 12px;
+		overflow: auto;
+		border: 1px solid $border-color;
+		border-radius: $radius-sm;
+		background: $gray-100;
+		font-size: $font-12;
+		white-space: pre-wrap;
+	}
+}
+
+.admin-plan-number {
+	max-width: 150px;
+}
+
+.admin-table-search {
+	display: flex;
+	width: min(100%, 440px);
+	gap: 8px;
+
+	.form-control {
+		min-width: 0;
+	}
+}
+
+.admin-article-cover-preview {
+	max-height: 220px;
+	object-fit: cover;
+}
+
+.admin-article-gallery-item {
+	width: 180px;
+}
+
 .admin-table-secondary {
 	display: block;
 	margin-top: 3px;
@@ -349,6 +446,12 @@
 		border-color: $dark-theme-color-border;
 		background: $dark-theme-color-hover-2;
 	}
+
+	.admin-audit-snapshots pre {
+		border-color: $dark-theme-color-border;
+		background: $dark-theme-color-hover-2;
+		color: $dark-theme-color;
+	}
 }
 
 @media (max-width: 991.98px) {
@@ -365,6 +468,15 @@
 	.admin-table-toolbar-content {
 		align-items: stretch;
 		flex-direction: column;
+	}
+
+	.admin-table-search {
+		width: 100%;
+	}
+
+	.admin-audit-snapshots {
+		width: min(520px, 75vw);
+		grid-template-columns: 1fr;
 	}
 
 	.admin-filter-group {

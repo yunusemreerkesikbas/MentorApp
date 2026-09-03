@@ -10,8 +10,10 @@ describe("CoachActionLifecycleListener", () => {
       completeActionForResult,
     } as never);
 
+    // taskDate/originType/originRefId (added for W8) are irrelevant to this listener — it only
+    // ever reads userId/taskId — but the constructor is required-arity by design (coaching.events.ts).
     await listener.onPlanTaskCompleted(
-      new PlanTaskCompleted("user-1", "task-1"),
+      new PlanTaskCompleted("user-1", "task-1", "2026-09-03", null, null),
     );
 
     expect(completeActionForResult).toHaveBeenCalledWith("user-1", "task-1");

@@ -174,8 +174,21 @@ describe("MentorshipRiskDigestService", () => {
     });
     await service.dispatchDaily(NOW);
     const args = inApp[0]!.args as Record<string, unknown>;
-    expect(args).toMatchObject({ count: 3, names: "Ayşe, Mert", rest: 1 });
+    // The headline count and the named list must agree. They used to not: the copy capped the
+    // list at two and passed a `rest` arg that no locale string rendered, so a digest about three
+    // students said "3" and named two, with nothing to explain the third.
+    expect(args).toEqual({ count: 3, names: "Ayşe, Mert, Zeynep" });
+    expect(String(args.names).split(", ")).toHaveLength(args.count as number);
     expect(JSON.stringify(args)).not.toMatch(/INACTIVE|LOW_MOOD|NET_DROP/);
+  });
+
+  it("stays silent when every name resolves empty rather than saying '0 students'", async () => {
+    const { service, inApp, enqueued } = setup({
+      candidates: [candidate([{ id: AYSE, name: "", flags: ["INACTIVE"] }])],
+    });
+    await expect(service.dispatchDaily(NOW)).resolves.toEqual({ sent: 0, skipped: 1 });
+    expect(inApp).toHaveLength(0);
+    expect(enqueued).toHaveLength(0);
   });
 
   it("treats a malformed stored baseline as no baseline instead of throwing", async () => {

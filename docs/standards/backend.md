@@ -19,6 +19,12 @@
   the app filter alone.
 - [ ] Schema change → `drizzle-kit generate` migration (not handwritten SQL); migrations in version control.
 - [ ] **Migrations are forward-only:** never edit an applied/shipped migration → add a new one.
+- [ ] **`CHECK`/`FOREIGN KEY` on a non-empty table → `NOT VALID`, then `VALIDATE CONSTRAINT`.**
+      A plain `ADD CONSTRAINT` takes an ACCESS EXCLUSIVE lock and full-scans the table to verify
+      rows that a nullable new column usually satisfies anyway; `VALIDATE` takes only SHARE UPDATE
+      EXCLUSIVE and lets reads/writes through. Matters most on the hot tables (`plan_tasks`,
+      `study_sessions`, `daily_activity`). `drizzle-kit` does not emit `NOT VALID` — split it by
+      hand into the generated file **before** the migration is applied anywhere.
 - [ ] **List endpoints must be paginated** (`paginationQuerySchema`). No unbounded `findAll`.
 - [ ] No N+1: fetch related data in one query/`inArray`; index frequently-filtered columns.
 
