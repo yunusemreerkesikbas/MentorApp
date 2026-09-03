@@ -4,6 +4,8 @@ import { Eye, EyeOff } from "lucide-react";
 import type * as React from "react";
 import { useId, useState } from "react";
 
+import { ShakeField } from "./transitions/shake-field.js";
+
 export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
   label: string;
   /** Field-level error: sets `aria-invalid`, danger border, and a described message below. */
@@ -51,45 +53,46 @@ export function TextField({
       >
         {label}
       </span>
-      <div className="relative">
-        <input
-          {...rest}
-          ref={ref}
-          id={inputId}
-          type={effectiveType}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? errorId : undefined}
-          className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${showToggle ? "pr-12" : ""}`}
-          style={{
-            color: "var(--color-body)",
-            boxShadow: "var(--shadow-card)",
-            fontFamily: "var(--font-body)",
-            borderColor: error ? "var(--color-danger)" : "var(--color-border)",
-          }}
-        />
-        {showToggle ? (
-          <button
-            type="button"
-            onClick={() => setRevealed((v) => !v)}
-            aria-label={revealed ? revealLabels.hide : revealLabels.show}
-            aria-pressed={revealed}
-            className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--radius-card)] outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            {revealed ? (
-              <EyeOff size={20} strokeWidth={2} aria-hidden />
-            ) : (
-              <Eye size={20} strokeWidth={2} aria-hidden />
-            )}
-          </button>
-        ) : null}
-      </div>
+      <ShakeField isError={Boolean(error)} errorMessage={error}>
+        <div className="relative">
+          <input
+            {...rest}
+            ref={ref}
+            id={inputId}
+            type={effectiveType}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? errorId : undefined}
+            className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${showToggle ? "pr-12" : ""}`}
+            style={{
+              color: "var(--color-body)",
+              boxShadow: "var(--shadow-card)",
+              fontFamily: "var(--font-body)",
+              borderColor: error ? "var(--color-danger)" : "var(--color-border)",
+            }}
+          />
+          {showToggle ? (
+            <button
+              type="button"
+              onClick={() => setRevealed((v) => !v)}
+              aria-label={revealed ? revealLabels.hide : revealLabels.show}
+              aria-pressed={revealed}
+              className="absolute right-2 top-1/2 flex h-9 w-9 -translate-y-1/2 cursor-pointer items-center justify-center rounded-[var(--radius-card)] outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{ color: "var(--color-secondary)" }}
+            >
+              {revealed ? (
+                <EyeOff size={20} strokeWidth={2} aria-hidden />
+              ) : (
+                <Eye size={20} strokeWidth={2} aria-hidden />
+              )}
+            </button>
+          ) : null}
+        </div>
+      </ShakeField>
       {error ? (
         <span
           id={errorId}
           role="alert"
-          className="text-sm"
-          style={{ color: "var(--color-danger)" }}
+          className="sr-only"
         >
           {error}
         </span>

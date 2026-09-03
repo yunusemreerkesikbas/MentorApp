@@ -1,0 +1,133 @@
+/**
+ * Motion tokens — transitions.dev scale, DESIGN.md §9 easings (no elastic/bounce).
+ * Recipe vars below reference these where usage matches.
+ */
+:root {
+  --duration-stagger: 40ms;
+  --duration-micro: 80ms;
+  --duration-quick: 150ms;
+  --duration-fast: 250ms;
+  --duration-medium: 350ms;
+  --duration-slow: 400ms;
+  --duration-very-slow: 500ms;
+
+  --ease-smooth-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: ease-in-out;
+  --ease-out: ease-out;
+  --ease-linear: linear;
+
+  --distance-micro: 4px;
+  --distance-small: 6px;
+  --distance-base: 8px;
+  --distance-medium: 12px;
+  --distance-large: 30px;
+
+  --scale-large: 0.96;
+  --scale-medium: 0.97;
+  --scale-small: 0.98;
+  --scale-tiny: 0.99;
+
+  --blur-small: 2px;
+  --blur-medium: 3px;
+  --blur-large: 8px;
+
+  /* Number pop-in */
+  --digit-dur: var(--duration-very-slow);
+  --digit-distance: var(--distance-base);
+  --digit-stagger: 70ms;
+  --digit-blur: var(--blur-small);
+  --digit-ease: var(--ease-smooth-out);
+  --digit-dir-x: 0;
+  --digit-dir-y: 1;
+
+  /* Notification badge */
+  --badge-slide-dur: var(--duration-fast);
+  --badge-pop-dur: var(--duration-very-slow);
+  --badge-pop-close-dur: 180ms;
+  --badge-fade-dur: var(--duration-slow);
+  --badge-fade-close-dur: 180ms;
+  --badge-blur: var(--blur-small);
+  --badge-offset-x: -8.2px;
+  --badge-offset-y: 12.4px;
+  --badge-slide-ease: var(--ease-smooth-out);
+  --badge-pop-ease: var(--ease-smooth-out);
+  --badge-close-ease: var(--ease-out);
+
+  /* Text states swap */
+  --text-swap-dur: var(--duration-quick);
+  --text-swap-translate-y: var(--distance-micro);
+  --text-swap-blur: var(--blur-small);
+  --text-swap-ease: var(--ease-in-out);
+
+  /* Error shake */
+  --shake-distance: var(--distance-small);
+  --shake-overshoot: 4px;
+  --shake-dur-a: var(--duration-micro);
+  --shake-dur-b: 60ms;
+  --shake-ease: var(--ease-smooth-out);
+  --revert-hold: 3000ms;
+  --revert-dur: 280ms;
+
+  /* Success check */
+  --check-opacity-dur: var(--duration-very-slow);
+  --check-rotate-dur: var(--duration-very-slow);
+  --check-rotate-from: 80deg;
+  --check-bob-dur: var(--duration-very-slow);
+  --check-y-amount: var(--distance-large);
+  --check-blur-dur: var(--duration-very-slow);
+  --check-blur-from: 10px;
+  --check-path-dur: var(--duration-very-slow);
+  --check-path-delay: var(--duration-micro);
+  --check-ease-out: var(--ease-smooth-out);
+  --check-ease-opacity: var(--ease-smooth-out);
+  --check-ease-rotate: var(--ease-smooth-out);
+  --check-ease-bob: var(--ease-smooth-out);
+  --check-ease-path: var(--ease-smooth-out);
+
+  /* Skeleton reveal */
+  --pulse-dur: 1000ms;
+  --pulse-count: 1;
+  --pulse-min: 0.5;
+  --reveal-dur: var(--duration-slow);
+  --reveal-blur: var(--blur-small);
+  --reveal-ease: var(--ease-in-out);
+
+  /* Texts reveal */
+  --stagger-dur: var(--duration-very-slow);
+  --stagger-distance: var(--distance-medium);
+  --stagger-stagger: var(--duration-stagger);
+  --stagger-blur: var(--blur-medium);
+  --stagger-ease: var(--ease-smooth-out);
+
+  /* Tabs sliding — Mentor surface tokens, not gallery hex */
+  --tabs-dur: var(--duration-fast);
+  --tabs-ease: var(--ease-smooth-out);
+  --tabs-text-muted: var(--color-secondary);
+  --tabs-text-active: var(--color-main);
+  --tabs-bar-bg: color-mix(in srgb, var(--color-surface-container) 58%, var(--color-surface));
+  --tabs-pill-bg: var(--color-surface);
+
+  /* Shimmer text */
+  --shimmer-dur: 2000ms;
+  --shimmer-base: var(--color-secondary);
+  --shimmer-highlight: var(--color-main);
+  --shimmer-band: 400%;
+  --shimmer-ease: var(--ease-linear);
+
+  /* Like button */
+  --like-color: var(--color-like-active);
+  --like-fill: var(--duration-quick);
+  --like-pop: var(--duration-medium);
+  --like-pop-ease: var(--ease-smooth-out);
+  --like-particle-dur: 600ms;
+  --like-particle-dist: 20px;
+  --like-particle-size: 2.5px;
+  --like-ease: var(--ease-smooth-out);
+
+  /* Checkbox check (stroke draw) */
+  --t-check-box: var(--duration-quick);
+  --t-check-draw: var(--duration-medium);
+  --t-check-delay: 0ms;
+  --t-check-uncheck: var(--duration-quick);
+  --t-check-ease: var(--ease-smooth-out);
+}

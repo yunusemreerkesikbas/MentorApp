@@ -66,10 +66,6 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
     };
   }, [setUserFromServer]);
 
-  if (state.status === "loading") {
-    return <ProfileContentSkeleton label={t("loading")} />;
-  }
-
   if (state.status === "error") {
     return (
       <main className="mx-auto w-full max-w-6xl px-5 py-8 lg:px-8 lg:py-10">
@@ -78,7 +74,9 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
     );
   }
 
-  const { premium, user } = state;
+  const loading = state.status === "loading";
+  const premium = state.status === "ready" ? state.premium : false;
+  const user = state.status === "ready" ? state.user : null;
   const hasSocialLinks = getProfileLinks().social.length > 0;
   const handleUserSaved = (next: AuthUser) => {
     setUserFromServer(next);
@@ -92,9 +90,12 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
         variants: staggerListVariants,
       };
 
-  return (
-    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
-      <motion.div className="grid min-w-0 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]" {...motionProps}>
+  const readyBody =
+    user != null ? (
+      <motion.div
+        className="grid min-w-0 gap-5 lg:gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
+        {...motionProps}
+      >
         <section className="flex min-w-0 flex-col gap-5 lg:gap-6">
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ProfileHeader
@@ -118,7 +119,6 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
         </section>
 
         <aside className="flex min-w-0 flex-col gap-5 lg:gap-6 xl:sticky xl:top-8 xl:self-start">
-
           {hasSocialLinks ? (
             <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
               <SocialFollowCard />
@@ -138,63 +138,65 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
               }}
             />
           </motion.div>
-
         </aside>
       </motion.div>
+    ) : (
+      <div className="min-h-[28rem]" aria-hidden />
+    );
+
+  return (
+    <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <ProfileSkeletonBlocks />
+        </div>
+      </SkeletonGroup>
     </main>
   );
 }
 
-function ProfileContentSkeleton({ label }: { label: string }) {
+function ProfileSkeletonBlocks() {
   return (
-    <main className="mx-auto w-full max-w-6xl px-5 py-6 lg:px-8 lg:py-10">
-      <SkeletonGroup
-        label={label}
-        className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]"
-      >
-        <section className="flex flex-col gap-6">
-          <Card solid className="overflow-hidden p-0">
-            <Skeleton className="h-28 rounded-none" />
-            <div className="p-6">
-              <Skeleton className="-mt-14 h-24 w-24 rounded-[var(--radius-card)]" />
-              <Skeleton className="mt-5 h-7 w-60 max-w-full rounded-[var(--radius-card)]" />
-              <Skeleton className="mt-3 h-4 w-72 max-w-full rounded-[var(--radius-card)]" />
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                <Skeleton className="h-14 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-14 rounded-[var(--radius-card)]" />
-              </div>
+    <>
+      <section className="flex flex-col gap-6">
+        <Card solid className="overflow-hidden p-0">
+          <Skeleton className="h-28 rounded-none" />
+          <div className="p-6">
+            <Skeleton className="-mt-14 h-24 w-24 rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-5 h-7 w-60 max-w-full rounded-[var(--radius-card)]" />
+            <Skeleton className="mt-3 h-4 w-72 max-w-full rounded-[var(--radius-card)]" />
+            <div className="mt-5 grid gap-3 sm:grid-cols-2">
+              <Skeleton className="h-14 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-14 rounded-[var(--radius-card)]" />
             </div>
-          </Card>
-          <Card>
-            <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
-            <div className="mt-4 grid gap-2">
-              {[0, 1, 2].map((item) => (
-                <Skeleton
-                  key={item}
-                  className="h-12 rounded-[var(--radius-card)]"
-                />
-              ))}
-            </div>
-          </Card>
-        </section>
-        <aside className="flex flex-col gap-6">
-          <Card>
-            <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
-          </Card>
-          <Card>
-            <Skeleton className="h-6 w-24 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
-          </Card>
-          <Card>
-            <Skeleton className="h-6 w-32 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-            <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
-          </Card>
-        </aside>
-      </SkeletonGroup>
-    </main>
+          </div>
+        </Card>
+        <Card>
+          <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
+          <div className="mt-4 grid gap-2">
+            {[0, 1, 2].map((item) => (
+              <Skeleton key={item} className="h-12 rounded-[var(--radius-card)]" />
+            ))}
+          </div>
+        </Card>
+      </section>
+      <aside className="flex flex-col gap-6">
+        <Card>
+          <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        </Card>
+        <Card>
+          <Skeleton className="h-6 w-24 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        </Card>
+        <Card>
+          <Skeleton className="h-6 w-32 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        </Card>
+      </aside>
+    </>
   );
 }

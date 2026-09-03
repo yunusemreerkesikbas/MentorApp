@@ -1,12 +1,11 @@
 "use client";
 import { Minus, Pencil, Plus } from "lucide-react";
 
-import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { FocusGoalDto } from "@mentor/types";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Card, DigitPopIn, SuccessCheck } from "@mentor/ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 
 const GOAL_MIN = 15;
@@ -48,7 +47,6 @@ export function SessionFocusGoalCard({
   onGoalChange: (goalMinutes: number | null) => void;
 }) {
   const t = useTranslations("session");
-  const reduceMotion = useReducedMotion();
   const { error: showErrorToast } = useMentorToast();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(DEFAULT_GOAL);
@@ -103,9 +101,9 @@ export function SessionFocusGoalCard({
       aria-label={label}
       disabled={disabled || saving}
       onClick={onClick}
-      className="flex h-9 w-9 items-center justify-center rounded-full disabled:opacity-40"
+      className="flex h-9 w-9 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] disabled:opacity-40"
       style={{
-        backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
+        backgroundColor: "color-mix(in srgb, var(--color-main) 6%, transparent)",
         color: "var(--color-main)",
       }}
     >
@@ -114,7 +112,7 @@ export function SessionFocusGoalCard({
   );
 
   return (
-    <Card className="flex flex-col gap-3 px-5 py-4">
+    <Card className="flex flex-col gap-3 px-5 py-4 session-liquid-card">
       <div className="flex items-center justify-between gap-2">
         <span
           className="text-[11px] font-semibold uppercase tracking-wide"
@@ -130,7 +128,7 @@ export function SessionFocusGoalCard({
               setDraft(goalMinutes);
               setEditing(true);
             }}
-            className="flex h-7 w-7 items-center justify-center rounded-full"
+            className="flex h-7 w-7 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)]"
             style={{ color: "var(--color-secondary)" }}
           >
             <Pencil size={14} />
@@ -151,7 +149,7 @@ export function SessionFocusGoalCard({
               className="min-w-20 text-center text-xl font-bold tabular-nums"
               style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
             >
-              {t("minutes_value", { minutes: draft })}
+              <DigitPopIn value={t("minutes_value", { minutes: draft })} />
             </span>
             {stepperButton(
               t("goal_increase_aria"),
@@ -214,29 +212,36 @@ export function SessionFocusGoalCard({
               className="text-sm font-bold tabular-nums"
               style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
             >
-              {t("goal_progress", { done: focusMinutesToday, goal: goalMinutes })}
+              <DigitPopIn
+                value={t("goal_progress", {
+                  done: focusMinutesToday,
+                  goal: goalMinutes,
+                })}
+              />
             </span>
             {reached ? (
-              <motion.span
-                {...(reduceMotion || !celebrate
-                  ? {}
-                  : {
-                      initial: { scale: 0.6, opacity: 0 },
-                      animate: {
-                        scale: 1,
-                        opacity: 1,
-                        transition: { type: "spring", stiffness: 300, damping: 18 },
-                      },
-                    })}
-                className="rounded-full px-3 py-1 text-xs font-semibold"
+              <span
+                className="inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold"
                 style={{
                   backgroundColor:
                     "color-mix(in srgb, var(--color-progress) 14%, transparent)",
                   color: "var(--color-main)",
                 }}
               >
+                <SuccessCheck
+                  state="in"
+                  size={16}
+                  stroke="var(--color-success)"
+                  style={
+                    {
+                      ["--check-y-amount" as string]: "6px",
+                      ["--check-blur-from" as string]: "3px",
+                      ["--check-rotate-from" as string]: "35deg",
+                    } as CSSProperties
+                  }
+                />
                 {t("goal_reached")}
-              </motion.span>
+              </span>
             ) : null}
           </div>
           <div

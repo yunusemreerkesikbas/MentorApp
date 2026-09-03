@@ -239,7 +239,6 @@ export function ProfileShell({ username }: { username: string }) {
     });
   }, [patchReady, showErrorToast, t, username]);
 
-  if (state.status === "loading") return <ProfileLoading label={t("loading")} />;
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "notfound") return <Centered>{t("profile_not_found")}</Centered>;
   if (state.status === "error") {
@@ -250,155 +249,198 @@ export function ProfileShell({ username }: { username: string }) {
     );
   }
 
-  const { profile, items, nextCursor, loadingMore, achievements } = state;
-  const tab = (requestedTab === "achievements" && !profile.achievementsEnabled)
-    || (requestedTab === "bookmarks" && !isOwn)
-    ? "posts"
-    : requestedTab;
-  const profileTabs: Array<"posts" | "achievements" | "bookmarks"> = isOwn
-    ? ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : []), "bookmarks"]
-    : ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : [])];
+  const loading = state.status === "loading";
+  const ready = state.status === "ready" ? state : null;
+  const profile = ready?.profile ?? null;
+  const items = ready?.items ?? [];
+  const nextCursor = ready?.nextCursor ?? null;
+  const loadingMore = ready?.loadingMore ?? false;
+  const achievements = ready?.achievements ?? null;
+  const tab =
+    profile == null
+      ? "posts"
+      : (requestedTab === "achievements" && !profile.achievementsEnabled) ||
+          (requestedTab === "bookmarks" && !isOwn)
+        ? "posts"
+        : requestedTab;
+  const profileTabs: Array<"posts" | "achievements" | "bookmarks"> =
+    profile == null
+      ? ["posts"]
+      : isOwn
+        ? ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : []), "bookmarks"]
+        : ["posts", ...(profile.achievementsEnabled ? ["achievements" as const] : [])];
 
-  return (
-    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-      <section className="min-w-0 bg-[var(--color-surface)]">
-      <ProfileHeader
-        key={profile.userId}
-        profile={profile}
-        isOwn={isOwn}
-        onToggleFollow={onToggleFollow}
-        onBuddyRequest={onBuddyRequest}
-        onOpenFollowers={() => setListView("followers")}
-        onOpenFollowing={() => setListView("following")}
-      />
+  const readyBody =
+    profile == null ? (
+      <div className="min-h-[28rem]" aria-hidden />
+    ) : (
+      <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[600px_300px]">
+        <section className="min-w-0 bg-[var(--color-surface)]">
+          <ProfileHeader
+            key={profile.userId}
+            profile={profile}
+            isOwn={isOwn}
+            onToggleFollow={onToggleFollow}
+            onBuddyRequest={onBuddyRequest}
+            onOpenFollowers={() => setListView("followers")}
+            onOpenFollowing={() => setListView("following")}
+          />
 
-      <div className="profile-progress-mobile px-4 pb-4 xl:hidden">
-        <div className="relative z-10">
-          <ProfileProgressPanel profile={profile} isOwner={isOwn} />
-        </div>
-      </div>
-
-      {listView ? (
-        <FollowListPanel
-          key={listView}
-          username={username}
-          kind={listView}
-          onBack={() => setListView(null)}
-        />
-      ) : (
-        <>
-      {/* Achievements are public; saved items remain private to the profile owner. */}
-      <div className="flex gap-1 border-b px-4 lg:px-6" style={{ borderColor: "var(--color-border)" }}>
-          {profileTabs.map((k) => {
-            const active = tab === k;
-            return (
-              <button
-                key={k}
-                type="button"
-                onClick={() => selectTab(k)}
-                aria-current={active ? "page" : undefined}
-                className="relative -mb-px px-3 py-3 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                style={{ color: active ? "var(--color-main)" : "var(--color-secondary)" }}
-              >
-                {k === "posts" ? t("profile_tab_posts") : k === "achievements" ? t("profile_tab_achievements") : t("saved_nav")}
-                {active && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute inset-x-2 -bottom-px h-0.5 rounded-full"
-                    style={{ background: "var(--color-accent)" }}
-                  />
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-      {isOwn && tab === "bookmarks" ? (
-        <SavedShell embedded />
-      ) : tab === "achievements" && achievements ? (
-        <AchievementCollection collection={achievements} />
-      ) : items.length === 0 ? (
-        <p className="px-4 py-12 text-center text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("profile_activity_empty")}
-        </p>
-      ) : (
-        <>
-          <div className="divide-y divide-[var(--color-border)]">
-            {items.map((it) => {
-              const key = it.type === "thread" ? `t-${it.thread.id}` : `c-${it.comment.id}`;
-              return (
-                <div key={key}>
-                  {it.zone.title && (
-                    <Link
-                      href={{
-                        pathname: "/community/[slug]",
-                        params: { slug: it.zone.slug },
-                      }}
-                      className="inline-block px-3 pt-3 text-[11px] font-semibold hover:underline"
-                      style={{ color: "var(--color-accent)" }}
-                    >
-                      {it.zone.title}
-                    </Link>
-                  )}
-                  {it.type === "thread" ? (
-                    <CommunityPostCard
-                      thread={it.thread}
-                      onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(it.thread.id, nextEmoji, previousEmoji)}
-                      onToggleBookmark={(adding) => onToggleThreadBookmark(it.thread.id, adding)}
-                      onReplyCountChange={(delta) => onReplyCountChange("thread", it.thread.id, delta)}
-                      clickable
-                    />
-                  ) : (
-                    // A reply opens its PARENT post with itself highlighted — so its context shows,
-                    // not the reply stranded on its own detail page.
-                    <CommentRow
-                      comment={it.comment}
-                      onToggleReaction={onToggleCommentReaction}
-                      onToggleBookmark={onToggleCommentBookmark}
-                      onReplyCountChange={(delta) => onReplyCountChange("comment", it.comment.id, delta)}
-                      rowHref={
-                        it.comment.parentPostId
-                          ? {
-                              pathname: "/community/comment/[postId]",
-                              params: { postId: it.comment.parentPostId },
-                              query: { highlight: it.comment.id },
-                            }
-                          : {
-                              pathname: "/community/message/[threadId]",
-                              params: { threadId: it.comment.threadId },
-                              query: { highlight: it.comment.id },
-                            }
-                      }
-                    />
-                  )}
-                </div>
-              );
-            })}
+          <div className="profile-progress-mobile px-4 pb-4 xl:hidden">
+            <div className="relative z-10">
+              <ProfileProgressPanel profile={profile} isOwner={isOwn} />
+            </div>
           </div>
 
-          {nextCursor && (
-            <div className="my-6 flex justify-center">
-              <Button variant="secondary" busy={loadingMore} onClick={loadMore}>
-                {t("saved_load_more")}
-              </Button>
-            </div>
-          )}
-        </>
-      )}
-        </>
-      )}
-      </section>
+          {listView ? (
+            <FollowListPanel
+              key={listView}
+              username={username}
+              kind={listView}
+              onBack={() => setListView(null)}
+            />
+          ) : (
+            <>
+              {/* Achievements are public; saved items remain private to the profile owner. */}
+              <div
+                className="flex gap-1 border-b px-4 lg:px-6"
+                style={{ borderColor: "var(--color-border)" }}
+              >
+                {profileTabs.map((k) => {
+                  const active = tab === k;
+                  return (
+                    <button
+                      key={k}
+                      type="button"
+                      onClick={() => selectTab(k)}
+                      aria-current={active ? "page" : undefined}
+                      className="relative -mb-px px-3 py-3 text-[14px] font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                      style={{
+                        color: active ? "var(--color-main)" : "var(--color-secondary)",
+                      }}
+                    >
+                      {k === "posts"
+                        ? t("profile_tab_posts")
+                        : k === "achievements"
+                          ? t("profile_tab_achievements")
+                          : t("saved_nav")}
+                      {active && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute inset-x-2 -bottom-px h-0.5 rounded-full"
+                          style={{ background: "var(--color-accent)" }}
+                        />
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
 
-      <aside className="sticky top-20 hidden xl:block">
-        <ProfileProgressPanel profile={profile} isOwner={isOwn} />
-      </aside>
+              {isOwn && tab === "bookmarks" ? (
+                <SavedShell embedded />
+              ) : tab === "achievements" && achievements ? (
+                <AchievementCollection collection={achievements} />
+              ) : items.length === 0 ? (
+                <p
+                  className="px-4 py-12 text-center text-sm"
+                  style={{ color: "var(--color-secondary)" }}
+                >
+                  {t("profile_activity_empty")}
+                </p>
+              ) : (
+                <>
+                  <div className="divide-y divide-[var(--color-border)]">
+                    {items.map((it) => {
+                      const key = it.type === "thread" ? `t-${it.thread.id}` : `c-${it.comment.id}`;
+                      return (
+                        <div key={key}>
+                          {it.zone.title && (
+                            <Link
+                              href={{
+                                pathname: "/community/[slug]",
+                                params: { slug: it.zone.slug },
+                              }}
+                              className="inline-block px-3 pt-3 text-[11px] font-semibold hover:underline"
+                              style={{ color: "var(--color-accent)" }}
+                            >
+                              {it.zone.title}
+                            </Link>
+                          )}
+                          {it.type === "thread" ? (
+                            <CommunityPostCard
+                              thread={it.thread}
+                              onToggleReaction={(nextEmoji, previousEmoji) =>
+                                onToggleReaction(it.thread.id, nextEmoji, previousEmoji)
+                              }
+                              onToggleBookmark={(adding) =>
+                                onToggleThreadBookmark(it.thread.id, adding)
+                              }
+                              onReplyCountChange={(delta) =>
+                                onReplyCountChange("thread", it.thread.id, delta)
+                              }
+                              clickable
+                            />
+                          ) : (
+                            // A reply opens its PARENT post with itself highlighted — so its context shows,
+                            // not the reply stranded on its own detail page.
+                            <CommentRow
+                              comment={it.comment}
+                              onToggleReaction={onToggleCommentReaction}
+                              onToggleBookmark={onToggleCommentBookmark}
+                              onReplyCountChange={(delta) =>
+                                onReplyCountChange("comment", it.comment.id, delta)
+                              }
+                              rowHref={
+                                it.comment.parentPostId
+                                  ? {
+                                      pathname: "/community/comment/[postId]",
+                                      params: { postId: it.comment.parentPostId },
+                                      query: { highlight: it.comment.id },
+                                    }
+                                  : {
+                                      pathname: "/community/message/[threadId]",
+                                      params: { threadId: it.comment.threadId },
+                                      query: { highlight: it.comment.id },
+                                    }
+                              }
+                            />
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {nextCursor && (
+                    <div className="my-6 flex justify-center">
+                      <Button variant="secondary" busy={loadingMore} onClick={loadMore}>
+                        {t("saved_load_more")}
+                      </Button>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </section>
+
+        <aside className="sticky top-20 hidden xl:block">
+          <ProfileProgressPanel profile={profile} isOwner={isOwn} />
+        </aside>
+      </div>
+    );
+
+  return (
+    <main className="mx-auto w-full min-w-0 max-w-[924px]">
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <ProfileSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }
 
-function ProfileLoading({ label }: { label: string }) {
+function ProfileSkeletonBlocks() {
   return (
-    <SkeletonGroup label={label} className="mx-auto grid max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
+    <div className="grid min-w-0 items-start gap-6 xl:grid-cols-[600px_300px]">
       <div className="overflow-hidden bg-[var(--color-surface)] sm:border-x sm:border-[var(--color-border)]">
         <Skeleton className="h-[min(52dvh,440px)] w-full rounded-none sm:h-[420px]" />
         <div className="flex justify-center gap-3 px-4 py-5">
@@ -411,7 +453,7 @@ function ProfileLoading({ label }: { label: string }) {
         </div>
       </div>
       <Skeleton className="hidden h-[360px] rounded-[var(--radius-card)] xl:block" />
-    </SkeletonGroup>
+    </div>
   );
 }
 

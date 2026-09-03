@@ -1,5 +1,5 @@
 "use client";
-import { CalendarDays, ChevronRight, CreditCard, GraduationCap, LogOut, Scale, Trash2 } from "lucide-react";
+import { CalendarDays, ChevronRight, CreditCard, GraduationCap, LogOut, Scale, Trash2, UserRound } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -115,6 +115,7 @@ export function AccountLinksCard({
   const tAccount = useTranslations("profile.account");
   const tExam = useTranslations("profile.exam_settings");
   const tLegal = useTranslations("legal");
+  const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
   const router = useRouter();
@@ -238,6 +239,12 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow href="/subscription" icon={<CreditCard size={20} aria-hidden />}>
           {tAccount("subscription")}
+        </ListRow>
+        {/* The only way into the mentorship flow. /my-coach answers both states on its own: no
+            coach yet -> the invite-code screen, linked -> the data-scope contract. A student
+            handed a code looks under "Koçum", so the row carries no separate hint. */}
+        <ListRow href="/my-coach" icon={<UserRound size={20} aria-hidden />}>
+          {tMentorship("my_coach_title")}
         </ListRow>
         {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
         <ListRow

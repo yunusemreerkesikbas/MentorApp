@@ -2,11 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import type { MentorshipReportPlanTaskDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, TextAreaField, TextField } from "@mentor/ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks, type MentorshipAssignmentDraft } from "@/lib/mentorship";
 import { useExamTopicTaxonomy } from "@/lib/use-exam-topic-taxonomy";
+import { buildRepeatDrafts } from "./repeat-week";
 
 /**
  * The week composer: a coach plans a week and sends it in ONE request.
@@ -50,11 +52,14 @@ export function AssignTaskForm({
   studentId,
   studentName,
   studentExamType,
+  previousTasks,
   onAssigned,
 }: {
   studentId: string;
   studentName: string;
   studentExamType: string | null;
+  /** The report's plan rows, already loaded by the page — the source for "copy last week". */
+  previousTasks: readonly MentorshipReportPlanTaskDto[];
   onAssigned: () => void;
 }) {
   const t = useTranslations("mentorship");
@@ -85,6 +90,19 @@ export function AssignTaskForm({
   );
   const topics = subject === "" ? [] : (topicsBySubject.get(subject) ?? []);
   const atCeiling = drafts.length >= MAX_TASKS;
+  const today = todayLocalIso();
+  // Asking for one draft is enough to know whether the button has anything to do.
+  const canRepeat =
+    !atCeiling && buildRepeatDrafts(previousTasks, days, today, 1).length > 0;
+
+  function repeatWeek() {
+    const copied = buildRepeatDrafts(previousTasks, days, today, MAX_TASKS - drafts.length);
+    // Appended, never substituted: whatever the coach already composed stays.
+    setDrafts((prev) => [
+      ...prev,
+      ...copied.map((draft, index) => ({ ...draft, key: `repeat-${Date.now()}-${index}` })),
+    ]);
+  }
 
   function addDraft() {
     const trimmed = title.trim();
@@ -157,8 +175,8 @@ export function AssignTaskForm({
           <Button
             type="button"
             variant="ghost"
-            onClick={() => setWeekStart(todayLocalIso())}
-            disabled={weekStart === todayLocalIso()}
+            onClick={() => setWeekStart(today)}
+            disabled={weekStart === today}
           >
             {t("assign_week_this")}
           </Button>
@@ -168,6 +186,9 @@ export function AssignTaskForm({
             onClick={() => setWeekStart(addDaysIso(weekStart, DAYS_IN_WEEK))}
           >
             {t("assign_week_next")}
+          </Button>
+          <Button type="button" variant="secondary" onClick={repeatWeek} disabled={!canRepeat}>
+            {t("assign_repeat_week")}
           </Button>
         </div>
 

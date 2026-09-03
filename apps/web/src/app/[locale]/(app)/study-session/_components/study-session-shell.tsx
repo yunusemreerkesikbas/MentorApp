@@ -117,16 +117,12 @@ function unwrapTodayResponse(response: unknown): TodayPanelResponse {
 function SetupStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-0.5">
-      <span
-        className="text-[11px] font-semibold uppercase tracking-wide"
-        style={{ color: "var(--color-secondary)" }}
-      >
+      <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">
         {label}
       </span>
       <span
-        className="text-sm font-bold tabular-nums"
+        className="text-sm font-bold tabular-nums text-white"
         style={{
-          color: "var(--color-main)",
           fontFamily: "var(--font-heading)",
         }}
       >
@@ -461,13 +457,11 @@ export function StudySessionShell() {
       className="room-stage flex w-full flex-col items-center gap-2"
       data-room-theme={activeTheme}
       style={
-        scene.plain
-          ? ({
-              "--room-ink-soft": "var(--color-secondary)",
-              "--room-accent": "var(--color-progress)",
-              "--room-scrim": "var(--color-surface-translucent)",
-            } as React.CSSProperties)
-          : undefined
+        {
+          "--room-ink-soft": "#ffffff",
+          "--room-accent": "var(--color-progress)",
+          "--room-scrim": "rgba(255, 255, 255, 0.15)",
+        } as React.CSSProperties
       }
     >
       {seated ? <PlanTaskContextChip title={seated.name} /> : null}
@@ -480,8 +474,7 @@ export function StudySessionShell() {
           area, not weight: the pill groups them into one obviously-interactive object.
         */}
         <div
-          className="flex items-center gap-1 rounded-full py-0.5 pr-0.5 pl-1"
-          style={{ backgroundColor: "var(--room-scrim)" }}
+          className="flex items-center gap-1 rounded-full py-0.5 pr-0.5 pl-1 session-liquid-pill"
         >
         <RoomThemeSwitcher
           theme={activeTheme}
@@ -534,15 +527,14 @@ export function StudySessionShell() {
     // Same surface as "Yol arkadaşın" and the focus-goal card on the right: a tinted chip
     // wash was invisible once a room photo sat behind it, and this is a panel of numbers, not
     // a chip. `Card` carries the border, radius and single shadow token with it.
-    <Card className="flex w-full items-center px-2 py-3">
+    <Card className="flex w-full items-center px-2 py-3 session-liquid-card">
       <SetupStat
         label={t("summary_focus")}
         value={t("minutes_value", { minutes: focusMinutes })}
       />
       <span
         aria-hidden
-        className="h-7 w-px shrink-0"
-        style={{ backgroundColor: "var(--color-progress-track)" }}
+        className="h-7 w-px shrink-0 bg-white/20"
       />
       <SetupStat
         label={t("summary_break")}
@@ -550,8 +542,7 @@ export function StudySessionShell() {
       />
       <span
         aria-hidden
-        className="h-7 w-px shrink-0"
-        style={{ backgroundColor: "var(--color-progress-track)" }}
+        className="h-7 w-px shrink-0 bg-white/20"
       />
       <SetupStat label={t("summary_finish")} value={estimatedFinish} />
     </Card>
@@ -725,7 +716,7 @@ export function StudySessionShell() {
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] shadow-[var(--shadow-card)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full session-liquid-pill transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             aria-label={t("history_open")}
             data-testid="session-history-open"
           >
@@ -762,7 +753,7 @@ export function StudySessionShell() {
               {focusingNow !== null ? (
                 <p
                   className="flex items-center gap-1.5 text-center text-sm"
-                  style={{ color: "var(--color-secondary)" }}
+                  style={{ color: "rgba(255, 255, 255, 0.72)" }}
                 >
                   <span
                     aria-hidden
@@ -781,7 +772,7 @@ export function StudySessionShell() {
       <aside
         className="flex w-full shrink-0 flex-col gap-4 px-5 pb-8 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:p-4"
         style={{
-          borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+          borderColor: "rgba(255, 255, 255, 0.12)",
         }}
       >
         <SessionFocusGoalCard

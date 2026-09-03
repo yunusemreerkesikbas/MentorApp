@@ -1,7 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Button, TextField } from "@mentor/ui";
+import { Button, ShakeField, TextField } from "@mentor/ui";
 
 /* Form helpers — thin wrappers over the @mentor/ui primitives (DESIGN.md §6). */
 
@@ -19,9 +19,11 @@ export function SubmitButton({ children, busy }: { children: ReactNode; busy?: b
 export function FormError({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="text-sm" style={{ color: "var(--color-danger)" }}>
-      {message}
-    </p>
+    <ShakeField isError>
+      <p role="alert" className="text-sm" style={{ color: "var(--color-danger)" }}>
+        {message}
+      </p>
+    </ShakeField>
   );
 }
 

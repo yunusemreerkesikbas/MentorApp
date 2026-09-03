@@ -1,7 +1,7 @@
 "use client";
-import { CheckCircle2, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import {
   CoachActionStatus,
@@ -9,6 +9,7 @@ import {
   type CoachActionDto,
   type CoachActionStatus as CoachActionStatusValue,
 } from "@mentor/types";
+import { SuccessCheck } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { decideCoachAction } from "@/lib/coach";
 import { trackCoachEvent } from "@/lib/analytics";
@@ -87,9 +88,17 @@ export function CoachActionCard({
   ) {
     return (
       <div className="flex max-w-[85%] items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-3 py-2 text-sm text-[var(--color-body-text)]">
-        <CheckCircle2
-          className="size-4 text-[var(--color-progress)]"
-          aria-hidden
+        <SuccessCheck
+          state="in"
+          size={18}
+          stroke="var(--color-progress)"
+          style={
+            {
+              ["--check-y-amount" as string]: "8px",
+              ["--check-blur-from" as string]: "4px",
+              ["--check-rotate-from" as string]: "40deg",
+            } as CSSProperties
+          }
         />
         <span>
           {t(status === CoachActionStatus.COMPLETED ? "completed" : "accepted")}

@@ -4,7 +4,7 @@ import { Bell, Mail, Smartphone, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Card, SectionHeading, Skeleton } from "@mentor/ui";
+import { Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
 import {
   ApiClientError,
@@ -69,17 +69,7 @@ export function NotificationSettings() {
     }
   };
 
-  if (loading) {
-    return (
-      <Card solid className="p-4">
-        <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-4 h-14 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
-      </Card>
-    );
-  }
-
-  return (
+  const settingsBody = (
     <Card id="notification-settings" solid className="p-4">
       <SectionHeading
         action={
@@ -95,7 +85,7 @@ export function NotificationSettings() {
         <ToggleRow
           checked={emailEnabled}
           description={t("email_desc")}
-          disabled={saving}
+          disabled={saving || loading}
           icon={<Mail size={20} aria-hidden />}
           label={t("email")}
           onChange={(next) => {
@@ -110,7 +100,7 @@ export function NotificationSettings() {
         <ToggleRow
           checked={pushEnabled}
           description={t("push_desc")}
-          disabled={saving}
+          disabled={saving || loading}
           icon={<Smartphone size={20} aria-hidden />}
           label={t("push")}
           onChange={(next) => {
@@ -127,7 +117,7 @@ export function NotificationSettings() {
         <ToggleRow
           checked={campaignsEnabled}
           description={t("campaigns_desc")}
-          disabled={saving}
+          disabled={saving || loading}
           icon={<Tag size={20} aria-hidden />}
           label={t("campaigns")}
           onChange={(next) => {
@@ -141,6 +131,21 @@ export function NotificationSettings() {
         />
       </div>
     </Card>
+  );
+
+  return (
+    <SkeletonGroup
+      label={t("title")}
+      loading={loading}
+      revealed={settingsBody}
+    >
+      <Card solid className="p-4">
+        <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-4 h-14 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
+      </Card>
+    </SkeletonGroup>
   );
 }
 

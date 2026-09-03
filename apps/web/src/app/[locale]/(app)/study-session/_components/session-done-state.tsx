@@ -5,7 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { QuestProgressView, StudySessionStatus, TodayPanelResponse } from "@mentor/types";
 import { coachingControllerGetToday } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
+import { Button, SuccessCheck } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
 import { SuggestedTaskCard } from "@/components/suggested-task-card";
@@ -273,15 +273,18 @@ export function SessionDoneState({
       >
         {t("done_chip")}
       </span>
-      <p
-        className="text-xl font-bold"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {t("done_title")}
-      </p>
+      <div className="flex flex-col items-center gap-2">
+        <SuccessCheck state="in" size={40} stroke="var(--color-success)" />
+        <p
+          className="text-xl font-bold"
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+          }}
+        >
+          {t("done_title")}
+        </p>
+      </div>
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
         {t("done_elapsed", { minutes: Math.floor(focusElapsed / 60) })}
       </p>

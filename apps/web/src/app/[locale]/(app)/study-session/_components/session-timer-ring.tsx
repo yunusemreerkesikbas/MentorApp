@@ -36,7 +36,16 @@ export function SessionTimerRing({
   const referenceMinutes = isBreak ? breakMinutes : focusMinutes;
 
   return (
-    <div className="flex w-full flex-col items-center gap-5">
+    <div
+      className="flex w-full flex-col items-center gap-5"
+      style={
+        {
+          "--color-main": "#ffffff",
+          "--color-secondary": "rgba(255, 255, 255, 0.72)",
+          "--color-progress-track": "rgba(255, 255, 255, 0.22)",
+        } as React.CSSProperties
+      }
+    >
       <CircularTimerRing
         mode={isCountdown ? "countdown" : "setup"}
         minutes={referenceMinutes}
@@ -65,20 +74,13 @@ export function SessionTimerRing({
                     p.breakMinutes,
                   )
                 }
-                className="min-h-11 cursor-pointer rounded-full px-4 text-sm font-semibold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                className={`min-h-11 cursor-pointer rounded-full px-5 text-sm font-bold transition-all duration-150 hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:hover:scale-100 ${
+                  selected ? "session-liquid-btn-obsidian" : "session-liquid-pill"
+                }`}
                 aria-pressed={selected}
                 whileTap={reduceMotion ? undefined : { scale: 0.97 }}
                 style={{
                   fontFamily: "var(--font-body)",
-                  backgroundColor: selected
-                    ? "var(--color-btn)"
-                    : "var(--color-surface)",
-                  color: selected
-                    ? "var(--color-btn-label)"
-                    : "var(--color-main)",
-                  border: selected
-                    ? "1px solid var(--color-btn)"
-                    : "1px solid var(--color-border)",
                 }}
               >
                 {p.label}

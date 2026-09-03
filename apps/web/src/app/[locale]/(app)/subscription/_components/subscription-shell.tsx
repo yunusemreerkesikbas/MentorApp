@@ -12,7 +12,7 @@ import {
   subscriptionsControllerGetMine,
   subscriptionsControllerListPlans,
 } from "@mentor/api-client";
-import { Button, Card, Chip } from "@mentor/ui";
+import { Button, Card, Chip, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
@@ -24,7 +24,9 @@ import {
   COACH_RETURN_TO_STORAGE_KEY,
   safeInternalReturnTo,
 } from "@/lib/community-coach-bridge";
-import { SubscriptionContentSkeleton } from "./subscription-content-skeleton";
+import {
+  SubscriptionSkeletonBlocks,
+} from "./subscription-content-skeleton";
 import {
   heroChipKey,
   listSubscriptionFacts,
@@ -227,10 +229,6 @@ export function SubscriptionShell() {
         variants: staggerListVariants,
       };
 
-  if (loadState.status === "loading") {
-    return <SubscriptionContentSkeleton label={t("loading")} />;
-  }
-
   if (loadState.status === "error") {
     return (
       <main className="mx-auto w-full max-w-2xl px-5 py-10">
@@ -239,7 +237,8 @@ export function SubscriptionShell() {
     );
   }
 
-  const { plans } = loadState;
+  const loading = loadState.status === "loading";
+  const plans = loadState.status === "ready" ? loadState.plans : [];
   const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
   const ent = view?.entitlement;
   const sub = view?.subscription;
@@ -277,11 +276,10 @@ export function SubscriptionShell() {
     }
   }
 
-  return (
-    <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
-      <h1 className="sr-only">{t("title")}</h1>
-
-      <motion.div className="flex flex-col gap-6" {...headerMotion} {...gridMotion}>
+  const readyBody = loading ? (
+    <div className="min-h-[22rem]" aria-hidden />
+  ) : (
+    <motion.div className="flex flex-col gap-6" {...headerMotion} {...gridMotion}>
         {showSummary ? (
         <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
           <Card>
@@ -473,6 +471,14 @@ export function SubscriptionShell() {
           </>
         ) : null}
       </motion.div>
+  );
+
+  return (
+    <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
+      <h1 className="sr-only">{t("title")}</h1>
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <SubscriptionSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }

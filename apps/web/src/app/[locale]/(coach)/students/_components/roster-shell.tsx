@@ -7,7 +7,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
-import { Link } from "@/i18n/navigation";
+import { getPathname, Link } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchInviteCode, fetchRoster, rotateInviteCode } from "@/lib/mentorship";
 import {
@@ -95,9 +95,27 @@ export function RosterShell() {
 
   async function copyCode() {
     if (!invite) return;
+    await copyToClipboard(invite.code, t("invite_copied"));
+  }
+
+  /**
+   * The same code as a link the coach can paste into a message. `?code=` only fills the field in:
+   * the invitation screen still asks the student to look up the code and confirm the data scope,
+   * because clicking a link somebody sent is not consent.
+   */
+  async function copyInviteLink() {
+    if (!invite) return;
+    const path = getPathname({ href: "/coach-invitation", locale });
+    await copyToClipboard(
+      `${window.location.origin}${path}?code=${encodeURIComponent(invite.code)}`,
+      t("invite_link_copied"),
+    );
+  }
+
+  async function copyToClipboard(text: string, title: string) {
     try {
-      await navigator.clipboard.writeText(invite.code);
-      toast.success({ title: t("invite_copied") });
+      await navigator.clipboard.writeText(text);
+      toast.success({ title });
     } catch {
       /* Clipboard can be blocked; the code is on screen to read either way. */
     }
@@ -131,6 +149,9 @@ export function RosterShell() {
                 </code>
                 <Button variant="soft" onClick={copyCode}>
                   {t("invite_copy")}
+                </Button>
+                <Button variant="soft" onClick={copyInviteLink}>
+                  {t("invite_copy_link")}
                 </Button>
                 <Button variant="ghost" busy={busy} onClick={rotate}>
                   {t("invite_rotate")}
@@ -166,29 +187,40 @@ export function RosterShell() {
         layoutId="mentorship-roster-tabs"
       />
 
-      {rows === null ? (
-        <SkeletonGroup label={t("loading")}>
-          <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
-          <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
-          <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
-        </SkeletonGroup>
-      ) : rows.length === 0 ? (
-        <EmptyState
-          title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
-          description={
-            tab === "ACTIVE" ? t("roster_empty_body") : t("roster_ended_empty_body")
-          }
-          puhuVariant="encouraging"
-        />
-      ) : (
-        <ul className="flex flex-col gap-3">
-          {rows.map((row) => (
-            <li key={row.linkId}>
-              <StudentCard row={row} locale={locale} clickable={tab === "ACTIVE"} />
-            </li>
-          ))}
-        </ul>
-      )}
+      <SkeletonGroup
+        label={t("loading")}
+        loading={rows === null}
+        revealed={
+          rows === null ? (
+            <div className="flex flex-col gap-3" aria-hidden>
+              <div className="h-28" />
+              <div className="h-28" />
+              <div className="h-28" />
+            </div>
+          ) : rows.length === 0 ? (
+            <EmptyState
+              title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
+              description={
+                tab === "ACTIVE" ? t("roster_empty_body") : t("roster_ended_empty_body")
+              }
+              puhuVariant="encouraging"
+            />
+          ) : (
+            <ul className="flex flex-col gap-3">
+              {rows.map((row) => (
+                <li key={row.linkId}>
+                  <StudentCard row={row} locale={locale} clickable={tab === "ACTIVE"} />
+                </li>
+              ))}
+            </ul>
+          )
+        }
+        className="flex flex-col gap-3"
+      >
+        <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
+        <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
+        <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
+      </SkeletonGroup>
     </div>
   );
 }

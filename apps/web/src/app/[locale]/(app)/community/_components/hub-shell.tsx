@@ -14,6 +14,7 @@ import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { ForumFeedItem, ForumHubView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
+import { SkeletonGroup } from "@mentor/ui";
 
 import { Link } from "@/i18n/navigation";
 import { trackCommunityEvent } from "@/lib/analytics";
@@ -58,7 +59,6 @@ export function HubShell() {
     };
   }, [t]);
 
-  if (state.status === "loading") return <HubSkeleton label={t("loading")} />;
   if (state.status === "disabled") {
     return <Centered title={t("soon_title")} body={t("soon_desc")} />;
   }
@@ -76,27 +76,32 @@ export function HubShell() {
     );
   }
 
-  const { hub } = state;
+  const loading = state.status === "loading";
+  const hub = state.status === "ready" ? state.hub : null;
   const formattedDates = new Map(
-    hub.continueDiscussions.map((item) => [
+    (hub?.continueDiscussions ?? []).map((item) => [
       item.id,
       new Intl.DateTimeFormat(locale, { day: "numeric", month: "short" }).format(
         new Date(item.lastActivityAt),
       ),
     ]),
   );
-  const communityFaces = Array.from(
-    new Map(
-      [
-        ...(hub.featured ? [hub.featured.author] : []),
-        ...hub.supporters,
-        ...hub.continueDiscussions.map((item) => item.author),
-      ].map((person) => [person.id, person] as const),
-    ).values(),
-  ).slice(0, 5);
+  const communityFaces = hub
+    ? Array.from(
+        new Map(
+          [
+            ...(hub.featured ? [hub.featured.author] : []),
+            ...hub.supporters,
+            ...hub.continueDiscussions.map((item) => item.author),
+          ].map((person) => [person.id, person] as const),
+        ).values(),
+      ).slice(0, 5)
+    : [];
 
-  return (
-    <main className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-7 lg:px-8 lg:py-10">
+  const readyBody = !hub ? (
+    <div className="min-h-[36rem]" aria-hidden />
+  ) : (
+    <>
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1.03fr)_minmax(380px,1fr)]">
         <section
           className="flex min-h-[480px] flex-col overflow-hidden rounded-[10px] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
@@ -419,6 +424,14 @@ export function HubShell() {
           </HubColumn>
         </div>
       </section>
+    </>
+  );
+
+  return (
+    <main className="mx-auto w-full max-w-6xl px-4 py-7 sm:px-7 lg:px-8 lg:py-10">
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <HubSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }
@@ -523,14 +536,14 @@ function Centered({
   );
 }
 
-function HubSkeleton({ label }: { label: string }) {
+function HubSkeletonBlocks() {
   return (
-    <main className="mx-auto w-full max-w-6xl animate-pulse px-4 py-8" aria-label={label}>
+    <div className="flex flex-col gap-5">
       <div className="grid gap-5 xl:grid-cols-2">
         <div className="h-[480px] rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
         <div className="h-[480px] rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
       </div>
-      <div className="mt-5 h-64 rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
-    </main>
+      <div className="h-64 rounded-[10px] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)]" />
+    </div>
   );
 }

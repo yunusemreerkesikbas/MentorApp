@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type { ExamCalendarDto, ExamType, InfoArticleSummaryDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Card, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -19,7 +19,7 @@ import {
 import { ArticleCard } from "./article-card";
 import { FamilyFilterBar } from "./family-filter-bar";
 import { FeaturedHero } from "./featured-hero";
-import { KnowledgeContentSkeleton } from "./knowledge-content-skeleton";
+import { KnowledgeSkeletonBlocks } from "./knowledge-content-skeleton";
 import { KnowledgePagination } from "./knowledge-pagination";
 import { KnowledgeSidebar } from "./knowledge-sidebar";
 import {
@@ -136,8 +136,6 @@ export function KnowledgeShell() {
     loadRef.current();
   }, [authStatus, examType, family, category, page]);
 
-  if (state.status === "loading") return <KnowledgeContentSkeleton />;
-
   if (state.status === "error") {
     return (
       <main className={KNOWLEDGE_PAGE_CLASS}>
@@ -154,7 +152,7 @@ export function KnowledgeShell() {
     );
   }
 
-  if (state.status === "no_exam_type" || !family) {
+  if (state.status === "no_exam_type") {
     return (
       <main className={KNOWLEDGE_PAGE_CLASS}>
         <ExamTypeGate />
@@ -162,54 +160,68 @@ export function KnowledgeShell() {
     );
   }
 
+  const loading = state.status === "loading";
+  const data = state.status === "ready" ? state : null;
+
+  const readyBody =
+    !data || !family ? (
+      <div className="min-h-[36rem]" aria-hidden />
+    ) : (
+      <>
+        <FamilyFilterBar
+          value={family}
+          onChange={(next) => {
+            setSelectedFamily(next);
+            replaceQuery({ page: 1 });
+          }}
+        />
+
+        <div className={`mt-6 ${KNOWLEDGE_SPLIT_CLASS}`}>
+          <section>
+            {data.featured ? (
+              <div className="mb-6">
+                <FeaturedHero article={data.featured} />
+              </div>
+            ) : null}
+            {data.articles.length === 0 ? (
+              <Card>
+                <EmptyState
+                  chip={t("articles_empty_chip")}
+                  description={t("articles_empty_desc")}
+                />
+              </Card>
+            ) : (
+              <ul className={KNOWLEDGE_ARTICLE_GRID_CLASS}>
+                {data.articles.map((article) => (
+                  <li key={article.slug}>
+                    <ArticleCard article={article} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <KnowledgePagination
+              page={page}
+              pageSize={PAGE_SIZE}
+              total={data.total}
+              onPageChange={(next) => replaceQuery({ page: next })}
+            />
+          </section>
+
+          <KnowledgeSidebar
+            calendar={data.calendar}
+            related={data.related}
+            selectedCategory={category}
+            onSelectCategory={(next) => replaceQuery({ category: next, page: 1 })}
+          />
+        </div>
+      </>
+    );
+
   return (
     <main className={KNOWLEDGE_PAGE_CLASS}>
-      <FamilyFilterBar
-        value={family}
-        onChange={(next) => {
-          setSelectedFamily(next);
-          replaceQuery({ page: 1 });
-        }}
-      />
-
-      <div className={`mt-6 ${KNOWLEDGE_SPLIT_CLASS}`}>
-        <section>
-          {state.featured ? (
-            <div className="mb-6">
-              <FeaturedHero article={state.featured} />
-            </div>
-          ) : null}
-          {state.articles.length === 0 ? (
-            <Card>
-              <EmptyState
-                chip={t("articles_empty_chip")}
-                description={t("articles_empty_desc")}
-              />
-            </Card>
-          ) : (
-            <ul className={KNOWLEDGE_ARTICLE_GRID_CLASS}>
-              {state.articles.map((article) => (
-                <li key={article.slug}>
-                  <ArticleCard article={article} />
-                </li>
-              ))}
-            </ul>
-          )}
-          <KnowledgePagination
-            page={page}
-            pageSize={PAGE_SIZE}
-            total={state.total}
-            onPageChange={(next) => replaceQuery({ page: next })}
-          />
-        </section>
-
-        <KnowledgeSidebar
-          calendar={state.calendar}
-          related={state.related}
-          selectedCategory={category}
-          onSelectCategory={(next) => replaceQuery({ category: next, page: 1 })}
-        />
-      </div>
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <KnowledgeSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }

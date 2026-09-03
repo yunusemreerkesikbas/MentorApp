@@ -82,16 +82,6 @@ export interface MyCoachDto {
   dataScope: MentorshipDataScopeKey[];
 }
 
-/** Link row as the coach sees it (identity only — metrics arrive with the roster slice). */
-export interface MentorshipStudentDto {
-  linkId: string;
-  studentId: string;
-  studentDisplayName: string;
-  studentUsername: string | null;
-  status: MentorshipLinkStatus;
-  acceptedAt: string | null;
-}
-
 /**
  * Rule-based triage flags (roadmap §9 "smart brief" — the deterministic first version; the AI layer
  * is a later slice). Ordered worst-first in `MENTORSHIP_RISK_SEVERITY`; the roster sorts by it.
@@ -162,6 +152,17 @@ export interface MentorshipReportPlanTaskDto {
   coachNote: string | null;
 }
 
+/**
+ * A coach-assigned task the student removed. The report otherwise shows only the LIVING plan, so
+ * without this a dropped assignment reads as one that was never given.
+ */
+export interface MentorshipDroppedAssignmentDto {
+  /** The day it had been assigned for. */
+  taskDate: string;
+  title: string;
+  droppedAt: string;
+}
+
 /** The single-student report. Numbers, dates, statuses and task headings — never free text. */
 export interface MentorshipStudentReportDto {
   studentId: string;
@@ -192,5 +193,7 @@ export interface MentorshipStudentReportDto {
     net: number;
   }[];
   planTasks: MentorshipReportPlanTaskDto[];
+  /** Assigned by THIS coach and since deleted, newest first. Same 14-day window as `planTasks`. */
+  droppedAssignments: MentorshipDroppedAssignmentDto[];
   moodTrend: { date: string; level: number }[];
 }

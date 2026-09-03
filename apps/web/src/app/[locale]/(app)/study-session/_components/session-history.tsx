@@ -10,6 +10,7 @@ import {
   historyDateRange,
 } from "@/lib/history-date-range";
 import { listStudySessions } from "@/lib/study-sessions";
+import { HistoryFilterSelect } from "@/components/history-side-panel";
 import { SessionHistoryRow } from "./session-history-row";
 
 const HISTORY_PAGE_SIZE = 8;
@@ -175,7 +176,7 @@ export function SessionHistory() {
         grows for free as subjects accumulate, which is exactly where the chip row got worse.
       */}
       <div className="flex gap-1.5">
-        <FilterSelect
+        <HistoryFilterSelect
           label={t("history_date_filter_label")}
           value={datePreset}
           onChange={(value) => setDatePreset(value as HistoryDatePreset)}
@@ -183,9 +184,10 @@ export function SessionHistory() {
             value: preset,
             label: t(`history_date_${preset}`),
           }))}
+          testId="history-filter-date"
         />
         {filterSubjects.length > 0 ? (
-          <FilterSelect
+          <HistoryFilterSelect
             label={t("history_subject_filter_label")}
             value={selectedSubject ?? ""}
             onChange={(value) => setSelectedSubject(value === "" ? null : value)}
@@ -193,6 +195,7 @@ export function SessionHistory() {
               { value: "", label: t("history_filter_all") },
               ...filterSubjects.map((subject) => ({ value: subject, label: subject })),
             ]}
+            testId="history-filter-subject"
           />
         ) : null}
       </div>
@@ -290,50 +293,3 @@ export function SessionHistory() {
   );
 }
 
-/**
- * A labelled native `<select>` styled to the app's chip language. The visible control carries
- * its own accessible name through `aria-label`, so the filter reads correctly without a
- * separate label row eating a line of the rail.
- */
-function FilterSelect({
-  label,
-  value,
-  onChange,
-  options,
-}: {
-  label: string;
-  value: string;
-  onChange: (value: string) => void;
-  options: { value: string; label: string }[];
-}) {
-  return (
-    <div className="relative min-w-0 flex-1">
-      <select
-        aria-label={label}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full cursor-pointer appearance-none rounded-[var(--radius-card)] border py-1.5 pr-7 pl-2.5 text-xs font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{
-          backgroundColor: "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-          borderColor: "color-mix(in srgb, var(--color-chip-text) 18%, transparent)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      {/* `appearance-none` removes the platform arrow along with the platform skin, so the
-          affordance has to be drawn back; `pointer-events-none` keeps the select clickable. */}
-      <ChevronDown
-        className="pointer-events-none absolute top-1/2 right-2 size-3.5 -translate-y-1/2"
-        style={{ color: "var(--color-chip-text)" }}
-        strokeWidth={2.5}
-        aria-hidden
-      />
-    </div>
-  );
-}

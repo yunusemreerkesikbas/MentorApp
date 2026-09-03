@@ -26,3 +26,4 @@ export * from "./components/dialog/index.js";
 export * from "./components/bottom-sheet/index.js";
 export * from "./components/notification-drawer/index.js";
 export * from "./components/skeleton/index.js";
+export * from "./components/transitions/index.js";

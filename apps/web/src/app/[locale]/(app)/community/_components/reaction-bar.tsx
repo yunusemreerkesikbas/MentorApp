@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Heart } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { LikeBurst } from "@mentor/ui";
 import { FORUM_REACTION_EMOJIS } from "@mentor/types";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { ReactionDetailsContent } from "./reaction-details-content";
@@ -32,11 +33,13 @@ export function ReactionBar({
   const reduceMotion = useReducedMotion();
   const { show } = useMentorBottomSheet();
   const [open, setOpen] = useState(false);
+  const [burstKey, setBurstKey] = useState(0);
   const pickerRef = useRef<HTMLDivElement>(null);
   const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const longPressTriggeredRef = useRef(false);
   const currentEmoji = myReactions[0] ?? null;
+  const heartLiked = currentEmoji === "❤️";
   const summary = getReactionSummary(reactionCounts);
 
   const cancelScheduledClose = () => {
@@ -84,6 +87,7 @@ export function ReactionBar({
       return;
     }
     const change = getDefaultReactionChange(currentEmoji);
+    if (change.nextEmoji === "❤️") setBurstKey((k) => k + 1);
     void onChange(change.nextEmoji, change.previousEmoji);
     setOpen(false);
   };
@@ -133,45 +137,64 @@ export function ReactionBar({
           if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false);
         }}
       >
-        <motion.button
-          type="button"
-          aria-label={t("reaction_add")}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-pressed={currentEmoji !== null}
-          onClick={handleDefaultReaction}
-          onPointerDown={(event) => {
-            if (event.pointerType !== "touch") return;
-            cancelLongPress();
-            longPressTriggeredRef.current = false;
-            longPressTimerRef.current = setTimeout(() => {
-              longPressTriggeredRef.current = true;
-              setOpen(true);
-            }, 450);
-          }}
-          onPointerUp={cancelLongPress}
-          onPointerCancel={cancelLongPress}
-          whileHover={reduceMotion ? undefined : { scale: 1.08 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.9 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="community-post-action flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{
-            color:
-              currentEmoji === "❤️"
+        {currentEmoji && currentEmoji !== "❤️" ? (
+          <motion.button
+            type="button"
+            aria-label={t("reaction_add")}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            aria-pressed
+            onClick={handleDefaultReaction}
+            onPointerDown={(event) => {
+              if (event.pointerType !== "touch") return;
+              cancelLongPress();
+              longPressTriggeredRef.current = false;
+              longPressTimerRef.current = setTimeout(() => {
+                longPressTriggeredRef.current = true;
+                setOpen(true);
+              }, 450);
+            }}
+            onPointerUp={cancelLongPress}
+            onPointerCancel={cancelLongPress}
+            whileHover={reduceMotion ? undefined : { scale: 1.08 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.9 }}
+            transition={{ duration: 0.18, ease: "easeOut" }}
+            className="community-post-action flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: "var(--color-secondary)" }}
+          >
+            <span className="text-[18px]" aria-hidden>
+              {currentEmoji}
+            </span>
+          </motion.button>
+        ) : (
+          <LikeBurst
+            liked={heartLiked}
+            burstKey={burstKey}
+            aria-label={t("reaction_add")}
+            aria-haspopup="menu"
+            aria-expanded={open}
+            onClick={handleDefaultReaction}
+            onPointerDown={(event) => {
+              if (event.pointerType !== "touch") return;
+              cancelLongPress();
+              longPressTriggeredRef.current = false;
+              longPressTimerRef.current = setTimeout(() => {
+                longPressTriggeredRef.current = true;
+                setOpen(true);
+              }, 450);
+            }}
+            onPointerUp={cancelLongPress}
+            onPointerCancel={cancelLongPress}
+            className="community-post-action flex size-11 items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{
+              color: heartLiked
                 ? "var(--color-like-active)"
                 : "var(--color-secondary)",
-          }}
-        >
-          {currentEmoji && currentEmoji !== "❤️" ? (
-            <span className="text-[18px]" aria-hidden>{currentEmoji}</span>
-          ) : (
-            <Heart
-              size={20}
-              fill={currentEmoji === "❤️" ? "currentColor" : "none"}
-              aria-hidden="true"
-            />
-          )}
-        </motion.button>
+            }}
+          >
+            <Heart className="t-like-heart" size={20} aria-hidden />
+          </LikeBurst>
+        )}
 
         <AnimatePresence>
           {open ? (

@@ -79,7 +79,7 @@ export function SessionRoomList() {
   if (state.status === "loading" || state.status === "hidden") return null;
 
   return (
-    <Card className="flex flex-col gap-3 px-4 py-4">
+    <Card className="flex flex-col gap-3 px-4 py-4 session-liquid-card">
       <div className="flex items-center justify-between gap-2">
         <span
           className="text-[11px] font-semibold uppercase tracking-wide"
