@@ -21,6 +21,7 @@ full layering (domain/application/infrastructure/presentation).
 | `promotions` | Coupons, campaigns, automatic discounts; redemption ledger (payments depends on it, never the reverse) | MVP (web) |
 | `forum` | Zone primitive (announcement/chat/qa) + scoped membership; MVP slice 1 = zones + OPEN/REQUEST join (flag `forum.enabled`). Verification/coin/C-layer = Phase 2 | MVP (slice 1) |
 | `community` | Folds into `forum` (mahalle = closed/auto-assign zone variant). Presence/leaderboard (Redis), live study room | Phase 2 |
+| `mentorship` | Human coach ↔ student: invite code + double opt-in link, roster, rule-based risk triage, student report, coach-assigned plan tasks. NOT the AI coach — that is `ai` / the `coach_*` tables | Phase 2 (pulled forward) |
 | `marketplace` | Coach discovery/commission/chat (to be added) | Phase 3 |
 
 Each module is imported into `app.module.ts` as it's implemented. For now only `health` is active;

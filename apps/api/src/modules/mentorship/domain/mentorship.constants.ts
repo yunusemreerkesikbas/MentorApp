@@ -19,6 +19,16 @@ export const MENTORSHIP_INVITE_CODE_BYTES = 6;
  */
 export const MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD = 120;
 
+/**
+ * How far back the report reads dropped assignments. Deliberately the same 14 days coaching uses
+ * for the plan rows: the two lists are read side by side, and a drop older than the plan it
+ * belonged to would be a fact with nothing to compare it against.
+ */
+export const MENTORSHIP_DROPPED_WINDOW_DAYS = 14;
+
+/** Ceiling on the drop list. Three weeks of assignments dropped in a fortnight is already a story. */
+export const MENTORSHIP_DROPPED_LIMIT = 60;
+
 /** Domain events (topic format `module.entity.action` — §8 event backbone). */
 export const MentorshipEventTopic = {
   LINK_ACCEPTED: "mentorship.link.accepted",

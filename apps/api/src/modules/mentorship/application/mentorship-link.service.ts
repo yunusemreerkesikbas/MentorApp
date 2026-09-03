@@ -4,10 +4,9 @@ import {
   MENTORSHIP_DATA_SCOPE,
   type MentorshipInvitationPreviewDto,
   type MentorshipLinkStatus,
-  type MentorshipStudentDto,
   type MyCoachDto,
-  type Paginated,
 } from "@mentor/types";
+import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -48,7 +47,7 @@ export class MentorshipLinkService {
 
   /** Runtime kill-switch (config registry). Every W8 entry point calls this first. */
   async assertEnabled(): Promise<void> {
-    const enabled = await this.config.get("mentorship.enabled");
+    const enabled = await this.config.get(FeatureFlag.MENTORSHIP_ENABLED);
     if (!enabled) throw new DomainError(ErrorCode.MENTORSHIP_DISABLED, HttpStatus.FORBIDDEN);
   }
 
@@ -126,34 +125,6 @@ export class MentorshipLinkService {
       ),
     );
     return this.toMyCoachDto(link, people.get(coachId));
-  }
-
-  /** The coach's roster. Identity only in this slice; metrics arrive with the roster read model. */
-  async listStudents(
-    coachId: string,
-    status: MentorshipLinkStatus,
-    page: number,
-    pageSize: number,
-  ): Promise<Paginated<MentorshipStudentDto>> {
-    await this.assertEnabled();
-    const { rows, total } = await this.links.listByCoach(coachId, status, page, pageSize);
-    const people = await this.users.listDisplayIdentities(rows.map((row) => row.studentId));
-    return {
-      items: rows.map((row) => {
-        const person = people.get(row.studentId);
-        return {
-          linkId: row.id,
-          studentId: row.studentId,
-          studentDisplayName: person?.displayName ?? "",
-          studentUsername: person?.username ?? null,
-          status: row.status as MentorshipLinkStatus,
-          acceptedAt: row.acceptedAt?.toISOString() ?? null,
-        };
-      }),
-      total,
-      page,
-      pageSize,
-    };
   }
 
   /** The student's transparency view: who their coach is and exactly what that coach can see. */

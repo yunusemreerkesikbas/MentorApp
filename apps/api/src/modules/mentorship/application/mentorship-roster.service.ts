@@ -7,13 +7,18 @@ import type {
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
-import { todayIso } from "../../coaching/domain/date.util";
+import { addDays, todayIso } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
+import {
+  MENTORSHIP_DROPPED_LIMIT,
+  MENTORSHIP_DROPPED_WINDOW_DAYS,
+} from "../domain/mentorship.constants";
 import {
   compareByRisk,
   evaluateRiskFlags,
   type RiskThresholds,
 } from "../domain/risk-flags";
+import { MentorshipDroppedAssignmentRepository } from "../infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipLinkService } from "./mentorship-link.service";
 
@@ -28,6 +33,7 @@ import { MentorshipLinkService } from "./mentorship-link.service";
 export class MentorshipRosterService {
   constructor(
     private readonly links: MentorshipLinkRepository,
+    private readonly dropped: MentorshipDroppedAssignmentRepository,
     private readonly linkService: MentorshipLinkService,
     private readonly evidence: CohortEvidenceService,
     private readonly users: UsersService,
@@ -108,12 +114,14 @@ export class MentorshipRosterService {
 
     // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
     // previous coach on a task that outlived their link must not be readable by the current one.
-    const [person, profile, report, snapshots, thresholds] = await Promise.all([
+    const droppedSince = addDays(todayIso(now), -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1));
+    const [person, profile, report, snapshots, thresholds, dropped] = await Promise.all([
       this.users.listDisplayIdentities([studentId]),
       this.users.getDiscoveryProfile(studentId),
       this.evidence.getStudentReport(studentId, now, link.id),
       this.evidence.listCohortSnapshots([studentId], now),
       this.thresholds(),
+      this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
     ]);
     const snapshot = snapshots.get(studentId)!;
 
@@ -126,6 +134,13 @@ export class MentorshipRosterService {
       studentExamType: profile.examType,
       riskFlags: evaluateRiskFlags(snapshot, thresholds, todayIso(now)),
       ...report,
+      // What the living plan cannot say: these were assigned and then removed. Same `link.id`
+      // scope as the plan rows, so a previous coach's assignments stay invisible.
+      droppedAssignments: dropped.map((row) => ({
+        taskDate: row.taskDate,
+        title: row.taskTitle,
+        droppedAt: row.droppedAt.toISOString(),
+      })),
     };
   }
 

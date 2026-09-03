@@ -10,6 +10,7 @@ const STUDENT = "33333333-3333-4333-8333-333333333333";
 function setup(link?: { id: string; coachId: string; status: string } | undefined) {
   const emitted: { topic: string; payload: unknown }[] = [];
   const links = { findById: vi.fn(async () => link) };
+  const dropped = { record: vi.fn(async () => undefined) };
   const users = {
     listDisplayIdentities: vi.fn(async () => new Map([[STUDENT, { displayName: "Ayşe" }]])),
   };
@@ -19,8 +20,13 @@ function setup(link?: { id: string; coachId: string; status: string } | undefine
       return true;
     }),
   };
-  const listener = new PlanTaskFeedbackListener(links as never, users as never, events as never);
-  return { listener, emitted, links, users };
+  const listener = new PlanTaskFeedbackListener(
+    links as never,
+    dropped as never,
+    users as never,
+    events as never,
+  );
+  return { listener, emitted, links, dropped, users };
 }
 
 const activeLink = { id: LINK, coachId: COACH, status: "ACTIVE" };
@@ -60,6 +66,27 @@ describe("PlanTaskFeedbackListener", () => {
     });
   });
 
+  it("logs the drop so the report can show it after the notification is gone", async () => {
+    const { listener, dropped } = setup(activeLink);
+    await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
+    expect(dropped.record).toHaveBeenCalledWith(LINK, "Paragraf 20 soru", "2026-09-10");
+  });
+
+  it("does not log a completion — a done task is still in the plan, marked DONE", async () => {
+    const { listener, dropped } = setup(activeLink);
+    await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
+    expect(dropped.record).not.toHaveBeenCalled();
+  });
+
+  it("still tells the coach when the log write fails", async () => {
+    // Notify first, log second: the timely signal is the half worth protecting. A coach who hears
+    // nothing cannot intervene; a missing history row only costs them the retrospective.
+    const { listener, emitted, dropped } = setup(activeLink);
+    dropped.record.mockRejectedValueOnce(new Error("db down") as never);
+    await expect(listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK))).resolves.toBeUndefined();
+    expect(emitted).toHaveLength(1);
+  });
+
   it("tells the coach when their assignment is completed", async () => {
     const { listener, emitted } = setup(activeLink);
     await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
@@ -70,10 +97,11 @@ describe("PlanTaskFeedbackListener", () => {
   it("says nothing to a coach whose link has ENDED", async () => {
     // The event-side counterpart of the roster's `metrics: null` rule: revoked consent stops the
     // data, and a notification about the student IS data about the student.
-    const { listener, emitted } = setup({ ...activeLink, status: "ENDED" });
+    const { listener, emitted, dropped } = setup({ ...activeLink, status: "ENDED" });
     await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
     await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
     expect(emitted).toEqual([]);
+    expect(dropped.record).not.toHaveBeenCalled();
   });
 
   it("says nothing when the link is gone — the soft ref outlived its row (erasure)", async () => {

@@ -79,7 +79,7 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 ### Coach
 GET    /v1/mentorship/invite-code                  -> { code, expiresAt } | (empty = none yet)
 POST   /v1/mentorship/invite-code                  -> rotates; the previous code stops working
-GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipStudentDto>
+GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipRosterRowDto>
 DELETE /v1/mentorship/students/:studentId          -> 204
 
 ### Student (no role required)
@@ -88,6 +88,10 @@ POST   /v1/mentorship/invitations/accept   { code } -> MyCoachDto
 GET    /v1/mentorship/my-coach                      -> MyCoachDto | (empty = no coach)
 DELETE /v1/mentorship/my-coach                      -> 204
 ```
+
+Web'de öğrencinin akışa giriş noktası **profil → "Koçum"** (`/profil` → `/kocum`); oradan koçu
+yoksa `/kocluk-daveti`'ye geçer. Koç davet kartından kodu ya da `?code=` taşıyan hazır linki
+kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 ## API
 
@@ -135,6 +139,38 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Davet akışının ulaşılabilirliği ve "geçen haftayı kopyala" (APP-069, 2026-09-03)** — Yalnız
+  `apps/web`; migration ve API değişikliği yok.
+  **Bloklayıcı bulgu:** `/kocum` ve `/kocluk-daveti` ekranlarına uygulamada **hiçbir giriş noktası
+  yoktu** — ne alt sekmede, ne kenar çubuğunda, ne profilde, ne ayarlarda. `/kocluk-daveti`'ye tek
+  yol `/kocum`'un boş-durum butonu, `/kocum`'a tek yol bir MENTORSHIP bildirimiydi; yani bildirim
+  alabilmek için zaten bağlı olman gerekiyordu. Eline davet kodu verilen öğrenci ekrana hiç
+  ulaşamıyordu. Backend altı dilimdir hazırdı ama `mentorship.enabled` bugün açılsa çıkmaz sokak
+  yayınlanmış olacaktı. Profil hesap kartına `/kocum` satırı eklendi; ekran iki durumu zaten kendisi
+  ayırt ediyor (koç yoksa davet ekranına CTA, varsa veri kapsamı sözleşmesi).
+  **Koç tarafı:** davet kartına "Linki kopyala" — `{origin}/kocluk-daveti?code=…`. Koçun gerçekte
+  yaptığı şey kodu bir mesajda paylaşmak; kod butonu duruyor, link onun yanına geldi.
+  **Besteci:** "Geçen haftayı kopyala". Kaynak, sayfanın zaten yüklediği raporun `planTasks`'i →
+  ek istek yok. Yalnız `assignedByCoach` satırları kopyalanır: raporun geri kalanı öğrencinin
+  kendi planı ve onu kaldırmak öğrencinin tercihlerini koçun ödevine çevirirdi. 21 tavanına kadar
+  doldurur, mevcut taslakların **üstüne** ekler.
+  **Gotchas:** (1) Kaynak pencere `weekStart`'a değil **bugüne** göre: besteci geleceğe park
+  edilmiş olabiliyor ve "baktığım haftadan önceki hafta" raporun 14 günlük penceresinden çıkıp
+  sessizce boş dönerdi. Hafta düğmesi tam 7 gün adımladığı için haftanın içindeki gün her iki
+  okumada da korunuyor. (2) `(app)` grubunun `route-message-scopes.json`'da kaydı yok →
+  `getMessages()` ile **tüm** namespace'leri alıyor, profil kartı bu yüzden `mentorship`
+  namespace'ini doğrudan kullanabiliyor. `(coach)` grubu scope'lu, oraya bir namespace eklemek
+  gerekirse `coaching` satırı da güncellenmeli, yoksa `pickMessages` fırlatır. (3) Bayrak
+  kapalıyken `/kocum` artık hata toast'ı değil "koçluk şu an kapalı" boş durumu gösteriyor:
+  profil satırı bayraktan bağımsız görünür, ve kill-switch bir arıza değil bir durum.
+  (4) `?code=` hâlâ yalnız alanı dolduruyor — link kopyalamak rızayı otomatikleştirmiyor,
+  öğrenci gene kodu getirip veri kapsamını okuyup onaylıyor.
+  **İlgili:** `apps/web/src/app/[locale]/(app)/profile/_components/account-links-card.tsx`,
+  `apps/web/src/app/[locale]/(app)/my-coach/_components/my-coach-shell.tsx`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/roster-shell.tsx`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/repeat-week.ts` (+ spec),
+  `apps/web/messages/{tr,en}.json`.
 
 - **Code review düzeltmeleri — W8 üç dilim (2026-09-03)** — Üç PR'ın (besteci · risk özeti · geri
   bildirim döngüsü) max-effort incelemesinde çıkan yedi bulgu kapatıldı.

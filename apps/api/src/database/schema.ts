@@ -226,6 +226,39 @@ export const mentorshipInviteCodes = pgTable(
 );
 
 /**
+ * Append-only log of coach-assigned tasks the student deleted (W8).
+ *
+ * The report renders the LIVING plan, so a deleted assignment used to leave no trace at all and a
+ * coach read its absence as "never assigned". Only deletion loses information: a completed task
+ * stays in the plan marked DONE, and a MENTORSHIP task cannot be retitled or moved
+ * (`assertMentorshipTaskEditable`), so there is nothing else to shadow.
+ *
+ * `link_id` is a real FK with ON DELETE CASCADE, unlike `plan_tasks.origin_ref_id`: that column
+ * points across a module boundary and had to stay soft, this one points at W8's own table. The
+ * cascade is also the whole KVKK story — `MentorshipErasureService` deletes link rows outright
+ * (it does not anonymize them), so the drops go with them and the erasure service needs no clause.
+ */
+export const mentorshipDroppedAssignments = pgTable(
+  "mentorship_dropped_assignments",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    /** The heading the coach gave it. No `description`: that column is the student's own words. */
+    taskTitle: text("task_title").notNull(),
+    /** The day it had been assigned for, so the report can slot it back into the right week. */
+    taskDate: date("task_date").notNull(),
+    droppedAt: timestamp("dropped_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [index("mentorship_dropped_assignments_link_idx").on(t.linkId, t.droppedAt)],
+);
+
+/**
  * Refresh tokens: opaque 256-bit secrets — only the sha256 hash is stored.
  * Rotation: each refresh revokes the old row and issues a new one in the same `family`.
  * Reuse detection: presenting an already-revoked token revokes the whole family (theft assumption).
