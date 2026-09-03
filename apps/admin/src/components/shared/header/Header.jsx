@@ -9,6 +9,7 @@ import { NavigationContext } from '@/contentApi/navigationProvider';
 const Header = () => {
     const { navigationOpen, setNavigationOpen } = useContext(NavigationContext)
     const [navigationExpend, setNavigationExpend] = useState(false)
+    const [theme, setTheme] = useState("light")
     const miniButtonRef = useRef(null);
     const expendButtonRef = useRef(null);
 
@@ -21,6 +22,7 @@ const Header = () => {
             document.documentElement.classList.remove("app-skin-dark")
             localStorage.setItem("skinTheme", "light");
         }
+        setTheme(type)
     }
 
     useEffect(() => {
@@ -47,7 +49,7 @@ const Header = () => {
         window.addEventListener('resize', handleResize);
         handleResize();
 
-        const savedSkinTheme = localStorage.getItem("skinTheme");
+        const savedSkinTheme = localStorage.getItem("skinTheme") === "dark" ? "dark" : "light";
         handleThemeMode(savedSkinTheme)
 
         return () => {
@@ -137,12 +139,12 @@ const Header = () => {
                             </div>
                         </div>
                         <div className="nxl-h-item dark-light-theme">
-                            <div className="nxl-head-link me-0 dark-button" onClick={() => handleThemeMode("dark")}>
+                            <button type="button" className="nxl-head-link me-0 dark-button admin-header-icon-button" onClick={() => handleThemeMode("dark")} aria-label="Koyu temayı aç" aria-pressed={theme === "dark"} title="Koyu tema">
                                 <FiMoon size={20} />
-                            </div>
-                            <div className="nxl-head-link me-0 light-button" onClick={() => handleThemeMode("light")} style={{ display: "none" }}>
+                            </button>
+                            <button type="button" className="nxl-head-link me-0 light-button admin-header-icon-button" onClick={() => handleThemeMode("light")} aria-label="Açık temayı aç" aria-pressed={theme === "light"} title="Açık tema" style={{ display: "none" }}>
                                 <FiSun size={20} />
-                            </div>
+                            </button>
                         </div>
                         <AdminProfile />
                     </div>

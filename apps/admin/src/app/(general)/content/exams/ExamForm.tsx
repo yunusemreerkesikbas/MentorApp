@@ -1,7 +1,11 @@
 'use client'
 import { useState, type FormEvent } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Swal from "sweetalert2";
+import { FieldLabel } from "@/components/shared/admin/FieldLabel";
+import { FormSection } from "@/components/shared/admin/FormSection";
+import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AdminExam } from "@/lib/types";
 
@@ -46,43 +50,66 @@ export default function ExamForm({ initial }: { initial?: AdminExam | null }) {
     };
 
     return (
-        <form onSubmit={submit} className="card stretch stretch-full">
-            <div className="card-body">
-                <div className="row g-3">
-                    <div className="col-md-6">
-                        <label className="form-label">Slug</label>
-                        <input className="form-control" value={f.slug} onChange={set("slug")} disabled={editing} required placeholder="kpss-2026-lisans" />
-                    </div>
-                    <div className="col-md-6">
-                        <label className="form-label">Ad</label>
-                        <input className="form-control" value={f.name} onChange={set("name")} required placeholder="KPSS 2026 Lisans" />
-                    </div>
-                    <div className="col-md-3">
-                        <label className="form-label">Sınav</label>
-                        <select className="form-select" value={f.family} onChange={set("family")}>
-                            {FAMILIES.map((x) => <option key={x} value={x}>{x}</option>)}
-                        </select>
-                    </div>
-                    <div className="col-md-3">
-                        <label className="form-label">Tür (varyant)</label>
-                        <select className="form-select" value={f.variant} onChange={set("variant")}>
-                            {VARIANTS.map((x) => <option key={x} value={x}>{x || "—"}</option>)}
-                        </select>
-                    </div>
-                    <div className="col-md-3">
-                        <label className="form-label">Net kuralı (ceza böleni)</label>
-                        <input className="form-control" type="number" min={1} value={f.divisor} onChange={set("divisor")} required />
-                    </div>
-                    <div className="col-md-3 d-flex align-items-end">
-                        <div className="form-check">
-                            <input className="form-check-input" type="checkbox" id="isCurrent" checked={f.isCurrent} onChange={(e) => setF((p) => ({ ...p, isCurrent: e.target.checked }))} />
-                            <label className="form-check-label" htmlFor="isCurrent">Güncel sınav</label>
+        <form onSubmit={submit} aria-busy={busy}>
+            <div className="row g-4 align-items-start">
+                <div className="col-xl-8">
+                    <FormSection title="Sınav bilgileri">
+                        <div className="row g-4">
+                            <div className="col-md-6">
+                                <FieldLabel htmlFor="exam-slug" label="Slug" required hint={editing ? "Bağlantılar ve takvim kayıtları bu değeri kullandığı için düzenleme sırasında değiştirilemez." : "URL ve API kayıtlarında kullanılan benzersiz, küçük harfli tanımlayıcı."} />
+                                <input id="exam-slug" className="form-control" value={f.slug} onChange={set("slug")} disabled={editing} required placeholder="kpss-2026-lisans" />
+                            </div>
+                            <div className="col-md-6">
+                                <FieldLabel htmlFor="exam-name" label="Sınav adı" required />
+                                <input id="exam-name" className="form-control" value={f.name} onChange={set("name")} required placeholder="KPSS 2026 Lisans" />
+                            </div>
+                            <div className="col-md-6">
+                                <FieldLabel htmlFor="exam-family" label="Sınav ailesi" required />
+                                <select id="exam-family" className="form-select" value={f.family} onChange={set("family")}>
+                                    {FAMILIES.map((family) => <option key={family} value={family}>{family}</option>)}
+                                </select>
+                            </div>
+                            <div className="col-md-6">
+                                <FieldLabel htmlFor="exam-variant" label="Varyant" hint="Yalnız sınav ailesinin lisans, ön lisans veya ortaöğretim gibi ayrı bir kapsamı varsa seçilir." />
+                                <select id="exam-variant" className="form-select" value={f.variant} onChange={set("variant")}>
+                                    {VARIANTS.map((variant) => <option key={variant} value={variant}>{variant || "Varyant yok"}</option>)}
+                                </select>
+                            </div>
                         </div>
-                    </div>
+                    </FormSection>
                 </div>
-                <div className="mt-3 d-flex gap-2">
-                    <button type="submit" className="btn btn-primary" disabled={busy}>{editing ? "Güncelle" : "Oluştur"}</button>
-                    <button type="button" className="btn btn-light" onClick={() => router.push("/content/exams")}>İptal</button>
+                <div className="col-xl-4">
+                    <div className="admin-form-rail">
+                        <FormSection
+                            title="Puanlama ve durum"
+                            footer={
+                                <div className="d-grid gap-2">
+                                    <button type="submit" className="btn btn-primary admin-submit-button" disabled={busy}>
+                                        {busy ? <span className="spinner-border spinner-border-sm" aria-hidden="true" /> : null}
+                                        <span>{busy ? "Kaydediliyor…" : editing ? "Sınavı güncelle" : "Sınavı oluştur"}</span>
+                                    </button>
+                                    <Link href="/content/exams" className="btn btn-light">Vazgeç</Link>
+                                </div>
+                            }
+                        >
+                            <div className="mb-4">
+                                <FieldLabel htmlFor="exam-divisor" label="Ceza böleni" required hint="Net hesabında kaç yanlışın bir doğruyu götürdüğünü belirtir. Hesaplama backend sözleşmesinde yapılır." />
+                                <input id="exam-divisor" className="form-control admin-field-compact" type="number" min={1} value={f.divisor} onChange={set("divisor")} required />
+                            </div>
+                            <div className="admin-publish-control">
+                                <div>
+                                    <strong>Takvim durumu</strong>
+                                    <span>Aktif sınav seçimlerinde gösterilir.</span>
+                                </div>
+                                <div className="d-flex align-items-center gap-2">
+                                    <StatusBadge tone={f.isCurrent ? "success" : "neutral"}>{f.isCurrent ? "Güncel" : "Arşiv"}</StatusBadge>
+                                    <div className="form-check form-switch mb-0">
+                                        <input className="form-check-input" type="checkbox" role="switch" id="isCurrent" checked={f.isCurrent} onChange={(event) => setF((previous) => ({ ...previous, isCurrent: event.target.checked }))} />
+                                    </div>
+                                </div>
+                            </div>
+                        </FormSection>
+                    </div>
                 </div>
             </div>
         </form>

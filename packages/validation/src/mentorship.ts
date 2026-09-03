@@ -1,5 +1,9 @@
 import { z } from "zod";
-import { planTaskFieldsSchema, refinePlanTaskTimes } from "./coaching.js";
+import {
+  planTaskFieldsSchema,
+  refinePlanTaskTaxonomy,
+  refinePlanTaskTimes,
+} from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
 
 /**
@@ -30,18 +34,28 @@ export const mentorshipStudentParamSchema = z.object({
 });
 export type MentorshipStudentParam = z.infer<typeof mentorshipStudentParamSchema>;
 
+/** A coach's instruction on one assignment. Short on purpose: it renders inline under the task. */
+export const MENTORSHIP_COACH_NOTE_MAX = 500;
+
 /**
  * One assigned task. Reuses the plan-task shape so a coach cannot write something the student could
- * not have written themselves, minus `description`: that field is the student's own note on their
- * own plan, and the coach report deliberately never reads it back. Letting a coach write into a
- * box they can never see again would make the report's omission look like a bug instead of a rule.
+ * not have written themselves, minus `description`: that field is the STUDENT's own note on their
+ * own plan, and the coach report deliberately never reads it back.
+ *
+ * The coach is not silenced, they simply have their own box: `coachNote` is written by the coach,
+ * shown to the student, and read back to the coach in the report. Two people's words must not
+ * share one column — that is the whole reason these are two fields and not one.
  */
 export const mentorshipAssignmentTaskSchema = planTaskFieldsSchema
   .omit({ description: true })
+  .extend({
+    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+  })
   // `.strict()`: a dropped field must be REFUSED, not silently stripped. Accepting a description
   // and quietly discarding it would leave the coach believing they wrote a note that never existed.
   .strict()
-  .superRefine(refinePlanTaskTimes);
+  .superRefine(refinePlanTaskTimes)
+  .superRefine(refinePlanTaskTaxonomy);
 
 /** Cap mirrors `bulkCreatePlanTasksSchema` (three weeks of days). */
 export const createMentorshipAssignmentsSchema = z.object({

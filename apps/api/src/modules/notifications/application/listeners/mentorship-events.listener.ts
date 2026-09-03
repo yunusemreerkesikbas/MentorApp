@@ -1,6 +1,8 @@
 import { Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import {
+  MentorshipAssignmentDropped,
+  MentorshipAssignmentProgressed,
   MentorshipAssignmentsCreated,
   MentorshipEventTopic,
   MentorshipLinkAccepted,
@@ -12,7 +14,7 @@ import { NotificationsService } from "../notifications.service";
 /**
  * Mentorship domain events → in-app notifications (W8).
  *
- * All three are transactional, not campaign: something happened to a relationship the person is
+ * All five are transactional, not campaign: something happened to a relationship the person is
  * in, so they land in the inbox regardless of campaign preferences (email/push still honour the
  * per-user channel switches inside NotificationsService).
  *
@@ -48,6 +50,46 @@ export class MentorshipEventsListener {
           : NotificationCopyKey.MENTORSHIP_ASSIGNED_PLURAL,
         `/plan?date=${event.firstTaskDate}`,
         { args: { name: event.coachDisplayName, count: event.taskCount } },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * One per assignment, undeduped: removals are rare, and each one is a separate fact the report
+   * will never mention again. A per-day dedupe would report three removals as "a task", which is
+   * the same quiet untruth the notification exists to prevent. The title travels because the coach
+   * wrote it — reading back their own words crosses no trust line.
+   */
+  @OnEvent(MentorshipEventTopic.ASSIGNMENT_DROPPED)
+  async onAssignmentDropped(event: MentorshipAssignmentDropped): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.coachId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_ASSIGNMENT_DROPPED,
+        `/students/${event.studentId}`,
+        { args: { name: event.studentDisplayName, title: event.taskTitle, date: event.taskDate } },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * At most one per student per day (`dedupeKey`), and deliberately vague about how many: a coach
+   * with twenty students would otherwise get a completion storm every evening. "A task" is true on
+   * the first completion and still true after the dedupe drops the rest.
+   */
+  @OnEvent(MentorshipEventTopic.ASSIGNMENT_PROGRESSED)
+  async onAssignmentProgressed(event: MentorshipAssignmentProgressed): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.coachId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_ASSIGNMENT_PROGRESSED,
+        `/students/${event.studentId}`,
+        {
+          args: { name: event.studentDisplayName },
+          dedupeKey: `mentorship-progress:${event.studentId}:${event.taskDate}`,
+        },
       )
       .catch(() => {});
   }

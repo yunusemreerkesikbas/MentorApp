@@ -97,6 +97,44 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-03 — Sınavlar ve resmi takvim redesign dalgası** — `/content/exams` listesi açık
+  Türkçe başlık/breadcrumb, Güncel-Arşiv filtresi, ortak `DataTableShell`, `StatusBadge`, ikon
+  aksiyonu ve loading/error/retry/empty durumlarına geçirildi. Yeni ve düzenle ekranları sınav
+  bilgileri ile puanlama/durum bölümlerine ayrıldı; teknik slug, varyant ve net kuralı açıklamaları
+  `InfoHint` içinde sunuluyor. Takvim etkinlikleri taranabilir tablo ve ayrı düzenleme formu kullanır;
+  resmi kaynak, doğrulayan ve doğrulama tarihi güven hattı olduğu için her zaman görünür kalır.
+  Kullanım: sınav satırından düzenleme ekranına girilir, var olan etkinlik türü seçilince kayıt forma
+  yüklenir; aynı türü kaydetmek mevcut upsert davranışını sürdürür. Gotcha: tarih/ISO dönüşümleri,
+  tür başına tek kayıt, silme onayı ve server-side audit sözleşmeleri değişmedi; geniş etkinlik
+  tablosu mobilde kendi alanında kayar. İlgili: `app/(general)/content/exams/{page,ExamForm,EventsEditor}.tsx`,
+  `app/(general)/content/exams/{new,[slug]}/page.tsx`, `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Admin UI core, Dashboard ve Ayarlar dalgası** — Dört ayrı dashboard
+  implementasyonundaki tekrar eden KPI görünümü `MetricCard` altında birleştirildi; kartlar Duralux
+  grid/card düzeninde kalırken ikincil açıklamalar `InfoHint` içine taşındı. Dashboard veri blokları
+  artık sessizce kaybolmak yerine kompakt loading ve hata/yeniden dene durumlarını gösteriyor;
+  başlık da açık Türkçe `AdminPageHeader` kullanıyor. `/config` ekranı aynı header, `FormSection`,
+  `StatusBadge`, `InfoHint` ve `AsyncState` parçalarına geçirildi; uzun teknik açıklamalar bilgi
+  ikonunda, hassas ayar sonucu ise görünür rozet ve mevcut SweetAlert onayında kalıyor. Kullanım:
+  grid kolonunu sayfa belirler, `MetricCard` yalnız kart içeriğini yönetir; yoğun veri bloklarında
+  `AsyncState size="compact"` kullanılabilir. Gotcha: tooltip tek global hostu kullanır; ayar PATCH,
+  server doğrulaması ve audit sözleşmesi değişmedi. İlgili: `components/shared/admin/MetricCard.tsx`,
+  `components/shared/admin/AsyncState.tsx`, `app/{MetricsCards,AiCostCards,EconomyCards,CoachFeedbackCards}.tsx`,
+  `app/(general)/config/page.tsx`, `themes/mentor/_admin-core.scss`.
+
+- **2026-09-03 — Admin UI core ve Kampanyalar pilot redesign** — Duralux shell sadeleştirildi;
+  tema özelleştirici kaldırıldı, Inter fontu sabitlendi ve kalıcı light/dark seçimi ilk boyamadan
+  önce uygulanır. `components/shared/admin` altında açık başlık/breadcrumb, erişilebilir bilgi
+  ipucu, alan etiketi, async durum, status badge, tablo kabuğu, form bölümü ve ikon aksiyonu
+  bileşenleri eklendi. `/promotions` liste ekranı client-side durum filtresi, gerçek hata/retry,
+  boş durum ve gruplanmış kolonları kullanır; oluşturma/düzenleme formu beş operasyonel bölüme
+  ayrıldı. Kullanım: sayfalar bileşenleri dosyalarından doğrudan named import eder; kolon ve form
+  alanı yönetimi sayfada kalır. Gotcha: `InfoHint` yalnız ikincil açıklamalar içindir ve tek
+  `AdminTooltipHost` üzerinden hover/focus/tap + Escape davranışı sağlar; kritik sonuçlar görünür
+  metin olarak kalmalıdır. Dark tema `skinTheme` anahtarını kullanır. Backend sözleşmesi, tarih/
+  kuruş dönüşümleri ve audit davranışı değişmedi. İlgili: `AdminShell.tsx`, `app/layout.js`,
+  `themes/mentor/_admin-core.scss`, `components/shared/admin/*`, `app/(general)/promotions/*`.
+
 - **2026-08-29 — Reklam operasyon görünürlüğü** — Ana metrik görünümüne created/rewarded/closed,
   benzersiz kullanıcı ve dağıtılan Coin özetleri ile Google Ad Manager gelir bağlantısı eklendi.
   `ads.*` ayarları mevcut katalog ekranında sınır/audit davranışını otomatik kullanır.

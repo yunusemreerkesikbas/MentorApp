@@ -1,6 +1,8 @@
 'use client'
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiThumbsUp, FiThumbsDown, FiSmile, FiMessageSquare } from "react-icons/fi";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { MetricCard } from "@/components/shared/admin/MetricCard";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { canSee } from "@/lib/roles";
@@ -9,26 +11,6 @@ import type { AdminCoachFeedback } from "@/lib/types";
 const fmtInt = (n: number) => n.toLocaleString("tr-TR");
 const fmtDate = (iso: string) => new Date(iso).toLocaleDateString("tr-TR", { day: "2-digit", month: "short", year: "numeric" });
 
-function Kpi({ icon, value, label }: { icon: ReactNode; value: string | number; label: string }) {
-    return (
-        <div className="col-xxl-3 col-md-6">
-            <div className="card stretch stretch-full">
-                <div className="card-body">
-                    <div className="d-flex align-items-center gap-3">
-                        <span className="d-inline-flex align-items-center justify-content-center bg-soft-primary text-primary rounded" style={{ width: 44, height: 44 }}>
-                            {icon}
-                        </span>
-                        <div>
-                            <div className="fs-4 fw-bold text-dark lh-1">{value}</div>
-                            <div className="fs-12 text-muted mt-1">{label}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 // Coach reply satisfaction (Dilim 6 signal → admin report) — read-only, ADMIN only. Satisfaction
 // rate + the most recent 👎 replies with the question that prompted each (admin-only free text).
 export default function CoachFeedbackCards() {
@@ -36,32 +18,40 @@ export default function CoachFeedbackCards() {
     const canView = canSee(["SUPPORT", "FINANCE"], admin?.roles);
     const [f, setF] = useState<AdminCoachFeedback | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
+    const load = useCallback(async () => {
         if (!canView) return;
-        let active = true;
-        apiClient
-            .get<AdminCoachFeedback>("/admin/metrics/coach-feedback")
-            .then(({ data }) => { if (active) setF(data); })
-            .catch(() => { if (active) setF(null); })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
+        setLoading(true);
+        setHasError(false);
+        try {
+            const { data } = await apiClient.get<AdminCoachFeedback>("/admin/metrics/coach-feedback");
+            setF(data);
+        } catch {
+            setF(null);
+            setHasError(true);
+        } finally {
+            setLoading(false);
+        }
     }, [canView]);
 
+    useEffect(() => { void load(); }, [load]);
+
     if (!canView) return null;
-    if (loading) return <div className="text-muted mb-4">Koç memnuniyeti yükleniyor…</div>;
+    if (loading) return <div className="card mb-4"><AsyncState status="loading" size="compact" title="Koç memnuniyeti yükleniyor" /></div>;
+    if (hasError) return <div className="card mb-4"><AsyncState status="error" size="compact" title="Koç memnuniyeti yüklenemedi" description="Geri bildirim ve kırılım verileri alınamadı." onRetry={() => void load()} /></div>;
     if (!f) return null;
 
     const ratePct = f.satisfactionRate === null ? "—" : `${Math.round(f.satisfactionRate * 100)}%`;
 
     return (
-        <div className="mb-4">
-            <h6 className="mb-2 text-muted">Koç Memnuniyeti</h6>
+        <section className="admin-dashboard-section">
+            <h2 className="admin-dashboard-section-title">Koç memnuniyeti</h2>
             <div className="row g-4 mb-3">
-                <Kpi icon={<FiSmile size={20} />} value={ratePct} label="Memnuniyet oranı" />
-                <Kpi icon={<FiThumbsUp size={20} />} value={fmtInt(f.up)} label="Beğeni (👍)" />
-                <Kpi icon={<FiThumbsDown size={20} />} value={fmtInt(f.down)} label="Beğenmeme (👎)" />
-                <Kpi icon={<FiMessageSquare size={20} />} value={fmtInt(f.rated)} label="Toplam oylanan" />
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiSmile size={20} />} value={ratePct} label="Memnuniyet oranı" /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiThumbsUp size={20} />} value={fmtInt(f.up)} label="Beğeni" /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiThumbsDown size={20} />} value={fmtInt(f.down)} label="Beğenmeme" /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiMessageSquare size={20} />} value={fmtInt(f.rated)} label="Toplam oylanan" /></div>
             </div>
 
             <div className="card stretch stretch-full mb-3">
@@ -106,6 +96,6 @@ export default function CoachFeedbackCards() {
                     </table>
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

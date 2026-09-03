@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, eq, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, lt, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { userNotifications } from "../../../database/schema";
 import type { NotificationCategory } from "@mentor/types";
@@ -49,6 +49,30 @@ export class UserNotificationRepository {
   ): Promise<UserNotificationRow[]> {
     if (rows.length === 0) return [];
     return tx.insert(userNotifications).values(rows).onConflictDoNothing().returning();
+  }
+
+  /**
+   * The most recent notification a user got from one template — the baseline the risk digest
+   * diffs against, so "what changed since I last told you" needs no state table of its own.
+   * `data.templateKey` is written by `createFromTemplate`; served by the user+created index.
+   */
+  async findLatestByTemplateKey(
+    tx: DatabaseTx,
+    userId: string,
+    templateKey: string,
+  ): Promise<UserNotificationRow | undefined> {
+    const rows = await tx
+      .select()
+      .from(userNotifications)
+      .where(
+        and(
+          eq(userNotifications.userId, userId),
+          sql`${userNotifications.data}->>'templateKey' = ${templateKey}`,
+        ),
+      )
+      .orderBy(desc(userNotifications.createdAt))
+      .limit(1);
+    return rows[0];
   }
 
   async listByUser(

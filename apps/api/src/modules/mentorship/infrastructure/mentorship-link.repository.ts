@@ -47,6 +47,37 @@ export class MentorshipLinkRepository {
     });
   }
 
+  /**
+   * One link by id — resolving `plan_tasks.origin_ref_id`, which is a soft ref with no FK, so the
+   * row it points at may already be gone (erasure) or no longer ACTIVE. Callers check `status`.
+   */
+  findById(linkId: string): Promise<MentorshipLinkRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(coachStudents)
+        .where(eq(coachStudents.id, linkId))
+        .limit(1);
+      return rows[0];
+    });
+  }
+
+  /**
+   * Every live coach↔student pair, for the daily risk digest.
+   *
+   * Deliberately unpaged: the digest evaluates the whole population once a day and one batch
+   * snapshot call covers it. Two ids per row, no identity or behavioural data — the caller resolves
+   * both through their own module's seams.
+   */
+  listAllActiveLinks(): Promise<{ coachId: string; studentId: string }[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({ coachId: coachStudents.coachId, studentId: coachStudents.studentId })
+        .from(coachStudents)
+        .where(eq(coachStudents.status, "ACTIVE")),
+    );
+  }
+
   async listByCoach(
     coachId: string,
     status: string,

@@ -51,8 +51,15 @@ export interface MentorshipInvitationPreviewDto {
 export const MentorshipDataScopeKey = {
   ACTIVITY: "ACTIVITY",
   MOCK_EXAMS: "MOCK_EXAMS",
+  /** Titles, subject/topic labels and statuses — never `plan_tasks.description`. */
   PLAN_TASK_TITLES: "PLAN_TASK_TITLES",
   MOOD_LEVEL: "MOOD_LEVEL",
+  /**
+   * Which exam the student is preparing for. Profile data rather than behaviour, so it earns its
+   * own key: the coach needs it to pick topics from the right taxonomy, and a scope list that
+   * omitted it would be describing less than the coach actually receives.
+   */
+  EXAM_TRACK: "EXAM_TRACK",
 } as const;
 export type MentorshipDataScopeKey =
   (typeof MentorshipDataScopeKey)[keyof typeof MentorshipDataScopeKey];
@@ -62,6 +69,7 @@ export const MENTORSHIP_DATA_SCOPE: readonly MentorshipDataScopeKey[] = [
   MentorshipDataScopeKey.MOCK_EXAMS,
   MentorshipDataScopeKey.PLAN_TASK_TITLES,
   MentorshipDataScopeKey.MOOD_LEVEL,
+  MentorshipDataScopeKey.EXAM_TRACK,
 ];
 
 /** The student's view of their own link ("who is my coach, what do they see"). */
@@ -135,12 +143,33 @@ export interface MentorshipRosterRowDto {
   riskFlags: MentorshipRiskFlagId[];
 }
 
+/**
+ * One plan row as the coach sees it. Headings and labels only — `plan_tasks.description` is the
+ * student's own note and never appears here.
+ */
+export interface MentorshipReportPlanTaskDto {
+  taskDate: string;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  status: string;
+  /** True when THIS coach's live link authored the row — the "did they do what I gave them" bit. */
+  assignedByCoach: boolean;
+  /**
+   * The coach's own instruction, read back to them. Null unless `assignedByCoach`: a coach never
+   * reads a previous coach's note, even on a task that outlived the link that created it.
+   */
+  coachNote: string | null;
+}
+
 /** The single-student report. Numbers, dates, statuses and task headings — never free text. */
 export interface MentorshipStudentReportDto {
   studentId: string;
   studentDisplayName: string;
   studentUsername: string | null;
   acceptedAt: string | null;
+  /** Which exam taxonomy to offer when assigning (scope key `EXAM_TRACK`); null if unset. */
+  studentExamType: string | null;
   riskFlags: MentorshipRiskFlagId[];
   activity: {
     lastActiveDate: string | null;
@@ -162,6 +191,6 @@ export interface MentorshipStudentReportDto {
     blank: number;
     net: number;
   }[];
-  planTasks: { taskDate: string; title: string; subject: string | null; status: string }[];
+  planTasks: MentorshipReportPlanTaskDto[];
   moodTrend: { date: string; level: number }[];
 }

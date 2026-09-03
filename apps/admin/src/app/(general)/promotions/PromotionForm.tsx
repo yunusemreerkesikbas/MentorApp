@@ -2,7 +2,10 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { FiCheckCircle } from "react-icons/fi";
 import Swal from "sweetalert2";
+import { FieldLabel } from "@/components/shared/admin/FieldLabel";
+import { FormSection } from "@/components/shared/admin/FormSection";
 import apiClient from "@/lib/apiClient";
 import type { AdminPromotion, PromotionDiscountType, PromotionRuleType } from "@/lib/types";
 
@@ -13,32 +16,32 @@ function errorMessage(err: unknown): string {
     );
 }
 
-/** `datetime-local` wants `yyyy-MM-ddTHH:mm` in local time; the API speaks ISO/UTC. */
+/** `datetime-local` expects local time while the API uses ISO/UTC. */
 function toLocalInput(iso: string | null): string {
     if (!iso) return "";
-    const d = new Date(iso);
-    const pad = (n: number) => String(n).padStart(2, "0");
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
-        d.getHours(),
-    )}:${pad(d.getMinutes())}`;
+    const date = new Date(iso);
+    const pad = (value: number) => String(value).padStart(2, "0");
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(
+        date.getHours(),
+    )}:${pad(date.getMinutes())}`;
 }
 
 const RULE_OPTIONS: { value: PromotionRuleType; label: string; hint: string }[] = [
-    { value: "ANYONE", label: "Herkes", hint: "Koşulsuz — dönemsel kampanya veya açık kupon." },
+    { value: "ANYONE", label: "Herkes", hint: "Koşulsuz kampanya veya açık kupon." },
     {
         value: "NEW_USER",
         label: "Yeni kayıt",
-        hint: "Son N gün içinde kaydolmuş ve hiç abone olmamış kullanıcı.",
+        hint: "Son belirlenen gün içinde kaydolmuş ve hiç abone olmamış kullanıcılar.",
     },
     {
         value: "ACTIVE_DAYS",
         label: "Aktif gün",
-        hint: "Son N gün içinde en az X gün çalışmış kullanıcı (seans veya görev).",
+        hint: "Belirlenen dönemde yeterli sayıda seans veya görev tamamlayan kullanıcılar.",
     },
     {
         value: "WIN_BACK",
         label: "Geri kazanım",
-        hint: "Aboneliği sona ermiş ya da iptal etmiş kullanıcı.",
+        hint: "Aboneliği sona ermiş veya iptal edilmiş kullanıcılar.",
     },
 ];
 
@@ -127,7 +130,6 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
             name: form.name.trim(),
             labelTr: form.labelTr.trim(),
             labelEn: form.labelEn.trim(),
-            // Blank clears the column: the app then falls back to its own default wording.
             eyebrowTr: blankToNull(form.eyebrowTr),
             eyebrowEn: blankToNull(form.eyebrowEn),
             descriptionTr: blankToNull(form.descriptionTr),
@@ -136,7 +138,6 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
             ruleType: form.ruleType,
             ruleParams: ruleParams(),
             discountType: form.discountType,
-            // FIXED is entered in lira but stored in kuruş — money is integer minor units.
             discountValue:
                 form.discountType === "FIXED"
                     ? Math.round(Number(form.discountValue) * 100)
@@ -155,21 +156,26 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
             maxRedemptionsPerUser: Number(form.maxRedemptionsPerUser),
             isActive: form.isActive,
         };
+
         try {
             if (editing && initial) {
                 await apiClient.patch(`/admin/promotions/${initial.id}`, payload);
             } else {
                 await apiClient.post("/admin/promotions", payload);
             }
-            Swal.fire({
+            await Swal.fire({
                 icon: "success",
-                title: "Kaydedildi",
+                title: editing ? "Kampanya güncellendi" : "Kampanya oluşturuldu",
                 timer: 1200,
                 showConfirmButton: false,
             });
             router.push("/promotions");
-        } catch (err) {
-            Swal.fire({ icon: "error", title: "Hata", text: errorMessage(err) });
+        } catch (error) {
+            await Swal.fire({
+                icon: "error",
+                title: "Kampanya kaydedilemedi",
+                text: errorMessage(error),
+            });
         } finally {
             setBusy(false);
         }
@@ -178,332 +184,171 @@ export default function PromotionForm({ initial }: { initial?: AdminPromotion | 
     const activeRule = RULE_OPTIONS.find((option) => option.value === form.ruleType);
 
     return (
-        <div className="nxl-content">
-            <form onSubmit={(event) => void submit(event)}>
-                <div className="row">
-                    <div className="col-lg-8">
-                        <div className="card stretch stretch-full mb-4">
-                            <div className="card-body">
-                                <h6 className="fw-bold mb-3">Tanım</h6>
+        <div className="main-content">
+            <form onSubmit={(event) => void submit(event)} aria-busy={busy}>
+                <div className="row g-4">
+                    <div className="col-xl-8">
+                        <FormSection
+                            title="Tanım"
+                            hint="Üst etiket ve açıklama boşsa uygulamanın varsayılan metni kullanılır. Plan satırı ve buton metni kampanyadan otomatik türetilir."
+                        >
+                            <div className="mb-4">
+                                <FieldLabel htmlFor="promotion-name" label="Kampanya adı" required hint="Yalnız admin kullanıcıları görür." />
+                                <input id="promotion-name" className="form-control" value={form.name} onChange={set("name")} maxLength={80} required />
+                            </div>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Ad (yalnız admin görür)</label>
-                                    <input
-                                        className="form-control"
-                                        value={form.name}
-                                        onChange={set("name")}
-                                        maxLength={80}
-                                        required
-                                    />
+                            <div className="row">
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-label-tr" label="Kullanıcı rozeti (TR)" required />
+                                    <input id="promotion-label-tr" className="form-control" value={form.labelTr} onChange={set("labelTr")} maxLength={60} placeholder="Hoş geldin hediyesi" required />
                                 </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Kullanıcı rozeti (TR)</label>
-                                        <input
-                                            className="form-control"
-                                            value={form.labelTr}
-                                            onChange={set("labelTr")}
-                                            maxLength={60}
-                                            placeholder="Hoş geldin hediyesi"
-                                            required
-                                        />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Kullanıcı rozeti (EN)</label>
-                                        <input
-                                            className="form-control"
-                                            value={form.labelEn}
-                                            onChange={set("labelEn")}
-                                            maxLength={60}
-                                            placeholder="Welcome gift"
-                                            required
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Modal üst etiketi (TR)</label>
-                                        <input
-                                            className="form-control"
-                                            value={form.eyebrowTr}
-                                            onChange={set("eyebrowTr")}
-                                            maxLength={40}
-                                            placeholder="Sana özel"
-                                        />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Modal üst etiketi (EN)</label>
-                                        <input
-                                            className="form-control"
-                                            value={form.eyebrowEn}
-                                            onChange={set("eyebrowEn")}
-                                            maxLength={40}
-                                            placeholder="Just for you"
-                                        />
-                                    </div>
-                                </div>
-
-                                <div className="row">
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Modal açıklaması (TR)</label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={2}
-                                            value={form.descriptionTr}
-                                            onChange={set("descriptionTr")}
-                                            maxLength={200}
-                                            placeholder="Kampanyayı anlatan bir iki cümle."
-                                        />
-                                    </div>
-                                    <div className="col-md-6 mb-3">
-                                        <label className="form-label">Modal açıklaması (EN)</label>
-                                        <textarea
-                                            className="form-control"
-                                            rows={2}
-                                            value={form.descriptionEn}
-                                            onChange={set("descriptionEn")}
-                                            maxLength={200}
-                                            placeholder="A sentence or two about the campaign."
-                                        />
-                                    </div>
-                                </div>
-
-                                <p className="text-muted small mb-3">
-                                    Üst etiket ve açıklama boş bırakılırsa uygulama kendi
-                                    varsayılan metnini kullanır. İndirimin hangi planlarda geçerli
-                                    olduğunu anlatan satır ile buton yazısı kampanyadan türetilir,
-                                    elle yazılamaz.
-                                </p>
-
-                                <div className="mb-1">
-                                    <label className="form-label">Kupon kodu</label>
-                                    <input
-                                        className="form-control text-uppercase"
-                                        value={form.code}
-                                        onChange={set("code")}
-                                        maxLength={32}
-                                        placeholder="HOSGELDIN"
-                                        pattern="[A-Za-z0-9-]*"
-                                    />
-                                    <div className="fs-12 text-muted mt-1">
-                                        Boş bırakırsan indirim uygun kullanıcılara{" "}
-                                        <strong>otomatik</strong> uygulanır. Kod yazarsan kullanıcı
-                                        ödeme ekranında kendisi girer.
-                                    </div>
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-label-en" label="Kullanıcı rozeti (EN)" required />
+                                    <input id="promotion-label-en" className="form-control" value={form.labelEn} onChange={set("labelEn")} maxLength={60} placeholder="Welcome gift" required />
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="card stretch stretch-full mb-4">
-                            <div className="card-body">
-                                <h6 className="fw-bold mb-3">Kimler yararlanır</h6>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Kural</label>
-                                    <select
-                                        className="form-select"
-                                        value={form.ruleType}
-                                        onChange={set("ruleType")}
-                                    >
-                                        {RULE_OPTIONS.map((option) => (
-                                            <option key={option.value} value={option.value}>
-                                                {option.label}
-                                            </option>
-                                        ))}
-                                    </select>
-                                    <div className="fs-12 text-muted mt-1">{activeRule?.hint}</div>
+                            <div className="row">
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-eyebrow-tr" label="Modal üst etiketi (TR)" />
+                                    <input id="promotion-eyebrow-tr" className="form-control" value={form.eyebrowTr} onChange={set("eyebrowTr")} maxLength={40} placeholder="Sana özel" />
                                 </div>
-
-                                {form.ruleType === "NEW_USER" ? (
-                                    <div className="mb-0" style={{ maxWidth: 240 }}>
-                                        <label className="form-label">Kayıttan sonra kaç gün</label>
-                                        <input
-                                            type="number"
-                                            className="form-control"
-                                            value={form.withinDays}
-                                            onChange={set("withinDays")}
-                                            min={1}
-                                            max={365}
-                                            required
-                                        />
-                                    </div>
-                                ) : null}
-
-                                {form.ruleType === "ACTIVE_DAYS" ? (
-                                    <div className="row">
-                                        <div className="col-md-6 mb-0">
-                                            <label className="form-label">En az kaç aktif gün</label>
-                                            <input
-                                                type="number"
-                                                className="form-control"
-                                                value={form.days}
-                                                onChange={set("days")}
-                                                min={1}
-                                                max={31}
-                                                required
-                                            />
-                                        </div>
-                                        <div className="col-md-6 mb-0">
-                                            <label className="form-label">Kaç günlük pencerede</label>
-                                            <input
-                                                type="number"
-                                                className="form-control"
-                                                value={form.windowDays}
-                                                onChange={set("windowDays")}
-                                                min={1}
-                                                max={90}
-                                                required
-                                            />
-                                        </div>
-                                    </div>
-                                ) : null}
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-eyebrow-en" label="Modal üst etiketi (EN)" />
+                                    <input id="promotion-eyebrow-en" className="form-control" value={form.eyebrowEn} onChange={set("eyebrowEn")} maxLength={40} placeholder="Just for you" />
+                                </div>
                             </div>
-                        </div>
+
+                            <div className="row">
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-description-tr" label="Modal açıklaması (TR)" />
+                                    <textarea id="promotion-description-tr" className="form-control" rows={3} value={form.descriptionTr} onChange={set("descriptionTr")} maxLength={200} placeholder="Kampanyayı anlatan kısa bir açıklama." />
+                                </div>
+                                <div className="col-md-6 mb-3">
+                                    <FieldLabel htmlFor="promotion-description-en" label="Modal açıklaması (EN)" />
+                                    <textarea id="promotion-description-en" className="form-control" rows={3} value={form.descriptionEn} onChange={set("descriptionEn")} maxLength={200} placeholder="A short description of the campaign." />
+                                </div>
+                            </div>
+
+                            <div>
+                                <FieldLabel htmlFor="promotion-code" label="Kupon kodu" hint="Harf, rakam ve tire kullanabilirsin. Kod kaydedilirken büyük harfe çevrilir." />
+                                <input id="promotion-code" className="form-control text-uppercase" value={form.code} onChange={set("code")} maxLength={32} placeholder="HOSGELDIN" pattern="[A-Za-z0-9-]*" />
+                                <div className="form-text">Boş bırakırsan indirim uygun kullanıcılara otomatik uygulanır. Kod girersen kullanıcı ödeme ekranında kodu kendisi yazar.</div>
+                            </div>
+                        </FormSection>
+
+                        <FormSection title="Hedef kitle">
+                            <div className="mb-3">
+                                <FieldLabel htmlFor="promotion-rule" label="Uygunluk kuralı" required />
+                                <select id="promotion-rule" className="form-select" value={form.ruleType} onChange={set("ruleType")}>
+                                    {RULE_OPTIONS.map((option) => (
+                                        <option key={option.value} value={option.value}>{option.label}</option>
+                                    ))}
+                                </select>
+                                <div className="form-text">{activeRule?.hint}</div>
+                            </div>
+
+                            {form.ruleType === "NEW_USER" ? (
+                                <div className="admin-field-compact">
+                                    <FieldLabel htmlFor="promotion-within-days" label="Kayıttan sonra kaç gün" required />
+                                    <input id="promotion-within-days" type="number" className="form-control" value={form.withinDays} onChange={set("withinDays")} min={1} max={365} required />
+                                </div>
+                            ) : null}
+
+                            {form.ruleType === "ACTIVE_DAYS" ? (
+                                <div className="row">
+                                    <div className="col-md-6 mb-3 mb-md-0">
+                                        <FieldLabel htmlFor="promotion-active-days" label="En az aktif gün" required />
+                                        <input id="promotion-active-days" type="number" className="form-control" value={form.days} onChange={set("days")} min={1} max={31} required />
+                                    </div>
+                                    <div className="col-md-6">
+                                        <FieldLabel htmlFor="promotion-window-days" label="Değerlendirme aralığı (gün)" required />
+                                        <input id="promotion-window-days" type="number" className="form-control" value={form.windowDays} onChange={set("windowDays")} min={1} max={90} required />
+                                    </div>
+                                </div>
+                            ) : null}
+                        </FormSection>
                     </div>
 
-                    <div className="col-lg-4">
-                        <div className="card stretch stretch-full mb-4">
-                            <div className="card-body">
-                                <h6 className="fw-bold mb-3">İndirim</h6>
-
+                    <div className="col-xl-4">
+                        <div className="admin-form-rail">
+                            <FormSection title="İndirim ve planlar">
                                 <div className="mb-3">
-                                    <label className="form-label">Tür</label>
-                                    <select
-                                        className="form-select"
-                                        value={form.discountType}
-                                        onChange={set("discountType")}
-                                    >
+                                    <FieldLabel htmlFor="promotion-discount-type" label="İndirim türü" required />
+                                    <select id="promotion-discount-type" className="form-select" value={form.discountType} onChange={set("discountType")}>
                                         <option value="PERCENT">Yüzde (%)</option>
                                         <option value="FIXED">Sabit tutar (₺)</option>
                                     </select>
                                 </div>
 
                                 <div className="mb-3">
-                                    <label className="form-label">
-                                        {form.discountType === "PERCENT" ? "Yüzde" : "Tutar (₺)"}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={form.discountValue}
-                                        onChange={set("discountValue")}
-                                        min={form.discountType === "PERCENT" ? 1 : 0.01}
-                                        max={form.discountType === "PERCENT" ? 90 : undefined}
-                                        step={form.discountType === "PERCENT" ? 1 : 0.01}
+                                    <FieldLabel
+                                        htmlFor="promotion-discount-value"
+                                        label={form.discountType === "PERCENT" ? "İndirim yüzdesi" : "İndirim tutarı (₺)"}
                                         required
+                                        hint="Ayarlar bölümündeki promotions.max_percent değeri her iki indirim türünün üst sınırını belirler."
                                     />
-                                    <div className="fs-12 text-muted mt-1">
-                                        Ayarlar&apos;daki <code>promotions.max_percent</code> tavanı
-                                        her iki türü de sınırlar.
+                                    <input id="promotion-discount-value" type="number" className="form-control" value={form.discountValue} onChange={set("discountValue")} min={form.discountType === "PERCENT" ? 1 : 0.01} max={form.discountType === "PERCENT" ? 90 : undefined} step={form.discountType === "PERCENT" ? 1 : 0.01} required />
+                                </div>
+
+                                <div className="mb-3">
+                                    <FieldLabel htmlFor="promotion-periods" label="Uygulanacak tahsilat" required hint="Üst sınırı promotions.max_discount_periods ayarı belirler." />
+                                    <input id="promotion-periods" type="number" className="form-control" value={form.appliesToPeriods} onChange={set("appliesToPeriods")} min={1} max={24} required />
+                                    <div className="form-text">Ödeme sağlayıcısı çok dönemli indirimi destekleyene kadar bu değer 1 kalmalı.</div>
+                                </div>
+
+                                <div>
+                                    <FieldLabel htmlFor="promotion-plans" label="Planlar" hint="Birden fazla plan kimliğini virgülle ayır." />
+                                    <input id="promotion-plans" className="form-control" value={form.planIds} onChange={set("planIds")} placeholder="premium-monthly, premium-3m" />
+                                    <div className="form-text">Boş bırakırsan tüm planlarda geçerli olur.</div>
+                                </div>
+                            </FormSection>
+
+                            <FormSection title="Geçerlilik ve limitler">
+                                <div className="row">
+                                    <div className="col-sm-6 col-xl-12 mb-3">
+                                        <FieldLabel htmlFor="promotion-start" label="Başlangıç" />
+                                        <input id="promotion-start" type="datetime-local" className="form-control" value={form.startsAt} onChange={set("startsAt")} />
+                                    </div>
+                                    <div className="col-sm-6 col-xl-12 mb-3">
+                                        <FieldLabel htmlFor="promotion-end" label="Bitiş" />
+                                        <input id="promotion-end" type="datetime-local" className="form-control" value={form.endsAt} onChange={set("endsAt")} />
+                                    </div>
+                                    <div className="col-sm-6 col-xl-12 mb-3">
+                                        <FieldLabel htmlFor="promotion-total-limit" label="Toplam kullanım limiti" hint="Boş bırakırsan toplam kullanım sınırı uygulanmaz." />
+                                        <input id="promotion-total-limit" type="number" className="form-control" value={form.maxRedemptions} onChange={set("maxRedemptions")} min={1} placeholder="Sınırsız" />
+                                    </div>
+                                    <div className="col-sm-6 col-xl-12">
+                                        <FieldLabel htmlFor="promotion-user-limit" label="Kullanıcı başına limit" required />
+                                        <input id="promotion-user-limit" type="number" className="form-control" value={form.maxRedemptionsPerUser} onChange={set("maxRedemptionsPerUser")} min={1} max={100} required />
                                     </div>
                                 </div>
+                            </FormSection>
 
-                                <div className="mb-3">
-                                    <label className="form-label">Kaç tahsilata uygulanır</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={form.appliesToPeriods}
-                                        onChange={set("appliesToPeriods")}
-                                        min={1}
-                                        max={24}
-                                        required
-                                    />
-                                    <div className="fs-12 text-muted mt-1">
-                                        1 = yalnız ilk tahsilat. Üst sınırı{" "}
-                                        <code>promotions.max_discount_periods</code> belirler;
-                                        ödeme sağlayıcısı çok dönemli indirimi destekleyene kadar 1
-                                        kalmalı.
+                            <FormSection title="Yayın durumu">
+                                <div className="admin-publish-control">
+                                    <div>
+                                        <strong>{form.isActive ? "Yayında" : "Durduruldu"}</strong>
+                                        <span>{form.isActive ? "Koşulları sağlayan ödemelerde uygulanabilir." : "Hiçbir yeni ödemede uygulanmaz."}</span>
+                                    </div>
+                                    <div className="form-check form-switch m-0">
+                                        <input
+                                            id="promotion-active"
+                                            type="checkbox"
+                                            className="form-check-input"
+                                            checked={form.isActive}
+                                            onChange={(event) => setForm((current) => ({ ...current, isActive: event.target.checked }))}
+                                            aria-label="Kampanyayı yayında tut"
+                                        />
                                     </div>
                                 </div>
+                            </FormSection>
 
-                                <div className="mb-0">
-                                    <label className="form-label">Planlar</label>
-                                    <input
-                                        className="form-control"
-                                        value={form.planIds}
-                                        onChange={set("planIds")}
-                                        placeholder="premium-monthly, premium-3m"
-                                    />
-                                    <div className="fs-12 text-muted mt-1">
-                                        Boş = tüm planlar.
-                                    </div>
-                                </div>
-                            </div>
+                            <button type="submit" className="btn btn-primary w-100 admin-submit-button" disabled={busy}>
+                                <FiCheckCircle aria-hidden="true" />
+                                <span>{busy ? "Kaydediliyor…" : editing ? "Kampanyayı güncelle" : "Kampanyayı oluştur"}</span>
+                            </button>
                         </div>
-
-                        <div className="card stretch stretch-full mb-4">
-                            <div className="card-body">
-                                <h6 className="fw-bold mb-3">Sınırlar</h6>
-
-                                <div className="mb-3">
-                                    <label className="form-label">Başlangıç</label>
-                                    <input
-                                        type="datetime-local"
-                                        className="form-control"
-                                        value={form.startsAt}
-                                        onChange={set("startsAt")}
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Bitiş</label>
-                                    <input
-                                        type="datetime-local"
-                                        className="form-control"
-                                        value={form.endsAt}
-                                        onChange={set("endsAt")}
-                                    />
-                                </div>
-                                <div className="mb-3">
-                                    <label className="form-label">Toplam kullanım limiti</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={form.maxRedemptions}
-                                        onChange={set("maxRedemptions")}
-                                        min={1}
-                                        placeholder="Sınırsız"
-                                    />
-                                </div>
-                                <div className="mb-0">
-                                    <label className="form-label">Kullanıcı başına limit</label>
-                                    <input
-                                        type="number"
-                                        className="form-control"
-                                        value={form.maxRedemptionsPerUser}
-                                        onChange={set("maxRedemptionsPerUser")}
-                                        min={1}
-                                        max={100}
-                                        required
-                                    />
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className="card stretch stretch-full mb-4">
-                            <div className="card-body">
-                                <label className="form-check form-switch mb-0">
-                                    <input
-                                        type="checkbox"
-                                        className="form-check-input"
-                                        checked={form.isActive}
-                                        onChange={(event) =>
-                                            setForm((current) => ({
-                                                ...current,
-                                                isActive: event.target.checked,
-                                            }))
-                                        }
-                                    />
-                                    <span className="form-check-label ms-2">Yayında</span>
-                                </label>
-                            </div>
-                        </div>
-
-                        <button type="submit" className="btn btn-primary w-100" disabled={busy}>
-                            {busy ? "Kaydediliyor…" : editing ? "Güncelle" : "Oluştur"}
-                        </button>
                     </div>
                 </div>
             </form>

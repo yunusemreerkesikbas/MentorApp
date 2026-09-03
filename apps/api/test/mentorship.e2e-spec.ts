@@ -6,6 +6,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
+import { PlanService } from "../src/modules/coaching/application/plan.service";
 
 /**
  * W8 mentorship e2e — the coach↔student link against real Postgres (RLS active).
@@ -24,6 +25,9 @@ describe("mentorship (e2e)", () => {
 
   const auth = (who: string) => ({ Authorization: `Bearer ${token[who]}` });
   const http = () => request(app.getHttpServer());
+  /** Today + n days as yyyy-mm-dd — the week grid never assigns into the past. */
+  const isoDaysFromNow = (n: number) =>
+    new Date(Date.now() + n * 86_400_000).toISOString().slice(0, 10);
 
   const svc = async (fn: (c: import("pg").PoolClient) => Promise<void>) => {
     const c = await pool.connect();
@@ -130,6 +134,7 @@ describe("mentorship (e2e)", () => {
       "MOCK_EXAMS",
       "PLAN_TASK_TITLES",
       "MOOD_LEVEL",
+      "EXAM_TRACK",
     ]);
   });
 
@@ -294,7 +299,7 @@ describe("mentorship (e2e)", () => {
     const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
     expect(mine.status).toBe(200);
     expect(mine.body.coachDisplayName).toBe("W8 coach");
-    expect(mine.body.dataScope).toHaveLength(4);
+    expect(mine.body.dataScope).toHaveLength(5);
 
     const none = await http().get("/v1/mentorship/my-coach").set(auth("outsider"));
     expect(none.status).toBe(200);
@@ -407,7 +412,10 @@ describe("mentorship (e2e)", () => {
         taskDate: expect.any(String),
         title: "Paragraf 20 soru",
         subject: "Türkçe",
+        topic: null,
         status: "DONE",
+        assignedByCoach: true,
+        coachNote: null,
       });
       expect(report.body.planCompletionRate7d).toBe(1);
     });
@@ -416,6 +424,43 @@ describe("mentorship (e2e)", () => {
       expect(
         (await http().delete(`/v1/plan-tasks/${taskId}`).set(auth("student"))).status,
       ).toBe(204);
+    });
+
+    it("but tells the coach, so their report does not quietly lie", async () => {
+      // The report shows the living plan, not its history. Without this the assignment would
+      // simply never be mentioned again and the coach would read its absence as "never assigned".
+      const inbox = await http().get("/v1/notifications").set(auth("coach"));
+      expect(inbox.status).toBe(200);
+      const dropped = inbox.body.items.find((n: { body: string }) =>
+        n.body.includes("Paragraf 20 soru"),
+      );
+      expect(dropped).toBeDefined();
+      expect(dropped.linkUrl).toBe(`/students/${userId.student}`);
+    });
+
+    it("tells the coach about a completion, at most once a day per student", async () => {
+      const assign = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({
+          tasks: [{ title: "Bugün birinci" }, { title: "Bugün ikinci" }],
+        });
+      expect(assign.status).toBe(201);
+
+      const before = (await http().get("/v1/notifications").set(auth("coach"))).body.items.length;
+      for (const created of assign.body) {
+        const done = await http()
+          .patch(`/v1/plan-tasks/${created.id}`)
+          .set(auth("student"))
+          .send({ status: "DONE" });
+        expect(done.status).toBe(200);
+      }
+
+      // Two completions on the same day, one notification: a coach with twenty students would
+      // otherwise get a completion storm every evening.
+      const after = (await http().get("/v1/notifications").set(auth("coach"))).body.items;
+      expect(after.length).toBe(before + 1);
+      expect(after[0].linkUrl).toBe(`/students/${userId.student}`);
     });
 
     it("refuses an assignment beyond the horizon", async () => {
@@ -444,6 +489,173 @@ describe("mentorship (e2e)", () => {
         .send({ tasks: [{ title: "" }] });
       expect(res.status).toBe(400);
       expect(res.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("writes a whole week in one request, up to the 21-task ceiling", async () => {
+      const tasks = Array.from({ length: 21 }, (_, i) => ({
+        title: `Hafta görevi ${i + 1}`,
+        subject: "Matematik",
+        taskDate: isoDaysFromNow(i % 7),
+      }));
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks });
+      expect(res.status).toBe(201);
+      expect(res.body).toHaveLength(21);
+    });
+
+    it("refuses a 22nd task rather than silently truncating the week", async () => {
+      const tasks = Array.from({ length: 22 }, (_, i) => ({ title: `Fazla ${i}` }));
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    it("refuses a topic with no subject — a leaf needs its branch", async () => {
+      const res = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "Dalsız", topic: "Paragrafta anlam" }] });
+      expect(res.status).toBe(400);
+      expect(res.body.code).toBe("VALIDATION_ERROR");
+    });
+
+    describe("the coach's own note", () => {
+      let notedTaskId = "";
+
+      it("reaches the student without touching their own description box", async () => {
+        const assign = await http()
+          .post(`/v1/mentorship/students/${userId.student}/assignments`)
+          .set(auth("coach"))
+          .send({
+            tasks: [
+              {
+                title: "Problemler tekrar",
+                subject: "Matematik",
+                topic: "Problemler",
+                coachNote: "Netin düştü, bu hafta problemlere ağırlık ver.",
+              },
+            ],
+          });
+        expect(assign.status).toBe(201);
+        notedTaskId = assign.body[0].id;
+
+        const plan = await http().get("/v1/plan-tasks").set(auth("student"));
+        const mine = plan.body.items.find((t: { id: string }) => t.id === notedTaskId);
+        expect(mine).toMatchObject({
+          topic: "Problemler",
+          coachNote: "Netin düştü, bu hafta problemlere ağırlık ver.",
+          // The student's own box stays empty: two people's words, two columns.
+          description: null,
+        });
+      });
+
+      it("stops the student rewriting the note, like the title", async () => {
+        // `coachNote` is not in the update contract at all, so a patch carrying only it has no
+        // writable field left and is refused as empty — not accepted-then-ignored.
+        const only = await http()
+          .patch(`/v1/plan-tasks/${notedTaskId}`)
+          .set(auth("student"))
+          .send({ coachNote: "Koç böyle demedi" });
+        expect(only.status).toBe(400);
+        expect(only.body.code).toBe("VALIDATION_ERROR");
+
+        // Smuggling it alongside a change the student IS allowed to make must not work either.
+        const alongside = await http()
+          .patch(`/v1/plan-tasks/${notedTaskId}`)
+          .set(auth("student"))
+          .send({ status: "DONE", coachNote: "Koç böyle demedi" });
+        expect(alongside.status).toBe(200);
+        expect(alongside.body.status).toBe("DONE");
+        expect(alongside.body.coachNote).toBe("Netin düştü, bu hafta problemlere ağırlık ver.");
+      });
+
+      it("is read back to the coach who wrote it", async () => {
+        const report = await http()
+          .get(`/v1/mentorship/students/${userId.student}`)
+          .set(auth("coach"));
+        expect(report.body.planTasks).toContainEqual(
+          expect.objectContaining({
+            title: "Problemler tekrar",
+            topic: "Problemler",
+            assignedByCoach: true,
+            coachNote: "Netin düştü, bu hafta problemlere ağırlık ver.",
+          }),
+        );
+      });
+
+      it("is invisible to the NEXT coach, even though the task outlives the link", async () => {
+        // End the link, hand the student to coach2, and look again. The task survives (it is the
+        // student's work); the previous coach's instruction is not the successor's to read.
+        expect(
+          (await http().delete(`/v1/mentorship/students/${userId.student}`).set(auth("coach")))
+            .status,
+        ).toBe(204);
+        const code2 = (await http().post("/v1/mentorship/invite-code").set(auth("coach2"))).body
+          .code;
+        expect(
+          (
+            await http()
+              .post("/v1/mentorship/invitations/accept")
+              .set(auth("student"))
+              .send({ code: code2 })
+          ).status,
+        ).toBe(200);
+
+        const report = await http()
+          .get(`/v1/mentorship/students/${userId.student}`)
+          .set(auth("coach2"));
+        expect(report.status).toBe(200);
+        const row = report.body.planTasks.find(
+          (t: { title: string }) => t.title === "Problemler tekrar",
+        );
+        expect(row).toBeDefined();
+        expect(row.assignedByCoach).toBe(false);
+        expect(row.coachNote).toBeNull();
+        expect(JSON.stringify(report.body)).not.toContain("Netin düştü");
+      });
+    });
+  });
+
+  it("erasing a coach clears the note along with the provenance", async () => {
+    // Regression guard for a trap the CHECK constraint turns into a loud failure:
+    // `plan_tasks_coach_note_origin_chk` forbids a note on an origin-less row, so a
+    // `clearMentorshipOrigin` that forgot `coach_note` would make every coach erasure throw.
+    // The unit spec mocks this call, so only a real transaction proves it.
+    const assign = await http()
+      .post(`/v1/mentorship/students/${userId.student}/assignments`)
+      .set(auth("coach2"))
+      .send({ tasks: [{ title: "Silinecek koç ödevi", coachNote: "Bu not de gitmeli" }] });
+    expect(assign.status).toBe(201);
+    const orphanId: string = assign.body[0].id;
+
+    let linkId = "";
+    await svc(async (c) => {
+      const res = await c.query(
+        "select id from coach_students where student_id = $1 and status = 'ACTIVE'",
+        [userId.student],
+      );
+      linkId = res.rows[0].id;
+    });
+
+    await expect(
+      app.get(PlanService).clearMentorshipOrigin([linkId]),
+    ).resolves.toBeGreaterThan(0);
+
+    await svc(async (c) => {
+      const res = await c.query(
+        "select origin_type, origin_ref_id, coach_note, title from plan_tasks where id = $1",
+        [orphanId],
+      );
+      expect(res.rows[0].origin_type).toBeNull();
+      expect(res.rows[0].origin_ref_id).toBeNull();
+      expect(res.rows[0].coach_note).toBeNull();
+      // The task itself survives — it is the student's work, not the coach's.
+      expect(res.rows[0].title).toBe("Silinecek koç ödevi");
     });
   });
 

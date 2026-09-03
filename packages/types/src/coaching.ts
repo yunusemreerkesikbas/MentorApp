@@ -59,6 +59,8 @@ export interface PlanTaskDto {
   title: string;
   /** Soft-ref to the content subject taxonomy (display name), nullable. */
   subject: string | null;
+  /** Soft-ref to the content topic taxonomy (display name); never set without `subject`. */
+  topic: string | null;
   status: PlanTaskStatus;
   sortOrder: number;
   taskDate: string; // yyyy-mm-dd
@@ -66,8 +68,13 @@ export interface PlanTaskDto {
   startTime: string | null;
   /** Wall-clock "HH:MM"; null when open-ended. Never set without `startTime`. */
   endTime: string | null;
-  /** Free-text note shown in the calendar event preview. */
+  /** Free-text note shown in the calendar event preview. The STUDENT's own words. */
   description: string | null;
+  /**
+   * The COACH's instruction on an assignment — their words, not the student's. Only ever set on a
+   * MENTORSHIP-origin task; the student reads it but cannot edit it, like the title.
+   */
+  coachNote: string | null;
   /** Nullable additive provenance; legacy and manually-created tasks have no origin. */
   origin: PlanTaskOriginDto | null;
 }

@@ -29,6 +29,9 @@ export const NotificationCopyKey = {
   MENTORSHIP_ASSIGNED_SINGULAR: "mentorshipAssignedSingular",
   MENTORSHIP_ASSIGNED_PLURAL: "mentorshipAssignedPlural",
   MENTORSHIP_LINK_ENDED: "mentorshipLinkEnded",
+  MENTORSHIP_RISK_DIGEST: "mentorshipRiskDigest",
+  MENTORSHIP_ASSIGNMENT_DROPPED: "mentorshipAssignmentDropped",
+  MENTORSHIP_ASSIGNMENT_PROGRESSED: "mentorshipAssignmentProgressed",
   /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
   WIN_BACK_OFFER: "winBackOffer",
 } as const;

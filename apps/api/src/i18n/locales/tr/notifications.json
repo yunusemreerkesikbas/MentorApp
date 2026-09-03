@@ -149,6 +149,21 @@
       "register": "companion",
       "title": "Koçluk bağlantısı sona erdi",
       "body": "{name} ile bağlantın kapandı."
+    },
+    "mentorshipRiskDigest": {
+      "register": "companion",
+      "title": "Bugün {count} öğrencin için yeni bir işaret var",
+      "body": "{names} son günlerde zorlanıyor olabilir. Rapora bir göz atmak iyi gelir."
+    },
+    "mentorshipAssignmentDropped": {
+      "register": "companion",
+      "title": "{name} bir ödevi planından çıkardı",
+      "body": "\"{title}\" ({date}) artık planında değil. Raporun bunu göstermeyecek."
+    },
+    "mentorshipAssignmentProgressed": {
+      "register": "companion",
+      "title": "{name} ödevini tamamladı",
+      "body": "Bugün senin verdiğin bir görevi bitirdi."
     }
   },
   "email": {
@@ -182,6 +197,12 @@
     "fallback": {
       "subject": "Mentor",
       "body": "Sana bir notumuz var."
+    },
+    "mentorshipRiskDigest": {
+      "subject": "Mentor: Bugün bakmaya değer {count} öğrenci",
+      "greeting": "Merhaba {displayName},",
+      "body": "{names} son günlerde zorlanıyor olabilir. Panelde raporlarına göz atabilirsin.",
+      "cta": "Öğrencilerime bak"
     }
   }
 }

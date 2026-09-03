@@ -26,12 +26,14 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
     id: row.id,
     title: row.title,
     subject: row.subject,
+    topic: row.topic,
     status: row.status as PlanTaskStatus,
     sortOrder: row.sortOrder,
     taskDate: row.taskDate,
     startTime: toHhmm(row.startTime),
     endTime: toHhmm(row.endTime),
     description: row.description,
+    coachNote: row.coachNote,
     origin: toPlanTaskOriginDto(row),
   };
 }

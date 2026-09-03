@@ -3,6 +3,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import Header from "@/components/shared/header/Header";
 import NavigationManu from "@/components/shared/navigationMenu/NavigationMenu";
+import { AdminTooltipHost } from "@/components/shared/admin/AdminTooltipHost";
 import useBootstrapUtils from "@/hooks/useBootstrapUtils";
 import AuthProvider, { useAuth } from "@/contentApi/authProvider";
 
@@ -30,6 +31,7 @@ function ShellInner({ children }: { children: ReactNode }) {
             <main className="nxl-container">
                 <div className="nxl-content">{children}</div>
             </main>
+            <AdminTooltipHost />
         </>
     );
 }

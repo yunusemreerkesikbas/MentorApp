@@ -80,10 +80,17 @@ export class CohortEvidenceService {
     return result;
   }
 
-  /** Single-student detail. Per-user queries are fine here: it is one student on one screen. */
+  /**
+   * Single-student detail. Per-user queries are fine here: it is one student on one screen.
+   *
+   * `mentorshipLinkId` scopes the coach-authored fields on the plan rows to the caller's own link
+   * (see `planTaskRows`). Callers without a link — anyone but W8 — simply omit it and get neither
+   * `coachNote` nor `assignedByCoach`.
+   */
   async getStudentReport(
     studentId: string,
     now = new Date(),
+    mentorshipLinkId?: string,
   ): Promise<StudentReportSnapshot> {
     const today = todayIso(now);
     const since7 = addDays(today, -(ROSTER_WINDOW_DAYS - 1));
@@ -110,7 +117,7 @@ export class CohortEvidenceService {
       this.repo.streaks(ids),
       this.repo.planTotalsSince(ids, since7),
       this.repo.mockTrend(studentId, REPORT_MOCK_LIMIT),
-      this.repo.planTaskTitles(studentId, sincePlan, REPORT_PLAN_TASK_LIMIT),
+      this.repo.planTaskRows(studentId, sincePlan, REPORT_PLAN_TASK_LIMIT, mentorshipLinkId),
       this.repo.moodTrend(studentId, sinceMood),
     ]);
 
@@ -149,7 +156,10 @@ export class CohortEvidenceService {
         taskDate: row.taskDate,
         title: row.title,
         subject: row.subject,
+        topic: row.topic,
         status: row.status,
+        assignedByCoach: row.assignedByCoach,
+        coachNote: row.coachNote,
       })),
       moodTrend: moodTrend.map((row) => ({ date: row.date, level: row.level })),
     };

@@ -33,7 +33,7 @@ import {
   PlanTaskCompleted,
 } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
-import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
+import { PlanTaskRepository, type PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { StudyRoomRepository } from "../infrastructure/study-room.repository";
 import {
   StudySessionRepository,
@@ -321,8 +321,10 @@ export class SessionService {
     const minFocusSeconds = await this.getMinFocusSeconds();
     let firstSessionToday = false;
     let planCompleted: number | null = null;
-    let completedPlanTaskId: string | null = null;
-    const result = await withUserContext(this.db, { userId }, async (tx) => {
+    // The auto-completed plan row travels OUT of the transaction rather than into a captured
+    // `let`: the event needs its provenance, and TS cannot see an assignment made in the callback.
+    const { dto, completedPlanTask } = await withUserContext(this.db, { userId }, async (tx) => {
+      let completedPlanTask: PlanTaskRow | null = null;
       const existing = await this.sessions.findById(tx, userId, id);
       if (!existing) {
         throw new DomainError(ErrorCode.COACHING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND);
@@ -359,7 +361,7 @@ export class SessionService {
           const doneCount = await this.planTasks.countDone(tx, userId, task.taskDate);
           await this.activity.upsertTasksDone(tx, userId, task.taskDate, doneCount);
           planTaskAutoCompleted = true;
-          completedPlanTaskId = task.id;
+          completedPlanTask = task;
           if (task.taskDate === todayIso()) {
             const total = await this.planTasks.countTotal(tx, userId, task.taskDate);
             if (total > 0 && doneCount === total) planCompleted = total;
@@ -367,7 +369,10 @@ export class SessionService {
         }
       }
 
-      return toStudySessionDto(updated!, minFocusSeconds, { planTaskAutoCompleted });
+      return {
+        dto: toStudySessionDto(updated!, minFocusSeconds, { planTaskAutoCompleted }),
+        completedPlanTask,
+      };
     });
     if (firstSessionToday) {
       this.events.emit(CoachingEventTopic.FIRST_SESSION, new FirstSessionOfDay(userId));
@@ -378,10 +383,18 @@ export class SessionService {
         new DailyPlanCompleted(userId, planCompleted),
       );
     }
-    if (completedPlanTaskId) {
+    if (completedPlanTask) {
+      // A session seated at a coach's assignment completes it automatically — real work, so the
+      // event (and the coach's notification behind it) is the honest outcome, not a false positive.
       this.events.emit(
         CoachingEventTopic.PLAN_TASK_COMPLETED,
-        new PlanTaskCompleted(userId, completedPlanTaskId),
+        new PlanTaskCompleted(
+          userId,
+          completedPlanTask.id,
+          completedPlanTask.taskDate,
+          completedPlanTask.originType,
+          completedPlanTask.originRefId,
+        ),
       );
     }
     // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).
@@ -391,10 +404,10 @@ export class SessionService {
     ) {
       this.events.emit(
         CoachingEventTopic.SESSION_COMPLETED,
-        new StudySessionCompleted(userId, new Date(result.startedAt)),
+        new StudySessionCompleted(userId, new Date(dto.startedAt)),
       );
     }
-    return result;
+    return dto;
   }
 
   /**

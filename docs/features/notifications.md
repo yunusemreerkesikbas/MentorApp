@@ -97,6 +97,24 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Koç risk özeti — `MentorshipRiskDigestService` (APP-067, 2026-09-03)** — Yeni bir cron
+  tetikleyicisi (`dispatch-mentorship-risk-digest`, 07:00 UTC) ve W5'in ikinci cross-module okuma
+  seam'i: `MENTORSHIP_QUERY_PORT`, `COACHING_QUERY_PORT`'un birebir kardeşi. Sahip modül **kimin**
+  haberi olduğunu hesaplıyor, notifications yalnız **nasıl** söyleneceğine karar veriyor —
+  `coach_students` bu modülden hiç okunmuyor ve bir risk flag'inin ne demek olduğu W5'e girmiyor.
+  **Kullanım:** `MentorshipRiskDigestService.dispatchDaily(now)`; `mentorship.risk_digest.enabled`
+  kapalıysa port'a hiç sorulmadan `{sent:0, skipped:0}` döner.
+  **Gotchas:** (1) `DailyReminderService`'in deseni **kopyalanmadı**: orada `notification_deliveries`
+  ve in-app iki ayrı yol ve in-app tarafı aslında dedupe'suz (cron iki kez koşarsa iki kutu satırı).
+  Burada tek kapı var — `createFromTemplate`'in `dedupeKey`'i; `false` dönerse e-posta enqueue
+  edilmiyor. (2) `findLatestByTemplateKey` `data->>'templateKey'` üzerinden okuyor; bu alanı
+  `createFromTemplate` yazıyor, yani doğrudan `createInApp` çağıran bir gönderici baseline
+  bırakmaz. (3) NotificationsModule artık MentorshipModule import ediyor; döngü yok çünkü
+  mentorship identity + coaching'e bağlı ve bu modül zaten `@Global`.
+  **İlgili:** `application/mentorship-risk-digest.service.ts`,
+  `infrastructure/user-notification.repository.ts`, `presentation/cron.controller.ts`,
+  `../../render.yaml`, [`mentorship.md`](./mentorship.md).
+
 - **Geri kazanım bildirimi + kampanya kapatma anahtarı (2026-09-01)** — İlk ticari bildirim:
   `SUBSCRIPTION_EXPIRED` olayını dinleyen `PromotionEventsListener`, o kullanıcı için gerçekten bir
   indirim varsa (`SubscriptionsService.findWinBackOffer` — tek çağrı, tarama yok) in-app + push

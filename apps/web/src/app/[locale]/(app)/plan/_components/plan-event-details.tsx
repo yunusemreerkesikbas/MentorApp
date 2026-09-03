@@ -56,11 +56,25 @@ export function PlanEventDetails({
       </div>
 
       <dl className="flex flex-col">
-        <DetailRow label={t("subject")} value={task.subject ?? "—"} />
+        <DetailRow
+          label={t("subject")}
+          value={
+            task.subject
+              ? task.topic
+                ? `${task.subject} › ${task.topic}`
+                : task.subject
+              : "—"
+          }
+        />
         <DetailRow
           label={t("event_status")}
           value={t(task.status === "DONE" ? "event_status_done" : "event_status_pending")}
         />
+        {/* Two boxes, two authors: the coach's instruction is labelled as theirs, the note below
+            it is the student's own. Merging them would put words in someone else's mouth. */}
+        {task.coachNote ? (
+          <DetailRow label={t("coach_note")} value={task.coachNote} multiline />
+        ) : null}
         {task.description ? (
           <DetailRow label={t("description")} value={task.description} multiline />
         ) : null}

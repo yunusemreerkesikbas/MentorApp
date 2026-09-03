@@ -36,10 +36,20 @@ import {
   PlanAdapted,
   PlanTaskCompleted,
   PlanTaskCreated,
+  PlanTaskDeleted,
 } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
-import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
+import { PlanTaskRepository, type PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
+
+/**
+ * What {@link PlanService.createFromMentorship} accepts: a plan task minus the student's own
+ * `description`, plus the coach's own `coachNote`. Declared here rather than imported from
+ * `@mentor/validation`'s mentorship schema so coaching keeps no dependency on W8's contracts.
+ */
+export type MentorshipAssignmentInput = Omit<CreatePlanTaskInput, "description"> & {
+  coachNote?: string | null;
+};
 
 /**
  * Plan tasks (today's plan) CRUD. Toggling a task's status recomputes
@@ -131,6 +141,7 @@ export class PlanService {
         taskDate,
         title: input.title,
         subject: input.subject ?? null,
+        topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
         description: input.description ?? null,
@@ -166,6 +177,7 @@ export class PlanService {
         taskDate,
         title: input.title,
         subject: input.subject ?? null,
+        topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
         description: input.description ?? null,
@@ -199,6 +211,7 @@ export class PlanService {
         taskDate,
         title: input.title,
         subject: input.subject ?? null,
+        topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
         description: input.description ?? null,
@@ -237,10 +250,13 @@ export class PlanService {
    *
    * The caller (W8) MUST have passed `MentorshipLinkService.requireActiveLink` first; this method
    * trusts `linkId` and writes it as the provenance. All-or-nothing, like {@link createMany}.
+   *
+   * This is the ONLY writer of `coach_note` — enforced by `plan_tasks_coach_note_origin_chk`,
+   * which also makes {@link clearMentorshipOrigin} fail loudly if it ever forgets to clear it.
    */
   async createFromMentorship(
     studentId: string,
-    inputs: CreatePlanTaskInput[],
+    inputs: MentorshipAssignmentInput[],
     linkId: string,
   ): Promise<PlanTaskDto[]> {
     const withDates = inputs.map((input) => ({
@@ -258,9 +274,12 @@ export class PlanService {
             taskDate: input.taskDate,
             title: input.title,
             subject: input.subject ?? null,
+            topic: input.topic ?? null,
             startTime: input.startTime ?? null,
             endTime: input.endTime ?? null,
-            description: input.description ?? null,
+            // The student's own box stays empty — a coach writes into `coachNote`, never here.
+            description: null,
+            coachNote: input.coachNote ?? null,
             ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
             originType: "MENTORSHIP",
             originRefId: linkId,
@@ -293,6 +312,7 @@ export class PlanService {
             taskDate: input.taskDate,
             title: input.title,
             subject: input.subject ?? null,
+            topic: input.topic ?? null,
             startTime: input.startTime ?? null,
             endTime: input.endTime ?? null,
             description: input.description ?? null,
@@ -480,8 +500,10 @@ export class PlanService {
 
   async update(userId: string, id: string, input: UpdatePlanTaskInput): Promise<PlanTaskDto> {
     let planCompleted: number | null = null;
-    let completedTaskId: string | null = null;
-    const result = await withUserContext(this.db, { userId }, async (tx) => {
+    // The completed row travels OUT of the transaction rather than into a captured `let`: the
+    // event needs its provenance, and TS cannot see an assignment made inside the callback.
+    const { dto, completed } = await withUserContext(this.db, { userId }, async (tx) => {
+      let completed: PlanTaskRow | null = null;
       await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
@@ -507,25 +529,31 @@ export class PlanService {
           if (total > 0 && doneCount === total) planCompleted = total;
         }
         if (input.status === "DONE" && existing.status !== "DONE") {
-          completedTaskId = existing.id;
+          completed = existing;
         }
       }
-      return toPlanTaskDto(updated!);
+      return { dto: toPlanTaskDto(updated!), completed };
     });
     if (planCompleted !== null) {
       this.events.emit(CoachingEventTopic.PLAN_COMPLETED, new DailyPlanCompleted(userId, planCompleted));
     }
-    if (completedTaskId) {
+    if (completed) {
       this.events.emit(
         CoachingEventTopic.PLAN_TASK_COMPLETED,
-        new PlanTaskCompleted(userId, completedTaskId),
+        new PlanTaskCompleted(
+          userId,
+          completed.id,
+          completed.taskDate,
+          completed.originType,
+          completed.originRefId,
+        ),
       );
     }
-    return result;
+    return dto;
   }
 
   async remove(userId: string, id: string): Promise<void> {
-    await withUserContext(this.db, { userId }, async (tx) => {
+    const removed = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
       const existing = await this.tasks.findById(tx, userId, id);
       if (!existing) {
@@ -536,7 +564,22 @@ export class PlanService {
       // A removed DONE task lowers the day's count → recompute.
       const doneCount = await this.tasks.countDone(tx, userId, existing.taskDate);
       await this.activity.upsertTasksDone(tx, userId, existing.taskDate, doneCount);
+      return existing;
     });
+    // NOTE: KVKK erasure does NOT come through here (it bulk-updates rows in
+    // `coaching-erasure.repository.ts`), which is why deleting an account does not fire a hundred
+    // of these at whoever was following that person. Any future bulk delete must keep that true.
+    this.events.emit(
+      CoachingEventTopic.PLAN_TASK_DELETED,
+      new PlanTaskDeleted(
+        userId,
+        removed.id,
+        removed.taskDate,
+        removed.title,
+        removed.originType,
+        removed.originRefId,
+      ),
+    );
   }
 
   /**

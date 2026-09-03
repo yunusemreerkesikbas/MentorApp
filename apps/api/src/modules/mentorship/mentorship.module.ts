@@ -6,8 +6,11 @@ import { MentorshipAssignmentService } from "./application/mentorship-assignment
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
 import { MentorshipLinkService } from "./application/mentorship-link.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
+import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
 import { MentorshipInviteCodeRepository } from "./infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "./infrastructure/mentorship-link.repository";
+import { MentorshipQueryAdapter } from "./infrastructure/mentorship-query.adapter";
+import { MENTORSHIP_QUERY_PORT } from "./domain/mentorship-query.port";
 import { MentorshipCoachController } from "./presentation/mentorship-coach.controller";
 import { MentorshipStudentController } from "./presentation/mentorship-student.controller";
 
@@ -16,7 +19,9 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
  *
  * Depends on identity (display-identity seam) and coaching (the exported `CohortEvidenceService`
  * aggregate boundary). It never reads another module's tables.
- * `MentorshipLinkService` is exported so other services can reuse the single authorization gate.
+ * `MentorshipLinkService` is exported so other services can reuse the single authorization gate;
+ * `MENTORSHIP_QUERY_PORT` is the read seam notifications uses for the daily risk digest, so risk
+ * evaluation stays here and W5 never learns what a flag means.
  */
 @Module({
   imports: [IdentityModule, CoachingModule],
@@ -27,9 +32,12 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipRosterService,
     MentorshipAssignmentService,
     MentorshipErasureService,
+    PlanTaskFeedbackListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
+    MentorshipQueryAdapter,
+    { provide: MENTORSHIP_QUERY_PORT, useExisting: MentorshipQueryAdapter },
   ],
-  exports: [MentorshipLinkService, MentorshipErasureService],
+  exports: [MentorshipLinkService, MentorshipErasureService, MENTORSHIP_QUERY_PORT],
 })
 export class MentorshipModule {}

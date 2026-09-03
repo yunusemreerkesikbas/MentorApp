@@ -1,6 +1,8 @@
 'use client'
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { FiArrowDownCircle, FiArrowUpCircle, FiDatabase, FiTarget, FiUsers } from "react-icons/fi";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { MetricCard } from "@/components/shared/admin/MetricCard";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { canSee } from "@/lib/roles";
@@ -35,27 +37,6 @@ const REASON_LABEL: Record<string, string> = {
     "forum.thread.posted": "Topluluk gönderisi",
 };
 const reasonLabel = (r: string) => REASON_LABEL[r] ?? (r.startsWith("milestone.") || r.startsWith("quest.milestone.") ? `Kilometre taşı (${r})` : r);
-
-function Kpi({ icon, value, label, hint }: { icon: ReactNode; value: string | number; label: string; hint?: string }) {
-    return (
-        <div className="col-xxl-3 col-md-6">
-            <div className="card stretch stretch-full">
-                <div className="card-body">
-                    <div className="d-flex align-items-center gap-3">
-                        <span className="d-inline-flex align-items-center justify-content-center bg-soft-primary text-primary rounded" style={{ width: 44, height: 44 }}>
-                            {icon}
-                        </span>
-                        <div>
-                            <div className="fs-4 fw-bold text-dark lh-1">{value}</div>
-                            <div className="fs-12 text-muted mt-1">{label}</div>
-                            {hint ? <div className="fs-11 text-muted">{hint}</div> : null}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
 
 function flowLabel(w: EconomyFlow) {
     return `+${fmtInt(w.coinCredited)} / −${fmtInt(w.coinDebited)}`;
@@ -97,20 +78,28 @@ export default function EconomyCards() {
     const canView = canSee(["SUPPORT", "FINANCE"], admin?.roles);
     const [s, setS] = useState<AdminEconomyStats | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
+    const load = useCallback(async () => {
         if (!canView) return;
-        let active = true;
-        apiClient
-            .get<AdminEconomyStats>("/admin/metrics/economy")
-            .then(({ data }) => { if (active) setS(data); })
-            .catch(() => { if (active) setS(null); })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
+        setLoading(true);
+        setHasError(false);
+        try {
+            const { data } = await apiClient.get<AdminEconomyStats>("/admin/metrics/economy");
+            setS(data);
+        } catch {
+            setS(null);
+            setHasError(true);
+        } finally {
+            setLoading(false);
+        }
     }, [canView]);
 
+    useEffect(() => { void load(); }, [load]);
+
     if (!canView) return null;
-    if (loading) return <div className="text-muted mb-4">Ekonomi verisi yükleniyor…</div>;
+    if (loading) return <div className="card mb-4"><AsyncState status="loading" size="compact" title="Ekonomi verisi yükleniyor" /></div>;
+    if (hasError) return <div className="card mb-4"><AsyncState status="error" size="compact" title="Ekonomi verisi yüklenemedi" description="Coin ve XP akışları alınamadı." onRetry={() => void load()} /></div>;
     if (!s) return null;
 
     const reach = s.faucetReach;
@@ -118,24 +107,14 @@ export default function EconomyCards() {
     const reachPct = reach.activeUsers7d > 0 ? Math.round((reach.earners7d / reach.activeUsers7d) * 100) : null;
 
     return (
-        <div className="mb-4">
-            <h6 className="mb-2 text-muted">Ekonomi (coin akışı)</h6>
+        <section className="admin-dashboard-section">
+            <h2 className="admin-dashboard-section-title">Ekonomi ve coin akışı</h2>
 
             <div className="row g-4 mb-3">
-                <Kpi icon={<FiArrowUpCircle size={20} />} value={flowLabel(s.windows.d1)} label="Son 24 saat" hint="giren / çıkan coin" />
-                <Kpi icon={<FiArrowUpCircle size={20} />} value={flowLabel(s.windows.d7)} label="Son 7 gün" hint="giren / çıkan coin" />
-                <Kpi
-                    icon={<FiDatabase size={20} />}
-                    value={fmtInt(s.float.coinConfirmed)}
-                    label="Harcanmamış coin (float)"
-                    hint={`${fmtInt(s.float.holders)} kullanıcıda duruyor`}
-                />
-                <Kpi
-                    icon={<FiTarget size={20} />}
-                    value={reachPct === null ? fmtInt(reach.earners7d) : `${fmtInt(reach.earners7d)} · %${reachPct}`}
-                    label="Haftalık musluğa ulaşan"
-                    hint={`son 7 günde XP kazanan ${fmtInt(reach.activeUsers7d)} kişi içinden`}
-                />
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiArrowUpCircle size={20} />} value={flowLabel(s.windows.d1)} label="Son 24 saat" hint="Giren / çıkan coin." /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiArrowUpCircle size={20} />} value={flowLabel(s.windows.d7)} label="Son 7 gün" hint="Giren / çıkan coin." /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiDatabase size={20} />} value={fmtInt(s.float.coinConfirmed)} label="Harcanmamış coin" hint={`${fmtInt(s.float.holders)} kullanıcıda duruyor.`} /></div>
+                <div className="col-xxl-3 col-md-6"><MetricCard icon={<FiTarget size={20} />} value={reachPct === null ? fmtInt(reach.earners7d) : `${fmtInt(reach.earners7d)} · %${reachPct}`} label="Haftalık musluğa ulaşan" hint={`Son 7 günde XP kazanan ${fmtInt(reach.activeUsers7d)} kişi içinden.`} /></div>
             </div>
 
             {s.corrections.rows > 0 ? (
@@ -159,6 +138,6 @@ export default function EconomyCards() {
                     emptyLabel="XP hareketi yok"
                 />
             </div>
-        </div>
+        </section>
     );
 }

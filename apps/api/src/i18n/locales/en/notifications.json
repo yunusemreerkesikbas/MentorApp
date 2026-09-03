@@ -149,6 +149,21 @@
       "register": "companion",
       "title": "The coaching link ended",
       "body": "Your link with {name} is closed."
+    },
+    "mentorshipRiskDigest": {
+      "register": "companion",
+      "title": "{count} of your students need a look today",
+      "body": "{names} may be struggling lately. A glance at the report would help."
+    },
+    "mentorshipAssignmentDropped": {
+      "register": "companion",
+      "title": "{name} removed an assignment",
+      "body": "\"{title}\" ({date}) is no longer in their plan. Your report will not show it."
+    },
+    "mentorshipAssignmentProgressed": {
+      "register": "companion",
+      "title": "{name} finished an assignment",
+      "body": "They completed one of the tasks you gave them today."
     }
   },
   "email": {
@@ -182,6 +197,12 @@
     "fallback": {
       "subject": "Mentor",
       "body": "We have a note for you."
+    },
+    "mentorshipRiskDigest": {
+      "subject": "Mentor: {count} students worth a look today",
+      "greeting": "Hi {displayName},",
+      "body": "{names} may be struggling lately. You can check their reports in the panel.",
+      "cta": "Open my students"
     }
   }
 }

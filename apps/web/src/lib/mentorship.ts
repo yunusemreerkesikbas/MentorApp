@@ -50,10 +50,23 @@ export async function fetchStudentReport(
   )) as MentorshipStudentReportDto;
 }
 
-/** Assign plan tasks to a student. They land in the student's own plan screen, badged. */
+/** One row of the week composer. `topic` requires `subject`; the API refuses the pair otherwise. */
+export interface MentorshipAssignmentDraft {
+  title: string;
+  subject?: string | null;
+  topic?: string | null;
+  taskDate?: string;
+  /** The coach's own instruction. Read back to them in the report — unlike the student's note. */
+  coachNote?: string | null;
+}
+
+/**
+ * Assign plan tasks to a student. They land in the student's own plan screen, badged.
+ * Up to 21 in one call (`createMentorshipAssignmentsSchema`) — a 22nd is refused, not truncated.
+ */
 export async function assignTasks(
   studentId: string,
-  tasks: { title: string; subject?: string | null; taskDate?: string }[],
+  tasks: MentorshipAssignmentDraft[],
 ): Promise<PlanTaskDto[]> {
   return (await http<PlanTaskDto[]>(
     `/v1/mentorship/students/${encodeURIComponent(studentId)}/assignments`,

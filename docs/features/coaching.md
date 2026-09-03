@@ -155,6 +155,27 @@ pnpm --filter @mentor/api test
   **İlgili:** `application/plan.service.ts`, `infrastructure/plan-task.repository.ts`,
   [`mentorship.md`](./mentorship.md).
 
+- **`plan_tasks.topic` + `plan_tasks.coach_note` (APP-066, 2026-09-03)** — W8'in haftalık ödev
+  bestecisi için W2'nin tablosuna iki soft-ref kolon. Kolonları **W2 ekledi**, W8 yalnız
+  `createFromMentorship` seam'inden yazıyor (`workstreams.md:40`'taki koordineli şema dokunuşu
+  deseni). `topic`, `subject`'in birebir kardeşi: FK yok, görünen ad, `planTaskFieldsSchema`'da.
+  `coach_note` ise **yalnız** `createFromMentorship`'te dolabiliyor — `plan_tasks_coach_note_origin_chk`
+  bunu servis hafızasına değil veritabanına yazıyor. Migration `0095`.
+  **Kullanım:** `createFromMentorship(studentId, inputs: MentorshipAssignmentInput[], linkId)`;
+  girdi tipi `CreatePlanTaskInput` eksi `description` artı `coachNote` (coaching, W8'in Zod
+  şemasına bağımlı olmasın diye yerelde tanımlı). `getStudentReport(studentId, now, linkId?)`
+  üçüncü parametreyi alınca `planTaskRows` koç-yazımı alanları o link'e scope'luyor.
+  **Gotchas:** (1) `coachNote`'u temizlemeyi unutan her yazar CHECK'e çarpar —
+  `clearMentorshipOrigin` ve `coaching-erasure.repository.ts` ikisi de `coachNote: null` yazıyor;
+  bu bilerek gürültülü bir hata, sessiz kalıntıdan iyi. (2) `plan-task.repository.listByDate`
+  `select()` yapıyor, yani yeni kolonlar `PlanTaskRow`'a otomatik giriyor ama `toPlanTaskDto`
+  güncellenmezse DTO'da sessizce kaybolur. (3) `description` **koça kapalı kalmaya devam ediyor**;
+  `coach_note` istisna değil çünkü yazarı koçun kendisi — `domain/cohort-evidence.ts` başlığındaki
+  şerh bunu anlatıyor. (4) `topic` `updatePlanTaskSchema`'ya eklenmedi (öğrenci düzenleme yüzeyi).
+  **İlgili:** `application/plan.service.ts`, `application/coaching.mappers.ts`,
+  `infrastructure/{plan-task,cohort-evidence,coaching-erasure}.repository.ts`,
+  `domain/cohort-evidence.ts`, [`mentorship.md`](./mentorship.md).
+
 - **`PlanService.createFromMentorship` + koç-ataması düzenleme kilidi (APP-065, 2026-09-02)** —
   İnsan koçun (W8) ödev yazdığı public seam. `plan_tasks` yazma hakkı W2'de kalıyor; W8 bu metodu
   çağırıyor, tabloya dokunmuyor. `origin_type='MENTORSHIP'`, `origin_ref_id=coach_students.id`,

@@ -10,8 +10,10 @@ import { PUSH_PORT } from "../../shared/ports/push.port";
 import { CoachingModule } from "../coaching/coaching.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { IdentityModule } from "../identity/identity.module";
+import { MentorshipModule } from "../mentorship/mentorship.module";
 import { DailyReminderService } from "./application/daily-reminder.service";
 import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
+import { MentorshipRiskDigestService } from "./application/mentorship-risk-digest.service";
 import { AnnouncementDispatchHandler } from "./application/handlers/announcement-dispatch.handler";
 import { SendEmailHandler } from "./application/handlers/send-email.handler";
 import { SendPushHandler } from "./application/handlers/send-push.handler";
@@ -50,7 +52,9 @@ import { NotificationsController } from "./presentation/notifications.controller
  */
 @Global()
 @Module({
-  imports: [IdentityModule, CoachingModule, PaymentsModule],
+  // MentorshipModule for MENTORSHIP_QUERY_PORT. No cycle: mentorship imports identity +
+  // coaching, neither of which imports this module (it is @Global).
+  imports: [IdentityModule, CoachingModule, PaymentsModule, MentorshipModule],
   controllers: [CronController, NotificationsController],
   providers: [
     JobRepository,
@@ -67,6 +71,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     NotificationsErasureService,
     DailyReminderService,
     NotebookReviewReminderService,
+    MentorshipRiskDigestService,
     SessionReturnReminderService,
     PaymentsEventsListener,
     PromotionEventsListener,

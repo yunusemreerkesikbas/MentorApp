@@ -1,6 +1,8 @@
 'use client'
-import { useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { FiCpu, FiDollarSign, FiPieChart, FiZap } from "react-icons/fi";
+import { AsyncState } from "@/components/shared/admin/AsyncState";
+import { MetricCard } from "@/components/shared/admin/MetricCard";
 import apiClient from "@/lib/apiClient";
 import { useAuth } from "@/contentApi/authProvider";
 import { canSee } from "@/lib/roles";
@@ -26,26 +28,6 @@ const FEATURE_LABEL: Record<string, string> = {
 };
 const featureLabel = (f: string) => FEATURE_LABEL[f] ?? f;
 
-function Kpi({ icon, value, label }: { icon: ReactNode; value: string | number; label: string }) {
-    return (
-        <div className="col-xxl-4 col-md-6">
-            <div className="card stretch stretch-full">
-                <div className="card-body">
-                    <div className="d-flex align-items-center gap-3">
-                        <span className="d-inline-flex align-items-center justify-content-center bg-soft-primary text-primary rounded" style={{ width: 44, height: 44 }}>
-                            {icon}
-                        </span>
-                        <div>
-                            <div className="fs-4 fw-bold text-dark lh-1">{value}</div>
-                            <div className="fs-12 text-muted mt-1">{label}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
 function windowLabel(w: AiCostWindow) {
     return `${fmtUsd(w.costMicros)} · ${fmtInt(w.calls)} çağrı`;
 }
@@ -57,20 +39,28 @@ export default function AiCostCards() {
     const canView = canSee(["SUPPORT", "FINANCE"], admin?.roles);
     const [c, setC] = useState<AdminAiCost | null>(null);
     const [loading, setLoading] = useState(true);
+    const [hasError, setHasError] = useState(false);
 
-    useEffect(() => {
+    const load = useCallback(async () => {
         if (!canView) return;
-        let active = true;
-        apiClient
-            .get<AdminAiCost>("/admin/metrics/ai")
-            .then(({ data }) => { if (active) setC(data); })
-            .catch(() => { if (active) setC(null); })
-            .finally(() => { if (active) setLoading(false); });
-        return () => { active = false; };
+        setLoading(true);
+        setHasError(false);
+        try {
+            const { data } = await apiClient.get<AdminAiCost>("/admin/metrics/ai");
+            setC(data);
+        } catch {
+            setC(null);
+            setHasError(true);
+        } finally {
+            setLoading(false);
+        }
     }, [canView]);
 
+    useEffect(() => { void load(); }, [load]);
+
     if (!canView) return null;
-    if (loading) return <div className="text-muted mb-4">AI maliyeti yükleniyor…</div>;
+    if (loading) return <div className="card mb-4"><AsyncState status="loading" size="compact" title="AI maliyeti yükleniyor" /></div>;
+    if (hasError) return <div className="card mb-4"><AsyncState status="error" size="compact" title="AI maliyeti yüklenemedi" description="Maliyet ve kullanım dağılımları alınamadı." onRetry={() => void load()} /></div>;
     if (!c) return null;
 
     const budget = c.budget;
@@ -79,8 +69,8 @@ export default function AiCostCards() {
     const budgetTone = budget.exceeded ? "danger" : budgetPct >= 80 ? "warning" : "success";
 
     return (
-        <div className="mb-4">
-            <h6 className="mb-2 text-muted">AI Maliyeti (LLM)</h6>
+        <section className="admin-dashboard-section">
+            <h2 className="admin-dashboard-section-title">AI maliyeti</h2>
 
             {budget.capMicros > 0 ? (
                 <div className={`alert alert-${budgetTone} d-flex justify-content-between align-items-center mb-3`} role="status">
@@ -94,9 +84,9 @@ export default function AiCostCards() {
             ) : null}
 
             <div className="row g-4 mb-3">
-                <Kpi icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d1)} label="Son 24 saat" />
-                <Kpi icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d7)} label="Son 7 gün" />
-                <Kpi icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d30)} label="Son 30 gün" />
+                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d1)} label="Son 24 saat" /></div>
+                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d7)} label="Son 7 gün" /></div>
+                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d30)} label="Son 30 gün" /></div>
             </div>
 
             <div className="row g-4">
@@ -170,6 +160,6 @@ export default function AiCostCards() {
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
     );
 }

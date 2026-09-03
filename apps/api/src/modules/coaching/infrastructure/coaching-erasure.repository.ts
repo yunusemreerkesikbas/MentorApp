@@ -115,9 +115,11 @@ export class CoachingErasureRepository {
         .set({ aiGhostNarration: null })
         .where(eq(mockExams.userId, userId));
 
+      // `coachNote` goes too: it is a coach's instruction written FOR this person, so it cannot
+      // outlive them any more than the title can.
       await tx
         .update(planTasks)
-        .set({ title: ERASED_TASK_TITLE })
+        .set({ title: ERASED_TASK_TITLE, coachNote: null })
         .where(eq(planTasks.userId, userId));
 
       return {
