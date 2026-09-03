@@ -4,7 +4,7 @@ import { Bell, Mail, Smartphone, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
+import { Card, SectionHeading, Skeleton, SkeletonGroup, Toggle } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
 import {
   ApiClientError,
@@ -165,7 +165,7 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <label className="flex min-h-16 min-w-0 cursor-pointer items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)] focus-within:ring-offset-2">
+    <div className="flex min-h-16 min-w-0 items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)]">
       <span className="flex min-w-0 items-center gap-3">
         <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
           {icon}
@@ -179,28 +179,12 @@ function ToggleRow({
           </span>
         </span>
       </span>
-      <input
-        type="checkbox"
-        className="sr-only"
+      <Toggle
         checked={checked}
         disabled={disabled}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={onChange}
+        aria-label={label}
       />
-      <span
-        className={[
-          "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-          checked ? "bg-[var(--color-btn)]" : "bg-[color-mix(in_srgb,var(--color-main)_15%,transparent)]",
-          disabled ? "opacity-60" : "",
-        ].join(" ")}
-        aria-hidden
-      >
-        <span
-          className={[
-            `absolute left-1 top-1 size-5 rounded-full transition-transform ${checked ? "bg-[var(--color-btn-label)]" : "bg-[var(--color-surface)]"}`,
-            checked ? "translate-x-5" : "",
-          ].join(" ")}
-        />
-      </span>
-    </label>
+    </div>
   );
 }

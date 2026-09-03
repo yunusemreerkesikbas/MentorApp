@@ -35,6 +35,7 @@ branch is presented as PR/merge/release-ready, or earlier when risk/cross-cuttin
 
 **Engineering principles** (§[engineering-principles](./engineering-principles.md))
 - [ ] SOLID/DRY/KISS/YAGNI; no premature abstraction.
+- [ ] **Modularity & file size discipline (FE + BE):** Files kept modular (<250–300 lines target). Decomposed proactively into sub-units during development (subcomponents on FE; sub-services, domain services, strategies, query helpers, and mappers on BE; thin controllers).
 - [ ] No hardcoded tunables / **no silent fallbacks** (explicit + justified + logged if any).
 - [ ] Edge/negative cases handled, without excessive defensive programming (validate at the boundary, trust inside).
 - [ ] **No business logic/calculations on FE/mobile** — backend computes; messages come localized from the backend.

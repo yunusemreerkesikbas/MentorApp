@@ -17,13 +17,24 @@ export interface SlidingTabsProps {
   onChange: (id: string) => void;
   ariaLabel: string;
   equalWidth?: boolean;
+  /** Pill segment (default) or bottom underline bar (drawer chrome). */
+  variant?: "pill" | "underline";
   idPrefix?: string;
   className?: string;
   style?: React.CSSProperties;
 }
 
+const SLIDE_TRANSITION =
+  "transform var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)), width var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1))";
+
 /**
- * Sliding pill tablist — measures active tab and tweens pill width/transform.
+ * Sliding pill tablist — measures active tab and tweens pill width/transform
+ * (transitions.dev tabs-sliding recipe).
+ *
+ * Important: snap (no transition) only on mount / resize / structure change.
+ * Value changes must animate. Do NOT depend on a fresh `items` array identity
+ * for the snap effect — parents recreate that array every render and would
+ * cancel the slide by snapping before paint.
  */
 export function SlidingTabs({
   items,
@@ -31,45 +42,57 @@ export function SlidingTabs({
   onChange,
   ariaLabel,
   equalWidth = false,
+  variant = "pill",
   idPrefix,
   className,
   style,
 }: SlidingTabsProps) {
   const rootRef = useRef<HTMLDivElement>(null);
   const pillRef = useRef<HTMLSpanElement>(null);
+  const valueRef = useRef(value);
+  const hasPlacedRef = useRef(false);
+
+  // Stable across parent re-renders that recreate the `items` array with the same ids.
+  const itemsKey = items.map((item) => item.id).join("\0");
 
   const placePill = useCallback((animate: boolean) => {
     const root = rootRef.current;
     const pill = pillRef.current;
     if (!root || !pill) return;
+
     const active = root.querySelector<HTMLElement>('[role="tab"][aria-selected="true"]');
     if (!active) return;
 
     const nextTransform = `translateX(${active.offsetLeft}px)`;
     const nextWidth = `${active.offsetWidth}px`;
-    // Inline transition so the slide works even if recipe CSS failed to load.
-    const slideTransition =
-      "transform var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1)), width var(--tabs-dur, 250ms) var(--tabs-ease, cubic-bezier(0.22, 1, 0.36, 1))";
+    const reduce = prefersReducedMotion();
+    // Never animate the first placement — recipe snaps first paint / resize.
+    const shouldAnimate = animate && !reduce && hasPlacedRef.current;
 
-    if (!animate || prefersReducedMotion()) {
+    if (!shouldAnimate) {
       pill.style.transition = "none";
       pill.style.transform = nextTransform;
       pill.style.width = nextWidth;
       forceReflow(pill);
-      pill.style.transition = slideTransition;
-      return;
+      pill.style.transition = reduce ? "none" : SLIDE_TRANSITION;
+    } else {
+      pill.style.transition = SLIDE_TRANSITION;
+      pill.style.transform = nextTransform;
+      pill.style.width = nextWidth;
     }
 
-    pill.style.transition = slideTransition;
-    pill.style.transform = nextTransform;
-    pill.style.width = nextWidth;
+    hasPlacedRef.current = true;
   }, []);
 
+  // Snap on structure / layout — not on fresh `items` array identity.
   useLayoutEffect(() => {
     placePill(false);
-  }, [placePill, items, equalWidth]);
+  }, [placePill, itemsKey, equalWidth, variant]);
 
+  // Animate when selection changes (mount skipped: valueRef starts equal).
   useEffect(() => {
+    if (valueRef.current === value) return;
+    valueRef.current = value;
     placePill(true);
   }, [placePill, value]);
 
@@ -106,23 +129,47 @@ export function SlidingTabs({
     });
   }
 
+  const underline = variant === "underline";
+  const rootClass = [
+    "t-tabs",
+    "relative",
+    underline
+      ? "t-tabs--underline"
+      : `inline-flex items-center gap-[3px] rounded-full p-[3px]${equalWidth ? " t-tabs--equal flex w-full" : ""}`,
+    className,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <div
       ref={rootRef}
       role="tablist"
       aria-label={ariaLabel}
-      className={`t-tabs inline-flex items-center gap-[3px] rounded-full p-[3px]${equalWidth ? " t-tabs--equal flex w-full" : ""}${className ? ` ${className}` : ""}`}
-      style={{
-        background:
-          "var(--tabs-bar-bg, color-mix(in srgb, var(--color-surface-container) 58%, var(--color-surface)))",
-        ...style,
-      }}
+      className={rootClass}
+      style={
+        underline
+          ? style
+          : {
+              background:
+                "var(--tabs-bar-bg, color-mix(in srgb, var(--color-surface-container) 58%, var(--color-surface)))",
+              ...style,
+            }
+      }
     >
       <span
         ref={pillRef}
-        className="t-tabs-pill pointer-events-none absolute top-[3px] left-0 z-0 h-[calc(100%-6px)] rounded-full shadow-[var(--shadow-card)]"
+        className={
+          underline
+            ? "t-tabs-pill pointer-events-none absolute left-0 z-0"
+            : "t-tabs-pill pointer-events-none absolute top-[3px] left-0 z-0 rounded-full shadow-[var(--shadow-card)]"
+        }
         aria-hidden
-        style={{ background: "var(--tabs-pill-bg, var(--color-surface))" }}
+        style={{
+          background: underline
+            ? "var(--tabs-pill-bg, var(--color-main))"
+            : "var(--tabs-pill-bg, var(--color-surface))",
+        }}
       />
       {items.map((item) => {
         const active = item.id === value;
@@ -133,11 +180,17 @@ export function SlidingTabs({
             type="button"
             role="tab"
             id={buttonId}
-            className={`t-tab relative z-[1] cursor-pointer appearance-none border-0 bg-transparent px-4 py-1.5 text-sm font-semibold${equalWidth ? " min-h-11 flex-1" : " min-h-9"}`}
+            className={
+              underline
+                ? "t-tab relative z-[1] cursor-pointer appearance-none border-0 bg-transparent"
+                : `t-tab relative z-[1] cursor-pointer appearance-none border-0 bg-transparent px-4 py-1.5 text-sm font-semibold${equalWidth ? " min-h-11 flex-1" : " min-h-9"}`
+            }
             style={{
               fontFamily: "var(--font-heading)",
-              color: active ? "var(--tabs-text-active, var(--color-main))" : "var(--tabs-text-muted, var(--color-secondary))",
-              borderRadius: 9999,
+              color: active
+                ? "var(--tabs-text-active, var(--color-main))"
+                : "var(--tabs-text-muted, var(--color-secondary))",
+              borderRadius: underline ? 0 : 9999,
             }}
             aria-selected={active}
             aria-controls={item.panelId}

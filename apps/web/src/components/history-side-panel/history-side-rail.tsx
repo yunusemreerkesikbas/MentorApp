@@ -31,6 +31,8 @@ export interface HistorySideRailProps {
   collapsedActions?: ReactNode;
   ariaLabel?: string;
   testId?: string;
+  variant?: "default" | "liquid";
+  className?: string;
 }
 
 /**
@@ -48,14 +50,27 @@ export function HistorySideRail({
   collapsedActions,
   ariaLabel,
   testId = "history-side-rail",
+  variant = "default",
+  className,
 }: HistorySideRailProps) {
   const reduceMotion = useReducedMotion();
+  const isLiquid = variant === "liquid";
 
   return (
     <motion.aside
-      className="relative z-[1] hidden h-full shrink-0 overflow-hidden border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
+      className={[
+        "relative z-[1] hidden h-full shrink-0 overflow-hidden lg:flex lg:flex-col",
+        isLiquid
+          ? "session-liquid-rail border-r"
+          : "border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md",
+        className,
+      ]
+        .filter(Boolean)
+        .join(" ")}
       style={{
-        borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+        borderColor: isLiquid
+          ? "rgba(255, 255, 255, 0.18)"
+          : "color-mix(in srgb, var(--color-main) 8%, transparent)",
       }}
       initial={false}
       animate={{
@@ -84,7 +99,7 @@ export function HistorySideRail({
         >
           <PanelLeft
             className="size-5"
-            style={{ color: "var(--color-main)" }}
+            style={{ color: isLiquid ? "#ffffff" : "var(--color-main)" }}
             strokeWidth={2.25}
             aria-hidden
           />
@@ -107,6 +122,7 @@ export function HistorySideRail({
           collapseLabel={collapseLabel}
           headerActions={headerActions}
           footer={footer}
+          variant={variant}
         >
           {children}
         </HistorySidePanel>

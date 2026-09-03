@@ -6,6 +6,7 @@ or a **domain event** (NestJS `EventEmitter`; moves to a queue if they split out
 **Pragmatic Clean (§8):** layer depth scales with the work. Simple CRUD (read an article) →
 controller+service+repo. Critical domain (economy/payments/ai/forum-verification) →
 full layering (domain/application/infrastructure/presentation).
+**File size & modularity (<250–300 lines):** decompose bloated services proactively into domain calculators, strategies/handlers, query helpers, and DTO mappers during development. Controllers stay strictly thin HTTP adapters.
 
 | Module | Responsibility | Phase |
 |---|---|---|

@@ -63,6 +63,42 @@
   pointer-events: none;
 }
 
+/* Underline variant — notification drawer chrome (sliding bar, not pill). */
+.t-tabs.t-tabs--underline {
+  display: flex;
+  width: 100%;
+  gap: 0;
+  padding: 0 1rem;
+  border-radius: 0;
+  background: transparent;
+  border-bottom: 1px solid
+    color-mix(in srgb, var(--color-main) 10%, transparent);
+}
+
+.t-tabs.t-tabs--underline .t-tab {
+  margin-right: 1.25rem;
+  min-height: 2.75rem;
+  padding: 0.75rem 0;
+  border-radius: 0;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.t-tabs.t-tabs--underline .t-tab:last-child {
+  margin-right: 0;
+}
+
+.t-tabs.t-tabs--underline .t-tabs-pill {
+  top: auto;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 0;
+  box-shadow: none;
+  background: var(--tabs-pill-bg, var(--color-main));
+}
+
 @media (prefers-reduced-motion: reduce) {
   .t-tabs-pill,
   .t-tab {

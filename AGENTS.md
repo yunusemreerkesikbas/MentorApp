@@ -106,6 +106,7 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 - **Branches:** `main` protected; work on `feat/<topic>`, merge via PR.
 - **Design:** UI values come from DESIGN.md tokens (`@mentor/ui`), no magic numbers.
 - **Config:** tunable parameters in a central registry (§9) — not magic numbers.
+- **Modularity:** keep files manageable (<250–300 lines target). Decompose *proactively during development* (FE: subcomponents, view stages, params helpers; BE: sub-services, domain calculators, strategies, query helpers, DTO mappers; thin controllers).
 - Full list: [`docs/core/conventions.md`](./docs/core/conventions.md).
 
 ## 8. Skill usage (when developing in this repo)
@@ -135,7 +136,7 @@ Structure detail: [`docs/core/file-structure.md`](./docs/core/file-structure.md)
 ## 10. Standards & documentation (binding)
 
 - **Standards & documentation (binding):** [`docs/standards/`](./docs/standards/) · Copy constitution: [`docs/copy/voice.md`](./docs/copy/voice.md).
-- **Engineering principles:** [`docs/standards/engineering-principles.md`](./docs/standards/engineering-principles.md) — SOLID/DRY/KISS/YAGNI, no hardcoding/silent fallbacks, edge cases vs over-defensiveness, **logic backend-only**, **backend-localized messages**, Definition of Done (incl. dead-code cleanup)
+- **Engineering principles:** [`docs/standards/engineering-principles.md`](./docs/standards/engineering-principles.md) — SOLID/DRY/KISS/YAGNI, modularity & size discipline (<250–300 lines FE+BE; proactive decomposition during development), no hardcoding/silent fallbacks, edge cases vs over-defensiveness, **logic backend-only**, **backend-localized messages**, Definition of Done (incl. dead-code cleanup)
 - **Code style & naming:** [`docs/standards/code-style.md`](./docs/standards/code-style.md) — file/class/variable/DB/event names, format, imports, git
 - **API design & versioning + service catalog:** [`docs/standards/api.md`](./docs/standards/api.md)
 - **Backend:** [`docs/standards/backend.md`](./docs/standards/backend.md)

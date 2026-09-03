@@ -21,17 +21,21 @@ import {
   LikeBurst,
   CheckBox,
   SlidingTabs,
+  Toggle,
 } from "@mentor/ui";
 ```
 
-- Prefer these primitives over ad-hoc Framer for chrome micro-motion (badges, tabs, shakes, digit updates).
+- Prefer these primitives over ad-hoc Framer for chrome micro-motion (badges, tabs, shakes, digit updates, settings toggles).
 - Infrequent numbers only for `DigitPopIn` (XP, days, goal minutes). **Not** live 1Hz session timers.
 - `SegmentPillControl` and `PlanViewSwitcher` use `SlidingTabs` (CSS pill), not Framer `layoutId`.
+- Notification drawer ALL/UNREAD uses `SlidingTabs` `variant="underline"`.
+- Settings switches use `Toggle` (no bounce overshoot).
 
 ## Gotchas
 
 - Nested `@import` inside package CSS is dropped by Tailwind/Next — `transitions/index.css` is a **flattened single file**, imported from `globals.css` as `@mentor/ui/transitions.css`.
 - `SlidingTabs` sets pill `transition` inline so the slide still runs if recipe CSS is missing.
+- `SlidingTabs` snap effect must key off stable tab **ids**, not `items` array identity — parents recreate that array every render and would snap-cancel the slide.
 - Do not stack Framer scale and `LikeBurst` pop on the same node.
 - `SkeletonGroup` optional `loading` + `revealed` enables `SkeletonReveal`; parent must reserve height.
 - Deferred (YAGNI): input-clear dissolve, spinning counter, streaming text, full toast recipe swap.
@@ -45,6 +49,20 @@ import {
 - DESIGN.md §9
 
 ## Geliştirmeler (timeline)
+
+### 2026-09-04 — SlidingTabs slide fix
+
+- **What:** Pill now animates on tab change. Root cause: `useLayoutEffect` depended on `items` array identity; consumers recreate that array every render, so the pill snapped before paint and the slide never showed.
+- **Usage:** unchanged — `SlidingTabs` / `SegmentPillControl`.
+- **Gotchas:** Snap only on mount/resize/structure (`itemsKey` of ids); animate on `value` change.
+- **Related:** `sliding-tabs.tsx`.
+
+### 2026-09-04 — Drawer underline tabs + Toggle
+
+- **What:** Notification drawer ALL/UNREAD → `SlidingTabs` `variant="underline"` (sliding bar, same measure/tween as pills). New `Toggle` primitive + CSS (smooth travel, no bounce) wired on profile notification preference rows.
+- **Usage:** `SlidingTabs` `variant="underline"` for underline chrome; `Toggle` from `@mentor/ui` for settings switches (`.is-init` only after first click).
+- **Gotchas:** Gallery toggle bounce mapped to `--ease-smooth-out` / zero overshoot. Flatten `transitions/index.css` after recipe edits (no nested `@import`).
+- **Related:** `notification-drawer-panel.tsx`, `sliding-tabs.tsx`, `toggle.tsx`, `toggle.css`, `notification-settings.tsx`.
 
 ### 2026-09-04 — SkeletonReveal expansions (client shells)
 
