@@ -117,7 +117,7 @@ export class CoachingErasureRepository {
 
       await tx
         .update(planTasks)
-        .set({ title: ERASED_TASK_TITLE })
+        .set({ title: ERASED_TASK_TITLE, description: null })
         .where(eq(planTasks.userId, userId));
 
       return {
