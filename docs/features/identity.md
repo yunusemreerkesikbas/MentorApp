@@ -28,7 +28,8 @@ by admin for stats) — the canonical cross-module seam for user data.
 - **RLS ENABLE+FORCE** on `users`/`refresh_tokens`/`email_tokens`; policies allow self (`app.user_id`)
   or `app.role IN ('SERVICE','ADMIN')`. `withServiceContext` for pre-auth flows (only from
   auth-boundary services). Local `mentor` DB is superuser → RLS bypassed locally; verify on Neon/prod.
-- **Schema:** `users` + `organizations` + `coach_students` (Phase-2-ready, unused),
+- **Schema:** `users` + `organizations` + `coach_students` (owned by `mentorship` since W8 —
+  see [mentorship.md](./mentorship.md); `organizations` is still Phase-2-ready and unused),
   `refresh_tokens` (hash + family), `email_tokens`, `user_auth_accounts`.
 - **Guards (global):** `JwtAuthGuard` (+`@Public()`), `RolesGuard` (+`@Roles()`, umbrella-aware —
   see [admin.md](./admin.md)), `@CurrentUser()`. Health is `@Public`.

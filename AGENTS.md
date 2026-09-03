@@ -36,7 +36,7 @@ that pain?
 
 ```
 identity · coaching · ai · content · payments · notifications · admin   (MVP)
-economy · forum · community                                            (Phase 2)
+economy · forum · community · mentorship                               (Phase 2)
 marketplace                                                            (Phase 3)
 ```
 **Rule:** modules **never touch** each other's tables → public interface or **domain event**

@@ -285,6 +285,7 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - **Checkout success** shares the achievement confetti lottie (`/lottie/confetti.lottie`, play once) plus `/animation/success.svg`. Reduced-motion skips both and uses a static `--color-success` check.
 
 Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives in web `globals.css`.
+Shared transitions.dev recipes + tokens: `packages/ui/src/transitions/` (imported via `theme.css`); React primitives from `@mentor/ui` — see [`docs/features/motion.md`](./docs/features/motion.md).
 
 ### 9.1 Motion personality (2026-07-26)
 

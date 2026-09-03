@@ -39,6 +39,10 @@
 | APP-063 | W8 mentorship slice 1: coach↔student link (invite code, double opt-in, roster, transparency view) + COACH role assignment |
 | APP-064 | W8 mentorship slice 2: roster + rule-based risk triage + student report + `(coach)` web surface |
 | APP-065 | W8 mentorship slice 3: coach-assigned homework via `plan_tasks` origin + notifications |
+| APP-066 | W8 mentorship: weekly assignment composer, `plan_tasks.topic` + `coach_note` |
+| APP-067 | W8 mentorship: daily coach risk digest (cron, new-pairs-only) |
+| APP-068 | W8 mentorship: feedback loop — student delete/complete reaches the coach |
+| APP-069 | W8 mentorship: invite flow reachable from the profile, "copy last week" in the composer |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)

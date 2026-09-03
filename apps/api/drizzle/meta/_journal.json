@@ -673,6 +673,13 @@
       "when": 1788423940077,
       "tag": "0095_w8_plan_task_topic_coach_note",
       "breakpoints": true
+    },
+    {
+      "idx": 96,
+      "version": "7",
+      "when": 1788466891463,
+      "tag": "0096_w8_mentorship_dropped_assignments",
+      "breakpoints": true
     }
   ]
 }

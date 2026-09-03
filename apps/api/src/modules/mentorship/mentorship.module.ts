@@ -7,6 +7,7 @@ import { MentorshipInviteService } from "./application/mentorship-invite.service
 import { MentorshipLinkService } from "./application/mentorship-link.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
+import { MentorshipDroppedAssignmentRepository } from "./infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipInviteCodeRepository } from "./infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "./infrastructure/mentorship-link.repository";
 import { MentorshipQueryAdapter } from "./infrastructure/mentorship-query.adapter";
@@ -35,6 +36,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     PlanTaskFeedbackListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
+    MentorshipDroppedAssignmentRepository,
     MentorshipQueryAdapter,
     { provide: MENTORSHIP_QUERY_PORT, useExisting: MentorshipQueryAdapter },
   ],

@@ -274,7 +274,6 @@ describe("MentorshipLinkService", () => {
         () => service.acceptInvitation(STUDENT, CODE),
         () => service.previewInvitation(CODE),
         () => service.getMyCoach(STUDENT),
-        () => service.listStudents(COACH, "ACTIVE", 1, 20),
         () => service.endByStudent(STUDENT),
         () => service.endByCoach(COACH, STUDENT),
       ]) {

@@ -217,7 +217,7 @@ pnpm --filter @mentor/api test
   [`mentorship.md`](./mentorship.md).
 
 - **Çalışılmış gün sinyali dışa açıldı (2026-08-30)** — `StreakService.listActiveDatesSince(userId,
-  windowDays)`: son N günün çalışılmış tarihleri (≥1 tamamlanmış seans VEYA ≥1 biten görev), türetme
+windowDays)`: son N günün çalışılmış tarihleri (≥1 tamamlanmış seans VEYA ≥1 biten görev), türetme
   yapmadan. İlk tüketici promotions (`ACTIVE_DAYS` indirim kuralı). Yeni sorgu yok — mevcut
   `DailyActivityRepository.listActiveDatesSince` sarmalayıcısı. Kullanım: `CoachingModule` zaten
   `StreakService`'i export ediyor, import yeterli. Gotcha: `daily_activity` **çalışılan** günü
@@ -3454,7 +3454,6 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   `attachment-gallery.tsx`, `discovery-feed-card.tsx`.
 
   **Rollout checklist (deploy bu PR'nin parçası değil):**
-
   1. Staging yedeği/PITR ve uygulama sürümünü kaydet; aktif migration'ın `0083` olduğunu doğrula.
   2. `0084`ü uygula. Salt-okunur smoke sorgularıyla kullanıcı başına tek `MISTAKE`, toplam
      `notebook_pages`, boşta kalan sayfa ve `doc ? 'cover'` sayılarını kontrol et; çapraz kullanıcı
@@ -3606,7 +3605,7 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   bildirim: üst üste beş pomodoro masayı bir kez uyandırır. Uçtan uca best-effort — bildirim
   hatası seans başlatmayı asla kırmaz.
 
-  **Neden modal değil:** biri oturması bir *davet* değil, bir *sinyal*. On kişilik masada her
+  **Neden modal değil:** biri oturması bir _davet_ değil, bir _sinyal_. On kişilik masada her
   oturuşta diyalog açmak, odanın var olma sebebi olan odağı baltalar.
 
   **Silinen: buddy "birlikte çalışalım" daveti.** Sadece bir buton değildi — endpoint
@@ -3686,11 +3685,11 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   kontrollerin okunur kalmasını sağlayan şey bu.
 
   **Masa artık mobilya gibi okunuyor:** üst yüzey + kenar (iki kaydırılmış elips) + temas gölgesi
-  + vinyet. Koltuklar **sandalye**: avatarın arkasında yuvarlatılmış sırtlık, boş sandalye de
-  sandalye gibi görünüyor — "kesik çizgili daire" gibi render hatası gibi değil.
+  - vinyet. Koltuklar **sandalye**: avatarın arkasında yuvarlatılmış sırtlık, boş sandalye de
+    sandalye gibi görünüyor — "kesik çizgili daire" gibi render hatası gibi değil.
 
   **Boş sandalye davet kontrolüdür.** Sahibe boş sandalyeye basmak davet sayfasını açar. Kalıcı
-  davet kartı kaldırıldı: eylem, boşluğun *olduğu* yerde yaşıyor ve birincil CTA ile yarışmıyor.
+  davet kartı kaldırıldı: eylem, boşluğun _olduğu_ yerde yaşıyor ve birincil CTA ile yarışmıyor.
   Yıkıcı eylemler (ayrıl / masayı kapat) taşma menüsüne indi — masa kapatmak niyet istemeli.
 
   **Presence altyazı oldu, dipnot değil:** başlıkta canlı nokta + "2 kişi çalışıyor · Matematik,
@@ -3722,7 +3721,7 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   çeviriyordu. Yön (`direction`) tema ile aynı olayda set ediliyor, böylece çıkan ve giren slayt
   odanın hangi yöne gittiği konusunda anlaşıyor.
 
-  **Gotcha — kapsam iki yerde gerekiyor.** Oklar ve noktalar animasyonlu elemanın *dışında*
+  **Gotcha — kapsam iki yerde gerekiyor.** Oklar ve noktalar animasyonlu elemanın _dışında_
   yaşıyor; dış sarmalayıcıya `.room-stage` verilmezse `--room-*` ailesi tanımsız kalıyordu.
   Slayt kendi kapsamını da koruyor: aksi hâlde çıkan tema, giderken yeni temanın rengine
   atlıyordu.
@@ -3863,7 +3862,7 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   telefonda tab bar'ın altına düşüp tamamen kayboluyordu. Ayrıca `<main>` `min-h-screen`
   kullanıyordu — uygulamanın kendi chrome'unu yok sayan bir ölçü; repodaki standart viewport
   aritmetiğine çevrildi (`100dvh-4rem-80px-safe-area`, `lg:` üstünde tam ekran).
-  **Butonun kendisi kaldırılmadı:** boş sandalyedeki `+` ikonu *davet et* (yalnız sahip için),
+  **Butonun kendisi kaldırılmadı:** boş sandalyedeki `+` ikonu _davet et_ (yalnız sahip için),
   "otur" değil. İkisi ayrı aksiyon; sandalyeye tıklamayı "otur" yapmak sahibin davet yolunu
   götürürdü.
 
@@ -3888,7 +3887,7 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
 - **Seans ekranı odanın içine taşındı: tema switcher, sade görünüm, sahne geçişi (2026-08-28)** —
 
   **Tema switcher artık iki sayfanın ortak bileşeni** (`room-theme-switcher.tsx`). Oda
-  sayfasında zaten vardı; seans ekranı da artık odanın *içi* olduğuna göre temayı oradan da
+  sayfasında zaten vardı; seans ekranı da artık odanın _içi_ olduğuna göre temayı oradan da
   değiştirebilmek gerekiyordu. Kopyalamak yerine çıkarıldı — "sonraki tema hangisi" mantığının
   iki kopyası tam olarak zamanla birbirinden ayrılan cinsten. `canChange` (yalnız sahip, API
   kuralıyla aynı) devre dışı ok yerine bileşeni düz etikete indiriyor: üyeye bir aksiyon
@@ -4048,7 +4047,7 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   yüzey artık aynı dili konuşuyor.
 
   **Yön kontrolden gelir, liste sırasından değil.** `RoomThemeSwitcher` artık `onChange(next,
-  direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat ediyor —
+direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat ediyor —
   indeks farkına baksaydık sarma anında yön ters dönerdi.
 
   Tek bileşen (`room-backdrop-slide.tsx`) üç yerde: oda sayfası, seans idle ekranı ve odak modu
@@ -4112,3 +4111,17 @@ lg:overflow-hidden`), mobilde taban aynen kaldı — orada panel yarım ekran bi
   İlgili: `packages/ui/src/theme.css` (`--room-veil`), `room-backdrop.tsx`,
   `room-theme-switcher.tsx`, `study-session-shell.tsx`, `session-history.tsx`,
   `room-shell.tsx`.
+
+- **2026-09-04 — Seans light tema Liquid Glass ve HistoryFilterSelect UI/UX redesign.**
+  - **Ne yapıldı:** Seans (`/study-session`) sayfasındaki katı ve yapay beyaz blok etkisi, modern **Liquid Glass (Refraktif Sıvı Cam)** mimarisine dönüştürüldü.
+    - `packages/ui/src/theme.css` içine `.session-liquid-card`, `.session-liquid-pill` ve `.session-liquid-btn-obsidian` sınıfları eklendi:
+      - Çift katmanlı refraktif gradyan (`linear-gradient(135deg, rgba(255,255,255,0.58) 0%, rgba(255,255,255,0.28) 100%)`).
+      - Doygunluk ve optik kırılma (`backdrop-filter: blur(20px) saturate(170%)`).
+      - Gerçek cam kenarı hissi veren prizmatik üst ışıma (`inset 0 1.5px 1.5px rgba(255,255,255,0.85)`).
+    - Sağdaki kartlar (`SessionFocusGoalCard`, `SessionRoomList`, `SessionBuddyCard`), özet kartı (`setupSummary`) ve üst bar hapları sıvı cam kapsüllere bağlandı.
+    - Sayaç altı `−`/`+` butonları ve ön ayar hapları (`25 / 5 dk`, `50 / 10 dk`) sıvı cam formuna kavuşturuldu; seçili durum derin parlak obsidyen cama bağlandı.
+    - Sayaç kadranının ortasındaki katı gri-mavi daire yumuşak bir odak halesine dönüştürüldü (`stopOpacity` 0.22/0.06).
+    - "Başla" butonu tepe ışıklı parlak mekanik obsidyen cam (`session-liquid-btn-obsidian`) ile yeniden biçimlendirildi.
+    - History Side Panel'deki mor yerel `<select>` yerine token uyumlu `HistoryFilterSelect` entegre edildi.
+  - **Kullanım:** Sahne kartları için `.session-liquid-card`, haplar için `.session-liquid-pill`, birincil eylemler için `.session-liquid-btn-obsidian`.
+  - **İlgili dosyalar:** `packages/ui/src/theme.css`, `session-chrome-pill.ts`, `study-session-shell.tsx`, `session-focus-goal-card.tsx`, `session-room-list.tsx`, `session-buddy-card.tsx`, `packages/ui/src/components/circular-timer-ring.tsx`, `session-timer-ring.tsx`, `session-controls.tsx`.
