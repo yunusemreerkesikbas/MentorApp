@@ -43,6 +43,74 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
     ? { duration: 0 }
     : { type: "spring" as const, stiffness: 430, damping: 32, mass: 0.75 };
 
+  const loading = zones === null;
+  const readyBody =
+    zones === null ? (
+      <div className="min-h-[16rem]" aria-hidden />
+    ) : (
+      <div className="flex flex-col gap-5">
+        {GROUPS.map(({ type, key }) => {
+          const group = zones.filter((z) => z.type === type);
+          const iconTone =
+            type === "CHAT"
+              ? "text-[var(--community-blue-ink)]"
+              : type === "QA"
+                ? "text-[var(--community-coral)]"
+                : "text-[var(--community-green)]";
+          if (group.length === 0) return null;
+          return (
+            <div key={type} className="flex flex-col gap-1">
+              <p className="mb-1 px-2 text-xs font-bold text-[var(--color-secondary)]">
+                {t(key)}
+              </p>
+              {group.map((z) => {
+                const isActive = activeZoneSlug === z.slug;
+                return (
+                  <Link
+                    key={z.id}
+                    href={{
+                      pathname: "/community/[slug]",
+                      params: { slug: z.slug },
+                    }}
+                    onClick={onNavigate}
+                    aria-current={isActive ? "page" : undefined}
+                    className={`relative isolate flex min-h-11 items-center gap-2.5 overflow-hidden rounded-[10px] px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "hover:bg-[var(--color-surface)]"}`}
+                  >
+                    {isActive ? (
+                      <motion.span
+                        layoutId="community-sidebar-active-link"
+                        className="absolute inset-0 -z-10 rounded-[10px] bg-[var(--community-blue-soft)]"
+                        transition={activeTransition}
+                        aria-hidden
+                      />
+                    ) : null}
+                    <motion.span
+                      className={`grid size-6 shrink-0 place-items-center ${isActive ? "text-[var(--community-blue-ink)]" : iconTone}`}
+                      animate={reduceMotion ? undefined : { scale: isActive ? 1.14 : 1, rotate: isActive ? -5 : 0 }}
+                      transition={activeTransition}
+                    >
+                      <ZoneTypeIcon type={type} size={16} strokeWidth={isActive ? 2.2 : 2} aria-hidden />
+                    </motion.span>
+                    <span className="min-w-0 flex-1">
+                      <span className={`flex items-center gap-1.5 truncate text-sm ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-body-text)]"}`}>
+                        <span className="min-w-0 truncate">{z.title}</span>
+                      {z.myStatus === "ACTIVE" && (
+                        <span
+                            className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-success)]"
+                          aria-hidden="true"
+                        />
+                      )}
+                      </span>
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          );
+        })}
+      </div>
+    );
+
   return (
     <LayoutGroup id="community-sidebar-navigation">
     <nav className="flex flex-col gap-5 px-3">
@@ -121,77 +189,11 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </div>
 
-      {zones === null ? (
-        <div className="flex flex-col gap-4">
-          <SkeletonGroup label={t("loading")}>
-            {Array.from({ length: 5 }).map((_, i) => (
-              <Skeleton key={i} className="h-[52px] w-full rounded-lg" />
-            ))}
-          </SkeletonGroup>
-        </div>
-      ) : (
-        <div className="flex flex-col gap-5">
-          {GROUPS.map(({ type, key }) => {
-            const group = zones.filter((z) => z.type === type);
-            const iconTone =
-              type === "CHAT"
-                ? "text-[var(--community-blue-ink)]"
-                : type === "QA"
-                  ? "text-[var(--community-coral)]"
-                  : "text-[var(--community-green)]";
-            if (group.length === 0) return null;
-            return (
-              <div key={type} className="flex flex-col gap-1">
-                <p className="mb-1 px-2 text-xs font-bold text-[var(--color-secondary)]">
-                  {t(key)}
-                </p>
-                {group.map((z) => {
-                  const isActive = activeZoneSlug === z.slug;
-                  return (
-                    <Link
-                      key={z.id}
-                      href={{
-                        pathname: "/community/[slug]",
-                        params: { slug: z.slug },
-                      }}
-                      onClick={onNavigate}
-                      aria-current={isActive ? "page" : undefined}
-                      className={`relative isolate flex min-h-11 items-center gap-2.5 overflow-hidden rounded-[10px] px-2 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "hover:bg-[var(--color-surface)]"}`}
-                    >
-                      {isActive ? (
-                        <motion.span
-                          layoutId="community-sidebar-active-link"
-                          className="absolute inset-0 -z-10 rounded-[10px] bg-[var(--community-blue-soft)]"
-                          transition={activeTransition}
-                          aria-hidden
-                        />
-                      ) : null}
-                      <motion.span
-                        className={`grid size-6 shrink-0 place-items-center ${isActive ? "text-[var(--community-blue-ink)]" : iconTone}`}
-                        animate={reduceMotion ? undefined : { scale: isActive ? 1.14 : 1, rotate: isActive ? -5 : 0 }}
-                        transition={activeTransition}
-                      >
-                        <ZoneTypeIcon type={type} size={16} strokeWidth={isActive ? 2.2 : 2} aria-hidden />
-                      </motion.span>
-                      <span className="min-w-0 flex-1">
-                        <span className={`flex items-center gap-1.5 truncate text-sm ${isActive ? "font-bold text-[var(--community-blue-ink)]" : "font-medium text-[var(--color-body-text)]"}`}>
-                          <span className="min-w-0 truncate">{z.title}</span>
-                        {z.myStatus === "ACTIVE" && (
-                          <span
-                              className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-[var(--color-success)]"
-                            aria-hidden="true"
-                          />
-                        )}
-                        </span>
-                      </span>
-                    </Link>
-                  );
-                })}
-              </div>
-            );
-          })}
-        </div>
-      )}
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody} className="flex flex-col gap-2">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Skeleton key={i} className="h-[52px] w-full rounded-lg" />
+        ))}
+      </SkeletonGroup>
     </nav>
     </LayoutGroup>
   );

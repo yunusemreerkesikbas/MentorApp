@@ -36,22 +36,14 @@ function IconButton({
       disabled={busy}
       aria-label={label}
       title={label}
-      className={`flex cursor-pointer items-center justify-center rounded-full border border-[var(--color-border)] transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 disabled:opacity-40 motion-reduce:transition-none ${
-        primary ? "h-16 w-16" : "h-12 w-12"
-      }`}
-      style={
+      className={`flex cursor-pointer items-center justify-center rounded-full transition-all duration-150 hover:scale-105 active:scale-95 hover:opacity-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40 motion-reduce:transition-none motion-reduce:hover:scale-100 ${
         primary
-          ? {
-              backgroundColor: "var(--color-progress)",
-              color: "#fff",
-              boxShadow: "var(--shadow-card)",
-            }
-          : {
-              backgroundColor: "var(--color-surface)",
-              color: "var(--color-main)",
-              boxShadow: "var(--shadow-card)",
-            }
-      }
+          ? "h-16 w-16 session-liquid-btn-obsidian !text-white"
+          : "h-12 w-12 session-liquid-pill"
+      }`}
+      style={{
+        color: primary ? "#ffffff" : "var(--color-main)",
+      }}
     >
       {children}
     </button>
@@ -72,7 +64,19 @@ export function SessionControls({
 
   if (phase === "idle") {
     return (
-      <Button onClick={onStart} busy={busy} fullWidth>
+      <Button
+        onClick={onStart}
+        busy={busy}
+        fullWidth
+        className="!rounded-full py-3.5 text-base font-bold transition-all duration-150 hover:scale-[1.01] active:scale-[0.98]"
+        style={{
+          fontFamily: "var(--font-heading)",
+          backgroundColor: "#ffffff",
+          color: "#0f172a",
+          border: "1px solid rgba(255, 255, 255, 0.95)",
+          boxShadow: "0 4px 24px 0 rgba(255, 255, 255, 0.35), 0 2px 8px 0 rgba(0, 0, 0, 0.2)",
+        }}
+      >
         {translate("start")}
       </Button>
     );

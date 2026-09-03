@@ -1,6 +1,7 @@
 "use client";
 import { Bell } from "lucide-react";
 
+import { NotificationBadge } from "../transitions/notification-badge.js";
 import { useNotificationDrawer } from "./notification-drawer-context.js";
 import type { NotificationDrawerDesktopSide } from "./types.js";
 
@@ -23,6 +24,7 @@ export function NotificationBell({
   desktopSide = "left",
 }: NotificationBellProps) {
   const { toggle, unreadCount } = useNotificationDrawer();
+  const open = unreadCount > 0;
 
   return (
     <button
@@ -36,18 +38,11 @@ export function NotificationBell({
     >
       <Bell size={24} color="var(--color-main)" strokeWidth={2} aria-hidden />
 
-      {unreadCount > 0 && (
-        <span
-          aria-hidden
-          className="absolute right-1.5 top-1.5 flex h-[18px] min-w-[18px] items-center justify-center rounded-full px-1 text-[10px] font-bold text-white"
-          style={{
-            backgroundColor: "var(--color-progress)",
-            fontFamily: "var(--font-body)",
-          }}
-        >
-          {unreadCount > 99 ? "99+" : unreadCount}
-        </span>
-      )}
+      <NotificationBadge
+        open={open}
+        count={unreadCount > 99 ? "99+" : unreadCount > 0 ? unreadCount : null}
+        className="!right-1.5 !top-1.5"
+      />
     </button>
   );
 }

@@ -145,6 +145,7 @@ export interface PopoverMenuItemProps {
    * Default true — action menus and selects dismiss on choose.
    */
   closeOnClick?: boolean;
+  className?: string;
 }
 
 export function PopoverMenuItem({
@@ -155,6 +156,7 @@ export function PopoverMenuItem({
   selected,
   role = "menuitem",
   closeOnClick = true,
+  className,
 }: PopoverMenuItemProps) {
   const ctx = useContext(PopoverMenuContext);
 
@@ -170,9 +172,10 @@ export function PopoverMenuItem({
       }}
       className={[
         "block w-full cursor-pointer px-3 py-2.5 text-left text-sm font-semibold transition-colors",
-        "hover:bg-black/[0.04] focus-visible:bg-black/[0.04] focus-visible:outline-none",
+        "hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none",
         "disabled:cursor-not-allowed disabled:opacity-50 motion-reduce:transition-none",
-        selected ? "bg-black/[0.04]" : "",
+        selected ? "bg-[color-mix(in_srgb,var(--color-main)_12%,transparent)]" : "",
+        className,
       ]
         .filter(Boolean)
         .join(" ")}

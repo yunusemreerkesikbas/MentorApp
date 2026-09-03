@@ -1,4 +1,5 @@
 import { DataCard } from "./data-card.js";
+import { DigitPopIn } from "./transitions/digit-pop-in.js";
 
 /** Web `public/img` asset — CountdownCard is panel-only. */
 const HOURGLASS_SRC = "/img/hourglass.svg";
@@ -71,7 +72,7 @@ export function CountdownCard({
           labels.today
         ) : (
           <span>
-            {daysRemaining}{" "}
+            <DigitPopIn value={daysRemaining} />{" "}
             <span
               className="text-base font-bold"
               style={{ color: "var(--color-secondary)" }}

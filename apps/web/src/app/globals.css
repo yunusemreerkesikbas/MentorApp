@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "@mentor/ui/theme.css";
+@import "@mentor/ui/transitions.css";
 /* Scan the shared UI package source so its utility classes are generated. */
 @source "../../../../packages/ui/src";
 

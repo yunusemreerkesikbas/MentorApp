@@ -113,7 +113,7 @@ export function SessionBuddyCard() {
   );
 
   return (
-    <Card className="flex flex-col gap-4 px-4 py-4">
+    <Card className="flex flex-col gap-4 px-4 py-4 session-liquid-card">
       <span
         className="text-[11px] font-semibold uppercase tracking-wide"
         style={{ color: "var(--color-secondary)" }}

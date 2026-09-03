@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { useTranslations } from "next-intl";
+import { CheckBox } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { AUTH_ANALYTICS_FIELD } from "@/lib/auth-analytics-choice";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
@@ -12,20 +13,19 @@ export function AuthCookieConsent() {
   const { consent } = useAnalyticsConsent();
   const [userChoice, setUserChoice] = useState<boolean | null>(null);
   const checked = userChoice ?? consent === "accepted";
+  const labelId = useId();
 
   return (
-    <label
-      className="flex min-h-11 cursor-pointer items-start gap-3 text-sm"
-      style={{ color: "var(--color-body)" }}
-    >
-      <input
-        type="checkbox"
-        name={AUTH_ANALYTICS_FIELD}
+    <div className="flex min-h-11 items-start gap-3 text-sm" style={{ color: "var(--color-body)" }}>
+      <CheckBox
         checked={checked}
-        onChange={(event) => setUserChoice(event.target.checked)}
-        className="mt-1 h-5 w-5 shrink-0"
+        onChange={setUserChoice}
+        name={AUTH_ANALYTICS_FIELD}
+        value="on"
+        aria-labelledby={labelId}
+        className="mt-1"
       />
-      <span>
+      <span id={labelId}>
         {t.rich("label", {
           link: (chunks) => (
             <Link
@@ -40,6 +40,6 @@ export function AuthCookieConsent() {
           ),
         })}
       </span>
-    </label>
+    </div>
   );
 }

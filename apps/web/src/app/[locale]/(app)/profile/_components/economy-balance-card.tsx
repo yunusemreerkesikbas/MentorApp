@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { EconomyBalance, EconomyLedgerEntryView } from "@mentor/types";
-import { Button, Card, SectionHeading } from "@mentor/ui";
+import { Button, Card, DigitPopIn, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
@@ -63,7 +63,7 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
             className="mt-1 text-2xl font-bold tabular-nums"
             style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
           >
-            {balance.xp}
+            <DigitPopIn value={balance.xp} />
           </dd>
         </div>
         <div>
@@ -74,7 +74,7 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
             className="mt-1 text-2xl font-bold tabular-nums"
             style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
           >
-            {balance.coinConfirmed}
+            <DigitPopIn value={balance.coinConfirmed} />
           </dd>
           {balance.coinPending > 0 ? (
             <p className="mt-1 text-xs" style={{ color: "var(--color-secondary)" }}>

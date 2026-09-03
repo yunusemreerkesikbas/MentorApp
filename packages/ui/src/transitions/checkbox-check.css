@@ -1,0 +1,60 @@
+.t-check {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  border-radius: 4px;
+  border: 1.5px solid var(--color-secondary);
+  background: transparent;
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background var(--t-check-box) var(--t-check-ease),
+    border-color var(--t-check-box) var(--t-check-ease),
+    box-shadow var(--t-check-box) var(--t-check-ease);
+}
+
+.t-check:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+.t-check[aria-checked="true"] {
+  background: var(--color-main);
+  border-color: var(--color-main);
+}
+
+.t-check svg {
+  width: 12px;
+  height: 12px;
+  display: block;
+}
+
+.t-check svg path {
+  fill: none;
+  stroke: var(--color-btn-label);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: var(--check-len, 15);
+  stroke-dashoffset: var(--check-len, 15);
+  transition: stroke-dashoffset var(--t-check-uncheck) var(--t-check-ease);
+}
+
+.t-check[aria-checked="true"] svg path {
+  stroke-dashoffset: 0;
+  transition: stroke-dashoffset var(--t-check-draw) var(--t-check-ease)
+    var(--t-check-delay);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-check,
+  .t-check svg path {
+    transition: none !important;
+  }
+  .t-check[aria-checked="true"] svg path {
+    stroke-dashoffset: 0;
+  }
+}

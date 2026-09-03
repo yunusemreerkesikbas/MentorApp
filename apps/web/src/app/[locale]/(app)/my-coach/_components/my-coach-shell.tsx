@@ -22,6 +22,7 @@ export function MyCoachShell() {
   const toast = useMentorToast();
   const dialog = useMentorDialog();
   const [coach, setCoach] = useState<MyCoachDto | null>(null);
+  const [off, setOff] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
 
@@ -38,7 +39,15 @@ export function MyCoachShell() {
   const load = useCallback(() => {
     fetchMyCoach()
       .then(setCoach)
-      .catch(showError)
+      .catch((err: unknown) => {
+        // The kill-switch is a state, not a failure. The profile row that leads here is always
+        // visible, so an error toast would read as a bug on a screen the student just opened.
+        if (err instanceof ApiClientError && err.body.code === "MENTORSHIP_DISABLED") {
+          setOff(true);
+          return;
+        }
+        showError(err);
+      })
       .finally(() => setLoaded(true));
   }, [showError]);
 
@@ -63,22 +72,19 @@ export function MyCoachShell() {
     }
   }
 
-  if (!loaded) {
-    return (
-      <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 lg:py-10">
-        <SkeletonGroup label={t("loading")}>
-          <Skeleton className="h-10 w-48 rounded-[var(--radius-card)]" />
-          <Skeleton className="h-40 w-full rounded-[var(--radius-card)]" />
-        </SkeletonGroup>
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col gap-6 px-5 py-6 sm:px-8 lg:py-10">
+  const body = !loaded ? (
+    <div className="h-52" aria-hidden />
+  ) : (
+    <div className="flex flex-col gap-6">
       <SectionHeading>{t("my_coach_title")}</SectionHeading>
 
-      {coach === null ? (
+      {off ? (
+        <EmptyState
+          title={t("my_coach_off_title")}
+          description={t("my_coach_off_body")}
+          puhuVariant="encouraging"
+        />
+      ) : coach === null ? (
         <EmptyState
           title={t("my_coach_empty_title")}
           description={t("my_coach_empty_body")}
@@ -118,6 +124,21 @@ export function MyCoachShell() {
           <DataScopeCard scope={coach.dataScope} />
         </>
       )}
+    </div>
+  );
+
+  return (
+    <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 lg:py-10">
+      <SkeletonGroup
+        label={t("loading")}
+        loading={!loaded}
+        revealed={body}
+        className="flex flex-col gap-4"
+      >
+        <Skeleton className="h-10 w-48 rounded-[var(--radius-card)]" />
+        <Skeleton className="h-40 w-full rounded-[var(--radius-card)]" />
+        <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
+      </SkeletonGroup>
     </div>
   );
 }

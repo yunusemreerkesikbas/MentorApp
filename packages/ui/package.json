@@ -11,11 +11,13 @@
       "types": "./dist/index.d.ts",
       "default": "./dist/index.js"
     },
-    "./theme.css": "./src/theme.css"
+    "./theme.css": "./src/theme.css",
+    "./transitions.css": "./src/transitions/index.css"
   },
   "files": [
     "dist",
-    "src/theme.css"
+    "src/theme.css",
+    "src/transitions"
   ],
   "scripts": {
     "build": "tsc -p tsconfig.json",

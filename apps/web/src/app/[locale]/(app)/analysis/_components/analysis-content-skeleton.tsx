@@ -6,11 +6,13 @@ import { useTranslations } from "next-intl";
 const FORM_ROWS = 4;
 const HISTORY_ROWS = 5;
 
-export function AnalysisContentSkeleton() {
-  const t = useTranslations("analysis");
+const SHELL_MIN_H =
+  "flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]";
 
+/** Inner blocks shared by full-page skeleton and in-place SkeletonReveal. */
+export function AnalysisSkeletonBlocks() {
   return (
-    <main className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]">
+    <div className={SHELL_MIN_H}>
       <aside
         className="relative z-[1] hidden h-auto w-72 shrink-0 border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
         style={{
@@ -38,56 +40,67 @@ export function AnalysisContentSkeleton() {
         </div>
       </aside>
 
-      <div className="mx-auto w-full max-w-5xl flex-1 px-5 py-4 lg:px-8 lg:py-8">
-        <SkeletonGroup label={t("loading")} className="flex flex-col gap-6">
-          <Card>
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-10 w-28 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-6 w-40 rounded-full" />
-              </div>
-              <Skeleton className="h-14 w-full max-w-[220px] rounded-[var(--radius-card)] sm:h-14" />
-              <Skeleton className="h-11 w-36 rounded-[var(--radius-card)]" />
+      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-5 py-4 lg:px-8 lg:py-8">
+        <Card>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-2">
+              <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-10 w-28 rounded-[var(--radius-card)]" />
+              <Skeleton className="h-6 w-40 rounded-full" />
             </div>
-          </Card>
+            <Skeleton className="h-14 w-full max-w-[220px] rounded-[var(--radius-card)] sm:h-14" />
+            <Skeleton className="h-11 w-36 rounded-[var(--radius-card)]" />
+          </div>
+        </Card>
 
-          <div className="flex gap-1 rounded-full border border-[var(--color-border)] p-1">
+        <div className="flex gap-1 rounded-full border border-[var(--color-border)] p-1">
+          {[0, 1, 2].map((i) => (
+            <Skeleton
+              key={i}
+              className="h-10 flex-1 rounded-full"
+              style={skeletonStaggerStyle(i)}
+            />
+          ))}
+        </div>
+
+        <Card>
+          <Skeleton className="mb-4 h-6 w-40 rounded-[var(--radius-card)]" />
+          <div className="hidden sm:grid sm:grid-cols-[1fr_repeat(3,4rem)] sm:gap-2 sm:pb-2">
+            <Skeleton className="h-4 w-20 rounded-[var(--radius-card)]" />
             {[0, 1, 2].map((i) => (
-              <Skeleton
-                key={i}
-                className="h-10 flex-1 rounded-full"
-                style={skeletonStaggerStyle(i)}
-              />
+              <Skeleton key={i} className="h-4 rounded-[var(--radius-card)]" />
             ))}
           </div>
-
-          <Card>
-            <Skeleton className="mb-4 h-6 w-40 rounded-[var(--radius-card)]" />
-            <div className="hidden sm:grid sm:grid-cols-[1fr_repeat(3,4rem)] sm:gap-2 sm:pb-2">
-              <Skeleton className="h-4 w-20 rounded-[var(--radius-card)]" />
-              {[0, 1, 2].map((i) => (
-                <Skeleton key={i} className="h-4 rounded-[var(--radius-card)]" />
-              ))}
-            </div>
-            <div className="flex flex-col gap-3">
-              {Array.from({ length: FORM_ROWS }, (_, index) => (
-                <div
-                  key={index}
-                  className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_repeat(3,4rem)] sm:items-center"
-                  style={skeletonStaggerStyle(index + 3)}
-                >
-                  <Skeleton className="h-5 w-28 rounded-[var(--radius-card)]" />
-                  {[0, 1, 2].map((c) => (
-                    <Skeleton key={c} className="h-12 rounded-[var(--radius-card)]" />
-                  ))}
-                </div>
-              ))}
-            </div>
-            <Skeleton className="mt-4 h-14 w-full rounded-[var(--radius-card)]" />
-          </Card>
-        </SkeletonGroup>
+          <div className="flex flex-col gap-3">
+            {Array.from({ length: FORM_ROWS }, (_, index) => (
+              <div
+                key={index}
+                className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_repeat(3,4rem)] sm:items-center"
+                style={skeletonStaggerStyle(index + 3)}
+              >
+                <Skeleton className="h-5 w-28 rounded-[var(--radius-card)]" />
+                {[0, 1, 2].map((c) => (
+                  <Skeleton key={c} className="h-12 rounded-[var(--radius-card)]" />
+                ))}
+              </div>
+            ))}
+          </div>
+          <Skeleton className="mt-4 h-14 w-full rounded-[var(--radius-card)]" />
+        </Card>
       </div>
+    </div>
+  );
+}
+
+/** Standalone full-page skeleton when there is no shared client tree. */
+export function AnalysisContentSkeleton() {
+  const t = useTranslations("analysis");
+
+  return (
+    <main className="w-full">
+      <SkeletonGroup label={t("loading")}>
+        <AnalysisSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }

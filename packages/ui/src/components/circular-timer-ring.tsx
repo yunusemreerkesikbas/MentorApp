@@ -168,13 +168,13 @@ export function CircularTimerRing({
             <radialGradient id={`${labelId}-fill`} cx="50%" cy="38%" r="65%">
               <stop
                 offset="0%"
-                stopColor="var(--color-progress-track)"
-                stopOpacity={0.55}
+                stopColor="var(--color-progress)"
+                stopOpacity={0.06}
               />
               <stop
                 offset="100%"
                 stopColor="var(--color-progress)"
-                stopOpacity={0.14}
+                stopOpacity={0}
               />
             </radialGradient>
           </defs>
@@ -297,13 +297,8 @@ export function CircularTimerRing({
           <button
             type="button"
             aria-label={`${step} dakika azalt`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              backgroundColor: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              boxShadow: "var(--shadow-card)",
-            }}
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full session-liquid-pill transition-all duration-150 hover:scale-105 active:scale-95 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+            style={{ color: "var(--color-main)" }}
             onClick={() => nudge(-step)}
           >
             <Minus className="size-5" strokeWidth={2.5} aria-hidden />
@@ -311,13 +306,8 @@ export function CircularTimerRing({
           <button
             type="button"
             aria-label={`${step} dakika artır`}
-            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              backgroundColor: "var(--color-surface)",
-              border: "1px solid var(--color-border)",
-              boxShadow: "var(--shadow-card)",
-            }}
+            className="flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full session-liquid-pill transition-all duration-150 hover:scale-105 active:scale-95 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:hover:scale-100"
+            style={{ color: "var(--color-main)" }}
             onClick={() => nudge(step)}
           >
             <Plus className="size-5" strokeWidth={2.5} aria-hidden />

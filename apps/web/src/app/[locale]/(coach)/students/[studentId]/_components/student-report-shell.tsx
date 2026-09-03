@@ -143,6 +143,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         studentId={studentId}
         studentName={report.studentDisplayName}
         studentExamType={report.studentExamType}
+        previousTasks={report.planTasks}
         onAssigned={load}
       />
 

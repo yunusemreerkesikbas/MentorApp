@@ -2,6 +2,11 @@
 import { PanelLeft } from "lucide-react";
 
 import type { ReactNode } from "react";
+export { HistoryFilterSelect } from "./history-filter-select";
+export type {
+  HistoryFilterOption,
+  HistoryFilterSelectProps,
+} from "./history-filter-select";
 
 export interface HistorySidePanelProps {
   title: string;
@@ -14,6 +19,8 @@ export interface HistorySidePanelProps {
   children: ReactNode;
   footer?: ReactNode;
   testId?: string;
+  variant?: "default" | "liquid";
+  className?: string;
 }
 
 /**
@@ -28,16 +35,22 @@ export function HistorySidePanel({
   children,
   footer,
   testId,
+  variant = "default",
+  className,
 }: HistorySidePanelProps) {
+  const isLiquid = variant === "liquid";
+
   return (
     <div
-      className="flex h-full min-h-0 flex-col"
+      className={`flex h-full min-h-0 flex-col ${className ?? ""}`}
       data-testid={testId}
     >
       <div
         className="flex shrink-0 items-center gap-2 border-b px-4 py-4"
         style={{
-          borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+          borderColor: isLiquid
+            ? "rgba(255, 255, 255, 0.15)"
+            : "color-mix(in srgb, var(--color-main) 8%, transparent)",
         }}
       >
         <h2
@@ -45,7 +58,7 @@ export function HistorySidePanel({
           className="min-w-0 flex-1 text-base font-bold leading-tight"
           style={{
             fontFamily: "var(--font-heading)",
-            color: "var(--color-main)",
+            color: isLiquid ? "#ffffff" : "var(--color-main)",
           }}
         >
           {title}
@@ -56,11 +69,11 @@ export function HistorySidePanel({
             onClick={onCollapse}
             aria-label={collapseLabel}
             data-testid="history-side-panel-collapse"
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-white/10 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
           >
             <PanelLeft
               className="size-5"
-              style={{ color: "var(--color-main)" }}
+              style={{ color: isLiquid ? "#ffffff" : "var(--color-main)" }}
               strokeWidth={2.25}
               aria-hidden
             />
@@ -80,7 +93,9 @@ export function HistorySidePanel({
         <div
           className="shrink-0 border-t px-4 py-3"
           style={{
-            borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
+            borderColor: isLiquid
+              ? "rgba(255, 255, 255, 0.15)"
+              : "color-mix(in srgb, var(--color-main) 8%, transparent)",
           }}
         >
           {footer}

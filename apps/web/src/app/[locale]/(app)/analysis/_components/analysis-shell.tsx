@@ -20,7 +20,7 @@ import {
   http,
   usersControllerMe,
 } from "@mentor/api-client";
-import { Button, Card } from "@mentor/ui";
+import { Button, Card, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/components/empty-state";
 import { FormError } from "@/components/form";
@@ -29,7 +29,7 @@ import {
   HistorySideRail,
 } from "@/components/history-side-panel";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { AnalysisContentSkeleton } from "./analysis-content-skeleton";
+import { AnalysisSkeletonBlocks } from "./analysis-content-skeleton";
 import { AnalysisHistoryList } from "./analysis-history-list";
 import { AnalysisSegmentControl } from "./analysis-segment-control";
 import { AnalysisSummaryBand } from "./analysis-summary-band";
@@ -52,6 +52,9 @@ const tabTransition = {
   duration: 0.2,
   ease: [0.22, 1, 0.36, 1] as const,
 };
+
+const SHELL_MIN_H =
+  "flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]";
 
 const railIconBtn =
   "inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
@@ -329,10 +332,6 @@ export function AnalysisShell() {
     }
   }
 
-  if (loadState.status === "loading") {
-    return <AnalysisContentSkeleton />;
-  }
-
   if (loadState.status === "error") {
     return (
       <main className="mx-auto w-full max-w-5xl px-5 py-8 lg:px-8 lg:py-10">
@@ -365,6 +364,7 @@ export function AnalysisShell() {
     );
   }
 
+  const loading = loadState.status === "loading";
   const historyListProps =
     exam?.id != null
       ? {
@@ -375,11 +375,10 @@ export function AnalysisShell() {
         }
       : null;
 
-  return (
-    <main
-      className="flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]"
-      aria-label={t("title")}
-    >
+  const readyBody = loading ? (
+    <div className="min-h-[36rem]" aria-hidden />
+  ) : (
+    <div className={SHELL_MIN_H} aria-label={t("title")}>
       <HistorySideRail
         title={tHistory("title")}
         railOpen={railOpen}
@@ -489,6 +488,14 @@ export function AnalysisShell() {
           <AnalysisHistoryList {...historyListProps} />
         ) : null}
       </HistorySideDrawer>
+    </div>
+  );
+
+  return (
+    <main className="w-full" aria-label={t("title")}>
+      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+        <AnalysisSkeletonBlocks />
+      </SkeletonGroup>
     </main>
   );
 }

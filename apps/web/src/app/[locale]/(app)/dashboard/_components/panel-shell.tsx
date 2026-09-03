@@ -29,7 +29,7 @@ import {
   coachingControllerGetToday,
   planTaskControllerUpdate,
 } from "@mentor/api-client";
-import { Chip, CountdownCard } from "@mentor/ui";
+import { Chip, CountdownCard, ShimmerText, TextSwap, TextsReveal } from "@mentor/ui";
 import {
   ArrowRight,
   BookOpen,
@@ -798,12 +798,8 @@ function MoodCoachNote({
 
   if (reflecting) {
     return (
-      <p
-        className="text-sm"
-        role="status"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("coach_thinking")}
+      <p className="text-sm" role="status">
+        <ShimmerText text={t("coach_thinking")} />
       </p>
     );
   }
@@ -815,9 +811,12 @@ function MoodCoachNote({
           <Sparkles aria-hidden size={11} />
           {t("coach_chip")}
         </Chip>
-        <p className="text-sm" style={{ color: "var(--color-body)" }}>
-          {reflection}
-        </p>
+        <TextSwap
+          as="p"
+          text={reflection}
+          className="text-sm"
+          style={{ color: "var(--color-body)" }}
+        />
       </div>
     );
   }
@@ -865,9 +864,13 @@ function DailyRhythmCard({
     <article className="overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]">
       <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_120px] sm:p-6">
         <div className="space-y-2">
-          <h2 className="text-xl font-bold text-[var(--color-main)]">
-            {t("rhythm_title")}
-          </h2>
+          <TextsReveal
+            lines={[
+              <h2 key="title" className="text-xl font-bold text-[var(--color-main)]">
+                {t("rhythm_title")}
+              </h2>,
+            ]}
+          />
           <ExpandableRhythmCopy text={dailyGreeting ?? t("rhythm_copy")} />
           {greetingLocked ? (
             <PremiumLockNudge

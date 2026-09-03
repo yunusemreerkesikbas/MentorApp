@@ -417,6 +417,149 @@ export function LeaderboardScreen() {
   const rest = board?.items.slice(3) ?? [];
   const me = board?.me ?? null;
   const meOnPodium = me !== null && podium.some((e) => e.isMe);
+  const summaryLoading = !failed && data === null;
+
+  const boardBody =
+    board === null ? (
+      failedWindows.has(activeWindow) ? (
+        <div className="flex flex-col items-center gap-3 py-8">
+          <p className="text-[14px]" style={{ color: "var(--color-secondary)" }}>
+            {t("error")}
+          </p>
+          <button
+            type="button"
+            onClick={() =>
+              setFailedWindows((s) => {
+                const next = new Set(s);
+                next.delete(activeWindow);
+                return next;
+              })
+            }
+            className="rounded-full px-4 py-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ background: "var(--color-soft)", color: "var(--color-main)" }}
+          >
+            {t("refresh")}
+          </button>
+        </div>
+      ) : (
+        <div className="min-h-[24rem]" aria-hidden />
+      )
+    ) : board.items.length === 0 ? (
+      <div className="flex flex-col items-center gap-3 py-12 text-center">
+        <span
+          className="flex h-14 w-14 items-center justify-center rounded-full"
+          style={{ background: "color-mix(in srgb, var(--color-chip) 16%, var(--color-surface))" }}
+        >
+          <Trophy size={24} aria-hidden="true" style={{ color: MEDAL[0] }} />
+        </span>
+        <p className="max-w-[240px] text-[14px]" style={{ color: "var(--color-secondary)" }}>
+          {t("leaderboard_empty")}
+        </p>
+      </div>
+    ) : (
+      <div className="flex flex-col gap-6">
+        <EncouragingBanner me={me} total={board.totalParticipants} />
+
+        <div className="relative overflow-hidden rounded-3xl px-4 pb-6 pt-8">
+          {/* AI-generated podium atmosphere (public/leaderboard/podium-bg.png). */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 bg-cover bg-top"
+            style={{ backgroundImage: "url(/leaderboard/podium-bg.png)" }}
+          />
+          {/* Feather to the page canvas so the image never overpowers either theme. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0"
+            style={{
+              background:
+                "radial-gradient(120% 90% at 50% 0%, transparent 0%, transparent 42%, color-mix(in srgb, var(--color-bg) 82%, transparent) 78%, var(--color-bg) 100%)",
+            }}
+          />
+          <div className="relative flex items-end justify-center gap-2">
+            {podium.map((entry, i) => (
+              <PodiumSpot
+                key={entry.userId}
+                entry={entry}
+                place={i as 0 | 1 | 2}
+                youLabel={t("leaderboard_you")}
+                reduce={reduce}
+              />
+            ))}
+          </div>
+        </div>
+
+        {me !== null && !meOnPodium && (
+          <StandingCard me={me} youLabel={t("leaderboard_you")} reduce={reduce} />
+        )}
+        {me === null && (
+          <p className="text-[13px]" style={{ color: "var(--color-secondary)" }}>
+            {t("leaderboard_you_none")}
+          </p>
+        )}
+
+        {rest.length > 0 && (
+          <div className="flex flex-col gap-1">
+            <p
+              className="mb-1 text-[15px] font-bold"
+              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
+            >
+              {t("rank_list_title")}
+            </p>
+            {rest.map((entry, i) => (
+              <ListRow
+                key={entry.userId}
+                entry={entry}
+                index={i}
+                youLabel={t("leaderboard_you")}
+                reduce={reduce}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    );
+
+  const boardLoading = economyOn && board === null && !failedWindows.has(activeWindow);
+
+  const readyBody =
+    data === null ? (
+      <div className="min-h-[28rem]" aria-hidden />
+    ) : !economyOn ? (
+      <p className="py-10 text-center text-[14px]" style={{ color: "var(--color-secondary)" }}>
+        {t("leaderboard_empty")}
+      </p>
+    ) : (
+      <div className="flex flex-col gap-6">
+        <WindowTabs value={activeWindow} onChange={setActiveWindow} />
+
+        <motion.div
+          key={activeWindow}
+          className="flex flex-col gap-6"
+          initial={reduce ? false : { opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+        >
+          <SkeletonGroup
+            label={t("loading")}
+            loading={boardLoading}
+            revealed={boardBody}
+            className="flex flex-col gap-4"
+          >
+            <Skeleton className="h-[52px] w-full rounded-2xl" />
+            <Skeleton className="h-[180px] w-full rounded-2xl" />
+            <Skeleton className="h-[160px] w-full rounded-2xl" />
+          </SkeletonGroup>
+        </motion.div>
+
+        {/* Badges only — streak/XP live on the profile/dashboard, not repeated on the ranking page. */}
+        {data.badges.length > 0 && (
+          <div className="border-t pt-5" style={{ borderColor: "var(--color-border)" }}>
+            <BadgeStrip badges={data.badges} />
+          </div>
+        )}
+      </div>
+    );
 
   return (
     <div className="mx-auto w-full max-w-md px-4 pb-10 pt-4">
@@ -443,139 +586,17 @@ export function LeaderboardScreen() {
         <p className="py-10 text-center text-[14px]" style={{ color: "var(--color-secondary)" }}>
           {t("error")}
         </p>
-      ) : data === null ? (
-        <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
+      ) : (
+        <SkeletonGroup
+          label={t("loading")}
+          loading={summaryLoading}
+          revealed={readyBody}
+          className="flex flex-col gap-4"
+        >
           <Skeleton className="h-[52px] w-full rounded-2xl" />
           <Skeleton className="h-[180px] w-full rounded-2xl" />
           <Skeleton className="h-[220px] w-full rounded-2xl" />
         </SkeletonGroup>
-      ) : !economyOn ? (
-        <p className="py-10 text-center text-[14px]" style={{ color: "var(--color-secondary)" }}>
-          {t("leaderboard_empty")}
-        </p>
-      ) : (
-        <div className="flex flex-col gap-6">
-          <WindowTabs value={activeWindow} onChange={setActiveWindow} />
-
-          <motion.div
-            key={activeWindow}
-            className="flex flex-col gap-6"
-            initial={reduce ? false : { opacity: 0, y: 6 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-          >
-          {board === null ? (
-            failedWindows.has(activeWindow) ? (
-              <div className="flex flex-col items-center gap-3 py-8">
-                <p className="text-[14px]" style={{ color: "var(--color-secondary)" }}>
-                  {t("error")}
-                </p>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setFailedWindows((s) => {
-                      const next = new Set(s);
-                      next.delete(activeWindow);
-                      return next;
-                    })
-                  }
-                  className="rounded-full px-4 py-2 text-[13px] font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  style={{ background: "var(--color-soft)", color: "var(--color-main)" }}
-                >
-                  {t("refresh")}
-                </button>
-              </div>
-            ) : (
-              <SkeletonGroup label={t("loading")} className="flex flex-col gap-4">
-                <Skeleton className="h-[52px] w-full rounded-2xl" />
-                <Skeleton className="h-[180px] w-full rounded-2xl" />
-                <Skeleton className="h-[160px] w-full rounded-2xl" />
-              </SkeletonGroup>
-            )
-          ) : board.items.length === 0 ? (
-            <div className="flex flex-col items-center gap-3 py-12 text-center">
-              <span
-                className="flex h-14 w-14 items-center justify-center rounded-full"
-                style={{ background: "color-mix(in srgb, var(--color-chip) 16%, var(--color-surface))" }}
-              >
-                <Trophy size={24} aria-hidden="true" style={{ color: MEDAL[0] }} />
-              </span>
-              <p className="max-w-[240px] text-[14px]" style={{ color: "var(--color-secondary)" }}>
-                {t("leaderboard_empty")}
-              </p>
-            </div>
-          ) : (
-            <>
-              <EncouragingBanner me={me} total={board.totalParticipants} />
-
-              <div className="relative overflow-hidden rounded-3xl px-4 pb-6 pt-8">
-                {/* AI-generated podium atmosphere (public/leaderboard/podium-bg.png). */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0 bg-cover bg-top"
-                  style={{ backgroundImage: "url(/leaderboard/podium-bg.png)" }}
-                />
-                {/* Feather to the page canvas so the image never overpowers either theme. */}
-                <div
-                  aria-hidden="true"
-                  className="pointer-events-none absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(120% 90% at 50% 0%, transparent 0%, transparent 42%, color-mix(in srgb, var(--color-bg) 82%, transparent) 78%, var(--color-bg) 100%)",
-                  }}
-                />
-                <div className="relative flex items-end justify-center gap-2">
-                  {podium.map((entry, i) => (
-                    <PodiumSpot
-                      key={entry.userId}
-                      entry={entry}
-                      place={i as 0 | 1 | 2}
-                      youLabel={t("leaderboard_you")}
-                      reduce={reduce}
-                    />
-                  ))}
-                </div>
-              </div>
-
-              {me !== null && !meOnPodium && (
-            <StandingCard me={me} youLabel={t("leaderboard_you")} reduce={reduce} />
-          )}
-              {me === null && (
-                <p className="text-[13px]" style={{ color: "var(--color-secondary)" }}>
-                  {t("leaderboard_you_none")}
-                </p>
-              )}
-
-              {rest.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <p
-                    className="mb-1 text-[15px] font-bold"
-                    style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-                  >
-                    {t("rank_list_title")}
-                  </p>
-                  {rest.map((entry, i) => (
-                    <ListRow
-                      key={entry.userId}
-                      entry={entry}
-                      index={i}
-                      youLabel={t("leaderboard_you")}
-                      reduce={reduce}
-                    />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
-          </motion.div>
-
-          {/* Badges only — streak/XP live on the profile/dashboard, not repeated on the ranking page. */}
-          {data.badges.length > 0 && (
-            <div className="border-t pt-5" style={{ borderColor: "var(--color-border)" }}>
-              <BadgeStrip badges={data.badges} />
-            </div>
-          )}
-        </div>
       )}
     </div>
   );

@@ -2,8 +2,8 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useState, type FormEvent } from "react";
-import { SectionHeading } from "@mentor/ui";
+import { useId, useState, type FormEvent } from "react";
+import { CheckBox, SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
@@ -29,12 +29,12 @@ export default function SignupPage() {
   const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [kvkkChecked, setKvkkChecked] = useState(false);
+  const kvkkLabelId = useId();
 
   function requireKvkk() {
-    const checked =
-      document.querySelector<HTMLInputElement>('input[name="kvkk"]')?.checked === true;
-    if (!checked) setError(translate("kvkk_error"));
-    return checked;
+    if (!kvkkChecked) setError(translate("kvkk_error"));
+    return kvkkChecked;
   }
 
   function applyAnalyticsChoice() {
@@ -46,7 +46,7 @@ export default function SignupPage() {
     setError(null);
     setBusy(true);
     const data = new FormData(e.currentTarget);
-    if (data.get("kvkk") !== "on") {
+    if (!kvkkChecked || data.get("kvkk") !== "on") {
       setError(translate("kvkk_error"));
       setBusy(false);
       return;
@@ -98,23 +98,26 @@ export default function SignupPage() {
         minLength={8}
         revealLabels={{ show: ui("show_password"), hide: ui("hide_password") }}
       />
-      <label
-        className="flex min-h-11 cursor-pointer items-start gap-3 text-sm"
+      <div
+        className="flex min-h-11 items-start gap-3 text-sm"
         style={{ color: "var(--color-body)" }}
       >
-        <input
-          type="checkbox"
+        <CheckBox
+          checked={kvkkChecked}
+          onChange={setKvkkChecked}
           name="kvkk"
+          value="on"
           required
-          className="mt-1 h-5 w-5 shrink-0"
+          aria-labelledby={kvkkLabelId}
+          className="mt-1"
         />
         {/* The checkbox asserts the notice was READ — so it has to be reachable from right here. */}
-        <span>
+        <span id={kvkkLabelId}>
           {translate.rich("kvkk", {
             link: (chunks) => <LegalLink slug="kvkk-aydinlatma">{chunks}</LegalLink>,
           })}
         </span>
-      </label>
+      </div>
       <AuthCookieConsent />
       <FormError message={error} />
       <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>

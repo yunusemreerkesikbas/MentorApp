@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useTranslations } from "next-intl";
 import type { TodayPanelResponse } from "@mentor/types";
+import { TextSwap } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { trackCoachEvent } from "@/lib/analytics";
 import { resolveCoachNextActionHref } from "@/lib/coach-next-action-href";
@@ -42,11 +43,14 @@ export function CoachNextActionCard({
           fontFamily: "var(--font-heading)",
         }}
       >
-        {nextAction.title}
+        <TextSwap text={nextAction.title} />
       </h3>
-      <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-        {nextAction.message}
-      </p>
+      <TextSwap
+        as="p"
+        text={nextAction.message}
+        className="mt-1 text-sm"
+        style={{ color: "var(--color-secondary)" }}
+      />
       {href ? (
         <Link
           onClick={() =>

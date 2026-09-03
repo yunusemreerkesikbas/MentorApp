@@ -9,3 +9,8 @@ export { HistorySidePanel } from "./history-side-panel";
 export type { HistorySidePanelProps } from "./history-side-panel";
 export { HistorySideRail } from "./history-side-rail";
 export type { HistorySideRailProps } from "./history-side-rail";
+export { HistoryFilterSelect } from "./history-filter-select";
+export type {
+  HistoryFilterOption,
+  HistoryFilterSelectProps,
+} from "./history-filter-select";
