@@ -8,6 +8,7 @@ import { UserRole } from "@mentor/types";
 import { EmbedArticleHandler } from "../src/modules/ai/application/handlers/embed-article.handler";
 
 const RUN = Date.now();
+const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
 const SLUG = `e2e-rag-kpss-${RUN}`;
 const RAG_ARTICLE_PATTERN = "e2e-rag-kpss-%";
 
@@ -45,6 +46,33 @@ describe("ai coach RAG grounding (e2e)", () => {
       await c.query("begin");
       await c.query("select set_config('app.role','SERVICE',true)");
       await fn(c);
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+  };
+
+  /**
+   * Premium through a real subscription, not `UserRole.STAFF`. STAFF does grant premium
+   * (`entitlement.service.ts`), but it also short-circuits `isMentorV2Enabled`, so a STAFF user is
+   * always on Personalized Mentor V2 and its first turn answers with a calibration question
+   * instead of calling the LLM. See ai-coach.e2e-spec.ts for the full note.
+   */
+  const seedSubscription = async (userId: string) => {
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into plans (id,name,period_months,price_minor,currency,trial_days,is_active)
+         values ($1,'AI Test Plan',1,19900,'TRY',7,true) on conflict (id) do nothing`,
+        [PREMIUM_PLAN_ID],
+      );
+      await c.query(
+        `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
+         values ($1,$2,'ACTIVE','FAKE',$3, now(), now() + interval '30 days')`,
+        [userId, PREMIUM_PLAN_ID, `fake_ai_${userId}`],
+      );
       await c.query("commit");
     } finally {
       c.release();
@@ -115,7 +143,7 @@ describe("ai coach RAG grounding (e2e)", () => {
     await app.init();
 
     const premium = await signup("premium");
-    await grantRole(premium.user.id, UserRole.STAFF); // premium entitlement
+    await seedSubscription(premium.user.id);
     premiumToken = await login(premium.email);
     // Set exam family so RAG retrieval (family-filtered) applies.
     await request(app.getHttpServer())

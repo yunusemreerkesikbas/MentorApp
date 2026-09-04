@@ -5,10 +5,10 @@ import express from "express";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { UserRole } from "@mentor/types";
 import { PHOTO_MAX_BYTES } from "../src/modules/ai/domain/photo-classify.constants";
 
 const RUN = Date.now();
+const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
 
 /**
  * W3 photo → subject categorize (e2e, fake vision + fake storage).
@@ -29,11 +29,28 @@ describe("ai photo categorize (e2e)", () => {
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 
-  const grantRole = async (userId: string, role: string) => {
+  /**
+   * Premium through a real subscription, not `UserRole.STAFF`. STAFF does grant premium
+   * (`entitlement.service.ts`), but it also short-circuits `isMentorV2Enabled`, so a STAFF user is
+   * always on Personalized Mentor V2 and its first turn answers with a calibration question
+   * instead of calling the LLM. See ai-coach.e2e-spec.ts for the full note.
+   */
+  const seedSubscription = async (userId: string) => {
     const c = await pool.connect();
     try {
+      await c.query("begin");
       await c.query("select set_config('app.role','SERVICE',true)");
-      await c.query("update users set roles = array_append(roles,$1) where id=$2", [role, userId]);
+      await c.query(
+        `insert into plans (id,name,period_months,price_minor,currency,trial_days,is_active)
+         values ($1,'AI Test Plan',1,19900,'TRY',7,true) on conflict (id) do nothing`,
+        [PREMIUM_PLAN_ID],
+      );
+      await c.query(
+        `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
+         values ($1,$2,'ACTIVE','FAKE',$3, now(), now() + interval '30 days')`,
+        [userId, PREMIUM_PLAN_ID, `fake_ai_${userId}`],
+      );
+      await c.query("commit");
     } finally {
       c.release();
     }
@@ -68,7 +85,7 @@ describe("ai photo categorize (e2e)", () => {
 
     const premium = await signup("premium");
     premiumId = premium.user.id;
-    await grantRole(premiumId, UserRole.STAFF);
+    await seedSubscription(premiumId);
     premiumToken = await login(premium.email);
 
     const calendar = await request(app.getHttpServer()).get(
@@ -134,11 +151,11 @@ describe("ai photo categorize (e2e)", () => {
     expect(categorize.body.subjectRefs.length).toBeGreaterThan(0);
     expect(categorize.body.subjectRefs[0].slug).toBeTruthy();
 
-    const analysis = await request(app.getHttpServer())
-      .get("/v1/coaching/analysis")
-      .set({ Authorization: `Bearer ${premiumToken}` });
-    expect(analysis.status).toBe(200);
-    expect(analysis.body.photoSubjectSignals.length).toBeGreaterThan(0);
+    // No analysis assertion here on purpose. `photoSubjectSignals` keeps the name but no longer
+    // comes from photo categorization: `mock-exam.service.ts` reads it from the mistake notebook
+    // now, and the photo-categorize card that fed it was retired. Categorizing a photo therefore
+    // cannot move that array, and asserting it did was testing a link that had been cut. The
+    // field's shape stays covered by coaching.e2e-spec.ts.
 
     const retry = await request(app.getHttpServer())
       .post(`/v1/mock-exams/${mockExamId}/categorize-photo`)

@@ -99,6 +99,12 @@
   --stagger-blur: var(--blur-medium);
   --stagger-ease: var(--ease-smooth-out);
 
+  /* Streaming text */
+  --stream-gap: 60ms;
+  --stream-fade: var(--duration-medium);
+  --stream-blur: 1px;
+  --stream-ease: var(--ease-smooth-out);
+
   /* Tabs sliding — Mentor surface tokens, not gallery hex */
   --tabs-dur: var(--duration-fast);
   --tabs-ease: var(--ease-smooth-out);

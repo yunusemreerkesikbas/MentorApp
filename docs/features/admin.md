@@ -97,6 +97,23 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-05 — Kullanıcı detayı modülerlik geçişi** — 499 satırlık kullanıcı detay ekranı;
+  kullanıcı özeti/yetkiler, ekonomi ve abonelik için üç sayfaya özel sunum bileşenine ayrıldı;
+  parent sayfa 300 satır sınırının altına indirildi. Kullanım: parent veri yükleme, yetki kontrolü,
+  mutasyon ve SweetAlert onaylarını yönetir; alt bileşenler açık prop/callback sözleşmeleriyle yalnız
+  arayüzü sunar. Gotcha: rol, KVKK, ledger, iade ve abonelik API davranışları değişmedi; parçalar
+  üç gerçek kullanım kazanmadığı için generic admin core’a taşınmadı. İlgili:
+  `app/(general)/users/[id]/{page,UserOverviewSections,UserEconomySection,UserSubscriptionSection}.tsx`.
+
+- **2026-09-05 — Makale editörü modülerlik geçişi** — Büyüyen makale formundaki kapak ve galeri
+  arayüzü `ArticleMediaSection` bileşenine, dosya doğrulama/yükleme yardımcıları ise
+  `article-image-utils` modülüne ayrıldı; ana form 300 satır sınırının altına indirildi. Kullanım:
+  makale formu medya durumunu ve açık callback'leri sayfaya özel medya bileşenine aktarır. Gotcha:
+  dosya türü/boyut sınırları, paralel boyut okuma, R2 upload akışı, alt metin zorunluluğu ve API
+  payload'ı değişmedi; yeni parçalar generic admin core’a eklenmedi. İlgili:
+  `app/(general)/content/articles/ArticleForm.tsx`, `ArticleMediaSection.tsx`,
+  `article-image-utils.ts`.
+
 - **2026-09-03 — Admin metin tutarlılığı geçişi** — Aktif menüdeki İngilizce “Audit Log” adı
   “İşlem Geçmişi” olarak güncellendi; makale kategori seçenekleri ve kullanıcı abonelik/ödeme
   durumları backend enum kodları yerine Türkçe operasyon metinleriyle gösterilir. Kullanım ve

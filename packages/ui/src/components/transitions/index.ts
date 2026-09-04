@@ -19,6 +19,9 @@ export type { SkeletonRevealProps } from "./skeleton-reveal.js";
 export { TextsReveal } from "./texts-reveal.js";
 export type { TextsRevealProps } from "./texts-reveal.js";
 
+export { StreamingText } from "./streaming-text.js";
+export type { StreamingTextProps } from "./streaming-text.js";
+
 export { ShimmerText } from "./shimmer-text.js";
 export type { ShimmerTextProps } from "./shimmer-text.js";
 

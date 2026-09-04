@@ -142,6 +142,25 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Mentorship'in tarayıcı kapsamı (APP-072, 2026-09-04)** — 24 Playwright spec'i vardı ve
+  hiçbiri mentorship'e değmiyordu; W8'in en yeni yüzeyi aynı zamanda tarayıcıda hiç koşmayan
+  tek yüzeydi. `apps/web/e2e/mentorship.spec.ts` iki masaüstü/mobil projede 18 test koşuyor.
+  **Öğrenci yarısı bayrak kapısı:** profil satırı → `/kocum` → `/kocluk-daveti` → veri kapsamı →
+  kabul. Bu tam yol APP-069'a kadar hiç var olmadığı için, geri gitmesi de en kolay olan yol.
+  Ayrıca üç sözleşme maddesi kilitlendi: kodu **okumak** kabul değil (`acceptCalls === 0`),
+  `?code=` yalnız alanı dolduruyor (`previewCalls === 0`), bayrak kapalıyken ekran hata değil
+  "kapalı" durumu gösteriyor.
+  **Koç yarısı** üç dilimin görünür iddialarını doğruluyor: hazır davet linki panoya
+  `/kocluk-daveti?code=…` olarak gidiyor, rapor silinen ödevi gösteriyor, "geçen haftayı kopyala"
+  taslak sayacını 0/21'den 1/21'e taşıyor, not `PUT .../note` gövdesine düşüyor.
+  **Backend gerekmiyor:** harness `page.route()` ile `/v1/**` mock'luyor, mevcut spec'lerin deseni.
+  **Gotchas:** (1) Kopyalama testi "Kendi çalışmam" başlığının **yokluğunu** iddia edemiyor —
+  raporun plan listesi aynı satırları sayfanın altında zaten render ediyor. Süzme iddiası
+  `repeat-week.spec.ts`'te; e2e'nin işi düğmenin ona bağlı olduğunu göstermek, sayaç bunu tek
+  başına taşıyor. (2) Kaynak hafta `daysFromToday()` ile tarayıcının kendi takviminden üretiliyor;
+  sabit tarih yazmak testi birkaç ay sonra sessizce kırardı.
+  **İlgili:** `apps/web/e2e/mentorship.spec.ts`, `apps/web/e2e/profile.spec.ts` (mock deseni).
+
 - **Koçun öğrenciye duran notu (APP-071, 2026-09-04)** — Koçun öğrencinin dünyasına yazabildiği tek
   şey bir ödevdi; "bu hafta paragrafa ağırlık ver" demek için cümleyi bir görev başlığına
   sıkıştırmak gerekiyordu. Artık link'e bağlı **tek bir duran not** var: öğrenci `/kocum`'da görüyor,

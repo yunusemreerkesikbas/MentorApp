@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   buildAnalysisCoachHref,
   buildAnalysisTabHref,
-  shouldOpenAnalysisEvidence,
   shouldRevealFirstInsight,
   shouldNavigateAnalysisTab,
 } from "../../web/src/app/[locale]/(app)/analysis/_components/analysis-types";
@@ -26,11 +25,6 @@ describe("analysis tab navigation", () => {
   it("reveals development only after the first saved attempt", () => {
     expect(shouldRevealFirstInsight(0)).toBe(true);
     expect(shouldRevealFirstInsight(1)).toBe(false);
-  });
-
-  it("keeps evidence collapsed when a next focus is available", () => {
-    expect(shouldOpenAnalysisEvidence(true)).toBe(false);
-    expect(shouldOpenAnalysisEvidence(false)).toBe(true);
   });
 
   it("opens an editable coach seed without attaching or sending context", () => {

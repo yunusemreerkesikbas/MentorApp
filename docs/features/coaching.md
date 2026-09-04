@@ -1419,6 +1419,18 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
 
 ## Gotchas / Known issues
 
+- **Defter araç çubuğu mobilde sabit başlığın altına kaçıyor (e2e'de kırmızı, 2026-09-05)** — 375px
+  viewport'ta `notebook.spec.ts` "not"/"çizim"/"silgi" ve `notebooks.spec.ts` "koleksiyondan defter"
+  testleri düşüyor. Sebep tek: Playwright hedefi tıklamadan hemen önce "görünüre kaydır" yapıyor,
+  bu da araç çubuğu butonunu mobil kabuğun `fixed top-0 h-16` başlığının **tam altına** park
+  ediyor ve tıklama başlığa gidiyor (`<header …> subtree intercepts pointer events`). Denenen ve
+  **işe yaramayan**: `scroll-margin-top` (CDP kaydırması onu dikkate almıyor) ve tıklama öncesi
+  `mouse.wheel` (Playwright hemen ardından yeniden kaydırıyor). Gerçek kullanıcı parmağıyla
+  kaydırıp erişebildiği için **kullanıcıya yansıyan bir hata olduğu kanıtlanmadı**; testler
+  `dispatchEvent` ile yeşile boyanmadı, çünkü o zaman "buton gerçekten tıklanabiliyor mu"yu
+  ölçmeyi bırakırlardı. Karar W2'nin: ya rail'in yerleşimi başlıktan bağımsız hale gelir, ya da bu
+  dört test bilinçli olarak `dispatchEvent`'e geçer. Masaüstünde dördü de yeşil.
+
 - **Session history date filter is UTC** — `from`/`to` bound `started_at` to UTC calendar days
   (same day math as streak/`daily_activity`). Near midnight local time, "Bugün" may differ from the
   user's wall clock until per-user timezone is threaded.

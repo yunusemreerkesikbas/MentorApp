@@ -7,6 +7,9 @@ describe("localized pathname contract", () => {
     expect(getPathname({ locale: "en", href: "/dashboard" })).toBe(
       "/en/dashboard",
     );
+    // The AI coach chat, whose TR segment (/koc) is deliberately NOT the human coach's (/kocluk).
+    expect(getPathname({ locale: "tr", href: "/coach/chat" })).toBe("/koc/sohbet");
+    expect(getPathname({ locale: "en", href: "/coach/chat" })).toBe("/en/coach/chat");
     expect(
       getPathname({
         locale: "tr",

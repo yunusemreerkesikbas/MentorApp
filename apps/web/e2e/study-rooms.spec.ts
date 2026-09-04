@@ -97,10 +97,17 @@ test("çalışma masası iki viewportta koltukları ve timer devrini gösterir",
   await page.goto(`/seans/masa/${ROOM_ID}`);
 
   await expect(page.getByRole("heading", { name: "Sabah Kuşları" })).toBeVisible();
-  await expect(page.getByText("Çalışan sayısı: 1")).toBeVisible();
-  await expect(page.getByText("MASA-A1B2C3")).toBeVisible();
-  await expect(page.getByTitle("Masa Sahibi")).toBeVisible();
-  await expect(page.getByTitle("Yol Arkadaşı")).toBeVisible();
+  // The desk stopped counting out loud when it became a themed table with seats arranged around
+  // it (2026-08-25, "Çalışma masası — Dilim 2"). The seats ARE the occupancy, so "Çalışan sayısı: 1"
+  // was a caption for a picture that already said it. Identities moved from avatar `title`
+  // attributes onto the seats themselves, and the invite code moved behind "Masa menüsü" instead
+  // of lying on the table.
+  const seats = page.getByRole("main").getByRole("listitem");
+  await expect(seats).toHaveCount(4);
+  await expect(seats.nth(0)).toContainText("Matematik");
+  await expect(seats.nth(1)).toContainText("Şu an masada değil");
+  await expect(page.getByRole("button", { name: "Davet et" })).toHaveCount(2);
+  await expect(page.getByRole("button", { name: "Masa menüsü" })).toBeVisible();
 
   const start = page.getByRole("link", { name: "Bu masada çalışmaya başla" });
   await expect(start).toHaveAttribute("href", `/seans?room=${ROOM_ID}`);

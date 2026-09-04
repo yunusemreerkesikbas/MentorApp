@@ -9,7 +9,9 @@ import Swal from "sweetalert2";
 import { FieldLabel } from "@/components/shared/admin/FieldLabel";
 import { FormSection } from "@/components/shared/admin/FormSection";
 import apiClient from "@/lib/apiClient";
-import type { AdminArticle, ArticleImageUploadUrl } from "@/lib/types";
+import type { AdminArticle } from "@/lib/types";
+import { ArticleMediaSection } from "./ArticleMediaSection";
+import { ACCEPTED_IMAGES, escapeAttribute, imageDimensions, resolveUploadUrl, uploadArticleImage } from "./article-image-utils";
 
 const JoditEditor = dynamic(() => import("jodit-react"), { ssr: false });
 const FAMILIES = ["KPSS", "YKS", "LGS"];
@@ -20,40 +22,12 @@ const CATEGORIES = [
 ] as const;
 const FEATURED_DAYS = [1, 3, 7, 14] as const;
 const GALLERY_MAX = 4;
-const ACCEPTED_IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp"] as const;
-const ACCEPTED_IMAGES = ACCEPTED_IMAGE_TYPES.join(",");
 
 const toLocalInput = (iso?: string) => {
     const date = iso ? new Date(iso) : new Date();
     const pad = (value: number) => String(value).padStart(2, "0");
     return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
-
-const escapeAttribute = (value: string) => value
-    .replaceAll("&", "&amp;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;");
-
-const resolveUploadUrl = (url: string) => {
-    if (/^https?:\/\//.test(url)) return url;
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:3001/v1";
-    return new URL(url, apiUrl).toString();
-};
-
-async function imageDimensions(file: File): Promise<{ width: number; height: number }> {
-    const objectUrl = URL.createObjectURL(file);
-    try {
-        return await new Promise((resolve, reject) => {
-            const image = new Image();
-            image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
-            image.onerror = reject;
-            image.src = objectUrl;
-        });
-    } finally {
-        URL.revokeObjectURL(objectUrl);
-    }
-}
 
 export default function ArticleForm({ initial }: { initial?: AdminArticle | null }) {
     const router = useRouter();
@@ -103,24 +77,15 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
     }), []);
     const set = (key: keyof typeof form) => (event: { target: { value: string } }) =>
         setForm((current) => ({ ...current, [key]: event.target.value }));
-
-    const uploadImage = async (file: File, purpose: "COVER" | "BODY" | "GALLERY") => {
-        if (file.size > 5 * 1024 * 1024) throw new Error("Görsel en fazla 5 MB olabilir.");
-        if (!ACCEPTED_IMAGE_TYPES.includes(file.type as (typeof ACCEPTED_IMAGE_TYPES)[number])) {
-            throw new Error("Yalnız JPEG, PNG veya WebP yüklenebilir.");
-        }
-        const { data } = await apiClient.post<ArticleImageUploadUrl>("/admin/content/articles/images/upload-url", {
-            purpose,
-            contentType: file.type,
-        });
-        const response = await fetch(resolveUploadUrl(data.uploadUrl), {
-            method: "PUT",
-            headers: { "Content-Type": file.type },
-            body: file,
-        });
-        if (!response.ok) throw new Error("Görsel yüklenemedi.");
-        return data;
-    };
+    const updateGalleryAlt = (index: number, alt: string) => setForm((current) => ({
+        ...current,
+        galleryImages: current.galleryImages.map((item, itemIndex) => itemIndex === index ? { ...item, alt } : item),
+    }));
+    const moveGalleryImage = (index: number, direction: -1 | 1) => setForm((current) => {
+        const next = [...current.galleryImages];
+        [next[index + direction], next[index]] = [next[index], next[index + direction]];
+        return { ...current, galleryImages: next };
+    });
 
     const uploadCover = async (event: ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
@@ -129,7 +94,7 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
         setUploading("COVER");
         try {
             const [uploaded, dimensions] = await Promise.all([
-                uploadImage(file, "COVER"),
+                uploadArticleImage(file, "COVER"),
                 imageDimensions(file),
             ]);
             setForm((current) => ({
@@ -156,7 +121,7 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
         }
         setUploading("BODY");
         try {
-            const uploaded = await uploadImage(file, "BODY");
+            const uploaded = await uploadArticleImage(file, "BODY");
             const imageHtml = `<p><img src="${escapeAttribute(uploaded.publicUrl)}" alt="${escapeAttribute(bodyImageAlt.trim())}"></p>`;
             setForm((current) => ({ ...current, body: `${current.body}${imageHtml}` }));
             setBodyImageAlt("");
@@ -178,7 +143,7 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
         setUploading("GALLERY");
         try {
             const [uploaded, dimensions] = await Promise.all([
-                uploadImage(file, "GALLERY"),
+                uploadArticleImage(file, "GALLERY"),
                 imageDimensions(file),
             ]);
             setForm((current) => ({
@@ -263,62 +228,22 @@ export default function ArticleForm({ initial }: { initial?: AdminArticle | null
                 </div>
             </FormSection>
 
-            <FormSection title="Görseller" hint="Kapak görseli paylaşım önizlemelerinde kullanılır. Tüm görseller açıklayıcı alt metin taşımalıdır.">
-                <div className="row g-3">
-                    <div className="col-12"><h3 className="h6 mb-0">Kapak ve sosyal paylaşım görseli</h3></div>
-                    <div className="col-md-5">
-                        {form.coverImageUrl ? <img src={form.coverImageUrl} alt={form.coverImageAlt || "Kapak önizlemesi"} className="img-fluid rounded border mb-2 admin-article-cover-preview" /> : <div className="border rounded p-4 text-muted">Kapak yüklenmedi</div>}
-                    </div>
-                    <div className="col-md-7">
-                        <label className="form-label">Kapak alt metni</label><input className="form-control mb-2" value={form.coverImageAlt} onChange={set("coverImageAlt")} required={Boolean(form.coverImageKey)} />
-                        <div className="d-flex gap-2"><label className="btn btn-light mb-0">{uploading === "COVER" ? "Yükleniyor…" : "Kapak yükle"}<input hidden type="file" accept={ACCEPTED_IMAGES} disabled={uploading !== null} onChange={uploadCover} /></label>{form.coverImageKey && <button type="button" className="btn btn-outline-danger" onClick={() => setForm((current) => ({ ...current, coverImageKey: "", coverImageUrl: "", coverImageAlt: "", coverImageWidth: 0, coverImageHeight: 0 }))}>Kaldır</button>}</div>
-                    </div>
-
-                    <div className="col-12"><hr className="my-1" /><h3 className="h6 mb-0">Ek banner görselleri <span className="text-muted fw-normal">({form.galleryImages.length}/{GALLERY_MAX})</span></h3></div>
-                    <div className="col-12">
-                        <div className="d-flex flex-wrap gap-3">
-                            {form.galleryImages.map((image, index) => (
-                                <div key={image.key} className="border rounded p-2 admin-article-gallery-item">
-                                    <img src={image.url} alt={image.alt} className="img-fluid rounded mb-2" />
-                                    <input
-                                        className="form-control form-control-sm mb-2"
-                                        value={image.alt}
-                                        onChange={(event) => setForm((current) => ({
-                                            ...current,
-                                            galleryImages: current.galleryImages.map((item, itemIndex) =>
-                                                itemIndex === index ? { ...item, alt: event.target.value } : item,
-                                            ),
-                                        }))}
-                                        placeholder="Alt metin"
-                                        required
-                                    />
-                                    <div className="d-flex gap-1">
-                                        <button type="button" className="btn btn-sm btn-light" disabled={index === 0} onClick={() => setForm((current) => {
-                                            const next = [...current.galleryImages];
-                                            [next[index - 1], next[index]] = [next[index], next[index - 1]];
-                                            return { ...current, galleryImages: next };
-                                        })}>↑</button>
-                                        <button type="button" className="btn btn-sm btn-light" disabled={index === form.galleryImages.length - 1} onClick={() => setForm((current) => {
-                                            const next = [...current.galleryImages];
-                                            [next[index + 1], next[index]] = [next[index], next[index + 1]];
-                                            return { ...current, galleryImages: next };
-                                        })}>↓</button>
-                                        <button type="button" className="btn btn-sm btn-outline-danger" onClick={() => setForm((current) => ({
-                                            ...current,
-                                            galleryImages: current.galleryImages.filter((_, itemIndex) => itemIndex !== index),
-                                        }))}>Sil</button>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                        <label className="btn btn-light mt-2 mb-0">
-                            {uploading === "GALLERY" ? "Yükleniyor…" : "Ek görsel ekle"}
-                            <input hidden type="file" accept={ACCEPTED_IMAGES} disabled={uploading !== null || form.galleryImages.length >= GALLERY_MAX} onChange={uploadGalleryImage} />
-                        </label>
-                    </div>
-
-                </div>
-            </FormSection>
+            <ArticleMediaSection
+                acceptedImages={ACCEPTED_IMAGES}
+                coverImageAlt={form.coverImageAlt}
+                coverImageKey={form.coverImageKey}
+                coverImageUrl={form.coverImageUrl}
+                galleryImages={form.galleryImages}
+                galleryMax={GALLERY_MAX}
+                uploading={uploading}
+                onCoverAltChange={(coverImageAlt) => setForm((current) => ({ ...current, coverImageAlt }))}
+                onCoverRemove={() => setForm((current) => ({ ...current, coverImageKey: "", coverImageUrl: "", coverImageAlt: "", coverImageWidth: 0, coverImageHeight: 0 }))}
+                onCoverUpload={uploadCover}
+                onGalleryAltChange={updateGalleryAlt}
+                onGalleryMove={moveGalleryImage}
+                onGalleryRemove={(index) => setForm((current) => ({ ...current, galleryImages: current.galleryImages.filter((_, itemIndex) => itemIndex !== index) }))}
+                onGalleryUpload={uploadGalleryImage}
+            />
 
             <FormSection title="Yazar" hint="Yazar bilgisi verilmezse makale kurumsal içerik olarak gösterilir.">
                 <div className="row g-3">
