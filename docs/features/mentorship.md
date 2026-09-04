@@ -80,6 +80,7 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 GET    /v1/mentorship/invite-code                  -> { code, expiresAt } | (empty = none yet)
 POST   /v1/mentorship/invite-code                  -> rotates; the previous code stops working
 GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipRosterRowDto>
+PUT    /v1/mentorship/students/:studentId/note     -> 204  { body: string | null }
 DELETE /v1/mentorship/students/:studentId          -> 204
 
 ### Student (no role required)
@@ -101,6 +102,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
 | `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
 | `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
+| `PUT /v1/mentorship/students/:studentId/note` | The coach's standing note to this student; `{ body: null }` clears it (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
@@ -139,6 +141,77 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Koçun öğrenciye duran notu (APP-071, 2026-09-04)** — Koçun öğrencinin dünyasına yazabildiği tek
+  şey bir ödevdi; "bu hafta paragrafa ağırlık ver" demek için cümleyi bir görev başlığına
+  sıkıştırmak gerekiyordu. Artık link'e bağlı **tek bir duran not** var: öğrenci `/kocum`'da görüyor,
+  koç raporunda kendi yazdığını geri okuyor.
+  **Kanal değil.** Thread yok, cevap yok, okundu bilgisi yok; `PUT` ile satır **değiştiriliyor**,
+  geçmiş tutulmuyor. Faz 2'de iletişim platform dışı, in-app chat Faz 3 (roadmap §9) — bu dilim o
+  çizgiyi geçmiyor, sadece koçun tek yönlü sesini ödeve bağlı olmaktan kurtarıyor.
+  **Model:** `coach_students`'a iki nullable kolon, `coach_note` + `coach_note_at` (migration
+  `0097`). Ad `plan_tasks.coach_note` ile bilerek aynı: aynı ses (koçun kendi sözleri, öğrencinin
+  `description`'ı hâlâ koça kapalı), farklı kapsam — biri göreve biniyor, bu tek başına duruyor.
+  Ayrı tablo yok; tek not tutuluyorsa ikinci bir tablo yalnız ikinci bir doğruluk kaynağı olurdu.
+  **`end()` notu siliyor.** Zorunlu: yeniden bağlanma ENDED satırını **canlandırıyor**
+  (`onConflictDoUpdate` + `setWhere: status = 'ENDED'`), temizlenmezse iki tarafın da bıraktığı bir
+  ilişkiden kalma cümle aylar sonra geri gelirdi. e2e bunu mevcut "iptal et → geri dön" akışının
+  içinde doğruluyor.
+  **Bildirim:** `mentorship.note.updated` → öğrenciye in-app, `/my-coach` deep-link'i, günlük
+  dedupe (`mentorship-note:{studentId}:{todayIso()}`) — bir cümleyi beş kez düzelten koç hâlâ tek
+  haber. Push yok, e-posta yok. **Notu silmek hiç olay yaymıyor:** "koçun bir şeyi kaldırdı"
+  bildirimi kimseye bir şey öğretmez, kartın yokluğu zaten mesajın kendisi.
+  **KVKK:** `MENTORSHIP_DATA_SCOPE` koçun **okuduğunu** tanımlıyor, not okuma değil yazma → yeni
+  scope anahtarı eklenmedi. Yalnız `scope_coach_writes` kopyası güncellendi (eskiden sadece ödev
+  altındaki nottan bahsediyordu).
+  **Gotchas:** (1) `toCoachNoteDto` iki kolonu birlikte okuyor ve biri eksikse `null` dönüyor;
+  gövdesiz zaman damgası ya da tersi API'nin kazara üretebileceği bir durum olmamalı. (2) Yeni e2e
+  testi `invitations/accept` çağırmıyor: o uç 5/dk throttle'lı ve suite'in bütçesini tüketmek
+  sonraki testleri 429'a düşürüyor — canlanma iddiası zaten var olan iptal/geri-dönüş testine
+  eklendi. (3) `0097` yalnız nullable kolon ekliyor, CHECK/FK yok → dolu tabloya rağmen
+  `NOT VALID` gerekmiyor.
+  **İlgili:** `modules/mentorship/application/mentorship-link.service.ts`,
+  `modules/mentorship/domain/coach-note.ts`,
+  `modules/mentorship/infrastructure/mentorship-link.repository.ts`,
+  `modules/notifications/application/listeners/mentorship-events.listener.ts`,
+  `drizzle/0097_w8_mentorship_coach_note.sql`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/coach-note-card.tsx`,
+  `apps/web/src/app/[locale]/(app)/my-coach/_components/my-coach-shell.tsx`.
+
+- **Silinen ödevlerin raporda kalması (APP-070, 2026-09-04)** — Rapor **yaşayan** planı
+  gösteriyordu, dolayısıyla öğrenci koç ödevini sildiğinde satır sessizce kayboluyor ve koç bu
+  yokluğu "hiç atanmamış" diye okuyordu. APP-068 anlık bir bildirim getirmişti ama bildirim geçmiş
+  değil: kutudan düşünce geriye hiçbir şey kalmıyordu. Backlog #1 kapandı.
+  **Model:** `mentorship_dropped_assignments` (migration `0096`) — append-only, satır bir kez
+  yazılır. `link_id` **gerçek FK + ON DELETE CASCADE**; `plan_tasks.origin_ref_id`'nin aksine bu
+  kolon modül sınırını aşmıyor, W8'in kendi tablosunu gösteriyor. Cascade aynı zamanda tüm KVKK
+  hikâyesi: `MentorshipErasureService` link satırlarını anonimleştirmiyor **siliyor**, kayıtlar da
+  onlarla gidiyor; erasure servisine tek satır eklenmedi.
+  **Yalnız silme loglanıyor.** Tamamlanan görev planda DONE olarak duruyor, MENTORSHIP görevi
+  yeniden adlandırılamıyor ve taşınamıyor (`assertMentorshipTaskEditable`) — bilgi kaybının tek
+  yolu silme. İkinci bir "atandı" logu aynı gerçeği iki yerde tutmak olurdu.
+  **W2'ye hiç dokunulmadı:** `PlanTaskDeleted` zaten `taskDate` + `title` taşıyor ve W8'in kendi
+  `PlanTaskFeedbackListener`'ı `origin_ref_id`'yi link'e çözüyordu; eksik olan tek şey kalıcılıktı.
+  **Sıra: önce bildir, sonra logla.** İkisi de patlayabilir ve korunmaya değer yarı zamanında gelen
+  sinyal: hiç haber alamayan koç müdahale edemez, eksik bir geçmiş satırı ise yalnız retrospektifi
+  götürür. Log yazımı patlarsa `catch` logluyor, bildirim gitmiş oluyor.
+  **Rapor:** `MentorshipStudentReportDto.droppedAssignments`, `planTasks` ile aynı 14 günlük
+  pencere ve aynı `link.id` scope'u — koç bir öncekinin sildiklerini de görmüyor. Ekranda plan
+  kartının içinde, ayrı kart değil: çoğu öğrencide boş olurdu.
+  **Yan temizlik:** roster dilimi geldiğinden beri ölü olan `MentorshipLinkService.listStudents()`
+  ve `MentorshipStudentDto` silindi (controller `MentorshipRosterService`'e gidiyor);
+  `assertEnabled` ham `"mentorship.enabled"` dizesi yerine tüketicisi olmayan
+  `FeatureFlag.MENTORSHIP_ENABLED` sabitini kullanıyor.
+  **Gotchas:** (1) Cascade yalnız link'in **silinmesi** doğru olduğu sürece yeterli; erasure bir gün
+  anonimleştirmeye dönerse log ayrıca temizlenmeli (servis yorumunda yazılı). (2) `0096`'daki FK
+  `NOT VALID` taşımıyor ve taşımamalı — tablo aynı migration'da **boş** doğuyor, backend.md'nin
+  kuralı dolu tablolara (`plan_tasks` gibi) bakıyor. (3) e2e sıralı bir suite: yeni test tek başına
+  (`-t`) çalışmaz, komşuları da çalışmıyor; sözleşme tam koşu.
+  **İlgili:** `modules/mentorship/infrastructure/mentorship-dropped-assignment.repository.ts`,
+  `modules/mentorship/application/plan-task-feedback.listener.ts`,
+  `modules/mentorship/application/mentorship-roster.service.ts`,
+  `drizzle/0096_w8_mentorship_dropped_assignments.sql`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/student-report-shell.tsx`.
 
 - **Davet akışının ulaşılabilirliği ve "geçen haftayı kopyala" (APP-069, 2026-09-03)** — Yalnız
   `apps/web`; migration ve API değişikliği yok.
@@ -429,8 +502,6 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Backlog
 
-- Append-only assignment event log, so the report can show "assigned but deleted". Today a deleted
-  assignment simply disappears; the coach sees the living plan, not its history.
 - AI "smart brief" on top of the rule-based triage (roadmap §9). The rules stay as the floor.
 - Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
 - Seat billing beyond the free quota; the quota knob is already in the config registry.

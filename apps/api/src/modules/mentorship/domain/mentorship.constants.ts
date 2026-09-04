@@ -36,6 +36,7 @@ export const MentorshipEventTopic = {
   ASSIGNMENTS_CREATED: "mentorship.assignments.created",
   ASSIGNMENT_DROPPED: "mentorship.assignment.dropped",
   ASSIGNMENT_PROGRESSED: "mentorship.assignment.progressed",
+  NOTE_UPDATED: "mentorship.note.updated",
 } as const;
 
 /** A student accepted a coach's invite. Carries display names so listeners need no extra lookup. */
@@ -45,6 +46,20 @@ export class MentorshipLinkAccepted {
     readonly coachId: string,
     readonly studentId: string,
     readonly studentDisplayName: string,
+    readonly coachDisplayName: string,
+  ) {}
+}
+
+/**
+ * The coach wrote (or rewrote) their standing note. The student hears about it, deduped to once a
+ * day: a coach editing a sentence five times is still one piece of news. Clearing the note emits
+ * nothing — an empty inbox item saying "your coach removed something" helps no one.
+ */
+export class MentorshipNoteUpdated {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
     readonly coachDisplayName: string,
   ) {}
 }

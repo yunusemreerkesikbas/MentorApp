@@ -38,6 +38,24 @@ export type MentorshipStudentParam = z.infer<typeof mentorshipStudentParamSchema
 export const MENTORSHIP_COACH_NOTE_MAX = 500;
 
 /**
+ * The coach's standing note to a student. Same 500-char ceiling as the per-task note: it is the
+ * same voice at a different scope, and two limits would only be two things to keep in step.
+ * An empty string means "clear it" — the client should not have to know that null is the API's
+ * word for erasure.
+ */
+export const mentorshipCoachNoteSchema = z
+  .object({
+    body: z
+      .string()
+      .trim()
+      .max(MENTORSHIP_COACH_NOTE_MAX)
+      .nullable()
+      .transform((value) => (value === null || value === "" ? null : value)),
+  })
+  .strict();
+export type MentorshipCoachNoteInput = z.infer<typeof mentorshipCoachNoteSchema>;
+
+/**
  * One assigned task. Reuses the plan-task shape so a coach cannot write something the student could
  * not have written themselves, minus `description`: that field is the STUDENT's own note on their
  * own plan, and the coach report deliberately never reads it back.

@@ -6,6 +6,7 @@ import {
   MentorshipAssignmentsCreated,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
+  MentorshipNoteUpdated,
 } from "../../../mentorship/domain/mentorship.constants";
 import { todayIso } from "../../../coaching/domain/date.util";
 
@@ -35,6 +36,15 @@ function setup() {
 
 describe("MentorshipEventsListener", () => {
   beforeEach(() => vi.clearAllMocks());
+
+  it("sends the coach's standing note to the student, deduped to one a day", async () => {
+    const { listener, sent } = setup();
+    await listener.onNoteUpdated(new MentorshipNoteUpdated(LINK, COACH, STUDENT, "Koç Mert"));
+    expect(sent[0]).toMatchObject({ userId: STUDENT, linkUrl: "/my-coach" });
+    expect(sent[0]!.options?.args).toMatchObject({ name: "Koç Mert" });
+    // A coach rewording one sentence five times is still one piece of news.
+    expect(sent[0]!.options?.dedupeKey).toBe(`mentorship-note:${STUDENT}:${todayIso()}`);
+  });
 
   it("tells the coach their invite was accepted", async () => {
     const { listener, sent } = setup();

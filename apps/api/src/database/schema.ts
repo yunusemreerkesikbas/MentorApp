@@ -174,6 +174,17 @@ export const coachStudents = pgTable(
     endedAt: timestamp("ended_at", { withTimezone: true }),
     /** Who ended it — either party may (`users.id`); null while the link lives. */
     endedBy: uuid("ended_by").references(() => users.id),
+    /**
+     * The coach's standing note to this student, shown on their `/my-coach` screen. One row,
+     * overwritten in place: this is a note, not a thread, and in-app conversation is Phase 3
+     * (roadmap §9). Same name as `plan_tasks.coach_note` because it is the same thing — the
+     * coach's own words — at a different scope: that one rides a task, this one stands alone.
+     *
+     * Cleared by `end()`. Re-linking revives the ENDED row, so a note left behind would
+     * reappear months later attached to a relationship both sides had walked away from.
+     */
+    coachNote: text("coach_note"),
+    coachNoteAt: timestamp("coach_note_at", { withTimezone: true }),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

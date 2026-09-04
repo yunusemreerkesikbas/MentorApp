@@ -7,6 +7,7 @@ import {
   HttpStatus,
   Param,
   Post,
+  Put,
   Query,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
@@ -29,6 +30,7 @@ import { MentorshipRosterService } from "../application/mentorship-roster.servic
 import {
   CreateMentorshipAssignmentsDto,
   ListMentorshipStudentsQueryDto,
+  MentorshipCoachNoteDto,
   MentorshipStudentParamDto,
 } from "./mentorship.dto";
 
@@ -97,6 +99,22 @@ export class MentorshipCoachController {
     @Body() dto: CreateMentorshipAssignmentsDto,
   ): Promise<PlanTaskDto[]> {
     return this.assignments.assign(user.id, params.studentId, dto);
+  }
+
+  /**
+   * The coach's standing note to this student, shown on their `/my-coach` screen.
+   *
+   * PUT because it replaces a singleton rather than appending to a thread: there is one note per
+   * link and `{ body: null }` removes it. In-app conversation is Phase 3 (roadmap §9).
+   */
+  @Put("students/:studentId/note")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setNote(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+    @Body() dto: MentorshipCoachNoteDto,
+  ): Promise<void> {
+    return this.links.setCoachNote(user.id, params.studentId, dto.body);
   }
 
   @Delete("students/:studentId")

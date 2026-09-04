@@ -164,6 +164,11 @@
       "register": "companion",
       "title": "{name} ödevini tamamladı",
       "body": "Bugün senin verdiğin bir görevi bitirdi."
+    },
+    "mentorshipCoachNote": {
+      "register": "companion",
+      "title": "Koçundan bir not",
+      "body": "{name} sana bir not bıraktı."
     }
   },
   "email": {

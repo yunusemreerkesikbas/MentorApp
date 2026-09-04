@@ -18,6 +18,7 @@ import {
   evaluateRiskFlags,
   type RiskThresholds,
 } from "../domain/risk-flags";
+import { toCoachNoteDto } from "../domain/coach-note";
 import { MentorshipDroppedAssignmentRepository } from "../infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipLinkService } from "./mentorship-link.service";
@@ -132,6 +133,9 @@ export class MentorshipRosterService {
       acceptedAt: link.acceptedAt?.toISOString() ?? null,
       // Scope key EXAM_TRACK: the coach needs it to offer topics from the right taxonomy.
       studentExamType: profile.examType,
+      // Read back to the coach who wrote it. Scoped to the live link, so a successor coach starts
+      // on a blank page rather than inheriting somebody else's words.
+      coachNote: toCoachNoteDto(link),
       riskFlags: evaluateRiskFlags(snapshot, thresholds, todayIso(now)),
       ...report,
       // What the living plan cannot say: these were assigned and then removed. Same `link.id`

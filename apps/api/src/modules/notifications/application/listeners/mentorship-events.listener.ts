@@ -5,6 +5,7 @@ import {
   MentorshipAssignmentProgressed,
   MentorshipAssignmentsCreated,
   MentorshipEventTopic,
+  MentorshipNoteUpdated,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
 } from "../../../mentorship/domain/mentorship.constants";
@@ -94,6 +95,27 @@ export class MentorshipEventsListener {
         {
           args: { name: event.studentDisplayName },
           dedupeKey: `mentorship-progress:${event.studentId}:${todayIso()}`,
+        },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * The coach left a standing note. Deduped to one a day, like progress: a coach rewording a
+   * sentence five times is still one piece of news. Clearing a note emits nothing at all, so
+   * nothing reaches here for it.
+   */
+  @OnEvent(MentorshipEventTopic.NOTE_UPDATED)
+  async onNoteUpdated(event: MentorshipNoteUpdated): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.studentId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_COACH_NOTE,
+        "/my-coach",
+        {
+          args: { name: event.coachDisplayName },
+          dedupeKey: `mentorship-note:${event.studentId}:${todayIso()}`,
         },
       )
       .catch(() => {});

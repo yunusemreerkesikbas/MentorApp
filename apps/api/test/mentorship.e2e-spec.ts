@@ -325,6 +325,16 @@ describe("mentorship (e2e)", () => {
   });
 
   it("lets the student revoke consent, which closes the coach's access immediately", async () => {
+    // A standing note before the break, so the revival below can prove it did not come back.
+    expect(
+      (
+        await http()
+          .put(`/v1/mentorship/students/${userId.student}/note`)
+          .set(auth("coach"))
+          .send({ body: "Bağlantı bitmeden önceki not" })
+      ).status,
+    ).toBe(204);
+
     expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(204);
 
     const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
@@ -373,6 +383,12 @@ describe("mentorship (e2e)", () => {
     expect(roster.body.total).toBe(1);
     const history = await http().get("/v1/mentorship/students?status=ENDED").set(auth("coach"));
     expect(history.body.total).toBe(0);
+
+    // Revival reuses the very row that was ended, so `end()` has to blank the note or a sentence
+    // from a relationship both sides walked away from would reappear months later.
+    const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+    expect(mine.body.coachNote).toBeNull();
+    expect(JSON.stringify(mine.body)).not.toContain("Bağlantı bitmeden önceki not");
   });
 
   describe("coach-assigned homework", () => {
@@ -626,6 +642,43 @@ describe("mentorship (e2e)", () => {
         );
       });
 
+      it("keeps a deleted assignment in the report, which the living plan cannot", async () => {
+        // Before the drop log, a deleted assignment simply vanished and the coach read its absence
+        // as "never assigned". Deleting stays the student's right; the record of it is the coach's.
+        const assign = await http()
+          .post(`/v1/mentorship/students/${userId.student}/assignments`)
+          .set(auth("coach"))
+          .send({ tasks: [{ title: "Silinecek deneme", taskDate: isoDaysFromNow(1) }] });
+        expect(assign.status).toBe(201);
+
+        expect(
+          (await http().delete(`/v1/plan-tasks/${assign.body[0].id}`).set(auth("student"))).status,
+        ).toBe(204);
+
+        // The listener writes off a fire-and-forget emit, so the row lands a beat after the 204.
+        let report: { body: { droppedAssignments: { title: string }[]; planTasks: unknown[] } };
+        for (let attempt = 0; ; attempt++) {
+          report = await http()
+            .get(`/v1/mentorship/students/${userId.student}`)
+            .set(auth("coach"));
+          if (
+            report.body.droppedAssignments.some((row) => row.title === "Silinecek deneme") ||
+            attempt === 19
+          )
+            break;
+          await new Promise((resolve) => setTimeout(resolve, 50));
+        }
+        expect(report.body.droppedAssignments).toContainEqual(
+          expect.objectContaining({ title: "Silinecek deneme", taskDate: isoDaysFromNow(1) }),
+        );
+        // And the plan itself really did lose it: the log records a deletion, it does not undo one.
+        expect(
+          (report.body.planTasks as { title: string }[]).some(
+            (t) => t.title === "Silinecek deneme",
+          ),
+        ).toBe(false);
+      });
+
       it("is invisible to the NEXT coach, even though the task outlives the link", async () => {
         // End the link, hand the student to coach2, and look again. The task survives (it is the
         // student's work); the previous coach's instruction is not the successor's to read.
@@ -655,8 +708,56 @@ describe("mentorship (e2e)", () => {
         expect(row.assignedByCoach).toBe(false);
         expect(row.coachNote).toBeNull();
         expect(JSON.stringify(report.body)).not.toContain("Netin düştü");
+        // Same isolation for the drop log: a successor inherits the student, not the history of
+        // what the previous coach assigned and lost.
+        expect(report.body.droppedAssignments).toEqual([]);
       });
     });
+  });
+
+  describe("the coach's standing note to a student", () => {
+    it("reaches the student's transparency view and back to the coach who wrote it", async () => {
+      expect(
+        (
+          await http()
+            .put(`/v1/mentorship/students/${userId.student}/note`)
+            .set(auth("coach2"))
+            .send({ body: "Bu hafta paragrafa ağırlık ver." })
+        ).status,
+      ).toBe(204);
+
+      const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+      expect(mine.body.coachNote).toMatchObject({ body: "Bu hafta paragrafa ağırlık ver." });
+
+      const report = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach2"));
+      expect(report.body.coachNote).toMatchObject({ body: "Bu hafta paragrafa ağırlık ver." });
+    });
+
+    it("refuses a coach with no active link — 404, not 403", async () => {
+      // "coach" was handed off earlier; @Roles(COACH) still passes, the link gate does not.
+      const res = await http()
+        .put(`/v1/mentorship/students/${userId.student}/note`)
+        .set(auth("coach"))
+        .send({ body: "Ben de yazayım" });
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("MENTORSHIP_LINK_NOT_FOUND");
+    });
+
+    it("is cleared by an empty body", async () => {
+      expect(
+        (
+          await http()
+            .put(`/v1/mentorship/students/${userId.student}/note`)
+            .set(auth("coach2"))
+            .send({ body: null })
+        ).status,
+      ).toBe(204);
+      const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+      expect(mine.body.coachNote).toBeNull();
+    });
+
   });
 
   it("erasing a coach clears the note along with the provenance", async () => {

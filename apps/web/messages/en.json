@@ -2939,6 +2939,8 @@
     "report_mood": "Mood",
     "report_mock_empty": "No mock exam entries yet.",
     "report_plan_empty": "No plan tasks in the past two weeks.",
+    "report_dropped": "Removed assignments",
+    "report_dropped_body": "Tasks you gave that were taken out of the plan. The plan is theirs, and removing is their right.",
     "report_mood_empty": "No mood check-ins in the past two weeks.",
     "report_subject_table_subject": "Subject",
     "report_subject_table_correct": "C",
@@ -2965,6 +2967,15 @@
     "my_coach_off_title": "Coaching is off right now",
     "my_coach_off_body": "This feature is not open yet. It will be here when it is.",
     "my_coach_since": "Since {date}",
+    "my_coach_note_title": "A note from your coach",
+    "my_coach_note_since": "Written on {date}",
+    "note_title": "Your note to this student",
+    "note_body": "A short note that is not tied to a task. Your student sees it on their coach screen.",
+    "note_placeholder": "Focus on paragraphs this week.",
+    "note_save": "Save note",
+    "note_clear": "Remove note",
+    "note_saved": "Note saved",
+    "note_cleared": "Note removed",
     "my_coach_end": "End the link",
     "my_coach_end_confirm_title": "End the link with your coach?",
     "my_coach_end_confirm_body": "Their access to your data closes right away. You can reconnect any time with a new code.",
@@ -3008,6 +3019,6 @@
     "report_topic_progress_body": "Where they are stuck on the topics you assigned. Lowest completion first.",
     "report_topic_progress_count": "{done}/{total} done",
     "scope_EXAM_TRACK": "Which exam you are preparing for",
-    "scope_coach_writes": "Your coach can assign tasks and leave a short note under them. That note is visible to you and your coach."
+    "scope_coach_writes": "Your coach can assign tasks, leave a short note under them, and leave you a standing note of their own. Those notes are visible to you and your coach."
   }
 }
