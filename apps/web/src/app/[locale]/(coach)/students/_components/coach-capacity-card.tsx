@@ -23,6 +23,7 @@ export function CoachCapacityCard({
   activeStudents,
   maxActiveStudents,
   freeSeats,
+  paidSeats,
   sponsorshipEnabled,
   busy,
   onRotate,
@@ -31,8 +32,10 @@ export function CoachCapacityCard({
   inviteCode: MentorshipInviteCodeDto | null;
   activeStudents: number;
   maxActiveStudents: number;
-  /** How many students the coach may sponsor Premium for. */
+  /** Sponsored seats included at no cost. */
   freeSeats: number;
+  /** Extra sponsored seats the coach's own plan pays for. 0 without a seat plan. */
+  paidSeats: number;
   sponsorshipEnabled: boolean;
   busy: boolean;
   onRotate: () => void;
@@ -87,12 +90,15 @@ export function CoachCapacityCard({
         {/* The seat count is a different question from the roster cap: one says who the coach may
             follow, the other who they are paying Premium for. A coach handing out a code deserves
             to know which of the two they are about to spend. */}
-        {loaded && sponsorshipEnabled && freeSeats > 0 && (
+        {loaded && sponsorshipEnabled && freeSeats + paidSeats > 0 && (
           <p className="text-sm" style={{ color: "var(--color-body)" }}>
             {t("seats_body", {
-              used: Math.min(activeStudents, freeSeats),
-              total: freeSeats,
+              used: Math.min(activeStudents, freeSeats + paidSeats),
+              total: freeSeats + paidSeats,
             })}
+            {/* Running out of seats never blocks a link — it only stops the sponsorship, and a
+                coach reading "3/3" deserves to know the next student still joins. */}
+            {activeStudents >= freeSeats + paidSeats ? ` ${t("seats_full")}` : ""}
           </p>
         )}
         {!loaded ? (

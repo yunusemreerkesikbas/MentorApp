@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 import { AiModule } from "../ai/ai.module";
 import { CoachingModule } from "../coaching/coaching.module";
+import { PaymentsModule } from "../payments/payments.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MentorshipErasureService } from "./application/mentorship-erasure.service";
 import { MentorshipAssignmentService } from "./application/mentorship-assignment.service";
@@ -31,7 +32,11 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
 @Module({
   // AiModule for the coach brief: W8 owns the gate and the cache, W3 writes the text. Safe one
   // way — ai.module.ts imports identity/content/payments/economy/coaching/forum, never mentorship.
-  imports: [IdentityModule, CoachingModule, AiModule],
+  // PaymentsModule for the PAID seat allowance. W8 stayed free of payments while every seat was
+  // free (APP-076 kept the arrow out with events); charging for seats IS coupling, and the seat
+  // decision has to be synchronous — it happens inside the accept transaction's lock, where an
+  // event would arrive far too late. One-way still: payments imports identity/promotions/coaching.
+  imports: [IdentityModule, CoachingModule, AiModule, PaymentsModule],
   controllers: [MentorshipCoachController, MentorshipStudentController],
   providers: [
     MentorshipLinkService,

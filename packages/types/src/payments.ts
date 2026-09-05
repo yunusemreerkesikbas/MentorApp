@@ -39,6 +39,11 @@ export interface PlanDto {
   priceMinor: number;
   currency: "TRY";
   trialDays: number;
+  /**
+   * Sponsored coach seats this plan grants (W8). 0 on every student plan — a non-zero value is
+   * what makes it a coach plan, and the catalog hides those until seat billing is switched on.
+   */
+  seatCount: number;
   /** Backend-owned availability; false while the real payment provider is not active. */
   purchaseEnabled: boolean;
 }

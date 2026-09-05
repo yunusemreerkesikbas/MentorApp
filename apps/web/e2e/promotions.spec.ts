@@ -33,7 +33,8 @@ const plans: PlanDto[] = [
     currency: "TRY",
     trialDays: 7,
     // Purchase is live so the consent copy and the coupon field render.
-    purchaseEnabled: true,
+    seatCount: 0,
+  purchaseEnabled: true,
   },
 ];
 

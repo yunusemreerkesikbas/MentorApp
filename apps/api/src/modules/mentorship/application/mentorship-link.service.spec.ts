@@ -38,7 +38,9 @@ function link(overrides: Partial<MentorshipLinkRow> = {}): MentorshipLinkRow {
   };
 }
 
-function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {}) {
+function setup(
+  options: { rows?: MentorshipLinkRow[]; codeOwner?: string; paidSeats?: number } = {},
+) {
   const rows = options.rows ?? [];
   const emitted: { topic: string; payload: unknown }[] = [];
 
@@ -125,14 +127,19 @@ function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {})
     }),
   };
 
+  // Paid seats come from the coach's own plan; 0 unless a test says otherwise, which is what
+  // every coach looks like until seat billing is switched on.
+  const subscriptions = { paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0) };
+
   const service = new MentorshipLinkService(
     links as never,
     invites as never,
     users as never,
     configRegistry as never,
+    subscriptions as never,
     events as never,
   );
-  return { service, links, invites, users, configRegistry, events, emitted, rows };
+  return { service, links, invites, users, configRegistry, subscriptions, events, emitted, rows };
 }
 
 const codeOf = async (fn: () => Promise<unknown>): Promise<string> => {
@@ -256,6 +263,20 @@ describe("MentorshipLinkService", () => {
         topic: MentorshipEventTopic.LINK_ACCEPTED,
         payload: { seatKind: "NONE" },
       });
+    });
+
+    /**
+     * The paid half. `free_seats` is 1 here, so the second student can only be sponsored if the
+     * coach's own plan pays for them — and running out of seats must still not block the link.
+     */
+    it("sponsors past the free quota when the coach's plan pays for it", async () => {
+      const { service, emitted } = setup({ paidSeats: 1 });
+      await service.acceptInvitation(STUDENT, CODE);
+      expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "FREE" } });
+
+      await service.acceptInvitation(OTHER_STUDENT, CODE);
+      // Inside free + paid: sponsored, and the event says which kind paid for it.
+      expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "PAID" } });
     });
 
     it("hands out no seat at all while sponsorship is switched off", async () => {

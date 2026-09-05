@@ -2994,6 +2994,7 @@
     "scope_MOOD_LEVEL": "Your daily mood score (1-5)",
     "scope_never_title": "What your coach cannot see",
     "seats_body": "The first {total} students you link get Premium. {used} of {total} seats are taken.",
+    "seats_full": "Your seats are full; a new student still joins, but without Premium.",
     "scope_never_body": "What you tell the AI coach, your session and mood notes, your mistake notebook, your email. Those stay with you.",
     "my_coach_title": "My coach",
     "my_coach_empty_title": "You do not have a coach yet",

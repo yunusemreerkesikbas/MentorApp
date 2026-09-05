@@ -149,6 +149,45 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Ücretli koltuk — Koç Pro (APP-079, 2026-09-05)** — Sponsorlu koltuk üç öğrenciyle sınırlıydı;
+  artık koçun kendi planı fazlasını ödeyebiliyor. Koltuk hakkı = `mentorship.coach.free_seats` +
+  koçun planının `seat_count`'u.
+  **Planda `COACH_PRO` tier'ı vardı; yapılmadı, gerekmedi.** Tier'ın satın alacağı iki şey vardı:
+  koçun kendi premium'u ve koltuk hakkı. Birincisi **zaten geliyor** — `coach-pro-10` sıradan bir
+  abonelik, ACTIVE yolundan `isPremium: true` çıkıyor. İkincisi bir **sayı**, planın özelliği
+  (`plans.seat_count`, migration `0101`). Yani `SubscriptionTier` FREE|PREMIUM kaldı ve
+  `computeEntitlement` yine **hiç değişmedi**; üstündeki 18 test regresyon ağı olarak duruyor.
+  Tek açık abonelik kısıtı da korundu: koç, öğrenci planı yerine koç planına abone oluyor, ikinci
+  bir ürün doğmuyor.
+  **Koltuk bitince bağ engellenmiyor.** Planın taslağında aşım `MENTORSHIP_SEAT_REQUIRED` (409) idi;
+  yazarken yanlış olduğu görüldü. Kimin takip edilebileceği `max_active_students`, kimin Premium
+  aldığı koltuk — ikincisini duvara çevirmek roadmap §5'in "bedava koçluk araçları" sözünü
+  koçluğun kendisine konmuş bir paywall'a çevirirdi. Koltuk biterse öğrenci **bağlanır, sponsor
+  edilmez**, ve kart bunu açıkça söyler.
+  **Yeni modül oku: `mentorship → payments`.** APP-076 bu oku olaylarla kurmaktan bilerek
+  kaçınmıştı; her koltuk bedavayken bu mümkündü. Koltuğa **para** girince kuplaj zaten var demektir,
+  ve koltuk kararı kabul transaction'ının kilidi altında **senkron** verilmek zorunda — bir olay
+  oraya çok geç varırdı. Döngü yok: payments identity/promotions/coaching import ediyor,
+  mentorship'i değil (`mentorship → ai → payments` zaten vardı).
+  **`paidSeatsFor` üç şeyi reddediyor:** açık aboneliği olmayan (0), `provider = 'SPONSOR'` olan
+  (koç, koçlanıyor olmaktan koltuk türetemez) ve premium vermeyen durumlar (INCOMPLETE bir checkout
+  henüz hiçbir şey satın almamıştır).
+  **`mentorship.seats.billing_enabled` gerçek bir kapı.** Kapalıyken koç planları katalogda
+  **listelenmiyor** *ve* id'yle checkout **reddediliyor** (`PAYMENT_DISABLED`). Yalnız listeden
+  gizlemek bir UI geleneği olurdu; iyzico doğrulanmadan satın alınabilir bir plan göstermek de
+  olmayan bir akışı vaat etmek olurdu.
+  **Fiyatlar PLACEHOLDER** — 999₺/10 koltuk, 1999₺/25. Faz-0 WTP araştırması hâlâ açık (roadmap §12).
+  **Gotchas:** (1) `seat_count` `NOT NULL DEFAULT 0` olarak eklendi; Postgres 11+ varsayılanı
+  katalogda tuttuğu için dolu tabloya rağmen rewrite yok, `NOT VALID` ayrımı gerekmiyor.
+  (2) `AdminPlanDto.seatCount` **salt okunur**: koltuk sayısı bir ürün şekli, fiyat değil —
+  tıklamayla değiştirilecek bir şey olmamalı, migration kararı. (3) `PlanDto`'ya da eklendi ki
+  billing açıldığında katalog "Koç Pro 10"un ne verdiğini söyleyebilsin.
+  **İlgili:** `apps/api/drizzle/0101_w8_coach_pro_seats.sql`,
+  `modules/payments/application/subscriptions.service.ts` (`paidSeatsFor`, `listPlans`, `checkout`),
+  `modules/mentorship/application/mentorship-link.service.ts`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/coach-capacity-card.tsx`.
+
 - **Koç zekâ katmanı — AI brifingi (APP-078, 2026-09-05)** — Risk triyajı üç dilimdir kural
   temelliydi ve öyle kalıyor; brifing onun **üstüne** biniyor. `POST /v1/mentorship/students/:id/brief`
   raporun sayılarından üç bölümlük kısa bir özet yazıyor: bu hafta ne oldu, neden dikkat

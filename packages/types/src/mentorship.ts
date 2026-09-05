@@ -102,6 +102,11 @@ export interface MentorshipCoachOverviewDto {
    * paid for. A coach at 5/20 students with 3 free seats is following five and sponsoring three.
    */
   freeSeats: number;
+  /**
+   * Extra sponsored seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan.
+   * The allowance is `freeSeats + paidSeats`; past it a student is followed but not sponsored.
+   */
+  paidSeats: number;
   /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
   sponsorshipEnabled: boolean;
   dataScope: MentorshipDataScopeKey[];

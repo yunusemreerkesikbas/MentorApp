@@ -27,7 +27,8 @@ const plans: PlanDto[] = [
     priceMinor: 24900,
     currency: "TRY",
     trialDays: 7,
-    purchaseEnabled: false,
+    seatCount: 0,
+  purchaseEnabled: false,
   },
 ];
 

@@ -317,6 +317,10 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for coach-sponsored Premium. Separate from mentorship.enabled so the coach surface can open before anyone is granted paid AI on someone else's behalf.",
   ),
+  "mentorship.seats.billing_enabled": mentorshipFlag(
+    false,
+    "List the coach-pro seat plans as purchasable. Off keeps them out of the catalog AND refuses checkout on them, so no paywall promises a purchase flow the payment provider cannot yet complete.",
+  ),
   "mentorship.coach.free_seats": mentorshipCount(
     3,
     0,

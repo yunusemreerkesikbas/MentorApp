@@ -211,6 +211,16 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   student's own trial), `countByStatus` (the conversion denominator), and `checkout` (a seat is
   retired rather than raising `PAYMENT_ALREADY_SUBSCRIBED`). Revenue metrics needed no clause: they
   read the ledger, and a seat never writes one.
+- **Coach seats are a PLAN property, not a tier (W8, APP-079).** `plans.seat_count` is 0 on every
+  student plan; a non-zero value is what makes a plan a coach plan. There is no `COACH_PRO` tier
+  and `computeEntitlement` is untouched: a coach subscribes to `coach-pro-10` *instead of* a
+  student plan, holds the same one open subscription as everybody else, and gets `isPremium` from
+  the ordinary ACTIVE path. Seat allowance is read off the row they already have. If a future tier
+  ladder is ever really needed, note that this one did not require it.
+- **`mentorship.seats.billing_enabled` gates the catalog AND checkout-by-id.** Hiding seat plans
+  from `listPlans` alone would be a UI convention; `checkout` refuses them too
+  (`PAYMENT_DISABLED`), so the flag is a real gate for as long as the provider cannot complete the
+  purchase.
 - **The sponsored cohort shares the global AI budget — deliberately, for now.** Seats hand out real
   LLM spend, and `ai.budget.monthly_cap_usd_cents` is a single cap over everyone, so a large enough
   giveaway can exhaust it and start returning `AI_BUDGET_EXCEEDED` to **paying** users. No separate

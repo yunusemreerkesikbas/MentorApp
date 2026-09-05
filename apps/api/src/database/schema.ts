@@ -1747,6 +1747,15 @@ export const plans = pgTable("plans", {
   priceMinor: integer("price_minor").notNull(),
   currency: text("currency").notNull().default("TRY"),
   trialDays: integer("trial_days").notNull().default(7),
+  /**
+   * How many students this plan lets a coach sponsor Premium for, on top of the free quota (W8).
+   *
+   * 0 for every student-facing plan, which is why it is a property of the plan rather than a new
+   * product: a coach on `coach-pro-10` holds ONE open subscription like everybody else, gets
+   * `isPremium` from the ordinary ACTIVE path, and their seat allowance falls out of the row they
+   * already have. No second tier, no second subscription, no change to `computeEntitlement`.
+   */
+  seatCount: integer("seat_count").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()

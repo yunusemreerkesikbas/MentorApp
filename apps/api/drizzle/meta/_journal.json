@@ -708,6 +708,20 @@
       "when": 1788634792082,
       "tag": "0100_w8_mentorship_brief",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1788638339177,
+      "tag": "0101_w8_coach_pro_seats",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1788639087501,
+      "tag": "0102_security-hardening",
+      "breakpoints": true
     }
   ]
 }

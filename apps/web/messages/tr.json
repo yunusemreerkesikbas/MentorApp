@@ -2994,6 +2994,7 @@
     "scope_MOOD_LEVEL": "Günlük mod puanın (1-5)",
     "scope_never_title": "Koçunun göremedikleri",
     "seats_body": "Bağladığın ilk {total} öğrenci Premium'a erişir. Şu an {used}/{total} koltuk dolu.",
+    "seats_full": "Koltukların dolu; yeni öğrenci yine bağlanır ama Premium açılmaz.",
     "scope_never_body": "AI koçla konuştukların, seans ve mod notların, yanlış defterin, e-postan. Bunlar sende kalır.",
     "my_coach_title": "Koçum",
     "my_coach_empty_title": "Henüz bir koçun yok",

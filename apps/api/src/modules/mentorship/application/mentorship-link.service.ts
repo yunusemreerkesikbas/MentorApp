@@ -13,6 +13,7 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import { UsersService } from "../../identity/application/users.service";
+import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { toCoachNoteDto } from "../domain/coach-note";
 import {
   MentorshipEventTopic,
@@ -46,6 +47,7 @@ export class MentorshipLinkService {
     private readonly invites: MentorshipInviteService,
     private readonly users: UsersService,
     private readonly config: ConfigRegistryService,
+    private readonly subscriptions: SubscriptionsService,
     private readonly events: EventEmitter2,
   ) {}
 
@@ -76,19 +78,21 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, activeStudents, maxActiveStudents, freeSeats, sponsorshipEnabled] =
+    const [inviteCode, activeStudents, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats] =
       await Promise.all([
         this.invites.getCurrent(coachId),
         this.links.countActiveByCoach(coachId),
         this.config.get("mentorship.coach.max_active_students"),
         this.config.get("mentorship.coach.free_seats"),
         this.config.get("mentorship.seats.sponsorship_enabled"),
+        this.subscriptions.paidSeatsFor(coachId),
       ]);
     return {
       inviteCode,
       activeStudents,
       maxActiveStudents,
       freeSeats,
+      paidSeats,
       sponsorshipEnabled,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
     };
@@ -123,10 +127,13 @@ export class MentorshipLinkService {
     if (await this.links.findActiveByStudent(studentId)) {
       throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
     }
-    const [maxActiveStudents, freeSeats, sponsorshipEnabled] = await Promise.all([
+    const [maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats] = await Promise.all([
       this.config.get("mentorship.coach.max_active_students"),
       this.config.get("mentorship.coach.free_seats"),
       this.config.get("mentorship.seats.sponsorship_enabled"),
+      // What the coach's own plan adds on top of the free quota. 0 for everyone today: seat plans
+      // stay unpurchasable until `mentorship.seats.billing_enabled` and a verified provider.
+      this.subscriptions.paidSeatsFor(coachId),
     ]);
 
     let outcome: Awaited<ReturnType<MentorshipLinkRepository["acceptInvite"]>>;
@@ -148,14 +155,20 @@ export class MentorshipLinkService {
     }
     const { link, activeBefore } = outcome;
 
-    // The seat, decided from the count taken under the accept lock. Beyond the free quota the
-    // student is simply followed, not sponsored — a PAID seat needs a seat plan, which is a later
-    // slice. Sponsorship has its own flag so the coach surface can open before anyone is handed
-    // Premium on someone else's behalf.
-    const seatKind: MentorshipSeatKind =
-      sponsorshipEnabled && activeBefore < freeSeats
+    // The seat, decided from the count taken under the accept lock.
+    //
+    // Beyond the whole allowance the student is simply FOLLOWED, not sponsored — running out of
+    // seats never blocks a link. Who a coach may follow is `max_active_students`; who gets Premium
+    // is this. Turning the second into a wall would make the free tooling roadmap §5 promises into
+    // a paywall on coaching itself.
+    const allowance = freeSeats + paidSeats;
+    const seatKind: MentorshipSeatKind = !sponsorshipEnabled
+      ? MentorshipSeatKind.NONE
+      : activeBefore < freeSeats
         ? MentorshipSeatKind.FREE
-        : MentorshipSeatKind.NONE;
+        : activeBefore < allowance
+          ? MentorshipSeatKind.PAID
+          : MentorshipSeatKind.NONE;
 
     const people = await this.users.listDisplayIdentities([coachId, studentId]);
     this.events.emit(

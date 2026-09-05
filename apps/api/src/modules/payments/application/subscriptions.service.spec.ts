@@ -40,6 +40,7 @@ const plan = {
   priceMinor: 24900,
   currency: "TRY",
   trialDays: 7,
+  seatCount: 0,
   isActive: true,
 };
 
@@ -100,6 +101,8 @@ describe("SubscriptionsService payment availability", () => {
       {} as never,
       {} as never,
       config as never,
+      // The DB-backed registry: seat billing off, like production.
+      { get: vi.fn(async () => false) } as never,
       paymentProvider as never,
       {} as never,
     );
@@ -167,6 +170,8 @@ describe("SubscriptionsService checkout with a promotion", () => {
       { listActiveDatesSince: vi.fn(async () => []) } as never,
       {} as never,
       config as never,
+      // The DB-backed registry: seat billing off, like production.
+      { get: vi.fn(async () => false) } as never,
       paymentProvider as never,
       {} as never,
     );
@@ -345,6 +350,7 @@ describe("SubscriptionsService plan catalog admin", () => {
       priceMinor: 24900,
       currency: "TRY",
       trialDays: 7,
+      seatCount: 0,
       isActive: true,
     };
     const plansRepo = {

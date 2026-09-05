@@ -13,6 +13,7 @@ const plan: PlanDto = {
   priceMinor: 24900,
   currency: "TRY",
   trialDays: 7,
+  seatCount: 0,
   purchaseEnabled: true,
 };
 
