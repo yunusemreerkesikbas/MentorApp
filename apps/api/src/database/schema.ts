@@ -185,6 +185,20 @@ export const coachStudents = pgTable(
      */
     coachNote: text("coach_note"),
     coachNoteAt: timestamp("coach_note_at", { withTimezone: true }),
+    /**
+     * The coach's last AI brief about this student (W8), cached on the link.
+     *
+     * No table of its own: it is one text per relationship, overwritten in place, the same shape
+     * as `coach_note` above. Living on the link is also the whole KVKK story — erasure deletes
+     * link rows outright, so the brief goes with them and the erasure service needs no clause.
+     *
+     * `brief_fingerprint` hashes the report the brief was written from, so an unchanged report
+     * returns the stored text instead of paying for the same summary twice. Cleared by `end()`
+     * for the same reason the note is: re-linking revives this very row.
+     */
+    brief: text("brief"),
+    briefAt: timestamp("brief_at", { withTimezone: true }),
+    briefFingerprint: text("brief_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

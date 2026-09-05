@@ -701,6 +701,13 @@
       "when": 1788608418203,
       "tag": "0099_w8_sponsored_seat",
       "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1788634792082,
+      "tag": "0100_w8_mentorship_brief",
+      "breakpoints": true
     }
   ]
 }

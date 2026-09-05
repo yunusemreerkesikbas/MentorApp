@@ -741,6 +741,15 @@ export const CONFIG_CATALOG = {
     100000,
     "Free-user weekly narrations per 7-day window when the taste flag is on.",
   ),
+  "ai.features.mentorship.brief.free_enabled": flag(
+    false,
+    "Allow a coach without Pro a capped taste of the AI student brief.",
+  ),
+  "ai.features.mentorship.brief.free_limit": aiCount(
+    1,
+    100000,
+    "Briefs per day for a coach on the free taste. Charged to the COACH, not the student.",
+  ),
   "ai.features.daily.greeting.free_enabled": flag(
     false,
     "Allow free users a capped daily AI greeting taste.",

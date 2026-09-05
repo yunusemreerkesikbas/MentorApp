@@ -180,6 +180,12 @@ export class MentorshipLinkRepository {
           endedBy,
           coachNote: null,
           coachNoteAt: null,
+          // The brief goes with the note, and for the same reason: re-linking revives this very
+          // row, and an AI summary of a relationship both sides walked away from must not
+          // reappear months later as if it described the new one.
+          brief: null,
+          briefAt: null,
+          briefFingerprint: null,
           updatedAt: now,
         })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
@@ -199,6 +205,18 @@ export class MentorshipLinkRepository {
         .returning();
       return rows[0];
     });
+  }
+
+  /** Store a freshly written brief with the fingerprint of the report it was written from. */
+  async setBrief(linkId: string, brief: string, fingerprint: string): Promise<Date> {
+    const now = new Date();
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(coachStudents)
+        .set({ brief, briefAt: now, briefFingerprint: fingerprint, updatedAt: now })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")));
+    });
+    return now;
   }
 
   /**

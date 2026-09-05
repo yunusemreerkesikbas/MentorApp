@@ -149,6 +149,54 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Koç zekâ katmanı — AI brifingi (APP-078, 2026-09-05)** — Risk triyajı üç dilimdir kural
+  temelliydi ve öyle kalıyor; brifing onun **üstüne** biniyor. `POST /v1/mentorship/students/:id/brief`
+  raporun sayılarından üç bölümlük kısa bir özet yazıyor: bu hafta ne oldu, neden dikkat
+  gerektiriyor, koç ne yapabilir.
+  **Aktör özne değil — katalogdaki ilk özellik.** `PremiumFeatureGateService.assertAllowed` kotayı
+  **isteyen** kullanıcıya yazar; burada isteyen koç, konu öğrenci. Kota, roller ve `ai_usage` satırı
+  hep **koça** ait. Öğrencinin tier'ı hiç sorulmuyor: brifingi o istemedi, bedelini de ne kotayla ne
+  parayla ödemeli. Bu, entitlement modelinin bugüne kadar hiç modellemediği bir ayrım; yeni bir
+  mekanizma gerektirmedi çünkü doğru cevap "koçu geçir"di.
+  **Yetki W8'de, metin W3'te.** `MentorshipBriefService` (W8) kapıyı ve önbelleği tutuyor,
+  `MentorshipBriefService` (W3) yalnız yazıyor. AI servisi **hazır yetkilendirilmiş raporu argüman
+  olarak alıyor** — kendi başına veri çekmiyor. Böylece `requireActiveLink`'i kazara bile atlayamaz
+  ve koç bağının ne olduğunu hiç öğrenmez. Ok tek yönlü: `mentorship → ai`; `ai.module.ts`
+  mentorship'i import etmiyor, döngü yok.
+  **Güven çizgisi:** prompt'a giden tek şey `MentorshipStudentReportDto`, yani
+  `cohort-evidence.ts`'in zaten çizdiği sözleşme. Ek olarak **isim de gitmiyor** (model, adını
+  bildiği birini tanıdığını sanarak yazmaya başlıyor) ve **koçun kendi notu da gitmiyor** (geri
+  beslersen model sayılara bakmak yerine nota katılıyor).
+  **Kayıt: `MENTORSHIP_DATA_SCOPE`'a `AI_BRIEF`.** Brifing yeni bir kolon **okumuyor** — zaten
+  kapsamdaki verilerden türüyor — ama **yöntem** yeni, ve "bir LLM benim hakkımda başkası için yazı
+  yazıyor" bir öğrencinin "koçum aktivitemi görüyor"dan çıkarabileceği bir şey değil. Liste API'den
+  geldiği için hem onay ekranı hem koçun aynası kendiliğinden güncellendi. Mevcut bağlar için kapsam
+  genişlemesi: bayrak kapalı ve üretimde bağ yokken maliyeti sıfır (APP-066'nın `EXAM_TRACK` anı).
+  **Önbellek link satırında, yeni tablo yok.** `coach_students.brief` + `brief_at` +
+  `brief_fingerprint` (migration `0100`) — `coach_note` ile birebir aynı şekil ve aynı gerekçe.
+  Parmak izi raporun **şekillendirilmiş** hâlini hashliyor, yani brifingin hiç görmediği bir alan
+  önbelleği bozamıyor ve `MENTORSHIP_BRIEF_PROMPT_VERSION` hash'in içinde olduğu için sürümü
+  yükseltmek hepsini bir anda geçersiz kılıyor. **KVKK bedava:** erasure link satırlarını siliyor,
+  brifing onlarla gidiyor; erasure servisine tek satır eklenmedi. `end()` üçünü de temizliyor —
+  yeniden bağlanma bu satırı canlandırıyor.
+  **Register yeni.** Modüldeki diğer bütün prompt'lar öğrenciye "sen" diye sesleniyor
+  (`companionPromptSystem` / `companionCoachOpening`). Bu, üçüncü bir kişi hakkında bir başkasına
+  yazıyor; o sıcaklığı ödünç almak öğrenciyle konuşuyormuş gibi bir brifing üretirdi. Kendi kuralları
+  var: risk flag'lerini yeniden adlandırma/çelişme yasak (kural motoru taban), `moodTrend`'den teşhis
+  veya kişilik çıkarma yasak, resmi bilgi üretme yasak, veri inceyse "ince" de.
+  **Gotchas:** (1) Uç **POST**, GET değil: LLM çağrısı ve kota harcıyor, bir sayfa yüklemesi ya da
+  prefetch tetikleyememeli. Kart da mount'ta hiçbir şey istemiyor. (2) Throttle 10/dk — ödev
+  ucundan (20/dk) daha sıkı, çünkü bu çağrı başına para harcıyor. (3) Ekonomi:
+  `ai.features.mentorship.brief.free_{enabled,limit}`, ikisi de admin'den; free_enabled varsayılan
+  **kapalı**. (4) `AiUsageFeature.MENTORSHIP_BRIEF` satırları **koçun** id'siyle yazılıyor, admin AI
+  maliyet tablosunda "Koç brifingi" olarak görünüyor.
+  **İlgili:** `apps/api/drizzle/0100_w8_mentorship_brief.sql`,
+  `modules/ai/{domain/mentorship-brief-prompt.ts,application/mentorship-brief.service.ts}`,
+  `modules/mentorship/application/mentorship-brief.service.ts`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/brief-card.tsx`,
+  [`ai.md`](./ai.md), [`payments.md`](./payments.md).
+
 - **Sponsorluk görünürlüğü ve acil fren (APP-077, 2026-09-05)** — APP-076
   `mentorship.coach.free_seats`'i "tüm maliyet riskini tutan tek düğme" diye tanımladı ama o
   düğmenin ne yaptığını gösteren hiçbir şey yoktu: `countByStatus()` sponsor satırlarını *aktif

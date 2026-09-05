@@ -5,6 +5,7 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { CommunityCoachPlanTaskService } from "./application/community-coach-plan-task.service";
 import { PremiumFeatureGateService } from "./application/premium-feature-gate.service";
+import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -107,6 +108,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     WeeklyReviewNarrationService,
     PhotoAccessService,
     PremiumFeatureGateService,
+    MentorshipBriefService,
     PhotoCategorizeService,
     PhotoUploadService,
     ContextBuilder,
@@ -188,6 +190,13 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
       },
     },
   ],
-  exports: [AiCostStatsService, CoachFeedbackStatsService, AiErasureService],
+  // MentorshipBriefService is exported for W8, which owns the coach↔student gate and the cache;
+  // this module only writes the text. The arrow is one-way: AI does not import MentorshipModule.
+  exports: [
+    AiCostStatsService,
+    CoachFeedbackStatsService,
+    AiErasureService,
+    MentorshipBriefService,
+  ],
 })
 export class AiModule {}

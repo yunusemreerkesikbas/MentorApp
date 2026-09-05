@@ -85,6 +85,12 @@ export const PremiumFeatureId = {
   WEEKLY_NARRATION: "weekly.narration",
   DAILY_GREETING: "daily.greeting",
   DEEP_ANALYSIS: "deep.analysis",
+  /**
+   * The coach's AI brief over a student's report (W8). The only feature in this catalog whose
+   * ACTOR and SUBJECT differ: the coach asks, the coach's quota is charged, the coach's roles
+   * decide access — the student's tier is irrelevant to it.
+   */
+  MENTORSHIP_BRIEF: "mentorship.brief",
 } as const;
 export type PremiumFeatureId =
   (typeof PremiumFeatureId)[keyof typeof PremiumFeatureId];
@@ -100,6 +106,7 @@ export const PREMIUM_FEATURE_IDS = [
   PremiumFeatureId.WEEKLY_NARRATION,
   PremiumFeatureId.DAILY_GREETING,
   PremiumFeatureId.DEEP_ANALYSIS,
+  PremiumFeatureId.MENTORSHIP_BRIEF,
 ] as const satisfies readonly PremiumFeatureId[];
 
 export const FeaturePolicyWindow = {

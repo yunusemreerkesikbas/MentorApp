@@ -1,6 +1,7 @@
 import type {
   MentorshipCoachOverviewDto,
   MentorshipInviteCodeDto,
+  MentorshipBriefDto,
   MentorshipInvitationPreviewDto,
   MentorshipProgramTemplateDto,
   MentorshipProgramTemplateTaskDto,
@@ -110,6 +111,18 @@ export async function deleteTemplate(templateId: string): Promise<void> {
   await http<void>(`/v1/mentorship/templates/${encodeURIComponent(templateId)}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * Ask for the AI brief on one student. POST because it may spend an LLM call and a quota unit —
+ * never something a page load can trigger. The API returns `model: "cache"` when the report has
+ * not moved since the last one.
+ */
+export async function generateBrief(studentId: string): Promise<MentorshipBriefDto> {
+  return (await http<MentorshipBriefDto>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief`,
+    { method: "POST" },
+  )) as MentorshipBriefDto;
 }
 
 // --- student side -------------------------------------------------------------------------

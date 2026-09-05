@@ -11,6 +11,7 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endStudentLink, fetchStudentReport } from "@/lib/mentorship";
 import { AssignTaskForm } from "./assign-task-form";
+import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
 import {
   formatDate,
@@ -139,6 +140,10 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
           )}
         </div>
       </div>
+
+      {/* Above the note and the composer: the brief is what a coach reads before deciding what to
+          write. It sits BELOW the risk chips, which stay the deterministic floor it summarizes. */}
+      <BriefCard studentId={studentId} />
 
       <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
 
