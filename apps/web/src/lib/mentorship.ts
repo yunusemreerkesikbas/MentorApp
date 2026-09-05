@@ -1,4 +1,5 @@
 import type {
+  MentorshipCoachOverviewDto,
   MentorshipInviteCodeDto,
   MentorshipInvitationPreviewDto,
   MentorshipRosterRowDto,
@@ -18,13 +19,14 @@ import { http } from "@mentor/api-client";
 
 // --- coach side ---------------------------------------------------------------------------
 
-/** The coach's current invite code, or null when they have never issued one. */
-export async function fetchInviteCode(): Promise<MentorshipInviteCodeDto | null> {
-  return (
-    ((await http<MentorshipInviteCodeDto>("/v1/mentorship/invite-code")) as
-      | MentorshipInviteCodeDto
-      | undefined) ?? null
-  );
+/**
+ * The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract.
+ * One call, because the roster header renders all three together.
+ */
+export async function fetchOverview(): Promise<MentorshipCoachOverviewDto> {
+  return (await http<MentorshipCoachOverviewDto>(
+    "/v1/mentorship/overview",
+  )) as MentorshipCoachOverviewDto;
 }
 
 /** Issue a fresh code. The previous one stops working immediately. */

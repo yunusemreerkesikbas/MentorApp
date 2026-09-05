@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   MENTORSHIP_DATA_SCOPE,
+  type MentorshipCoachOverviewDto,
   type MentorshipInvitationPreviewDto,
   type MentorshipLinkStatus,
   type MyCoachDto,
@@ -63,6 +64,28 @@ export class MentorshipLinkService {
       throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return link;
+  }
+
+  /**
+   * The coach's landing state: invite code, seats taken out of the cap, and the same data-scope
+   * contract the student consented to, mirrored back.
+   *
+   * The seat numbers exist because the quota is checked on the STUDENT's redemption
+   * ({@link acceptInvitation}), so without them the cap is invisible to the only person who can
+   * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
+   */
+  async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
+    const [inviteCode, activeStudents, maxActiveStudents] = await Promise.all([
+      this.invites.getCurrent(coachId),
+      this.links.countActiveByCoach(coachId),
+      this.config.get("mentorship.coach.max_active_students"),
+    ]);
+    return {
+      inviteCode,
+      activeStudents,
+      maxActiveStudents,
+      dataScope: [...MENTORSHIP_DATA_SCOPE],
+    };
   }
 
   /**

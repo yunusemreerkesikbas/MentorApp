@@ -73,6 +73,23 @@ export const MENTORSHIP_DATA_SCOPE: readonly MentorshipDataScopeKey[] = [
 ];
 
 /**
+ * The coach's own landing state: their invite code, how many of their seats are taken, and the
+ * mirror of what the student consented to hand over.
+ *
+ * `dataScope` travels from the API rather than being imported from this package by the coach UI,
+ * for the same reason {@link MentorshipInvitationPreviewDto} carries it: the two screens describe
+ * one contract, and a client-side copy of the list is a second place for it to drift.
+ */
+export interface MentorshipCoachOverviewDto {
+  /** Null when the coach has never issued one. */
+  inviteCode: MentorshipInviteCodeDto | null;
+  activeStudents: number;
+  /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
+  maxActiveStudents: number;
+  dataScope: MentorshipDataScopeKey[];
+}
+
+/**
  * The coach's standing note to their student. One note, overwritten in place — not a thread:
  * Phase-2 communication stays off-platform and in-app chat is Phase 3 (roadmap §9).
  */

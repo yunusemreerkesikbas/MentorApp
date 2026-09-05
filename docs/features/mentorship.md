@@ -77,7 +77,7 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 
 ```http
 ### Coach
-GET    /v1/mentorship/invite-code                  -> { code, expiresAt } | (empty = none yet)
+GET    /v1/mentorship/overview                     -> { inviteCode, activeStudents, maxActiveStudents, dataScope }
 POST   /v1/mentorship/invite-code                  -> rotates; the previous code stops working
 GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipRosterRowDto>
 PUT    /v1/mentorship/students/:studentId/note     -> 204  { body: string | null }
@@ -98,7 +98,8 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET/POST /v1/mentorship/invite-code` | Read or rotate the coach's single invite code (`@Roles(COACH)`) |
+| `GET /v1/mentorship/overview` | The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract mirrored back to them (`@Roles(COACH)`) |
+| `POST /v1/mentorship/invite-code` | Rotate the code; the previous one stops working immediately (`@Roles(COACH)`) |
 | `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
 | `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
 | `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
@@ -141,6 +142,54 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Roster'dan kokpite — kohort özeti, kontenjan ve kapsam aynası (APP-073, 2026-09-05)** — Roster
+  bir liste idi; roadmap §9'un "koç panele girince **kim geride, neden, ne yapmalı** öne çıkar"
+  vaadinin yalnız ilk üçte biri karşılanıyordu. Aynı ekrana üç şey eklendi ve hiçbiri yeni bir
+  sorgu istemiyor.
+  **Bloklayıcı bulgu — kontenjanın faturası öğrenciye kesiliyordu.**
+  `mentorship.coach.max_active_students` (20) yalnız `acceptInvite` içinde kontrol ediliyor, yani
+  tavanı **üzerinde hiçbir tasarrufu olmayan taraf** öğreniyordu: koç kodu paylaşıyor, 21. öğrenci
+  409 yiyor, koç bunu hiç duymuyor. `GET /v1/mentorship/invite-code` yerine
+  `GET /v1/mentorship/overview` geldi (`inviteCode` + `activeStudents` + `maxActiveStudents` +
+  `dataScope`); davet kartı artık "3/20 öğrenci" diyor, dolu iken de bunu söylüyor.
+  **Sayımın tek tanımı var.** `acceptInvite`'in advisory lock'u içindeki ACTIVE sayımı modül-özel
+  `countActive(tx, coachId)` fonksiyonuna çıkarıldı; `countActiveByCoach` onu kendi
+  `withServiceContext`'i içinde çağırıyor. Ayrı bir sayım yazmak, başlığın vaat ettiği koltuğu
+  kabulün reddettiği bir durum üretebilirdi.
+  **Kohort bandı backend'siz.** Sayfa zaten `pageSize=100` ile tüm ACTIVE satırları çekiyor (kota
+  20), dolayısıyla özet saf bir fonksiyon: `summarizeCohort` → ilgi bekleyen sayısı, flag dağılımı
+  ve plan uyumu ortalaması. **Ortalama `planCompletionRate7d === null` satırlarını paydadan
+  düşürüyor**, sıfır saymıyor: aksi halde plan ekranını hiç açmamış bir kohort "plan yapıp
+  tutturamayan" bir kohort gibi okunur, ve koç yanlış soruna müdahale ederdi. Payda da ekranda
+  duruyor ("%50 (2 öğrenci)") — 2 kişiden alınan ortalama 20 kişiden alınanla aynı iddia değil.
+  **"Ne yapmalı" öğrenci başına tek satır**, en kötü flag'e göre. Kod tablosu yok: eşleme `action_{FLAG}`
+  i18n anahtarının kendisi. En kötü flag'i **istemci seçmek zorunda**, çünkü `evaluateRiskFlags`
+  değerlendirme sırasıyla dönüyor (PLAN_SLIPPING, LOW_MOOD'dan önce) ama şiddet sırası tersi;
+  `compareByRisk` satırları sıralıyor, bir satırın içindeki flag'leri hiç sıralamıyor.
+  **Kapsam aynası.** Öğrenci kabul öncesi tam onam ekranı görüyordu, koç ise boş bir listeye
+  düşüyordu — güven çizgisinin kaldıramayacağı tek asimetri, veriyi **alan** tarafın sınırları
+  hakkında **veren** taraftan az bilmesi. `dataScope` koç tarafında da API'den geliyor, sabitten
+  değil; iki ekran tek sözleşmeyi anlatıyor ve istemcideki ikinci bir kopya sürüklenecek ikinci
+  bir yer olurdu. Kart `<details>`, state hook'u yok, ve boş roster'da açık açılıyor.
+  **Gotchas:** (1) Öneri satırı **düz metin**, link değil: kartın tamamı zaten rapora giden bir
+  `<Link>` ve içine ikinci bir `<a>` koymak geçersiz HTML üretirdi. Rapor sayfasında not alanı ve
+  besteci zaten yan yana duruyor, çapa kazancı bir kaydırma. (2) `FLAG_ORDER` API'nin `SEVERITY`
+  dizisinin kopyası; paylaşılmadı çünkü sınırı yalnız sunum için geçiyor — sürüklenirse çipler
+  yeniden sıralanır, hiçbir şey yanlış sayılmaz. (3) `?status=ENDED` sekmesinde özet bandı
+  render **edilmiyor**: o satırların `metrics`'i zaten `null` ve kapanmış bir pencereyi özetlemek
+  "metrics null" kuralını arka kapıdan delerdi. (4) Kontenjan doluyken **kod yenileme
+  engellenmedi**: dolu bir roster de boşalır, ve engellemek sunucuda olmayan bir kural icat etmek
+  olurdu. (5) `roster-shell.tsx` 320 → 170 satır; `StudentCard` kendi dosyasına çıktı ve
+  `(coach)` grubu ilk kez sayfaya özel iskeletine kavuştu (frontend.md § Loading skeletons).
+  (6) `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` kopyası çıkmaz sokaktı ("Bu koçun öğrenci kontenjanı
+  dolu."); `MENTORSHIP_INVITE_EXPIRED`'ın deseniyle sonraki adım eklendi.
+  **İlgili:** `modules/mentorship/{application/mentorship-link.service.ts,infrastructure/mentorship-link.repository.ts,presentation/mentorship-coach.controller.ts}`,
+  `packages/types/src/mentorship.ts` (`MentorshipCoachOverviewDto`),
+  `apps/api/src/i18n/locales/{tr,en}/errors.json`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/{cohort-summary.ts,cohort-summary-card.tsx,coach-capacity-card.tsx,coach-scope-card.tsx,student-card.tsx,roster-content-skeleton.tsx,roster-shell.tsx}`,
+  `apps/web/src/lib/mentorship.ts`, `apps/web/messages/{tr,en}.json`,
+  [`mvp-status.md`](../core/mvp-status.md) (W8 satırı eklendi).
 
 - **Mentorship'in tarayıcı kapsamı (APP-072, 2026-09-04)** — 24 Playwright spec'i vardı ve
   hiçbiri mentorship'e değmiyordu; W8'in en yeni yüzeyi aynı zamanda tarayıcıda hiç koşmayan
@@ -504,8 +553,9 @@ flag that cries wolf costs the coach more than it gives.
 
 - **Role changes need a re-login.** `TokenService.loadPrincipal` re-reads roles on refresh, so a
   freshly granted COACH sees the surface only after their next refresh or login.
-- **Empty 200, not `null` JSON.** `GET /invite-code` and `GET /my-coach` return an empty body when
-  there is nothing. The shared `http()` client already tolerates this (`res.json().catch(…)`).
+- **Empty 200, not `null` JSON.** `GET /my-coach` returns an empty body when there is nothing. The
+  shared `http()` client already tolerates this (`res.json().catch(…)`). `GET /overview` does not
+  share the quirk: it always returns an object, with `inviteCode: null` inside it.
 - **Three ways to change a task, not two.** Besides the row menu and the calendar sheet, the AI
   plan adaptation (`POST /v1/plan-tasks/adapt`) can MOVE a task to another day. Coach-assigned
   tasks are filtered out of the adaptation snapshot so they are never proposed, and the apply path

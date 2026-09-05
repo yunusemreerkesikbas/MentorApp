@@ -134,6 +134,63 @@ test.describe("koç tarafı", () => {
     expect(copied).toContain(`/kocluk-daveti?code=${INVITE_CODE}`);
   });
 
+  test("kokpit kohortu özetler ve öğrenci başına tek öneri verir", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      roster: [
+        rosterRow("Ada", ["PLAN_SLIPPING", "LOW_MOOD"], 0.2),
+        rosterRow("Bora", ["INACTIVE"], null),
+        rosterRow("Cem", [], 0.8),
+      ],
+    });
+    await page.goto("/kocluk");
+
+    await expect(page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor.")).toBeVisible();
+    // The average leaves Bora out: he planned nothing, and counting that as 0% would report a
+    // cohort that never opened the plan screen as one that plans and fails.
+    await expect(page.getByText("Plan uyumu %50 (2 öğrenci)")).toBeVisible();
+
+    // Severity order, not the order the API happened to evaluate the flags in: the roster row
+    // for Ada lists PLAN_SLIPPING first, and the breakdown still puts INACTIVE at the front.
+    const chips = page.getByRole("list", { name: "Risk dağılımı" }).getByRole("listitem");
+    await expect(chips).toHaveText(["Sessiz · 1", "Morali düşük · 1", "Plan aksıyor · 1"]);
+
+    // One suggestion per student, for their worst flag — LOW_MOOD outranks PLAN_SLIPPING even
+    // though the API lists it second.
+    await expect(page.getByText("Ona bir not bırak, bu haftanın yükünü hafiflet.")).toBeVisible();
+    await expect(page.getByText("Bu haftanın ödevini hafiflet.")).toHaveCount(0);
+  });
+
+  test("kontenjan koça görünür ve dolduğunda söylenir", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      roster: [rosterRow("Ada", [], 0.5), rosterRow("Bora", [], 0.5)],
+      maxActiveStudents: 2,
+    });
+    await page.goto("/kocluk");
+
+    // The quota is enforced on the STUDENT's redemption, so the coach's own screen is the only
+    // place they can learn about it before handing the code to someone who will be refused.
+    await expect(page.getByText("2/2 öğrenci")).toBeVisible();
+    await expect(page.getByText("Kontenjanın dolu.", { exact: false })).toBeVisible();
+    // A full roster still empties; rotating is not blocked.
+    await expect(page.getByRole("button", { name: "Yeni kod üret" })).toBeEnabled();
+  });
+
+  test("koç kendi veri kapsamını okuyabilir", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    await page.goto("/kocluk");
+
+    // Open by default on an empty roster: the coach's first screen is the one moment they have
+    // nothing else to read, and the student saw this same contract before consenting.
+    await expect(page.getByText("Günlük mod puanı (1-5)")).toBeVisible();
+    await expect(
+      page.getByText("Öğrencinin AI koçla konuştukları", { exact: false }),
+    ).toBeVisible();
+  });
+
   test("rapor silinen ödevi gösterir, çünkü yaşayan plan gösteremez", async ({ page }) => {
     await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto(`/kocluk/${STUDENT_ID}`);
@@ -172,6 +229,38 @@ test.describe("koç tarafı", () => {
   });
 });
 
+/**
+ * One ACTIVE roster row. Metrics carry the numbers the header's cohort band averages; `riskFlags`
+ * drives both the flag counts and the per-student suggestion.
+ */
+function rosterRow(
+  name: string,
+  riskFlags: string[],
+  planCompletionRate7d: number | null,
+): Record<string, unknown> {
+  return {
+    linkId: `link-${name}`,
+    studentId: `${name}-id`,
+    studentDisplayName: name,
+    studentUsername: null,
+    status: "ACTIVE",
+    acceptedAt: "2026-09-01T00:00:00.000Z",
+    endedAt: null,
+    riskFlags,
+    metrics: {
+      lastActiveDate: daysFromToday(-1),
+      currentStreak: 2,
+      focusMinutes7d: 120,
+      sessions7d: 4,
+      activeDays7d: 3,
+      planCompletionRate7d,
+      latestMockNet: 55,
+      latestMockAt: daysFromToday(-2),
+      moodLevel7dAvg: 4,
+    },
+  };
+}
+
 /** A date offset from today in the browser's own calendar, as `yyyy-mm-dd`. */
 function daysFromToday(offset: number): string {
   const now = new Date();
@@ -187,6 +276,9 @@ async function mockApi(
     roles: AuthUser["roles"];
     myCoach: typeof MY_COACH | null;
     disabled?: boolean;
+    /** ACTIVE roster rows. The header's summary and seat count are both derived from these. */
+    roster?: ReturnType<typeof rosterRow>[];
+    maxActiveStudents?: number;
   },
 ) {
   const user = makeUser(options.roles);
@@ -292,11 +384,17 @@ async function mockApi(
       acceptCalls += 1;
       return json(route, MY_COACH);
     }
-    if (method === "GET" && path === "/v1/mentorship/invite-code") {
-      return json(route, { code: INVITE_CODE, expiresAt: "2026-09-30T00:00:00.000Z" });
+    if (method === "GET" && path === "/v1/mentorship/overview") {
+      return json(route, {
+        inviteCode: { code: INVITE_CODE, expiresAt: "2026-09-30T00:00:00.000Z" },
+        activeStudents: options.roster?.length ?? 0,
+        maxActiveStudents: options.maxActiveStudents ?? 20,
+        dataScope: DATA_SCOPE,
+      });
     }
     if (method === "GET" && path.startsWith("/v1/mentorship/students?")) {
-      return json(route, { items: [], total: 0, page: 1, pageSize: 100 });
+      const items = path.includes("status=ACTIVE") ? (options.roster ?? []) : [];
+      return json(route, { items, total: items.length, page: 1, pageSize: 100 });
     }
     if (method === "GET" && path === `/v1/mentorship/students/${STUDENT_ID}`) {
       return json(route, report);

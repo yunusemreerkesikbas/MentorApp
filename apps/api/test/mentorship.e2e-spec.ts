@@ -119,19 +119,33 @@ describe("mentorship (e2e)", () => {
   });
 
   it("requires auth everywhere", async () => {
-    expect((await http().get("/v1/mentorship/invite-code")).status).toBe(401);
+    expect((await http().get("/v1/mentorship/overview")).status).toBe(401);
     expect((await http().get("/v1/mentorship/my-coach")).status).toBe(401);
   });
 
   it("keeps the coach surface behind the COACH role", async () => {
-    expect((await http().get("/v1/mentorship/invite-code").set(auth("student"))).status).toBe(403);
+    expect((await http().get("/v1/mentorship/overview").set(auth("student"))).status).toBe(403);
     expect((await http().get("/v1/mentorship/students").set(auth("student"))).status).toBe(403);
   });
 
-  it("a coach with no code yet gets null, not a 404", async () => {
-    const res = await http().get("/v1/mentorship/invite-code").set(auth("coach"));
+  it("shows a fresh coach an empty seat count and the scope they are bound by", async () => {
+    const res = await http().get("/v1/mentorship/overview").set(auth("coach"));
     expect(res.status).toBe(200);
-    expect(res.body).toEqual({});
+    expect(res.body.inviteCode).toBeNull();
+    expect(res.body.activeStudents).toBe(0);
+    // The cap the STUDENT's redemption is refused on has to be the number the coach reads, or
+    // the header would promise a seat the accept denies.
+    expect(res.body.maxActiveStudents).toBeGreaterThan(0);
+    // Spelled out rather than compared against the exported constant: a test that reads the same
+    // constant the endpoint reads proves nothing about the contract. Both halves of the double
+    // opt-in must describe the SAME list, so the literal lives in both assertions.
+    expect(res.body.dataScope).toEqual([
+      "ACTIVITY",
+      "MOCK_EXAMS",
+      "PLAN_TASK_TITLES",
+      "MOOD_LEVEL",
+      "EXAM_TRACK",
+    ]);
   });
 
   it("issues an invite code the student can preview before consenting", async () => {
@@ -198,6 +212,14 @@ describe("mentorship (e2e)", () => {
 
     const other = await http().get("/v1/mentorship/students").set(auth("coach2"));
     expect(other.body.total).toBe(0);
+
+    // The seat counter is what makes the quota visible to the coach, so it has to move with the
+    // roster rather than being a number the header computes on its own.
+    const overview = await http().get("/v1/mentorship/overview").set(auth("coach"));
+    expect(overview.body.activeStudents).toBe(1);
+    expect(overview.body.inviteCode.code).toBe(inviteCode);
+    expect((await http().get("/v1/mentorship/overview").set(auth("coach2"))).body.activeStudents)
+      .toBe(0);
   });
 
   it("carries the roster metrics a coach acts on", async () => {
@@ -806,6 +828,7 @@ describe("mentorship (e2e)", () => {
       expect(roster.body.code).toBe("MENTORSHIP_DISABLED");
       expect((await http().get("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(403);
       expect((await http().post("/v1/mentorship/invite-code").set(auth("coach"))).status).toBe(403);
+      expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).status).toBe(403);
     } finally {
       await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
     }

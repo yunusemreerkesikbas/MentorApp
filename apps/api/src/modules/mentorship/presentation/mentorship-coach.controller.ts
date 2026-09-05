@@ -14,6 +14,7 @@ import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   UserRole,
+  type MentorshipCoachOverviewDto,
   type MentorshipInviteCodeDto,
   type MentorshipLinkStatus,
   type MentorshipRosterRowDto,
@@ -53,10 +54,17 @@ export class MentorshipCoachController {
     private readonly assignments: MentorshipAssignmentService,
   ) {}
 
-  @Get("invite-code")
-  async getInviteCode(@CurrentUser() user: RequestUser): Promise<MentorshipInviteCodeDto | null> {
+  /**
+   * The coach's landing state in one call: invite code, seats taken, and the data-scope contract.
+   *
+   * Replaces the older `GET /invite-code`, which could only ever answer half the question - a coach
+   * whose roster is full needs to know that before handing the code to a 21st student, not after
+   * that student is refused.
+   */
+  @Get("overview")
+  async getOverview(@CurrentUser() user: RequestUser): Promise<MentorshipCoachOverviewDto> {
     await this.links.assertEnabled();
-    return this.invites.getCurrent(user.id);
+    return this.links.getCoachOverview(user.id);
   }
 
   @Post("invite-code")
