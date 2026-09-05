@@ -121,6 +121,25 @@ export function MyCoachShell() {
             </div>
           </Card>
 
+          {coach.coachNote ? (
+            <Card>
+              <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+                {t("my_coach_note_title")}
+              </h2>
+              <p className="whitespace-pre-line text-sm" style={{ color: "var(--color-main)" }}>
+                {coach.coachNote.body}
+              </p>
+              <p className="mt-2 text-xs" style={{ color: "var(--color-secondary)" }}>
+                {t("my_coach_note_since", {
+                  date: new Intl.DateTimeFormat(locale, {
+                    day: "numeric",
+                    month: "long",
+                  }).format(new Date(coach.coachNote.updatedAt)),
+                })}
+              </p>
+            </Card>
+          ) : null}
+
           <DataScopeCard scope={coach.dataScope} />
         </>
       )}

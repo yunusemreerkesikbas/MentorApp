@@ -36,12 +36,12 @@ export function TextsReveal({ lines, shown = true, className }: TextsRevealProps
       className={`t-stagger${visible ? " is-shown" : ""}${!shown && visible === false ? " is-hiding" : ""}${className ? ` ${className}` : ""}`}
     >
       {lines.map((line, i) => (
-        <span
+        <div
           key={i}
           className={`t-stagger-line t-stagger-line--${Math.min(i + 1, 3)}`}
         >
           {line}
-        </span>
+        </div>
       ))}
     </div>
   );

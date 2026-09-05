@@ -116,7 +116,7 @@ test("koç notunu görevin altında, öğrencinin kendi notundan ayrı gösterir
   ).toBeVisible();
 });
 
-test("Free kullanıcıyı LLM isteği yapmadan aboneliğe yönlendirir", async ({
+test("Free kullanıcıya LLM isteği yapmadan paywall açar", async ({
   page,
 }) => {
   const api = await mockPlanApi(page, {
@@ -127,7 +127,11 @@ test("Free kullanıcıyı LLM isteği yapmadan aboneliğe yönlendirir", async (
 
   await page.getByRole("button", { name: "Koçla planla" }).click();
 
-  await expect(page).toHaveURL(/\/abonelik$/);
+  // The paywall opens in place. It stopped being a redirect to /abonelik when the premium paywall
+  // modal shipped — `plan-coach-adaptation-action.tsx` calls `openPaywall({ sourceFeature:
+  // "plan.ai" })`. The load-bearing half of this test is unchanged: a free user's click must not
+  // reach the LLM.
+  await expect(page.getByTestId("premium-paywall")).toBeVisible();
   expect(api.previewCalls).toBe(0);
 });
 
@@ -292,9 +296,13 @@ test.describe("Takvim", () => {
       startTime: "09:00",
       endTime: "10:30",
       description: "Sayısal bölüm",
-      topic: null,
-      coachNote: null,
     });
+    // The student's form omits these rather than sending explicit nulls. Server-side both are
+    // `nullish()`, so absence and null mean the same thing — but only one of them is the student's
+    // field at all: `coachNote` belongs to the coach, and the payload proving it is never smuggled
+    // is worth more than the payload echoing a null back.
+    expect(api.createBodies[0]).not.toHaveProperty("coachNote");
+    expect(api.createBodies[0].topic ?? null).toBeNull();
   });
 
   test("bitiş saati başlangıçtan önceyse kaydetmez", async ({ page }) => {

@@ -164,6 +164,11 @@
       "register": "companion",
       "title": "{name} finished an assignment",
       "body": "They completed one of the tasks you gave them today."
+    },
+    "mentorshipCoachNote": {
+      "register": "companion",
+      "title": "A note from your coach",
+      "body": "{name} left you a note."
     }
   },
   "email": {

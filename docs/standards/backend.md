@@ -65,6 +65,12 @@
 - [ ] Phased/risky features behind a **config-registry feature flag** (gradual rollout + kill-switch).
 - [ ] Unit tests: domain/use-case pure logic. Integration: repository + adapter. E2E: auth + payment
   webhook idempotency.
+- [ ] **Every provider the suite fakes is pinned in `vitest.config.ts`'s `env`, not left to `.env`.**
+  The test process still loads `apps/api/.env`, so any provider the config does not pin is whatever
+  that developer happens to run. `AI_PROVIDER`/`VISION_PROVIDER` were pinned and `STORAGE_PROVIDER`
+  was not: anyone with `STORAGE_PROVIDER=r2` locally watched six upload tests fail while CI — which
+  has no `.env` and so takes the `fake` default — stayed green. A suite that only passes on some
+  machines gets ignored on all of them.
 - [ ] No merge unless `pnpm typecheck && lint && build` is green.
 
 ## Don't

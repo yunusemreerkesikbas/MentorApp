@@ -730,7 +730,7 @@ describe("forum zones (e2e)", () => {
     expect(byStaff.status).toBe(201);
   });
 
-  it("emoji palette: multi-emoji reactions on threads + comments; disallowed emoji rejected", async () => {
+  it("emoji palette: one reaction per user, replaced on re-react; disallowed emoji rejected", async () => {
     const zoneId = await createZone(ZoneType.CHAT, "Tepki Odası");
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
     const posted = await request(app.getHttpServer())
@@ -739,7 +739,12 @@ describe("forum zones (e2e)", () => {
       .send({ body: "tepki ver" });
     const threadId = posted.body.id as string;
 
-    // React with two distinct palette emojis (multiple reactions per user).
+    // ONE reaction per user per target. PUT is set-or-replace, not add: reacting again with a
+    // different emoji MOVES the reaction. The database says so — `forum_reactions_unique_idx` is
+    // UNIQUE (thread_id, user_id) and `addReaction` upserts the emoji onto that pair — and so does
+    // docs/features/forum.md ("the viewer's single thread reaction"; the 2026-08-09 entry records
+    // reactions being reduced to one per target+user). This test asserted the pre-2026-08-09
+    // multi-emoji model and had been failing ever since.
     for (const emoji of [FORUM_LIKE_EMOJI, "💪"]) {
       await request(app.getHttpServer())
         .put(`/v1/forum/threads/${threadId}/reactions`)
@@ -758,22 +763,23 @@ describe("forum zones (e2e)", () => {
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     let item = feed.body.items.find((t: { id: string }) => t.id === threadId);
-    expect(item.reactionCounts[FORUM_LIKE_EMOJI]).toBe(1);
+    // The second PUT replaced the first: the heart is gone, not kept alongside.
+    expect(item.reactionCounts[FORUM_LIKE_EMOJI] ?? 0).toBe(0);
     expect(item.reactionCounts["💪"]).toBe(1);
-    expect(item.myReactions).toEqual(expect.arrayContaining([FORUM_LIKE_EMOJI, "💪"]));
+    expect(item.myReactions).toEqual(["💪"]);
 
-    // Unreact one → the other stays.
+    // Removing the live reaction leaves the thread with none.
     await request(app.getHttpServer())
       .delete(`/v1/forum/threads/${threadId}/reactions`)
       .set(asUser())
-      .send({ emoji: FORUM_LIKE_EMOJI })
+      .send({ emoji: "💪" })
       .expect(204);
     feed = await request(app.getHttpServer())
       .get(`/v1/forum/zones/${zoneId}/threads`)
       .set(asUser());
     item = feed.body.items.find((t: { id: string }) => t.id === threadId);
-    expect(item.reactionCounts[FORUM_LIKE_EMOJI] ?? 0).toBe(0);
-    expect(item.reactionCounts["💪"]).toBe(1);
+    expect(item.reactionCounts["💪"] ?? 0).toBe(0);
+    expect(item.myReactions ?? []).toEqual([]);
 
     // Comments carry the same palette (reactionCounts / myReactions).
     const comment = await request(app.getHttpServer())

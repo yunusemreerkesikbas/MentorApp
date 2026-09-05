@@ -27,6 +27,8 @@ function link(overrides: Partial<MentorshipLinkRow> = {}): MentorshipLinkRow {
     acceptedAt: now,
     endedAt: null,
     endedBy: null,
+    coachNote: null,
+    coachNoteAt: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -72,6 +74,16 @@ function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {})
       row.status = "ENDED";
       row.endedAt = new Date();
       row.endedBy = endedBy;
+      // Mirrors the repository: the note goes with the link, because re-linking revives this row.
+      row.coachNote = null;
+      row.coachNoteAt = null;
+      return row;
+    }),
+    setCoachNote: vi.fn(async (linkId: string, body: string | null) => {
+      const row = rows.find((r) => r.id === linkId);
+      if (!row || row.status !== "ACTIVE") return undefined;
+      row.coachNote = body;
+      row.coachNoteAt = body === null ? null : new Date("2026-09-04T09:00:00Z");
       return row;
     }),
     purgeForUser: vi.fn(),
@@ -266,6 +278,54 @@ describe("MentorshipLinkService", () => {
     });
   });
 
+  describe("the coach's standing note", () => {
+    it("writes the note and tells the student", async () => {
+      const { service, emitted, links } = setup({ rows: [link()] });
+      await service.setCoachNote(COACH, STUDENT, "Bu hafta paragrafa ağırlık ver.");
+      expect(links.setCoachNote).toHaveBeenCalledWith(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "Bu hafta paragrafa ağırlık ver.",
+      );
+      expect(emitted.map((e) => e.topic)).toContain(MentorshipEventTopic.NOTE_UPDATED);
+    });
+
+    it("reads the note back on the student's own transparency view", async () => {
+      const { service } = setup({ rows: [link()] });
+      await service.setCoachNote(COACH, STUDENT, "Bu hafta paragrafa ağırlık ver.");
+      const view = await service.getMyCoach(STUDENT);
+      expect(view?.coachNote).toEqual({
+        body: "Bu hafta paragrafa ağırlık ver.",
+        updatedAt: "2026-09-04T09:00:00.000Z",
+      });
+    });
+
+    it("clears the note without announcing it — an empty inbox item teaches nothing", async () => {
+      const { service, emitted } = setup({ rows: [link()] });
+      await service.setCoachNote(COACH, STUDENT, "Bir şey");
+      emitted.length = 0;
+      await service.setCoachNote(COACH, STUDENT, null);
+      expect(emitted).toEqual([]);
+      expect((await service.getMyCoach(STUDENT))?.coachNote).toBeNull();
+    });
+
+    it("refuses a coach with no active link, with 404 rather than 403", async () => {
+      const { service } = setup({ rows: [] });
+      expect(await codeOf(() => service.setCoachNote(COACH, STUDENT, "Merhaba"))).toBe(
+        ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
+      );
+    });
+
+    it("does not survive the link: a revived row starts on a blank page", async () => {
+      // Re-linking reuses the ENDED row (`onConflictDoUpdate` with `setWhere: status = 'ENDED'`),
+      // so a note left behind would resurface months later on a relationship both sides left.
+      const { service } = setup({ rows: [link()] });
+      await service.setCoachNote(COACH, STUDENT, "Eski not");
+      await service.endByStudent(STUDENT);
+      await service.acceptInvitation(STUDENT, CODE);
+      expect((await service.getMyCoach(STUDENT))?.coachNote).toBeNull();
+    });
+  });
+
   describe("the kill switch", () => {
     it("closes every entry point when the flag is off", async () => {
       config["mentorship.enabled"] = false;
@@ -274,6 +334,7 @@ describe("MentorshipLinkService", () => {
         () => service.acceptInvitation(STUDENT, CODE),
         () => service.previewInvitation(CODE),
         () => service.getMyCoach(STUDENT),
+        () => service.setCoachNote(COACH, STUDENT, "Merhaba"),
         () => service.endByStudent(STUDENT),
         () => service.endByCoach(COACH, STUDENT),
       ]) {

@@ -5,7 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useEffect, useRef, useState, type FocusEvent, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@mentor/ui";
+import { Button, StreamingText, TextsReveal } from "@mentor/ui";
 import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
 import { OnboardingProgress } from "./onboarding-progress";
 
@@ -118,10 +118,16 @@ export function OnboardingStepLayout({
           </motion.div>
           <div className="relative min-w-0 flex-1 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)] sm:p-5" aria-live="polite">
             <span className="absolute -left-2 top-8 size-4 rotate-45 bg-[var(--color-surface)]" aria-hidden />
-            <motion.h1 ref={titleRef} tabIndex={-1} className="text-balance text-lg font-semibold leading-snug text-[var(--color-main)] outline-none sm:text-2xl" style={{ fontFamily: "var(--font-heading)" }} initial={reduceMotion ? undefined : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.24 }}>
-              {title}
-            </motion.h1>
-            {subtitle ? <motion.p className="mt-2 text-sm leading-relaxed text-[var(--color-body)] sm:text-base" initial={reduceMotion ? undefined : { opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: reduceMotion ? 0 : 0.2, duration: 0.24 }}>{subtitle}</motion.p> : null}
+            <h1 ref={titleRef} tabIndex={-1} className="text-balance text-lg font-semibold leading-snug text-[var(--color-main)] outline-none sm:text-2xl" style={{ fontFamily: "var(--font-heading)" }}>
+              <StreamingText key={title} text={title} />
+            </h1>
+            {subtitle ? (
+              <TextsReveal
+                key={subtitle}
+                className="mt-2"
+                lines={[<p key="subtitle" className="text-sm leading-relaxed text-[var(--color-body)] sm:text-base">{subtitle}</p>]}
+              />
+            ) : null}
           </div>
         </section>
 

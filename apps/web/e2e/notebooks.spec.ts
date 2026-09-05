@@ -255,6 +255,10 @@ test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve deft
   await expect.poll(() => state.pagePuts).toBeGreaterThan(0);
 
   await page.goto("/defterlerim");
+  // Card actions are revealed by card hover (or keyboard focus) wherever hover exists; touch
+  // devices keep them on permanently so they stay reachable. Playwright's own auto-hover aims at
+  // the button, which is still hidden at that point, so the CARD has to be hovered first.
+  await page.getByRole("heading", { name: "Matematik Notlarım" }).hover();
   await page
     .getByRole("button", { name: "Matematik Notlarım defterini sil" })
     .click();
@@ -324,6 +328,7 @@ test("silme başarılıyken liste yenileme tekrarı ikinci DELETE göndermez", a
   });
   await page.goto("/defterlerim");
 
+  await page.getByRole("heading", { name: "Silinecek Defter" }).hover();
   await page.getByRole("button", { name: "Silinecek Defter defterini sil" }).click();
   await page.getByRole("button", { name: "Defteri sil" }).click();
 

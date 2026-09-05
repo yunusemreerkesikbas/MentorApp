@@ -43,6 +43,10 @@
 | APP-067 | W8 mentorship: daily coach risk digest (cron, new-pairs-only) |
 | APP-068 | W8 mentorship: feedback loop — student delete/complete reaches the coach |
 | APP-069 | W8 mentorship: invite flow reachable from the profile, "copy last week" in the composer |
+| APP-070 | W8 mentorship: append-only drop log so the report shows "assigned but deleted" |
+| APP-071 | W8 mentorship: the coach's standing note to a student (one-way, not a thread) |
+| APP-072 | W8 mentorship: Playwright coverage for the student invite path and the coach surface |
+| APP-073 | Test suite repair: two shell bugs the stale suites were hiding + provider pinning |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)

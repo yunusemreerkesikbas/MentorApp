@@ -2939,6 +2939,8 @@
     "report_mood": "Mod",
     "report_mock_empty": "Henüz deneme girişi yok.",
     "report_plan_empty": "Son iki haftada plan görevi yok.",
+    "report_dropped": "Silinen ödevler",
+    "report_dropped_body": "Verdiğin ama planından çıkarılan görevler. Plan öğrencinin kendi planı; silmek onun hakkı.",
     "report_mood_empty": "Son iki haftada mod kaydı yok.",
     "report_subject_table_subject": "Ders",
     "report_subject_table_correct": "D",
@@ -2965,6 +2967,15 @@
     "my_coach_off_title": "Koçluk şu an kapalı",
     "my_coach_off_body": "Bu özellik henüz açılmadı. Açıldığında burada olacak.",
     "my_coach_since": "{date} tarihinden beri",
+    "my_coach_note_title": "Koçundan not",
+    "my_coach_note_since": "{date} tarihinde yazdı",
+    "note_title": "Öğrenciye notun",
+    "note_body": "Ödeve bağlı olmayan kısa bir not. Öğrencin bunu koç ekranında görür.",
+    "note_placeholder": "Bu hafta paragrafa ağırlık ver.",
+    "note_save": "Notu kaydet",
+    "note_clear": "Notu kaldır",
+    "note_saved": "Not kaydedildi",
+    "note_cleared": "Not kaldırıldı",
     "my_coach_end": "Bağlantıyı sonlandır",
     "my_coach_end_confirm_title": "Koçunla bağlantın sonlansın mı?",
     "my_coach_end_confirm_body": "Verilerine erişimi hemen kapanır. İstediğin zaman yeni bir kodla geri bağlanabilirsin.",
@@ -3008,6 +3019,6 @@
     "report_topic_progress_body": "Verdiğin konularda nerede takıldığı. En düşük tamamlama üstte.",
     "report_topic_progress_count": "{done}/{total} tamamlandı",
     "scope_EXAM_TRACK": "Hangi sınava hazırlandığın",
-    "scope_coach_writes": "Koçun sana ödev verebilir ve ödevin altına kısa bir not bırakabilir. Bu not sende ve koçunda görünür."
+    "scope_coach_writes": "Koçun sana ödev verebilir, ödevin altına kısa bir not yazabilir ve sana ödevden bağımsız duran bir not bırakabilir. Bu notlar sende ve koçunda görünür."
   }
 }

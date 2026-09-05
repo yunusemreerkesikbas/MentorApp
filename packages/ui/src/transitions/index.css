@@ -102,6 +102,12 @@
   --stagger-blur: var(--blur-medium);
   --stagger-ease: var(--ease-smooth-out);
 
+  /* Streaming text */
+  --stream-gap: 60ms;
+  --stream-fade: var(--duration-medium);
+  --stream-blur: 1px;
+  --stream-ease: var(--ease-smooth-out);
+
   /* Tabs sliding — Mentor surface tokens, not gallery hex */
   --tabs-dur: var(--duration-fast);
   --tabs-ease: var(--ease-smooth-out);
@@ -558,6 +564,28 @@
     opacity: 1;
     transform: none;
     filter: none;
+  }
+}
+
+/* === streaming-text.css === */
+.t-stream-w {
+  opacity: 0;
+  filter: blur(var(--stream-blur));
+  transition:
+    opacity var(--stream-fade) var(--stream-ease),
+    filter var(--stream-fade) var(--stream-ease);
+}
+
+.t-stream-w.is-in {
+  opacity: 1;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stream-w {
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
   }
 }
 

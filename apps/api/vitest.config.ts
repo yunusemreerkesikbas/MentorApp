@@ -7,9 +7,15 @@ export default defineConfig({
     globals: true,
     environment: "node",
     // Required env for module boot in e2e suites (single place — suites don't repeat these).
+    //
+    // These also SHIELD the suite from a developer's own `apps/api/.env`. Every provider the
+    // tests exercise through a fake has to be pinned here: `STORAGE_PROVIDER` was not, so anyone
+    // with `STORAGE_PROVIDER=r2` locally saw six upload tests fail while CI (which has no .env,
+    // and so takes the "fake" default) stayed green.
     env: {
       AI_PROVIDER: "fake",
       VISION_PROVIDER: "fake",
+      STORAGE_PROVIDER: "fake",
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
       PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",
     },

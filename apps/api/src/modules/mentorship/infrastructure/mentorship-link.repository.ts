@@ -148,7 +148,29 @@ export class MentorshipLinkRepository {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .update(coachStudents)
-        .set({ status: "ENDED", endedAt: now, endedBy, updatedAt: now })
+        // The note goes with the link. Re-linking revives this very row (`onConflictDoUpdate`
+        // with `setWhere: status = 'ENDED'`), so a note left behind would resurface months later.
+        .set({
+          status: "ENDED",
+          endedAt: now,
+          endedBy,
+          coachNote: null,
+          coachNoteAt: null,
+          updatedAt: now,
+        })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning();
+      return rows[0];
+    });
+  }
+
+  /** The coach's standing note. `null` clears it; one row per link, overwritten in place. */
+  setCoachNote(linkId: string, body: string | null): Promise<MentorshipLinkRow | undefined> {
+    const now = new Date();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(coachStudents)
+        .set({ coachNote: body, coachNoteAt: body === null ? null : now, updatedAt: now })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning();
       return rows[0];

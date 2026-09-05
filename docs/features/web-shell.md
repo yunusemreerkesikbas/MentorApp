@@ -63,6 +63,32 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **Sheet içeriğinin kendi i18n provider'ı + çekmecenin boş yanıt koruması (APP-073, 2026-09-05)** —
+  Kırık test suite'ini toparlarken çıkan iki gerçek kullanıcı hatası. İkisi de kabuğun kendisinde.
+  **(1) Sheet içeriği ham çeviri anahtarı gösteriyordu.** `BottomSheetProviderShell` kök layout'ta,
+  `children`'ın **üstünde** duruyor ve kök layout `NextIntlClientProvider`'ı bundle boyutu için
+  `ROUTE_MESSAGE_SCOPES.root`'a (`analyticsConsent`) daraltıyor. `show`/`filterSheet`'e verilen bir
+  React node, yazıldığı yerde değil **viewport'un olduğu yerde** render ediliyor — yani o dar
+  kümeyi görüyor, rotanın kendi namespace'lerini değil. Plan takvimindeki "Yeni etkinlik" sheet'i
+  bu yüzden kullanıcıya `plan.new_task`, `plan.all_day`, `plan.time_start`, `plan.subject` diye
+  yazıyordu; sheet'in kendi çerçevesi ("Yeni etkinlik", "Görev ekle") doğru görünüyordu, çünkü o
+  içeriğin değil bileşenin kendi metni. Düzeltme `useMentorBottomSheet`'te: hook **çağıranın**
+  ağacında koştuğu için `useMessages()` orada rotanın kendi paketi; node onunla sarılıyor.
+  `actionSheet`'e dokunulmadı — seçenekleri zaten çözülmüş string, o yüzden hiç bozulmamıştı.
+  **(2) Bildirim çekmecesi boş yanıtta sayfayı düşürüyordu.** `refreshCelebrations`
+  `Promise.allSettled` kullanıyor ki kutlama sorgusu patlarsa çekmeceyi götürmesin; ama
+  `http()` 204/boş gövdede `undefined` çözüyor, bu `fulfilled` sayılıyor ve
+  `result.value.celebrations` okuması korumanın içinden geri fırlıyordu. Çekmece uygulama geneline
+  monte, yani bu çökme tüm sayfayı error boundary'ye alıyordu. `?.` + `?? []` eklendi.
+  **Gotchas:** (1) Bir sheet'e **node** veren her yeni çağrı bu sarmalayıcıdan geçmeli; ham
+  `useBottomSheet()` kullanmak hatayı geri getirir. (2) `(coach)` grubu scope'lu, oradan açılan bir
+  sheet doğru biçimde yalnız `mentorship/common/nav` görür — sarmalayıcı çağıranın kümesini taşıyor,
+  hepsini değil. (3) `Promise.allSettled` "fulfilled" demek "gövde var" demek değil; `http()`'nin
+  204 sözleşmesi her `.value` okumasında hatırlanmalı.
+  **İlgili:** `apps/web/src/lib/mentor-bottom-sheet.tsx` (`.ts`'ten `.tsx`'e taşındı),
+  `apps/web/src/lib/notification-drawer-shell.tsx`, `apps/web/src/app/[locale]/layout.tsx`,
+  `apps/web/src/i18n/scoped-messages.ts`.
+
 - **APP-059 güvenli dev ve bloklayıcı performans kapıları (2026-09-01)** — Varsayılan web `dev`
   komutu artık cache silmeden başlar; yalnız kapalı bir sunucuda istisnai kurtarma gerektiğinde
   `dev:clean` kullanılır. Production build sonrasında `check:budgets`, client-reference ve build/font

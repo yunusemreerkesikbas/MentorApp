@@ -2,11 +2,25 @@ import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import enErrors from "../src/i18n/locales/en/errors.json";
+import trErrors from "../src/i18n/locales/tr/errors.json";
 
 /**
  * End-to-end against a real Postgres (docker `mentor_test` db). Verifies the base wiring:
  * global prefix, exception filter (ApiError), i18n, and the health probes.
  */
+/**
+ * Assert on the catalogue entry, not on a phrase inside it. What these tests actually check is
+ * that Accept-Language picks the right file; the wording belongs to `docs/copy/voice.md` and is
+ * rewritten whenever the voice work says so. An earlier version matched /not found/i and broke the
+ * day the English copy became "That record wasn't found." — a copy edit failing an infrastructure
+ * test is a false alarm, and a false alarm that fires often gets ignored.
+ */
+const TR_NOT_FOUND = trErrors.NOT_FOUND;
+const EN_NOT_FOUND = enErrors.NOT_FOUND;
+// If the two catalogues ever converge, equality below would pass with localization broken.
+expect(TR_NOT_FOUND).not.toBe(EN_NOT_FOUND);
+
 describe("base infrastructure (e2e)", () => {
   let app: INestApplication;
 
@@ -50,6 +64,6 @@ describe("base infrastructure (e2e)", () => {
       .get("/v1/does-not-exist")
       .set("Accept-Language", "en");
     expect(res.status).toBe(404);
-    expect(res.body.message).toMatch(/not found/i);
+    expect(res.body.message).toBe(EN_NOT_FOUND);
   });
 });

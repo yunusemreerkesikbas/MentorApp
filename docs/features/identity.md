@@ -366,6 +366,19 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   protects distinct paths, dimensions, and PNG alpha support. Related: `public/mascot/puhu/motion/*.png`,
   `src/lib/onboarding-assets.ts`, `src/lib/onboarding-assets.spec.ts`.
 
+### 2026-09-05 — Onboarding text motion recipes
+
+- Welcome slide headline/support pairs and the centered completion message now use the shared
+  transitions.dev `TextsReveal` recipe. Puhu's post-signup speech resolves word by word through the
+  `StreamingText` cross-blur recipe while the existing mouth/blink choreography continues.
+- The reusable streaming primitive reads its 60 ms word gap and 350 ms fade from shared motion
+  variables, replays when the sentence changes, and exposes the full sentence to assistive technology
+  without a typewriter-style character delay. Both recipes become immediate under reduced motion.
+- Usage: wrap stacked onboarding copy with `TextsReveal`; place `StreamingText` inside the semantic
+  heading or paragraph that Puhu is voicing. Related: `@mentor/ui` transition components/styles,
+  `_components/welcome/welcome-slide-layout.tsx`, `(onboarding)/_components/onboarding-step-layout.tsx`,
+  `(onboarding)/_components/steps/complete-step.tsx`, `e2e/onboarding-redesign.spec.ts`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

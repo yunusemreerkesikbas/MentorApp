@@ -9,6 +9,7 @@ import { buildSystemPrompt } from "../src/modules/ai/domain/ai.constants";
 import { CoachMessageRepository } from "../src/modules/ai/infrastructure/coach-message.repository";
 
 const RUN = Date.now();
+const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
 
 /**
  * W3 AI coach chat (e2e, fake LLM): premium flat + earned-coin path, access probe, rate-limits,
@@ -74,6 +75,38 @@ describe("ai coach chat (e2e)", () => {
       await c.query("begin");
       await c.query("select set_config('app.role','SERVICE',true)");
       await c.query("update users set roles = array_append(roles,$1) where id=$2", [role, userId]);
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+  };
+
+  /**
+   * Premium through a real subscription row, NOT through `UserRole.STAFF`.
+   *
+   * STAFF does grant premium (`entitlement.service.ts`: "PREMIUM <= STAFF role"), which is why
+   * these suites used it as a one-line shortcut. But STAFF also short-circuits
+   * `isMentorV2Enabled` — internal dogfooding — so a STAFF user is ALWAYS on Personalized Mentor
+   * V2 no matter what `ai.coach_personalization_v2.rollout_percent` says. V2 answers the first
+   * turn with a calibration question instead of calling the LLM, so these tests were quietly
+   * asserting the legacy chat path against a user who could never take it. A subscribed
+   * non-staff user is what "premium user" in these test names actually means.
+   */
+  const seedSubscription = async (userId: string) => {
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into plans (id,name,period_months,price_minor,currency,trial_days,is_active)
+         values ($1,'AI Test Plan',1,19900,'TRY',7,true) on conflict (id) do nothing`,
+        [PREMIUM_PLAN_ID],
+      );
+      await c.query(
+        `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
+         values ($1,$2,'ACTIVE','FAKE',$3, now(), now() + interval '30 days')`,
+        [userId, PREMIUM_PLAN_ID, `fake_ai_${userId}`],
+      );
       await c.query("commit");
     } finally {
       c.release();
@@ -151,7 +184,7 @@ describe("ai coach chat (e2e)", () => {
 
     const premium = await signup("premium");
     premiumId = premium.user.id;
-    await grantRole(premiumId, UserRole.STAFF);
+    await seedSubscription(premiumId);
     premiumToken = await login(premium.email);
 
     const admin = await signup("admin");
@@ -164,7 +197,7 @@ describe("ai coach chat (e2e)", () => {
     await grantCoin(brokeId, 2);
 
     const rl = await signup("rl");
-    await grantRole(rl.user.id, UserRole.STAFF);
+    await seedSubscription(rl.user.id);
     rlToken = await login(rl.email);
   }, 90_000);
 

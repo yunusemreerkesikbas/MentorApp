@@ -109,6 +109,19 @@ export async function fetchMyCoach(): Promise<MyCoachDto | null> {
   );
 }
 
+/**
+ * The coach's standing note to one student. `null` removes it.
+ *
+ * PUT, not POST: there is one note per link and writing replaces it. Not a message thread —
+ * in-app conversation is Phase 3.
+ */
+export async function setCoachNote(studentId: string, body: string | null): Promise<void> {
+  await http(`/v1/mentorship/students/${encodeURIComponent(studentId)}/note`, {
+    method: "PUT",
+    body: JSON.stringify({ body }),
+  });
+}
+
 export async function endMyCoachLink(): Promise<void> {
   await http("/v1/mentorship/my-coach", { method: "DELETE" });
 }

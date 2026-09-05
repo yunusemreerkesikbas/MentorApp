@@ -12,10 +12,12 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import { UsersService } from "../../identity/application/users.service";
+import { toCoachNoteDto } from "../domain/coach-note";
 import {
   MentorshipEventTopic,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
+  MentorshipNoteUpdated,
 } from "../domain/mentorship.constants";
 import {
   MentorshipLinkRepository,
@@ -127,6 +129,26 @@ export class MentorshipLinkService {
     return this.toMyCoachDto(link, people.get(coachId));
   }
 
+  /**
+   * The coach's standing note to a student. A note, not a channel: one row overwritten in place,
+   * no thread and no reply. Phase-2 communication is off-platform and in-app chat is Phase 3
+   * (roadmap §9); this exists so a coach can say "focus on paragraphs this week" without needing
+   * one, and it does not put the student's words anywhere the coach can read them.
+   */
+  async setCoachNote(coachId: string, studentId: string, body: string | null): Promise<void> {
+    await this.assertEnabled();
+    const link = await this.requireActiveLink(coachId, studentId);
+    await this.links.setCoachNote(link.id, body);
+    // Clearing is not news. A student told "your coach removed something" learns nothing and is
+    // left wondering; the absence of the card on /kocum is the whole message.
+    if (body === null) return;
+    const coach = (await this.users.listDisplayIdentities([coachId])).get(coachId);
+    this.events.emit(
+      MentorshipEventTopic.NOTE_UPDATED,
+      new MentorshipNoteUpdated(link.id, coachId, studentId, coach?.displayName ?? ""),
+    );
+  }
+
   /** The student's transparency view: who their coach is and exactly what that coach can see. */
   async getMyCoach(studentId: string): Promise<MyCoachDto | null> {
     await this.assertEnabled();
@@ -178,6 +200,7 @@ export class MentorshipLinkService {
       status: link.status as MentorshipLinkStatus,
       acceptedAt: link.acceptedAt?.toISOString() ?? null,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
+      coachNote: toCoachNoteDto(link),
     };
   }
 }

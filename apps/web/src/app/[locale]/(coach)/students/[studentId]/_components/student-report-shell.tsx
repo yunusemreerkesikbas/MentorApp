@@ -11,6 +11,7 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endStudentLink, fetchStudentReport } from "@/lib/mentorship";
 import { AssignTaskForm } from "./assign-task-form";
+import { CoachNoteCard } from "./coach-note-card";
 import {
   formatDate,
   formatMood,
@@ -138,6 +139,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
           )}
         </div>
       </div>
+
+      <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
 
       <AssignTaskForm
         studentId={studentId}
@@ -302,6 +305,33 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
             ))}
           </ul>
         )}
+
+        {/* Sits inside the plan card, not beside it: the living plan and what left it are one
+            answer to "did they do what I gave them", and a separate card would be empty for most
+            students most of the time. */}
+        {report.droppedAssignments.length > 0 ? (
+          <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
+            <h3 className="text-xs font-semibold" style={{ color: "var(--color-main)" }}>
+              {t("report_dropped")}
+            </h3>
+            <p className="mt-0.5 text-xs" style={{ color: "var(--color-secondary)" }}>
+              {t("report_dropped_body")}
+            </p>
+            <ul className="mt-2 flex flex-col gap-1">
+              {report.droppedAssignments.map((row) => (
+                <li
+                  key={`${row.droppedAt}-${row.title}`}
+                  className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
+                >
+                  <span style={{ color: "var(--color-secondary)" }}>{row.title}</span>
+                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                    {formatDate(`${row.taskDate}T00:00:00.000Z`, locale)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
       </Card>
 
       {topicProgress.length > 0 ? (

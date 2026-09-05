@@ -1,0 +1,20 @@
+.t-stream-w {
+  opacity: 0;
+  filter: blur(var(--stream-blur));
+  transition:
+    opacity var(--stream-fade) var(--stream-ease),
+    filter var(--stream-fade) var(--stream-ease);
+}
+
+.t-stream-w.is-in {
+  opacity: 1;
+  filter: blur(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .t-stream-w {
+    transition: none !important;
+    filter: none !important;
+    opacity: 1 !important;
+  }
+}

@@ -680,6 +680,13 @@
       "when": 1788466891463,
       "tag": "0096_w8_mentorship_dropped_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 97,
+      "version": "7",
+      "when": 1788505507846,
+      "tag": "0097_w8_mentorship_coach_note",
+      "breakpoints": true
     }
   ]
 }

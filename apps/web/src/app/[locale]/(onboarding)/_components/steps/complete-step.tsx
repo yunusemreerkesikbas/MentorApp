@@ -3,6 +3,7 @@
 import { useEffect, useRef } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { TextsReveal } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { useRouter } from "@/i18n/navigation";
 import { useCloudTransition } from "@/lib/cloud-transition";
@@ -34,7 +35,12 @@ export function CompleteStep({ onFinish }: { onFinish: () => void }) {
     <main className="flex min-h-dvh items-center justify-center px-5 text-center">
       <motion.div initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 16, scale: 0.96 }} animate={{ opacity: 1, y: 0, scale: 1 }} transition={{ duration: reduceMotion ? 0.12 : 0.4, ease: "easeOut" }}>
         <PuhuImage variant="happy" size={220} priority />
-        <h1 className="mt-6 text-2xl font-semibold text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{t("title")}</h1>
+        <TextsReveal
+          className="mt-6"
+          lines={[
+            <h1 key="title" className="text-2xl font-semibold text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{t("title")}</h1>,
+          ]}
+        />
       </motion.div>
     </main>
   );

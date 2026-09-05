@@ -106,10 +106,18 @@ describe("content (e2e)", () => {
       "/v1/content/info-articles?family=KPSS&pageSize=100",
     );
     expect(res.status).toBe(200);
-    expect(res.body.total).toBeGreaterThanOrEqual(3);
-    // Assert on a known seeded article by slug — not items[0] (feed order is publishedAt-desc).
+    // Two, not three, and that is the contract: the list always EXCLUDES the featured article
+    // (`ContentService.listInfoArticles` passes it as `excludeSlug`), and the featured lookup
+    // falls back pinned -> trending -> newest-with-cover -> newest-published, so with nothing
+    // pinned it still always claims one of the three seeded rows. Asking for >= 3 out of a
+    // three-article corpus was arithmetically impossible.
+    expect(res.body.total).toBeGreaterThanOrEqual(2);
+    // Not a fixed slug: the three seeds share publishedAt to the second, so which one the
+    // fallback promotes to hero is a Postgres tie-break — pinning the assertion to
+    // "kpss-basvuru-sureci" meant the day it won that tie, this test failed for no reason.
+    // What the test is actually for is the trust metadata on a public summary.
     const seeded = res.body.items.find(
-      (a: { slug: string }) => a.slug === "kpss-basvuru-sureci",
+      (a: { verifiedBy: string }) => a.verifiedBy === "editorial-seed",
     );
     expect(seeded).toBeDefined();
     expect(seeded.source).toBe("ÖSYM");

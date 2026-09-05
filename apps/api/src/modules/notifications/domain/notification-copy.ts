@@ -32,6 +32,7 @@ export const NotificationCopyKey = {
   MENTORSHIP_RISK_DIGEST: "mentorshipRiskDigest",
   MENTORSHIP_ASSIGNMENT_DROPPED: "mentorshipAssignmentDropped",
   MENTORSHIP_ASSIGNMENT_PROGRESSED: "mentorshipAssignmentProgressed",
+  MENTORSHIP_COACH_NOTE: "mentorshipCoachNote",
   /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
   WIN_BACK_OFFER: "winBackOffer",
 } as const;

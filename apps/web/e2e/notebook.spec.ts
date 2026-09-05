@@ -867,28 +867,54 @@ test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler"
     overview: { dueCount: 3, entryCount: 3 },
   });
 
+  // The deck deals itself in with a per-slab stagger, so without this the slabs never satisfy
+  // Playwright's "stable" check and a click on one waits out the whole timeout. The component
+  // already has a reduced-motion variant set; this asks for it.
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
   await page.getByRole("button", { name: "Listeyi aç" }).click();
 
-  // Grouped by subject, in the order the deck introduces them — not alphabetised behind the
-  // student's back.
-  await expect(page.getByText("Matematik", { exact: true })).toBeVisible();
-  await expect(page.getByText("Tarih", { exact: true })).toBeVisible();
-  await expect(page.getByText("3 kart kaldı")).toBeVisible();
+  // Still grouped by subject in first-seen order — `bySubject()` sorts the deck once as the panel
+  // opens, so the student never bounces Matematik → Tarih → Matematik. What changed with APP-046 is
+  // how that grouping is shown: the subject HEADINGS are gone, because a heading between two slices
+  // broke the stack illusion the list is built on. Each row carries its own `Ders · Konu` instead,
+  // the same label the back of the card uses. The seed order below is Problemler, Kurtuluş Savaşı,
+  // Kümeler — so this asserts the regrouping, not the input.
+  const rows = page.getByRole("dialog").getByRole("listitem");
+  await expect(rows).toHaveCount(3);
+  await expect(rows.nth(0)).toContainText("Matematik · Problemler");
+  await expect(rows.nth(1)).toContainText("Matematik · Kümeler");
+  await expect(rows.nth(2)).toContainText("Tarih · Kurtuluş Savaşı");
   // Navigation only: the list never offers a verdict.
   await expect(page.getByRole("button", { name: "Çözebildim" })).toHaveCount(0);
 
-  // Jumping lands on that card, not the one after it.
-  await page.getByRole("button", { name: /^Kümeler/ }).click();
-  await expect(page.getByText("3 / 3")).toBeVisible();
+  // Jumping lands on that card, not the one after it: `pickCard` seeks by id and closes the list
+  // in the same move, so the verdict buttons are waiting straight after the click. Only the row's
+  // NAME changed with the redesign — the old `/^Kümeler/` stopped matching once the label became
+  // `Ders · Konu`, and a click that quietly hit nothing left the deck sitting on card one.
+  // Aimed at the label, not the button: the slabs overlap by design (64px slab, 44px visible band)
+  // and sit under a `perspective` + `rotateX` stack, so the button's bounding-box centre falls in
+  // the half its neighbour covers. Clicking there is swallowed and the deck quietly stays put,
+  // which reads as "jumping is broken". The label lives in the exposed band — that asymmetric
+  // `pt-3 pb-5` is exactly what puts it there — so it is also where a real thumb lands.
+  await page
+    .getByRole("dialog")
+    .getByText("Matematik · Kümeler", { exact: true })
+    .click();
   await page.getByRole("button", { name: "Çözebildim" }).click();
 
-  // An answered card is shown as done and cannot be reviewed twice — a second answer would reset
-  // its interval ladder and quietly undo the student's own progress.
+  // An answered card stays in the stack but cannot be reviewed twice — a second answer would reset
+  // its interval ladder and quietly undo the student's own progress. There is no "N kart kaldı"
+  // chip to check any more: the deck is the count now, and the line above it was a caption reading
+  // out what the picture already showed.
   await page.getByRole("button", { name: "Listeyi aç" }).click();
-  await expect(page.getByText("2 kart kaldı")).toBeVisible();
-  await expect(page.getByRole("button", { name: /^Kümeler/ })).toBeDisabled();
+  // It stays in the stack rather than vanishing from it — dimmed, ticked, and disabled. The tick
+  // joins the accessible name ("… Cevapladın"), which the substring match below tolerates.
+  await expect(page.getByRole("dialog").getByRole("listitem")).toHaveCount(3);
+  await expect(
+    page.getByRole("button", { name: "Matematik · Kümeler" }),
+  ).toBeDisabled();
 });
 
 test("takılan kart topluluğa devredilirken kayıt kimliğini taşır", async ({
@@ -963,8 +989,10 @@ test("deste sonu ne yapıldığını özetler", async ({ page }) => {
   await page.getByRole("button", { name: "Şimdilik geç" }).click();
 
   await expect(page.getByText("3 karttan 2 tanesini çözdün.")).toBeVisible();
-  // The missed card is described as still in the rotation, never counted as a wrong answer.
-  await expect(page.getByText(/Kalan 1 kart tekrar döngüsünde/)).toBeVisible();
+  // The missed card is still described as in the rotation, never as a wrong answer. It stopped
+  // being a one-line "Kalan 1 kart tekrar döngüsünde" and became a named list of the cards that
+  // caught the student again — same promise, more of it.
+  await expect(page.getByText("Yine takıldıkların")).toBeVisible();
 });
 
 test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir", async ({
@@ -1015,53 +1043,6 @@ test("çözüm kartın arkasında görünür ve tekrar sırasında yazılabilir"
   await expect(
     page.getByText("Önce paydaları eşitle, sonra sadeleştir."),
   ).toBeVisible();
-});
-
-test("ders filtresi desteyi daraltır ve biten ders günü bitirmez", async ({
-  page,
-}) => {
-  const due = [
-    makeEntry({
-      id: "aaaaaaaa-1111-4111-8111-111111111111",
-      topicName: "Problemler",
-    }),
-    makeEntry({
-      id: "bbbbbbbb-1111-4111-8111-111111111111",
-      topicName: "Kümeler",
-    }),
-    makeEntry({
-      id: "cccccccc-1111-4111-8111-111111111111",
-      subjectName: "Tarih",
-      topicName: "Kurtuluş Savaşı",
-    }),
-  ];
-  await mockNotebookApi(page, {
-    due,
-    overview: { dueCount: 3, entryCount: 3 },
-  });
-
-  await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
-  await page.getByRole("button", { name: "Listeyi aç" }).click();
-
-  // Two Matematik cards out of three: the deck narrows, the counter follows it.
-  await page.getByRole("button", { name: "Sadece bunu çalış" }).first().click();
-  await expect(page.getByText("Matematik · 1 / 2")).toBeVisible();
-
-  await page.getByRole("button", { name: "Çözebildim" }).click();
-  await page.getByRole("button", { name: "Çözebildim" }).click();
-
-  // Matematik is finished but Tarih is not, so the day is not over — saying "bugünlük bu kadar"
-  // here would be the review flow telling the student a comfortable lie.
-  await expect(page.getByText("Matematik bitti")).toBeVisible();
-  await expect(page.getByText(/1 kart daha var/)).toBeVisible();
-  await expect(page.getByText("Bugünlük bu kadar")).toHaveCount(0);
-
-  await page.getByRole("button", { name: "Diğerlerine geç" }).click();
-  // Back to the whole deck, landing on the card the filter had hidden.
-  await expect(page.getByText("Kurtuluş Savaşı").first()).toBeVisible();
-  await page.getByRole("button", { name: "Çözebildim" }).click();
-  await expect(page.getByText("Bugünlük bu kadar")).toBeVisible();
 });
 
 /** A page holding one entry card — the arrangement both delete paths act on. */

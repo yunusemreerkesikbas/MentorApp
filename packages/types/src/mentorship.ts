@@ -72,6 +72,15 @@ export const MENTORSHIP_DATA_SCOPE: readonly MentorshipDataScopeKey[] = [
   MentorshipDataScopeKey.EXAM_TRACK,
 ];
 
+/**
+ * The coach's standing note to their student. One note, overwritten in place — not a thread:
+ * Phase-2 communication stays off-platform and in-app chat is Phase 3 (roadmap §9).
+ */
+export interface MentorshipCoachNoteDto {
+  body: string;
+  updatedAt: string;
+}
+
 /** The student's view of their own link ("who is my coach, what do they see"). */
 export interface MyCoachDto {
   linkId: string;
@@ -80,6 +89,8 @@ export interface MyCoachDto {
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
   dataScope: MentorshipDataScopeKey[];
+  /** Null when the coach has not left one. Cleared with the link, never inherited by a successor. */
+  coachNote: MentorshipCoachNoteDto | null;
 }
 
 /**
@@ -171,6 +182,8 @@ export interface MentorshipStudentReportDto {
   acceptedAt: string | null;
   /** Which exam taxonomy to offer when assigning (scope key `EXAM_TRACK`); null if unset. */
   studentExamType: string | null;
+  /** What THIS coach wrote for this student, read back to them. */
+  coachNote: MentorshipCoachNoteDto | null;
   riskFlags: MentorshipRiskFlagId[];
   activity: {
     lastActiveDate: string | null;

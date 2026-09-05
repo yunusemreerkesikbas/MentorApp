@@ -103,16 +103,23 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   const [celebrationBusy, setCelebrationBusy] = useState(false);
   const [journeyCelebrationError, setJourneyCelebrationError] = useState<string | null>(null);
 
+ /*
+  * `?.` and `?? []` are load-bearing. `Promise.allSettled` was chosen so a failing celebration
+  * lookup cannot take the notification drawer down with it — but `http()` resolves to
+  * `undefined` on a 204/empty body, which lands in `fulfilled`, and reading `.celebrations` off
+  * it threw right back through the guard. The drawer is mounted app-wide, so that crash took the
+  * whole page to an error boundary.
+  */
   const refreshCelebrations = useCallback(async () => {
     const [achievementsResult, journeyResult] = await Promise.allSettled([
       getUnseenAchievements(),
       getUnseenJourneyLevelCelebrations(),
     ]);
     if (achievementsResult.status === "fulfilled") {
-      setAchievementCelebrations(achievementsResult.value.celebrations);
+      setAchievementCelebrations(achievementsResult.value?.celebrations ?? []);
     }
     if (journeyResult.status === "fulfilled") {
-      setJourneyLevelCelebrations(journeyResult.value.celebrations);
+      setJourneyLevelCelebrations(journeyResult.value?.celebrations ?? []);
     }
   }, []);
 
@@ -132,10 +139,10 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         setData(notificationsResult.value);
       }
       if (achievementsResult.status === "fulfilled") {
-        setAchievementCelebrations(achievementsResult.value.celebrations);
+        setAchievementCelebrations(achievementsResult.value?.celebrations ?? []);
       }
       if (journeyResult.status === "fulfilled") {
-        setJourneyLevelCelebrations(journeyResult.value.celebrations);
+        setJourneyLevelCelebrations(journeyResult.value?.celebrations ?? []);
       }
     });
   }, []);
