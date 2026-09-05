@@ -149,6 +149,49 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Sponsorluk görünürlüğü ve acil fren (APP-077, 2026-09-05)** — APP-076
+  `mentorship.coach.free_seats`'i "tüm maliyet riskini tutan tek düğme" diye tanımladı ama o
+  düğmenin ne yaptığını gösteren hiçbir şey yoktu: `countByStatus()` sponsor satırlarını *aktif
+  olarak* filtreliyor ve başka hiçbir sorgu geri saymıyordu, `ai_usage`'ın da `subscriptions` ile
+  hiçbir join'i yok. Yani "koltuk başına ne harcıyorum" — free_seats'in doğru olup olmadığına karar
+  veren tek sayı — sorulamıyordu bile. Bayrağı canlıda açmanın ön koşulu buydu.
+  **`GET /v1/admin/metrics/sponsorship`** — canlı koltuk sayısı, ayarın kendisi, kohortun 1/7/30
+  günlük LLM maliyeti ve **koltuk başına 30 günlük maliyet**.
+  **Tablolar buluşmuyor, admin orkestre ediyor.** Cevap `subscriptions` ile `ai_usage`'ı yan yana
+  getirmeyi gerektiriyor ama ikisi ayrı modülün tablosu; SQL'de join etmek modül sınırını
+  veritabanına taşırdı. Yerine iki public servis sırayla çağrılıyor: payments **kimin** koltuğu var
+  der (`listSponsoredUserIds`), AI **ne harcadı** der (`costForUsersSince`). Admin, ikisini aynı
+  anda tutmasına izin verilen tek yüzey — modülün varlık sebebi bu.
+  **Koltuk yokken ortalama `null`, sıfır değil.** Sıfır "koltuklar bedava" diye okunur; boş
+  kohortun anlamı bunun tam tersi. Ekranda tire çıkıyor.
+  **Tavan gürültülü.** `listSponsoredUserIds` 1000'de kesiyor; aşılırsa DTO `truncated: true`
+  taşıyor ve kart "eksik sayıyor" uyarısı gösteriyor — sessizce kısmi bir ortalama vermektense.
+  **Acil fren: bayrak artık gerçekten kesiyor.** `mentorship.seats.sponsorship_enabled` baştan beri
+  yeni sponsorlukları kapatıyordu ama mevcutlara dokunmuyordu — yani bir kapı vardı, fren yoktu.
+  Artık kapatmak canlı koltukları da `EXPIRED` yapıyor. Premium maliyetli diye düğmeye basan
+  operatör "şimdi" demek istiyor, "bir sonraki öğrenciden itibaren" değil.
+  **`free_seats` bilerek geriye dönük DEĞİL.** Kotayı düşürmek kimden koltuk alınacağını şekillendirir,
+  verilmiş olanı geri almaz — hangi ikisinin kalacağı da keyfi olurdu. İki düğme, iki şiddet.
+  **Bayrağı geri açmak hiçbir şeyi geri getirmiyor:** koltuk kararı kabul anında veriliyor.
+  **Mekanizma:** `ConfigRegistryService.set` artık `config.changed` olayı yayıyor; payments'taki
+  `SponsoredSeatListener` yalnız kendi anahtarını dinliyor. Genel bir olay, çünkü alternatif admin
+  config uç noktasına payments'a özel bir çağrı koymaktı — kill-switch bilgisi sonucun sahibi olan
+  modülde kalsın diye.
+  **Ayrı bütçe tavanı eklenmedi, bilerek.** Sponsorlu kohort global `ai.budget.monthly_cap_usd_cents`
+  tavanını yiyip **ödeyen** kullanıcıları 503'e düşürebilir. Gerçek veri olmadan tavan uydurmak
+  yanlış yerden kesen bir fren takmak olurdu ve bu dilim tam da o veriyi üretiyor. Bayrak kapalı,
+  `free_seats` düşük, kill-switch var. Karar [`payments.md`](./payments.md)'ye yazıldı ki sonraki
+  okuyan bunun bir unutma değil tercih olduğunu bilsin.
+  **Gotchas:** (1) `costForUsersSince` boş dizide sorgu **atmıyor** — `in ()` bazı sürücülerde
+  "hepsi" demek. (2) Sorgu `ai_usage`'ın mevcut `(user_id, created_at)` index'ini kullanıyor, yeni
+  index gerekmedi. (3) "Kaç koç sponsorluyor" **yok**: `coach_students`'a join gerektirirdi
+  (payments → mentorship tablo sınırı) ve kararı veren sayı değil.
+  **İlgili:** `modules/admin/presentation/admin-metrics.controller.ts`,
+  `modules/payments/application/sponsored-seat.{service,listener}.ts`,
+  `modules/payments/infrastructure/payments.repositories.ts`,
+  `modules/ai/{application/ai-cost-stats.service.ts,infrastructure/ai-usage.repository.ts}`,
+  `common/config/config-registry.service.ts`, `apps/admin/src/app/SponsorshipCards.tsx`.
+
 - **Sponsorlu koltuk — koçun bağladığı öğrenci Premium alıyor (APP-076, 2026-09-05)** — W8 bugüne
   kadar parasal hiçbir şey bilmiyordu; tek sınır `max_active_students` idi ve aşımı bir hataydı.
   Artık koçun **koltuğu** var: bağladığı ilk `mentorship.coach.free_seats` (3) öğrenci Premium'a

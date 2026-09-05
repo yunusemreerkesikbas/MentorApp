@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { SponsoredSeatService } from "./sponsored-seat.service";
+import { costPerSeatMicros, SponsoredSeatService } from "./sponsored-seat.service";
 
 const STUDENT = "11111111-1111-4111-8111-111111111111";
 const LINK = "22222222-2222-4222-8222-222222222222";
@@ -13,6 +13,8 @@ function setup(
   const subscriptions = {
     findOpenForUser: vi.fn(async () => over.openForUser),
     findOpenBySponsorLink: vi.fn(async () => over.openBySponsorLink),
+    expireAllSponsored: vi.fn(async () => 3),
+    listSponsoredUserIds: vi.fn(async () => ["a", "b", "c"]),
     create: vi.fn(async (data: Record<string, unknown>) => ({ id: "sub-1", ...data })),
     expireSponsorship: vi.fn(async () => undefined),
   };
@@ -72,5 +74,30 @@ describe("SponsoredSeatService.revoke", () => {
     const { service, subscriptions } = setup({ openBySponsorLink: undefined });
     expect(await service.revoke(LINK)).toBe(false);
     expect(subscriptions.expireSponsorship).not.toHaveBeenCalled();
+  });
+});
+
+describe("costPerSeatMicros", () => {
+  it("divides the cohort cost across live seats", () => {
+    expect(costPerSeatMicros(900, 3)).toBe(300);
+  });
+
+  /**
+   * The load-bearing one. Zero would read as "seats are free" — the opposite of what an empty
+   * cohort means — and this is the number an operator uses to decide whether
+   * `mentorship.coach.free_seats` is set too high.
+   */
+  it("reports no figure at all when nobody holds a seat", () => {
+    expect(costPerSeatMicros(0, 0)).toBeNull();
+    expect(costPerSeatMicros(500, 0)).toBeNull();
+  });
+});
+
+describe("SponsoredSeatService.revokeAll — the kill switch", () => {
+  it("expires every live seat and reports how many, without deleting anything", async () => {
+    const now = new Date("2026-09-05T12:00:00Z");
+    const { service, subscriptions } = setup();
+    expect(await service.revokeAll(now)).toBe(3);
+    expect(subscriptions.expireAllSponsored).toHaveBeenCalledWith(now);
   });
 });

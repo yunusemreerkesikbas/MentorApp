@@ -70,6 +70,8 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     },
     { provide: INVOICE_PORT, useClass: LoggerInvoiceAdapter },
   ],
-  exports: [EntitlementService, PremiumGuard, SubscriptionsService],
+  // SponsoredSeatService is exported for the admin metrics surface, which is the one place
+  // allowed to hold both "who has a seat" and "what AI cost" at the same time.
+  exports: [EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService],
 })
 export class PaymentsModule {}

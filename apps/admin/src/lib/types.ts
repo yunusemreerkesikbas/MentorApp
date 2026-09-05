@@ -336,3 +336,15 @@ export interface AdminPromotion {
     redeemedCount: number;
     createdAt: string;
 }
+
+/** Mirrors AdminSponsorshipStatsDto in @mentor/types (admin does not consume @mentor/api-client). */
+export interface AdminSponsorshipStats {
+    seats: number;
+    freeSeatsPerCoach: number;
+    sponsorshipEnabled: boolean;
+    costMicros: { d1: number; d7: number; d30: number };
+    /** Null when there are no seats — render a dash, never $0. */
+    costPerSeatMicros30d: number | null;
+    truncated: boolean;
+    generatedAt: string;
+}

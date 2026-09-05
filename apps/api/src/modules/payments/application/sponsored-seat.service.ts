@@ -16,6 +16,24 @@ import { SubscriptionsRepository } from "../infrastructure/payments.repositories
  * makes it under the accept transaction's lock and puts it on the event; the two modules never
  * import each other.
  */
+/**
+ * How many sponsored user ids one metrics call will gather. A ceiling, not a page size: past it
+ * the reported cost undercounts, which the DTO flags rather than hides.
+ */
+export const SPONSORED_SEAT_METRIC_LIMIT = 1000;
+
+/**
+ * 30-day cohort cost per live seat, micro-USD.
+ *
+ * Null rather than 0 when there are no seats. Zero would read as "seats are free", which is the
+ * opposite of what an empty cohort means, and it is the number an operator uses to decide whether
+ * `mentorship.coach.free_seats` is set too high.
+ */
+export function costPerSeatMicros(costMicros30d: number, seats: number): number | null {
+  if (seats <= 0) return null;
+  return Math.round(costMicros30d / seats);
+}
+
 @Injectable()
 export class SponsoredSeatService {
   private readonly logger = new Logger(SponsoredSeatService.name);
@@ -50,6 +68,24 @@ export class SponsoredSeatService {
       sponsorLinkId: linkId,
     });
     return true;
+  }
+
+  /**
+   * End every live sponsorship — what flipping `mentorship.seats.sponsorship_enabled` off means.
+   *
+   * The flag was already a gate on new grants; making it retroactive is what turns it into a real
+   * brake. `mentorship.coach.free_seats` deliberately does NOT behave this way: lowering a quota
+   * should shape who gets a seat next, not take one back from somebody who already has it.
+   */
+  /** The user ids of live seats, for whoever can price them. Bounded; see the constant. */
+  async listSeatUserIds(limit = SPONSORED_SEAT_METRIC_LIMIT): Promise<string[]> {
+    return this.subscriptions.listSponsoredUserIds(limit);
+  }
+
+  async revokeAll(now = new Date()): Promise<number> {
+    const ended = await this.subscriptions.expireAllSponsored(now);
+    if (ended > 0) this.logger.warn(`Sponsorship switched off — ended ${ended} seat(s)`);
+    return ended;
   }
 
   /**

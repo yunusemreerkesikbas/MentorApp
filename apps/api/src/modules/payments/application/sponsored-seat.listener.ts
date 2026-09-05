@@ -1,12 +1,19 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import {
+  CONFIG_CHANGED_EVENT,
+  ConfigChanged,
+} from "../../../common/config/config-registry.service";
+import {
   MentorshipEventTopic,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
   MentorshipSeatKind,
 } from "../../mentorship/domain/mentorship.constants";
 import { SponsoredSeatService } from "./sponsored-seat.service";
+
+/** The one config key this listener reacts to. Kept next to its handler, not in a shared map. */
+const SPONSORSHIP_FLAG_KEY = "mentorship.seats.sponsorship_enabled";
 
 /**
  * W8 seat events → W4 entitlement.
@@ -41,6 +48,23 @@ export class SponsoredSeatListener {
   async onLinkEnded(event: MentorshipLinkEnded): Promise<void> {
     await this.seats.revoke(event.linkId).catch((err: unknown) => {
       this.logger.error(`Sponsored seat revoke failed for link ${event.linkId}`, err);
+    });
+  }
+
+  /**
+   * The kill switch. `mentorship.seats.sponsorship_enabled` gated new grants from the start; here
+   * it also ends the live ones, which is the difference between a gate and a brake — an operator
+   * who flips it because premium is costing too much means "now", not "for the next student".
+   *
+   * Switching it back ON grants nothing back: seats are decided at accept time, and silently
+   * re-opening premium for links whose owners had already lost it would be a change nobody asked
+   * for. `mentorship.coach.free_seats` stays forward-only for the same reason.
+   */
+  @OnEvent(CONFIG_CHANGED_EVENT)
+  async onConfigChanged(event: ConfigChanged): Promise<void> {
+    if (event.key !== SPONSORSHIP_FLAG_KEY || event.after !== false) return;
+    await this.seats.revokeAll().catch((err: unknown) => {
+      this.logger.error("Sponsorship kill switch failed to end live seats", err);
     });
   }
 }

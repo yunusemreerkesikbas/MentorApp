@@ -34,6 +34,28 @@ export interface SpenderUsage {
 export class AiUsageRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  /**
+   * What a named set of users cost since `since`, in micro-USD.
+   *
+   * Takes ids rather than joining: the cohort that matters right now lives in `subscriptions`,
+   * another module's table, and answering the question in one SQL statement would put the module
+   * boundary inside the database. The caller bounds the list.
+   *
+   * Uses the existing `(user_id, created_at)` index — no new index, no scan.
+   */
+  async costForUsersSince(userIds: readonly string[], since: Date): Promise<number> {
+    // An empty cohort has a known answer; asking the database for it would only produce an
+    // `in ()` that some drivers translate into "match everything".
+    if (userIds.length === 0) return 0;
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ total: sql<number>`coalesce(sum(${aiUsage.costMicros}), 0)::int` })
+        .from(aiUsage)
+        .where(and(inArray(aiUsage.userId, [...userIds]), gte(aiUsage.createdAt, since)));
+      return rows[0]?.total ?? 0;
+    });
+  }
+
   async append(row: {
     userId: string;
     model: string;

@@ -211,6 +211,14 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   student's own trial), `countByStatus` (the conversion denominator), and `checkout` (a seat is
   retired rather than raising `PAYMENT_ALREADY_SUBSCRIBED`). Revenue metrics needed no clause: they
   read the ledger, and a seat never writes one.
+- **The sponsored cohort shares the global AI budget — deliberately, for now.** Seats hand out real
+  LLM spend, and `ai.budget.monthly_cap_usd_cents` is a single cap over everyone, so a large enough
+  giveaway can exhaust it and start returning `AI_BUDGET_EXCEEDED` to **paying** users. No separate
+  sponsored cap was added (APP-077): inventing a ceiling without data would brake in the wrong
+  place, and `GET /v1/admin/metrics/sponsorship` exists precisely to produce that data. The brakes
+  that do exist are `mentorship.coach.free_seats` (bounds new seats) and
+  `mentorship.seats.sponsorship_enabled` (a real kill switch — flipping it off ends live seats).
+  Revisit once cost-per-seat is known.
 - **`coach-seat` is an active plan that is not for sale.** `PlansRepository.findActive` excludes it
   by name. `PlanDto.purchaseEnabled` is a global switch (provider ≠ disabled), not per-plan, so a
   listed seat plan would appear on the pricing screen with a buy button next to a ₺0 price.

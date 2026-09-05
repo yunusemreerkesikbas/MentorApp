@@ -143,3 +143,29 @@ export interface SubscriptionView {
 export interface CheckoutSession {
   checkoutUrl: string;
 }
+
+/**
+ * Coach-sponsored Premium, as the operator sees it (W8 seats).
+ *
+ * The point of this DTO is one number: `costPerSeatMicros30d`. `mentorship.coach.free_seats` is
+ * documented as the knob that bounds the whole giveaway, and until this existed there was no way
+ * to tell whether the value it is set to is generous, stingy or ruinous.
+ */
+export interface AdminSponsorshipStatsDto {
+  /** Live sponsored seats (non-terminal `provider = 'SPONSOR'` rows). */
+  seats: number;
+  /** `mentorship.coach.free_seats`, echoed so the setting sits next to its effect. */
+  freeSeatsPerCoach: number;
+  /** Whether sponsorship is switched on at all; `seats` can be non-zero while it is off. */
+  sponsorshipEnabled: boolean;
+  /** LLM spend by the sponsored cohort, micro-USD. */
+  costMicros: { d1: number; d7: number; d30: number };
+  /** 30-day cost divided by live seats. Null when there are no seats — not zero. */
+  costPerSeatMicros30d: number | null;
+  /**
+   * True when the cohort was larger than the metric's own ceiling, so the costs above undercount.
+   * Surfaced rather than swallowed: a quietly partial average is worse than a flagged one.
+   */
+  truncated: boolean;
+  generatedAt: string;
+}

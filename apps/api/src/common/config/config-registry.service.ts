@@ -1,9 +1,26 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { z } from "zod";
 import { DomainError } from "../errors/domain-error";
 import { ErrorCode } from "../errors/error-code";
 import { CONFIG_CATALOG, isConfigKey, type ConfigKey } from "./config.catalog";
 import { ConfigRepository } from "./config.repository";
+
+/**
+ * A config override actually changed. Most knobs are read on demand and need no announcement; a
+ * few are kill-switches whose whole point is to act on what ALREADY exists, and those have to
+ * reach the module that owns the consequence. Emitting generically keeps that knowledge in the
+ * owning module rather than teaching this service, or the admin controller, about anyone's domain.
+ */
+export const CONFIG_CHANGED_EVENT = "config.changed";
+
+export class ConfigChanged {
+  constructor(
+    readonly key: string,
+    readonly before: unknown,
+    readonly after: unknown,
+  ) {}
+}
 
 /** One row of the admin config view (catalog entry + effective value). */
 export interface ConfigEntryView {
@@ -31,7 +48,10 @@ export interface ConfigChangeResult {
 export class ConfigRegistryService {
   private overrides: Map<string, unknown> | null = null;
 
-  constructor(private readonly repo: ConfigRepository) {}
+  constructor(
+    private readonly repo: ConfigRepository,
+    private readonly events: EventEmitter2,
+  ) {}
 
   private async ensureLoaded(): Promise<Map<string, unknown>> {
     if (this.overrides === null) {
@@ -80,6 +100,7 @@ export class ConfigRegistryService {
 
     await this.repo.upsert(key, parsed.data, actorId);
     overrides.set(key, parsed.data);
+    this.events.emit(CONFIG_CHANGED_EVENT, new ConfigChanged(key, before, parsed.data));
 
     return { before, after: parsed.data };
   }

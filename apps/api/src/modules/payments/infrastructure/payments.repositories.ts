@@ -156,6 +156,53 @@ export class SubscriptionsRepository {
     });
   }
 
+  /**
+   * Live sponsored seats: the user ids the platform is currently paying AI for.
+   *
+   * Ids rather than a count, because the cost question can only be answered by handing them to the
+   * AI module — the two tables live in different modules and joining them in SQL would move the
+   * boundary into the database. `limit` caps that hand-off; the caller reports truncation rather
+   * than quietly averaging over a partial cohort.
+   */
+  async listSponsoredUserIds(limit: number): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ userId: subscriptions.userId })
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        )
+        .limit(limit);
+      return rows.map((row) => row.userId);
+    });
+  }
+
+  /**
+   * End every live sponsorship at once — the kill switch.
+   *
+   * EXPIRED outright, for the same reason {@link expireSponsorship} does it: the sweeper waits out
+   * the dunning grace, and a switch thrown because premium is costing too much cannot mean "in
+   * three days". Rows are updated, never deleted; who had access when survives.
+   */
+  async expireAllSponsored(now: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(subscriptions)
+        .set({ status: SubscriptionStatus.EXPIRED, currentPeriodEnd: now, updatedAt: now })
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        )
+        .returning({ id: subscriptions.id });
+      return rows.length;
+    });
+  }
+
   async findByProviderRef(providerRef: string, tx?: Exec): Promise<SubscriptionRow | undefined> {
     return onServiceTx(this.db, tx, async (exec) => {
       const rows = await exec
