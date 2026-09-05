@@ -872,11 +872,13 @@ describe("mentorship (e2e)", () => {
       expect(list.body).toHaveLength(1);
     });
 
-    it("refuses a day outside the week and a topic without a subject", async () => {
+    it("refuses a day past three weeks and a topic without a subject", async () => {
+      // 21, not 7: the ceiling is 20 because the composer's 21-task limit is three weeks of days
+      // and stepping the week leaves earlier drafts in place, so a program may span more than one.
       const badDay = await http()
         .post("/v1/mentorship/templates")
         .set(auth("coach"))
-        .send({ name: "Kötü", tasks: [{ dayIndex: 7, title: "Görev" }] });
+        .send({ name: "Kötü", tasks: [{ dayIndex: 21, title: "Görev" }] });
       expect(badDay.status).toBe(400);
 
       // Same rule the assignment path enforces: a topic cannot be a branchless label.
