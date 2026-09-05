@@ -149,6 +149,184 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Ücretli koltuk — Koç Pro (APP-079, 2026-09-05)** — Sponsorlu koltuk üç öğrenciyle sınırlıydı;
+  artık koçun kendi planı fazlasını ödeyebiliyor. Koltuk hakkı = `mentorship.coach.free_seats` +
+  koçun planının `seat_count`'u.
+  **Planda `COACH_PRO` tier'ı vardı; yapılmadı, gerekmedi.** Tier'ın satın alacağı iki şey vardı:
+  koçun kendi premium'u ve koltuk hakkı. Birincisi **zaten geliyor** — `coach-pro-10` sıradan bir
+  abonelik, ACTIVE yolundan `isPremium: true` çıkıyor. İkincisi bir **sayı**, planın özelliği
+  (`plans.seat_count`, migration `0101`). Yani `SubscriptionTier` FREE|PREMIUM kaldı ve
+  `computeEntitlement` yine **hiç değişmedi**; üstündeki 18 test regresyon ağı olarak duruyor.
+  Tek açık abonelik kısıtı da korundu: koç, öğrenci planı yerine koç planına abone oluyor, ikinci
+  bir ürün doğmuyor.
+  **Koltuk bitince bağ engellenmiyor.** Planın taslağında aşım `MENTORSHIP_SEAT_REQUIRED` (409) idi;
+  yazarken yanlış olduğu görüldü. Kimin takip edilebileceği `max_active_students`, kimin Premium
+  aldığı koltuk — ikincisini duvara çevirmek roadmap §5'in "bedava koçluk araçları" sözünü
+  koçluğun kendisine konmuş bir paywall'a çevirirdi. Koltuk biterse öğrenci **bağlanır, sponsor
+  edilmez**, ve kart bunu açıkça söyler.
+  **Yeni modül oku: `mentorship → payments`.** APP-076 bu oku olaylarla kurmaktan bilerek
+  kaçınmıştı; her koltuk bedavayken bu mümkündü. Koltuğa **para** girince kuplaj zaten var demektir,
+  ve koltuk kararı kabul transaction'ının kilidi altında **senkron** verilmek zorunda — bir olay
+  oraya çok geç varırdı. Döngü yok: payments identity/promotions/coaching import ediyor,
+  mentorship'i değil (`mentorship → ai → payments` zaten vardı).
+  **`paidSeatsFor` üç şeyi reddediyor:** açık aboneliği olmayan (0), `provider = 'SPONSOR'` olan
+  (koç, koçlanıyor olmaktan koltuk türetemez) ve premium vermeyen durumlar (INCOMPLETE bir checkout
+  henüz hiçbir şey satın almamıştır).
+  **`mentorship.seats.billing_enabled` gerçek bir kapı.** Kapalıyken koç planları katalogda
+  **listelenmiyor** *ve* id'yle checkout **reddediliyor** (`PAYMENT_DISABLED`). Yalnız listeden
+  gizlemek bir UI geleneği olurdu; iyzico doğrulanmadan satın alınabilir bir plan göstermek de
+  olmayan bir akışı vaat etmek olurdu.
+  **Fiyatlar PLACEHOLDER** — 999₺/10 koltuk, 1999₺/25. Faz-0 WTP araştırması hâlâ açık (roadmap §12).
+  **Gotchas:** (1) `seat_count` `NOT NULL DEFAULT 0` olarak eklendi; Postgres 11+ varsayılanı
+  katalogda tuttuğu için dolu tabloya rağmen rewrite yok, `NOT VALID` ayrımı gerekmiyor.
+  (2) `AdminPlanDto.seatCount` **salt okunur**: koltuk sayısı bir ürün şekli, fiyat değil —
+  tıklamayla değiştirilecek bir şey olmamalı, migration kararı. (3) `PlanDto`'ya da eklendi ki
+  billing açıldığında katalog "Koç Pro 10"un ne verdiğini söyleyebilsin.
+  **İlgili:** `apps/api/drizzle/0101_w8_coach_pro_seats.sql`,
+  `modules/payments/application/subscriptions.service.ts` (`paidSeatsFor`, `listPlans`, `checkout`),
+  `modules/mentorship/application/mentorship-link.service.ts`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/coach-capacity-card.tsx`.
+
+- **Koç zekâ katmanı — AI brifingi (APP-078, 2026-09-05)** — Risk triyajı üç dilimdir kural
+  temelliydi ve öyle kalıyor; brifing onun **üstüne** biniyor. `POST /v1/mentorship/students/:id/brief`
+  raporun sayılarından üç bölümlük kısa bir özet yazıyor: bu hafta ne oldu, neden dikkat
+  gerektiriyor, koç ne yapabilir.
+  **Aktör özne değil — katalogdaki ilk özellik.** `PremiumFeatureGateService.assertAllowed` kotayı
+  **isteyen** kullanıcıya yazar; burada isteyen koç, konu öğrenci. Kota, roller ve `ai_usage` satırı
+  hep **koça** ait. Öğrencinin tier'ı hiç sorulmuyor: brifingi o istemedi, bedelini de ne kotayla ne
+  parayla ödemeli. Bu, entitlement modelinin bugüne kadar hiç modellemediği bir ayrım; yeni bir
+  mekanizma gerektirmedi çünkü doğru cevap "koçu geçir"di.
+  **Yetki W8'de, metin W3'te.** `MentorshipBriefService` (W8) kapıyı ve önbelleği tutuyor,
+  `MentorshipBriefService` (W3) yalnız yazıyor. AI servisi **hazır yetkilendirilmiş raporu argüman
+  olarak alıyor** — kendi başına veri çekmiyor. Böylece `requireActiveLink`'i kazara bile atlayamaz
+  ve koç bağının ne olduğunu hiç öğrenmez. Ok tek yönlü: `mentorship → ai`; `ai.module.ts`
+  mentorship'i import etmiyor, döngü yok.
+  **Güven çizgisi:** prompt'a giden tek şey `MentorshipStudentReportDto`, yani
+  `cohort-evidence.ts`'in zaten çizdiği sözleşme. Ek olarak **isim de gitmiyor** (model, adını
+  bildiği birini tanıdığını sanarak yazmaya başlıyor) ve **koçun kendi notu da gitmiyor** (geri
+  beslersen model sayılara bakmak yerine nota katılıyor).
+  **Kayıt: `MENTORSHIP_DATA_SCOPE`'a `AI_BRIEF`.** Brifing yeni bir kolon **okumuyor** — zaten
+  kapsamdaki verilerden türüyor — ama **yöntem** yeni, ve "bir LLM benim hakkımda başkası için yazı
+  yazıyor" bir öğrencinin "koçum aktivitemi görüyor"dan çıkarabileceği bir şey değil. Liste API'den
+  geldiği için hem onay ekranı hem koçun aynası kendiliğinden güncellendi. Mevcut bağlar için kapsam
+  genişlemesi: bayrak kapalı ve üretimde bağ yokken maliyeti sıfır (APP-066'nın `EXAM_TRACK` anı).
+  **Önbellek link satırında, yeni tablo yok.** `coach_students.brief` + `brief_at` +
+  `brief_fingerprint` (migration `0100`) — `coach_note` ile birebir aynı şekil ve aynı gerekçe.
+  Parmak izi raporun **şekillendirilmiş** hâlini hashliyor, yani brifingin hiç görmediği bir alan
+  önbelleği bozamıyor ve `MENTORSHIP_BRIEF_PROMPT_VERSION` hash'in içinde olduğu için sürümü
+  yükseltmek hepsini bir anda geçersiz kılıyor. **KVKK bedava:** erasure link satırlarını siliyor,
+  brifing onlarla gidiyor; erasure servisine tek satır eklenmedi. `end()` üçünü de temizliyor —
+  yeniden bağlanma bu satırı canlandırıyor.
+  **Register yeni.** Modüldeki diğer bütün prompt'lar öğrenciye "sen" diye sesleniyor
+  (`companionPromptSystem` / `companionCoachOpening`). Bu, üçüncü bir kişi hakkında bir başkasına
+  yazıyor; o sıcaklığı ödünç almak öğrenciyle konuşuyormuş gibi bir brifing üretirdi. Kendi kuralları
+  var: risk flag'lerini yeniden adlandırma/çelişme yasak (kural motoru taban), `moodTrend`'den teşhis
+  veya kişilik çıkarma yasak, resmi bilgi üretme yasak, veri inceyse "ince" de.
+  **Gotchas:** (1) Uç **POST**, GET değil: LLM çağrısı ve kota harcıyor, bir sayfa yüklemesi ya da
+  prefetch tetikleyememeli. Kart da mount'ta hiçbir şey istemiyor. (2) Throttle 10/dk — ödev
+  ucundan (20/dk) daha sıkı, çünkü bu çağrı başına para harcıyor. (3) Ekonomi:
+  `ai.features.mentorship.brief.free_{enabled,limit}`, ikisi de admin'den; free_enabled varsayılan
+  **kapalı**. (4) `AiUsageFeature.MENTORSHIP_BRIEF` satırları **koçun** id'siyle yazılıyor, admin AI
+  maliyet tablosunda "Koç brifingi" olarak görünüyor.
+  **İlgili:** `apps/api/drizzle/0100_w8_mentorship_brief.sql`,
+  `modules/ai/{domain/mentorship-brief-prompt.ts,application/mentorship-brief.service.ts}`,
+  `modules/mentorship/application/mentorship-brief.service.ts`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/brief-card.tsx`,
+  [`ai.md`](./ai.md), [`payments.md`](./payments.md).
+
+- **Sponsorluk görünürlüğü ve acil fren (APP-077, 2026-09-05)** — APP-076
+  `mentorship.coach.free_seats`'i "tüm maliyet riskini tutan tek düğme" diye tanımladı ama o
+  düğmenin ne yaptığını gösteren hiçbir şey yoktu: `countByStatus()` sponsor satırlarını *aktif
+  olarak* filtreliyor ve başka hiçbir sorgu geri saymıyordu, `ai_usage`'ın da `subscriptions` ile
+  hiçbir join'i yok. Yani "koltuk başına ne harcıyorum" — free_seats'in doğru olup olmadığına karar
+  veren tek sayı — sorulamıyordu bile. Bayrağı canlıda açmanın ön koşulu buydu.
+  **`GET /v1/admin/metrics/sponsorship`** — canlı koltuk sayısı, ayarın kendisi, kohortun 1/7/30
+  günlük LLM maliyeti ve **koltuk başına 30 günlük maliyet**.
+  **Tablolar buluşmuyor, admin orkestre ediyor.** Cevap `subscriptions` ile `ai_usage`'ı yan yana
+  getirmeyi gerektiriyor ama ikisi ayrı modülün tablosu; SQL'de join etmek modül sınırını
+  veritabanına taşırdı. Yerine iki public servis sırayla çağrılıyor: payments **kimin** koltuğu var
+  der (`listSponsoredUserIds`), AI **ne harcadı** der (`costForUsersSince`). Admin, ikisini aynı
+  anda tutmasına izin verilen tek yüzey — modülün varlık sebebi bu.
+  **Koltuk yokken ortalama `null`, sıfır değil.** Sıfır "koltuklar bedava" diye okunur; boş
+  kohortun anlamı bunun tam tersi. Ekranda tire çıkıyor.
+  **Tavan gürültülü.** `listSponsoredUserIds` 1000'de kesiyor; aşılırsa DTO `truncated: true`
+  taşıyor ve kart "eksik sayıyor" uyarısı gösteriyor — sessizce kısmi bir ortalama vermektense.
+  **Acil fren: bayrak artık gerçekten kesiyor.** `mentorship.seats.sponsorship_enabled` baştan beri
+  yeni sponsorlukları kapatıyordu ama mevcutlara dokunmuyordu — yani bir kapı vardı, fren yoktu.
+  Artık kapatmak canlı koltukları da `EXPIRED` yapıyor. Premium maliyetli diye düğmeye basan
+  operatör "şimdi" demek istiyor, "bir sonraki öğrenciden itibaren" değil.
+  **`free_seats` bilerek geriye dönük DEĞİL.** Kotayı düşürmek kimden koltuk alınacağını şekillendirir,
+  verilmiş olanı geri almaz — hangi ikisinin kalacağı da keyfi olurdu. İki düğme, iki şiddet.
+  **Bayrağı geri açmak hiçbir şeyi geri getirmiyor:** koltuk kararı kabul anında veriliyor.
+  **Mekanizma:** `ConfigRegistryService.set` artık `config.changed` olayı yayıyor; payments'taki
+  `SponsoredSeatListener` yalnız kendi anahtarını dinliyor. Genel bir olay, çünkü alternatif admin
+  config uç noktasına payments'a özel bir çağrı koymaktı — kill-switch bilgisi sonucun sahibi olan
+  modülde kalsın diye.
+  **Ayrı bütçe tavanı eklenmedi, bilerek.** Sponsorlu kohort global `ai.budget.monthly_cap_usd_cents`
+  tavanını yiyip **ödeyen** kullanıcıları 503'e düşürebilir. Gerçek veri olmadan tavan uydurmak
+  yanlış yerden kesen bir fren takmak olurdu ve bu dilim tam da o veriyi üretiyor. Bayrak kapalı,
+  `free_seats` düşük, kill-switch var. Karar [`payments.md`](./payments.md)'ye yazıldı ki sonraki
+  okuyan bunun bir unutma değil tercih olduğunu bilsin.
+  **Gotchas:** (1) `costForUsersSince` boş dizide sorgu **atmıyor** — `in ()` bazı sürücülerde
+  "hepsi" demek. (2) Sorgu `ai_usage`'ın mevcut `(user_id, created_at)` index'ini kullanıyor, yeni
+  index gerekmedi. (3) "Kaç koç sponsorluyor" **yok**: `coach_students`'a join gerektirirdi
+  (payments → mentorship tablo sınırı) ve kararı veren sayı değil.
+  **İlgili:** `modules/admin/presentation/admin-metrics.controller.ts`,
+  `modules/payments/application/sponsored-seat.{service,listener}.ts`,
+  `modules/payments/infrastructure/payments.repositories.ts`,
+  `modules/ai/{application/ai-cost-stats.service.ts,infrastructure/ai-usage.repository.ts}`,
+  `common/config/config-registry.service.ts`, `apps/admin/src/app/SponsorshipCards.tsx`.
+
+- **Sponsorlu koltuk — koçun bağladığı öğrenci Premium alıyor (APP-076, 2026-09-05)** — W8 bugüne
+  kadar parasal hiçbir şey bilmiyordu; tek sınır `max_active_students` idi ve aşımı bir hataydı.
+  Artık koçun **koltuğu** var: bağladığı ilk `mentorship.coach.free_seats` (3) öğrenci Premium'a
+  erişiyor.
+  **Guardrail bilerek genişletildi.** AGENTS.md §4 #4 "AI'ı tattıran **iki** yol" diyordu; artık
+  **üç**. Kaldırılmadı, koşulu adlandırıldı: yol kürasyonlu COACH rolüne, config'li koltuk sayısına
+  ve `mentorship.seats.sponsorship_enabled` bayrağına bağlı, ve harcadığı her çağrı hâlâ
+  `ai.budget.monthly_cap_usd_cents` tavanının altında. Roadmap §7'nin "koçtan abonelik sıkma"
+  kararına da revizyon notu düşüldü.
+  **`free_seats` tüm maliyet riskini tutan tek düğme:** koç sayısı × koltuk = bedava premium.
+  **Mimari: sponsorluk gerçek bir `subscriptions` satırı, ikinci entitlement kaynağı değil.**
+  `getEntitlement` neredeyse her istekte çağrılıyor; oraya modüller arası bir join koymak tüm
+  platformun sıcak yolunu bir avuç kişi için zehirlerdi. Satır yazmak sayesinde `computeEntitlement`
+  **tek satır bile değişmedi** — 18 testlik entitlement spec'i regresyon kalkanı olarak duruyor.
+  **Modüller arası ok yok.** W8 koltuğa karar veriyor (kabul transaction'ının kilidi altında,
+  `activeBefore` sayımından), olaya `seatKind` koyuyor; W4'ün yeni `SponsoredSeatListener`'ı onu
+  okuyor. `PaymentsModule` `MentorshipModule`'ü import etmiyor, tersi de. W5'in
+  `MentorshipEventsListener`'ıyla birebir aynı desen.
+  **Süresiz ACTIVE, cron yok.** Sponsor satırı `currentPeriodEnd: null` ile yazılıyor; `ACTIVE` dalı
+  bitiş tarihi yokken süre kontrolü yapmıyor (STAFF'ın `validUntil: null` deseni). Aylık uzatma
+  cron'u gerekmedi.
+  **Değişen üç sayım** — atlanırsa sessiz yanlış üretirlerdi: (1) `hasAnyForUser` sponsor satırını
+  saymıyor, yani koçluk biten öğrencinin **kendi trial hakkı duruyor** — dönüşüm için en değerli an
+  o. (2) `countByStatus` sponsor satırını dışlıyor; yoksa her bedava koltuk `conversionRate`'in
+  paydasını şişirip huniyi olduğundan kötü gösterirdi. (3) `checkout` açık satır SPONSOR ise
+  `PAYMENT_ALREADY_SUBSCRIBED` atmıyor, koltuğu emekliye ayırıp öğrencinin kendi aboneliğine yol
+  veriyor.
+  **Gotchas:** (1) `revoke` satırı **doğrudan EXPIRED** yazıyor, yalnız `currentPeriodEnd`
+  doldurmuyor: `listMaybeRanOut` dunning grace'ini bekliyor, yani satır 3 gün daha açık kalır ve
+  `findOpenForUser` öğrenciyi kendi checkout'undan alıkoyardı. (2) `coach-seat` planı `is_active`
+  ama `findActive()` onu **adıyla dışlıyor** — `purchaseEnabled` plan başına değil global bir
+  anahtar olduğu için, katalogda görünseydi yanında satın alma düğmesi de olurdu. (3) `/abonelik`
+  sponsorlu koltukta "otomatik yenilenir" **demiyor** ve **iptal düğmesi göstermiyor**: arkasında
+  kart yok, `providerRef` null, ve koltuk dönem sınırında değil bağ bitince biter. (4) Öğrencinin
+  kendi açık aboneliği varsa sponsor satırı **hiç yazılmıyor** — kısmi unique index zaten tek açık
+  abonelik istiyor, ve ödenmiş bir şeyin bedava koltukla yer değiştirmesi olmaz.
+  **Bilerek yapılmayanlar:** onay ekranında "sana Premium açılacak" sözü yok (preview ile kabul
+  arasında son koltuk dolabilir; tutamayacağımız söz vermeyiz) · sponsorluk bildirimi yok (bağ
+  bitince öğrenci zaten "bağlantın sonlandı" bildirimi alıyor, `/abonelik` de durumu gösteriyor) ·
+  ücretli koltuk ve Pro tier (APP-077, iyzico doğrulanana kadar açılamaz).
+  **İlgili:** `apps/api/drizzle/0099_w8_sponsored_seat.sql`,
+  `modules/payments/application/{sponsored-seat.service.ts,sponsored-seat.listener.ts}`,
+  `modules/payments/infrastructure/payments.repositories.ts`,
+  `modules/mentorship/{domain/mentorship.constants.ts,application/mentorship-link.service.ts}`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(app)/subscription/_components/subscription-facts.ts`,
+  [`AGENTS.md`](../../AGENTS.md) §4 #4, [`payments.md`](./payments.md).
+
 - **Admin'de koç görünürlüğü (APP-075, 2026-09-05)** — `GET /v1/admin/users` yalnız serbest metin
   araması alıyordu; rol bir ismin ya da e-postanın parçası olmadığı için **"kim koç" sorusu
   sorulamıyordu**. Bayrağı ilk kez açacak operatörün ilk sorusu tam olarak buydu.

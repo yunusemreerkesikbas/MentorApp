@@ -47,6 +47,8 @@ export const AiUsageFeature = {
   DAILY_GREETING: "daily_greeting",
   PLAN_DRAFT: "plan_draft",
   PLAN_ADAPTATION: "plan_adaptation",
+  /** Coach-facing: the meter row is written against the COACH's id, not the student's. */
+  MENTORSHIP_BRIEF: "mentorship_brief",
 } as const;
 export type AiUsageFeature =
   (typeof AiUsageFeature)[keyof typeof AiUsageFeature];

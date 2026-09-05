@@ -7,6 +7,8 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PromotionsModule } from "../promotions/promotions.module";
 import { EntitlementService } from "./application/entitlement.service";
+import { SponsoredSeatListener } from "./application/sponsored-seat.listener";
+import { SponsoredSeatService } from "./application/sponsored-seat.service";
 import { FeaturePolicyService } from "./application/feature-policy.service";
 import { SubscriptionMaintenanceService } from "./application/subscription-maintenance.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
@@ -45,6 +47,8 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     SubscriptionMaintenanceService,
     FeaturePolicyService,
     EntitlementService,
+    SponsoredSeatService,
+    SponsoredSeatListener,
     WebhookService,
     PremiumGuard,
     DisabledPaymentsAdapter,
@@ -66,6 +70,8 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     },
     { provide: INVOICE_PORT, useClass: LoggerInvoiceAdapter },
   ],
-  exports: [EntitlementService, PremiumGuard, SubscriptionsService],
+  // SponsoredSeatService is exported for the admin metrics surface, which is the one place
+  // allowed to hold both "who has a seat" and "what AI cost" at the same time.
+  exports: [EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService],
 })
 export class PaymentsModule {}

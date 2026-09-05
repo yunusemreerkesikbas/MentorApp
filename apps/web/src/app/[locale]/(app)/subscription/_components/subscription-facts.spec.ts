@@ -13,6 +13,7 @@ const plan: PlanDto = {
   priceMinor: 24900,
   currency: "TRY",
   trialDays: 7,
+  seatCount: 0,
   purchaseEnabled: true,
 };
 
@@ -25,6 +26,7 @@ const active: SubscriptionDto = {
   currentPeriodStart: "2026-08-12T10:00:00.000Z",
   currentPeriodEnd: "2026-09-12T10:00:00.000Z",
   cancelAtPeriodEnd: false,
+  sponsored: false,
 };
 
 const entitlement = (reason: string, validUntil: string | null): EntitlementDto => ({
@@ -32,6 +34,46 @@ const entitlement = (reason: string, validUntil: string | null): EntitlementDto 
   isPremium: reason !== "NONE" && reason !== "EXPIRED" && reason !== "INCOMPLETE",
   validUntil,
   reason,
+});
+
+/**
+ * A coach's seat has no card, no charge and no billing period. Every row this screen normally
+ * shows would be a claim about the student's own money that is not true, so the assertion here is
+ * about ABSENCE: what the sponsored case must never render.
+ */
+describe("listSubscriptionFacts — a coach's sponsored seat", () => {
+  const sponsored: SubscriptionDto = {
+    ...active,
+    planId: "coach-seat",
+    // Endless while the seat holds: the ACTIVE branch skips the expiry check without an end date.
+    currentPeriodEnd: null,
+    sponsored: true,
+  };
+
+  it("says who opened it and never claims it renews", () => {
+    // `plan` is null because the seat plan is kept out of the purchasable catalog on the server.
+    const facts = listSubscriptionFacts({
+      entitlement: entitlement("ACTIVE", null),
+      subscription: sponsored,
+      plan: null,
+    });
+    const ids = facts.map((fact) => fact.id);
+    expect(ids).toContain("sponsored");
+    expect(ids).not.toContain("renewal");
+    expect(ids).not.toContain("next_renewal");
+    // No plan means no price or billing period either — nothing was charged to anybody here.
+    expect(ids).not.toContain("price");
+    expect(ids).not.toContain("billing");
+  });
+
+  it("still reports when the relationship started", () => {
+    const facts = listSubscriptionFacts({
+      entitlement: entitlement("ACTIVE", null),
+      subscription: sponsored,
+      plan: null,
+    });
+    expect(facts).toContainEqual({ id: "started", iso: sponsored.startedAt });
+  });
 });
 
 describe("listSubscriptionFacts", () => {

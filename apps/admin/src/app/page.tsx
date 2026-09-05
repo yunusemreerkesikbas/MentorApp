@@ -3,6 +3,7 @@ import DuplicateLayout from './duplicateLayout'
 import HomeCards from './HomeCards'
 import MetricsCards from './MetricsCards'
 import AiCostCards from './AiCostCards'
+import SponsorshipCards from './SponsorshipCards'
 import EconomyCards from './EconomyCards'
 import CoachFeedbackCards from './CoachFeedbackCards'
 
@@ -16,6 +17,7 @@ const Home = () => {
             <div className="main-content">
                 <MetricsCards />
                 <AiCostCards />
+                <SponsorshipCards />
                 <EconomyCards />
                 <CoachFeedbackCards />
                 <HomeCards />

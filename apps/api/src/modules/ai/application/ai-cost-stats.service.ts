@@ -18,6 +18,23 @@ export class AiCostStatsService {
     private readonly budget: AiBudgetGuard,
   ) {}
 
+  /**
+   * 1/7/30-day LLM spend for a named set of users, micro-USD.
+   *
+   * The seam that lets another module price a cohort it owns without either side reaching into
+   * the other's tables: the caller knows WHO, this module knows WHAT IT COST.
+   */
+  async costForUsers(userIds: readonly string[]): Promise<{ d1: number; d7: number; d30: number }> {
+    const now = Date.now();
+    const since = (days: number) => new Date(now - days * DAY_MS);
+    const [d1, d7, d30] = await Promise.all([
+      this.usage.costForUsersSince(userIds, since(1)),
+      this.usage.costForUsersSince(userIds, since(7)),
+      this.usage.costForUsersSince(userIds, since(30)),
+    ]);
+    return { d1, d7, d30 };
+  }
+
   async getCostStats(): Promise<AdminAiCostDto> {
     const now = Date.now();
     const since = (days: number) => new Date(now - days * DAY_MS);

@@ -451,6 +451,12 @@ async function mockApi(
       acceptCalls += 1;
       return json(route, MY_COACH);
     }
+    // The profile screen gained a Google-linking card that queries on mount. The harness answers
+    // unmatched routes with 204, and an empty body breaks it — which would take the whole profile
+    // screen down and, with it, the "Koçum" row this suite navigates through.
+    if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
+      return json(route, { enabled: false, linked: false, providerEmail: null, canLink: false });
+    }
     if (method === "GET" && path === "/v1/mentorship/templates") {
       return json(route, options.templates ?? []);
     }

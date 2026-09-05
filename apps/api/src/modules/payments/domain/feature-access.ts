@@ -24,6 +24,13 @@ export interface PremiumFeatureMeta {
 
 export const PREMIUM_FEATURE_CATALOG: Record<PremiumFeatureId, PremiumFeatureMeta> =
   {
+    [PremiumFeatureId.MENTORSHIP_BRIEF]: {
+      // DAY, like the other on-demand surfaces: a coach reviewing a student today should not be
+      // rationed by what they read last week.
+      window: FeaturePolicyWindow.DAY,
+      enabledKey: "ai.features.mentorship.brief.free_enabled",
+      limitKey: "ai.features.mentorship.brief.free_limit",
+    },
     [PremiumFeatureId.COACH_CHAT]: {
       window: FeaturePolicyWindow.DAY,
       enabledKey: "ai.features.coach.chat.free_enabled",

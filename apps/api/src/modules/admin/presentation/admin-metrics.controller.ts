@@ -5,13 +5,20 @@ import {
   type AdminAiCostDto,
   type AdminCoachFeedbackDto,
   type AdminEconomyStatsDto,
+  type AdminSponsorshipStatsDto,
 } from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { UsersService, type UserStats } from "../../identity/application/users.service";
 import {
   SubscriptionsService,
   type SubscriptionStats,
 } from "../../payments/application/subscriptions.service";
+import {
+  SponsoredSeatService,
+  SPONSORED_SEAT_METRIC_LIMIT,
+  costPerSeatMicros,
+} from "../../payments/application/sponsored-seat.service";
 import { EconomyService } from "../../economy/application/economy.service";
 import { EconomyStatsService } from "../../economy/application/economy-stats.service";
 import { InviteService } from "../../economy/application/invite.service";
@@ -53,6 +60,8 @@ export class AdminMetricsController {
     private readonly coachFeedback: CoachFeedbackStatsService,
     private readonly sessions: SessionService,
     private readonly ads: AdsStatsService,
+    private readonly seats: SponsoredSeatService,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   @Get()
@@ -71,6 +80,38 @@ export class AdminMetricsController {
       economy: { ...economy, invite },
       coaching,
       ads,
+      generatedAt: new Date().toISOString(),
+    };
+  }
+
+  /**
+   * What the coach-sponsored Premium giveaway is costing (W8 seats).
+   *
+   * Composed here rather than in either module because the answer needs both halves and their
+   * tables must not meet: payments knows WHICH users hold a seat, the AI meter knows what those
+   * users spent. Admin is the surface allowed to hold both at once, so it asks each in turn.
+   */
+  @Get("sponsorship")
+  async sponsorshipStats(): Promise<AdminSponsorshipStatsDto> {
+    const [seats, userIds, freeSeatsPerCoach, sponsorshipEnabled] = await Promise.all([
+      this.seats.countSeats(),
+      this.seats.listSeatUserIds(),
+      this.config.get("mentorship.coach.free_seats"),
+      this.config.get("mentorship.seats.sponsorship_enabled"),
+    ]);
+    const costMicros = await this.aiCost.costForUsers(userIds);
+    // `seats` is counted; `userIds` is a bounded page used only to price the cohort. Past the
+    // ceiling the costs describe a sample, so the per-seat figure is withheld rather than
+    // presented as a platform average — an operator calibrating `free_seats` against a number
+    // that silently covers a third of the cohort would set it wrong with full confidence.
+    const truncated = userIds.length >= SPONSORED_SEAT_METRIC_LIMIT;
+    return {
+      seats,
+      freeSeatsPerCoach,
+      sponsorshipEnabled,
+      costMicros,
+      costPerSeatMicros30d: truncated ? null : costPerSeatMicros(costMicros.d30, seats),
+      truncated,
       generatedAt: new Date().toISOString(),
     };
   }

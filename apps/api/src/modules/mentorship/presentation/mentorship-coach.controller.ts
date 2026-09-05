@@ -14,6 +14,7 @@ import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   UserRole,
+  type MentorshipBriefDto,
   type MentorshipCoachOverviewDto,
   type MentorshipInviteCodeDto,
   type MentorshipProgramTemplateDto,
@@ -26,6 +27,7 @@ import {
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
+import { MentorshipBriefService } from "../application/mentorship-brief.service";
 import { MentorshipInviteService } from "../application/mentorship-invite.service";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipRosterService } from "../application/mentorship-roster.service";
@@ -57,6 +59,7 @@ export class MentorshipCoachController {
     private readonly roster: MentorshipRosterService,
     private readonly assignments: MentorshipAssignmentService,
     private readonly templates: MentorshipTemplateService,
+    private readonly brief: MentorshipBriefService,
   ) {}
 
   /**
@@ -158,6 +161,25 @@ export class MentorshipCoachController {
     @Param() params: MentorshipTemplateParamDto,
   ): Promise<void> {
     return this.templates.remove(user.id, params.templateId);
+  }
+
+  /**
+   * The AI brief over one student's report (roadmap §9's "koç zekâ katmanı").
+   *
+   * POST, not GET: it may spend an LLM call and a quota unit, so it must never be something a
+   * page load or a prefetch can trigger. The rule-based risk flags stay the floor — the brief
+   * reads them, it does not replace them.
+   *
+   * Throttled tighter than the assignment path: this one costs money per call.
+   */
+  @Post("students/:studentId/brief")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  generateBrief(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+  ): Promise<MentorshipBriefDto> {
+    return this.brief.generate({ id: user.id, roles: user.roles }, params.studentId);
   }
 
   @Delete("students/:studentId")

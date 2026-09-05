@@ -145,6 +145,7 @@ describe("mentorship (e2e)", () => {
       "PLAN_TASK_TITLES",
       "MOOD_LEVEL",
       "EXAM_TRACK",
+      "AI_BRIEF",
     ]);
   });
 
@@ -167,6 +168,7 @@ describe("mentorship (e2e)", () => {
       "PLAN_TASK_TITLES",
       "MOOD_LEVEL",
       "EXAM_TRACK",
+      "AI_BRIEF",
     ]);
   });
 
@@ -339,7 +341,9 @@ describe("mentorship (e2e)", () => {
     const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
     expect(mine.status).toBe(200);
     expect(mine.body.coachDisplayName).toBe("W8 coach");
-    expect(mine.body.dataScope).toHaveLength(5);
+    // Length, not contents: the two literal lists above already pin what the scope IS. What this
+    // one guards is that the student's own screen and the consent screen never drift apart.
+    expect(mine.body.dataScope).toHaveLength(6);
 
     const none = await http().get("/v1/mentorship/my-coach").set(auth("outsider"));
     expect(none.status).toBe(200);

@@ -44,7 +44,9 @@ const FACT_LABEL: Record<
   | "row_next_renewal"
   | "row_access_ends"
   | "row_renewal"
+  | "row_sponsored"
 > = {
+  sponsored: "row_sponsored",
   price: "row_price",
   billing: "row_billing",
   started: "row_started",
@@ -253,7 +255,9 @@ export function SubscriptionShell() {
   });
   const reason = ent?.reason ?? "NONE";
   const heroTitle = plan?.name ?? (ent?.isPremium ? t("chip_premium") : t("chip_free"));
-  const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd;
+  // A sponsored seat is not the student's to cancel: there is no provider reference behind it,
+  // and it ends with the coaching link rather than on a billing boundary.
+  const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd && !sub?.sponsored;
   const showSummary = facts.length > 0 || canCancel || reason !== "NONE";
   const heroChip = heroChipKey(reason, Boolean(sub?.cancelAtPeriodEnd));
 
@@ -273,6 +277,8 @@ export function SubscriptionShell() {
         return fact.iso ? formatDate(fact.iso, locale) : "—";
       case "renewal":
         return fact.renewal === "stops" ? t("renewal_stops") : t("renewal_auto");
+      case "sponsored":
+        return t("sponsored_by_coach");
     }
   }
 
