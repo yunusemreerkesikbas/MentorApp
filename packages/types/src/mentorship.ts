@@ -227,3 +227,33 @@ export interface MentorshipStudentReportDto {
   droppedAssignments: MentorshipDroppedAssignmentDto[];
   moodTrend: { date: string; level: number }[];
 }
+
+/**
+ * One task inside a saved program. `dayIndex` is days from the program's own first day (0..20,
+ * three weeks — the composer's 21-task ceiling), never a date: a template exists to be re-dated
+ * onto whatever week the composer is showing.
+ */
+export interface MentorshipProgramTemplateTaskDto {
+  dayIndex: number;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  coachNote: string | null;
+}
+
+/**
+ * A week the coach saved to reuse. Loading one fills the composer's drafts; the write still goes
+ * through `POST /students/:id/assignments`, so every existing guard (21 ceiling, 120-day horizon,
+ * all-or-nothing transaction) applies unchanged and there is no second way to write a plan.
+ *
+ * `examType` is the taxonomy the topics were picked from, so the composer can say so when the
+ * template is loaded onto a student sitting a different exam. Null means the template carries no
+ * topics and fits anyone.
+ */
+export interface MentorshipProgramTemplateDto {
+  id: string;
+  name: string;
+  examType: string | null;
+  tasks: MentorshipProgramTemplateTaskDto[];
+  updatedAt: string;
+}

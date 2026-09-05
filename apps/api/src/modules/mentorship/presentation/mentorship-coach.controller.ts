@@ -16,6 +16,7 @@ import {
   UserRole,
   type MentorshipCoachOverviewDto,
   type MentorshipInviteCodeDto,
+  type MentorshipProgramTemplateDto,
   type MentorshipLinkStatus,
   type MentorshipRosterRowDto,
   type MentorshipStudentReportDto,
@@ -28,11 +29,14 @@ import { MentorshipAssignmentService } from "../application/mentorship-assignmen
 import { MentorshipInviteService } from "../application/mentorship-invite.service";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipRosterService } from "../application/mentorship-roster.service";
+import { MentorshipTemplateService } from "../application/mentorship-template.service";
 import {
   CreateMentorshipAssignmentsDto,
   ListMentorshipStudentsQueryDto,
   MentorshipCoachNoteDto,
   MentorshipStudentParamDto,
+  MentorshipTemplateParamDto,
+  SaveMentorshipTemplateDto,
 } from "./mentorship.dto";
 
 /**
@@ -52,6 +56,7 @@ export class MentorshipCoachController {
     private readonly invites: MentorshipInviteService,
     private readonly roster: MentorshipRosterService,
     private readonly assignments: MentorshipAssignmentService,
+    private readonly templates: MentorshipTemplateService,
   ) {}
 
   /**
@@ -123,6 +128,36 @@ export class MentorshipCoachController {
     @Body() dto: MentorshipCoachNoteDto,
   ): Promise<void> {
     return this.links.setCoachNote(user.id, params.studentId, dto.body);
+  }
+
+  /**
+   * Saved weekly programs. Note what is NOT here: an "apply" endpoint. Loading a template fills the
+   * composer's drafts client-side and the coach still writes through `POST .../assignments`, so
+   * there is one assignment path, not two, and the composer's subject/topic picker stays the gate
+   * that keeps a template built for one exam off a student sitting another.
+   */
+  @Get("templates")
+  listTemplates(@CurrentUser() user: RequestUser): Promise<MentorshipProgramTemplateDto[]> {
+    return this.templates.list(user.id);
+  }
+
+  /** Upsert by name: saving over an existing name IS the edit, so there is no PUT. */
+  @Post("templates")
+  @HttpCode(HttpStatus.OK)
+  saveTemplate(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: SaveMentorshipTemplateDto,
+  ): Promise<MentorshipProgramTemplateDto> {
+    return this.templates.save(user.id, dto);
+  }
+
+  @Delete("templates/:templateId")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  deleteTemplate(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipTemplateParamDto,
+  ): Promise<void> {
+    return this.templates.remove(user.id, params.templateId);
   }
 
   @Delete("students/:studentId")

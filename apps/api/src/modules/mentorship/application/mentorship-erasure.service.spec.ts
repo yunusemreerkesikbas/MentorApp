@@ -6,21 +6,26 @@ const USER = "11111111-1111-4111-8111-111111111111";
 function setup(purgedLinkIds: string[]) {
   const links = { purgeForUser: vi.fn(async () => purgedLinkIds) };
   const codes = { purgeForCoach: vi.fn(async () => undefined) };
+  const templates = { purgeForCoach: vi.fn(async () => undefined) };
   const plan = { clearMentorshipOrigin: vi.fn(async () => purgedLinkIds.length) };
   const service = new MentorshipErasureService(
     links as never,
     codes as never,
+    templates as never,
     plan as never,
   );
-  return { service, links, codes, plan };
+  return { service, links, codes, templates, plan };
 }
 
 describe("MentorshipErasureService", () => {
-  it("drops the links and the coach's invite code", async () => {
-    const { service, links, codes } = setup(["link-1"]);
+  it("drops the links, the coach's invite code and their saved templates", async () => {
+    const { service, links, codes, templates } = setup(["link-1"]);
     await service.eraseUserData(USER);
     expect(links.purgeForUser).toHaveBeenCalledWith(USER);
     expect(codes.purgeForCoach).toHaveBeenCalledWith(USER);
+    // Explicit, not by cascade: erasure anonymizes the `users` row rather than deleting it, so
+    // `mentorship_program_templates.coach_id`'s ON DELETE CASCADE never fires.
+    expect(templates.purgeForCoach).toHaveBeenCalledWith(USER);
   });
 
   /**

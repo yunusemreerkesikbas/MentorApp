@@ -270,6 +270,69 @@ export const mentorshipDroppedAssignments = pgTable(
 );
 
 /**
+ * One task inside a saved program. `dayIndex` rather than a date, because the whole point of a
+ * template is that it can be re-dated onto any start day.
+ */
+export type MentorshipProgramTemplateTask = {
+  /**
+   * Days from the program's first day, normalized so the earliest task is 0. Capped at 20 in Zod:
+   * the composer's 21-task ceiling is three weeks of days, and stepping the week leaves earlier
+   * drafts in place, so a program can legitimately span more than one week.
+   */
+  dayIndex: number;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  /** The coach's instruction, carried into `plan_tasks.coach_note` when the week is written. */
+  coachNote: string | null;
+};
+
+/**
+ * A week the coach saved to reuse (W8). The answer to the real bottleneck at the 20-student
+ * quota: rewriting the same program by hand for every student.
+ *
+ * `tasks` is jsonb rather than a child table because the array is bounded (the 21-task ceiling the
+ * assignment schema already enforces), always read and written whole, and never queried by field.
+ * A second table would only be a second join.
+ *
+ * A template is a saved DRAFT, not a second way to write a plan: loading one fills the composer,
+ * and the coach still submits through `POST /students/:id/assignments`. That matters because
+ * `topic` is not validated against the student's exam taxonomy server-side — the composer's own
+ * subject/topic picker is the only real gate, and a server-side "apply" would quietly write a KPSS
+ * topic onto a YKS student. `exam_type` records which taxonomy the topics came from so the picker
+ * can say so; null means the template carries no topics and fits anyone.
+ *
+ * No RLS policy — same as `mentorship_invite_codes`: SERVICE context, scoped by `coach_id` in the
+ * repository. Unique on `(coach_id, name)` so saving under an existing name overwrites, which is
+ * how a template is edited; there is no separate update endpoint.
+ */
+export const mentorshipProgramTemplates = pgTable(
+  "mentorship_program_templates",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    coachId: uuid("coach_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    name: text("name").notNull(),
+    /** Which exam's taxonomy the topics were picked from; null when the template has no topics. */
+    examType: text("exam_type"),
+    tasks: jsonb("tasks").$type<MentorshipProgramTemplateTask[]>().notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("mentorship_program_templates_coach_name_idx").on(t.coachId, t.name),
+    index("mentorship_program_templates_coach_idx").on(t.coachId, t.updatedAt),
+  ],
+);
+
+/**
  * Refresh tokens: opaque 256-bit secrets — only the sha256 hash is stored.
  * Rotation: each refresh revokes the old row and issues a new one in the same `family`.
  * Reuse detection: presenting an already-revoked token revokes the whole family (theft assumption).

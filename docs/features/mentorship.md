@@ -82,6 +82,9 @@ POST   /v1/mentorship/invite-code                  -> rotates; the previous code
 GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipRosterRowDto>
 PUT    /v1/mentorship/students/:studentId/note     -> 204  { body: string | null }
 DELETE /v1/mentorship/students/:studentId          -> 204
+GET    /v1/mentorship/templates                    -> MentorshipProgramTemplateDto[]
+POST   /v1/mentorship/templates                    -> upsert by name (saving over a name IS the edit)
+DELETE /v1/mentorship/templates/:templateId        -> 204
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
@@ -105,6 +108,9 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
 | `PUT /v1/mentorship/students/:studentId/note` | The coach's standing note to this student; `{ body: null }` clears it (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
+| `GET /v1/mentorship/templates` | The coach's saved weekly programs (`@Roles(COACH)`) |
+| `POST /v1/mentorship/templates` | Save a program, upserting on `(coach, name)` — there is no PUT because saving over a name is the edit |
+| `DELETE /v1/mentorship/templates/:templateId` | Delete one of the coach's own; another coach's id is a 404 |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
@@ -112,7 +118,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
 `MENTORSHIP_INVITE_EXPIRED` · `MENTORSHIP_ALREADY_LINKED` · `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` ·
-`MENTORSHIP_SELF_LINK`.
+`MENTORSHIP_SELF_LINK` · `MENTORSHIP_TEMPLATE_NOT_FOUND` · `MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED`.
 
 Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_active_students`
 (20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
@@ -142,6 +148,49 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Program şablonu — bir haftayı kaydet, başka öğrenciye uygula (APP-074, 2026-09-05)** — Besteci
+  öğrenci başına çalışıyordu; aynı programı ikinci öğrenciye vermek sıfırdan yazmak demekti. 20
+  öğrenci kotasındaki gerçek darboğaz buydu (roadmap §9'un "aynı ekiple 2-3x öğrenci" iddiası).
+  **En kritik karar: şablon UYGULANMIYOR, bestecinin içine YÜKLENİYOR.** Ayrı bir `apply` ucu yok.
+  Sebep teknik değil, doğruluk: `topic` sunucuda öğrencinin sınav taksonomisine karşı **hiç
+  doğrulanmıyor** — `refinePlanTaskTaxonomy` yalnız "konu dersi ister" diyor. Tek gerçek kapı
+  bestecinin `useExamTopicTaxonomy` seçicisi. Sunucu tarafı bir apply, KPSS için yazılmış bir konuyu
+  YKS öğrencisine sessizce yazardı. Yükleme taslakları dolduruyor, yazma gene
+  `POST /students/:id/assignments` ile oluyor: 21 tavanı, 120 gün ufku, 20/dk throttle ve
+  all-or-nothing tx aynen geçerli, ikinci bir yazma yolu doğmuyor.
+  **Sınav uyuşmazlığı sessiz değil.** Şablonun `examType`'ı öğrencininkinden farklıysa konular
+  düşürülüyor ve **kaç tanesinin düştüğü söyleniyor**; ders kalıyor (ders koçun elle de yazabileceği
+  geniş bir etiket, sınava özgü olan onun altındaki dal). Yarısını sessizce kaybeden bir şablon,
+  hiç yüklenmeyeninden kötüdür: koç kalanı bütün program sanıp atar.
+  **Model:** `mentorship_program_templates` (migration `0098`) — `tasks` jsonb, alt tablo değil
+  (dizi 21 ile sınırlı, hep bütün okunuyor, alanına göre hiç sorgulanmıyor). `UNIQUE (coach_id, name)`
+  upsert anahtarı: **ada göre kaydetmek düzenlemenin ta kendisi**, ayrı PUT yok.
+  **`dayIndex` 0..6 değil 0..20:** bestecinin 21 tavanı zaten "üç hafta"; hafta düğmesine basmak
+  önceki taslakları yerinde bıraktığı için bir program bugün bile birden fazla haftaya yayılabiliyor.
+  Ofset programın **kendi ilk gününden** sayılıyor (en erken görev 0), yeniden tarihlenebilirliğin
+  şartı bu.
+  **Kota kilitsiz.** Sayım ve insert tek transaction'da ama advisory lock yok — `acceptInvite`'in
+  aksine burada kota, sayacı olmayan bir davet kodunun tek sınırı değil, koçun kendi listesinin
+  düzen tavanı; yarışın üretebileceği en kötü şey 20 yerine 21 şablon.
+  **Erasure açık yazılmak zorunda.** `coach_id` FK'sı ON DELETE CASCADE taşısa da erasure `users`
+  satırını **anonimleştiriyor, silmiyor** — cascade hiç ateşlenmiyor. `mentorship_dropped_assignments`
+  cascade'e güvenebiliyor çünkü o link'e bağlı ve link'ler gerçekten siliniyor.
+  **Yan temizlik:** besteci 362 satırdı; `ComposerSelect` (eski `TaxonomySelect`, artık
+  `{value,label}` alıyor) ve `composer-dates.ts` ayrı dosyalara çıktı.
+  **Gotchas:** (1) `mentorshipTemplateTaskSchema` `planTaskFieldsSchema`'dan türetiliyor,
+  `mentorshipAssignmentTaskSchema`'dan değil: ikincisi `.superRefine` ile bitiyor, yani `ZodEffects`,
+  ve `ZodEffects` `.pick()`/`.omit()` kabul etmiyor. (2) Şema `.strict()`; `taskDate` göndermek 400
+  döner — şablonun taşıyamayacağı bir alanı sessizce kırpmak koça olmayan bir şey kaydettiğini
+  düşündürürdü. (3) `0098`'deki FK `NOT VALID` taşımıyor ve taşımamalı: tablo aynı migration'da boş
+  doğuyor. (4) Şablon **hiçbir öğrenciden bahsetmiyor**, dolayısıyla `requireActiveLink` bu uçlara
+  uygulanmıyor; sahiplik repository'de her okuma ve silmede `coach_id` filtresiyle duruyor ve
+  başkasının id'si 404 (403 değil) dönüyor.
+  **İlgili:** `apps/api/drizzle/0098_w8_mentorship_program_templates.sql`,
+  `modules/mentorship/{infrastructure/mentorship-template.repository.ts,application/mentorship-template.service.ts,application/mentorship-erasure.service.ts}`,
+  `packages/{types,validation}/src/mentorship.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/{template-apply.ts,template-bar.tsx,composer-select.tsx,composer-dates.ts,assign-task-form.tsx}`,
+  `apps/web/src/lib/mentorship.ts`, `apps/web/messages/{tr,en}.json`.
 
 - **Roster'dan kokpite — kohort özeti, kontenjan ve kapsam aynası (APP-073, 2026-09-05)** — Roster
   bir liste idi; roadmap §9'un "koç panele girince **kim geride, neden, ne yapmalı** öne çıkar"

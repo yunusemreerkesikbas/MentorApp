@@ -2,6 +2,8 @@ import type {
   MentorshipCoachOverviewDto,
   MentorshipInviteCodeDto,
   MentorshipInvitationPreviewDto,
+  MentorshipProgramTemplateDto,
+  MentorshipProgramTemplateTaskDto,
   MentorshipRosterRowDto,
   MentorshipStudentReportDto,
   MyCoachDto,
@@ -78,6 +80,34 @@ export async function assignTasks(
 
 export async function endStudentLink(studentId: string): Promise<void> {
   await http(`/v1/mentorship/students/${encodeURIComponent(studentId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** The coach's saved weekly programs, newest edit first. */
+export async function fetchTemplates(): Promise<MentorshipProgramTemplateDto[]> {
+  return (await http<MentorshipProgramTemplateDto[]>(
+    "/v1/mentorship/templates",
+  )) as MentorshipProgramTemplateDto[];
+}
+
+/**
+ * Save under a name. Saving over an existing name replaces it — that is the edit path, which is
+ * why there is no PUT here and none on the API.
+ */
+export async function saveTemplate(input: {
+  name: string;
+  examType: string | null;
+  tasks: MentorshipProgramTemplateTaskDto[];
+}): Promise<MentorshipProgramTemplateDto> {
+  return (await http<MentorshipProgramTemplateDto>("/v1/mentorship/templates", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as MentorshipProgramTemplateDto;
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  await http<void>(`/v1/mentorship/templates/${encodeURIComponent(templateId)}`, {
     method: "DELETE",
   });
 }

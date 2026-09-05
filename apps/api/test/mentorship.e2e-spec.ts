@@ -820,6 +820,103 @@ describe("mentorship (e2e)", () => {
     });
   });
 
+  describe("saved program templates", () => {
+    let templateId: string;
+
+    const week = (name: string) => ({
+      name,
+      examType: "KPSS",
+      tasks: [
+        { dayIndex: 0, title: "Paragraf 20 soru", subject: "Türkçe", topic: "Paragraf" },
+        { dayIndex: 3, title: "Problemler tekrar", subject: "Matematik", coachNote: "Süre tut" },
+      ],
+    });
+
+    it("is a coach surface, and one coach never sees another's", async () => {
+      expect((await http().get("/v1/mentorship/templates")).status).toBe(401);
+      expect((await http().get("/v1/mentorship/templates").set(auth("student"))).status).toBe(403);
+
+      const saved = await http()
+        .post("/v1/mentorship/templates")
+        .set(auth("coach"))
+        .send(week("Hafta 1"));
+      expect(saved.status).toBe(200);
+      templateId = saved.body.id;
+      expect(saved.body.tasks).toHaveLength(2);
+      expect(saved.body.tasks[0].dayIndex).toBe(0);
+      // Absent optional fields come back as explicit nulls, never missing keys: the composer
+      // reads them straight into drafts and `undefined` there would mean "leave as is".
+      expect(saved.body.tasks[1]).toEqual({
+        dayIndex: 3,
+        title: "Problemler tekrar",
+        subject: "Matematik",
+        topic: null,
+        coachNote: "Süre tut",
+      });
+
+      expect((await http().get("/v1/mentorship/templates").set(auth("coach2"))).body).toEqual([]);
+    });
+
+    it("overwrites on the same name instead of piling up, because that is the edit path", async () => {
+      const again = await http()
+        .post("/v1/mentorship/templates")
+        .set(auth("coach"))
+        .send({ ...week("Hafta 1"), tasks: [{ dayIndex: 6, title: "Tek görev" }] });
+      expect(again.status).toBe(200);
+      expect(again.body.id).toBe(templateId);
+      expect(again.body.tasks).toEqual([
+        { dayIndex: 6, title: "Tek görev", subject: null, topic: null, coachNote: null },
+      ]);
+
+      const list = await http().get("/v1/mentorship/templates").set(auth("coach"));
+      expect(list.body).toHaveLength(1);
+    });
+
+    it("refuses a day outside the week and a topic without a subject", async () => {
+      const badDay = await http()
+        .post("/v1/mentorship/templates")
+        .set(auth("coach"))
+        .send({ name: "Kötü", tasks: [{ dayIndex: 7, title: "Görev" }] });
+      expect(badDay.status).toBe(400);
+
+      // Same rule the assignment path enforces: a topic cannot be a branchless label.
+      const orphanTopic = await http()
+        .post("/v1/mentorship/templates")
+        .set(auth("coach"))
+        .send({ name: "Kötü", tasks: [{ dayIndex: 0, title: "Görev", topic: "Paragraf" }] });
+      expect(orphanTopic.status).toBe(400);
+    });
+
+    it("refuses an unknown field rather than silently dropping it", async () => {
+      // `.strict()`: a coach must not believe they saved a date the template cannot carry.
+      const res = await http()
+        .post("/v1/mentorship/templates")
+        .set(auth("coach"))
+        .send({ name: "Kötü", tasks: [{ dayIndex: 0, title: "Görev", taskDate: "2026-09-10" }] });
+      expect(res.status).toBe(400);
+    });
+
+    it("hands another coach's template a 404, not a 403", async () => {
+      const res = await http()
+        .delete(`/v1/mentorship/templates/${templateId}`)
+        .set(auth("coach2"));
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("MENTORSHIP_TEMPLATE_NOT_FOUND");
+      // And it is still there for its owner.
+      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).body).toHaveLength(1);
+    });
+
+    it("deletes the coach's own, idempotently enough to 404 the second time", async () => {
+      expect(
+        (await http().delete(`/v1/mentorship/templates/${templateId}`).set(auth("coach"))).status,
+      ).toBe(204);
+      expect(
+        (await http().delete(`/v1/mentorship/templates/${templateId}`).set(auth("coach"))).status,
+      ).toBe(404);
+      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).body).toEqual([]);
+    });
+  });
+
   it("closes every door when the flag is off", async () => {
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
     try {
@@ -829,6 +926,7 @@ describe("mentorship (e2e)", () => {
       expect((await http().get("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(403);
       expect((await http().post("/v1/mentorship/invite-code").set(auth("coach"))).status).toBe(403);
       expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).status).toBe(403);
+      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).status).toBe(403);
     } finally {
       await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
     }

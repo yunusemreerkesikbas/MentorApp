@@ -2,13 +2,20 @@
 
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MentorshipReportPlanTaskDto } from "@mentor/types";
+import type {
+  MentorshipProgramTemplateDto,
+  MentorshipReportPlanTaskDto,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, TextAreaField, TextField } from "@mentor/ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks, type MentorshipAssignmentDraft } from "@/lib/mentorship";
 import { useExamTopicTaxonomy } from "@/lib/use-exam-topic-taxonomy";
+import { ComposerSelect, labelOptions } from "./composer-select";
+import { addDaysIso, todayLocalIso } from "./composer-dates";
 import { buildRepeatDrafts } from "./repeat-week";
+import { TemplateBar } from "./template-bar";
+import { buildTemplateDrafts } from "./template-apply";
 
 /**
  * The week composer: a coach plans a week and sends it in ONE request.
@@ -25,22 +32,6 @@ import { buildRepeatDrafts } from "./repeat-week";
 const DAYS_IN_WEEK = 7;
 const MAX_TASKS = 21;
 const COACH_NOTE_MAX = 500;
-
-/** Today in the browser's local calendar as `yyyy-mm-dd`. The past is refused server-side. */
-function todayLocalIso(): string {
-  const now = new Date();
-  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-}
-
-function addDaysIso(iso: string, days: number): string {
-  const date = new Date(`${iso}T00:00:00`);
-  date.setDate(date.getDate() + days);
-  return new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
-    .toISOString()
-    .slice(0, 10);
-}
 
 interface Draft extends MentorshipAssignmentDraft {
   /** Local-only key: drafts are unsaved rows, so nothing server-side can identify them yet. */
@@ -102,6 +93,38 @@ export function AssignTaskForm({
       ...prev,
       ...copied.map((draft, index) => ({ ...draft, key: `repeat-${Date.now()}-${index}` })),
     ]);
+  }
+
+  /**
+   * A saved program becomes drafts, anchored on the week the composer is showing. Nothing is
+   * written until the coach submits, which is the point: a template built for another exam has its
+   * topics dropped here, and the coach can see and fix that before it reaches a student's plan.
+   */
+  function loadTemplate(template: MentorshipProgramTemplateDto) {
+    const load = buildTemplateDrafts(
+      template,
+      days[0]!,
+      studentExamType,
+      MAX_TASKS - drafts.length,
+    );
+    setDrafts((prev) => [
+      ...prev,
+      ...load.drafts.map((draft, index) => ({
+        ...draft,
+        key: `template-${Date.now()}-${index}`,
+      })),
+    ]);
+    // Say what was thinned. A template that quietly loses half its tasks is worse than one that
+    // refuses to load, because the coach assigns the remainder believing it is the whole program.
+    if (load.clearedTopics > 0 || load.skipped > 0) {
+      toast.info({
+        title: t("template_loaded", { name: template.name }),
+        message:
+          load.clearedTopics > 0
+            ? t("template_topics_cleared", { count: load.clearedTopics })
+            : t("template_skipped", { count: load.skipped }),
+      });
+    }
   }
 
   function addDraft() {
@@ -171,6 +194,13 @@ export function AssignTaskForm({
       </p>
 
       <form className="flex flex-col gap-4" onSubmit={submit}>
+        <TemplateBar
+          drafts={drafts}
+          examType={studentExamType}
+          disabled={busy || atCeiling}
+          onLoad={loadTemplate}
+        />
+
         <div className="flex flex-wrap items-center gap-2">
           <Button
             type="button"
@@ -224,11 +254,11 @@ export function AssignTaskForm({
         />
 
         <div className="grid gap-3 sm:grid-cols-2">
-          <TaxonomySelect
+          <ComposerSelect
             label={t("assign_subject")}
             value={subject}
             placeholder={t("assign_subject_none")}
-            options={subjects}
+            options={labelOptions(subjects)}
             disabled={!loaded || subjects.length === 0}
             onChange={(next) => {
               setSubject(next);
@@ -236,11 +266,11 @@ export function AssignTaskForm({
               setTopic("");
             }}
           />
-          <TaxonomySelect
+          <ComposerSelect
             label={t("assign_topic")}
             value={topic}
             placeholder={t("assign_topic_none")}
-            options={topics}
+            options={labelOptions(topics)}
             disabled={subject === "" || topics.length === 0}
             onChange={setTopic}
           />
@@ -319,44 +349,5 @@ export function AssignTaskForm({
         </div>
       </form>
     </Card>
-  );
-}
-
-/**
- * A native `<select>`: it opens the platform's own picker, is keyboard- and screen-reader-correct
- * for free, and costs no bundle. A combobox library for two dropdowns would never earn its weight.
- */
-function TaxonomySelect({
-  label,
-  value,
-  placeholder,
-  options,
-  disabled,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  placeholder: string;
-  options: string[];
-  disabled: boolean;
-  onChange: (next: string) => void;
-}) {
-  return (
-    <label className="grid gap-1 text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-      {label}
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className="min-h-11 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-      >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
-          </option>
-        ))}
-      </select>
-    </label>
   );
 }

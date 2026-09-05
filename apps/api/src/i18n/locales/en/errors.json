@@ -125,6 +125,8 @@
   "MENTORSHIP_INVITE_EXPIRED": "That invite code has expired. Ask your coach for a new one.",
   "MENTORSHIP_ALREADY_LINKED": "You already have an active coach. End that link before joining a new one.",
   "MENTORSHIP_STUDENT_QUOTA_EXCEEDED": "This coach's student roster is full. Let them know, and try again when a seat opens.",
+  "MENTORSHIP_TEMPLATE_NOT_FOUND": "That template was not found.",
+  "MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED": "You have saved as many templates as you can keep. Delete one to save another.",
   "MENTORSHIP_SELF_LINK": "You can't coach yourself.",
   "COACHING_TASK_COACH_ASSIGNED": "You can't edit a task your coach assigned. You can complete it or delete it.",
   "MENTORSHIP_ASSIGNMENT_TOO_FAR": "You can't assign a task that far ahead."

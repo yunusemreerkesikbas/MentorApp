@@ -217,6 +217,70 @@ test.describe("koç tarafı", () => {
     await expect(page.getByText("1/21 görev")).toBeVisible();
   });
 
+  test("şablon kaydı programı gün ofsetine çevirir, tarihe değil", async ({ page }) => {
+    const api = await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    await page.goto(`/kocluk/${STUDENT_ID}`);
+
+    // Compose two tasks on two different days of the shown week.
+    await page.getByLabel("Görev", { exact: true }).fill("İlk görev");
+    await page.getByRole("button", { name: "Seçili güne ekle" }).click();
+    // The day chips, by their group label — matching on the rendered date would tie the test to
+    // the browser's own calendar, and matching on the "· N" count only works after a draft exists.
+    await page.getByRole("group", { name: "Gün seç" }).getByRole("button").nth(2).click();
+    await page.getByLabel("Görev", { exact: true }).fill("İkinci görev");
+    await page.getByRole("button", { name: "Seçili güne ekle" }).click();
+    await expect(page.getByText("2/21 görev")).toBeVisible();
+
+    await page.getByLabel("Şablon adı").fill("Hafta 1");
+    await page.getByRole("button", { name: "Şablon olarak kaydet" }).click();
+
+    await expect.poll(() => api.savedTemplates.length).toBe(1);
+    const saved = api.savedTemplates[0]!;
+    expect(saved.name).toBe("Hafta 1");
+    // The whole point: the program is stored as offsets from its own first day, so it can be
+    // re-dated onto any week. A saved date would pin it to the week it was composed in.
+    expect(saved.tasks).toEqual([
+      expect.objectContaining({ dayIndex: 0, title: "İlk görev" }),
+      expect.objectContaining({ dayIndex: 2, title: "İkinci görev" }),
+    ]);
+    expect(JSON.stringify(saved.tasks)).not.toContain("taskDate");
+  });
+
+  test("başka sınav için kaydedilmiş şablonun konuları sessizce taşınmaz", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      // The report's student sits KPSS; this template was built against YKS.
+      templates: [
+        {
+          id: "tpl-1",
+          name: "YKS haftası",
+          examType: "YKS",
+          updatedAt: "2026-09-01T00:00:00.000Z",
+          tasks: [
+            {
+              dayIndex: 0,
+              title: "Paragraf 20 soru",
+              subject: "Türkçe",
+              topic: "Paragraf",
+              coachNote: null,
+            },
+          ],
+        },
+      ],
+    });
+    await page.goto(`/kocluk/${STUDENT_ID}`);
+
+    await page.getByLabel("Şablondan yükle").selectOption({ label: "YKS haftası · 1 görev" });
+
+    await expect(page.getByText("1/21 görev")).toBeVisible();
+    // Said out loud, not silently thinned: `topic` is a soft ref into the content taxonomy and the
+    // API never checks it against THIS student's exam.
+    await expect(
+      page.getByText("1 görevin konusu kaldırıldı", { exact: false }),
+    ).toBeVisible();
+  });
+
   test("not yazmak öğrenciye giden tek yönlü kaydı gönderir", async ({ page }) => {
     const api = await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto(`/kocluk/${STUDENT_ID}`);
@@ -279,12 +343,15 @@ async function mockApi(
     /** ACTIVE roster rows. The header's summary and seat count are both derived from these. */
     roster?: ReturnType<typeof rosterRow>[];
     maxActiveStudents?: number;
+    /** The coach's saved programs, as `GET /v1/mentorship/templates` would return them. */
+    templates?: Record<string, unknown>[];
   },
 ) {
   const user = makeUser(options.roles);
   let previewCalls = 0;
   let acceptCalls = 0;
   const noteBodies: (string | null)[] = [];
+  const savedTemplates: { name: string; tasks: unknown[] }[] = [];
 
   const report = {
     studentId: STUDENT_ID,
@@ -384,6 +451,17 @@ async function mockApi(
       acceptCalls += 1;
       return json(route, MY_COACH);
     }
+    if (method === "GET" && path === "/v1/mentorship/templates") {
+      return json(route, options.templates ?? []);
+    }
+    if (method === "POST" && path === "/v1/mentorship/templates") {
+      const body = request.postDataJSON() as { name: string; tasks: unknown[] };
+      savedTemplates.push(body);
+      return json(route, { id: "tpl-new", updatedAt: "2026-09-05T00:00:00.000Z", ...body });
+    }
+    if (method === "DELETE" && path.startsWith("/v1/mentorship/templates/")) {
+      return json(route, null, 204);
+    }
     if (method === "GET" && path === "/v1/mentorship/overview") {
       return json(route, {
         inviteCode: { code: INVITE_CODE, expiresAt: "2026-09-30T00:00:00.000Z" },
@@ -427,6 +505,9 @@ async function mockApi(
     },
     get noteBodies() {
       return noteBodies;
+    },
+    get savedTemplates() {
+      return savedTemplates;
     },
   };
 }

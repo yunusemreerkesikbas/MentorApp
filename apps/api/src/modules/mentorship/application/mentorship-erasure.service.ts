@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { PlanService } from "../../coaching/application/plan.service";
 import { MentorshipInviteCodeRepository } from "../infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
+import { MentorshipTemplateRepository } from "../infrastructure/mentorship-template.repository";
 
 /**
  * KVKK erasure for W8 (called by AccountErasureService).
@@ -19,12 +20,18 @@ import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repo
  * ON DELETE CASCADE onto `coach_students`, so purging the links takes the drop log with them.
  * That is only true because links are deleted rather than anonymized — if that ever changes, the
  * log has to be purged explicitly.
+ *
+ * `mentorship_program_templates` DOES need a clause, even though its `coach_id` is a real FK with
+ * ON DELETE CASCADE: erasure anonymizes the `users` row instead of deleting it, so that cascade
+ * never fires. A template holds the coach's own words about nobody in particular, but it is still
+ * their content, and content survives the person who wrote it only by accident.
  */
 @Injectable()
 export class MentorshipErasureService {
   constructor(
     private readonly links: MentorshipLinkRepository,
     private readonly codes: MentorshipInviteCodeRepository,
+    private readonly templates: MentorshipTemplateRepository,
     private readonly plan: PlanService,
   ) {}
 
@@ -32,5 +39,6 @@ export class MentorshipErasureService {
     const purgedLinkIds = await this.links.purgeForUser(userId);
     await this.plan.clearMentorshipOrigin(purgedLinkIds);
     await this.codes.purgeForCoach(userId);
+    await this.templates.purgeForCoach(userId);
   }
 }
