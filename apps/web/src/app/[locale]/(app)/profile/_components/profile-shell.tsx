@@ -12,6 +12,7 @@ import { AccountLinksCard } from "./account-links-card";
 import { ApplicationSupportCard } from "./application-support-card";
 import { EconomySection } from "./economy-section";
 import { NotificationSettings } from "./notification-settings";
+import { GoogleAccountCard } from "./google-account-card";
 import { ProfileHeader } from "./profile-header";
 import { SocialFollowCard } from "./social-follow-card";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
@@ -111,6 +112,10 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <NotificationSettings />
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <GoogleAccountCard />
           </motion.div>
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>

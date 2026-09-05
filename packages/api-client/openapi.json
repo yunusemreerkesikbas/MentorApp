@@ -596,6 +596,54 @@
         ]
       }
     },
+    "/v1/users/me/auth-accounts/google": {
+      "get": {
+        "operationId": "GoogleLinkingController_status",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/v1/users/me/auth-accounts/google/start": {
+      "post": {
+        "operationId": "GoogleLinkingController_start",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GoogleLinkStartDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "users"
+        ]
+      }
+    },
     "/v1/coach/access": {
       "get": {
         "operationId": "AiChatController_getAccess",
@@ -2078,6 +2126,44 @@
         ]
       }
     },
+    "/v1/subscription/offers": {
+      "post": {
+        "operationId": "SubscriptionsController_offers",
+        "parameters": [
+          {
+            "name": "accept-language",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromotionOffersDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "payments"
+        ]
+      }
+    },
     "/v1/subscription/checkout": {
       "post": {
         "operationId": "SubscriptionsController_checkout",
@@ -2140,190 +2226,17 @@
         ]
       }
     },
-    "/v1/economy/balance": {
-      "get": {
-        "operationId": "EconomyController_balance",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/ledger": {
-      "get": {
-        "operationId": "EconomyController_ledger",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/invite": {
-      "get": {
-        "operationId": "EconomyController_invite",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/quests": {
-      "get": {
-        "operationId": "EconomyController_questsList",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/streak-rescue": {
-      "get": {
-        "operationId": "EconomyController_streakRescueState",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      },
+    "/v1/internal/cron/expire-subscriptions": {
       "post": {
-        "operationId": "EconomyController_streakRescuePurchase",
+        "operationId": "PaymentsInternalController_expireSubscriptions",
         "parameters": [],
         "responses": {
           "201": {
             "description": ""
           }
         },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
         "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/deep-analysis": {
-      "get": {
-        "operationId": "EconomyController_deepAnalysisState",
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      },
-      "post": {
-        "operationId": "EconomyController_deepAnalysisPurchase",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/DeepAnalysisDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
-        ]
-      }
-    },
-    "/v1/economy/invite/redeem": {
-      "post": {
-        "operationId": "EconomyController_redeem",
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/RedeemInviteDto"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        },
-        "security": [
-          {
-            "bearer": []
-          }
-        ],
-        "tags": [
-          "economy"
+          "internal"
         ]
       }
     },
@@ -3936,6 +3849,193 @@
         ],
         "tags": [
           "coaching"
+        ]
+      }
+    },
+    "/v1/economy/balance": {
+      "get": {
+        "operationId": "EconomyController_balance",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/ledger": {
+      "get": {
+        "operationId": "EconomyController_ledger",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/invite": {
+      "get": {
+        "operationId": "EconomyController_invite",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/quests": {
+      "get": {
+        "operationId": "EconomyController_questsList",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/streak-rescue": {
+      "get": {
+        "operationId": "EconomyController_streakRescueState",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      },
+      "post": {
+        "operationId": "EconomyController_streakRescuePurchase",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/deep-analysis": {
+      "get": {
+        "operationId": "EconomyController_deepAnalysisState",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      },
+      "post": {
+        "operationId": "EconomyController_deepAnalysisPurchase",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeepAnalysisDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/invite/redeem": {
+      "post": {
+        "operationId": "EconomyController_redeem",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RedeemInviteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
         ]
       }
     },
@@ -5723,6 +5823,14 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "placementId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -5743,6 +5851,14 @@
             "name": "cf-ipcountry",
             "required": true,
             "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "placementId",
+            "required": true,
+            "in": "path",
             "schema": {
               "type": "string"
             }
@@ -5771,6 +5887,14 @@
             "name": "cf-ipcountry",
             "required": true,
             "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "placementId",
+            "required": true,
+            "in": "path",
             "schema": {
               "type": "string"
             }
@@ -5896,6 +6020,389 @@
         },
         "tags": [
           "internal"
+        ]
+      }
+    },
+    "/v1/mentorship/overview": {
+      "get": {
+        "operationId": "MentorshipCoachController_getOverview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/invite-code": {
+      "post": {
+        "operationId": "MentorshipCoachController_rotateInviteCode",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students": {
+      "get": {
+        "operationId": "MentorshipCoachController_listStudents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}": {
+      "get": {
+        "operationId": "MentorshipCoachController_getStudent",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "delete": {
+        "operationId": "MentorshipCoachController_endLink",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/assignments": {
+      "post": {
+        "operationId": "MentorshipCoachController_assign",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMentorshipAssignmentsDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/note": {
+      "put": {
+        "operationId": "MentorshipCoachController_setNote",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipCoachNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/templates": {
+      "get": {
+        "operationId": "MentorshipCoachController_listTemplates",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "post": {
+        "operationId": "MentorshipCoachController_saveTemplate",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveMentorshipTemplateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/templates/{templateId}": {
+      "delete": {
+        "operationId": "MentorshipCoachController_deleteTemplate",
+        "parameters": [
+          {
+            "name": "templateId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/brief": {
+      "post": {
+        "operationId": "MentorshipCoachController_generateBrief",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/invitations/preview": {
+      "post": {
+        "operationId": "MentorshipStudentController_preview",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipInviteCodeParamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/invitations/accept": {
+      "post": {
+        "operationId": "MentorshipStudentController_accept",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipInviteCodeParamDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach": {
+      "get": {
+        "operationId": "MentorshipStudentController_myCoach",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "delete": {
+        "operationId": "MentorshipStudentController_endLink",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
         ]
       }
     },
@@ -6764,9 +7271,138 @@
         ]
       }
     },
+    "/v1/admin/promotions": {
+      "get": {
+        "operationId": "AdminPromotionsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "post": {
+        "operationId": "AdminPromotionsController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreatePromotionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/promotions/{id}": {
+      "get": {
+        "operationId": "AdminPromotionsController_get",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      },
+      "patch": {
+        "operationId": "AdminPromotionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePromotionDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/admin/metrics": {
       "get": {
         "operationId": "AdminMetricsController_overview",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/metrics/sponsorship": {
+      "get": {
+        "operationId": "AdminMetricsController_sponsorshipStats",
         "parameters": [],
         "responses": {
           "200": {
@@ -7560,6 +8196,20 @@
         ]
       }
     },
+    "/v1/internal/cron/dispatch-mentorship-risk-digest": {
+      "post": {
+        "operationId": "CronController_dispatchMentorshipRiskDigest",
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "internal"
+        ]
+      }
+    },
     "/v1/notifications/push-subscriptions": {
       "post": {
         "operationId": "NotificationsController_subscribePush",
@@ -7846,6 +8496,10 @@
         "type": "object",
         "properties": {}
       },
+      "GoogleLinkStartDto": {
+        "type": "object",
+        "properties": {}
+      },
       "AiChatDto": {
         "type": "object",
         "properties": {
@@ -7981,15 +8635,11 @@
         "type": "object",
         "properties": {}
       },
+      "PromotionOffersDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CheckoutDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "DeepAnalysisDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "RedeemInviteDto": {
         "type": "object",
         "properties": {}
       },
@@ -8101,6 +8751,14 @@
         "type": "object",
         "properties": {}
       },
+      "DeepAnalysisDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RedeemInviteDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateZoneDto": {
         "type": "object",
         "properties": {}
@@ -8165,6 +8823,22 @@
         "type": "object",
         "properties": {}
       },
+      "CreateMentorshipAssignmentsDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MentorshipCoachNoteDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SaveMentorshipTemplateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MentorshipInviteCodeParamDto": {
+        "type": "object",
+        "properties": {}
+      },
       "UpdateUserStatusDto": {
         "type": "object",
         "properties": {}
@@ -8198,6 +8872,14 @@
         "properties": {}
       },
       "UpdatePlanDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreatePromotionDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdatePromotionDto": {
         "type": "object",
         "properties": {}
       },

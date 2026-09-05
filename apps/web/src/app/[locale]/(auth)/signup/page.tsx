@@ -19,6 +19,7 @@ import { AuthCookieConsent } from "../_components/auth-cookie-consent";
 import { AuthNavLink } from "../_components/auth-nav-link";
 import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
+import { SignupTurnstile, turnstileSiteKey } from "../_components/signup-turnstile";
 
 export default function SignupPage() {
   const translate = useTranslations("auth.register");
@@ -30,6 +31,8 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [kvkkChecked, setKvkkChecked] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const kvkkLabelId = useId();
 
   function requireKvkk() {
@@ -43,6 +46,7 @@ export default function SignupPage() {
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (turnstileSiteKey && !turnstileToken) return;
     setError(null);
     setBusy(true);
     const data = new FormData(e.currentTarget);
@@ -58,6 +62,7 @@ export default function SignupPage() {
         email: String(data.get("email")),
         password: String(data.get("password")),
         kvkkAccepted: true,
+        ...(turnstileToken ? { turnstileToken } : {}),
       });
       trackProductEvent("sign_up", { method: "email" });
       exitThen(() => {
@@ -67,6 +72,8 @@ export default function SignupPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -119,8 +126,9 @@ export default function SignupPage() {
         </span>
       </div>
       <AuthCookieConsent />
+      <SignupTurnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <FormError message={error} />
-      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
+      <SubmitButton busy={busy} disabled={Boolean(turnstileSiteKey && !turnstileToken)}>{translate("submit")}</SubmitButton>
       <GoogleAuthButton
         mode="signup"
         onBeforeStart={() => {
