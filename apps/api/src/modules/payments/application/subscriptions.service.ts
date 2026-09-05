@@ -3,6 +3,7 @@ import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
+  SUBSCRIPTION_PROVIDER_SPONSOR,
   SubscriptionStatus,
   type CheckoutSession,
   type EntitlementDto,
@@ -456,6 +457,12 @@ export class SubscriptionsService {
         // Release the promotion seat that abandoned checkout was holding before the row goes.
         await this.promotions.voidForSubscription(open.id);
         await this.subsRepo.deleteById(open.id);
+      } else if (open.provider === SUBSCRIPTION_PROVIDER_SPONSOR) {
+        // A coach's seat must never stand between a student and their own subscription. The
+        // student did not choose the seat and may lose it whenever the coach ends the link, so
+        // "you already have a subscription" would be both untrue and a trap. Retire it and let
+        // the purchase through — the seat's own revoke path is then a no-op (nothing open left).
+        await this.subsRepo.expireSponsorship(open.id, new Date());
       } else {
         throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
       }
@@ -819,5 +826,6 @@ function toSubscriptionDto(row: SubscriptionRow): SubscriptionDto {
     currentPeriodStart: row.currentPeriodStart?.toISOString() ?? null,
     currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+    sponsored: row.provider === SUBSCRIPTION_PROVIDER_SPONSOR,
   };
 }

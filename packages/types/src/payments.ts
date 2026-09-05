@@ -17,6 +17,20 @@ export const SubscriptionStatus = {
 } as const;
 export type SubscriptionStatus = (typeof SubscriptionStatus)[keyof typeof SubscriptionStatus];
 
+/**
+ * `subscriptions.provider` for a coach-sponsored seat (W8).
+ *
+ * Not a payment provider at all — no checkout, no webhook, no ledger row. It marks the rows that
+ * three counters must skip: trial-once (`hasAnyForUser`), the paying/conversion metrics, and the
+ * "you already have a subscription" guard on checkout. Getting premium from a coach must not spend
+ * the student's own trial, must not inflate conversion, and must not block them from paying for
+ * themselves whenever they want to.
+ */
+export const SUBSCRIPTION_PROVIDER_SPONSOR = "SPONSOR";
+
+/** The plan a sponsored seat points at. Priced 0; it exists so the FK has somewhere to land. */
+export const COACH_SEAT_PLAN_ID = "coach-seat";
+
 export interface PlanDto {
   id: string;
   name: string;
@@ -39,6 +53,15 @@ export interface SubscriptionDto {
   currentPeriodStart: string | null;
   currentPeriodEnd: string | null;
   cancelAtPeriodEnd: boolean;
+  /**
+   * True when a coach's seat is paying for this, not the user (W8).
+   *
+   * The subscription screen has to know: a sponsored seat has no card, no renewal date and no
+   * cancel button, and rendering it with the usual billing chrome would tell the user something
+   * false about their own money. It also ends when the coaching link does, not on a period
+   * boundary, so "renews on the 5th" would be wrong twice over.
+   */
+  sponsored: boolean;
 }
 
 export interface EntitlementDto {

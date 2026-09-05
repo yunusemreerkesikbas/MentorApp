@@ -112,6 +112,8 @@ export function RosterShell() {
         inviteCode={overview?.inviteCode ?? null}
         activeStudents={overview?.activeStudents ?? 0}
         maxActiveStudents={overview?.maxActiveStudents ?? 0}
+        freeSeats={overview?.freeSeats ?? 0}
+        sponsorshipEnabled={overview?.sponsorshipEnabled ?? false}
         busy={busy}
         onRotate={rotate}
       />

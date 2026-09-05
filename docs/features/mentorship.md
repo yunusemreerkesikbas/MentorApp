@@ -149,6 +149,54 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Sponsorlu koltuk — koçun bağladığı öğrenci Premium alıyor (APP-076, 2026-09-05)** — W8 bugüne
+  kadar parasal hiçbir şey bilmiyordu; tek sınır `max_active_students` idi ve aşımı bir hataydı.
+  Artık koçun **koltuğu** var: bağladığı ilk `mentorship.coach.free_seats` (3) öğrenci Premium'a
+  erişiyor.
+  **Guardrail bilerek genişletildi.** AGENTS.md §4 #4 "AI'ı tattıran **iki** yol" diyordu; artık
+  **üç**. Kaldırılmadı, koşulu adlandırıldı: yol kürasyonlu COACH rolüne, config'li koltuk sayısına
+  ve `mentorship.seats.sponsorship_enabled` bayrağına bağlı, ve harcadığı her çağrı hâlâ
+  `ai.budget.monthly_cap_usd_cents` tavanının altında. Roadmap §7'nin "koçtan abonelik sıkma"
+  kararına da revizyon notu düşüldü.
+  **`free_seats` tüm maliyet riskini tutan tek düğme:** koç sayısı × koltuk = bedava premium.
+  **Mimari: sponsorluk gerçek bir `subscriptions` satırı, ikinci entitlement kaynağı değil.**
+  `getEntitlement` neredeyse her istekte çağrılıyor; oraya modüller arası bir join koymak tüm
+  platformun sıcak yolunu bir avuç kişi için zehirlerdi. Satır yazmak sayesinde `computeEntitlement`
+  **tek satır bile değişmedi** — 18 testlik entitlement spec'i regresyon kalkanı olarak duruyor.
+  **Modüller arası ok yok.** W8 koltuğa karar veriyor (kabul transaction'ının kilidi altında,
+  `activeBefore` sayımından), olaya `seatKind` koyuyor; W4'ün yeni `SponsoredSeatListener`'ı onu
+  okuyor. `PaymentsModule` `MentorshipModule`'ü import etmiyor, tersi de. W5'in
+  `MentorshipEventsListener`'ıyla birebir aynı desen.
+  **Süresiz ACTIVE, cron yok.** Sponsor satırı `currentPeriodEnd: null` ile yazılıyor; `ACTIVE` dalı
+  bitiş tarihi yokken süre kontrolü yapmıyor (STAFF'ın `validUntil: null` deseni). Aylık uzatma
+  cron'u gerekmedi.
+  **Değişen üç sayım** — atlanırsa sessiz yanlış üretirlerdi: (1) `hasAnyForUser` sponsor satırını
+  saymıyor, yani koçluk biten öğrencinin **kendi trial hakkı duruyor** — dönüşüm için en değerli an
+  o. (2) `countByStatus` sponsor satırını dışlıyor; yoksa her bedava koltuk `conversionRate`'in
+  paydasını şişirip huniyi olduğundan kötü gösterirdi. (3) `checkout` açık satır SPONSOR ise
+  `PAYMENT_ALREADY_SUBSCRIBED` atmıyor, koltuğu emekliye ayırıp öğrencinin kendi aboneliğine yol
+  veriyor.
+  **Gotchas:** (1) `revoke` satırı **doğrudan EXPIRED** yazıyor, yalnız `currentPeriodEnd`
+  doldurmuyor: `listMaybeRanOut` dunning grace'ini bekliyor, yani satır 3 gün daha açık kalır ve
+  `findOpenForUser` öğrenciyi kendi checkout'undan alıkoyardı. (2) `coach-seat` planı `is_active`
+  ama `findActive()` onu **adıyla dışlıyor** — `purchaseEnabled` plan başına değil global bir
+  anahtar olduğu için, katalogda görünseydi yanında satın alma düğmesi de olurdu. (3) `/abonelik`
+  sponsorlu koltukta "otomatik yenilenir" **demiyor** ve **iptal düğmesi göstermiyor**: arkasında
+  kart yok, `providerRef` null, ve koltuk dönem sınırında değil bağ bitince biter. (4) Öğrencinin
+  kendi açık aboneliği varsa sponsor satırı **hiç yazılmıyor** — kısmi unique index zaten tek açık
+  abonelik istiyor, ve ödenmiş bir şeyin bedava koltukla yer değiştirmesi olmaz.
+  **Bilerek yapılmayanlar:** onay ekranında "sana Premium açılacak" sözü yok (preview ile kabul
+  arasında son koltuk dolabilir; tutamayacağımız söz vermeyiz) · sponsorluk bildirimi yok (bağ
+  bitince öğrenci zaten "bağlantın sonlandı" bildirimi alıyor, `/abonelik` de durumu gösteriyor) ·
+  ücretli koltuk ve Pro tier (APP-077, iyzico doğrulanana kadar açılamaz).
+  **İlgili:** `apps/api/drizzle/0099_w8_sponsored_seat.sql`,
+  `modules/payments/application/{sponsored-seat.service.ts,sponsored-seat.listener.ts}`,
+  `modules/payments/infrastructure/payments.repositories.ts`,
+  `modules/mentorship/{domain/mentorship.constants.ts,application/mentorship-link.service.ts}`,
+  `packages/types/src/{payments,mentorship}.ts`,
+  `apps/web/src/app/[locale]/(app)/subscription/_components/subscription-facts.ts`,
+  [`AGENTS.md`](../../AGENTS.md) §4 #4, [`payments.md`](./payments.md).
+
 - **Admin'de koç görünürlüğü (APP-075, 2026-09-05)** — `GET /v1/admin/users` yalnız serbest metin
   araması alıyordu; rol bir ismin ya da e-postanın parçası olmadığı için **"kim koç" sorusu
   sorulamıyordu**. Bayrağı ilk kez açacak operatörün ilk sorusu tam olarak buydu.

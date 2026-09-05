@@ -1759,8 +1759,19 @@ export const subscriptions = pgTable(
       .notNull()
       .references(() => plans.id),
     status: text("status").notNull().default("TRIALING"),
-    provider: text("provider").notNull(), // FAKE | IYZICO
+    /** FAKE | IYZICO | DISABLED | SPONSOR (a coach seat — no money moved, no ledger row). */
+    provider: text("provider").notNull(),
     providerRef: text("provider_ref"),
+    /**
+     * The coach link that sponsors this subscription (W8 seats), or null for a self-paid one.
+     *
+     * ON DELETE SET NULL rather than CASCADE: a subscription row is an access record, not an
+     * extension of the relationship. When a link is erased the access history must survive it,
+     * the same way the charge ledger outlives everything it refers to.
+     */
+    sponsorLinkId: uuid("sponsor_link_id").references(() => coachStudents.id, {
+      onDelete: "set null",
+    }),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     currentPeriodStart: timestamp("current_period_start", {
       withTimezone: true,
@@ -1775,7 +1786,14 @@ export const subscriptions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("subscriptions_user_idx").on(t.userId)],
+  (t) => [
+    index("subscriptions_user_idx").on(t.userId),
+    // Partial: sponsored rows are the rare case, and the only query that needs this index
+    // ("which subscription does this link sponsor") never asks about self-paid rows.
+    index("subscriptions_sponsor_link_idx")
+      .on(t.sponsorLinkId)
+      .where(sql`sponsor_link_id is not null`),
+  ],
 );
 
 /** Append-only charge ledger (§3 ledger discipline): rows are never updated/deleted. */

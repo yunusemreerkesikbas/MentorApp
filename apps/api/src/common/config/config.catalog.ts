@@ -311,7 +311,17 @@ export const CONFIG_CATALOG = {
     20,
     1,
     500,
-    "Free active-student quota per coach. Also the invite-code abuse bound (no separate use counter).",
+    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students get sponsored Premium.",
+  ),
+  "mentorship.seats.sponsorship_enabled": mentorshipFlag(
+    false,
+    "Gate for coach-sponsored Premium. Separate from mentorship.enabled so the coach surface can open before anyone is granted paid AI on someone else's behalf.",
+  ),
+  "mentorship.coach.free_seats": mentorshipCount(
+    3,
+    0,
+    50,
+    "How many of a coach's students get sponsored Premium for free. THE cost knob: coaches x this = free premium seats, each one real LLM spend. Raise deliberately; 0 turns sponsorship off without touching the flag.",
   ),
   "mentorship.invite_code.ttl_days": mentorshipCount(
     14,

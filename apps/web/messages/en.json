@@ -57,6 +57,11 @@
     }
   },
   "auth": {
+    "turnstile": {
+      "error": "The security check could not load. You can try again.",
+      "expired": "The check expired. Refresh it to continue.",
+      "retry": "Refresh verification"
+    },
     "shell": {
       "back_login": "Back to sign in",
       "narrative_label": "Your exam journey with Puhu",
@@ -767,6 +772,16 @@
     }
   },
   "profile": {
+    "google_account": {
+      "title": "Your Google account",
+      "loading": "Loading your Google connection",
+      "linked": "Google account linked: {email}",
+      "description": "Confirm your current password, then choose the Google account with the same email to enable Google sign-in.",
+      "password": "Current password",
+      "password_required": "Enter your current password to continue.",
+      "connect": "Link Google account",
+      "verify_first": "Verify your email before linking your Google account."
+    },
     "loading": "Loading…",
     "title": "Settings",
     "subtitle_with_economy": "Your account, earned rights, and notification preferences.",
@@ -923,6 +938,8 @@
     "row_next_renewal": "Next renewal",
     "row_access_ends": "Access ends",
     "row_renewal": "Renewal",
+    "row_sponsored": "Source",
+    "sponsored_by_coach": "Opened by your coach",
     "billing_monthly": "Monthly",
     "billing_months": "{months} months",
     "renewal_auto": "Automatic",
@@ -2976,6 +2993,7 @@
     "scope_PLAN_TASK_TITLES": "Your plan task titles, subject/topic labels and statuses",
     "scope_MOOD_LEVEL": "Your daily mood score (1-5)",
     "scope_never_title": "What your coach cannot see",
+    "seats_body": "The first {total} students you link get Premium. {used} of {total} seats are taken.",
     "scope_never_body": "What you tell the AI coach, your session and mood notes, your mistake notebook, your email. Those stay with you.",
     "my_coach_title": "My coach",
     "my_coach_empty_title": "You do not have a coach yet",

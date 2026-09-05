@@ -18,6 +18,7 @@ import {
   MentorshipEventTopic,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
+  MentorshipSeatKind,
   MentorshipNoteUpdated,
 } from "../domain/mentorship.constants";
 import {
@@ -75,15 +76,20 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, activeStudents, maxActiveStudents] = await Promise.all([
-      this.invites.getCurrent(coachId),
-      this.links.countActiveByCoach(coachId),
-      this.config.get("mentorship.coach.max_active_students"),
-    ]);
+    const [inviteCode, activeStudents, maxActiveStudents, freeSeats, sponsorshipEnabled] =
+      await Promise.all([
+        this.invites.getCurrent(coachId),
+        this.links.countActiveByCoach(coachId),
+        this.config.get("mentorship.coach.max_active_students"),
+        this.config.get("mentorship.coach.free_seats"),
+        this.config.get("mentorship.seats.sponsorship_enabled"),
+      ]);
     return {
       inviteCode,
       activeStudents,
       maxActiveStudents,
+      freeSeats,
+      sponsorshipEnabled,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
     };
   }
@@ -117,7 +123,11 @@ export class MentorshipLinkService {
     if (await this.links.findActiveByStudent(studentId)) {
       throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
     }
-    const maxActiveStudents = await this.config.get("mentorship.coach.max_active_students");
+    const [maxActiveStudents, freeSeats, sponsorshipEnabled] = await Promise.all([
+      this.config.get("mentorship.coach.max_active_students"),
+      this.config.get("mentorship.coach.free_seats"),
+      this.config.get("mentorship.seats.sponsorship_enabled"),
+    ]);
 
     let outcome: Awaited<ReturnType<MentorshipLinkRepository["acceptInvite"]>>;
     try {
@@ -136,7 +146,16 @@ export class MentorshipLinkService {
     if (outcome === "ALREADY_ACTIVE") {
       throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
     }
-    const link = outcome;
+    const { link, activeBefore } = outcome;
+
+    // The seat, decided from the count taken under the accept lock. Beyond the free quota the
+    // student is simply followed, not sponsored — a PAID seat needs a seat plan, which is a later
+    // slice. Sponsorship has its own flag so the coach surface can open before anyone is handed
+    // Premium on someone else's behalf.
+    const seatKind: MentorshipSeatKind =
+      sponsorshipEnabled && activeBefore < freeSeats
+        ? MentorshipSeatKind.FREE
+        : MentorshipSeatKind.NONE;
 
     const people = await this.users.listDisplayIdentities([coachId, studentId]);
     this.events.emit(
@@ -147,6 +166,7 @@ export class MentorshipLinkService {
         studentId,
         people.get(studentId)?.displayName ?? "",
         people.get(coachId)?.displayName ?? "",
+        seatKind,
       ),
     );
     return this.toMyCoachDto(link, people.get(coachId));

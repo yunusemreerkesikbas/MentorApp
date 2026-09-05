@@ -128,19 +128,27 @@ export class MentorshipLinkRepository {
    * The `coach_students_pair_idx` unique makes a plain insert fail on a re-link, so this upserts.
    * Returns `"QUOTA_FULL"` when the cap is reached and `"ALREADY_ACTIVE"` when `setWhere` skipped
    * the update (a row exists that is not ENDED).
+   *
+   * `activeBefore` rides back out because the SEAT decision has to be made under this same lock.
+   * Deciding "is this student inside the coach's free-seat quota?" in the service afterwards would
+   * be check-then-act again, and the thing being handed out this time is sponsored Premium — real
+   * LLM spend, not just a roster row.
    */
   acceptInvite(
     coachId: string,
     studentId: string,
     maxActiveStudents: number,
-  ): Promise<MentorshipLinkRow | "QUOTA_FULL" | "ALREADY_ACTIVE"> {
+  ): Promise<
+    { link: MentorshipLinkRow; activeBefore: number } | "QUOTA_FULL" | "ALREADY_ACTIVE"
+  > {
     const now = new Date();
     return withServiceContext(this.db, async (tx) => {
       // Serialize concurrent redemptions of one coach's code; released at commit.
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
       );
-      if ((await countActive(tx, coachId)) >= maxActiveStudents) return "QUOTA_FULL";
+      const activeBefore = await countActive(tx, coachId);
+      if (activeBefore >= maxActiveStudents) return "QUOTA_FULL";
 
       const rows = await tx
         .insert(coachStudents)
@@ -153,7 +161,8 @@ export class MentorshipLinkRepository {
           setWhere: eq(coachStudents.status, "ENDED"),
         })
         .returning();
-      return rows[0] ?? "ALREADY_ACTIVE";
+      const link = rows[0];
+      return link ? { link, activeBefore } : "ALREADY_ACTIVE";
     });
   }
 

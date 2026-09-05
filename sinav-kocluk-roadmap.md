@@ -329,6 +329,13 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
 - Marketplace komisyonu (%X, iyzico alt-üye-işyeri) = ana model (Faz 3).
 - Koç araçları (panel, AI brief) erken fazda **ücretsiz/indirimli yem** (arz çekmek). İleride ops. "Pro Koç" aboneliği.
 - Koçtan abonelik sıkma; koç çok kazanınca platform komisyondan kazanır → çıkarlar hizalı.
+- **REVİZYON (2026-09-05, APP-076):** Koç artık *koltuk* sahibi: bağladığı ilk N öğrenci
+  (`mentorship.coach.free_seats`) Premium'a erişir, ötesi ücretli koltuk gerektirir. Yani "araç =
+  yem" kararı korunuyor ama yem büyütüldü — koçun elindeki değer kendi paneli değil, **öğrencisine
+  açabildiği Premium**. Bu, §9'un "org öğrencisi premium'u org lisansından alır" modelinin koç
+  ölçeğine indirilmiş hâli; §9 zaten koç↔B2B'yi "ayrı silo değil, bir süreklilik" sayıyor.
+  Ücretli koltuk (Pro Koç) hâlâ opsiyonel ve iyzico doğrulanana kadar bayrak arkasında.
+  AGENTS.md §4 #4 bu yüzden iki yoldan üç yola genişletildi.
 
 **B2B — en stabil/yüksek marj:**
 - Öğrenci-başı lisans (seat-based), hacme göre kademeli indirim.

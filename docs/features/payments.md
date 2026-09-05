@@ -202,6 +202,19 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Gotchas / Known issues
 
+- **A subscription row is not always a purchase (W8 seats, APP-076).** `provider = 'SPONSOR'` marks
+  a row a coach's seat pays for: no checkout, no webhook, no ledger entry, `plan_id = 'coach-seat'`
+  (priced 0) and `current_period_end = null` while it holds. `computeEntitlement` is deliberately
+  unaware of all this — it just sees ACTIVE. **Any new query over `subscriptions` has to answer
+  whether it means "has premium" or "pays us"**, because those are no longer the same set. Three
+  places already had to choose: `hasAnyForUser` (trial-once — sponsored rows must not burn the
+  student's own trial), `countByStatus` (the conversion denominator), and `checkout` (a seat is
+  retired rather than raising `PAYMENT_ALREADY_SUBSCRIBED`). Revenue metrics needed no clause: they
+  read the ledger, and a seat never writes one.
+- **`coach-seat` is an active plan that is not for sale.** `PlansRepository.findActive` excludes it
+  by name. `PlanDto.purchaseEnabled` is a global switch (provider ≠ disabled), not per-plan, so a
+  listed seat plan would appear on the pricing screen with a buy button next to a ₺0 price.
+
 - **`GET /v1/subscription` has no remaining quota** — payments must not read `ai_usage`. The
   client treats a surface as unlocked when `isPremium || features[id].freeEnabled`; exhausted free
   caps return `PAYMENT_PREMIUM_REQUIRED` on the action.

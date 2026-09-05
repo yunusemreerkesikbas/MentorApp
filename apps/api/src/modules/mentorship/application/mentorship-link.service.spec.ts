@@ -8,11 +8,14 @@ import { MentorshipLinkService } from "./mentorship-link.service";
 const COACH = "11111111-1111-4111-8111-111111111111";
 const STUDENT = "22222222-2222-4222-8222-222222222222";
 const OTHER_COACH = "33333333-3333-4333-8333-333333333333";
+const OTHER_STUDENT = "44444444-4444-4444-8444-444444444444";
 const CODE = "MENTOR-KOC-ABCDEF012345";
 
 const config: Record<string, number | boolean> = {
   "mentorship.enabled": true,
   "mentorship.coach.max_active_students": 2,
+  "mentorship.coach.free_seats": 1,
+  "mentorship.seats.sponsorship_enabled": true,
   "mentorship.invite_code.ttl_days": 14,
 };
 
@@ -62,11 +65,12 @@ function setup(options: { rows?: MentorshipLinkRow[]; codeOwner?: string } = {})
         existing.status = "ACTIVE";
         existing.endedAt = null;
         existing.endedBy = null;
-        return existing;
+        // `activeBefore` is the count taken under the accept lock — the seat decision reads it.
+        return { link: existing, activeBefore: active };
       }
       const row = link({ id: `link-${rows.length}`, coachId, studentId });
       rows.push(row);
-      return row;
+      return { link: row, activeBefore: active };
     }),
     end: vi.fn(async (linkId: string, endedBy: string) => {
       const row = rows.find((r) => r.id === linkId);
@@ -230,6 +234,38 @@ describe("MentorshipLinkService", () => {
       expect(await codeOf(() => service.acceptInvitation(STUDENT, CODE))).toBe(
         ErrorCode.MENTORSHIP_STUDENT_QUOTA_EXCEEDED,
       );
+    });
+
+    /**
+     * The seat is what decides whether the student is handed sponsored Premium, so it is the one
+     * number in this flow that costs real money to get wrong. It is read from the count taken
+     * under the accept lock, which is why the boundary is worth pinning here.
+     */
+    it("seats the first student free and merely follows the next one", async () => {
+      const { service, emitted } = setup();
+      await service.acceptInvitation(STUDENT, CODE);
+      expect(emitted.at(-1)).toMatchObject({
+        topic: MentorshipEventTopic.LINK_ACCEPTED,
+        payload: { seatKind: "FREE" },
+      });
+
+      await service.acceptInvitation(OTHER_STUDENT, CODE);
+      // free_seats is 1: the second student is followed, not sponsored.
+      expect(emitted.at(-1)).toMatchObject({
+        topic: MentorshipEventTopic.LINK_ACCEPTED,
+        payload: { seatKind: "NONE" },
+      });
+    });
+
+    it("hands out no seat at all while sponsorship is switched off", async () => {
+      config["mentorship.seats.sponsorship_enabled"] = false;
+      try {
+        const { service, emitted } = setup();
+        await service.acceptInvitation(STUDENT, CODE);
+        expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "NONE" } });
+      } finally {
+        config["mentorship.seats.sponsorship_enabled"] = true;
+      }
     });
 
     it("counts only ACTIVE links against the quota", async () => {

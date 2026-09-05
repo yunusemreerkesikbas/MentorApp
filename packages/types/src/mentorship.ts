@@ -86,6 +86,14 @@ export interface MentorshipCoachOverviewDto {
   activeStudents: number;
   /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
   maxActiveStudents: number;
+  /**
+   * How many of this coach's students get sponsored Premium (`mentorship.coach.free_seats`).
+   * Distinct from `maxActiveStudents`: that one caps who may be followed, this one caps who is
+   * paid for. A coach at 5/20 students with 3 free seats is following five and sponsoring three.
+   */
+  freeSeats: number;
+  /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
+  sponsorshipEnabled: boolean;
   dataScope: MentorshipDataScopeKey[];
 }
 

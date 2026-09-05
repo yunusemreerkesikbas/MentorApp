@@ -176,6 +176,7 @@ const activeSubscription: SubscriptionView = {
     currentPeriodStart: "2026-08-12T12:00:00.000Z",
     currentPeriodEnd: "2026-09-12T12:00:00.000Z",
     cancelAtPeriodEnd: false,
+  sponsored: false,
   },
   entitlement: {
     tier: "PREMIUM",

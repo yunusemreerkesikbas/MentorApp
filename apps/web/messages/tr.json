@@ -57,6 +57,11 @@
     }
   },
   "auth": {
+    "turnstile": {
+      "error": "Güvenlik doğrulaması yüklenemedi. Yeniden deneyebilirsin.",
+      "expired": "Doğrulamanın süresi doldu. Yenileyip devam edebilirsin.",
+      "retry": "Doğrulamayı yenile"
+    },
     "shell": {
       "back_login": "Girişe dön",
       "narrative_label": "Puhu ile sınav yolculuğu",
@@ -767,6 +772,16 @@
     }
   },
   "profile": {
+    "google_account": {
+      "title": "Google hesabın",
+      "loading": "Google bağlantın yükleniyor",
+      "linked": "Google hesabın bağlı: {email}",
+      "description": "Google ile giriş yapabilmek için mevcut şifreni doğrula, ardından aynı e-postaya ait Google hesabını seç.",
+      "password": "Mevcut şifren",
+      "password_required": "Devam etmek için mevcut şifreni yaz.",
+      "connect": "Google hesabını bağla",
+      "verify_first": "Google hesabını bağlamak için önce e-postanı doğrula."
+    },
     "loading": "Yükleniyor…",
     "title": "Ayarlar",
     "subtitle_with_economy": "Hesap, kazanılmış hak ve bildirim tercihlerin.",
@@ -923,6 +938,8 @@
     "row_next_renewal": "Sonraki yenileme",
     "row_access_ends": "Erişim bitiş",
     "row_renewal": "Yenileme",
+    "row_sponsored": "Kaynak",
+    "sponsored_by_coach": "Koçun açtı",
     "billing_monthly": "Aylık",
     "billing_months": "{months} ay",
     "renewal_auto": "Otomatik",
@@ -2976,6 +2993,7 @@
     "scope_PLAN_TASK_TITLES": "Plan görevlerinin başlıkları, ders/konu etiketleri ve durumları",
     "scope_MOOD_LEVEL": "Günlük mod puanın (1-5)",
     "scope_never_title": "Koçunun göremedikleri",
+    "seats_body": "Bağladığın ilk {total} öğrenci Premium'a erişir. Şu an {used}/{total} koltuk dolu.",
     "scope_never_body": "AI koçla konuştukların, seans ve mod notların, yanlış defterin, e-postan. Bunlar sende kalır.",
     "my_coach_title": "Koçum",
     "my_coach_empty_title": "Henüz bir koçun yok",

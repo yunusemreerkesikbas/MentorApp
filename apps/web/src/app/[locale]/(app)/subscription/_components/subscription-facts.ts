@@ -13,7 +13,8 @@ export type SubscriptionFactId =
   | "period_start"
   | "next_renewal"
   | "access_ends"
-  | "renewal";
+  | "renewal"
+  | "sponsored";
 
 export interface SubscriptionFact {
   id: SubscriptionFactId;
@@ -78,6 +79,13 @@ export function listSubscriptionFacts(input: {
         iso: endsIso,
       });
     }
+  }
+
+  if (subscription.sponsored) {
+    // A coach's seat has no card behind it and no period to renew. Saying "renews automatically"
+    // would be false twice over: nothing is charged, and it ends when the coaching link does.
+    facts.push({ id: "sponsored" });
+    return facts;
   }
 
   if (reason !== "INCOMPLETE") {
