@@ -124,7 +124,9 @@
   "MENTORSHIP_INVITE_INVALID": "Bu davet kodu geçerli değil.",
   "MENTORSHIP_INVITE_EXPIRED": "Bu davet kodunun süresi dolmuş. Koçundan yeni bir kod iste.",
   "MENTORSHIP_ALREADY_LINKED": "Zaten aktif bir koçun var. Yeni bir koça bağlanmadan önce mevcut bağlantını sonlandır.",
-  "MENTORSHIP_STUDENT_QUOTA_EXCEEDED": "Bu koçun öğrenci kontenjanı dolu.",
+  "MENTORSHIP_STUDENT_QUOTA_EXCEEDED": "Bu koçun öğrenci kontenjanı dolu. Koçuna haber ver, yer açılınca yeniden dene.",
+  "MENTORSHIP_TEMPLATE_NOT_FOUND": "Bu şablon bulunamadı.",
+  "MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED": "Şablon sayın doldu. Yenisini kaydetmek için birini sil.",
   "MENTORSHIP_SELF_LINK": "Kendine koç olamazsın.",
   "COACHING_TASK_COACH_ASSIGNED": "Koçunun verdiği görevi düzenleyemezsin. Tamamlayabilir ya da silebilirsin.",
   "MENTORSHIP_ASSIGNMENT_TOO_FAR": "Bu kadar ileri bir tarihe ödev veremezsin."

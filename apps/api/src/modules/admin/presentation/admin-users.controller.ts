@@ -46,7 +46,7 @@ export class AdminUsersController {
 
   @Get("users")
   searchUsers(@Query() query: SearchUsersQueryDto): Promise<AdminUserView[]> {
-    return this.users.search(query.q, query.page, query.pageSize);
+    return this.users.search(query.q, query.role, query.page, query.pageSize);
   }
 
   @Get("users/:userId")

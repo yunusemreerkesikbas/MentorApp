@@ -77,11 +77,14 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 
 ```http
 ### Coach
-GET    /v1/mentorship/invite-code                  -> { code, expiresAt } | (empty = none yet)
+GET    /v1/mentorship/overview                     -> { inviteCode, activeStudents, maxActiveStudents, dataScope }
 POST   /v1/mentorship/invite-code                  -> rotates; the previous code stops working
 GET    /v1/mentorship/students?status=ACTIVE|ENDED -> Paginated<MentorshipRosterRowDto>
 PUT    /v1/mentorship/students/:studentId/note     -> 204  { body: string | null }
 DELETE /v1/mentorship/students/:studentId          -> 204
+GET    /v1/mentorship/templates                    -> MentorshipProgramTemplateDto[]
+POST   /v1/mentorship/templates                    -> upsert by name (saving over a name IS the edit)
+DELETE /v1/mentorship/templates/:templateId        -> 204
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
@@ -98,12 +101,16 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 | Endpoint | Purpose |
 |---|---|
-| `GET/POST /v1/mentorship/invite-code` | Read or rotate the coach's single invite code (`@Roles(COACH)`) |
+| `GET /v1/mentorship/overview` | The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract mirrored back to them (`@Roles(COACH)`) |
+| `POST /v1/mentorship/invite-code` | Rotate the code; the previous one stops working immediately (`@Roles(COACH)`) |
 | `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
 | `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
 | `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
 | `PUT /v1/mentorship/students/:studentId/note` | The coach's standing note to this student; `{ body: null }` clears it (gate applies) |
 | `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
+| `GET /v1/mentorship/templates` | The coach's saved weekly programs (`@Roles(COACH)`) |
+| `POST /v1/mentorship/templates` | Save a program, upserting on `(coach, name)` — there is no PUT because saving over a name is the edit |
+| `DELETE /v1/mentorship/templates/:templateId` | Delete one of the coach's own; another coach's id is a 404 |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
@@ -111,7 +118,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
 `MENTORSHIP_INVITE_EXPIRED` · `MENTORSHIP_ALREADY_LINKED` · `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` ·
-`MENTORSHIP_SELF_LINK`.
+`MENTORSHIP_SELF_LINK` · `MENTORSHIP_TEMPLATE_NOT_FOUND` · `MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED`.
 
 Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_active_students`
 (20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
@@ -141,6 +148,116 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Admin'de koç görünürlüğü (APP-075, 2026-09-05)** — `GET /v1/admin/users` yalnız serbest metin
+  araması alıyordu; rol bir ismin ya da e-postanın parçası olmadığı için **"kim koç" sorusu
+  sorulamıyordu**. Bayrağı ilk kez açacak operatörün ilk sorusu tam olarak buydu.
+  **Yeni uç yok, yeni modül bağımlılığı yok:** `searchUsersQuerySchema`'ya `role` eklendi,
+  repository bir `roles @> ARRAY[:role]::text[]` koşulu ekliyor. `@>` (containment) seçildi çünkü
+  `roles` bir `text[]` ve dizi index'inin cevaplayabileceği soru bu; `= ANY` değil.
+  **`q` ile birlikte çalışıyor**, birbirini ezmiyor: ikisi de verilirse ikisi de uygulanır.
+  **Öğrenci sayıları kapsam dışı bırakıldı** — admin→mentorship modül bağımlılığı gerektirirdi ve
+  filtrelenmiş liste operatörün asıl sorusunu zaten cevaplıyor. Gerektiğinde `MentorshipModule`'ün
+  export ettiği bir servisle eklenir.
+  **Gotchas:** (1) Bilinmeyen rol **400** döner, boş liste değil: `z.nativeEnum(UserRole)` kenarda
+  reddediyor. Sessizce boş dönmek "bu rolde kimse yok" gibi okunurdu. (2) Filtre listesi
+  (`FILTERABLE_ROLES`) `STUDENT`'ı dışarıda bırakıyor — her hesapta var, dolayısıyla hiçbir şeyi
+  süzmez. (3) Rol seçimi forma basmadan yüklüyor (select'in `onChange`'i), arama kutusu ise
+  submit bekliyor; ikisi de aynı `load(q, role)` çağrısına gidiyor.
+  **İlgili:** `packages/validation/src/admin.ts`,
+  `modules/admin/{infrastructure/admin-users.repository.ts,application/admin-users.service.ts,presentation/admin-users.controller.ts}`,
+  `apps/admin/src/{lib/roles.ts,app/(general)/users/page.tsx}`, [`admin.md`](./admin.md).
+
+- **Program şablonu — bir haftayı kaydet, başka öğrenciye uygula (APP-074, 2026-09-05)** — Besteci
+  öğrenci başına çalışıyordu; aynı programı ikinci öğrenciye vermek sıfırdan yazmak demekti. 20
+  öğrenci kotasındaki gerçek darboğaz buydu (roadmap §9'un "aynı ekiple 2-3x öğrenci" iddiası).
+  **En kritik karar: şablon UYGULANMIYOR, bestecinin içine YÜKLENİYOR.** Ayrı bir `apply` ucu yok.
+  Sebep teknik değil, doğruluk: `topic` sunucuda öğrencinin sınav taksonomisine karşı **hiç
+  doğrulanmıyor** — `refinePlanTaskTaxonomy` yalnız "konu dersi ister" diyor. Tek gerçek kapı
+  bestecinin `useExamTopicTaxonomy` seçicisi. Sunucu tarafı bir apply, KPSS için yazılmış bir konuyu
+  YKS öğrencisine sessizce yazardı. Yükleme taslakları dolduruyor, yazma gene
+  `POST /students/:id/assignments` ile oluyor: 21 tavanı, 120 gün ufku, 20/dk throttle ve
+  all-or-nothing tx aynen geçerli, ikinci bir yazma yolu doğmuyor.
+  **Sınav uyuşmazlığı sessiz değil.** Şablonun `examType`'ı öğrencininkinden farklıysa konular
+  düşürülüyor ve **kaç tanesinin düştüğü söyleniyor**; ders kalıyor (ders koçun elle de yazabileceği
+  geniş bir etiket, sınava özgü olan onun altındaki dal). Yarısını sessizce kaybeden bir şablon,
+  hiç yüklenmeyeninden kötüdür: koç kalanı bütün program sanıp atar.
+  **Model:** `mentorship_program_templates` (migration `0098`) — `tasks` jsonb, alt tablo değil
+  (dizi 21 ile sınırlı, hep bütün okunuyor, alanına göre hiç sorgulanmıyor). `UNIQUE (coach_id, name)`
+  upsert anahtarı: **ada göre kaydetmek düzenlemenin ta kendisi**, ayrı PUT yok.
+  **`dayIndex` 0..6 değil 0..20:** bestecinin 21 tavanı zaten "üç hafta"; hafta düğmesine basmak
+  önceki taslakları yerinde bıraktığı için bir program bugün bile birden fazla haftaya yayılabiliyor.
+  Ofset programın **kendi ilk gününden** sayılıyor (en erken görev 0), yeniden tarihlenebilirliğin
+  şartı bu.
+  **Kota kilitsiz.** Sayım ve insert tek transaction'da ama advisory lock yok — `acceptInvite`'in
+  aksine burada kota, sayacı olmayan bir davet kodunun tek sınırı değil, koçun kendi listesinin
+  düzen tavanı; yarışın üretebileceği en kötü şey 20 yerine 21 şablon.
+  **Erasure açık yazılmak zorunda.** `coach_id` FK'sı ON DELETE CASCADE taşısa da erasure `users`
+  satırını **anonimleştiriyor, silmiyor** — cascade hiç ateşlenmiyor. `mentorship_dropped_assignments`
+  cascade'e güvenebiliyor çünkü o link'e bağlı ve link'ler gerçekten siliniyor.
+  **Yan temizlik:** besteci 362 satırdı; `ComposerSelect` (eski `TaxonomySelect`, artık
+  `{value,label}` alıyor) ve `composer-dates.ts` ayrı dosyalara çıktı.
+  **Gotchas:** (1) `mentorshipTemplateTaskSchema` `planTaskFieldsSchema`'dan türetiliyor,
+  `mentorshipAssignmentTaskSchema`'dan değil: ikincisi `.superRefine` ile bitiyor, yani `ZodEffects`,
+  ve `ZodEffects` `.pick()`/`.omit()` kabul etmiyor. (2) Şema `.strict()`; `taskDate` göndermek 400
+  döner — şablonun taşıyamayacağı bir alanı sessizce kırpmak koça olmayan bir şey kaydettiğini
+  düşündürürdü. (3) `0098`'deki FK `NOT VALID` taşımıyor ve taşımamalı: tablo aynı migration'da boş
+  doğuyor. (4) Şablon **hiçbir öğrenciden bahsetmiyor**, dolayısıyla `requireActiveLink` bu uçlara
+  uygulanmıyor; sahiplik repository'de her okuma ve silmede `coach_id` filtresiyle duruyor ve
+  başkasının id'si 404 (403 değil) dönüyor.
+  **İlgili:** `apps/api/drizzle/0098_w8_mentorship_program_templates.sql`,
+  `modules/mentorship/{infrastructure/mentorship-template.repository.ts,application/mentorship-template.service.ts,application/mentorship-erasure.service.ts}`,
+  `packages/{types,validation}/src/mentorship.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/{template-apply.ts,template-bar.tsx,composer-select.tsx,composer-dates.ts,assign-task-form.tsx}`,
+  `apps/web/src/lib/mentorship.ts`, `apps/web/messages/{tr,en}.json`.
+
+- **Roster'dan kokpite — kohort özeti, kontenjan ve kapsam aynası (APP-073, 2026-09-05)** — Roster
+  bir liste idi; roadmap §9'un "koç panele girince **kim geride, neden, ne yapmalı** öne çıkar"
+  vaadinin yalnız ilk üçte biri karşılanıyordu. Aynı ekrana üç şey eklendi ve hiçbiri yeni bir
+  sorgu istemiyor.
+  **Bloklayıcı bulgu — kontenjanın faturası öğrenciye kesiliyordu.**
+  `mentorship.coach.max_active_students` (20) yalnız `acceptInvite` içinde kontrol ediliyor, yani
+  tavanı **üzerinde hiçbir tasarrufu olmayan taraf** öğreniyordu: koç kodu paylaşıyor, 21. öğrenci
+  409 yiyor, koç bunu hiç duymuyor. `GET /v1/mentorship/invite-code` yerine
+  `GET /v1/mentorship/overview` geldi (`inviteCode` + `activeStudents` + `maxActiveStudents` +
+  `dataScope`); davet kartı artık "3/20 öğrenci" diyor, dolu iken de bunu söylüyor.
+  **Sayımın tek tanımı var.** `acceptInvite`'in advisory lock'u içindeki ACTIVE sayımı modül-özel
+  `countActive(tx, coachId)` fonksiyonuna çıkarıldı; `countActiveByCoach` onu kendi
+  `withServiceContext`'i içinde çağırıyor. Ayrı bir sayım yazmak, başlığın vaat ettiği koltuğu
+  kabulün reddettiği bir durum üretebilirdi.
+  **Kohort bandı backend'siz.** Sayfa zaten `pageSize=100` ile tüm ACTIVE satırları çekiyor (kota
+  20), dolayısıyla özet saf bir fonksiyon: `summarizeCohort` → ilgi bekleyen sayısı, flag dağılımı
+  ve plan uyumu ortalaması. **Ortalama `planCompletionRate7d === null` satırlarını paydadan
+  düşürüyor**, sıfır saymıyor: aksi halde plan ekranını hiç açmamış bir kohort "plan yapıp
+  tutturamayan" bir kohort gibi okunur, ve koç yanlış soruna müdahale ederdi. Payda da ekranda
+  duruyor ("%50 (2 öğrenci)") — 2 kişiden alınan ortalama 20 kişiden alınanla aynı iddia değil.
+  **"Ne yapmalı" öğrenci başına tek satır**, en kötü flag'e göre. Kod tablosu yok: eşleme `action_{FLAG}`
+  i18n anahtarının kendisi. En kötü flag'i **istemci seçmek zorunda**, çünkü `evaluateRiskFlags`
+  değerlendirme sırasıyla dönüyor (PLAN_SLIPPING, LOW_MOOD'dan önce) ama şiddet sırası tersi;
+  `compareByRisk` satırları sıralıyor, bir satırın içindeki flag'leri hiç sıralamıyor.
+  **Kapsam aynası.** Öğrenci kabul öncesi tam onam ekranı görüyordu, koç ise boş bir listeye
+  düşüyordu — güven çizgisinin kaldıramayacağı tek asimetri, veriyi **alan** tarafın sınırları
+  hakkında **veren** taraftan az bilmesi. `dataScope` koç tarafında da API'den geliyor, sabitten
+  değil; iki ekran tek sözleşmeyi anlatıyor ve istemcideki ikinci bir kopya sürüklenecek ikinci
+  bir yer olurdu. Kart `<details>`, state hook'u yok, ve boş roster'da açık açılıyor.
+  **Gotchas:** (1) Öneri satırı **düz metin**, link değil: kartın tamamı zaten rapora giden bir
+  `<Link>` ve içine ikinci bir `<a>` koymak geçersiz HTML üretirdi. Rapor sayfasında not alanı ve
+  besteci zaten yan yana duruyor, çapa kazancı bir kaydırma. (2) `FLAG_ORDER` API'nin `SEVERITY`
+  dizisinin kopyası; paylaşılmadı çünkü sınırı yalnız sunum için geçiyor — sürüklenirse çipler
+  yeniden sıralanır, hiçbir şey yanlış sayılmaz. (3) `?status=ENDED` sekmesinde özet bandı
+  render **edilmiyor**: o satırların `metrics`'i zaten `null` ve kapanmış bir pencereyi özetlemek
+  "metrics null" kuralını arka kapıdan delerdi. (4) Kontenjan doluyken **kod yenileme
+  engellenmedi**: dolu bir roster de boşalır, ve engellemek sunucuda olmayan bir kural icat etmek
+  olurdu. (5) `roster-shell.tsx` 320 → 170 satır; `StudentCard` kendi dosyasına çıktı ve
+  `(coach)` grubu ilk kez sayfaya özel iskeletine kavuştu (frontend.md § Loading skeletons).
+  (6) `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` kopyası çıkmaz sokaktı ("Bu koçun öğrenci kontenjanı
+  dolu."); `MENTORSHIP_INVITE_EXPIRED`'ın deseniyle sonraki adım eklendi.
+  **İlgili:** `modules/mentorship/{application/mentorship-link.service.ts,infrastructure/mentorship-link.repository.ts,presentation/mentorship-coach.controller.ts}`,
+  `packages/types/src/mentorship.ts` (`MentorshipCoachOverviewDto`),
+  `apps/api/src/i18n/locales/{tr,en}/errors.json`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/{cohort-summary.ts,cohort-summary-card.tsx,coach-capacity-card.tsx,coach-scope-card.tsx,student-card.tsx,roster-content-skeleton.tsx,roster-shell.tsx}`,
+  `apps/web/src/lib/mentorship.ts`, `apps/web/messages/{tr,en}.json`,
+  [`mvp-status.md`](../core/mvp-status.md) (W8 satırı eklendi).
 
 - **Mentorship'in tarayıcı kapsamı (APP-072, 2026-09-04)** — 24 Playwright spec'i vardı ve
   hiçbiri mentorship'e değmiyordu; W8'in en yeni yüzeyi aynı zamanda tarayıcıda hiç koşmayan
@@ -504,8 +621,9 @@ flag that cries wolf costs the coach more than it gives.
 
 - **Role changes need a re-login.** `TokenService.loadPrincipal` re-reads roles on refresh, so a
   freshly granted COACH sees the surface only after their next refresh or login.
-- **Empty 200, not `null` JSON.** `GET /invite-code` and `GET /my-coach` return an empty body when
-  there is nothing. The shared `http()` client already tolerates this (`res.json().catch(…)`).
+- **Empty 200, not `null` JSON.** `GET /my-coach` returns an empty body when there is nothing. The
+  shared `http()` client already tolerates this (`res.json().catch(…)`). `GET /overview` does not
+  share the quirk: it always returns an object, with `inviteCode: null` inside it.
 - **Three ways to change a task, not two.** Besides the row menu and the calendar sheet, the AI
   plan adaptation (`POST /v1/plan-tasks/adapt`) can MOVE a task to another day. Coach-assigned
   tasks are filtered out of the adaptation snapshot so they are never proposed, and the apply path

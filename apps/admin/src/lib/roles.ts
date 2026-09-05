@@ -42,3 +42,13 @@ export const canSee = (
   itemRoles: readonly string[] | undefined,
   userRoles: readonly string[] | undefined,
 ): boolean => !itemRoles || isFullAccess(userRoles) || has(userRoles, itemRoles);
+
+/**
+ * Roles worth offering as a user-list filter: everything except STUDENT, which every account
+ * carries by default and would therefore filter nothing. COACH is the reason this exists — a role
+ * is not part of a name or an email, so free-text search can never answer "who are my coaches",
+ * and that is the first question before `mentorship.enabled` is ever switched on.
+ */
+export const FILTERABLE_ROLES: readonly string[] = Object.values(UserRole).filter(
+  (role) => role !== UserRole.STUDENT,
+);

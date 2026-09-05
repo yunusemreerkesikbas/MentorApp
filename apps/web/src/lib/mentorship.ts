@@ -1,6 +1,9 @@
 import type {
+  MentorshipCoachOverviewDto,
   MentorshipInviteCodeDto,
   MentorshipInvitationPreviewDto,
+  MentorshipProgramTemplateDto,
+  MentorshipProgramTemplateTaskDto,
   MentorshipRosterRowDto,
   MentorshipStudentReportDto,
   MyCoachDto,
@@ -18,13 +21,14 @@ import { http } from "@mentor/api-client";
 
 // --- coach side ---------------------------------------------------------------------------
 
-/** The coach's current invite code, or null when they have never issued one. */
-export async function fetchInviteCode(): Promise<MentorshipInviteCodeDto | null> {
-  return (
-    ((await http<MentorshipInviteCodeDto>("/v1/mentorship/invite-code")) as
-      | MentorshipInviteCodeDto
-      | undefined) ?? null
-  );
+/**
+ * The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract.
+ * One call, because the roster header renders all three together.
+ */
+export async function fetchOverview(): Promise<MentorshipCoachOverviewDto> {
+  return (await http<MentorshipCoachOverviewDto>(
+    "/v1/mentorship/overview",
+  )) as MentorshipCoachOverviewDto;
 }
 
 /** Issue a fresh code. The previous one stops working immediately. */
@@ -76,6 +80,34 @@ export async function assignTasks(
 
 export async function endStudentLink(studentId: string): Promise<void> {
   await http(`/v1/mentorship/students/${encodeURIComponent(studentId)}`, {
+    method: "DELETE",
+  });
+}
+
+/** The coach's saved weekly programs, newest edit first. */
+export async function fetchTemplates(): Promise<MentorshipProgramTemplateDto[]> {
+  return (await http<MentorshipProgramTemplateDto[]>(
+    "/v1/mentorship/templates",
+  )) as MentorshipProgramTemplateDto[];
+}
+
+/**
+ * Save under a name. Saving over an existing name replaces it — that is the edit path, which is
+ * why there is no PUT here and none on the API.
+ */
+export async function saveTemplate(input: {
+  name: string;
+  examType: string | null;
+  tasks: MentorshipProgramTemplateTaskDto[];
+}): Promise<MentorshipProgramTemplateDto> {
+  return (await http<MentorshipProgramTemplateDto>("/v1/mentorship/templates", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as MentorshipProgramTemplateDto;
+}
+
+export async function deleteTemplate(templateId: string): Promise<void> {
+  await http<void>(`/v1/mentorship/templates/${encodeURIComponent(templateId)}`, {
     method: "DELETE",
   });
 }

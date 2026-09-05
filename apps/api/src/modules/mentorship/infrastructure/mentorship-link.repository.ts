@@ -1,11 +1,25 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { coachStudents } from "../../../database/schema";
 
 export type MentorshipLinkRow = typeof coachStudents.$inferSelect;
+
+/**
+ * How many students this coach is currently following. Takes the transaction rather than opening
+ * one, because the quota check in {@link MentorshipLinkRepository.acceptInvite} has to run inside
+ * that call's advisory lock. One definition, two callers: the seat counter the coach reads must be
+ * the same number the redemption refuses on, or the roster would promise a seat the accept denies.
+ */
+async function countActive(tx: DatabaseTx, coachId: string): Promise<number> {
+  const rows = await tx
+    .select({ n: count() })
+    .from(coachStudents)
+    .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
+  return rows[0]?.n ?? 0;
+}
 
 /**
  * Coach↔student link persistence.
@@ -78,6 +92,11 @@ export class MentorshipLinkRepository {
     );
   }
 
+  /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */
+  countActiveByCoach(coachId: string): Promise<number> {
+    return withServiceContext(this.db, (tx) => countActive(tx, coachId));
+  }
+
   async listByCoach(
     coachId: string,
     status: string,
@@ -121,11 +140,7 @@ export class MentorshipLinkRepository {
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
       );
-      const active = await tx
-        .select({ n: count() })
-        .from(coachStudents)
-        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
-      if ((active[0]?.n ?? 0) >= maxActiveStudents) return "QUOTA_FULL";
+      if ((await countActive(tx, coachId)) >= maxActiveStudents) return "QUOTA_FULL";
 
       const rows = await tx
         .insert(coachStudents)

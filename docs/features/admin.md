@@ -97,6 +97,16 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Kullanıcı listesinde rol filtresi (APP-075, 2026-09-05)** — Arama yalnız e-posta ve ada
+  bakıyordu; rol ikisinin de parçası olmadığı için **"kim koç"** sorusu panelden sorulamıyordu.
+  W8'in bayrağını (`mentorship.enabled`) ilk kez açacak operatörün ilk sorusu buydu.
+  `searchUsersQuerySchema`'ya `role` eklendi; repository `roles @> ARRAY[:role]::text[]` koyuyor
+  (`roles` bir `text[]`, containment dizi index'inin cevaplayabildiği soru). Yeni uç yok.
+  `q` ile **birlikte** çalışıyor. Bilinmeyen rol 400 (`z.nativeEnum`), boş liste değil.
+  Filtre listesi `STUDENT`'ı dışarıda bırakıyor: her hesapta var, hiçbir şeyi süzmez.
+  **İlgili:** `packages/validation/src/admin.ts`, `modules/admin/infrastructure/admin-users.repository.ts`,
+  `apps/admin/src/{lib/roles.ts,app/(general)/users/page.tsx}`, [`mentorship.md`](./mentorship.md).
+
 - **2026-09-05 — Kullanıcı detayı modülerlik geçişi** — 499 satırlık kullanıcı detay ekranı;
   kullanıcı özeti/yetkiler, ekonomi ve abonelik için üç sayfaya özel sunum bileşenine ayrıldı;
   parent sayfa 300 satır sınırının altına indirildi. Kullanım: parent veri yükleme, yetki kontrolü,

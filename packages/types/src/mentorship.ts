@@ -73,6 +73,23 @@ export const MENTORSHIP_DATA_SCOPE: readonly MentorshipDataScopeKey[] = [
 ];
 
 /**
+ * The coach's own landing state: their invite code, how many of their seats are taken, and the
+ * mirror of what the student consented to hand over.
+ *
+ * `dataScope` travels from the API rather than being imported from this package by the coach UI,
+ * for the same reason {@link MentorshipInvitationPreviewDto} carries it: the two screens describe
+ * one contract, and a client-side copy of the list is a second place for it to drift.
+ */
+export interface MentorshipCoachOverviewDto {
+  /** Null when the coach has never issued one. */
+  inviteCode: MentorshipInviteCodeDto | null;
+  activeStudents: number;
+  /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
+  maxActiveStudents: number;
+  dataScope: MentorshipDataScopeKey[];
+}
+
+/**
  * The coach's standing note to their student. One note, overwritten in place — not a thread:
  * Phase-2 communication stays off-platform and in-app chat is Phase 3 (roadmap §9).
  */
@@ -209,4 +226,34 @@ export interface MentorshipStudentReportDto {
   /** Assigned by THIS coach and since deleted, newest first. Same 14-day window as `planTasks`. */
   droppedAssignments: MentorshipDroppedAssignmentDto[];
   moodTrend: { date: string; level: number }[];
+}
+
+/**
+ * One task inside a saved program. `dayIndex` is days from the program's own first day (0..20,
+ * three weeks — the composer's 21-task ceiling), never a date: a template exists to be re-dated
+ * onto whatever week the composer is showing.
+ */
+export interface MentorshipProgramTemplateTaskDto {
+  dayIndex: number;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  coachNote: string | null;
+}
+
+/**
+ * A week the coach saved to reuse. Loading one fills the composer's drafts; the write still goes
+ * through `POST /students/:id/assignments`, so every existing guard (21 ceiling, 120-day horizon,
+ * all-or-nothing transaction) applies unchanged and there is no second way to write a plan.
+ *
+ * `examType` is the taxonomy the topics were picked from, so the composer can say so when the
+ * template is loaded onto a student sitting a different exam. Null means the template carries no
+ * topics and fits anyone.
+ */
+export interface MentorshipProgramTemplateDto {
+  id: string;
+  name: string;
+  examType: string | null;
+  tasks: MentorshipProgramTemplateTaskDto[];
+  updatedAt: string;
 }
