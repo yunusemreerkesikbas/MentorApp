@@ -33,6 +33,11 @@ describe("mentorship seats (e2e)", () => {
       await c.query("select set_config('app.role','SERVICE',true)");
       await fn(c);
       await c.query("commit");
+    } catch (err) {
+      // Without this the client goes back to the pool mid-transaction and the next test picks it
+      // up in a failed state — a failure that surfaces somewhere else entirely.
+      await c.query("rollback").catch(() => undefined);
+      throw err;
     } finally {
       c.release();
     }

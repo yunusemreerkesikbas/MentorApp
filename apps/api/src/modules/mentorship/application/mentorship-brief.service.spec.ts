@@ -34,7 +34,13 @@ const report = (over: Partial<MentorshipStudentReportDto> = {}): MentorshipStude
   ...over,
 });
 
-function setup(link: { brief?: string | null; briefAt?: Date | null; briefFingerprint?: string | null }) {
+function setup(link: {
+  brief?: string | null;
+  briefAt?: Date | null;
+  briefFingerprint?: string | null;
+  /** The link stopped being ACTIVE while the model was still writing. */
+  linkEnded?: boolean;
+}) {
   const current = report();
   const links = {
     assertEnabled: vi.fn(async () => undefined),
@@ -46,7 +52,11 @@ function setup(link: { brief?: string | null; briefAt?: Date | null; briefFinger
     })),
   };
   const roster = { getStudentReport: vi.fn(async () => current) };
-  const repo = { setBrief: vi.fn(async () => new Date("2026-09-05T12:00:00Z")) };
+  const repo = {
+    setBrief: vi.fn(async () =>
+      link.linkEnded ? undefined : new Date("2026-09-05T12:00:00Z"),
+    ),
+  };
   const writer = { generate: vi.fn(async () => ({ text: "Yeni brief", model: "fake-model" })) };
   return {
     service: new MentorshipBriefService(
@@ -118,5 +128,19 @@ describe("MentorshipBriefService", () => {
     await service.generate(COACH, STUDENT);
     // The actor is not the subject: the coach's id and roles decide the quota and the meter row.
     expect(writer.generate).toHaveBeenCalledWith(expect.anything(), COACH, "tr");
+  });
+});
+
+/**
+ * Writing a brief takes a whole LLM call, and either side can end the link at any point during it.
+ * Returning the text anyway would hand a fresh summary of a student to a coach who had already
+ * been cut off from them — the one thing the gate exists to prevent.
+ */
+describe("MentorshipBriefService — the link ends mid-generation", () => {
+  it("drops the brief instead of handing it to a coach who lost access", async () => {
+    const { service } = setup({ linkEnded: true });
+    await expect(service.generate(COACH, STUDENT)).rejects.toMatchObject({
+      code: "MENTORSHIP_LINK_NOT_FOUND",
+    });
   });
 });

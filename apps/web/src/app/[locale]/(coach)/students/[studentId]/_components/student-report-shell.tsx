@@ -143,7 +143,9 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
 
       {/* Above the note and the composer: the brief is what a coach reads before deciding what to
           write. It sits BELOW the risk chips, which stay the deterministic floor it summarizes. */}
-      <BriefCard studentId={studentId} />
+      {/* Keyed: moving between students must remount this, or a brief about one could be read
+          under another's name while a stale request is still in flight. */}
+      <BriefCard key={studentId} studentId={studentId} />
 
       <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
 

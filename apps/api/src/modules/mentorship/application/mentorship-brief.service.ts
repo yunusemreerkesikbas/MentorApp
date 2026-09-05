@@ -1,5 +1,7 @@
-import { Injectable } from "@nestjs/common";
+import { HttpStatus, Injectable } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import type { MentorshipBriefDto } from "@mentor/types";
 import { MentorshipBriefService as AiBriefWriter } from "../../ai/application/mentorship-brief.service";
 import { mentorshipBriefFingerprint } from "../../ai/domain/mentorship-brief-prompt";
@@ -53,6 +55,13 @@ export class MentorshipBriefService {
 
     const result = await this.writer.generate(report, coach, locale);
     const generatedAt = await this.repo.setBrief(link.id, result.text, fingerprint);
+    if (!generatedAt) {
+      // Either side can end the link at any moment, and writing a brief takes a whole LLM call.
+      // If it ended while the model was typing, this text is about a student the coach may no
+      // longer see — so it is dropped rather than returned. Same answer as any other read after
+      // the gate closes: the link is simply not there.
+      throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
     return { brief: result.text, model: result.model, generatedAt: generatedAt.toISOString() };
   }
 }

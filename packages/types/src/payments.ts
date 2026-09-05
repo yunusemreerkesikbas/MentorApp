@@ -172,7 +172,10 @@ export interface AdminSponsorshipStatsDto {
   sponsorshipEnabled: boolean;
   /** LLM spend by the sponsored cohort, micro-USD. */
   costMicros: { d1: number; d7: number; d30: number };
-  /** 30-day cost divided by live seats. Null when there are no seats — not zero. */
+  /**
+   * 30-day cost divided by live seats. Null when there are no seats — not zero — and also null
+   * when `truncated`, because a per-seat average over a sampled cohort is not one.
+   */
   costPerSeatMicros30d: number | null;
   /**
    * True when the cohort was larger than the metric's own ceiling, so the costs above undercount.

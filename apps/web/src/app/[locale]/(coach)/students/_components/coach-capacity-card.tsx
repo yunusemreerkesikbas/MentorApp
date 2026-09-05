@@ -24,6 +24,7 @@ export function CoachCapacityCard({
   maxActiveStudents,
   freeSeats,
   paidSeats,
+  usedSeats,
   sponsorshipEnabled,
   busy,
   onRotate,
@@ -36,6 +37,8 @@ export function CoachCapacityCard({
   freeSeats: number;
   /** Extra sponsored seats the coach's own plan pays for. 0 without a seat plan. */
   paidSeats: number;
+  /** Seats in use, counted server-side — not every student consumes one. */
+  usedSeats: number;
   sponsorshipEnabled: boolean;
   busy: boolean;
   onRotate: () => void;
@@ -92,13 +95,10 @@ export function CoachCapacityCard({
             to know which of the two they are about to spend. */}
         {loaded && sponsorshipEnabled && freeSeats + paidSeats > 0 && (
           <p className="text-sm" style={{ color: "var(--color-body)" }}>
-            {t("seats_body", {
-              used: Math.min(activeStudents, freeSeats + paidSeats),
-              total: freeSeats + paidSeats,
-            })}
+            {t("seats_body", { used: usedSeats, total: freeSeats + paidSeats })}
             {/* Running out of seats never blocks a link — it only stops the sponsorship, and a
                 coach reading "3/3" deserves to know the next student still joins. */}
-            {activeStudents >= freeSeats + paidSeats ? ` ${t("seats_full")}` : ""}
+            {usedSeats >= freeSeats + paidSeats ? ` ${t("seats_full")}` : ""}
           </p>
         )}
         {!loaded ? (

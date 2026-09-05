@@ -21,6 +21,13 @@ export const MENTORSHIP_BRIEF_PROMPT_VERSION = "v1";
 /** How many rows of each list travel. A brief is a paragraph, not a data dump. */
 const TREND_LIMIT = 5;
 const TASK_LIMIT = 20;
+/**
+ * Subject rows and dropped titles are capped too. The report bounds them loosely — a mock can
+ * carry many subjects and `MENTORSHIP_DROPPED_LIMIT` allows 60 dropped titles — and an unbounded
+ * list here turns into tokens the coach never asked for, or a request the model refuses outright.
+ */
+const SUBJECT_LIMIT = 8;
+const DROPPED_LIMIT = 8;
 
 export interface MentorshipBriefEvidence {
   examType: string | null;
@@ -53,7 +60,7 @@ export function buildMentorshipBriefEvidence(
     mockTrend: report.mockTrend
       .slice(0, TREND_LIMIT)
       .map((mock) => ({ takenAt: mock.takenAt, totalNet: mock.totalNet })),
-    latestMockSubjects: report.latestMockSubjects.map((subject) => ({
+    latestMockSubjects: report.latestMockSubjects.slice(0, SUBJECT_LIMIT).map((subject) => ({
       subjectRef: subject.subjectRef,
       net: subject.net,
       wrong: subject.wrong,
@@ -67,7 +74,7 @@ export function buildMentorshipBriefEvidence(
       status: task.status,
       assignedByCoach: task.assignedByCoach,
     })),
-    droppedAssignments: report.droppedAssignments.map((dropped) => ({
+    droppedAssignments: report.droppedAssignments.slice(0, DROPPED_LIMIT).map((dropped) => ({
       taskDate: dropped.taskDate,
       title: dropped.title,
     })),

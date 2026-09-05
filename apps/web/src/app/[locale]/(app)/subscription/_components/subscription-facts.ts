@@ -53,6 +53,14 @@ export function listSubscriptionFacts(input: {
 
   facts.push({ id: "started", iso: subscription.startedAt });
 
+  if (subscription.sponsored) {
+    // Branch here, before any billing-period row is built. A coach's seat has no card, no charge
+    // and no period to renew — `period_start`, `next_renewal` and `renewal` would each be a claim
+    // about the student's own money that is not true.
+    facts.push({ id: "sponsored" });
+    return facts;
+  }
+
   const trialIso = subscription.trialEndsAt;
   const showTrial = reason === "TRIALING" && trialIso != null;
   if (showTrial && trialIso) {
@@ -79,13 +87,6 @@ export function listSubscriptionFacts(input: {
         iso: endsIso,
       });
     }
-  }
-
-  if (subscription.sponsored) {
-    // A coach's seat has no card behind it and no period to renew. Saying "renews automatically"
-    // would be false twice over: nothing is charged, and it ends when the coaching link does.
-    facts.push({ id: "sponsored" });
-    return facts;
   }
 
   if (reason !== "INCOMPLETE") {

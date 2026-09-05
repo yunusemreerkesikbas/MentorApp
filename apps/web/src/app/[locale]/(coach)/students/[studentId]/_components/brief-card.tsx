@@ -15,6 +15,11 @@ import { formatDate } from "../../../_components/mentorship-format";
  * when the coach asks — a card that wrote itself on every page view would bill a coach for reading
  * their own roster.
  *
+ * The parent keys this component by `studentId`, so moving between students remounts it: the state
+ * resets and an in-flight reply lands on a dead instance instead of the new student's screen. A
+ * brief is an AI summary of one student's numbers, and showing it under another student's name is
+ * the one failure this card cannot have.
+ *
  * The rule-based risk chips stay above this card and are not replaced by it: a deterministic flag
  * a coach can trust beats a sentence they have to second-guess, and the brief says so in its copy.
  */

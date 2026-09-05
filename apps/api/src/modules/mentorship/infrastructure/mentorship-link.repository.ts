@@ -92,6 +92,17 @@ export class MentorshipLinkRepository {
     );
   }
 
+  /** Every live link this coach holds, by id — what payments needs to price or count their seats. */
+  async listActiveLinkIds(coachId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ id: coachStudents.id })
+        .from(coachStudents)
+        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
+      return rows.map((row) => row.id);
+    });
+  }
+
   /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */
   countActiveByCoach(coachId: string): Promise<number> {
     return withServiceContext(this.db, (tx) => countActive(tx, coachId));
@@ -207,16 +218,23 @@ export class MentorshipLinkRepository {
     });
   }
 
-  /** Store a freshly written brief with the fingerprint of the report it was written from. */
-  async setBrief(linkId: string, brief: string, fingerprint: string): Promise<Date> {
+  /**
+   * Store a freshly written brief with the fingerprint of the report it was written from.
+   *
+   * Returns undefined when the row is gone or no longer ACTIVE. Writing takes a whole LLM call, and
+   * a link can end while the model is still typing — reporting success then would hand a fresh
+   * summary of a student to a coach who had already been cut off from them.
+   */
+  async setBrief(linkId: string, brief: string, fingerprint: string): Promise<Date | undefined> {
     const now = new Date();
-    await withServiceContext(this.db, async (tx) => {
-      await tx
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
         .update(coachStudents)
         .set({ brief, briefAt: now, briefFingerprint: fingerprint, updatedAt: now })
-        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")));
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning({ id: coachStudents.id });
+      return rows.length > 0 ? now : undefined;
     });
-    return now;
   }
 
   /**

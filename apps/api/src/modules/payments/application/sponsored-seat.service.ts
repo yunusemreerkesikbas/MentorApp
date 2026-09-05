@@ -82,6 +82,11 @@ export class SponsoredSeatService {
     return this.subscriptions.listSponsoredUserIds(limit);
   }
 
+  /** How many seats are live. Counted, not inferred from the bounded id list above. */
+  async countSeats(): Promise<number> {
+    return this.subscriptions.countSponsoredSeats();
+  }
+
   async revokeAll(now = new Date()): Promise<number> {
     const ended = await this.subscriptions.expireAllSponsored(now);
     if (ended > 0) this.logger.warn(`Sponsorship switched off — ended ${ended} seat(s)`);

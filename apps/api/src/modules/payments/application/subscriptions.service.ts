@@ -3,6 +3,7 @@ import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
+  COACH_SEAT_PLAN_ID,
   SUBSCRIPTION_PROVIDER_SPONSOR,
   SubscriptionStatus,
   type CheckoutSession,
@@ -260,6 +261,11 @@ export class SubscriptionsService {
     return plan?.seatCount ?? 0;
   }
 
+  /** How many of these coach links currently carry a sponsored subscription. */
+  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
+    return this.subsRepo.countSponsoredForLinks(linkIds);
+  }
+
   async getSubscriptionStats(): Promise<SubscriptionStats> {
     const since30 = new Date(Date.now() - 30 * DAY_MS);
     const [byStatus, revenueMinor30d, refundedMinor, payingSubscriptions] = await Promise.all([
@@ -474,7 +480,11 @@ export class SubscriptionsService {
     }
 
     const plan = await this.plansRepo.findById(planId);
-    if (!plan || !plan.isActive) throw new NotFoundError();
+    // `coach-seat` is active (a sponsored row's FK points at it) and priced 0, so without this it
+    // is a self-serve free Premium subscription for anyone who guesses the id. `findActive` only
+    // hides it from the catalog; the seat-plan guard below does not cover it either, because a
+    // seat plan is `seatCount > 0` and this one grants none.
+    if (!plan || !plan.isActive || plan.id === COACH_SEAT_PLAN_ID) throw new NotFoundError();
     // The catalog already hides seat plans while billing is off; this closes the by-id path, so
     // the flag is a real gate rather than a UI convention.
     if (plan.seatCount > 0 && !(await this.registry.get("mentorship.seats.billing_enabled"))) {

@@ -170,6 +170,27 @@ const mentorshipRatio = (def: number, description: string): ConfigEntryDef => ({
   description,
 });
 
+/**
+ * Like {@link mentorshipCount} but flagged sensitive: bounds + audit (§7, backend.md).
+ *
+ * For the mentorship knobs that spend money rather than shape behaviour — a seat is real LLM
+ * budget handed to somebody who is not paying for it, so raising it should read as a financial
+ * change in the admin UI, not a preference.
+ */
+const mentorshipCostCount = (
+  def: number,
+  min: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
+  category: ConfigCategory.MENTORSHIP,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 const mentorshipCount = (
   def: number,
   min: number,
@@ -321,7 +342,7 @@ export const CONFIG_CATALOG = {
     false,
     "List the coach-pro seat plans as purchasable. Off keeps them out of the catalog AND refuses checkout on them, so no paywall promises a purchase flow the payment provider cannot yet complete.",
   ),
-  "mentorship.coach.free_seats": mentorshipCount(
+  "mentorship.coach.free_seats": mentorshipCostCount(
     3,
     0,
     50,

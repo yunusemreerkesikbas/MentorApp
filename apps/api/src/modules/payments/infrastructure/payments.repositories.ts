@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gt, gte, lte, ne, notInArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, inArray, lte, ne, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
@@ -177,6 +177,50 @@ export class SubscriptionsRepository {
         )
         .limit(limit);
       return rows.map((row) => row.userId);
+    });
+  }
+
+  /**
+   * How many sponsored seats are live. A real count, not the length of the id page above: past the
+   * metric's ceiling that list stops growing, and reporting its length as the seat count would
+   * quietly cap a platform-wide number at the size of one query.
+   */
+  async countSponsoredSeats(): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: count() })
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        );
+      return rows[0]?.n ?? 0;
+    });
+  }
+
+  /**
+   * How many of these links are actually sponsoring somebody right now.
+   *
+   * Ids in, count out — the same shape the cost metric uses, and for the same reason: the links
+   * belong to W8 and the subscriptions to W4, so the two tables meet in neither module's SQL.
+   * A link can be live without a seat (the student already pays for themselves), which is exactly
+   * why this cannot be inferred from the roster size.
+   */
+  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
+    if (linkIds.length === 0) return 0;
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: count() })
+        .from(subscriptions)
+        .where(
+          and(
+            inArray(subscriptions.sponsorLinkId, [...linkIds]),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        );
+      return rows[0]?.n ?? 0;
     });
   }
 

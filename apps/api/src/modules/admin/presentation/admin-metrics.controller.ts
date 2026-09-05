@@ -93,20 +93,25 @@ export class AdminMetricsController {
    */
   @Get("sponsorship")
   async sponsorshipStats(): Promise<AdminSponsorshipStatsDto> {
-    const [userIds, freeSeatsPerCoach, sponsorshipEnabled] = await Promise.all([
+    const [seats, userIds, freeSeatsPerCoach, sponsorshipEnabled] = await Promise.all([
+      this.seats.countSeats(),
       this.seats.listSeatUserIds(),
       this.config.get("mentorship.coach.free_seats"),
       this.config.get("mentorship.seats.sponsorship_enabled"),
     ]);
     const costMicros = await this.aiCost.costForUsers(userIds);
+    // `seats` is counted; `userIds` is a bounded page used only to price the cohort. Past the
+    // ceiling the costs describe a sample, so the per-seat figure is withheld rather than
+    // presented as a platform average — an operator calibrating `free_seats` against a number
+    // that silently covers a third of the cohort would set it wrong with full confidence.
+    const truncated = userIds.length >= SPONSORED_SEAT_METRIC_LIMIT;
     return {
-      seats: userIds.length,
+      seats,
       freeSeatsPerCoach,
       sponsorshipEnabled,
       costMicros,
-      costPerSeatMicros30d: costPerSeatMicros(costMicros.d30, userIds.length),
-      // The ceiling was reached, so the costs above are a floor, not a total.
-      truncated: userIds.length >= SPONSORED_SEAT_METRIC_LIMIT,
+      costPerSeatMicros30d: truncated ? null : costPerSeatMicros(costMicros.d30, seats),
+      truncated,
       generatedAt: new Date().toISOString(),
     };
   }

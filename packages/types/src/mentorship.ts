@@ -107,6 +107,12 @@ export interface MentorshipCoachOverviewDto {
    * The allowance is `freeSeats + paidSeats`; past it a student is followed but not sponsored.
    */
   paidSeats: number;
+  /**
+   * Seats actually in use right now — counted, never inferred from `activeStudents`. A live link
+   * does not imply a seat: a student who already pays for themselves is never sponsored, and
+   * lowering `freeSeats` leaves existing sponsorships standing.
+   */
+  usedSeats: number;
   /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
   sponsorshipEnabled: boolean;
   dataScope: MentorshipDataScopeKey[];

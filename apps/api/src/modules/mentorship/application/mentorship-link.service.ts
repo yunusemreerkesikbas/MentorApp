@@ -78,21 +78,26 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, activeStudents, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats] =
+    const [inviteCode, linkIds, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats] =
       await Promise.all([
         this.invites.getCurrent(coachId),
-        this.links.countActiveByCoach(coachId),
+        this.links.listActiveLinkIds(coachId),
         this.config.get("mentorship.coach.max_active_students"),
         this.config.get("mentorship.coach.free_seats"),
         this.config.get("mentorship.seats.sponsorship_enabled"),
         this.subscriptions.paidSeatsFor(coachId),
       ]);
+    // Counted, not inferred from the roster. A live link does not imply a seat: a student who
+    // already pays for themselves is never sponsored, and lowering `free_seats` leaves existing
+    // sponsorships standing — so roster size and seat usage drift apart in both directions.
+    const usedSeats = await this.subscriptions.countSponsoredForLinks(linkIds);
     return {
       inviteCode,
-      activeStudents,
+      activeStudents: linkIds.length,
       maxActiveStudents,
       freeSeats,
       paidSeats,
+      usedSeats,
       sponsorshipEnabled,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
     };
