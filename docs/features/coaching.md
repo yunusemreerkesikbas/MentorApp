@@ -145,6 +145,18 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **Doğrulanan yükleme yetkileri ve özel defter/pano medyası (2026-09-05)** — İstemci artık R2'ye
+  doğrudan presigned PUT almıyor. API kısa ömürlü, tek kullanımlık yetkiyi kullanıcıya, aktif `sid`'ye,
+  özelliğe, sunucunun ürettiği anahtara ve boyut/MIME sınırına bağlıyor; baytları sayıyor ve gerçek
+  PNG/JPEG/WebP/PDF/OOXML imzasını depolamadan önce doğruluyor. Kullanıcı başına bir aktif yükleme ve
+  günlük 100 MiB bütçe merkezi ayarlardan yönetiliyor. Defter ve hayal panosu nesneleri özel bucket'a
+  yazılıyor; sahibi kontrol edildikten sonra en fazla beş dakikalık okuma URL'si alıyor. Topluluk
+  paylaşımı ayrı forum kopyası üretmeye devam ediyor. Silmeler kalıcı kuyruk işiyle tekrar deneniyor.
+  Kullanım: mevcut “adres al → PUT → kaydet” ekran akışı korunur. Gotcha: eski genel R2 nesneleri ve
+  CDN önbellekleri dağıtım geçişinde ayrıca temizlenmelidir; kod değişikliği geçmiş kopyaları uzaktan
+  silemez. İlgili: `schema-uploads.ts`, `upload-ticket.*`, `upload-content.ts`, `secure-storage.service.ts`,
+  `storage-cleanup.service.ts`, `mistake-notebook.service.ts`, `vision.service.ts`.
+
 - **KVKK erasure — `plan_tasks.description` de siliniyor (2026-09-03)** — `CoachingErasureRepository`
   `plan_tasks`'ı sadece `title: ERASED_TASK_TITLE` ile scrub ediyordu; öğrencinin kendi serbest metin
   notu olan `description` erasure'dan sağ çıkıyordu. Oysa bu, `study_sessions.struggleNote` ile aynı

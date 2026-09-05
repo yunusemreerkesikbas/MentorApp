@@ -52,10 +52,19 @@
 
 ## 5. Security & reliability
 
-- **Auth:** `Authorization: Bearer <accessJWT>`; refresh rotation on a separate endpoint. Short-lived access.
+- **Auth:** `Authorization: Bearer <accessJWT>`; access includes `sid` and every protected request
+  reloads the active session/account/roles. Refresh rotation and family revocation are transactional.
 - **Idempotency:** `Idempotency-Key` header on money/coin POSTs; idempotent webhook (no double processing).
 - Input validated with Zod (at the boundary). Rate-limit at the Cloudflare edge + cost cap (§7).
 - AuthZ Guard/Policy + RLS (double belt); tenancy `user_id`/`org_id`.
+- **OAuth linking:** email equality never merges existing accounts. Google linking is explicitly started
+  at `POST /v1/users/me/auth-accounts/google/start` with password confirmation and session-bound state;
+  status is `GET /v1/users/me/auth-accounts/google`.
+- **Uploads:** feature endpoints issue an opaque, one-use `/v1/storage/uploads/:ticket` capability.
+  The API validates the bound session, owner, purpose, byte limit and actual file format before server-side
+  storage write; clients never choose a storage key or receive a direct PUT signature.
+- **Push:** subscription endpoints accept only allowlisted browser push providers over HTTPS/443.
+  DNS/private-network validation runs at registration and again immediately before outbound delivery.
 
 ## 6. Service (module) catalog
 

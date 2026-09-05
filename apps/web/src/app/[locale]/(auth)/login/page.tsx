@@ -5,6 +5,7 @@ import { useRouter } from "@/i18n/navigation";
 import { useState, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
+import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
 import { useAuth } from "@/lib/auth-context";
 import { trackProductEvent } from "@/lib/analytics";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
@@ -66,6 +67,7 @@ export default function LoginPage() {
         <AuthNavLink href="/forgot-password">{translate("forgot_link")}</AuthNavLink>
       </div>
       <FormError message={error} />
+      <GoogleAuthFeedback />
       <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
       <GoogleAuthButton mode="login" />
       <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>

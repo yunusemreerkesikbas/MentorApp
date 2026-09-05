@@ -59,6 +59,36 @@ pnpm db:up && pnpm --filter @mentor/api test
   dual-driver was dropped in favor of a single `pg` Pool. *(0007.)*
 - **Base review fixes** — health filter exclusion, Swagger prod-gate, CORS env, validation i18n,
   Sentry instrument, negative e2e. *(0008.)*
+- **2026-09-05: Privacy-safe diagnostics and production startup locks** — HTTP logs allow only
+  method/path (without query strings or upload capabilities), UUID request ID, status and duration.
+  Application logs retain module context, stable error codes and error-frame fingerprints; arbitrary
+  message text, headers, bodies, user identifiers and raw exception/provider payloads are discarded.
+  Sentry receives scrubbed error events only, without automatic request/SQL tracing or breadcrumbs.
+  Usage: correlate failures using the response `x-request-id` and safe error fingerprint; use structured
+  error metadata for new diagnostics. Gotcha: legacy freeform log prose is intentionally omitted.
+  Production now requires HTTPS `APP_URL`, explicit HTTPS `CORS_ORIGINS`, a Turnstile secret and
+  `TURNSTILE_EXPECTED_HOSTNAME` matching the app host. The signup widget uses action `signup`;
+  `TURNSTILE_VERIFY_TIMEOUT_MS` bounds provider verification (default 5000 ms), including response reads.
+  Invalid/missing tokens, wrong hostname/action, HTTP errors and timeouts fail closed. Startup also
+  inspects the runtime database role and rejects superuser, BYPASSRLS, CREATEROLE, ownership of application
+  tables/schemas/database, and memberships that grant those privileges. Deploy with separate restricted
+  runtime and migration-owner credentials; changing environment files alone does not provision roles.
+  Local development/test without Turnstile continues working, and only production inspects DB roles.
+  Validation: negative unit tests with in-memory log streams, mocked Siteverify and mocked DB queries;
+  no remote services, role changes or migrations run during those tests. Related files:
+  `apps/api/src/observability/*`, `instrument.ts`, `common/filters/all-exceptions.filter.ts`,
+  `config/env*.ts`, `modules/identity/application/turnstile.service.ts`, `database/database-role-safety.ts`,
+  `database/database.module.ts`, `.env.example`, `render.yaml`.
+- **2026-09-05: Güvenlik tabanı, bağımlılıklar ve CI kapıları** — Web ve admin Next.js 16.3.4,
+  React 19.2.8 tabanına alındı; admin Bootstrap görünümü korundu. Drizzle, Sentry, axios, multer ve
+  alt bağımlılıklar güvenli sürümlere taşındı; üretim bağımlılık taraması bilinen açık olmadan geçti.
+  CI artık yüksek önem düzeyinde üretim bağımlılığı taraması ve gitleaks sır taraması çalıştırıyor.
+  `0102_security-hardening` migration'ı sunucu oturumları, Google link niyetleri, push teslimat claim'leri
+  ve yükleme yetkilerini ekliyor ve RLS'yi ENABLE+FORCE yapıyor. OpenAPI export, DTO ile bağlanan eksik
+  yol parametrelerini de geçerli sözleşmeye tamamlıyor. Kullanım: endpoint değişikliğinden sonra normal
+  export+orval komutunu çalıştır. Gotcha: bağımlılık taramasının yeşil olması uygulama mantığının veya
+  gerçek Cloudflare/Render/Neon ayarlarının güvenli olduğunu tek başına kanıtlamaz. Yayın öncesi dış
+  ortam adımları için [security-release-checklist.md](./security-release-checklist.md) kullanılır.
 
 ## Gotchas / Known issues
 

@@ -1,10 +1,10 @@
 "use client";
-import { ArrowRight, CheckCircle2, Clock3, LoaderCircle } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { SlidingTabs, type SlidingTabItem } from "@mentor/ui";
 import {
   ApiClientError,
   usersControllerResendVerificationEmail,
@@ -15,8 +15,11 @@ import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { notifyCoinCelebration } from "@/lib/economy";
 import { findNewlyCompletedQuests } from "@/lib/economy-quest-utils";
+import { QuestProgressGauge } from "./economy-quests/quest-progress-gauge";
+import { QuestNextActionCard } from "./economy-quests/quest-next-action-card";
+import { QuestRowItem } from "./economy-quests/quest-row-item";
 
-interface EconomyQuestsCardProps {
+export interface EconomyQuestsCardProps {
   onDismiss?: () => void;
   onInviteRequested?: () => void;
   quests: QuestProgressView[];
@@ -30,7 +33,8 @@ interface EconomyQuestsCardProps {
 type QuestTabKey = QuestProgressView["category"];
 
 /**
- * Onboarding quests — titles and completion from backend; no FE reward logic.
+ * Economy Quests Card — redesigned companion quest checklist.
+ * Features ambient radial gauge, SlidingTabs, and Reference 3-style task cards.
  */
 export function EconomyQuestsCard({
   onDismiss,
@@ -41,7 +45,7 @@ export function EconomyQuestsCard({
   const translate = useTranslations("economy");
   const profileTranslate = useTranslations("profile");
   const router = useRouter();
-  const reduceMotion = useReducedMotion();
+  const reduceMotion = useReducedMotion() ?? false;
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
   const [selectedTab, setSelectedTab] = useState<QuestTabKey>("daily_ritual");
@@ -66,18 +70,34 @@ export function EconomyQuestsCard({
   const weeklyQuests = quests.filter((quest) => quest.category === "weekly_ritual");
   const milestoneQuests = quests.filter((quest) => quest.category === "milestone");
   const onboardingQuests = quests.filter((quest) => quest.category === "onboarding");
-  const questTabs = ([
-    { key: "daily_ritual", label: translate("quests_daily_section"), quests: dailyQuests },
-    { key: "weekly_ritual", label: translate("quests_weekly_section"), quests: weeklyQuests },
-    { key: "milestone", label: translate("quests_milestone_section"), quests: milestoneQuests },
-    { key: "onboarding", label: translate("quests_onboarding_section"), quests: onboardingQuests },
-  ] satisfies Array<{
-    key: QuestTabKey;
-    label: string;
-    quests: QuestProgressView[];
-  }>).filter(
+
+  const tabDefs = [
+    {
+      key: "daily_ritual" as const,
+      label: translate("quests_tab_daily"),
+      quests: dailyQuests,
+    },
+    {
+      key: "weekly_ritual" as const,
+      label: translate("quests_tab_weekly"),
+      quests: weeklyQuests,
+    },
+    {
+      key: "milestone" as const,
+      label: translate("quests_tab_milestone"),
+      quests: milestoneQuests,
+    },
+    {
+      key: "onboarding" as const,
+      label: translate("quests_tab_onboarding"),
+      quests: onboardingQuests,
+    },
+  ];
+
+  const questTabs = tabDefs.filter(
     (tab) => tab.quests.length > 0 || (tab.key === "daily_ritual" && Boolean(rewardedAd)),
   );
+
   const activeTab = questTabs.some((tab) => tab.key === selectedTab)
     ? selectedTab
     : questTabs[0]?.key;
@@ -91,7 +111,9 @@ export function EconomyQuestsCard({
     null;
   const promoteRewardedAd = Boolean(rewardedAd && !nextQuest);
 
-  function navigateAfterDismiss(path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/settings") {
+  function navigateAfterDismiss(
+    path: "/plan" | "/study-session" | "/dashboard" | "/subscription" | "/settings",
+  ) {
     flushSync(() => {
       onDismiss?.();
     });
@@ -108,11 +130,7 @@ export function EconomyQuestsCard({
       navigateAfterDismiss("/study-session");
       return;
     }
-    if (action === "mood-checkin") {
-      navigateAfterDismiss("/dashboard");
-      return;
-    }
-    if (action === "panel") {
+    if (action === "mood-checkin" || action === "panel") {
       navigateAfterDismiss("/dashboard");
       return;
     }
@@ -152,338 +170,130 @@ export function EconomyQuestsCard({
     }
   }
 
+  const slidingTabItems: SlidingTabItem[] = questTabs.map((tab) => {
+    const tabCompleted = tab.quests.filter((quest) => quest.completed).length;
+    return {
+      id: tab.key,
+      panelId: `quests-panel-${tab.key}`,
+      label: (
+        <span className="flex items-center justify-center gap-1 leading-tight">
+          <span className="truncate text-xs font-bold">{tab.label}</span>
+          <span className="text-[10px] font-semibold opacity-75 tabular-nums">
+            {tabCompleted}/{tab.quests.length}
+          </span>
+        </span>
+      ),
+    };
+  });
+
   return (
     <div className="flex h-full min-h-0 flex-col overflow-hidden">
-      <div className="shrink-0 bg-[var(--color-surface)] pb-3">
+      <div className="shrink-0 pb-1.5">
         <QuestProgressGauge
+          allDoneLabel={translate("quests_all_done")}
+          completed={completed}
           percent={percent}
           percentLabel={translate("quests_percent", { percent })}
           progressLabel={translate("quests_progress", {
             done: completed,
             total: dailyQuests.length,
           })}
+          reduceMotion={reduceMotion}
           stateLabel={translate("quests_daily_state")}
-          reduceMotion={reduceMotion ?? false}
+          total={dailyQuests.length}
         />
 
-        <p className="mt-3 text-sm font-medium text-[var(--color-secondary)]">
-          {translate("quests_subtitle")}
-        </p>
-
         {nextQuest ? (
-          <button
-            type="button"
-            className="mt-3 flex w-full cursor-pointer items-center justify-between gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-left shadow-[var(--shadow-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)]"
-            onClick={() => void handleAction(nextQuest.action)}
-          >
-            <span className="min-w-0">
-              <span className="block text-xs font-bold uppercase text-[var(--color-secondary)]">
-                {translate("quest_next_step")}
-              </span>
-              <span className="mt-1 block truncate text-base font-extrabold text-[var(--color-main)]">
-                {nextQuest.title}
-              </span>
-            </span>
-            <ArrowRight className="shrink-0 text-[var(--color-main)]" size={18} aria-hidden />
-          </button>
-        ) : rewardedAd ? (
-          <RewardedAdOffer {...rewardedAd} variant="promoted" />
+          <QuestNextActionCard
+            nextQuest={nextQuest}
+            nextStepLabel={translate("quest_next_step")}
+            onAction={handleAction}
+            reduceMotion={reduceMotion}
+          />
+        ) : rewardedAd && promoteRewardedAd ? (
+          <div className="mt-3">
+            <RewardedAdOffer {...rewardedAd} variant="promoted" />
+          </div>
         ) : null}
 
         {questTabs.length > 1 ? (
-          <div
-            aria-label={translate("quests_tabs_label")}
-            className="mt-3 flex rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] p-1"
-            role="tablist"
-          >
-            {questTabs.map((tab) => {
-              const tabCompleted = tab.quests.filter((quest) => quest.completed).length;
-              const selected = tab.key === activeTab;
-              return (
-                <button
-                  key={tab.key}
-                  aria-controls="quests-panel"
-                  aria-selected={selected}
-                  className={`relative min-w-0 flex-1 rounded-[var(--radius-card)] px-2 py-2 text-center text-xs font-extrabold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] motion-reduce:transition-none ${
-                    selected ? "text-[var(--color-main)]" : "text-[var(--color-secondary)] hover:text-[var(--color-main)]"
-                  }`}
-                  id={`quests-tab-${tab.key}`}
-                  onClick={() => setSelectedTab(tab.key)}
-                  role="tab"
-                  type="button"
-                >
-                  {selected ? (
-                    <motion.span
-                      className="absolute inset-0 rounded-[var(--radius-card)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
-                      layoutId="quest-tab-indicator"
-                      transition={
-                        reduceMotion
-                          ? { duration: 0 }
-                          : { duration: 0.22, ease: [0.22, 1, 0.36, 1] }
-                      }
-                    />
-                  ) : null}
-                  <span className="relative block truncate">{tab.label}</span>
-                  <span className="relative mt-0.5 block tabular-nums">
-                    {tabCompleted}/{tab.quests.length}
-                  </span>
-                </button>
-              );
-            })}
+          <div className="no-scrollbar mt-3.5 w-full overflow-hidden">
+            <SlidingTabs
+              ariaLabel={translate("quests_tabs_label")}
+              className="no-scrollbar w-full [&_.t-tab]:min-h-9 [&_.t-tab]:px-1.5 [&_.t-tab]:text-xs"
+              equalWidth={true}
+              idPrefix="quests-tab"
+              items={slidingTabItems}
+              onChange={(id) => setSelectedTab(id as QuestTabKey)}
+              value={activeTab ?? "daily_ritual"}
+            />
           </div>
         ) : null}
       </div>
 
       <QuestSection
-        animationKey={activeTab}
-        labelledBy={activeTab ? `quests-tab-${activeTab}` : undefined}
-        panelId="quests-panel"
+        activeTab={activeTab}
+        onAction={handleAction}
         quests={activeQuests}
+        reduceMotion={reduceMotion}
+        resendingVerification={resendingVerification}
         rewardedAd={
           activeTab === "daily_ritual" && rewardedAd && !promoteRewardedAd
             ? rewardedAd
             : undefined
         }
-        reduceMotion={reduceMotion ?? false}
-        resendingVerification={resendingVerification}
-        onAction={handleAction}
       />
     </div>
   );
 }
 
 function QuestSection({
-  animationKey,
+  activeTab,
   onAction,
-  labelledBy,
-  panelId,
   quests,
-  rewardedAd,
   reduceMotion,
   resendingVerification,
+  rewardedAd,
 }: {
-  animationKey?: string;
-  labelledBy?: string;
+  activeTab?: QuestTabKey;
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
-  panelId?: string;
   quests: QuestProgressView[];
-  rewardedAd?: EconomyQuestsCardProps["rewardedAd"];
   reduceMotion: boolean;
   resendingVerification: boolean;
+  rewardedAd?: EconomyQuestsCardProps["rewardedAd"];
 }) {
   if (quests.length === 0 && !rewardedAd) return null;
+
   return (
     <section
-      aria-labelledby={labelledBy}
-      className="mentor-scrollarea mt-4 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1"
-      id={panelId}
-      role={labelledBy ? "tabpanel" : undefined}
+      aria-labelledby={activeTab ? `quests-tab-${activeTab}` : undefined}
+      className="mentor-scrollarea mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1"
+      id={activeTab ? `quests-panel-${activeTab}` : "quests-panel"}
+      role={activeTab ? "tabpanel" : undefined}
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.ul
-          key={animationKey}
+          key={activeTab}
           animate={{ opacity: 1, y: 0 }}
-          className="mt-2 flex flex-col gap-2"
+          className="flex flex-col gap-2 pt-1"
           exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
           initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 6 }}
-          transition={reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }}
+          transition={
+            reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }
+          }
         >
           {rewardedAd ? <RewardedAdOffer {...rewardedAd} variant="list" /> : null}
           {quests.map((quest) => (
-            <QuestRow
+            <QuestRowItem
               key={`${quest.id}:${quest.periodKey}`}
               busy={quest.action === "verify-email" && resendingVerification}
               onAction={onAction}
               quest={quest}
+              reduceMotion={reduceMotion}
             />
           ))}
         </motion.ul>
       </AnimatePresence>
     </section>
-  );
-}
-
-function QuestRow({
-  busy,
-  onAction,
-  quest,
-}: {
-  busy: boolean;
-  onAction: (action: QuestProgressView["action"]) => Promise<void>;
-  quest: QuestProgressView;
-}) {
-  const translate = useTranslations("economy");
-  const action = quest.completed ? null : quest.action;
-  const progressCurrent = quest.progressCurrent;
-  const progressTarget = quest.progressTarget;
-  const hasProgress = progressCurrent !== undefined && progressTarget !== undefined;
-  const progressPercent =
-    hasProgress && progressTarget > 0
-      ? Math.min(100, Math.max(0, (progressCurrent / progressTarget) * 100))
-      : 0;
-  const content = (
-    <>
-      <span
-        className="grid size-6 shrink-0 place-items-center"
-        style={{
-          color: quest.completed ? "var(--color-success)" : "var(--color-chip-text)",
-        }}
-      >
-        {quest.completed ? (
-          <CheckCircle2 size={20} strokeWidth={2.2} aria-hidden />
-        ) : (
-          <Clock3 size={20} strokeWidth={2.2} aria-hidden />
-        )}
-      </span>
-      <span className="min-w-0 flex-1 text-left">
-        <span className="block truncate text-base font-semibold text-[var(--color-main)]">
-          {quest.title}
-        </span>
-        <span className="mt-1 block text-xs font-bold text-[var(--color-secondary)]">
-          {quest.badgeLabel}
-          {hasProgress
-            ? ` · ${translate(
-                // Only streak-style quests count days; session/task quests are plain counts.
-                quest.id.startsWith("milestone.streak.") || quest.id === "weekly.streak-full-week"
-                  ? "quest_progress_days"
-                  : "quest_progress_count",
-                {
-                  current: progressCurrent,
-                  target: progressTarget,
-                },
-              )}`
-            : null}
-        </span>
-        {hasProgress ? (
-          <span
-            aria-hidden="true"
-            className="mt-2 block h-1.5 overflow-hidden rounded-full bg-[var(--color-progress-track)]"
-          >
-            <span
-              className="block h-full rounded-full bg-[var(--color-progress)]"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </span>
-        ) : null}
-      </span>
-      {!quest.completed ? (
-        <span className="shrink-0 text-sm font-bold text-[var(--color-chip-text)]">
-          {rewardLabel(translate, quest)}
-        </span>
-      ) : null}
-      {action ? (
-        busy ? (
-          <LoaderCircle
-            className="shrink-0 animate-spin text-[var(--color-main)] motion-reduce:animate-none"
-            size={17}
-            aria-hidden
-          />
-        ) : (
-          <ArrowRight
-            className="shrink-0 text-[var(--color-main)]"
-            size={17}
-            aria-hidden
-          />
-        )
-      ) : null}
-    </>
-  );
-
-  return (
-    <li
-      data-testid="daily-quest-row"
-      className={`rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] p-3 ${
-        quest.completed ? "opacity-55" : ""
-      }`}
-    >
-      {action ? (
-        <button
-          type="button"
-          className="flex min-h-9 w-full min-w-0 cursor-pointer items-center gap-3 rounded-[var(--radius-card)] text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] disabled:cursor-wait disabled:opacity-70"
-          disabled={busy}
-          onClick={() => void onAction(action)}
-        >
-          {content}
-        </button>
-      ) : (
-        <div className="flex min-h-9 min-w-0 items-center gap-3">{content}</div>
-      )}
-    </li>
-  );
-}
-
-function rewardLabel(
-  translate: ReturnType<typeof useTranslations>,
-  quest: QuestProgressView,
-): string {
-  if (quest.rewardUnit === "XP") return translate("quest_reward_xp", { count: quest.rewardAmount });
-  if (quest.rewardUnit === "COIN") return translate("quest_reward_coin", { count: quest.rewardAmount });
-  return "";
-}
-
-function QuestProgressGauge({
-  percent,
-  percentLabel,
-  progressLabel,
-  reduceMotion,
-  stateLabel,
-}: {
-  percent: number;
-  percentLabel: string;
-  progressLabel: string;
-  reduceMotion: boolean;
-  stateLabel: string;
-}) {
-  const arcPath = "M 24 128 A 116 116 0 0 1 256 128";
-  const progress = Math.min(100, Math.max(0, percent)) / 100;
-
-  return (
-    <div className="mt-4 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-4 pb-3 pt-4 shadow-[var(--shadow-card)]">
-      <div className="relative mx-auto h-[140px] w-full max-w-[360px]">
-        <svg
-          aria-label={`${progressLabel} ${percentLabel}`}
-          className="h-full w-full overflow-visible"
-          role="img"
-          viewBox="0 8 280 136"
-        >
-          <path
-            d={arcPath}
-            fill="none"
-            pathLength={1}
-            stroke="color-mix(in srgb, var(--color-progress-track) 70%, var(--color-surface))"
-            strokeLinecap="round"
-            strokeWidth={14}
-          />
-          <motion.path
-            animate={{ pathLength: progress }}
-            d={arcPath}
-            fill="none"
-            initial={{ pathLength: reduceMotion ? progress : 0 }}
-            pathLength={1}
-            stroke="var(--color-progress)"
-            strokeLinecap="round"
-            strokeWidth={14}
-            transition={
-              reduceMotion
-                ? { duration: 0 }
-                : { duration: 0.9, ease: [0.22, 1, 0.36, 1] }
-            }
-          />
-        </svg>
-        <div className="absolute inset-x-0 bottom-0 flex flex-col items-center text-center">
-          <span className="text-sm font-semibold text-[var(--color-secondary)]">
-            {stateLabel}
-          </span>
-          <span className="mt-1 flex items-baseline justify-center text-[var(--color-main)]">
-            <span className="text-4xl font-extrabold tabular-nums leading-none">
-              {percentLabel}
-            </span>
-          </span>
-          <span className="mt-2 text-sm font-semibold text-[var(--color-secondary)]">
-            {progressLabel}
-          </span>
-        </div>
-      </div>
-    </div>
   );
 }

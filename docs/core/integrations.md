@@ -10,7 +10,7 @@
 | **OpenAI** | AI text, embeddings + vision classification | `OPENAI_API_KEY`, `OPENAI_*_MODEL`, `AI_PROVIDER`, `VISION_PROVIDER` | MVP |
 | **Gemini** | AI vision (photo→categorize) | `GEMINI_API_KEY`, `GEMINI_MODEL`, `VISION_PROVIDER` | MVP (premium) |
 | **iyzico** | Subscription/payments | `IYZICO_*` | MVP |
-| **Cloudflare R2** | Object storage — **two buckets**: public (avatars, forum ekleri, makale görselleri, vision board) + private (`mock-exams/`). Kurulum: [`storage-r2.md`](./storage-r2.md) | `STORAGE_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PRIVATE_BUCKET`, `R2_PUBLIC_BASE_URL`, `R2_JURISDICTION` | MVP |
+| **Cloudflare R2** | Object storage — **two buckets**: public (avatars, forum ekleri, makale görselleri) + private (`mock-exams/`, `notebook/`, `vision-board/`). Kurulum: [`storage-r2.md`](./storage-r2.md) | `STORAGE_PROVIDER`, `R2_ACCOUNT_ID`, `R2_ACCESS_KEY_ID`, `R2_SECRET_ACCESS_KEY`, `R2_PUBLIC_BUCKET`, `R2_PRIVATE_BUCKET`, `R2_PUBLIC_BASE_URL`, `R2_JURISDICTION` | MVP |
 | **Cloudflare Turnstile** | Bot/Sybil | `TURNSTILE_SECRET_KEY`, `NEXT_PUBLIC_TURNSTILE_SITE_KEY` | MVP |
 | **Postmark** | Transactional email | `POSTMARK_TOKEN` | MVP |
 | **Sentry** | Error monitoring | `SENTRY_DSN` | MVP |
@@ -37,8 +37,8 @@
   requires one `POST /v1/admin/ai/reembed` run so stored and query vectors stay compatible.
 - Google AI Studio key → `GEMINI_API_KEY` (vision, rate-limit + premium). Photo categorize:
   `VISION_PROVIDER=gemini` + `GEMINI_MODEL` (default `gemini-2.0-flash`). Dev/test: `VISION_PROVIDER=fake`.
-- Mock-exam photo uploads: `STORAGE_PROVIDER=r2` + `R2_*` in prod; `fake` uses in-memory
-  `/v1/storage/fake-upload` (dev/test only).
+- Uploads: `STORAGE_PROVIDER=r2` + `R2_*` in prod; every client PUT uses the short-lived
+  `/v1/storage/uploads/:ticket` capability. The legacy direct fake-storage route is removed.
 
 ### iyzico (payments)
 1. **Company required** (at least sole proprietorship) + documents + legal web pages → application (§7, Phase 0).
