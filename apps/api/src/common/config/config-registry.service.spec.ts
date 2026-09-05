@@ -19,8 +19,16 @@ function makeRepoFake(initial: Record<string, unknown> = {}) {
 describe("ConfigRegistryService", () => {
   let service: ConfigRegistryService;
 
+  let emitted: { topic: string; payload: unknown }[] = [];
+
   beforeEach(() => {
-    service = new ConfigRegistryService(makeRepoFake() as never);
+    emitted = [];
+    service = new ConfigRegistryService(makeRepoFake() as never, {
+      emit: (topic: string, payload: unknown) => {
+        emitted.push({ topic, payload });
+        return true;
+      },
+    } as never);
   });
 
   it("returns the catalog default when no override exists", async () => {
@@ -59,5 +67,20 @@ describe("ConfigRegistryService", () => {
     const economy = list.find((e) => e.key === FeatureFlag.ECONOMY_ENABLED);
     expect(economy).toMatchObject({ category: "feature-flags", type: "boolean", value: true });
     expect(list.length).toBeGreaterThanOrEqual(3);
+  });
+
+  /**
+   * Kill switches only work if the module that owns the consequence hears about the flip. Most
+   * keys are read on demand and need nothing; this event is what lets one act on what already
+   * exists (W8's sponsorship brake listens for exactly this).
+   */
+  it("announces a change so a kill switch can act on what already exists", async () => {
+    await service.set("admin", FeatureFlag.AI_ENABLED, false);
+    expect(emitted).toEqual([
+      {
+        topic: "config.changed",
+        payload: expect.objectContaining({ key: FeatureFlag.AI_ENABLED, after: false }),
+      },
+    ]);
   });
 });

@@ -104,8 +104,16 @@ describe("mentorship seats (e2e)", () => {
   });
 
   let code = "";
+  /** Platform-wide subscription counters as they stood before this suite handed out any seat. */
+  let baseline = { payingSubscriptions: 0, active: 0 };
 
   it("hands the seated student Premium the moment the link is accepted", async () => {
+    const before = await http().get("/v1/admin/metrics").set(auth("admin"));
+    baseline = {
+      payingSubscriptions: before.body.subscriptions.payingSubscriptions,
+      active: before.body.subscriptions.byStatus.active,
+    };
+
     code = (await http().post("/v1/mentorship/invite-code").set(auth("coach"))).body.code;
 
     expect(await subscriptionOf("seated")).toMatchObject({
@@ -136,10 +144,15 @@ describe("mentorship seats (e2e)", () => {
     });
   });
 
-  it("keeps the seat plan out of the catalog the student can buy", async () => {
-    const view = await subscriptionOf("seated");
-    expect((view.plans as { id: string }[]).map((plan) => plan.id)).not.toContain("coach-seat");
-    expect(view.plans.length).toBeGreaterThan(0);
+  it("keeps the seat plans out of the catalog anyone can buy", async () => {
+    const plans = (await http().get("/v1/plans").set(auth("seated"))).body as { id: string }[];
+    const ids = plans.map((plan) => plan.id);
+    expect(ids.length).toBeGreaterThan(0);
+    // `coach-seat` is what a sponsored row points at: priced 0, never a product.
+    expect(ids).not.toContain("coach-seat");
+    // The Pro plans are real products but stay hidden while `mentorship.seats.billing_enabled`
+    // is off — listing a plan the provider cannot charge for would price a promise.
+    expect(ids).not.toContain("coach-pro-10");
   });
 
   it("follows the next student without sponsoring them", async () => {
@@ -162,10 +175,12 @@ describe("mentorship seats (e2e)", () => {
   it("does not count a giveaway as a conversion", async () => {
     const metrics = await http().get("/v1/admin/metrics").set(auth("admin"));
     expect(metrics.status).toBe(200);
-    // The seat wrote no ledger row, and `countByStatus` skips sponsored rows, so the funnel's
-    // denominator never learns about Premium the platform gave away.
-    expect(metrics.body.subscriptions.payingSubscriptions).toBe(0);
-    expect(metrics.body.subscriptions.byStatus.active).toBe(0);
+    // A DELTA, not an absolute: these counters are platform-wide and this suite shares its
+    // database with every other one. What has to hold is that handing out a seat moved neither —
+    // the seat writes no ledger row, and `countByStatus` filters sponsored rows out of the
+    // funnel's denominator.
+    expect(metrics.body.subscriptions.payingSubscriptions).toBe(baseline.payingSubscriptions);
+    expect(metrics.body.subscriptions.byStatus.active).toBe(baseline.active);
   });
 
   it("ends the sponsorship with the link and leaves nothing blocking the student", async () => {
@@ -173,8 +188,11 @@ describe("mentorship seats (e2e)", () => {
       (await http().delete(`/v1/mentorship/students/${userId.seated}`).set(auth("coach"))).status,
     ).toBe(204);
 
+    // Poll on the row closing, not on `isPremium`: revoke writes EXPIRED and a past
+    // `currentPeriodEnd` in one update, and entitlement can read false off either half. Waiting
+    // for the stronger condition is what makes this deterministic under a full-suite run.
     let view = await subscriptionOf("seated");
-    for (let attempt = 0; attempt < 20 && view.entitlement.isPremium; attempt++) {
+    for (let attempt = 0; attempt < 40 && view.subscription !== null; attempt++) {
       await new Promise((resolve) => setTimeout(resolve, 50));
       view = await subscriptionOf("seated");
     }
