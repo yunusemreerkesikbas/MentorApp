@@ -70,8 +70,13 @@ export class AdminUsersService {
     private readonly accountErasure: AccountErasureService,
   ) {}
 
-  async search(q: string | undefined, page: number, pageSize: number): Promise<AdminUserView[]> {
-    const rows = await this.repo.search(q, page, pageSize);
+  async search(
+    q: string | undefined,
+    role: string | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<AdminUserView[]> {
+    const rows = await this.repo.search(q, role, page, pageSize);
     return rows.map(toView);
   }
 

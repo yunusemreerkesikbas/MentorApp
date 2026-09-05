@@ -3,6 +3,7 @@
  * User-facing copy is NOT here: messages are localized by the backend.
  */
 import { z } from "zod";
+import { UserRole } from "@mentor/types";
 // NOTE: import from the leaf module, NOT "./index.js" — a barrel import here would
 // create an index↔admin cycle that crashes sync ESM-from-CJS loading (see payments gotcha).
 import { paginationQuerySchema } from "./pagination.js";
@@ -11,6 +12,14 @@ import { paginationQuerySchema } from "./pagination.js";
 export const searchUsersQuerySchema = paginationQuerySchema.extend({
   /** Matches email or display name (case-insensitive, partial). */
   q: z.string().trim().min(1).max(120).optional(),
+  /**
+   * Narrow to holders of one role. Free text cannot answer "who are my coaches" — a role is not
+   * part of a name or an email — and before `mentorship.enabled` is ever switched on, that is
+   * exactly the question an operator has to be able to ask.
+   *
+   * Composes with `q` rather than replacing it: both are applied when both are given.
+   */
+  role: z.nativeEnum(UserRole).optional(),
 });
 export type SearchUsersQuery = z.infer<typeof searchUsersQuerySchema>;
 

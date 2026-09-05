@@ -92,6 +92,48 @@ describe("admin (e2e)", () => {
     expect(res.status).toBe(401);
   });
 
+  it("filters the user list by role, which free text cannot do", async () => {
+    // A role is not part of a name or an email, so "who are my coaches" is unanswerable without
+    // this. It is the first question an operator has before `mentorship.enabled` is switched on.
+    const before = await request(app.getHttpServer())
+      .get("/v1/admin/users?role=COACH")
+      .set(asAdmin());
+    expect(before.status).toBe(200);
+    expect((before.body as { id: string }[]).some((u) => u.id === targetUserId)).toBe(false);
+
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post(`/v1/admin/users/${targetUserId}/roles/COACH`)
+          .set(asAdmin())
+      ).status,
+    ).toBe(201);
+
+    const after = await request(app.getHttpServer())
+      .get("/v1/admin/users?role=COACH")
+      .set(asAdmin());
+    expect((after.body as { id: string }[]).map((u) => u.id)).toContain(targetUserId);
+    // Every row really carries the role — `@>` is containment, not a prefix match.
+    for (const user of after.body as { roles: string[] }[]) {
+      expect(user.roles).toContain("COACH");
+    }
+
+    // `q` and `role` compose rather than override.
+    const both = await request(app.getHttpServer())
+      .get("/v1/admin/users?role=COACH&q=definitely-no-such-user")
+      .set(asAdmin());
+    expect(both.body).toEqual([]);
+
+    // An unknown role is refused at the edge, not answered with an empty list.
+    expect(
+      (await request(app.getHttpServer()).get("/v1/admin/users?role=NOPE").set(asAdmin())).status,
+    ).toBe(400);
+
+    await request(app.getHttpServer())
+      .delete(`/v1/admin/users/${targetUserId}/roles/COACH`)
+      .set(asAdmin());
+  });
+
   it("grants STAFF (idempotent) and writes an audit row", async () => {
     const grant = await request(app.getHttpServer())
       .post(`/v1/admin/users/${targetUserId}/roles/staff`)

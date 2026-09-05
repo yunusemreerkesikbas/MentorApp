@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -16,17 +16,31 @@ export class AdminUsersRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /** Paginated user list; `q` matches email or display name (case-insensitive, partial). */
-  async search(q: string | undefined, page: number, pageSize: number): Promise<AdminUserRow[]> {
+  async search(
+    q: string | undefined,
+    role: string | undefined,
+    page: number,
+    pageSize: number,
+  ): Promise<AdminUserRow[]> {
     return withServiceContext(this.db, async (tx) => {
+      const filters = [];
+      if (q) {
+        const like = `%${q}%`;
+        filters.push(
+          or(sql`${users.email} ILIKE ${like}`, sql`${users.displayName} ILIKE ${like}`),
+        );
+      }
+      // `roles` is a text[]; `@>` asks "contains this element", which is what an index on the
+      // array can answer. A `= ANY` over the column would not.
+      if (role) filters.push(sql`${users.roles} @> ARRAY[${role}]::text[]`);
+
       const base = tx
         .select()
         .from(users)
         .orderBy(desc(users.createdAt))
         .limit(pageSize)
         .offset((page - 1) * pageSize);
-      if (!q) return base;
-      const like = `%${q}%`;
-      return base.where(or(sql`${users.email} ILIKE ${like}`, sql`${users.displayName} ILIKE ${like}`));
+      return filters.length === 0 ? base : base.where(and(...filters));
     });
   }
 

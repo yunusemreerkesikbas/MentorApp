@@ -149,6 +149,25 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Admin'de koç görünürlüğü (APP-075, 2026-09-05)** — `GET /v1/admin/users` yalnız serbest metin
+  araması alıyordu; rol bir ismin ya da e-postanın parçası olmadığı için **"kim koç" sorusu
+  sorulamıyordu**. Bayrağı ilk kez açacak operatörün ilk sorusu tam olarak buydu.
+  **Yeni uç yok, yeni modül bağımlılığı yok:** `searchUsersQuerySchema`'ya `role` eklendi,
+  repository bir `roles @> ARRAY[:role]::text[]` koşulu ekliyor. `@>` (containment) seçildi çünkü
+  `roles` bir `text[]` ve dizi index'inin cevaplayabileceği soru bu; `= ANY` değil.
+  **`q` ile birlikte çalışıyor**, birbirini ezmiyor: ikisi de verilirse ikisi de uygulanır.
+  **Öğrenci sayıları kapsam dışı bırakıldı** — admin→mentorship modül bağımlılığı gerektirirdi ve
+  filtrelenmiş liste operatörün asıl sorusunu zaten cevaplıyor. Gerektiğinde `MentorshipModule`'ün
+  export ettiği bir servisle eklenir.
+  **Gotchas:** (1) Bilinmeyen rol **400** döner, boş liste değil: `z.nativeEnum(UserRole)` kenarda
+  reddediyor. Sessizce boş dönmek "bu rolde kimse yok" gibi okunurdu. (2) Filtre listesi
+  (`FILTERABLE_ROLES`) `STUDENT`'ı dışarıda bırakıyor — her hesapta var, dolayısıyla hiçbir şeyi
+  süzmez. (3) Rol seçimi forma basmadan yüklüyor (select'in `onChange`'i), arama kutusu ise
+  submit bekliyor; ikisi de aynı `load(q, role)` çağrısına gidiyor.
+  **İlgili:** `packages/validation/src/admin.ts`,
+  `modules/admin/{infrastructure/admin-users.repository.ts,application/admin-users.service.ts,presentation/admin-users.controller.ts}`,
+  `apps/admin/src/{lib/roles.ts,app/(general)/users/page.tsx}`, [`admin.md`](./admin.md).
+
 - **Program şablonu — bir haftayı kaydet, başka öğrenciye uygula (APP-074, 2026-09-05)** — Besteci
   öğrenci başına çalışıyordu; aynı programı ikinci öğrenciye vermek sıfırdan yazmak demekti. 20
   öğrenci kotasındaki gerçek darboğaz buydu (roadmap §9'un "aynı ekiple 2-3x öğrenci" iddiası).
