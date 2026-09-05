@@ -1,10 +1,14 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gt, gte, lte, notInArray, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, gte, inArray, lte, ne, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { paymentTransactions, paymentWebhookEvents, plans, subscriptions } from "../../../database/schema";
-import { SubscriptionStatus } from "@mentor/types";
+import {
+  COACH_SEAT_PLAN_ID,
+  SUBSCRIPTION_PROVIDER_SPONSOR,
+  SubscriptionStatus,
+} from "@mentor/types";
 import { GRACE_PERIOD_DAYS } from "../domain/payments.constants";
 import type { TxStatus, TxType } from "../domain/payments.constants";
 
@@ -32,9 +36,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 export class PlansRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  /** Public catalog — the `plans` table has no RLS. */
+  /**
+   * The public catalog: what a student may actually buy.
+   *
+   * `coach-seat` is excluded by name. It is an active plan (a sponsored subscription's FK points
+   * at it) but it is not a product — it is priced 0, has no trial and is never checked out, so
+   * listing it would put a free "plan" on the pricing screen and, with `purchaseEnabled` being a
+   * global switch rather than a per-plan one, a buy button next to it.
+   */
   async findActive(): Promise<PlanRow[]> {
-    return this.db.select().from(plans).where(eq(plans.isActive, true));
+    return this.db
+      .select()
+      .from(plans)
+      .where(and(eq(plans.isActive, true), ne(plans.id, COACH_SEAT_PLAN_ID)));
   }
 
   /** `plans` has no RLS → reads via the caller tx (webhook path) or the pool directly. */
@@ -88,9 +102,148 @@ export class SubscriptionsRepository {
       const rows = await tx
         .select({ id: subscriptions.id })
         .from(subscriptions)
-        .where(eq(subscriptions.userId, userId))
+        .where(
+          and(
+            eq(subscriptions.userId, userId),
+            // A coach's sponsored seat must not burn the student's own trial. They never chose
+            // it, never carded it, and the moment coaching ends is exactly when a trial is worth
+            // the most — walking them into a full-price wall would be the worst possible timing.
+            ne(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+          ),
+        )
         .limit(1);
       return rows.length > 0;
+    });
+  }
+
+  /**
+   * The live sponsored subscription a coach link is paying for, if any.
+   *
+   * Scoped to non-terminal rows because a re-linked pair reuses the SAME `coach_students.id`: an
+   * earlier, already-expired sponsorship for that link can still be sitting in the table, and
+   * reviving the wrong row would hand back premium that was correctly taken away.
+   */
+  async findOpenBySponsorLink(linkId: string): Promise<SubscriptionRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.sponsorLinkId, linkId),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        )
+        .limit(1);
+      return rows[0];
+    });
+  }
+
+  /**
+   * End a sponsorship now.
+   *
+   * Writes EXPIRED directly instead of only setting `currentPeriodEnd` and leaving it to the
+   * sweeper: `listMaybeRanOut` deliberately waits out the dunning grace, so the row would stay
+   * non-terminal for three more days and `findOpenForUser` would keep reporting it — which would
+   * block the student from starting their own checkout at the one moment they are most likely to.
+   */
+  async expireSponsorship(id: string, now: Date): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(subscriptions)
+        .set({ status: SubscriptionStatus.EXPIRED, currentPeriodEnd: now, updatedAt: now })
+        .where(eq(subscriptions.id, id));
+    });
+  }
+
+  /**
+   * Live sponsored seats: the user ids the platform is currently paying AI for.
+   *
+   * Ids rather than a count, because the cost question can only be answered by handing them to the
+   * AI module — the two tables live in different modules and joining them in SQL would move the
+   * boundary into the database. `limit` caps that hand-off; the caller reports truncation rather
+   * than quietly averaging over a partial cohort.
+   */
+  async listSponsoredUserIds(limit: number): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ userId: subscriptions.userId })
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        )
+        .limit(limit);
+      return rows.map((row) => row.userId);
+    });
+  }
+
+  /**
+   * How many sponsored seats are live. A real count, not the length of the id page above: past the
+   * metric's ceiling that list stops growing, and reporting its length as the seat count would
+   * quietly cap a platform-wide number at the size of one query.
+   */
+  async countSponsoredSeats(): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: count() })
+        .from(subscriptions)
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        );
+      return rows[0]?.n ?? 0;
+    });
+  }
+
+  /**
+   * How many of these links are actually sponsoring somebody right now.
+   *
+   * Ids in, count out — the same shape the cost metric uses, and for the same reason: the links
+   * belong to W8 and the subscriptions to W4, so the two tables meet in neither module's SQL.
+   * A link can be live without a seat (the student already pays for themselves), which is exactly
+   * why this cannot be inferred from the roster size.
+   */
+  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
+    if (linkIds.length === 0) return 0;
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ n: count() })
+        .from(subscriptions)
+        .where(
+          and(
+            inArray(subscriptions.sponsorLinkId, [...linkIds]),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        );
+      return rows[0]?.n ?? 0;
+    });
+  }
+
+  /**
+   * End every live sponsorship at once — the kill switch.
+   *
+   * EXPIRED outright, for the same reason {@link expireSponsorship} does it: the sweeper waits out
+   * the dunning grace, and a switch thrown because premium is costing too much cannot mean "in
+   * three days". Rows are updated, never deleted; who had access when survives.
+   */
+  async expireAllSponsored(now: Date): Promise<number> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(subscriptions)
+        .set({ status: SubscriptionStatus.EXPIRED, currentPeriodEnd: now, updatedAt: now })
+        .where(
+          and(
+            eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        )
+        .returning({ id: subscriptions.id });
+      return rows.length;
     });
   }
 
@@ -211,6 +364,14 @@ export class SubscriptionsRepository {
   }
 
   /** Admin metrics (W6) — subscription counts by status, single scan (SERVICE context). */
+  /**
+   * Subscription counts for the admin dashboard.
+   *
+   * Sponsored seats are excluded. They are Premium the platform gave away, not Premium anyone
+   * bought, and `total` is the denominator of `conversionRate` — leaving them in would make the
+   * funnel look worse every time a coach helped somebody. Revenue and `payingSubscriptions` need
+   * no such clause: both read the ledger, and a seat never writes one.
+   */
   async countByStatus(): Promise<{
     trialing: number;
     active: number;
@@ -229,7 +390,8 @@ export class SubscriptionsRepository {
           expired: sql<number>`count(*) filter (where ${subscriptions.status} = 'EXPIRED')::int`,
           total: sql<number>`count(*)::int`,
         })
-        .from(subscriptions);
+        .from(subscriptions)
+        .where(ne(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR));
       return rows[0]!;
     });
   }

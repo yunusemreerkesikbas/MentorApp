@@ -3,6 +3,8 @@ import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
+  COACH_SEAT_PLAN_ID,
+  SUBSCRIPTION_PROVIDER_SPONSOR,
   SubscriptionStatus,
   type CheckoutSession,
   type EntitlementDto,
@@ -13,6 +15,7 @@ import {
   type SubscriptionDto,
   type SubscriptionView,
 } from "@mentor/types";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { AdminUpdatePlanInput } from "@mentor/validation";
@@ -49,7 +52,7 @@ import {
   type ResolvedOffer,
 } from "../../promotions/application/promotions.service";
 import { StreakService } from "../../coaching/application/streak.service";
-import { EntitlementService, hasLostAccess } from "./entitlement.service";
+import { computeEntitlement, EntitlementService, hasLostAccess } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
 
 /** Identity-owned fields the promotion rules need; the controller crosses that seam, not us. */
@@ -105,6 +108,8 @@ export interface AdminPlanDto {
   priceMinor: number;
   currency: "TRY";
   trialDays: number;
+  /** Sponsored coach seats this plan grants (W8). Read-only: a product shape, not a price. */
+  seatCount: number;
   isActive: boolean;
 }
 
@@ -156,14 +161,23 @@ export class SubscriptionsService {
     private readonly streaks: StreakService,
     private readonly events: EventEmitter2,
     private readonly config: ConfigService<Env, true>,
+    /** The DB-backed registry (feature flags), distinct from `config` above which is env. */
+    private readonly registry: ConfigRegistryService,
     @Inject(PAYMENTS_PORT) private readonly provider: PaymentsPort,
     @Inject(INVOICE_PORT) private readonly invoices: InvoicePort,
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
-    const rows = await this.plansRepo.findActive();
+    const [rows, seatBilling] = await Promise.all([
+      this.plansRepo.findActive(),
+      this.registry.get("mentorship.seats.billing_enabled"),
+    ]);
     const purchaseEnabled = this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled";
-    return rows.map((row) => toPlanDto(row, purchaseEnabled));
+    // Seat plans stay out of the catalog until seat billing is switched on. Listing a plan nobody
+    // can complete a checkout for would put a price and a buy button on a promise.
+    return rows
+      .filter((row) => seatBilling || row.seatCount === 0)
+      .map((row) => toPlanDto(row, purchaseEnabled));
   }
 
   async listAllPlans(): Promise<AdminPlanDto[]> {
@@ -232,6 +246,26 @@ export class SubscriptionsService {
   }
 
   /** Admin metrics (W6): subscription counts + 30-day revenue/refunds + conversion. Read-only. */
+  /**
+   * How many students this user's plan lets them sponsor Premium for (W8 paid seats).
+   *
+   * Zero unless they hold live paid access: an INCOMPLETE checkout has bought nothing yet, and a
+   * SPONSORED row is a seat somebody else is paying for — letting it grant seats of its own would
+   * mean a coach could bootstrap a roster out of being coached.
+   */
+  async paidSeatsFor(userId: string): Promise<number> {
+    const sub = await this.subsRepo.findOpenForUser(userId);
+    if (!sub || sub.provider === SUBSCRIPTION_PROVIDER_SPONSOR) return 0;
+    if (!computeEntitlement(sub, new Date()).isPremium) return 0;
+    const plan = await this.plansRepo.findById(sub.planId);
+    return plan?.seatCount ?? 0;
+  }
+
+  /** How many of these coach links currently carry a sponsored subscription. */
+  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
+    return this.subsRepo.countSponsoredForLinks(linkIds);
+  }
+
   async getSubscriptionStats(): Promise<SubscriptionStats> {
     const since30 = new Date(Date.now() - 30 * DAY_MS);
     const [byStatus, revenueMinor30d, refundedMinor, payingSubscriptions] = await Promise.all([
@@ -446,7 +480,16 @@ export class SubscriptionsService {
     }
 
     const plan = await this.plansRepo.findById(planId);
-    if (!plan || !plan.isActive) throw new NotFoundError();
+    // `coach-seat` is active (a sponsored row's FK points at it) and priced 0, so without this it
+    // is a self-serve free Premium subscription for anyone who guesses the id. `findActive` only
+    // hides it from the catalog; the seat-plan guard below does not cover it either, because a
+    // seat plan is `seatCount > 0` and this one grants none.
+    if (!plan || !plan.isActive || plan.id === COACH_SEAT_PLAN_ID) throw new NotFoundError();
+    // The catalog already hides seat plans while billing is off; this closes the by-id path, so
+    // the flag is a real gate rather than a UI convention.
+    if (plan.seatCount > 0 && !(await this.registry.get("mentorship.seats.billing_enabled"))) {
+      throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
+    }
 
     const open = await this.subsRepo.findOpenForUser(user.id);
     if (open) {
@@ -456,6 +499,12 @@ export class SubscriptionsService {
         // Release the promotion seat that abandoned checkout was holding before the row goes.
         await this.promotions.voidForSubscription(open.id);
         await this.subsRepo.deleteById(open.id);
+      } else if (open.provider === SUBSCRIPTION_PROVIDER_SPONSOR) {
+        // A coach's seat must never stand between a student and their own subscription. The
+        // student did not choose the seat and may lose it whenever the coach ends the link, so
+        // "you already have a subscription" would be both untrue and a trap. Retire it and let
+        // the purchase through — the seat's own revoke path is then a no-op (nothing open left).
+        await this.subsRepo.expireSponsorship(open.id, new Date());
       } else {
         throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
       }
@@ -780,6 +829,7 @@ function toPlanDto(row: PlanRow, purchaseEnabled: boolean): PlanDto {
     priceMinor: row.priceMinor,
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
+    seatCount: row.seatCount,
     purchaseEnabled,
   };
 }
@@ -792,6 +842,7 @@ function toAdminPlanDto(row: PlanRow): AdminPlanDto {
     priceMinor: row.priceMinor,
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
+    seatCount: row.seatCount,
     isActive: row.isActive,
   };
 }
@@ -819,5 +870,6 @@ function toSubscriptionDto(row: SubscriptionRow): SubscriptionDto {
     currentPeriodStart: row.currentPeriodStart?.toISOString() ?? null,
     currentPeriodEnd: row.currentPeriodEnd?.toISOString() ?? null,
     cancelAtPeriodEnd: row.cancelAtPeriodEnd,
+    sponsored: row.provider === SUBSCRIPTION_PROVIDER_SPONSOR,
   };
 }

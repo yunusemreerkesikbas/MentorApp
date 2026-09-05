@@ -57,6 +57,11 @@
     }
   },
   "auth": {
+    "turnstile": {
+      "error": "The security check could not load. You can try again.",
+      "expired": "The check expired. Refresh it to continue.",
+      "retry": "Refresh verification"
+    },
     "shell": {
       "back_login": "Back to sign in",
       "narrative_label": "Your exam journey with Puhu",
@@ -767,6 +772,16 @@
     }
   },
   "profile": {
+    "google_account": {
+      "title": "Your Google account",
+      "loading": "Loading your Google connection",
+      "linked": "Google account linked: {email}",
+      "description": "Confirm your current password, then choose the Google account with the same email to enable Google sign-in.",
+      "password": "Current password",
+      "password_required": "Enter your current password to continue.",
+      "connect": "Link Google account",
+      "verify_first": "Verify your email before linking your Google account."
+    },
     "loading": "Loading…",
     "title": "Settings",
     "subtitle_with_economy": "Your account, earned rights, and notification preferences.",
@@ -923,6 +938,8 @@
     "row_next_renewal": "Next renewal",
     "row_access_ends": "Access ends",
     "row_renewal": "Renewal",
+    "row_sponsored": "Source",
+    "sponsored_by_coach": "Opened by your coach",
     "billing_monthly": "Monthly",
     "billing_months": "{months} months",
     "renewal_auto": "Automatic",
@@ -2976,6 +2993,8 @@
     "scope_PLAN_TASK_TITLES": "Your plan task titles, subject/topic labels and statuses",
     "scope_MOOD_LEVEL": "Your daily mood score (1-5)",
     "scope_never_title": "What your coach cannot see",
+    "seats_body": "The first {total} students you link get Premium. {used} of {total} seats are taken.",
+    "seats_full": "Your seats are full; a new student still joins, but without Premium.",
     "scope_never_body": "What you tell the AI coach, your session and mood notes, your mistake notebook, your email. Those stay with you.",
     "my_coach_title": "My coach",
     "my_coach_empty_title": "You do not have a coach yet",
@@ -3023,6 +3042,15 @@
     "ended_on": "Ended on {date}. Your access to their data is closed.",
     "ended_no_access": "The link ended. Your access to their data is closed.",
     "assign_week_this": "This week",
+    "scope_AI_BRIEF": "Your coach can run an AI summary over the data above",
+    "coach_scope_AI_BRIEF": "You can run an AI summary over the data above",
+    "brief_title": "AI brief",
+    "brief_body": "A short summary of the numbers in this report. The risk flags stay rule-based; the brief sits on top of them.",
+    "brief_action": "Write a brief",
+    "brief_refresh": "Refresh",
+    "brief_cached": "The report has not changed, showing the stored brief.",
+    "brief_since": "Written on {date}",
+    "brief_empty": "No brief yet.",
     "capacity_full": "Your roster is full. No new student can join until a seat opens.",
     "capacity_value": "{used}/{total} students",
     "coach_scope_ACTIVITY": "Study time, session count, active days and streak",

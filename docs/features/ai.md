@@ -732,6 +732,19 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
 
 ## Gotchas / Known issues
 
+- **One feature in the catalog is not about the requester (W8, APP-078).**
+  `PremiumFeatureId.MENTORSHIP_BRIEF` is asked for by a COACH about a STUDENT, and everything is
+  charged to the coach: the quota (`assertAllowed(coachId, coachRoles, …)`), the roles that decide
+  access, and the `ai_usage` row. The student's tier is never consulted — they did not ask for the
+  brief and must not pay for it in quota or in money. Any future coach- or org-facing AI surface
+  has to answer the same question before it picks a `userId`.
+- **`MentorshipBriefService` (ai) takes an already-authorized report, it does not fetch one.**
+  W8's `requireActiveLink` is the single gate for coach→student data and it lives inside
+  `getStudentReport`; passing the DTO in means this module cannot route around it, and never
+  learns what a coach link is. The prompt sees `MentorshipStudentReportDto` and nothing else —
+  no display name, no coach note — so the LLM cannot become a laundering path around
+  `coaching/domain/cohort-evidence.ts`.
+
 - **Daily-greeting ilk üretimi yarışabilir** — cache satırı henüz yokken eşzamanlı iki istek
   ikisi de LLM çağırabilir; `onConflictDoNothing` sayesinde tek satır kazanır ve sonraki tüm
   istekler cache'ten döner. Dev'deki StrictMode çift-effect kaynağı FE'de `requestedRef` guard'ıyla

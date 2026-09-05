@@ -13,7 +13,8 @@ export type SubscriptionFactId =
   | "period_start"
   | "next_renewal"
   | "access_ends"
-  | "renewal";
+  | "renewal"
+  | "sponsored";
 
 export interface SubscriptionFact {
   id: SubscriptionFactId;
@@ -51,6 +52,14 @@ export function listSubscriptionFacts(input: {
   if (!subscription) return facts;
 
   facts.push({ id: "started", iso: subscription.startedAt });
+
+  if (subscription.sponsored) {
+    // Branch here, before any billing-period row is built. A coach's seat has no card, no charge
+    // and no period to renew — `period_start`, `next_renewal` and `renewal` would each be a claim
+    // about the student's own money that is not true.
+    facts.push({ id: "sponsored" });
+    return facts;
+  }
 
   const trialIso = subscription.trialEndsAt;
   const showTrial = reason === "TRIALING" && trialIso != null;

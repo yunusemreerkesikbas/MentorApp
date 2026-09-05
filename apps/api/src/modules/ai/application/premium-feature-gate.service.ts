@@ -27,6 +27,7 @@ const USAGE_FEATURES: Record<FeatureId, string[]> = {
   [PremiumFeatureId.WEEKLY_NARRATION]: [AiUsageFeature.WEEKLY_REVIEW],
   [PremiumFeatureId.DAILY_GREETING]: [AiUsageFeature.DAILY_GREETING],
   [PremiumFeatureId.DEEP_ANALYSIS]: [AiUsageFeature.WEEKLY_REVIEW],
+  [PremiumFeatureId.MENTORSHIP_BRIEF]: [AiUsageFeature.MENTORSHIP_BRIEF],
 };
 
 @Injectable()

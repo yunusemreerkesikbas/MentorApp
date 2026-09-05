@@ -185,6 +185,20 @@ export const coachStudents = pgTable(
      */
     coachNote: text("coach_note"),
     coachNoteAt: timestamp("coach_note_at", { withTimezone: true }),
+    /**
+     * The coach's last AI brief about this student (W8), cached on the link.
+     *
+     * No table of its own: it is one text per relationship, overwritten in place, the same shape
+     * as `coach_note` above. Living on the link is also the whole KVKK story — erasure deletes
+     * link rows outright, so the brief goes with them and the erasure service needs no clause.
+     *
+     * `brief_fingerprint` hashes the report the brief was written from, so an unchanged report
+     * returns the stored text instead of paying for the same summary twice. Cleared by `end()`
+     * for the same reason the note is: re-linking revives this very row.
+     */
+    brief: text("brief"),
+    briefAt: timestamp("brief_at", { withTimezone: true }),
+    briefFingerprint: text("brief_fingerprint"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1733,6 +1747,15 @@ export const plans = pgTable("plans", {
   priceMinor: integer("price_minor").notNull(),
   currency: text("currency").notNull().default("TRY"),
   trialDays: integer("trial_days").notNull().default(7),
+  /**
+   * How many students this plan lets a coach sponsor Premium for, on top of the free quota (W8).
+   *
+   * 0 for every student-facing plan, which is why it is a property of the plan rather than a new
+   * product: a coach on `coach-pro-10` holds ONE open subscription like everybody else, gets
+   * `isPremium` from the ordinary ACTIVE path, and their seat allowance falls out of the row they
+   * already have. No second tier, no second subscription, no change to `computeEntitlement`.
+   */
+  seatCount: integer("seat_count").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
@@ -1759,8 +1782,19 @@ export const subscriptions = pgTable(
       .notNull()
       .references(() => plans.id),
     status: text("status").notNull().default("TRIALING"),
-    provider: text("provider").notNull(), // FAKE | IYZICO
+    /** FAKE | IYZICO | DISABLED | SPONSOR (a coach seat — no money moved, no ledger row). */
+    provider: text("provider").notNull(),
     providerRef: text("provider_ref"),
+    /**
+     * The coach link that sponsors this subscription (W8 seats), or null for a self-paid one.
+     *
+     * ON DELETE SET NULL rather than CASCADE: a subscription row is an access record, not an
+     * extension of the relationship. When a link is erased the access history must survive it,
+     * the same way the charge ledger outlives everything it refers to.
+     */
+    sponsorLinkId: uuid("sponsor_link_id").references(() => coachStudents.id, {
+      onDelete: "set null",
+    }),
     trialEndsAt: timestamp("trial_ends_at", { withTimezone: true }),
     currentPeriodStart: timestamp("current_period_start", {
       withTimezone: true,
@@ -1775,7 +1809,14 @@ export const subscriptions = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("subscriptions_user_idx").on(t.userId)],
+  (t) => [
+    index("subscriptions_user_idx").on(t.userId),
+    // Partial: sponsored rows are the rare case, and the only query that needs this index
+    // ("which subscription does this link sponsor") never asks about self-paid rows.
+    index("subscriptions_sponsor_link_idx")
+      .on(t.sponsorLinkId)
+      .where(sql`sponsor_link_id is not null`),
+  ],
 );
 
 /** Append-only charge ledger (§3 ledger discipline): rows are never updated/deleted. */

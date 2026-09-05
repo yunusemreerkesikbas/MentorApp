@@ -1,10 +1,13 @@
 import { Module } from "@nestjs/common";
+import { AiModule } from "../ai/ai.module";
 import { CoachingModule } from "../coaching/coaching.module";
+import { PaymentsModule } from "../payments/payments.module";
 import { IdentityModule } from "../identity/identity.module";
 import { MentorshipErasureService } from "./application/mentorship-erasure.service";
 import { MentorshipAssignmentService } from "./application/mentorship-assignment.service";
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
 import { MentorshipLinkService } from "./application/mentorship-link.service";
+import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
@@ -27,12 +30,19 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
  * evaluation stays here and W5 never learns what a flag means.
  */
 @Module({
-  imports: [IdentityModule, CoachingModule],
+  // AiModule for the coach brief: W8 owns the gate and the cache, W3 writes the text. Safe one
+  // way — ai.module.ts imports identity/content/payments/economy/coaching/forum, never mentorship.
+  // PaymentsModule for the PAID seat allowance. W8 stayed free of payments while every seat was
+  // free (APP-076 kept the arrow out with events); charging for seats IS coupling, and the seat
+  // decision has to be synchronous — it happens inside the accept transaction's lock, where an
+  // event would arrive far too late. One-way still: payments imports identity/promotions/coaching.
+  imports: [IdentityModule, CoachingModule, AiModule, PaymentsModule],
   controllers: [MentorshipCoachController, MentorshipStudentController],
   providers: [
     MentorshipLinkService,
     MentorshipInviteService,
     MentorshipRosterService,
+    MentorshipBriefService,
     MentorshipAssignmentService,
     MentorshipTemplateService,
     MentorshipErasureService,

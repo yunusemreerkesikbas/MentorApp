@@ -39,6 +39,24 @@ export const MentorshipEventTopic = {
   NOTE_UPDATED: "mentorship.note.updated",
 } as const;
 
+/**
+ * Which kind of seat a student landed on.
+ *
+ * The seat is what decides whether the student gets sponsored Premium, so the value is computed
+ * inside the accept transaction (under the coach's advisory lock) and travels on the event. W8
+ * decides the seat; W4 grants the entitlement. Neither module imports the other.
+ */
+export const MentorshipSeatKind = {
+  /** Inside `mentorship.coach.free_seats` — the coach sponsors this student's Premium at no cost. */
+  FREE: "FREE",
+  /** Beyond the free quota, covered by a paid seat plan. Reserved; nothing writes it yet. */
+  PAID: "PAID",
+  /** Followed, but not sponsored: the student keeps whatever tier they had. */
+  NONE: "NONE",
+} as const;
+export type MentorshipSeatKind =
+  (typeof MentorshipSeatKind)[keyof typeof MentorshipSeatKind];
+
 /** A student accepted a coach's invite. Carries display names so listeners need no extra lookup. */
 export class MentorshipLinkAccepted {
   constructor(
@@ -47,6 +65,8 @@ export class MentorshipLinkAccepted {
     readonly studentId: string,
     readonly studentDisplayName: string,
     readonly coachDisplayName: string,
+    /** Decided under the accept lock — see {@link MentorshipSeatKind}. */
+    readonly seatKind: MentorshipSeatKind,
   ) {}
 }
 

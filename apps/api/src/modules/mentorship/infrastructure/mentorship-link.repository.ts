@@ -92,6 +92,17 @@ export class MentorshipLinkRepository {
     );
   }
 
+  /** Every live link this coach holds, by id — what payments needs to price or count their seats. */
+  async listActiveLinkIds(coachId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ id: coachStudents.id })
+        .from(coachStudents)
+        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
+      return rows.map((row) => row.id);
+    });
+  }
+
   /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */
   countActiveByCoach(coachId: string): Promise<number> {
     return withServiceContext(this.db, (tx) => countActive(tx, coachId));
@@ -128,19 +139,27 @@ export class MentorshipLinkRepository {
    * The `coach_students_pair_idx` unique makes a plain insert fail on a re-link, so this upserts.
    * Returns `"QUOTA_FULL"` when the cap is reached and `"ALREADY_ACTIVE"` when `setWhere` skipped
    * the update (a row exists that is not ENDED).
+   *
+   * `activeBefore` rides back out because the SEAT decision has to be made under this same lock.
+   * Deciding "is this student inside the coach's free-seat quota?" in the service afterwards would
+   * be check-then-act again, and the thing being handed out this time is sponsored Premium — real
+   * LLM spend, not just a roster row.
    */
   acceptInvite(
     coachId: string,
     studentId: string,
     maxActiveStudents: number,
-  ): Promise<MentorshipLinkRow | "QUOTA_FULL" | "ALREADY_ACTIVE"> {
+  ): Promise<
+    { link: MentorshipLinkRow; activeBefore: number } | "QUOTA_FULL" | "ALREADY_ACTIVE"
+  > {
     const now = new Date();
     return withServiceContext(this.db, async (tx) => {
       // Serialize concurrent redemptions of one coach's code; released at commit.
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
       );
-      if ((await countActive(tx, coachId)) >= maxActiveStudents) return "QUOTA_FULL";
+      const activeBefore = await countActive(tx, coachId);
+      if (activeBefore >= maxActiveStudents) return "QUOTA_FULL";
 
       const rows = await tx
         .insert(coachStudents)
@@ -153,7 +172,8 @@ export class MentorshipLinkRepository {
           setWhere: eq(coachStudents.status, "ENDED"),
         })
         .returning();
-      return rows[0] ?? "ALREADY_ACTIVE";
+      const link = rows[0];
+      return link ? { link, activeBefore } : "ALREADY_ACTIVE";
     });
   }
 
@@ -171,6 +191,12 @@ export class MentorshipLinkRepository {
           endedBy,
           coachNote: null,
           coachNoteAt: null,
+          // The brief goes with the note, and for the same reason: re-linking revives this very
+          // row, and an AI summary of a relationship both sides walked away from must not
+          // reappear months later as if it described the new one.
+          brief: null,
+          briefAt: null,
+          briefFingerprint: null,
           updatedAt: now,
         })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
@@ -189,6 +215,25 @@ export class MentorshipLinkRepository {
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning();
       return rows[0];
+    });
+  }
+
+  /**
+   * Store a freshly written brief with the fingerprint of the report it was written from.
+   *
+   * Returns undefined when the row is gone or no longer ACTIVE. Writing takes a whole LLM call, and
+   * a link can end while the model is still typing — reporting success then would hand a fresh
+   * summary of a student to a coach who had already been cut off from them.
+   */
+  async setBrief(linkId: string, brief: string, fingerprint: string): Promise<Date | undefined> {
+    const now = new Date();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(coachStudents)
+        .set({ brief, briefAt: now, briefFingerprint: fingerprint, updatedAt: now })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning({ id: coachStudents.id });
+      return rows.length > 0 ? now : undefined;
     });
   }
 

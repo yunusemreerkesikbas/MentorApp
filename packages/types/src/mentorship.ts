@@ -60,6 +60,15 @@ export const MentorshipDataScopeKey = {
    * omitted it would be describing less than the coach actually receives.
    */
   EXAM_TRACK: "EXAM_TRACK",
+  /**
+   * The coach may run an AI summary over everything above.
+   *
+   * It reads no new column — the brief is built from this very list — but the METHOD is new, and
+   * "an LLM writes about me for someone else" is not something a student can infer from
+   * "my coach sees my activity". Guardrail §4 #5 protects the student's words; this key is what
+   * keeps the same honesty about their numbers.
+   */
+  AI_BRIEF: "AI_BRIEF",
 } as const;
 export type MentorshipDataScopeKey =
   (typeof MentorshipDataScopeKey)[keyof typeof MentorshipDataScopeKey];
@@ -70,6 +79,7 @@ export const MENTORSHIP_DATA_SCOPE: readonly MentorshipDataScopeKey[] = [
   MentorshipDataScopeKey.PLAN_TASK_TITLES,
   MentorshipDataScopeKey.MOOD_LEVEL,
   MentorshipDataScopeKey.EXAM_TRACK,
+  MentorshipDataScopeKey.AI_BRIEF,
 ];
 
 /**
@@ -86,6 +96,25 @@ export interface MentorshipCoachOverviewDto {
   activeStudents: number;
   /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
   maxActiveStudents: number;
+  /**
+   * How many of this coach's students get sponsored Premium (`mentorship.coach.free_seats`).
+   * Distinct from `maxActiveStudents`: that one caps who may be followed, this one caps who is
+   * paid for. A coach at 5/20 students with 3 free seats is following five and sponsoring three.
+   */
+  freeSeats: number;
+  /**
+   * Extra sponsored seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan.
+   * The allowance is `freeSeats + paidSeats`; past it a student is followed but not sponsored.
+   */
+  paidSeats: number;
+  /**
+   * Seats actually in use right now — counted, never inferred from `activeStudents`. A live link
+   * does not imply a seat: a student who already pays for themselves is never sponsored, and
+   * lowering `freeSeats` leaves existing sponsorships standing.
+   */
+  usedSeats: number;
+  /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
+  sponsorshipEnabled: boolean;
   dataScope: MentorshipDataScopeKey[];
 }
 
@@ -256,4 +285,18 @@ export interface MentorshipProgramTemplateDto {
   examType: string | null;
   tasks: MentorshipProgramTemplateTaskDto[];
   updatedAt: string;
+}
+
+/**
+ * The coach's AI brief over one student's report.
+ *
+ * Cached on the link row rather than in a table of its own: it is one text per relationship,
+ * overwritten in place, exactly like the coach's standing note — and being on the link means KVKK
+ * erasure, which deletes links outright, carries it away with no extra clause.
+ */
+export interface MentorshipBriefDto {
+  brief: string;
+  /** The model that wrote it, or `"cache"` when the stored one still matches the report. */
+  model: string;
+  generatedAt: string;
 }

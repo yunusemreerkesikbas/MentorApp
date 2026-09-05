@@ -27,7 +27,8 @@ const plans: PlanDto[] = [
     priceMinor: 24900,
     currency: "TRY",
     trialDays: 7,
-    purchaseEnabled: false,
+    seatCount: 0,
+  purchaseEnabled: false,
   },
 ];
 
@@ -42,6 +43,12 @@ const subscription: SubscriptionView = {
   features: {
     "coach.chat": {
       id: "coach.chat",
+      freeEnabled: false,
+      limit: 1,
+      window: "day",
+    },
+    "mentorship.brief": {
+      id: "mentorship.brief",
       freeEnabled: false,
       limit: 1,
       window: "day",
@@ -176,6 +183,7 @@ const activeSubscription: SubscriptionView = {
     currentPeriodStart: "2026-08-12T12:00:00.000Z",
     currentPeriodEnd: "2026-09-12T12:00:00.000Z",
     cancelAtPeriodEnd: false,
+  sponsored: false,
   },
   entitlement: {
     tier: "PREMIUM",

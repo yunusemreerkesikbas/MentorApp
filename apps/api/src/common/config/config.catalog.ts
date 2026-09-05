@@ -170,6 +170,27 @@ const mentorshipRatio = (def: number, description: string): ConfigEntryDef => ({
   description,
 });
 
+/**
+ * Like {@link mentorshipCount} but flagged sensitive: bounds + audit (§7, backend.md).
+ *
+ * For the mentorship knobs that spend money rather than shape behaviour — a seat is real LLM
+ * budget handed to somebody who is not paying for it, so raising it should read as a financial
+ * change in the admin UI, not a preference.
+ */
+const mentorshipCostCount = (
+  def: number,
+  min: number,
+  max: number,
+  description: string,
+): ConfigEntryDef => ({
+  category: ConfigCategory.MENTORSHIP,
+  type: ConfigValueType.NUMBER,
+  schema: z.number().int().min(min).max(max),
+  default: def,
+  sensitive: true,
+  description,
+});
+
 const mentorshipCount = (
   def: number,
   min: number,
@@ -311,7 +332,21 @@ export const CONFIG_CATALOG = {
     20,
     1,
     500,
-    "Free active-student quota per coach. Also the invite-code abuse bound (no separate use counter).",
+    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students get sponsored Premium.",
+  ),
+  "mentorship.seats.sponsorship_enabled": mentorshipFlag(
+    false,
+    "Gate for coach-sponsored Premium. Separate from mentorship.enabled so the coach surface can open before anyone is granted paid AI on someone else's behalf.",
+  ),
+  "mentorship.seats.billing_enabled": mentorshipFlag(
+    false,
+    "List the coach-pro seat plans as purchasable. Off keeps them out of the catalog AND refuses checkout on them, so no paywall promises a purchase flow the payment provider cannot yet complete.",
+  ),
+  "mentorship.coach.free_seats": mentorshipCostCount(
+    3,
+    0,
+    50,
+    "How many of a coach's students get sponsored Premium for free. THE cost knob: coaches x this = free premium seats, each one real LLM spend. Raise deliberately; 0 turns sponsorship off without touching the flag.",
   ),
   "mentorship.invite_code.ttl_days": mentorshipCount(
     14,
@@ -730,6 +765,15 @@ export const CONFIG_CATALOG = {
     1,
     100000,
     "Free-user weekly narrations per 7-day window when the taste flag is on.",
+  ),
+  "ai.features.mentorship.brief.free_enabled": flag(
+    false,
+    "Allow a coach without Pro a capped taste of the AI student brief.",
+  ),
+  "ai.features.mentorship.brief.free_limit": aiCount(
+    1,
+    100000,
+    "Briefs per day for a coach on the free taste. Charged to the COACH, not the student.",
   ),
   "ai.features.daily.greeting.free_enabled": flag(
     false,

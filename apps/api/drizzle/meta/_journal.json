@@ -694,6 +694,34 @@
       "when": 1788603002335,
       "tag": "0098_w8_mentorship_program_templates",
       "breakpoints": true
+    },
+    {
+      "idx": 99,
+      "version": "7",
+      "when": 1788608418203,
+      "tag": "0099_w8_sponsored_seat",
+      "breakpoints": true
+    },
+    {
+      "idx": 100,
+      "version": "7",
+      "when": 1788634792082,
+      "tag": "0100_w8_mentorship_brief",
+      "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1788638339177,
+      "tag": "0101_w8_coach_pro_seats",
+      "breakpoints": true
+    },
+    {
+      "idx": 102,
+      "version": "7",
+      "when": 1788639087501,
+      "tag": "0102_security-hardening",
+      "breakpoints": true
     }
   ]
 }
