@@ -432,6 +432,64 @@ export const mentorshipCoachApplications = pgTable(
 );
 
 /**
+ * One student's line inside a stored cohort brief.
+ *
+ * The display name is NOT here, and that is the load-bearing part: it is resolved live on every
+ * read through `UsersService.listDisplayIdentities`. This row belongs to the COACH, so purging it
+ * does not fire when a *student* exercises erasure — a stored copy of their name would outlive the
+ * anonymization, rendered from a cache nobody would think to look in.
+ *
+ * `riskFlags` IS stored, and the asymmetry is deliberate. A brief describes a moment; showing
+ * today's flags beside a sentence written about last night's would put a claim in the text's mouth
+ * that it never made.
+ */
+export type MentorshipCohortBriefItem = {
+  studentId: string;
+  riskFlags: string[];
+  why: string;
+  action: string;
+  /** Whether the previous brief already carried one of this student's flags. */
+  isNew: boolean;
+};
+
+/**
+ * The coach's cohort brief (W8), one row per coach, overwritten in place.
+ *
+ * No history, for the same reason the morning digest keeps none: the only thing the next brief
+ * needs from the last one is which `studentId:FLAG` pairs it already reported, and that fits in a
+ * column. A second table would be a second thing to keep correct and a third place for KVKK to
+ * chase (`mentorship-risk-digest.service.ts` makes the same argument about `data.pairs`).
+ *
+ * `coach_id` is the primary key rather than a surrogate id: there is exactly one current brief per
+ * coach, and saying so in the key means no query can accidentally read a stale one.
+ *
+ * ON DELETE CASCADE is here for correctness, not for erasure — erasure anonymizes `users` instead
+ * of deleting them, so `MentorshipErasureService` purges this table explicitly, the same trap
+ * `mentorship_program_templates` and `mentorship_coach_applications` already carry.
+ */
+export const mentorshipCohortBriefs = pgTable("mentorship_cohort_briefs", {
+  coachId: uuid("coach_id")
+    .primaryKey()
+    .references(() => users.id, { onDelete: "cascade" }),
+  brief: jsonb("brief")
+    .$type<{ overall: string; items: MentorshipCohortBriefItem[] }>()
+    .notNull(),
+  /** Hash of the shaped cohort evidence + locale + prompt version. Same text in, same text back. */
+  fingerprint: text("fingerprint").notNull(),
+  /**
+   * `studentId:FLAG` pairs this brief reported. The baseline the next one diffs against to decide
+   * which lines are new — the digest's `hasNewNews` rule, applied to a screen instead of an email.
+   */
+  pairs: text("pairs")
+    .array()
+    .notNull()
+    .default(sql`'{}'::text[]`),
+  generatedAt: timestamp("generated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});
+
+/**
  * Refresh tokens: opaque 256-bit secrets — only the sha256 hash is stored.
  * Rotation: each refresh revokes the old row and issues a new one in the same `family`.
  * Reuse detection: presenting an already-revoked token revokes the whole family (theft assumption).
@@ -1189,6 +1247,13 @@ export const planTasks = pgTable(
           zoneType: "CHAT" | "QA";
         }
       | { coachMessageId: string }
+      | {
+          baselineMockExamId: string;
+          subjectRef: string;
+          topicRef?: string;
+          source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
+          evidenceCount: number;
+        }
     >(),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -1208,7 +1273,7 @@ export const planTasks = pgTable(
       sql`(
         (${t.originType} is null and ${t.originRefId} is null and ${t.originMeta} is null)
         or
-        (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH') and ${t.originRefId} is not null and ${t.originMeta} is not null)
+        (${t.originType} in ('COMMUNITY_COACH', 'AI_COACH', 'ANALYSIS') and ${t.originRefId} is not null and ${t.originMeta} is not null)
         or
         (${t.originType} = 'MENTORSHIP' and ${t.originRefId} is not null and ${t.originMeta} is null)
       )`,

@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { PlanService } from "../../coaching/application/plan.service";
 import { MentorshipApplicationRepository } from "../infrastructure/mentorship-application.repository";
+import { MentorshipCohortBriefRepository } from "../infrastructure/mentorship-cohort-brief.repository";
 import { MentorshipInviteCodeRepository } from "../infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipTemplateRepository } from "../infrastructure/mentorship-template.repository";
@@ -31,6 +32,12 @@ import { MentorshipTemplateRepository } from "../infrastructure/mentorship-templ
  * application is the person's own account of who they are — an institution, a branch, years of
  * work — sitting next to an admin's verdict on it. That is the last thing that should outlive the
  * account by way of a cascade that never fires.
+ *
+ * `mentorship_cohort_briefs` is the third, and the one worth pausing on: unlike the per-student
+ * brief — which lives on the link row and is therefore deleted for free — a cohort brief is the
+ * COACH's row, holding LLM-written sentences about students. Erasing the coach must take it; and
+ * erasing a *student* is covered from the other side, because the brief stores ids rather than
+ * names and every read resolves the name live through the anonymized `users` row.
  */
 @Injectable()
 export class MentorshipErasureService {
@@ -39,6 +46,7 @@ export class MentorshipErasureService {
     private readonly codes: MentorshipInviteCodeRepository,
     private readonly templates: MentorshipTemplateRepository,
     private readonly applications: MentorshipApplicationRepository,
+    private readonly cohortBriefs: MentorshipCohortBriefRepository,
     private readonly plan: PlanService,
   ) {}
 
@@ -48,5 +56,6 @@ export class MentorshipErasureService {
     await this.codes.purgeForCoach(userId);
     await this.templates.purgeForCoach(userId);
     await this.applications.purgeForUser(userId);
+    await this.cohortBriefs.purgeForCoach(userId);
   }
 }

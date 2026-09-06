@@ -1,6 +1,7 @@
 import type {
   MentorshipApplicationDto,
   MentorshipCoachOverviewDto,
+  MentorshipCohortBriefDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
   MentorshipInvitationPreviewDto,
@@ -178,6 +179,28 @@ export async function generateBrief(studentId: string): Promise<MentorshipBriefD
     `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief`,
     { method: "POST" },
   )) as MentorshipBriefDto;
+}
+
+/**
+ * This morning's cohort brief, if one was written. Free: no LLM call, no quota — which is why the
+ * roster may ask for it on load. An empty body means none exists yet.
+ */
+export async function fetchCohortBrief(): Promise<MentorshipCohortBriefDto | null> {
+  return (
+    ((await http<MentorshipCohortBriefDto>("/v1/mentorship/brief")) as
+      | MentorshipCohortBriefDto
+      | undefined) ?? null
+  );
+}
+
+/**
+ * Write a new cohort brief. POST for `generateBrief`'s reason; the API returns `model: "cache"`
+ * when the cohort has not moved, so pressing refresh twice costs nothing.
+ */
+export async function generateCohortBrief(): Promise<MentorshipCohortBriefDto> {
+  return (await http<MentorshipCohortBriefDto>("/v1/mentorship/brief", {
+    method: "POST",
+  })) as MentorshipCohortBriefDto;
 }
 
 // --- student side -------------------------------------------------------------------------

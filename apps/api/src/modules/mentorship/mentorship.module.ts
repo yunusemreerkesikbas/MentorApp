@@ -9,10 +9,12 @@ import { MentorshipAssignmentService } from "./application/mentorship-assignment
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
 import { MentorshipLinkService } from "./application/mentorship-link.service";
 import { MentorshipBriefService } from "./application/mentorship-brief.service";
+import { MentorshipCohortBriefService } from "./application/mentorship-cohort-brief.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
 import { MentorshipApplicationRepository } from "./infrastructure/mentorship-application.repository";
+import { MentorshipCohortBriefRepository } from "./infrastructure/mentorship-cohort-brief.repository";
 import { MentorshipDroppedAssignmentRepository } from "./infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipInviteCodeRepository } from "./infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "./infrastructure/mentorship-link.repository";
@@ -50,6 +52,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipInviteService,
     MentorshipRosterService,
     MentorshipBriefService,
+    MentorshipCohortBriefService,
     MentorshipAssignmentService,
     MentorshipTemplateService,
     MentorshipApplicationService,
@@ -57,6 +60,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     PlanTaskFeedbackListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
+    MentorshipCohortBriefRepository,
     MentorshipDroppedAssignmentRepository,
     MentorshipTemplateRepository,
     MentorshipApplicationRepository,

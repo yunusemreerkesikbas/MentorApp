@@ -3135,6 +3135,15 @@
     "coach_profile_claim_YEARS": "{value} years · verified",
     "profile_edit": "Edit profile",
     "profile_edit_save": "Save",
-    "profile_edit_claims_locked": "Institution, subject and experience are not editable here: we are the ones who verified them, so we are the ones standing behind the badge."
+    "profile_edit_claims_locked": "Institution, subject and experience are not editable here: we are the ones who verified them, so we are the ones standing behind the badge.",
+    "cohort_brief_title": "Today's brief",
+    "cohort_brief_action": "Write the brief",
+    "cohort_brief_refresh": "Refresh",
+    "cohort_brief_empty": "No brief for your cohort yet. Once you write one, you will see who is waiting and why right here.",
+    "cohort_brief_all_clear": "Nobody is waiting today.",
+    "cohort_brief_new": "New",
+    "cohort_brief_list_label": "Students needing attention",
+    "cohort_brief_since": "Written on {date}",
+    "cohort_brief_cached": "nothing changed, not rewritten"
   }
 }

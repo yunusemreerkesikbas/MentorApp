@@ -986,6 +986,104 @@ describe("mentorship (e2e)", () => {
     });
   });
 
+  describe("the cohort brief", () => {
+    beforeAll(async () => {
+      // The premise, made rather than assumed. A student reaches the brief only when they need
+      // attention, so: clear any "I dealt with this" an earlier block left, and age their activity
+      // past the idle window so INACTIVE actually fires. Without this the suite would be asserting
+      // whatever state the tests above happened to leave behind.
+      await svc(async (c) => {
+        await c.query(
+          "update coach_students set attended_at = null, attended_flags = '{}' where coach_id = any($1)",
+          [[userId.coach, userId.coach2]],
+        );
+        await c.query(
+          "update daily_activity set activity_date = activity_date - interval '30 days' where user_id = $1",
+          [userId.student],
+        );
+      });
+    });
+
+    it("is the coach's alone", async () => {
+      expect((await http().get("/v1/mentorship/brief").set(auth("student"))).status).toBe(403);
+      expect((await http().post("/v1/mentorship/brief").set(auth("student"))).status).toBe(403);
+    });
+
+    it("reads empty before anything is written, and spends nothing doing it", async () => {
+      const res = await http().get("/v1/mentorship/brief").set(auth("coach2"));
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
+    });
+
+    it("refuses a coach without Pro, because the free taste is off by default", async () => {
+      // This IS the Koç Pro seat's concrete value (APP-079), so the refusal is a contract, not an
+      // accident of configuration. The tests below turn the taste on deliberately.
+      const res = await http().post("/v1/mentorship/brief").set(auth("coach2"));
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("PAYMENT_PREMIUM_REQUIRED");
+
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "ai.features.mentorship.cohort_brief.free_enabled", true);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "ai.features.mentorship.cohort_brief.free_limit", 50);
+    });
+
+    it("writes a brief the coach can then read for free", async () => {
+      const written = await http().post("/v1/mentorship/brief").set(auth("coach2"));
+      expect(written.status).toBe(200);
+      expect(typeof written.body.overall).toBe("string");
+      // The linked student has never studied, so INACTIVE fires and they are waiting.
+      expect(written.body.items.length).toBeGreaterThan(0);
+      const line = written.body.items[0];
+      expect(line.studentId).toBe(userId.student);
+      expect(line.studentDisplayName).toBeTruthy();
+      // The chips are the rule engine's, not the model's.
+      expect(line.riskFlags).toContain("INACTIVE");
+      expect(line.isNew).toBe(true);
+
+      const read = await http().get("/v1/mentorship/brief").set(auth("coach2"));
+      expect(read.status).toBe(200);
+      expect(read.body.model).toBe("cache");
+      expect(read.body.overall).toBe(written.body.overall);
+    });
+
+    it("does not pay twice for an unchanged cohort", async () => {
+      const again = await http().post("/v1/mentorship/brief").set(auth("coach2"));
+      expect(again.status).toBe(200);
+      expect(again.body.model).toBe("cache");
+    });
+
+    it("says nothing about a cohort that is not yours", async () => {
+      // By this point the blocks above have handed the student to coach2; coach follows nobody, so
+      // there is nothing to be behind — and certainly not another coach's student.
+      const res = await http().post("/v1/mentorship/brief").set(auth("coach"));
+      expect(res.status).toBe(200);
+      expect(res.body.items).toEqual([]);
+    });
+
+    it("closes with the flag", async () => {
+      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      try {
+        expect((await http().get("/v1/mentorship/brief").set(auth("coach2"))).status).toBe(403);
+        expect((await http().post("/v1/mentorship/brief").set(auth("coach2"))).status).toBe(403);
+      } finally {
+        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+      }
+    });
+
+    afterAll(async () => {
+      // The taste this block turned on is global config. Leaving it set would hand every later
+      // test — in this file and any that shares the database — a paywall that is quietly open.
+      await svc(async (c) => {
+        await c.query(
+          "delete from config_overrides where key like 'ai.features.mentorship.cohort_brief.%'",
+        );
+      });
+    });
+  });
+
   it("closes every door when the flag is off", async () => {
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
     try {

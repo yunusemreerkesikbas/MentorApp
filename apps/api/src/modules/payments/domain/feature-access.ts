@@ -31,6 +31,13 @@ export const PREMIUM_FEATURE_CATALOG: Record<PremiumFeatureId, PremiumFeatureMet
       enabledKey: "ai.features.mentorship.brief.free_enabled",
       limitKey: "ai.features.mentorship.brief.free_limit",
     },
+    [PremiumFeatureId.MENTORSHIP_COHORT_BRIEF]: {
+      // DAY for the same reason, and the number behind it is smaller: this is the view a coach
+      // opens once a morning, not one they page through.
+      window: FeaturePolicyWindow.DAY,
+      enabledKey: "ai.features.mentorship.cohort_brief.free_enabled",
+      limitKey: "ai.features.mentorship.cohort_brief.free_limit",
+    },
     [PremiumFeatureId.COACH_CHAT]: {
       window: FeaturePolicyWindow.DAY,
       enabledKey: "ai.features.coach.chat.free_enabled",

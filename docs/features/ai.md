@@ -102,6 +102,31 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Kohort brifingi — katalogdaki ikinci "aktör özne değil" özelliği (APP-085, 2026-09-07)** —
+  W3 `CohortBriefService` yalnız metni yazıyor; yetki, roster ve önbellek W8'de
+  (`mentorship-cohort-brief.service.ts`). Ok gene tek yönlü, `ai.module.ts` mentorship'i import
+  etmiyor. Girdi `MentorshipRosterRowDto[]`'in **şekillendirilmiş** hâli: isim ve id yerine `S1`,
+  `S2` ref'leri; `lastActiveDate` yerine `daysSinceActive` (model takvim aritmetiğinde kötü).
+  **Çıktı JSON ve katı ayrıştırılıyor** — `plan-adaptation.ts`'in tarzı: bilinmeyen ya da yinelenen
+  ref **düşürülüyor**, uzunluklar kırpılıyor, bozuk JSON `AI_PROVIDER_ERROR`. Repo'da LLM çıktısında
+  hâlâ zod yok; kural aynı.
+  **Yeni prompt kuralı kohorta özgü:** öğrencileri birbiriyle kıyaslama/sıralama yasak. Tek
+  öğrenciyle var olmayan, iki öğrenci yan yana gelince doğan bir risk.
+  **Canlı koşuda bulundu, prompt kuralı yetmedi.** İlk gerçek gpt-4o-mini çağrısı ref'i cümlenin
+  içine yazdı: "S1'in aktiflik durumu dikkat çekiyor." Fake adapter bunu yakalayamazdı, çünkü
+  kendi cevabı ref taşımıyor. İki katman eklendi: prompt "ref'i cümleye yazma, öğrencinin adı zaten
+  başlıkta" diyor, ve `stripRefTokens` ayrıştırmada kalanı **siliyor**. İsimle DEĞİŞTİRMEK reddedildi
+  — Türkçe eki bağlandığı sözcüğe uyar, "S1'in" → "Zeynep Kaya'in" yanlış, doğrusu "Kaya'nın", ve
+  bunu bir token değiştirme işlemi bilemez. Cümle özneyi düşürüyor, başlık zaten söylüyor.
+  **Gotchas:** (1) `fake-llm.adapter.ts`'e sentinel dalı eklendi — olmasaydı `AI_PROVIDER=fake`
+  koşan her dev ve e2e çağrısı 503 dönerdi. (2) Kimse dikkat istemiyorsa AI servisi **hiç
+  çağrılmıyor**; boş kohort için model çalıştırmak ona kimse hakkında yazdırmak olurdu.
+  (3) `ai_usage` satırı ayrıştırma başarısız olsa bile yazılıyor: çağrı yapıldı, token harcandı, ve
+  yalnız başarıları sayan bir maliyet panosu faturayı eksik gösterir.
+  **İlgili:** `modules/ai/{domain/cohort-brief-prompt.ts,application/cohort-brief.service.ts}`,
+  `modules/ai/infrastructure/adapters/fake-llm.adapter.ts`,
+  [`mentorship.md`](./mentorship.md).
+
 - **AI mahremiyeti ve eşzamanlı bütçe rezervasyonu (2026-09-06)** — Sağlayıcıya giden kullanıcı
   mesajı ve sohbet geçmişi merkezi `PrivacyPreservingLlmAdapter` içinde e-posta, telefon, T.C.
   kimlik no, IBAN, ödeme kartı, IP, URL, kullanıcı adı, açık ad ve adres kalıplarından arındırılıyor;
@@ -748,12 +773,15 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
 
 ## Gotchas / Known issues
 
-- **One feature in the catalog is not about the requester (W8, APP-078).**
+- **Two features in the catalog are not about the requester (W8, APP-078 + APP-085).**
   `PremiumFeatureId.MENTORSHIP_BRIEF` is asked for by a COACH about a STUDENT, and everything is
   charged to the coach: the quota (`assertAllowed(coachId, coachRoles, …)`), the roles that decide
   access, and the `ai_usage` row. The student's tier is never consulted — they did not ask for the
   brief and must not pay for it in quota or in money. Any future coach- or org-facing AI surface
-  has to answer the same question before it picks a `userId`.
+  has to answer the same question before it picks a `userId`. `MENTORSHIP_COHORT_BRIEF` is the
+  second, and it deliberately does NOT share a quota with the first: the cohort view is how a coach
+  decides which student to open, so charging it to the per-student allowance would ration the map by
+  how much of the territory they had already walked.
 - **`MentorshipBriefService` (ai) takes an already-authorized report, it does not fetch one.**
   W8's `requireActiveLink` is the single gate for coach→student data and it lives inside
   `getStudentReport`; passing the DTO in means this module cannot route around it, and never

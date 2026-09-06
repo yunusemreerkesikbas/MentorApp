@@ -3135,6 +3135,15 @@
     "coach_profile_claim_YEARS": "{value} yıl deneyim · doğrulandı",
     "profile_edit": "Profili düzenle",
     "profile_edit_save": "Kaydet",
-    "profile_edit_claims_locked": "Kurum, branş ve deneyim bilgini burada değiştiremezsin: onları doğrulayan biz olduğumuz için rozetin arkasında biz duruyoruz."
+    "profile_edit_claims_locked": "Kurum, branş ve deneyim bilgini burada değiştiremezsin: onları doğrulayan biz olduğumuz için rozetin arkasında biz duruyoruz.",
+    "cohort_brief_title": "Bugünün brifingi",
+    "cohort_brief_action": "Brifingi oluştur",
+    "cohort_brief_refresh": "Yenile",
+    "cohort_brief_empty": "Kohortun için henüz bir brifing yok. Oluşturduğunda kimin beklediğini ve neden beklediğini burada göreceksin.",
+    "cohort_brief_all_clear": "Bugün kimse beklemiyor.",
+    "cohort_brief_new": "Yeni",
+    "cohort_brief_list_label": "Dikkat isteyen öğrenciler",
+    "cohort_brief_since": "{date} tarihinde yazıldı",
+    "cohort_brief_cached": "değişiklik yok, yeniden yazılmadı"
   }
 }

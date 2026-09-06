@@ -322,6 +322,43 @@ export interface MentorshipBriefDto {
   generatedAt: string;
 }
 
+/**
+ * One student's line in the cohort brief.
+ *
+ * Two of these three signals do NOT come from the model. `riskFlags` is the deterministic triage
+ * from `domain/risk-flags.ts` and `isNew` is a set comparison against the previous brief — the
+ * same rule the morning digest uses to decide it has news. Only `why` and `action` are written by
+ * an LLM, and they sit next to evidence the coach can check rather than replacing it.
+ */
+export interface MentorshipCohortBriefItemDto {
+  studentId: string;
+  studentDisplayName: string;
+  /** Rule-based, not model-authored. Rendered as the same chips the roster shows. */
+  riskFlags: MentorshipRiskFlagId[];
+  /** Why this student is on the list, at most a sentence. */
+  why: string;
+  /** What the coach can do about it, at most a sentence. */
+  action: string;
+  /** True when the previous brief did not already carry one of this student's current flags. */
+  isNew: boolean;
+}
+
+/**
+ * The coach's morning view: who is waiting, across the whole roster, in one call.
+ *
+ * `GET` returns the stored one and spends nothing; `POST` writes a new one when the cohort has
+ * actually moved. Students with no live signal are absent by construction — this answers "who
+ * needs me today", not "who am I following".
+ */
+export interface MentorshipCohortBriefDto {
+  /** One or two sentences about the cohort as a whole. */
+  overall: string;
+  items: MentorshipCohortBriefItemDto[];
+  /** The model that wrote it, or `"cache"` when the stored one still matches the cohort. */
+  model: string;
+  generatedAt: string;
+}
+
 /* -------------------------------------------------------------------------------------------
  * Coach applications (W8 curation, roadmap §5) — "açık kayıt değil, kürasyon".
  * ---------------------------------------------------------------------------------------- */

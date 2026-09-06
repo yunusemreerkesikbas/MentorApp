@@ -25,6 +25,7 @@ const FEATURE_LABEL: Record<string, string> = {
     daily_greeting: "Günlük selam",
     plan_draft: "Plan taslağı",
     mentorship_brief: "Koç brifingi",
+    mentorship_cohort_brief: "Koç kohort brifingi",
     other: "Diğer",
 };
 const featureLabel = (f: string) => FEATURE_LABEL[f] ?? f;

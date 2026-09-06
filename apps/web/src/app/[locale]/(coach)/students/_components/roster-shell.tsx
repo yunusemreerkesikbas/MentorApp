@@ -11,6 +11,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchOverview, fetchRoster, rotateInviteCode, setAttention } from "@/lib/mentorship";
 import { CoachCapacityCard } from "./coach-capacity-card";
 import { CoachScopeCard } from "./coach-scope-card";
+import { CohortBriefCard } from "./cohort-brief-card";
 import { compareByAttention, summarizeCohort } from "./cohort-summary";
 import { CohortSummaryCard } from "./cohort-summary-card";
 import { RosterContentSkeleton } from "./roster-content-skeleton";
@@ -153,6 +154,10 @@ export function RosterShell() {
   return (
     <div className="flex flex-col gap-6">
       <SectionHeading subtitle={t("roster_subtitle")}>{t("roster_title")}</SectionHeading>
+
+      {/* Above the counts on purpose: the summary says how many are waiting, the brief says who and
+          why. Both are ACTIVE-only — the history tab describes closed windows. */}
+      {tab === "ACTIVE" && <CohortBriefCard />}
 
       {tab === "ACTIVE" && <CohortSummaryCard summary={summary} />}
 

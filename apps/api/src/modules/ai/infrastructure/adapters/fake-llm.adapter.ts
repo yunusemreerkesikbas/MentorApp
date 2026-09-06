@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PLAN_DRAFT_JSON_SENTINEL } from "../../domain/ai.constants";
+import { COHORT_BRIEF_JSON_SENTINEL } from "../../domain/cohort-brief-prompt";
 import { PLAN_ADAPTATION_JSON_SENTINEL } from "../../domain/plan-adaptation";
 import type {
   LlmCompleteInput,
@@ -20,6 +21,26 @@ const estimateTokens = (text: string): number =>
 @Injectable()
 export class FakeLlmAdapter implements LlmPort {
   async complete(input: LlmCompleteInput): Promise<LlmResult> {
+    // The cohort brief parses strictly and treats anything unparseable as a provider failure, so
+    // without this branch every dev and e2e run of the coach panel would 503. Refs are echoed back
+    // from the evidence rather than guessed, which also exercises the ref → student remapping.
+    if (input.system.includes(COHORT_BRIEF_JSON_SENTINEL)) {
+      const refs = [...input.user.matchAll(/"ref":"(S\d+)"/g)].map((match) => match[1]!);
+      const text = JSON.stringify({
+        overall: `${refs.length} öğrenci bugün dikkat istiyor.`,
+        items: refs.map((ref) => ({
+          ref,
+          why: "Son bir haftada plan tamamlama oranı düşük.",
+          action: "Kısa bir mesajla neyin zorladığını sor.",
+        })),
+      });
+      return {
+        text,
+        promptTokens: estimateTokens(input.system) + estimateTokens(input.user),
+        completionTokens: estimateTokens(text),
+        model: "fake",
+      };
+    }
     if (input.system.includes(PLAN_ADAPTATION_JSON_SENTINEL)) {
       const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000)
         .toISOString()

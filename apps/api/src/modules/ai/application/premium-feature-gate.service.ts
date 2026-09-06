@@ -28,6 +28,12 @@ const USAGE_FEATURES: Record<FeatureId, string[]> = {
   [PremiumFeatureId.DAILY_GREETING]: [AiUsageFeature.DAILY_GREETING],
   [PremiumFeatureId.DEEP_ANALYSIS]: [AiUsageFeature.WEEKLY_REVIEW],
   [PremiumFeatureId.MENTORSHIP_BRIEF]: [AiUsageFeature.MENTORSHIP_BRIEF],
+  // Deliberately NOT sharing a quota with MENTORSHIP_BRIEF: the cohort view is how a coach decides
+  // which student to open, so paying for it out of the per-student allowance would ration the map
+  // by how much of the territory you already walked.
+  [PremiumFeatureId.MENTORSHIP_COHORT_BRIEF]: [
+    AiUsageFeature.MENTORSHIP_COHORT_BRIEF,
+  ],
 };
 
 @Injectable()

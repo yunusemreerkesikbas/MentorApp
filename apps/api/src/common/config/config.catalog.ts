@@ -810,6 +810,15 @@ export const CONFIG_CATALOG = {
     100000,
     "Briefs per day for a coach on the free taste. Charged to the COACH, not the student.",
   ),
+  "ai.features.mentorship.cohort_brief.free_enabled": flag(
+    false,
+    "Allow a coach without Pro a capped taste of the cohort brief. Off by default: this is the concrete thing a Koc Pro seat buys.",
+  ),
+  "ai.features.mentorship.cohort_brief.free_limit": aiCount(
+    1,
+    100000,
+    "Cohort briefs per day for a coach on the free taste. One call covers the whole roster, so this number is small on purpose.",
+  ),
   "ai.features.daily.greeting.free_enabled": flag(
     false,
     "Allow free users a capped daily AI greeting taste.",
