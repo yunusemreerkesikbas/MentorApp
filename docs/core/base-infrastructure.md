@@ -83,6 +83,20 @@ pnpm db:up && pnpm --filter @mentor/api test
   `react-icons` 5.6→5.7 denendi, **çözmedi**, geri alındı — sorun sürüm değil çözümlemeydi.
   **Yan bulgu:** `apps/web/AGENTS.md` admin'i "React 18 (accepted deviation)" diye anlatıyordu;
   admin artık Next 16 / React 19. Not düzeltildi, çünkü tam da bu pin'i açıklayan yer.
+  **Ve arkasında bir kapı daha vardı — ancak push edince görüldü.** Sır taraması düzelince CI ilk
+  kez Test adımına ulaştı ve orada düştü: `globalSetup` migration'ı `ECONNREFUSED ...:5433`.
+  CI'ın Postgres'i 5432'de ve workflow `TEST_DATABASE_URL`'i job seviyesinde veriyor, ama
+  **`pnpm test` turbo'dan geçiyor ve Turbo 2 katı env modunda çalışıyor**: `turbo.json`'da
+  tanımlanmayan bir değişken göreve **geçirilmiyor**. `globalEnv` yalnız `NODE_ENV` içeriyordu,
+  dolayısıyla e2e kurulumu değişkeni hiç görmedi ve yerel docker-compose portuna (5433) düştü.
+  Düzeltme: `tasks.test.env = ["TEST_DATABASE_URL"]`.
+  **Yerelde neden görünmüyordu:** `pnpm --filter @mentor/api test` turbo'yu **atlıyor**, ve
+  atlayınca fallback zaten doğru port. Doğrulama bilerek yanlış bir portla yapıldı (59999): pas
+  geçiliyorsa suite 5433'e düşer, geçiyorsa 59999'a çarpar — 59999'a çarptı.
+  **Not (takip):** `NEXT_PUBLIC_SITE_URL` ve `NEXT_PUBLIC_GA_MEASUREMENT_ID` de workflow'da
+  tanımlı ama `turbo.json`'da değil, yani `build` görevine de geçmiyorlar. Build yeşil olduğu için
+  bu dilimde dokunulmadı; üretim derlemesi Render'da ayrı koştuğu için etkisi CI'la sınırlı, ama
+  workflow'un niyeti ile turbo'nun davranışı ayrışıyor.
   **Ders:** yeşil bir CI rozeti "testler geçti" demiyor. Bu koşularda **hiçbir test koşmadı**, ve
   rozet kırmızıydı ama kırmızılığın sebebi herkesin sandığı yer değildi.
   **İlgili:** `.github/workflows/ci.yml`, `apps/admin/{tsconfig.json,src/assets/scss/theme.scss,src/app/layout.js}`,
