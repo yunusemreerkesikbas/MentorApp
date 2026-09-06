@@ -19,6 +19,7 @@
 
 - **[setup.md](./setup.md)** — local setup (Node/pnpm/Docker/Postgres), env files, W5 notifications smoke test, ports, troubleshooting.
 - **[integrations.md](./integrations.md)** — account + environment wiring for Neon / OpenAI / Gemini / iyzico / Cloudflare R2+Turnstile+Access / Postmark / Sentry / Render.
+- **[security-release-checklist.md](./security-release-checklist.md)** — production session/key rotation, restricted DB role, private-media migration and browser/security release gates.
 - **[file-structure.md](./file-structure.md)** — monorepo folder tree + package dependency direction + module internal structure.
 - **[conventions.md](./conventions.md)** — cross-cutting basics: language, config & secrets, git, **ticket registry (APP-NNN)**, feature-doc rule, testing, quality gates.
 

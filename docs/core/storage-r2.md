@@ -13,15 +13,16 @@
 
 ## Ne saklıyoruz
 
-İki bucket. Ayrım keyfi değil: deneme fotoğrafları kişisel veri ve sadece kullanıcının kendi
-AI hattına servis ediliyor, geri kalanı sayfada gösterilmek üzere yükleniyor.
+İki bucket. Ayrım keyfi değil: deneme, yanlış defteri ve hayal panosu fotoğrafları kişisel veri;
+yalnız sahibine veya sahibinin işlem hattına kısa ömürlü yetkiyle servis ediliyor.
 
 | Prefix | Bucket | Üreten | Sınır |
 |---|---|---|---|
 | `avatars/` | public | `identity/application/users.service.ts` | 2 MB · jpeg, png |
 | `forum-attachments/` | public | `forum/application/forum-thread.service.ts` | 5 MB görsel / 10 MB dosya |
 | `content/` | public | `content/application/content.service.ts` | 5 MB · jpeg, png, webp |
-| `vision-board/` | public | `coaching/application/vision-board-image.service.ts` | 5 MB · jpeg, png, webp |
+| `vision-board/` | **private** | `coaching/application/vision-board-image.service.ts` | 5 MB · jpeg, png, webp |
+| `notebook/` | **private** | `coaching/application/mistake-notebook.service.ts` | 5 MB · jpeg, png, webp |
 | `mock-exams/` | **private** | `ai/application/photo-upload.service.ts` | 5 MB · jpeg, png |
 
 Prefix listesi tek yerde: [`apps/api/src/shared/storage/storage-prefixes.ts`](../../apps/api/src/shared/storage/storage-prefixes.ts).
@@ -79,7 +80,7 @@ Test ve production bucket'ları zaten ayrı olmalı, dolayısıyla farklı juris
 Sadece **`mentor-public`** için: bucket → **Settings** → **Public Development URL** → **Enable** →
 kutuya `allow` yaz → **Allow**. Çıkan `https://pub-….r2.dev` adresi `R2_PUBLIC_BASE_URL` olur.
 
-`mentor-private` için **açma.** Orada public erişim olmamalı; `getPublicUrl` zaten `mock-exams/`
+`mentor-private` için **açma.** Orada public erişim olmamalı; `getPublicUrl` zaten özel prefixler
 için `FORBIDDEN` atıyor, bu onun altyapı tarafındaki karşılığı.
 
 > r2.dev Cloudflare tarafından açıkça "production için değil" deniyor: saniyede yüzlerce istekte
@@ -104,11 +105,12 @@ npx wrangler r2 bucket cors list mentor-public
 > `[{"AllowedOrigins":…}]` ister. Birini diğerine yapıştırmak hata verir.
 > `infra/r2/*.json` **wrangler şemasında**; detay [`infra/r2/README.md`](../../infra/r2/README.md).
 
-**Private bucket'ın da CORS'a ihtiyacı var.** Presigned URL kimlik doğrulamayı taşır ama tarayıcı
-yine CORS uygular; politika olmadan deneme fotoğrafı yüklemesi geçerli bir URL'le bile başarısız
-olur. Sadece `PUT` alıyor — `GET` yok, çünkü o objeler hiçbir sayfadan okunmamalı.
+**Private bucket'ın da CORS'a ihtiyacı var.** Defter ve hayal panosu görselleri sahibi kontrol
+edildikten sonra en fazla beş dakikalık imzalı `GET` URL'siyle tarayıcıya gelir. Private CORS yalnız
+`GET` açar. Yükleme PUT'u R2'ye tarayıcıdan gitmez; kimlik, oturum, limit ve gerçek dosya biçimini
+doğrulayan NestJS yükleme yetkisi üzerinden sunucu tarafında yazılır.
 
-Public bucket `GET` + `PUT` alıyor. `GET` iki iş için: normal görsel gösterimi ve **vision board
+Public bucket yalnız `GET` alıyor. `GET` iki iş için: normal görsel gösterimi ve **vision board
 PNG export'u** — export, görselleri canvas'a çizip geri okuduğu için CORS'suz "tainted canvas"
 hatası verir (`BoardExportTaintedError` bunu ayrı bir mesajla gösterir).
 
@@ -153,10 +155,9 @@ Altısı da zorunlu — biri eksikse API **boot etmez** (`env.validation.ts`). P
 pnpm --filter @mentor/api storage:check
 ```
 
-Her prefix için presign → CORS preflight → PUT → (public ise `Origin` başlıklı GET + CORS başlığı
-kontrolü) → `readObject` → `deleteObject` → gerçekten silindi mi. Başarısız her satır **hangi
-adımın eksik olduğunu** söyler. Beklenen: beş prefix ✅, `mock-exams/` için "private key has no
-public URL" ✅.
+Her prefix için sunucu PUT'u → yetkili tarayıcı GET'i + CORS başlığı → `readObject` →
+`deleteObject` → gerçekten silindi mi. Başarısız her satır **hangi adımın eksik olduğunu** söyler.
+Beklenen: bütün prefixler ✅, özel prefixler için "private key has no public URL" ve imzalı GET ✅.
 
 Ardından `pnpm dev` ile tarayıcıda, **giriş yapmış halde**:
 
@@ -172,9 +173,8 @@ Ardından `pnpm dev` ile tarayıcıda, **giriş yapmış halde**:
 Domain belirlendiğinde: bucket → **Settings** → **Custom Domains** → **Connect Domain**
 (domain Cloudflare'da olmalı). Sonra:
 
-1. `R2_PUBLIC_BASE_URL`'i yeni domain'e çevir — **tek değişiklik bu.** Mutlak URL hiçbir yerde
-   saklanmıyor; `vision_boards.board` gibi belgeler yalnız key tutuyor ve URL her okumada
-   türetiliyor, dolayısıyla eski içerik de anında yeni domain'den servis edilir.
+1. `R2_PUBLIC_BASE_URL`'i yeni domain'e çevir. Mutlak URL saklanmaz; public nesneler yalnız key
+   tutar ve URL her okumada türetilir. Özel defter/pano nesneleri bu public domain'i kullanmaz.
 2. `infra/r2/cors-*.json` içindeki origin'leri güncelle ve yeniden uygula.
 3. **Cache purge** — CORS politikası değişince önceden cache'lenmiş objeler eski başlıklarla
    servis edilmeye devam eder.
@@ -183,11 +183,11 @@ Domain belirlendiğinde: bucket → **Settings** → **Custom Domains** → **Co
 
 ## Tuzaklar
 
-- **Presign ömrü 15 dakika** ve **süresi dolmuş presigned URL `403` dönerken CORS başlığı
-  taşımaz** → tarayıcı JS'i hatayı okuyamaz, kullanıcı sessiz bir başarısızlık görür. Dosya seçip
-  uzun süre bekleyen kullanıcıda görülebilir.
-- **Boyut sınırları R2'de zorlanmıyor.** Presigned PUT ne gönderilirse kabul eder; tablodaki
-  limitler client kontrolü + dev fake yolunda geçerli. Gerçek koruma orphan süpürme ve lifecycle.
+- **Yükleme yetkisi kısa ömürlü ve tek kullanımlık.** Sunucu `Content-Length` değerine güvenmez;
+  akış baytlarını sayar, özellik sınırında keser ve gerçek dosya imzasını R2 yazımından önce doğrular.
+  Aynı kullanıcı aynı anda bir yetki ve günde toplam 100 MiB kullanabilir; değerler config registry'dedir.
+- **Özel okuma URL'si en fazla beş dakika.** URL'yi loglama veya kalıcı istemci durumunda saklama;
+  süresi dolunca sahibi API'den yeni URL alır.
 - **Orphan süpürme:** `vision-board/` için 6 saatte bir çalışıyor, 24 saatten eski ve hiçbir
   kayıtlı panoda geçmeyen objeleri siliyor (`VisionBoardMaintenanceService`). Forum'un kendi
   süpürmesi var. `avatars/` ve `content/` için yok — oralarda yükleme hep bir kayda bağlanıyor.

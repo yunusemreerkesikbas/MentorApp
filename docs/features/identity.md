@@ -15,15 +15,17 @@ by admin for stats) — the canonical cross-module seam for user data.
 ## Architecture (key decisions)
 
 - **Own JWT** (access ~15m, `@nestjs/jwt`) + **opaque refresh** (256-bit, sha256 in DB) in an
-  **httpOnly cookie** (path `/v1/auth`). **Rotation + reuse detection** (replay → whole family
-  revoked). argon2id hashing. **Deviation:** Passport not used (roadmap said "Passport+argon2") —
+  **httpOnly cookie** (path `/v1/auth`). Access tokens carry a server-side session id (`sid`);
+  every protected request reloads the active account, session and roles. **Rotation + reuse detection**
+  is transactional (replay → whole family revoked). argon2id hashing. **Deviation:** Passport not used (roadmap said "Passport+argon2") —
   `@nestjs/jwt` + custom guard is leaner for a JWT-only flow; argon2 kept.
 - **Enumeration-safe login** (same 401 + dummy-hash timing equalization via a valid `DUMMY_HASH`);
   forgot-password always 200; reset revokes all sessions; KVKK consent required; Turnstile verified
   when the secret is set; per-route throttling on auth endpoints.
 - **Google sign-in** uses Google Authorization Code + OpenID Connect on the backend. Google `sub`
-  is the stable provider key; Google tokens are not stored. Existing email/password accounts are
-  auto-linked only when Google reports `email_verified=true`. The public UI is gated by
+  is the stable provider key; Google tokens are not stored. Email equality never auto-links an
+  existing account. Linking is an authenticated settings action requiring the current password,
+  verified matching email and a one-use state bound to the active session. The public UI is gated by
   `identity.google_oauth.enabled` in the admin config registry.
 - **RLS ENABLE+FORCE** on `users`/`refresh_tokens`/`email_tokens`; policies allow self (`app.user_id`)
   or `app.role IN ('SERVICE','ADMIN')`. `withServiceContext` for pre-auth flows (only from
@@ -63,6 +65,8 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | GET | `/v1/auth/google/status` | Public Google button availability (`enabled`, plus flag/config diagnostics) |
 | GET | `/v1/auth/google/start` | Starts Google OAuth (`mode=login|signup`; signup requires KVKK flag) |
 | GET | `/v1/auth/google/callback` | Google callback; sets Mentor refresh cookie then redirects to web |
+| GET | `/v1/users/me/auth-accounts/google` | Current user's Google-link status |
+| POST | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start |
 | POST | `/v1/auth/refresh` | Cookie-scoped `/v1/auth`; rotation + reuse detection |
 | POST | `/v1/auth/logout` | Revokes refresh family |
 | POST | `/v1/auth/verify-email` | Consumes `email_tokens` |
@@ -70,7 +74,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | POST | `/v1/auth/reset-password` | Revokes all sessions |
 | GET / PATCH | `/v1/users/me` | Minimal onboarding: displayName / username / examType / examDate |
 | POST | `/v1/users/me/verification-email` | Authenticated resend for the current user's verification email |
-| POST | `/v1/users/me/avatar-upload-url` | Signed upload URL for current user's JPEG/PNG avatar |
+| POST | `/v1/users/me/avatar-upload-url` | One-use, session-bound upload capability for current user's JPEG/PNG avatar |
 
 ## API
 
@@ -78,6 +82,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 |---|---|
 | `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Auth lifecycle |
 | `GET /v1/auth/google/{status,start,callback}` | Google OAuth sign-in/sign-up |
+| `GET/POST /v1/users/me/auth-accounts/google{,/start}` | Inspect/start explicit Google account linking |
 | `GET /v1/users/me` | Current user (consumed by coaching, notifications, admin) |
 | `PATCH /v1/users/me` | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
 | `POST /v1/users/me/verification-email` | Resend verification email for current user |
@@ -85,6 +90,27 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `DELETE /v1/account` | Self-service KVKK erasure ("hesabımı sil") — irreversible |
 
 ## Geliştirmeler (timeline)
+
+- **İptal edilebilir oturumlar ve açık Google bağlama (2026-09-05)** — Erişim JWT'sine `sid`
+  eklendi; global guard her istekte hesabın, oturumun ve güncel rollerin aktif olduğunu veritabanından
+  doğruluyor. Refresh rotation, replay ile aile iptali, logout ve parola sıfırlama aynı kullanıcı kilit
+  düzeninde transaction içinde çalışıyor. Parola sıfırlama bütün oturumları ve kullanılmamış kardeş
+  reset linklerini iptal ediyor. Web sekmeleri Web Locks ile refresh'i koordine ediyor ve yalnız
+  oturum-geçersizleştirme sinyali yayıyor. Google e-posta eşleşmesi artık hesabı otomatik birleştirmiyor;
+  Ayarlar'daki bağlama işlemi doğrulanmış aynı e-posta, mevcut parola, aktif oturum ve tek kullanımlık
+  OAuth state gerektiriyor. Kullanım: kullanıcı Ayarlar → Google hesabı kartından parolasını girer.
+  Gotcha: `0102_security-hardening` geçişinden önce üretilmiş JWT/refresh ailelerinde `sid` kaydı yoktur;
+  kapalı test geçişinde bir kez yeniden giriş gerekir. İlgili: `schema-sessions.ts`,
+  `auth-session.repository.ts`, `token.service.ts`, `jwt-auth.guard.ts`, `google-linking.*`,
+  `auth-session-coordinator.ts`, `google-account-card.tsx`.
+
+- **Turnstile üretimde fail-closed (2026-09-05)** — Üretim başlangıcı gerçek Turnstile secret ve
+  uygulama alan adıyla aynı beklenen hostname olmadan reddediliyor. Siteverify cevabında `hostname`,
+  `action=signup` ve zaman aşımı doğrulanıyor; web kayıt formu gerçek widget tokenını API'ye taşıyor.
+  Kullanım: `TURNSTILE_SECRET`, `TURNSTILE_EXPECTED_HOSTNAME` ve
+  `NEXT_PUBLIC_TURNSTILE_SITE_KEY` dağıtım ortamında birlikte ayarlanır. Gotcha: geliştirme/testte
+  secret yoksa yerel akış açık kalır; bu esneklik üretime uygulanmaz. İlgili: `turnstile.service.ts`,
+  `env-production-locks.ts`, `signup-turnstile.tsx`, `.env.example`.
 
 - **Yoldaşlık sesi Dalga 17 — form kontrol et (2026-08-29)** — Şifre sıfırlama success ve profil `form_error` companion. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: yeni anahtar yok. İlgili: `apps/web/messages/{tr,en}.json`.
 
@@ -227,15 +253,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   `enabled`, `flagEnabled`, `configured` alanlarını döner. Signup için KVKK
   checkbox'ı hem client hem API start query'sinde zorunludur. Gotcha: Google Console redirect URI
   `GOOGLE_OAUTH_REDIRECT_URI` ile birebir aynı olmalı; credential env'leri eksikse status kapalı
-  döner ve start 503 verir. Mevcut email/şifre hesabı yalnızca `email_verified=true` Google
-  hesabıyla otomatik bağlanır. Related: `GoogleAuthService`, `CONFIG_CATALOG`,
+  döner ve start 503 verir. Bu ilk sürümün doğrulanmış e-posta ile otomatik bağlama davranışı
+  2026-09-05 güvenlik paketinde kaldırıldı; mevcut hesaplar yalnız Ayarlar'dan açık işlemle bağlanır.
+  Related: `GoogleAuthService`, `CONFIG_CATALOG`,
   `user_auth_accounts`, `google-auth-button.tsx`. *(2026-07-03.)*
 - **Profile avatar V1** — `users.avatar_storage_key` nullable kolonu eklendi; auth/session ve
   `GET/PATCH /v1/users/me` artık `avatarUrl` döner. Akış: client
   `POST /v1/users/me/avatar-upload-url` ile JPEG/PNG için user-scoped key alır
   (`avatars/{userId}/{uuid}.jpg|png`, max 2 MB), dosyayı storage URL'ine PUT eder, sonra
   `PATCH /v1/users/me` ile `avatarStorageKey` kaydeder veya `null` göndererek kaldırır. Gotcha:
-  eski avatar object'i best-effort silinir; silme hatası profil kaydını bozmaz. Local fake storage
+  eski avatar nesnesi kalıcı silme işiyle tekrar denenir; silme hatası profil kaydını bozmaz. Local fake storage
   preview için disk-backed `GET /v1/storage/fake-object?key=...` public dev endpoint'i kullanılır ve
   web origin'inden `<img>` render edilebilmesi için sadece bu dev object response'u
   `Cross-Origin-Resource-Policy: cross-origin` döner. Related:

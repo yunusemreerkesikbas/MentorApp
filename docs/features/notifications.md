@@ -25,8 +25,10 @@ daily reminder (no session + no mood today).
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
   `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
-- **Web Push:** VAPID keypair; `sw.js` + profil notification settings. Daily reminders dedupe via
-  `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
+- **Web Push:** VAPID keypair; `sw.js` + profil notification settings. Endpoints are restricted to
+  known browser push providers over HTTPS/443, DNS is resolved before registration and every send,
+  private/reserved destinations and redirects are rejected, and requests use bounded timeouts.
+  Daily reminders dedupe via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
 - **Domain triggers:** Payments `@OnEvent` → dunning/welcome email jobs (uses `UsersService.
   getNotificationContact` + delivery dedupe — no identity repo access); coaching `CoachingQueryPort`
   (in `coaching/domain`) → rule-based daily reminder (no session + no mood today). Shared `todayIso`
@@ -96,6 +98,19 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **Push SSRF koruması ve canlı oturum kontrolü (2026-09-05)** — Push aboneliği yalnız bilinen
+  Chrome/Firefox/Safari/Windows sağlayıcı alan adlarını, HTTPS/443 ve kullanıcı bilgisiz URL'leri kabul
+  ediyor. Kayıtta ve gönderimden hemen önce DNS çözülerek özel, loopback, link-local ve ayrılmış IP'ler
+  reddediliyor; TLS isteği doğrulanmış IP'ye sabitleniyor, yönlendirme izlenmiyor ve zaman aşımı uygulanıyor.
+  Kullanıcı başına abonelik sınırı merkezi ayara taşındı. Dış ağ isteği DB transaction'ı dışında;
+  `push_delivery_claims` teslimat kiralaması eşzamanlı işi tekilleştiriyor ve geçici hata kuyruk retry'ına
+  dönüyor. SSE tokenı kullanıcı+`sid` için tek kullanımlık; bağlantı kurulurken ve her 25 saniyede oturum
+  yeniden doğrulanıyor. Kullanım: normal profil bildirim izni ve stream-token akışları değişmedi.
+  Gotcha: dış sağlayıcıya gönderim ile claim tamamlama arasında süreç çökerse ağ teslimatı kesin olarak
+  bilinemediğinden sağlayıcı düzeyinde tekrar olasılığı tamamen yok edilemez. İlgili:
+  `push-endpoint-policy.ts`, `web-push.adapter.ts`, `push-delivery.repository.ts`,
+  `send-push.handler.ts`, `notification-stream.service.ts`, `schema-push-delivery.ts`.
 
 - **Koç risk özeti — `MentorshipRiskDigestService` (APP-067, 2026-09-03)** — Yeni bir cron
   tetikleyicisi (`dispatch-mentorship-risk-digest`, 07:00 UTC) ve W5'in ikinci cross-module okuma

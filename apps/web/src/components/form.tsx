@@ -7,9 +7,9 @@ import { Button, ShakeField, TextField } from "@mentor/ui";
 
 export { TextField as Field };
 
-export function SubmitButton({ children, busy }: { children: ReactNode; busy?: boolean }) {
+export function SubmitButton({ children, busy, disabled }: { children: ReactNode; busy?: boolean; disabled?: boolean }) {
   return (
-    <Button type="submit" busy={busy} fullWidth>
+    <Button type="submit" busy={busy} disabled={disabled} fullWidth>
       {children}
     </Button>
   );

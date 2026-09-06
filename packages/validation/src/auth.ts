@@ -58,8 +58,9 @@ export const googleOAuthStartQuerySchema = z
 export type GoogleOAuthStartQuery = z.infer<typeof googleOAuthStartQuerySchema>;
 
 export const googleOAuthCallbackQuerySchema = z.object({
-  code: z.string().min(1),
+  code: z.string().min(1).optional(),
   state: z.string().min(16),
+  error: z.string().min(1).max(128).optional(),
 });
 export type GoogleOAuthCallbackQuery = z.infer<typeof googleOAuthCallbackQuerySchema>;
 

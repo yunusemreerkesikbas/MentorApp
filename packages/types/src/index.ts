@@ -123,3 +123,4 @@ export * from "./preference-simulation.js";
 export * from "./ads.js";
 export * from "./mentorship.js";
 export * from "./promotions.js";
+export * from "./google-linking.js";

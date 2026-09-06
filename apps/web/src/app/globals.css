@@ -273,6 +273,15 @@ html.mentor-sheet-open {
   background-clip: content-box;
 }
 
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
 /* Custom slider: filled track (via inline `background` gradient) + a ringed thumb, instead of the
    browser's native accent-color look. `-webkit-appearance`/`-moz-appearance: none` strips the
    native track/thumb so the pseudo-elements below and the element's own `background` take over. */

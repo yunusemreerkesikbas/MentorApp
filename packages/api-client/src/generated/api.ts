@@ -19,6 +19,8 @@ export interface UpdateMeDto { [key: string]: unknown }
 
 export interface AvatarUploadUrlDto { [key: string]: unknown }
 
+export interface GoogleLinkStartDto { [key: string]: unknown }
+
 export interface AiChatDto {
   /**
    * @minLength 1
@@ -131,11 +133,9 @@ export interface CategorizePhotoDto { [key: string]: unknown }
 
 export interface PrelabelNotebookEntryDto { [key: string]: unknown }
 
+export interface PromotionOffersDto { [key: string]: unknown }
+
 export interface CheckoutDto { [key: string]: unknown }
-
-export interface DeepAnalysisDto { [key: string]: unknown }
-
-export interface RedeemInviteDto { [key: string]: unknown }
 
 export interface CompleteWeeklyReviewDto { [key: string]: unknown }
 
@@ -191,6 +191,10 @@ export interface CreateNotebookDto { [key: string]: unknown }
 
 export interface UpdateNotebookDto { [key: string]: unknown }
 
+export interface DeepAnalysisDto { [key: string]: unknown }
+
+export interface RedeemInviteDto { [key: string]: unknown }
+
 export interface CreateZoneDto { [key: string]: unknown }
 
 export interface AssignOwnerDto { [key: string]: unknown }
@@ -221,6 +225,16 @@ export interface UpdateForumPostDto { [key: string]: unknown }
 
 export interface PollVoteDto { [key: string]: unknown }
 
+export interface CreateAdRewardSessionDto { [key: string]: unknown }
+
+export interface CreateMentorshipAssignmentsDto { [key: string]: unknown }
+
+export interface MentorshipCoachNoteDto { [key: string]: unknown }
+
+export interface SaveMentorshipTemplateDto { [key: string]: unknown }
+
+export interface MentorshipInviteCodeParamDto { [key: string]: unknown }
+
 export interface UpdateUserStatusDto { [key: string]: unknown }
 
 export interface UpdateConfigDto { [key: string]: unknown }
@@ -239,6 +253,10 @@ export interface RefundSubscriptionDto { [key: string]: unknown }
 
 export interface UpdatePlanDto { [key: string]: unknown }
 
+export interface CreatePromotionDto { [key: string]: unknown }
+
+export interface UpdatePromotionDto { [key: string]: unknown }
+
 export interface ReviewForumTagSuggestionDto { [key: string]: unknown }
 
 export interface AdminForumTagCreateDto { [key: string]: unknown }
@@ -246,6 +264,10 @@ export interface AdminForumTagCreateDto { [key: string]: unknown }
 export interface AdminForumTagUpdateDto { [key: string]: unknown }
 
 export interface SetFeaturedThreadDto { [key: string]: unknown }
+
+export interface CreateAnnouncementDto { [key: string]: unknown }
+
+export interface SendAnnouncementDto { [key: string]: unknown }
 
 export interface CelebrateAchievementsDto { [key: string]: unknown }
 
@@ -456,6 +478,48 @@ export const GeoControllerSearchProgramsScoreType = {
   SÖZ: 'SÖZ',
   DİL: 'DİL',
   TYT: 'TYT',
+} as const;
+
+export type InfoArticleControllerListArticlesParams = {
+pageSize?: unknown;
+page?: unknown;
+excludeSlug?: unknown;
+category?: InfoArticleControllerListArticlesCategory;
+family: InfoArticleControllerListArticlesFamily;
+};
+
+export type InfoArticleControllerListArticlesCategory = typeof InfoArticleControllerListArticlesCategory[keyof typeof InfoArticleControllerListArticlesCategory];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InfoArticleControllerListArticlesCategory = {
+  EXAM_PROCESS: 'EXAM_PROCESS',
+  APPLICATION: 'APPLICATION',
+  GENERAL: 'GENERAL',
+} as const;
+
+export type InfoArticleControllerListArticlesFamily = typeof InfoArticleControllerListArticlesFamily[keyof typeof InfoArticleControllerListArticlesFamily];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InfoArticleControllerListArticlesFamily = {
+  KPSS: 'KPSS',
+  YKS: 'YKS',
+  LGS: 'LGS',
+} as const;
+
+export type InfoArticleControllerGetFeaturedParams = {
+family: InfoArticleControllerGetFeaturedFamily;
+};
+
+export type InfoArticleControllerGetFeaturedFamily = typeof InfoArticleControllerGetFeaturedFamily[keyof typeof InfoArticleControllerGetFeaturedFamily];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const InfoArticleControllerGetFeaturedFamily = {
+  KPSS: 'KPSS',
+  YKS: 'YKS',
+  LGS: 'LGS',
 } as const;
 
 export type CoachingControllerGetAnalysisParams = {
@@ -1194,6 +1258,73 @@ export const followControllerFollowing = async (username: string, options?: Requ
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type googleLinkingControllerStatusResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type googleLinkingControllerStatusResponseSuccess = (googleLinkingControllerStatusResponse200) & {
+  headers: Headers;
+};
+;
+
+export type googleLinkingControllerStatusResponse = (googleLinkingControllerStatusResponseSuccess)
+
+export const getGoogleLinkingControllerStatusUrl = () => {
+
+
+  
+
+  return `/v1/users/me/auth-accounts/google`
+}
+
+export const googleLinkingControllerStatus = async ( options?: RequestInit): Promise<googleLinkingControllerStatusResponse> => {
+  
+  return http<googleLinkingControllerStatusResponse>(getGoogleLinkingControllerStatusUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type googleLinkingControllerStartResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type googleLinkingControllerStartResponseSuccess = (googleLinkingControllerStartResponse200) & {
+  headers: Headers;
+};
+;
+
+export type googleLinkingControllerStartResponse = (googleLinkingControllerStartResponseSuccess)
+
+export const getGoogleLinkingControllerStartUrl = () => {
+
+
+  
+
+  return `/v1/users/me/auth-accounts/google/start`
+}
+
+export const googleLinkingControllerStart = async (googleLinkStartDto: GoogleLinkStartDto, options?: RequestInit): Promise<googleLinkingControllerStartResponse> => {
+  
+  return http<googleLinkingControllerStartResponse>(getGoogleLinkingControllerStartUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      googleLinkStartDto,)
   }
 );}
 
@@ -2793,20 +2924,100 @@ export type infoArticleControllerListArticlesResponseSuccess = (infoArticleContr
 
 export type infoArticleControllerListArticlesResponse = (infoArticleControllerListArticlesResponseSuccess)
 
-export const getInfoArticleControllerListArticlesUrl = () => {
+export const getInfoArticleControllerListArticlesUrl = (params: InfoArticleControllerListArticlesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/content/info-articles`
+  return stringifiedParams.length > 0 ? `/v1/content/info-articles?${stringifiedParams}` : `/v1/content/info-articles`
 }
 
-export const infoArticleControllerListArticles = async ( options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
+export const infoArticleControllerListArticles = async (params: InfoArticleControllerListArticlesParams, options?: RequestInit): Promise<infoArticleControllerListArticlesResponse> => {
   
-  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(),
+  return http<infoArticleControllerListArticlesResponse>(getInfoArticleControllerListArticlesUrl(params),
   {      
     ...options,
     method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerGetFeaturedResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type infoArticleControllerGetFeaturedResponseSuccess = (infoArticleControllerGetFeaturedResponse200) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerGetFeaturedResponse = (infoArticleControllerGetFeaturedResponseSuccess)
+
+export const getInfoArticleControllerGetFeaturedUrl = (params: InfoArticleControllerGetFeaturedParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/content/info-articles/featured?${stringifiedParams}` : `/v1/content/info-articles/featured`
+}
+
+export const infoArticleControllerGetFeatured = async (params: InfoArticleControllerGetFeaturedParams, options?: RequestInit): Promise<infoArticleControllerGetFeaturedResponse> => {
+  
+  return http<infoArticleControllerGetFeaturedResponse>(getInfoArticleControllerGetFeaturedUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type infoArticleControllerRecordViewResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type infoArticleControllerRecordViewResponseSuccess = (infoArticleControllerRecordViewResponse204) & {
+  headers: Headers;
+};
+;
+
+export type infoArticleControllerRecordViewResponse = (infoArticleControllerRecordViewResponseSuccess)
+
+export const getInfoArticleControllerRecordViewUrl = (slug: string,) => {
+
+
+  
+
+  return `/v1/content/info-articles/${slug}/views`
+}
+
+export const infoArticleControllerRecordView = async (slug: string, options?: RequestInit): Promise<infoArticleControllerRecordViewResponse> => {
+  
+  return http<infoArticleControllerRecordViewResponse>(getInfoArticleControllerRecordViewUrl(slug),
+  {      
+    ...options,
+    method: 'POST'
     
     
   }
@@ -2946,6 +3157,40 @@ export const subscriptionsControllerGetMine = async ( options?: RequestInit): Pr
 
 
 
+export type subscriptionsControllerOffersResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type subscriptionsControllerOffersResponseSuccess = (subscriptionsControllerOffersResponse200) & {
+  headers: Headers;
+};
+;
+
+export type subscriptionsControllerOffersResponse = (subscriptionsControllerOffersResponseSuccess)
+
+export const getSubscriptionsControllerOffersUrl = () => {
+
+
+  
+
+  return `/v1/subscription/offers`
+}
+
+export const subscriptionsControllerOffers = async (promotionOffersDto: PromotionOffersDto, options?: RequestInit): Promise<subscriptionsControllerOffersResponse> => {
+  
+  return http<subscriptionsControllerOffersResponse>(getSubscriptionsControllerOffersUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      promotionOffersDto,)
+  }
+);}
+
+
+
 export type subscriptionsControllerCheckoutResponse200 = {
   data: void
   status: 200
@@ -3046,300 +3291,34 @@ export const paymentsWebhookControllerHandle = async ( options?: RequestInit): P
 
 
 
-export type economyControllerBalanceResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerBalanceResponseSuccess = (economyControllerBalanceResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerBalanceResponse = (economyControllerBalanceResponseSuccess)
-
-export const getEconomyControllerBalanceUrl = () => {
-
-
-  
-
-  return `/v1/economy/balance`
-}
-
-export const economyControllerBalance = async ( options?: RequestInit): Promise<economyControllerBalanceResponse> => {
-  
-  return http<economyControllerBalanceResponse>(getEconomyControllerBalanceUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerLedgerResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerLedgerResponseSuccess = (economyControllerLedgerResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerLedgerResponse = (economyControllerLedgerResponseSuccess)
-
-export const getEconomyControllerLedgerUrl = () => {
-
-
-  
-
-  return `/v1/economy/ledger`
-}
-
-export const economyControllerLedger = async ( options?: RequestInit): Promise<economyControllerLedgerResponse> => {
-  
-  return http<economyControllerLedgerResponse>(getEconomyControllerLedgerUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerInviteResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerInviteResponseSuccess = (economyControllerInviteResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerInviteResponse = (economyControllerInviteResponseSuccess)
-
-export const getEconomyControllerInviteUrl = () => {
-
-
-  
-
-  return `/v1/economy/invite`
-}
-
-export const economyControllerInvite = async ( options?: RequestInit): Promise<economyControllerInviteResponse> => {
-  
-  return http<economyControllerInviteResponse>(getEconomyControllerInviteUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerQuestsListResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerQuestsListResponseSuccess = (economyControllerQuestsListResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerQuestsListResponse = (economyControllerQuestsListResponseSuccess)
-
-export const getEconomyControllerQuestsListUrl = () => {
-
-
-  
-
-  return `/v1/economy/quests`
-}
-
-export const economyControllerQuestsList = async ( options?: RequestInit): Promise<economyControllerQuestsListResponse> => {
-  
-  return http<economyControllerQuestsListResponse>(getEconomyControllerQuestsListUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerStreakRescueStateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerStreakRescueStateResponseSuccess = (economyControllerStreakRescueStateResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerStreakRescueStateResponse = (economyControllerStreakRescueStateResponseSuccess)
-
-export const getEconomyControllerStreakRescueStateUrl = () => {
-
-
-  
-
-  return `/v1/economy/streak-rescue`
-}
-
-export const economyControllerStreakRescueState = async ( options?: RequestInit): Promise<economyControllerStreakRescueStateResponse> => {
-  
-  return http<economyControllerStreakRescueStateResponse>(getEconomyControllerStreakRescueStateUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerStreakRescuePurchaseResponse201 = {
+export type paymentsInternalControllerExpireSubscriptionsResponse201 = {
   data: void
   status: 201
 }
     
-export type economyControllerStreakRescuePurchaseResponseSuccess = (economyControllerStreakRescuePurchaseResponse201) & {
+export type paymentsInternalControllerExpireSubscriptionsResponseSuccess = (paymentsInternalControllerExpireSubscriptionsResponse201) & {
   headers: Headers;
 };
 ;
 
-export type economyControllerStreakRescuePurchaseResponse = (economyControllerStreakRescuePurchaseResponseSuccess)
+export type paymentsInternalControllerExpireSubscriptionsResponse = (paymentsInternalControllerExpireSubscriptionsResponseSuccess)
 
-export const getEconomyControllerStreakRescuePurchaseUrl = () => {
+export const getPaymentsInternalControllerExpireSubscriptionsUrl = () => {
 
 
   
 
-  return `/v1/economy/streak-rescue`
+  return `/v1/internal/cron/expire-subscriptions`
 }
 
-export const economyControllerStreakRescuePurchase = async ( options?: RequestInit): Promise<economyControllerStreakRescuePurchaseResponse> => {
+export const paymentsInternalControllerExpireSubscriptions = async ( options?: RequestInit): Promise<paymentsInternalControllerExpireSubscriptionsResponse> => {
   
-  return http<economyControllerStreakRescuePurchaseResponse>(getEconomyControllerStreakRescuePurchaseUrl(),
+  return http<paymentsInternalControllerExpireSubscriptionsResponse>(getPaymentsInternalControllerExpireSubscriptionsUrl(),
   {      
     ...options,
     method: 'POST'
     
     
-  }
-);}
-
-
-
-export type economyControllerDeepAnalysisStateResponse200 = {
-  data: void
-  status: 200
-}
-    
-export type economyControllerDeepAnalysisStateResponseSuccess = (economyControllerDeepAnalysisStateResponse200) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerDeepAnalysisStateResponse = (economyControllerDeepAnalysisStateResponseSuccess)
-
-export const getEconomyControllerDeepAnalysisStateUrl = () => {
-
-
-  
-
-  return `/v1/economy/deep-analysis`
-}
-
-export const economyControllerDeepAnalysisState = async ( options?: RequestInit): Promise<economyControllerDeepAnalysisStateResponse> => {
-  
-  return http<economyControllerDeepAnalysisStateResponse>(getEconomyControllerDeepAnalysisStateUrl(),
-  {      
-    ...options,
-    method: 'GET'
-    
-    
-  }
-);}
-
-
-
-export type economyControllerDeepAnalysisPurchaseResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type economyControllerDeepAnalysisPurchaseResponseSuccess = (economyControllerDeepAnalysisPurchaseResponse201) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerDeepAnalysisPurchaseResponse = (economyControllerDeepAnalysisPurchaseResponseSuccess)
-
-export const getEconomyControllerDeepAnalysisPurchaseUrl = () => {
-
-
-  
-
-  return `/v1/economy/deep-analysis`
-}
-
-export const economyControllerDeepAnalysisPurchase = async (deepAnalysisDto: DeepAnalysisDto, options?: RequestInit): Promise<economyControllerDeepAnalysisPurchaseResponse> => {
-  
-  return http<economyControllerDeepAnalysisPurchaseResponse>(getEconomyControllerDeepAnalysisPurchaseUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      deepAnalysisDto,)
-  }
-);}
-
-
-
-export type economyControllerRedeemResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type economyControllerRedeemResponseSuccess = (economyControllerRedeemResponse201) & {
-  headers: Headers;
-};
-;
-
-export type economyControllerRedeemResponse = (economyControllerRedeemResponseSuccess)
-
-export const getEconomyControllerRedeemUrl = () => {
-
-
-  
-
-  return `/v1/economy/invite/redeem`
-}
-
-export const economyControllerRedeem = async (redeemInviteDto: RedeemInviteDto, options?: RequestInit): Promise<economyControllerRedeemResponse> => {
-  
-  return http<economyControllerRedeemResponse>(getEconomyControllerRedeemUrl(),
-  {      
-    ...options,
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', ...options?.headers },
-    body: JSON.stringify(
-      redeemInviteDto,)
   }
 );}
 
@@ -5320,6 +5299,305 @@ export const notebooksControllerPutPage = async (id: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       putNotebookPageDto,)
+  }
+);}
+
+
+
+export type economyControllerBalanceResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerBalanceResponseSuccess = (economyControllerBalanceResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerBalanceResponse = (economyControllerBalanceResponseSuccess)
+
+export const getEconomyControllerBalanceUrl = () => {
+
+
+  
+
+  return `/v1/economy/balance`
+}
+
+export const economyControllerBalance = async ( options?: RequestInit): Promise<economyControllerBalanceResponse> => {
+  
+  return http<economyControllerBalanceResponse>(getEconomyControllerBalanceUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerLedgerResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerLedgerResponseSuccess = (economyControllerLedgerResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerLedgerResponse = (economyControllerLedgerResponseSuccess)
+
+export const getEconomyControllerLedgerUrl = () => {
+
+
+  
+
+  return `/v1/economy/ledger`
+}
+
+export const economyControllerLedger = async ( options?: RequestInit): Promise<economyControllerLedgerResponse> => {
+  
+  return http<economyControllerLedgerResponse>(getEconomyControllerLedgerUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerInviteResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerInviteResponseSuccess = (economyControllerInviteResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerInviteResponse = (economyControllerInviteResponseSuccess)
+
+export const getEconomyControllerInviteUrl = () => {
+
+
+  
+
+  return `/v1/economy/invite`
+}
+
+export const economyControllerInvite = async ( options?: RequestInit): Promise<economyControllerInviteResponse> => {
+  
+  return http<economyControllerInviteResponse>(getEconomyControllerInviteUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerQuestsListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerQuestsListResponseSuccess = (economyControllerQuestsListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerQuestsListResponse = (economyControllerQuestsListResponseSuccess)
+
+export const getEconomyControllerQuestsListUrl = () => {
+
+
+  
+
+  return `/v1/economy/quests`
+}
+
+export const economyControllerQuestsList = async ( options?: RequestInit): Promise<economyControllerQuestsListResponse> => {
+  
+  return http<economyControllerQuestsListResponse>(getEconomyControllerQuestsListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerStreakRescueStateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerStreakRescueStateResponseSuccess = (economyControllerStreakRescueStateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerStreakRescueStateResponse = (economyControllerStreakRescueStateResponseSuccess)
+
+export const getEconomyControllerStreakRescueStateUrl = () => {
+
+
+  
+
+  return `/v1/economy/streak-rescue`
+}
+
+export const economyControllerStreakRescueState = async ( options?: RequestInit): Promise<economyControllerStreakRescueStateResponse> => {
+  
+  return http<economyControllerStreakRescueStateResponse>(getEconomyControllerStreakRescueStateUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerStreakRescuePurchaseResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type economyControllerStreakRescuePurchaseResponseSuccess = (economyControllerStreakRescuePurchaseResponse201) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerStreakRescuePurchaseResponse = (economyControllerStreakRescuePurchaseResponseSuccess)
+
+export const getEconomyControllerStreakRescuePurchaseUrl = () => {
+
+
+  
+
+  return `/v1/economy/streak-rescue`
+}
+
+export const economyControllerStreakRescuePurchase = async ( options?: RequestInit): Promise<economyControllerStreakRescuePurchaseResponse> => {
+  
+  return http<economyControllerStreakRescuePurchaseResponse>(getEconomyControllerStreakRescuePurchaseUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerDeepAnalysisStateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type economyControllerDeepAnalysisStateResponseSuccess = (economyControllerDeepAnalysisStateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerDeepAnalysisStateResponse = (economyControllerDeepAnalysisStateResponseSuccess)
+
+export const getEconomyControllerDeepAnalysisStateUrl = () => {
+
+
+  
+
+  return `/v1/economy/deep-analysis`
+}
+
+export const economyControllerDeepAnalysisState = async ( options?: RequestInit): Promise<economyControllerDeepAnalysisStateResponse> => {
+  
+  return http<economyControllerDeepAnalysisStateResponse>(getEconomyControllerDeepAnalysisStateUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerDeepAnalysisPurchaseResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type economyControllerDeepAnalysisPurchaseResponseSuccess = (economyControllerDeepAnalysisPurchaseResponse201) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerDeepAnalysisPurchaseResponse = (economyControllerDeepAnalysisPurchaseResponseSuccess)
+
+export const getEconomyControllerDeepAnalysisPurchaseUrl = () => {
+
+
+  
+
+  return `/v1/economy/deep-analysis`
+}
+
+export const economyControllerDeepAnalysisPurchase = async (deepAnalysisDto: DeepAnalysisDto, options?: RequestInit): Promise<economyControllerDeepAnalysisPurchaseResponse> => {
+  
+  return http<economyControllerDeepAnalysisPurchaseResponse>(getEconomyControllerDeepAnalysisPurchaseUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      deepAnalysisDto,)
+  }
+);}
+
+
+
+export type economyControllerRedeemResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type economyControllerRedeemResponseSuccess = (economyControllerRedeemResponse201) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerRedeemResponse = (economyControllerRedeemResponseSuccess)
+
+export const getEconomyControllerRedeemUrl = () => {
+
+
+  
+
+  return `/v1/economy/invite/redeem`
+}
+
+export const economyControllerRedeem = async (redeemInviteDto: RedeemInviteDto, options?: RequestInit): Promise<economyControllerRedeemResponse> => {
+  
+  return http<economyControllerRedeemResponse>(getEconomyControllerRedeemUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      redeemInviteDto,)
   }
 );}
 
@@ -7419,6 +7697,740 @@ export const forumPollControllerVote = async (pollId: string,
 
 
 
+export type adsControllerPublicPlacementResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adsControllerPublicPlacementResponseSuccess = (adsControllerPublicPlacementResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerPublicPlacementResponse = (adsControllerPublicPlacementResponseSuccess)
+
+export const getAdsControllerPublicPlacementUrl = (placementId: string,) => {
+
+
+  
+
+  return `/v1/ads/public/placements/${placementId}`
+}
+
+export const adsControllerPublicPlacement = async (placementId: string, options?: RequestInit): Promise<adsControllerPublicPlacementResponse> => {
+  
+  return http<adsControllerPublicPlacementResponse>(getAdsControllerPublicPlacementUrl(placementId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adsControllerPlacementResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adsControllerPlacementResponseSuccess = (adsControllerPlacementResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerPlacementResponse = (adsControllerPlacementResponseSuccess)
+
+export const getAdsControllerPlacementUrl = (placementId: string,) => {
+
+
+  
+
+  return `/v1/ads/placements/${placementId}`
+}
+
+export const adsControllerPlacement = async (placementId: string, options?: RequestInit): Promise<adsControllerPlacementResponse> => {
+  
+  return http<adsControllerPlacementResponse>(getAdsControllerPlacementUrl(placementId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adsControllerRewardOfferResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adsControllerRewardOfferResponseSuccess = (adsControllerRewardOfferResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerRewardOfferResponse = (adsControllerRewardOfferResponseSuccess)
+
+export const getAdsControllerRewardOfferUrl = (placementId: string,) => {
+
+
+  
+
+  return `/v1/ads/reward-offers/${placementId}`
+}
+
+export const adsControllerRewardOffer = async (placementId: string, options?: RequestInit): Promise<adsControllerRewardOfferResponse> => {
+  
+  return http<adsControllerRewardOfferResponse>(getAdsControllerRewardOfferUrl(placementId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adsControllerCreateRewardSessionResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adsControllerCreateRewardSessionResponseSuccess = (adsControllerCreateRewardSessionResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerCreateRewardSessionResponse = (adsControllerCreateRewardSessionResponseSuccess)
+
+export const getAdsControllerCreateRewardSessionUrl = () => {
+
+
+  
+
+  return `/v1/ads/reward-sessions`
+}
+
+export const adsControllerCreateRewardSession = async (createAdRewardSessionDto: CreateAdRewardSessionDto, options?: RequestInit): Promise<adsControllerCreateRewardSessionResponse> => {
+  
+  return http<adsControllerCreateRewardSessionResponse>(getAdsControllerCreateRewardSessionUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createAdRewardSessionDto,)
+  }
+);}
+
+
+
+export type adsControllerCompleteResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adsControllerCompleteResponseSuccess = (adsControllerCompleteResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerCompleteResponse = (adsControllerCompleteResponseSuccess)
+
+export const getAdsControllerCompleteUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/ads/reward-sessions/${id}/complete`
+}
+
+export const adsControllerComplete = async (id: string, options?: RequestInit): Promise<adsControllerCompleteResponse> => {
+  
+  return http<adsControllerCompleteResponse>(getAdsControllerCompleteUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adsControllerCloseResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adsControllerCloseResponseSuccess = (adsControllerCloseResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adsControllerCloseResponse = (adsControllerCloseResponseSuccess)
+
+export const getAdsControllerCloseUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/ads/reward-sessions/${id}/close`
+}
+
+export const adsControllerClose = async (id: string, options?: RequestInit): Promise<adsControllerCloseResponse> => {
+  
+  return http<adsControllerCloseResponse>(getAdsControllerCloseUrl(id),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type adsInternalControllerExpireRewardSessionsResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adsInternalControllerExpireRewardSessionsResponseSuccess = (adsInternalControllerExpireRewardSessionsResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adsInternalControllerExpireRewardSessionsResponse = (adsInternalControllerExpireRewardSessionsResponseSuccess)
+
+export const getAdsInternalControllerExpireRewardSessionsUrl = () => {
+
+
+  
+
+  return `/v1/internal/cron/expire-ad-reward-sessions`
+}
+
+export const adsInternalControllerExpireRewardSessions = async ( options?: RequestInit): Promise<adsInternalControllerExpireRewardSessionsResponse> => {
+  
+  return http<adsInternalControllerExpireRewardSessionsResponse>(getAdsInternalControllerExpireRewardSessionsUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerGetOverviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerGetOverviewResponseSuccess = (mentorshipCoachControllerGetOverviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerGetOverviewResponse = (mentorshipCoachControllerGetOverviewResponseSuccess)
+
+export const getMentorshipCoachControllerGetOverviewUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/overview`
+}
+
+export const mentorshipCoachControllerGetOverview = async ( options?: RequestInit): Promise<mentorshipCoachControllerGetOverviewResponse> => {
+  
+  return http<mentorshipCoachControllerGetOverviewResponse>(getMentorshipCoachControllerGetOverviewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerRotateInviteCodeResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerRotateInviteCodeResponseSuccess = (mentorshipCoachControllerRotateInviteCodeResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerRotateInviteCodeResponse = (mentorshipCoachControllerRotateInviteCodeResponseSuccess)
+
+export const getMentorshipCoachControllerRotateInviteCodeUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/invite-code`
+}
+
+export const mentorshipCoachControllerRotateInviteCode = async ( options?: RequestInit): Promise<mentorshipCoachControllerRotateInviteCodeResponse> => {
+  
+  return http<mentorshipCoachControllerRotateInviteCodeResponse>(getMentorshipCoachControllerRotateInviteCodeUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerListStudentsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerListStudentsResponseSuccess = (mentorshipCoachControllerListStudentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerListStudentsResponse = (mentorshipCoachControllerListStudentsResponseSuccess)
+
+export const getMentorshipCoachControllerListStudentsUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/students`
+}
+
+export const mentorshipCoachControllerListStudents = async ( options?: RequestInit): Promise<mentorshipCoachControllerListStudentsResponse> => {
+  
+  return http<mentorshipCoachControllerListStudentsResponse>(getMentorshipCoachControllerListStudentsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerGetStudentResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerGetStudentResponseSuccess = (mentorshipCoachControllerGetStudentResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerGetStudentResponse = (mentorshipCoachControllerGetStudentResponseSuccess)
+
+export const getMentorshipCoachControllerGetStudentUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}`
+}
+
+export const mentorshipCoachControllerGetStudent = async (studentId: string, options?: RequestInit): Promise<mentorshipCoachControllerGetStudentResponse> => {
+  
+  return http<mentorshipCoachControllerGetStudentResponse>(getMentorshipCoachControllerGetStudentUrl(studentId),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerEndLinkResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipCoachControllerEndLinkResponseSuccess = (mentorshipCoachControllerEndLinkResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerEndLinkResponse = (mentorshipCoachControllerEndLinkResponseSuccess)
+
+export const getMentorshipCoachControllerEndLinkUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}`
+}
+
+export const mentorshipCoachControllerEndLink = async (studentId: string, options?: RequestInit): Promise<mentorshipCoachControllerEndLinkResponse> => {
+  
+  return http<mentorshipCoachControllerEndLinkResponse>(getMentorshipCoachControllerEndLinkUrl(studentId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerAssignResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mentorshipCoachControllerAssignResponseSuccess = (mentorshipCoachControllerAssignResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerAssignResponse = (mentorshipCoachControllerAssignResponseSuccess)
+
+export const getMentorshipCoachControllerAssignUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/assignments`
+}
+
+export const mentorshipCoachControllerAssign = async (studentId: string,
+    createMentorshipAssignmentsDto: CreateMentorshipAssignmentsDto, options?: RequestInit): Promise<mentorshipCoachControllerAssignResponse> => {
+  
+  return http<mentorshipCoachControllerAssignResponse>(getMentorshipCoachControllerAssignUrl(studentId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMentorshipAssignmentsDto,)
+  }
+);}
+
+
+
+export type mentorshipCoachControllerSetNoteResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipCoachControllerSetNoteResponseSuccess = (mentorshipCoachControllerSetNoteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerSetNoteResponse = (mentorshipCoachControllerSetNoteResponseSuccess)
+
+export const getMentorshipCoachControllerSetNoteUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/note`
+}
+
+export const mentorshipCoachControllerSetNote = async (studentId: string,
+    mentorshipCoachNoteDto: MentorshipCoachNoteDto, options?: RequestInit): Promise<mentorshipCoachControllerSetNoteResponse> => {
+  
+  return http<mentorshipCoachControllerSetNoteResponse>(getMentorshipCoachControllerSetNoteUrl(studentId),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mentorshipCoachNoteDto,)
+  }
+);}
+
+
+
+export type mentorshipCoachControllerListTemplatesResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerListTemplatesResponseSuccess = (mentorshipCoachControllerListTemplatesResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerListTemplatesResponse = (mentorshipCoachControllerListTemplatesResponseSuccess)
+
+export const getMentorshipCoachControllerListTemplatesUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/templates`
+}
+
+export const mentorshipCoachControllerListTemplates = async ( options?: RequestInit): Promise<mentorshipCoachControllerListTemplatesResponse> => {
+  
+  return http<mentorshipCoachControllerListTemplatesResponse>(getMentorshipCoachControllerListTemplatesUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerSaveTemplateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerSaveTemplateResponseSuccess = (mentorshipCoachControllerSaveTemplateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerSaveTemplateResponse = (mentorshipCoachControllerSaveTemplateResponseSuccess)
+
+export const getMentorshipCoachControllerSaveTemplateUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/templates`
+}
+
+export const mentorshipCoachControllerSaveTemplate = async (saveMentorshipTemplateDto: SaveMentorshipTemplateDto, options?: RequestInit): Promise<mentorshipCoachControllerSaveTemplateResponse> => {
+  
+  return http<mentorshipCoachControllerSaveTemplateResponse>(getMentorshipCoachControllerSaveTemplateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      saveMentorshipTemplateDto,)
+  }
+);}
+
+
+
+export type mentorshipCoachControllerDeleteTemplateResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipCoachControllerDeleteTemplateResponseSuccess = (mentorshipCoachControllerDeleteTemplateResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerDeleteTemplateResponse = (mentorshipCoachControllerDeleteTemplateResponseSuccess)
+
+export const getMentorshipCoachControllerDeleteTemplateUrl = (templateId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/templates/${templateId}`
+}
+
+export const mentorshipCoachControllerDeleteTemplate = async (templateId: string, options?: RequestInit): Promise<mentorshipCoachControllerDeleteTemplateResponse> => {
+  
+  return http<mentorshipCoachControllerDeleteTemplateResponse>(getMentorshipCoachControllerDeleteTemplateUrl(templateId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerGenerateBriefResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerGenerateBriefResponseSuccess = (mentorshipCoachControllerGenerateBriefResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerGenerateBriefResponse = (mentorshipCoachControllerGenerateBriefResponseSuccess)
+
+export const getMentorshipCoachControllerGenerateBriefUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/brief`
+}
+
+export const mentorshipCoachControllerGenerateBrief = async (studentId: string, options?: RequestInit): Promise<mentorshipCoachControllerGenerateBriefResponse> => {
+  
+  return http<mentorshipCoachControllerGenerateBriefResponse>(getMentorshipCoachControllerGenerateBriefUrl(studentId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipStudentControllerPreviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipStudentControllerPreviewResponseSuccess = (mentorshipStudentControllerPreviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerPreviewResponse = (mentorshipStudentControllerPreviewResponseSuccess)
+
+export const getMentorshipStudentControllerPreviewUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/invitations/preview`
+}
+
+export const mentorshipStudentControllerPreview = async (mentorshipInviteCodeParamDto: MentorshipInviteCodeParamDto, options?: RequestInit): Promise<mentorshipStudentControllerPreviewResponse> => {
+  
+  return http<mentorshipStudentControllerPreviewResponse>(getMentorshipStudentControllerPreviewUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mentorshipInviteCodeParamDto,)
+  }
+);}
+
+
+
+export type mentorshipStudentControllerAcceptResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipStudentControllerAcceptResponseSuccess = (mentorshipStudentControllerAcceptResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerAcceptResponse = (mentorshipStudentControllerAcceptResponseSuccess)
+
+export const getMentorshipStudentControllerAcceptUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/invitations/accept`
+}
+
+export const mentorshipStudentControllerAccept = async (mentorshipInviteCodeParamDto: MentorshipInviteCodeParamDto, options?: RequestInit): Promise<mentorshipStudentControllerAcceptResponse> => {
+  
+  return http<mentorshipStudentControllerAcceptResponse>(getMentorshipStudentControllerAcceptUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mentorshipInviteCodeParamDto,)
+  }
+);}
+
+
+
+export type mentorshipStudentControllerMyCoachResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipStudentControllerMyCoachResponseSuccess = (mentorshipStudentControllerMyCoachResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerMyCoachResponse = (mentorshipStudentControllerMyCoachResponseSuccess)
+
+export const getMentorshipStudentControllerMyCoachUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/my-coach`
+}
+
+export const mentorshipStudentControllerMyCoach = async ( options?: RequestInit): Promise<mentorshipStudentControllerMyCoachResponse> => {
+  
+  return http<mentorshipStudentControllerMyCoachResponse>(getMentorshipStudentControllerMyCoachUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipStudentControllerEndLinkResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipStudentControllerEndLinkResponseSuccess = (mentorshipStudentControllerEndLinkResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerEndLinkResponse = (mentorshipStudentControllerEndLinkResponseSuccess)
+
+export const getMentorshipStudentControllerEndLinkUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/my-coach`
+}
+
+export const mentorshipStudentControllerEndLink = async ( options?: RequestInit): Promise<mentorshipStudentControllerEndLinkResponse> => {
+  
+  return http<mentorshipStudentControllerEndLinkResponse>(getMentorshipStudentControllerEndLinkUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
 export type adminUsersControllerSearchUsersResponse200 = {
   data: void
   status: 200
@@ -8430,6 +9442,141 @@ export const adminPlansControllerUpdate = async (id: string,
 
 
 
+export type adminPromotionsControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPromotionsControllerListResponseSuccess = (adminPromotionsControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPromotionsControllerListResponse = (adminPromotionsControllerListResponseSuccess)
+
+export const getAdminPromotionsControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/promotions`
+}
+
+export const adminPromotionsControllerList = async ( options?: RequestInit): Promise<adminPromotionsControllerListResponse> => {
+  
+  return http<adminPromotionsControllerListResponse>(getAdminPromotionsControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminPromotionsControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminPromotionsControllerCreateResponseSuccess = (adminPromotionsControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminPromotionsControllerCreateResponse = (adminPromotionsControllerCreateResponseSuccess)
+
+export const getAdminPromotionsControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/admin/promotions`
+}
+
+export const adminPromotionsControllerCreate = async (createPromotionDto: CreatePromotionDto, options?: RequestInit): Promise<adminPromotionsControllerCreateResponse> => {
+  
+  return http<adminPromotionsControllerCreateResponse>(getAdminPromotionsControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createPromotionDto,)
+  }
+);}
+
+
+
+export type adminPromotionsControllerGetResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPromotionsControllerGetResponseSuccess = (adminPromotionsControllerGetResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPromotionsControllerGetResponse = (adminPromotionsControllerGetResponseSuccess)
+
+export const getAdminPromotionsControllerGetUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/promotions/${id}`
+}
+
+export const adminPromotionsControllerGet = async (id: string, options?: RequestInit): Promise<adminPromotionsControllerGetResponse> => {
+  
+  return http<adminPromotionsControllerGetResponse>(getAdminPromotionsControllerGetUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminPromotionsControllerUpdateResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminPromotionsControllerUpdateResponseSuccess = (adminPromotionsControllerUpdateResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminPromotionsControllerUpdateResponse = (adminPromotionsControllerUpdateResponseSuccess)
+
+export const getAdminPromotionsControllerUpdateUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/promotions/${id}`
+}
+
+export const adminPromotionsControllerUpdate = async (id: string,
+    updatePromotionDto: UpdatePromotionDto, options?: RequestInit): Promise<adminPromotionsControllerUpdateResponse> => {
+  
+  return http<adminPromotionsControllerUpdateResponse>(getAdminPromotionsControllerUpdateUrl(id),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updatePromotionDto,)
+  }
+);}
+
+
+
 export type adminMetricsControllerOverviewResponse200 = {
   data: void
   status: 200
@@ -8453,6 +9600,39 @@ export const getAdminMetricsControllerOverviewUrl = () => {
 export const adminMetricsControllerOverview = async ( options?: RequestInit): Promise<adminMetricsControllerOverviewResponse> => {
   
   return http<adminMetricsControllerOverviewResponse>(getAdminMetricsControllerOverviewUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminMetricsControllerSponsorshipStatsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminMetricsControllerSponsorshipStatsResponseSuccess = (adminMetricsControllerSponsorshipStatsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminMetricsControllerSponsorshipStatsResponse = (adminMetricsControllerSponsorshipStatsResponseSuccess)
+
+export const getAdminMetricsControllerSponsorshipStatsUrl = () => {
+
+
+  
+
+  return `/v1/admin/metrics/sponsorship`
+}
+
+export const adminMetricsControllerSponsorshipStats = async ( options?: RequestInit): Promise<adminMetricsControllerSponsorshipStatsResponse> => {
+  
+  return http<adminMetricsControllerSponsorshipStatsResponse>(getAdminMetricsControllerSponsorshipStatsUrl(),
   {      
     ...options,
     method: 'GET'
@@ -8822,6 +10002,141 @@ export const getAdminForumControllerClearFeaturedThreadUrl = () => {
 export const adminForumControllerClearFeaturedThread = async ( options?: RequestInit): Promise<adminForumControllerClearFeaturedThreadResponse> => {
   
   return http<adminForumControllerClearFeaturedThreadResponse>(getAdminForumControllerClearFeaturedThreadUrl(),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type adminAnnouncementsControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminAnnouncementsControllerListResponseSuccess = (adminAnnouncementsControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminAnnouncementsControllerListResponse = (adminAnnouncementsControllerListResponseSuccess)
+
+export const getAdminAnnouncementsControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/announcements`
+}
+
+export const adminAnnouncementsControllerList = async ( options?: RequestInit): Promise<adminAnnouncementsControllerListResponse> => {
+  
+  return http<adminAnnouncementsControllerListResponse>(getAdminAnnouncementsControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminAnnouncementsControllerCreateResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminAnnouncementsControllerCreateResponseSuccess = (adminAnnouncementsControllerCreateResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminAnnouncementsControllerCreateResponse = (adminAnnouncementsControllerCreateResponseSuccess)
+
+export const getAdminAnnouncementsControllerCreateUrl = () => {
+
+
+  
+
+  return `/v1/admin/announcements`
+}
+
+export const adminAnnouncementsControllerCreate = async (createAnnouncementDto: CreateAnnouncementDto, options?: RequestInit): Promise<adminAnnouncementsControllerCreateResponse> => {
+  
+  return http<adminAnnouncementsControllerCreateResponse>(getAdminAnnouncementsControllerCreateUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createAnnouncementDto,)
+  }
+);}
+
+
+
+export type adminAnnouncementsControllerSendResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type adminAnnouncementsControllerSendResponseSuccess = (adminAnnouncementsControllerSendResponse201) & {
+  headers: Headers;
+};
+;
+
+export type adminAnnouncementsControllerSendResponse = (adminAnnouncementsControllerSendResponseSuccess)
+
+export const getAdminAnnouncementsControllerSendUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/announcements/${id}/send`
+}
+
+export const adminAnnouncementsControllerSend = async (id: string,
+    sendAnnouncementDto: SendAnnouncementDto, options?: RequestInit): Promise<adminAnnouncementsControllerSendResponse> => {
+  
+  return http<adminAnnouncementsControllerSendResponse>(getAdminAnnouncementsControllerSendUrl(id),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      sendAnnouncementDto,)
+  }
+);}
+
+
+
+export type adminAnnouncementsControllerRemoveResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type adminAnnouncementsControllerRemoveResponseSuccess = (adminAnnouncementsControllerRemoveResponse204) & {
+  headers: Headers;
+};
+;
+
+export type adminAnnouncementsControllerRemoveResponse = (adminAnnouncementsControllerRemoveResponseSuccess)
+
+export const getAdminAnnouncementsControllerRemoveUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/admin/announcements/${id}`
+}
+
+export const adminAnnouncementsControllerRemove = async (id: string, options?: RequestInit): Promise<adminAnnouncementsControllerRemoveResponse> => {
+  
+  return http<adminAnnouncementsControllerRemoveResponse>(getAdminAnnouncementsControllerRemoveUrl(id),
   {      
     ...options,
     method: 'DELETE'
@@ -9336,39 +10651,6 @@ export const buddyControllerNudge = async ( options?: RequestInit): Promise<budd
 
 
 
-export type buddyControllerStudyInviteResponse201 = {
-  data: void
-  status: 201
-}
-    
-export type buddyControllerStudyInviteResponseSuccess = (buddyControllerStudyInviteResponse201) & {
-  headers: Headers;
-};
-;
-
-export type buddyControllerStudyInviteResponse = (buddyControllerStudyInviteResponseSuccess)
-
-export const getBuddyControllerStudyInviteUrl = () => {
-
-
-  
-
-  return `/v1/buddy/study-invite`
-}
-
-export const buddyControllerStudyInvite = async ( options?: RequestInit): Promise<buddyControllerStudyInviteResponse> => {
-  
-  return http<buddyControllerStudyInviteResponse>(getBuddyControllerStudyInviteUrl(),
-  {      
-    ...options,
-    method: 'POST'
-    
-    
-  }
-);}
-
-
-
 export type cronControllerProcessJobsResponse201 = {
   data: void
   status: 201
@@ -9458,6 +10740,39 @@ export const getCronControllerDispatchNotebookReviewsUrl = () => {
 export const cronControllerDispatchNotebookReviews = async ( options?: RequestInit): Promise<cronControllerDispatchNotebookReviewsResponse> => {
   
   return http<cronControllerDispatchNotebookReviewsResponse>(getCronControllerDispatchNotebookReviewsUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type cronControllerDispatchMentorshipRiskDigestResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type cronControllerDispatchMentorshipRiskDigestResponseSuccess = (cronControllerDispatchMentorshipRiskDigestResponse201) & {
+  headers: Headers;
+};
+;
+
+export type cronControllerDispatchMentorshipRiskDigestResponse = (cronControllerDispatchMentorshipRiskDigestResponseSuccess)
+
+export const getCronControllerDispatchMentorshipRiskDigestUrl = () => {
+
+
+  
+
+  return `/v1/internal/cron/dispatch-mentorship-risk-digest`
+}
+
+export const cronControllerDispatchMentorshipRiskDigest = async ( options?: RequestInit): Promise<cronControllerDispatchMentorshipRiskDigestResponse> => {
+  
+  return http<cronControllerDispatchMentorshipRiskDigestResponse>(getCronControllerDispatchMentorshipRiskDigestUrl(),
   {      
     ...options,
     method: 'POST'

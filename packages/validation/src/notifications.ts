@@ -1,12 +1,30 @@
 import { z } from "zod";
 
+/** Browser push services only; never accept a caller-selected webhook destination. */
+export function isTrustedPushEndpoint(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint);
+    if (
+      url.protocol !== "https:" || (url.port !== "" && url.port !== "443") ||
+      url.username !== "" || url.password !== "" || url.hash !== ""
+    ) return false;
+    const host = url.hostname;
+    return host === "fcm.googleapis.com" || host === "updates.push.services.mozilla.com" ||
+      host.endsWith(".push.apple.com") || host.endsWith(".notify.windows.com");
+  } catch {
+    return false;
+  }
+}
+
+export const pushEndpointSchema = z.string().url().max(2048).refine(isTrustedPushEndpoint);
+
 export const pushSubscriptionKeysSchema = z.object({
   p256dh: z.string().min(1).max(512),
   auth: z.string().min(1).max(256),
 });
 
 export const pushSubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
+  endpoint: pushEndpointSchema,
   keys: pushSubscriptionKeysSchema,
 });
 export type PushSubscribeInput = z.infer<typeof pushSubscribeSchema>;

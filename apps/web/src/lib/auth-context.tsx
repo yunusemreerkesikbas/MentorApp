@@ -13,7 +13,6 @@ import {
 import { useLocale } from "next-intl";
 import type { AuthSession, AuthUser } from "@mentor/types";
 import {
-  ApiClientError,
   authControllerLogin,
   authControllerLogout,
   authControllerRefresh,
@@ -22,6 +21,7 @@ import {
 } from "@mentor/api-client";
 import type { LoginInput, SignupInput } from "@mentor/validation";
 import { apiBaseUrl } from "./api-base";
+import { getAuthSessionCoordinator, SessionSupersededError } from "./auth-session-coordinator";
 
 type Status = "loading" | "authenticated" | "anonymous";
 
@@ -36,15 +36,6 @@ interface AuthContextValue {
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
-
-/** Network blips / nest --watch recompile — cover ~30s. */
-const NETWORK_RETRY_MAX = 8;
-function networkRetryDelayMs(attempt: number): number {
-  return Math.min(500 * 2 ** (attempt - 1), 8_000);
-}
-
-/** Shared so Strict Mode remounts don't start a second /auth/refresh storm. */
-let refreshInFlight: Promise<AuthSession> | null = null;
 
 /**
  * Access token lives ONLY in memory (XSS can't read httpOnly refresh cookie; we never
@@ -89,26 +80,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const silentRefresh = useCallback(async () => {
     const startedAtVersion = sessionVersionRef.current;
-    for (let attempt = 1; ; attempt++) {
-      try {
-        refreshInFlight ??= (
-          authControllerRefresh() as unknown as Promise<AuthSession>
-        ).finally(() => {
-          refreshInFlight = null;
-        });
-        const session = await refreshInFlight;
-        if (sessionVersionRef.current === startedAtVersion) applySession(session);
-        return;
-      } catch (err) {
-        const isNetworkError = !(err instanceof ApiClientError);
-        const stillCurrent = sessionVersionRef.current === startedAtVersion;
-        if (isNetworkError && stillCurrent && attempt < NETWORK_RETRY_MAX) {
-          await new Promise((r) => setTimeout(r, networkRetryDelayMs(attempt)));
-          continue;
-        }
-        if (stillCurrent) clearSession();
-        return;
-      }
+    try {
+      const session = await getAuthSessionCoordinator().refresh(
+        () => authControllerRefresh() as unknown as Promise<AuthSession>,
+      );
+      if (sessionVersionRef.current === startedAtVersion) applySession(session);
+    } catch (error) {
+      // A lost rotation response is ambiguous: retrying the old cookie could
+      // revoke the entire session family. Let the user sign in again instead.
+      if (!(error instanceof SessionSupersededError) && sessionVersionRef.current === startedAtVersion) clearSession();
     }
   }, [applySession, clearSession]);
 
@@ -125,32 +105,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
   }, [locale]);
 
-  // Silent refresh runs once on mount — locale changes do not re-trigger it.
+  // Cross-tab messages carry invalidation only, never access credentials.
   useEffect(() => {
+    const unsubscribe = getAuthSessionCoordinator().subscribe((event) => {
+      clearSession();
+      if (event === "session-changed") silentRefreshRef.current();
+    });
     silentRefreshRef.current();
-  }, []);
+    return () => {
+      unsubscribe();
+      if (refreshTimer.current) clearTimeout(refreshTimer.current);
+    };
+  }, [clearSession]);
 
   const value = useMemo<AuthContextValue>(
     () => ({
       status,
       user,
       login: async (input) => {
-        const session = (await authControllerLogin(
-          input,
-        )) as unknown as AuthSession;
+        const coordinator = getAuthSessionCoordinator();
+        const session = await coordinator.mutate(async () => {
+          const next = await authControllerLogin(input) as unknown as AuthSession;
+          coordinator.announce("session-changed");
+          return next;
+        });
         applySession(session);
         return session.user;
       },
       signup: async (input) => {
-        const session = (await authControllerSignup(
-          input,
-        )) as unknown as AuthSession;
+        const coordinator = getAuthSessionCoordinator();
+        const session = await coordinator.mutate(async () => {
+          const next = await authControllerSignup(input) as unknown as AuthSession;
+          coordinator.announce("session-changed");
+          return next;
+        });
         applySession(session);
         return session.user;
       },
       logout: async () => {
-        await authControllerLogout().catch(() => undefined); // idempotent server-side
-        clearSession();
+        const coordinator = getAuthSessionCoordinator();
+        coordinator.announce("logout");
+        await coordinator.mutate(() => authControllerLogout()).catch(() => undefined);
+        // Repeat after the server responds so tabs opened during logout also clear.
+        coordinator.announce("logout");
       },
       setUserFromServer,
     }),
