@@ -1,6 +1,7 @@
 import type * as React from "react";
 
 export type BottomSheetLayout = "action" | "filter";
+export type BottomSheetSize = "default" | "wide" | "compact" | "full";
 
 export type BottomSheetActionIcon =
   | "check-circle"
@@ -20,6 +21,7 @@ export interface BottomSheetAction {
 export interface BottomSheetShowOptions {
   title: string;
   layout?: BottomSheetLayout;
+  size?: BottomSheetSize;
   actions?: BottomSheetAction[];
   cancelLabel?: string;
   applyLabel?: string;
@@ -36,6 +38,7 @@ export interface BottomSheetActionSheetOptions {
   actions: BottomSheetAction[];
   cancelLabel: string;
   closeLabel: string;
+  size?: BottomSheetSize;
 }
 
 export interface BottomSheetFilterOptions {
@@ -43,6 +46,7 @@ export interface BottomSheetFilterOptions {
   applyLabel: string;
   closeLabel: string;
   children: React.ReactNode;
+  size?: BottomSheetSize;
   onApply?: () => void | Promise<void>;
 }
 

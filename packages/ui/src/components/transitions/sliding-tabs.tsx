@@ -81,6 +81,24 @@ export function SlidingTabs({
       pill.style.width = nextWidth;
     }
 
+    // Keep active tab scrolled into view when container overflows horizontally
+    const activeLeft = active.offsetLeft;
+    const activeRight = activeLeft + active.offsetWidth;
+    const scrollLeft = root.scrollLeft;
+    const clientWidth = root.clientWidth;
+
+    if (activeLeft < scrollLeft) {
+      root.scrollTo({
+        left: Math.max(0, activeLeft - 12),
+        behavior: shouldAnimate ? "smooth" : "auto",
+      });
+    } else if (activeRight > scrollLeft + clientWidth) {
+      root.scrollTo({
+        left: activeRight - clientWidth + 12,
+        behavior: shouldAnimate ? "smooth" : "auto",
+      });
+    }
+
     hasPlacedRef.current = true;
   }, []);
 
@@ -133,6 +151,7 @@ export function SlidingTabs({
   const rootClass = [
     "t-tabs",
     "relative",
+    "max-w-full overflow-x-auto overflow-y-hidden no-scrollbar",
     underline
       ? "t-tabs--underline"
       : `inline-flex items-center gap-[3px] rounded-full p-[3px]${equalWidth ? " t-tabs--equal flex w-full" : ""}`,
@@ -182,8 +201,8 @@ export function SlidingTabs({
             id={buttonId}
             className={
               underline
-                ? "t-tab relative z-[1] cursor-pointer appearance-none border-0 bg-transparent"
-                : `t-tab relative z-[1] cursor-pointer appearance-none border-0 bg-transparent px-4 py-1.5 text-sm font-semibold${equalWidth ? " min-h-11 flex-1" : " min-h-9"}`
+                ? "t-tab relative z-[1] shrink-0 whitespace-nowrap cursor-pointer appearance-none border-0 bg-transparent"
+                : `t-tab relative z-[1] shrink-0 whitespace-nowrap cursor-pointer appearance-none border-0 bg-transparent px-4 py-1.5 text-sm font-semibold${equalWidth ? " min-h-11 flex-1 min-w-fit" : " min-h-9"}`
             }
             style={{
               fontFamily: "var(--font-heading)",

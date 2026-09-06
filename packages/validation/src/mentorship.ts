@@ -56,6 +56,18 @@ export const mentorshipCoachNoteSchema = z
 export type MentorshipCoachNoteInput = z.infer<typeof mentorshipCoachNoteSchema>;
 
 /**
+ * "I have dealt with this student" — the mark that turns the roster from a list into a worklist.
+ *
+ * No flag list in the body on purpose: the server evaluates the flags it is marking as handled.
+ * A client-supplied set could silence a flag that appeared after the page was rendered, so the
+ * coach would be told they handled something they never saw.
+ *
+ * `.strict()` for that reason too — sending `flags` is a 400, not a silently dropped field.
+ */
+export const mentorshipAttentionSchema = z.object({ attended: z.boolean() }).strict();
+export type MentorshipAttentionInput = z.infer<typeof mentorshipAttentionSchema>;
+
+/**
  * One assigned task. Reuses the plan-task shape so a coach cannot write something the student could
  * not have written themselves, minus `description`: that field is the STUDENT's own note on their
  * own plan, and the coach report deliberately never reads it back.
@@ -140,3 +152,71 @@ export const mentorshipTemplateParamSchema = z.object({
   templateId: z.string().uuid(),
 });
 export type MentorshipTemplateParam = z.infer<typeof mentorshipTemplateParamSchema>;
+
+/* --- Coach applications (W8 curation, roadmap §5) ------------------------------------------ */
+
+export const MENTORSHIP_HEADLINE_MAX = 120;
+export const MENTORSHIP_BIO_MAX = 1000;
+export const MENTORSHIP_REVIEW_NOTE_MAX = 500;
+
+/**
+ * A coach application. Structured claims, not a paragraph: the admin marks WHICH claim they
+ * checked, and you cannot verify prose.
+ *
+ * `.strict()` matters more than usual here — `status`, `verifiedClaims` and `reviewNote` are the
+ * admin's columns, and a body that carried them would be a body asking to approve itself.
+ */
+export const submitCoachApplicationSchema = z
+  .object({
+    headline: z.string().trim().min(1).max(MENTORSHIP_HEADLINE_MAX),
+    bio: z.string().trim().min(1).max(MENTORSHIP_BIO_MAX),
+    institution: z.string().trim().min(1).max(160).nullish(),
+    branch: z.string().trim().min(1).max(80).nullish(),
+    /** Years of experience. 60 is not a real bound, it is a typo bound. */
+    years: z.number().int().min(0).max(60).nullish(),
+    note: z.string().trim().min(1).max(MENTORSHIP_BIO_MAX).nullish(),
+  })
+  .strict();
+export type SubmitCoachApplicationInput = z.infer<typeof submitCoachApplicationSchema>;
+
+/**
+ * The admin's verdict. `verifiedClaims` is only meaningful on an approval — a rejection verifies
+ * nothing — so the schema drops it rather than storing a claim nobody stands behind.
+ */
+export const reviewCoachApplicationSchema = z
+  .object({
+    decision: z.enum(["APPROVE", "REJECT"]),
+    verifiedClaims: z.enum(["INSTITUTION", "BRANCH", "YEARS"]).array().max(3).default([]),
+    reviewNote: z.string().trim().max(MENTORSHIP_REVIEW_NOTE_MAX).nullish(),
+  })
+  .strict()
+  .transform((value) => ({
+    ...value,
+    verifiedClaims: value.decision === "APPROVE" ? [...new Set(value.verifiedClaims)] : [],
+  }));
+export type ReviewCoachApplicationInput = z.infer<typeof reviewCoachApplicationSchema>;
+
+export const listCoachApplicationsQuerySchema = z.object({
+  status: z.enum(["PENDING", "APPROVED", "REJECTED"]).default("PENDING"),
+});
+export type ListCoachApplicationsQuery = z.infer<typeof listCoachApplicationsQuerySchema>;
+
+export const coachApplicationParamSchema = z.object({
+  applicationId: z.string().uuid(),
+});
+export type CoachApplicationParam = z.infer<typeof coachApplicationParamSchema>;
+
+/**
+ * The coach editing their own profile after approval.
+ *
+ * Exactly the two student-facing fields, and nothing else: `verifiedClaims` and `status` belong to
+ * the admin, and the claims themselves are what was vetted — letting a coach rewrite the
+ * institution an admin checked would make the badge a lie.
+ */
+export const updateCoachProfileSchema = z
+  .object({
+    headline: z.string().trim().min(1).max(MENTORSHIP_HEADLINE_MAX),
+    bio: z.string().trim().min(1).max(MENTORSHIP_BIO_MAX),
+  })
+  .strict();
+export type UpdateCoachProfileInput = z.infer<typeof updateCoachProfileSchema>;

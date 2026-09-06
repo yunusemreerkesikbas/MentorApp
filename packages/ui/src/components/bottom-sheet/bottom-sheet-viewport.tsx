@@ -50,11 +50,25 @@ export function BottomSheetViewport({
       <button
         type="button"
         aria-label={closeLabel}
-        className={`absolute inset-0 bg-[#111111]/40 backdrop-blur-sm ${sheet.exiting ? "opacity-0" : "animate-dialog-backdrop-enter motion-reduce:animate-none"} motion-reduce:transition-none transition-opacity duration-200`}
+        className={`absolute inset-0 bg-black/35 backdrop-blur-[6px] dark:bg-black/55 dark:backdrop-blur-[8px] ${
+          sheet.exiting
+            ? "animate-dialog-backdrop-exit motion-reduce:opacity-0"
+            : "animate-dialog-backdrop-enter motion-reduce:animate-none"
+        } motion-reduce:transition-none`}
         onClick={onBackdropClick}
       />
       <div className="pointer-events-none fixed inset-0 z-[50] flex max-lg:items-end lg:items-center lg:justify-center lg:p-5">
-        <div className="pointer-events-auto w-full max-lg:max-h-[70vh] lg:w-full lg:max-h-[82dvh] lg:max-w-[480px]">
+        <div
+          className={`pointer-events-auto w-full ${
+            sheet.size === "full"
+              ? "max-lg:h-dvh max-lg:max-h-dvh lg:max-h-[88dvh] lg:max-w-[560px]"
+              : sheet.size === "wide"
+                ? "max-lg:h-[92dvh] max-lg:max-h-[92dvh] lg:max-h-[84dvh] lg:max-w-[520px]"
+                : sheet.size === "compact"
+                  ? "max-lg:max-h-[70vh] lg:max-h-[82dvh] lg:max-w-[400px]"
+                  : "max-lg:max-h-[70vh] lg:max-h-[82dvh] lg:max-w-[480px]"
+          }`}
+        >
           <BottomSheetPanel
             sheet={sheet}
             onActionSelect={onActionSelect}

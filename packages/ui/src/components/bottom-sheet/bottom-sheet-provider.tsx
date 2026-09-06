@@ -111,6 +111,7 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
       id: createSheetId(),
       title: options.title,
       layout: options.layout ?? "action",
+      size: options.size,
       actions: options.actions,
       cancelLabel: options.cancelLabel,
       applyLabel: options.applyLabel,
@@ -181,6 +182,7 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
         openSheet({
           title: options.title,
           layout: "action",
+          size: options.size,
           actions: options.actions,
           cancelLabel: options.cancelLabel,
           closeLabel: options.closeLabel,
@@ -200,6 +202,7 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
         openSheet({
           title: options.title,
           layout: "filter",
+          size: options.size,
           applyLabel: options.applyLabel,
           closeLabel: options.closeLabel,
           children: options.children,

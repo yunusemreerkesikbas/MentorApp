@@ -227,9 +227,15 @@ export interface PollVoteDto { [key: string]: unknown }
 
 export interface CreateAdRewardSessionDto { [key: string]: unknown }
 
+export interface SubmitCoachApplicationDto { [key: string]: unknown }
+
+export interface UpdateCoachProfileDto { [key: string]: unknown }
+
 export interface CreateMentorshipAssignmentsDto { [key: string]: unknown }
 
 export interface MentorshipCoachNoteDto { [key: string]: unknown }
+
+export interface MentorshipAttentionDto { [key: string]: unknown }
 
 export interface SaveMentorshipTemplateDto { [key: string]: unknown }
 
@@ -268,6 +274,8 @@ export interface SetFeaturedThreadDto { [key: string]: unknown }
 export interface CreateAnnouncementDto { [key: string]: unknown }
 
 export interface SendAnnouncementDto { [key: string]: unknown }
+
+export interface ReviewCoachApplicationDto { [key: string]: unknown }
 
 export interface CelebrateAchievementsDto { [key: string]: unknown }
 
@@ -7929,6 +7937,107 @@ export const adsInternalControllerExpireRewardSessions = async ( options?: Reque
 
 
 
+export type mentorshipApplicationControllerSubmitResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mentorshipApplicationControllerSubmitResponseSuccess = (mentorshipApplicationControllerSubmitResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipApplicationControllerSubmitResponse = (mentorshipApplicationControllerSubmitResponseSuccess)
+
+export const getMentorshipApplicationControllerSubmitUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/applications`
+}
+
+export const mentorshipApplicationControllerSubmit = async (submitCoachApplicationDto: SubmitCoachApplicationDto, options?: RequestInit): Promise<mentorshipApplicationControllerSubmitResponse> => {
+  
+  return http<mentorshipApplicationControllerSubmitResponse>(getMentorshipApplicationControllerSubmitUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      submitCoachApplicationDto,)
+  }
+);}
+
+
+
+export type mentorshipApplicationControllerMineResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipApplicationControllerMineResponseSuccess = (mentorshipApplicationControllerMineResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipApplicationControllerMineResponse = (mentorshipApplicationControllerMineResponseSuccess)
+
+export const getMentorshipApplicationControllerMineUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/applications/mine`
+}
+
+export const mentorshipApplicationControllerMine = async ( options?: RequestInit): Promise<mentorshipApplicationControllerMineResponse> => {
+  
+  return http<mentorshipApplicationControllerMineResponse>(getMentorshipApplicationControllerMineUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipApplicationControllerUpdateProfileResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipApplicationControllerUpdateProfileResponseSuccess = (mentorshipApplicationControllerUpdateProfileResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipApplicationControllerUpdateProfileResponse = (mentorshipApplicationControllerUpdateProfileResponseSuccess)
+
+export const getMentorshipApplicationControllerUpdateProfileUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/applications/mine`
+}
+
+export const mentorshipApplicationControllerUpdateProfile = async (updateCoachProfileDto: UpdateCoachProfileDto, options?: RequestInit): Promise<mentorshipApplicationControllerUpdateProfileResponse> => {
+  
+  return http<mentorshipApplicationControllerUpdateProfileResponse>(getMentorshipApplicationControllerUpdateProfileUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateCoachProfileDto,)
+  }
+);}
+
+
+
 export type mentorshipCoachControllerGetOverviewResponse200 = {
   data: void
   status: 200
@@ -8159,6 +8268,41 @@ export const mentorshipCoachControllerSetNote = async (studentId: string,
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       mentorshipCoachNoteDto,)
+  }
+);}
+
+
+
+export type mentorshipCoachControllerSetAttentionResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipCoachControllerSetAttentionResponseSuccess = (mentorshipCoachControllerSetAttentionResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerSetAttentionResponse = (mentorshipCoachControllerSetAttentionResponseSuccess)
+
+export const getMentorshipCoachControllerSetAttentionUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/attention`
+}
+
+export const mentorshipCoachControllerSetAttention = async (studentId: string,
+    mentorshipAttentionDto: MentorshipAttentionDto, options?: RequestInit): Promise<mentorshipCoachControllerSetAttentionResponse> => {
+  
+  return http<mentorshipCoachControllerSetAttentionResponse>(getMentorshipCoachControllerSetAttentionUrl(studentId),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mentorshipAttentionDto,)
   }
 );}
 
@@ -10142,6 +10286,74 @@ export const adminAnnouncementsControllerRemove = async (id: string, options?: R
     method: 'DELETE'
     
     
+  }
+);}
+
+
+
+export type adminCoachApplicationsControllerListResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminCoachApplicationsControllerListResponseSuccess = (adminCoachApplicationsControllerListResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminCoachApplicationsControllerListResponse = (adminCoachApplicationsControllerListResponseSuccess)
+
+export const getAdminCoachApplicationsControllerListUrl = () => {
+
+
+  
+
+  return `/v1/admin/coach-applications`
+}
+
+export const adminCoachApplicationsControllerList = async ( options?: RequestInit): Promise<adminCoachApplicationsControllerListResponse> => {
+  
+  return http<adminCoachApplicationsControllerListResponse>(getAdminCoachApplicationsControllerListUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type adminCoachApplicationsControllerReviewResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminCoachApplicationsControllerReviewResponseSuccess = (adminCoachApplicationsControllerReviewResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminCoachApplicationsControllerReviewResponse = (adminCoachApplicationsControllerReviewResponseSuccess)
+
+export const getAdminCoachApplicationsControllerReviewUrl = (applicationId: string,) => {
+
+
+  
+
+  return `/v1/admin/coach-applications/${applicationId}/review`
+}
+
+export const adminCoachApplicationsControllerReview = async (applicationId: string,
+    reviewCoachApplicationDto: ReviewCoachApplicationDto, options?: RequestInit): Promise<adminCoachApplicationsControllerReviewResponse> => {
+  
+  return http<adminCoachApplicationsControllerReviewResponse>(getAdminCoachApplicationsControllerReviewUrl(applicationId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      reviewCoachApplicationDto,)
   }
 );}
 

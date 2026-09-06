@@ -42,6 +42,11 @@ export interface MentorshipInvitationPreviewDto {
   coachUsername: string | null;
   /** Stable keys the client renders from the `mentorship` i18n namespace. */
   dataScope: MentorshipDataScopeKey[];
+  /**
+   * The coach's vetted profile, or null when they hold COACH without one (every coach granted the
+   * role by hand). Handing private data to a name alone was the weakest link on this screen.
+   */
+  coachProfile: MentorshipCoachProfileDto | null;
 }
 
 /**
@@ -137,6 +142,8 @@ export interface MyCoachDto {
   dataScope: MentorshipDataScopeKey[];
   /** Null when the coach has not left one. Cleared with the link, never inherited by a successor. */
   coachNote: MentorshipCoachNoteDto | null;
+  /** The same profile the consent screen showed, so the student can re-read what they agreed to. */
+  coachProfile: MentorshipCoachProfileDto | null;
 }
 
 /**
@@ -188,6 +195,17 @@ export interface MentorshipRosterRowDto {
   metrics: MentorshipRosterMetricsDto | null;
   /** Always empty for an ENDED link (no data to triage, and nothing to act on). */
   riskFlags: MentorshipRiskFlagId[];
+  /** When this coach last marked the student as handled; null if never, and on an ENDED link. */
+  attendedAt: string | null;
+  /**
+   * Still waiting for the coach: flagged, and not covered by a mark that is both recent and taken
+   * over the same flags. Always false for an ENDED link.
+   *
+   * Derived on the server rather than from `riskFlags` + `attendedAt` here, because the daily
+   * digest applies the identical rule; a second copy of it in the client would be a second place
+   * for the panel and the morning email to disagree about who still needs the coach.
+   */
+  needsAttention: boolean;
 }
 
 /**
@@ -231,6 +249,9 @@ export interface MentorshipStudentReportDto {
   /** What THIS coach wrote for this student, read back to them. */
   coachNote: MentorshipCoachNoteDto | null;
   riskFlags: MentorshipRiskFlagId[];
+  /** Same pair as on the roster row, so the report can carry the same button. */
+  attendedAt: string | null;
+  needsAttention: boolean;
   activity: {
     lastActiveDate: string | null;
     currentStreak: number;
@@ -299,4 +320,89 @@ export interface MentorshipBriefDto {
   /** The model that wrote it, or `"cache"` when the stored one still matches the report. */
   model: string;
   generatedAt: string;
+}
+
+/* -------------------------------------------------------------------------------------------
+ * Coach applications (W8 curation, roadmap §5) — "açık kayıt değil, kürasyon".
+ * ---------------------------------------------------------------------------------------- */
+
+/**
+ * One row per person, and the APPROVED row IS the coach's profile.
+ *
+ * There is no second "profile" table on purpose: a coach's profile is exactly what passed vetting,
+ * and the record of what an admin approved already lives in W6's append-only `admin_audit_log`.
+ */
+export const MentorshipApplicationStatus = {
+  PENDING: "PENDING",
+  APPROVED: "APPROVED",
+  REJECTED: "REJECTED",
+} as const;
+export type MentorshipApplicationStatusId =
+  (typeof MentorshipApplicationStatus)[keyof typeof MentorshipApplicationStatus];
+
+/**
+ * What an applicant claims about themselves. Structured rather than free-form because the admin
+ * marks WHICH claim they checked (`verifiedClaims`), and you cannot verify a paragraph.
+ *
+ * No document upload: the evaluation's paperwork happens off-platform (roadmap §5's "kısa
+ * değerlendirme"). A credential file would be the heaviest personal data in the system, kept for
+ * rejected applicants too, and the badge only ever needed to record what was checked.
+ */
+export const MentorshipClaim = {
+  INSTITUTION: "INSTITUTION",
+  BRANCH: "BRANCH",
+  YEARS: "YEARS",
+} as const;
+export type MentorshipClaimId = (typeof MentorshipClaim)[keyof typeof MentorshipClaim];
+
+/** The applicant's own view: where their application stands and, if refused, why. */
+export interface MentorshipApplicationDto {
+  id: string;
+  status: MentorshipApplicationStatusId;
+  headline: string;
+  bio: string;
+  institution: string | null;
+  branch: string | null;
+  years: number | null;
+  note: string | null;
+  submittedAt: string;
+  reviewedAt: string | null;
+  /** The admin's reason, shown to the applicant. One-way: this is not a conversation. */
+  reviewNote: string | null;
+  /** Which claims an admin checked. Empty until approval; never written by the applicant. */
+  verifiedClaims: MentorshipClaimId[];
+}
+
+/** One queue row for the admin panel. Adds the identity the applicant's own view does not need. */
+export interface AdminCoachApplicationDto extends MentorshipApplicationDto {
+  userId: string;
+  displayName: string;
+  email: string;
+  /**
+   * Whether the person actually carries COACH today.
+   *
+   * The approval writes two rows in two transactions (the role lives in W6, the verdict in W8, and
+   * importing across both ways would be a cycle). A crash between them is recoverable only if it
+   * is visible, so the queue reports the truth instead of trusting the status column.
+   */
+  hasCoachRole: boolean;
+}
+
+/**
+ * What a STUDENT sees about their coach: the coach's own two lines, plus the claims an admin
+ * actually checked.
+ *
+ * The raw claims never travel. An institution nobody verified, rendered next to a verified one,
+ * would read as endorsed by us; a verified claim shows its VALUE ("Ankara Üniversitesi") because
+ * throwing away a fact somebody checked, to render a generic badge, helps nobody.
+ *
+ * Null is a real state, not an empty object: every coach granted the role by hand before the
+ * application queue existed has no profile, and the consent screen has to say so rather than
+ * render a blank card.
+ */
+export interface MentorshipCoachProfileDto {
+  headline: string;
+  bio: string;
+  /** Only claims an admin marked verified, with the value they verified. Possibly empty. */
+  verifiedClaims: { claim: MentorshipClaimId; value: string }[];
 }

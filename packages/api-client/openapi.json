@@ -6023,6 +6023,81 @@
         ]
       }
     },
+    "/v1/mentorship/applications": {
+      "post": {
+        "operationId": "MentorshipApplicationController_submit",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitCoachApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/applications/mine": {
+      "get": {
+        "operationId": "MentorshipApplicationController_mine",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "put": {
+        "operationId": "MentorshipApplicationController_updateProfile",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateCoachProfileDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
     "/v1/mentorship/overview": {
       "get": {
         "operationId": "MentorshipCoachController_getOverview",
@@ -6191,6 +6266,44 @@
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/MentorshipCoachNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/attention": {
+      "put": {
+        "operationId": "MentorshipCoachController_setAttention",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipAttentionDto"
               }
             }
           }
@@ -7792,6 +7905,63 @@
         ]
       }
     },
+    "/v1/admin/coach-applications": {
+      "get": {
+        "operationId": "AdminCoachApplicationsController_list",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/coach-applications/{applicationId}/review": {
+      "post": {
+        "operationId": "AdminCoachApplicationsController_review",
+        "parameters": [
+          {
+            "name": "applicationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReviewCoachApplicationDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/v1/community/summary": {
       "get": {
         "operationId": "CommunityController_getSummary",
@@ -8823,11 +8993,23 @@
         "type": "object",
         "properties": {}
       },
+      "SubmitCoachApplicationDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateCoachProfileDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CreateMentorshipAssignmentsDto": {
         "type": "object",
         "properties": {}
       },
       "MentorshipCoachNoteDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MentorshipAttentionDto": {
         "type": "object",
         "properties": {}
       },
@@ -8904,6 +9086,10 @@
         "properties": {}
       },
       "SendAnnouncementDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "ReviewCoachApplicationDto": {
         "type": "object",
         "properties": {}
       },
