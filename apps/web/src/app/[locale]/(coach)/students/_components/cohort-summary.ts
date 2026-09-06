@@ -27,8 +27,14 @@ const FLAG_ORDER: readonly MentorshipRiskFlagId[] = [
 
 export interface CohortSummary {
   total: number;
-  /** Students carrying at least one flag. */
+  /**
+   * Students still waiting for the coach: flagged, and not covered by a mark the coach has already
+   * taken. Read straight off the row's `needsAttention` — the server derives it so the panel and
+   * the daily digest cannot disagree about who is waiting.
+   */
   needsAttention: number;
+  /** Flagged students the coach has already dealt with. The other half of the same sentence. */
+  attended: number;
   /** Non-zero counts only, worst first. A student with two flags is counted under both. */
   flagCounts: { flag: MentorshipRiskFlagId; count: number }[];
   /** 0..1 mean plan completion, or null when nobody in the cohort planned anything. */
@@ -40,11 +46,15 @@ export interface CohortSummary {
 export function summarizeCohort(rows: readonly MentorshipRosterRowDto[]): CohortSummary {
   const counts = new Map<MentorshipRiskFlagId, number>();
   let needsAttention = 0;
+  let attended = 0;
   let adherenceSum = 0;
   let adherenceOf = 0;
 
   for (const row of rows) {
-    if (row.riskFlags.length > 0) needsAttention += 1;
+    // Flag counts stay raw: a handled student is still INACTIVE, and a band that hid the chip
+    // would be describing the coach's clicks instead of the cohort.
+    if (row.needsAttention) needsAttention += 1;
+    else if (row.riskFlags.length > 0) attended += 1;
     for (const flag of row.riskFlags) counts.set(flag, (counts.get(flag) ?? 0) + 1);
 
     // A null rate means the student planned nothing. Counting that as 0% would let a cohort of
@@ -60,6 +70,7 @@ export function summarizeCohort(rows: readonly MentorshipRosterRowDto[]): Cohort
   return {
     total: rows.length,
     needsAttention,
+    attended,
     flagCounts: FLAG_ORDER.filter((flag) => (counts.get(flag) ?? 0) > 0).map((flag) => ({
       flag,
       count: counts.get(flag) ?? 0,
@@ -78,4 +89,21 @@ export function summarizeCohort(rows: readonly MentorshipRosterRowDto[]): Cohort
  */
 export function worstFlag(flags: readonly MentorshipRiskFlagId[]): MentorshipRiskFlagId | null {
   return FLAG_ORDER.find((flag) => flags.includes(flag)) ?? null;
+}
+
+/**
+ * Roster order once marks exist: whoever is still waiting first, then the handled-but-flagged,
+ * then everyone calm. The API already sorts by severity; this only sinks the rows the coach has
+ * dealt with, so the top of the list is the work that is left.
+ *
+ * Client-side because the page holds the whole cohort (`pageSize=100` against a seat cap in the
+ * dozens), so re-ordering here sees every row the server ranked — not a shortcut around paging.
+ */
+export function compareByAttention(
+  a: MentorshipRosterRowDto,
+  b: MentorshipRosterRowDto,
+): number {
+  const rank = (row: MentorshipRosterRowDto) =>
+    row.needsAttention ? 0 : row.riskFlags.length > 0 ? 1 : 2;
+  return rank(a) - rank(b);
 }

@@ -28,7 +28,7 @@ export function QuestNextActionCard({
       whileTap={reduceMotion ? undefined : { scale: 0.985 }}
     >
       <div className="flex min-w-0 items-center gap-3">
-        <div className="grid size-8 shrink-0 place-items-center rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400">
+        <div className="grid size-8 shrink-0 place-items-center rounded-full text-amber-600 dark:text-amber-400">
           <Compass className="size-4.5 stroke-[2.2]" aria-hidden />
         </div>
         <div className="min-w-0">

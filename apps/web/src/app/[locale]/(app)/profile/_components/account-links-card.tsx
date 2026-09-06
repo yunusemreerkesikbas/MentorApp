@@ -205,7 +205,9 @@ export function AccountLinksCard({
     setDeleting(true);
     try {
       await http<void>("/v1/account", { method: "DELETE" });
-      await logout();
+      // The account is already gone, so a failed server logout leaves no live session
+      // to worry about; the local session is cleared regardless. Don't block navigation.
+      await logout().catch(() => undefined);
       router.replace("/");
     } catch (err) {
       setDeleteError(
@@ -246,6 +248,12 @@ export function AccountLinksCard({
         <ListRow href="/my-coach" icon={<UserRound size={20} aria-hidden />}>
           {tMentorship("my_coach_title")}
         </ListRow>
+        {/* The other direction: becoming one. Always visible rather than gated on the flag —
+            the screen behind it says "closed" for itself, and a row that appears and disappears
+            with a config change is a row nobody can be told to look for. */}
+        <ListRow href="/coach-application" icon={<GraduationCap size={20} aria-hidden />}>
+          {tMentorship("application_title")}
+        </ListRow>
         {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
         <ListRow
           href={{ pathname: "/legal/[slug]", params: { slug: "kullanim-kosullari" } }}
@@ -255,7 +263,11 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow
           icon={<LogOut size={20} aria-hidden />}
-          onClick={() => void logout()}
+          onClick={() => {
+            void logout().catch(() => {
+              toast.error({ title: tAccount("logout_error"), duration: 3000 });
+            });
+          }}
           showChevron={false}
         >
           {tAccount("logout")}

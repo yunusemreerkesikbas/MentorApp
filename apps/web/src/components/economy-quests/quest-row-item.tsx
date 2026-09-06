@@ -27,10 +27,6 @@ export function QuestRowItem({
   const progressCurrent = quest.progressCurrent;
   const progressTarget = quest.progressTarget;
   const hasProgress = progressCurrent !== undefined && progressTarget !== undefined;
-  const progressPercent =
-    hasProgress && progressTarget > 0
-      ? Math.min(100, Math.max(0, (progressCurrent / progressTarget) * 100))
-      : 0;
 
   const content = (
     <>
@@ -52,6 +48,7 @@ export function QuestRowItem({
       {/* Middle: Title, Badge, and Progress */}
       <span className="min-w-0 flex-1 text-left">
         <span
+          title={quest.title}
           className={`block truncate text-sm font-semibold sm:text-base ${
             quest.completed
               ? "line-through text-[var(--color-secondary)] opacity-70"
@@ -78,18 +75,6 @@ export function QuestRowItem({
             </span>
           ) : null}
         </span>
-
-        {hasProgress ? (
-          <span
-            aria-hidden="true"
-            className="mt-2 block h-1.5 max-w-[220px] overflow-hidden rounded-full bg-[var(--color-progress-track)]"
-          >
-            <span
-              className="block h-full rounded-full bg-[var(--color-progress)] transition-all duration-300"
-              style={{ width: `${progressPercent}%` }}
-            />
-          </span>
-        ) : null}
       </span>
 
       {/* Right: Clean typography rewards and completed badge */}
@@ -137,6 +122,7 @@ export function QuestRowItem({
       {action ? (
         <button
           type="button"
+          title={quest.title}
           className="flex min-h-10 w-full min-w-0 cursor-pointer items-center gap-3 text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--color-focus)] disabled:cursor-wait disabled:opacity-70"
           disabled={busy}
           onClick={() => void onAction(action)}
@@ -144,7 +130,7 @@ export function QuestRowItem({
           {content}
         </button>
       ) : (
-        <div className="flex min-h-10 min-w-0 items-center gap-3">{content}</div>
+        <div title={quest.title} className="flex min-h-10 min-w-0 items-center gap-3">{content}</div>
       )}
     </motion.li>
   );

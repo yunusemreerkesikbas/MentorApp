@@ -30,6 +30,14 @@ export function CohortSummaryCard({ summary }: { summary: CohortSummary }) {
                   count: summary.needsAttention,
                   total: summary.total,
                 })}
+            {/* The second half of the sentence: what the coach has already handled. Omitted at
+                zero — "0 ilgilenildi" reads as a reproach on a morning nobody has started yet. */}
+            {summary.attended > 0 && (
+              <span style={{ color: "var(--color-secondary)", fontWeight: 400 }}>
+                {" · "}
+                {t("cohort_attended", { count: summary.attended })}
+              </span>
+            )}
           </p>
           <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
             {/* A mean over 2 of 20 students is a different claim from a mean over 20, so the

@@ -10,6 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endMyCoachLink, fetchMyCoach } from "@/lib/mentorship";
+import { CoachProfileCard } from "./coach-profile-card";
 
 /**
  * The student's transparency screen. Its job is not to manage a relationship — it is to answer
@@ -120,6 +121,10 @@ export function MyCoachShell() {
               </Button>
             </div>
           </Card>
+
+          {/* Re-readable after the fact: a student who agreed to something should not have to dig
+              out the invite they used months ago to remember who they agreed with. */}
+          <CoachProfileCard profile={coach.coachProfile} />
 
           {coach.coachNote ? (
             <Card>

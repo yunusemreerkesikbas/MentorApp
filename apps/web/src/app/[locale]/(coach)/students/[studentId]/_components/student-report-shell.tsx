@@ -9,7 +9,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { endStudentLink, fetchStudentReport } from "@/lib/mentorship";
+import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorship";
 import { AssignTaskForm } from "./assign-task-form";
 import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
@@ -21,6 +21,7 @@ import {
   relativeDay,
 } from "../../../_components/mentorship-format";
 import { NoRiskChip, RiskChip } from "../../../_components/risk-chip";
+import { AttentionButton } from "../../_components/attention-button";
 
 export function StudentReportShell({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
@@ -31,6 +32,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   const router = useRouter();
   const [report, setReport] = useState<MentorshipStudentReportDto | null>(null);
   const [failed, setFailed] = useState(false);
+  const [marking, setMarking] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const showError = useCallback(
@@ -53,6 +55,36 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   }, [studentId, showError]);
 
   useEffect(load, [load]);
+
+  /**
+   * Optimistic like the roster's: this is the coach's own act, and a round trip between deciding
+   * and seeing it is the friction the mark exists to remove. On failure the row snaps back.
+   */
+  const toggleAttention = useCallback(
+    async (attended: boolean) => {
+      setMarking(true);
+      const patch = (next: boolean) =>
+        setReport((prev) =>
+          prev === null
+            ? prev
+            : {
+                ...prev,
+                attendedAt: next ? new Date().toISOString() : null,
+                needsAttention: !next && prev.riskFlags.length > 0,
+              },
+        );
+      patch(attended);
+      try {
+        await setAttention(studentId, attended);
+      } catch (err) {
+        patch(!attended);
+        showError(err);
+      } finally {
+        setMarking(false);
+      }
+    },
+    [studentId, showError],
+  );
 
   async function endLink() {
     if (!report) return;
@@ -101,6 +133,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   // Derived in the browser, not on the server: the rows are already on the wire, so a
   // `topicProgress[]` aggregate would be a second query for arithmetic we can do here.
   const topicProgress = summarizeTopics(report.planTasks);
+  const mine = summarizeMine(report.planTasks);
 
   const last = relativeDay(report.activity.lastActiveDate);
   const lastLabel =
@@ -140,6 +173,16 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
           )}
         </div>
       </div>
+
+      {/* The same mark as on the roster card. Offered here too because this is the screen a coach
+          is on when they finish acting — walking back to the list to say so is the friction. */}
+      {report.riskFlags.length > 0 && (
+        <AttentionButton
+          attendedAt={report.attendedAt}
+          busy={marking}
+          onToggle={(attended) => void toggleAttention(attended)}
+        />
+      )}
 
       {/* Above the note and the composer: the brief is what a coach reads before deciding what to
           write. It sits BELOW the risk chips, which stay the deterministic floor it summarizes. */}
@@ -272,6 +315,14 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
           {t("report_plan")}
         </h2>
+        {/* The coach's own effect, which nothing else on this screen reports: the plan completion
+            rate covers everything the student planned, most of it their own. Derived here from
+            rows the page already holds — no endpoint, no query. */}
+        {mine.total > 0 && (
+          <p className="mb-3 text-sm" style={{ color: "var(--color-body)" }}>
+            {t("report_mine_done", { done: mine.done, total: mine.total })}
+          </p>
+        )}
         {report.planTasks.length === 0 ? (
           <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
             {t("report_plan_empty")}
@@ -418,6 +469,20 @@ function summarizeTopics(
   return [...rows.values()].sort(
     (a, b) => a.done / a.total - b.done / b.total || b.total - a.total,
   );
+}
+
+/**
+ * How much of what THIS coach assigned got done, in the report's own 14-day window.
+ *
+ * Deliberately not `planCompletionRate7d`: that one covers everything the student planned, most of
+ * which the coach never wrote. This is the only number on the screen that is about the coach.
+ */
+function summarizeMine(tasks: MentorshipStudentReportDto["planTasks"]): {
+  done: number;
+  total: number;
+} {
+  const mine = tasks.filter((task) => task.assignedByCoach);
+  return { done: mine.filter((task) => task.status === "DONE").length, total: mine.length };
 }
 
 function Metric({ label, value }: { label: string; value: string }) {

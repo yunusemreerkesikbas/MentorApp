@@ -10,6 +10,7 @@ import {
 } from "react";
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { LegalLink } from "@/components/legal-link";
 import { PuhuImage } from "@/components/puhu-image";
 
 /** Single-line textarea height (min-h-9 + py-2 content). */
@@ -132,13 +133,18 @@ export const CoachComposer = forwardRef<
           </button>
         </div>
       </div>
-      <p
-        className="mx-auto mt-1.5 max-w-2xl truncate px-1 text-center text-[10px] leading-none whitespace-nowrap"
+      <div
+        className="mx-auto mt-1.5 max-w-2xl px-1 text-center text-[10px] leading-tight"
         style={{ color: "var(--color-secondary)" }}
-        title={translate("disclaimer")}
       >
-        {translate("disclaimer")}
-      </p>
+        <p>{translate("disclaimer")}</p>
+        <p className="mt-1">
+          {translate("privacy_notice")} {" "}
+          <LegalLink slug="gizlilik-politikasi">
+            {translate("privacy_link")}
+          </LegalLink>
+        </p>
+      </div>
     </div>
   );
 });
