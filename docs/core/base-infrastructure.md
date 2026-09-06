@@ -105,6 +105,17 @@ pnpm db:up && pnpm --filter @mentor/api test
   kaydettiği tuzağın aynısı. Düzeltme kardeş `site-url.spec.ts`'in deseni: `vi.stubEnv` ile origin
   spec'te sabitleniyor, böylece dosyanın konusu ne olduğu şeye — **yol biçimine** — geri dönüyor.
   Yerelde CI'ın değişkeni verilerek doğrulandı.
+  **Ve son kapı: `express` bildirilmemiş bir bağımlılıktı.** Web yeşile dönünce API'de beş dosya
+  *dosya seviyesinde* düştü (tek bir test kırılmadan):
+  `Failed to load url express … in src/common/http/body-parsers.ts`. `apps/api` `express`'i
+  **dependencies'inde taşımıyordu**; yalnız `@types/express` devDependency olarak vardı.
+  Kaynaktaki diğer bütün kullanımlar `import type` (derlemede siliniyor), ama `body-parsers.ts` bir
+  **değer** import'u yapıyor — yani çalışma zamanında gerçekten gerekiyor ve üretimde sadece
+  `@nestjs/platform-express`'in getirdiği paketi pnpm yerleşimi sayesinde buluyordu. Vite'ın
+  çözümleyicisi temiz kurulumda buna müsamaha etmiyor. `apps/api`'ye `express` eklendi.
+  **Üçü zaten kırıktı:** `payments`/`promotions`/`economy-invite` spec'leri kendileri
+  `import * as express` yapıyor, yani bu dilimden bağımsız olarak temiz kurulumda düşerlerdi —
+  Test adımı hep atlandığı için hiç görülmemişti.
   **Ders:** yeşil bir CI rozeti "testler geçti" demiyor. Bu koşularda **hiçbir test koşmadı**, ve
   rozet kırmızıydı ama kırmızılığın sebebi herkesin sandığı yer değildi.
   **İlgili:** `.github/workflows/ci.yml`, `apps/admin/{tsconfig.json,src/assets/scss/theme.scss,src/app/layout.js}`,
