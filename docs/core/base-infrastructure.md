@@ -97,6 +97,14 @@ pnpm db:up && pnpm --filter @mentor/api test
   tanımlı ama `turbo.json`'da değil, yani `build` görevine de geçmiyorlar. Build yeşil olduğu için
   bu dilimde dokunulmadı; üretim derlemesi Render'da ayrı koştuğu için etkisi CI'la sınırlı, ama
   workflow'un niyeti ile turbo'nun davranışı ayrışıyor.
+  **Ve bir kapı daha, aynı sınıftan.** DB bağlantısı düzelince API suite'i geçti, hata **web'e**
+  taştı: `canonical-urls.spec.ts` `http://localhost:3000` bekliyor, CI ise
+  `NEXT_PUBLIC_SITE_URL=https://mentor.example` veriyor (Turbo `NEXT_PUBLIC_*`'ı framework çıkarımıyla
+  zaten geçiriyor). Beklenen değer aslında değişken **tanımsızken** dönen fallback'ti — yani test
+  dizüstünde geçip CI'da düşüyordu. `docs/standards/backend.md`'nin `STORAGE_PROVIDER` için
+  kaydettiği tuzağın aynısı. Düzeltme kardeş `site-url.spec.ts`'in deseni: `vi.stubEnv` ile origin
+  spec'te sabitleniyor, böylece dosyanın konusu ne olduğu şeye — **yol biçimine** — geri dönüyor.
+  Yerelde CI'ın değişkeni verilerek doğrulandı.
   **Ders:** yeşil bir CI rozeti "testler geçti" demiyor. Bu koşularda **hiçbir test koşmadı**, ve
   rozet kırmızıydı ama kırmızılığın sebebi herkesin sandığı yer değildi.
   **İlgili:** `.github/workflows/ci.yml`, `apps/admin/{tsconfig.json,src/assets/scss/theme.scss,src/app/layout.js}`,
