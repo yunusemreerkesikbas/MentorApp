@@ -1,8 +1,8 @@
 /**
  * Proves a real R2 setup actually works, end to end, without opening the Cloudflare dashboard.
  *
- * For every key prefix the app writes, it presigns an upload, PUTs a few bytes, reads the object
- * back the way the browser will (public prefixes) and the way the server will (`readObject`), then
+ * For every key prefix the app writes, it writes a small object through the server adapter, reads it
+ * back the way the browser will and the way the server will (`readObject`), then
  * deletes it and confirms it is gone. Every failure prints the setup step that is missing rather
  * than the raw error, because "403" on its own does not tell you whether the token scope, the
  * bucket name or the CORS policy is wrong.
@@ -50,61 +50,22 @@ async function checkPrefix(prefix: string, origin: string): Promise<Check[]> {
   const checks: Check[] = [];
   const isPublic = isPublicKey(key);
 
-  // 1 — presign. Fails on bad credentials, wrong account id, or an unrouted prefix.
-  let uploadUrl: string;
+  // 1 — server-side write. Browser uploads terminate at the authenticated API capability endpoint.
   try {
-    const signed = await storage.createUploadUrl({ key, contentType: TEST_CONTENT_TYPE });
-    uploadUrl = signed.url;
-    checks.push({ label: "presign", ok: true });
+    await storage.putObject(key, TEST_BYTES, TEST_CONTENT_TYPE);
+    checks.push({ label: "server PUT object", ok: true });
   } catch (error) {
     checks.push({
-      label: "presign",
+      label: "server PUT object",
       ok: false,
       detail: `${String(error)} — check R2_ACCOUNT_ID / access keys, and that "${prefix}" is listed in storage-prefixes.ts`,
     });
     return checks;
   }
 
-  // 2 — CORS preflight for the upload. This is the check that catches "uploads silently fail in
-  // the browser but curl works": presigned URLs still need a bucket CORS policy.
-  try {
-    const preflight = await fetch(uploadUrl, {
-      method: "OPTIONS",
-      headers: {
-        Origin: origin,
-        "Access-Control-Request-Method": "PUT",
-        "Access-Control-Request-Headers": "content-type",
-      },
-    });
-    const allow = preflight.headers.get("access-control-allow-origin");
-    checks.push({
-      label: "upload CORS preflight",
-      ok: Boolean(allow),
-      detail: allow
-        ? undefined
-        : `no Access-Control-Allow-Origin for ${origin} — add a CORS policy with PUT + Content-Type to this bucket (infra/r2/cors-*.json)`,
-    });
-  } catch (error) {
-    checks.push({ label: "upload CORS preflight", ok: false, detail: String(error) });
-  }
-
-  // 3 — the upload itself.
-  const put = await fetch(uploadUrl, {
-    method: "PUT",
-    headers: { "Content-Type": TEST_CONTENT_TYPE },
-    body: TEST_BYTES,
-  });
-  checks.push({
-    label: "PUT object",
-    ok: put.ok,
-    detail: put.ok
-      ? undefined
-      : `HTTP ${put.status} — token needs Object Read & Write on this bucket, and the bucket name must match R2_${isPublic ? "PUBLIC" : "PRIVATE"}_BUCKET`,
-  });
-  if (!put.ok) return checks;
-
+  // 2 — browser read. Private media uses a five-minute signed URL after owner authorization.
   if (isPublic) {
-    // 4 — read it the way a browser will, with an Origin header. Without one, R2 returns no
+    // Read it the way a browser will, with an Origin header. Without one, R2 returns no
     // CORS headers at all and the check would pass while the app still breaks.
     const publicUrl = storage.getPublicUrl(key);
     const res = await fetch(publicUrl, { headers: { Origin: origin } });
@@ -136,9 +97,19 @@ async function checkPrefix(prefix: string, origin: string): Promise<Check[]> {
       ok: threw,
       detail: threw ? undefined : "getPublicUrl returned a URL for a private object — this would expose exam photos",
     });
+    const signedUrl = await storage.createReadUrl(key, 300);
+    const signed = await fetch(signedUrl, { headers: { Origin: origin } });
+    const allow = signed.headers.get("access-control-allow-origin");
+    checks.push({
+      label: "private signed GET",
+      ok: signed.ok && Boolean(allow),
+      detail: !signed.ok
+        ? `HTTP ${signed.status} — check private bucket read permission and GET CORS`
+        : allow ? undefined : `no Access-Control-Allow-Origin for ${origin}`,
+    });
   }
 
-  // 5 — server-side read (the path the Gemini vision pipeline uses).
+  // 3 — server-side read (the path the Gemini vision pipeline uses).
   const bytes = await storage.readObject(key);
   checks.push({
     label: "readObject",
@@ -146,7 +117,7 @@ async function checkPrefix(prefix: string, origin: string): Promise<Check[]> {
     detail: bytes ? undefined : "returned null — token needs read permission on this bucket",
   });
 
-  // 6 — delete, then confirm it is really gone (KVKK erasure depends on this).
+  // 4 — delete, then confirm it is really gone (KVKK erasure depends on this).
   await storage.deleteObject(key);
   const after = await storage.readObject(key);
   checks.push({
@@ -185,7 +156,7 @@ async function main(): Promise<void> {
     console.error(`${failed} check(s) failed. See docs/core/storage-r2.md for the matching setup step.`);
     process.exit(1);
   }
-  console.log("All prefixes verified — uploads, public reads, CORS, server reads and deletes.");
+  console.log("All prefixes verified — server writes, authorized browser reads, CORS, server reads and deletes.");
 }
 
 main().catch((error) => {

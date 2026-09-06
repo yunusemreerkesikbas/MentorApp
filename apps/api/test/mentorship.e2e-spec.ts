@@ -361,6 +361,16 @@ describe("mentorship (e2e)", () => {
       ).status,
     ).toBe(204);
 
+    // Same for the "I dealt with this" mark: it rides the very row revival brings back.
+    expect(
+      (
+        await http()
+          .put(`/v1/mentorship/students/${userId.student}/attention`)
+          .set(auth("coach"))
+          .send({ attended: true })
+      ).status,
+    ).toBe(204);
+
     expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(204);
 
     const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
@@ -415,6 +425,10 @@ describe("mentorship (e2e)", () => {
     const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
     expect(mine.body.coachNote).toBeNull();
     expect(JSON.stringify(mine.body)).not.toContain("Bağlantı bitmeden önceki not");
+
+    // The mark goes with it, for the same reason: a revived row carrying an old "handled" would
+    // open the new relationship looking calm.
+    expect(roster.body.items[0].attendedAt).toBeNull();
   });
 
   describe("coach-assigned homework", () => {
@@ -784,6 +798,55 @@ describe("mentorship (e2e)", () => {
       expect(mine.body.coachNote).toBeNull();
     });
 
+  });
+
+  describe("the coach's \"I dealt with this\" mark", () => {
+    const attention = (as: string, attended: boolean) =>
+      http()
+        .put(`/v1/mentorship/students/${userId.student}/attention`)
+        .set(auth(as))
+        .send({ attended });
+
+    it("refuses a coach with no active link — 404, not 403", async () => {
+      const res = await attention("coach", true);
+      expect(res.status).toBe(404);
+      expect(res.body.code).toBe("MENTORSHIP_LINK_NOT_FOUND");
+    });
+
+    it("refuses a body that tries to choose the flags", async () => {
+      // The server decides what is being marked. A client-supplied set could silence a flag that
+      // landed after the page rendered, so `.strict()` makes the attempt loud.
+      const res = await http()
+        .put(`/v1/mentorship/students/${userId.student}/attention`)
+        .set(auth("coach2"))
+        .send({ attended: true, flags: ["INACTIVE"] });
+      expect(res.status).toBe(400);
+    });
+
+    it("lands on the roster row and is taken back by { attended: false }", async () => {
+      expect((await attention("coach2", true)).status).toBe(204);
+
+      const marked = await http().get("/v1/mentorship/students").set(auth("coach2"));
+      const row = marked.body.items.find(
+        (r: { studentId: string }) => r.studentId === userId.student,
+      );
+      expect(row.attendedAt).not.toBeNull();
+      expect(row.needsAttention).toBe(false);
+
+      // The flags themselves are NOT hidden — the mark quiets the counter, it does not edit the data.
+      const report = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach2"));
+      expect(report.body).toHaveProperty("riskFlags");
+      expect(report.body.attendedAt).not.toBeNull();
+
+      expect((await attention("coach2", false)).status).toBe(204);
+      const cleared = await http().get("/v1/mentorship/students").set(auth("coach2"));
+      const back = cleared.body.items.find(
+        (r: { studentId: string }) => r.studentId === userId.student,
+      );
+      expect(back.attendedAt).toBeNull();
+    });
   });
 
   it("erasing a coach clears the note along with the provenance", async () => {
