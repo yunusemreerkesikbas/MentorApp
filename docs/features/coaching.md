@@ -157,6 +157,13 @@ pnpm --filter @mentor/api test
   silemez. İlgili: `schema-uploads.ts`, `upload-ticket.*`, `upload-content.ts`, `secure-storage.service.ts`,
   `storage-cleanup.service.ts`, `mistake-notebook.service.ts`, `vision.service.ts`.
 
+- **Eski genel defter/pano nesneleri için güvenli geçiş aracı (2026-09-06)** —
+  `storage:migrate-private` varsayılan olarak yalnız planı gösterir; `--apply` public bucket'taki
+  `notebook/` ve `vision-board/` nesnelerini private bucket'a `private, no-store` ile kopyalar,
+  hedef boyutunu doğrular ve ancak sonra genel kopyayı siler. Nesne anahtarları loglanmaz. Gotcha:
+  gerçek ortam çalıştırması, veri referansı kontrolü ve CDN cache purge operasyon adımıdır. İlgili:
+  `scripts/migrate-private-media.ts`, `private-media-migration.ts`, `docs/core/storage-r2.md`.
+
 - **KVKK erasure — `plan_tasks.description` de siliniyor (2026-09-03)** — `CoachingErasureRepository`
   `plan_tasks`'ı sadece `title: ERASED_TASK_TITLE` ile scrub ediyordu; öğrencinin kendi serbest metin
   notu olan `description` erasure'dan sağ çıkıyordu. Oysa bu, `study_sessions.struggleNote` ile aynı

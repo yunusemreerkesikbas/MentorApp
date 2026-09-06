@@ -72,7 +72,11 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 #   POST /v1/admin/config  { "key": "mentorship.enabled", "value": true }   (SUPER_ADMIN)
 # Make someone a coach:
 #   POST /v1/admin/users/:userId/roles/COACH                                (SUPER_ADMIN, audited)
-#   The coach must re-login: roles are read from the DB on refresh, not patched into a live JWT.
+#   No re-login needed since APP-080: JwtAuthGuard resolves the principal through
+#   TokenService.validateSession, which joins `users` on every request, so the role is live
+#   at once. Curation now runs through the application queue instead
+#   (POST /v1/mentorship/applications -> admin /coach-applications); this endpoint stays as
+#   the manual override.
 ```
 
 ```http
@@ -148,6 +152,182 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Güven yüzeyi — koç profili öğrenciye görünüyor (APP-083, 2026-09-06)** — APP-082 kürasyonu
+  kurdu ama ürettiği veriyi kimse görmüyordu: öğrenci onay ekranında hâlâ **bir isim** görüp
+  mahrem verisini teslim ediyordu (`MentorshipInvitationPreviewDto` yalnız `coachDisplayName` +
+  `coachUsername` taşıyordu). Bu dilim o boşluğu kapatıyor.
+  **Ham iddialar öğrenciye GİTMİYOR.** `coachProfile` yalnız `headline`, `bio` ve **doğrulanmış**
+  iddiaları taşıyor. Doğrulanmamış bir kurum, doğrulanmışın yanında render edilseydi bizim
+  onayladığımız gibi okunurdu. Doğrulanmış olan ise **değeriyle** gidiyor ("Ankara Üniversitesi ·
+  doğrulandı") — birinin kontrol ettiği bir olguyu genel bir rozete indirgemek bilgiyi boşuna
+  atmaktı. Rozet hâlâ "bu koç iyidir" demiyor; puan yok, liste var.
+  **`null` gerçek bir durum, doldurulacak bir boşluk değil.** Kuyruk var olmadan önce elle COACH
+  alan her koçun profili yok, ve ekran "bu koç hakkında henüz bir profil yok" diyor — boş bir kart
+  değil. Bağlanmayı **engellemedik**: kürasyonun kapısı COACH rolünün kendisi (APP-082), ve
+  profilin üstüne ikinci bir kapı koymak var olan kuralı iki yerde tutmak olurdu.
+  **Kart paylaşılıyor, iki ekran tek ilişkiyi anlatıyor.** `CoachProfileCard` hem onay ekranında
+  hem `/kocum`'da — `DataScopeCard`'ın gerekçesinin aynısı. Onay ekranında **kapsam listesinin
+  üstünde**: öğrenci önce KİM'e, sonra NE'ye karar veriyor.
+  **Düzenleme yeni bir rota açmıyor.** Koç `headline`/`bio`'sunu `/koc-basvurusu`'nda düzenliyor,
+  çünkü onaylanmış başvuru profilin ta kendisi; ikinci bir ekran aynı satırı iki kez gösterirdi.
+  Uç da aynı kaynak: `PUT /v1/mentorship/applications/mine`, yalnız APPROVED satırda (yoksa 404).
+  **İddialar ve rozet koça kapalı** — imzada yok, şemada yok, formda yok. Doğrulayan biz olduğumuz
+  için rozetin arkasında biz duruyoruz; koç kurumu değiştirebilseydi rozet yalan olurdu.
+  **Repodaki ilk Tier-1 moderasyonu.** `domain/contact-pattern.ts` (saf, 14 test): telefon · e-posta
+  · IBAN · `@handle` · uygulama adı + rakam. Roadmap §9 aracısızlaşmayı marketplace'in ana kaçağı
+  sayıp "chat'te numara/IBAN maskele" diyor; chat yok ama koç profili aynı deliğin bir dilim erken
+  hali — serbest metin, tam da koçun platform dışına çıkarmak isteyeceği kişilere gösteriliyor.
+  **Reddetme, maskeleme değil.** Rakamları yıldızlamak koça yazdığını sandığı bir şeyi kaydettiğini
+  düşündürürdü ve bunu ilk kez bir öğrenci "bu yıldızlar ne" diye sorunca öğrenirdi.
+  **Normalizasyon desenlerden daha önemli.** `İ` küçültünce `i` + birleşen nokta oluyor, hiçbir
+  ASCII deseni tutmuyor; `toLocaleLowerCase("tr-TR")` + NFD + birleşen işaretleri atma + `ı`→`i`.
+  **Tavan `ponytail:` yorumuyla adlandırıldı:** bu Tier-1, deneyen herkes geçer. Dürüst bir koçun
+  alışkanlıkla numarasını yazmasını durduruyor; kararlı olan için Tier-2 sınıflandırıcı gerekiyor
+  ve o Faz 2 (roadmap §9). Forum'un Tier-1 dilimi geldiğinde bu dosyayı devralır.
+  **Kontrol iki yerde: hem düzenlemede hem BAŞVURUDA**, ve yalnız `headline`/`bio`'da. Yoksa aday
+  numarasını yazar, admin gözle yakalamak zorunda kalır, ve onaylandığı an profil onunla yayına
+  girer. `claimNote` **kontrol edilmiyor** — o alan admine yazılıyor, oraya telefon yazmak alanın
+  amacının ta kendisi.
+  **Gotchas:** (1) İlk eşleşen kural dönüyor, hepsi değil: çağıran zaten reddediyor, ve tüm
+  eşleşmeleri listelemek yazara etrafından nasıl dolaşacağını anlatmaktan başka işe yaramazdı.
+  (2) IBAN ve telefon **ayraçsız** metne bakıyor (ikisi de her zaman boşluklu yazılır), e-posta ve
+  handle **yazıldığı gibi** olana — ayraçları önce atmak alakasız kelimeleri birbirine yapıştırıp
+  yanlış eşleşme üretirdi. (3) Telefon deseni 10 haneden kısasını görmezden geliyor: "2019 mezunu"
+  ve "40 yıllık" bir numara değil, ve boşuna bir ret koça sebepsiz bir yeniden yazım maliyeti.
+  (4) Doğrulanmış ama değeri sonradan boşalmış bir iddia **düşürülüyor** — etiketi boş bir rozet
+  göstermektense hiç göstermemek. (5) `toMyCoachDto` senkron kaldı, profil parametre olarak
+  geçiyor: iki çağıranın ikisi de zaten `coachId`'yi elinde tutuyor.
+  **İlgili:** `modules/mentorship/domain/contact-pattern.ts`,
+  `modules/mentorship/application/{mentorship-application.service.ts,mentorship-link.service.ts}`,
+  `modules/mentorship/infrastructure/mentorship-application.repository.ts` (`updateProfile`),
+  `packages/{types,validation}/src/mentorship.ts`,
+  `apps/web/src/app/[locale]/(app)/my-coach/_components/coach-profile-card.tsx`,
+  `apps/web/src/app/[locale]/(app)/coach-application/_components/application-status-card.tsx`.
+
+- **Kürasyon hattı — koç başvurusu ve vetting kuyruğu (APP-082, 2026-09-06)** — `mentorship.enabled`
+  üretimde kapalıydı ve açılamıyordu: açıldığı gün koç adayının **başvuracağı bir yer yoktu**.
+  Kürasyon şuydu — birileri bir şekilde ulaşıyor, biri elle `POST /v1/admin/users/:id/roles/COACH`
+  çağırıyor. Roadmap §5 "açık kayıt değil, **kürasyon**: başvuru + belge + kısa değerlendirme"
+  diyor; başvurunun girişi hiç yapılmamıştı.
+  **Tek tablo, ve onaylanmış satır profilin ta kendisi.** `mentorship_coach_applications`
+  (migration `0105`). İkinci bir "profil" tablosu reddedildi: koçun profili tam olarak vetting'ten
+  geçen şeydir, ve "ne onaylandı"nın kaydı W6'nın append-only `admin_audit_log`'unda **zaten var** —
+  ikinci tablo var olan bir olgunun ikinci kopyası ve KVKK'nın kovalayacağı üçüncü yer olurdu.
+  **İki yazar, ayrım servis imzasında.** `submit` yalnız adayın alanlarını alıyor; `verifiedClaims`
+  ya da `status` parametresi hiçbir yerde **yok**, yani "aday kendini onaylar" unutulan bir
+  kontrolle doğabilecek bir hata değil, var olmayan bir argüman. Uçta da `.strict()`: gövdeye
+  `status` koymak **400**, sessizce kırpılan bir alan değil.
+  **Belge yok, yapılandırılmış iddia var.** Kanıt `claim_institution/branch/years` ve adminin
+  **hangisini doğruladığı** (`verified_claims`). Belge sistemdeki en ağır kişisel veri olurdu,
+  üstelik reddedilenler için de saklanan; rozetin ihtiyacı olan şey ise yalnız "ne kontrol edildi".
+  Değerlendirmenin evrak işi platform dışında (§5'in "kısa değerlendirme"si). Şema (a)'ya hazır:
+  bir `credential_key` kolonu ve private bir prefix eklemek yeter.
+  **Rozet "bu koç iyidir" demiyor**, "şu iddia doğrulandı" diyor — `verified_claims` bir liste,
+  puan değil. Ret ile gönderilen iddialar şemada **düşürülüyor**: bir reddetme hiçbir şeyi
+  doğrulamaz, ve arkasında kimsenin durmadığı bir rozet hiç rozetten kötüdür.
+  **En kritik karar: onay = rol, ama tek transaction DEĞİL.** `grantRole` W6'nın
+  `AdminUsersService`'inde; admin kuyruk için mentorship'i import ediyor, mentorship rol için
+  admin'i import etse **döngü** olurdu. İki yazma, iki transaction, ve **sıra tasarımın kendisi**:
+  önce rol, sonra karar. Aradaki çökme COACH'lu ama PENDING bir satır bırakır — kuyrukta
+  **görünür**, admin tekrar onaylar, `grantRole` idempotent, tamamlanır. Ters sıra
+  APPROVED-ama-rolsüz bırakırdı: satır kuyruktan **düşer**, kimse fark etmez, koç panele giremez
+  ve nedenini bilmez. Görünür ve kendini iyileştiren bir hata, görünmez bir hatadan iyidir. Üstüne
+  kuyruk satır başına `hasCoachRole` taşıyor — boşluk hafızaya bırakılmıyor.
+  **`review` idempotent.** Repository yalnız PENDING satırı güncelliyor, yani ikinci çağrı ilk
+  değerlendirenin iddialarını boş kümeyle ezmiyor; audit satırı `applied: false` ile ne değiştiğini
+  dürüstçe yazıyor.
+  **İki bayrak, ikisi ayrı.** `mentorship.applications.open` bilerek `mentorship.enabled`'dan
+  bağımsız: koç yüzeyi açılmadan önce başvuru toplayabilmek gerekiyor, ve yüzey açıldığı gün
+  musluğu kapatan düğme bu. `reapply_after_days` (30) olmasa ret bir karar değil bir döngü olurdu.
+  **Throttle bilerek sıkı DEĞİL** (10/dk, davet uçlarıyla aynı): asıl abuse sınırı burada değil,
+  `UNIQUE (user_id)` kişi başına tek satır demek ve ne zaman yeniden yazılabileceğine `canApply`
+  karar veriyor. Saatlik bir sınır çoğunlukla doğrulama hatasını düzelten adayı cezalandırırdı —
+  rate limiter 400'leri de sayıyor. Davet kodunun "ayrı sayaç gerekmez" gerekçesinin aynısı.
+  **Düzeltme: "koç yeniden giriş yapmalı" uyarısı artık YANLIŞ.** Bu doküman
+  `POST /v1/admin/users/:id/roles/COACH` yanında "roller DB'den refresh'te okunuyor, canlı JWT'ye
+  yamalanmıyor" diyordu. APP-080'in `auth_sessions` işi bunu değiştirdi: `JwtAuthGuard`,
+  `TokenService.validateSession` üzerinden **her istekte** `users`'ı join ediyor, yani onay anında
+  geçerli. e2e bunu artık iddia ediyor (onaylanan aday **mevcut** token'ıyla panele giriyor).
+  **KVKK:** `MentorshipErasureService`'e tek satır. FK cascade yetmez — erasure `users`'ı
+  anonimleştiriyor, silmiyor, `mentorship_program_templates`'in aynı tuzağı; burada daha da önemli,
+  çünkü başvuru kişinin kendini anlattığı metnin yanında adminin ona verdiği kararı taşıyor.
+  **Gotchas:** (1) Aday ucu **yeni bir controller**: `MentorshipCoachController` `@Roles(COACH)`
+  taşıyor, yani henüz koç olmayan herkesi reddederdi; student controller'a koymak da o dosyanın
+  adını yalan yapardı. (2) `hasCoachRole` `status`'tan **türetilmiyor**, API'den geliyor.
+  (3) Kuyruk `AdminUsersService.listByIds` ile insanı geri koyuyor — W8 `users`'ı hiç okumuyor,
+  admin ikisini aynı anda tutmasına izin verilen tek katman (APP-077'nin sponsorluk metriği deseni).
+  (4) Onay **SUPER_ADMIN**: bir başvuruyu onaylamak o rolü vermenin ta kendisi, dolayısıyla
+  doğrudan vermekten daha yumuşak bir izin olamaz. (5) Ret mevcut COACH rolünü **almıyor** —
+  rol geri almak kendi şiddeti olan ayrı bir eylem (`free_seats`'in "geriye dönük değil" çizgisi).
+  (6) Yeniden başvuru satırı canlandırıyor ve eski kararı **siliyor**: adaya taze başvurusunun
+  yanında geçen seferki reddi göstermek, henüz verilmemiş bir kararı anlatmak olurdu.
+  **İlgili:** `apps/api/drizzle/0105_w8_coach_applications.sql`,
+  `modules/mentorship/{domain/coach-application.ts,application/mentorship-application.service.ts,infrastructure/mentorship-application.repository.ts,presentation/mentorship-application.controller.ts}`,
+  `modules/admin/presentation/admin-coach-applications.controller.ts`,
+  `modules/admin/{application/admin-users.service.ts,infrastructure/admin-users.repository.ts}` (`listByIds`),
+  `packages/{types,validation}/src/mentorship.ts`,
+  `apps/web/src/app/[locale]/(app)/coach-application/**`,
+  `apps/admin/src/app/(general)/coach-applications/page.tsx`,
+  [`admin.md`](./admin.md), [`identity.md`](./identity.md).
+
+- **Müdahale döngüsü — "ilgilendim" işareti (APP-081, 2026-09-06)** — Roadmap §9'un koç vaadi üç
+  parçalıydı: **kim geride, neden, ne yapmalı**. İlk ikisi APP-063/073/078 ile kapandı, üçüncüsü hiç
+  kapanmıyordu. Bayrak yanıyor, digest gidiyor, koç öğrenciyle konuşuyor ve **panel bunu hiç
+  öğrenmiyordu**: ertesi sabah aynı kırmızı satır aynı yerde, e-posta aynı ismi tekrar sayıyor.
+  Roster bir listeydi; artık bir iş listesi.
+  **İşaret "çözüldü" demiyor.** Uygulamanın bilebileceği tek şey koçun baktığı ve bir şey yaptığı.
+  İyileşmeye hâlâ kurallar karar veriyor, koçun tıklaması değil. Bayraklar da **gizlenmiyor** —
+  kart soluklaşıyor, çipler duruyor: veriyi saklamak koçun tıklamalarını kohort diye anlatmak olurdu.
+  **İki mekanizma, ikisi de zorunlu.** İşaret şu iki durumda bozuluyor: (1) işaretin **kapsamadığı**
+  bir bayrak düşerse (ertesi gün gelen `NET_DROP` için TTL beklemek bir hafta geç olurdu),
+  (2) işaret **bayatlarsa** (`mentorship.attention.ttl_days`, 7). Yalnız küme farkı olsaydı kronik
+  `INACTIVE` — en sık bayrak — tek tıkla sonsuza susardı; yalnız TTL olsaydı yeni haber bir hafta
+  beklerdi. **İkisi de icat değil:** digest'in `hasNewNews`'i küme farkı, `repeat_after_days`'i TTL.
+  Bu dilim aynı cümleyi tek öğrenci için kuruyor, `domain/attention.ts` (saf, 10 test).
+  **Bayrakları sunucu değerlendiriyor, istemci göndermiyor.** Şema `.strict()`, `flags` göndermek
+  **400**. İstemciden gelen bir küme, koçun sayfa render edildikten sonra düşen bir bayrağı
+  susturabilir ve koça hiç görmediği bir şeyi hallettiğini söyletirdi. Bedeli tek
+  `listCohortSnapshots([studentId])` — raporun zaten yaptığı iş.
+  **`needsAttention` sunucuda türetiliyor.** Digest aynı kuralı tüketiyor; istemcideki bir kopya,
+  panel ile sabah e-postasının "kim bekliyor" konusunda ayrılabileceği ikinci yer olurdu.
+  (`cohort-summary.ts`'teki `FLAG_ORDER` kopyası bilerek güvenli — sürüklenirse yalnız çipler
+  yeniden sıralanır; bu **yanlış sayardı**.)
+  **Digest'in asıl boşluğu içerikteydi, kapıda değil.** `hasNewNews` e-postanın **çıkıp
+  çıkmayacağına** koç başına karar veriyordu, ama gövde adayın taşıdığı **herkesi** listeliyordu —
+  yani bir öğrencide yeni haber varken dün aranan öğrenci de tekrar sayılıyordu. Filtre artık
+  `listAllActiveLinks`'in select'ine eklenen iki kolonla adayın **öğrencilerine** uygulanıyor;
+  yeni sorgu yok, `CoachRiskDigestCandidate`/`hasNewNews`/`toPairs` değişmedi.
+  **Model: link satırına iki nullable kolon** (`attended_at`, `attended_flags`, migration `0103`) —
+  `coach_note` (0097) ve `brief` (0100) ile birebir aynı şekil ve aynı gerekçe: ilişki başına tek
+  olgu, yerinde üzerine yazılıyor, **KVKK bedava** (erasure link satırlarını siliyor). `end()`
+  ikisini de temizliyor; yeniden bağlanma bu satırı canlandırıyor ve aylar önceki bir "ilgilendim"
+  yeni ilişkiyi sakin gösterirdi. `attended_flags` yeniden hesaplanmıyor **saklanıyor**: soru "koç
+  işaretlerken ne gördü", ve sonradan düşen bayrağı ayırt edebilecek tek şey o an'ın fotoğrafı.
+  **Gotchas:** (1) Düğme kartın `<Link>`'inin **dışında** — anchor içinde button geçersiz HTML,
+  öneri satırının zaten kaçındığı tuzak; `StudentCard`'ın dış elemanı artık `Card`, `Link` yalnız
+  içeriği sarıyor. (2) İstemci sıralaması (`compareByAttention`) meşru çünkü sayfa **tüm kohortu**
+  tutuyor (`pageSize=100`, koltuk tavanı onlarca); sunucunun şiddet sırası bant içinde korunuyor
+  (`Array.prototype.sort` kararlı). (3) İyimser güncelleme: tıklama koçun kendi eylemi, karar ile
+  görme arasına spinner koymak dilimin kaldırmak istediği sürtünmenin ta kendisi; hatada satır geri
+  dönüyor ve sebebini söylüyor. (4) Bant `attended` sayacını **sıfırken göstermiyor** — kimsenin
+  başlamadığı bir sabahta "0 ilgilenildi" sitem gibi okunur. (5) `attended`, "bekleyen değil" değil
+  "bayraklı ama halledilmiş" — yoksa her sağlıklı öğrenci sayacı şişirir ve bant koçun yapmadığı işi
+  ona mal ederdi. (6) Ek `@Throttle` **yok**: iki kolonluk bir update, brifingin 10/dk'sı çağrı
+  başına para harcadığı için sıkı.
+  **Yanına sığan bir şey:** rapor artık "senin verdiğin 12 görevin 7'si yapıldı" diyor.
+  `planCompletionRate7d` bilerek kullanılmadı — o, öğrencinin planladığı **her şeyi** kapsıyor ve
+  çoğunu koç yazmadı. Bu, ekrandaki koç hakkında olan tek sayı; sayfanın zaten tuttuğu
+  `assignedByCoach` satırlarından türüyor, uç yok, sorgu yok.
+  **İlgili:** `apps/api/drizzle/0103_w8_mentorship_attention.sql`,
+  `modules/mentorship/domain/attention.ts`,
+  `modules/mentorship/application/mentorship-roster.service.ts` (`setAttention`),
+  `modules/mentorship/infrastructure/{mentorship-link.repository.ts,mentorship-query.adapter.ts}`,
+  `common/config/config.catalog.ts` (`mentorship.attention.ttl_days`),
+  `packages/{types,validation}/src/mentorship.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/{attention-button.tsx,student-card.tsx,cohort-summary.ts,roster-shell.tsx}`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/student-report-shell.tsx`,
+  [`notifications.md`](./notifications.md).
 
 - **Ücretli koltuk — Koç Pro (APP-079, 2026-09-05)** — Sponsorlu koltuk üç öğrenciyle sınırlıydı;
   artık koçun kendi planı fazlasını ödeyebiliyor. Koltuk hakkı = `mentorship.coach.free_seats` +
@@ -817,12 +997,29 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Backlog
 
-- AI "smart brief" on top of the rule-based triage (roadmap §9). The rules stay as the floor.
+- ~~AI "smart brief"~~ — shipped (APP-078). The rules stayed as the floor, as planned.
 - Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
-- Seat billing beyond the free quota; the quota knob is already in the config registry.
-- Coach vetting queue (application + document). Today: manual, curated role grant.
-- Minors: KVKK parental consent for under-18 students. `users` carries no birth date; this slice
-  assumes 18+ (KPSS/YKS). Must be settled before LGS opens (roadmap §0).
+- ~~Seat billing beyond the free quota~~ — shipped (APP-076/077/079: sponsored seats, the kill
+  switch and the paid Koç Pro plans).
+- ~~Coach vetting queue~~ — **shipped (APP-082)**, minus the document: the evidence is a
+  structured claim plus the admin's mark of what they checked. A credential file stays out on
+  purpose (it would be the heaviest personal data in the system, retained for rejected
+  applicants too); the schema takes a `credential_key` column and a private storage prefix
+  whenever that changes.
+- ~~The approved profile shown to the student~~ — **shipped (APP-083)**, with the coach editing
+  their own two lines and the repo's first Tier-1 contact detector behind it. Tier-2 (the AI
+  classifier that survives deliberate evasion) stays Phase 2, roadmap §9.
+- **Minors — decided (2026-09-06): no separate parental-consent flow.** The 18+/mentorship clause
+  goes into the signup consent checkbox text, to be added when that copy is written. `users` still
+  carries no birth date and this module still assumes 18+; the decision is that the consent screen
+  says so rather than the app enforcing an age it cannot verify.
+- **Topic-level evidence for the coach — rejected (2026-09-06), with the reason.** The
+  `mistake_notebook_entries` line in `cohort-evidence.ts` stays: even an aggregate count is a
+  behaviour pattern produced in a space framed as the student's own, and that file's header ("a
+  student's words stay with the student") is what makes the notebook usable at all. If topic
+  evidence is ever wanted, the honest path is `mock_exam_photo_categorizations.topic_ref` — a label
+  attached to a mock exam, already inside the `MOCK_EXAMS` scope the student consented to. Not the
+  notebook.
 - Move the surface to `apps/panel` when the coach cohort justifies its own app (roadmap §9).
 
 ## Related

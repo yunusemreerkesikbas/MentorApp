@@ -102,6 +102,22 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **AI mahremiyeti ve eşzamanlı bütçe rezervasyonu (2026-09-06)** — Sağlayıcıya giden kullanıcı
+  mesajı ve sohbet geçmişi merkezi `PrivacyPreservingLlmAdapter` içinde e-posta, telefon, T.C.
+  kimlik no, IBAN, ödeme kartı, IP, URL, kullanıcı adı, açık ad ve adres kalıplarından arındırılıyor;
+  sunucunun doğrulanmış sistem bağlamı korunuyor ve yerel sohbet kaydı değişmiyor. Koç yazma alanı
+  yurt dışı aktarımı ile maskelemenin sınırını TR/EN gösterip gizlilik taslağına bağlanıyor. Metin ve
+  görsel sağlayıcı çağrıları ayrıca kısa ömürlü bütçe rezervasyonu alıyor; gerçek kullanım yazılırken
+  rezervasyon aynı kilit ve işlem altında kapanıyor, hata halinde bırakılıyor. Böylece eşzamanlı
+  çağrılar aynı boş bütçeyi sınırsız kez kullanamıyor. Kullanım: çağrılar yine
+  `LLM_PORT`/`VISION_PORT` tüketir; çağrı başına
+  rezervasyon `ai.budget.reservation_usd_cents` ile ayarlanır. Gotcha: desen tabanlı maskeleme serbest
+  metindeki her kişisel veriyi garanti edemez; onaylı KVKK metni, sağlayıcı sözleşmesi ve no-training
+  ayarı yayın kapısıdır. Rezervasyon değeri izin verilen en pahalı çağrı maliyetinin altında kalırsa
+  tavan bu fark kadar aşılabilir; model/fiyat değişiminde değer yeniden kalibre edilir. İlgili:
+  `privacy-preserving-llm.adapter.ts`, `budgeted-vision.adapter.ts`,
+  `ai-budget-reservation.repository.ts`, migration `0104_cultured_morgan_stark`, `coach-composer.tsx`.
+
 - **Yoldaşlık sesi Dalga 16 — LLM prompt noktalama (2026-08-29)** — Modele giden V1/V2 ve haftalık recap prompt metinlerinde em dash kalktı; nokta/virgül/iki nokta kuralı eklendi. Persona cümleleri durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod yorumları durdu; recap cache `v7`. İlgili: `ai.constants.ts`, `mentor-v2-prompt.ts`, `weekly-review-prompt.ts`.
 
 - **Yoldaşlık sesi Dalga 13 — koç kapısı / derin analiz hak (2026-08-29)** — Koç erişim kapısı ve derin analiz yetersiz-coin companion hak; “hak kazan” FOMO kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `kazanılmış hak` isim ve `go_earn` CTA durdu. İlgili: `apps/web/messages/{tr,en}.json`, `coach-access-gate.tsx`.

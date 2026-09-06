@@ -75,6 +75,14 @@ export const menuList: MenuItem[] = [
         roles: ["SUPER_ADMIN"],
     },
     {
+        id: 12,
+        name: "Koç Başvuruları",
+        path: "/coach-applications",
+        icon: "feather-user-check",
+        dropdownMenu: false,
+        roles: ["SUPER_ADMIN"],
+    },
+    {
         id: 2,
         name: "İşlem Geçmişi",
         path: "/audit-log",

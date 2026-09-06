@@ -8,7 +8,7 @@
           "https://app.mentor.example",
           "https://admin.mentor.example"
         ],
-        "methods": ["PUT"],
+        "methods": ["GET"],
         "headers": ["Content-Type"]
       },
       "exposeHeaders": ["ETag"],

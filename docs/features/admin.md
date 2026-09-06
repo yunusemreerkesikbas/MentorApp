@@ -97,6 +97,41 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Koç vetting kuyruğu (APP-082, 2026-09-06)** — Elle `POST /v1/admin/users/:id/roles/COACH`
+  çağırmanın yerini alan kürasyon ekranı: `GET /v1/admin/coach-applications?status=` +
+  `POST /v1/admin/coach-applications/:id/review` (`@Audit(COACH_APPLICATION_REVIEW)`,
+  `@Roles(SUPER_ADMIN)` — bir başvuruyu onaylamak o rolü vermenin ta kendisi, dolayısıyla doğrudan
+  vermekten daha yumuşak bir izin olamaz).
+  **Uç neden burada:** başvurunun tablosu W8'de ama karar iki şey gerektiriyor — kararın kendisi
+  (W8) ve COACH rolü (W6'nın `AdminUsersService`'i). Admin ikisini aynı anda tutmasına izin verilen
+  tek katman; `AdminForumController`'ın ve sponsorluk metriğinin aynı düzeni.
+  **Onay iki transaction, ve sıra önemli: önce rol, sonra karar.** Ters sıra APPROVED-ama-rolsüz
+  bir satır bırakırdı ve o satır kuyruktan **düşerdi** — kimse fark etmez. Bu sırayla çökme
+  PENDING'de kalır, kuyrukta görünür, `grantRole` idempotent olduğu için tekrar onaylamak
+  tamamlar. Ayrıca kuyruk satır başına `hasCoachRole` **raporluyor** (statusten türetmiyor), yani
+  boşluk hafızaya değil ekrana bırakılıyor.
+  **Yeni seam: `AdminUsersService.listByIds`.** Başka bir modülün sahip olduğu satırları listeleyen
+  admin ekranları için — W8 `users`'ı hiç okumuyor, kuyruk isim/e-posta/rolü buradan alıyor.
+  Repository'deki `findByIds` boş dizide **sorgu atmıyor** (`inArray` bazı sürücülerde "hepsi").
+  **Gotcha:** audit satırı `after.applied` taşıyor. `review` idempotent olduğu için ikinci çağrı
+  hiçbir şeyi değiştirmiyor, ve audit'in bunu "değişti" diye yazması yalan olurdu.
+  **İlgili:** `presentation/admin-coach-applications.controller.ts`,
+  `application/admin-users.service.ts`, `infrastructure/admin-users.repository.ts`,
+  `domain/admin.constants.ts`, `apps/admin/src/app/(general)/coach-applications/page.tsx`,
+  [`mentorship.md`](./mentorship.md).
+
+- **Admin oturum ve origin savunması (2026-09-06)** — Admin erişim tokenı kalıcı tarayıcı
+  depolamasından çıkarıldı; yalnız bellekte tutuluyor, sayfa açılışında httpOnly refresh cookie ile
+  oturum kuruluyor ve eski `mentor_admin_token` temizleniyor. 401 yenilemeleri sekme içinde tek promise,
+  sekmeler arasında Web Locks ile koordine ediliyor. Next.js 16 Proxy her isteğe nonce tabanlı CSP,
+  `no-referrer`, `nosniff` ve Permissions-Policy ekliyor. Üretimde `/v1/admin/**` ayrıca Cloudflare
+  Access JWT imzası, issuer, audience ve app hesabıyla aynı e-posta şartıyla korunuyor; sahte Render
+  header'ı geçemiyor. Kullanım: API'de `CLOUDFLARE_ACCESS_TEAM_DOMAIN` ve
+  `CLOUDFLARE_ACCESS_AUD` zorunlu. Gotcha: aynı Access uygulaması admin web ve API originini
+  kapsamalı; MFA zorunluluğu Cloudflare Access politikasında ayrıca etkinleştirilip dağıtımda
+  doğrulanır. Bootstrap nedeniyle `style-src` inline stil izni sürer. İlgili: `auth.ts`,
+  `apiClient.ts`, `proxy.ts`, `cloudflare-access-verifier.ts`, `cloudflare-access.guard.ts`.
+
 - **Kullanıcı listesinde rol filtresi (APP-075, 2026-09-05)** — Arama yalnız e-posta ve ada
   bakıyordu; rol ikisinin de parçası olmadığı için **"kim koç"** sorusu panelden sorulamıyordu.
   W8'in bayrağını (`mentorship.enabled`) ilk kez açacak operatörün ilk sorusu buydu.
