@@ -794,6 +794,16 @@
   padding: 3px;
   border-radius: 9999px;
   background: var(--tabs-bar-bg);
+  max-width: 100%;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+.t-tabs::-webkit-scrollbar {
+  display: none;
 }
 
 .t-tabs.t-tabs--equal {
@@ -815,11 +825,14 @@
   font-family: var(--font-heading);
   font-size: 0.875rem;
   font-weight: 600;
+  flex-shrink: 0;
+  white-space: nowrap;
   transition: color var(--tabs-dur) var(--tabs-ease);
 }
 
 .t-tabs.t-tabs--equal .t-tab {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: fit-content;
   min-height: 44px;
 }
 
