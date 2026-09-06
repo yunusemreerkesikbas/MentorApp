@@ -1,11 +1,9 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import cookieParser from "cookie-parser";
-import express from "express";
+import { createTestApp } from "./app-harness";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { PHOTO_MAX_BYTES } from "../src/modules/ai/domain/photo-classify.constants";
 
 const RUN = Date.now();
 const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-00000000ai01";
@@ -71,13 +69,7 @@ describe("ai photo categorize (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
-    app = moduleRef.createNestApplication({ logger: false });
-    app.setGlobalPrefix("v1");
-    app.use(cookieParser());
-    app.use(
-      "/v1/storage/fake-upload",
-      express.raw({ type: ["image/jpeg", "image/png"], limit: PHOTO_MAX_BYTES }),
-    );
+    app = createTestApp(moduleRef);
     await app.init();
 
     const free = await signup("free");
@@ -131,16 +123,17 @@ describe("ai photo categorize (e2e)", () => {
     expect(uploadUrlRes.status).toBe(201);
     const { uploadUrl, key } = uploadUrlRes.body;
 
-    const jpegBytes = Buffer.from(
-      "/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAAgGBgcGBQgHBwcJCQgKDBQNDAsLDBkSEw8UHRofHh0aHBwgJC4nICIsIxwcKDcpLDAxNDQ0Hyc5PTgyPC4zNDL/2wBDAQkJCQwLDBgNDRgyIRwhMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjIyMjL/wAARCAABAAEDASIAAhEBAxEB/8QAFQABAQAAAAAAAAAAAAAAAAAAAAn/xAAUEAEAAAAAAAAAAAAAAAAAAAAA/8QAFQEBAQAAAAAAAAAAAAAAAAAAAAX/xAAUEQEAAAAAAAAAAAAAAAAAAAAA/9oADAMBEQACEQADAP/EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAQUC/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAwEBPwF/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAgEBPwF/8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQAGPwJ//8QAFBEBAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPyF/9k=",
-      "base64",
-    );
+    // SOI, SOF0 (1x1, three components), SOS, EOI — the smallest thing the upload validator
+    // accepts. The previous fixture was TRUNCATED (it ended `ff64`, not the `ffd9` a JPEG must end
+    // with), so the receiver rejected it and this test never proved a photo could be uploaded.
+    const jpegBytes = Buffer.from("/9j/wAARCAABAAEDAREAAhEBAxEB/9oACAEBAAA/AP/Z", "base64");
 
     const putRes = await request(app.getHttpServer())
       .put(uploadUrl.startsWith("/") ? uploadUrl : uploadUrl.replace(/^https?:\/\/[^/]+/, ""))
       .set("Content-Type", "image/jpeg")
       .send(jpegBytes);
-    expect(putRes.status).toBe(200);
+    // 204: the ticket receiver stores the object and returns no content.
+    expect(putRes.status).toBe(204);
 
     const clientRequestId = "11111111-1111-4111-8111-111111111111";
     const categorize = await request(app.getHttpServer())

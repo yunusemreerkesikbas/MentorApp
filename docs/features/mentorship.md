@@ -79,6 +79,39 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 #   the manual override.
 ```
 
+## Going live — the flag order
+
+Five flags, and the order is the whole point. Turning `mentorship.enabled` on first opens a screen
+that cannot work: a student who redeems a code before any coach exists gets "invalid code", and the
+surface is a promise nobody can keep. Each step below is one `POST /v1/admin/config` (SUPER_ADMIN,
+audited) or one admin screen.
+
+| # | Step | What it opens | Cost | Turning it back off |
+|---|---|---|---|---|
+| 1 | `mentorship.applications.open = true` | The application form at `/koc-basvurusu`. **Students see nothing.** | None | Clean. Existing applications stay; the form says "closed". |
+| 2 | admin `/coach-applications` | Approve the first coaches. Approval also grants COACH. | None | A rejection does not revoke an already-granted role — that is a separate act. |
+| 3 | `mentorship.enabled = true` | The coach panel and the student's invite screen. | None | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
+| 4 | `mentorship.risk_digest.enabled = true` | The 07:00 UTC morning email. Do this **after** a cohort exists. | Email volume | Clean. |
+| 5 | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.** | `coaches x free_seats` in LLM budget | **NOT clean — see below.** |
+
+**Before step 5, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
+the cohort's 30-day LLM cost per seat — the number `mentorship.coach.free_seats` is calibrated
+against. It exists precisely so this flag is not flipped on a guess (APP-077).
+
+**Two knobs at step 5, two different severities, and neither is the other's undo:**
+
+- `mentorship.seats.sponsorship_enabled = false` is the **emergency brake**: it expires live seats
+  immediately, not just future ones. An operator hitting it means "now", not "from the next student".
+  Turning it back on does not restore them — the seat decision is made at accept time.
+- `mentorship.coach.free_seats` lowered is **not retroactive**: it shapes who gets a seat next, it
+  does not take back one already granted. Deciding which existing seats to revoke would be arbitrary.
+
+**Rollback of the whole surface** is step 3 alone: `mentorship.enabled = false` closes every door in
+one config write. Links, applications and assignments are untouched — nothing is deleted by a flag.
+
+```bash
+```
+
 ```http
 ### Coach
 GET    /v1/mentorship/overview                     -> { inviteCode, activeStudents, maxActiveStudents, dataScope }
@@ -152,6 +185,56 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Yayın kapısı: CI yeşil, koçluk açılabilir (APP-084, 2026-09-06)** — Karar iki karanlık yüzeyi
+  (`forum.enabled`, `mentorship.enabled`) açmaktı; ama `security-release-checklist.md`'nin **ilk
+  kapısı** "Tam CI … yeşil" diyor ve master altı testte kırmızıydı. Yani kırmızı CI rakip bir iş
+  değil, açma işinin birinci maddesiydi.
+  **Düzeltme: CI'ı kırmızı yapan bu altı test DEĞİLDİ.** Koşu kayıtları okunduğunda CI'ın sır
+  tarama adımında düştüğü ve lint/typecheck/build/test'in **hiç koşmadığı** çıktı; testler
+  yerelde kırıktı ve CI oraya hiç varmıyordu. O hikâye
+  [`base-infrastructure.md`](../core/base-infrastructure.md)'de. Aşağısı testlerin kendisi.
+  **Altı kırmızı, üç ayrı kök neden — hiçbiri "testi güncelle" değildi.**
+  **(1) Doğrulanmayan başlık, gerçek 500.** `@Headers() dto: AdIdempotencyHeadersDto` doğrulama
+  **yapmıyordu**: Nest başlık parametrelerini `ArgumentMetadata.type === "custom"` diye bildiriyor
+  ve pipe'a bildirilen sınıf yerine `Object` veriyor, dolayısıyla `ZodValidationPipe` şema bulamayıp
+  ham başlıkları geçiriyor. Bozuk bir `Idempotency-Key` böylece `ad_reward_sessions.idempotency_key`
+  (**uuid kolonu**) sorgusuna ulaşıp Postgres hatası → 500 üretiyordu. Sonda ile ölçüldü:
+  `PROBE {"type":"custom","metatype":"Object","hasSchema":false}`.
+  **Pipe da eklenemiyor:** `Headers` `(property?: string) => ParameterDecorator` diye tanımlı —
+  `@Body`/`@Query`/`@Param`'ın aksine pipe almıyor, verilen sessizce yok sayılıyor. Denendi,
+  ölçüldü, hâlâ 500 döndü. Yani bir başlık **yalnızca** onu çıkaran dekoratörün içinde doğrulanabilir.
+  Çözüm `common/http/idempotency-key.decorator.ts`: `createParamDecorator` gövdesi istek yolunda
+  sıradan kod, dolayısıyla kontrol gerçekten koşuyor. Şema ve DTO **silindi** — doğrulama gibi
+  okunup hiçbir şey yapmayan bir şema yem, ve bir sonraki kişi doğrulanmış başlık lazım olunca ona
+  uzanır.
+  **(2) Harness üretim hattını elle kopyalıyordu ve kopya bayatlamıştı.** `main.ts` `bodyParser:
+  false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT'unu **atlıyor**, çünkü
+  alıcı ham akışa ihtiyaç duyuyor. 31 e2e dosyasının **hiçbiri** onu çağırmıyordu; forum spec'i
+  `express.raw`'ı APP-080'de ölen bir rotaya (`/v1/storage/fake-upload`) besliyordu. Sonuç: varsayılan
+  ayrıştırıcı gövdeyi yiyor, alıcı boş okuyor, 400. `test/app-harness.ts` artık `src/`'den **aynı
+  fonksiyonu** çağırıyor — kural yeniden yazılmadığı için üretimde doğru testte bayat olamaz.
+  `bodyParser: false` neden `AppModule`'e taşınamıyor: fabrika seçeneği, Nest varsayılan
+  ayrıştırıcıları app oluşturulurken kaydediyor, modül middleware'inden önce.
+  **(3) İki test fixture'ı gerçek görsel değildi.** Harness düzeldikten sonra bayt akışı alıcıya
+  ulaştı ve doğrulayıcı onları **haklı olarak** reddetti. Forum'un PNG'i 70 bayt: IDAT'tan sonraki
+  chunk başlığı `"\0\0IE"` okunuyor, akış kaymış. ai-photo'nun JPEG'i `ff64` ile bitiyor, `ffd9`
+  ile değil — kesik. İkisi de "gerçek bir görsel yükleniyor" iddia eden testlerdi ve **hiçbir zaman
+  onu kanıtlamamışlardı**; harness hatası aynı 400'ü ürettiği için görünmüyordu. Yerlerine
+  doğrulayıcıya karşı **ölçülmüş** fixture'lar kondu (JPEG: SOI · SOF0 1x1 · SOS · EOI, 33 bayt).
+  **Sözleşme farkı:** bilet alıcısı `@HttpCode(204)`, testler 200 bekliyordu. Bu gerçek bir
+  değişiklik, testler geride kalmıştı.
+  **`content.service.spec` bayat imzayla çağırıyordu** (`("BODY","image/webp")`); imza
+  `(userId, sessionId, purpose, contentType)`. Controller doğruydu, yani üretim hatası yok. Yeni
+  iddia `ownerId`/`sessionId`'nin presign'a gerçekten gittiğini **kontrol ediyor** — APP-080 o
+  alanları bir sebeple ekledi ve testin onları hiç görmemesi sorunun kendisiydi.
+  **Ayrıca:** kayıt onay kutusuna 18 yaş maddesi (`auth.register.kvkk`, tr+en) — ayrı veli onayı
+  akışı yok, karar buydu. **Hukuk onayı bekliyor** (roadmap §12 zaten lansman öncesi açık madde).
+  Ve bayrak açma runbook'u: beş bayrak, sırası önemli, hiçbir yerde yazmıyordu.
+  **İlgili:** `common/http/idempotency-key.decorator.ts`, `apps/api/test/app-harness.ts`,
+  `modules/ads/presentation/{ads.controller.ts,ads.dto.ts}`, `packages/validation/src/ads.ts`,
+  `apps/api/test/{forum,ai-photo}.e2e-spec.ts`,
+  `modules/content/application/content.service.spec.ts`, `apps/web/messages/{tr,en}.json`.
 
 - **Güven yüzeyi — koç profili öğrenciye görünüyor (APP-083, 2026-09-06)** — APP-082 kürasyonu
   kurdu ama ürettiği veriyi kimse görmüyordu: öğrenci onay ekranında hâlâ **bir isim** görüp
@@ -1009,10 +1092,11 @@ flag that cries wolf costs the coach more than it gives.
 - ~~The approved profile shown to the student~~ — **shipped (APP-083)**, with the coach editing
   their own two lines and the repo's first Tier-1 contact detector behind it. Tier-2 (the AI
   classifier that survives deliberate evasion) stays Phase 2, roadmap §9.
-- **Minors — decided (2026-09-06): no separate parental-consent flow.** The 18+/mentorship clause
-  goes into the signup consent checkbox text, to be added when that copy is written. `users` still
-  carries no birth date and this module still assumes 18+; the decision is that the consent screen
-  says so rather than the app enforcing an age it cannot verify.
+- ~~Minors~~ — **decided and shipped (APP-084).** No separate parental-consent flow; the signup
+  consent checkbox now carries "18 yaşından büyüğüm" / "I am over 18" (`auth.register.kvkk`).
+  `users` still holds no birth date and the app enforces no age it cannot verify — the consent
+  screen states it instead. **The wording awaits legal sign-off** (roadmap §12 keeps that as a
+  pre-launch item); changing it is a copy edit, not a code change.
 - **Topic-level evidence for the coach — rejected (2026-09-06), with the reason.** The
   `mistake_notebook_entries` line in `cohort-evidence.ts` stays: even an aggregate count is a
   behaviour pattern produced in a space framed as the student's own, and that file's header ("a

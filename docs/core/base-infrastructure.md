@@ -53,6 +53,41 @@ pnpm db:up && pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **CI hiç koşmuyormuş: sır taraması, build ve tip kapıları (APP-084, 2026-09-06)** — Amaç iki
+  karanlık yüzeyi açmaktı ve `security-release-checklist.md`'nin ilk kapısı "Tam CI … yeşil" diyor.
+  Yerelde altı test kırıktı, oradan başlandı; sonra **asıl bulgu** çıktı.
+  **CI, lint/typecheck/build/test'e hiç ulaşmıyordu.** `gh run view`: her koşuda "Scan repository
+  for secrets" **failure**, sonraki her adım **skipped**. gitleaks bir commit ARALIĞI tarıyor
+  (`<base>^..<head>`) ama `actions/checkout@v4` varsayılan olarak derinlik 1 klonluyor, yani base'in
+  ebeveyni checkout'ta yok: `fatal: ambiguous argument … unknown revision` → `failed to scan Git
+  repository` → exit 1. Log'un kendisi **"no leaks found in partial scan"** diyor — hiçbir sır
+  bulunmadı, tarama koşamadı bile. Düzeltme `fetch-depth: 0`.
+  **Ne kadardır böyle:** sır tarama adımı APP-080'de, aynı gün eklendi — yani bu özel sebep bir
+  günlük. Ama `gh run list` son 100 koşuda (23 Ağustos'a kadar) **hiç başarılı koşu göstermiyor**,
+  yani CI ondan önce de başka bir sebeple kırmızıydı. Bu dilim bugünkü zinciri açıyor; kırmızının
+  daha eski tarihi ayrıca bakılmayı hak ediyor.
+  **Arkasındaki iki kapı da kırıkmış, kimse göremediği için.**
+  **(1) `pnpm build`** admin'de düşüyordu: `theme.scss` içindeki CSS `@import url(...)` sass
+  tarafından üretilen stylesheet'e taşınıyor, Next 16'nın Turbopack ayrıştırıcısı en başta olmayan
+  bir `@import`'u reddediyor (sass'ın önüne koyduğu BOM içerik sayılıyor) →
+  `Unexpected token AtKeyword("import")`. Font **`<link>` olarak da eklenemezdi**: admin CSP'si
+  `style-src 'self' 'unsafe-inline'` ve `font-src 'self' data:` — yani o webfont CSP geldiğinden
+  beri zaten yüklenmiyordu. Yüklenmeyecek bir `<link>` koymak düzeltme gibi görünüp hiçbir şey
+  yapmazdı; webfont kaldırıldı, şablonun kendi yığını devraldı. Geri istenirse **self-host**
+  (`font-src 'self'` zaten izinli), üçüncü taraf origin için CSP gevşetmek bir güvenlik kararı.
+  **(2) `pnpm typecheck`** admin'de yedi hata veriyordu (`react-icons`: *Property 'className' does
+  not exist on type 'IconBaseProps'*), ve **turbo bunu önbellekte saklıyordu** — yükseltmeden
+  önceki geçen koşu hâlâ cache'teydi. Sebep repoda zaten çözülmüş bir sınıf: `apps/web/tsconfig`'in
+  `paths.react` pin'i. Admin'de yoktu, dolayısıyla `react-icons` `SVGAttributes`'ı olmayan bir React
+  ad alanına çözülüyordu. Aynı pin admin'e eklendi; `next build` sonrası hayatta kaldığı doğrulandı.
+  `react-icons` 5.6→5.7 denendi, **çözmedi**, geri alındı — sorun sürüm değil çözümlemeydi.
+  **Yan bulgu:** `apps/web/AGENTS.md` admin'i "React 18 (accepted deviation)" diye anlatıyordu;
+  admin artık Next 16 / React 19. Not düzeltildi, çünkü tam da bu pin'i açıklayan yer.
+  **Ders:** yeşil bir CI rozeti "testler geçti" demiyor. Bu koşularda **hiçbir test koşmadı**, ve
+  rozet kırmızıydı ama kırmızılığın sebebi herkesin sandığı yer değildi.
+  **İlgili:** `.github/workflows/ci.yml`, `apps/admin/{tsconfig.json,src/assets/scss/theme.scss,src/app/layout.js}`,
+  `apps/web/AGENTS.md`, [`security-release-checklist.md`](./security-release-checklist.md).
+
 - **Project initialization** — Turborepo + pnpm monorepo skeleton (`apps/*` + `packages/*`), queue +
   RLS foundational decisions. *(Original devnote 0001.)*
 - **Core/base infrastructure** — `db` (pg Pool)/errors/i18n/logging/security/OpenAPI/health/tests; the

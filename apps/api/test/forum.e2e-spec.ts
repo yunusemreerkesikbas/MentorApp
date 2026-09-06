@@ -1,8 +1,7 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { createTestApp } from "./app-harness";
 import { ThrottlerStorage } from "@nestjs/throttler";
-import cookieParser from "cookie-parser";
-import express from "express";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -86,25 +85,7 @@ describe("forum zones (e2e)", () => {
         increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
       })
       .compile();
-    app = moduleRef.createNestApplication({ logger: false });
-    app.setGlobalPrefix("v1");
-    app.use(cookieParser());
-    // Mirror main.ts: raw body for the fake-upload endpoint (needed by the attachments tests).
-    app.use(
-      "/v1/storage/fake-upload",
-      express.raw({
-        type: [
-          "image/jpeg",
-          "image/png",
-          "image/webp",
-          "application/pdf",
-          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "application/vnd.openxmlformats-officedocument.presentationml.presentation",
-        ],
-        limit: 10 * 1024 * 1024,
-      }),
-    );
+    app = createTestApp(moduleRef);
     await app.init();
 
     const admin = await signup("admin");
@@ -394,14 +375,15 @@ describe("forum zones (e2e)", () => {
 
     // 2) PUT a real 1x1 PNG to the fake-upload endpoint
     const png = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7WQAAAAASUVORK5CYII=",
       "base64",
     );
     await request(app.getHttpServer())
       .put(uploadUrl)
       .set("Content-Type", "image/png")
       .send(png)
-      .expect(200);
+      // 204: the ticket receiver stores the object and returns no content.
+      .expect(204);
 
     // 3) create a thread carrying the attachment
     const posted = await request(app.getHttpServer())
@@ -469,7 +451,7 @@ describe("forum zones (e2e)", () => {
       .put(uploadUrl)
       .set("Content-Type", "application/pdf")
       .send(pdf)
-      .expect(200);
+      .expect(204);
 
     const posted = await request(app.getHttpServer())
       .post(`/v1/forum/zones/${zoneId}/threads`)
@@ -499,7 +481,7 @@ describe("forum zones (e2e)", () => {
     await request(app.getHttpServer()).post(`/v1/forum/zones/${zoneId}/join`).set(asUser());
 
     const png = Buffer.from(
-      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7WQAAAAASUVORK5CYII=",
       "base64",
     );
     // Upload one image and return its key (fake storage in test).
@@ -514,7 +496,7 @@ describe("forum zones (e2e)", () => {
         .put(uploadUrl)
         .set("Content-Type", "image/png")
         .send(png)
-        .expect(200);
+        .expect(204);
       return key;
     };
 

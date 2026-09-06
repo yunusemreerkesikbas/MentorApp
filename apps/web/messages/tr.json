@@ -89,7 +89,7 @@
       "name": "Ad Soyad",
       "email": "E-posta",
       "password": "Şifre (en az 8 karakter, harf + rakam)",
-      "kvkk": "<link>KVKK aydınlatma metnini</link> okudum, kişisel verilerimin işlenmesini kabul ediyorum.",
+      "kvkk": "<link>KVKK aydınlatma metnini</link> okudum, kişisel verilerimin işlenmesini kabul ediyorum. 18 yaşından büyüğüm.",
       "kvkk_error": "Devam etmek için KVKK metnini kabul etmelisin.",
       "submit": "Kayıt ol",
       "login_prompt": "Zaten hesabın var mı?",

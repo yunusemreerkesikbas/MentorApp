@@ -613,13 +613,20 @@ describe("ContentService — info articles", () => {
     const { service, storage } = buildService();
 
     const result = await service.createArticleImageUploadUrl(
+      "editor-1",
+      "session-1",
       "BODY",
       "image/webp",
     );
 
+    // `ownerId` and `sessionId` are what bind the upload ticket to the person and the live session
+    // that asked for it. The older two-argument call could not carry them, and this assertion is
+    // here so a signature that quietly drops one fails loudly instead of minting an unbound ticket.
     expect(storage.createUploadUrl).toHaveBeenCalledWith({
       key: expect.stringMatching(/^content\/articles\/body\/.+\.webp$/),
       contentType: "image/webp",
+      ownerId: "editor-1",
+      sessionId: "session-1",
     });
     expect(result).toMatchObject({
       uploadUrl: "https://upload.mentor.test/signed",

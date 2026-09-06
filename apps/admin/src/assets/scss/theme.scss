@@ -12,7 +12,22 @@
 */
 
 // The internal product UI is intentionally locked to a single family.
-@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap");
+// The Inter webfont used to be pulled in here with a CSS `@import url(...)`. It is gone, for two
+// reasons that point the same way.
+//
+// It broke the build: sass hoists a CSS `@import` into the generated stylesheet, and Next 16's
+// Turbopack parser rejects an `@import` that is not the very first thing there — the byte-order
+// mark sass emits ahead of it counts as content. `Unexpected token AtKeyword("import")` failed
+// `pnpm build`, and CI never reached lint, typecheck or test behind it.
+//
+// And it was already loading nothing. The admin CSP is `style-src 'self' 'unsafe-inline'` with
+// `font-src 'self' data:` (proxy.ts), which refuses a stylesheet from fonts.googleapis.com however
+// it is requested — an `@import` and a `<link>` are both `style-src`. So this font has not
+// rendered since the CSP landed. Re-adding it as a `<link>` would have looked like a fix and
+// loaded nothing; widening the CSP for a webfont is a security decision, not a build fix.
+//
+// The template's own font stack takes over. If Inter is wanted back, self-host it (`font-src
+// 'self'` already allows that) rather than reaching for a third-party origin.
 
 
 // @import "themes/_bs-custom-variables";
