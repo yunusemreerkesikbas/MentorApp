@@ -126,6 +126,13 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   `createFromTemplate` yazıyor, yani doğrudan `createInApp` çağıran bir gönderici baseline
   bırakmaz. (3) NotificationsModule artık MentorshipModule import ediyor; döngü yok çünkü
   mentorship identity + coaching'e bağlı ve bu modül zaten `@Global`.
+  **Güncelleme (APP-081, 2026-09-06): koçun "ilgilendim" işareti gövdeyi de süzüyor.**
+  `hasNewNews` e-postanın **çıkıp çıkmayacağına** koç başına karar veriyor ama gövde adayın
+  taşıdığı herkesi listeliyordu — yani bir öğrencide yeni haber varken dün aranan öğrenci de
+  tekrar sayılıyordu. Süzme W8'de, bu serviste değil: `MentorshipQueryAdapter` artık işareti
+  kapsayan öğrenciyi adaya hiç koymuyor. Kural roster ile paylaşılıyor
+  (`mentorship/domain/attention.ts`), yani panel ile sabah e-postası "kim bekliyor"da ayrılamıyor.
+  Bu servisin kodu değişmedi.
   **İlgili:** `application/mentorship-risk-digest.service.ts`,
   `infrastructure/user-notification.repository.ts`, `presentation/cron.controller.ts`,
   `../../render.yaml`, [`mentorship.md`](./mentorship.md).

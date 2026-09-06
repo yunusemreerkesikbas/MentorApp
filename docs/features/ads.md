@@ -45,6 +45,14 @@ kapatılmalıdır; doğrudan/reservation envanteri kullanılmalıdır.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-06 — Rewarded Coin üretimde fail-closed** — Google Ad Manager web rewarded formatı
+  sunucu tarafı doğrulama kanıtı vermediği için üretimde istemci `rewardedSlotGranted` olayı Coin
+  basamaz. Teklif `SERVER_VERIFICATION_UNAVAILABLE` gerekçesiyle kapalı döner; daha önce üretilmiş
+  bir oturumu tamamlama isteği de 422 ile reddedilir. Geliştirme/test ortamındaki akış görsel ve
+  entegrasyon çalışması için korunur. Kullanım: üretimde ödül ancak imzalı sunucu doğrulaması sunan
+  bir sağlayıcı veya app formatı seçildikten sonra yeniden açılmalıdır. Gotcha: günlük limit
+  suistimal kanıtı değildir. İlgili: `ads.service.ts`, `ads.service.spec.ts`, `packages/types/src/ads.ts`.
+
 - **2026-08-30 — Premium görev bannerı reklamdan ayrıldı** — `TopBanner` reklam bileşeni değil,
   ortak dashboard duyuru/görev giriş noktasıdır. Premium kullanıcı `Bugünün görevleri seni
   bekliyor` item'ını görüp Görevler sheet'ini açar; rewarded satır, GPT scripti ve reklam isteği

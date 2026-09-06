@@ -7,17 +7,21 @@
 
 1. Kısıtlı runtime DB rolünü ve ayrı migration rolünü hazırla. Runtime rolü superuser, BYPASSRLS,
    tablo/şema/veritabanı sahibi veya bu yetkileri miras alan bir rol olmamalı.
-2. `0102_security-hardening` migration'ını migration rolüyle uygula. API'yi kısıtlı runtime URL ile
+2. `0102_security-hardening` ve `0104_cultured_morgan_stark` migration'larını migration rolüyle uygula. API'yi kısıtlı runtime URL ile
    başlat ve başlangıç rol denetiminin geçtiğini kaydet.
 3. HTTPS `APP_URL`, açık HTTPS `CORS_ORIGINS`, gerçek Turnstile secret/hostname, Google callback,
-   VAPID ve R2 ayarlarını kontrol et. Doğrudan Render origin erişiminin Cloudflare korumalarını
-   atlamadığını dışarıdan doğrula.
+   VAPID, R2, `CLOUDFLARE_ACCESS_TEAM_DOMAIN` ve `CLOUDFLARE_ACCESS_AUD` ayarlarını kontrol et.
+   Admin web ve `/v1/admin/**` aynı Access uygulaması/politikası kapsamında olmalı; MFA zorunlu
+   tutulmalı. Doğrudan Render origin erişiminin imzasız veya sahte Access header'ıyla admin API'ye
+   ulaşamadığını dışarıdan doğrula.
 4. Dağıtımdan sonra bütün eski oturumları sonlandır ve `CRON_SECRET` değerini yenile. Geçmiş uygulama,
    platform ve Sentry loglarında cookie, refresh/access tokenı, cron sırrı veya OAuth kodu arayıp erişim
    kapsamı ile saklama süresini değerlendir; gerekiyorsa kayıtları sil ve ilgili kimlik bilgilerini döndür.
-5. Defter/hayal panosu için eski genel R2 nesnelerini özel anahtarlara taşı veya yeniden yüklet; veri
-   referanslarını doğrula, ardından genel kopyaları ve CDN cache'lerini temizle. Sahip olmayan kullanıcıyla
+5. `storage:migrate-private` ile önce dry-run al, sonra kontrollü ortamda `--apply` çalıştır. Veri
+   referanslarını doğrula, ardından kalan genel kopyaları ve CDN cache'lerini temizle. Sahip olmayan kullanıcıyla
    okuma denemesi yap ve imzalı URL'nin beş dakika içinde sona erdiğini doğrula.
+6. Onaylı KVKK/gizlilik metninde AI sağlayıcısına yurt dışı aktarımı, veri minimizasyonunun sınırı,
+   saklama ve no-training taahhüdünü yayımla; sağlayıcı hesabındaki veri işleme ayarını doğrula.
 
 ## Yayın kapıları
 
@@ -28,8 +32,14 @@
 - Eşzamanlı refresh/logout/parola reset sonrasında çalışan erişim veya refresh tokenı kalmıyor.
 - İç ağ push hedefi, sahte MIME, fazla boyut, kullanılmış yükleme yetkisi ve başka kullanıcının özel
   medyası gerçek dağıtımda reddediliyor.
-- Cloudflare Access yönetici API yollarını kapsıyor; Render origin doğrudan erişime kapalı. Yönetici MFA,
-  CSP ve tarayıcıda kalıcı admin tokenının kaldırılması takip paketinde tamamlanmadan genel yayın onayı verme.
+- Cloudflare Access yönetici API yollarını kapsıyor; Render origin doğrudan erişime kapalı ve Access
+  politikasında MFA zorunlu. Nonce tabanlı CSP cevapta mevcut; admin tokenı local/session storage'a
+  yazılmıyor ve eski anahtar açılışta temizleniyor.
+- Rewarded Coin üretimde `SERVER_VERIFICATION_UNAVAILABLE` ile kapalı. İmzalı sunucu doğrulaması
+  sağlayan bir reklam formatı seçilmeden etkinleştirme.
+- AI aylık bütçe rezervasyonları eşzamanlı çağrılarda tavanı koruyor; süresi dolmuş rezervasyonlar
+  temizleniyor ve kullanım kaydı rezervasyonu aynı kilit/işlem altında kapatıyor. Rezervasyon tutarı
+  izin verilen en pahalı model çağrısının ölçülen üst sınırından düşük değil.
 
 ## İzleme ve geri dönüş
 

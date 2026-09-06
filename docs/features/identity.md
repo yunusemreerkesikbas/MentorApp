@@ -406,6 +406,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   `_components/welcome/welcome-slide-layout.tsx`, `(onboarding)/_components/onboarding-step-layout.tsx`,
   `(onboarding)/_components/steps/complete-step.tsx`, `e2e/onboarding-redesign.spec.ts`.
 
+### 2026-09-06 — Logout propagates a failed server call
+
+- `AuthProvider.logout` no longer swallows a failed `POST /v1/auth/logout`. The local session is
+  still cleared first (cross-tab `announce("logout")`), but a network/HTTP failure now rejects so
+  the caller can retry instead of reporting a clean sign-out while the refresh cookie is still live.
+- Callers: the profile sign-out row shows a `profile.account.logout_error` toast on failure; the
+  delete-account flow deliberately ignores it (the account is already gone) and still navigates.
+- Related: `lib/auth-context.tsx`, `_components/account-links-card.tsx`, `messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

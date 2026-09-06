@@ -181,6 +181,27 @@ Domain belirlendiğinde: bucket → **Settings** → **Custom Domains** → **Co
 4. İstersen public development URL'i kapat (WAF/Access kullanacaksan **kapatmalısın**, yoksa
    bucket r2.dev üzerinden açık kalır).
 
+## Eski genel defter ve pano nesnelerini taşı
+
+Önce yalnız planı ve toplamları al:
+
+```bash
+pnpm --filter @mentor/api storage:migrate-private
+```
+
+Public ve private bucket ayarlarını, veritabanı referanslarını ve kapalı ortam yedeğini kontrol
+ettikten sonra geçişi uygula:
+
+```bash
+pnpm --filter @mentor/api storage:migrate-private -- --apply
+```
+
+Araç `notebook/` ve `vision-board/` prefixlerini sayfalı gezer. Her nesneyi private bucket'a
+`Cache-Control: private, no-store` ile kopyalar, hedef boyutunu doğrular ve yalnız başarılı
+doğrulamadan sonra public kaynağı siler. Anahtarlar loglara yazılmaz. Uygulama sonrasında veri
+referanslarını örnekle, sahip olmayan hesapla erişimi reddet ve Cloudflare CDN cache'ini temizle.
+Başarısız toplam sıfır olmadan geçiş tamamlanmış sayılmaz.
+
 ## Tuzaklar
 
 - **Yükleme yetkisi kısa ömürlü ve tek kullanımlık.** Sunucu `Content-Length` değerine güvenmez;

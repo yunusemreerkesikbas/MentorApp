@@ -1,6 +1,16 @@
 packages:
   - "apps/*"
   - "packages/*"
+overrides:
+  body-parser: 2.3.0
+  browserslist: 4.28.9
+  form-data: 4.0.6
+  immutable: 5.1.9
+  js-yaml: 4.3.1
+  multer: 2.3.0
+  nanoid@3: 3.3.18
+  postcss: 8.5.28
+  qs: 6.16.0
 allowBuilds:
   "@nestjs/core": true
   '@parcel/watcher': true

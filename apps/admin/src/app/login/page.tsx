@@ -5,7 +5,7 @@ import apiClient from "@/lib/apiClient";
 import { setToken } from "@/lib/auth";
 
 // Admin login (W6). Reuses the single API: POST /v1/auth/login. Admin = a users row holding
-// the ADMIN role; in prod the app also sits behind Cloudflare Access (§9). No self-signup.
+// the ADMIN role; the access token remains in memory and the refresh secret is an httpOnly cookie.
 export default function AdminLoginPage() {
     const router = useRouter();
     const [email, setEmail] = useState("");

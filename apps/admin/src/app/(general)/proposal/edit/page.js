@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 import dynamic from 'next/dynamic'
 import ProposalEditContent from '@/components/proposalEditCreate/ProposalEditContent'

@@ -86,6 +86,8 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   İlgili: `coin-celebration.tsx`, `coin-celebration-context.tsx`, `coin.json`, `coin-bg.svg`, `coin-sound.ts`,
   `panel-shell.tsx`, `economy-quests-card.tsx`, `rewarded-ad-offer.tsx`, `session-done-state.tsx`.
 
+- **Görevler Bottom Sheet & Dialog Redesign / Boyutlandırma (2026-09-06)** — `EconomyQuestsCard` ve alt bileşenleri (`QuestProgressGauge`, `QuestRowItem`, `QuestNextActionCard`) modern companions-hub tasarımına kavuşturuldu. Yarım daire sunset atmosferli progres göstergesi, SlidingTabs entegrasyonu ve to-do stilinde tek satır başlık + hover tooltip (`title`) yapısı kuruldu. `packages/ui` altındaki `BottomSheetProvider`, `BottomSheetViewport` ve `BottomSheetPanel` bileşenlerine `size: "wide"` ve `size: "full"` desteği kazandırıldı; `wide` modunda masaüstünde 520px genişlik ve mobilde %92 dvh (`max-lg:h-[92dvh]`, `rounded-t-[20px]`) yükseklik kilitlenerek görev listesi için ferah scroll alanı sağlandı. `transitions-dev` standartlarında yumuşak açılış/kapanış animasyonları eklendi. İlgili: `economy-quests-card.tsx`, `quest-row-item.tsx`, `quest-progress-gauge.tsx`, `bottom-sheet-panel.tsx`, `bottom-sheet-provider.tsx`, `bottom-sheet-viewport.tsx`, `types.ts`, `globals.css`.
+
 - **Ardışık Coin reklam görevi geri bildirimi (2026-08-30)** — Bir rewarded reklam tamamlandığında
   Coin sonucu kısa toast ile duyurulur; Ads görevi organik quest sayacına eklenmeden backend'deki
   kalan hakkı yeniden okur. Kalan hak varsa aynı sheet içinde ikinci açık kullanıcı aksiyonu
@@ -355,6 +357,11 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   tutarı ve kısa tarih ile gösterilir. Yeni endpoint yok; mobile ileride aynı view contract'ını
   tüketebilir.
   _(2026-07-09.)_
+- **Quest kartı — tek sekmede tabpanel a11y düzeltmesi** — `EconomyQuestsCard` yalnız
+  `questTabs.length > 1` iken `SlidingTabs` render ediyor. `QuestSection` artık `tabbed` prop'u
+  alıyor; sekme çubuğu yoksa `role="tabpanel"` ve `aria-labelledby` set edilmiyor (aksi halde
+  var olmayan `quests-tab-*` id'sine referans kalıyordu). CodeRabbit PR #80 bulgusu.
+  _(2026-09-06.)_
 
 ## Gotchas / Known issues
 

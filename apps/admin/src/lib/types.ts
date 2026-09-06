@@ -13,6 +13,30 @@ export interface AdminUserView {
     createdAt: string;
 }
 
+/**
+ * One coach-application queue row. `hasCoachRole` is REPORTED by the API rather than inferred from
+ * `status`: the approval writes the role and the verdict in two transactions, so an APPROVED row
+ * without the role is a real (recoverable) state the queue has to show.
+ */
+export interface AdminCoachApplicationView {
+    id: string;
+    userId: string;
+    displayName: string;
+    email: string;
+    status: string;
+    headline: string;
+    bio: string;
+    institution: string | null;
+    branch: string | null;
+    years: number | null;
+    note: string | null;
+    verifiedClaims: string[];
+    reviewNote: string | null;
+    submittedAt: string;
+    reviewedAt: string | null;
+    hasCoachRole: boolean;
+}
+
 export interface AdminUserDetail extends AdminUserView {
     organizationId: string | null;
     examType: string | null;
