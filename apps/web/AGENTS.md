@@ -18,12 +18,16 @@
   recognise, so never document anything inside that file. Two entries there are load-bearing and
   must not be removed:
   - `paths.react` / `paths.react-dom` pin React's types for the whole program, `node_modules`
-    `.d.ts` files included. `apps/admin` is React 18 (accepted deviation), so pnpm hoists
-    `@types/react@18` into `.pnpm/node_modules`, and any package that does not declare its own
-    `@types/react` — framer-motion is the one that bites — resolves 18's types while our code is on
-    19. The two `ReactNode` unions are not mutually assignable, so passing a `ReactNode` variable as
-    `children` to `motion.div` fails to compile. `pnpm.overrides` cannot fix it: framer-motion
-    declares no `@types/react` edge, and forcing 19 workspace-wide would break admin.
+    `.d.ts` files included. The workspace holds two majors of `@types/react`, so any package that
+    does not declare its own — framer-motion is the one that bites here — resolves whichever pnpm
+    hoisted rather than ours. The two `ReactNode` unions are not mutually assignable, so passing a
+    `ReactNode` variable as `children` to `motion.div` fails to compile. `pnpm.overrides` cannot fix
+    it: framer-motion declares no `@types/react` edge to override.
+    **`apps/admin` needs the same pin and now has it** (APP-084). It is no longer the React 18
+    deviation this note used to describe — it is Next 16 / React 19 like this app — but it was
+    missing the pin, so `react-icons` resolved a React namespace without `SVGAttributes` and seven
+    `Property 'className' does not exist on type 'IconBaseProps'` errors failed `pnpm typecheck`.
+    Turbo had cached a passing run from before the upgrade, which is why nobody saw them.
   - After changing anything in `tsconfig.json`, run `pnpm --filter @mentor/web build` and re-read
     the file to confirm the toolchain kept your change.
 

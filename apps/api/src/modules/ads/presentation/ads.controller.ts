@@ -4,9 +4,9 @@ import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { ExamType } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Public } from "../../../common/auth/public.decorator";
+import { IdempotencyKey } from "../../../common/http/idempotency-key.decorator";
 import { AdsService } from "../application/ads.service";
 import {
-  AdIdempotencyHeadersDto,
   AdPlacementParamsDto,
   AdPlacementQueryDto,
   CreateAdRewardSessionDto,
@@ -67,16 +67,13 @@ export class AdsController {
   @Post("reward-sessions")
   createRewardSession(
     @Body() dto: CreateAdRewardSessionDto,
-    @Headers() headers: AdIdempotencyHeadersDto,
     @CurrentUser() user: RequestUser,
+    // Validated inside the decorator, because a header can be validated nowhere else: a Zod DTO
+    // on `@Headers()` is never reached and `@Headers` takes no pipes. See the decorator's comment.
+    @IdempotencyKey() idempotencyKey?: string,
     @Headers("cf-ipcountry") countryCode?: string,
   ) {
-    return this.ads.createRewardSession(
-      dto.placementId,
-      user,
-      countryCode ?? null,
-      headers["idempotency-key"],
-    );
+    return this.ads.createRewardSession(dto.placementId, user, countryCode ?? null, idempotencyKey);
   }
 
   @ApiBearerAuth()

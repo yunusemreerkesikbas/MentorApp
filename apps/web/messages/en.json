@@ -89,7 +89,7 @@
       "name": "Full Name",
       "email": "Email",
       "password": "Password (at least 8 characters, letters + numbers)",
-      "kvkk": "I have read the <link>personal data protection notice</link> and consent to the processing of my personal data.",
+      "kvkk": "I have read the <link>personal data protection notice</link> and consent to the processing of my personal data. I am over 18.",
       "kvkk_error": "You must accept the KVKK text to continue.",
       "submit": "Sign up",
       "login_prompt": "Already have an account?",

@@ -33,7 +33,14 @@ jobs:
       NEXT_PUBLIC_GA_MEASUREMENT_ID: G-CI0000000
 
     steps:
+      # Full history, not the default shallow clone: gitleaks scans a COMMIT RANGE
+      # (`<base>^..<head>`), and on a depth-1 checkout the base's parent is not there. Git then
+      # answers "unknown revision", gitleaks reports "failed to scan Git repository" and exits 1 —
+      # so the step failed without ever scanning anything ("no leaks found in partial scan"), and
+      # lint, typecheck, build and test were all skipped behind it.
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
 

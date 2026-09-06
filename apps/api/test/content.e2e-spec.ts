@@ -28,6 +28,18 @@ describe("content (e2e)", () => {
     app.use(cookieParser());
     await app.init();
 
+    // Real clock for the sign-in, frozen clock for everything else.
+    //
+    // A session row is written with the process's `Date` but VALIDATED against Postgres `now()`
+    // (`AuthSessionRepository.findActive` filters `expires_at > now()`). Minting one while `Date`
+    // is pinned three months in the past produces a row the database considers expired the moment
+    // it exists, and every authenticated request comes back 401 — which is what took this whole
+    // suite down at `beforeAll`, not any single test.
+    //
+    // The freeze is for the editorial seed that ran during `app.init()` above and for the
+    // countdown assertions below; it is not needed to create a user. It comes back straight after.
+    vi.useRealTimers();
+
     const signup = await request(app.getHttpServer()).post("/v1/auth/signup").send({
       email: `w1-${randomUUID()}@test.local`,
       password: "Sifre1234",
@@ -43,6 +55,11 @@ describe("content (e2e)", () => {
       .send({ examType: "KPSS" });
     expect(patchMe.status).toBe(200);
     expect(patchMe.body.examType).toBe("KPSS");
+
+    // Back to the fixed date the countdown tests are written against. The session row already
+    // carries a real expiry, so authentication keeps working while the app's clock is pinned.
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date("2026-06-11T12:00:00.000Z"));
   }, 90_000);
 
   afterAll(async () => {
