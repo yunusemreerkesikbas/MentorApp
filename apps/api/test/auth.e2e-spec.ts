@@ -1,12 +1,13 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
-import express from "express";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { FeatureFlag } from "../src/common/config/config.catalog";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { AVATAR_MAX_BYTES } from "../src/modules/identity/domain/avatar";
+import { PG_POOL } from "../src/database/database.constants";
+import type { Pool } from "pg";
 
 /**
  * W0 identity e2e — full auth lifecycle against a real Postgres (RLS active).
@@ -37,10 +38,6 @@ describe("identity (e2e)", () => {
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
-    app.use(
-      "/v1/storage/fake-upload",
-      express.raw({ type: ["image/jpeg", "image/png"], limit: AVATAR_MAX_BYTES }),
-    );
     await app.init();
   });
 
@@ -156,12 +153,12 @@ describe("identity (e2e)", () => {
     expect(res.body.code).toBe("VALIDATION_ERROR");
   });
 
-  it("rejects unsupported fake storage upload content types", async () => {
+  it("removes the legacy direct fake-storage upload route", async () => {
     const res = await request(app.getHttpServer())
       .put("/v1/storage/fake-upload?key=avatars/test/bad.gif&contentType=image/gif")
       .set("Content-Type", "image/png")
       .send(Buffer.from("bad"));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(404);
   });
 
   it("uploads, saves, serves, and removes the current user's avatar", async () => {
@@ -173,12 +170,12 @@ describe("identity (e2e)", () => {
     expect(uploadUrlRes.body.key).toMatch(/^avatars\/.+\/.+\.png$/);
     expect(uploadUrlRes.body.maxBytes).toBe(2 * 1024 * 1024);
 
-    const bytes = Buffer.from("avatar-bytes");
+    const bytes = Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a7WQAAAAASUVORK5CYII=", "base64");
     const putRes = await request(app.getHttpServer())
       .put(uploadUrlRes.body.uploadUrl)
       .set("Content-Type", "image/png")
       .send(bytes);
-    expect(putRes.status).toBe(200);
+    expect(putRes.status).toBe(204);
 
     const saved = await request(app.getHttpServer())
       .patch("/v1/users/me")
@@ -193,12 +190,32 @@ describe("identity (e2e)", () => {
     expect(objectRes.headers["cross-origin-resource-policy"]).toBe("cross-origin");
     expect(objectRes.headers["content-type"]).toContain("image/png");
 
+    const replay = await request(app.getHttpServer()).put(uploadUrlRes.body.uploadUrl)
+      .set("Content-Type", "image/png").send(bytes);
+    expect(replay.status).toBe(401);
+
     const removed = await request(app.getHttpServer())
       .patch("/v1/users/me")
       .set("Authorization", `Bearer ${accessToken}`)
       .send({ avatarStorageKey: null });
     expect(removed.status).toBe(200);
     expect(removed.body.avatarUrl).toBeNull();
+  });
+
+  it("rejects disguised and oversized uploads before storage publication", async () => {
+    const issue = () => request(app.getHttpServer()).post("/v1/users/me/avatar-upload-url")
+      .set("Authorization", `Bearer ${accessToken}`).send({ contentType: "image/png" });
+    const disguisedTicket = await issue();
+    expect(disguisedTicket.status).toBe(201);
+    const disguised = await request(app.getHttpServer()).put(disguisedTicket.body.uploadUrl)
+      .set("Content-Type", "image/png").send(Buffer.from("<script>alert(1)</script>"));
+    expect(disguised.status).toBe(400);
+
+    const oversizedTicket = await issue();
+    expect(oversizedTicket.status).toBe(201);
+    const oversized = await request(app.getHttpServer()).put(oversizedTicket.body.uploadUrl)
+      .set("Content-Type", "image/png").send(Buffer.alloc(AVATAR_MAX_BYTES + 1));
+    expect(oversized.status).toBe(413);
   });
 
   it("unknown email and wrong password return the SAME generic 401 (no enumeration)", async () => {
@@ -255,6 +272,51 @@ describe("identity (e2e)", () => {
     expect(again.status).toBe(204);
   });
 
+  it("parallel refresh treats the loser as replay and leaves no valid descendant", async () => {
+    const login = await request(app.getHttpServer()).post("/v1/auth/login").send({ email, password });
+    expect(login.status).toBe(200);
+    const cookie = (login.headers["set-cookie"]?.[0] ?? "").split(";")[0]!;
+    const [a, b] = await Promise.all([
+      request(app.getHttpServer()).post("/v1/auth/refresh").set("Cookie", cookie),
+      request(app.getHttpServer()).post("/v1/auth/refresh").set("Cookie", cookie),
+    ]);
+    expect([a.status, b.status].sort()).toEqual([200, 401]);
+    const winner = a.status === 200 ? a : b;
+    const successor = (winner.headers["set-cookie"]?.[0] ?? "").split(";")[0]!;
+    expect((await request(app.getHttpServer()).get("/v1/users/me")
+      .set("Authorization", `Bearer ${winner.body.accessToken}`)).status).toBe(401);
+    expect((await request(app.getHttpServer()).post("/v1/auth/refresh").set("Cookie", successor)).status).toBe(401);
+  });
+
+  it("suspension immediately invalidates an already-issued access token", async () => {
+    const login = await request(app.getHttpServer()).post("/v1/auth/login").send({ email, password });
+    const pool = app.get<Pool>(PG_POOL);
+    await pool.query("update users set status = 'SUSPENDED' where id = $1", [userId]);
+    try {
+      expect((await request(app.getHttpServer()).get("/v1/users/me")
+        .set("Authorization", `Bearer ${login.body.accessToken}`)).status).toBe(401);
+    } finally {
+      await pool.query("update users set status = 'ACTIVE' where id = $1", [userId]);
+    }
+  });
+
+  it("role removal immediately blocks an access token carrying the old admin role", async () => {
+    const pool = app.get<Pool>(PG_POOL);
+    await pool.query("update users set roles = array['ADMIN']::text[] where id = $1", [userId]);
+    try {
+      const login = await request(app.getHttpServer()).post("/v1/auth/login").send({ email, password });
+      expect(login.status).toBe(200);
+      expect((await request(app.getHttpServer()).get("/v1/admin/users?page=1&pageSize=1")
+        .set("Authorization", `Bearer ${login.body.accessToken}`)).status).toBe(200);
+
+      await pool.query("update users set roles = array['STUDENT']::text[] where id = $1", [userId]);
+      expect((await request(app.getHttpServer()).get("/v1/admin/users?page=1&pageSize=1")
+        .set("Authorization", `Bearer ${login.body.accessToken}`)).status).toBe(403);
+    } finally {
+      await pool.query("update users set roles = array['STUDENT']::text[] where id = $1", [userId]);
+    }
+  });
+
   it("starts Google OAuth with state cookie and Google redirect", async () => {
     await app
       .get(ConfigRegistryService)
@@ -277,8 +339,8 @@ describe("identity (e2e)", () => {
     const res = await request(app.getHttpServer()).get(
       "/v1/auth/google/callback?code=x&state=y1234567890123456",
     );
-    expect(res.status).toBe(400);
-    expect(res.body.code).toBe("AUTH_GOOGLE_STATE_INVALID");
+    expect(res.status).toBe(302);
+    expect(res.headers.location).toContain("googleError=");
   });
 
   it("forgot-password always returns 200 (no enumeration)", async () => {
@@ -291,6 +353,31 @@ describe("identity (e2e)", () => {
     expect(known.status).toBe(200);
     expect(unknown.status).toBe(200);
     expect(known.body).toEqual(unknown.body);
+  });
+
+  it("password reset atomically revokes sessions and every unused sibling reset link", async () => {
+    const login = await request(app.getHttpServer()).post("/v1/auth/login").send({ email, password });
+    expect(login.status).toBe(200);
+    await request(app.getHttpServer()).post("/v1/auth/forgot-password").send({ email }).expect(200);
+    const pool = app.get<Pool>(PG_POOL);
+    const result = await pool.query<{ payload: { variables?: { link?: string } } }>(
+      "select payload from jobs where name = 'notifications.send-email' and payload->>'to' = $1 order by created_at desc limit 2",
+      [email],
+    );
+    expect(result.rows).toHaveLength(2);
+    const tokens = result.rows.map((row) => new URL(row.payload.variables!.link!).searchParams.get("token")!);
+    const nextPassword = "YeniSifre1234";
+    await request(app.getHttpServer()).post("/v1/auth/reset-password")
+      .send({ token: tokens[0], password: nextPassword }).expect(200);
+    const sibling = await request(app.getHttpServer()).post("/v1/auth/reset-password")
+      .send({ token: tokens[1], password: "BaskaSifre1234" });
+    expect(sibling.status).toBe(400);
+    expect((await request(app.getHttpServer()).get("/v1/users/me")
+      .set("Authorization", `Bearer ${login.body.accessToken}`)).status).toBe(401);
+    expect((await request(app.getHttpServer()).post("/v1/auth/login")
+      .send({ email, password })).status).toBe(401);
+    expect((await request(app.getHttpServer()).post("/v1/auth/login")
+      .send({ email, password: nextPassword })).status).toBe(200);
   });
 
   it("health stays public", async () => {

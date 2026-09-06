@@ -722,6 +722,27 @@
       "when": 1788639087501,
       "tag": "0102_security-hardening",
       "breakpoints": true
+    },
+    {
+      "idx": 103,
+      "version": "7",
+      "when": 1788647143433,
+      "tag": "0103_w8_mentorship_attention",
+      "breakpoints": true
+    },
+    {
+      "idx": 104,
+      "version": "7",
+      "when": 1788687164201,
+      "tag": "0104_cultured_morgan_stark",
+      "breakpoints": true
+    },
+    {
+      "idx": 105,
+      "version": "7",
+      "when": 1788688678867,
+      "tag": "0105_w8_coach_applications",
+      "breakpoints": true
     }
   ]
 }
