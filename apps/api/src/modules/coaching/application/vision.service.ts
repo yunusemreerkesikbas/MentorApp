@@ -54,7 +54,7 @@ export class VisionService {
       const row = await this.visions.findByUser(tx, userId);
       return row ? toVisionDto(row) : null;
     });
-    return dto ? this.enrich(dto) : null;
+    return dto ? this.enrich(userId, dto) : null;
   }
 
   /**
@@ -63,9 +63,11 @@ export class VisionService {
    *
    * The name lookups short-circuit on null ids, so a goal with no map selection costs no queries.
    */
-  private async enrich(dto: VisionDto): Promise<VisionDto> {
-    const targetNames = await this.resolveTargetNames(dto);
-    return { ...this.withImageUrls(dto), targetNames };
+  private async enrich(userId: string, dto: VisionDto): Promise<VisionDto> {
+    const [withImages, targetNames] = await Promise.all([
+      this.withImageUrls(userId, dto), this.resolveTargetNames(dto),
+    ]);
+    return { ...withImages, targetNames };
   }
 
   /**
@@ -75,17 +77,17 @@ export class VisionService {
    * back an absolute CDN URL, the dev fake store an API-relative path. The field is derived on
    * every read and dropped by the write schema, so it never becomes stored state that can go stale.
    */
-  private withImageUrls(dto: VisionDto): VisionDto {
+  private async withImageUrls(userId: string, dto: VisionDto): Promise<VisionDto> {
     if (!dto.board) return dto;
     return {
       ...dto,
       board: {
         ...dto.board,
-        items: dto.board.items.map((item) =>
+        items: await Promise.all(dto.board.items.map(async (item) =>
           item.kind === "image"
-            ? { ...item, url: this.storage.getPublicUrl(item.storageKey) }
+            ? { ...item, url: await this.storage.getPrivateUrl(item.storageKey, userId) }
             : item,
-        ),
+        )),
       },
     };
   }
@@ -167,7 +169,7 @@ export class VisionService {
       const row = await this.visions.upsert(tx, userId, normalized);
       return toVisionDto(row);
     });
-    return this.enrich(dto);
+    return this.enrich(userId, dto);
   }
 
   /**
@@ -229,7 +231,7 @@ export class VisionService {
         new VisionBoardSaved(userId),
       );
     }
-    return this.enrich(dto);
+    return this.enrich(userId, dto);
   }
 
   /**

@@ -10,8 +10,8 @@ import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
-import { LLM_PORT } from "./domain/llm.port";
-import { VISION_PORT } from "./domain/vision.port";
+import { LLM_PORT, RAW_LLM_PORT } from "./domain/llm.port";
+import { RAW_VISION_PORT, VISION_PORT } from "./domain/vision.port";
 import { ChatService } from "./application/chat.service";
 import { CoachAccessService } from "./application/coach-access.service";
 import { MoodReflectionService } from "./application/mood-reflection.service";
@@ -41,6 +41,7 @@ import { AiBudgetGuard } from "./application/ai-budget.guard";
 import { AiErasureService } from "./application/ai-erasure.service";
 import { CoachFeedbackStatsService } from "./application/coach-feedback-stats.service";
 import { AiUsageRepository } from "./infrastructure/ai-usage.repository";
+import { AiBudgetReservationRepository } from "./infrastructure/ai-budget-reservation.repository";
 import { CoachMessageRepository } from "./infrastructure/coach-message.repository";
 import { CoachConversationRepository } from "./infrastructure/coach-conversation.repository";
 import { CoachMemoryRepository } from "./infrastructure/coach-memory.repository";
@@ -54,6 +55,8 @@ import { GeminiLlmAdapter } from "./infrastructure/adapters/gemini-llm.adapter";
 import { OpenAiVisionAdapter } from "./infrastructure/adapters/openai-vision.adapter";
 import { FakeVisionAdapter } from "./infrastructure/adapters/fake-vision.adapter";
 import { GeminiVisionAdapter } from "./infrastructure/adapters/gemini-vision.adapter";
+import { PrivacyPreservingLlmAdapter } from "./infrastructure/adapters/privacy-preserving-llm.adapter";
+import { BudgetedVisionAdapter } from "./infrastructure/adapters/budgeted-vision.adapter";
 import { AiChatController } from "./presentation/ai-chat.controller";
 import { AiMoodController } from "./presentation/ai-mood.controller";
 import { AiSessionController } from "./presentation/ai-session.controller";
@@ -113,6 +116,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     PhotoUploadService,
     ContextBuilder,
     AiUsageRepository,
+    AiBudgetReservationRepository,
     AiCostStatsService,
     AiBudgetGuard,
     AiErasureService,
@@ -138,11 +142,13 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     FakeLlmAdapter,
     OpenAiLlmAdapter,
     GeminiLlmAdapter,
+    PrivacyPreservingLlmAdapter,
     OpenAiVisionAdapter,
     FakeVisionAdapter,
     GeminiVisionAdapter,
+    BudgetedVisionAdapter,
     {
-      provide: LLM_PORT,
+      provide: RAW_LLM_PORT,
       inject: [
         ConfigService,
         FakeLlmAdapter,
@@ -165,8 +171,9 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
         }
       },
     },
+    { provide: LLM_PORT, useExisting: PrivacyPreservingLlmAdapter },
     {
-      provide: VISION_PORT,
+      provide: RAW_VISION_PORT,
       inject: [
         ConfigService,
         FakeVisionAdapter,
@@ -189,6 +196,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
         }
       },
     },
+    { provide: VISION_PORT, useExisting: BudgetedVisionAdapter },
   ],
   // MentorshipBriefService is exported for W8, which owns the coach↔student gate and the cache;
   // this module only writes the text. The arrow is one-way: AI does not import MentorshipModule.

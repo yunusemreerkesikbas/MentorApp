@@ -1,7 +1,7 @@
-import { Inject, Injectable, NotFoundException, OnModuleDestroy, OnModuleInit } from "@nestjs/common";
-import { randomUUID } from "node:crypto";
-import { EMPTY, interval, merge, Observable, of, Subject } from "rxjs";
-import { finalize, map } from "rxjs/operators";
+import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+
+import type { Observable } from "rxjs";
+
 import type { MessageEvent } from "@nestjs/common";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -15,6 +15,10 @@ import type {
   PushSubscriptionInput,
   UserNotificationDto,
 } from "@mentor/types";
+import { ConfigRegistryService } from "../../../common/config/config-registry.service";
+import { PushEndpointPolicy } from "../../../shared/adapters/push/push-endpoint-policy";
+import { NotificationStreamService } from "./notification-stream.service";
+export { REALTIME_QUEUE_TTL_MS } from "./notification-stream.service";
 import type { NotificationCopyKey } from "../domain/notification-copy";
 import { NotificationsCopyService } from "./notifications-copy.service";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
@@ -25,23 +29,8 @@ import {
   type UserNotificationRow,
 } from "../infrastructure/user-notification.repository";
 
-const STREAM_TOKEN_TTL_MS = 60_000;
-const HEARTBEAT_INTERVAL_MS = 25_000;
-/**
- * How long a realtime cue waits for an offline recipient. A live SSE push only lands if the
- * client happens to be connected; queuing it briefly means a user who opens/focuses the tab
- * moments later still gets it (the durable notification remains the long-term fallback).
- */
-export const REALTIME_QUEUE_TTL_MS = 5 * 60_000;
-
 @Injectable()
-export class NotificationsService implements OnModuleInit, OnModuleDestroy {
-  private readonly streamTokens = new Map<string, { userId: string; exp: number }>();
-  private readonly streams = new Map<string, Set<Subject<MessageEvent>>>();
-  /** Realtime cues for users who weren't connected — flushed on their next stream connect. */
-  private readonly pendingRealtime = new Map<string, { data: Record<string, unknown>; exp: number }>();
-  private tokenCleanupTimer?: ReturnType<typeof setInterval>;
-
+export class NotificationsService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly pushSubs: PushSubscriptionRepository,
@@ -49,110 +38,39 @@ export class NotificationsService implements OnModuleInit, OnModuleDestroy {
     private readonly userNotifs: UserNotificationRepository,
     private readonly i18n: I18nService,
     private readonly copy: NotificationsCopyService,
+    private readonly streams: NotificationStreamService,
+    private readonly registry: ConfigRegistryService,
+    private readonly endpoints: PushEndpointPolicy,
   ) {}
 
-  onModuleInit(): void {
-    // Purge expired stream tokens every 60s to prevent unbounded Map growth
-    this.tokenCleanupTimer = setInterval(() => {
-      const now = Date.now();
-      for (const [token, entry] of this.streamTokens) {
-        if (entry.exp < now) this.streamTokens.delete(token);
-      }
-      for (const [userId, entry] of this.pendingRealtime) {
-        if (entry.exp < now) this.pendingRealtime.delete(userId);
-      }
-    }, 60_000);
+  createStreamToken(userId: string, sessionId: string): string {
+    return this.streams.createStreamToken(userId, sessionId);
   }
 
-  onModuleDestroy(): void {
-    clearInterval(this.tokenCleanupTimer);
+  validateAndConsumeStreamToken(token: string) {
+    return this.streams.validateAndConsumeStreamToken(token);
   }
 
-  // --- SSE streaming ---
-
-  createStreamToken(userId: string): string {
-    const token = randomUUID();
-    this.streamTokens.set(token, { userId, exp: Date.now() + STREAM_TOKEN_TTL_MS });
-    return token;
-  }
-
-  validateAndConsumeStreamToken(token: string): string | null {
-    const entry = this.streamTokens.get(token);
-    if (!entry || entry.exp < Date.now()) {
-      this.streamTokens.delete(token);
-      return null;
-    }
-    this.streamTokens.delete(token); // one-time use
-    return entry.userId;
-  }
-
-  createStream(userId: string): Observable<MessageEvent> {
-    const subject = new Subject<MessageEvent>();
-    let set = this.streams.get(userId);
-    if (!set) { set = new Set(); this.streams.set(userId, set); }
-    set.add(subject);
-
-    // ponytail: heartbeat prevents proxy timeout at 30s; upgrade to per-connection if needed
-    const heartbeat = interval(HEARTBEAT_INTERVAL_MS).pipe(
-      map(() => ({ data: "" } as MessageEvent)),
-    );
-
-    // Flush a cue that arrived while this user had no open stream (e.g. a study invite
-    // sent seconds before they focused the tab) — emitted on subscribe, before live events.
-    const queued = this.takePendingRealtime(userId);
-
-    return merge(queued ? of(queued) : EMPTY, subject.asObservable(), heartbeat).pipe(
-      finalize(() => {
-        set?.delete(subject);
-        if (set?.size === 0) this.streams.delete(userId);
-      }),
-    );
+  createStream(userId: string, sessionId: string): Promise<Observable<MessageEvent>> {
+    return this.streams.createStream(userId, sessionId);
   }
 
   private pushToStreams(userId: string): void {
     this.pushRealtimeEvent(userId, "new_notification");
   }
 
-  /**
-   * Push a typed realtime event to a user's live SSE streams (no-op if they're not
-   * connected). Beyond the generic bell ping, this carries a payload the client can
-   * branch on — e.g. a live "study_invite" modal cue. The durable notification is the
-   * async fallback; this only reaches an online recipient.
-   */
-  pushRealtimeEvent(
-    userId: string,
-    event: string,
-    extra?: Record<string, unknown>,
-    queueTtlMs?: number,
-  ): void {
-    const data = { event, ...extra };
-    const set = this.streams.get(userId);
-    if (set && set.size > 0) {
-      for (const s of set) s.next({ data } as MessageEvent);
-      return;
-    }
-    // Nobody listening — hold it briefly so an about-to-connect client still sees it.
-    if (queueTtlMs) {
-      this.pendingRealtime.set(userId, { data, exp: Date.now() + queueTtlMs });
-    }
+  pushRealtimeEvent(userId: string, event: string, extra?: Record<string, unknown>, queueTtlMs?: number): void {
+    this.streams.pushRealtimeEvent(userId, event, extra, queueTtlMs);
   }
-
-  /** Take (and clear) a still-valid queued cue for this user. */
-  private takePendingRealtime(userId: string): MessageEvent | null {
-    const pending = this.pendingRealtime.get(userId);
-    if (!pending) return null;
-    this.pendingRealtime.delete(userId);
-    if (pending.exp < Date.now()) return null;
-    return { data: pending.data } as MessageEvent;
-  }
-
   async subscribePush(userId: string, input: PushSubscriptionInput): Promise<void> {
+    await this.endpoints.resolve(input.endpoint);
+    const maxSubscriptions = await this.registry.get("notifications.push.max_subscriptions") as number;
     await withUserContext(this.db, { userId }, async (tx) => {
-      await this.pushSubs.upsert(tx, userId, {
+      await this.pushSubs.upsertWithinLimit(tx, userId, {
         endpoint: input.endpoint,
         p256dh: input.keys.p256dh,
         auth: input.keys.auth,
-      });
+      }, maxSubscriptions);
       await this.preferences.getOrCreate(tx, userId);
     });
   }

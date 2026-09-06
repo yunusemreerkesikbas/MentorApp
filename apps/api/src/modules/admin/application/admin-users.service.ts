@@ -130,6 +130,18 @@ export class AdminUsersService {
   }
 
   /** Full (secret-free) detail for the user screen. */
+  /**
+   * Display identity + roles for a set of ids, keyed by id.
+   *
+   * The seam admin screens use when they list rows another module owns: W8 never reads `users`, so
+   * the coach-application queue arrives without a name, an email or a role, and admin — the layer
+   * allowed to hold both at once — puts them together.
+   */
+  async listByIds(ids: string[]): Promise<Map<string, AdminUserView>> {
+    const rows = await this.repo.findByIds(ids);
+    return new Map([...rows].map(([id, row]) => [id, toView(row)]));
+  }
+
   async getDetail(userId: string): Promise<AdminUserDetail> {
     const row = await this.repo.findById(userId);
     if (!row) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);

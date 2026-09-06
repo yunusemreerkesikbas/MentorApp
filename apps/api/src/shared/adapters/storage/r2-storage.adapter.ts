@@ -15,18 +15,16 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type {
   StorageObjectSummary,
-  StoragePort,
-  StorageUploadUrlResult,
+  ObjectStoragePort,
 } from "../../ports/storage.port";
-import { PRIVATE_PREFIX, isPublicKey } from "../../storage/storage-prefixes";
+import { isPrivateKey, isPublicKey } from "../../storage/storage-prefixes";
 
-const UPLOAD_EXPIRY_SEC = 900;
 
 /**
  * Cloudflare R2 adapter (S3-compatible API). Requires R2_* env vars when STORAGE_PROVIDER=r2.
  */
 @Injectable()
-export class R2StorageAdapter implements StoragePort {
+export class R2StorageAdapter implements ObjectStoragePort {
   private readonly logger = new Logger(R2StorageAdapter.name);
   private client: S3Client | null = null;
   private publicBucket: string | null = null;
@@ -73,44 +71,28 @@ export class R2StorageAdapter implements StoragePort {
   }
 
   private bucketForKey(key: string): string {
-    if (key.startsWith(PRIVATE_PREFIX)) return this.privateBucket!;
+    if (isPrivateKey(key)) return this.privateBucket!;
     if (isPublicKey(key)) return this.publicBucket!;
     // Unknown prefix is rejected rather than defaulted: guessing "probably public" is how a
     // private object ends up on the internet.
     throw new DomainError(ErrorCode.BAD_REQUEST, HttpStatus.BAD_REQUEST);
   }
 
-  async createUploadUrl(input: {
-    key: string;
-    contentType: string;
-  }): Promise<StorageUploadUrlResult> {
+  async putObject(key: string, bytes: Buffer, contentType: string): Promise<void> {
     this.ensureReady();
-    const bucket = this.bucketForKey(input.key);
-    try {
-      const command = new PutObjectCommand({
-        Bucket: bucket,
-        Key: input.key,
-        ContentType: input.contentType,
-      });
-      const url = await getSignedUrl(this.client!, command, {
-        expiresIn: UPLOAD_EXPIRY_SEC,
-      });
-      const expiresAt = new Date(
-        Date.now() + UPLOAD_EXPIRY_SEC * 1000,
-      ).toISOString();
-      return { url, key: input.key, expiresAt };
-    } catch (err) {
-      this.logger.error(`R2 presign failed: ${String(err)}`);
-      throw new DomainError(
-        ErrorCode.SERVICE_UNAVAILABLE,
-        HttpStatus.SERVICE_UNAVAILABLE,
-      );
-    }
+    const download = contentType === "application/pdf" || contentType.startsWith("application/vnd.openxmlformats-officedocument.");
+    await this.client!.send(new PutObjectCommand({ Bucket: this.bucketForKey(key), Key: key, Body: bytes, ContentLength: bytes.length, ContentType: contentType, ContentDisposition: download ? `attachment; filename="${key.split("/").at(-1)}"` : undefined, CacheControl: isPrivateKey(key) ? "private, no-store" : "public, max-age=300" }));
+  }
+
+  async createReadUrl(key: string, expiresInSeconds: number): Promise<string> {
+    this.ensureReady();
+    if (!isPrivateKey(key)) throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    return getSignedUrl(this.client!, new GetObjectCommand({ Bucket: this.bucketForKey(key), Key: key, ResponseCacheControl: "private, no-store" }), { expiresIn: Math.max(1, Math.min(expiresInSeconds, 300)) });
   }
 
   getPublicUrl(key: string): string {
     this.ensureReady();
-    if (key.startsWith(PRIVATE_PREFIX)) {
+    if (isPrivateKey(key)) {
       throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
     this.bucketForKey(key);
@@ -185,13 +167,6 @@ export class R2StorageAdapter implements StoragePort {
 
   async deleteObject(key: string): Promise<void> {
     this.ensureReady();
-    const bucket = this.bucketForKey(key);
-    try {
-      await this.client!.send(
-        new DeleteObjectCommand({ Bucket: bucket, Key: key }),
-      );
-    } catch (err) {
-      this.logger.warn(`R2 deleteObject failed for ${key}: ${String(err)}`);
-    }
+    await this.client!.send(new DeleteObjectCommand({ Bucket: this.bucketForKey(key), Key: key }));
   }
 }

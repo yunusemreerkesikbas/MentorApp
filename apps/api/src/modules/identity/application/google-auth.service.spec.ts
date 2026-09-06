@@ -41,6 +41,7 @@ describe("Google OAuth status", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     await expect(service.status()).resolves.toEqual({
@@ -54,6 +55,7 @@ describe("Google OAuth status", () => {
     const service = new GoogleAuthService(
       { get: () => undefined } as never,
       { get: async () => true } as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -75,6 +77,7 @@ describe("Google OAuth status", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
     );
 
     await expect(service.status()).resolves.toEqual({
@@ -88,6 +91,7 @@ describe("Google OAuth status", () => {
     const service = new GoogleAuthService(
       { get: () => "configured" } as never,
       { get: async () => false } as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -110,6 +114,7 @@ describe("Google OAuth status", () => {
     const service = new GoogleAuthService(
       { get: () => "configured" } as never,
       { get: async () => true } as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,
@@ -173,6 +178,7 @@ describe("Google OAuth linking", () => {
       } as never,
       { issue: vi.fn() } as never,
       {} as never,
+      {} as never,
     );
     (
       service as unknown as {
@@ -186,7 +192,7 @@ describe("Google OAuth linking", () => {
     });
 
     await expect(service.callback("code", STATE)).rejects.toMatchObject({
-      code: ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND,
+      code: ErrorCode.AUTH_GOOGLE_LINK_REQUIRED,
     });
   });
 });
@@ -195,6 +201,7 @@ describe("Google OAuth redirect", () => {
   it("keeps users without usernames in onboarding", () => {
     const service = new GoogleAuthService(
       { get: () => "http://localhost:3000" } as never,
+      {} as never,
       {} as never,
       {} as never,
       {} as never,

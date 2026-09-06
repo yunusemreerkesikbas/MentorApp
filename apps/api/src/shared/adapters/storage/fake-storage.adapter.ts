@@ -1,3 +1,8 @@
+import { createHmac, timingSafeEqual } from "node:crypto";
+import { ConfigService } from "@nestjs/config";
+import type { Env } from "../../../config/env.validation";
+import { ForbiddenError } from "../../../common/errors/domain-error";
+import { isPrivateKey, isPublicKey } from "../../storage/storage-prefixes";
 import {
   mkdir,
   readFile,
@@ -10,8 +15,7 @@ import path from "node:path";
 import { Injectable } from "@nestjs/common";
 import type {
   StorageObjectSummary,
-  StoragePort,
-  StorageUploadUrlResult,
+  ObjectStoragePort,
 } from "../../ports/storage.port";
 
 /** Local fake object store keyed by storage key (dev/test). */
@@ -31,18 +35,28 @@ function metaPath(key: string): string {
  * Production uses R2; fake is the dev/test default (STORAGE_PROVIDER=fake).
  */
 @Injectable()
-export class FakeStorageAdapter implements StoragePort {
-  async createUploadUrl(input: {
-    key: string;
-    contentType: string;
-  }): Promise<StorageUploadUrlResult> {
-    const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
-    const url = `/v1/storage/fake-upload?key=${encodeURIComponent(input.key)}&contentType=${encodeURIComponent(input.contentType)}`;
-    return { url, key: input.key, expiresAt };
-  }
+export class FakeStorageAdapter implements ObjectStoragePort {
+  constructor(private readonly config: ConfigService<Env, true>) {}
 
   getPublicUrl(key: string): string {
+    if (!isPublicKey(key)) throw new ForbiddenError();
     return `/v1/storage/fake-object?key=${encodeURIComponent(key)}`;
+  }
+
+  async createReadUrl(key: string, expiresInSeconds: number): Promise<string> {
+    if (!isPrivateKey(key)) throw new ForbiddenError();
+    const expires = Math.floor(Date.now() / 1000) + Math.max(1, Math.min(expiresInSeconds, 300));
+    return `/v1/storage/fake-private-object?key=${encodeURIComponent(key)}&expires=${expires}&signature=${this.readSignature(key, expires)}`;
+  }
+
+  verifyReadSignature(key: string, expires: number, signature: string): boolean {
+    const now = Math.floor(Date.now() / 1000);
+    if (!isPrivateKey(key) || !Number.isSafeInteger(expires) || expires < now || expires > now + 300 || !/^[a-f0-9]{64}$/.test(signature)) return false;
+    return timingSafeEqual(Buffer.from(signature, "hex"), Buffer.from(this.readSignature(key, expires), "hex"));
+  }
+
+  private readSignature(key: string, expires: number): string {
+    return createHmac("sha256", this.config.get("JWT_ACCESS_SECRET", { infer: true })).update(`fake-private-read:${key}:${expires}`).digest("hex");
   }
 
   async readObject(key: string, maxBytes?: number): Promise<Buffer | null> {
@@ -116,6 +130,8 @@ export class FakeStorageAdapter implements StoragePort {
     bytes: Buffer,
     contentType: string,
   ): Promise<void> {
+    if (!isPrivateKey(key) && !isPublicKey(key)) throw new ForbiddenError();
+    memoryStore.set(key, { bytes, contentType });
     await mkdir(storageRoot, { recursive: true });
     await Promise.all([
       writeFile(objectPath(key), bytes),

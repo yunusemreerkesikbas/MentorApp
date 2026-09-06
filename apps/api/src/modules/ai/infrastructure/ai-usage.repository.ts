@@ -4,6 +4,8 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { aiUsage, users } from "../../../database/schema";
+import { aiBudgetReservations } from "../../../database/schema-ai-budget";
+import { aiBudgetLockName } from "./ai-budget-reservation.repository";
 
 /** Aggregate cost/usage over a time window (admin cost dashboard). */
 export interface UsageWindow {
@@ -64,9 +66,25 @@ export class AiUsageRepository {
     promptTokens: number;
     completionTokens: number;
     costMicros: number;
+    budgetReservationId?: string;
   }): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      await tx.insert(aiUsage).values(row);
+      const { budgetReservationId, ...usageRow } = row;
+      if (budgetReservationId) {
+        const now = new Date();
+        const windowStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        // Settlement uses the same lock as reserve/check/insert. Without it, a new caller could
+        // observe the hold deleted before the actual usage row becomes visible.
+        await tx.execute(
+          sql`select pg_advisory_xact_lock(hashtextextended(${aiBudgetLockName(windowStart)}, 0))`,
+        );
+      }
+      await tx.insert(aiUsage).values(usageRow);
+      if (budgetReservationId) {
+        await tx
+          .delete(aiBudgetReservations)
+          .where(eq(aiBudgetReservations.id, budgetReservationId));
+      }
     });
   }
 
@@ -128,10 +146,10 @@ export class AiUsageRepository {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
         .select({
-          costMicros: sql<number>`coalesce(sum(${aiUsage.costMicros}), 0)::int`,
+          costMicros: sql<number>`coalesce(sum(${aiUsage.costMicros}), 0)`.mapWith(Number),
           calls: sql<number>`count(*)::int`,
-          promptTokens: sql<number>`coalesce(sum(${aiUsage.promptTokens}), 0)::int`,
-          completionTokens: sql<number>`coalesce(sum(${aiUsage.completionTokens}), 0)::int`,
+          promptTokens: sql<number>`coalesce(sum(${aiUsage.promptTokens}), 0)`.mapWith(Number),
+          completionTokens: sql<number>`coalesce(sum(${aiUsage.completionTokens}), 0)`.mapWith(Number),
         })
         .from(aiUsage)
         .where(gte(aiUsage.createdAt, since));

@@ -33,31 +33,34 @@ function reflectorWith(meta: Record<string, unknown>): Reflector {
 
 describe("JwtAuthGuard", () => {
   const jwt = new JwtService({ secret: SECRET });
+  const sessionId = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  const userId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const sessions = { validateSession: async () => ({ id: userId, sessionId, roles: ["STUDENT"], orgId: null }) };
 
   it("allows @Public routes without a token", async () => {
-    const guard = new JwtAuthGuard(reflectorWith({ [IS_PUBLIC_KEY]: true }), jwt);
+    const guard = new JwtAuthGuard(reflectorWith({ [IS_PUBLIC_KEY]: true }), jwt, sessions as never);
     await expect(guard.canActivate(ctx({ headers: {} }))).resolves.toBe(true);
   });
 
   it("rejects a missing bearer token", async () => {
-    const guard = new JwtAuthGuard(reflectorWith({}), jwt);
+    const guard = new JwtAuthGuard(reflectorWith({}), jwt, sessions as never);
     await expect(guard.canActivate(ctx({ headers: {} }))).rejects.toBeInstanceOf(DomainError);
   });
 
   it("rejects an invalid token with AUTH_TOKEN_EXPIRED", async () => {
-    const guard = new JwtAuthGuard(reflectorWith({}), jwt);
+    const guard = new JwtAuthGuard(reflectorWith({}), jwt, sessions as never);
     await expect(
       guard.canActivate(ctx({ headers: { authorization: "Bearer garbage" } })),
     ).rejects.toMatchObject({ code: "AUTH_TOKEN_EXPIRED" });
   });
 
   it("accepts a valid token and attaches req.user", async () => {
-    const token = await jwt.signAsync({ sub: "u1", roles: ["STUDENT"], orgId: null });
-    const guard = new JwtAuthGuard(reflectorWith({}), jwt);
+    const token = await jwt.signAsync({ sub: userId, sid: sessionId, roles: ["ADMIN"], orgId: null });
+    const guard = new JwtAuthGuard(reflectorWith({}), jwt, sessions as never);
     const context = ctx({ headers: { authorization: `Bearer ${token}` } });
     await expect(guard.canActivate(context)).resolves.toBe(true);
     const req = context.switchToHttp().getRequest<{ user?: { id: string } }>();
-    expect(req.user?.id).toBe("u1");
+    expect(req.user?.id).toBe(userId);
   });
 });
 

@@ -1,8 +1,10 @@
 import { Injectable } from "@nestjs/common";
+import type { MentorshipRiskFlagId } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
 import { todayIso } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
+import { needsAttention } from "../domain/attention";
 import { evaluateRiskFlags, type RiskThresholds } from "../domain/risk-flags";
 import type {
   CoachRiskDigestCandidate,
@@ -35,9 +37,10 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
     if (pairs.length === 0) return [];
 
     const studentIds = [...new Set(pairs.map((pair) => pair.studentId))];
-    const [snapshots, thresholds, people] = await Promise.all([
+    const [snapshots, thresholds, attentionTtlDays, people] = await Promise.all([
       this.evidence.listCohortSnapshots(studentIds, now),
       this.thresholds(),
+      this.config.get("mentorship.attention.ttl_days"),
       this.users.listDisplayIdentities(studentIds),
     ]);
     const today = todayIso(now);
@@ -58,10 +61,26 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
     }
     if (flagsByStudent.size === 0) return [];
 
+    // The mark is a property of the LINK, not the student, so it is applied here rather than in
+    // the map above: two coaches cannot hold the same student today, but the flags are the
+    // student's and the "I dealt with this" is one coach's.
+    //
+    // Filtering the students, not just gating the send: the digest's own `hasNewNews` decides
+    // whether an email goes out at all, but its body lists whatever the candidate carries. Without
+    // this, a student the coach called yesterday is named again the moment ANY other student has
+    // news — which is exactly the repetition the mark exists to stop.
     const byCoach = new Map<string, CoachRiskDigestStudent[]>();
     for (const pair of pairs) {
       const student = flagsByStudent.get(pair.studentId);
       if (!student) continue;
+      const waiting = needsAttention(
+        student.flags,
+        pair.attendedAt,
+        (pair.attendedFlags ?? []) as MentorshipRiskFlagId[],
+        attentionTtlDays,
+        now,
+      );
+      if (!waiting) continue;
       const list = byCoach.get(pair.coachId);
       if (list) list.push(student);
       else byCoach.set(pair.coachId, [student]);

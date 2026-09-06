@@ -51,14 +51,14 @@ import {
 export class ForumThreadController {
   constructor(private readonly threads: ForumThreadService) {}
 
-  /** Presigned upload URL for a post image (client PUTs the file, then sends `key` on create). */
+  /** One-use validated upload capability; the client PUTs then sends `key` on create. */
   @Post("attachments/upload-url")
   @Throttle({ default: { limit: 40, ttl: 60_000 } })
   attachmentUploadUrl(
     @CurrentUser() user: RequestUser,
     @Body() dto: AttachmentUploadUrlDto,
   ): Promise<ForumAttachmentUploadUrl> {
-    return this.threads.createAttachmentUploadUrl(user.id, dto.contentType);
+    return this.threads.createAttachmentUploadUrl(user.id, user.sessionId, dto.contentType);
   }
 
   /**

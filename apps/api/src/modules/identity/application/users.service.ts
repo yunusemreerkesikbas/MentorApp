@@ -134,6 +134,12 @@ export class UsersService {
     return { email: user.email, displayName: user.displayName };
   }
 
+  /** Private identity binding used by the production Cloudflare Access admin gate. */
+  async getAdminAccessIdentity(userId: string): Promise<{ email: string } | null> {
+    const user = await this.usersRepo.findByIdService(userId);
+    return user ? { email: user.email } : null;
+  }
+
   async getMe(userId: string): Promise<AuthUser> {
     const user = await this.usersRepo.findSelf(userId);
     if (!user) throw new NotFoundError();
@@ -142,6 +148,7 @@ export class UsersService {
 
   async createAvatarUploadUrl(
     userId: string,
+    sessionId: string,
     input: AvatarUploadUrlInput,
   ): Promise<AvatarUploadUrlDto> {
     if (!AVATAR_ALLOWED_MIME.has(input.contentType)) {
@@ -152,6 +159,8 @@ export class UsersService {
     const result = await this.storage.createUploadUrl({
       key: `avatars/${userId}/${randomUUID()}.${ext}`,
       contentType: input.contentType,
+      ownerId: userId,
+      sessionId,
     });
     return {
       uploadUrl: result.url,

@@ -10,6 +10,7 @@ import type { Request, Response } from "express";
 import { I18nContext } from "nestjs-i18n";
 import type { ApiError } from "@mentor/types";
 import { Sentry } from "../../observability/sentry";
+import { safeApiCode, safeErrorMetadata, validRequestId } from "../../observability/safe-diagnostics";
 import { DomainError } from "../errors/domain-error";
 import { ErrorCode, httpStatusToErrorCode } from "../errors/error-code";
 import { mapPostgresError } from "../errors/postgres-error";
@@ -25,7 +26,7 @@ const HEALTH_PATH = /\/health(\/ready)?$/;
  *
  * Guardrails (§engineering-principles / backend standard):
  *  - Raw SQL/DB/internal errors and stack traces are NEVER returned to the client → generic code/message.
- *  - Full detail (stack, original error) is logged server-side (pino + Sentry).
+ *  - Logs/Sentry retain only safe diagnostic metadata, never messages, SQL or provider payloads.
  *  - Only DomainError/validation details (which we author) are exposed; pg/unknown carry no details.
  *
  * Exception: health probes (`/health`, `/health/ready`) keep their own terminus body so the up/down
@@ -39,7 +40,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const res = ctx.getResponse<Response>();
     const req = ctx.getRequest<Request & { id?: string }>();
-    const requestId = req?.id;
+    const requestId = validRequestId(req?.id);
 
     // Let terminus own health responses (consistent up/down body).
     if (exception instanceof HttpException && HEALTH_PATH.test(req?.path ?? "")) {
@@ -73,13 +74,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
       details = this.localizeFieldDetails(i18n, details);
     }
 
-    // Always log internals server-side; 5xx as error (with stack), 4xx as warn.
-    const line = `[${requestId ?? "-"}] ${status} ${code}`;
+    const diagnostic = { event: "http.exception", requestId, statusCode: status, code: safeApiCode(code), err: safeErrorMetadata(exception) };
     if (status >= HttpStatus.INTERNAL_SERVER_ERROR) {
-      this.logger.error(line, exception instanceof Error ? exception.stack : String(exception));
-      Sentry.captureException(exception, { tags: { code, requestId: requestId ?? "-" } });
+      this.logger.error(diagnostic);
+      Sentry.captureException(new Error("Unhandled request error"), {
+        tags: { code: safeApiCode(code), requestId, diagnosticCode: diagnostic.err.code as string | undefined, errorFingerprint: diagnostic.err.fingerprint as string | undefined },
+      });
     } else {
-      this.logger.warn(line);
+      this.logger.warn(diagnostic);
     }
 
     const body: ApiErrorBody = { code, message };

@@ -1,4 +1,4 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
@@ -20,15 +20,9 @@ import {
 import { AuthAccountRepository } from "../infrastructure/auth-account.repository";
 import { UsersRepository, type UserRow } from "../infrastructure/users.repository";
 import { TokenService } from "./token.service";
-
-export interface GoogleOAuthState {
-  nonce: string;
-  mode: "login" | "signup";
-  locale: "tr" | "en";
-  returnTo: string;
-  kvkkAccepted: boolean;
-  expiresAt: number;
-}
+import { GoogleLinkingService } from "./google-linking.service";
+import { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState, type GoogleLinkState } from "./google-oauth-state";
+export { signGoogleOAuthState, verifyGoogleOAuthState, type GoogleOAuthState } from "./google-oauth-state";
 
 export interface GoogleOAuthProfile {
   sub: string;
@@ -52,6 +46,7 @@ export class GoogleAuthService {
     private readonly authAccounts: AuthAccountRepository,
     private readonly tokenService: TokenService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly linking: GoogleLinkingService,
   ) {}
 
   async createStartFor(input: {
@@ -61,7 +56,6 @@ export class GoogleAuthService {
     kvkkAccepted: boolean;
   }): Promise<{ state: GoogleOAuthState; cookieValue: string; url: string }> {
     await this.assertEnabled();
-    const client = this.client();
     const state: GoogleOAuthState = {
       nonce: randomBytes(32).toString("base64url"),
       mode: input.mode,
@@ -70,6 +64,12 @@ export class GoogleAuthService {
       kvkkAccepted: input.kvkkAccepted,
       expiresAt: Date.now() + GOOGLE_OAUTH_STATE_TTL_MS,
     };
+    return this.createLinkStartFor(state);
+  }
+
+  async createLinkStartFor(state: GoogleOAuthState): Promise<{ state: GoogleOAuthState; cookieValue: string; url: string }> {
+    await this.assertEnabled();
+    const client = this.client();
     return {
       state,
       cookieValue: signGoogleOAuthState(state, this.stateSecret()),
@@ -98,6 +98,9 @@ export class GoogleAuthService {
 
   async callback(code: string, state: GoogleOAuthState): Promise<AuthResult> {
     await this.assertEnabled();
+    if (state.mode === "link") {
+      throw new DomainError(ErrorCode.AUTH_GOOGLE_STATE_INVALID, HttpStatus.BAD_REQUEST);
+    }
     const profile = await this.exchangeCode(code);
     if (!profile.emailVerified) {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_EMAIL_UNVERIFIED, HttpStatus.FORBIDDEN);
@@ -114,16 +117,7 @@ export class GoogleAuthService {
 
     const existing = await this.usersRepo.findByEmailService(profile.email);
     if (existing) {
-      if (existing.status !== UserStatus.ACTIVE) {
-        throw new DomainError(ErrorCode.AUTH_ACCOUNT_SUSPENDED, HttpStatus.FORBIDDEN);
-      }
-      const user = existing.emailVerifiedAt
-        ? existing
-        : ((await this.usersRepo.updateService(existing.id, {
-            emailVerifiedAt: new Date(),
-          })) ?? existing);
-      await this.linkGoogle(existing.id, profile);
-      return this.issue(user);
+      throw new DomainError(ErrorCode.AUTH_GOOGLE_LINK_REQUIRED, HttpStatus.CONFLICT);
     }
 
     if (state.mode !== "signup" || !state.kvkkAccepted) {
@@ -144,19 +138,15 @@ export class GoogleAuthService {
       if (!isUniqueViolation(err)) throw err;
       const raced = await this.usersRepo.findByEmailService(profile.email);
       if (!raced) throw err;
-      if (raced.status !== UserStatus.ACTIVE) {
-        throw new DomainError(ErrorCode.AUTH_ACCOUNT_SUSPENDED, HttpStatus.FORBIDDEN);
-      }
-      const user = raced.emailVerifiedAt
-        ? raced
-        : ((await this.usersRepo.updateService(raced.id, {
-            emailVerifiedAt: new Date(),
-          })) ?? raced);
-      await this.linkGoogle(raced.id, profile);
-      return this.issue(user);
+      throw new DomainError(ErrorCode.AUTH_GOOGLE_LINK_REQUIRED, HttpStatus.CONFLICT);
     }
     await this.linkGoogle(user.id, profile);
     return this.issue(user);
+  }
+
+  async linkCallback(code: string, state: GoogleLinkState): Promise<void> {
+    await this.assertEnabled();
+    await this.linking.complete(state, () => this.exchangeCode(code));
   }
 
   redirectUrl(state: GoogleOAuthState, user: UserRow | AuthResult["user"]): string {
@@ -285,38 +275,6 @@ export class GoogleAuthService {
     });
     return { user: toAuthUser(user, this.storage), tokens };
   }
-}
-
-export function signGoogleOAuthState(state: GoogleOAuthState, secret: string): string {
-  const body = Buffer.from(JSON.stringify(state)).toString("base64url");
-  const sig = hmac(body, secret);
-  return `${body}.${sig}`;
-}
-
-export function verifyGoogleOAuthState(
-  cookieValue: string | undefined,
-  secret: string,
-): GoogleOAuthState | null {
-  if (!cookieValue) return null;
-  const [body, sig] = cookieValue.split(".");
-  if (!body || !sig) return null;
-  const expected = hmac(body, secret);
-  if (!safeEqual(sig, expected)) return null;
-  try {
-    return JSON.parse(Buffer.from(body, "base64url").toString("utf8")) as GoogleOAuthState;
-  } catch {
-    return null;
-  }
-}
-
-function hmac(body: string, secret: string): string {
-  return createHmac("sha256", secret).update(body).digest("base64url");
-}
-
-function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  return left.length === right.length && timingSafeEqual(left, right);
 }
 
 function sanitizeReturnTo(value: string): string {

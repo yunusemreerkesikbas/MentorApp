@@ -107,7 +107,7 @@ function makeStorageFake() {
     deleteObject: async (key: string) => {
       deleted.push(key);
     },
-    getPublicUrl: (key: string) => `/fake-object?key=${key}`,
+    getPrivateUrl: async (key: string, ownerId: string) => `/fake-private-object?owner=${ownerId}&key=${key}`,
     listObjects: async () => listing,
   };
 }
@@ -384,7 +384,7 @@ describe("VisionService", () => {
       await service.putBoard(USER, boardWith([imageItem(uid(1), IMAGE_A)]));
 
       const item = (await service.getMine(USER))?.board?.items[0];
-      expect(item?.kind === "image" && item.url).toBe(`/fake-object?key=${IMAGE_A}`);
+      expect(item?.kind === "image" && item.url).toBe(`/fake-private-object?owner=${USER}&key=${IMAGE_A}`);
     });
 
     it("rejects an image key belonging to another user", async () => {

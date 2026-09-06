@@ -9,6 +9,7 @@ import { PaymentsModule } from "../payments/payments.module";
 import { PromotionsModule } from "../promotions/promotions.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
+import { MentorshipModule } from "../mentorship/mentorship.module";
 import { AdminAuditService } from "./application/admin-audit.service";
 import { AdminUsersService } from "./application/admin-users.service";
 import { AdminAuditRepository } from "./infrastructure/admin-audit.repository";
@@ -24,6 +25,7 @@ import { AdminPlansController } from "./presentation/admin-plans.controller";
 import { AdminPromotionsController } from "./presentation/admin-promotions.controller";
 import { AdminSubscriptionController } from "./presentation/admin-subscription.controller";
 import { AdminUsersController } from "./presentation/admin-users.controller";
+import { AdminCoachApplicationsController } from "./presentation/admin-coach-applications.controller";
 import { AdminForumController } from "./presentation/admin-forum.controller";
 
 /**
@@ -46,6 +48,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AccountModule,
     CoachingModule,
     ForumModule,
+    MentorshipModule,
   ],
   controllers: [
     AdminUsersController,
@@ -59,6 +62,7 @@ import { AdminForumController } from "./presentation/admin-forum.controller";
     AdminMetricsController,
     AdminForumController,
     AdminAnnouncementsController,
+    AdminCoachApplicationsController,
   ],
   providers: [
     AdminUsersService,

@@ -22,6 +22,10 @@
   "AUTH_GOOGLE_STATE_INVALID": "The Google sign-in session expired. Let's try again.",
   "AUTH_GOOGLE_EMAIL_UNVERIFIED": "Your Google account email does not look verified.",
   "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "No Mentor account is registered with this Google account. Create an account first.",
+  "AUTH_GOOGLE_LINK_REQUIRED": "Sign in with your password or reset it to continue with this email. You can then link your Google account in Settings.",
+  "AUTH_GOOGLE_LINK_UNAVAILABLE": "Verify your email and sign in again to link your Google account.",
+  "AUTH_GOOGLE_LINK_EMAIL_MISMATCH": "Choose the Google account with the same verified email as your Mentor account.",
+  "AUTH_GOOGLE_LINK_CONFLICT": "This Google account could not be linked. Check your account connection in Settings.",
   "COACHING_TASK_NOT_FOUND": "This task was not found.",
   "COACHING_TASK_DATE_READONLY": "Past days are read-only; only today and future days can be edited.",
   "COACHING_PLAN_CHANGED": "Your plan changed after this preview. Open the current plan and let's try again.",
@@ -129,5 +133,12 @@
   "MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED": "You have saved as many templates as you can keep. Delete one to save another.",
   "MENTORSHIP_SELF_LINK": "You can't coach yourself.",
   "COACHING_TASK_COACH_ASSIGNED": "You can't edit a task your coach assigned. You can complete it or delete it.",
-  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "You can't assign a task that far ahead."
+  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "You can't assign a task that far ahead.",
+  "NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT": "You have reached the notification device limit for this account.",
+  "MENTORSHIP_APPLICATIONS_CLOSED": "Coach applications are closed right now. We will announce when they reopen.",
+  "MENTORSHIP_APPLICATION_PENDING": "Your application is under review. We will let you know when it is decided.",
+  "MENTORSHIP_APPLICATION_TOO_SOON": "You need to wait a little longer before applying again.",
+  "MENTORSHIP_APPLICATION_NOT_FOUND": "No such application.",
+  "MENTORSHIP_ALREADY_COACH": "You are already a coach, there is nothing to apply for.",
+  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Your profile cannot carry contact details. Remove the phone number, email, IBAN or handle and try again."
 }

@@ -1,11 +1,20 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import type { MentorshipRiskFlagId } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { coachStudents } from "../../../database/schema";
 
 export type MentorshipLinkRow = typeof coachStudents.$inferSelect;
+
+/** One live link plus the coach's mark on it — what the daily digest needs and nothing more. */
+export interface ActiveLinkRow {
+  coachId: string;
+  studentId: string;
+  attendedAt: Date | null;
+  attendedFlags: string[] | null;
+}
 
 /**
  * How many students this coach is currently following. Takes the transaction rather than opening
@@ -83,10 +92,17 @@ export class MentorshipLinkRepository {
    * snapshot call covers it. Two ids per row, no identity or behavioural data — the caller resolves
    * both through their own module's seams.
    */
-  listAllActiveLinks(): Promise<{ coachId: string; studentId: string }[]> {
+  listAllActiveLinks(): Promise<ActiveLinkRow[]> {
     return withServiceContext(this.db, (tx) =>
       tx
-        .select({ coachId: coachStudents.coachId, studentId: coachStudents.studentId })
+        .select({
+          coachId: coachStudents.coachId,
+          studentId: coachStudents.studentId,
+          // The digest reads the same mark the roster does — a student the coach handled must not
+          // be named again in the morning email while a different one has news.
+          attendedAt: coachStudents.attendedAt,
+          attendedFlags: coachStudents.attendedFlags,
+        })
         .from(coachStudents)
         .where(eq(coachStudents.status, "ACTIVE")),
     );
@@ -197,6 +213,10 @@ export class MentorshipLinkRepository {
           brief: null,
           briefAt: null,
           briefFingerprint: null,
+          // Same rule once more: a revived row carrying an old "I dealt with this" would open the
+          // new relationship looking handled, and the roster would stay quiet about it.
+          attendedAt: null,
+          attendedFlags: null,
           updatedAt: now,
         })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
@@ -212,6 +232,29 @@ export class MentorshipLinkRepository {
       const rows = await tx
         .update(coachStudents)
         .set({ coachNote: body, coachNoteAt: body === null ? null : now, updatedAt: now })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning();
+      return rows[0];
+    });
+  }
+
+  /**
+   * Mark this student handled, over the flags the coach was looking at. `null` flags clears the
+   * mark (the coach undoing it), which is why the two columns always move together.
+   */
+  setAttention(
+    linkId: string,
+    flags: MentorshipRiskFlagId[] | null,
+  ): Promise<MentorshipLinkRow | undefined> {
+    const now = new Date();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(coachStudents)
+        .set({
+          attendedAt: flags === null ? null : now,
+          attendedFlags: flags,
+          updatedAt: now,
+        })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning();
       return rows[0];

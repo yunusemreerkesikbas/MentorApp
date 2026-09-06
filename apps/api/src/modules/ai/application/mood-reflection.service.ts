@@ -82,6 +82,7 @@ export class MoodReflectionService {
     const result = await this.llm.complete({ system, user: userMsg });
 
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId: user.id,
       model: result.model,
       feature: AiUsageFeature.MOOD,

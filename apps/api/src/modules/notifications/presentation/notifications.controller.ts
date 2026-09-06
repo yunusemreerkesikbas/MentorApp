@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, HttpCode, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Query, Sse, UnauthorizedException } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, MessageEvent, Param, ParseUUIDPipe, Patch, Post, Query, Sse } from "@nestjs/common";
 import { ApiTags } from "@nestjs/swagger";
 import type { Observable } from "rxjs";
 import type {
@@ -70,16 +70,15 @@ export class NotificationsController {
   /** Issues a short-lived (60s) one-time token for the SSE stream (EventSource can't send headers). */
   @Post("stream-token")
   createStreamToken(@CurrentUser() user: RequestUser): { token: string } {
-    return { token: this.notifications.createStreamToken(user.id) };
+    return { token: this.notifications.createStreamToken(user.id, user.sessionId) };
   }
 
   /** SSE stream — client provides ?token= obtained from POST stream-token. */
   @Sse("stream")
   @Public()
-  stream(@Query("token") token: string): Observable<MessageEvent> {
-    const userId = this.notifications.validateAndConsumeStreamToken(token);
-    if (!userId) throw new UnauthorizedException("invalid_stream_token");
-    return this.notifications.createStream(userId);
+  stream(@Query("token") token: string): Promise<Observable<MessageEvent>> {
+    const principal = this.notifications.validateAndConsumeStreamToken(token);
+    return this.notifications.createStream(principal.userId, principal.sessionId);
   }
 
   @Get()

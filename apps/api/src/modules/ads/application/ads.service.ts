@@ -75,17 +75,28 @@ export class AdsService {
     });
     const adUnitPath = this.adUnitPath(placementId);
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
+    // Google Ad Manager does not provide server-side verification for Rewarded Web. A browser
+    // event is forgeable, so production must stay closed until the provider/format can prove it.
+    const serverVerificationUnavailable =
+      placement.format === "REWARDED" &&
+      this.env.get("NODE_ENV", { infer: true }) === "production";
     const reason: AdEligibilityReason = contextUnverified
       ? "CONTEXT_UNVERIFIED"
       : !decision.enabled
       ? decision.reason!
-      : adUnitPath
-        ? "ELIGIBLE"
-        : "PROVIDER_NOT_CONFIGURED";
+      : !adUnitPath
+        ? "PROVIDER_NOT_CONFIGURED"
+        : serverVerificationUnavailable
+          ? "SERVER_VERIFICATION_UNAVAILABLE"
+          : "ELIGIBLE";
     return {
       id: placement.id,
       format: placement.format,
-      enabled: !contextUnverified && decision.enabled && Boolean(adUnitPath),
+      enabled:
+        !contextUnverified &&
+        !serverVerificationUnavailable &&
+        decision.enabled &&
+        Boolean(adUnitPath),
       reason,
       provider: "GOOGLE_AD_MANAGER",
       adUnitPath: contextUnverified ? null : adUnitPath,
@@ -277,6 +288,11 @@ export class AdsService {
   }
 
   async completeRewardSession(id: string, userId: string): Promise<AdRewardCompletionView> {
+    if (this.env.get("NODE_ENV", { infer: true }) === "production") {
+      throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY, {
+        reason: "SERVER_VERIFICATION_UNAVAILABLE",
+      });
+    }
     const row = await this.repo.withServiceTx(async (tx) => {
       await this.repo.acquireUserLock(userId, tx);
       const session = await this.repo.findOwned(id, userId, tx);

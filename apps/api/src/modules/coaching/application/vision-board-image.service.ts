@@ -14,7 +14,7 @@ const EXTENSIONS: Record<string, string> = {
 };
 
 /**
- * Presigned direct-to-R2 upload for one vision-board photo — same two-step shape as the mock-exam
+ * One-use API upload capability for one vision-board photo — same two-step shape as the mock-exam
  * and forum uploaders (`POST` for the URL, client `PUT`s the bytes).
  *
  * The key is user-scoped, and that scoping is the whole security story: `VisionService.putBoard`
@@ -27,15 +27,16 @@ export class VisionBoardImageService {
 
   async createUploadUrl(
     userId: string,
+    sessionId: string,
     contentType: (typeof VISION_BOARD_IMAGE_MIMES)[number],
   ): Promise<VisionBoardImageUploadUrlDto> {
     const key = `vision-board/${userId}/${randomUUID()}.${EXTENSIONS[contentType]}`;
-    const result = await this.storage.createUploadUrl({ key, contentType });
+    const result = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
       uploadUrl: result.url,
       key: result.key,
       expiresAt: result.expiresAt,
-      // Advisory: R2's presigned PUT does not enforce a size, so the client checks before
+      // The API capability enforces this limit while streaming; the client also checks before
       // uploading and `putBoard` is the real gate on what ends up referenced.
       maxBytes: VISION_BOARD_IMAGE_MAX_BYTES,
     };

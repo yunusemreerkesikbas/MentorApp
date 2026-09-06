@@ -78,6 +78,7 @@ export class PlanDraftService {
 
     // The call happened — meter it even when the output turns out unusable.
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId: user.id,
       model: result.model,
       feature: AiUsageFeature.PLAN_DRAFT,

@@ -22,6 +22,10 @@
   "AUTH_GOOGLE_STATE_INVALID": "Google giriş oturumu doldu. Bir daha deneyelim.",
   "AUTH_GOOGLE_EMAIL_UNVERIFIED": "Google hesabının e-postası doğrulanmamış görünüyor.",
   "AUTH_GOOGLE_ACCOUNT_NOT_FOUND": "Bu Google hesabıyla kayıtlı bir Mentor hesabı yok. Önce hesap oluştur.",
+  "AUTH_GOOGLE_LINK_REQUIRED": "Bu e-postayla devam etmek için önce şifrenle giriş yap veya şifreni sıfırla. Sonra Ayarlar’dan Google hesabını bağlayabilirsin.",
+  "AUTH_GOOGLE_LINK_UNAVAILABLE": "Google hesabını bağlamak için e-postanı doğrula ve yeniden giriş yap.",
+  "AUTH_GOOGLE_LINK_EMAIL_MISMATCH": "Mentor hesabındaki doğrulanmış e-postayla aynı Google hesabını seç.",
+  "AUTH_GOOGLE_LINK_CONFLICT": "Bu Google hesabı bağlanamadı. Hesap bağlantını Ayarlar’dan kontrol edebilirsin.",
   "COACHING_TASK_NOT_FOUND": "Bu görev bulunamadı.",
   "COACHING_TASK_DATE_READONLY": "Geçmiş günler salt okunur; yalnız bugün ve gelecek günler düzenlenebilir.",
   "COACHING_PLAN_CHANGED": "Planın bu önizlemeden sonra değişti. Güncel planı açıp bir daha deneyelim.",
@@ -129,5 +133,12 @@
   "MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED": "Şablon sayın doldu. Yenisini kaydetmek için birini sil.",
   "MENTORSHIP_SELF_LINK": "Kendine koç olamazsın.",
   "COACHING_TASK_COACH_ASSIGNED": "Koçunun verdiği görevi düzenleyemezsin. Tamamlayabilir ya da silebilirsin.",
-  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "Bu kadar ileri bir tarihe ödev veremezsin."
+  "MENTORSHIP_ASSIGNMENT_TOO_FAR": "Bu kadar ileri bir tarihe ödev veremezsin.",
+  "NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT": "Bu hesap için bildirim alabilecek cihaz sınırına ulaştın.",
+  "MENTORSHIP_APPLICATIONS_CLOSED": "Şu anda koç başvurusu almıyoruz. Açıldığında duyuracağız.",
+  "MENTORSHIP_APPLICATION_PENDING": "Başvurun değerlendirmede. Sonuçlandığında haber vereceğiz.",
+  "MENTORSHIP_APPLICATION_TOO_SOON": "Yeniden başvurabilmen için biraz daha beklemen gerekiyor.",
+  "MENTORSHIP_APPLICATION_NOT_FOUND": "Böyle bir başvuru yok.",
+  "MENTORSHIP_ALREADY_COACH": "Zaten koçsun, başvurmana gerek yok.",
+  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Profilinde iletişim bilgisi paylaşamazsın. Telefon, e-posta, IBAN veya sosyal medya hesabını çıkarıp yeniden dene."
 }

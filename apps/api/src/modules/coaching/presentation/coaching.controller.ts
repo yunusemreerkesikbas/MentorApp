@@ -135,13 +135,13 @@ export class CoachingController {
     return this.vision.putBoard(user.id, dto.board);
   }
 
-  /** Presigned direct-to-R2 upload for one board photo; the client then PUTs the bytes itself. */
+  /** One-use API upload capability for a board photo; the API validates bytes before storage. */
   @Post("vision/board/image-upload-url")
   createVisionBoardImageUploadUrl(
     @CurrentUser() user: RequestUser,
     @Body() dto: CreateVisionBoardImageUploadUrlDto,
   ): Promise<VisionBoardImageUploadUrlDto> {
-    return this.visionBoardImages.createUploadUrl(user.id, dto.contentType);
+    return this.visionBoardImages.createUploadUrl(user.id, user.sessionId, dto.contentType);
   }
 
   @Get("preference-simulation/access")

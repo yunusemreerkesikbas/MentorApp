@@ -561,8 +561,19 @@ describe("ForumThreadService", () => {
       makeMentionService() as never,
       makeUsersService() as never,
     );
-    const res = await service.createAttachmentUploadUrl("u1", "image/png");
+    const sessionId = "11111111-1111-4111-8111-111111111111";
+    const res = await service.createAttachmentUploadUrl(
+      "u1",
+      sessionId,
+      "image/png",
+    );
     expect(res.key).toBe("forum-attachments/u1/x.png");
+    expect(storageMock.createUploadUrl).toHaveBeenCalledWith({
+      key: expect.stringMatching(/^forum-attachments\/u1\/[0-9a-f-]+\.png$/),
+      contentType: "image/png",
+      ownerId: "u1",
+      sessionId,
+    });
     expect(attachments.markPending).toHaveBeenCalledWith(
       "forum-attachments/u1/x.png",
       "u1",

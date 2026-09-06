@@ -132,6 +132,9 @@ export class PhotoCategorizeService {
       input.clientRequestId,
     );
     await this.usage.append({
+      ...(visionResult.budgetReservationId
+        ? { budgetReservationId: visionResult.budgetReservationId }
+        : {}),
       userId,
       model: visionResult.model,
       feature: AiUsageFeature.VISION,
@@ -226,6 +229,9 @@ export class PhotoCategorizeService {
     });
 
     await this.usage.append({
+      ...(visionResult.budgetReservationId
+        ? { budgetReservationId: visionResult.budgetReservationId }
+        : {}),
       userId,
       model: visionResult.model,
       feature: AiUsageFeature.VISION,

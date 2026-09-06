@@ -35,6 +35,7 @@ import { MentorshipTemplateService } from "../application/mentorship-template.se
 import {
   CreateMentorshipAssignmentsDto,
   ListMentorshipStudentsQueryDto,
+  MentorshipAttentionDto,
   MentorshipCoachNoteDto,
   MentorshipStudentParamDto,
   MentorshipTemplateParamDto,
@@ -131,6 +132,23 @@ export class MentorshipCoachController {
     @Body() dto: MentorshipCoachNoteDto,
   ): Promise<void> {
     return this.links.setCoachNote(user.id, params.studentId, dto.body);
+  }
+
+  /**
+   * "I have dealt with this student." Drops them out of the needs-attention count and out of
+   * tomorrow's digest, until a flag the mark never covered appears or the mark goes stale.
+   *
+   * PUT for the same reason the note is: one mark per link, replaced in place, `{ attended: false }`
+   * takes it back. No extra `@Throttle` — this is a two-column update, not an LLM call.
+   */
+  @Put("students/:studentId/attention")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setAttention(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+    @Body() dto: MentorshipAttentionDto,
+  ): Promise<void> {
+    return this.roster.setAttention(user.id, params.studentId, dto.attended);
   }
 
   /**

@@ -3,6 +3,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type { ArticleImageUploadUrlDto, Paginated } from "@mentor/types";
 import { UserRole } from "@mentor/types";
 import { Roles } from "../../../common/auth/roles.decorator";
+import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { ContentService, type AdminArticleView } from "../../content/application/content.service";
 import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
@@ -39,9 +40,10 @@ export class AdminContentController {
 
   @Post("images/upload-url")
   createImageUploadUrl(
+    @CurrentUser() user: RequestUser,
     @Body() dto: ArticleImageUploadDto,
   ): Promise<ArticleImageUploadUrlDto> {
-    return this.content.createArticleImageUploadUrl(dto.purpose, dto.contentType);
+    return this.content.createArticleImageUploadUrl(user.id, user.sessionId, dto.purpose, dto.contentType);
   }
 
   /** Create or update by slug (idempotent upsert). */

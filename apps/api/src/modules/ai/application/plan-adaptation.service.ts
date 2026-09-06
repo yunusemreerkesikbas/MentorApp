@@ -124,6 +124,7 @@ export class PlanAdaptationService {
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMessage });
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId: user.id,
       model: result.model,
       feature: AiUsageFeature.PLAN_ADAPTATION,

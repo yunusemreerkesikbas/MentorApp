@@ -874,6 +874,8 @@ export class ContentService {
   }
 
   async createArticleImageUploadUrl(
+    userId: string,
+    sessionId: string,
     purpose: "COVER" | "BODY" | "GALLERY",
     contentType: "image/jpeg" | "image/png" | "image/webp",
   ): Promise<ArticleImageUploadUrlDto> {
@@ -885,7 +887,7 @@ export class ContentService {
     const directory =
       purpose === "COVER" ? "cover" : purpose === "GALLERY" ? "gallery" : "body";
     const key = `content/articles/${directory}/${randomUUID()}.${extension}`;
-    const signed = await this.storage.createUploadUrl({ key, contentType });
+    const signed = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
       uploadUrl: signed.url,
       key: signed.key,
