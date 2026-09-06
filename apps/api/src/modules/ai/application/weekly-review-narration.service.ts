@@ -93,6 +93,7 @@ export class WeeklyReviewNarrationService {
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete(prompt);
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId: user.id,
       model: result.model,
       feature: AiUsageFeature.WEEKLY_REVIEW,

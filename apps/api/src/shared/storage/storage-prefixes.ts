@@ -11,8 +11,9 @@
  * what the feature's service actually mints, so each entry names that call site.
  */
 
-/** Not publicly readable: user exam photos are personal data, served only to the owner's pipeline. */
+/** Not publicly readable: personal media is served only to the owner or the owner's pipeline. */
 export const PRIVATE_PREFIX = "mock-exams/" as const;
+export const PRIVATE_PREFIXES = [PRIVATE_PREFIX, "vision-board/", "notebook/"] as const;
 
 export const PUBLIC_PREFIXES = [
   /** `identity/application/users.service.ts` → `avatars/{userId}/{uuid}.{ext}` */
@@ -21,27 +22,17 @@ export const PUBLIC_PREFIXES = [
   "forum-attachments/",
   /** `content/application/content.service.ts` → `content/articles/{cover|body}/{uuid}.{ext}` */
   "content/",
-  /** `coaching/application/vision-board-image.service.ts` → `vision-board/{userId}/{uuid}.{ext}` */
-  "vision-board/",
-  /**
-   * `coaching/application/mistake-notebook.service.ts` → `notebook/{userId}/{uuid}.{ext}`
-   *
-   * Public with an unguessable key, the same trade the vision board makes: the browser has to
-   * render these directly and `StoragePort` has no signed-read. The mitigations are the ones that
-   * apply there too — the uuid path is never listed, and erasure deletes the objects.
-   */
-  "notebook/",
 ] as const;
 
 export type PublicPrefix = (typeof PUBLIC_PREFIXES)[number];
 
 /** All prefixes, for exhaustive checks (setup verification, drift tests). */
-export const ALL_PREFIXES = [PRIVATE_PREFIX, ...PUBLIC_PREFIXES] as const;
+export const ALL_PREFIXES = [...PRIVATE_PREFIXES, ...PUBLIC_PREFIXES] as const;
 
 export function isPublicKey(key: string): boolean {
   return PUBLIC_PREFIXES.some((prefix) => key.startsWith(prefix));
 }
 
 export function isPrivateKey(key: string): boolean {
-  return key.startsWith(PRIVATE_PREFIX);
+  return PRIVATE_PREFIXES.some((prefix) => key.startsWith(prefix));
 }

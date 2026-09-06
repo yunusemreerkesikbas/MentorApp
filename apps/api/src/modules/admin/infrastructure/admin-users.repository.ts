@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -48,6 +48,21 @@ export class AdminUsersRepository {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.select().from(users).where(eq(users.id, id)).limit(1);
       return rows[0];
+    });
+  }
+
+  /**
+   * Several users at once, keyed by id — for admin screens that list rows owned by another module
+   * and need the person behind each one (the coach-application queue is the first).
+   *
+   * Empty in, empty out WITHOUT a query: `inArray` with an empty list is an error in some drivers
+   * and "everything" in others, and neither is what a caller with nothing to look up meant.
+   */
+  async findByIds(ids: string[]): Promise<Map<string, AdminUserRow>> {
+    if (ids.length === 0) return new Map();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.select().from(users).where(inArray(users.id, ids));
+      return new Map(rows.map((row) => [row.id, row]));
     });
   }
 

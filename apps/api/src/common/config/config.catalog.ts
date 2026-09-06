@@ -256,6 +256,10 @@ const promotionsCount = (
 });
 
 export const CONFIG_CATALOG = {
+  "storage.upload.active_per_user": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(4), default: 1, sensitive: false, description: "Maximum simultaneous upload tickets/streams per user." },
+  "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
+  "storage.upload.ticket_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Single-use upload ticket lifetime in seconds." },
+  "storage.upload.stream_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(10).max(120), default: 60, sensitive: false, description: "Maximum duration for an authorized upload stream." },
   "promotions.enabled": promotionsFlag(
     false,
     "Global promotions kill-switch — off means every checkout pays the list price.",
@@ -380,6 +384,22 @@ export const CONFIG_CATALOG = {
     90,
     "How long a already-reported risk stays quiet before it is worth repeating. Lowering it makes every stale baseline expire at once, so the next run mails everybody.",
   ),
+  "mentorship.applications.open": mentorshipFlag(
+    false,
+    "Whether the coach application form accepts submissions. Deliberately separate from mentorship.enabled: applications have to be collectable before the coach surface opens, and this is the tap you close the day it does.",
+  ),
+  "mentorship.applications.reapply_after_days": mentorshipCount(
+    30,
+    1,
+    365,
+    "How long a rejected applicant waits before applying again. Without it a refusal is not a decision, it is a loop.",
+  ),
+  "mentorship.attention.ttl_days": mentorshipCount(
+    7,
+    1,
+    90,
+    "How long a coach's 'I dealt with this student' mark keeps them out of the needs-attention count and the daily digest. A flag the mark never covered comes back immediately regardless. Same default as risk_digest.repeat_after_days so the panel and the email breathe at one rhythm, but its own key: the digest can be off while the roster is on.",
+  ),
   "identity.verification_email.resend_limit": identityCount(
     1,
     100,
@@ -399,6 +419,16 @@ export const CONFIG_CATALOG = {
     10,
     3600,
     "How often API instances poll the jobs table for pending notification/email jobs.",
+  ),
+  "notifications.push.max_subscriptions": notificationCount(
+    5,
+    20,
+    "Maximum stored browser push subscriptions per user.",
+  ),
+  "notifications.push.request_timeout_ms": notificationCount(
+    10000,
+    30000,
+    "Maximum time in milliseconds for push DNS resolution or provider delivery.",
   ),
   "economy.coin.daily_cap": economyCount(
     50,
@@ -608,6 +638,11 @@ export const CONFIG_CATALOG = {
     0,
     100_000_000,
     "Monthly AI spend cap in US cents (0 = no cap; e.g. 5000 = $50). Over cap → all AI blocked until next month (§7).",
+  ),
+  "ai.budget.reservation_usd_cents": aiPositiveCount(
+    5,
+    1_000,
+    "Conservative per-provider-call budget hold in US cents; tune above the largest allowed call cost.",
   ),
   "coaching.session.min_focus_seconds": coachingCount(
     300,

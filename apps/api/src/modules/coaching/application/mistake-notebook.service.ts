@@ -292,7 +292,7 @@ export class MistakeNotebookService {
         };
       },
     );
-    return { pageIndex, doc, entries: await this.toEntryDtos(entries) };
+    return { pageIndex, doc, entries: await this.toEntryDtos(userId, entries) };
   }
 
   /**
@@ -343,7 +343,7 @@ export class MistakeNotebookService {
     return {
       pageIndex,
       doc: doc as NotebookPageDoc,
-      entries: await this.toEntryDtos(entries),
+      entries: await this.toEntryDtos(userId, entries),
     };
   }
 
@@ -444,7 +444,7 @@ export class MistakeNotebookService {
         nextReviewAt: firstReviewAt(),
       });
     });
-    const [dto] = await this.toEntryDtos([row]);
+    const [dto] = await this.toEntryDtos(userId, [row]);
     return dto!;
   }
 
@@ -463,7 +463,7 @@ export class MistakeNotebookService {
       this.notebook.listEntries(tx, userId, query),
     );
     return {
-      items: await this.toEntryDtos(items),
+      items: await this.toEntryDtos(userId, items),
       total,
       page: query.page,
       pageSize: query.pageSize,
@@ -543,7 +543,7 @@ export class MistakeNotebookService {
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       return updated;
     });
-    const [dto] = await this.toEntryDtos([row]);
+    const [dto] = await this.toEntryDtos(userId, [row]);
     return dto!;
   }
 
@@ -574,7 +574,7 @@ export class MistakeNotebookService {
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       return linked;
     });
-    const [dto] = await this.toEntryDtos([row]);
+    const [dto] = await this.toEntryDtos(userId, [row]);
     return dto!;
   }
 
@@ -622,7 +622,7 @@ export class MistakeNotebookService {
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       return updated;
     });
-    const [dto] = await this.toEntryDtos([row]);
+    const [dto] = await this.toEntryDtos(userId, [row]);
     this.events?.emit(
       CoachingEventTopic.NOTEBOOK_ENTRY_REVIEWED,
       new NotebookEntryReviewed(userId, now),
@@ -634,7 +634,7 @@ export class MistakeNotebookService {
     const rows = await withUserContext(this.db, { userId }, (tx) =>
       this.notebook.listDueEntries(tx, userId, new Date(), DUE_LIMIT),
     );
-    return this.toEntryDtos(rows);
+    return this.toEntryDtos(userId, rows);
   }
 
   /**
@@ -663,10 +663,11 @@ export class MistakeNotebookService {
 
   async createUploadUrl(
     userId: string,
+    sessionId: string,
     contentType: (typeof NOTEBOOK_IMAGE_MIMES)[number],
   ): Promise<NotebookImageUploadUrlDto> {
     const key = `${NOTEBOOK_PREFIX}${userId}/${randomUUID()}.${EXTENSIONS[contentType]}`;
-    const result = await this.storage.createUploadUrl({ key, contentType });
+    const result = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
       uploadUrl: result.url,
       key: result.key,
@@ -752,6 +753,7 @@ export class MistakeNotebookService {
    * round-trips.
    */
   private async toEntryDtos(
+    userId: string,
     rows: MistakeNotebookEntryRow[],
   ): Promise<NotebookEntryDto[]> {
     if (rows.length === 0) return [];
@@ -771,7 +773,7 @@ export class MistakeNotebookService {
       ),
     );
 
-    return rows.map((row) => {
+    return Promise.all(rows.map(async (row) => {
       const taxonomy = taxonomies.get(row.examId);
       const subject = row.subjectRef
         ? taxonomy?.subjects.find((item) => item.slug === row.subjectRef)
@@ -788,7 +790,7 @@ export class MistakeNotebookService {
         id: row.id,
         mockExamId: row.mockExamId,
         storageKey: row.storageKey,
-        url: row.storageKey ? this.storage.getPublicUrl(row.storageKey) : null,
+        url: row.storageKey ? await this.storage.getPrivateUrl(row.storageKey, userId) : null,
         subjectRef: row.subjectRef,
         subjectName: subject?.name ?? row.subjectRef,
         topicRef: row.topicRef,
@@ -797,7 +799,7 @@ export class MistakeNotebookService {
         note: row.note,
         solutionStorageKey: row.solutionStorageKey,
         solutionUrl: row.solutionStorageKey
-          ? this.storage.getPublicUrl(row.solutionStorageKey)
+          ? await this.storage.getPrivateUrl(row.solutionStorageKey, userId)
           : null,
         solutionNote: row.solutionNote,
         status: row.status as NotebookEntryDto["status"],
@@ -810,6 +812,6 @@ export class MistakeNotebookService {
         createdAt: row.createdAt.toISOString(),
         updatedAt: row.updatedAt.toISOString(),
       };
-    });
+    }));
   }
 }

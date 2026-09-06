@@ -116,9 +116,10 @@ export class ForumThreadService {
     @Optional() private readonly polls?: ForumPollService,
   ) {}
 
-  /** Presigned upload URL for a post attachment — image or file (APP-027). Client PUTs, then sends `key`. */
+  /** One-use validated upload capability for an attachment (APP-027). Client PUTs, then sends `key`. */
   async createAttachmentUploadUrl(
     userId: string,
+    sessionId: string,
     contentType: string,
   ): Promise<ForumAttachmentUploadUrl> {
     await this.assertEnabled();
@@ -136,6 +137,8 @@ export class ForumThreadService {
     const result = await this.storage.createUploadUrl({
       key: `forum-attachments/${userId}/${randomUUID()}.${ext}`,
       contentType,
+      ownerId: userId,
+      sessionId,
     });
     // Record the minted key as pending; insertMany clears it once attached. A create that never lands
     // leaves the row for the orphan sweep (cleanupOrphanAttachments).

@@ -4,6 +4,7 @@ import {
   MENTORSHIP_DATA_SCOPE,
   type MentorshipCoachOverviewDto,
   type MentorshipInvitationPreviewDto,
+  type MentorshipCoachProfileDto,
   type MentorshipLinkStatus,
   type MyCoachDto,
 } from "@mentor/types";
@@ -26,6 +27,7 @@ import {
   MentorshipLinkRepository,
   type MentorshipLinkRow,
 } from "../infrastructure/mentorship-link.repository";
+import { MentorshipApplicationService } from "./mentorship-application.service";
 import { MentorshipInviteService } from "./mentorship-invite.service";
 
 type DisplayPerson = { displayName: string; username: string | null };
@@ -45,6 +47,7 @@ export class MentorshipLinkService {
   constructor(
     private readonly links: MentorshipLinkRepository,
     private readonly invites: MentorshipInviteService,
+    private readonly applications: MentorshipApplicationService,
     private readonly users: UsersService,
     private readonly config: ConfigRegistryService,
     private readonly subscriptions: SubscriptionsService,
@@ -110,12 +113,18 @@ export class MentorshipLinkService {
   async previewInvitation(code: string): Promise<MentorshipInvitationPreviewDto> {
     await this.assertEnabled();
     const coachId = await this.invites.resolveCoachId(code);
-    const coach = await this.findPerson(coachId);
+    const [coach, coachProfile] = await Promise.all([
+      this.findPerson(coachId),
+      this.applications.findPublicProfile(coachId),
+    ]);
     if (!coach) throw new DomainError(ErrorCode.MENTORSHIP_INVITE_INVALID, HttpStatus.NOT_FOUND);
     return {
       coachDisplayName: coach.displayName,
       coachUsername: coach.username,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
+      // The screen where a student decides to hand over private data used to show a name and
+      // nothing else. `null` here is honest and common: every coach granted the role by hand.
+      coachProfile,
     };
   }
 
@@ -187,7 +196,7 @@ export class MentorshipLinkService {
         seatKind,
       ),
     );
-    return this.toMyCoachDto(link, people.get(coachId));
+    return this.toMyCoachDto(link, people.get(coachId), await this.applications.findPublicProfile(coachId));
   }
 
   /**
@@ -215,7 +224,11 @@ export class MentorshipLinkService {
     await this.assertEnabled();
     const link = await this.links.findActiveByStudent(studentId);
     if (!link) return null;
-    return this.toMyCoachDto(link, await this.findPerson(link.coachId));
+    const [person, profile] = await Promise.all([
+      this.findPerson(link.coachId),
+      this.applications.findPublicProfile(link.coachId),
+    ]);
+    return this.toMyCoachDto(link, person, profile);
   }
 
   /** Coach ends the link. */
@@ -253,7 +266,11 @@ export class MentorshipLinkService {
     return (await this.users.listDisplayIdentities([userId])).get(userId);
   }
 
-  private toMyCoachDto(link: MentorshipLinkRow, coach: DisplayPerson | undefined): MyCoachDto {
+  private toMyCoachDto(
+    link: MentorshipLinkRow,
+    coach: DisplayPerson | undefined,
+    coachProfile: MentorshipCoachProfileDto | null,
+  ): MyCoachDto {
     return {
       linkId: link.id,
       coachDisplayName: coach?.displayName ?? "",
@@ -262,6 +279,9 @@ export class MentorshipLinkService {
       acceptedAt: link.acceptedAt?.toISOString() ?? null,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
       coachNote: toCoachNoteDto(link),
+      // The same profile the consent screen showed. A student who agreed to something should be
+      // able to re-read it without digging out the invite they used months ago.
+      coachProfile,
     };
   }
 }

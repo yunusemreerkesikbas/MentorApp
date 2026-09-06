@@ -37,6 +37,7 @@ export class PhotoUploadService {
 
   async createUploadUrl(
     userId: string,
+    sessionId: string,
     rolesHint: string[] | undefined,
     contentType: string,
   ): Promise<PhotoUploadUrlDto> {
@@ -47,7 +48,7 @@ export class PhotoUploadService {
     }
     const ext = extensionForMime(contentType);
     const key = `mock-exams/${userId}/${randomUUID()}.${ext}`;
-    const result = await this.storage.createUploadUrl({ key, contentType });
+    const result = await this.storage.createUploadUrl({ key, contentType, ownerId: userId, sessionId });
     return {
       uploadUrl: result.url,
       key: result.key,

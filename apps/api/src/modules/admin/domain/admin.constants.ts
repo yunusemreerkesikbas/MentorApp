@@ -8,6 +8,8 @@ export const AuditAction = {
   STAFF_ASSIGN: "staff.assign",
   STAFF_REVOKE: "staff.revoke",
   ROLE_ASSIGN: "role.assign",
+  /** Coach vetting (W8 curation). Approving also grants COACH — see the controller. */
+  COACH_APPLICATION_REVIEW: "coach-application.review",
   ROLE_REVOKE: "role.revoke",
   USER_STATUS: "user.status",
   USER_KVKK_EXPORT: "user.kvkk-export",
@@ -45,6 +47,7 @@ export const AuditTargetType = {
   EXAM_EVENT: "exam-event",
   SUBSCRIPTION: "subscription",
   PLAN: "plan",
+  COACH_APPLICATION: "coach-application",
   FORUM_TAG: "forum-tag",
   FORUM_TAG_SUGGESTION: "forum-tag-suggestion",
   FORUM_THREAD: "forum-thread",

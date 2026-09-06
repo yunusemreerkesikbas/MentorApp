@@ -94,6 +94,7 @@ export class SessionReflectionService {
     const { text, task } = extractReplyMarkers(result.text);
 
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId: user.id,
       model: result.model,
       feature: AiUsageFeature.SESSION_REFLECTION,

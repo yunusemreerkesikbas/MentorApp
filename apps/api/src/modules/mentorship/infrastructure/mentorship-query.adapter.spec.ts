@@ -29,11 +29,27 @@ function idleSnapshot(studentId: string) {
   return { ...calmSnapshot(studentId), lastActiveDate: "2026-08-01", planCompletionRate7d: null };
 }
 
-function setup(pairs: { coachId: string; studentId: string }[], snapshots: unknown[]) {
+/** A live link, unmarked unless the test says otherwise — the shape `listAllActiveLinks` returns. */
+type Pair = {
+  coachId: string;
+  studentId: string;
+  attendedAt?: Date | null;
+  attendedFlags?: string[] | null;
+};
+
+function setup(pairs: Pair[], snapshots: unknown[]) {
   const listCohortSnapshots = vi.fn(
     async () => new Map(snapshots.map((s) => [(s as { studentId: string }).studentId, s])),
   );
-  const links = { listAllActiveLinks: vi.fn(async () => pairs) };
+  const links = {
+    listAllActiveLinks: vi.fn(async () =>
+      pairs.map((pair) => ({
+        attendedAt: null,
+        attendedFlags: null,
+        ...pair,
+      })),
+    ),
+  };
   const evidence = { listCohortSnapshots };
   const users = {
     listDisplayIdentities: vi.fn(
@@ -45,9 +61,11 @@ function setup(pairs: { coachId: string; studentId: string }[], snapshots: unkno
     })),
   };
   const config = {
-    get: vi.fn(async (key: string) =>
-      key === "mentorship.risk.inactive_days" ? 3 : key.endsWith("floor") ? 0.5 : 2,
-    ),
+    get: vi.fn(async (key: string) => {
+      if (key === "mentorship.risk.inactive_days") return 3;
+      if (key === "mentorship.attention.ttl_days") return 7;
+      return key.endsWith("floor") ? 0.5 : 2;
+    }),
   };
   const adapter = new MentorshipQueryAdapter(
     links as never,
@@ -96,6 +114,57 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
     await adapter.listRiskDigestCandidates(NOW);
     expect(listCohortSnapshots).toHaveBeenCalledTimes(1);
     expect(listCohortSnapshots.mock.calls[0]![0]).toEqual([IDLE, CALM]);
+  });
+
+  describe("a student the coach already dealt with", () => {
+    it("drops out of the digest", async () => {
+      // The mark is why this exists: the coach called them yesterday, the flag has not changed,
+      // and naming them again tomorrow is the repetition that makes a coach stop reading.
+      const { adapter } = setup(
+        [
+          {
+            coachId: COACH_A,
+            studentId: IDLE,
+            attendedAt: new Date("2026-09-09T18:00:00.000Z"),
+            attendedFlags: ["INACTIVE"],
+          },
+        ],
+        [idleSnapshot(IDLE)],
+      );
+      await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
+    });
+
+    it("comes back when a flag the mark never covered appears", async () => {
+      const { adapter } = setup(
+        [
+          {
+            coachId: COACH_A,
+            studentId: IDLE,
+            attendedAt: new Date("2026-09-09T18:00:00.000Z"),
+            attendedFlags: ["LOW_MOOD"],
+          },
+        ],
+        [idleSnapshot(IDLE)],
+      );
+      const [candidate] = await adapter.listRiskDigestCandidates(NOW);
+      expect(candidate!.students[0]).toMatchObject({ studentId: IDLE, flags: ["INACTIVE"] });
+    });
+
+    it("comes back once the mark goes stale", async () => {
+      const { adapter } = setup(
+        [
+          {
+            coachId: COACH_A,
+            studentId: IDLE,
+            attendedAt: new Date("2026-08-20T18:00:00.000Z"),
+            attendedFlags: ["INACTIVE"],
+          },
+        ],
+        [idleSnapshot(IDLE)],
+      );
+      const [candidate] = await adapter.listRiskDigestCandidates(NOW);
+      expect(candidate!.students[0]).toMatchObject({ studentId: IDLE });
+    });
   });
 
   it("skips a coach with no contact row rather than half-sending", async () => {

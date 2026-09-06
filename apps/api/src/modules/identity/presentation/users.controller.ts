@@ -31,7 +31,7 @@ export class UsersController {
     @CurrentUser() user: RequestUser,
     @Body() dto: AvatarUploadUrlDto,
   ): Promise<AvatarUploadUrlResponseDto> {
-    return this.users.createAvatarUploadUrl(user.id, dto);
+    return this.users.createAvatarUploadUrl(user.id, user.sessionId, dto);
   }
 
   @Post("me/verification-email")

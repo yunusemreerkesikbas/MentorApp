@@ -3,6 +3,7 @@ import { AiModule } from "../ai/ai.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { PaymentsModule } from "../payments/payments.module";
 import { IdentityModule } from "../identity/identity.module";
+import { MentorshipApplicationService } from "./application/mentorship-application.service";
 import { MentorshipErasureService } from "./application/mentorship-erasure.service";
 import { MentorshipAssignmentService } from "./application/mentorship-assignment.service";
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
@@ -11,12 +12,14 @@ import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
+import { MentorshipApplicationRepository } from "./infrastructure/mentorship-application.repository";
 import { MentorshipDroppedAssignmentRepository } from "./infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipInviteCodeRepository } from "./infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "./infrastructure/mentorship-link.repository";
 import { MentorshipQueryAdapter } from "./infrastructure/mentorship-query.adapter";
 import { MentorshipTemplateRepository } from "./infrastructure/mentorship-template.repository";
 import { MENTORSHIP_QUERY_PORT } from "./domain/mentorship-query.port";
+import { MentorshipApplicationController } from "./presentation/mentorship-application.controller";
 import { MentorshipCoachController } from "./presentation/mentorship-coach.controller";
 import { MentorshipStudentController } from "./presentation/mentorship-student.controller";
 
@@ -37,7 +40,11 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
   // decision has to be synchronous — it happens inside the accept transaction's lock, where an
   // event would arrive far too late. One-way still: payments imports identity/promotions/coaching.
   imports: [IdentityModule, CoachingModule, AiModule, PaymentsModule],
-  controllers: [MentorshipCoachController, MentorshipStudentController],
+  controllers: [
+    MentorshipApplicationController,
+    MentorshipCoachController,
+    MentorshipStudentController,
+  ],
   providers: [
     MentorshipLinkService,
     MentorshipInviteService,
@@ -45,15 +52,25 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipBriefService,
     MentorshipAssignmentService,
     MentorshipTemplateService,
+    MentorshipApplicationService,
     MentorshipErasureService,
     PlanTaskFeedbackListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
     MentorshipDroppedAssignmentRepository,
     MentorshipTemplateRepository,
+    MentorshipApplicationRepository,
     MentorshipQueryAdapter,
     { provide: MENTORSHIP_QUERY_PORT, useExisting: MentorshipQueryAdapter },
   ],
-  exports: [MentorshipLinkService, MentorshipErasureService, MENTORSHIP_QUERY_PORT],
+  // `MentorshipApplicationService` is exported for the admin vetting queue. The arrow only ever
+  // goes admin → mentorship: the COACH role lives in W6 and admin performs that write itself, so
+  // this module never has to reach back and no cycle can form.
+  exports: [
+    MentorshipLinkService,
+    MentorshipErasureService,
+    MentorshipApplicationService,
+    MENTORSHIP_QUERY_PORT,
+  ],
 })
 export class MentorshipModule {}

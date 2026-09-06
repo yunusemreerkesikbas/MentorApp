@@ -4,6 +4,8 @@
  * feed the usage meter (§7 cost cap). The port carries NO PII — callers pass a PII-free prompt (§4 #6).
  */
 export const LLM_PORT = Symbol("LLM_PORT");
+/** Selected provider before the outbound privacy boundary is applied. */
+export const RAW_LLM_PORT = Symbol("RAW_LLM_PORT");
 
 /** Prior conversation turns (oldest-first) — the user's own words + earlier coach replies. */
 export interface LlmHistoryMessage {
@@ -23,6 +25,8 @@ export interface LlmResult {
   promptTokens: number;
   completionTokens: number;
   model: string;
+  /** Internal aggregate-budget hold; callers settle it with the usage row. */
+  budgetReservationId?: string;
 }
 
 /** Incremental completion event: text deltas while generating, then exactly one `final`. */

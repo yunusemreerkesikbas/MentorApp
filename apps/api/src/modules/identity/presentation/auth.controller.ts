@@ -2,9 +2,12 @@ import { Body, Controller, Get, HttpCode, Post, Query, Req, Res } from "@nestjs/
 import { ConfigService } from "@nestjs/config";
 import { ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
+import { I18nService } from "nestjs-i18n";
 import type { Request, Response } from "express";
 import type { AuthSession } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import type { Env } from "../../../config/env.validation";
 import {
   GOOGLE_OAUTH_COOKIE_PATH,
@@ -14,7 +17,7 @@ import {
   REFRESH_COOKIE_PATH,
 } from "../domain/identity.constants";
 import { AuthService, type AuthResult } from "../application/auth.service";
-import { GoogleAuthService, type GoogleOAuthStatus } from "../application/google-auth.service";
+import { GoogleAuthService, type GoogleOAuthState, type GoogleOAuthStatus } from "../application/google-auth.service";
 import {
   ForgotPasswordDto,
   GoogleOAuthCallbackQueryDto,
@@ -39,6 +42,7 @@ export class AuthController {
     private readonly auth: AuthService,
     private readonly googleAuth: GoogleAuthService,
     private readonly config: ConfigService<Env, true>,
+    private readonly i18n: I18nService,
   ) {}
 
   @Post("signup")
@@ -96,11 +100,33 @@ export class AuthController {
     @Res() res: Response,
   ): Promise<void> {
     const raw = (req.cookies as Record<string, string> | undefined)?.[GOOGLE_OAUTH_STATE_COOKIE];
-    const state = this.googleAuth.verifyState(raw, query.state);
     res.clearCookie(GOOGLE_OAUTH_STATE_COOKIE, { path: GOOGLE_OAUTH_COOKIE_PATH });
-    const result = await this.googleAuth.callback(query.code, state);
-    this.finish(result, res);
-    res.redirect(this.googleAuth.redirectUrl(state, result.user));
+    let state: GoogleOAuthState | undefined;
+    try {
+      state = this.googleAuth.verifyState(raw, query.state);
+      if (!query.code || query.error) {
+        throw new DomainError(ErrorCode.AUTH_GOOGLE_STATE_INVALID, 400);
+      }
+      if (state.mode === "link") {
+        await this.googleAuth.linkCallback(query.code, state);
+        const appUrl = this.config.get("APP_URL", { infer: true }).replace(/\/$/, "");
+        res.redirect(`${appUrl}${state.returnTo}?googleLinked=true`);
+        return;
+      }
+      const result = await this.googleAuth.callback(query.code, state);
+      this.finish(result, res);
+      res.redirect(this.googleAuth.redirectUrl(state, result.user));
+    } catch (err) {
+      if (!(err instanceof DomainError)) throw err;
+      const locale = state?.locale ?? "tr";
+      const path = state?.mode === "link" ? state.returnTo : locale === "tr" ? "/giris" : "/en/login";
+      const appUrl = this.config.get("APP_URL", { infer: true }).replace(/\/$/, "");
+      const params = new URLSearchParams({
+        googleError: this.i18n.translate(`errors.${err.code}`, { lang: locale }),
+        googleErrorCode: err.code,
+      });
+      res.redirect(`${appUrl}${path}?${params.toString()}`);
+    }
   }
 
   @Post("refresh")

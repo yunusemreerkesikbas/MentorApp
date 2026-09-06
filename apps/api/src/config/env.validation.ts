@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { validateProductionSecurity } from "./env-production-locks";
 
 /**
  * Environment variable schema (§8/§10).
@@ -12,7 +13,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
-  // Comma-separated allowed CORS origins (web/admin). Falls back to dev defaults if unset.
+  // Comma-separated allowed CORS origins. Required HTTPS origins in production.
   CORS_ORIGINS: z.string().optional(),
 
   // DB — Postgres (local docker / Neon). Required: the app cannot function without it (fail-fast).
@@ -64,6 +65,12 @@ const envSchema = z.object({
   R2_PRIVATE_BUCKET: z.string().optional(),
   R2_JURISDICTION: z.enum(["auto", "eu"]).default("auto"),
   TURNSTILE_SECRET_KEY: z.string().optional(),
+  TURNSTILE_EXPECTED_HOSTNAME: z.string().max(253).regex(/^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)*[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/).optional(),
+  TURNSTILE_EXPECTED_ACTION: z.string().regex(/^[A-Za-z0-9_-]{1,32}$/).default("signup"),
+  TURNSTILE_VERIFY_TIMEOUT_MS: z.coerce.number().int().min(100).max(15_000).default(5_000),
+  /** Cloudflare Access issuer and application audience protecting /v1/admin/**. */
+  CLOUDFLARE_ACCESS_TEAM_DOMAIN: z.string().url().optional(),
+  CLOUDFLARE_ACCESS_AUD: z.string().min(8).max(256).optional(),
 
   // Email — Postmark (§8)
   POSTMARK_TOKEN: z.string().optional(),
@@ -89,6 +96,7 @@ export type Env = z.infer<typeof envSchema>;
 
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
+  validateProductionSecurity(env, ctx);
   // Production safety lock: the fake payments provider must never reach production.
   if (env.NODE_ENV === "production" && !env.DATABASE_MIGRATION_URL) {
     ctx.addIssue({
@@ -221,7 +229,9 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
 export function validateEnv(config: Record<string, unknown>): Env {
   const parsed = envSchemaWithLocks.safeParse(config);
   if (!parsed.success) {
-    throw new Error(`Invalid environment variables:\n${parsed.error.toString()}`);
+    // Zod enum diagnostics include the received value, which can itself be a secret.
+    const issues = parsed.error.issues.map((issue) => `${issue.path.join(".")}: ${issue.code === "custom" ? issue.message : issue.code}`);
+    throw new Error(`Invalid environment variables:\n${issues.join("\n")}`);
   }
   return parsed.data;
 }

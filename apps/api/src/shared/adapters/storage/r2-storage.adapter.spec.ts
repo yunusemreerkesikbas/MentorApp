@@ -74,7 +74,7 @@ describe("R2StorageAdapter", () => {
     },
     {
       key: "vision-board/6f1c.../a3d1-....jpg",
-      bucket: "mentor-public",
+      bucket: "mentor-private",
       source: "coaching/application/vision-board-image.service.ts",
     },
     {
@@ -87,9 +87,9 @@ describe("R2StorageAdapter", () => {
   it.each(REAL_KEYS)(
     "routes $key to $bucket (minted by $source)",
     async ({ key, bucket }) => {
-      await adapter().createUploadUrl({ key, contentType: "image/png" });
+      await adapter().putObject(key, Buffer.from("bytes"), "image/png");
 
-      const command = vi.mocked(getSignedUrl).mock.calls[0]?.[1] as {
+      const command = send.mock.calls[0]?.[0] as {
         input: { Bucket: string };
       };
       expect(command.input.Bucket).toBe(bucket);
@@ -103,11 +103,8 @@ describe("R2StorageAdapter", () => {
    */
   it.each(ALL_PREFIXES)("routes the declared prefix %s", async (prefix) => {
     await expect(
-      adapter().createUploadUrl({
-        key: `${prefix}user/object.bin`,
-        contentType: "image/png",
-      }),
-    ).resolves.toBeDefined();
+      adapter().putObject(`${prefix}user/object.bin`, Buffer.from("bytes"), "image/png"),
+    ).resolves.toBeUndefined();
   });
 
   it.each(PUBLIC_PREFIXES)(
@@ -150,12 +147,18 @@ describe("R2StorageAdapter", () => {
     ).toThrow();
   });
 
+  it("has no raw client upload URL and caps private read links at five minutes", async () => {
+    const storage = adapter();
+    expect("createUploadUrl" in storage).toBe(false);
+    await expect(storage.createReadUrl("notebook/user/photo.jpg", 900)).resolves.toBe("https://signed.example/upload");
+    const call = vi.mocked(getSignedUrl).mock.calls[0];
+    expect(call?.[2]).toMatchObject({ expiresIn: 300 });
+    expect((call?.[1] as { input: { Bucket: string } }).input.Bucket).toBe("mentor-private");
+  });
+
   it("rejects unknown key prefixes instead of putting them in a public bucket", async () => {
     await expect(
-      adapter().createUploadUrl({
-        key: "unknown/private.txt",
-        contentType: "text/plain",
-      }),
+      adapter().putObject("unknown/private.txt", Buffer.from("bytes"), "text/plain"),
     ).rejects.toThrow();
   });
 

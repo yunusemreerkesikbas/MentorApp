@@ -8,6 +8,7 @@ import { DomainError, UnauthorizedError } from "../errors/domain-error";
 import { ErrorCode } from "../errors/error-code";
 import { IS_PUBLIC_KEY } from "./public.decorator";
 import type { RequestUser } from "./current-user";
+import { TokenService } from "../../modules/identity/application/token.service";
 
 /**
  * Global JWT guard (APP_GUARD). Routes/controllers marked @Public() are skipped
@@ -18,6 +19,7 @@ export class JwtAuthGuard implements CanActivate {
   constructor(
     private readonly reflector: Reflector,
     private readonly jwt: JwtService,
+    private readonly tokens: TokenService,
   ) {}
 
   async canActivate(context: ExecutionContext): Promise<boolean> {
@@ -32,13 +34,19 @@ export class JwtAuthGuard implements CanActivate {
     const token = header?.startsWith("Bearer ") ? header.slice(7) : undefined;
     if (!token) throw new UnauthorizedError();
 
+    let payload: AccessTokenPayload;
     try {
-      const payload = await this.jwt.verifyAsync<AccessTokenPayload>(token);
-      req.user = { id: payload.sub, roles: payload.roles, orgId: payload.orgId };
-      return true;
+      payload = await this.jwt.verifyAsync<AccessTokenPayload>(token, { algorithms: ["HS256"] });
+      if (!isUuid(payload.sub) || !isUuid(payload.sid)) throw new UnauthorizedError();
     } catch {
       // Expired/invalid access token → 401 with a stable code (client triggers refresh).
       throw new DomainError(ErrorCode.AUTH_TOKEN_EXPIRED, HttpStatus.UNAUTHORIZED);
     }
+    req.user = await this.tokens.validateSession(payload.sid, payload.sub);
+    return true;
   }
+}
+
+function isUuid(value: unknown): value is string {
+  return typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 }

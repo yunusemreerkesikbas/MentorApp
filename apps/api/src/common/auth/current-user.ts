@@ -2,6 +2,7 @@ import { createParamDecorator, type ExecutionContext } from "@nestjs/common";
 
 /** Authenticated principal attached to the request by JwtAuthGuard. */
 export interface RequestUser {
+  sessionId: string;
   id: string;
   roles: string[];
   orgId: string | null;

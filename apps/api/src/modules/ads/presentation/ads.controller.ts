@@ -1,6 +1,6 @@
 import { Body, Controller, Get, Headers, Param, Post, Query } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiParam, ApiTags } from "@nestjs/swagger";
 import { ExamType } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Public } from "../../../common/auth/public.decorator";
@@ -19,6 +19,7 @@ export class AdsController {
 
   @Public()
   @Get("public/placements/:placementId")
+  @ApiParam({ name: "placementId", type: String })
   publicPlacement(
     @Param() params: AdPlacementParamsDto,
     @Query() query: AdPlacementQueryDto,
@@ -34,6 +35,7 @@ export class AdsController {
 
   @ApiBearerAuth()
   @Get("placements/:placementId")
+  @ApiParam({ name: "placementId", type: String })
   placement(
     @Param() params: AdPlacementParamsDto,
     @Query() query: AdPlacementQueryDto,
@@ -51,6 +53,7 @@ export class AdsController {
 
   @ApiBearerAuth()
   @Get("reward-offers/:placementId")
+  @ApiParam({ name: "placementId", type: String })
   rewardOffer(
     @Param() params: AdPlacementParamsDto,
     @CurrentUser() user: RequestUser,

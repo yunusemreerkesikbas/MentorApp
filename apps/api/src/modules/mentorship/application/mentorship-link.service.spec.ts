@@ -32,6 +32,8 @@ function link(overrides: Partial<MentorshipLinkRow> = {}): MentorshipLinkRow {
     endedBy: null,
     coachNote: null,
     coachNoteAt: null,
+    attendedAt: null,
+    attendedFlags: null,
     createdAt: now,
     updatedAt: now,
     ...overrides,
@@ -83,6 +85,9 @@ function setup(
       // Mirrors the repository: the note goes with the link, because re-linking revives this row.
       row.coachNote = null;
       row.coachNoteAt = null;
+      // And so does the coach's "I dealt with this" mark, for the same reason.
+      row.attendedAt = null;
+      row.attendedFlags = null;
       return row;
     }),
     setCoachNote: vi.fn(async (linkId: string, body: string | null) => {
@@ -131,15 +136,30 @@ function setup(
   // every coach looks like until seat billing is switched on.
   const subscriptions = { paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0) };
 
+  // The profile the consent screen and /kocum now carry. Null is the common case: every coach
+  // granted COACH by hand has no vetted application behind them.
+  const applications = { findPublicProfile: vi.fn(async () => null) };
   const service = new MentorshipLinkService(
     links as never,
     invites as never,
+    applications as never,
     users as never,
     configRegistry as never,
     subscriptions as never,
     events as never,
   );
-  return { service, links, invites, users, configRegistry, subscriptions, events, emitted, rows };
+  return {
+    service,
+    links,
+    invites,
+    applications,
+    users,
+    configRegistry,
+    subscriptions,
+    events,
+    emitted,
+    rows,
+  };
 }
 
 const codeOf = async (fn: () => Promise<unknown>): Promise<string> => {

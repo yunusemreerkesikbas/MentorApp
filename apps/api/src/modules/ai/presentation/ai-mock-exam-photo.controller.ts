@@ -39,7 +39,7 @@ export class AiMockExamPhotoController {
     @CurrentUser() user: RequestUser,
     @Body() dto: PhotoUploadUrlBodyDto,
   ): Promise<PhotoUploadUrlDto> {
-    return this.photoUpload.createUploadUrl(user.id, user.roles, dto.contentType);
+    return this.photoUpload.createUploadUrl(user.id, user.sessionId, user.roles, dto.contentType);
   }
 
   @Post(":id/categorize-photo")

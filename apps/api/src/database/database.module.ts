@@ -4,6 +4,8 @@ import type { Pool } from "pg";
 import type { Env } from "../config/env.validation";
 import { DRIZZLE, PG_POOL } from "./database.constants";
 import { createDatabase, createPool } from "./drizzle";
+import { assertRuntimeDatabaseRole } from "./database-role-safety";
+import { safeErrorMetadata } from "../observability/safe-diagnostics";
 
 /**
  * Global database module. Provides the `pg` Pool and the drizzle instance.
@@ -19,7 +21,7 @@ import { createDatabase, createPool } from "./drizzle";
     {
       provide: PG_POOL,
       inject: [ConfigService],
-      useFactory: (config: ConfigService<Env, true>) => {
+      useFactory: async (config: ConfigService<Env, true>) => {
         const url = config.get("DATABASE_URL", { infer: true });
         if (!url) {
           // Fail fast: the app cannot function without a database.
@@ -27,7 +29,13 @@ import { createDatabase, createPool } from "./drizzle";
         }
         const pool = createPool(url);
         const logger = new Logger("PgPool");
-        pool.on("error", (err) => logger.error(`Idle client error: ${err.message}`));
+        pool.on("error", (err) => logger.error({ event: "database.idle_client_error", err: safeErrorMetadata(err) }));
+        try {
+          await assertRuntimeDatabaseRole(pool, config.get("NODE_ENV", { infer: true }));
+        } catch (error) {
+          await pool.end();
+          throw error;
+        }
         return pool;
       },
     },

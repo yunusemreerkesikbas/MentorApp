@@ -199,6 +199,20 @@ export const coachStudents = pgTable(
     brief: text("brief"),
     briefAt: timestamp("brief_at", { withTimezone: true }),
     briefFingerprint: text("brief_fingerprint"),
+    /**
+     * The coach's "I have dealt with this student" mark (W8), and the risk flags it was taken
+     * over. Together they are what stops the roster and the daily digest from repeating a student
+     * the coach already reached out to; the rule lives in `mentorship/domain/attention.ts`.
+     *
+     * `attended_flags` is stored rather than recomputed because the question is "what did the
+     * coach see when they marked it" — a flag that appeared afterwards is news, and only the
+     * snapshot at mark time can tell the two apart.
+     *
+     * Cleared by `end()`, like `coach_note` and `brief` above and for the same reason: re-linking
+     * revives this very row, and a months-old mark would open a new relationship looking calm.
+     */
+    attendedAt: timestamp("attended_at", { withTimezone: true }),
+    attendedFlags: text("attended_flags").array(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -343,6 +357,77 @@ export const mentorshipProgramTemplates = pgTable(
   (t) => [
     uniqueIndex("mentorship_program_templates_coach_name_idx").on(t.coachId, t.name),
     index("mentorship_program_templates_coach_idx").on(t.coachId, t.updatedAt),
+  ],
+);
+
+/**
+ * Coach applications — the curation pipeline roadmap §5 asks for ("açık kayıt değil, kürasyon").
+ *
+ * ONE ROW PER PERSON, and the APPROVED row IS the coach's profile. There is no second table: a
+ * coach's profile is exactly what passed vetting, and the record of what an admin approved already
+ * lives in W6's append-only `admin_audit_log`. A second store would be a second copy of a fact
+ * that exists, and a third place for KVKK erasure to chase.
+ *
+ * TWO WRITERS, split by column, enforced in the service signatures rather than here:
+ *   applicant → headline, bio, claim_*        (submitted, and editable after approval — APP-083)
+ *   admin     → status, verified_claims, reviewed_*  (`review()` is the only door)
+ *
+ * No credential file. The evaluation's paperwork happens off-platform (§5's "kısa değerlendirme"):
+ * a document would be the heaviest personal data in the system, kept for rejected applicants too,
+ * and the badge only ever needed to record WHICH claim was checked.
+ *
+ * Re-applying revives this very row, the `coach_students` pattern. `UNIQUE (user_id)` is therefore
+ * also what guarantees a single open application — no partial index needed.
+ */
+export const mentorshipCoachApplications = pgTable(
+  "mentorship_coach_applications",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    /** PENDING | APPROVED | REJECTED (MentorshipApplicationStatus). */
+    status: text("status").notNull().default("PENDING"),
+    /** The applicant's own words. Shown to a student on the consent screen once approved. */
+    headline: text("headline").notNull(),
+    bio: text("bio").notNull(),
+    /** Structured claims — the admin marks which of these they checked. */
+    claimInstitution: text("claim_institution"),
+    claimBranch: text("claim_branch"),
+    claimYears: integer("claim_years"),
+    claimNote: text("claim_note"),
+    /**
+     * Which claims an admin verified (MentorshipClaim ids). Empty on a rejection: a refusal
+     * verifies nothing, and a badge nobody stands behind is worse than no badge.
+     */
+    verifiedClaims: text("verified_claims")
+      .array()
+      .notNull()
+      .default(sql`'{}'::text[]`),
+    reviewedBy: uuid("reviewed_by").references(() => users.id),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
+    /** The admin's reason, shown to the applicant. One-way — this is not a conversation. */
+    reviewNote: text("review_note"),
+    submittedAt: timestamp("submitted_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("mentorship_coach_applications_user_idx").on(t.userId),
+    /** The queue's only read pattern: one status, oldest first. */
+    index("mentorship_coach_applications_status_idx").on(t.status, t.submittedAt),
+    check(
+      "mentorship_coach_applications_status_chk",
+      sql`${t.status} in ('PENDING', 'APPROVED', 'REJECTED')`,
+    ),
   ],
 );
 

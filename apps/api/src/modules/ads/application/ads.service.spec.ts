@@ -21,7 +21,7 @@ const CONFIG: Record<string, number | boolean> = {
 
 function setup(
   isPremium = false,
-  options: { profileExamType?: ExamType; articleFamily?: ExamType } = {},
+  options: { profileExamType?: ExamType; articleFamily?: ExamType; nodeEnv?: string } = {},
 ) {
   const sessions: AdRewardSessionRow[] = [];
   const rewardedCountSince = vi.fn(async () => sessions.filter((row) => row.status === "REWARDED").length);
@@ -68,7 +68,14 @@ function setup(
   const service = new AdsService(
     repo as never,
     { get: async (key: string) => CONFIG[key] } as never,
-    { get: (key: string) => key.includes("KNOWLEDGE") ? "/network/article" : "/network/reward" } as never,
+    {
+      get: (key: string) =>
+        key === "NODE_ENV"
+          ? options.nodeEnv
+          : key.includes("KNOWLEDGE")
+            ? "/network/article"
+            : "/network/reward",
+    } as never,
     { getEntitlement: async () => ({ isPremium }) } as never,
     { getDiscoveryProfile: async () => ({ examType: options.profileExamType ?? ExamType.LGS }) } as never,
     economy as never,
@@ -114,6 +121,23 @@ describe("AdsService", () => {
       enabled: false,
       reason: "CONTEXT_UNVERIFIED",
       adUnitPath: null,
+    });
+  });
+
+  it("fails closed for rewarded web ads in production without server verification", async () => {
+    const { service } = setup(false, { nodeEnv: "production" });
+
+    const offer = await service.getRewardOffer(
+      AdPlacementId.DASHBOARD_REWARDED_COIN,
+      "user-1",
+      [],
+      "TR",
+    );
+
+    expect(offer).toMatchObject({
+      enabled: false,
+      eligible: false,
+      reason: "SERVER_VERIFICATION_UNAVAILABLE",
     });
   });
 

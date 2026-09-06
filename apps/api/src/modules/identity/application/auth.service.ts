@@ -106,7 +106,7 @@ export class AuthService {
       id: user.id,
       roles: user.roles,
       organizationId: user.organizationId,
-    });
+    }, user.passwordHash);
     return { user: toAuthUser(user, this.storage), tokens };
   }
 
@@ -165,15 +165,12 @@ export class AuthService {
   }
 
   async resetPassword(input: ResetPasswordInput): Promise<void> {
-    const row = await this.emailTokenRepo.consume(hashToken(input.token), EmailTokenType.RESET_PASSWORD);
-    if (!row) throw new DomainError(ErrorCode.AUTH_TOKEN_INVALID, HttpStatus.BAD_REQUEST);
-    if (row.expiresAt.getTime() <= Date.now()) {
+    const passwordHash = await argon2.hash(input.password);
+    const result = await this.tokenService.resetPassword(hashToken(input.token), passwordHash);
+    if (result === "invalid") throw new DomainError(ErrorCode.AUTH_TOKEN_INVALID, HttpStatus.BAD_REQUEST);
+    if (result === "expired") {
       throw new DomainError(ErrorCode.AUTH_TOKEN_EXPIRED, HttpStatus.BAD_REQUEST);
     }
-    const passwordHash = await argon2.hash(input.password);
-    await this.usersRepo.updateService(row.userId, { passwordHash });
-    // Stolen-password assumption: kill every active session.
-    await this.tokenService.revokeAllForUser(row.userId);
   }
 
   private async sendEmailToken(user: UserRow, type: EmailTokenType): Promise<void> {

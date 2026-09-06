@@ -1,8 +1,9 @@
 /**
  * Object storage port (§8) — Cloudflare R2 adapter behind it (S3-compatible, zero egress).
- * Usage: avatars, mock-exam photos, forum images.
+ * Usage: avatars, mock-exam photos, notebook/vision media, forum and content files.
  */
 export const STORAGE_PORT = Symbol("STORAGE_PORT");
+export const RAW_STORAGE_PORT = Symbol("RAW_STORAGE_PORT");
 
 export interface StorageUploadUrlResult {
   url: string;
@@ -11,16 +12,33 @@ export interface StorageUploadUrlResult {
   expiresAt: string;
 }
 
+export interface StorageUploadInput {
+  key: string;
+  contentType: string;
+  ownerId: string;
+  sessionId: string;
+}
+
 export interface StoragePort {
-  /** Create a signed upload URL (client→R2 directly). */
-  createUploadUrl(input: {
-    key: string;
-    contentType: string;
-  }): Promise<StorageUploadUrlResult>;
+  /** Single-use API capability; bytes are validated before any object is published. */
+  createUploadUrl(input: StorageUploadInput): Promise<StorageUploadUrlResult>;
+  /** Call only from an owner-authorized feature read. */
+  getPrivateUrl(key: string, ownerId: string): Promise<string>;
+  getPublicUrl(key: string): string;
+  readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
+  deleteObject(key: string): Promise<void>;
+  copyObject(sourceKey: string, destinationKey: string): Promise<void>;
+  listObjects(prefix: string, limit: number): Promise<StorageObjectSummary[]>;
+}
+
+/** Raw adapter surface. No direct client upload capability exists here. */
+export interface ObjectStoragePort {
+  putObject(key: string, bytes: Buffer, contentType: string): Promise<void>;
+  createReadUrl(key: string, expiresInSeconds: number): Promise<string>;
   getPublicUrl(key: string): string;
   /** Server-side read for the vision pipeline (never exposed to clients). */
   readObject(key: string, maxBytes?: number): Promise<Buffer | null>;
-  /** Best-effort cleanup for replaced user uploads. */
+  /** Immediate raw delete used by the durable cleanup job handler. */
   deleteObject(key: string): Promise<void>;
   /**
    * Server-side copy within the store — the bytes never travel through a client.

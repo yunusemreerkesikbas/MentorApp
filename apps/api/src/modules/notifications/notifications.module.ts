@@ -3,6 +3,7 @@ import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
 import { LoggerEmailAdapter } from "../../shared/adapters/email/logger-email.adapter";
 import { PostmarkEmailAdapter } from "../../shared/adapters/email/postmark-email.adapter";
+import { PushEndpointPolicy } from "../../shared/adapters/push/push-endpoint-policy";
 import { WebPushAdapter } from "../../shared/adapters/push/web-push.adapter";
 import { EMAIL_PORT } from "../../shared/ports/email.port";
 import { JOB_QUEUE_PORT } from "../../shared/ports/job-queue.port";
@@ -33,6 +34,7 @@ import { PromotionEventsListener } from "./application/listeners/promotion-event
 import { AnnouncementService } from "./application/announcement.service";
 import { NotificationsCopyService } from "./application/notifications-copy.service";
 import { NotificationsService } from "./application/notifications.service";
+import { NotificationStreamService } from "./application/notification-stream.service";
 import { NotificationsErasureService } from "./application/notifications-erasure.service";
 import { SessionReturnReminderService } from "./application/session-return-reminder.service";
 import { AnnouncementRepository } from "./infrastructure/announcement.repository";
@@ -41,6 +43,7 @@ import { NotificationDeliveryRepository } from "./infrastructure/notification-de
 import { NotificationPreferencesRepository } from "./infrastructure/notification-preferences.repository";
 import { PostgresJobQueueAdapter } from "./infrastructure/postgres-job-queue.adapter";
 import { PushSubscriptionRepository } from "./infrastructure/push-subscription.repository";
+import { PushDeliveryRepository } from "./infrastructure/push-delivery.repository";
 import { UserNotificationRepository } from "./infrastructure/user-notification.repository";
 import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
 import { CronController } from "./presentation/cron.controller";
@@ -66,6 +69,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     SessionReturnReminderHandler,
     AnnouncementDispatchHandler,
     NotificationsService,
+    NotificationStreamService,
     NotificationsCopyService,
     AnnouncementService,
     NotificationsErasureService,
@@ -85,6 +89,8 @@ import { NotificationsController } from "./presentation/notifications.controller
     AchievementEventsListener,
     NotificationPreferencesRepository,
     PushSubscriptionRepository,
+    PushDeliveryRepository,
+    PushEndpointPolicy,
     NotificationDeliveryRepository,
     UserNotificationRepository,
     AnnouncementRepository,
@@ -105,7 +111,7 @@ import { NotificationsController } from "./presentation/notifications.controller
         postmark: PostmarkEmailAdapter,
       ) => (config.get("POSTMARK_TOKEN", { infer: true }) ? postmark : logger),
     },
-    { provide: PUSH_PORT, useClass: WebPushAdapter },
+    { provide: PUSH_PORT, useExisting: WebPushAdapter },
   ],
   exports: [
     JOB_QUEUE_PORT,

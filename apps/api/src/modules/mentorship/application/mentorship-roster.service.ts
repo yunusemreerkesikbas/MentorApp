@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import type {
   MentorshipLinkStatus,
+  MentorshipRiskFlagId,
   MentorshipRosterRowDto,
   MentorshipStudentReportDto,
   Paginated,
@@ -13,6 +14,7 @@ import {
   MENTORSHIP_DROPPED_LIMIT,
   MENTORSHIP_DROPPED_WINDOW_DAYS,
 } from "../domain/mentorship.constants";
+import { needsAttention } from "../domain/attention";
 import {
   compareByRisk,
   evaluateRiskFlags,
@@ -24,7 +26,9 @@ import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repo
 import { MentorshipLinkService } from "./mentorship-link.service";
 
 /**
- * The coach's read surface: roster with triage, and the single-student report.
+ * The coach's triage surface: the roster, the single-student report, and the coach's own mark on
+ * both. The mark is a write, but it belongs here rather than on the link service because it is a
+ * fact ABOUT the triage — recording it means evaluating the same flags this file already computes.
  *
  * Every student-scoped read here goes through {@link MentorshipLinkService.requireActiveLink} or is
  * derived from links this coach owns. The numbers come from coaching's exported
@@ -66,16 +70,18 @@ export class MentorshipRosterService {
     const activeStudentIds = rows
       .filter((row) => row.status === "ACTIVE")
       .map((row) => row.studentId);
-    const [people, snapshots, thresholds] = await Promise.all([
+    const [people, snapshots, thresholds, attentionTtlDays] = await Promise.all([
       this.users.listDisplayIdentities(rows.map((row) => row.studentId)),
       this.evidence.listCohortSnapshots(activeStudentIds, now),
       this.thresholds(),
+      this.config.get("mentorship.attention.ttl_days"),
     ]);
     const today = todayIso(now);
 
     const items = rows.map((link): MentorshipRosterRowDto => {
       const person = people.get(link.studentId);
       const snapshot = snapshots.get(link.studentId);
+      const flags = snapshot ? evaluateRiskFlags(snapshot, thresholds, today) : [];
       return {
         linkId: link.id,
         studentId: link.studentId,
@@ -97,11 +103,56 @@ export class MentorshipRosterService {
               moodLevel7dAvg: snapshot.moodLevel7dAvg,
             }
           : null,
-        riskFlags: snapshot ? evaluateRiskFlags(snapshot, thresholds, today) : [],
+        riskFlags: flags,
+        // An ENDED link carries no mark for the same reason it carries no metrics: the coach's
+        // window is closed, and "you handled this" is a statement about data they can no longer see.
+        attendedAt: snapshot ? (link.attendedAt?.toISOString() ?? null) : null,
+        needsAttention: snapshot
+          ? needsAttention(
+              flags,
+              link.attendedAt,
+              (link.attendedFlags ?? []) as MentorshipRiskFlagId[],
+              attentionTtlDays,
+              now,
+            )
+          : false,
       };
     });
     items.sort(compareByRisk);
     return { items, total, page, pageSize };
+  }
+
+  /**
+   * The coach marks a student handled, or takes the mark back.
+   *
+   * The flags are evaluated HERE, not taken from the request. A client-supplied set could silence a
+   * flag that landed after the page rendered, and the coach would be told they had dealt with
+   * something they never saw. It costs one snapshot call — the same one the report already makes.
+   *
+   * Marking is not "resolved": recovery is still decided by the rules. This only records that the
+   * coach looked, so the roster and the morning digest stop repeating themselves.
+   */
+  async setAttention(
+    coachId: string,
+    studentId: string,
+    attended: boolean,
+    now = new Date(),
+  ): Promise<void> {
+    await this.linkService.assertEnabled();
+    const link = await this.linkService.requireActiveLink(coachId, studentId);
+    if (!attended) {
+      await this.links.setAttention(link.id, null);
+      return;
+    }
+    const [snapshots, thresholds] = await Promise.all([
+      this.evidence.listCohortSnapshots([studentId], now),
+      this.thresholds(),
+    ]);
+    const snapshot = snapshots.get(studentId);
+    // No snapshot means no evidence to triage. An empty mark is still worth writing: it records
+    // that the coach looked, and `needsAttention` reads it as covering nothing if flags appear.
+    const flags = snapshot ? evaluateRiskFlags(snapshot, thresholds, todayIso(now)) : [];
+    await this.links.setAttention(link.id, flags);
   }
 
   /** One student's report. 404s unless this coach holds an ACTIVE link to them. */
@@ -116,15 +167,18 @@ export class MentorshipRosterService {
     // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
     // previous coach on a task that outlived their link must not be readable by the current one.
     const droppedSince = addDays(todayIso(now), -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1));
-    const [person, profile, report, snapshots, thresholds, dropped] = await Promise.all([
-      this.users.listDisplayIdentities([studentId]),
-      this.users.getDiscoveryProfile(studentId),
-      this.evidence.getStudentReport(studentId, now, link.id),
-      this.evidence.listCohortSnapshots([studentId], now),
-      this.thresholds(),
-      this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
-    ]);
+    const [person, profile, report, snapshots, thresholds, attentionTtlDays, dropped] =
+      await Promise.all([
+        this.users.listDisplayIdentities([studentId]),
+        this.users.getDiscoveryProfile(studentId),
+        this.evidence.getStudentReport(studentId, now, link.id),
+        this.evidence.listCohortSnapshots([studentId], now),
+        this.thresholds(),
+        this.config.get("mentorship.attention.ttl_days"),
+        this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
+      ]);
     const snapshot = snapshots.get(studentId)!;
+    const flags = evaluateRiskFlags(snapshot, thresholds, todayIso(now));
 
     return {
       studentId,
@@ -136,7 +190,15 @@ export class MentorshipRosterService {
       // Read back to the coach who wrote it. Scoped to the live link, so a successor coach starts
       // on a blank page rather than inheriting somebody else's words.
       coachNote: toCoachNoteDto(link),
-      riskFlags: evaluateRiskFlags(snapshot, thresholds, todayIso(now)),
+      riskFlags: flags,
+      attendedAt: link.attendedAt?.toISOString() ?? null,
+      needsAttention: needsAttention(
+        flags,
+        link.attendedAt,
+        (link.attendedFlags ?? []) as MentorshipRiskFlagId[],
+        attentionTtlDays,
+        now,
+      ),
       ...report,
       // What the living plan cannot say: these were assigned and then removed. Same `link.id`
       // scope as the plan rows, so a previous coach's assignments stay invisible.

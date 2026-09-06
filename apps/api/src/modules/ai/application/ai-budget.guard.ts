@@ -3,11 +3,13 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
+import { AiBudgetReservationRepository } from "../infrastructure/ai-budget-reservation.repository";
 
 /** 1 US cent = 10_000 micro-USD (ai_usage.cost_micros unit). */
 const MICROS_PER_CENT = 10_000;
 /** Cache the month-to-date spend so the guard doesn't aggregate on every AI request. */
 const CACHE_TTL_MS = 30_000;
+const RESERVATION_TTL_MS = 2 * 60_000;
 
 export interface AiBudgetStatus {
   /** Monthly cap in micro-USD (0 = no cap). */
@@ -31,6 +33,7 @@ export class AiBudgetGuard {
   constructor(
     private readonly config: ConfigRegistryService,
     private readonly usage: AiUsageRepository,
+    private readonly reservations: AiBudgetReservationRepository,
   ) {}
 
   /** UTC first-of-month — the budget window resets here. */
@@ -64,6 +67,27 @@ export class AiBudgetGuard {
     if (!(await this.isWithinBudget())) {
       throw new DomainError(ErrorCode.AI_BUDGET_EXCEEDED, HttpStatus.SERVICE_UNAVAILABLE);
     }
+  }
+
+  /** Atomically holds a conservative allowance so concurrent calls cannot all pass the same cap. */
+  async acquire(): Promise<string | null> {
+    const capMicros = await this.capMicros();
+    if (capMicros <= 0) return null;
+    const reservationCents = await this.config.get("ai.budget.reservation_usd_cents");
+    const id = await this.reservations.reserveIfAvailable({
+      capMicros,
+      amountMicros: reservationCents * MICROS_PER_CENT,
+      windowStart: this.startOfMonth(),
+      expiresAt: new Date(Date.now() + RESERVATION_TTL_MS),
+    });
+    if (!id) {
+      throw new DomainError(ErrorCode.AI_BUDGET_EXCEEDED, HttpStatus.SERVICE_UNAVAILABLE);
+    }
+    return id;
+  }
+
+  async release(id: string | null | undefined): Promise<void> {
+    if (id) await this.reservations.release(id);
   }
 
   /** Budget snapshot for the admin cost dashboard banner. */

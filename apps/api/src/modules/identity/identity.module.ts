@@ -4,6 +4,9 @@ import { JwtModule } from "@nestjs/jwt";
 import type { Env } from "../../config/env.validation";
 import { AuthService } from "./application/auth.service";
 import { GoogleAuthService } from "./application/google-auth.service";
+import { GoogleLinkingService } from "./application/google-linking.service";
+import { GoogleLinkingRepository } from "./infrastructure/google-linking.repository";
+import { GoogleLinkingController } from "./presentation/google-linking.controller";
 import { TokenService } from "./application/token.service";
 import { TurnstileService } from "./application/turnstile.service";
 import { UsersService } from "./application/users.service";
@@ -13,6 +16,7 @@ import { SocialErasureService } from "./application/social-erasure.service";
 import { EmailTokenRepository } from "./infrastructure/email-token.repository";
 import { AuthAccountRepository } from "./infrastructure/auth-account.repository";
 import { RefreshTokenRepository } from "./infrastructure/refresh-token.repository";
+import { AuthSessionRepository } from "./infrastructure/auth-session.repository";
 import { UsersRepository } from "./infrastructure/users.repository";
 import { FollowRepository } from "./infrastructure/follow.repository";
 import { BuddyRepository } from "./infrastructure/buddy.repository";
@@ -35,10 +39,12 @@ import { FollowController } from "./presentation/follow.controller";
       }),
     }),
   ],
-  controllers: [AuthController, UsersController, FollowController],
+  controllers: [AuthController, UsersController, FollowController, GoogleLinkingController],
   providers: [
     AuthService,
     GoogleAuthService,
+    GoogleLinkingService,
+    GoogleLinkingRepository,
     TokenService,
     TurnstileService,
     UsersService,
@@ -50,6 +56,7 @@ import { FollowController } from "./presentation/follow.controller";
     BuddyRepository,
     AuthAccountRepository,
     RefreshTokenRepository,
+    AuthSessionRepository,
     EmailTokenRepository,
   ],
   exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService],

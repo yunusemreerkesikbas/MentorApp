@@ -6,14 +6,12 @@ import { ConfigService } from "@nestjs/config";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
-import express from "express";
 import helmet from "helmet";
 import { Logger } from "nestjs-pino";
 import { AppModule } from "./app.module";
 import type { Env } from "./config/env.validation";
 import { setupSwagger } from "./observability/swagger";
-import { PHOTO_MAX_BYTES } from "./modules/ai/domain/photo-classify.constants";
-import { FORUM_FILE_MAX_BYTES, FORUM_FILE_MIMES } from "@mentor/types";
+import { configureBodyParsers } from "./common/http/body-parsers";
 
 function corsOrigins(config: ConfigService<Env, true>): string[] {
   const raw = config.get("CORS_ORIGINS", { infer: true });
@@ -31,6 +29,7 @@ function corsOrigins(config: ConfigService<Env, true>): string[] {
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true, // buffer until pino logger is attached
+    bodyParser: false,
   });
   app.useLogger(app.get(Logger));
 
@@ -43,20 +42,7 @@ async function bootstrap(): Promise<void> {
   app.use(helmet());
   app.use(cookieParser());
   app.enableCors({ origin: corsOrigins(config), credentials: true });
-  app.use(
-    "/v1/storage/fake-upload",
-    express.raw({
-      type: ["image/jpeg", "image/png", "image/webp", ...FORUM_FILE_MIMES],
-      limit: Math.max(PHOTO_MAX_BYTES, FORUM_FILE_MAX_BYTES),
-    }),
-  );
-  app.useBodyParser("json", {
-    limit: "1mb",
-    // Capture the raw body for webhook signature verification (payments).
-    verify: (req: { rawBody?: Buffer }, _res: unknown, buf: Buffer) => {
-      req.rawBody = buf;
-    },
-  });
+  configureBodyParsers(app.getHttpAdapter().getInstance());
 
   // OpenAPI at /v1/docs — non-production only (don't expose the API surface in prod).
   if (config.get("NODE_ENV", { infer: true }) !== "production") {

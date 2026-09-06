@@ -34,6 +34,7 @@ export type AuthProvider = (typeof AuthProvider)[keyof typeof AuthProvider];
 
 /** JWT payload shape (access token). */
 export interface AccessTokenPayload {
+  sid: string;
   sub: string;
   roles: string[];
   orgId: string | null;

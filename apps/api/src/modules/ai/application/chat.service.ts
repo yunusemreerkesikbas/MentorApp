@@ -36,6 +36,7 @@ import {
   LLM_PORT,
   type LlmHistoryMessage,
   type LlmPort,
+  type LlmResult,
 } from "../domain/llm.port";
 import {
   AiUsageFeature,
@@ -788,12 +789,7 @@ export class ChatService {
     userId: string,
     target: CoachConversationTarget,
     message: string,
-    result: {
-      text: string;
-      promptTokens: number;
-      completionTokens: number;
-      model: string;
-    },
+    result: LlmResult,
     sources: { title: string; slug: string; url: string }[],
     personalization: CoachPersonalizationDto,
     suggestedTask?: { title: string; subject: string | null },
@@ -809,6 +805,7 @@ export class ChatService {
     coachMessageId?: string;
   }> {
     await this.usage.append({
+      ...(result.budgetReservationId ? { budgetReservationId: result.budgetReservationId } : {}),
       userId,
       model: result.model,
       feature: AiUsageFeature.CHAT,
@@ -1298,6 +1295,7 @@ export class ChatService {
       }
 
       await this.usage.append({
+        ...(final.budgetReservationId ? { budgetReservationId: final.budgetReservationId } : {}),
         userId: user.id,
         model: final.model,
         feature: AiUsageFeature.CHAT,
@@ -1361,12 +1359,7 @@ export class ChatService {
     history: LlmHistoryMessage[];
   }, personalization: CoachPersonalizationDto, locale: PromptLocale, mentorV2 = false): AsyncGenerator<
     CoachChatStreamEvent,
-    {
-      text: string;
-      promptTokens: number;
-      completionTokens: number;
-      model: string;
-    }
+    LlmResult
   > {
     // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
     const personalizationFilter = mentorV2
@@ -1375,12 +1368,7 @@ export class ChatService {
     const bufferUntilValidated =
       !mentorV2 && personalization.mode === "NEEDS_INPUT";
     const markerFilter = createTaskMarkerFilter();
-    let final: {
-      text: string;
-      promptTokens: number;
-      completionTokens: number;
-      model: string;
-    } | null = null;
+    let final: LlmResult | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
         const personalized = personalizationFilter

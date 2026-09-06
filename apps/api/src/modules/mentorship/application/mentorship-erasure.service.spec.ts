@@ -7,25 +7,30 @@ function setup(purgedLinkIds: string[]) {
   const links = { purgeForUser: vi.fn(async () => purgedLinkIds) };
   const codes = { purgeForCoach: vi.fn(async () => undefined) };
   const templates = { purgeForCoach: vi.fn(async () => undefined) };
+  const applications = { purgeForUser: vi.fn(async () => undefined) };
   const plan = { clearMentorshipOrigin: vi.fn(async () => purgedLinkIds.length) };
   const service = new MentorshipErasureService(
     links as never,
     codes as never,
     templates as never,
+    applications as never,
     plan as never,
   );
-  return { service, links, codes, templates, plan };
+  return { service, links, codes, templates, applications, plan };
 }
 
 describe("MentorshipErasureService", () => {
-  it("drops the links, the coach's invite code and their saved templates", async () => {
-    const { service, links, codes, templates } = setup(["link-1"]);
+  it("drops the links, the invite code, the templates and the coach application", async () => {
+    const { service, links, codes, templates, applications } = setup(["link-1"]);
     await service.eraseUserData(USER);
     expect(links.purgeForUser).toHaveBeenCalledWith(USER);
     expect(codes.purgeForCoach).toHaveBeenCalledWith(USER);
     // Explicit, not by cascade: erasure anonymizes the `users` row rather than deleting it, so
     // `mentorship_program_templates.coach_id`'s ON DELETE CASCADE never fires.
     expect(templates.purgeForCoach).toHaveBeenCalledWith(USER);
+    // Same trap, and it matters more here: an application is the person's own account of who they
+    // are, sitting next to an admin's verdict on it.
+    expect(applications.purgeForUser).toHaveBeenCalledWith(USER);
   });
 
   /**

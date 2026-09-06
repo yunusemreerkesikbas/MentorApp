@@ -12,6 +12,7 @@ const ITEM = "99999999-9999-4999-8999-999999999999";
 const STROKE = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const THREAD = "12121212-1212-4212-8212-121212121212";
 const NOTEBOOK = "13131313-1313-4313-8313-131313131313";
+const SESSION = "14141414-1414-4414-8414-141414141414";
 
 const fakeDb = {
   transaction: async <T>(cb: (tx: unknown) => Promise<T>): Promise<T> =>
@@ -234,7 +235,7 @@ function makeStorageFake() {
     /** What the sweep sees in the bucket; set per test. */
     objects: [] as Array<{ key: string; lastModified: Date }>,
     listObjects: async () => fake.objects,
-    getPublicUrl: (key: string) => `https://cdn.test/${key}`,
+    getPrivateUrl: async (key: string, ownerId: string) => `https://private.test/${ownerId}/${key}`,
     createUploadUrl: async ({ key }: { key: string }) => ({
       url: `https://upload.test/${key}`,
       key,
@@ -513,7 +514,7 @@ describe("MistakeNotebookService", () => {
 
   describe("createUploadUrl", () => {
     it("scopes the key to the caller's own prefix", async () => {
-      const result = await ctx.service.createUploadUrl(USER, "image/jpeg");
+      const result = await ctx.service.createUploadUrl(USER, SESSION, "image/jpeg");
       expect(result.key.startsWith(`notebook/${USER}/`)).toBe(true);
       expect(result.key.endsWith(".jpg")).toBe(true);
     });
@@ -531,7 +532,7 @@ describe("MistakeNotebookService", () => {
       });
 
       expect(dto.solutionStorageKey).toBe(key);
-      expect(dto.solutionUrl).toBe(`https://cdn.test/${key}`);
+      expect(dto.solutionUrl).toBe(`https://private.test/${USER}/${key}`);
       // Trimmed on the way in, like `note` — the same field on the same card.
       expect(dto.solutionNote).toBe("Payda eşitlemem gerekiyordu.");
     });

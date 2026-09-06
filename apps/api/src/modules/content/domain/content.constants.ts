@@ -47,7 +47,7 @@ export const ContentEventTopic = {
  * dev fake-storage controller enforces the same number on the way in — two copies of a limit is
  * how one of them quietly stops matching the other.
  *
- * R2 cannot enforce this: a presigned PUT accepts whatever the client sends, so this is an
+ * The upload capability enforces this while streaming; this is also an
  * advisory the client checks and the fake path enforces. Real protection is the bucket's
  * lifecycle/orphan sweep, not this constant.
  */

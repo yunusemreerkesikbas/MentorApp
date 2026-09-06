@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PlanService } from "../../coaching/application/plan.service";
+import { MentorshipApplicationRepository } from "../infrastructure/mentorship-application.repository";
 import { MentorshipInviteCodeRepository } from "../infrastructure/mentorship-invite-code.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipTemplateRepository } from "../infrastructure/mentorship-template.repository";
@@ -25,6 +26,11 @@ import { MentorshipTemplateRepository } from "../infrastructure/mentorship-templ
  * ON DELETE CASCADE: erasure anonymizes the `users` row instead of deleting it, so that cascade
  * never fires. A template holds the coach's own words about nobody in particular, but it is still
  * their content, and content survives the person who wrote it only by accident.
+ *
+ * `mentorship_coach_applications` needs one for the identical reason, and more urgently: an
+ * application is the person's own account of who they are — an institution, a branch, years of
+ * work — sitting next to an admin's verdict on it. That is the last thing that should outlive the
+ * account by way of a cascade that never fires.
  */
 @Injectable()
 export class MentorshipErasureService {
@@ -32,6 +38,7 @@ export class MentorshipErasureService {
     private readonly links: MentorshipLinkRepository,
     private readonly codes: MentorshipInviteCodeRepository,
     private readonly templates: MentorshipTemplateRepository,
+    private readonly applications: MentorshipApplicationRepository,
     private readonly plan: PlanService,
   ) {}
 
@@ -40,5 +47,6 @@ export class MentorshipErasureService {
     await this.plan.clearMentorshipOrigin(purgedLinkIds);
     await this.codes.purgeForCoach(userId);
     await this.templates.purgeForCoach(userId);
+    await this.applications.purgeForUser(userId);
   }
 }
