@@ -142,6 +142,7 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
     sheet.show({
       title: t("quests_title"),
       layout: "filter",
+      size: "wide",
       bodyScroll: false,
       children: (
         <EconomyQuestsCard

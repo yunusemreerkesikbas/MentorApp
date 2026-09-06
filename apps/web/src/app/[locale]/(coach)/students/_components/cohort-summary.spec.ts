@@ -4,11 +4,13 @@ import {
   type MentorshipRiskFlagId,
   type MentorshipRosterRowDto,
 } from "@mentor/types";
-import { summarizeCohort } from "./cohort-summary";
+import { compareByAttention, summarizeCohort } from "./cohort-summary";
 
 function row(
   over: {
     riskFlags?: MentorshipRiskFlagId[];
+    /** Defaults to "flagged means waiting" — the server's answer before any mark is taken. */
+    needsAttention?: boolean;
     planCompletionRate7d?: number | null;
     metrics?: null;
   } = {},
@@ -22,6 +24,8 @@ function row(
     acceptedAt: "2026-09-01T00:00:00.000Z",
     endedAt: null,
     riskFlags: over.riskFlags ?? [],
+    attendedAt: over.needsAttention === false ? "2026-09-05T09:00:00.000Z" : null,
+    needsAttention: over.needsAttention ?? (over.riskFlags ?? []).length > 0,
     metrics:
       over.metrics === null
         ? null
@@ -98,9 +102,45 @@ describe("summarizeCohort", () => {
     expect(summarizeCohort([])).toEqual({
       total: 0,
       needsAttention: 0,
+      attended: 0,
       flagCounts: [],
       planAdherence: null,
       planAdherenceOf: 0,
     });
+  });
+
+  // The point of the mark: the band stops nagging about a student the coach already called, while
+  // still saying the flag is there. Counting the raw flags would make marking pointless; hiding
+  // the chip would make the band lie about the cohort.
+  it("moves a handled student out of the waiting count without hiding their flag", () => {
+    const summary = summarizeCohort([
+      row({ riskFlags: [MentorshipRiskFlag.INACTIVE], needsAttention: false }),
+      row({ riskFlags: [MentorshipRiskFlag.INACTIVE] }),
+    ]);
+    expect(summary.needsAttention).toBe(1);
+    expect(summary.attended).toBe(1);
+    expect(summary.flagCounts).toEqual([{ flag: MentorshipRiskFlag.INACTIVE, count: 2 }]);
+  });
+
+  it("does not count a calm student as handled", () => {
+    // `attended` is "flagged but dealt with", not "not waiting" — otherwise every healthy student
+    // would inflate it and the band would claim work the coach never did.
+    expect(summarizeCohort([row()]).attended).toBe(0);
+  });
+});
+
+describe("compareByAttention", () => {
+  it("sinks handled rows below waiting ones, and calm rows below both", () => {
+    const waiting = row({ riskFlags: [MentorshipRiskFlag.INACTIVE] });
+    const handled = row({ riskFlags: [MentorshipRiskFlag.LOW_MOOD], needsAttention: false });
+    const calm = row();
+    expect([calm, handled, waiting].sort(compareByAttention)).toEqual([waiting, handled, calm]);
+  });
+
+  it("leaves the API's severity order alone inside a band", () => {
+    // Array.prototype.sort is stable, so equal ranks keep the order the server ranked them in.
+    const worse = row({ riskFlags: [MentorshipRiskFlag.INACTIVE] });
+    const milder = row({ riskFlags: [MentorshipRiskFlag.PLAN_SLIPPING] });
+    expect([worse, milder].sort(compareByAttention)).toEqual([worse, milder]);
   });
 });

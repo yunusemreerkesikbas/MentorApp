@@ -1,4 +1,5 @@
 import type {
+  MentorshipApplicationDto,
   MentorshipCoachOverviewDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
@@ -11,6 +12,10 @@ import type {
   Paginated,
   PlanTaskDto,
 } from "@mentor/types";
+import type {
+  SubmitCoachApplicationInput,
+  UpdateCoachProfileInput,
+} from "@mentor/validation";
 import { http } from "@mentor/api-client";
 
 /**
@@ -19,6 +24,43 @@ import { http } from "@mentor/api-client";
  *
  * NOT the AI coach: that lives in lib/coach.ts and talks to `/v1/coach/*`.
  */
+
+// --- becoming a coach (curation, roadmap §5) -----------------------------------------------
+
+/**
+ * Apply, or re-apply after a rejection. The verdict columns are absent from the body by design —
+ * the API refuses one that carries them.
+ */
+export async function submitCoachApplication(
+  input: SubmitCoachApplicationInput,
+): Promise<MentorshipApplicationDto> {
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/applications", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as MentorshipApplicationDto;
+}
+
+/** Where my application stands. Empty body when I have never applied — a state, not an error. */
+export async function fetchMyCoachApplication(): Promise<MentorshipApplicationDto | null> {
+  const res = await http<MentorshipApplicationDto>("/v1/mentorship/applications/mine");
+  return res && "status" in res ? (res as MentorshipApplicationDto) : null;
+}
+
+/**
+ * The approved coach rewriting the two lines a student reads.
+ *
+ * PUT on the application itself, because the approved application IS the profile — there is no
+ * second resource. The verdict columns are not in the body and the API refuses one that carries
+ * them: a coach editing the institution behind a verified badge would make the badge a lie.
+ */
+export async function updateCoachProfile(
+  input: UpdateCoachProfileInput,
+): Promise<MentorshipApplicationDto> {
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/applications/mine", {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })) as MentorshipApplicationDto;
+}
 
 // --- coach side ---------------------------------------------------------------------------
 
@@ -53,6 +95,19 @@ export async function fetchStudentReport(
   return (await http<MentorshipStudentReportDto>(
     `/v1/mentorship/students/${encodeURIComponent(studentId)}`,
   )) as MentorshipStudentReportDto;
+}
+
+/**
+ * Mark a student handled, or take the mark back.
+ *
+ * No flag list travels: the server evaluates what it is marking. A set chosen here could silence a
+ * flag that appeared after this page rendered, and the API rejects the field outright.
+ */
+export async function setAttention(studentId: string, attended: boolean): Promise<void> {
+  await http(`/v1/mentorship/students/${encodeURIComponent(studentId)}/attention`, {
+    method: "PUT",
+    body: JSON.stringify({ attended }),
+  });
 }
 
 /** One row of the week composer. `topic` requires `subject`; the API refuses the pair otherwise. */

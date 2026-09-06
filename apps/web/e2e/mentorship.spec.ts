@@ -47,6 +47,14 @@ const MY_COACH = {
   acceptedAt: "2026-09-01T10:00:00.000Z",
   dataScope: DATA_SCOPE,
   coachNote: null as CoachNote | null,
+  coachProfile: null as Record<string, unknown> | null,
+};
+
+/** A vetted coach profile as the student receives it: two lines plus what somebody checked. */
+const COACH_PROFILE = {
+  headline: "KPSS Türkçe koçu",
+  bio: "On yıldır KPSS adaylarıyla çalışıyorum.",
+  verifiedClaims: [{ claim: "INSTITUTION", value: "Ankara Üniversitesi" }],
 };
 
 test.describe("öğrenci tarafı", () => {
@@ -80,6 +88,28 @@ test.describe("öğrenci tarafı", () => {
 
     await page.getByRole("button", { name: "Onaylıyorum, bağlan" }).click();
     await expect.poll(() => api.acceptCalls).toBe(1);
+  });
+
+  test("onay ekranı koçun doğrulanmış profilini gösteriyor", async ({ page }) => {
+    // The gap this closes: a student used to hand over private data to a NAME and nothing else.
+    await mockApi(page, { roles: ["STUDENT"], myCoach: null, coachProfile: COACH_PROFILE });
+    await page.goto("/kocluk-daveti");
+    await page.getByLabel("Davet kodu").fill(INVITE_CODE);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+
+    await expect(page.getByText("KPSS Türkçe koçu")).toBeVisible();
+    // The badge carries the value that was checked, and says only that it was checked.
+    await expect(page.getByText("Ankara Üniversitesi · doğrulandı")).toBeVisible();
+  });
+
+  test("profili olmayan koç için onay ekranı boş kart değil bunu söylüyor", async ({ page }) => {
+    // Every coach granted the role by hand before the queue existed looks like this.
+    await mockApi(page, { roles: ["STUDENT"], myCoach: null });
+    await page.goto("/kocluk-daveti");
+    await page.getByLabel("Davet kodu").fill(INVITE_CODE);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+
+    await expect(page.getByText("Bu koç hakkında henüz bir profil yok.")).toBeVisible();
   });
 
   test("?code= yalnız alanı doldurur, kendiliğinden bağlamaz", async ({ page }) => {
@@ -160,6 +190,165 @@ test.describe("koç tarafı", () => {
     // though the API lists it second.
     await expect(page.getByText("Ona bir not bırak, bu haftanın yükünü hafiflet.")).toBeVisible();
     await expect(page.getByText("Bu haftanın ödevini hafiflet.")).toHaveCount(0);
+  });
+
+  test("ilgilendim işareti bekleyen sayacını düşürüyor", async ({ page }) => {
+    const api = await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      roster: [
+        rosterRow("Ada", ["PLAN_SLIPPING"], 0.2),
+        rosterRow("Bora", ["INACTIVE"], null),
+        rosterRow("Cem", [], 0.8),
+      ],
+    });
+    await page.goto("/kocluk");
+
+    await expect(page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor.")).toBeVisible();
+
+    // The button is offered only where there is something to attend to: Cem is calm.
+    const marks = page.getByRole("button", { name: "İlgilendim" });
+    await expect(marks).toHaveCount(2);
+    await marks.first().click();
+
+    // The band stops counting the handled student, and says so in the other half of the sentence.
+    await expect(page.getByText("3 öğrenciden 1 tanesi ilgi bekliyor.")).toBeVisible();
+    await expect(page.getByText("1 tanesiyle ilgilendin")).toBeVisible();
+    await expect.poll(() => api.attentionCalls).toEqual([true]);
+
+    // The flag itself is untouched — the mark quiets the worklist, it does not edit the data.
+    const chips = page.getByRole("list", { name: "Risk dağılımı" }).getByRole("listitem");
+    await expect(chips).toHaveText(["Sessiz · 1", "Plan aksıyor · 1"]);
+
+    // And it is reversible from the same spot.
+    await page.getByRole("button", { name: "İşareti kaldır" }).click();
+    await expect(page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor.")).toBeVisible();
+    await expect.poll(() => api.attentionCalls).toEqual([true, false]);
+  });
+
+  test("koç adayı başvurusunu gönderiyor ve durumunu geri okuyor", async ({ page }) => {
+    const api = await mockApi(page, { roles: ["STUDENT"], myCoach: null });
+    await page.goto("/koc-basvurusu");
+
+    await page.getByLabel("Tek cümlede sen").fill("KPSS Türkçe koçu");
+    await page
+      .getByLabel("Kendini anlat")
+      .fill("On yıldır KPSS adaylarıyla çalışıyorum, paragraf ağırlıklı.");
+    await page.getByLabel("Kurum").fill("Ankara Üniversitesi");
+    await page.getByRole("button", { name: "Başvuruyu gönder" }).click();
+
+    // The form gives way to the verdict card: an applicant with an outstanding decision has
+    // nothing to submit, and leaving the box would invite them to try.
+    await expect(page.getByText("Değerlendirmede")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Başvuruyu gönder" })).toHaveCount(0);
+
+    // The verdict columns never travel from the client — the API refuses a body carrying them.
+    expect(Object.keys(api.application ?? {})).not.toContain("status_sent");
+    expect((api.application as { headline: string }).headline).toBe("KPSS Türkçe koçu");
+  });
+
+  test("başvuru kapalıyken ekran hata değil kapalı durumu gösteriyor", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: null, applicationsClosed: true });
+    await page.goto("/koc-basvurusu");
+
+    await page.getByLabel("Tek cümlede sen").fill("Deneme");
+    await page.getByLabel("Kendini anlat").fill("Deneme metni");
+    await page.getByRole("button", { name: "Başvuruyu gönder" }).click();
+
+    // The row into this screen is always visible, so a red toast would read as a bug on a page
+    // somebody just opened.
+    await expect(page.getByText("Şu an başvuru almıyoruz")).toBeVisible();
+  });
+
+  test("reddedilen aday gerekçeyi görüyor, onaylanan panele geçiyor", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT"],
+      myCoach: null,
+      application: {
+        id: "app-1",
+        status: "REJECTED",
+        headline: "Deneyimsiz aday",
+        bio: "…",
+        institution: null,
+        branch: null,
+        years: null,
+        note: null,
+        submittedAt: "2026-08-01T00:00:00.000Z",
+        reviewedAt: "2026-08-05T00:00:00.000Z",
+        reviewNote: "Deneyim yeterli değil.",
+        verifiedClaims: [],
+      },
+    });
+    await page.goto("/koc-basvurusu");
+
+    // The admin's words, verbatim. One-way: a verdict, not a conversation.
+    await expect(page.getByText("Deneyim yeterli değil.")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Yeniden başvur" })).toBeVisible();
+  });
+
+  test("onaylanan aday rozetleri ve panel bağlantısını görüyor", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      application: {
+        id: "app-1",
+        status: "APPROVED",
+        headline: "KPSS Türkçe koçu",
+        bio: "…",
+        institution: "Ankara Üniversitesi",
+        branch: "Türkçe",
+        years: 10,
+        note: null,
+        submittedAt: "2026-08-01T00:00:00.000Z",
+        reviewedAt: "2026-08-05T00:00:00.000Z",
+        reviewNote: null,
+        verifiedClaims: ["INSTITUTION", "BRANCH"],
+      },
+    });
+    await page.goto("/koc-basvurusu");
+
+    // The badge says what was CHECKED, never "this coach is good".
+    await expect(page.getByText("Kurum doğrulandı")).toBeVisible();
+    await expect(page.getByText("Branş doğrulandı")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Koç paneline git" })).toBeVisible();
+  });
+
+  test("koç profilini düzenliyor, iletişim bilgisi reddediliyor", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      application: {
+        id: "app-1",
+        status: "APPROVED",
+        headline: "KPSS Türkçe koçu",
+        bio: "On yıldır KPSS adaylarıyla çalışıyorum.",
+        institution: "Ankara Üniversitesi",
+        branch: "Türkçe",
+        years: 10,
+        note: null,
+        submittedAt: "2026-08-01T00:00:00.000Z",
+        reviewedAt: "2026-08-05T00:00:00.000Z",
+        reviewNote: null,
+        verifiedClaims: ["INSTITUTION"],
+      },
+    });
+    await page.goto("/koc-basvurusu");
+
+    await page.getByRole("button", { name: "Profili düzenle" }).click();
+    // The vetted claims are not in the form: they are what an admin checked, and a coach who could
+    // rewrite them would be rewriting somebody else's verification.
+    await expect(page.getByLabel("Kurum")).toHaveCount(0);
+
+    await page.getByLabel("Kendini anlat").fill("Bana 0532 123 45 67 numarasından ulaş");
+    await page.getByRole("button", { name: "Kaydet" }).click();
+
+    // Refusal, not masking: starring out the digits would leave the coach believing they had
+    // written something they had not.
+    await expect(page.getByText("iletişim bilgisi paylaşamazsın", { exact: false })).toBeVisible();
+
+    await page.getByLabel("Kendini anlat").fill("Paragraf ağırlıklı çalışıyorum.");
+    await page.getByRole("button", { name: "Kaydet" }).click();
+    await expect(page.getByText("Paragraf ağırlıklı çalışıyorum.")).toBeVisible();
   });
 
   test("kontenjan koça görünür ve dolduğunda söylenir", async ({ page }) => {
@@ -311,6 +500,9 @@ function rosterRow(
     acceptedAt: "2026-09-01T00:00:00.000Z",
     endedAt: null,
     riskFlags,
+    attendedAt: null,
+    // The server derives this; a flagged row starts out waiting, and the mark is what clears it.
+    needsAttention: riskFlags.length > 0,
     metrics: {
       lastActiveDate: daysFromToday(-1),
       currentStreak: 2,
@@ -345,12 +537,21 @@ async function mockApi(
     maxActiveStudents?: number;
     /** The coach's saved programs, as `GET /v1/mentorship/templates` would return them. */
     templates?: Record<string, unknown>[];
+    /** An existing coach application, as `GET /v1/mentorship/applications/mine` would return it. */
+    application?: Record<string, unknown> | null;
+    /** `mentorship.applications.open` being off — the POST answers 403, not an error page. */
+    applicationsClosed?: boolean;
+    /** The coach's vetted profile as the student sees it; null = granted the role by hand. */
+    coachProfile?: Record<string, unknown> | null;
   },
 ) {
   const user = makeUser(options.roles);
   let previewCalls = 0;
   let acceptCalls = 0;
   const noteBodies: (string | null)[] = [];
+  const attentionCalls: boolean[] = [];
+  /** The applicant's own row, or null before they apply. Mutated by the POST below. */
+  let application: Record<string, unknown> | null = options.application ?? null;
   const savedTemplates: { name: string; tasks: unknown[] }[] = [];
 
   const report = {
@@ -361,6 +562,8 @@ async function mockApi(
     studentExamType: "KPSS",
     coachNote: null,
     riskFlags: [],
+    attendedAt: null,
+    needsAttention: false,
     activity: {
       lastActiveDate: daysFromToday(-1),
       currentStreak: 3,
@@ -437,7 +640,13 @@ async function mockApi(
 
     if (method === "GET" && path === "/v1/mentorship/my-coach") {
       // Empty 200, not a null body, when there is no coach — same as the API.
-      return json(route, options.myCoach, options.myCoach ? 200 : 204);
+      return json(
+        route,
+        options.myCoach
+          ? { ...options.myCoach, coachProfile: options.coachProfile ?? null }
+          : options.myCoach,
+        options.myCoach ? 200 : 204,
+      );
     }
     if (method === "POST" && path === "/v1/mentorship/invitations/preview") {
       previewCalls += 1;
@@ -445,6 +654,8 @@ async function mockApi(
         coachDisplayName: "Koç Mert",
         coachUsername: "kocmert",
         dataScope: DATA_SCOPE,
+        // Unspecified means "no profile", which is what every hand-granted coach looks like.
+        coachProfile: options.coachProfile ?? null,
       });
     }
     if (method === "POST" && path === "/v1/mentorship/invitations/accept") {
@@ -487,6 +698,51 @@ async function mockApi(
       noteBodies.push((request.postDataJSON() as { body: string | null }).body);
       return json(route, null, 204);
     }
+    if (method === "PUT" && /\/v1\/mentorship\/students\/[^/]+\/attention$/.test(path)) {
+      attentionCalls.push((request.postDataJSON() as { attended: boolean }).attended);
+      return json(route, null, 204);
+    }
+    if (method === "GET" && path === "/v1/mentorship/applications/mine") {
+      // Empty body when nobody has applied — the API returns null, not a 404.
+      return json(route, application ?? {});
+    }
+    if (method === "PUT" && path === "/v1/mentorship/applications/mine") {
+      const body = request.postDataJSON() as { headline: string; bio: string };
+      // Mirrors the API's Tier-1 refusal so the screen can be exercised against it.
+      const joined = `${body.headline} ${body.bio}`.replace(/[\s.\-]/g, "");
+      if (/\d{10}|@[a-z0-9._]{4,}/i.test(joined)) {
+        return json(
+          route,
+          {
+            code: "MENTORSHIP_CONTACT_NOT_ALLOWED",
+            message: "Profilinde iletişim bilgisi paylaşamazsın.",
+          },
+          400,
+        );
+      }
+      application = { ...(application ?? {}), ...body };
+      return json(route, application);
+    }
+    if (method === "POST" && path === "/v1/mentorship/applications") {
+      if (options.applicationsClosed) {
+        return json(route, { code: "MENTORSHIP_APPLICATIONS_CLOSED", message: "kapalı" }, 403);
+      }
+      const body = request.postDataJSON() as Record<string, unknown>;
+      application = {
+        id: "app-1",
+        status: "PENDING",
+        institution: null,
+        branch: null,
+        years: null,
+        note: null,
+        submittedAt: new Date().toISOString(),
+        reviewedAt: null,
+        reviewNote: null,
+        verifiedClaims: [],
+        ...body,
+      };
+      return json(route, application, 201);
+    }
     if (method === "GET" && path.startsWith("/v1/content/exams/")) {
       return json(route, [
         {
@@ -511,6 +767,12 @@ async function mockApi(
     },
     get noteBodies() {
       return noteBodies;
+    },
+    get attentionCalls() {
+      return attentionCalls;
+    },
+    get application() {
+      return application;
     },
     get savedTemplates() {
       return savedTemplates;

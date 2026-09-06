@@ -112,38 +112,57 @@ body {
   }
 }
 
-@keyframes dialog-enter {
+@keyframes dialog-backdrop-exit {
   from {
-    opacity: 0;
-    transform: scale(0.95);
+    opacity: 1;
   }
   to {
-    opacity: 1;
-    transform: scale(1);
+    opacity: 0;
   }
 }
 
-.animate-dialog-enter {
-  animation: dialog-enter 280ms ease-out forwards;
+.animate-dialog-backdrop-enter {
+  animation: dialog-backdrop-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity;
+}
+
+.animate-dialog-backdrop-exit {
+  animation: dialog-backdrop-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: opacity;
+}
+
+@keyframes dialog-enter {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 24px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+@utility animate-dialog-enter {
+  animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center;
+  will-change: transform, opacity;
 }
 
 @keyframes dialog-exit {
   from {
     opacity: 1;
-    transform: scale(1);
+    transform: translate3d(0, 0, 0) scale(1);
   }
   to {
     opacity: 0;
-    transform: scale(0.95);
+    transform: translate3d(0, 20px, 0) scale(0.97);
   }
 }
 
-.animate-dialog-exit {
-  animation: dialog-exit 200ms ease-in forwards;
-}
-
-.animate-dialog-backdrop-enter {
-  animation: dialog-backdrop-enter 200ms ease-out forwards;
+@utility animate-dialog-exit {
+  animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  transform-origin: center;
+  will-change: transform, opacity;
 }
 
 /* Notification drawer — mobile slide-in/out, desktop popover fade */
@@ -335,32 +354,63 @@ html.mentor-sheet-open {
 
 @keyframes sheet-enter {
   from {
-    opacity: 0;
-    transform: translateY(100%);
+    transform: translate3d(0, 100%, 0);
   }
   to {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
 }
 
 @keyframes sheet-exit {
   from {
-    opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0);
   }
   to {
-    opacity: 0;
-    transform: translateY(100%);
+    transform: translate3d(0, 100%, 0);
   }
 }
 
-.animate-sheet-enter {
-  animation: sheet-enter 320ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+@utility animate-sheet-enter {
+  animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards;
+  will-change: transform;
 }
 
-.animate-sheet-exit {
-  animation: sheet-exit 240ms cubic-bezier(0.4, 0, 1, 1) forwards;
+@utility animate-sheet-exit {
+  animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  will-change: transform;
+}
+
+/* Bottom sheet panel responsive animations (Apple liquid glass modal) */
+@media (max-width: 63.999rem) {
+  [data-mentor-bottom-sheet-panel] {
+    animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards !important;
+    will-change: transform;
+  }
+  [data-mentor-bottom-sheet-panel][data-exiting="true"] {
+    animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards !important;
+    will-change: transform;
+  }
+}
+
+@media (min-width: 64rem) {
+  [data-mentor-bottom-sheet-panel] {
+    animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+  [data-mentor-bottom-sheet-panel][data-exiting="true"] {
+    animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    transform-origin: center;
+    will-change: transform, opacity;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-mentor-bottom-sheet-panel],
+  [data-mentor-bottom-sheet-panel][data-exiting="true"] {
+    animation: none !important;
+    transform: none !important;
+  }
 }
 
 /* Auth sheet — slide by measured height; transition starts only after travel is set. */

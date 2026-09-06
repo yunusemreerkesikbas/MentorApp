@@ -20,6 +20,21 @@
     ],
     "paths": {
       "@/*": ["./src/*"],
+      /*
+       * Pin React's types for EVERY file in this program, node_modules `.d.ts` included.
+       *
+       * apps/admin is Next 14 / React 18 (an accepted deviation — see apps/admin/AGENTS.md), so the
+       * workspace legitimately holds two majors of @types/react and pnpm hoists 18.x into
+       * `.pnpm/node_modules`. Packages that don't declare @types/react themselves — framer-motion is
+       * the one that bites — resolve React 18's types from there, while our own code is on 19. The
+       * two `ReactNode` unions are structurally incompatible (React 19's `ReactElement<unknown, …>`
+       * does not satisfy React 18's `ReactPortal`), so passing a `ReactNode`-typed variable as
+       * `children` to `motion.div` fails to compile. Inline JSX slips through on contextual typing,
+       * which is why this surfaced at exactly one call site instead of fifty.
+       *
+       * `pnpm.overrides` cannot fix it: framer-motion declares no @types/react edge to override, and
+       * forcing 19 workspace-wide would hand React 18 types to admin.
+       */
       "react": ["./node_modules/@types/react"],
       "react/*": ["./node_modules/@types/react/*"],
       "react-dom": ["./node_modules/@types/react-dom"],

@@ -8,10 +8,10 @@ import { SectionHeading, SkeletonGroup } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { fetchOverview, fetchRoster, rotateInviteCode } from "@/lib/mentorship";
+import { fetchOverview, fetchRoster, rotateInviteCode, setAttention } from "@/lib/mentorship";
 import { CoachCapacityCard } from "./coach-capacity-card";
 import { CoachScopeCard } from "./coach-scope-card";
-import { summarizeCohort } from "./cohort-summary";
+import { compareByAttention, summarizeCohort } from "./cohort-summary";
 import { CohortSummaryCard } from "./cohort-summary-card";
 import { RosterContentSkeleton } from "./roster-content-skeleton";
 import { StudentCard } from "./student-card";
@@ -38,6 +38,8 @@ export function RosterShell() {
   } | null>(null);
   const [overview, setOverview] = useState<MentorshipCoachOverviewDto | null>(null);
   const [busy, setBusy] = useState(false);
+  /** The student whose mark is in flight, so one card disables without freezing the roster. */
+  const [marking, setMarking] = useState<string | null>(null);
 
   const showError = useCallback(
     (err: unknown) => {
@@ -67,6 +69,53 @@ export function RosterShell() {
   }, [tab, showError]);
 
   const rows = loaded?.tab === tab ? loaded.items : null;
+
+  // Handled rows sink below the ones still waiting, inside the severity order the API already
+  // applied. Safe on the client because the page holds the whole cohort (pageSize=100 against a
+  // seat cap in the dozens), so this re-orders every row the server ranked, not just a slice.
+  const ordered = useMemo(
+    () => (rows === null ? null : [...rows].sort(compareByAttention)),
+    [rows],
+  );
+
+  /**
+   * Optimistic: the click is the coach's own act, and a spinner between deciding and seeing it is
+   * the friction the whole slice exists to remove. On failure the row snaps back and says why.
+   */
+  const toggleAttention = useCallback(
+    async (studentId: string, attended: boolean) => {
+      setMarking(studentId);
+      const patch = (next: boolean) =>
+        setLoaded((prev) =>
+          prev === null
+            ? prev
+            : {
+                ...prev,
+                items: prev.items.map((row) =>
+                  row.studentId === studentId
+                    ? {
+                        ...row,
+                        attendedAt: next ? new Date().toISOString() : null,
+                        // The server re-derives this from flags the coach cannot see change
+                        // mid-click; marking always clears the wait, unmarking always restores it.
+                        needsAttention: !next && row.riskFlags.length > 0,
+                      }
+                    : row,
+                ),
+              },
+        );
+      patch(attended);
+      try {
+        await setAttention(studentId, attended);
+      } catch (err) {
+        patch(!attended);
+        showError(err);
+      } finally {
+        setMarking(null);
+      }
+    },
+    [showError],
+  );
 
   useEffect(() => {
     let active = true;
@@ -139,15 +188,15 @@ export function RosterShell() {
 
       <SkeletonGroup
         label={t("loading")}
-        loading={rows === null}
+        loading={ordered === null}
         revealed={
-          rows === null ? (
+          ordered === null ? (
             <div className="flex flex-col gap-3" aria-hidden>
               <div className="h-28" />
               <div className="h-28" />
               <div className="h-28" />
             </div>
-          ) : rows.length === 0 ? (
+          ) : ordered.length === 0 ? (
             <EmptyState
               title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
               description={
@@ -157,9 +206,19 @@ export function RosterShell() {
             />
           ) : (
             <ul className="flex flex-col gap-3">
-              {rows.map((row) => (
+              {ordered.map((row) => (
                 <li key={row.linkId}>
-                  <StudentCard row={row} locale={locale} clickable={tab === "ACTIVE"} />
+                  <StudentCard
+                    row={row}
+                    locale={locale}
+                    clickable={tab === "ACTIVE"}
+                    busy={marking === row.studentId}
+                    onAttention={
+                      tab === "ACTIVE"
+                        ? (attended) => void toggleAttention(row.studentId, attended)
+                        : undefined
+                    }
+                  />
                 </li>
               ))}
             </ul>

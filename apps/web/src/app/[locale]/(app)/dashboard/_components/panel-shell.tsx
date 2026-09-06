@@ -221,6 +221,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
       sheet.show({
         title: economyT("quests_title"),
         layout: "filter",
+        size: "wide",
         bodyScroll: false,
         children: (
           <EconomyQuestsCard
@@ -1365,6 +1366,7 @@ function RitualQuestStrip({ quests }: { quests: QuestProgressView[] }) {
     sheet.show({
       title: economyT("quests_title"),
       layout: "filter",
+      size: "wide",
       bodyScroll: false,
       children: (
         <EconomyQuestsCard quests={quests} onDismiss={sheet.dismissNow} />

@@ -145,9 +145,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       logout: async () => {
         const coordinator = getAuthSessionCoordinator();
         coordinator.announce("logout");
-        await coordinator.mutate(() => authControllerLogout()).catch(() => undefined);
-        // Repeat after the server responds so tabs opened during logout also clear.
-        coordinator.announce("logout");
+        try {
+          // Propagate a failed server logout: the refresh cookie may still be live, so
+          // the caller must surface it (retry) rather than report a clean sign-out.
+          await coordinator.mutate(() => authControllerLogout());
+        } finally {
+          // Repeat after the server responds so tabs opened during logout also clear.
+          coordinator.announce("logout");
+        }
       },
       setUserFromServer,
     }),

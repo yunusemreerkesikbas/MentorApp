@@ -55,6 +55,8 @@ export const routing = defineRouting({
     },
     "/my-coach": { tr: "/kocum", en: "/my-coach" },
     "/coach-invitation": { tr: "/kocluk-daveti", en: "/coach-invitation" },
+    /** Becoming a coach (curation, roadmap §5) — distinct from ACCEPTING one above. */
+    "/coach-application": { tr: "/koc-basvurusu", en: "/coach-application" },
 
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },

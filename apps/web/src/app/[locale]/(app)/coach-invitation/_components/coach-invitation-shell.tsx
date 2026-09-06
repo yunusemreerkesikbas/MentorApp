@@ -9,6 +9,7 @@ import { Button, Card, SectionHeading, TextField } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { acceptInvitation, previewInvitation } from "@/lib/mentorship";
+import { CoachProfileCard } from "../../my-coach/_components/coach-profile-card";
 import { DataScopeCard } from "../../my-coach/_components/my-coach-shell";
 
 /**
@@ -106,6 +107,8 @@ export function CoachInvitationShell() {
               {t("invitation_from", { name: preview.coachDisplayName })}
             </p>
           </Card>
+          {/* Above the scope list on purpose: the student decides WHO before they read WHAT. */}
+          <CoachProfileCard profile={preview.coachProfile} />
           <DataScopeCard scope={preview.dataScope} />
           <div>
             <Button busy={busy} onClick={accept}>

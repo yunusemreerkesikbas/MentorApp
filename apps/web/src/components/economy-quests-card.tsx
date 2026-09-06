@@ -176,8 +176,8 @@ export function EconomyQuestsCard({
       id: tab.key,
       panelId: `quests-panel-${tab.key}`,
       label: (
-        <span className="flex items-center justify-center gap-1 leading-tight">
-          <span className="truncate text-xs font-bold">{tab.label}</span>
+        <span className="flex items-center justify-center gap-1.5 leading-tight whitespace-nowrap">
+          <span className="text-xs font-bold whitespace-nowrap">{tab.label}</span>
           <span className="text-[10px] font-semibold opacity-75 tabular-nums">
             {tabCompleted}/{tab.quests.length}
           </span>
@@ -217,10 +217,10 @@ export function EconomyQuestsCard({
         ) : null}
 
         {questTabs.length > 1 ? (
-          <div className="no-scrollbar mt-3.5 w-full overflow-hidden">
+          <div className="no-scrollbar mt-3.5 w-full overflow-x-auto overflow-y-hidden">
             <SlidingTabs
               ariaLabel={translate("quests_tabs_label")}
-              className="no-scrollbar w-full [&_.t-tab]:min-h-9 [&_.t-tab]:px-1.5 [&_.t-tab]:text-xs"
+              className="no-scrollbar w-full [&_.t-tab]:min-h-9 [&_.t-tab]:px-2.5 [&_.t-tab]:text-xs"
               equalWidth={true}
               idPrefix="quests-tab"
               items={slidingTabItems}
@@ -233,6 +233,7 @@ export function EconomyQuestsCard({
 
       <QuestSection
         activeTab={activeTab}
+        tabbed={questTabs.length > 1}
         onAction={handleAction}
         quests={activeQuests}
         reduceMotion={reduceMotion}
@@ -249,6 +250,7 @@ export function EconomyQuestsCard({
 
 function QuestSection({
   activeTab,
+  tabbed,
   onAction,
   quests,
   reduceMotion,
@@ -256,6 +258,7 @@ function QuestSection({
   rewardedAd,
 }: {
   activeTab?: QuestTabKey;
+  tabbed: boolean;
   onAction: (action: QuestProgressView["action"]) => Promise<void>;
   quests: QuestProgressView[];
   reduceMotion: boolean;
@@ -266,10 +269,10 @@ function QuestSection({
 
   return (
     <section
-      aria-labelledby={activeTab ? `quests-tab-${activeTab}` : undefined}
+      aria-labelledby={tabbed && activeTab ? `quests-tab-${activeTab}` : undefined}
       className="mentor-scrollarea mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1"
       id={activeTab ? `quests-panel-${activeTab}` : "quests-panel"}
-      role={activeTab ? "tabpanel" : undefined}
+      role={tabbed && activeTab ? "tabpanel" : undefined}
     >
       <AnimatePresence initial={false} mode="wait">
         <motion.ul
