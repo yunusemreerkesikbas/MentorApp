@@ -171,6 +171,11 @@ export function parseAssignmentSuggestions(
 
   for (const item of rawTasks) {
     if (tasks.length >= MAX_TASKS) break;
+    // `null` is the one array entry that does not merely fail the checks below — it throws on
+    // property access, and this loop sits OUTSIDE the try/catch that guards JSON.parse. A model
+    // answering `{"tasks":[null]}` would turn a bad completion into a 500 instead of the
+    // AI_PROVIDER_ERROR every other malformed answer produces.
+    if (typeof item !== "object" || item === null) continue;
     const dayIndex = (item as { dayIndex?: unknown }).dayIndex;
     if (
       typeof dayIndex !== "number" ||

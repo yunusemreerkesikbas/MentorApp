@@ -800,7 +800,11 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   has to answer the same question before it picks a `userId`. `MENTORSHIP_COHORT_BRIEF` is the
   second, and it deliberately does NOT share a quota with the first: the cohort view is how a coach
   decides which student to open, so charging it to the per-student allowance would ration the map by
-  how much of the territory they had already walked.
+  how much of the territory they had already walked. `MENTORSHIP_SUGGESTIONS` (APP-086) is the third,
+  and it follows the same two rules: `AssignmentSuggestionService` authorizes against `coach.id` and
+  writes the `ai_usage` row against the coach, and it carries its own quota rather than sharing one
+  with either brief — a coach who read their cohort this morning has not yet asked anyone to draft
+  a week, and the student it is drafted for never pays for it.
 - **`MentorshipBriefService` (ai) takes an already-authorized report, it does not fetch one.**
   W8's `requireActiveLink` is the single gate for coach→student data and it lives inside
   `getStudentReport`; passing the DTO in means this module cannot route around it, and never

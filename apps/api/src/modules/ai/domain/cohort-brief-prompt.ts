@@ -251,6 +251,9 @@ export function parseCohortBrief(
   const items: { ref: string; why: string; action: string }[] = [];
   for (const raw of rawItems) {
     if (items.length >= evidence.students.length) break;
+    // Same reason as `parseAssignmentSuggestions`: a `null` entry throws on property access here,
+    // outside the try/catch, turning a malformed completion into a 500.
+    if (typeof raw !== "object" || raw === null) continue;
     const ref = (raw as { ref?: unknown }).ref;
     if (typeof ref !== "string" || !known.has(ref) || seen.has(ref)) continue;
     const why = clean((raw as { why?: unknown }).why, SENTENCE_MAX);

@@ -257,6 +257,15 @@ describe("parseCohortBrief", () => {
     expect(result.kind === "VALID" && result.items[0]!.why).toBe("Sınav netleri düştü.");
   });
 
+  it("survives a null item instead of throwing out of the parser", () => {
+    // Same trap as the suggestion parser: property access on `null` throws outside the try/catch.
+    const result = parseCohortBrief(
+      ok([null, "metin", 7, { ref: "S1", why: "a", action: "b" }]),
+      evidence,
+    );
+    expect(result.kind === "VALID" && result.items.map((i) => i.ref)).toEqual(["S1"]);
+  });
+
   it("reports malformed JSON distinctly from an empty list", () => {
     expect(parseCohortBrief("not json at all", evidence).kind).toBe("MALFORMED");
     expect(parseCohortBrief('{"overall":"x"}', evidence).kind).toBe("MALFORMED");

@@ -166,6 +166,17 @@ describe("parseAssignmentSuggestions", () => {
     });
   });
 
+  it("survives a null entry instead of throwing out of the parser", () => {
+    // `null` is the one entry that does not merely fail the checks — it throws on property access,
+    // and this loop is outside the try/catch that guards JSON.parse. Without the guard a model
+    // answering `{"tasks":[null]}` turns a bad completion into a 500. (CodeRabbit, PR #87.)
+    const result = parseAssignmentSuggestions(
+      wrap([null, "metin", 42, [], { dayIndex: 0, title: "Soru çöz" }]),
+      SUBJECTS,
+    );
+    expect(result.kind === "VALID" && result.tasks.map((t) => t.title)).toEqual(["Soru çöz"]);
+  });
+
   it("tolerates fences, and reports malformed JSON distinctly from an empty week", () => {
     const fenced = "```json\n" + wrap([{ dayIndex: 0, title: "Soru çöz" }]) + "\n```";
     expect(parseAssignmentSuggestions(fenced, SUBJECTS).kind).toBe("VALID");
