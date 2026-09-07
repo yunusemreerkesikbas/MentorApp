@@ -102,6 +102,25 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **AI ödev taslağı — katalogdaki üçüncü "aktör özne değil" özelliği (APP-086, 2026-09-07)** —
+  `AssignmentSuggestionService` bir öğrenci için bir haftalık görev taslağı yazıyor; yetki gene
+  W8'de. **Kanıt yeni değil:** `buildMentorshipBriefEvidence` yeniden kullanılıyor, yani isim ve
+  koç notu ayıklaması ikinci bir yerde tekrar edilmiyor ve brifingin kendi cümlesi prompt'a geri
+  giremiyor (girseydi model sayılara değil kendi eski cümlesine katılırdı).
+  **Ayrıştırma `topic`'i okumuyor, null'a zorluyor.** Prompt "böyle bir alan yok" diyor; bu satır
+  onu doğru kılıyor. Ayrıca `dayIndex` 0..6 dışındaysa **kırpılmıyor, düşürülüyor** — bir modelin
+  "7"si "6" demek değil, ve tahmin edilen bir gün koçun görmediği bir güne ödev koyar.
+  **Önbellek yok:** brifinglerin aksine yeniden sormak özelliğin kendisi, sınır kota.
+  **Prompt kuralı iki kez yetmedi, ikisi de canlı koşuda çıktı.** (a) Kanıtında ders olmayan KPSS
+  adayına "Fen Bilgisi" önerildi → `collectEvidenceSubjects` + ayrıştırmada boşaltma. (b) Verisi
+  olmayan öğrenciye yedi gün aynı başlık geldi → `MAX_SAME_TITLE = 3`. APP-085'in ref sızıntısıyla
+  aynı ders: kuralı söyle, ama garantiyi deterministik katmana koy.
+  **Gotchas:** (1) Tavan 7 görev / günde 3 — bestecinin 21'i koçun kurabileceği, modelin
+  önüne koyacağı değil. (2) `fake-llm.adapter.ts`'e ikinci sentinel dalı eklendi.
+  (3) Ayrıştırma başarısız olsa da `ai_usage` yazılıyor: token harcandı.
+  **İlgili:** `modules/ai/domain/assignment-suggestion-prompt.ts`,
+  `modules/ai/application/assignment-suggestion.service.ts`, [`mentorship.md`](./mentorship.md).
+
 - **Kohort brifingi — katalogdaki ikinci "aktör özne değil" özelliği (APP-085, 2026-09-07)** —
   W3 `CohortBriefService` yalnız metni yazıyor; yetki, roster ve önbellek W8'de
   (`mentorship-cohort-brief.service.ts`). Ok gene tek yönlü, `ai.module.ts` mentorship'i import
@@ -773,7 +792,7 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
 
 ## Gotchas / Known issues
 
-- **Two features in the catalog are not about the requester (W8, APP-078 + APP-085).**
+- **Three features in the catalog are not about the requester (W8, APP-078 + APP-085 + APP-086).**
   `PremiumFeatureId.MENTORSHIP_BRIEF` is asked for by a COACH about a STUDENT, and everything is
   charged to the coach: the quota (`assertAllowed(coachId, coachRoles, …)`), the roles that decide
   access, and the `ai_usage` row. The student's tier is never consulted — they did not ask for the

@@ -5,6 +5,7 @@ import { CoachingModule } from "../coaching/coaching.module";
 import { ForumModule } from "../forum/forum.module";
 import { CommunityCoachPlanTaskService } from "./application/community-coach-plan-task.service";
 import { PremiumFeatureGateService } from "./application/premium-feature-gate.service";
+import { AssignmentSuggestionService } from "./application/assignment-suggestion.service";
 import { CohortBriefService } from "./application/cohort-brief.service";
 import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { ContentModule } from "../content/content.module";
@@ -112,6 +113,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     WeeklyReviewNarrationService,
     PhotoAccessService,
     PremiumFeatureGateService,
+    AssignmentSuggestionService,
     CohortBriefService,
     MentorshipBriefService,
     PhotoCategorizeService,
@@ -209,6 +211,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     AiErasureService,
     MentorshipBriefService,
     CohortBriefService,
+    AssignmentSuggestionService,
   ],
 })
 export class AiModule {}

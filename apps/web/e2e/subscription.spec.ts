@@ -59,6 +59,12 @@ const subscription: SubscriptionView = {
       limit: 1,
       window: "day",
     },
+    "mentorship.suggestions": {
+      id: "mentorship.suggestions",
+      freeEnabled: false,
+      limit: 1,
+      window: "day",
+    },
     "photo.categorize": {
       id: "photo.categorize",
       freeEnabled: false,

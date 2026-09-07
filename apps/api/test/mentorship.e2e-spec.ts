@@ -1084,6 +1084,72 @@ describe("mentorship (e2e)", () => {
     });
   });
 
+  describe("AI-proposed homework", () => {
+    const suggest = (who: string, studentId: string) =>
+      http()
+        .post(`/v1/mentorship/students/${studentId}/assignment-suggestions`)
+        .set(auth(who));
+
+    it("is the coach's alone, and only over a student they follow", async () => {
+      expect((await suggest("student", userId.student!)).status).toBe(403);
+      // coach holds no link to this student by now — 404, never 403, so an id is not confirmed.
+      expect((await suggest("coach", userId.student!)).status).toBe(404);
+    });
+
+    it("refuses a coach without Pro, because the free taste is off by default", async () => {
+      const res = await suggest("coach2", userId.student!);
+      expect(res.status).toBe(403);
+      expect(res.body.code).toBe("PAYMENT_PREMIUM_REQUIRED");
+
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "ai.features.mentorship.suggestions.free_enabled", true);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "ai.features.mentorship.suggestions.free_limit", 50);
+    });
+
+    it("drafts a week without writing anything", async () => {
+      const before = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach2"));
+      const res = await suggest("coach2", userId.student!);
+      expect(res.status).toBe(200);
+      expect(res.body.tasks.length).toBeGreaterThan(0);
+
+      for (const task of res.body.tasks) {
+        expect(task.dayIndex).toBeGreaterThanOrEqual(0);
+        expect(task.dayIndex).toBeLessThanOrEqual(6);
+        expect(typeof task.title).toBe("string");
+        // The composer's picker is the only thing that knows this student's taxonomy.
+        expect(task.topic).toBeNull();
+      }
+
+      // The whole point: a suggestion is a draft. The student's plan must be untouched.
+      const after = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach2"));
+      expect(after.body.planTasks).toEqual(before.body.planTasks);
+    });
+
+    it("closes with the flag", async () => {
+      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      try {
+        expect((await suggest("coach2", userId.student!)).status).toBe(403);
+      } finally {
+        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+      }
+    });
+
+    afterAll(async () => {
+      await svc(async (c) => {
+        await c.query(
+          "delete from config_overrides where key like 'ai.features.mentorship.suggestions.%'",
+        );
+      });
+    });
+  });
+
   it("closes every door when the flag is off", async () => {
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
     try {

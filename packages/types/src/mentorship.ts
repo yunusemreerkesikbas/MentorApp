@@ -359,6 +359,23 @@ export interface MentorshipCohortBriefDto {
   generatedAt: string;
 }
 
+/**
+ * A week of homework the model proposed for one student.
+ *
+ * The tasks are {@link MentorshipProgramTemplateTaskDto} on purpose, not a shape of their own: a
+ * suggestion enters the composer through the exact door a saved program does, so the client needs
+ * no second drafting path and the coach still submits through `POST .../assignments`. Nothing here
+ * is written anywhere until they do.
+ *
+ * `topic` is always null. The composer's picker is the only thing that knows this student's exam
+ * taxonomy, and a model-authored topic would walk straight past it (APP-074's reason, again).
+ */
+export interface MentorshipAssignmentSuggestionsDto {
+  tasks: MentorshipProgramTemplateTaskDto[];
+  /** The model that proposed them. There is no cache here, so never `"cache"`. */
+  model: string;
+}
+
 /* -------------------------------------------------------------------------------------------
  * Coach applications (W8 curation, roadmap §5) — "açık kayıt değil, kürasyon".
  * ---------------------------------------------------------------------------------------- */

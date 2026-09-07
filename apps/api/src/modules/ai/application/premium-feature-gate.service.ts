@@ -34,6 +34,7 @@ const USAGE_FEATURES: Record<FeatureId, string[]> = {
   [PremiumFeatureId.MENTORSHIP_COHORT_BRIEF]: [
     AiUsageFeature.MENTORSHIP_COHORT_BRIEF,
   ],
+  [PremiumFeatureId.MENTORSHIP_SUGGESTIONS]: [AiUsageFeature.MENTORSHIP_SUGGESTIONS],
 };
 
 @Injectable()

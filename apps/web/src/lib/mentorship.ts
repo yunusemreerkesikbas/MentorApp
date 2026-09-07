@@ -1,6 +1,7 @@
 import type {
   MentorshipApplicationDto,
   MentorshipCoachOverviewDto,
+  MentorshipAssignmentSuggestionsDto,
   MentorshipCohortBriefDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
@@ -201,6 +202,22 @@ export async function generateCohortBrief(): Promise<MentorshipCohortBriefDto> {
   return (await http<MentorshipCohortBriefDto>("/v1/mentorship/brief", {
     method: "POST",
   })) as MentorshipCohortBriefDto;
+}
+
+/**
+ * Ask the model to draft a week for this student.
+ *
+ * POST because it spends an LLM call and a quota unit. It writes NOTHING — the tasks come back as
+ * drafts for the composer, and the coach still submits them through `assignTasks`. Uncached on the
+ * server, so calling it again really does produce a different week.
+ */
+export async function suggestAssignments(
+  studentId: string,
+): Promise<MentorshipAssignmentSuggestionsDto> {
+  return (await http<MentorshipAssignmentSuggestionsDto>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/assignment-suggestions`,
+    { method: "POST" },
+  )) as MentorshipAssignmentSuggestionsDto;
 }
 
 // --- student side -------------------------------------------------------------------------

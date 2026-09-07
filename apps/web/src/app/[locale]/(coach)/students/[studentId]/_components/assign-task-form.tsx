@@ -195,6 +195,7 @@ export function AssignTaskForm({
 
       <form className="flex flex-col gap-4" onSubmit={submit}>
         <TemplateBar
+          studentId={studentId}
           drafts={drafts}
           examType={studentExamType}
           disabled={busy || atCeiling}

@@ -38,6 +38,13 @@ export const PREMIUM_FEATURE_CATALOG: Record<PremiumFeatureId, PremiumFeatureMet
       enabledKey: "ai.features.mentorship.cohort_brief.free_enabled",
       limitKey: "ai.features.mentorship.cohort_brief.free_limit",
     },
+    [PremiumFeatureId.MENTORSHIP_SUGGESTIONS]: {
+      // DAY: drafting a week is something a coach does per student, and the daily allowance is
+      // what stops one afternoon of re-rolling from becoming the whole month's budget.
+      window: FeaturePolicyWindow.DAY,
+      enabledKey: "ai.features.mentorship.suggestions.free_enabled",
+      limitKey: "ai.features.mentorship.suggestions.free_limit",
+    },
     [PremiumFeatureId.COACH_CHAT]: {
       window: FeaturePolicyWindow.DAY,
       enabledKey: "ai.features.coach.chat.free_enabled",

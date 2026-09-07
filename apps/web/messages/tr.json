@@ -3144,6 +3144,10 @@
     "cohort_brief_new": "Yeni",
     "cohort_brief_list_label": "Dikkat isteyen öğrenciler",
     "cohort_brief_since": "{date} tarihinde yazıldı",
-    "cohort_brief_cached": "değişiklik yok, yeniden yazılmadı"
+    "cohort_brief_cached": "değişiklik yok, yeniden yazılmadı",
+    "suggest_action": "AI önerisi",
+    "suggest_name": "AI önerisi",
+    "suggest_empty": "Model bu öğrenci için bir hafta çıkaramadı. Veri inceyse bu normal.",
+    "suggest_hint": "AI önerisi haftayı bestecinin içine dolduruyor, hiçbir şey gönderilmiyor. Konu alanı boş gelir, dersi ve konuyu sen seçersin."
   }
 }

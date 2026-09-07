@@ -16,6 +16,7 @@ import {
   UserRole,
   type MentorshipBriefDto,
   type MentorshipCoachOverviewDto,
+  type MentorshipAssignmentSuggestionsDto,
   type MentorshipCohortBriefDto,
   type MentorshipInviteCodeDto,
   type MentorshipProgramTemplateDto,
@@ -30,6 +31,7 @@ import { Roles } from "../../../common/auth/roles.decorator";
 import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
 import { MentorshipBriefService } from "../application/mentorship-brief.service";
 import { MentorshipCohortBriefService } from "../application/mentorship-cohort-brief.service";
+import { MentorshipSuggestionService } from "../application/mentorship-suggestion.service";
 import { MentorshipInviteService } from "../application/mentorship-invite.service";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipRosterService } from "../application/mentorship-roster.service";
@@ -64,6 +66,7 @@ export class MentorshipCoachController {
     private readonly templates: MentorshipTemplateService,
     private readonly brief: MentorshipBriefService,
     private readonly cohortBrief: MentorshipCohortBriefService,
+    private readonly suggestions: MentorshipSuggestionService,
   ) {}
 
   /**
@@ -231,6 +234,23 @@ export class MentorshipCoachController {
     @CurrentUser() user: RequestUser,
   ): Promise<MentorshipCohortBriefDto> {
     return this.cohortBrief.generate({ id: user.id, roles: user.roles });
+  }
+
+  /**
+   * A week of homework the model proposes for this student.
+   *
+   * POST for the briefs' reason, and throttled the same. It writes NOTHING: the answer goes into
+   * the composer, the coach edits it, and `POST .../assignments` is still the only door onto a
+   * student's plan. Uncached on purpose — asking again for a different week is the feature.
+   */
+  @Post("students/:studentId/assignment-suggestions")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  suggestAssignments(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+  ): Promise<MentorshipAssignmentSuggestionsDto> {
+    return this.suggestions.suggest({ id: user.id, roles: user.roles }, params.studentId);
   }
 
   @Delete("students/:studentId")

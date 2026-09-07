@@ -11,6 +11,7 @@ import { MentorshipLinkService } from "./application/mentorship-link.service";
 import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { MentorshipCohortBriefService } from "./application/mentorship-cohort-brief.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
+import { MentorshipSuggestionService } from "./application/mentorship-suggestion.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
 import { MentorshipApplicationRepository } from "./infrastructure/mentorship-application.repository";
@@ -53,6 +54,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipRosterService,
     MentorshipBriefService,
     MentorshipCohortBriefService,
+    MentorshipSuggestionService,
     MentorshipAssignmentService,
     MentorshipTemplateService,
     MentorshipApplicationService,

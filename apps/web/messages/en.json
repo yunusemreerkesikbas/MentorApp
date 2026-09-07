@@ -3144,6 +3144,10 @@
     "cohort_brief_new": "New",
     "cohort_brief_list_label": "Students needing attention",
     "cohort_brief_since": "Written on {date}",
-    "cohort_brief_cached": "nothing changed, not rewritten"
+    "cohort_brief_cached": "nothing changed, not rewritten",
+    "suggest_action": "AI draft",
+    "suggest_name": "AI draft",
+    "suggest_empty": "The model could not draft a week for this student. That is normal when the data is thin.",
+    "suggest_hint": "An AI draft fills the composer; nothing is sent. Topics come back empty, so the subject and topic stay your pick."
   }
 }

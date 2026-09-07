@@ -124,6 +124,7 @@ POST   /v1/mentorship/templates                    -> upsert by name (saving ove
 DELETE /v1/mentorship/templates/:templateId        -> 204
 GET    /v1/mentorship/brief                        -> MentorshipCohortBriefDto | (empty = never written)
 POST   /v1/mentorship/brief                        -> writes one; unchanged cohort returns the stored text
+POST   /v1/mentorship/students/:id/assignment-suggestions -> a week of drafts for the composer (writes nothing)
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
@@ -152,6 +153,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `DELETE /v1/mentorship/templates/:templateId` | Delete one of the coach's own; another coach's id is a 404 |
 | `GET /v1/mentorship/brief` | The stored cohort brief. Free — no LLM call, no quota, so the panel may ask on load (`@Roles(COACH)`) |
 | `POST /v1/mentorship/brief` | Write one. Unchanged cohort returns the stored text and spends nothing (`@Roles(COACH)`, 10/min) |
+| `POST /v1/mentorship/students/:studentId/assignment-suggestions` | A week of AI-drafted homework for the composer. Writes nothing; uncached (gate applies, 10/min) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
@@ -189,6 +191,62 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Eyleme dönük brifing — AI ödev taslağı (APP-086, 2026-09-07)** — APP-085 "ne yapmalı"yı düz
+  cümleyle söylüyordu. Bu dilim onu bestecinin içine somut bir haftaya çeviriyor:
+  `POST /v1/mentorship/students/:id/assignment-suggestions` bir haftalık görev taslağı döndürüyor.
+  **Yeni bir yazma yolu AÇILMIYOR, ve karar bu.** Öneri sadece öneri; koç düzenleyip mevcut
+  `POST .../assignments` ile gönderiyor. `PlanService.createFromMentorship` tek yazar olarak
+  kalıyor, LLM öğrencinin planına hiç dokunmuyor. Bu APP-074'ün "şablon UYGULANMIYOR, bestecinin
+  içine YÜKLENİYOR" kararının aynısı — ve aynı sebeple: taksonominin tek kapısı bestecinin seçicisi.
+  **`topic` ayrıştırmada zorla null.** Prompt "böyle bir alan yok" diyor, parser da onu doğru
+  kılıyor. Konu, tek bir sınavın taksonomisine yumuşak referans; sunucu yalnız "konunun dersi var
+  mı"ya bakıyor, konunun bu öğrencinin sınavında var olup olmadığına bakan tek şey bestecinin
+  seçicisi. Model üretse doğrudan öğrencinin planına yazılır ve koça biri kontrol etmiş gibi
+  görünürdü.
+  **Tarih değil `dayIndex`.** `MentorshipProgramTemplateTaskDto`'nun gerekçesi: taslak "bir
+  program", "8'inin haftası" değil. Besteci hangi haftayı gösteriyorsa oraya tarihliyor, model
+  takvim aritmetiği yapmıyor. Yan fayda: öneri **şablonla birebir aynı şekle** sahip, dolayısıyla
+  `buildTemplateDrafts` olduğu gibi çalışıyor ve istemciye tek satır çizim mantığı eklenmedi.
+  **Tavan bir hafta: 7 görev, günde 3.** Bestecinin kendi tavanı 21 ama o koçun KURABİLECEĞİ,
+  modelin sormadan önüne koyacağı değil. Yedi görev okunup düzeltilebilen bir hafta; 21'i kimse
+  gerçekten okumaz.
+  **Kanıt brifingin şekillendiricisi, yeniden kullanıldı.** `buildMentorshipBriefEvidence` zaten
+  ismi ve koçun kendi notunu ayıklıyor; onu çağırmak "brifingin kendi cümlesi prompt'a geri
+  gitmiyor"u hatırlanan değil **yapısal** bir gerçek yapıyor. Kendi eski cümlesini gören model
+  sayılara bakmak yerine ona katılır.
+  **Önbellek YOK, ve bu brifingden bilinçli fark.** Brifing aynı özeti iki kez yazmasın diye
+  cache'li; öneri ise koçun beğenmediğinde yeniden isteyeceği şey. Parmak iziyle aynı haftayı geri
+  vermek düğmeyi bozuk gösterirdi. Sınır kota, ki kotanın işi bu.
+  **Kullanım:** öğrenci raporunda bestecinin üstündeki çubukta "AI önerisi". Kota
+  `ai.features.mentorship.suggestions.free_{enabled,limit}`, free varsayılan **kapalı**.
+  **Canlı koşuda iki kere ders alındı, ikisi de aynı ders.** Bir prompt kuralı talimattır, garanti
+  değil — APP-085'te ref sızıntısında öğrenilen şey burada iki kez daha tekrarlandı, ve ikisinde de
+  çözüm aynı: kuralı prompt'ta söyle, **ayrıştırmada zorla**.
+  **(1) Uydurulan ders.** Kanıtında hiç deneme, hiç ders olmayan bir KPSS adayına "Fen Bilgisi: 5
+  deney yaz" ve "İngilizce" önerildi. Model sınavın müfredatını tahmin ediyor, üstelik kendinden
+  emin. `collectEvidenceSubjects` artık kanıtın **söylediği** dersleri topluyor
+  (`latestMockSubjects` + `planTasks`), ayrıştırma dışındakini **boşaltıyor**. Görev düşürülmüyor,
+  yalnız `subject` boşalıyor: başlık koçun düzelteceği düz metin, ama `subject` `plan_tasks.subject`'e
+  giren, sonradan gruplanıp sayılan **yapılandırılmış** veri — uydurulmuşu sessiz bozulma olur.
+  **(2) Tek görevle doldurulmuş hafta.** Verisi neredeyse hiç olan öğrenciye yedi günün yedisinde
+  "Paragraf: 10 soru çöz" geldi. "Veri inceyse az görev öner" denmişti; model azı değil aynısını
+  seçti. `MAX_SAME_TITLE = 3`: haftada üç kez tekrar eden bir alıştırma koçun gerçekten yazacağı
+  bir program, yedi değil.
+  **Gotchas:** (1) `ai_usage` satırı **koça** yazılıyor, admin tablosunda "Koç ödev önerisi";
+  brifinglerle kota **paylaşmıyor** — kohortunu okumuş bir koç henüz kimseye hafta yazdırmadı.
+  (2) Kart `examType: null` ile yükleniyor: model taksonomi görmedi, dolayısıyla öneri hiçbir
+  sınava ait değil ve `buildTemplateDrafts`'in uyumsuzluk dalı boşuna tetiklenmiyor.
+  (3) `fake-llm.adapter.ts`'e ikinci sentinel dalı — olmadan dev ve e2e'de her çağrı 503.
+  (4) e2e taslağın **hiçbir şey yazmadığını** raporun `planTasks`'ini önce/sonra karşılaştırarak
+  iddia ediyor; "yazmıyor" bu özelliğin tek gerçek güvenlik iddiası. (5) Kanıtta hiç ders yoksa
+  **her** öneri dersi boş gelir; bu bir hata değil, temellendirmenin doğru sonucu — dersi koç seçer.
+  (6) Prompt sürüm sabiti **yok**: sürüm bir önbelleği geçersiz kılmak için vardır, burada önbellek
+  yok.
+  **İlgili:** `modules/ai/{domain/assignment-suggestion-prompt.ts,application/assignment-suggestion.service.ts}`,
+  `modules/mentorship/application/mentorship-suggestion.service.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/template-bar.tsx`,
+  [`ai.md`](./ai.md).
 
 - **Kohort brifingi — koçun sabah görünümü (APP-085, 2026-09-07)** — APP-078 brifingi öğrenci
   başına verdi; roadmap §9'un cümlesi ise başkaydı: "koç panele girince **kim geride**, neden, ne

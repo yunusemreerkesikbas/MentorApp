@@ -103,6 +103,12 @@ export const PremiumFeatureId = {
    * would make the cohort view the thing you cannot afford to open.
    */
   MENTORSHIP_COHORT_BRIEF: "mentorship.cohort_brief",
+  /**
+   * Homework the model proposes for one student, which the coach edits and submits themselves.
+   * Charged to the coach like the two briefs — and separately from them, because a coach who read
+   * their cohort this morning has not yet asked anyone to draft a week.
+   */
+  MENTORSHIP_SUGGESTIONS: "mentorship.suggestions",
 } as const;
 export type PremiumFeatureId =
   (typeof PremiumFeatureId)[keyof typeof PremiumFeatureId];
@@ -120,6 +126,7 @@ export const PREMIUM_FEATURE_IDS = [
   PremiumFeatureId.DEEP_ANALYSIS,
   PremiumFeatureId.MENTORSHIP_BRIEF,
   PremiumFeatureId.MENTORSHIP_COHORT_BRIEF,
+  PremiumFeatureId.MENTORSHIP_SUGGESTIONS,
 ] as const satisfies readonly PremiumFeatureId[];
 
 export const FeaturePolicyWindow = {
