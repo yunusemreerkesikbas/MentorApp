@@ -49,6 +49,10 @@ export const AiUsageFeature = {
   PLAN_ADAPTATION: "plan_adaptation",
   /** Coach-facing: the meter row is written against the COACH's id, not the student's. */
   MENTORSHIP_BRIEF: "mentorship_brief",
+  /** Coach-facing, cohort-wide. Its own label so the admin breakdown can price the two apart. */
+  MENTORSHIP_COHORT_BRIEF: "mentorship_cohort_brief",
+  /** Coach-facing: proposed homework for one student. Metered against the COACH. */
+  MENTORSHIP_SUGGESTIONS: "mentorship_suggestions",
 } as const;
 export type AiUsageFeature =
   (typeof AiUsageFeature)[keyof typeof AiUsageFeature];

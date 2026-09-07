@@ -16,6 +16,8 @@ import {
   UserRole,
   type MentorshipBriefDto,
   type MentorshipCoachOverviewDto,
+  type MentorshipAssignmentSuggestionsDto,
+  type MentorshipCohortBriefDto,
   type MentorshipInviteCodeDto,
   type MentorshipProgramTemplateDto,
   type MentorshipLinkStatus,
@@ -28,6 +30,8 @@ import { CurrentUser, type RequestUser } from "../../../common/auth/current-user
 import { Roles } from "../../../common/auth/roles.decorator";
 import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
 import { MentorshipBriefService } from "../application/mentorship-brief.service";
+import { MentorshipCohortBriefService } from "../application/mentorship-cohort-brief.service";
+import { MentorshipSuggestionService } from "../application/mentorship-suggestion.service";
 import { MentorshipInviteService } from "../application/mentorship-invite.service";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipRosterService } from "../application/mentorship-roster.service";
@@ -61,6 +65,8 @@ export class MentorshipCoachController {
     private readonly assignments: MentorshipAssignmentService,
     private readonly templates: MentorshipTemplateService,
     private readonly brief: MentorshipBriefService,
+    private readonly cohortBrief: MentorshipCohortBriefService,
+    private readonly suggestions: MentorshipSuggestionService,
   ) {}
 
   /**
@@ -198,6 +204,53 @@ export class MentorshipCoachController {
     @Param() params: MentorshipStudentParamDto,
   ): Promise<MentorshipBriefDto> {
     return this.brief.generate({ id: user.id, roles: user.roles }, params.studentId);
+  }
+
+  /**
+   * The stored cohort brief. Free: no LLM call, no quota, nothing to throttle harder than the rest.
+   *
+   * GET exists precisely so the panel can show this morning's brief on arrival without billing a
+   * coach for opening their own roster — the reason `brief-card.tsx` requests nothing on mount.
+   * Empty body when none was ever written, the `GET /my-coach` convention.
+   */
+  @Get("brief")
+  readCohortBrief(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipCohortBriefDto | null> {
+    return this.cohortBrief.read(user.id);
+  }
+
+  /**
+   * Write a new cohort brief.
+   *
+   * POST for the per-student brief's reason, and more so: this one reads the whole roster before it
+   * writes. Unchanged cohort returns the stored text and spends nothing, so the refresh button is
+   * safe to press twice.
+   */
+  @Post("brief")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  generateCohortBrief(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipCohortBriefDto> {
+    return this.cohortBrief.generate({ id: user.id, roles: user.roles });
+  }
+
+  /**
+   * A week of homework the model proposes for this student.
+   *
+   * POST for the briefs' reason, and throttled the same. It writes NOTHING: the answer goes into
+   * the composer, the coach edits it, and `POST .../assignments` is still the only door onto a
+   * student's plan. Uncached on purpose — asking again for a different week is the feature.
+   */
+  @Post("students/:studentId/assignment-suggestions")
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  suggestAssignments(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+  ): Promise<MentorshipAssignmentSuggestionsDto> {
+    return this.suggestions.suggest({ id: user.id, roles: user.roles }, params.studentId);
   }
 
   @Delete("students/:studentId")

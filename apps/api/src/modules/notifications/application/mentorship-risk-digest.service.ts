@@ -10,6 +10,7 @@ import {
   type CoachRiskDigestCandidate,
   type MentorshipQueryPort,
 } from "../../mentorship/domain/mentorship-query.port";
+import { hasNewPairs, toRiskPairs } from "../../mentorship/domain/risk-pairs";
 import { EmailTemplate, JobName } from "../domain/notifications.constants";
 import { NotificationCopyKey } from "../domain/notification-copy";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
@@ -147,12 +148,16 @@ export class MentorshipRiskDigestService {
 }
 
 function toPairs(candidate: CoachRiskDigestCandidate): string[] {
-  return candidate.students
-    .flatMap((student) => student.flags.map((flag) => `${student.studentId}:${flag}`))
-    .sort();
+  return toRiskPairs(candidate.students);
 }
 
-/** A digest is worth sending only when it carries something the last one did not. */
+/**
+ * A digest is worth sending only when it carries something the last one did not.
+ *
+ * The rule itself moved to `mentorship/domain/risk-pairs.ts` when the cohort brief needed the same
+ * answer for a screen. Two copies of "what counts as new" would drift, and the first symptom would
+ * be a coach emailed at 07:00 about a student the panel then greets as fresh news.
+ */
 function hasNewNews(pairs: string[], baseline: Set<string>): boolean {
-  return pairs.some((pair) => !baseline.has(pair));
+  return hasNewPairs(pairs, baseline);
 }

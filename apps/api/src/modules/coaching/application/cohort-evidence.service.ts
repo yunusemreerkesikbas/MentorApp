@@ -6,11 +6,16 @@ import type {
 import { addDays, todayIso } from "../domain/date.util";
 import { CohortEvidenceRepository } from "../infrastructure/cohort-evidence.repository";
 
-/** Windows the coach surface reads over. Fixed, not configurable — they are part of the contract. */
-const ROSTER_WINDOW_DAYS = 7;
+/**
+ * Windows the coach surface reads over. Fixed, not configurable — they are part of the contract.
+ *
+ * The three W8's student mirror quotes back ("your last 7 days travel") are exported for exactly
+ * that reason: a screen that guessed the number would drift from the query the day either changed.
+ */
+export const ROSTER_WINDOW_DAYS = 7;
 const REPORT_LONG_WINDOW_DAYS = 28;
-const REPORT_PLAN_WINDOW_DAYS = 14;
-const REPORT_MOOD_WINDOW_DAYS = 14;
+export const REPORT_PLAN_WINDOW_DAYS = 14;
+export const REPORT_MOOD_WINDOW_DAYS = 14;
 const REPORT_MOCK_LIMIT = 10;
 const REPORT_PLAN_TASK_LIMIT = 120;
 

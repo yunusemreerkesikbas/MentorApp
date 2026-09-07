@@ -1,6 +1,9 @@
 import type {
   MentorshipApplicationDto,
   MentorshipCoachOverviewDto,
+  MentorshipAssignmentSuggestionsDto,
+  MentorshipCohortBriefDto,
+  MentorshipSharedDataDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
   MentorshipInvitationPreviewDto,
@@ -180,7 +183,56 @@ export async function generateBrief(studentId: string): Promise<MentorshipBriefD
   )) as MentorshipBriefDto;
 }
 
+/**
+ * This morning's cohort brief, if one was written. Free: no LLM call, no quota — which is why the
+ * roster may ask for it on load. An empty body means none exists yet.
+ */
+export async function fetchCohortBrief(): Promise<MentorshipCohortBriefDto | null> {
+  return (
+    ((await http<MentorshipCohortBriefDto>("/v1/mentorship/brief")) as
+      | MentorshipCohortBriefDto
+      | undefined) ?? null
+  );
+}
+
+/**
+ * Write a new cohort brief. POST for `generateBrief`'s reason; the API returns `model: "cache"`
+ * when the cohort has not moved, so pressing refresh twice costs nothing.
+ */
+export async function generateCohortBrief(): Promise<MentorshipCohortBriefDto> {
+  return (await http<MentorshipCohortBriefDto>("/v1/mentorship/brief", {
+    method: "POST",
+  })) as MentorshipCohortBriefDto;
+}
+
+/**
+ * Ask the model to draft a week for this student.
+ *
+ * POST because it spends an LLM call and a quota unit. It writes NOTHING — the tasks come back as
+ * drafts for the composer, and the coach still submits them through `assignTasks`. Uncached on the
+ * server, so calling it again really does produce a different week.
+ */
+export async function suggestAssignments(
+  studentId: string,
+): Promise<MentorshipAssignmentSuggestionsDto> {
+  return (await http<MentorshipAssignmentSuggestionsDto>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/assignment-suggestions`,
+    { method: "POST" },
+  )) as MentorshipAssignmentSuggestionsDto;
+}
+
 // --- student side -------------------------------------------------------------------------
+
+/**
+ * The numbers currently travelling to my coach.
+ *
+ * Free and read-only. Empty body when I have no coach: nothing is being shared, so there is nothing
+ * to mirror. Its own call rather than a field on `fetchMyCoach` — see the API route's comment.
+ */
+export async function fetchSharedData(): Promise<MentorshipSharedDataDto | null> {
+  const res = await http<MentorshipSharedDataDto>("/v1/mentorship/my-coach/data");
+  return res && "examType" in res ? (res as MentorshipSharedDataDto) : null;
+}
 
 /**
  * What the student is asked to consent to. The code goes in the body, not the URL — it is a

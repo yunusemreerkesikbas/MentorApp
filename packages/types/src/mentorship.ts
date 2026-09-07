@@ -322,6 +322,110 @@ export interface MentorshipBriefDto {
   generatedAt: string;
 }
 
+/**
+ * One student's line in the cohort brief.
+ *
+ * Two of these three signals do NOT come from the model. `riskFlags` is the deterministic triage
+ * from `domain/risk-flags.ts` and `isNew` is a set comparison against the previous brief — the
+ * same rule the morning digest uses to decide it has news. Only `why` and `action` are written by
+ * an LLM, and they sit next to evidence the coach can check rather than replacing it.
+ */
+export interface MentorshipCohortBriefItemDto {
+  studentId: string;
+  studentDisplayName: string;
+  /** Rule-based, not model-authored. Rendered as the same chips the roster shows. */
+  riskFlags: MentorshipRiskFlagId[];
+  /** Why this student is on the list, at most a sentence. */
+  why: string;
+  /** What the coach can do about it, at most a sentence. */
+  action: string;
+  /** True when the previous brief did not already carry one of this student's current flags. */
+  isNew: boolean;
+}
+
+/**
+ * The coach's morning view: who is waiting, across the whole roster, in one call.
+ *
+ * `GET` returns the stored one and spends nothing; `POST` writes a new one when the cohort has
+ * actually moved. Students with no live signal are absent by construction — this answers "who
+ * needs me today", not "who am I following".
+ */
+export interface MentorshipCohortBriefDto {
+  /** One or two sentences about the cohort as a whole. */
+  overall: string;
+  items: MentorshipCohortBriefItemDto[];
+  /** The model that wrote it, or `"cache"` when the stored one still matches the cohort. */
+  model: string;
+  generatedAt: string;
+}
+
+/**
+ * A week of homework the model proposed for one student.
+ *
+ * The tasks are {@link MentorshipProgramTemplateTaskDto} on purpose, not a shape of their own: a
+ * suggestion enters the composer through the exact door a saved program does, so the client needs
+ * no second drafting path and the coach still submits through `POST .../assignments`. Nothing here
+ * is written anywhere until they do.
+ *
+ * `topic` is always null. The composer's picker is the only thing that knows this student's exam
+ * taxonomy, and a model-authored topic would walk straight past it (APP-074's reason, again).
+ */
+export interface MentorshipAssignmentSuggestionsDto {
+  tasks: MentorshipProgramTemplateTaskDto[];
+  /** The model that proposed them. There is no cache here, so never `"cache"`. */
+  model: string;
+}
+
+/**
+ * What is being handed to my coach, right now, with the actual numbers in it.
+ *
+ * `MENTORSHIP_DATA_SCOPE` tells a student what KIND of data travels; this tells them HOW MUCH.
+ * APP-073 closed the same asymmetry on the coach's side ("the one asymmetry the trust line cannot
+ * carry is the side GIVING the data knowing less about the limits than the side RECEIVING it") —
+ * this is that argument pointed the other way.
+ *
+ * Not a second dashboard. Half of this the student already sees on their own screens (mock nets in
+ * full, plan titles, exam), and restating it there would be a worse copy. So each field is a
+ * one-line summary: the value where the value is new to them, a pointer where it is not. The
+ * mock-exam entry is deliberately just a count and a date for that reason.
+ *
+ * Nothing the coach writes appears here. The snapshot behind it is fetched WITHOUT a mentorship
+ * link id, so `coachNote` and `assignedByCoach` are absent by construction rather than filtered.
+ */
+export interface MentorshipSharedDataDto {
+  /** Null until the student has any activity at all. */
+  activity: {
+    /** The rolling window the coach's 7-day figures cover. */
+    windowDays: number;
+    sessions7d: number;
+    focusMinutes7d: number;
+    activeDays7d: number;
+    currentStreak: number;
+    longestStreak: number;
+    lastActiveDate: string | null;
+  } | null;
+  /**
+   * Null when nothing was planned in the window. `titleWindowDays` is the window the TITLES come
+   * from; the completion rate is a 7-day figure and says so in its name — two windows, and
+   * collapsing them into one number would misreport both.
+   */
+  planTasks: {
+    titleWindowDays: number;
+    titleCount: number;
+    /** 0..1, or null when nothing was planned in the last 7 days (silence, not failure). */
+    planCompletionRate7d: number | null;
+  } | null;
+  /** Null when the student has never checked in. `average` is 1..5, rounded to one decimal. */
+  mood: { windowDays: number; count: number; average: number } | null;
+  /**
+   * A pointer, not a restatement: how many attempts travel and when the last one was. The nets and
+   * the per-subject breakdown live on the student's own analysis screen, in more detail than the
+   * coach ever receives.
+   */
+  mockExams: { count: number; latestAt: string } | null;
+  examType: string | null;
+}
+
 /* -------------------------------------------------------------------------------------------
  * Coach applications (W8 curation, roadmap §5) — "açık kayıt değil, kürasyon".
  * ---------------------------------------------------------------------------------------- */

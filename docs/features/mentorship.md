@@ -122,11 +122,15 @@ DELETE /v1/mentorship/students/:studentId          -> 204
 GET    /v1/mentorship/templates                    -> MentorshipProgramTemplateDto[]
 POST   /v1/mentorship/templates                    -> upsert by name (saving over a name IS the edit)
 DELETE /v1/mentorship/templates/:templateId        -> 204
+GET    /v1/mentorship/brief                        -> MentorshipCohortBriefDto | (empty = never written)
+POST   /v1/mentorship/brief                        -> writes one; unchanged cohort returns the stored text
+POST   /v1/mentorship/students/:id/assignment-suggestions -> a week of drafts for the composer (writes nothing)
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
 POST   /v1/mentorship/invitations/accept   { code } -> MyCoachDto
 GET    /v1/mentorship/my-coach                      -> MyCoachDto | (empty = no coach)
+GET    /v1/mentorship/my-coach/data                 -> MentorshipSharedDataDto | (empty = no coach)
 DELETE /v1/mentorship/my-coach                      -> 204
 ```
 
@@ -148,9 +152,13 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `GET /v1/mentorship/templates` | The coach's saved weekly programs (`@Roles(COACH)`) |
 | `POST /v1/mentorship/templates` | Save a program, upserting on `(coach, name)` — there is no PUT because saving over a name is the edit |
 | `DELETE /v1/mentorship/templates/:templateId` | Delete one of the coach's own; another coach's id is a 404 |
+| `GET /v1/mentorship/brief` | The stored cohort brief. Free — no LLM call, no quota, so the panel may ask on load (`@Roles(COACH)`) |
+| `POST /v1/mentorship/brief` | Write one. Unchanged cohort returns the stored text and spends nothing (`@Roles(COACH)`, 10/min) |
+| `POST /v1/mentorship/students/:studentId/assignment-suggestions` | A week of AI-drafted homework for the composer. Writes nothing; uncached (gate applies, 10/min) |
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
+| `GET /v1/mentorship/my-coach/data` | The same contract with the actual figures in it: how much is travelling under each scope key. No coach-authored field can appear — the snapshot is fetched without a link id |
 | `DELETE /v1/mentorship/my-coach` | Student revokes consent, unilaterally (KVKK) |
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
@@ -185,6 +193,173 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Öğrencinin aynası — koçuma ne gidiyor (APP-087, 2026-09-07)** — APP-073 asimetriyi koç
+  tarafında kapatmıştı: *"güven çizgisinin kaldıramayacağı tek asimetri, veriyi alan tarafın
+  sınırları hakkında veren taraftan az bilmesi."* Öğrenci tarafında o liste hâlâ **sözdü**:
+  `/kocum` "çalışma süren, seans sayın, aktif günlerin ve serin" diyordu ama **kaç** olduğunu
+  söylemiyordu. Öğrenci neyin türünü biliyor, miktarını bilmiyordu.
+  `GET /v1/mentorship/my-coach/data` her kapsam satırının yanına o an koça giden fiilî değeri
+  koyuyor. Vaat, rapora dönüşüyor.
+  **Seam zaten öğrenci için tasarlanmıştı.** `CohortEvidenceService.getStudentReport(studentId,
+  now?, mentorshipLinkId?)` koç id'si almıyor ve link id'si opsiyonel; kendi dokümanı "W8 dışındaki
+  çağıranlar onu atlar, `coachNote` ve `assignedByCoach` almaz" diyor. Öğrenci kendisi için
+  çağırdığında koçun özel alanları **argüman verilmediği için** gelmiyor — sonradan filtrelenmesi
+  gereken, unutulabilecek bir şey değil, **var olmayan bir parametre**. Yeni sorgu, yeni tablo,
+  migration, LLM çağrısı, kota **yok**; bu dilim para harcamıyor.
+  **Ayrı servis, çünkü kapı farklı.** `MentorshipRosterService`'teki her metot
+  `requireActiveLink(coachId, studentId)` ile kapılı; bu "ben bu öğrenciyim" ile. İki
+  yetkilendirme modelini tek dosyada karıştırmak, bir sonrakinin yanlış olanı çağırmasının en kısa
+  yolu — `mentorship-self-view.service.ts` kapıyı tartışmasız yapıyor.
+  **Ölçüldü: aynanın yarısı yeni bilgi, yarısı değil.** Öğrenci deneme netlerini (koçtan bile
+  fazlasını), plan başlıklarını ve sınavını zaten kendi ekranlarında görüyor. Ama `sessions7d`,
+  `activeDays`, `focusMinutes`, `longestStreak`, **haftalık plan tamamlama oranı** ve **14 günlük
+  mod ortalaması** hiçbir ekranında yok. Bu yüzden ekran her satıra sayı basmıyor: **değerin yeni
+  olduğu yerde değeri, olmadığı yerde kendi ekranına işareti** gösteriyor. Deneme satırı bu yüzden
+  yalnız "kaç deneme, sonuncusu ne zaman" diyor; `/analiz`'in bandını burada yeniden çizmek daha
+  kötü bir kopya olurdu. Ama satır **listeden çıkmıyor**: liste onay sözleşmesinin ta kendisi,
+  eksik bir liste yanlış beyandır.
+  **Risk flag'leri gitmiyor.** `INACTIVE` / `PLAN_SLIPPING` bir operatörün triyaj sözcükleri;
+  APP-067 digest'te zaten "flag adı kopyada geçmez, gelen kutusunda teşhis gibi okunur" demişti.
+  Aynı gerekçe ekranda da geçerli.
+  **Aynı kart, iki an.** `DataScopeCard` hem onay ekranında hem `/kocum`'da. Onay ekranında bağ
+  henüz yok, dolayısıyla değer de yok — prop opsiyonel, o ekran hiç değişmedi. Onay ekranı **söz
+  vermeye**, `/kocum` **rapor etmeye** devam ediyor.
+  **Kullanım:** `/kocum`, otomatik. `mentorship.enabled` kapalıysa bu uç da 403.
+  **Gotchas:** (1) Sayılar sunucuda hesaplanıyor, mod ortalaması dahil — iki ekranda iki türlü
+  yuvarlanan bir ortalama tam olarak bu özelliğin engellemek için var olduğu sapma olurdu.
+  (2) Plan satırı **iki pencere** taşıyor: başlıklar 14 günden, oran 7 günlük. Tek sayıya
+  indirmek ikisini birden yanlış raporlardı. (3) Hiç verisi olmayan öğrenciye **sıfır dizisi
+  gösterilmiyor**, satır çıplak kalıyor: sıfırları rapor gibi sunmak dürüst değil. Ama
+  `planCompletionRate7d = 0` **gösteriliyor** — planlayıp yapmamak bir olgu, veri yokluğu değil.
+  (4) `AI_BRIEF`'in değeri yok: o bir veri değil bir yöntem, ve öğrenci onu zaten onayladı.
+  (5) Tarayıcıda yakalandı: "Son haftanın %{percent}'ini tamamladın" **Türkçe eki sayının
+  okunuşuna göre değişiyor** (%0 → "sıfırını", %5 → "beşini"); statik metin bunu tutturamaz, kopya
+  eki hiç almayacak biçimde yeniden yazıldı.
+  **İlgili:** `modules/mentorship/application/mentorship-self-view.service.ts`,
+  `modules/coaching/application/cohort-evidence.service.ts` (üç pencere sabiti export edildi),
+  `apps/web/src/app/[locale]/(app)/my-coach/_components/{my-coach-shell.tsx,scope-values.ts}`,
+  `packages/types/src/mentorship.ts`.
+
+- **Eyleme dönük brifing — AI ödev taslağı (APP-086, 2026-09-07)** — APP-085 "ne yapmalı"yı düz
+  cümleyle söylüyordu. Bu dilim onu bestecinin içine somut bir haftaya çeviriyor:
+  `POST /v1/mentorship/students/:id/assignment-suggestions` bir haftalık görev taslağı döndürüyor.
+  **Yeni bir yazma yolu AÇILMIYOR, ve karar bu.** Öneri sadece öneri; koç düzenleyip mevcut
+  `POST .../assignments` ile gönderiyor. `PlanService.createFromMentorship` tek yazar olarak
+  kalıyor, LLM öğrencinin planına hiç dokunmuyor. Bu APP-074'ün "şablon UYGULANMIYOR, bestecinin
+  içine YÜKLENİYOR" kararının aynısı — ve aynı sebeple: taksonominin tek kapısı bestecinin seçicisi.
+  **`topic` ayrıştırmada zorla null.** Prompt "böyle bir alan yok" diyor, parser da onu doğru
+  kılıyor. Konu, tek bir sınavın taksonomisine yumuşak referans; sunucu yalnız "konunun dersi var
+  mı"ya bakıyor, konunun bu öğrencinin sınavında var olup olmadığına bakan tek şey bestecinin
+  seçicisi. Model üretse doğrudan öğrencinin planına yazılır ve koça biri kontrol etmiş gibi
+  görünürdü.
+  **Tarih değil `dayIndex`.** `MentorshipProgramTemplateTaskDto`'nun gerekçesi: taslak "bir
+  program", "8'inin haftası" değil. Besteci hangi haftayı gösteriyorsa oraya tarihliyor, model
+  takvim aritmetiği yapmıyor. Yan fayda: öneri **şablonla birebir aynı şekle** sahip, dolayısıyla
+  `buildTemplateDrafts` olduğu gibi çalışıyor ve istemciye tek satır çizim mantığı eklenmedi.
+  **Tavan bir hafta: 7 görev, günde 3.** Bestecinin kendi tavanı 21 ama o koçun KURABİLECEĞİ,
+  modelin sormadan önüne koyacağı değil. Yedi görev okunup düzeltilebilen bir hafta; 21'i kimse
+  gerçekten okumaz.
+  **Kanıt brifingin şekillendiricisi, yeniden kullanıldı.** `buildMentorshipBriefEvidence` zaten
+  ismi ve koçun kendi notunu ayıklıyor; onu çağırmak "brifingin kendi cümlesi prompt'a geri
+  gitmiyor"u hatırlanan değil **yapısal** bir gerçek yapıyor. Kendi eski cümlesini gören model
+  sayılara bakmak yerine ona katılır.
+  **Önbellek YOK, ve bu brifingden bilinçli fark.** Brifing aynı özeti iki kez yazmasın diye
+  cache'li; öneri ise koçun beğenmediğinde yeniden isteyeceği şey. Parmak iziyle aynı haftayı geri
+  vermek düğmeyi bozuk gösterirdi. Sınır kota, ki kotanın işi bu.
+  **Kullanım:** öğrenci raporunda bestecinin üstündeki çubukta "AI önerisi". Kota
+  `ai.features.mentorship.suggestions.free_{enabled,limit}`, free varsayılan **kapalı**.
+  **Canlı koşuda iki kere ders alındı, ikisi de aynı ders.** Bir prompt kuralı talimattır, garanti
+  değil — APP-085'te ref sızıntısında öğrenilen şey burada iki kez daha tekrarlandı, ve ikisinde de
+  çözüm aynı: kuralı prompt'ta söyle, **ayrıştırmada zorla**.
+  **(1) Uydurulan ders.** Kanıtında hiç deneme, hiç ders olmayan bir KPSS adayına "Fen Bilgisi: 5
+  deney yaz" ve "İngilizce" önerildi. Model sınavın müfredatını tahmin ediyor, üstelik kendinden
+  emin. `collectEvidenceSubjects` artık kanıtın **söylediği** dersleri topluyor
+  (`latestMockSubjects` + `planTasks`), ayrıştırma dışındakini **boşaltıyor**. Görev düşürülmüyor,
+  yalnız `subject` boşalıyor: başlık koçun düzelteceği düz metin, ama `subject` `plan_tasks.subject`'e
+  giren, sonradan gruplanıp sayılan **yapılandırılmış** veri — uydurulmuşu sessiz bozulma olur.
+  **(2) Tek görevle doldurulmuş hafta.** Verisi neredeyse hiç olan öğrenciye yedi günün yedisinde
+  "Paragraf: 10 soru çöz" geldi. "Veri inceyse az görev öner" denmişti; model azı değil aynısını
+  seçti. `MAX_SAME_TITLE = 3`: haftada üç kez tekrar eden bir alıştırma koçun gerçekten yazacağı
+  bir program, yedi değil.
+  **Gotchas:** (1) `ai_usage` satırı **koça** yazılıyor, admin tablosunda "Koç ödev önerisi";
+  brifinglerle kota **paylaşmıyor** — kohortunu okumuş bir koç henüz kimseye hafta yazdırmadı.
+  (2) Kart `examType: null` ile yükleniyor: model taksonomi görmedi, dolayısıyla öneri hiçbir
+  sınava ait değil ve `buildTemplateDrafts`'in uyumsuzluk dalı boşuna tetiklenmiyor.
+  (3) `fake-llm.adapter.ts`'e ikinci sentinel dalı — olmadan dev ve e2e'de her çağrı 503.
+  (4) e2e taslağın **hiçbir şey yazmadığını** raporun `planTasks`'ini önce/sonra karşılaştırarak
+  iddia ediyor; "yazmıyor" bu özelliğin tek gerçek güvenlik iddiası. (5) Kanıtta hiç ders yoksa
+  **her** öneri dersi boş gelir; bu bir hata değil, temellendirmenin doğru sonucu — dersi koç seçer.
+  (6) Prompt sürüm sabiti **yok**: sürüm bir önbelleği geçersiz kılmak için vardır, burada önbellek
+  yok.
+  **İlgili:** `modules/ai/{domain/assignment-suggestion-prompt.ts,application/assignment-suggestion.service.ts}`,
+  `modules/mentorship/application/mentorship-suggestion.service.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/template-bar.tsx`,
+  [`ai.md`](./ai.md).
+
+- **Kohort brifingi — koçun sabah görünümü (APP-085, 2026-09-07)** — APP-078 brifingi öğrenci
+  başına verdi; roadmap §9'un cümlesi ise başkaydı: "koç panele girince **kim geride**, neden, ne
+  yapmalı otomatik öne çıkar". Yirmi öğrencisi olan koç bunu öğrenmek için yirmi kart açıp yirmi
+  kez ödemek zorundaydı. Bu dilim aynı brifingi bir seviye yukarı taşıyor.
+  **İki fiil, çünkü ikisi gerçekten farklı iş.** `GET /v1/mentorship/brief` yazılmış olanı okuyor —
+  LLM yok, kota yok, ücret yok — ve kart **mount'ta onu istiyor**. `POST` tek para harcayan yol.
+  APP-078'in "kendi kendine yazan kart koçu faturalar" kuralı böylece korunuyor ama "otomatik öne
+  çıkar" da gerçekleşiyor: bugünün brifingi varsa koç hiçbir şeye tıklamadan görüyor.
+  **LLM yalnız cümle yazıyor; kanıt da "yeni mi" de ondan gelmiyor.** Her satırın yanındaki
+  `riskFlags` kural motorunun (`domain/risk-flags.ts`), `isNew` ise bir önceki brifingin
+  `studentId:FLAG` çiftleriyle küme farkı. İkisi de deterministik. Brifing triyajın **üstüne**
+  biniyor, yerine değil — APP-078'in aynı cümlesi.
+  **"Yeni haber ne" artık tek yerde.** `domain/risk-pairs.ts` (saf, 8 test): digest'in `toPairs` /
+  `hasNewNews`'i oraya taşındı, notifications onu import ediyor. İki kopya kaçınılmaz olarak
+  kayardı ve ilk belirtisi şu olurdu: koça 07:00'de e-posta gitmiş bir öğrenciyi panel sabah
+  "yeni" diye karşılar. `attention.ts`'in gerekçesinin bir üst katı.
+  **Model isim de id de görmüyor — `S1`, `S2`.** APP-078'in gerekçesi (adını bildiği birini
+  tanıdığını sanan model) artı `plan-adaptation.ts`'in gerekçesi: hiç görmediği bir id'yi
+  **uyduramaz**, uydurduğu ref çözülmez ve **düşürülür**. Bu özelliğin yaşayamayacağı tek hata bir
+  cümlenin yanlış öğrencinin adı altında görünmesi.
+  **Yeni prompt kuralı: öğrencileri birbiriyle KIYASLAMA.** Kohort ekranında iki satır yan yana
+  duruyor, ve roadmap `:616` bireysel utandırmayı açıkça yasaklıyor. Sıralanmış bir listeyi okuyan
+  koç sıralamaya göre davranır, öğrenciye göre değil. Diğer bütün brief kuralları aynen devam
+  ediyor (flag'lerle çelişme, mood'dan teşhis, resmî bilgi — hepsi yasak).
+  **Seçim kuralı tek fonksiyon.** `selectCohortBriefRows` hem kanıtı üretiyor hem servisin `S1`'i
+  öğrenciye geri eşlemesini besliyor. Aynı yüklem iki dosyada yazılsaydı ilk sapmada satırlar
+  kayardı; e2e bunu yakalamazdı çünkü tek öğrenciyle her ikisi de doğru görünür.
+  **`MENTORSHIP_DATA_SCOPE` DEĞİŞMEDİ, ve bu bir karar.** `AI_BRIEF` zaten "bir LLM benim hakkımda
+  başkası için yazı yazıyor" diyor. Kohort brifingi aynı yöntem, aynı veri, tek çağrıda N öğrenci —
+  yeni kolon okumuyor. Öğrencinin onayladığı cümle değişmediği için liste de değişmiyor. Değişen
+  tek şey ekrandaki komşuluk, ve onun karşılığı kod değil yukarıdaki prompt kuralı.
+  **Yeni tablo, ve KVKK bu sefer bedava değil.** `mentorship_cohort_briefs` (migration `0106`):
+  koç başına tek satır, üstüne yazılıyor. Tarihçe yok — bir sonraki brifingin öncekinden ihtiyaç
+  duyduğu tek şey `pairs`, ve o bir kolona sığıyor (digest'in "ayrı durum tablosu yok"unun aynısı).
+  `ON DELETE CASCADE` **yetmiyor**: erasure `users`'ı anonimleştiriyor, silmiyor — şablon ve
+  başvurunun aynı tuzağı — dolayısıyla `MentorshipErasureService`'e bir satır eklendi.
+  **İsim saklanmıyor, `riskFlags` saklanıyor.** Asimetri kasıtlı: isim her okumada
+  `listDisplayIdentities` üzerinden çözülüyor, yoksa erasure'dan sonra kimsenin bakmayı akıl
+  etmeyeceği bir önbellekte yaşamaya devam ederdi. Flag'ler ise **o anın** flag'leri; dünkü cümlenin
+  yanına bugünün flag'ini koymak metne söylemediği bir şeyi söyletmek olurdu.
+  **Bağ biterse satır da gider.** Okuma her seferinde aktif bağlarla kesişiyor: dün yazılmış bir
+  brifing, bu sabah ayrılan öğrenciyi anlatmaya devam edemez.
+  **Kullanım:** kart `/kocluk` roster ekranının en üstünde. Kota Koç Pro'ya bağlı —
+  `ai.features.mentorship.cohort_brief.free_enabled` varsayılan **kapalı**; APP-079'un ücretli
+  koltuğunun bugüne kadar eksik olan somut karşılığı bu.
+  **Gotchas:** (1) `ai_usage` satırı **koça** yazılıyor, admin maliyet tablosunda "Koç kohort
+  brifingi". Kotası per-student brifinginkiyle **paylaşılmıyor**: kohort görünümü koçun hangi
+  öğrenciyi açacağına karar verdiği yer, onu tek tek okumaların payından harcamak haritayı yürünen
+  yola göre kısıtlamak olurdu. (2) Kimse beklemiyorsa model **hiç çağrılmıyor**; `model: "empty"`
+  dönüyor ve satır yine de yazılıyor, ki değişmemiş sakin kohort bir sonraki çağrıda tanınsın.
+  (3) `pairs` yalnız **brifingde görünen** satırları kaydediyor: on kişilik tavana takılan ya da
+  modelin atladığı öğrenci gösterilmedi, yarın "yeni" olarak gelebilmeli. (4) `fake-llm.adapter.ts`
+  yeni sentinel dalı olmadan dev ve e2e'de her çağrı 503 olurdu — ayrıştırıcı katı. (5) Servis
+  **senkron**, `backend.md:49`'un "LLM işi kuyruğa" kuralından sapıyor; sapma `ai.md:778`'de zaten
+  kayıtlı ve `ponytail:` yorumu yükseltme yolunu adlandırıyor (POST kuyruğa, GET yoklamaya —
+  zaten okuduğu satırı yokluyor). (6) Roster sayfası zaten kohortun tamamı: `pageSize` = kontenjan
+  tavanı, yani hiçbir öğrenci görünürden sıralanıp çıkmıyor.
+  **İlgili:** `apps/api/drizzle/0106_w8_mentorship_cohort_brief.sql`,
+  `modules/ai/{domain/cohort-brief-prompt.ts,application/cohort-brief.service.ts}`,
+  `modules/mentorship/{domain/risk-pairs.ts,application/mentorship-cohort-brief.service.ts,infrastructure/mentorship-cohort-brief.repository.ts}`,
+  `packages/types/src/{mentorship,payments}.ts`,
+  `apps/web/src/app/[locale]/(coach)/students/_components/cohort-brief-card.tsx`,
+  [`ai.md`](./ai.md), [`notifications.md`](./notifications.md).
 
 - **Yayın kapısı: CI yeşil, koçluk açılabilir (APP-084, 2026-09-06)** — Karar iki karanlık yüzeyi
   (`forum.enabled`, `mentorship.enabled`) açmaktı; ama `security-release-checklist.md`'nin **ilk
@@ -1060,8 +1235,10 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Gotchas / Known issues
 
-- **Role changes need a re-login.** `TokenService.loadPrincipal` re-reads roles on refresh, so a
-  freshly granted COACH sees the surface only after their next refresh or login.
+- ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
+  `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
+  on every request, so a freshly granted COACH sees the surface at once. The Tutorials block
+  (`:75-79`) and the APP-082 entry both say so; this line had not been updated and contradicted them.
 - **Empty 200, not `null` JSON.** `GET /my-coach` returns an empty body when there is nothing. The
   shared `http()` client already tolerates this (`res.json().catch(…)`). `GET /overview` does not
   share the quirk: it always returns an object, with `inviteCode: null` inside it.
@@ -1081,7 +1258,12 @@ flag that cries wolf costs the coach more than it gives.
 ## Backlog
 
 - ~~AI "smart brief"~~ — shipped (APP-078). The rules stayed as the floor, as planned.
-- Whole-cohort risk ranking. Today a page is sorted, not the cohort; fine to 100 students a page.
+- **Whole-cohort risk ranking — not needed yet, and here is why.** Today a page is sorted, not the
+  cohort. But `mentorship.coach.max_active_students` defaults to 20 against a page size of 100, so
+  one page IS the cohort: nothing is ranked out of view. The item is born the day that ceiling is
+  raised past 100, and not before. The cohort brief (APP-085) relies on the same fact.
+- ~~AI cohort brief~~ — shipped (APP-085). Rules stayed the floor there too: the chips beside each
+  line are `risk-flags.ts`, the "new" badge is a set comparison, and only the sentence is a model's.
 - ~~Seat billing beyond the free quota~~ — shipped (APP-076/077/079: sponsored seats, the kill
   switch and the paid Koç Pro plans).
 - ~~Coach vetting queue~~ — **shipped (APP-082)**, minus the document: the evidence is a
@@ -1104,6 +1286,10 @@ flag that cries wolf costs the coach more than it gives.
   evidence is ever wanted, the honest path is `mock_exam_photo_categorizations.topic_ref` — a label
   attached to a mock exam, already inside the `MOCK_EXAMS` scope the student consented to. Not the
   notebook.
+- **AI brief transparency — open.** `coach_students.brief_at` records when a brief was last written
+  about a student, and APP-087 deliberately does not show it: the scope line already says a coach
+  MAY run an AI summary, and "your coach ran one on the 5th" is a decision about surveillance-feel
+  rather than a number that screen was asked to report. Worth revisiting with a real coach cohort.
 - Move the surface to `apps/panel` when the coach cohort justifies its own app (roadmap §9).
 
 ## Related

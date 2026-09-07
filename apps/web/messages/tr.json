@@ -3135,6 +3135,24 @@
     "coach_profile_claim_YEARS": "{value} yıl deneyim · doğrulandı",
     "profile_edit": "Profili düzenle",
     "profile_edit_save": "Kaydet",
-    "profile_edit_claims_locked": "Kurum, branş ve deneyim bilgini burada değiştiremezsin: onları doğrulayan biz olduğumuz için rozetin arkasında biz duruyoruz."
+    "profile_edit_claims_locked": "Kurum, branş ve deneyim bilgini burada değiştiremezsin: onları doğrulayan biz olduğumuz için rozetin arkasında biz duruyoruz.",
+    "cohort_brief_title": "Bugünün brifingi",
+    "cohort_brief_action": "Brifingi oluştur",
+    "cohort_brief_refresh": "Yenile",
+    "cohort_brief_empty": "Kohortun için henüz bir brifing yok. Oluşturduğunda kimin beklediğini ve neden beklediğini burada göreceksin.",
+    "cohort_brief_all_clear": "Bugün kimse beklemiyor.",
+    "cohort_brief_new": "Yeni",
+    "cohort_brief_list_label": "Dikkat isteyen öğrenciler",
+    "cohort_brief_since": "{date} tarihinde yazıldı",
+    "cohort_brief_cached": "değişiklik yok, yeniden yazılmadı",
+    "suggest_action": "AI önerisi",
+    "suggest_name": "AI önerisi",
+    "suggest_empty": "Model bu öğrenci için bir hafta çıkaramadı. Veri inceyse bu normal.",
+    "suggest_hint": "AI önerisi haftalık programı aşağıdaki forma dolduruyor, hiçbir şey gönderilmiyor. Konu alanı boş gelir; dersi ve konuyu sen seçersin.",
+    "scope_value_ACTIVITY": "Son {days} gün: {sessions} seans, {minutes} dk, {activeDays} aktif gün. Serin: {streak} gün.",
+    "scope_value_MOCK_EXAMS": "{count} deneme, sonuncusu {date}. Netlerinin tamamını analiz ekranında görüyorsun.",
+    "scope_value_PLAN_TASK_TITLES": "Son {days} günden {count} görev başlığı.",
+    "scope_value_PLAN_RATE": "Son haftada tamamlama oranın: %{percent}.",
+    "scope_value_MOOD_LEVEL": "Son {days} günde {count} kayıt, ortalaman {average}."
   }
 }

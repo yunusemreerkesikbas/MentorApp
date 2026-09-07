@@ -1,9 +1,14 @@
 import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import type { MentorshipInvitationPreviewDto, MyCoachDto } from "@mentor/types";
+import type {
+  MentorshipInvitationPreviewDto,
+  MentorshipSharedDataDto,
+  MyCoachDto,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
+import { MentorshipSelfViewService } from "../application/mentorship-self-view.service";
 import { MentorshipInviteCodeParamDto } from "./mentorship.dto";
 
 /**
@@ -17,7 +22,10 @@ import { MentorshipInviteCodeParamDto } from "./mentorship.dto";
 @ApiBearerAuth()
 @Controller("mentorship")
 export class MentorshipStudentController {
-  constructor(private readonly links: MentorshipLinkService) {}
+  constructor(
+    private readonly links: MentorshipLinkService,
+    private readonly selfView: MentorshipSelfViewService,
+  ) {}
 
   /** What am I about to consent to? Rendered before the accept button, never after. */
   @Post("invitations/preview")
@@ -40,6 +48,21 @@ export class MentorshipStudentController {
   @Get("my-coach")
   myCoach(@CurrentUser() user: RequestUser): Promise<MyCoachDto | null> {
     return this.links.getMyCoach(user.id);
+  }
+
+  /**
+   * The numbers currently travelling to my coach.
+   *
+   * Its own route rather than a field on `GET /my-coach`, because that DTO is also what
+   * `POST /invitations/accept` returns and running the evidence queries would make accepting an
+   * invitation pay for a screen nobody is looking at yet. Empty body when there is no coach — the
+   * `GET /my-coach` convention, and honest: nothing is being shared, so there is nothing to mirror.
+   */
+  @Get("my-coach/data")
+  sharedData(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipSharedDataDto | null> {
+    return this.selfView.getSharedData(user.id);
   }
 
   @Delete("my-coach")

@@ -810,6 +810,24 @@ export const CONFIG_CATALOG = {
     100000,
     "Briefs per day for a coach on the free taste. Charged to the COACH, not the student.",
   ),
+  "ai.features.mentorship.cohort_brief.free_enabled": flag(
+    false,
+    "Allow a coach without Pro a capped taste of the cohort brief. Off by default: this is the concrete thing a Koc Pro seat buys.",
+  ),
+  "ai.features.mentorship.cohort_brief.free_limit": aiCount(
+    1,
+    100000,
+    "Cohort briefs per day for a coach on the free taste. One call covers the whole roster, so this number is small on purpose.",
+  ),
+  "ai.features.mentorship.suggestions.free_enabled": flag(
+    false,
+    "Allow a coach without Pro a capped taste of AI-proposed homework. Off by default: the coach still submits every task themselves, but drafting it costs an LLM call.",
+  ),
+  "ai.features.mentorship.suggestions.free_limit": aiCount(
+    1,
+    100000,
+    "Suggestion sets per day for a coach on the free taste. Uncached on purpose, so this number is the only bound on re-rolling.",
+  ),
   "ai.features.daily.greeting.free_enabled": flag(
     false,
     "Allow free users a capped daily AI greeting taste.",

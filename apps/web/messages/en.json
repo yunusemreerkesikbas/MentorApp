@@ -3135,6 +3135,24 @@
     "coach_profile_claim_YEARS": "{value} years · verified",
     "profile_edit": "Edit profile",
     "profile_edit_save": "Save",
-    "profile_edit_claims_locked": "Institution, subject and experience are not editable here: we are the ones who verified them, so we are the ones standing behind the badge."
+    "profile_edit_claims_locked": "Institution, subject and experience are not editable here: we are the ones who verified them, so we are the ones standing behind the badge.",
+    "cohort_brief_title": "Today's brief",
+    "cohort_brief_action": "Write the brief",
+    "cohort_brief_refresh": "Refresh",
+    "cohort_brief_empty": "No brief for your cohort yet. Once you write one, you will see who is waiting and why right here.",
+    "cohort_brief_all_clear": "Nobody is waiting today.",
+    "cohort_brief_new": "New",
+    "cohort_brief_list_label": "Students needing attention",
+    "cohort_brief_since": "Written on {date}",
+    "cohort_brief_cached": "nothing changed, not rewritten",
+    "suggest_action": "AI draft",
+    "suggest_name": "AI draft",
+    "suggest_empty": "The model could not draft a week for this student. That is normal when the data is thin.",
+    "suggest_hint": "An AI draft fills the week into the form below; nothing is sent. Topics come back empty, so the subject and topic stay your pick.",
+    "scope_value_ACTIVITY": "Last {days} days: {sessions} sessions, {minutes} min, {activeDays} active days. Streak: {streak} days.",
+    "scope_value_MOCK_EXAMS": "{count} attempts, the latest on {date}. You see every net on your own analysis screen.",
+    "scope_value_PLAN_TASK_TITLES": "{count} task titles from the last {days} days.",
+    "scope_value_PLAN_RATE": "Completion rate last week: {percent}%.",
+    "scope_value_MOOD_LEVEL": "{count} check-ins in {days} days, averaging {average}."
   }
 }

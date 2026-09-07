@@ -7,7 +7,12 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button, TextField } from "@mentor/ui";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { deleteTemplate, fetchTemplates, saveTemplate } from "@/lib/mentorship";
+import {
+  deleteTemplate,
+  fetchTemplates,
+  saveTemplate,
+  suggestAssignments,
+} from "@/lib/mentorship";
 import { ComposerSelect } from "./composer-select";
 import { toTemplateTasks, type DatedDraft } from "./template-apply";
 
@@ -20,11 +25,13 @@ import { toTemplateTasks, type DatedDraft } from "./template-apply";
  * picker stays the only real gate on a program built against another exam's taxonomy.
  */
 export function TemplateBar({
+  studentId,
   drafts,
   examType,
   disabled,
   onLoad,
 }: {
+  studentId: string;
   drafts: readonly DatedDraft[];
   /** The STUDENT's exam: what a template saved from this composer was built against. */
   examType: string | null;
@@ -38,6 +45,7 @@ export function TemplateBar({
   const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>([]);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
+  const [suggesting, setSuggesting] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -107,6 +115,36 @@ export function TemplateBar({
     }
   }
 
+  /**
+   * The model drafts a week; it arrives through the SAME door a saved program does.
+   *
+   * `onLoad` takes a template, and a suggestion is exactly that shape, so nothing new drafts
+   * anything: the tasks land in the composer, the coach edits them, and `POST .../assignments` is
+   * still the only path onto a student's plan. `examType: null` marks it as belonging to no exam,
+   * which is honest — the model was never given a taxonomy, and every `topic` it returns is null.
+   */
+  async function suggest() {
+    setSuggesting(true);
+    try {
+      const { tasks } = await suggestAssignments(studentId);
+      if (tasks.length === 0) {
+        toast.info({ title: t("suggest_empty") });
+        return;
+      }
+      onLoad({
+        id: `ai-${Date.now()}`,
+        name: t("suggest_name"),
+        examType: null,
+        tasks,
+        updatedAt: new Date().toISOString(),
+      });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setSuggesting(false);
+    }
+  }
+
   const named = templates.find((row) => row.name === name.trim());
 
   return (
@@ -152,10 +190,22 @@ export function TemplateBar({
               {t("template_delete_action")}
             </Button>
           )}
+          <Button
+            type="button"
+            variant="soft"
+            busy={suggesting}
+            disabled={disabled}
+            onClick={suggest}
+          >
+            {t("suggest_action")}
+          </Button>
         </div>
       </div>
       <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
         {t("template_hint")}
+      </p>
+      <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
+        {t("suggest_hint")}
       </p>
     </div>
   );
