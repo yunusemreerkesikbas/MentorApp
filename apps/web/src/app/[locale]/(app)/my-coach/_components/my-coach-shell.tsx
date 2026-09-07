@@ -2,15 +2,16 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MyCoachDto } from "@mentor/types";
+import type { MentorshipSharedDataDto, MyCoachDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { Link } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { endMyCoachLink, fetchMyCoach } from "@/lib/mentorship";
+import { endMyCoachLink, fetchMyCoach, fetchSharedData } from "@/lib/mentorship";
 import { CoachProfileCard } from "./coach-profile-card";
+import { scopeValue } from "./scope-values";
 
 /**
  * The student's transparency screen. Its job is not to manage a relationship — it is to answer
@@ -23,6 +24,7 @@ export function MyCoachShell() {
   const toast = useMentorToast();
   const dialog = useMentorDialog();
   const [coach, setCoach] = useState<MyCoachDto | null>(null);
+  const [shared, setShared] = useState<MentorshipSharedDataDto | null>(null);
   const [off, setOff] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -38,8 +40,17 @@ export function MyCoachShell() {
   );
 
   const load = useCallback(() => {
-    fetchMyCoach()
-      .then(setCoach)
+    // Beside the coach fetch, never behind it (`standards/frontend.md`: no waterfalls). The mirror
+    // is settled separately so a failure there cannot blank the screen: the numbers are the newer,
+    // less important half, and "who can see my data and how do I stop it" has to render regardless.
+    Promise.all([
+      fetchMyCoach(),
+      fetchSharedData().catch(() => null),
+    ])
+      .then(([myCoach, sharedData]) => {
+        setCoach(myCoach);
+        setShared(sharedData);
+      })
       .catch((err: unknown) => {
         // The kill-switch is a state, not a failure. The profile row that leads here is always
         // visible, so an error toast would read as a bug on a screen the student just opened.
@@ -145,7 +156,7 @@ export function MyCoachShell() {
             </Card>
           ) : null}
 
-          <DataScopeCard scope={coach.dataScope} />
+          <DataScopeCard scope={coach.dataScope} values={shared} />
         </>
       )}
     </div>
@@ -170,9 +181,22 @@ export function MyCoachShell() {
 /**
  * The consent contract, rendered. `dataScope` comes from the API rather than being hardcoded here,
  * so this list cannot drift from what the server actually sends a coach.
+ *
+ * `values` is optional because this card serves two moments. On the consent screen the link does
+ * not exist yet, so there is nothing to report and the list stays a promise. On `/kocum` the link
+ * is live, and each line gains the figure actually travelling — the same argument APP-073 made for
+ * giving the COACH a scope mirror, pointed the other way: the side handing data over should not
+ * know less about it than the side receiving it.
  */
-export function DataScopeCard({ scope }: { scope: readonly string[] }) {
+export function DataScopeCard({
+  scope,
+  values,
+}: {
+  scope: readonly string[];
+  values?: MentorshipSharedDataDto | null;
+}) {
   const t = useTranslations("mentorship");
+  const locale = useLocale();
   return (
     <div className="flex flex-col gap-4">
       <Card>
@@ -180,12 +204,22 @@ export function DataScopeCard({ scope }: { scope: readonly string[] }) {
           {t("scope_title")}
         </h2>
         <ul
-          className="flex list-disc flex-col gap-1 pl-5 text-sm"
+          className="flex list-disc flex-col gap-2 pl-5 text-sm"
           style={{ color: "var(--color-secondary)" }}
         >
-          {scope.map((key) => (
-            <li key={key}>{t(`scope_${key}`)}</li>
-          ))}
+          {scope.map((key) => {
+            const value = values ? scopeValue(key, values, t, locale) : null;
+            return (
+              <li key={key}>
+                {t(`scope_${key}`)}
+                {value !== null && (
+                  <span className="mt-0.5 block" style={{ color: "var(--color-body)" }}>
+                    {value}
+                  </span>
+                )}
+              </li>
+            );
+          })}
         </ul>
         {/* What the coach can WRITE, not see — so it sits beside the list, not inside it. */}
         <p className="mt-3 text-sm" style={{ color: "var(--color-secondary)" }}>

@@ -3148,6 +3148,11 @@
     "suggest_action": "AI önerisi",
     "suggest_name": "AI önerisi",
     "suggest_empty": "Model bu öğrenci için bir hafta çıkaramadı. Veri inceyse bu normal.",
-    "suggest_hint": "AI önerisi haftayı bestecinin içine dolduruyor, hiçbir şey gönderilmiyor. Konu alanı boş gelir, dersi ve konuyu sen seçersin."
+    "suggest_hint": "AI önerisi haftayı bestecinin içine dolduruyor, hiçbir şey gönderilmiyor. Konu alanı boş gelir, dersi ve konuyu sen seçersin.",
+    "scope_value_ACTIVITY": "Son {days} gün: {sessions} seans, {minutes} dk, {activeDays} aktif gün. Serin: {streak} gün.",
+    "scope_value_MOCK_EXAMS": "{count} deneme, sonuncusu {date}. Netlerinin tamamını analiz ekranında görüyorsun.",
+    "scope_value_PLAN_TASK_TITLES": "Son {days} günden {count} görev başlığı.",
+    "scope_value_PLAN_RATE": "Son haftada tamamlama oranın: %{percent}.",
+    "scope_value_MOOD_LEVEL": "Son {days} günde {count} kayıt, ortalaman {average}."
   }
 }

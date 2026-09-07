@@ -1150,6 +1150,73 @@ describe("mentorship (e2e)", () => {
     });
   });
 
+  describe("the student's mirror", () => {
+    const mirror = (who: string) => http().get("/v1/mentorship/my-coach/data").set(auth(who));
+
+    it("mirrors exactly the numbers the coach is reading", async () => {
+      // The whole claim of this surface. Both sides come from `getStudentReport`, so the only way
+      // they can disagree is a mistake in the mapping — which is what this asserts.
+      const student = await mirror("student");
+      const coach = await http()
+        .get(`/v1/mentorship/students/${userId.student}`)
+        .set(auth("coach2"));
+      expect(student.status).toBe(200);
+      expect(coach.status).toBe(200);
+
+      expect(student.body.activity).toMatchObject({
+        sessions7d: coach.body.activity.sessions7d,
+        focusMinutes7d: coach.body.activity.focusMinutes7d,
+        activeDays7d: coach.body.activity.activeDays7d,
+        currentStreak: coach.body.activity.currentStreak,
+        longestStreak: coach.body.activity.longestStreak,
+        lastActiveDate: coach.body.activity.lastActiveDate,
+      });
+      expect(student.body.planTasks?.planCompletionRate7d ?? null).toBe(
+        coach.body.planCompletionRate7d,
+      );
+      expect(student.body.planTasks?.titleCount ?? 0).toBe(coach.body.planTasks.length);
+      expect(student.body.mood?.count ?? 0).toBe(coach.body.moodTrend.length);
+      expect(student.body.mockExams?.count ?? 0).toBe(coach.body.mockTrend.length);
+      expect(student.body.examType).toBe(coach.body.studentExamType);
+    });
+
+    it("carries nothing the coach wrote", async () => {
+      // The coach has a standing note and at least one assigned task by now; neither may appear.
+      const res = await mirror("student");
+      const body = JSON.stringify(res.body);
+      expect(body).not.toContain("coachNote");
+      expect(body).not.toContain("assignedByCoach");
+      expect(body).not.toContain("riskFlags");
+      expect(body).not.toContain("needsAttention");
+    });
+
+    it("is empty for a student nobody is following", async () => {
+      const res = await mirror("outsider");
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({});
+    });
+
+    it("stops the moment the student revokes consent", async () => {
+      expect((await mirror("student")).body.activity).toBeDefined();
+      expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(
+        204,
+      );
+      // Nothing is being shared any more, so there is nothing to mirror.
+      const after = await mirror("student");
+      expect(after.status).toBe(200);
+      expect(after.body).toEqual({});
+    });
+
+    it("closes with the flag", async () => {
+      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      try {
+        expect((await mirror("student")).status).toBe(403);
+      } finally {
+        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+      }
+    });
+  });
+
   it("closes every door when the flag is off", async () => {
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
     try {

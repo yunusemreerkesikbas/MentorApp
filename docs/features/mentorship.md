@@ -130,6 +130,7 @@ POST   /v1/mentorship/students/:id/assignment-suggestions -> a week of drafts fo
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
 POST   /v1/mentorship/invitations/accept   { code } -> MyCoachDto
 GET    /v1/mentorship/my-coach                      -> MyCoachDto | (empty = no coach)
+GET    /v1/mentorship/my-coach/data                 -> MentorshipSharedDataDto | (empty = no coach)
 DELETE /v1/mentorship/my-coach                      -> 204
 ```
 
@@ -157,6 +158,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
 | `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
 | `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
+| `GET /v1/mentorship/my-coach/data` | The same contract with the actual figures in it: how much is travelling under each scope key. No coach-authored field can appear — the snapshot is fetched without a link id |
 | `DELETE /v1/mentorship/my-coach` | Student revokes consent, unilaterally (KVKK) |
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
@@ -191,6 +193,53 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Öğrencinin aynası — koçuma ne gidiyor (APP-087, 2026-09-07)** — APP-073 asimetriyi koç
+  tarafında kapatmıştı: *"güven çizgisinin kaldıramayacağı tek asimetri, veriyi alan tarafın
+  sınırları hakkında veren taraftan az bilmesi."* Öğrenci tarafında o liste hâlâ **sözdü**:
+  `/kocum` "çalışma süren, seans sayın, aktif günlerin ve serin" diyordu ama **kaç** olduğunu
+  söylemiyordu. Öğrenci neyin türünü biliyor, miktarını bilmiyordu.
+  `GET /v1/mentorship/my-coach/data` her kapsam satırının yanına o an koça giden fiilî değeri
+  koyuyor. Vaat, rapora dönüşüyor.
+  **Seam zaten öğrenci için tasarlanmıştı.** `CohortEvidenceService.getStudentReport(studentId,
+  now?, mentorshipLinkId?)` koç id'si almıyor ve link id'si opsiyonel; kendi dokümanı "W8 dışındaki
+  çağıranlar onu atlar, `coachNote` ve `assignedByCoach` almaz" diyor. Öğrenci kendisi için
+  çağırdığında koçun özel alanları **argüman verilmediği için** gelmiyor — sonradan filtrelenmesi
+  gereken, unutulabilecek bir şey değil, **var olmayan bir parametre**. Yeni sorgu, yeni tablo,
+  migration, LLM çağrısı, kota **yok**; bu dilim para harcamıyor.
+  **Ayrı servis, çünkü kapı farklı.** `MentorshipRosterService`'teki her metot
+  `requireActiveLink(coachId, studentId)` ile kapılı; bu "ben bu öğrenciyim" ile. İki
+  yetkilendirme modelini tek dosyada karıştırmak, bir sonrakinin yanlış olanı çağırmasının en kısa
+  yolu — `mentorship-self-view.service.ts` kapıyı tartışmasız yapıyor.
+  **Ölçüldü: aynanın yarısı yeni bilgi, yarısı değil.** Öğrenci deneme netlerini (koçtan bile
+  fazlasını), plan başlıklarını ve sınavını zaten kendi ekranlarında görüyor. Ama `sessions7d`,
+  `activeDays`, `focusMinutes`, `longestStreak`, **haftalık plan tamamlama oranı** ve **14 günlük
+  mod ortalaması** hiçbir ekranında yok. Bu yüzden ekran her satıra sayı basmıyor: **değerin yeni
+  olduğu yerde değeri, olmadığı yerde kendi ekranına işareti** gösteriyor. Deneme satırı bu yüzden
+  yalnız "kaç deneme, sonuncusu ne zaman" diyor; `/analiz`'in bandını burada yeniden çizmek daha
+  kötü bir kopya olurdu. Ama satır **listeden çıkmıyor**: liste onay sözleşmesinin ta kendisi,
+  eksik bir liste yanlış beyandır.
+  **Risk flag'leri gitmiyor.** `INACTIVE` / `PLAN_SLIPPING` bir operatörün triyaj sözcükleri;
+  APP-067 digest'te zaten "flag adı kopyada geçmez, gelen kutusunda teşhis gibi okunur" demişti.
+  Aynı gerekçe ekranda da geçerli.
+  **Aynı kart, iki an.** `DataScopeCard` hem onay ekranında hem `/kocum`'da. Onay ekranında bağ
+  henüz yok, dolayısıyla değer de yok — prop opsiyonel, o ekran hiç değişmedi. Onay ekranı **söz
+  vermeye**, `/kocum` **rapor etmeye** devam ediyor.
+  **Kullanım:** `/kocum`, otomatik. `mentorship.enabled` kapalıysa bu uç da 403.
+  **Gotchas:** (1) Sayılar sunucuda hesaplanıyor, mod ortalaması dahil — iki ekranda iki türlü
+  yuvarlanan bir ortalama tam olarak bu özelliğin engellemek için var olduğu sapma olurdu.
+  (2) Plan satırı **iki pencere** taşıyor: başlıklar 14 günden, oran 7 günlük. Tek sayıya
+  indirmek ikisini birden yanlış raporlardı. (3) Hiç verisi olmayan öğrenciye **sıfır dizisi
+  gösterilmiyor**, satır çıplak kalıyor: sıfırları rapor gibi sunmak dürüst değil. Ama
+  `planCompletionRate7d = 0` **gösteriliyor** — planlayıp yapmamak bir olgu, veri yokluğu değil.
+  (4) `AI_BRIEF`'in değeri yok: o bir veri değil bir yöntem, ve öğrenci onu zaten onayladı.
+  (5) Tarayıcıda yakalandı: "Son haftanın %{percent}'ini tamamladın" **Türkçe eki sayının
+  okunuşuna göre değişiyor** (%0 → "sıfırını", %5 → "beşini"); statik metin bunu tutturamaz, kopya
+  eki hiç almayacak biçimde yeniden yazıldı.
+  **İlgili:** `modules/mentorship/application/mentorship-self-view.service.ts`,
+  `modules/coaching/application/cohort-evidence.service.ts` (üç pencere sabiti export edildi),
+  `apps/web/src/app/[locale]/(app)/my-coach/_components/{my-coach-shell.tsx,scope-values.ts}`,
+  `packages/types/src/mentorship.ts`.
 
 - **Eyleme dönük brifing — AI ödev taslağı (APP-086, 2026-09-07)** — APP-085 "ne yapmalı"yı düz
   cümleyle söylüyordu. Bu dilim onu bestecinin içine somut bir haftaya çeviriyor:
@@ -1237,6 +1286,10 @@ flag that cries wolf costs the coach more than it gives.
   evidence is ever wanted, the honest path is `mock_exam_photo_categorizations.topic_ref` — a label
   attached to a mock exam, already inside the `MOCK_EXAMS` scope the student consented to. Not the
   notebook.
+- **AI brief transparency — open.** `coach_students.brief_at` records when a brief was last written
+  about a student, and APP-087 deliberately does not show it: the scope line already says a coach
+  MAY run an AI summary, and "your coach ran one on the 5th" is a decision about surveillance-feel
+  rather than a number that screen was asked to report. Worth revisiting with a real coach cohort.
 - Move the surface to `apps/panel` when the coach cohort justifies its own app (roadmap §9).
 
 ## Related

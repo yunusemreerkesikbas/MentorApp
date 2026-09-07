@@ -3148,6 +3148,11 @@
     "suggest_action": "AI draft",
     "suggest_name": "AI draft",
     "suggest_empty": "The model could not draft a week for this student. That is normal when the data is thin.",
-    "suggest_hint": "An AI draft fills the composer; nothing is sent. Topics come back empty, so the subject and topic stay your pick."
+    "suggest_hint": "An AI draft fills the composer; nothing is sent. Topics come back empty, so the subject and topic stay your pick.",
+    "scope_value_ACTIVITY": "Last {days} days: {sessions} sessions, {minutes} min, {activeDays} active days. Streak: {streak} days.",
+    "scope_value_MOCK_EXAMS": "{count} attempts, the latest on {date}. You see every net on your own analysis screen.",
+    "scope_value_PLAN_TASK_TITLES": "{count} task titles from the last {days} days.",
+    "scope_value_PLAN_RATE": "Completion rate last week: {percent}%.",
+    "scope_value_MOOD_LEVEL": "{count} check-ins in {days} days, averaging {average}."
   }
 }

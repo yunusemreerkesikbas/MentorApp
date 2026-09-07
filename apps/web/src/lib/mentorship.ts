@@ -3,6 +3,7 @@ import type {
   MentorshipCoachOverviewDto,
   MentorshipAssignmentSuggestionsDto,
   MentorshipCohortBriefDto,
+  MentorshipSharedDataDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
   MentorshipInvitationPreviewDto,
@@ -221,6 +222,17 @@ export async function suggestAssignments(
 }
 
 // --- student side -------------------------------------------------------------------------
+
+/**
+ * The numbers currently travelling to my coach.
+ *
+ * Free and read-only. Empty body when I have no coach: nothing is being shared, so there is nothing
+ * to mirror. Its own call rather than a field on `fetchMyCoach` — see the API route's comment.
+ */
+export async function fetchSharedData(): Promise<MentorshipSharedDataDto | null> {
+  const res = await http<MentorshipSharedDataDto>("/v1/mentorship/my-coach/data");
+  return res && "examType" in res ? (res as MentorshipSharedDataDto) : null;
+}
 
 /**
  * What the student is asked to consent to. The code goes in the body, not the URL — it is a
