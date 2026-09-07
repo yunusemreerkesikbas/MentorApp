@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TextAreaField, TextField } from "@mentor/ui";
 import { FormError } from "@/components/form";
@@ -10,8 +10,11 @@ import {
 } from "@/components/subject-picker";
 import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { PlanSubjectPicker } from "./plan-subject-picker";
+import { Link } from "@/i18n/navigation";
+import { loadAnalysisPlanFocus, validAnalysisTaskDate, type AnalysisFocusRefs } from "@/lib/analysis-plan-focus";
 
 export type PlanTaskFormValues = {
+  taskDate?: string;
   title: string;
   subject: string;
   /** null = all-day (the API's own convention). */
@@ -23,6 +26,7 @@ export type PlanTaskFormValues = {
 export type PlanAddTaskFormHandle = {
   getValues: () => PlanTaskFormValues;
   validate: () => boolean;
+  showSubmissionError: (message: string, focusChanged: boolean) => void;
 };
 
 interface PlanAddTaskFormProps {
@@ -31,6 +35,9 @@ interface PlanAddTaskFormProps {
   initialStartTime?: string | null;
   initialEndTime?: string | null;
   initialDescription?: string | null;
+  lockedFocus?: { subjectName: string; topicName?: string };
+  initialTaskDate?: string;
+  analysisFocus?: AnalysisFocusRefs;
 }
 
 /** Default block length when the user turns off "all day" without picking an end. */
@@ -47,12 +54,16 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
       initialStartTime = null,
       initialEndTime = null,
       initialDescription = null,
+      lockedFocus,
+      initialTaskDate,
+      analysisFocus,
     }: PlanAddTaskFormProps,
     ref,
   ) {
     const t = useTranslations("plan");
     const taxonomy = useExamSubjectTaxonomy();
     const [title, setTitle] = useState(initialTitle);
+    const [taskDate, setTaskDate] = useState(initialTaskDate);
     const [subject, setSubject] = useState(initialSubject);
     const [allDay, setAllDay] = useState(!initialStartTime);
     const [startTime, setStartTime] = useState(initialStartTime ?? "09:00");
@@ -61,17 +72,39 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
     );
     const [description, setDescription] = useState(initialDescription ?? "");
     const [error, setError] = useState<string | null>(null);
+    const [focusChanged, setFocusChanged] = useState(false);
+    const [verifiedFocus, setVerifiedFocus] = useState<typeof lockedFocus>();
+    const examId = analysisFocus?.examId;
+    const subjectRef = analysisFocus?.subjectRef;
+    const topicRef = analysisFocus?.topicRef;
+    useEffect(() => {
+      if (!examId || !subjectRef) return;
+      let active = true;
+      loadAnalysisPlanFocus({ examId, subjectRef, topicRef }).then((focus) => {
+        if (active) setVerifiedFocus(focus);
+      }).catch(() => {
+        if (active) { setError(t("analysis_focus_unavailable")); setFocusChanged(true); }
+      });
+      return () => { active = false; };
+    }, [examId, subjectRef, topicRef, t]);
+    const displayFocus = analysisFocus ? verifiedFocus : lockedFocus;
 
     useImperativeHandle(ref, () => ({
       getValues: () => ({
+        ...(taskDate && { taskDate }),
         title,
-        subject,
+        subject: displayFocus?.subjectName ?? subject,
         startTime: allDay ? null : startTime,
         endTime: allDay || !endTime ? null : endTime,
         description: description.trim() ? description.trim() : null,
       }),
       validate: () => {
+        if (analysisFocus && (!verifiedFocus || focusChanged)) return false;
         if (!taxonomy.loaded) return false;
+        if (initialTaskDate && !validAnalysisTaskDate(taskDate, new Date().toISOString().slice(0, 10))) {
+          setError(t("analysis_date_required"));
+          return false;
+        }
         if (!title.trim()) {
           setError(t("task_required"));
           return false;
@@ -83,6 +116,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
         setError(null);
         return true;
       },
+      showSubmissionError: (message, changed) => { setError(message); setFocusChanged(changed); },
     }));
 
     if (!taxonomy.loaded) {
@@ -101,6 +135,10 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
     return (
       <div className="flex flex-col gap-3">
         <FormError message={error} />
+        {focusChanged ? <Link href={{ pathname: "/analysis", query: { tab: "progress" } }} className="min-h-11 text-sm font-semibold underline">{t("analysis_return")}</Link> : null}
+        {initialTaskDate ? (
+          <TextField type="date" label={t("analysis_task_date")} value={taskDate ?? ""} min={new Date().toISOString().slice(0, 10)} onChange={(event) => setTaskDate(event.target.value)} required />
+        ) : null}
         <TextField
           label={t("new_task")}
           value={title}
@@ -156,11 +194,30 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
           </div>
         ) : null}
 
-        <PlanSubjectPicker
-          value={subject}
-          onChange={setSubject}
-          taxonomy={taxonomy}
-        />
+        {analysisFocus || lockedFocus ? (
+          <div
+            className="rounded-[var(--radius-card)] border px-4 py-3"
+            style={{
+              borderColor: "var(--color-border)",
+              backgroundColor: "var(--color-surface-container)",
+            }}
+            aria-label={t("analysis_focus_locked")}
+          >
+            <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
+              {t("analysis_focus_locked")}
+            </p>
+            <p className="mt-1 text-sm font-bold" style={{ color: "var(--color-main)" }}>
+              {displayFocus?.subjectName ?? t("loading")}
+              {displayFocus?.topicName ? ` · ${displayFocus.topicName}` : ""}
+            </p>
+          </div>
+        ) : (
+          <PlanSubjectPicker
+            value={subject}
+            onChange={setSubject}
+            taxonomy={taxonomy}
+          />
+        )}
 
         <TextAreaField
           label={t("description")}

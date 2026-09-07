@@ -10,6 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { COIN_CELEBRATE_EVENT, type CoinCelebrateDetail } from "@/lib/economy";
+import { AnimatePresence } from "framer-motion";
 import { CoinCelebration } from "@/components/coin-celebration";
 
 interface CoinCelebrationContextValue {
@@ -99,14 +100,16 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
   return (
     <CoinCelebrationContext.Provider value={{ triggerCoinCelebration }}>
       {children}
-      {activeItem ? (
-        <CoinCelebration
-          key={activeItem.id}
-          amount={activeItem.amount}
-          label={activeItem.label}
-          onClose={handleClose}
-        />
-      ) : null}
+      <AnimatePresence>
+        {activeItem ? (
+          <CoinCelebration
+            key={activeItem.id}
+            amount={activeItem.amount}
+            label={activeItem.label}
+            onClose={handleClose}
+          />
+        ) : null}
+      </AnimatePresence>
     </CoinCelebrationContext.Provider>
   );
 }

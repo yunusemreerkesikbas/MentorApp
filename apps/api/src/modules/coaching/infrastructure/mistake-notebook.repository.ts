@@ -409,7 +409,10 @@ export class MistakeNotebookRepository {
     tx: DatabaseTx,
     userId: string,
     filters: {
+      examId?: string;
+      mockExamId?: string;
       subjectRef?: string;
+      topicRef?: string;
       errorType?: string;
       status?: string;
       page: number;
@@ -418,8 +421,17 @@ export class MistakeNotebookRepository {
   ): Promise<{ items: MistakeNotebookEntryRow[]; total: number }> {
     const where = and(
       eq(mistakeNotebookEntries.userId, userId),
+      ...(filters.examId
+        ? [eq(mistakeNotebookEntries.examId, filters.examId)]
+        : []),
+      ...(filters.mockExamId
+        ? [eq(mistakeNotebookEntries.mockExamId, filters.mockExamId)]
+        : []),
       ...(filters.subjectRef
         ? [eq(mistakeNotebookEntries.subjectRef, filters.subjectRef)]
+        : []),
+      ...(filters.topicRef
+        ? [eq(mistakeNotebookEntries.topicRef, filters.topicRef)]
         : []),
       ...(filters.errorType
         ? [eq(mistakeNotebookEntries.errorType, filters.errorType)]
@@ -442,6 +454,86 @@ export class MistakeNotebookRepository {
         .where(where),
     ]);
     return { items, total: totalRow[0]?.count ?? 0 };
+  }
+
+  /** Rolling notebook summary used by analysis; all numbers share the same 60-day scope. */
+  async analysisStats(
+    tx: DatabaseTx,
+    userId: string,
+    examId: string | undefined,
+    since: Date,
+    now: Date,
+  ): Promise<{
+    savedCount: number;
+    reviewedCount: number;
+    dueCount: number;
+    healedCount: number;
+  }> {
+    const [row] = await tx
+      .select({
+        savedCount: sql<number>`count(*)::int`,
+        reviewedCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.lastReviewedAt} is not null)::int`,
+        dueCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.nextReviewAt} is not null and ${mistakeNotebookEntries.nextReviewAt} <= ${now})::int`,
+        healedCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.status} = 'HEALED')::int`,
+      })
+      .from(mistakeNotebookEntries)
+      .where(
+        and(
+          eq(mistakeNotebookEntries.userId, userId),
+          examId ? eq(mistakeNotebookEntries.examId, examId) : undefined,
+          gte(mistakeNotebookEntries.createdAt, since),
+        ),
+      );
+    return {
+      savedCount: row?.savedCount ?? 0,
+      reviewedCount: row?.reviewedCount ?? 0,
+      dueCount: row?.dueCount ?? 0,
+      healedCount: row?.healedCount ?? 0,
+    };
+  }
+
+  /** Aggregate activity for the exact analysis focus; never selects notes or image keys. */
+  async focusActivity(
+    tx: DatabaseTx,
+    userId: string,
+    examId: string,
+    subjectRef: string,
+    topicRef: string | undefined,
+    planCreatedAt: Date,
+    now: Date,
+  ): Promise<{
+    matchingCount: number;
+    reviewedAfterPlanCount: number;
+    dueCount: number;
+    healedCount: number;
+  }> {
+    const where = and(
+      eq(mistakeNotebookEntries.userId, userId),
+      eq(mistakeNotebookEntries.examId, examId),
+      eq(mistakeNotebookEntries.subjectRef, subjectRef),
+      topicRef ? eq(mistakeNotebookEntries.topicRef, topicRef) : undefined,
+    );
+    const [row] = await tx
+      .select({
+        matchingCount: sql<number>`count(*)::int`,
+        reviewedAfterPlanCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.lastReviewedAt} >= ${planCreatedAt})::int`,
+        dueCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.nextReviewAt} is not null and ${mistakeNotebookEntries.nextReviewAt} <= ${now})::int`,
+        healedCount:
+          sql<number>`count(*) filter (where ${mistakeNotebookEntries.status} = 'HEALED')::int`,
+      })
+      .from(mistakeNotebookEntries)
+      .where(where);
+    return {
+      matchingCount: row?.matchingCount ?? 0,
+      reviewedAfterPlanCount: row?.reviewedAfterPlanCount ?? 0,
+      dueCount: row?.dueCount ?? 0,
+      healedCount: row?.healedCount ?? 0,
+    };
   }
 
   async countsFor(

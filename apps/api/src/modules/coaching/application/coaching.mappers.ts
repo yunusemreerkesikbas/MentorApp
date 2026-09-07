@@ -57,6 +57,29 @@ function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {
     };
   }
   if (
+    row.originType === "ANALYSIS" &&
+    row.originRefId &&
+    meta &&
+    "baselineMockExamId" in meta &&
+    "subjectRef" in meta &&
+    "source" in meta &&
+    "evidenceCount" in meta &&
+    typeof meta.baselineMockExamId === "string" &&
+    typeof meta.subjectRef === "string" &&
+    (meta.source === "PHOTO_SIGNAL" || meta.source === "LOWEST_AVERAGE") &&
+    typeof meta.evidenceCount === "number"
+  ) {
+    return {
+      type: "ANALYSIS",
+      examId: row.originRefId,
+      baselineMockExamId: meta.baselineMockExamId,
+      subjectRef: meta.subjectRef,
+      ...(typeof meta.topicRef === "string" && { topicRef: meta.topicRef }),
+      source: meta.source,
+      evidenceCount: meta.evidenceCount,
+    };
+  }
+  if (
     row.originType !== "COMMUNITY_COACH" ||
     !row.originRefId ||
     !meta ||

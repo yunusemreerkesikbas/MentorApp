@@ -123,7 +123,10 @@ export async function fetchNotebookEntries(
     page: String(query.page),
     pageSize: String(query.pageSize),
   });
+  if (query.examId) qs.set("examId", query.examId);
+  if (query.mockExamId) qs.set("mockExamId", query.mockExamId);
   if (query.subjectRef) qs.set("subjectRef", query.subjectRef);
+  if (query.topicRef) qs.set("topicRef", query.topicRef);
   if (query.errorType) qs.set("errorType", query.errorType);
   if (query.status) qs.set("status", query.status);
   return (await http<Paginated<NotebookEntryDto>>(

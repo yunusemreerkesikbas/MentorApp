@@ -131,7 +131,17 @@ export function OnboardingStepLayout({
           </div>
         </section>
 
-        <section className="mt-6 flex flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-xl lg:flex-none">{children}</section>
+        <section
+          className="mt-6 flex flex-1 flex-col lg:mx-auto lg:w-full lg:max-w-xl lg:flex-none"
+          data-onboarding-content
+        >
+          {children ? (
+            <TextsReveal
+              key={title}
+              lines={[<div key="content">{children}</div>]}
+            />
+          ) : null}
+        </section>
         {primaryLabel && (onPrimary || primaryFormId) ? (
           <div className="sticky bottom-0 mx-auto mt-6 w-full max-w-xl bg-[linear-gradient(to_bottom,transparent,var(--color-bg)_25%)] pb-[max(1rem,env(safe-area-inset-bottom))] pt-5 lg:static lg:bg-none lg:pb-0 lg:pt-0">
             <Button type={primaryFormId ? "submit" : "button"} form={primaryFormId} fullWidth busy={primaryBusy} disabled={primaryDisabled} onClick={primaryFormId ? undefined : onPrimary}>{primaryLabel}</Button>

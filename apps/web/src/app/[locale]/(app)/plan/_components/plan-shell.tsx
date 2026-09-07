@@ -21,6 +21,7 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
   createPlanTask,
+  createAnalysisPlanTask,
   deletePlanTask,
   listPlanTasksForDate,
   listPlanTasksForMonthGrid,
@@ -134,8 +135,14 @@ export function PlanShell() {
     () =>
       parseAnalysisPlanPrefill({
         add: searchParams.get("add"),
+        source: searchParams.get("source"),
         subject: searchParams.get("subject"),
+        topic: searchParams.get("topic"),
         title: searchParams.get("title"),
+        examId: searchParams.get("examId"),
+        baselineMockExamId: searchParams.get("baselineMockExamId"),
+        subjectRef: searchParams.get("subjectRef"),
+        topicRef: searchParams.get("topicRef"),
       }),
     [searchParams],
   );
@@ -402,11 +409,11 @@ export function PlanShell() {
 
   const appendTask = useCallback((created: PlanTaskDto) => {
     if (created.taskDate === date) {
-      setTasks((prev) => [...prev, created]);
+      setTasks((prev) => [...prev.filter((task) => task.id !== created.id), created]);
     }
     const add = (prev: Record<string, PlanTaskDto[]>) => {
       const day = created.taskDate;
-      return { ...prev, [day]: [...(prev[day] ?? []), created] };
+      return { ...prev, [day]: [...(prev[day] ?? []).filter((task) => task.id !== created.id), created] };
     };
     setWeekTasks(add);
     setMonthTasks(add);
@@ -490,6 +497,7 @@ export function PlanShell() {
             ref={addFormRef}
             initialTitle={task.title}
             initialSubject={task.subject ?? ""}
+            lockedFocus={task.origin?.type === "ANALYSIS" ? { subjectName: task.subject ?? "", topicName: task.topic ?? undefined } : undefined}
             initialStartTime={task.startTime}
             initialEndTime={task.endTime}
             initialDescription={task.description}
@@ -581,11 +589,21 @@ export function PlanShell() {
           initialTitle={taskPrefill?.title}
           initialSubject={taskPrefill?.subject}
           initialStartTime={taskPrefill?.startTime ?? null}
+          initialTaskDate={taskPrefill?.source === "analysis" ? targetDate : undefined}
+          analysisFocus={taskPrefill?.source === "analysis" && taskPrefill.examId && taskPrefill.subjectRef ? { examId: taskPrefill.examId, subjectRef: taskPrefill.subjectRef, topicRef: taskPrefill.topicRef } : undefined}
+          lockedFocus={
+            taskPrefill?.source === "analysis" && taskPrefill.subject
+              ? {
+                  subjectName: taskPrefill.subject,
+                  ...(taskPrefill.topic && { topicName: taskPrefill.topic }),
+                }
+              : undefined
+          }
         />
       ),
       onApply: async () => {
         if (!addFormRef.current?.validate()) throw new Error("validation");
-        const { title, subject, startTime, endTime, description } =
+        const { title, subject, startTime, endTime, description, taskDate: editedDate } =
           addFormRef.current.getValues();
         const input = {
           title: title.trim(),
@@ -594,13 +612,42 @@ export function PlanShell() {
           ...(startTime ? { startTime, endTime } : {}),
           ...(description ? { description } : {}),
         };
-        const created = communityAttribution
+        let created: PlanTaskDto;
+        try {
+        created = taskPrefill?.source === "analysis" &&
+          taskPrefill.examId &&
+          taskPrefill.baselineMockExamId &&
+          taskPrefill.subjectRef
+          ? await createAnalysisPlanTask({
+              examId: taskPrefill.examId,
+              baselineMockExamId: taskPrefill.baselineMockExamId,
+              expectedSubjectRef: taskPrefill.subjectRef,
+              ...(taskPrefill.topicRef
+                ? { expectedTopicRef: taskPrefill.topicRef }
+                : {}),
+              title: title.trim(),
+              taskDate: editedDate || targetDate,
+              ...(startTime ? { startTime, endTime } : {}),
+              ...(description ? { description } : {}),
+            })
+          : communityAttribution
           ? await createCommunityCoachPlanTask(
               communityAttribution.conversationId,
               input,
             )
           : await createPlanTask(input);
+        } catch (failure) {
+          addFormRef.current?.showSubmissionError(
+            failure instanceof Error ? failure.message : t("analysis_save_failed"),
+            failure instanceof ApiClientError && failure.body.code === "ANALYSIS_FOCUS_CHANGED",
+          );
+          throw failure;
+        }
         appendTask(created);
+        if (taskPrefill?.source === "analysis" && created.taskDate !== date) {
+          setDate(created.taskDate);
+          setWeekAnchor(weekStart(created.taskDate));
+        }
         if (communityAttribution) {
           trackCoachEvent("coach_community_task_added", {
             intent: communityAttribution.intent,

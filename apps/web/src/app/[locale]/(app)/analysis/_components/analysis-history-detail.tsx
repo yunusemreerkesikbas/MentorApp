@@ -253,6 +253,19 @@ export function AnalysisHistoryDetail({
 
           {!deleting ? (
             <Link
+              href={{
+                pathname: "/notebook",
+                query: { panel: "index", examId: detail.examId, mockExamId: detail.id },
+              }}
+              className="inline-flex min-h-10 w-full items-center justify-center rounded-[var(--radius-card)] border px-3 py-2 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              style={{ color: "var(--color-main)", borderColor: "var(--color-border)" }}
+            >
+              {t("open_mistakes")}
+            </Link>
+          ) : null}
+
+          {!deleting ? (
+            <Link
               href={buildCoachMockExamHref(
                 t("coach_seed", {
                   date: formatTrendDate(detail.takenAt, locale),

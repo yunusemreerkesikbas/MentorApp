@@ -131,6 +131,27 @@ export const createPlanTaskSchema = planTaskFieldsSchema
   .superRefine(refinePlanTaskTaxonomy);
 export type CreatePlanTaskInput = z.infer<typeof createPlanTaskSchema>;
 
+/**
+ * POST /v1/coaching/analysis/plan-task
+ *
+ * Subject/topic labels are deliberately absent: the server resolves them from the current,
+ * verified analysis focus. Strict parsing prevents a stale or tampered client from smuggling
+ * editable taxonomy labels into an analysis-origin task.
+ */
+export const createAnalysisPlanTaskSchema = planTaskFieldsSchema
+  .omit({ subject: true, topic: true })
+  .extend({
+    examId: z.string().uuid(),
+    baselineMockExamId: z.string().uuid(),
+    expectedSubjectRef: z.string().trim().min(1).max(120),
+    expectedTopicRef: z.string().trim().min(1).max(120).nullish(),
+  })
+  .strict()
+  .superRefine(refinePlanTaskTimes);
+export type CreateAnalysisPlanTaskInput = z.infer<
+  typeof createAnalysisPlanTaskSchema
+>;
+
 /** POST /v1/plan-tasks/bulk — user-confirmed batch add (e.g. accepted coach draft). */
 export const bulkCreatePlanTasksSchema = z.object({
   tasks: createPlanTaskSchema.array().min(1).max(21),
@@ -967,7 +988,10 @@ export type UpdateNotebookEntryInput = z.infer<
  * for; text search over notes would need a trigram index of its own and is deliberately left out.
  */
 export const listNotebookEntriesQuerySchema = paginationQuerySchema.extend({
+  examId: z.string().uuid().optional(),
+  mockExamId: z.string().uuid().optional(),
   subjectRef: z.string().trim().min(1).max(120).optional(),
+  topicRef: z.string().trim().min(1).max(120).optional(),
   errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
   status: z.enum(NOTEBOOK_ENTRY_STATUSES).optional(),
 });

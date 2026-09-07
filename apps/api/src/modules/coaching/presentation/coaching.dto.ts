@@ -1,5 +1,6 @@
 import {
   analysisQuerySchema,
+  createAnalysisPlanTaskSchema,
   applyPlanAdaptationSchema,
   bulkCreatePlanTasksSchema,
   createMoodCheckinSchema,
@@ -73,6 +74,9 @@ export class ListMoodCheckinsQueryDto extends createZodDto(
   listMoodCheckinsQuerySchema,
 ) {}
 export class AnalysisQueryDto extends createZodDto(analysisQuerySchema) {}
+export class CreateAnalysisPlanTaskDto extends createZodDto(
+  createAnalysisPlanTaskSchema,
+) {}
 export class WeeklyReviewQueryDto extends createZodDto(
   weeklyReviewQuerySchema,
 ) {}

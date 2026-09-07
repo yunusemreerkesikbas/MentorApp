@@ -222,6 +222,18 @@ function trackEvent(event: string, params: object): void {
   window.gtag?.("event", event, params);
 }
 
+export function trackAnalysisAction(params: {
+  action: "plan" | "notebook" | "coach";
+  focusSource: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
+  cycleState: "signal" | "planned" | "practiced" | "measured" | "closed";
+}): void {
+  trackEvent("analysis_action", {
+    action: params.action,
+    focus_source: params.focusSource,
+    cycle_state: params.cycleState,
+  });
+}
+
 export function trackArticleEvent(
   event: ArticleAnalyticsEvent,
   params: ArticleAnalyticsParams,

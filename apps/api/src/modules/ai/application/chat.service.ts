@@ -26,6 +26,8 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ContentService } from "../../content/application/content.service";
 import { ExamEventType } from "../../content/domain/content.constants";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
+import { AnalysisService } from "../../coaching/application/analysis.service";
+import { analysisCoachPrompt } from "../domain/analysis-coach-prompt";
 import { CoachEvidenceService } from "../../coaching/application/coach-evidence.service";
 import type { CoachEvidenceSnapshot } from "../../coaching/domain/coach-evidence";
 import { EconomyService } from "../../economy/application/economy.service";
@@ -125,6 +127,7 @@ export class ChatService {
     @Optional() private readonly profiles?: CoachProfileService,
     @Optional() private readonly turnPlanner?: CoachTurnPlanner,
     @Optional() private readonly featureGate?: PremiumFeatureGateService,
+    @Optional() private readonly analysis?: AnalysisService,
   ) {}
 
   /** Keeps legacy repository test doubles/rolling deployments readable during the additive change. */
@@ -753,7 +756,10 @@ export class ChatService {
     }
 
     const locale = promptLocale(I18nContext.current()?.lang);
-    const system = mentorV2
+    const analysisContext = mockExam && this.analysis
+      ? await this.analysis.getCoachContext(userId, mockExam.examId)
+      : undefined;
+    let system = mentorV2
       ? buildMentorV2Prompt({
           locale,
           turn: mentorV2.turn,
@@ -761,6 +767,7 @@ export class ChatService {
           memoryEnabled: mentorV2.profile.memoryConsent === "GRANTED",
           sources: retrieved,
           mockExam,
+          analysisContext,
           community,
         })
       : buildSystemPrompt(
@@ -770,6 +777,8 @@ export class ChatService {
           locale,
           community,
         );
+
+    if (!mentorV2 && analysisContext) system += "\n" + analysisCoachPrompt(analysisContext);
 
     return {
       llmInput: { system, user: message, history },
@@ -885,7 +894,8 @@ export class ChatService {
           personalized.personalization.mode,
           locale,
         );
-    const { task, followUps, memoryCandidate } = markers;
+    const { followUps, memoryCandidate } = markers;
+    const task = mockExam ? undefined : markers.task;
     const action = await this.buildAction(mentorV2 ?? null, task ?? undefined);
     const persisted = await this.recordSuccess(
       userId,
@@ -1042,7 +1052,8 @@ export class ChatService {
             personalized.personalization.mode,
             locale,
           );
-      const { task, followUps, memoryCandidate } = markers;
+      const { followUps, memoryCandidate } = markers;
+      const task = mockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
       if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
         yield { delta: reply };
@@ -1288,7 +1299,8 @@ export class ChatService {
             personalized.personalization.mode,
             locale,
           );
-      const { task, followUps } = markers;
+      const { followUps } = markers;
+      const task = regeneratedMockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
       if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
         yield { delta: reply };

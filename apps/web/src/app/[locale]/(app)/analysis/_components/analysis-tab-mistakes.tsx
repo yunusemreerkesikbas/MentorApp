@@ -8,9 +8,10 @@ import { EmptyState } from "@/components/empty-state";
 
 interface AnalysisTabMistakesProps {
   analysis: CoachingAnalysisDto | null;
+  examId: string;
 }
 
-export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
+export function AnalysisTabMistakes({ analysis, examId }: AnalysisTabMistakesProps) {
   const t = useTranslations("analysis");
   const notebookT = useTranslations("notebook");
   const signals = analysis?.photoSubjectSignals ?? [];
@@ -32,22 +33,29 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
       });
     return groups;
   }, []);
-  const maxTopicCount = topicSignals.reduce(
-    (maximum, signal) => Math.max(maximum, signal.count),
-    0,
-  );
-  const maxCount = signals.reduce(
-    (maximum, signal) => Math.max(maximum, signal.count),
-    0,
-  );
   const errorSignals = analysis?.notebookErrorSignals ?? [];
-  const maxErrorCount = errorSignals.reduce(
-    (maximum, signal) => Math.max(maximum, signal.count),
-    0,
-  );
 
   return (
     <div className="flex flex-col gap-6">
+      {analysis ? (
+        <Card>
+          <SectionHeading subtitle={t("notebook_stats_subtitle", { days: analysis.notebookStats.windowDays })}>
+            {t("notebook_stats_title")}
+          </SectionHeading>
+          <dl className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {(["savedCount", "reviewedCount", "dueCount", "healedCount"] as const).map((key) => (
+              <div key={key} className="rounded-[var(--radius-card)] border p-3" style={{ borderColor: "var(--color-border)" }}>
+                <dt className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                  {t(`notebook_stats.${key}`)}
+                </dt>
+                <dd className="mt-1 text-2xl font-bold tabular-nums" style={{ color: "var(--color-main)" }}>
+                  {analysis.notebookStats[key]}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </Card>
+      ) : null}
       {/*
         The notebook replaced the photo-categorize card here. That card told the student the
         subject of a mistake they had just made — something they already knew — and burned a
@@ -67,6 +75,10 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
           <ul className="flex flex-col gap-2">
             {errorSignals.map((signal) => (
               <li key={signal.errorType} className="flex flex-col gap-1">
+                <Link
+                  href={{ pathname: "/notebook", query: { panel: "index", examId, errorType: signal.errorType } }}
+                  className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                >
                 <div className="flex items-center justify-between gap-2">
                   <span className="text-sm" style={{ color: "var(--color-main)" }}>
                     {notebookT(`error_type.${signal.errorType}`)}
@@ -75,16 +87,13 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
                     className="text-xs font-semibold tabular-nums"
                     style={{ color: "var(--color-secondary)" }}
                   >
-                    {signal.count}
+                    {t("signal_share", { count: signal.count, percent: signal.sharePercent })}
                   </span>
                 </div>
                 <ProgressBar
-                  value={
-                    maxErrorCount > 0
-                      ? Math.round((signal.count / maxErrorCount) * 100)
-                      : 0
-                  }
+                  value={signal.sharePercent}
                 />
+                </Link>
               </li>
             ))}
           </ul>
@@ -142,6 +151,10 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
                 <ul className="flex flex-col gap-3">
                   {group.topics.map((signal) => (
                     <li key={signal.topicRef} className="flex flex-col gap-1">
+                      <Link
+                        href={{ pathname: "/notebook", query: { panel: "index", examId, subjectRef: signal.subjectRef, topicRef: signal.topicRef } }}
+                        className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                      >
                       <div className="flex items-center justify-between gap-3 text-sm">
                         <span style={{ color: "var(--color-body)" }}>
                           {signal.topicName}
@@ -150,16 +163,13 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
                           className="tabular-nums"
                           style={{ color: "var(--color-secondary)" }}
                         >
-                          {t("photo_count", { count: signal.count })}
+                          {t("signal_share", { count: signal.count, percent: signal.sharePercent })}
                         </span>
                       </div>
                       <ProgressBar
-                        value={
-                          maxTopicCount > 0
-                            ? Math.round((signal.count / maxTopicCount) * 100)
-                            : 0
-                        }
+                        value={signal.sharePercent}
                       />
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -167,7 +177,8 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
             ))}
           </div>
         </Card>
-      ) : signals.length > 0 ? (
+      ) : null}
+      {signals.length > 0 ? (
         <Card>
           <SectionHeading subtitle={t("photo_signals_subtitle")}>
             {t("photo_signals_title")}
@@ -181,6 +192,10 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
           <ul className="mt-4 flex flex-col gap-3">
             {signals.map((signal) => (
               <li key={signal.subjectRef} className="flex flex-col gap-1">
+                <Link
+                  href={{ pathname: "/notebook", query: { panel: "index", examId, subjectRef: signal.subjectRef } }}
+                  className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                >
                 <div className="flex items-center justify-between gap-3 text-sm">
                   <span style={{ color: "var(--color-body)" }}>
                     {signal.subjectName}
@@ -189,16 +204,13 @@ export function AnalysisTabMistakes({ analysis }: AnalysisTabMistakesProps) {
                     className="tabular-nums"
                     style={{ color: "var(--color-secondary)" }}
                   >
-                    {t("photo_count", { count: signal.count })}
+                    {t("signal_share", { count: signal.count, percent: signal.sharePercent })}
                   </span>
                 </div>
                 <ProgressBar
-                  value={
-                    maxCount > 0
-                      ? Math.round((signal.count / maxCount) * 100)
-                      : 0
-                  }
+                  value={signal.sharePercent}
                 />
+                </Link>
               </li>
             ))}
           </ul>

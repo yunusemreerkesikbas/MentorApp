@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, desc, eq, inArray, ne, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, ne, sql } from "drizzle-orm";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { mockExamSubjects, mockExams } from "../../../database/schema";
 
@@ -282,5 +282,36 @@ export class MockExamRepository {
       avgNet: r.avgNet,
       attemptCount: r.attemptCount,
     }));
+  }
+
+  async findFirstComparableSubjectAttempt(
+    db: Database | DatabaseTx,
+    userId: string,
+    examId: string,
+    subjectRef: string,
+    afterCreatedAt: Date,
+    afterTakenAt: Date,
+  ): Promise<{ exam: MockExamRow; net: string } | undefined> {
+    const rows = await db
+      .select({ exam: mockExams, net: mockExamSubjects.net })
+      .from(mockExams)
+      .innerJoin(
+        mockExamSubjects,
+        and(
+          eq(mockExamSubjects.mockExamId, mockExams.id),
+          eq(mockExamSubjects.subjectRef, subjectRef),
+        ),
+      )
+      .where(
+        and(
+          eq(mockExams.userId, userId),
+          eq(mockExams.examId, examId),
+          gt(mockExams.createdAt, afterCreatedAt),
+          sql`(${mockExams.takenAt} at time zone 'UTC')::date > ${afterTakenAt.toISOString().slice(0, 10)}::date`,
+        ),
+      )
+      .orderBy(asc(mockExams.takenAt), asc(mockExams.createdAt), asc(mockExams.id))
+      .limit(1);
+    return rows[0];
   }
 }

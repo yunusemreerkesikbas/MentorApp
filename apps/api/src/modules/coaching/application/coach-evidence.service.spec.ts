@@ -116,6 +116,7 @@ function makeService(
     moods as never,
     streak as never,
     mockExams as never,
+    mockExams as never,
     vision as never,
     content as never,
     i18n as never,

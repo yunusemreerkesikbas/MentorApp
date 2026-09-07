@@ -145,6 +145,26 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-07 · Analysis V1 verification.** The dedicated database flow verifies owned baseline access, cross-user notebook isolation, pending-task reuse, notebook practice, neutral follow-up difference and stale-focus conflict. Mobile and desktop browser checks cover empty/first attempts, focus links and keyboard-operated evidence disclosure. TR/EN analysis/plan/notebook keys match. `analysis_action` uses the existing consent gate and explicitly projects action, focus source and cycle state only. Related tests: `analysis-improvement.e2e-spec.ts`, `analysis-cycle-reader.spec.ts`, `analysis-analytics.spec.ts`, `e2e/analysis.spec.ts`. No workspace-wide CI or production migration was run.
+
+- **2026-09-07 · Analysis improvement loop V1.** Extracted analysis reads into `AnalysisService`; added 60-day notebook totals, denominator-based signal percentages, and filtered notebook links. Analysis-origin tasks retain their baseline and fixed taxonomy focus; task completion or a subsequent notebook review marks practice, and the first newer comparable exam supplies a neutral net difference. Usage: Analysis → Progress → Add to my plan; Mistakes opens the filtered index. Apply migration `0107_analysis_origin.sql` before using the new endpoint. Deleted baselines preserve tasks but disable comparison. Related: coaching analysis services/repositories, shared coaching contracts, web analysis/plan/notebook components. Targeted verification only; database and browser acceptance remain separate checks.
+
+- **Puhu Maskotlu Dinamik Konuşma Overlay'i & Mood Reflection Redesign (2026-09-07)** — Dashboard'daki
+  günlük mood check-in sonrasında koç notunun panel içinde sabit kart olarak gösterilmesi (`MoodCoachNote`)
+  kaldırıldı. Yerine tam ekran blurlaştırma (`backdrop-blur-md bg-black/65`), merkezde `onboarding-step-layout`'taki
+  frame animasyonlarıyla konuşan Puhu maskotu (`rest.png`, `talk-closed.png`, `look-down.png`, `blink.png`) ve
+  sağ üstte kuyruğu maskota bakan konuşma balonu ile sunulan dinamik `PuhuSpeechModal` bileşeni eklendi.
+  AI koç notu beklenirken (`/v1/coach/mood-reflection`) `ShimmerText` ile bekleme animasyonu, yanıt geldiğinde
+  ise `StreamingText` (eklenen `onComplete` callback'i ile) kelime kelime akış ve Puhu ağız/kafa hareketleri
+  oynatılır. Metin akışı bittiğinde Puhu göz kırpar ve onay butonu belirir. Free veya servis hatası durumunda
+  backend kural bazlı mesajı (`MoodCheckinDto.message`) aynı akışla iletilir.
+  **Kullanım:** `<PuhuSpeechModal isOpen={isOpen} onClose={handleClose} isLoading={reflecting} text={reflection || message} badgeText="Koçun" actionLabel="Anladım" />`
+  **Gotchas:** Portal SSR uyumluluğu için `document` kontrolü içerir. `prefers-reduced-motion` aktifken
+  tüm animasyonlar statik ve anında çözülür.
+  **İlgili:** `apps/web/src/components/puhu-speech-modal.tsx`, `packages/ui/src/components/transitions/streaming-text.tsx`,
+  `apps/web/src/app/[locale]/(app)/dashboard/_components/mood-checkin.tsx`, `apps/web/src/app/[locale]/(app)/dashboard/_components/panel-shell.tsx`,
+  `apps/web/messages/tr.json`, `apps/web/messages/en.json`.
+
 - **Doğrulanan yükleme yetkileri ve özel defter/pano medyası (2026-09-05)** — İstemci artık R2'ye
   doğrudan presigned PUT almıyor. API kısa ömürlü, tek kullanımlık yetkiyi kullanıcıya, aktif `sid`'ye,
   özelliğe, sunucunun ürettiği anahtara ve boyut/MIME sınırına bağlıyor; baytları sayıyor ve gerçek

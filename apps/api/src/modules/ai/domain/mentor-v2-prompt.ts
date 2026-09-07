@@ -5,6 +5,8 @@ import {
   type MockExamDto,
 } from "@mentor/types";
 import type { LlmHistoryMessage } from "./llm.port";
+import type { AnalysisCoachContext } from "../../coaching/domain/analysis-coach-context";
+import { analysisCoachPrompt } from "./analysis-coach-prompt";
 import type { PromptLocale } from "./prompt-locale";
 import type { CoachTurnPlan } from "./coach-turn-planner";
 import type { CoachSource, CommunityCoachPromptContext } from "./ai.constants";
@@ -45,6 +47,7 @@ export interface MentorV2PromptInput {
   memoryEnabled: boolean;
   sources?: CoachSource[];
   mockExam?: MockExamDto;
+  analysisContext?: AnalysisCoachContext;
   community?: CommunityCoachPromptContext;
 }
 
@@ -165,5 +168,6 @@ export function buildMentorV2Prompt(input: MentorV2PromptInput): string {
     'If useful, append <<FOLLOWUP["short user-voice question"]>> with at most 3 items.',
     "Only when ALLOWED_ACTION=CREATE_PLAN_TASK and one concrete task was proposed, append one <<TASK{...}>> marker.",
   );
+  if (input.analysisContext) lines.push(analysisCoachPrompt(input.analysisContext));
   return lines.join("\n");
 }

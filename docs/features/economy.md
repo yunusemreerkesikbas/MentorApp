@@ -125,6 +125,8 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   günlük/haftalık organic cap içinde `coin_grant_reservations` kapasitesi ayırabilir; settle tek
   idempotent ledger grant üretir, close/expiry kapasiteyi bırakır. Ledger append-only kalır.
 
+- **Coin kutlaması ve toast bildirimi sadeleştirmesi (2026-09-06)** — Coin kazanılan tüm akışlarda (görevler, mood check-in sonrası görev tamamlanması, rewarded ad, davet bonusu) `CoinCelebration` modal tasarımı kesintisiz, hızlı (320ms akış) ve 450ms tıklama korumalı olarak gösterilecek şekilde optimize edildi. Coin kazanıldığında çıkan mükerrer toast bildirimleri kaldırıldı (yalnızca coin içermeyen salt XP görevlerinde bilgilendirici toast gösterilir). Mood check-in kaydında ödül yenileme çağrısı AI yansıma üretimini beklemeden anında tetiklenir hale getirildi. İlgili: `apps/web/src/components/coin-celebration.tsx`, `apps/web/src/components/coin-celebration-visual.tsx`, `apps/web/src/lib/coin-celebration-context.tsx`, `apps/web/src/app/[locale]/(app)/dashboard/_components/panel-shell.tsx`, `apps/web/src/app/[locale]/(app)/dashboard/_components/mood-checkin.tsx`, `apps/web/src/app/[locale]/(app)/study-session/_components/session-done-state.tsx`.
+
 - **Yoldaşlık sesi Dalga 8 — quest katalog i18n (2026-08-29)** — `QUEST_CATALOG` öğrenci başlıkları (`title` / `badge` / `ledgerTitle`) `economy.json` `quests.*` companion kopyasına çekildi; id ve ödül mekaniği durdu. `{target}` kartta çözülür, ledger satırında strip; kilometre `{days}`/`{count}` id’den gelir. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: admin Swal ve `quests_subtitle` bu dalgada değil. İlgili: `quest.catalog.ts`, `quest-copy.ts`, `quest.service.ts`, `ledger-entry-view.ts`, `locales/{tr,en}/economy.json`.
 
 - **Yoldaşlık sesi Dalga 7 — ledger i18n (2026-08-29)** — `toLedgerEntryView` sabit TR cümleleri `economy.json` companion hak diline çekildi (`ödül` → `hak`, `Accept-Language`). Quest açıklaması hâlâ katalog TR. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `QUEST_CATALOG` başlıkları bu dalgada değil. İlgili: `ledger-entry-view.ts`, `locales/{tr,en}/economy.json`.
@@ -409,9 +411,21 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
   narration/LLM failure after purchase retries free (cache in `weekly_review_cache`). Eligibility
   (review READY) is checked BEFORE spending, so an ungeneratable report can't be bought.
 
+## Geliştirmeler (timeline)
+
+### 2026-09-06 — CoinCelebration tam entegrasyon & görevler tamamlanma ekranı
+
+- **What:** `CoinCelebration` görseli (`CoinCelebrationVisual` + `CoinCelebrationCard`) modülerleştirilerek tüm coin kazanılan akışlara ve `economy-quests-card.tsx` tamamlanma ekranına bağlandı. Görevler kartında tüm ritüel bittiğinde sönük liste yerine 3D altın coin zafer kartı sunuluyor. Davet kodu kullanımında (`EconomyInviteCard`), e-posta doğrulamasında (`verify-email`), ilk abonelikte (`checkout-result-content`) ve onboarding sonrasında dashboard'a varışta (`panel-shell`) coin kutlaması tetikleniyor.
+- **Usage:**
+  - `notifyCoinCelebration(amount, label?)` ile tam ekran overlay kutlaması.
+  - `<CoinCelebrationCard />` ile bileşen içi yerleşik başarı görünümü.
+- **Gotchas:** `EconomyQuestsCard` artık `ECONOMY_CHANGED_EVENT` dinleyerek dışarıdaki değişikliklerde de güncel kalır.
+- **Related:** `coin-celebration.tsx`, `coin-celebration-card.tsx`, `coin-celebration-visual.tsx`, `quest-section.tsx`, `economy-quests-card.tsx`, `economy-invite-card.tsx`.
+
 ## Related
 
 - Seam: [ai.md](./ai.md) (coin spend), [forum.md](./forum.md) (XP on accepted answer),
   [payments.md](./payments.md) (subscription event), [admin.md](./admin.md) (config/economy UI)
 - Smoke: [core/setup.md](../core/setup.md) § Economy smoke test (pre-flip, 10 adım)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W6 breakdown)
+

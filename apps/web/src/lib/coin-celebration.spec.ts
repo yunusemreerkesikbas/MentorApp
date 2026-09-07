@@ -44,4 +44,24 @@ describe("notifyCoinCelebration", () => {
 
     mockWindow.removeEventListener(COIN_CELEBRATE_EVENT, listener);
   });
+
+  it("supports multiple distinct coin award events with correct amounts and reasons", () => {
+    const events: CoinCelebrateDetail[] = [];
+    const listener = (e: Event) => {
+      events.push((e as CustomEvent<CoinCelebrateDetail>).detail);
+    };
+    mockWindow.addEventListener(COIN_CELEBRATE_EVENT, listener);
+
+    notifyCoinCelebration(10, "Davet Kodu Bonusu");
+    notifyCoinCelebration(20, "İlk Abonelik Bonusu");
+    notifyCoinCelebration(5, "Profil Kurulumu");
+
+    expect(events).toEqual([
+      { amount: 10, label: "Davet Kodu Bonusu" },
+      { amount: 20, label: "İlk Abonelik Bonusu" },
+      { amount: 5, label: "Profil Kurulumu" },
+    ]);
+
+    mockWindow.removeEventListener(COIN_CELEBRATE_EVENT, listener);
+  });
 });

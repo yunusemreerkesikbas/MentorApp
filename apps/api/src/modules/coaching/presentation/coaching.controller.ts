@@ -12,10 +12,12 @@ import type {
   PreferenceSimulationAccessDto,
   PreferenceSimulationDto,
   PreferenceSimulationRefreshResultDto,
+  PlanTaskDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MoodService } from "../application/mood.service";
-import { MockExamService } from "../application/mock-exam.service";
+import { AnalysisService } from "../application/analysis.service";
+import { AnalysisPlanTaskService } from "../application/analysis-plan-task.service";
 import { TodayService } from "../application/today.service";
 import { VisionService } from "../application/vision.service";
 import { VisionBoardImageService } from "../application/vision-board-image.service";
@@ -24,6 +26,7 @@ import { WeeklyReviewCompletionService } from "../application/weekly-review-comp
 import { PreferenceSimulationService } from "../application/preference-simulation.service";
 import {
   AnalysisQueryDto,
+  CreateAnalysisPlanTaskDto,
   CreateMoodCheckinDto,
   ListMoodCheckinsQueryDto,
   UpsertVisionDto,
@@ -43,7 +46,8 @@ export class CoachingController {
   constructor(
     private readonly today: TodayService,
     private readonly mood: MoodService,
-    private readonly mockExams: MockExamService,
+    private readonly analysis: AnalysisService,
+    private readonly analysisPlanTasks: AnalysisPlanTaskService,
     private readonly vision: VisionService,
     private readonly visionBoardImages: VisionBoardImageService,
     private readonly weeklyReview: WeeklyReviewService,
@@ -64,7 +68,16 @@ export class CoachingController {
     @CurrentUser() user: RequestUser,
     @Query() query: AnalysisQueryDto,
   ): Promise<CoachingAnalysisDto> {
-    return this.mockExams.getAnalysis(user.id, query.examId);
+    return this.analysis.getAnalysis(user.id, query.examId);
+  }
+
+  /** User-confirmed bridge from the current deterministic focus to the daily plan. */
+  @Post("analysis/plan-task")
+  createAnalysisPlanTask(
+    @CurrentUser() user: RequestUser,
+    @Body() dto: CreateAnalysisPlanTaskDto,
+  ): Promise<PlanTaskDto> {
+    return this.analysisPlanTasks.create(user.id, dto);
   }
 
   /** Previous completed week, scoped to the active exam. */

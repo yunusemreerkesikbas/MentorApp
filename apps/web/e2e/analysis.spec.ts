@@ -54,10 +54,10 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   // about it.
   await page.getByRole("tab", { name: "Gelişim" }).click();
   await expect(
-    page.getByRole("heading", { name: "Henüz deneme yok" }),
+    page.getByRole("heading", { name: "Deneme henüz yok" }),
   ).toBeVisible();
   await expect(
-    page.getByText("İlk deneme sonucunu girdikten sonra trend burada görünecek."),
+    page.getByText("İlk netini girince trend burada uyanır."),
   ).toBeVisible();
   expect(api.weeklyCalls).toBe(0);
   expect(api.photoAccessCalls).toBe(0);
@@ -83,7 +83,7 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   // there is a focus to show, and simply absent when there is not — no expand/collapse state
   // left to assert on either side.
   await expect(
-    firstPage.getByRole("heading", { name: "Çalışma odağın" }),
+    firstPage.getByRole("heading", { name: "İyileşme döngüsü" }),
   ).toBeVisible();
   expect(firstApi.unexpected).toEqual([]);
 
@@ -93,7 +93,7 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   });
   await noFocusPage.goto("/analiz?tab=progress");
   await expect(
-    noFocusPage.getByRole("heading", { name: "Çalışma odağın" }),
+    noFocusPage.getByRole("heading", { name: "İyileşme döngüsü" }),
   ).toHaveCount(0);
   expect(noFocusApi.unexpected).toEqual([]);
 });
@@ -113,10 +113,10 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
 
   const planLinks = page.getByRole("link", { name: "Planıma ekle" });
   const plan = planLinks.first();
-  const coach = page.getByRole("link", { name: "Koçla konuş" });
+  const coach = page.getByRole("link", { name: "AI koçla değerlendir" });
   await expect(plan).toHaveAttribute(
     "href",
-    /\/plan\?add=1&subject=Matematik&title=Problemler\+konusunu\+tekrar\+et/,
+    /\/plan\?add=1&source=analysis&examId=/,
   );
   await expect(coach).toHaveAttribute(
     "href",
@@ -141,7 +141,10 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
   // The evidence trend used to sit behind a keyboard-openable `<details>`; the focus card is now
   // a flat, always-expanded card (same redesign that dropped the "Haftanın Hikâyesi hazır" teaser
   // above), so its recent-trend block is already on screen with nothing left to open.
-  await expect(page.getByText("Son 4 deneme")).toBeVisible();
+  const evidence = page.locator("summary").filter({ hasText: "Kanıtlar ve geçmiş" });
+  await evidence.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByRole("heading", { name: "Net trendi" })).toBeVisible();
 
   await expectNoHorizontalOverflow(page);
   for (const target of [
@@ -166,7 +169,7 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   });
   await page.goto("/analiz?tab=progress");
   await expect(
-    page.getByRole("heading", { name: "Çalışma odağın" }),
+    page.getByRole("heading", { name: "İyileşme döngüsü" }),
   ).toBeVisible();
 
   await waitForRscRequestsToSettle(page);

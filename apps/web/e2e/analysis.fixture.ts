@@ -49,6 +49,14 @@ export const emptyAnalysis: CoachingAnalysisDto = {
   photoTopicSignals: [],
   notebookErrorSignals: [],
   notebookErrorMessage: null,
+  notebookStats: {
+    windowDays: 7,
+    savedCount: 0,
+    reviewedCount: 0,
+    dueCount: 0,
+    healedCount: 0,
+  },
+  improvementCycle: null,
   nextFocus: null,
   personalRecordNet: null,
   ghost: null,
@@ -111,7 +119,7 @@ export const multipleAnalysis: CoachingAnalysisDto = {
     firstAnalysis.trend[0]!,
   ],
   photoSubjectSignals: [
-    { subjectRef: "matematik", subjectName: "Matematik", count: 3 },
+    { subjectRef: "matematik", subjectName: "Matematik", count: 3, sharePercent: 100 },
   ],
   photoTopicSignals: [
     {
@@ -120,6 +128,7 @@ export const multipleAnalysis: CoachingAnalysisDto = {
       topicRef: "problemler",
       topicName: "Problemler",
       count: 3,
+      sharePercent: 100,
     },
   ],
   nextFocus: {

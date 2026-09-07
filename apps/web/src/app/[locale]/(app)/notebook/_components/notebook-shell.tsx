@@ -19,6 +19,7 @@ import {
 import { useTranslations } from "next-intl";
 import type {
   ExamCalendarDto,
+  ExamSummaryDto,
   ExamSubjectDto,
   ExamTopicDto,
   NotebookEntryDto,
@@ -30,6 +31,7 @@ import type {
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
 import {
   contentControllerCalendarByFamily,
+  contentControllerListExams,
   contentControllerSubjectsBySlug,
   usersControllerMe,
 } from "@mentor/api-client";
@@ -92,8 +94,13 @@ import {
 import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-inline-editor";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { fetchExamTopics } from "@/lib/content-topics";
+import { fetchMockExamById } from "@/lib/mock-exams";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
 import { clearSpentQueryParam } from "@/lib/spent-query-param";
+import {
+  parseNotebookIndexQuery,
+  type NotebookIndexFilters,
+} from "@/lib/notebook-index-query";
 import {
   deleteNotebookEntry,
   fetchDueEntries,
@@ -124,6 +131,7 @@ import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
 
 interface ExamContext {
   id: string;
+  name: string;
   subjects: ExamSubjectDto[];
   /** Every topic of the exam, carrying its parent subject — the picker filters client-side. */
   topics: ExamTopicDto[];
@@ -159,6 +167,13 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
    * column has existed since the table was created with nothing ever filling it.
    */
   const [mockExamId, setMockExamId] = useState<string | null>(null);
+  const [indexExam, setIndexExam] = useState<ExamContext | null>(null);
+  const [initialIndexFilters, setInitialIndexFilters] =
+    useState<NotebookIndexFilters>({});
+  const [indexFilterNames, setIndexFilterNames] = useState<{
+    exam?: string;
+    mockExam?: string;
+  }>({});
   /** Book-level metadata, composed for the existing cover controls. */
   const [cover, setCover] = useState<NotebookCoverDoc | null>(null);
   /** The rail always has a "current" category; whether its panel is showing is separate. */
@@ -333,10 +348,15 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         return;
       }
 
+      const indexQuery = parseNotebookIndexQuery(
+        new URLSearchParams(window.location.search),
+      );
+      if (indexQuery.open) setInitialIndexFilters(indexQuery.filters);
+
       const [overviewResult, dueResult, examResult] = await Promise.allSettled([
         fetchNotebookOverview(),
         fetchDueEntries(),
-        (async (): Promise<ExamContext | null> => {
+        (async () => {
           const me = (await usersControllerMe()) as unknown as AuthUser;
           if (!me.examType) return null;
           const calendar = (await contentControllerCalendarByFamily(
@@ -344,15 +364,56 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           )) as unknown as ExamCalendarDto | null;
           const current = calendar?.exam ?? null;
           if (!current) return null;
+          const requestedMock = indexQuery.filters.mockExamId
+            ? await fetchMockExamById(indexQuery.filters.mockExamId)
+            : null;
+          const requestedExamId =
+            indexQuery.filters.examId ?? requestedMock?.examId ?? current.id;
+          let selectedExam = current;
+          if (requestedExamId !== current.id) {
+            const exams = (await contentControllerListExams()) as unknown as ExamSummaryDto[];
+            selectedExam = exams.find((candidate) => candidate.id === requestedExamId) ?? current;
+          }
           // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
           // which spares the picker a fetch every time the subject changes.
           const [subjects, topics] = await Promise.all([
-            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<
+            contentControllerSubjectsBySlug(selectedExam.slug) as unknown as Promise<
               ExamSubjectDto[]
             >,
+            fetchExamTopics(selectedExam.slug),
+          ]);
+          const selectedContext = {
+            id: selectedExam.id,
+            name: selectedExam.name,
+            subjects,
+            topics,
+          };
+          if (selectedExam.id === current.id) {
+            return {
+              current: selectedContext,
+              selected: selectedContext,
+              filterNames: {
+                exam: selectedExam.name,
+                ...(requestedMock && {
+                  mockExam: requestedMock.publisherName ?? requestedMock.examName,
+                }),
+              },
+            };
+          }
+          const [currentSubjects, currentTopics] = await Promise.all([
+            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<ExamSubjectDto[]>,
             fetchExamTopics(current.slug),
           ]);
-          return { id: current.id, subjects, topics };
+          return {
+            current: { id: current.id, name: current.name, subjects: currentSubjects, topics: currentTopics },
+            selected: selectedContext,
+            filterNames: {
+              exam: selectedExam.name,
+              ...(requestedMock && {
+                mockExam: requestedMock.publisherName ?? requestedMock.examName,
+              }),
+            },
+          };
         })(),
       ]);
       if (cancelled) return;
@@ -392,9 +453,18 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         // student files next, quietly attributing later mistakes to an old sitting.
         clearSpentQueryParam("mockExam");
       }
+      if (indexQuery.open) {
+        setView({ kind: "spread", left: 0 });
+        setActivePanel("index");
+        setDetailCollapsed(false);
+      }
       // A missing exam only disables *adding*, so it is not an error banner — the user can still
       // read the notebook they already have.
-      if (examResult.status === "fulfilled") setExam(examResult.value);
+      if (examResult.status === "fulfilled" && examResult.value) {
+        setExam(examResult.value.current);
+        setIndexExam(examResult.value.selected);
+        if (indexQuery.open) setIndexFilterNames(examResult.value.filterNames);
+      }
     }
 
     void load();
@@ -1458,8 +1528,11 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                           onCover={(next) => void handleCover(next)}
                           exam={exam}
                           mockExamId={mockExamId}
+                          indexExam={indexExam}
                           placedEntryIds={placedEntryIds}
                           indexRefreshKey={indexRefreshKey}
+                          initialIndexFilters={initialIndexFilters}
+                          indexFilterNames={indexFilterNames}
                           onOpenEntry={setSingleReview}
                           onStudyEntries={setStudyDeck}
                           onPlaceEntry={(entry) => void handlePlaceEntry(entry)}

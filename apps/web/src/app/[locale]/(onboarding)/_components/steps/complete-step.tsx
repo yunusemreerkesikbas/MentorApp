@@ -21,6 +21,9 @@ export function CompleteStep({ onFinish }: { onFinish: () => void }) {
     if (started.current) return;
     started.current = true;
     onFinish();
+    try {
+      sessionStorage.setItem("mentor_onboarding_coin_pending", "1");
+    } catch {}
     const destination = onboardingDestination(consumePendingInvite());
     const timer = window.setTimeout(() => {
       startCloudTransition(() => {

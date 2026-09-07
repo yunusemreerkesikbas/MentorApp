@@ -7,11 +7,18 @@ import { prefersReducedMotion, readCssMs } from "./motion-utils.js";
 export interface StreamingTextProps {
   text: string;
   className?: string;
+  onComplete?: () => void;
 }
 
 /** Resolves a complete sentence word by word through a soft cross-blur. */
-export function StreamingText({ text, className }: StreamingTextProps) {
+export function StreamingText({
+  text,
+  className,
+  onComplete,
+}: StreamingTextProps) {
   const rootRef = useRef<HTMLSpanElement>(null);
+  const onCompleteRef = useRef(onComplete);
+  onCompleteRef.current = onComplete;
   const words = text.trim().split(/\s+/).filter(Boolean);
   const [stream, setStream] = useState({ text, visibleWords: 0 });
   const visibleWords = stream.text === text ? stream.visibleWords : 0;
@@ -24,6 +31,7 @@ export function StreamingText({ text, className }: StreamingTextProps) {
 
     if (!root || words.length === 0 || prefersReducedMotion()) {
       setStream({ text, visibleWords: words.length });
+      onCompleteRef.current?.();
       return;
     }
 
@@ -35,7 +43,10 @@ export function StreamingText({ text, className }: StreamingTextProps) {
       const revealNext = () => {
         if (cancelled) return;
         setStream({ text, visibleWords: nextWord });
-        if (nextWord >= words.length) return;
+        if (nextWord >= words.length) {
+          onCompleteRef.current?.();
+          return;
+        }
         nextWord += 1;
         timer = window.setTimeout(revealNext, gap);
       };

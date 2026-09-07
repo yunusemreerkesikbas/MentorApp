@@ -395,9 +395,10 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ### 2026-09-05 — Onboarding text motion recipes
 
-- Welcome slide headline/support pairs and the centered completion message now use the shared
-  transitions.dev `TextsReveal` recipe. Puhu's post-signup speech resolves word by word through the
-  `StreamingText` cross-blur recipe while the existing mouth/blink choreography continues.
+- The first welcome greeting and Puhu's post-signup speech now resolve word by word through the
+  transitions.dev `StreamingText` cross-blur recipe. Supporting welcome copy, the remaining welcome
+  headline/support pairs, post-signup question content, and the centered completion message use the
+  shared `TextsReveal` recipe.
 - The reusable streaming primitive reads its 60 ms word gap and 350 ms fade from shared motion
   variables, replays when the sentence changes, and exposes the full sentence to assistive technology
   without a typewriter-style character delay. Both recipes become immediate under reduced motion.

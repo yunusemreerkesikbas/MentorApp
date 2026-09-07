@@ -102,6 +102,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-07 · Selected-exam analysis context.** Existing chat preparation now adds an explicit aggregate-only projection of the current analysis focus, dominant error distribution and notebook status counts alongside selected-exam nets. Usage: “Review with AI coach” opens a draft with `contextMockExamId`; sending remains a user action. No notebook notes, photo keys or raw confessions enter this context. Existing access, quota and budget gates remain in place; no new AI endpoint was added. The prompt requests one short next step and does not authorize creating or completing an analysis loop. Related: `analysis-coach-prompt.ts`, `mentor-v2-prompt.ts`, `chat.service.ts`, coaching `AnalysisService`.
+
 - **AI ödev taslağı — katalogdaki üçüncü "aktör özne değil" özelliği (APP-086, 2026-09-07)** —
   `AssignmentSuggestionService` bir öğrenci için bir haftalık görev taslağı yazıyor; yetki gene
   W8'de. **Kanıt yeni değil:** `buildMentorshipBriefEvidence` yeniden kullanılıyor, yani isim ve

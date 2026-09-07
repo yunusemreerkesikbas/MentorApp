@@ -7,7 +7,6 @@ import { usePathname, useRouter } from "@/i18n/navigation";
 import { hidesMobileAppChrome } from "@/lib/app-sidebar";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
-import { CoinCelebrationProvider } from "@/lib/coin-celebration-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { PremiumPaywallProvider } from "@/lib/premium-paywall";
@@ -41,23 +40,21 @@ export function AppShell({ children }: { children: ReactNode }) {
   return (
     <NotificationDrawerShell>
       <PremiumPaywallProvider>
-        <CoinCelebrationProvider>
+        <div
+          className="min-h-screen"
+          style={{ backgroundColor: "var(--color-bg)" }}
+        >
+          <AppNav />
           <div
-            className="min-h-screen"
-            style={{ backgroundColor: "var(--color-bg)" }}
+            className={
+              hideMobileTabOffset
+                ? "mentor-app-shell min-h-screen"
+                : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
+            }
           >
-            <AppNav />
-            <div
-              className={
-                hideMobileTabOffset
-                  ? "mentor-app-shell min-h-screen"
-                  : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
-              }
-            >
-              {children}
-            </div>
+            {children}
           </div>
-        </CoinCelebrationProvider>
+        </div>
       </PremiumPaywallProvider>
     </NotificationDrawerShell>
   );
