@@ -551,6 +551,37 @@ export const NotebookReviewControllerSummaryDays = {
   NUMBER_30: 30,
 } as const;
 
+export type NotebookReviewControllerSummary200Days = typeof NotebookReviewControllerSummary200Days[keyof typeof NotebookReviewControllerSummary200Days];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const NotebookReviewControllerSummary200Days = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
+
+export type NotebookReviewControllerSummary200FocusesItem = {
+  examId: string;
+  /** @nullable */
+  subjectRef: string | null;
+  /** @nullable */
+  topicRef: string | null;
+  /** @nullable */
+  subjectName: string | null;
+  /** @nullable */
+  topicName: string | null;
+};
+
+export type NotebookReviewControllerSummary200 = {
+  workedCount: number;
+  revisitCount: number;
+  completedCount: number;
+  dueCount: number;
+  since: string;
+  days: NotebookReviewControllerSummary200Days;
+  focuses: NotebookReviewControllerSummary200FocusesItem[];
+};
+
 export type NotebookReviewControllerHistoryParams = {
 pageSize?: number;
 page?: number;
@@ -569,6 +600,32 @@ export const NotebookReviewControllerHistoryDays = {
   NUMBER_7: 7,
   NUMBER_30: 30,
 } as const;
+
+export type NotebookReviewControllerHistory200ItemsItem = {
+  examId: string;
+  /** @nullable */
+  subjectRef: string | null;
+  /** @nullable */
+  topicRef: string | null;
+  /** @nullable */
+  subjectName: string | null;
+  /** @nullable */
+  topicName: string | null;
+  id: string;
+  entryId: string;
+  solved: boolean;
+  early: boolean;
+  reviewedAt: string;
+  /** @nullable */
+  nextReviewAt: string | null;
+};
+
+export type NotebookReviewControllerHistory200 = {
+  total: number;
+  page: number;
+  pageSize: number;
+  items: NotebookReviewControllerHistory200ItemsItem[];
+};
 
 export type CoachingControllerGetAnalysisParams = {
 examId?: string;
@@ -3436,7 +3493,7 @@ export const paymentsInternalControllerExpireSubscriptions = async ( options?: R
 
 
 export type notebookReviewControllerSummaryResponse200 = {
-  data: void
+  data: NotebookReviewControllerSummary200
   status: 200
 }
     
@@ -3476,7 +3533,7 @@ export const notebookReviewControllerSummary = async (params?: NotebookReviewCon
 
 
 export type notebookReviewControllerHistoryResponse200 = {
-  data: void
+  data: NotebookReviewControllerHistory200
   status: 200
 }
     

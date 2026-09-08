@@ -5,11 +5,14 @@ import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 import { PuhuImage } from "@/components/puhu-image";
 import { isForumDisabled, listZones } from "@/lib/forum";
-import { SoftPromoShell } from "./soft-promo-shell";
+import { SoftPromoShell } from "@/components/soft-promo-shell";
 
 /**
- * Panel entry to the community — PromoSoft surface + Puhu (DESIGN.md §8.4).
- * Flag-aware: hidden when forum is off. Best-effort; never blocks the panel.
+ * Entry to the community — PromoSoft surface + Puhu (DESIGN.md §8.4).
+ * Flag-aware: hidden when forum is off. Best-effort; never blocks the page that holds it.
+ *
+ * Shared rather than panel-local since APP-090: the coach home shows it too, and `(coach)` may not
+ * import from `(app)/**`. Role-agnostic and self-fetching, so the move needed no other change.
  */
 export function CommunityCard() {
   const t = useTranslations("community");

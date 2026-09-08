@@ -1,0 +1,434 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    /* Tokens lifted verbatim from packages/ui/src/theme.css — not re-derived, not rounded. */
+    :root {
+      --color-main: #111111;
+      --color-body: #333333;
+      --color-secondary: #666666;
+      --color-btn: #000000;
+      --color-btn-label: #ffffff;
+      --color-bg: #ffffff;
+      --color-surface: #ffffff;
+      --color-border: #ffffff;
+      --color-surface-container: #f0edec;
+      --color-surface-translucent: rgba(255, 255, 255, 0.5);
+      --color-chip: #bea1fe;
+      --color-chip-text: #7c6f97;
+      --color-progress: #55acee;
+      --color-progress-track: #c3d9fd;
+      --color-star: #ffc700;
+      --color-streak: #f3705a;
+      --color-danger: #b42318;
+      --color-success: #2e7d54;
+      --color-focus-ring: #1d6fbf;
+      --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --radius-card: 10px;
+      --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
+      --shadow-card-hover: 0px 6px 14px rgba(37, 73, 150, 0.1);
+
+      /* Signal hues — one per triage flag. Identity, not rank: the roster is already sorted
+         worst-first, so hue only has to answer "which signal", which hue does well and ordering
+         does badly. Nothing here paints a student red. */
+      --sig-inactive: #f3705a;   /* --color-streak */
+      --sig-mood: #a78bda;       /* --color-chip, darkened to carry on white */
+      --sig-net: #e0a300;        /* --color-star, darkened for contrast as a 6px dot */
+      --sig-plan: #55acee;       /* --color-progress */
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--color-bg);
+      font-family: var(--font-body);
+      color: var(--color-body);
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--color-progress); text-decoration: none; }
+    a:hover { color: #3b8fd0; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* Card — packages/ui/src/components/card.tsx: radius 10, 1px border, p-6, one blue shadow. */
+    .card {
+      border-radius: var(--radius-card);
+      border: 1px solid var(--color-border);
+      background: var(--color-surface-translucent);
+      box-shadow: var(--shadow-card);
+      padding: 24px;
+    }
+
+    /* ── Signal pill (replaces the violet Chip on risk flags) ────────────────────────────────
+       Was: every flag in --color-chip @30% with --color-chip-text. Four different KINDS of
+       thing wore that same pill — a flag, a count, a novelty marker, a status — so none of
+       them read as itself. This one is defined by FORM: hairline ring, no fill, a 6px dot that
+       names the signal. Quiet enough to repeat four times on one row. */
+    .sig {
+      display: inline-flex; align-items: center; gap: 6px;
+      height: 24px; padding: 0 10px 0 8px;
+      border-radius: 999px;
+      border: 1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent);
+      background: var(--color-surface);
+      font-size: 12px; font-weight: 600; line-height: 1;
+      color: var(--color-body);
+      white-space: nowrap;
+    }
+    .sig i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+
+    /* Calm state. Not a pill at all — "nothing is wrong" should not carry the visual weight of
+       a finding, and an outlined pill saying "Yolunda" competes with real flags two rows down. */
+    .calm {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 500; color: var(--color-secondary);
+    }
+
+    /* Novelty marker. A micro-pill in the accent, not the violet tag: "Yeni" is chrome on one
+       line of the brief, and at tag weight it out-shouted the student's name beside it. */
+    .new {
+      display: inline-flex; align-items: center;
+      height: 18px; padding: 0 7px; border-radius: 999px;
+      background: color-mix(in srgb, var(--color-progress) 16%, transparent);
+      color: #1d6fbf;
+      font-size: 11px; font-weight: 700; line-height: 1; letter-spacing: 0.01em;
+    }
+
+    /* Count, in the cohort band. Deliberately NOT a pill: it is a measurement, and the pill
+       shape is now reserved for "this is a flag on somebody". */
+    .count { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--color-body); }
+    .count b { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-main); }
+    .count i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+
+    .btn-primary {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      height: 44px; padding: 0 18px; width: 100%;
+      border: none; border-radius: var(--radius-card);
+      background: var(--color-btn); color: var(--color-btn-label);
+      font-family: var(--font-body); font-size: 15px; font-weight: 700;
+    }
+    .btn-quiet {
+      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+      height: 36px; padding: 0 12px;
+      border: 1px solid color-mix(in srgb, var(--color-secondary) 22%, transparent);
+      border-radius: var(--radius-card);
+      background: var(--color-surface); color: var(--color-main);
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+    }
+    .btn-text {
+      background: none; border: none; padding: 0;
+      font-family: var(--font-body); font-size: 13px; font-weight: 600;
+      color: var(--color-secondary); text-decoration: underline; text-underline-offset: 3px;
+    }
+    .meta { font-size: 12px; color: var(--color-secondary); }
+    .label { font-size: 12px; color: var(--color-secondary); line-height: 1.4; }
+    .value { font-size: 15px; font-weight: 600; color: var(--color-main); line-height: 1.4; }
+  </style>
+</helmet>
+
+<div style="display: flex; width: 1440px; height: 1024px; background: var(--color-bg)">
+
+  <!-- ══ SIDEBAR — app-nav.tsx DesktopSidebar, matched value for value ══════════════════════
+       240px (APP_SIDEBAR_EXPANDED_PX), surface @50% + blur, border-r, shadow-card, p-5.
+       Coach item set: `visibleTo` drops every studentOnly entry, so what is left is Bilgi,
+       Topluluk, Öğrencilerim, Ayarlar — plus Profil, the coach's own /kocluk/profil.
+       The economy pills are absent on purpose: coin and XP are the student economy, and a
+       coach has no balance to show. -->
+  <aside style="width: 240px; flex: none; display: flex; flex-direction: column; padding: 20px;
+                border-right: 1px solid var(--color-border);
+                background: color-mix(in srgb, var(--color-surface) 50%, transparent);
+                box-shadow: var(--shadow-card)">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 16px">
+      <span style="font-family: var(--font-heading); font-size: 24px; font-weight: 700; color: var(--color-main)">Mentor</span>
+      <span style="display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-card); color: var(--color-main)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 3v18"/></svg>
+      </span>
+    </div>
+
+    <!-- SidebarIdentity: avatar 56, bell, greeting text-lg/700, name text-sm secondary -->
+    <div style="margin-bottom: 20px">
+      <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px">
+        <span style="display: grid; place-items: center; width: 56px; height: 56px; border-radius: 999px;
+                     background: var(--color-surface-container); color: var(--color-secondary);
+                     font-size: 18px; font-weight: 700">M</span>
+        <span style="position: relative; display: grid; place-items: center; width: 44px; height: 44px; color: var(--color-main)">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+          <span style="position: absolute; top: 6px; right: 6px; display: grid; place-items: center;
+                       min-width: 16px; height: 16px; padding: 0 4px; border-radius: 999px;
+                       background: var(--color-progress); color: #fff; font-size: 10px; font-weight: 700">1</span>
+        </span>
+      </div>
+      <div style="margin-top: 12px">
+        <p style="margin: 0; font-family: var(--font-heading); font-size: 18px; font-weight: 700; line-height: 1.35; color: var(--color-main)">İyi geceler</p>
+        <p style="margin: 4px 0 0; font-size: 14px; line-height: 1.35; color: var(--color-secondary)">Mert Aydın</p>
+      </div>
+    </div>
+
+    <!-- NavLink: min-h-44, gap-3, radius 10, px-3 py-2, 16px; active = surface @80% + 700 -->
+    <nav style="display: flex; flex-direction: column; gap: 4px">
+      <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px;
+                         border-radius: var(--radius-card); font-size: 16px; font-weight: 700; color: var(--color-main);
+                         background: color-mix(in srgb, var(--color-surface) 80%, transparent)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-12 0"/><circle cx="12" cy="11" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+        Öğrencilerim
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px;
+                         border-radius: var(--radius-card); font-size: 16px; font-weight: 400; color: var(--color-secondary)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4v4H6z"/><path d="M14 10h4M14 14h4"/></svg>
+        Profil
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px;
+                         border-radius: var(--radius-card); font-size: 16px; font-weight: 400; color: var(--color-secondary)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></svg>
+        Bilgi
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px;
+                         border-radius: var(--radius-card); font-size: 16px; font-weight: 400; color: var(--color-secondary)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Topluluk
+      </a>
+      <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 8px 12px;
+                         border-radius: var(--radius-card); font-size: 16px; font-weight: 400; color: var(--color-secondary)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2"/><circle cx="12" cy="12" r="3"/></svg>
+        Ayarlar
+      </a>
+    </nav>
+
+    <div style="margin-top: auto; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--color-secondary) 24%, transparent);
+                display: flex; align-items: center; justify-content: space-between">
+      <span style="display: grid; place-items: center; width: 44px; height: 44px; color: var(--color-main)">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M1 12h1M22 12h1M4.9 19.8l-.7.7M19.8 4.9l.7-.7"/><circle cx="12" cy="12" r="4"/></svg>
+      </span>
+      <span class="meta" style="font-weight: 600">TR · EN</span>
+    </div>
+  </aside>
+
+  <!-- ══ CONTENT ══════════════════════════════════════════════════════════════════════════ -->
+  <main style="flex: 1; min-width: 0; padding: 32px; overflow: hidden">
+    <div style="display: grid; grid-template-columns: minmax(0, 1.75fr) minmax(320px, 0.85fr); gap: 24px; align-items: start; max-width: 1120px">
+
+      <!-- ── LEFT: today's work ───────────────────────────────────────────────────────────
+           The "Öğrencilerim / Kim geride kaldı…" heading is gone (2). It restated the nav
+           item the coach just clicked and the subtitle described the sort order the list
+           already demonstrates — two lines of chrome above the only thing on the page. -->
+      <section style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+        <!-- Brief -->
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px">
+            <h2 style="margin: 0; font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: var(--color-main)">Bugünün brifingi</h2>
+            <button class="btn-quiet" type="button">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+              Yenile
+            </button>
+          </div>
+
+          <p style="margin: 14px 0 0; font-size: 15px; line-height: 1.6; color: var(--color-body); text-wrap: pretty">
+            Kohortun sakin sayılır, tek bir öğrenci geride kaldı.
+          </p>
+
+          <div style="margin-top: 16px; padding-top: 16px; border-top: 1px solid color-mix(in srgb, var(--color-secondary) 14%, transparent)">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap">
+              <a href="#" style="font-size: 15px; font-weight: 700; color: var(--color-main)">Zeynep Kaya</a>
+              <span class="new">Yeni</span>
+              <span class="sig"><i style="background: var(--sig-inactive)"></i>Sessiz</span>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--color-body)">Altı gündür hiç çalışma kaydı yok, seri de kırıldı.</p>
+            <p style="margin: 4px 0 0; font-size: 14px; line-height: 1.6; color: var(--color-secondary)">Kısa bir not bırak, nerede takıldığını sor.</p>
+          </div>
+
+          <p class="meta" style="margin: 16px 0 0">7 Eylül 2026 · değişiklik yok, yeniden yazılmadı</p>
+        </div>
+
+        <!-- Cohort band. Was a card whose only content was one sentence and a violet count
+             pill; now a flush strip — a measurement, not an object you can act on. -->
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 20px; flex-wrap: wrap; padding: 0 4px">
+          <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap">
+            <p style="margin: 0; font-size: 15px; font-weight: 600; color: var(--color-main)">
+              <span class="num">3</span> öğrenciden <span class="num">1</span> tanesi ilgi bekliyor.
+            </p>
+            <span class="count"><i style="background: var(--sig-inactive)"></i><b>1</b> Sessiz</span>
+          </div>
+          <p class="meta" style="margin: 0">Plan uyumu <span class="num">%42</span> · <span class="num">3</span> öğrenci</p>
+        </div>
+
+        <!-- Tabs — SegmentPillControl -->
+        <div style="display: inline-flex; align-self: flex-start; padding: 4px; gap: 4px;
+                    border-radius: 999px; background: var(--color-surface-container)">
+          <span style="display: inline-flex; align-items: center; height: 34px; padding: 0 18px; border-radius: 999px;
+                       background: var(--color-surface); box-shadow: var(--shadow-card);
+                       font-size: 14px; font-weight: 700; color: var(--color-main)">Aktif</span>
+          <span style="display: inline-flex; align-items: center; height: 34px; padding: 0 18px; border-radius: 999px;
+                       font-size: 14px; font-weight: 600; color: var(--color-secondary)">Geçmiş</span>
+        </div>
+
+        <!-- Roster -->
+        <div style="display: flex; flex-direction: column; gap: 12px">
+
+          <!-- Waiting: the mark button is the row's one action and sits on the same line as
+               the metrics, so the card stops being three stacked bands. -->
+          <div class="card" style="padding: 20px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span style="font-size: 16px; font-weight: 700; color: var(--color-main)">Zeynep Kaya</span>
+              <span class="sig"><i style="background: var(--sig-inactive)"></i>Sessiz</span>
+            </div>
+            <dl style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 16px 0 0">
+              <div><dt class="label">Son aktiflik</dt><dd class="value num" style="margin: 2px 0 0">6 gün önce</dd></div>
+              <div><dt class="label">7 günlük çalışma</dt><dd class="value num" style="margin: 2px 0 0">0 dk</dd></div>
+              <div><dt class="label">Plan tamamlama</dt><dd class="value num" style="margin: 2px 0 0">%0</dd></div>
+              <div><dt class="label">Son net</dt><dd class="value" style="margin: 2px 0 0">Yok</dd></div>
+            </dl>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px;
+                        padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--color-secondary) 14%, transparent)">
+              <p style="margin: 0; font-size: 14px; color: var(--color-body)">Kısa bir not bırak, nerede takıldığını sor.</p>
+              <button class="btn-quiet" type="button" style="flex: none">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                İlgilendim
+              </button>
+            </div>
+          </div>
+
+          <!-- Two flags on one row: the reason the pill had to get quieter. -->
+          <div class="card" style="padding: 20px">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span style="font-size: 16px; font-weight: 700; color: var(--color-main)">Bora Çelik</span>
+              <div style="display: flex; gap: 6px">
+                <span class="sig"><i style="background: var(--sig-net)"></i>Net düştü</span>
+                <span class="sig"><i style="background: var(--sig-plan)"></i>Plan aksıyor</span>
+              </div>
+            </div>
+            <dl style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 16px 0 0">
+              <div><dt class="label">Son aktiflik</dt><dd class="value" style="margin: 2px 0 0">Dün</dd></div>
+              <div><dt class="label">7 günlük çalışma</dt><dd class="value num" style="margin: 2px 0 0">85 dk</dd></div>
+              <div><dt class="label">Plan tamamlama</dt><dd class="value num" style="margin: 2px 0 0">%38</dd></div>
+              <div><dt class="label">Son net</dt><dd class="value num" style="margin: 2px 0 0">47,5</dd></div>
+            </dl>
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-top: 16px;
+                        padding-top: 14px; border-top: 1px solid color-mix(in srgb, var(--color-secondary) 14%, transparent)">
+              <p style="margin: 0; font-size: 14px; color: var(--color-body)">Son denemenin ders kırılımına bak.</p>
+              <button class="btn-quiet" type="button" style="flex: none">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                İlgilendim
+              </button>
+            </div>
+          </div>
+
+          <!-- Calm: no pill, no advice line, no button. Nothing to do reads as nothing to do. -->
+          <div class="card" style="padding: 20px; opacity: 0.82">
+            <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+              <span style="font-size: 16px; font-weight: 700; color: var(--color-main)">Cem Demir</span>
+              <span class="calm">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+                Yolunda
+              </span>
+            </div>
+            <dl style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; margin: 16px 0 0">
+              <div><dt class="label">Son aktiflik</dt><dd class="value" style="margin: 2px 0 0">Bugün</dd></div>
+              <div><dt class="label">7 günlük çalışma</dt><dd class="value num" style="margin: 2px 0 0">320 dk</dd></div>
+              <div><dt class="label">Plan tamamlama</dt><dd class="value num" style="margin: 2px 0 0">%88</dd></div>
+              <div><dt class="label">Son net</dt><dd class="value num" style="margin: 2px 0 0">61,0</dd></div>
+            </dl>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── RIGHT: standing facts ───────────────────────────────────────────────────────
+           "Öğrencinde neyi görürsün" is gone (4) — a consent contract is read once and then
+           lives in settings, not beside a list a coach opens every morning. -->
+      <aside style="display: flex; flex-direction: column; gap: 16px; min-width: 0">
+
+        <!-- Countdown -->
+        <div class="card" style="display: flex; align-items: center; gap: 16px">
+          <span style="display: grid; place-items: center; width: 44px; height: 44px; flex: none;
+                       border-radius: var(--radius-card); background: var(--color-surface-container); color: var(--color-secondary)">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+          </span>
+          <div style="min-width: 0">
+            <p class="label" style="margin: 0">Sınava kalan</p>
+            <p style="margin: 2px 0 0; display: flex; align-items: baseline; gap: 6px">
+              <span class="num" style="font-family: var(--font-heading); font-size: 32px; font-weight: 700; line-height: 1.1; color: var(--color-main)">113</span>
+              <span style="font-size: 14px; font-weight: 600; color: var(--color-secondary)">gün</span>
+            </p>
+            <p class="meta" style="margin: 4px 0 0">KPSS Lisans 2026 · 30 Aralık 2026</p>
+          </div>
+        </div>
+
+        <!-- ── INVITE (5) ─────────────────────────────────────────────────────────────
+             Was: title, seat counter, and two full paragraphs of explanation above a bare
+             code and three equal-weight buttons — the card spent most of its height telling
+             a coach something they read once.
+             Now: one primary action (the link is what actually gets sent), the two
+             paragraphs folded into the info tooltip, and the code MASKED. The code is a
+             bearer secret: whoever reads it can attach as a student, and it does not need
+             to be visible to be copied. -->
+        <div class="card">
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+            <div style="display: flex; align-items: center; gap: 6px">
+              <h2 style="margin: 0; font-family: var(--font-heading); font-size: 16px; font-weight: 700; color: var(--color-main)">Davet kodun</h2>
+              <!-- Hover/tap target, 24px so it clears the touch floor with its padding box -->
+              <span style="display: grid; place-items: center; width: 24px; height: 24px; border-radius: 999px;
+                           color: var(--color-secondary); cursor: help" title="Öğrencin bu kodu girip onayladığında bağlantı kurulur. Davet kodun e-postanı doğrulayınca açılıyor.">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>
+              </span>
+            </div>
+            <span class="meta num" style="font-weight: 600">3/20 öğrenci</span>
+          </div>
+
+          <div style="margin-top: 16px">
+            <button class="btn-primary" type="button">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+              Davet linkini kopyala
+            </button>
+          </div>
+
+          <!-- Masked code. The dots are the resting state; "Göster" is a deliberate act, so a
+               screen-share or a shoulder does not hand the code away by default. -->
+          <div style="display: flex; align-items: center; gap: 8px; margin-top: 10px">
+            <code style="flex: 1; min-width: 0; display: flex; align-items: center; height: 36px; padding: 0 12px;
+                         border-radius: var(--radius-card); background: var(--color-surface-container);
+                         font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; letter-spacing: 0.08em;
+                         color: var(--color-secondary)">MENTOR-KOC-••••••••••••</code>
+            <button class="btn-quiet" type="button" style="flex: none; width: 36px; padding: 0" aria-label="Kodu göster">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+            <button class="btn-quiet" type="button" style="flex: none; width: 36px; padding: 0" aria-label="Kodu kopyala">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+            </button>
+          </div>
+
+          <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px">
+            <span class="meta">1 Aralık 2026'ya kadar geçerli</span>
+            <button class="btn-text" type="button">Yeni kod üret</button>
+          </div>
+        </div>
+
+        <!-- Community — unchanged component, moved into the rail -->
+        <div style="position: relative; overflow: hidden; border-radius: var(--radius-card);
+                    background: color-mix(in srgb, var(--color-progress-track) 45%, var(--color-surface));
+                    padding: 24px; box-shadow: var(--shadow-card)">
+          <div style="position: absolute; right: -30px; bottom: -30px; width: 150px; height: 150px; border-radius: 999px;
+                      background: color-mix(in srgb, var(--color-progress) 18%, transparent)"></div>
+          <div style="position: relative; max-width: 190px">
+            <h2 style="margin: 0; font-family: var(--font-heading); font-size: 20px; font-weight: 700; color: var(--color-main)">Topluluk</h2>
+            <p style="margin: 8px 0 0; font-size: 14px; line-height: 1.6; color: var(--color-body)">Sohbet, duyuru, soru.<br>Yalnız yürüme.</p>
+            <button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 16px; margin-top: 16px;
+                                         border: none; border-radius: var(--radius-card); background: var(--color-surface);
+                                         box-shadow: var(--shadow-card); font-family: var(--font-body); font-size: 14px; font-weight: 700; color: var(--color-main)">
+              Topluluğa git
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </button>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+</body>
+</html>

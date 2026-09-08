@@ -3243,6 +3243,7 @@
     "coach_profile_unknown": "No profile for this coach yet.",
     "coach_profile_verified_label": "Verified details",
     "coach_profile_declared_label": "The coach's own words, not verified yet",
+    "coach_profile_missing": "You have not written a profile yet. A student reads these two lines before they link to you, and your invite code opens once they exist.",
     "coach_profile_claim_INSTITUTION": "Institution: {value}",
     "coach_profile_claim_BRANCH": "Subject: {value}",
     "coach_profile_claim_YEARS": "Experience: {value} years",

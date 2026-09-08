@@ -94,6 +94,31 @@ describe("postAuthDestination with an invite", () => {
   });
 });
 
+describe("postAuthDestination for a coach (APP-090)", () => {
+  // No `as const`: it would make `roles` readonly, which `Partial<AuthUser>` does not accept.
+  const coach: Partial<AuthUser> = {
+    username: "mert",
+    examType: "KPSS",
+    roles: ["STUDENT", "COACH"],
+  };
+
+  it("opens the coach's own surface, not the student dashboard", () => {
+    expect(postAuthDestination(user(coach))).toBe("/students");
+  });
+
+  it("ignores a next that would land them on a blocked student screen", () => {
+    // Every `next` this app produces is a student deep link, and all of them sit behind
+    // `isStudentOnlyPath`. Honouring one would route a coach into a screen the `(app)` guard
+    // bounces them out of a frame later — a redirect flash instead of a destination.
+    expect(postAuthDestination(user(coach), "/join-room?kod=MASA-A1B2C3")).toBe("/students");
+  });
+
+  it("still onboards a coach whose profile is unfinished", () => {
+    // The role does not skip the gate: `(app)` and `(coach)` both need a username.
+    expect(postAuthDestination(user({ roles: ["STUDENT", "COACH"] }))).toBe("/onboarding");
+  });
+});
+
 describe("readAuthNextParam", () => {
   it("returns null when window is unavailable", () => {
     expect(readAuthNextParam()).toBeNull();

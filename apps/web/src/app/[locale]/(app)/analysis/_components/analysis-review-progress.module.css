@@ -1,0 +1,492 @@
+.workspace {
+  --review-canvas: #ffffff;
+  --review-surface: #f4f5f7;
+  --review-line: #e3e5e8;
+  --review-ink: #17181a;
+  --review-muted: #62666d;
+  --review-success: #2f7d5b;
+  --review-success-soft: #e9f5ef;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 20px;
+  color: var(--review-ink);
+}
+
+:global(.dark) .workspace {
+  --review-canvas: #17181a;
+  --review-surface: #232529;
+  --review-line: #35383d;
+  --review-ink: #f5f6f7;
+  --review-muted: #a9adb4;
+  --review-success: #75c49a;
+  --review-success-soft: #19382b;
+}
+
+.focus {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 20px 24px;
+  padding: 24px 0 20px;
+  border-block: 1px solid var(--review-line);
+  background: var(--review-canvas);
+}
+
+.focusBody,
+.focusField {
+  min-width: 0;
+}
+
+.eyebrow {
+  margin-bottom: 14px;
+  color: var(--review-ink);
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.focusField {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.focusLabel {
+  color: var(--review-muted);
+  font-size: 12px;
+}
+
+.focusSelect > div {
+  width: 100%;
+}
+
+.focusSelect button {
+  min-height: 50px;
+  padding-inline: 14px !important;
+  border-color: var(--review-line) !important;
+  border-radius: 12px !important;
+  background: var(--review-canvas) !important;
+  color: var(--review-ink) !important;
+  font-size: 18px !important;
+  font-weight: 650 !important;
+  letter-spacing: -0.015em;
+}
+
+.focusSelect button:hover {
+  background: var(--review-surface) !important;
+}
+
+.reason {
+  max-width: 65ch;
+  margin-top: 12px;
+  color: var(--review-muted);
+  font-size: 14px;
+  line-height: 1.55;
+  text-wrap: pretty;
+}
+
+.start {
+  display: inline-flex;
+  min-height: 50px;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding: 12px 18px;
+  border-radius: 12px;
+  background: var(--review-ink);
+  color: var(--review-canvas);
+  font-size: 14px;
+  font-weight: 650;
+  transition:
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 100ms ease-out;
+}
+
+.start:hover {
+  background: color-mix(in srgb, var(--review-ink) 88%, var(--review-muted));
+}
+
+.start:active {
+  transform: scale(0.98);
+}
+
+.plan {
+  grid-column: 1 / -1;
+  border-top: 1px solid var(--review-line);
+}
+
+.plan summary {
+  display: flex;
+  min-height: 46px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding-top: 6px;
+  list-style: none;
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+}
+
+.plan summary::-webkit-details-marker {
+  display: none;
+}
+
+.plan summary svg {
+  transition: transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.plan[open] summary {
+  margin-bottom: 14px;
+}
+
+.plan[open] summary svg {
+  transform: rotate(180deg);
+}
+
+.period {
+  --tabs-bar-bg: var(--review-surface);
+  --tabs-pill-bg: var(--review-canvas);
+  --tabs-text-active: var(--review-ink);
+  --tabs-text-muted: var(--review-muted);
+  --tabs-dur: 220ms;
+  width: min(100%, 320px) !important;
+  align-self: flex-end;
+  border: 1px solid var(--review-line);
+  border-radius: 12px !important;
+}
+
+.period :global(.t-tabs-pill) {
+  border-radius: 9px;
+  box-shadow: 0 2px 6px rgb(23 24 26 / 8%);
+}
+
+.period :global(.t-tab) {
+  border-radius: 9px !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding-block: 6px;
+}
+
+.metric {
+  display: flex;
+  min-width: 0;
+  flex-direction: column-reverse;
+  justify-content: flex-end;
+  gap: 8px;
+  padding: 4px 20px;
+  border-left: 1px solid var(--review-line);
+}
+
+.metric:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.metric dt {
+  color: var(--review-muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.metricValue {
+  display: flex;
+  min-height: 40px;
+  align-items: center;
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+}
+
+.metricValue a {
+  display: inline-flex;
+  min-width: 44px;
+  min-height: 44px;
+  align-items: center;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 6px;
+}
+
+.note,
+.historyNote {
+  color: var(--review-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.note {
+  margin-top: -6px;
+}
+
+.historySkeleton {
+  width: 100%;
+  height: 160px;
+  margin-top: 24px;
+  border-radius: 12px;
+}
+
+.history {
+  padding-top: 24px;
+  border-top: 1px solid var(--review-line);
+}
+
+.historyNote {
+  max-width: 70ch;
+  margin-block: 6px 20px;
+  text-wrap: pretty;
+}
+
+.historyList {
+  border-top: 1px solid var(--review-line);
+}
+
+.historyItem {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 2px 24px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--review-line);
+}
+
+.historyLink {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  font-size: 14px;
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.historyLink:hover {
+  text-decoration: underline;
+  text-decoration-color: var(--review-line);
+  text-underline-offset: 4px;
+}
+
+.historyItem p {
+  color: var(--review-muted);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.historyItem p:first-of-type {
+  grid-column: 1;
+}
+
+.historyItem .reviewSchedule {
+  display: inline-flex;
+  grid-column: 2;
+  grid-row: 1 / 3;
+  align-self: center;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 9999px;
+  background: var(--review-surface);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: 28px 0;
+  color: var(--review-muted);
+  font-size: 14px;
+}
+
+.pagination {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.paginationButton {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border: 1px solid var(--review-line);
+  border-radius: 11px;
+  background: var(--review-surface);
+  color: var(--review-ink);
+  font-size: 13px;
+  font-weight: 650;
+  cursor: pointer;
+  transition:
+    background-color 180ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 100ms ease-out;
+}
+
+.paginationButton:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--review-surface) 72%, var(--review-line));
+}
+
+.paginationButton:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.paginationNext {
+  border-color: var(--review-ink);
+  background: var(--review-ink);
+  color: var(--review-canvas);
+}
+
+.paginationButton:disabled {
+  border-color: transparent;
+  background: var(--review-surface);
+  color: var(--review-muted);
+  cursor: not-allowed;
+  opacity: 0.62;
+}
+
+.signalBadge {
+  display: inline-flex;
+  min-height: 32px;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 10px;
+  border-radius: 9999px;
+  background: var(--review-success-soft);
+  color: var(--review-success);
+  font-size: 12px;
+  font-weight: 650;
+  white-space: nowrap;
+}
+
+.cycleSteps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.cycleStep {
+  display: flex;
+  min-height: 44px;
+  align-items: center;
+  gap: 8px;
+  padding-block: 8px;
+  border-top: 1px solid var(--review-line);
+  color: var(--review-muted) !important;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.cycleStep[data-complete="true"] {
+  color: var(--review-ink) !important;
+}
+
+.cyclePrimaryAction,
+.cycleSecondaryAction,
+.cycleTertiaryAction {
+  display: inline-flex;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 11px;
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.cyclePrimaryAction {
+  width: 100%;
+  background: var(--review-ink);
+  color: var(--review-canvas);
+}
+
+.cycleSecondaryAction {
+  border: 1px solid var(--review-line);
+  color: var(--review-ink);
+}
+
+.cycleTertiaryAction {
+  color: var(--review-ink);
+}
+
+.cycleSecondaryAction:hover,
+.cycleTertiaryAction:hover {
+  background: var(--review-surface);
+}
+
+.workspace :is(a, button, summary):focus-visible {
+  outline: 2px solid var(--color-focus-ring);
+  outline-offset: 3px;
+}
+
+@media (max-width: 639px) {
+  .workspace {
+    gap: 18px;
+  }
+
+  .focus {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 16px;
+    padding-block: 20px 16px;
+  }
+
+  .focusSelect button {
+    font-size: 16px !important;
+  }
+
+  .start,
+  .period {
+    width: 100% !important;
+  }
+
+  .start {
+    justify-content: space-between;
+  }
+
+  .metrics,
+  .cycleSteps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .metric {
+    padding: 4px 14px;
+  }
+
+  .metric:nth-child(odd) {
+    padding-left: 0;
+    border-left: 0;
+  }
+
+  .metricValue {
+    font-size: 27px;
+  }
+
+  .historyItem {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .historyItem .reviewSchedule {
+    grid-column: 1;
+    grid-row: auto;
+    justify-self: start;
+    margin-top: 8px;
+    white-space: normal;
+    text-align: left;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start,
+  .plan summary svg,
+  .paginationButton {
+    transition: none;
+  }
+
+  .start:active,
+  .paginationButton:active:not(:disabled) {
+    transform: none;
+  }
+}

@@ -2308,7 +2308,83 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "workedCount",
+                    "revisitCount",
+                    "completedCount",
+                    "dueCount",
+                    "since",
+                    "days",
+                    "focuses"
+                  ],
+                  "properties": {
+                    "workedCount": {
+                      "type": "integer"
+                    },
+                    "revisitCount": {
+                      "type": "integer"
+                    },
+                    "completedCount": {
+                      "type": "integer"
+                    },
+                    "dueCount": {
+                      "type": "integer"
+                    },
+                    "since": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "days": {
+                      "type": "integer",
+                      "enum": [
+                        7,
+                        30
+                      ]
+                    },
+                    "focuses": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "examId",
+                          "subjectRef",
+                          "topicRef",
+                          "subjectName",
+                          "topicName"
+                        ],
+                        "properties": {
+                          "examId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "subjectRef": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "topicRef": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "topicName": {
+                            "type": "string",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2389,7 +2465,95 @@
         ],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "items",
+                    "total",
+                    "page",
+                    "pageSize"
+                  ],
+                  "properties": {
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "pageSize": {
+                      "type": "integer"
+                    },
+                    "items": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "examId",
+                          "subjectRef",
+                          "topicRef",
+                          "subjectName",
+                          "topicName",
+                          "id",
+                          "entryId",
+                          "solved",
+                          "early",
+                          "reviewedAt",
+                          "nextReviewAt"
+                        ],
+                        "properties": {
+                          "examId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "subjectRef": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "topicRef": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "subjectName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "topicName": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "id": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "entryId": {
+                            "type": "string",
+                            "format": "uuid"
+                          },
+                          "solved": {
+                            "type": "boolean"
+                          },
+                          "early": {
+                            "type": "boolean"
+                          },
+                          "reviewedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "nextReviewAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "nullable": true
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         },
         "security": [

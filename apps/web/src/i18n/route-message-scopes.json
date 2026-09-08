@@ -5,5 +5,5 @@
   "auth": ["auth", "common", "economy"],
   "onboarding": ["onboarding", "profile", "vision", "common", "economy", "mentorship"],
   "joinRoom": ["session_room"],
-  "coaching": ["mentorship", "common", "nav"]
+  "coaching": ["mentorship", "common", "nav", "notifications", "journey_levels", "countdown", "community"]
 }

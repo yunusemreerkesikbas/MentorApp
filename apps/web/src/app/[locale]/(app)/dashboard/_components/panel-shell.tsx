@@ -81,10 +81,10 @@ import {
   type WeeklyRecapTeaserState,
 } from "@/lib/weekly-recap";
 
-import { CommunityCard } from "./community-card";
+import { CommunityCard } from "@/components/community-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { useMoodCheckin } from "./mood-checkin";
-import { SoftPromoShell } from "./soft-promo-shell";
+import { SoftPromoShell } from "@/components/soft-promo-shell";
 import { VisionBoardCard } from "./vision-board-card";
 import {
   formatWeekdayShort,
@@ -793,9 +793,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
       <PuhuSpeechModal
         isOpen={moodCheckin.speechModalOpen}
         onClose={moodCheckin.closeSpeechModal}
-        isLoading={moodCheckin.reflecting}
+        isLoading={moodCheckin.speechLoading}
         loadingText={moodT("coach_thinking")}
-        text={moodCheckin.reflection || moodCheckin.message}
+        text={moodCheckin.speechText}
         actionLabel={moodT("coach_speech_cta")}
         closeAriaLabel={moodT("coach_close_aria")}
       />

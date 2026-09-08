@@ -1,16 +1,75 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MentorshipApplicationDto } from "@mentor/types";
+import type {
+  MentorshipApplicationDto,
+  MentorshipCoachRegistrationStateDto,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, Chip, TextAreaField, TextField } from "@mentor/ui";
+import { Button, Card, Chip, SectionHeading, TextAreaField, TextField } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { Link } from "@/i18n/navigation";
-import { updateCoachProfile } from "@/lib/mentorship";
+import { fetchCoachRegistrationState, updateCoachProfile } from "@/lib/mentorship";
 
 /**
- * My coach account: the profile students read, and where it stands.
+ * The coach's own profile page (APP-090 moved it here from `/koc-basvurusu`).
+ *
+ * Self-fetching because it is a page root now, not a card the registration screen handed props to.
+ * The endpoint is the same one the roster header reads, so this costs a call the coach was already
+ * making elsewhere and nothing new was built for it.
+ */
+export function CoachProfileShell() {
+  const t = useTranslations("mentorship");
+  const [state, setState] = useState<MentorshipCoachRegistrationStateDto | null>(null);
+
+  const load = useCallback(() => {
+    fetchCoachRegistrationState()
+      .then(setState)
+      .catch(() => {
+        // Unknown rather than wrong: the skeleton holds instead of claiming a standing.
+      });
+  }, []);
+
+  useEffect(load, [load]);
+
+  if (state === null) return <div className="h-72" aria-hidden />;
+
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionHeading subtitle={t("application_subtitle")}>
+        {t("application_title")}
+      </SectionHeading>
+
+      {state.registration === null ? (
+        /* A coach who holds the role without a registry row — an admin designated them and they
+           have not written their own two lines yet. `assertCanInvite` keeps their invite code shut
+           until they do, so the form is the whole point of sending them here. */
+        <Card>
+          <p className="text-sm" style={{ color: "var(--color-body)" }}>
+            {t("coach_profile_missing")}
+          </p>
+          <div className="mt-3">
+            <Link href="/coach-application">
+              <Button>{t("registration_submit")}</Button>
+            </Link>
+          </div>
+        </Card>
+      ) : (
+        <ProfileStandingCard
+          registration={state.registration}
+          emailVerified={state.emailVerified}
+          onUpdated={(registration) =>
+            setState((current) => (current === null ? current : { ...current, registration }))
+          }
+        />
+      )}
+    </div>
+  );
+}
+
+/**
+ * Where the account stands, and the editor for the two student-facing lines.
  *
  * Three standings, three different things the coach needs (APP-089):
  *   ACTIVE     the panel, open now, plus the editor. If the email is still unverified the panel
@@ -19,7 +78,7 @@ import { updateCoachProfile } from "@/lib/mentorship";
  *   SUSPENDED  the admin's reason, verbatim, and no door back — registering again is refused, so
  *              offering a button would be offering a dead end.
  */
-export function ApplicationStatusCard({
+function ProfileStandingCard({
   registration,
   emailVerified,
   onUpdated,

@@ -1,0 +1,38 @@
+{
+  "artboards": [
+    { "file": "Main.dc.html", "x": 0, "y": 0, "w": 1440, "h": 1024, "title": "Koçluk — masaüstü" },
+    { "file": "Mobile.dc.html", "x": 1560, "y": 0, "w": 390, "h": 844, "title": "Koçluk — mobil" },
+    { "file": "SettingsModal.dc.html", "x": 2070, "y": 0, "w": 1440, "h": 1024, "title": "Ayarlar — veri kapsamı modalı" }
+  ],
+  "annotations": [
+    {
+      "id": "chips",
+      "x": 0,
+      "y": -190,
+      "w": 420,
+      "text": "3 — Chip sistemi\n\nÖnce dört ayrı anlam aynı mor hapı giyiyordu: risk bayrağı, sayım, \"Yeni\" ve durum. Artık biçim ayırıyor:\n\n• Bayrak = ince çerçeve + sinyali adlandıran 6px nokta\n• Sayım = hap değil, tabular sayı + nokta\n• \"Yeni\" = aksan renginde mikro hap\n• \"Yolunda\" = hap bile değil, sessiz metin\n\nNokta rengi sıra değil KİMLİK taşıyor — sıralamayı roster zaten yapıyor, ve hiçbir öğrenci kırmızıya boyanmıyor."
+    },
+    {
+      "id": "invite",
+      "x": 1000,
+      "y": -190,
+      "w": 400,
+      "text": "5 — Davet kodu\n\nİki paragraf açıklama info ikonuna girdi. Tek birincil eylem: linki kopyala — koç pratikte zaten onu paylaşıyor.\n\nKod maskeli duruyor. Bir bearer secret: onu okuyan kişi öğrenci olarak bağlanabiliyor, ve kopyalamak için görmeye gerek yok. \"Göster\" bilinçli bir eylem."
+    },
+    {
+      "id": "mobile-tabs",
+      "x": 1560,
+      "y": -190,
+      "w": 380,
+      "text": "Mobilde bulgu\n\nBu pill'de DÖRT sekme var; bugünkü kod ikisini üretiyor. TAB_ITEMS'ta Topluluk ve Ayarlar sidebarOnly, o yüzden koç telefonda yalnız Bilgi + Öğrencilerim görüyor ve kendi profiline hiç ulaşamıyor.\n\nUygulanırsa app-nav.tsx'te sidebarOnly'nin koç için gözden geçirilmesi gerekiyor."
+    },
+    {
+      "id": "removed",
+      "x": 2070,
+      "y": -190,
+      "w": 400,
+      "text": "2 ve 4 — kaldırılanlar\n\n\"Öğrencilerim / Kim geride kaldı…\" başlığı gitti: koçun az önce tıkladığı nav öğesini tekrar ediyordu, alt satır da listenin zaten gösterdiği sıralamayı anlatıyordu.\n\n\"Öğrencinde neyi görürsün\" panelden çıkıp buraya taşındı. Bir onay sözleşmesi bir kez okunur; her sabah açılan listenin yanında kalıcı akordeon olarak durmaz."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}

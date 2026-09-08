@@ -5,6 +5,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { SectionHeading, SkeletonGroup } from "@mentor/ui";
+import { CommunityCard } from "@/components/community-card";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -16,7 +17,9 @@ import {
   setAttention,
 } from "@/lib/mentorship";
 import { inviteLockOf, type InviteLock } from "./invite-lock";
+import { useAuth } from "@/lib/auth-context";
 import { CoachCapacityCard } from "./coach-capacity-card";
+import { CoachCountdownCard } from "./coach-countdown-card";
 import { CoachScopeCard } from "./coach-scope-card";
 import { CohortBriefCard } from "./cohort-brief-card";
 import { compareByAttention, summarizeCohort } from "./cohort-summary";
@@ -37,6 +40,7 @@ export function RosterShell() {
   const common = useTranslations("common");
   const locale = useLocale();
   const toast = useMentorToast();
+  const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("ACTIVE");
   // The loaded tab travels with its rows, so switching tabs shows the skeleton without a
   // synchronous setState in the effect (which would cascade a render).
@@ -173,37 +177,26 @@ export function RosterShell() {
     }
   }
 
+  /*
+   * Two columns since APP-090, because this stopped being a page a coach visits and became the
+   * page they land on. The split is by how often a thing changes: the left column is today's work
+   * (who is waiting, and why), the right is the standing facts a coach glances at (how long until
+   * the exam, how many seats are left, what students agreed to share).
+   *
+   * One column below `xl`, in this order, so a phone still opens on the work.
+   */
   return (
-    <div className="flex flex-col gap-6">
-      <SectionHeading subtitle={t("roster_subtitle")}>{t("roster_title")}</SectionHeading>
+    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.85fr)] xl:items-start">
+      <section className="flex min-w-0 flex-col gap-6">
+        <SectionHeading subtitle={t("roster_subtitle")}>{t("roster_title")}</SectionHeading>
 
-      {/* Above the counts on purpose: the summary says how many are waiting, the brief says who and
-          why. Both are ACTIVE-only — the history tab describes closed windows. */}
-      {tab === "ACTIVE" && <CohortBriefCard />}
+        {/* Above the counts on purpose: the summary says how many are waiting, the brief says who
+            and why. Both are ACTIVE-only — the history tab describes closed windows. */}
+        {tab === "ACTIVE" && <CohortBriefCard />}
 
-      {tab === "ACTIVE" && <CohortSummaryCard summary={summary} />}
+        {tab === "ACTIVE" && <CohortSummaryCard summary={summary} />}
 
-      <CoachCapacityCard
-        loaded={overview !== null}
-        inviteCode={overview?.inviteCode ?? null}
-        inviteLock={inviteLock}
-        activeStudents={overview?.activeStudents ?? 0}
-        maxActiveStudents={overview?.maxActiveStudents ?? 0}
-        freeSeats={overview?.freeSeats ?? 0}
-        paidSeats={overview?.paidSeats ?? 0}
-        usedSeats={overview?.usedSeats ?? 0}
-        sponsorshipEnabled={overview?.sponsorshipEnabled ?? false}
-        busy={busy}
-        onRotate={rotate}
-      />
-
-      {overview !== null && (
-        // Open on the empty roster: that screen is the coach's first, and it is the one moment
-        // they have nothing else to read.
-        <CoachScopeCard scope={overview.dataScope} defaultOpen={summary.total === 0} />
-      )}
-
-      <SegmentPillControl
+        <SegmentPillControl
         items={[
           { id: "ACTIVE", label: t("tab_active") },
           { id: "ENDED", label: t("tab_ended") },
@@ -252,10 +245,42 @@ export function RosterShell() {
             </ul>
           )
         }
-        className="flex flex-col gap-3"
-      >
-        <RosterContentSkeleton />
-      </SkeletonGroup>
+          className="flex flex-col gap-3"
+        >
+          <RosterContentSkeleton />
+        </SkeletonGroup>
+      </section>
+
+      <aside className="flex min-w-0 flex-col gap-5">
+        {/* The exam the coach coaches, not one they are sitting (APP-089 reframed `examType`).
+            Its own endpoint rather than `/v1/coaching/today`, which would hand a coach a student's
+            plan payload to read one date off. */}
+        <CoachCountdownCard examType={user?.examType ?? null} />
+
+        <CoachCapacityCard
+          loaded={overview !== null}
+          inviteCode={overview?.inviteCode ?? null}
+          inviteLock={inviteLock}
+          activeStudents={overview?.activeStudents ?? 0}
+          maxActiveStudents={overview?.maxActiveStudents ?? 0}
+          freeSeats={overview?.freeSeats ?? 0}
+          paidSeats={overview?.paidSeats ?? 0}
+          usedSeats={overview?.usedSeats ?? 0}
+          sponsorshipEnabled={overview?.sponsorshipEnabled ?? false}
+          busy={busy}
+          onRotate={rotate}
+        />
+
+        {overview !== null && (
+          // Open on the empty roster: that screen is the coach's first, and it is the one moment
+          // they have nothing else to read.
+          <CoachScopeCard scope={overview.dataScope} defaultOpen={summary.total === 0} />
+        )}
+
+        {/* Roadmap §5 makes the forum the coach's showcase and the raw material of their trust
+            score, so this is not the student's promo strip wearing a coach hat. */}
+        <CommunityCard />
+      </aside>
     </div>
   );
 }
