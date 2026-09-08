@@ -16,7 +16,7 @@ export function parseAnalysisTab(value: string | null): AnalysisTab {
   if (value && TAB_VALUES.includes(value as AnalysisTab)) {
     return value as AnalysisTab;
   }
-  return "entry";
+  return "progress";
 }
 
 export function shouldNavigateAnalysisTab(

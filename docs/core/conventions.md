@@ -47,6 +47,8 @@
 | APP-071 | W8 mentorship: the coach's standing note to a student (one-way, not a thread) |
 | APP-072 | W8 mentorship: Playwright coverage for the student invite path and the coach surface |
 | APP-073 | Test suite repair: two shell bugs the stale suites were hiding + provider pinning |
+| APP-074…APP-088 | Registry gap — recorded in the matching `docs/features/*.md` timelines |
+| APP-089 | W8 coach self-registration + coach onboarding branch; admin gains suspend/reinstate |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)

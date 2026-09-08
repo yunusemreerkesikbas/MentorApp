@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useState, useRef, type ReactNode } from "react";
 import Image from "next/image";
 import {
   BookOpenCheck,
@@ -91,6 +91,7 @@ export function NotebookReviewPanel({
   onEdit,
   onClose,
 }: NotebookReviewPanelProps) {
+  const requests = useRef(new Map<string, { id: string; solved: boolean }>());
   const t = useTranslations("notebook");
   const reduceMotion = useReducedMotion();
 
@@ -215,7 +216,11 @@ export function NotebookReviewPanel({
       setDirection(solved ? 1 : -1);
       try {
         const wasProgressing = entry.reviewCount > 0;
-        const updated = await reviewNotebookEntry(entry.id, solved);
+        const pending = requests.current.get(entry.id) ?? { id: crypto.randomUUID(), solved };
+        requests.current.set(entry.id, pending);
+        const updated = await reviewNotebookEntry(entry.id, pending.solved, pending.id);
+        solved = pending.solved;
+        requests.current.delete(entry.id);
         onReviewed(updated);
         setOutcomes((current) => [...current, { entry: updated, solved }]);
         // The days come from the entry the server returned, never from a copy of the ladder here:

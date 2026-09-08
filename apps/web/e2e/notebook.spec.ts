@@ -106,6 +106,52 @@ function makeEntry(
   };
 }
 
+test("analysis V1.1 notebook filters remain visible, clearable and persistent", async ({ page }) => {
+  await mockNotebookApi(page, { indexEntries: [makeEntry()] });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  const mockId = "44444444-4444-4444-8444-444444444444";
+  await page.route(`**/v1/mock-exams/${mockId}`, (route) => json(route, { id: mockId, examId: exam.id, examName: exam.name, publisherName: "Deneme A", takenAt: "2026-08-10T12:00:00Z", subjects: [] }));
+  const query = new URLSearchParams({ panel: "index", examId: exam.id, mockExamId: mockId, subjectRef: "matematik", topicRef: "problemler", errorType: "CARELESS" });
+  await page.goto(`/yanlis-defteri?${query}`);
+  await expect(page.getByRole("button", { name: "Deneme A filtresini temizle" })).toBeVisible();
+  await page.getByRole("button", { name: "Problemler filtresini temizle" }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.has("topicRef")).toBe(false);
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Deneme A filtresini temizle" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Problemler filtresini temizle" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Tüm filtreleri temizle" }).click();
+  await expect.poll(() => new URL(page.url()).searchParams.toString()).toBe("panel=index");
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Deneme A filtresini temizle" })).toHaveCount(0);
+});
+
+test("analysis V1.1 ignores delayed pagination after a filter change", async ({ page }) => {
+  await mockNotebookApi(page);
+  let release: (() => void) | undefined;
+  let requested = false;
+  const delayed = new Promise<void>((resolve) => { release = resolve; });
+  await page.route("**/v1/coaching/notebook/entries?**", async (route) => {
+    const query = new URL(route.request().url()).searchParams;
+    if (query.get("page") === "2") {
+      requested = true;
+      await delayed;
+      return json(route, { items: [makeEntry({ id: "55555555-5555-4555-8555-555555555555", topicName: "Geciken eski kayıt" })], total: 2, page: 2, pageSize: 20 });
+    }
+    const filtered = query.has("subjectRef");
+    return json(route, { items: [makeEntry({ topicName: filtered ? "İlk kayıt" : "Güncel kayıt" })], total: filtered ? 2 : 1, page: 1, pageSize: 20 });
+  });
+  await page.goto(`/yanlis-defteri?panel=index&examId=${exam.id}&subjectRef=matematik`);
+  await page.getByRole("button", { name: "1 kayıt daha", exact: true }).click();
+  await expect.poll(() => requested).toBe(true);
+  await page.getByRole("button", { name: "Matematik filtresini temizle" }).click();
+  await expect(page.getByText("Güncel kayıt", { exact: true })).toBeVisible();
+  const oldResponse = page.waitForResponse((response) => response.url().includes("/notebook/entries?") && new URL(response.url()).searchParams.get("page") === "2");
+  release?.();
+  await oldResponse;
+  await expect(page.getByText("Geciken eski kayıt", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Güncel kayıt", { exact: true })).toBeVisible();
+});
+
 /**
  * Choose a value from a `MenuSelect` field.
  *
@@ -806,7 +852,7 @@ test("silgi çizilen mürekkebi kaldırır, çizim modu kart sürüklemeyi kapat
 });
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
   "access-control-allow-credentials": "true",
 };
 

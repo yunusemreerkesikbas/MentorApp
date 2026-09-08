@@ -7,7 +7,7 @@ import {
   mentorshipStudentParamSchema,
   mentorshipTemplateParamSchema,
   saveMentorshipTemplateSchema,
-  submitCoachApplicationSchema,
+  registerCoachSchema,
   updateCoachProfileSchema,
 } from "@mentor/validation";
 import { createZodDto } from "../../../common/validation/zod-dto";
@@ -24,5 +24,5 @@ export class MentorshipCoachNoteDto extends createZodDto(mentorshipCoachNoteSche
 export class MentorshipAttentionDto extends createZodDto(mentorshipAttentionSchema) {}
 export class SaveMentorshipTemplateDto extends createZodDto(saveMentorshipTemplateSchema) {}
 export class MentorshipTemplateParamDto extends createZodDto(mentorshipTemplateParamSchema) {}
-export class SubmitCoachApplicationDto extends createZodDto(submitCoachApplicationSchema) {}
+export class RegisterCoachDto extends createZodDto(registerCoachSchema) {}
 export class UpdateCoachProfileDto extends createZodDto(updateCoachProfileSchema) {}

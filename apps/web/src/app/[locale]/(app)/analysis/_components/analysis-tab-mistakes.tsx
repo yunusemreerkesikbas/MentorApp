@@ -76,7 +76,7 @@ export function AnalysisTabMistakes({ analysis, examId }: AnalysisTabMistakesPro
             {errorSignals.map((signal) => (
               <li key={signal.errorType} className="flex flex-col gap-1">
                 <Link
-                  href={{ pathname: "/notebook", query: { panel: "index", examId, errorType: signal.errorType } }}
+                  href={{ pathname: "/notebook", query: { review: "focus", examId, errorType: signal.errorType } }}
                   className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 >
                 <div className="flex items-center justify-between gap-2">
@@ -152,7 +152,7 @@ export function AnalysisTabMistakes({ analysis, examId }: AnalysisTabMistakesPro
                   {group.topics.map((signal) => (
                     <li key={signal.topicRef} className="flex flex-col gap-1">
                       <Link
-                        href={{ pathname: "/notebook", query: { panel: "index", examId, subjectRef: signal.subjectRef, topicRef: signal.topicRef } }}
+                        href={{ pathname: "/notebook", query: { review: "focus", examId, subjectRef: signal.subjectRef, topicRef: signal.topicRef } }}
                         className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                       >
                       <div className="flex items-center justify-between gap-3 text-sm">
@@ -193,7 +193,7 @@ export function AnalysisTabMistakes({ analysis, examId }: AnalysisTabMistakesPro
             {signals.map((signal) => (
               <li key={signal.subjectRef} className="flex flex-col gap-1">
                 <Link
-                  href={{ pathname: "/notebook", query: { panel: "index", examId, subjectRef: signal.subjectRef } }}
+                  href={{ pathname: "/notebook", query: { review: "focus", examId, subjectRef: signal.subjectRef } }}
                   className="rounded-[var(--radius-card)] p-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 >
                 <div className="flex items-center justify-between gap-3 text-sm">

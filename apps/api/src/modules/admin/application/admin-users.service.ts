@@ -3,6 +3,7 @@ import { ASSIGNABLE_ROLES, UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
 import { AccountErasureService } from "../../account/application/account-erasure.service";
+import { UsersService } from "../../identity/application/users.service";
 import { UserStatus } from "../../identity/domain/identity.constants";
 import { AdminUsersRepository, type AdminUserRow } from "../infrastructure/admin-users.repository";
 
@@ -68,6 +69,7 @@ export class AdminUsersService {
   constructor(
     private readonly repo: AdminUsersRepository,
     private readonly accountErasure: AccountErasureService,
+    private readonly users: UsersService,
   ) {}
 
   async search(
@@ -121,7 +123,10 @@ export class AdminUsersService {
     userId: string,
     compute: (roles: string[]) => string[],
   ): Promise<RoleChangeResult> {
-    const change = await this.repo.setRoles(userId, compute);
+    // Identity owns `users.roles`; admin owns the policy (the allowlist above) and the audit line
+    // its caller writes. Two copies of the locked read-modify-write would be two places to drift,
+    // and W8 needs the same primitive for coach registration (APP-089).
+    const change = await this.users.setRoles(userId, compute);
     if (!change) {
       throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     }

@@ -6,7 +6,7 @@ export function analysisCycleView(analysis: CoachingAnalysisDto) {
   return {
     focus: cycle?.focus ?? analysis.nextFocus,
     coachMockExamId: cycle
-      ? cycle.baseline ? cycle.followUp?.mockExamId ?? cycle.baseline.mockExamId : undefined
+      ? cycle.baseline ? (cycle.steps.closed ? cycle.followUp?.mockExamId : undefined) ?? cycle.baseline.mockExamId : undefined
       : analysis.nextFocus?.recentTrend[0]?.mockExamId,
     proposal: !cycle || cycle.steps.closed || !cycle.baseline ? analysis.nextFocus : null,
   };

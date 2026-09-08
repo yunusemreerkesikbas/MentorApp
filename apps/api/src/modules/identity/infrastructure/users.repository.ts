@@ -225,6 +225,34 @@ export class UsersRepository {
     });
   }
 
+  /**
+   * Read-modify-write the role array under a row lock. Undefined when there is no such user.
+   *
+   * `FOR UPDATE` is the whole point: `roles` is an array that callers edit by adding or removing one
+   * value, so two concurrent grants that both read `['STUDENT']` would each write a one-element
+   * result and silently drop the other's role. Identity owns `users`, so this is the single
+   * implementation — W6 (admin grants) and W8 (coach registration) both reach it through
+   * `UsersService`, and neither writes the column itself.
+   */
+  async setRoles(
+    id: string,
+    compute: (current: string[]) => string[],
+  ): Promise<{ before: string[]; after: string[] } | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({ roles: users.roles })
+        .from(users)
+        .where(eq(users.id, id))
+        .for("update")
+        .limit(1);
+      const current = rows[0]?.roles;
+      if (!current) return undefined;
+      const after = compute(current);
+      await tx.update(users).set({ roles: after }).where(eq(users.id, id));
+      return { before: current, after };
+    });
+  }
+
   /** Self read — user-scoped RLS (returns nothing if the id doesn't match the context). */
   async findSelf(userId: string): Promise<UserRow | undefined> {
     return withUserContext(this.db, { userId }, async (tx) => {

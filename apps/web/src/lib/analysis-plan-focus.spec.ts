@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 vi.mock("@mentor/api-client", () => ({
-  contentControllerListExams: vi.fn(async () => [{ id: "exam", slug: "exam-slug" }]),
+  http: vi.fn(async () => ({ items: [{ id: "exam", slug: "exam-slug" }], total: 1, page: 1, pageSize: 100 })),
   contentControllerSubjectsBySlug: vi.fn(async () => [{ slug: "math", name: "Verified math" }]),
   contentControllerTopicsBySlug: vi.fn(async () => [{ subjectSlug: "math", slug: "topic", name: "Verified topic" }]),
 }));

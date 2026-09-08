@@ -1,3 +1,6 @@
+import { NotebookReviewRepository } from "./infrastructure/notebook-review.repository";
+import { NotebookReviewService } from "./application/notebook-review.service";
+import { NotebookReviewController } from "./presentation/notebook-review.controller";
 import { Module } from "@nestjs/common";
 import { ContentModule } from "../content/content.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -61,6 +64,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
 @Module({
   imports: [ContentModule, IdentityModule],
   controllers: [
+    NotebookReviewController,
     CoachingController,
     PlanTaskController,
     StudySessionController,
@@ -70,6 +74,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
     NotebooksController,
   ],
   providers: [
+    NotebookReviewRepository,
+    NotebookReviewService,
     PlanService,
     MistakeNotebookService,
     NotebookForumListener,

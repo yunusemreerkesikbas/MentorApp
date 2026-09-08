@@ -1,4 +1,5 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
+import type { AnalysisImprovementCycleDto } from "@mentor/types";
 import {
   emptyAnalysis,
   firstAnalysis,
@@ -8,6 +9,34 @@ import {
   readyWeekly,
   user,
 } from "./analysis.fixture";
+
+for (const deleted of [false, true]) {
+  test(`analysis V1.1 completed cycle keeps its focus separate (${deleted ? "deleted" : "completed"})`, async ({ page }) => {
+    const baselineId = firstAnalysis.trend[0]!.id;
+    const followId = multipleAnalysis.trend[0]!.id;
+    const cycle: AnalysisImprovementCycleDto = {
+      task: { id: baselineId, title: "Eski tekrar", status: "DONE", taskDate: "2026-07-12", createdAt: "2026-07-12T12:00:00Z" },
+      focus: { subjectRef: "tarih", subjectName: "Tarih", source: "LOWEST_AVERAGE", evidenceCount: 2 },
+      baseline: deleted ? null : { mockExamId: baselineId, takenAt: "2026-07-10T12:00:00Z", net: "12.00" },
+      followUp: deleted ? null : { mockExamId: followId, takenAt: "2026-07-13T12:00:00Z", net: "14.00", delta: "+2.00" },
+      notebook: { matchingCount: 0, reviewedAfterPlanCount: 0, dueCount: 0, healedCount: 0 },
+      steps: { planned: true, practiced: true, measured: !deleted, closed: !deleted },
+      message: deleted ? "Başlangıç denemesi silindi." : "Tarih netin 12,00’dan 14,00’a geldi, fark +2,00.",
+    };
+    await mockAnalysisApi(page, { analysis: { ...multipleAnalysis, improvementCycle: cycle } });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/analiz?tab=progress");
+    const card = page.getByTestId("analysis-improvement-cycle");
+    await expect(card.getByText(cycle.message)).toBeVisible();
+    await expect(card.getByText("Tarih", { exact: true })).toBeVisible();
+    const proposal = card.getByTestId("analysis-next-proposal");
+    await expect(proposal.getByText("Matematik · Problemler")).toBeVisible();
+    await expect(proposal.getByRole("link", { name: "Yeni odağı planıma ekle" })).toHaveAttribute("href", /subjectRef=matematik/);
+    const coach = card.getByRole("link", { name: "AI koçla değerlendir" });
+    if (deleted) await expect(coach).toHaveCount(0);
+    else await expect(coach).toHaveAttribute("href", new RegExp(`contextMockExamId=${followId}`));
+  });
+}
 
 test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", async ({
   page,
@@ -36,11 +65,8 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
     weekly: [insufficientWeekly],
   });
   await page.goto("/analiz");
-  // The calm empty state is no longer a redirect message on Gelişim — the shell defaults
-  // straight to Gir, whose own form already teaches "no attempts yet" by being the thing to fill
-  // in (`analysis-summary-band.tsx`'s own comment: "the Gir tab's own empty state already teaches
-  // this; don't repeat it here").
-  await expect(page.getByRole("tab", { name: "Gir" })).toHaveAttribute(
+  await page.getByRole("tab", { name: "Deneme ekle" }).click();
+  await expect(page.getByRole("tab", { name: "Deneme ekle" })).toHaveAttribute(
     "aria-selected",
     "true",
   );
@@ -77,7 +103,7 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   );
   await expect(firstPage.getByText(/Geçen denemeye göre/)).toHaveCount(0);
   await expect(
-    firstPage.getByText("Matematik", { exact: true }).first(),
+    firstPage.getByTestId("analysis-improvement-cycle").getByText("Matematik", { exact: true }),
   ).toBeVisible();
   // The focus card used to be a collapsible `<details>`; it is now a flat card shown whenever
   // there is a focus to show, and simply absent when there is not — no expand/collapse state
@@ -148,7 +174,7 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
 
   await expectNoHorizontalOverflow(page);
   for (const target of [
-    page.getByRole("tab", { name: "Gir" }),
+    page.getByRole("tab", { name: "Deneme ekle" }),
     page.getByRole("tab", { name: "Gelişim" }),
     page.getByRole("tab", { name: "Yanlışlarım" }),
     plan,
@@ -205,7 +231,7 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   // navigation is simply that this tab's own panel is now the one attached.
   await expect(page.locator("#analysis-panel-mistakes")).toBeVisible();
   await page.keyboard.press("Home");
-  await expect(page.getByRole("tab", { name: "Gir" })).toBeFocused();
+  await expect(page.getByRole("tab", { name: "Deneme ekle" })).toBeFocused();
 
   // The weekly-recap teaser lived here once but has since moved to the dashboard — `/analiz`
   // never calls the weekly-review endpoint at all now.
@@ -235,7 +261,7 @@ test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
   // Same shell-default as the Turkish empty-state test: it lands on Enter, not a redirect
   // message on Progress.
   await expect(
-    page.getByRole("heading", { name: "Enter mock exam results" }),
+    page.getByRole("heading", { name: "Your focus today" }),
   ).toBeVisible();
   await expectNoHorizontalOverflow(page);
   expect(api.unexpected).toEqual([]);
@@ -271,7 +297,7 @@ test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
   const api = await mockAnalysisApi(page, {});
 
   await page.goto("/analiz");
-  await page.getByRole("tab", { name: "Gir" }).click();
+  await page.getByRole("tab", { name: "Deneme ekle" }).click();
 
   // One subject with wrong answers is enough — the handoff counts them, it does not import them.
   // `exact` matters: the app sidebar has a "Yanlış defteri" link, and label matching is a

@@ -5,122 +5,179 @@ import {
   HttpCode,
   HttpStatus,
   Param,
-  ParseUUIDPipe,
   Post,
   Query,
   Req,
   UseInterceptors,
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
-import { UserRole, type AdminCoachApplicationDto } from "@mentor/types";
+import {
+  UserRole,
+  type AdminCoachApplicationDto,
+  type MentorshipApplicationDto,
+} from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
-import {
-  MentorshipApplicationService,
-  toAdminDto,
-} from "../../mentorship/application/mentorship-application.service";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
+import { MentorshipApplicationService } from "../../mentorship/application/mentorship-application.service";
+import { toAdminDto } from "../../mentorship/application/coach-registry.mappers";
+import type { MentorshipApplicationRow } from "../../mentorship/infrastructure/mentorship-application.repository";
 import { AdminUsersService } from "../application/admin-users.service";
 import { AuditAction, AuditTargetType } from "../domain/admin.constants";
 import { AdminAuditInterceptor } from "./admin-audit.interceptor";
-import { ListCoachApplicationsQueryDto, ReviewCoachApplicationDto } from "./admin.dto";
+import {
+  CoachUserParamDto,
+  ListCoachesQueryDto,
+  SetCoachStatusDto,
+  VerifyCoachClaimsDto,
+} from "./admin.dto";
 import { Audit } from "./audit.decorator";
 import { setAuditContext, type AuditableRequest } from "./audit-context";
 
+/** Identity fields W8 cannot see, put back onto a registry row by the layer allowed to hold both. */
+interface CoachIdentity {
+  displayName: string;
+  email: string;
+  hasCoachRole: boolean;
+}
+
 /**
- * Coach vetting (roadmap §5 curation) — the admin half.
+ * The coach registry — the admin half (APP-089).
  *
- * It lives here rather than in W8 for two reasons that point the same way: every admin mutation
- * has to pass `AdminAuditInterceptor`, and the approval needs BOTH the verdict (W8's table) and
- * the COACH role (W6's `AdminUsersService`). Admin is the layer allowed to hold both — the same
- * arrangement `AdminForumController` and the sponsorship metrics endpoint already use.
+ * THE DIRECTION OF THIS SCREEN INVERTED. It used to be a vetting queue: nobody could coach until a
+ * SUPER_ADMIN approved their application, and this controller's one job was to say yes. Registration
+ * is self-service now, so nothing here stands between a coach and their account. What lives here is
+ * the power to take it back, and the badge that says we checked something.
  *
- * SUPER_ADMIN, matching `POST /users/:id/roles/:role`: approving an application IS granting that
- * role, so it cannot be a softer permission than granting it directly.
+ * It stays in W6 rather than moving to W8 for the two reasons that always pointed the same way:
+ * every admin mutation has to pass `AdminAuditInterceptor`, and the registry read needs identity
+ * (name, email, real role) that W8 deliberately cannot see. Admin is the layer allowed to hold both.
+ *
+ * SUPER_ADMIN, matching `POST /users/:id/roles/:role`: suspending a coach revokes that role, so it
+ * cannot be a softer permission than revoking it directly.
  */
 @ApiTags("admin")
 @ApiBearerAuth()
 @Roles(UserRole.SUPER_ADMIN)
 @UseInterceptors(AdminAuditInterceptor)
-@Controller("admin/coach-applications")
+@Controller("admin/coaches")
 export class AdminCoachApplicationsController {
   constructor(
     private readonly applications: MentorshipApplicationService,
     private readonly users: AdminUsersService,
   ) {}
 
-  /** The queue. W8 supplies the applications, admin puts the people back on them. */
+  /** The registry, one standing at a time. W8 supplies the rows, admin puts the people back on them. */
   @Get()
-  async list(@Query() query: ListCoachApplicationsQueryDto): Promise<AdminCoachApplicationDto[]> {
+  async list(@Query() query: ListCoachesQueryDto): Promise<AdminCoachApplicationDto[]> {
     const rows = await this.applications.listForReview(query.status);
     const people = await this.users.listByIds(rows.map((row) => row.userId));
-    return rows.map((row) => {
-      const person = people.get(row.userId);
-      return toAdminDto(row, {
-        displayName: person?.displayName ?? "",
-        email: person?.email ?? "",
-        // Reported, not inferred from `status` — see the two-write note on `review` below.
-        hasCoachRole: person?.roles.includes(UserRole.COACH) ?? false,
-      });
-    });
+    return rows.map((row) =>
+      toAdminDto(row, {
+        displayName: people.get(row.userId)?.displayName ?? "",
+        email: people.get(row.userId)?.email ?? "",
+        // Reported, not inferred from `status`: the standing and the role are two writes without a
+        // shared transaction, so a crash between them is only recoverable if it is visible here.
+        hasCoachRole: people.get(row.userId)?.roles.includes(UserRole.COACH) ?? false,
+      }),
+    );
   }
 
   /**
-   * The verdict. Approving grants COACH; rejecting does not revoke it.
+   * Move a coach's standing. ACTIVE grants COACH back; anything else revokes it.
    *
-   * TWO WRITES, TWO TRANSACTIONS, AND THE ORDER IS THE DESIGN. The role lives in W6 and the
-   * verdict in W8; admin already imports mentorship for the queue, so mentorship importing admin
-   * back would be a cycle. One transaction is therefore not available, and pretending otherwise
-   * would be worse than choosing a failure mode on purpose:
+   * The two writes and their ordering live in `MentorshipApplicationService.setStatus` — W8 owns the
+   * registry row and reaches identity's role writer through `UsersService`, so the pair is one
+   * service's job. This endpoint's own work is the audit line and the identity join.
    *
-   *   role first  → a crash leaves COACH granted with the application still PENDING. The row stays
-   *                 in the queue, the admin decides again, `grantRole` is idempotent, and the
-   *                 second attempt completes it. Visible, and self-healing.
-   *   verdict first → a crash leaves APPROVED with no role. The row LEAVES the queue, nobody is
-   *                 told, and the coach cannot open their panel without knowing why. Invisible.
-   *
-   * The list above still reports `hasCoachRole` so even the visible failure is not left to memory.
-   *
-   * Rejection deliberately does not revoke an existing COACH role: taking a role away is its own
-   * act with its own severity, the same line `mentorship.coach.free_seats` draws about seats.
+   * Addressed by USER id, not by a row id: there is no application to point at any more, and an
+   * admin acting on a person should not have to look up which record represents them.
    */
-  @Post(":applicationId/review")
+  @Post(":userId/status")
   @HttpCode(HttpStatus.OK)
-  @Audit(AuditAction.COACH_APPLICATION_REVIEW)
-  async review(
+  @Audit(AuditAction.COACH_STATUS_CHANGE)
+  async setStatus(
     @CurrentUser() actor: RequestUser,
-    @Param("applicationId", ParseUUIDPipe) applicationId: string,
-    @Body() dto: ReviewCoachApplicationDto,
+    @Param() params: CoachUserParamDto,
+    @Body() dto: SetCoachStatusDto,
     @Req() req: AuditableRequest,
   ): Promise<AdminCoachApplicationDto> {
-    const target = await this.applications.findById(applicationId);
-
-    if (dto.decision === "APPROVE") {
-      await this.users.grantRole(target.userId, UserRole.COACH);
-    }
-    const reviewed = await this.applications.review(applicationId, actor.id, {
-      decision: dto.decision,
-      verifiedClaims: dto.verifiedClaims,
-      reviewNote: dto.reviewNote ?? null,
-    });
+    const before = await this.requireRegistration(params.userId);
+    const row = await this.applications.setStatus(
+      params.userId,
+      { status: dto.status, reviewNote: dto.reviewNote ?? null },
+      actor.id,
+    );
 
     setAuditContext(req, {
       targetType: AuditTargetType.COACH_APPLICATION,
-      targetId: applicationId,
-      before: { status: target.status },
-      // `reviewed` is null when the row had already been decided — a retry, or two reviewers on the
-      // same morning. The audit line records what this call actually changed, which is nothing.
-      after: {
-        status: reviewed?.status ?? target.status,
-        verifiedClaims: reviewed?.verifiedClaims ?? [],
-        applied: reviewed !== null,
-      },
+      targetId: params.userId,
+      before: { status: before.status },
+      // `row` is null only if the registry row disappeared between the read and the write. The
+      // audit line records what this call actually changed, which in that case is nothing.
+      after: { status: row?.status ?? before.status, applied: row !== null },
     });
 
-    const person = (await this.users.listByIds([target.userId])).get(target.userId);
-    return toAdminDto(reviewed ?? target, {
+    return this.withIdentity(params.userId, row, before);
+  }
+
+  /**
+   * Mark which of a coach's claims we actually checked.
+   *
+   * Its own endpoint rather than a field on the status change, because the two are different
+   * statements: standing is "may this person coach", a badge is "did we verify what they say about
+   * themselves". Reinstating somebody must not silently re-assert badges nobody re-read.
+   */
+  @Post(":userId/verified-claims")
+  @HttpCode(HttpStatus.OK)
+  @Audit(AuditAction.COACH_CLAIMS_VERIFY)
+  async verifyClaims(
+    @CurrentUser() actor: RequestUser,
+    @Param() params: CoachUserParamDto,
+    @Body() dto: VerifyCoachClaimsDto,
+    @Req() req: AuditableRequest,
+  ): Promise<AdminCoachApplicationDto> {
+    const before = await this.requireRegistration(params.userId);
+    const row = await this.applications.setVerifiedClaims(
+      params.userId,
+      dto.verifiedClaims,
+      actor.id,
+    );
+
+    setAuditContext(req, {
+      targetType: AuditTargetType.COACH_APPLICATION,
+      targetId: params.userId,
+      before: { verifiedClaims: before.verifiedClaims },
+      after: { verifiedClaims: row?.verifiedClaims ?? before.verifiedClaims },
+    });
+
+    return this.withIdentity(params.userId, row, before);
+  }
+
+  private async requireRegistration(userId: string): Promise<MentorshipApplicationDto> {
+    const row = await this.applications.findMine(userId);
+    if (!row) {
+      // Somebody who holds COACH without a registry row has no standing to move: the row is written
+      // by the coach, because `headline` and `bio` are their words. `assertCanInvite` keeps their
+      // invite code shut until they write it.
+      throw new DomainError(ErrorCode.MENTORSHIP_APPLICATION_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return row;
+  }
+
+  /** Puts the identity back on a registry row — the join W8 cannot do for itself. */
+  private async withIdentity(
+    userId: string,
+    row: MentorshipApplicationRow | null,
+    fallback: MentorshipApplicationDto,
+  ): Promise<AdminCoachApplicationDto> {
+    const person = (await this.users.listByIds([userId])).get(userId);
+    const identity: CoachIdentity = {
       displayName: person?.displayName ?? "",
       email: person?.email ?? "",
       hasCoachRole: person?.roles.includes(UserRole.COACH) ?? false,
-    });
+    };
+    return row ? toAdminDto(row, identity) : { ...fallback, userId, ...identity };
   }
 }

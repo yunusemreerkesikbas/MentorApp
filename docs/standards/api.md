@@ -199,3 +199,16 @@
   highlights, nullable weekly title, focus-time band and peak-focus day (JWT, Free).
 - `POST /v1/coach/weekly-review` — cached Premium/coin-unlocked narration + deterministic
   suggested task (JWT).
+
+### Notebook review progress (2026-09-08)
+
+Authenticated self-service, free-tier endpoints owned by coaching:
+- GET /v1/coaching/notebook/review-summary: examId/subjectRef/topicRef/errorType and days=7|30;
+  returns distinct reviewed, latest-missed active, newly completed and currently due counts.
+- GET /v1/coaching/notebook/review-history: same filters plus page/pageSize; newest answers first.
+- GET /v1/coaching/notebook/entries/:id: owned question for a history link.
+- GET /v1/coaching/notebook/entries additionally accepts due=true, sort=review, and revisit=true
+  with days=7|30. Filters run before pagination.
+- POST /v1/coaching/notebook/entries/:id/review accepts optional reviewId UUID alongside solved.
+  A retry with the same ID and answer replays the recorded outcome; a changed answer is rejected.
+  Legacy requests without reviewId remain accepted. This does not change the review ladder.

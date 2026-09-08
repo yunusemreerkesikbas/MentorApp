@@ -138,7 +138,13 @@ function setup(
 
   // The profile the consent screen and /kocum now carry. Null is the common case: every coach
   // granted COACH by hand has no vetted application behind them.
-  const applications = { findPublicProfile: vi.fn(async () => null) };
+  // `canInvite` is the APP-089 gate on both ends of a code: issuing one, and redeeming one. Default
+  // true here so these tests keep testing the link lifecycle; the gate has its own spec.
+  const applications = {
+    findPublicProfile: vi.fn(async () => null),
+    findStatus: vi.fn(async () => "ACTIVE"),
+    canInvite: vi.fn(async () => true),
+  };
   const service = new MentorshipLinkService(
     links as never,
     invites as never,

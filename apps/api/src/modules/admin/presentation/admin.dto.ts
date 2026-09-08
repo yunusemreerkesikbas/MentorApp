@@ -8,8 +8,10 @@ import {
   adminRefundSchema,
   adminUpdatePlanSchema,
   auditLogQuerySchema,
-  listCoachApplicationsQuerySchema,
-  reviewCoachApplicationSchema,
+  listCoachesQuerySchema,
+  setCoachStatusSchema,
+  verifyCoachClaimsSchema,
+  coachUserParamSchema,
   createAnnouncementSchema,
   sendAnnouncementSchema,
   economyAdjustSchema,
@@ -24,10 +26,10 @@ import {
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class SearchUsersQueryDto extends createZodDto(searchUsersQuerySchema) {}
-export class ListCoachApplicationsQueryDto extends createZodDto(
-  listCoachApplicationsQuerySchema,
-) {}
-export class ReviewCoachApplicationDto extends createZodDto(reviewCoachApplicationSchema) {}
+export class ListCoachesQueryDto extends createZodDto(listCoachesQuerySchema) {}
+export class SetCoachStatusDto extends createZodDto(setCoachStatusSchema) {}
+export class VerifyCoachClaimsDto extends createZodDto(verifyCoachClaimsSchema) {}
+export class CoachUserParamDto extends createZodDto(coachUserParamSchema) {}
 export class AuditLogQueryDto extends createZodDto(auditLogQuerySchema) {}
 export class UpdateUserStatusDto extends createZodDto(updateUserStatusSchema) {}
 export class UpdateConfigDto extends createZodDto(updateConfigSchema) {}

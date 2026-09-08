@@ -8,7 +8,7 @@ import { mentorshipCoachApplications } from "../../../database/schema";
 
 export type MentorshipApplicationRow = typeof mentorshipCoachApplications.$inferSelect;
 
-/** The applicant's own columns. The admin's are absent by construction — see the table comment. */
+/** The coach's own columns. The admin's are absent by construction — see the table comment. */
 export interface ApplicantFields {
   headline: string;
   bio: string;
@@ -19,11 +19,11 @@ export interface ApplicantFields {
 }
 
 /**
- * Coach-application persistence.
+ * Coach-registry persistence (table name predates APP-089 — see the schema comment).
  *
  * SERVICE context throughout, like the rest of W8: `mentorship_coach_applications` carries no RLS
  * policy of its own, and every read here is either scoped by an explicit `userId` or is an admin
- * queue read whose caller is gated by `@Roles(SUPER_ADMIN)`.
+ * registry read whose caller is gated by `@Roles(SUPER_ADMIN)`.
  */
 @Injectable()
 export class MentorshipApplicationRepository {
@@ -40,30 +40,20 @@ export class MentorshipApplicationRepository {
     });
   }
 
-  findById(applicationId: string): Promise<MentorshipApplicationRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .select()
-        .from(mentorshipCoachApplications)
-        .where(eq(mentorshipCoachApplications.id, applicationId))
-        .limit(1);
-      return rows[0];
-    });
-  }
+  /* `findById` is gone (APP-089): admin used to address an application row, and now addresses the
+     PERSON — there is no request to point at, and `UNIQUE (user_id)` makes `findByUser` the only
+     lookup anybody needs. */
 
   /**
-   * Submit, or re-submit after a rejection.
+   * Register as a coach. Returns undefined when a row already exists.
    *
-   * Upsert rather than insert because `UNIQUE (user_id)` makes a second row impossible and a
-   * re-application is the same person's same application, refreshed — the `coach_students`
-   * revival pattern. `setWhere` restricts it to REJECTED rows: whether the applicant is ALLOWED to
-   * be here is the service's decision (`canApply`), but the database refuses to let a race
-   * overwrite a PENDING or APPROVED row regardless of what the service concluded a moment ago.
-   *
-   * The verdict columns are reset with the same statement. A revived row keeping its old
-   * `review_note` would show the applicant last time's refusal next to this time's submission.
+   * `DO NOTHING` rather than the upsert this used to be, and the difference is the whole APP-089
+   * change. Re-applying used to revive a REJECTED row, so the statement had to overwrite one; now
+   * registration writes an ACTIVE row, which means overwriting ANY existing row would hand the
+   * person an admin's decision to erase. `canRegister` already refuses every one of those, and this
+   * is the same refusal expressed where a race cannot get past it.
    */
-  async submit(
+  async register(
     userId: string,
     fields: ApplicantFields,
     now = new Date(),
@@ -73,7 +63,7 @@ export class MentorshipApplicationRepository {
         .insert(mentorshipCoachApplications)
         .values({
           userId,
-          status: "PENDING",
+          status: "ACTIVE",
           headline: fields.headline,
           bio: fields.bio,
           claimInstitution: fields.institution,
@@ -82,42 +72,23 @@ export class MentorshipApplicationRepository {
           claimNote: fields.note,
           submittedAt: now,
         })
-        .onConflictDoUpdate({
-          target: mentorshipCoachApplications.userId,
-          set: {
-            status: "PENDING",
-            headline: fields.headline,
-            bio: fields.bio,
-            claimInstitution: fields.institution,
-            claimBranch: fields.branch,
-            claimYears: fields.years,
-            claimNote: fields.note,
-            verifiedClaims: [],
-            reviewedBy: null,
-            reviewedAt: null,
-            reviewNote: null,
-            submittedAt: now,
-            updatedAt: now,
-          },
-          setWhere: eq(mentorshipCoachApplications.status, "REJECTED"),
-        })
+        .onConflictDoNothing({ target: mentorshipCoachApplications.userId })
         .returning();
       return rows[0];
     });
   }
 
   /**
-   * Record a verdict. Returns undefined when the row is gone or already decided, which is what
-   * makes the review endpoint safe to retry: the second call changes nothing and says so.
+   * An admin moving a coach's standing. Undefined when there is no registry row.
+   *
+   * Unscoped by current status on purpose: every transition is legal (a suspended coach can be
+   * reinstated, an active one pulled back), and a status write is idempotent, so a retried call
+   * lands on the same row with the same value. `verifiedClaims` is deliberately NOT touched —
+   * reinstating somebody must not silently re-assert badges nobody re-read.
    */
-  async review(
-    applicationId: string,
-    verdict: {
-      status: "APPROVED" | "REJECTED";
-      verifiedClaims: MentorshipClaimId[];
-      reviewNote: string | null;
-      reviewedBy: string;
-    },
+  async setStatus(
+    userId: string,
+    verdict: { status: string; reviewNote: string | null; reviewedBy: string },
     now = new Date(),
   ): Promise<MentorshipApplicationRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -125,18 +96,29 @@ export class MentorshipApplicationRepository {
         .update(mentorshipCoachApplications)
         .set({
           status: verdict.status,
-          verifiedClaims: verdict.verifiedClaims,
           reviewNote: verdict.reviewNote,
           reviewedBy: verdict.reviewedBy,
           reviewedAt: now,
           updatedAt: now,
         })
-        .where(
-          and(
-            eq(mentorshipCoachApplications.id, applicationId),
-            eq(mentorshipCoachApplications.status, "PENDING"),
-          ),
-        )
+        .where(eq(mentorshipCoachApplications.userId, userId))
+        .returning();
+      return rows[0];
+    });
+  }
+
+  /** An admin marking which claims they checked. Standing is untouched: the two are separate acts. */
+  async setVerifiedClaims(
+    userId: string,
+    verifiedClaims: MentorshipClaimId[],
+    reviewedBy: string,
+    now = new Date(),
+  ): Promise<MentorshipApplicationRow | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(mentorshipCoachApplications)
+        .set({ verifiedClaims, reviewedBy, reviewedAt: now, updatedAt: now })
+        .where(eq(mentorshipCoachApplications.userId, userId))
         .returning();
       return rows[0];
     });
@@ -145,9 +127,9 @@ export class MentorshipApplicationRepository {
   /**
    * The coach editing their own two student-facing lines.
    *
-   * Scoped to APPROVED so an outstanding application cannot be rewritten while somebody is reading
-   * it, and so a rejected one cannot be quietly turned into a profile. The claims and the verdict
-   * are untouched: they are what was vetted.
+   * Scoped to ACTIVE so a suspended coach cannot keep polishing the profile a student would read,
+   * and so somebody an admin is mid-review on cannot rewrite what is being reviewed. The claims are
+   * untouched: they are what an admin may have checked.
    */
   async updateProfile(
     userId: string,
@@ -161,7 +143,7 @@ export class MentorshipApplicationRepository {
         .where(
           and(
             eq(mentorshipCoachApplications.userId, userId),
-            eq(mentorshipCoachApplications.status, "APPROVED"),
+            eq(mentorshipCoachApplications.status, "ACTIVE"),
           ),
         )
         .returning();
@@ -169,7 +151,7 @@ export class MentorshipApplicationRepository {
     });
   }
 
-  /** The queue: one status, oldest first — the order a queue is worked in. */
+  /** The registry, filtered to one standing, oldest first. */
   listByStatus(status: string, limit: number): Promise<MentorshipApplicationRow[]> {
     return withServiceContext(this.db, (tx) =>
       tx

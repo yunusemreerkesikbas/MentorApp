@@ -35,6 +35,7 @@ export function AnalysisSegmentControl({
       onChange={(id) => onChange(id as AnalysisTab)}
       ariaLabel={t("label")}
       layoutId="analysis-tab-pill"
+      className="[&_.t-tab]:px-3 sm:[&_.t-tab]:px-4"
       equalWidth
       idPrefix="analysis-tab"
     />

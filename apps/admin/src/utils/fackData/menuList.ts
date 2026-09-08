@@ -76,7 +76,7 @@ export const menuList: MenuItem[] = [
     },
     {
         id: 12,
-        name: "Koç Başvuruları",
+        name: "Koçlar",
         path: "/coach-applications",
         icon: "feather-user-check",
         dropdownMenu: false,

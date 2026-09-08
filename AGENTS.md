@@ -64,10 +64,16 @@ verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/core/ar
    earned right (invite/quest) · **a curated coach's sponsored seat**, bounded by
    `mentorship.coach.free_seats`. No unconditional metered sampling (§7/§10).
    *The seat was added 2026-09-05 (APP-076) and revises roadmap §7's "koçtan abonelik sıkma".*
-   *It is a widening, not a removal: the path is conditional on a manually curated COACH role (§5),
+   *It is a widening, not a removal: the path is conditional on a coach account in good standing,
    on a config'd seat count, and on `mentorship.seats.sponsorship_enabled`, and every call it
    funds still sits under `ai.budget.monthly_cap_usd_cents`. `free_seats` is the single knob that
    bounds the whole exposure — coaches x seats = giveaway premium. Raise it deliberately.*
+   ***REVISED 2026-09-08 (APP-089): "manually curated COACH role" is no longer what bounds the
+   coach count.*** *Registration is self-service, so the number of coaches is bounded by the number
+   of verified email addresses somebody can produce — which is not a bound. The seat exposure is
+   therefore gated on the SEQUENCE, not on curation: `mentorship.seats.sponsorship_enabled` must not
+   be switched on before SMS OTP ships. Until then `sponsorship_enabled = false` is the whole
+   defence, and it is off. See the flag runbook in `docs/features/mentorship.md`.*
 5. **AI→teacher trust line:** a student's raw confessions to the AI never reach the teacher/coach —
    only signals/flags (§9). This is the foundation of AI-companion trust (§0).
 6. **KVKK:** PII-free summary to the LLM; no-training API; foreign-transfer disclosure. Behavioral data

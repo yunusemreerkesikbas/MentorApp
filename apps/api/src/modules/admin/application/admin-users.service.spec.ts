@@ -23,11 +23,14 @@ function makeUser(id: string, roles: string[]): AdminUserRow {
   } as AdminUserRow;
 }
 
-/** In-memory fake mirroring the SERVICE-context repo (read-compute-write is atomic here). */
-function makeRepoFake(users: Map<string, AdminUserRow>) {
+/**
+ * In-memory stand-in for identity's role writer (APP-089).
+ *
+ * `users.roles` is identity's column, so admin no longer writes it: the allowlist and the audit
+ * line stay here, the locked read-modify-write lives in `UsersService`.
+ */
+function makeUsersServiceFake(users: Map<string, AdminUserRow>) {
   return {
-    search: async () => [...users.values()],
-    findById: async (id: string) => users.get(id),
     setRoles: async (id: string, compute: (roles: string[]) => string[]) => {
       const row = users.get(id);
       if (!row) return undefined;
@@ -36,6 +39,14 @@ function makeRepoFake(users: Map<string, AdminUserRow>) {
       users.set(id, { ...row, roles: after });
       return { before, after };
     },
+  };
+}
+
+/** In-memory fake mirroring the SERVICE-context repo (read-compute-write is atomic here). */
+function makeRepoFake(users: Map<string, AdminUserRow>) {
+  return {
+    search: async () => [...users.values()],
+    findById: async (id: string) => users.get(id),
     updateStatus: async (id: string, status: string) => {
       const row = users.get(id);
       if (!row) return undefined;
@@ -68,6 +79,7 @@ describe("AdminUsersService", () => {
     service = new AdminUsersService(
       makeRepoFake(users) as never,
       { eraseAccount } as never,
+      makeUsersServiceFake(users) as never,
     );
   });
 

@@ -93,7 +93,10 @@
       "kvkk_error": "Devam etmek için KVKK metnini kabul etmelisin.",
       "submit": "Kayıt ol",
       "login_prompt": "Zaten hesabın var mı?",
-      "login_link": "Giriş yap"
+      "login_link": "Giriş yap",
+      "title_coach": "Koç olarak katıl",
+      "coach_intro": "Önce hesabını açalım. Profilini birazdan birlikte yazacağız.",
+      "coach_link": "Koç olarak mı katılmak istiyorsun?"
     },
     "forgot_password": {
       "title": "Şifremi unuttum",
@@ -1202,7 +1205,7 @@
     "no_seed_desc": "Sınav takvimi veya ders listesi henüz yayımlanmadı. Editorial içerik güncellendiğinde form burada açılacak.",
     "tabs": {
       "label": "Analiz bölümleri",
-      "entry": "Gir",
+      "entry": "Deneme ekle",
       "progress": "Gelişim",
       "mistakes": "Yanlışlarım"
     },
@@ -1559,7 +1562,35 @@
     "error_signals_subtitle": "Son 60 günün yanlış defterinden.",
     "notebook_open": "Yanlış defterini aç",
     "notebook_empty_title": "Yanlış defterin henüz uyanmadı",
-    "notebook_empty_desc": "Yanlış ekledikçe nedenlerin dağılımı burada belirir."
+    "notebook_empty_desc": "Yanlış ekledikçe nedenlerin dağılımı burada belirir.",
+    "review": {
+      "focus": "Bugünkü odağın",
+      "choose": "Başka konu seç",
+      "all": "Tüm konular",
+      "start": "Tekrara başla · {count} kayıt",
+      "plan": "Plan ve deneme takibi",
+      "period": "İlerleme dönemi",
+      "days": "Son {count} gün",
+      "error": "İlerleme yüklenemedi.",
+      "retry": "Yeniden dene",
+      "loading": "İlerlemen yükleniyor…",
+      "workedCount": "Çalıştığın sorular",
+      "revisitCount": "Yeniden bakılacaklar",
+      "completedCount": "Tekrar basamaklarını tamamlayanlar",
+      "dueCount": "Tekrar zamanı gelenler",
+      "dueNote": "Tekrar zamanı gelenler bugünkü durumu gösterir. Diğer sayılar seçtiğin döneme aittir.",
+      "history": "Çalışma geçmişin",
+      "historyNote": "Geçmiş, bu özellik açıldıktan sonra kaydedilen cevapları gösterir. Sonuçlar senin çözdüm veya çözemedim yanıtına dayanır.",
+      "empty": "Bu dönemde kayıtlı tekrar yok. Hazır olduğunda bir soruyla başlayabilirsin.",
+      "unlabelled": "Henüz etiketlenmemiş soru",
+      "solved": "Çözdüm",
+      "missed": "Çözemedim",
+      "early": "Erken tekrar",
+      "next": "O tekrarda belirlenen tarih: {date}",
+      "noNext": "O tekrarda yeni tarih belirlenmedi.",
+      "previous": "Önceki",
+      "more": "Sonraki"
+    }
   },
   "session": {
     "title": "Çalışma Seansı",
@@ -1772,6 +1803,11 @@
     "index_filter_topic": "Konu",
     "index_analysis_filter_active": "Analizden gelen filtreler etkin",
     "index_filters_clear": "Temizle",
+    "index_filters_active": "Etkin filtreler",
+    "index_filters_clear_all": "Tüm filtreleri temizle",
+    "index_filter_clear_one": "{filter} filtresini temizle",
+    "index_exam_filter": "Seçili sınav",
+    "index_mock_filter": "Seçili deneme",
     "index_filter_error_type": "Hata tipi",
     "index_filter_status": "Durum",
     "index_filter_all": "Hepsi",
@@ -1956,7 +1992,18 @@
     "card_preview_aria": "Fotoğrafı büyüt: {type}",
     "card_preview_close": "Kapat",
     "save": "Kaydet",
-    "unsaved": "Kaydedilmedi"
+    "unsaved": "Kaydedilmedi",
+    "focusReview": {
+      "back": "Analize dön",
+      "error": "Tekrar kayıtları yüklenemedi.",
+      "retry": "Yeniden dene",
+      "loading": "Soruların yükleniyor…",
+      "empty": "Bu seçimde aktif soru yok.",
+      "noDue": "Bu seçimde tekrar zamanı gelen soru yok.",
+      "early": "Aktif sorularla erken çalış",
+      "saved": "Kaydedilen cevapların geçmişine eklendi.",
+      "more": "Diğer sorulara geç"
+    }
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",
@@ -2438,7 +2485,8 @@
     "exam": {
       "title": "Hangi sınava hazırlanıyorsun?",
       "continue": "Devam",
-      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
+      "title_coach": "Hangi sınava koçluk yapıyorsun?"
     },
     "kpss_level": {
       "title": "KPSS’nin hangi düzeyine hazırlanıyorsun?",
@@ -2453,12 +2501,21 @@
       "skip": "Şimdilik geç",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
+    "coach_profile": {
+      "title": "Öğrenciye kendini nasıl anlatalım?",
+      "subtitle": "Bu iki satırı, sana bağlanmadan önce öğrenci okuyor.",
+      "claims_intro": "İstersen ekle. Biz kontrol edene kadar öğrenciye senin beyanın olarak gösteriliyor.",
+      "save": "Koç hesabımı aç",
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+    },
     "complete": {
       "title": "Hazırız. İlk adımın seni bekliyor.",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
       "countdown_teaser": "Sınav geri sayımın panelde. Kaynak gösterilmiş resmî takvimden.",
       "map_cta": "Hedefini haritada işaretle →",
-      "go_panel": "Panele git"
+      "go_panel": "Panele git",
+      "title_coach": "Koç hesabın hazır.",
+      "verify_email_coach": "Davet kodun için e-postanı doğrulaman yeterli."
     }
   },
   "vision": {
@@ -3159,33 +3216,36 @@
     "application_headline_placeholder": "KPSS Türkçe koçu",
     "application_bio_label": "Kendini anlat",
     "application_bio_placeholder": "Kimlerle çalıştın, nasıl bir takip yapıyorsun?",
-    "application_claims_intro": "Aşağıdakiler isteğe bağlı. Doğrulayabildiklerimizi profilinde rozet olarak gösteriyoruz.",
     "application_institution_label": "Kurum",
     "application_branch_label": "Branş",
     "application_years_label": "Kaç yıldır koçluk yapıyorsun?",
     "application_note_label": "Eklemek istediğin bir şey",
     "application_note_placeholder": "Bize ulaşabileceğimiz bir bağlam, bir çalışma örneği…",
-    "application_submit": "Başvuruyu gönder",
-    "application_sent_title": "Başvurun bize ulaştı",
-    "application_sent_body": "Değerlendirip sonucu buradan göstereceğiz.",
-    "application_closed_title": "Şu an başvuru almıyoruz",
-    "application_closed_body": "Kapılar açıldığında duyuracağız.",
-    "application_status_PENDING": "Değerlendirmede",
-    "application_status_PENDING_body": "Başvurun bizde. Sonucu buradan göreceksin, ayrıca haber vereceğiz.",
-    "application_status_APPROVED": "Onaylandı",
-    "application_status_APPROVED_body": "Koç panelin açık. Öğrencilerini davet koduyla bağlayabilirsin.",
-    "application_status_REJECTED": "Bu sefer olmadı",
-    "application_status_REJECTED_body": "Aşağıdaki not gerekçeyi anlatıyor. Bir süre sonra yeniden başvurabilirsin.",
+    "registration_submit": "Koç hesabımı aç",
+    "registration_claims_intro": "Bunlar senin beyanın. Biz kontrol edene kadar öğrenciye böyle gösteriliyor.",
+    "registration_done_title": "Koç hesabın açıldı",
+    "registration_done_body": "Profilin yayında. Davet kodun e-postanı doğrulayınca çalışmaya başlıyor.",
+    "application_closed_title": "Koç kaydı şu an kapalı",
+    "application_closed_body": "Yeniden açtığımızda duyuracağız.",
     "application_claim_INSTITUTION": "Kurum doğrulandı",
     "application_claim_BRANCH": "Branş doğrulandı",
     "application_claim_YEARS": "Deneyim doğrulandı",
+    "coach_status_ACTIVE": "Açık",
+    "coach_status_ACTIVE_body": "Profilin öğrencilere görünüyor ve davet kodun elinde.",
+    "coach_status_PENDING": "İncelemede",
+    "coach_status_PENDING_body": "Hesabını inceliyoruz. Bu sürede yeni öğrenci alamıyorsun.",
+    "coach_status_SUSPENDED": "Durduruldu",
+    "coach_status_SUSPENDED_body": "Koç hesabın durduruldu. Yeniden kaydolmak bunu açmıyor.",
+    "coach_email_unverified": "Davet kodun e-postanı doğrulayınca açılıyor. Kutuna gelen bağlantıya dokunman yeterli.",
+    "invite_locked_standing": "Koç hesabın şu an açık değil, o yüzden davet kodu üretemiyorsun.",
+    "my_coach_suspended": "Koçunun erişimi durduruldu. Bağlantın duruyor, çalışmaların ona gitmiyor.",
     "application_open_panel": "Koç paneline git",
-    "application_reapply": "Yeniden başvur",
     "coach_profile_unknown": "Bu koç hakkında henüz bir profil yok.",
     "coach_profile_verified_label": "Doğrulanan bilgiler",
-    "coach_profile_claim_INSTITUTION": "{value} · doğrulandı",
-    "coach_profile_claim_BRANCH": "{value} · doğrulandı",
-    "coach_profile_claim_YEARS": "{value} yıl deneyim · doğrulandı",
+    "coach_profile_declared_label": "Koçun kendi beyanı, henüz doğrulanmadı",
+    "coach_profile_claim_INSTITUTION": "Kurum: {value}",
+    "coach_profile_claim_BRANCH": "Branş: {value}",
+    "coach_profile_claim_YEARS": "Deneyim: {value} yıl",
     "profile_edit": "Profili düzenle",
     "profile_edit_save": "Kaydet",
     "profile_edit_claims_locked": "Kurum, branş ve deneyim bilgini burada değiştiremezsin: onları doğrulayan biz olduğumuz için rozetin arkasında biz duruyoruz.",

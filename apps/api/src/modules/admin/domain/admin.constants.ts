@@ -8,8 +8,16 @@ export const AuditAction = {
   STAFF_ASSIGN: "staff.assign",
   STAFF_REVOKE: "staff.revoke",
   ROLE_ASSIGN: "role.assign",
-  /** Coach vetting (W8 curation). Approving also grants COACH — see the controller. */
+  /**
+   * Coach vetting (W8 curation). Approving also granted COACH.
+   * No longer written since APP-089 made registration self-service; kept because audit history
+   * references it and this map is append-only.
+   */
   COACH_APPLICATION_REVIEW: "coach-application.review",
+  /** Moving a coach's standing (APP-089). ACTIVE grants COACH back, anything else revokes it. */
+  COACH_STATUS_CHANGE: "coach.status-change",
+  /** Marking which of a coach's claims an admin checked. Standing is untouched. */
+  COACH_CLAIMS_VERIFY: "coach.claims-verify",
   ROLE_REVOKE: "role.revoke",
   USER_STATUS: "user.status",
   USER_KVKK_EXPORT: "user.kvkk-export",

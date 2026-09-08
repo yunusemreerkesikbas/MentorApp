@@ -102,6 +102,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-08 · Analysis V1.1 task isolation.** Selected-mock-exam review replies now discard suggested task markers server-side in blocking, streaming and regenerated replies, in addition to the aggregate-only prompt instruction. The analysis loop remains an explicit user-approved action on Analysis. Existing access, budget and sponsored-seat flags are unchanged. Related: `chat.service.ts`, its selected-exam regression test, and `analysis-coach-prompt.spec.ts`.
+
 - **2026-09-07 · Selected-exam analysis context.** Existing chat preparation now adds an explicit aggregate-only projection of the current analysis focus, dominant error distribution and notebook status counts alongside selected-exam nets. Usage: “Review with AI coach” opens a draft with `contextMockExamId`; sending remains a user action. No notebook notes, photo keys or raw confessions enter this context. Existing access, quota and budget gates remain in place; no new AI endpoint was added. The prompt requests one short next step and does not authorize creating or completing an analysis loop. Related: `analysis-coach-prompt.ts`, `mentor-v2-prompt.ts`, `chat.service.ts`, coaching `AnalysisService`.
 
 - **AI ödev taslağı — katalogdaki üçüncü "aktör özne değil" özelliği (APP-086, 2026-09-07)** —

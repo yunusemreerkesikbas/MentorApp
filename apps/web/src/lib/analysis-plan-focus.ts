@@ -1,11 +1,11 @@
-import { contentControllerListExams, contentControllerSubjectsBySlug, contentControllerTopicsBySlug } from "@mentor/api-client";
-import type { ExamSummaryDto, ExamSubjectDto, ExamTopicDto } from "@mentor/types";
+import { contentControllerSubjectsBySlug, contentControllerTopicsBySlug } from "@mentor/api-client";
+import type { ExamSubjectDto, ExamTopicDto } from "@mentor/types";
+import { findExamReference } from "./exam-reference";
 
 export type AnalysisFocusRefs = { examId: string; subjectRef: string; topicRef?: string };
 
 export async function loadAnalysisPlanFocus(refs: AnalysisFocusRefs) {
-  const exams = await contentControllerListExams() as unknown as ExamSummaryDto[];
-  const exam = exams.find((item) => item.id === refs.examId);
+  const exam = await findExamReference(refs.examId);
   if (!exam) throw new Error("ANALYSIS_FOCUS_CHANGED");
   const [subjects, topics] = await Promise.all([
     contentControllerSubjectsBySlug(exam.slug) as unknown as Promise<ExamSubjectDto[]>,

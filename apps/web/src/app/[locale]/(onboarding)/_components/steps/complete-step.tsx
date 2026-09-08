@@ -8,9 +8,9 @@ import { PuhuImage } from "@/components/puhu-image";
 import { useRouter } from "@/i18n/navigation";
 import { useCloudTransition } from "@/lib/cloud-transition";
 import { consumePendingInvite } from "@/lib/pending-invite";
-import { onboardingDestination } from "../onboarding-flow";
+import { onboardingDestination, type OnboardingAudience } from "../onboarding-flow";
 
-export function CompleteStep({ onFinish }: { onFinish: () => void }) {
+export function CompleteStep({ audience = "student", onFinish }: { audience?: OnboardingAudience; onFinish: () => void }) {
   const t = useTranslations("onboarding.complete");
   const router = useRouter();
   const reduceMotion = useReducedMotion();
@@ -24,7 +24,7 @@ export function CompleteStep({ onFinish }: { onFinish: () => void }) {
     try {
       sessionStorage.setItem("mentor_onboarding_coin_pending", "1");
     } catch {}
-    const destination = onboardingDestination(consumePendingInvite());
+    const destination = onboardingDestination(consumePendingInvite(), audience);
     const timer = window.setTimeout(() => {
       startCloudTransition(() => {
         // @ts-expect-error validated internal destination may be transported as a string.
@@ -32,7 +32,7 @@ export function CompleteStep({ onFinish }: { onFinish: () => void }) {
       });
     }, reduceMotion ? 250 : 1_100);
     return () => window.clearTimeout(timer);
-  }, [onFinish, reduceMotion, router, startCloudTransition]);
+  }, [audience, onFinish, reduceMotion, router, startCloudTransition]);
 
   return (
     <main className="flex min-h-dvh items-center justify-center px-5 text-center">
@@ -41,7 +41,14 @@ export function CompleteStep({ onFinish }: { onFinish: () => void }) {
         <TextsReveal
           className="mt-6"
           lines={[
-            <h1 key="title" className="text-2xl font-semibold text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{t("title")}</h1>,
+            <h1 key="title" className="text-2xl font-semibold text-[var(--color-main)] sm:text-3xl" style={{ fontFamily: "var(--font-heading)" }}>{audience === "coach" ? t("title_coach") : t("title")}</h1>,
+            ...(audience === "coach"
+              ? [
+                  // The coach registered a moment ago but their invite code is still shut until the
+                  // email is verified. Saying so here beats letting them find a locked panel.
+                  <p key="verify" className="mt-3 text-sm text-[var(--color-secondary)]">{t("verify_email_coach")}</p>,
+                ]
+              : []),
           ]}
         />
       </motion.div>

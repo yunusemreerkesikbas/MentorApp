@@ -21,6 +21,7 @@ import {
   jsonb,
   numeric,
   pgTable,
+  pgPolicy,
   primaryKey,
   smallint,
   text,
@@ -361,23 +362,34 @@ export const mentorshipProgramTemplates = pgTable(
 );
 
 /**
- * Coach applications — the curation pipeline roadmap §5 asks for ("açık kayıt değil, kürasyon").
+ * The coach registry. Table name predates APP-089 and is deliberately not renamed — see below.
  *
- * ONE ROW PER PERSON, and the APPROVED row IS the coach's profile. There is no second table: a
- * coach's profile is exactly what passed vetting, and the record of what an admin approved already
- * lives in W6's append-only `admin_audit_log`. A second store would be a second copy of a fact
- * that exists, and a third place for KVKK erasure to chase.
+ * ONE ROW PER PERSON, and the ACTIVE row IS the coach's profile. There is no second table: a
+ * coach's profile is exactly what they registered with, and the record of every admin intervention
+ * already lives in W6's append-only `admin_audit_log`. A second store would be a second copy of a
+ * fact that exists, and a third place for KVKK erasure to chase.
+ *
+ * REVISED (APP-089): this was an APPLICATION queue. Nobody could coach without a SUPER_ADMIN
+ * approving them first, so `status` was a verdict on a request (PENDING → APPROVED | REJECTED).
+ * Registration is self-service now and the row is created ACTIVE by the person themselves, so
+ * `status` is the coach's STANDING and the admin's power runs the other way:
+ *
+ *   ACTIVE     self-registered, or reinstated by an admin. The only status that carries COACH.
+ *   PENDING    an admin pulled them back for a look. Reversible; no link is ended.
+ *   SUSPENDED  an admin removed them. No self-service road back — only an admin reinstates.
+ *
+ * The table keeps its name on purpose: renaming it means a migration, a repository rename, and a
+ * churn diff across W6/W8/web for zero behaviour. The doc comment carries the meaning instead.
  *
  * TWO WRITERS, split by column, enforced in the service signatures rather than here:
- *   applicant → headline, bio, claim_*        (submitted, and editable after approval — APP-083)
- *   admin     → status, verified_claims, reviewed_*  (`review()` is the only door)
+ *   coach → headline, bio, claim_*                  (`register()`, then `updateProfile()`)
+ *   admin → status, verified_claims, reviewed_*     (`setStatus()` / `setVerifiedClaims()`)
  *
- * No credential file. The evaluation's paperwork happens off-platform (§5's "kısa değerlendirme"):
- * a document would be the heaviest personal data in the system, kept for rejected applicants too,
- * and the badge only ever needed to record WHICH claim was checked.
+ * No credential file. Verification paperwork happens off-platform: a document would be the heaviest
+ * personal data in the system, kept for suspended coaches too, and the badge only ever needed to
+ * record WHICH claim was checked.
  *
- * Re-applying revives this very row, the `coach_students` pattern. `UNIQUE (user_id)` is therefore
- * also what guarantees a single open application — no partial index needed.
+ * `UNIQUE (user_id)` is what keeps one standing per person; re-registration revives this very row.
  */
 export const mentorshipCoachApplications = pgTable(
   "mentorship_coach_applications",
@@ -388,9 +400,9 @@ export const mentorshipCoachApplications = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    /** PENDING | APPROVED | REJECTED (MentorshipApplicationStatus). */
-    status: text("status").notNull().default("PENDING"),
-    /** The applicant's own words. Shown to a student on the consent screen once approved. */
+    /** ACTIVE | PENDING | SUSPENDED (MentorshipApplicationStatus). Self-registration writes ACTIVE. */
+    status: text("status").notNull().default("ACTIVE"),
+    /** The coach's own words. Shown to a student on the consent screen. */
     headline: text("headline").notNull(),
     bio: text("bio").notNull(),
     /** Structured claims — the admin marks which of these they checked. */
@@ -399,8 +411,9 @@ export const mentorshipCoachApplications = pgTable(
     claimYears: integer("claim_years"),
     claimNote: text("claim_note"),
     /**
-     * Which claims an admin verified (MentorshipClaim ids). Empty on a rejection: a refusal
-     * verifies nothing, and a badge nobody stands behind is worse than no badge.
+     * Which claims an admin verified (MentorshipClaim ids). Empty is the norm now, not the
+     * exception: registration is self-service, so most rows are unchecked and the consent screen
+     * says so out loud rather than staying silent about it.
      */
     verifiedClaims: text("verified_claims")
       .array()
@@ -408,7 +421,7 @@ export const mentorshipCoachApplications = pgTable(
       .default(sql`'{}'::text[]`),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
-    /** The admin's reason, shown to the applicant. One-way — this is not a conversation. */
+    /** The admin's reason, shown to the coach. One-way — this is not a conversation. */
     reviewNote: text("review_note"),
     submittedAt: timestamp("submitted_at", { withTimezone: true })
       .notNull()
@@ -422,11 +435,11 @@ export const mentorshipCoachApplications = pgTable(
   },
   (t) => [
     uniqueIndex("mentorship_coach_applications_user_idx").on(t.userId),
-    /** The queue's only read pattern: one status, oldest first. */
+    /** The registry's only read pattern: one status, oldest first. */
     index("mentorship_coach_applications_status_idx").on(t.status, t.submittedAt),
     check(
       "mentorship_coach_applications_status_chk",
-      sql`${t.status} in ('PENDING', 'APPROVED', 'REJECTED')`,
+      sql`${t.status} in ('ACTIVE', 'PENDING', 'SUSPENDED')`,
     ),
   ],
 );
@@ -3859,3 +3872,27 @@ export const promotionRedemptions = pgTable(
     ),
   ],
 );
+
+// W2: immutable review outcomes; deleted with their source entry.
+export const notebookReviews = pgTable("notebook_reviews", {
+  id: uuid("id").primaryKey(),
+  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
+  orgId: uuid("org_id"),
+  entryId: uuid("entry_id").notNull().references(() => mistakeNotebookEntries.id, { onDelete: "cascade" }),
+  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
+  solved: boolean("solved").notNull(),
+  early: boolean("early").notNull(),
+  beforeStatus: text("before_status").notNull(),
+  afterStatus: text("after_status").notNull(),
+  beforeCount: integer("before_count").notNull(),
+  afterCount: integer("after_count").notNull(),
+  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+}, (t) => [
+  index("notebook_reviews_user_time_idx").on(t.userId, t.reviewedAt),
+  index("notebook_reviews_entry_idx").on(t.entryId),
+  pgPolicy("notebook_reviews_owner", {
+    for: "all",
+    using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    withCheck: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+  }),
+]).enableRLS();

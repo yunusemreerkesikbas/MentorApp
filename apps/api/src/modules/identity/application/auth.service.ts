@@ -2,7 +2,7 @@ import { randomBytes } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
-import type { AuthUser } from "@mentor/types";
+import { UserRole, type AuthUser } from "@mentor/types";
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -65,6 +65,15 @@ export class AuthService {
         displayName: input.displayName,
         username: input.username,
         kvkkAcceptedAt: new Date(),
+        // The ONE role a client may ask for at signup (APP-089), and it is safe because COACH on
+        // its own opens nothing: every road to a student's data runs through an invite code, and
+        // the code needs a verified email plus an ACTIVE registry row that only
+        // `POST /v1/mentorship/coach-registration` writes. What this buys is the coach-shaped
+        // onboarding and home surface, which is what a coach shoved through the student wizard
+        // could not have. Omitting `roles` entirely keeps the column default for everyone else.
+        ...(input.intent === "COACH"
+          ? { roles: [UserRole.STUDENT, UserRole.COACH] }
+          : {}),
       });
     } catch (err) {
       // Check-then-insert race: a concurrent signup hit the unique index → same 409 code.

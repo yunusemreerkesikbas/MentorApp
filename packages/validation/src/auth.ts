@@ -32,6 +32,18 @@ export const signupSchema = z.object({
   kvkkAccepted: z.literal(true),
   /** Cloudflare Turnstile token (enforced when the secret is configured). */
   turnstileToken: z.string().optional(),
+  /**
+   * Who is signing up (APP-089). This is the ONE field a client may use to influence its own roles,
+   * and it is safe for a specific reason: COACH on its own opens nothing.
+   *
+   * Every road to a student's data runs through an invite code, and the code is gated on a verified
+   * email plus an ACTIVE registry row that only `POST /v1/mentorship/coach-registration` can write.
+   * So this grants a shape, not a power: the coach-shaped onboarding, nav and home surface, which
+   * is exactly what a coach forced through the student wizard could not have.
+   *
+   * Do NOT extend this enum to any role that authorizes something by itself.
+   */
+  intent: z.enum(["STUDENT", "COACH"]).optional(),
 });
 export type SignupInput = z.infer<typeof signupSchema>;
 

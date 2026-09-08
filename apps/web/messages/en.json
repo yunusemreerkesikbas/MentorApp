@@ -93,7 +93,10 @@
       "kvkk_error": "You must accept the KVKK text to continue.",
       "submit": "Sign up",
       "login_prompt": "Already have an account?",
-      "login_link": "Sign in"
+      "login_link": "Sign in",
+      "title_coach": "Join as a coach",
+      "coach_intro": "Let's open your account first. We'll write your profile together in a moment.",
+      "coach_link": "Want to join as a coach?"
     },
     "forgot_password": {
       "title": "Forgot password",
@@ -1192,7 +1195,7 @@
     "no_seed_desc": "The exam calendar or subject list hasn't been published yet. The form will appear here when editorial content is updated.",
     "tabs": {
       "label": "Analysis sections",
-      "entry": "Enter",
+      "entry": "Add exam",
       "progress": "Progress",
       "mistakes": "Wrong answers"
     },
@@ -1559,7 +1562,35 @@
     "error_signals_subtitle": "From the last 60 days of your mistake notebook.",
     "notebook_open": "Open the mistake notebook",
     "notebook_empty_title": "The mistake notebook hasn't woken yet",
-    "notebook_empty_desc": "As you add mistakes, the causes show up here."
+    "notebook_empty_desc": "As you add mistakes, the causes show up here.",
+    "review": {
+      "focus": "Your focus today",
+      "choose": "Choose another topic",
+      "all": "All topics",
+      "start": "Start review · {count} entries",
+      "plan": "Plan and exam follow-up",
+      "period": "Progress period",
+      "days": "Last {count} days",
+      "error": "Could not load progress.",
+      "retry": "Try again",
+      "loading": "Loading your progress…",
+      "workedCount": "Questions reviewed",
+      "revisitCount": "Questions to revisit",
+      "completedCount": "Review ladders completed",
+      "dueCount": "Reviews due",
+      "dueNote": "Reviews due shows the current situation. Other counts cover your selected period.",
+      "history": "Your review history",
+      "historyNote": "History includes answers recorded since this feature became available. Results reflect your own solved or missed answers.",
+      "empty": "No recorded reviews in this period. Start with one question when you are ready.",
+      "unlabelled": "Unlabelled question",
+      "solved": "Solved",
+      "missed": "Missed",
+      "early": "Early review",
+      "next": "Next date scheduled at that review: {date}",
+      "noNext": "No next date was scheduled at that review.",
+      "previous": "Previous",
+      "more": "Next"
+    }
   },
   "session": {
     "title": "Study Session",
@@ -1772,6 +1803,11 @@
     "index_filter_topic": "Topic",
     "index_analysis_filter_active": "Analysis filters are active",
     "index_filters_clear": "Clear",
+    "index_filters_active": "Active filters",
+    "index_filters_clear_all": "Clear all filters",
+    "index_filter_clear_one": "Clear {filter} filter",
+    "index_exam_filter": "Selected exam",
+    "index_mock_filter": "Selected mock exam",
     "index_filter_error_type": "Error type",
     "index_filter_status": "Status",
     "index_filter_all": "All",
@@ -1956,7 +1992,18 @@
     "card_preview_aria": "Enlarge photo: {type}",
     "card_preview_close": "Close",
     "save": "Save",
-    "unsaved": "Unsaved"
+    "unsaved": "Unsaved",
+    "focusReview": {
+      "back": "Back to analysis",
+      "error": "Could not load reviews.",
+      "retry": "Try again",
+      "loading": "Loading questions…",
+      "empty": "No active questions in this selection.",
+      "noDue": "No questions are due in this selection.",
+      "early": "Review active questions early",
+      "saved": "Your recorded answers are in your history.",
+      "more": "Continue with other questions"
+    }
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",
@@ -2438,7 +2485,8 @@
     "exam": {
       "title": "Which exam are you preparing for?",
       "continue": "Continue",
-      "save_error": "It didn't save just now. Let's try again in a moment."
+      "save_error": "It didn't save just now. Let's try again in a moment.",
+      "title_coach": "Which exam do you coach for?"
     },
     "kpss_level": {
       "title": "Which KPSS level are you preparing for?",
@@ -2453,12 +2501,21 @@
       "skip": "Skip for now",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
+    "coach_profile": {
+      "title": "How should we introduce you to a student?",
+      "subtitle": "A student reads these two lines before they link to you.",
+      "claims_intro": "Add them if you like. Until we check them, students see them as your own words.",
+      "save": "Open my coach account",
+      "save_error": "That did not save. Let's try again in a moment."
+    },
     "complete": {
       "title": "We're ready. Your first step is waiting.",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
       "countdown_teaser": "Your exam countdown is on the dashboard. From the verified official calendar.",
       "map_cta": "Mark your goal on the map →",
-      "go_panel": "Go to dashboard"
+      "go_panel": "Go to dashboard",
+      "title_coach": "Your coach account is ready.",
+      "verify_email_coach": "Verify your email and your invite code is yours."
     }
   },
   "vision": {
@@ -3159,33 +3216,36 @@
     "application_headline_placeholder": "KPSS Turkish coach",
     "application_bio_label": "Tell us about yourself",
     "application_bio_placeholder": "Who have you worked with, and how do you follow them?",
-    "application_claims_intro": "These are optional. Whatever we can verify shows on your profile as a badge.",
     "application_institution_label": "Institution",
     "application_branch_label": "Subject",
     "application_years_label": "Years of coaching",
     "application_note_label": "Anything else",
     "application_note_placeholder": "Context we can follow up on, a sample of your work…",
-    "application_submit": "Send application",
-    "application_sent_title": "We have your application",
-    "application_sent_body": "We will review it and show the result here.",
-    "application_closed_title": "Applications are closed",
-    "application_closed_body": "We will announce it when they reopen.",
-    "application_status_PENDING": "Under review",
-    "application_status_PENDING_body": "It is with us. You will see the result here, and we will let you know.",
-    "application_status_APPROVED": "Approved",
-    "application_status_APPROVED_body": "Your coach panel is open. Invite students with your code.",
-    "application_status_REJECTED": "Not this time",
-    "application_status_REJECTED_body": "The note below explains why. You can apply again after a while.",
+    "registration_submit": "Open my coach account",
+    "registration_claims_intro": "These are your own words. Until we check them, that is how students see them.",
+    "registration_done_title": "Your coach account is open",
+    "registration_done_body": "Your profile is live. Your invite code starts working once your email is verified.",
+    "application_closed_title": "Coach registration is closed right now",
+    "application_closed_body": "We will announce when it reopens.",
     "application_claim_INSTITUTION": "Institution verified",
     "application_claim_BRANCH": "Subject verified",
     "application_claim_YEARS": "Experience verified",
+    "coach_status_ACTIVE": "Open",
+    "coach_status_ACTIVE_body": "Students can see your profile, and your invite code is yours to hand out.",
+    "coach_status_PENDING": "Under review",
+    "coach_status_PENDING_body": "We are reviewing your account. You cannot take on new students meanwhile.",
+    "coach_status_SUSPENDED": "Stopped",
+    "coach_status_SUSPENDED_body": "Your coach account has been stopped. Registering again will not reopen it.",
+    "coach_email_unverified": "Your invite code opens once your email is verified. Tap the link we sent you.",
+    "invite_locked_standing": "Your coach account is not open right now, so you cannot issue an invite code.",
+    "my_coach_suspended": "Your coach's access has been stopped. The link stands, but your work is not reaching them.",
     "application_open_panel": "Open the coach panel",
-    "application_reapply": "Apply again",
     "coach_profile_unknown": "No profile for this coach yet.",
     "coach_profile_verified_label": "Verified details",
-    "coach_profile_claim_INSTITUTION": "{value} · verified",
-    "coach_profile_claim_BRANCH": "{value} · verified",
-    "coach_profile_claim_YEARS": "{value} years · verified",
+    "coach_profile_declared_label": "The coach's own words, not verified yet",
+    "coach_profile_claim_INSTITUTION": "Institution: {value}",
+    "coach_profile_claim_BRANCH": "Subject: {value}",
+    "coach_profile_claim_YEARS": "Experience: {value} years",
     "profile_edit": "Edit profile",
     "profile_edit_save": "Save",
     "profile_edit_claims_locked": "Institution, subject and experience are not editable here: we are the ones who verified them, so we are the ones standing behind the badge.",

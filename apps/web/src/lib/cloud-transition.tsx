@@ -103,7 +103,20 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
         <motion.div
           className="pointer-events-auto fixed inset-0 overflow-hidden"
           style={{ zIndex: "var(--z-route-transition)" }}
-          initial={false}
+          /*
+           * A REAL mount animation, and the whole machine depends on it (found in APP-089).
+           *
+           * This was `initial={false}`, which tells framer-motion to snap to the `animate` target
+           * without animating. With nothing to animate, `onAnimationComplete` never fired — and
+           * that callback is the ONLY thing that dispatches "covered" and calls `navigate()`. So
+           * the overlay appeared, the phase stuck on "covering" forever, and the navigation never
+           * happened. The `timeout` escape hatch could not help either: its effect only arms in
+           * phase "covered", which was unreachable.
+           *
+           * Symptom in the wild: finishing onboarding left you on the completion screen under a
+           * full-screen cloud overlay. Every caller of `startCloudTransition` was affected.
+           */
+          initial={{ opacity: 0 }}
           animate={{ opacity: covering ? 1 : 0 }}
           transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
           onAnimationComplete={handleAnimationComplete}

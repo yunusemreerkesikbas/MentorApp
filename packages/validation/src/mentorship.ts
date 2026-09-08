@@ -153,20 +153,21 @@ export const mentorshipTemplateParamSchema = z.object({
 });
 export type MentorshipTemplateParam = z.infer<typeof mentorshipTemplateParamSchema>;
 
-/* --- Coach applications (W8 curation, roadmap §5) ------------------------------------------ */
+/* --- Coach registry (W8 self-service registration, roadmap §5 REVISED by APP-089) ---------- */
 
 export const MENTORSHIP_HEADLINE_MAX = 120;
 export const MENTORSHIP_BIO_MAX = 1000;
 export const MENTORSHIP_REVIEW_NOTE_MAX = 500;
 
 /**
- * A coach application. Structured claims, not a paragraph: the admin marks WHICH claim they
- * checked, and you cannot verify prose.
+ * Registering as a coach. Structured claims, not a paragraph: an admin can only mark WHICH claim
+ * they checked, and you cannot verify prose.
  *
  * `.strict()` matters more than usual here — `status`, `verifiedClaims` and `reviewNote` are the
- * admin's columns, and a body that carried them would be a body asking to approve itself.
+ * admin's columns. Registration grants the COACH role, so a body that carried them would be a body
+ * asking to badge itself as verified on the way in.
  */
-export const submitCoachApplicationSchema = z
+export const registerCoachSchema = z
   .object({
     headline: z.string().trim().min(1).max(MENTORSHIP_HEADLINE_MAX),
     bio: z.string().trim().min(1).max(MENTORSHIP_BIO_MAX),
@@ -177,41 +178,53 @@ export const submitCoachApplicationSchema = z
     note: z.string().trim().min(1).max(MENTORSHIP_BIO_MAX).nullish(),
   })
   .strict();
-export type SubmitCoachApplicationInput = z.infer<typeof submitCoachApplicationSchema>;
+export type RegisterCoachInput = z.infer<typeof registerCoachSchema>;
 
 /**
- * The admin's verdict. `verifiedClaims` is only meaningful on an approval — a rejection verifies
- * nothing — so the schema drops it rather than storing a claim nobody stands behind.
+ * An admin moving a coach's standing (APP-089) — the reverse power that replaced pre-approval.
+ *
+ * Separate from claim verification below, because the two answer different questions: this one is
+ * "may this person coach at all", that one is "did we check what they say about themselves". Fused
+ * into one verdict, reinstating a suspended coach would silently re-assert badges nobody re-read.
  */
-export const reviewCoachApplicationSchema = z
+export const setCoachStatusSchema = z
   .object({
-    decision: z.enum(["APPROVE", "REJECT"]),
-    verifiedClaims: z.enum(["INSTITUTION", "BRANCH", "YEARS"]).array().max(3).default([]),
+    status: z.enum(["ACTIVE", "PENDING", "SUSPENDED"]),
+    /** Shown to the coach, verbatim. One-way: this is a decision, not a conversation. */
     reviewNote: z.string().trim().max(MENTORSHIP_REVIEW_NOTE_MAX).nullish(),
   })
-  .strict()
-  .transform((value) => ({
-    ...value,
-    verifiedClaims: value.decision === "APPROVE" ? [...new Set(value.verifiedClaims)] : [],
-  }));
-export type ReviewCoachApplicationInput = z.infer<typeof reviewCoachApplicationSchema>;
-
-export const listCoachApplicationsQuerySchema = z.object({
-  status: z.enum(["PENDING", "APPROVED", "REJECTED"]).default("PENDING"),
-});
-export type ListCoachApplicationsQuery = z.infer<typeof listCoachApplicationsQuerySchema>;
-
-export const coachApplicationParamSchema = z.object({
-  applicationId: z.string().uuid(),
-});
-export type CoachApplicationParam = z.infer<typeof coachApplicationParamSchema>;
+  .strict();
+export type SetCoachStatusInput = z.infer<typeof setCoachStatusSchema>;
 
 /**
- * The coach editing their own profile after approval.
+ * Marking which claims an admin actually checked. Nothing else moves: a badge is a statement about
+ * our checking, not about the coach's standing, and the two must be able to disagree.
+ */
+export const verifyCoachClaimsSchema = z
+  .object({
+    verifiedClaims: z.enum(["INSTITUTION", "BRANCH", "YEARS"]).array().max(3).default([]),
+  })
+  .strict()
+  .transform((value) => ({ verifiedClaims: [...new Set(value.verifiedClaims)] }));
+export type VerifyCoachClaimsInput = z.infer<typeof verifyCoachClaimsSchema>;
+
+export const listCoachesQuerySchema = z.object({
+  status: z.enum(["ACTIVE", "PENDING", "SUSPENDED"]).default("ACTIVE"),
+});
+export type ListCoachesQuery = z.infer<typeof listCoachesQuerySchema>;
+
+/** Admin acts on the PERSON, not on a request row: there is no application to point at any more. */
+export const coachUserParamSchema = z.object({
+  userId: z.string().uuid(),
+});
+export type CoachUserParam = z.infer<typeof coachUserParamSchema>;
+
+/**
+ * The coach editing their own profile.
  *
  * Exactly the two student-facing fields, and nothing else: `verifiedClaims` and `status` belong to
- * the admin, and the claims themselves are what was vetted — letting a coach rewrite the
- * institution an admin checked would make the badge a lie.
+ * the admin, and the claims themselves are what an admin may have checked — letting a coach rewrite
+ * the institution behind a verified badge would make the badge a lie.
  */
 export const updateCoachProfileSchema = z
   .object({

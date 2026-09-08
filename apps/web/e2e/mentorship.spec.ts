@@ -50,11 +50,18 @@ const MY_COACH = {
   coachProfile: null as Record<string, unknown> | null,
 };
 
-/** A vetted coach profile as the student receives it: two lines plus what somebody checked. */
+/**
+ * A coach profile as the student receives it: two lines, plus every claim with whether anybody
+ * checked it. Both kinds are present on purpose — since APP-089 the screen has to distinguish them,
+ * and a fixture carrying only verified claims could not catch a screen that stopped.
+ */
 const COACH_PROFILE = {
   headline: "KPSS Türkçe koçu",
   bio: "On yıldır KPSS adaylarıyla çalışıyorum.",
-  verifiedClaims: [{ claim: "INSTITUTION", value: "Ankara Üniversitesi" }],
+  claims: [
+    { claim: "INSTITUTION", value: "Ankara Üniversitesi", verified: true },
+    { claim: "BRANCH", value: "Türkçe", verified: false },
+  ],
 };
 
 test.describe("öğrenci tarafı", () => {
@@ -98,12 +105,21 @@ test.describe("öğrenci tarafı", () => {
     await page.getByRole("button", { name: "Kodu getir" }).click();
 
     await expect(page.getByText("KPSS Türkçe koçu")).toBeVisible();
-    // The badge carries the value that was checked, and says only that it was checked.
-    await expect(page.getByText("Ankara Üniversitesi · doğrulandı")).toBeVisible();
+    // The badge carries the value that was checked. What it MEANS is the group heading above it,
+    // not the chip: a chip reading "doğrulandı" under a "henüz doğrulanmadı" heading would say the
+    // opposite of the thing it sits under.
+    await expect(page.getByText("Doğrulanan bilgiler")).toBeVisible();
+    await expect(page.getByText("Kurum: Ankara Üniversitesi")).toBeVisible();
+
+    // And the claim nobody checked is shown as exactly that (APP-089). Registration is self-service
+    // now, so silence here would make an unchecked coach look identical to a checked one at the
+    // moment a student decides to hand over private data.
+    await expect(page.getByText("Koçun kendi beyanı, henüz doğrulanmadı")).toBeVisible();
+    await expect(page.getByText("Branş: Türkçe")).toBeVisible();
   });
 
   test("profili olmayan koç için onay ekranı boş kart değil bunu söylüyor", async ({ page }) => {
-    // Every coach granted the role by hand before the queue existed looks like this.
+    // A coach who holds the role without a registry row, and a suspended one, both look like this.
     await mockApi(page, { roles: ["STUDENT"], myCoach: null });
     await page.goto("/kocluk-daveti");
     await page.getByLabel("Davet kodu").fill(INVITE_CODE);
@@ -226,7 +242,7 @@ test.describe("koç tarafı", () => {
     await expect.poll(() => api.attentionCalls).toEqual([true, false]);
   });
 
-  test("koç adayı başvurusunu gönderiyor ve durumunu geri okuyor", async ({ page }) => {
+  test("koç kaydoluyor ve hesabı anında açılıyor", async ({ page }) => {
     const api = await mockApi(page, { roles: ["STUDENT"], myCoach: null });
     await page.goto("/koc-basvurusu");
 
@@ -235,39 +251,61 @@ test.describe("koç tarafı", () => {
       .getByLabel("Kendini anlat")
       .fill("On yıldır KPSS adaylarıyla çalışıyorum, paragraf ağırlıklı.");
     await page.getByLabel("Kurum").fill("Ankara Üniversitesi");
-    await page.getByRole("button", { name: "Başvuruyu gönder" }).click();
+    await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
 
-    // The form gives way to the verdict card: an applicant with an outstanding decision has
-    // nothing to submit, and leaving the box would invite them to try.
-    await expect(page.getByText("Değerlendirmede")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Başvuruyu gönder" })).toHaveCount(0);
+    // No waiting room: the account is open, and the form gives way to the profile it just wrote.
+    await expect(page.getByText("Açık", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toHaveCount(0);
 
-    // The verdict columns never travel from the client — the API refuses a body carrying them.
-    expect(Object.keys(api.application ?? {})).not.toContain("status_sent");
+    // The admin's columns never travel from the client — the API refuses a body carrying them.
+    expect(Object.keys(api.application ?? {})).not.toContain("verifiedClaims_sent");
     expect((api.application as { headline: string }).headline).toBe("KPSS Türkçe koçu");
   });
 
-  test("başvuru kapalıyken ekran hata değil kapalı durumu gösteriyor", async ({ page }) => {
+  test("kayıt kapalıyken form hiç gösterilmiyor", async ({ page }) => {
     await mockApi(page, { roles: ["STUDENT"], myCoach: null, applicationsClosed: true });
     await page.goto("/koc-basvurusu");
 
-    await page.getByLabel("Tek cümlede sen").fill("Deneme");
-    await page.getByLabel("Kendini anlat").fill("Deneme metni");
-    await page.getByRole("button", { name: "Başvuruyu gönder" }).click();
-
-    // The row into this screen is always visible, so a red toast would read as a bug on a page
-    // somebody just opened.
-    await expect(page.getByText("Şu an başvuru almıyoruz")).toBeVisible();
+    // The state arrives with the page now. Before APP-089 this was discoverable only by filling the
+    // whole form and reading the 403 back, which is not a thing to do to somebody signup sent here.
+    await expect(page.getByText("Koç kaydı şu an kapalı")).toBeVisible();
+    await expect(page.getByLabel("Tek cümlede sen")).toHaveCount(0);
   });
 
-  test("reddedilen aday gerekçeyi görüyor, onaylanan panele geçiyor", async ({ page }) => {
+  test("doğrulanmamış e-posta koça neyin eksik olduğunu söylüyor", async ({ page }) => {
+    await mockApi(page, {
+      roles: ["STUDENT", "COACH"],
+      myCoach: null,
+      emailVerified: false,
+      application: {
+        id: "app-1",
+        status: "ACTIVE",
+        headline: "KPSS Türkçe koçu",
+        bio: "…",
+        institution: null,
+        branch: null,
+        years: null,
+        note: null,
+        submittedAt: "2026-09-01T00:00:00.000Z",
+        reviewedAt: null,
+        reviewNote: null,
+        verifiedClaims: [],
+      },
+    });
+    await page.goto("/koc-basvurusu");
+
+    // The one blocker a coach can clear themselves, so it is the one this card names.
+    await expect(page.getByText("e-postanı doğrulayınca", { exact: false })).toBeVisible();
+  });
+
+  test("durdurulan koç gerekçeyi görüyor ve geri dönüş kapısı bulunmuyor", async ({ page }) => {
     await mockApi(page, {
       roles: ["STUDENT"],
       myCoach: null,
       application: {
         id: "app-1",
-        status: "REJECTED",
-        headline: "Deneyimsiz aday",
+        status: "SUSPENDED",
+        headline: "Durdurulan koç",
         bio: "…",
         institution: null,
         branch: null,
@@ -275,24 +313,26 @@ test.describe("koç tarafı", () => {
         note: null,
         submittedAt: "2026-08-01T00:00:00.000Z",
         reviewedAt: "2026-08-05T00:00:00.000Z",
-        reviewNote: "Deneyim yeterli değil.",
+        reviewNote: "Şikayet üzerine durduruldu.",
         verifiedClaims: [],
       },
     });
     await page.goto("/koc-basvurusu");
 
-    // The admin's words, verbatim. One-way: a verdict, not a conversation.
-    await expect(page.getByText("Deneyim yeterli değil.")).toBeVisible();
-    await expect(page.getByRole("button", { name: "Yeniden başvur" })).toBeVisible();
+    // The admin's words, verbatim. One-way: a decision, not a conversation.
+    await expect(page.getByText("Şikayet üzerine durduruldu.")).toBeVisible();
+    // No door back, because registering again is refused. A button here would be a dead end.
+    await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Koç paneline git" })).toHaveCount(0);
   });
 
-  test("onaylanan aday rozetleri ve panel bağlantısını görüyor", async ({ page }) => {
+  test("açık koç rozetleri ve panel bağlantısını görüyor", async ({ page }) => {
     await mockApi(page, {
       roles: ["STUDENT", "COACH"],
       myCoach: null,
       application: {
         id: "app-1",
-        status: "APPROVED",
+        status: "ACTIVE",
         headline: "KPSS Türkçe koçu",
         bio: "…",
         institution: "Ankara Üniversitesi",
@@ -319,7 +359,7 @@ test.describe("koç tarafı", () => {
       myCoach: null,
       application: {
         id: "app-1",
-        status: "APPROVED",
+        status: "ACTIVE",
         headline: "KPSS Türkçe koçu",
         bio: "On yıldır KPSS adaylarıyla çalışıyorum.",
         institution: "Ankara Üniversitesi",
@@ -537,10 +577,12 @@ async function mockApi(
     maxActiveStudents?: number;
     /** The coach's saved programs, as `GET /v1/mentorship/templates` would return them. */
     templates?: Record<string, unknown>[];
-    /** An existing coach application, as `GET /v1/mentorship/applications/mine` would return it. */
+    /** An existing registry row, as `GET /v1/mentorship/coach-registration/mine` would carry it. */
     application?: Record<string, unknown> | null;
-    /** `mentorship.applications.open` being off — the POST answers 403, not an error page. */
+    /** `mentorship.applications.open` being off — the screen says so before the form is filled. */
     applicationsClosed?: boolean;
+    /** Unverified email keeps the invite code shut (APP-089). Defaults to verified. */
+    emailVerified?: boolean;
     /** The coach's vetted profile as the student sees it; null = granted the role by hand. */
     coachProfile?: Record<string, unknown> | null;
   },
@@ -702,11 +744,16 @@ async function mockApi(
       attentionCalls.push((request.postDataJSON() as { attended: boolean }).attended);
       return json(route, null, 204);
     }
-    if (method === "GET" && path === "/v1/mentorship/applications/mine") {
-      // Empty body when nobody has applied — the API returns null, not a 404.
-      return json(route, application ?? {});
+    if (method === "GET" && path === "/v1/mentorship/coach-registration/mine") {
+      // The envelope, not the row: the form needs to know the intake is open BEFORE it is filled
+      // in, and the panel needs the email flag to explain a locked invite code.
+      return json(route, {
+        registrationOpen: !options.applicationsClosed,
+        registration: application,
+        emailVerified: options.emailVerified ?? true,
+      });
     }
-    if (method === "PUT" && path === "/v1/mentorship/applications/mine") {
+    if (method === "PUT" && path === "/v1/mentorship/coach-registration/mine") {
       const body = request.postDataJSON() as { headline: string; bio: string };
       // Mirrors the API's Tier-1 refusal so the screen can be exercised against it.
       const joined = `${body.headline} ${body.bio}`.replace(/[\s.\-]/g, "");
@@ -723,14 +770,15 @@ async function mockApi(
       application = { ...(application ?? {}), ...body };
       return json(route, application);
     }
-    if (method === "POST" && path === "/v1/mentorship/applications") {
+    if (method === "POST" && path === "/v1/mentorship/coach-registration") {
       if (options.applicationsClosed) {
         return json(route, { code: "MENTORSHIP_APPLICATIONS_CLOSED", message: "kapalı" }, 403);
       }
       const body = request.postDataJSON() as Record<string, unknown>;
       application = {
         id: "app-1",
-        status: "PENDING",
+        // ACTIVE straight away: nobody approves this, and the API grants COACH off the same call.
+        status: "ACTIVE",
         institution: null,
         branch: null,
         years: null,

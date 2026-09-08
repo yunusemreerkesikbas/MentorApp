@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import { CalendarOff, Check, FileText, LayoutGrid } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -111,18 +111,22 @@ export function NotebookIndexPanel({
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const filters: NotebookIndexFilters = {
+  const filters = useMemo<NotebookIndexFilters>(() => ({
     ...(examId && { examId }),
     ...(mockExamId && { mockExamId }),
     ...(subjectRef && { subjectRef }),
     ...(topicRef && { topicRef }),
     ...(errorType && { errorType: errorType as NotebookErrorType }),
     ...(status && { status: status as "ACTIVE" | "HEALED" | "ARCHIVED" }),
-  };
+  }), [examId, mockExamId, subjectRef, topicRef, errorType, status]);
   const filterKey = notebookIndexFilterKey(filters);
   const activeFilterKeyRef = useRef(filterKey);
-  activeFilterKeyRef.current = filterKey;
   const paginationRequestRef = useRef(0);
+  useLayoutEffect(() => {
+    activeFilterKeyRef.current = filterKey;
+    paginationRequestRef.current += 1;
+    return () => { paginationRequestRef.current += 1; };
+  }, [filterKey, refreshKey]);
 
   const fetchPage = useCallback(
     (nextPage: number) =>
@@ -143,7 +147,7 @@ export function NotebookIndexPanel({
 
   useEffect(() => {
     replaceNotebookIndexQuery(filters);
-  }, [filterKey]);
+  }, [filters]);
 
   /**
    * Filters and outside edits both mean "the first page is no longer what the server would send".
@@ -154,12 +158,11 @@ export function NotebookIndexPanel({
    * arrive, which reads better than blanking the list on every filter tap.
    */
   useEffect(() => {
-    paginationRequestRef.current += 1;
-    setBusy(false);
     let cancelled = false;
     fetchPage(1)
       .then((result) => {
         if (cancelled) return;
+        setBusy(false);
         setItems(result.items);
         setTotal(result.total);
         setPage(1);
@@ -170,7 +173,7 @@ export function NotebookIndexPanel({
         clearPicks();
       })
       .catch(() => {
-        if (!cancelled) setError(t("error_index_load"));
+        if (!cancelled) { setBusy(false); setError(t("error_index_load")); }
       });
     return () => {
       cancelled = true;
@@ -195,7 +198,7 @@ export function NotebookIndexPanel({
         setPage((current) => current + 1);
       })
       .catch(() => {
-        if (activeFilterKeyRef.current === requestedFilterKey) {
+        if (activeFilterKeyRef.current === requestedFilterKey && paginationRequestRef.current === requestId) {
           setError(t("error_index_load"));
         }
       })
@@ -210,11 +213,11 @@ export function NotebookIndexPanel({
   const subjectName = subjects.find((subject) => subject.slug === subjectRef)?.name;
   const topicName = topics.find((topic) => topic.slug === topicRef)?.name;
   const chips: NotebookIndexFilterChip[] = [
-    ...(examId && filterNames?.exam
-      ? [{ key: "exam", label: filterNames.exam, onClear: () => setExamId("") }]
+    ...(examId
+      ? [{ key: "exam", label: filterNames?.exam ?? t("index_exam_filter"), onClear: () => setExamId("") }]
       : []),
-    ...(mockExamId && filterNames?.mockExam
-      ? [{ key: "mockExam", label: filterNames.mockExam, onClear: () => setMockExamId("") }]
+    ...(mockExamId
+      ? [{ key: "mockExam", label: filterNames?.mockExam ?? t("index_mock_filter"), onClear: () => setMockExamId("") }]
       : []),
     ...(subjectRef && subjectName
       ? [{ key: "subject", label: subjectName, onClear: () => { setSubjectRef(""); setTopicRef(""); } }]

@@ -1,5 +1,6 @@
 import type {
   MentorshipApplicationDto,
+  MentorshipCoachRegistrationStateDto,
   MentorshipCoachOverviewDto,
   MentorshipAssignmentSuggestionsDto,
   MentorshipCohortBriefDto,
@@ -15,10 +16,7 @@ import type {
   Paginated,
   PlanTaskDto,
 } from "@mentor/types";
-import type {
-  SubmitCoachApplicationInput,
-  UpdateCoachProfileInput,
-} from "@mentor/validation";
+import type { RegisterCoachInput, UpdateCoachProfileInput } from "@mentor/validation";
 import { http } from "@mentor/api-client";
 
 /**
@@ -28,38 +26,48 @@ import { http } from "@mentor/api-client";
  * NOT the AI coach: that lives in lib/coach.ts and talks to `/v1/coach/*`.
  */
 
-// --- becoming a coach (curation, roadmap §5) -----------------------------------------------
+// --- becoming a coach (self-service registration, roadmap §5 revised by APP-089) ------------
 
 /**
- * Apply, or re-apply after a rejection. The verdict columns are absent from the body by design —
- * the API refuses one that carries them.
+ * Register as a coach. Writes the registry row and grants COACH.
+ *
+ * The admin's columns are absent from the body by design — the API refuses one that carries them.
+ * Nobody reviews this before a student can read it, so the contact-detail check on `headline` and
+ * `bio` is the only thing standing between this text and a consent screen.
  */
-export async function submitCoachApplication(
-  input: SubmitCoachApplicationInput,
+export async function registerCoach(
+  input: RegisterCoachInput,
 ): Promise<MentorshipApplicationDto> {
-  return (await http<MentorshipApplicationDto>("/v1/mentorship/applications", {
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/coach-registration", {
     method: "POST",
     body: JSON.stringify(input),
   })) as MentorshipApplicationDto;
 }
 
-/** Where my application stands. Empty body when I have never applied — a state, not an error. */
-export async function fetchMyCoachApplication(): Promise<MentorshipApplicationDto | null> {
-  const res = await http<MentorshipApplicationDto>("/v1/mentorship/applications/mine");
-  return res && "status" in res ? (res as MentorshipApplicationDto) : null;
+/**
+ * Am I a coach, is the intake open, and does my invite code work yet.
+ *
+ * One call for all three because every screen asking one asks the others: the form needs
+ * `registrationOpen` BEFORE it is filled in, and the coach panel needs `emailVerified` to explain a
+ * locked invite code.
+ */
+export async function fetchCoachRegistrationState(): Promise<MentorshipCoachRegistrationStateDto> {
+  return (await http<MentorshipCoachRegistrationStateDto>(
+    "/v1/mentorship/coach-registration/mine",
+  )) as MentorshipCoachRegistrationStateDto;
 }
 
 /**
- * The approved coach rewriting the two lines a student reads.
+ * The coach rewriting the two lines a student reads.
  *
- * PUT on the application itself, because the approved application IS the profile — there is no
- * second resource. The verdict columns are not in the body and the API refuses one that carries
- * them: a coach editing the institution behind a verified badge would make the badge a lie.
+ * PUT on the registration itself, because the ACTIVE row IS the profile — there is no second
+ * resource. The admin's columns are not in the body and the API refuses one that carries them: a
+ * coach editing the institution behind a verified badge would make the badge a lie.
  */
 export async function updateCoachProfile(
   input: UpdateCoachProfileInput,
 ): Promise<MentorshipApplicationDto> {
-  return (await http<MentorshipApplicationDto>("/v1/mentorship/applications/mine", {
+  return (await http<MentorshipApplicationDto>("/v1/mentorship/coach-registration/mine", {
     method: "PUT",
     body: JSON.stringify(input),
   })) as MentorshipApplicationDto;

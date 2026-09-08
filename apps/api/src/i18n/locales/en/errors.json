@@ -136,10 +136,13 @@
   "COACHING_TASK_COACH_ASSIGNED": "You can't edit a task your coach assigned. You can complete it or delete it.",
   "MENTORSHIP_ASSIGNMENT_TOO_FAR": "You can't assign a task that far ahead.",
   "NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT": "You have reached the notification device limit for this account.",
-  "MENTORSHIP_APPLICATIONS_CLOSED": "Coach applications are closed right now. We will announce when they reopen.",
-  "MENTORSHIP_APPLICATION_PENDING": "Your application is under review. We will let you know when it is decided.",
+  "MENTORSHIP_APPLICATIONS_CLOSED": "Coach registration is closed right now. We will announce when it reopens.",
+  "MENTORSHIP_APPLICATION_PENDING": "Your coach account is under review. We will let you know when it is decided.",
   "MENTORSHIP_APPLICATION_TOO_SOON": "You need to wait a little longer before applying again.",
-  "MENTORSHIP_APPLICATION_NOT_FOUND": "No such application.",
-  "MENTORSHIP_ALREADY_COACH": "You are already a coach, there is nothing to apply for.",
-  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Your profile cannot carry contact details. Remove the phone number, email, IBAN or handle and try again."
+  "MENTORSHIP_APPLICATION_NOT_FOUND": "No such coach record.",
+  "MENTORSHIP_ALREADY_COACH": "You are already a coach, there is nothing to register.",
+  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Your profile cannot carry contact details. Remove the phone number, email, IBAN or handle and try again.",
+  "MENTORSHIP_EMAIL_NOT_VERIFIED": "Your invite code opens once your email is verified. Tap the link we sent you.",
+  "MENTORSHIP_COACH_NOT_ACTIVE": "Your coach account is not open right now, so you cannot issue an invite code.",
+  "MENTORSHIP_COACH_SUSPENDED": "Your coach account has been stopped. Registering again will not reopen it, so get in touch with us."
 }

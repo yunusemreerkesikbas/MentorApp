@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { StatLineChart } from "@/components/stat-line-chart";
 import { AnalysisGhostTeaser } from "./analysis-ghost-teaser";
-import { AnalysisImprovementLoopCard } from "./analysis-improvement-loop-card";
+import { AnalysisReviewProgress } from "./analysis-review-progress";
 import {
   formatTrendDate,
   sliceTrend,
@@ -52,6 +52,7 @@ export function AnalysisTabProgress({ analysis, examId }: AnalysisTabProgressPro
   if (!analysis || (trend.length === 0 && !analysis.nextFocus && !analysis.improvementCycle)) {
     return (
       <div className="flex flex-col gap-6">
+        <AnalysisReviewProgress key={examId} analysis={analysis} examId={examId} />
         <Card>
           <EmptyState
             title={t("empty_trend_chip")}
@@ -74,9 +75,7 @@ export function AnalysisTabProgress({ analysis, examId }: AnalysisTabProgressPro
 
   return (
     <div className="flex flex-col gap-6">
-      {analysis.nextFocus || analysis.improvementCycle ? (
-        <AnalysisImprovementLoopCard analysis={analysis} examId={examId} />
-      ) : null}
+      <AnalysisReviewProgress key={examId} analysis={analysis} examId={examId} />
 
       <details aria-labelledby="analysis-evidence-heading">
         <summary className="flex min-h-11 cursor-pointer items-center gap-1 rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">

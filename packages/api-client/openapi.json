@@ -2240,6 +2240,168 @@
         ]
       }
     },
+    "/v1/coaching/notebook/review-summary": {
+      "get": {
+        "operationId": "NotebookReviewController_summary",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                7,
+                30
+              ],
+              "type": "number"
+            }
+          },
+          {
+            "name": "errorType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "examId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/notebook/review-history": {
+      "get": {
+        "operationId": "NotebookReviewController_history",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                7,
+                30
+              ],
+              "type": "number"
+            }
+          },
+          {
+            "name": "errorType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "examId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/today": {
       "get": {
         "operationId": "CoachingController_getToday",
@@ -2275,6 +2437,35 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/coaching/analysis/plan-task": {
+      "post": {
+        "operationId": "CoachingController_createAnalysisPlanTask",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateAnalysisPlanTaskDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         },
@@ -3360,7 +3551,116 @@
     "/v1/coaching/notebook/entries": {
       "get": {
         "operationId": "MistakeNotebookController_listEntries",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "sort",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "created",
+                "review"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "due",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "true"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "days",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                7,
+                30
+              ],
+              "type": "number"
+            }
+          },
+          {
+            "name": "revisit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "true"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "enum": [
+                "ACTIVE",
+                "ARCHIVED",
+                "HEALED"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "name": "errorType",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "topicRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "subjectRef",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "examId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -3433,6 +3733,32 @@
       }
     },
     "/v1/coaching/notebook/entries/{id}": {
+      "get": {
+        "operationId": "MistakeNotebookController_getEntry",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      },
       "patch": {
         "operationId": "MistakeNotebookController_updateEntry",
         "parameters": [
@@ -3514,7 +3840,19 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewNotebookEntryDto"
+                "type": "object",
+                "required": [
+                  "solved"
+                ],
+                "properties": {
+                  "solved": {
+                    "type": "boolean"
+                  },
+                  "reviewId": {
+                    "type": "string",
+                    "format": "uuid"
+                  }
+                }
               }
             }
           }
@@ -6023,16 +6361,16 @@
         ]
       }
     },
-    "/v1/mentorship/applications": {
+    "/v1/mentorship/coach-registration": {
       "post": {
-        "operationId": "MentorshipApplicationController_submit",
+        "operationId": "MentorshipApplicationController_register",
         "parameters": [],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SubmitCoachApplicationDto"
+                "$ref": "#/components/schemas/RegisterCoachDto"
               }
             }
           }
@@ -6052,7 +6390,7 @@
         ]
       }
     },
-    "/v1/mentorship/applications/mine": {
+    "/v1/mentorship/coach-registration/mine": {
       "get": {
         "operationId": "MentorshipApplicationController_mine",
         "parameters": [],
@@ -6425,6 +6763,70 @@
         ]
       }
     },
+    "/v1/mentorship/brief": {
+      "get": {
+        "operationId": "MentorshipCoachController_readCohortBrief",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "post": {
+        "operationId": "MentorshipCoachController_generateCohortBrief",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/assignment-suggestions": {
+      "post": {
+        "operationId": "MentorshipCoachController_suggestAssignments",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
     "/v1/mentorship/invitations/preview": {
       "post": {
         "operationId": "MentorshipStudentController_preview",
@@ -6506,6 +6908,25 @@
         "parameters": [],
         "responses": {
           "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/data": {
+      "get": {
+        "operationId": "MentorshipStudentController_sharedData",
+        "parameters": [],
+        "responses": {
+          "200": {
             "description": ""
           }
         },
@@ -7905,7 +8326,7 @@
         ]
       }
     },
-    "/v1/admin/coach-applications": {
+    "/v1/admin/coaches": {
       "get": {
         "operationId": "AdminCoachApplicationsController_list",
         "parameters": [],
@@ -7924,14 +8345,14 @@
         ]
       }
     },
-    "/v1/admin/coach-applications/{applicationId}/review": {
+    "/v1/admin/coaches/{userId}/status": {
       "post": {
-        "operationId": "AdminCoachApplicationsController_review",
+        "operationId": "AdminCoachApplicationsController_setStatus",
         "parameters": [
           {
-            "name": "applicationId",
-            "required": true,
+            "name": "userId",
             "in": "path",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -7942,7 +8363,45 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/ReviewCoachApplicationDto"
+                "$ref": "#/components/schemas/SetCoachStatusDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/v1/admin/coaches/{userId}/verified-claims": {
+      "post": {
+        "operationId": "AdminCoachApplicationsController_verifyClaims",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyCoachClaimsDto"
               }
             }
           }
@@ -8813,6 +9272,10 @@
         "type": "object",
         "properties": {}
       },
+      "CreateAnalysisPlanTaskDto": {
+        "type": "object",
+        "properties": {}
+      },
       "CompleteWeeklyReviewDto": {
         "type": "object",
         "properties": {}
@@ -8898,10 +9361,6 @@
         "properties": {}
       },
       "UpdateNotebookEntryDto": {
-        "type": "object",
-        "properties": {}
-      },
-      "ReviewNotebookEntryDto": {
         "type": "object",
         "properties": {}
       },
@@ -8993,7 +9452,7 @@
         "type": "object",
         "properties": {}
       },
-      "SubmitCoachApplicationDto": {
+      "RegisterCoachDto": {
         "type": "object",
         "properties": {}
       },
@@ -9089,7 +9548,11 @@
         "type": "object",
         "properties": {}
       },
-      "ReviewCoachApplicationDto": {
+      "SetCoachStatusDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "VerifyCoachClaimsDto": {
         "type": "object",
         "properties": {}
       },

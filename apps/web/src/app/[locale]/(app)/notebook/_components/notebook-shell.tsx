@@ -17,9 +17,9 @@ import {
   useReducedMotion,
 } from "framer-motion";
 import { useTranslations } from "next-intl";
+import { findExamReference } from "@/lib/exam-reference";
 import type {
   ExamCalendarDto,
-  ExamSummaryDto,
   ExamSubjectDto,
   ExamTopicDto,
   NotebookEntryDto,
@@ -31,7 +31,6 @@ import type {
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
 import {
   contentControllerCalendarByFamily,
-  contentControllerListExams,
   contentControllerSubjectsBySlug,
   usersControllerMe,
 } from "@mentor/api-client";
@@ -371,8 +370,9 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             indexQuery.filters.examId ?? requestedMock?.examId ?? current.id;
           let selectedExam = current;
           if (requestedExamId !== current.id) {
-            const exams = (await contentControllerListExams()) as unknown as ExamSummaryDto[];
-            selectedExam = exams.find((candidate) => candidate.id === requestedExamId) ?? current;
+              const requested = await findExamReference(requestedExamId);
+              if (!requested) throw new Error("Unknown notebook filter exam");
+              selectedExam = requested;
           }
           // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
           // which spares the picker a fetch every time the subject changes.

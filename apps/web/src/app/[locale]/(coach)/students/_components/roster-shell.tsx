@@ -8,7 +8,14 @@ import { SectionHeading, SkeletonGroup } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { fetchOverview, fetchRoster, rotateInviteCode, setAttention } from "@/lib/mentorship";
+import {
+  fetchCoachRegistrationState,
+  fetchOverview,
+  fetchRoster,
+  rotateInviteCode,
+  setAttention,
+} from "@/lib/mentorship";
+import { inviteLockOf, type InviteLock } from "./invite-lock";
 import { CoachCapacityCard } from "./coach-capacity-card";
 import { CoachScopeCard } from "./coach-scope-card";
 import { CohortBriefCard } from "./cohort-brief-card";
@@ -38,6 +45,11 @@ export function RosterShell() {
     items: MentorshipRosterRowDto[];
   } | null>(null);
   const [overview, setOverview] = useState<MentorshipCoachOverviewDto | null>(null);
+  /**
+   * Why the invite code is withheld, if it is (APP-089). The overview nulls the code but cannot
+   * say why, so without this the card would offer a Create button that 403s.
+   */
+  const [inviteLock, setInviteLock] = useState<InviteLock>(null);
   const [busy, setBusy] = useState(false);
   /** The student whose mark is in flight, so one card disables without freezing the roster. */
   const [marking, setMarking] = useState<string | null>(null);
@@ -120,6 +132,16 @@ export function RosterShell() {
 
   useEffect(() => {
     let active = true;
+    // Two calls rather than one fatter DTO: the overview is the coach panel's own data, the
+    // registration state belongs to the registry and is read by the profile screen too.
+    fetchCoachRegistrationState()
+      .then((state) => {
+        if (active) setInviteLock(inviteLockOf(state));
+      })
+      .catch(() => {
+        // Unknown reason: the card falls back to the plain "no code yet" copy rather than
+        // guessing at a blocker that may not exist.
+      });
     fetchOverview()
       .then((next) => {
         if (active) setOverview(next);
@@ -164,6 +186,7 @@ export function RosterShell() {
       <CoachCapacityCard
         loaded={overview !== null}
         inviteCode={overview?.inviteCode ?? null}
+        inviteLock={inviteLock}
         activeStudents={overview?.activeStudents ?? 0}
         maxActiveStudents={overview?.maxActiveStudents ?? 0}
         freeSeats={overview?.freeSeats ?? 0}

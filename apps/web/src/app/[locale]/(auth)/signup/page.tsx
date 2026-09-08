@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
 import { CheckBox, SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
@@ -21,10 +21,34 @@ import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
 import { SignupTurnstile, turnstileSiteKey } from "../_components/signup-turnstile";
 
+/** Hoisted so the subscribe reference is stable across renders. */
+const NEVER_CHANGES = () => () => {};
+
+/**
+ * Reads the coach entry point off the URL (APP-089).
+ *
+ * `?rol=koc` in both locales rather than a localized param, because the link is written by us and a
+ * marketing page pointing at `/kayit?rol=koc` should keep working from anywhere. Anything else,
+ * including a missing value, is a student — the enum on the API is what actually decides.
+ */
+function useCoachIntent(): boolean {
+  return useSyncExternalStore(
+    // The value cannot change without a navigation, which remounts this page anyway.
+    NEVER_CHANGES,
+    () => new URLSearchParams(window.location.search).get("rol") === "koc",
+    // Server snapshot. The page is statically rendered, so the query string is unknown at build
+    // time and the first paint is always the student form; the coach heading arrives on hydration.
+    // `useSearchParams` would read it during render but drags the whole page into a Suspense
+    // boundary, which is the same reason `readAuthNextParam` reads `window` by hand.
+    () => false,
+  );
+}
+
 export default function SignupPage() {
   const translate = useTranslations("auth.register");
   const ui = useTranslations("common");
   const { signup } = useAuth();
+  const isCoach = useCoachIntent();
   const { accept, reject } = useAnalyticsConsent();
   const router = useRouter();
   const exitThen = useAuthSheetExit();
@@ -63,8 +87,12 @@ export default function SignupPage() {
         password: String(data.get("password")),
         kvkkAccepted: true,
         ...(turnstileToken ? { turnstileToken } : {}),
+        // Grants COACH, which shapes the onboarding and the home surface. It authorizes nothing on
+        // its own: the invite code needs a verified email and a registry row this account does not
+        // have yet. See `signupSchema.intent`.
+        ...(isCoach ? { intent: "COACH" as const } : {}),
       });
-      trackProductEvent("sign_up", { method: "email" });
+      trackProductEvent("sign_up", { method: "email", intent: isCoach ? "coach" : "student" });
       exitThen(() => {
         // @ts-expect-error -- a validated internal path, transported as a plain string.
         router.push(postAuthDestination(user, readAuthNextParam()));
@@ -80,8 +108,13 @@ export default function SignupPage() {
   return (
     <form onSubmit={onSubmit} className="flex flex-col gap-4">
       <SectionHeading as="h2" className="items-center text-center">
-        {translate("title")}
+        {isCoach ? translate("title_coach") : translate("title")}
       </SectionHeading>
+      {isCoach && (
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {translate("coach_intro")}
+        </p>
+      )}
       <Field
         label={translate("name")}
         name="displayName"
@@ -141,6 +174,18 @@ export default function SignupPage() {
         {translate("login_prompt")}{" "}
         <AuthNavLink href="/login">{translate("login_link")}</AuthNavLink>
       </p>
+      {/* Quiet, and below the fold of the form on purpose. Registration is open to anyone who wants
+          it, but a loud second button would invite every new student to wonder if they should be a
+          coach — the intake is self-service, not something to upsell. */}
+      {!isCoach && (
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {/* Object form, not a string: `@/i18n/navigation` types hrefs against the route map, so
+              the query has to travel beside the pathname rather than glued onto it. */}
+          <AuthNavLink href={{ pathname: "/signup", query: { rol: "koc" } }}>
+            {translate("coach_link")}
+          </AuthNavLink>
+        </p>
+      )}
     </form>
   );
 }

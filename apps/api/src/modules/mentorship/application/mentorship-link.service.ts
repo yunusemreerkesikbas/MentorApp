@@ -2,6 +2,8 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   MENTORSHIP_DATA_SCOPE,
+  MentorshipApplicationStatus,
+  type MentorshipApplicationStatusId,
   type MentorshipCoachOverviewDto,
   type MentorshipInvitationPreviewDto,
   type MentorshipCoachProfileDto,
@@ -61,6 +63,26 @@ export class MentorshipLinkService {
   }
 
   /**
+   * Resolve a code to the coach behind it, and refuse it unless that coach may still invite.
+   *
+   * The redemption half of the APP-089 gate, and it is NOT redundant with the issuing half. Codes
+   * outlive their issuing: a coach who was suspended, or who was reinstated and then unverified
+   * their email, keeps whatever code is in the table, and students hold copies of it. Checking only
+   * at issue time would leave every already-handed-out code live for its full TTL.
+   *
+   * The refusal is INVALID rather than a suspension-specific code on purpose: whoever holds this
+   * string is a stranger to us, and "that coach was suspended" is an administrative fact about
+   * somebody else. An unusable code is the whole truth the holder is owed.
+   */
+  private async resolveInvitingCoach(code: string): Promise<string> {
+    const coachId = await this.invites.resolveCoachId(code);
+    if (!(await this.applications.canInvite(coachId))) {
+      throw new DomainError(ErrorCode.MENTORSHIP_INVITE_INVALID, HttpStatus.NOT_FOUND);
+    }
+    return coachId;
+  }
+
+  /**
    * The gate. Returns the live link or throws - no admin bypass, no "the COACH role is enough".
    * Callers reading student data MUST await this before touching anything student-scoped.
    */
@@ -81,7 +103,7 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, linkIds, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats] =
+    const [inviteCode, linkIds, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats, canInvite] =
       await Promise.all([
         this.invites.getCurrent(coachId),
         this.links.listActiveLinkIds(coachId),
@@ -89,13 +111,19 @@ export class MentorshipLinkService {
         this.config.get("mentorship.coach.free_seats"),
         this.config.get("mentorship.seats.sponsorship_enabled"),
         this.subscriptions.paidSeatsFor(coachId),
+        this.applications.canInvite(coachId),
       ]);
     // Counted, not inferred from the roster. A live link does not imply a seat: a student who
     // already pays for themselves is never sponsored, and lowering `free_seats` leaves existing
     // sponsorships standing — so roster size and seat usage drift apart in both directions.
     const usedSeats = await this.subscriptions.countSponsoredForLinks(linkIds);
     return {
-      inviteCode,
+      // Withheld, not absent (APP-089). A coach who has not verified their email, or whom an admin
+      // pulled back, keeps whatever code they were issued in the database — reinstating them must
+      // not silently invalidate a code students may already hold — but the panel stops handing it
+      // out. `GET /mentorship/coach-registration/mine` carries the reason, so the screen can say
+      // which of the two it is instead of rendering an unexplained blank.
+      inviteCode: canInvite ? inviteCode : null,
       activeStudents: linkIds.length,
       maxActiveStudents,
       freeSeats,
@@ -112,7 +140,7 @@ export class MentorshipLinkService {
    */
   async previewInvitation(code: string): Promise<MentorshipInvitationPreviewDto> {
     await this.assertEnabled();
-    const coachId = await this.invites.resolveCoachId(code);
+    const coachId = await this.resolveInvitingCoach(code);
     const [coach, coachProfile] = await Promise.all([
       this.findPerson(coachId),
       this.applications.findPublicProfile(coachId),
@@ -134,7 +162,7 @@ export class MentorshipLinkService {
    */
   async acceptInvitation(studentId: string, code: string): Promise<MyCoachDto> {
     await this.assertEnabled();
-    const coachId = await this.invites.resolveCoachId(code);
+    const coachId = await this.resolveInvitingCoach(code);
     if (coachId === studentId) {
       throw new DomainError(ErrorCode.MENTORSHIP_SELF_LINK, HttpStatus.BAD_REQUEST);
     }
@@ -196,7 +224,14 @@ export class MentorshipLinkService {
         seatKind,
       ),
     );
-    return this.toMyCoachDto(link, people.get(coachId), await this.applications.findPublicProfile(coachId));
+    // ACTIVE without a lookup: `resolveInvitingCoach` above refused the code otherwise, so a link
+    // that exists at this line was made by a coach who could invite a moment ago.
+    return this.toMyCoachDto(
+      link,
+      people.get(coachId),
+      await this.applications.findPublicProfile(coachId),
+      MentorshipApplicationStatus.ACTIVE,
+    );
   }
 
   /**
@@ -224,11 +259,14 @@ export class MentorshipLinkService {
     await this.assertEnabled();
     const link = await this.links.findActiveByStudent(studentId);
     if (!link) return null;
-    const [person, profile] = await Promise.all([
+    const [person, profile, coachStatus] = await Promise.all([
       this.findPerson(link.coachId),
       this.applications.findPublicProfile(link.coachId),
+      // Only this screen asks. A coach an admin stopped keeps the link but can open nothing, and a
+      // coach who has simply gone quiet looks identical from here — so the student is told which.
+      this.applications.findStatus(link.coachId),
     ]);
-    return this.toMyCoachDto(link, person, profile);
+    return this.toMyCoachDto(link, person, profile, coachStatus);
   }
 
   /** Coach ends the link. */
@@ -270,6 +308,7 @@ export class MentorshipLinkService {
     link: MentorshipLinkRow,
     coach: DisplayPerson | undefined,
     coachProfile: MentorshipCoachProfileDto | null,
+    coachStatus: MentorshipApplicationStatusId | null = null,
   ): MyCoachDto {
     return {
       linkId: link.id,
@@ -282,6 +321,7 @@ export class MentorshipLinkService {
       // The same profile the consent screen showed. A student who agreed to something should be
       // able to re-read it without digging out the invite they used months ago.
       coachProfile,
+      coachStatus,
     };
   }
 }

@@ -144,6 +144,15 @@ export interface MyCoachDto {
   coachNote: MentorshipCoachNoteDto | null;
   /** The same profile the consent screen showed, so the student can re-read what they agreed to. */
   coachProfile: MentorshipCoachProfileDto | null;
+  /**
+   * The coach's own standing (APP-089). Anything other than ACTIVE means an admin has stopped
+   * them: the link survives and nothing was ended, but they can no longer open this student's
+   * report. The student is told, because a coach who has gone quiet for an administrative reason
+   * reads as a coach who stopped caring.
+   *
+   * Null when the coach holds the role without a registry row.
+   */
+  coachStatus: MentorshipApplicationStatusId | null;
 }
 
 /**
@@ -431,15 +440,27 @@ export interface MentorshipSharedDataDto {
  * ---------------------------------------------------------------------------------------- */
 
 /**
- * One row per person, and the APPROVED row IS the coach's profile.
+ * One row per person, and the ACTIVE row IS the coach's profile.
  *
- * There is no second "profile" table on purpose: a coach's profile is exactly what passed vetting,
- * and the record of what an admin approved already lives in W6's append-only `admin_audit_log`.
+ * There is no second "profile" table on purpose: a coach's profile is exactly what they registered
+ * with, and the record of every admin intervention already lives in W6's append-only
+ * `admin_audit_log`.
+ *
+ * REVISED (APP-089): this used to be an application queue — PENDING/APPROVED/REJECTED, where a
+ * SUPER_ADMIN's approval was the only way to become a coach. Registration is now self-service, so
+ * the row is a coach REGISTRY and the status is the coach's standing, not a verdict on a request:
+ *
+ *   ACTIVE     self-registered (or reinstated). The only status that carries the COACH role.
+ *   PENDING    an admin pulled them back for review. Reversible, links survive (see the invite gate).
+ *   SUSPENDED  an admin removed them. Only an admin can undo it; there is no self-service return.
+ *
+ * The status never grants anything by itself. What it gates is the invite code, which is the only
+ * road to a student's data — see `MentorshipCoachStatusService.assertCanInvite`.
  */
 export const MentorshipApplicationStatus = {
+  ACTIVE: "ACTIVE",
   PENDING: "PENDING",
-  APPROVED: "APPROVED",
-  REJECTED: "REJECTED",
+  SUSPENDED: "SUSPENDED",
 } as const;
 export type MentorshipApplicationStatusId =
   (typeof MentorshipApplicationStatus)[keyof typeof MentorshipApplicationStatus];
@@ -493,20 +514,41 @@ export interface AdminCoachApplicationDto extends MentorshipApplicationDto {
 }
 
 /**
- * What a STUDENT sees about their coach: the coach's own two lines, plus the claims an admin
- * actually checked.
+ * What a STUDENT sees about their coach: the coach's own two lines, plus what they claim about
+ * themselves and whether anybody checked it.
  *
- * The raw claims never travel. An institution nobody verified, rendered next to a verified one,
- * would read as endorsed by us; a verified claim shows its VALUE ("Ankara Üniversitesi") because
- * throwing away a fact somebody checked, to render a generic badge, helps nobody.
+ * REVISED (APP-089). This used to carry ONLY admin-verified claims, because every coach had passed
+ * a review before a student could reach them — an unverified claim beside a verified one would have
+ * read as endorsed. Registration is self-service now, so silence is the more dangerous default: a
+ * consent screen showing nothing looks identical for a checked coach and an unchecked one, and the
+ * student handing over private data cannot tell which they are looking at.
  *
- * Null is a real state, not an empty object: every coach granted the role by hand before the
- * application queue existed has no profile, and the consent screen has to say so rather than
- * render a blank card.
+ * So every claim travels, each carrying `verified` explicitly, and the screen MUST render the two
+ * differently. Dropping the flag, or rendering an unverified claim like a verified one, turns this
+ * screen into the endorsement the old design was avoiding.
+ *
+ * Null is a real state, not an empty object: a coach who holds the role without a registry row has
+ * no profile, and the consent screen has to say so rather than render a blank card.
  */
 export interface MentorshipCoachProfileDto {
   headline: string;
   bio: string;
-  /** Only claims an admin marked verified, with the value they verified. Possibly empty. */
-  verifiedClaims: { claim: MentorshipClaimId; value: string }[];
+  /** Every claim the coach made, each flagged with whether an admin checked it. Possibly empty. */
+  claims: { claim: MentorshipClaimId; value: string; verified: boolean }[];
+}
+
+/**
+ * Everything the "am I a coach, and what works right now" screens need, in one call.
+ *
+ * `registrationOpen` is here because the tap being shut used to be discoverable only by POSTing a
+ * completed form and reading the 403 back. That was survivable when the entry point was a link
+ * buried in the profile list; it is not, now that signup routes people here on purpose.
+ */
+export interface MentorshipCoachRegistrationStateDto {
+  /** `mentorship.applications.open` — whether self-service registration is accepting anyone today. */
+  registrationOpen: boolean;
+  /** Null when this person has never registered as a coach. */
+  registration: MentorshipApplicationDto | null;
+  /** The invite code stays locked until this is true (APP-089). */
+  emailVerified: boolean;
 }

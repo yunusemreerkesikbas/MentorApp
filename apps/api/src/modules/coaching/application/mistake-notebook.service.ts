@@ -1,3 +1,4 @@
+import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
 import { randomUUID } from "node:crypto";
 import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
@@ -102,6 +103,7 @@ export class MistakeNotebookService {
     private readonly notebook: MistakeNotebookRepository,
     private readonly content: ContentService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly reviewHistory: NotebookReviewRepository,
     @Optional() private readonly events?: EventEmitter2,
   ) {}
 
@@ -592,14 +594,32 @@ export class MistakeNotebookService {
   }
 
   /** Answer "could you do it this time?" and let the ladder pick the next moment. */
+  async getEntry(userId: string, entryId: string): Promise<NotebookEntryDto> {
+    const row = await withUserContext(this.db, { userId }, tx => this.notebook.findEntry(tx, userId, entryId));
+    if (!row) throw new NotFoundError({ reason: "notebook_entry_missing" });
+    const [dto] = await this.toEntryDtos(userId, [row]);
+    return dto!;
+  }
+
   async reviewEntry(
     userId: string,
     entryId: string,
     solved: boolean,
+    reviewId: string = randomUUID(),
+    orgId: string | null = null,
   ): Promise<NotebookEntryDto> {
-    const now = new Date();
-    const row = await withUserContext(this.db, { userId }, async (tx) => {
-      const existing = await this.notebook.findEntry(tx, userId, entryId);
+    let replay = false;
+    const row = await withUserContext(this.db, { userId, orgId }, async (tx) => {
+      const history = this.reviewHistory;
+      const existing = await history.lockEntry(tx, userId, entryId);
+      if (!existing) throw new NotFoundError({ reason: "notebook_entry_missing" });
+      const now = new Date();
+      const previous = await history.findReview(tx, userId, reviewId);
+      if (previous) {
+        if (previous.entryId !== entryId || previous.solved !== solved) throw new ValidationFailedError({ reason: "review_id_conflict" });
+        replay = true;
+        return { ...existing, status: previous.afterStatus, reviewCount: previous.afterCount, nextReviewAt: previous.nextReviewAt, lastReviewedAt: previous.reviewedAt };
+      }
       if (!existing)
         throw new NotFoundError({ reason: "notebook_entry_missing" });
       // The card's own due date decides whether this is a scheduled review or an early one; the
@@ -620,12 +640,13 @@ export class MistakeNotebookService {
       );
       if (!updated)
         throw new NotFoundError({ reason: "notebook_entry_missing" });
+      await history.insert(tx, { id: reviewId, userId, orgId, entryId, reviewedAt: now, solved, early: !existing.nextReviewAt || now < existing.nextReviewAt, beforeStatus: existing.status, afterStatus: outcome.status, beforeCount: existing.reviewCount, afterCount: outcome.reviewCount, nextReviewAt: outcome.nextReviewAt });
       return updated;
     });
     const [dto] = await this.toEntryDtos(userId, [row]);
-    this.events?.emit(
+    if (!replay) this.events?.emit(
       CoachingEventTopic.NOTEBOOK_ENTRY_REVIEWED,
-      new NotebookEntryReviewed(userId, now),
+      new NotebookEntryReviewed(userId, row.lastReviewedAt!),
     );
     return dto!;
   }

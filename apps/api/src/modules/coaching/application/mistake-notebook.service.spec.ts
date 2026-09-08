@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { NotebookReviewRepository } from "../infrastructure/notebook-review.repository";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MistakeNotebookService } from "./mistake-notebook.service";
 import type { MistakeNotebookEntryRow } from "../infrastructure/mistake-notebook.repository";
 import { NOTEBOOK_REVIEW_LADDER_DAYS } from "../domain/notebook-review.policy";
@@ -256,6 +257,7 @@ function makeService() {
     repo as never,
     makeContentFake() as never,
     storage as never,
+    new NotebookReviewRepository(),
   );
   return { service, repo, storage };
 }
@@ -264,7 +266,20 @@ describe("MistakeNotebookService", () => {
   let ctx: ReturnType<typeof makeService>;
 
   beforeEach(() => {
+    vi.restoreAllMocks();
     ctx = makeService();
+    const reviews = new Map<string, Awaited<ReturnType<NotebookReviewRepository["findReview"]>>>();
+    vi.spyOn(NotebookReviewRepository.prototype, "lockEntry").mockImplementation(async (_tx, userId, id) => {
+      const row = ctx.repo.entries.get(id);
+      return row?.userId === userId ? row : undefined;
+    });
+    vi.spyOn(NotebookReviewRepository.prototype, "findReview").mockImplementation(async (_tx, userId, id) => {
+      const row = reviews.get(id);
+      return row?.userId === userId ? row : undefined;
+    });
+    vi.spyOn(NotebookReviewRepository.prototype, "insert").mockImplementation(async (_tx, row) => {
+      reviews.set(row.id, row as NonNullable<Awaited<ReturnType<NotebookReviewRepository["findReview"]>>>);
+    });
   });
 
   describe("createEntry", () => {
