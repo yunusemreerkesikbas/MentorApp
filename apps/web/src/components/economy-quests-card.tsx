@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useReducedMotion } from "framer-motion";
 import { SlidingTabs, type SlidingTabItem } from "@mentor/ui";
 import {
   ApiClientError,
@@ -13,11 +13,15 @@ import type { QuestProgressView } from "@mentor/types";
 import { RewardedAdOffer } from "@/components/ads/rewarded-ad-offer";
 import { useRouter } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { notifyCoinCelebration } from "@/lib/economy";
+import {
+  ECONOMY_CHANGED_EVENT,
+  fetchQuests,
+  notifyCoinCelebration,
+} from "@/lib/economy";
 import { findNewlyCompletedQuests } from "@/lib/economy-quest-utils";
 import { QuestProgressGauge } from "./economy-quests/quest-progress-gauge";
 import { QuestNextActionCard } from "./economy-quests/quest-next-action-card";
-import { QuestRowItem } from "./economy-quests/quest-row-item";
+import { QuestSection } from "./economy-quests/quest-section";
 
 export interface EconomyQuestsCardProps {
   onDismiss?: () => void;
@@ -49,11 +53,30 @@ export function EconomyQuestsCard({
   const toast = useMentorToast();
   const [resendingVerification, setResendingVerification] = useState(false);
   const [selectedTab, setSelectedTab] = useState<QuestTabKey>("daily_ritual");
+  const [renderedQuests, setRenderedQuests] = useState(quests);
+  const [currentQuests, setCurrentQuests] = useState(quests);
+  if (renderedQuests !== quests) {
+    setRenderedQuests(quests);
+    setCurrentQuests(quests);
+  }
   const prevQuestsRef = useRef<QuestProgressView[] | null>(null);
+
+  // Listen to economy changes to refresh dynamically
+  useEffect(() => {
+    function onEconomyChanged() {
+      fetchQuests()
+        .then((fresh) => {
+          setCurrentQuests(fresh);
+        })
+        .catch(() => {});
+    }
+    window.addEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
+    return () => window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
+  }, []);
 
   useEffect(() => {
     if (prevQuestsRef.current) {
-      const completedNow = findNewlyCompletedQuests(prevQuestsRef.current, quests);
+      const completedNow = findNewlyCompletedQuests(prevQuestsRef.current, currentQuests);
       const coinEarned = completedNow.reduce(
         (sum, quest) =>
           quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
@@ -63,13 +86,13 @@ export function EconomyQuestsCard({
         notifyCoinCelebration(coinEarned);
       }
     }
-    prevQuestsRef.current = quests;
-  }, [quests]);
+    prevQuestsRef.current = currentQuests;
+  }, [currentQuests]);
 
-  const dailyQuests = quests.filter((quest) => quest.category === "daily_ritual");
-  const weeklyQuests = quests.filter((quest) => quest.category === "weekly_ritual");
-  const milestoneQuests = quests.filter((quest) => quest.category === "milestone");
-  const onboardingQuests = quests.filter((quest) => quest.category === "onboarding");
+  const dailyQuests = currentQuests.filter((quest) => quest.category === "daily_ritual");
+  const weeklyQuests = currentQuests.filter((quest) => quest.category === "weekly_ritual");
+  const milestoneQuests = currentQuests.filter((quest) => quest.category === "milestone");
+  const onboardingQuests = currentQuests.filter((quest) => quest.category === "onboarding");
 
   const tabDefs = [
     {
@@ -238,6 +261,8 @@ export function EconomyQuestsCard({
         quests={activeQuests}
         reduceMotion={reduceMotion}
         resendingVerification={resendingVerification}
+        completedCount={completed}
+        totalCount={dailyQuests.length}
         rewardedAd={
           activeTab === "daily_ritual" && rewardedAd && !promoteRewardedAd
             ? rewardedAd
@@ -245,58 +270,5 @@ export function EconomyQuestsCard({
         }
       />
     </div>
-  );
-}
-
-function QuestSection({
-  activeTab,
-  tabbed,
-  onAction,
-  quests,
-  reduceMotion,
-  resendingVerification,
-  rewardedAd,
-}: {
-  activeTab?: QuestTabKey;
-  tabbed: boolean;
-  onAction: (action: QuestProgressView["action"]) => Promise<void>;
-  quests: QuestProgressView[];
-  reduceMotion: boolean;
-  resendingVerification: boolean;
-  rewardedAd?: EconomyQuestsCardProps["rewardedAd"];
-}) {
-  if (quests.length === 0 && !rewardedAd) return null;
-
-  return (
-    <section
-      aria-labelledby={tabbed && activeTab ? `quests-tab-${activeTab}` : undefined}
-      className="mentor-scrollarea mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1 pb-1"
-      id={activeTab ? `quests-panel-${activeTab}` : "quests-panel"}
-      role={tabbed && activeTab ? "tabpanel" : undefined}
-    >
-      <AnimatePresence initial={false} mode="wait">
-        <motion.ul
-          key={activeTab}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex flex-col gap-2 pt-1"
-          exit={{ opacity: 0, y: reduceMotion ? 0 : -4 }}
-          initial={{ opacity: reduceMotion ? 1 : 0, y: reduceMotion ? 0 : 6 }}
-          transition={
-            reduceMotion ? { duration: 0 } : { duration: 0.18, ease: "easeOut" }
-          }
-        >
-          {rewardedAd ? <RewardedAdOffer {...rewardedAd} variant="list" /> : null}
-          {quests.map((quest) => (
-            <QuestRowItem
-              key={`${quest.id}:${quest.periodKey}`}
-              busy={quest.action === "verify-email" && resendingVerification}
-              onAction={onAction}
-              quest={quest}
-              reduceMotion={reduceMotion}
-            />
-          ))}
-        </motion.ul>
-      </AnimatePresence>
-    </section>
   );
 }

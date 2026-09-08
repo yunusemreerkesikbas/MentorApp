@@ -148,6 +148,57 @@ export class PlanTaskRepository {
     return rows[0]!;
   }
 
+  async findLatestAnalysisTask(
+    tx: DatabaseTx,
+    userId: string,
+    examId?: string,
+  ): Promise<PlanTaskRow | undefined> {
+    const rows = await tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          eq(planTasks.originType, "ANALYSIS"),
+          examId ? eq(planTasks.originRefId, examId) : undefined,
+        ),
+      )
+      .orderBy(desc(planTasks.createdAt), desc(planTasks.id))
+      .limit(1);
+    return rows[0];
+  }
+
+  async findPendingAnalysisTask(
+    tx: DatabaseTx,
+    userId: string,
+    examId: string,
+    baselineMockExamId: string,
+    subjectRef: string,
+    topicRef?: string,
+  ): Promise<PlanTaskRow | undefined> {
+    const expectedMeta = JSON.stringify({
+      baselineMockExamId,
+      subjectRef,
+      ...(topicRef && { topicRef }),
+    });
+    const rows = await tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.userId, userId),
+          eq(planTasks.status, "PENDING"),
+          eq(planTasks.originType, "ANALYSIS"),
+          eq(planTasks.originRefId, examId),
+          sql`${planTasks.originMeta} @> ${expectedMeta}::jsonb`,
+          topicRef ? undefined : sql`${planTasks.originMeta}->>'topicRef' is null`,
+        ),
+      )
+      .orderBy(desc(planTasks.createdAt), desc(planTasks.id))
+      .limit(1);
+    return rows[0];
+  }
+
   async update(
     tx: DatabaseTx,
     userId: string,

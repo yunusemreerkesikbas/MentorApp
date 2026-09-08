@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
+import { CoinCelebrationProvider } from "@/lib/coin-celebration-context";
 import { AppShell } from "./app-shell";
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default async function AppLayout({
 
   return (
     <NextIntlClientProvider messages={messages}>
-      <AppShell>{children}</AppShell>
+      <CoinCelebrationProvider>
+        <AppShell>{children}</AppShell>
+      </CoinCelebrationProvider>
     </NextIntlClientProvider>
   );
 }

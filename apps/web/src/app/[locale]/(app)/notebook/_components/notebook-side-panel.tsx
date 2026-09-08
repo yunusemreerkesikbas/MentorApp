@@ -33,6 +33,7 @@ import {
 } from "@/components/notebook/notebook-surface";
 import { NotebookAddPanel } from "./notebook-add-panel";
 import { NotebookIndexPanel } from "./notebook-index-panel";
+import type { NotebookIndexFilters } from "@/lib/notebook-index-query";
 
 /**
  * The note's own plate colours. A short, local copy of the vision board's `PLATE_COLORS` rather
@@ -94,6 +95,12 @@ export interface NotebookSidePanelProps {
     subjects: ExamSubjectDto[];
     topics: ExamTopicDto[];
   } | null;
+  /** Taxonomy of the exam named by an analysis deep link; adding still uses the active exam. */
+  indexExam?: {
+    id: string;
+    subjects: ExamSubjectDto[];
+    topics: ExamTopicDto[];
+  } | null;
   /** The focused page's selected note, when there is one — drives the "text" category's controls. */
   selectedText: VisionBoardTextItem | null;
   onCreated: (entry: NotebookEntryDto, aspect: number | null) => void;
@@ -104,6 +111,8 @@ export interface NotebookSidePanelProps {
   placedEntryIds: ReadonlySet<string>;
   /** Bumped when an entry is edited or deleted elsewhere, so the index reloads instead of lying. */
   indexRefreshKey: number;
+  initialIndexFilters?: NotebookIndexFilters;
+  indexFilterNames?: { exam?: string; mockExam?: string };
   onOpenEntry: (entry: NotebookEntryDto) => void;
   onPlaceEntry: (entry: NotebookEntryDto) => void;
   /** Study a chosen set now, whatever their schedule says — see `NotebookIndexPanel`. */
@@ -143,12 +152,15 @@ export function NotebookSidePanel({
   cover,
   onCover,
   exam,
+  indexExam,
   selectedText,
   onCreated,
   onAddSticker,
   mockExamId,
   placedEntryIds,
   indexRefreshKey,
+  initialIndexFilters,
+  indexFilterNames,
   onOpenEntry,
   onPlaceEntry,
   onStudyEntries,
@@ -274,8 +286,8 @@ export function NotebookSidePanel({
         <NotebookAddPanel
           examId={exam.id}
           mockExamId={mockExamId}
-          subjects={exam.subjects}
-          topics={exam.topics}
+          subjects={(indexExam ?? exam).subjects}
+          topics={(indexExam ?? exam).topics}
           onCreated={onCreated}
           onCancel={onCollapse}
         />
@@ -297,6 +309,9 @@ export function NotebookSidePanel({
       <Panel>
         <NotebookIndexPanel
           subjects={exam.subjects}
+          topics={exam.topics}
+          initialFilters={initialIndexFilters}
+          filterNames={indexFilterNames}
           placedEntryIds={placedEntryIds}
           refreshKey={indexRefreshKey}
           onOpen={onOpenEntry}

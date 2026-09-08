@@ -6,6 +6,8 @@ import { DailyQuestSignalService } from "./application/daily-quest-signal.servic
 import { MistakeNotebookService } from "./application/mistake-notebook.service";
 import { NotebookForumListener } from "./application/notebook-forum.listener";
 import { MockExamService } from "./application/mock-exam.service";
+import { AnalysisService } from "./application/analysis.service";
+import { AnalysisPlanTaskService } from "./application/analysis-plan-task.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
 import { StudyRoomService } from "./application/study-room.service";
@@ -77,6 +79,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
     StreakService,
     MoodService,
     MockExamService,
+    AnalysisService,
+    AnalysisPlanTaskService,
     TodayService,
     VisionService,
     VisionBoardImageService,
@@ -118,6 +122,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     DailyQuestSignalService,
     MistakeNotebookService,
     MockExamService,
+    AnalysisService,
     MoodService,
     PlanService,
     SessionService,

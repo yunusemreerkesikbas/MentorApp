@@ -9,7 +9,11 @@ import { redeemInviteSchema } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { redeemInviteCode } from "@/lib/economy";
+import {
+  notifyCoinCelebration,
+  notifyEconomyChanged,
+  redeemInviteCode,
+} from "@/lib/economy";
 import { useIsMounted } from "@/lib/use-is-mounted";
 
 interface EconomyInviteCardProps {
@@ -132,6 +136,11 @@ export function EconomyInviteCard({
         result.status === "PENDING"
           ? translate("redeem_pending")
           : translate("redeem_saved"),
+      );
+      notifyEconomyChanged();
+      notifyCoinCelebration(
+        10,
+        translate("invite_code_reward_label", { defaultValue: "Davet Kodu Bonusu" }),
       );
       onRedeemed();
     } catch (err) {

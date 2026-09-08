@@ -29,7 +29,7 @@ import {
   coachingControllerGetToday,
   planTaskControllerUpdate,
 } from "@mentor/api-client";
-import { Chip, CountdownCard, ShimmerText, TextSwap, TextsReveal } from "@mentor/ui";
+import { CountdownCard, TextsReveal } from "@mentor/ui";
 import {
   ArrowRight,
   BookOpen,
@@ -37,13 +37,13 @@ import {
   HeartPulse,
   ListChecks,
   Play,
-  Sparkles,
 } from "lucide-react";
 
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { TopBanner, type TopBannerItem } from "@/components/top-banner";
 import { CoachNextActionCard } from "@/components/coach-next-action-card";
 import { PuhuImage } from "@/components/puhu-image";
+import { PuhuSpeechModal } from "@/components/puhu-speech-modal";
 import { WeeklyRecapTeaser } from "@/components/weekly-recap-teaser";
 import { Link } from "@/i18n/navigation";
 import {
@@ -116,6 +116,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
   const adsT = useTranslations("ads");
   const paywallT = useTranslations("paywall");
   const countdownT = useTranslations("countdown");
+  const moodT = useTranslations("mood");
   const toast = useMentorToast();
   const { promo } = useMentorDialog();
   const { openPaywall } = usePremiumPaywall();
@@ -201,13 +202,9 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }
   }, []);
 
-  const handleRewardCompleted = useCallback((rewardCoin: number) => {
+  const handleRewardCompleted = useCallback(() => {
     setRewardUnavailable(false);
-    toast.success({
-      title: adsT("rewarded.success", { count: rewardCoin }),
-      duration: 3000,
-    });
-  }, [adsT, toast]);
+  }, []);
   const handleRewardUnavailable = useCallback(() => setRewardUnavailable(true), []);
   const handleRewardOfferChange = useCallback((offer: AdRewardOfferView) => {
     setRewardOffer(offer);
@@ -279,20 +276,26 @@ export function PanelShell({ initialData }: PanelShellProps) {
             0,
           );
           if (coinEarned > 0) {
-            notifyCoinCelebration(coinEarned);
-          }
-          const rewardSummary = formatRewardSummary(completedNow, economyT);
-          if (!rewardSummary) return;
-          toast.success({
-            title:
+            const coinLabel =
               completedNow.length === 1
-                ? t("quest_reward_single_title")
-                : t("quest_reward_multi_title"),
-            message: t("quest_reward_message", {
-              reward: rewardSummary,
-            }),
-            duration: 3000,
-          });
+                ? (completedNow[0]?.title ?? t("quest_reward_single_title"))
+                : t("quest_reward_multi_title");
+            notifyCoinCelebration(coinEarned, coinLabel);
+          } else {
+            const rewardSummary = formatRewardSummary(completedNow, economyT);
+            if (rewardSummary) {
+              toast.success({
+                title:
+                  completedNow.length === 1
+                    ? t("quest_reward_single_title")
+                    : t("quest_reward_multi_title"),
+                message: t("quest_reward_message", {
+                  reward: rewardSummary,
+                }),
+                duration: 3000,
+              });
+            }
+          }
         }
       } catch {
         questsRef.current = null;
@@ -338,9 +341,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
 
   const refreshRitualAndRewards = useCallback(
     async (opts?: { celebrateStreakFrom?: number }) => {
-      const next = await refreshToday();
-      await refreshQuests({ announceRewards: true, refreshBalance: true });
-      await refreshStreakRescue();
+      const [next] = await Promise.all([
+        refreshToday(),
+        refreshQuests({ announceRewards: true, refreshBalance: true }),
+        refreshStreakRescue(),
+      ]);
       if (opts?.celebrateStreakFrom != null && next) {
         tryCelebrate(opts.celebrateStreakFrom, next.streak.currentStreak);
       }
@@ -510,6 +515,21 @@ export function PanelShell({ initialData }: PanelShellProps) {
   }, [t, toast]);
 
   useEffect(() => {
+    try {
+      if (sessionStorage.getItem("mentor_onboarding_coin_pending") === "1") {
+        sessionStorage.removeItem("mentor_onboarding_coin_pending");
+        const timer = setTimeout(() => {
+          notifyCoinCelebration(
+            5,
+            economyT("quests_onboarding_section", { defaultValue: "Profil Kurulumu" }),
+          );
+        }, 800);
+        return () => clearTimeout(timer);
+      }
+    } catch {}
+  }, [economyT]);
+
+  useEffect(() => {
     if (initialData) return;
     let active = true;
 
@@ -646,17 +666,6 @@ export function PanelShell({ initialData }: PanelShellProps) {
               onMoodClick={moodCheckin.openMoodDialog}
             />
           </motion.div>
-          {moodCheckin.reflecting ||
-          moodCheckin.reflection ||
-          moodCheckin.reflectionLocked ? (
-            <motion.div variants={staggerItemVariants}>
-              <MoodCoachNote
-                reflecting={moodCheckin.reflecting}
-                reflection={moodCheckin.reflection}
-                locked={moodCheckin.reflectionLocked}
-              />
-            </motion.div>
-          ) : null}
           {moodCheckin.mood != null && moodCheckin.mood <= 2 ? (
             <motion.div variants={staggerItemVariants}>
               <Link
@@ -781,57 +790,17 @@ export function PanelShell({ initialData }: PanelShellProps) {
           onClose={() => setRescueSuccessDays(null)}
         />
       ) : null}
+      <PuhuSpeechModal
+        isOpen={moodCheckin.speechModalOpen}
+        onClose={moodCheckin.closeSpeechModal}
+        isLoading={moodCheckin.reflecting}
+        loadingText={moodT("coach_thinking")}
+        text={moodCheckin.reflection || moodCheckin.message}
+        actionLabel={moodT("coach_speech_cta")}
+        closeAriaLabel={moodT("coach_close_aria")}
+      />
     </main>
   );
-}
-
-function MoodCoachNote({
-  reflecting,
-  reflection,
-  locked,
-}: {
-  reflecting: boolean;
-  reflection: string | null;
-  locked: boolean;
-}) {
-  const t = useTranslations("mood");
-  const { openPaywall } = usePremiumPaywall();
-
-  if (reflecting) {
-    return (
-      <p className="text-sm" role="status">
-        <ShimmerText text={t("coach_thinking")} />
-      </p>
-    );
-  }
-
-  if (reflection) {
-    return (
-      <div className="flex flex-col gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)]">
-        <Chip size="sm" className="inline-flex w-fit items-center gap-1">
-          <Sparkles aria-hidden size={11} />
-          {t("coach_chip")}
-        </Chip>
-        <TextSwap
-          as="p"
-          text={reflection}
-          className="text-sm"
-          style={{ color: "var(--color-body)" }}
-        />
-      </div>
-    );
-  }
-
-  if (locked) {
-    return (
-      <PremiumLockNudge
-        label={t("premium_nudge")}
-        onClick={() => openPaywall({ sourceFeature: "mood.reflection" })}
-      />
-    );
-  }
-
-  return null;
 }
 
 function DailyRhythmCard({

@@ -50,6 +50,13 @@ import {
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-06 — CoinCelebration modularity & multi-flow integration
+
+- **What:** Modüler `CoinCelebrationVisual` (3D Lottie coin + tek seferlik burst + altın aura) ve `CoinCelebrationCard` (yerleşik zafer kartı) bileşenleri geliştirildi. `CoinCelebration` tam ekran modalı bu görsel çekirdekle sadeleştirildi (<250 satır). `economy-quests-card.tsx` içindeki `QuestSection` tamamlanma durumuna yerleşik 3D zafer kartı entegre edildi. `EconomyInviteCard`, `verify-email`, `checkout-result-content`, `panel-shell` ve `session-done-state` temas noktalarındaki coin kazanımları `notifyCoinCelebration` ile bağlandı. `CoinCelebrationProvider` kök `layout.tsx` seviyesine taşınarak evrensel hale getirildi.
+- **Usage:** Modal için `notifyCoinCelebration(amount, label?)`; kart/ekran içi yerleşik zafer durumu için `<CoinCelebrationCard ... />`.
+- **Gotchas:** `prefers-reduced-motion: reduce` altında yay animasyonları sıfırlanır, `motion.ul` exit prop'u `undefined` döner; görsel zenginlik ve tebrik metinleri statik olarak korunur.
+- **Related:** `coin-celebration.tsx`, `coin-celebration-visual.tsx`, `coin-celebration-card.tsx`, `quest-section.tsx`, `economy-quests-card.tsx`, `coin-celebration-context.tsx`.
+
 ### 2026-09-04 — SlidingTabs slide fix
 
 - **What:** Pill now animates on tab change. Root cause: `useLayoutEffect` depended on `items` array identity; consumers recreate that array every render, so the pill snapped before paint and the slide never showed.

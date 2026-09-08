@@ -30,10 +30,10 @@ export function shouldRevealFirstInsight(attemptCount: number): boolean {
   return attemptCount === 0;
 }
 
-export function buildAnalysisCoachHref(seed: string) {
+export function buildAnalysisCoachHref(seed: string, contextMockExamId?: string) {
   return {
     pathname: "/coach/chat" as const,
-    query: { seed },
+    query: { seed, ...(contextMockExamId && { contextMockExamId }) },
   };
 }
 

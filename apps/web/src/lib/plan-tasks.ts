@@ -14,6 +14,7 @@ import {
 } from "@mentor/api-client";
 import type {
   ApplyPlanAdaptationInput,
+  CreateAnalysisPlanTaskInput,
   CreatePlanTaskInput,
   UpdatePlanTaskInput,
 } from "@mentor/validation";
@@ -49,6 +50,15 @@ export async function createPlanTask(
   input: Parameters<typeof planTaskControllerCreate>[0],
 ): Promise<PlanTaskDto> {
   return (await planTaskControllerCreate(input)) as unknown as PlanTaskDto;
+}
+
+export async function createAnalysisPlanTask(
+  input: CreateAnalysisPlanTaskInput,
+): Promise<PlanTaskDto> {
+  return (await http<PlanTaskDto>("/v1/coaching/analysis/plan-task", {
+    method: "POST",
+    body: JSON.stringify(input),
+  })) as PlanTaskDto;
 }
 
 /** Apply the user's selected coach preview all-or-nothing. */

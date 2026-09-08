@@ -100,4 +100,8 @@ test("Puhu speech resolves as streaming words", async ({ page }) => {
   const streamedWords = page.locator('[aria-live="polite"] .t-stream-w');
   await expect(streamedWords.first()).toHaveClass(/is-in/);
   expect(await streamedWords.count()).toBeGreaterThan(1);
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  const revealedQuestion = page.locator('[data-onboarding-content] .t-stagger.is-shown');
+  await expect(revealedQuestion.getByLabel("Kullanıcı adı")).toBeVisible();
 });

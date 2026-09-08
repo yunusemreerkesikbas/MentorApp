@@ -99,11 +99,11 @@
     "BELOW_PREVIOUS": "Bu sefer biraz geride kaldın, olur böyle. Tek bir denemeye takılma. Trendine bak, yanındayım."
   },
   "focus": {
-    "PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında en çok öne çıkıyor. İstersen bunu bir sonraki planına ekleyelim.",
+    "PHOTO_SIGNAL": "{subject} yanlış defterinde en çok öne çıkıyor. İstersen bunu bir sonraki planına ekleyelim.",
     "LOWEST_AVERAGE": "{subject} için küçük bir tekrar iyi bir sonraki adım olabilir.",
     "TASK_TITLE": "{subject} tekrar et",
-    "PHOTO_SIGNAL_EARLY": "{subject} ilk yanlış fotoğraf sinyalinde öne çıktı. Bunu küçük bir başlangıç adımı olarak planına ekleyebiliriz.",
-    "PHOTO_SIGNAL_REPEATED": "{subject} yanlış fotoğraflarında tekrar tekrar öne çıkıyor. Bunu bir sonraki planına ekleyelim.",
+    "PHOTO_SIGNAL_EARLY": "{subject} ilk yanlış defteri sinyalinde öne çıktı. Bunu küçük bir başlangıç adımı olarak planına ekleyebiliriz.",
+    "PHOTO_SIGNAL_REPEATED": "{subject} yanlış defterinde tekrar tekrar öne çıkıyor. Bunu bir sonraki planına ekleyelim.",
     "LOWEST_AVERAGE_EARLY": "{subject} ilk denemende diğer derslere göre daha fazla desteğe ihtiyaç duyuyor. Küçük bir tekrar iyi bir başlangıç olabilir.",
     "LOWEST_AVERAGE_REPEATED": "{subject} denemelerinde tekrar eden çalışma alanın olarak görünüyor. Küçük bir tekrar iyi bir sonraki adım olabilir.",
     "TASK_TITLE_PHOTO_SIGNAL": "{subject} yanlışlarını gözden geçir",
@@ -112,7 +112,7 @@
     "TREND_UP": "{subject} yakın dönemde yukarı yönlü ilerliyor. Bu ritmi küçük bir tekrar ile sürdürelim.",
     "TREND_DOWN": "{subject} son denemede biraz daha desteğe ihtiyaç duydu. Tek bir sonuca takılmadan küçük bir tekrar planlayalım.",
     "TREND_STEADY": "{subject} son iki denemede dengeli kaldı. Küçük bir tekrar yeni hareket alanı açabilir.",
-    "PHOTO_TOPIC_REPEATED": "{subject} içindeki {topic} yanlış fotoğraflarında tekrar ediyor. Küçük bir konu tekrarı iyi bir sonraki adım.",
+    "PHOTO_TOPIC_REPEATED": "{subject} içindeki {topic} yanlış defterinde tekrar ediyor. Küçük bir konu tekrarı iyi bir sonraki adım.",
     "TASK_TITLE_PHOTO_TOPIC": "{topic} konusunu gözden geçir"
   },
   "weekly": {
@@ -169,12 +169,18 @@
     "PERFORMANCE_EARLY": "Bu haftanın ilk sinyali {net} net. Bir sonraki haftayla birlikte yön daha görünür olacak.",
     "PERFORMANCE_COMPARABLE": "Haftalık ortalaman {net} net; önceki haftaya göre farkın {delta}.",
     "PERFORMANCE_COMPARABLE_DOWN": "Haftalık ortalaman {net} net; önceki haftaya göre farkın {delta}. Tek bir haftanın sonucu yolculuğunu tanımlamaz.",
-    "FOCUS_REPEATED_PHOTO_SIGNAL": "{subject} yanlış fotoğraflarında tekrarlıyor. Küçük bir gözden geçirme iyi bir sonraki adım.",
+    "FOCUS_REPEATED_PHOTO_SIGNAL": "{subject} yanlış defterinde tekrarlıyor. Küçük bir gözden geçirme iyi bir sonraki adım.",
     "FOCUS_WEEKLY_DECLINE": "{subject} geçen haftaya göre en çok desteğe ihtiyaç duyan alanın. Tek bir tekrar yeterli bir başlangıç.",
     "FOCUS_LOWEST_NORMALIZED": "{subject} normalize performansta bu haftanın çalışma odağı olarak öne çıkıyor.",
     "FOCUS_SESSION_RHYTHM": "Bu hafta ritmi sürdürmek için iki küçük odak seansı planlayalım.",
     "TASK_SUBJECT": "{subject} haftalık tekrar",
     "TASK_SESSION": "İki odak seansı planla"
+  },
+  "improvement_cycle": {
+    "BASELINE_MISSING": "Başlangıç denemesi artık bulunamıyor. Görevin duruyor; bu döngünün net farkını ölçemiyoruz.",
+    "WAITING_PRACTICE": "Odağın planında. Görevi tamamladığında veya bu odaktaki bir yanlışı tekrar ettiğinde sonraki adım görünecek.",
+    "WAITING_MEASUREMENT": "Tekrar adımı kaydedildi. Aynı sınav ve dersi içeren sonraki denemede değişime bakacağız.",
+    "RESULT": "{subject} netin {baseline}’ten {followUp}’e geldi, fark {delta}."
   },
   "notebook_pattern": {
     "KNOWLEDGE_GAP": "Son yanlışlarının çoğu bilmediğin konulardan. Burada tekrar gerçekten işe yarar.",

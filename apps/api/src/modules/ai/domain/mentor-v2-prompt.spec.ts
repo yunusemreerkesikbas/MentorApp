@@ -93,4 +93,27 @@ describe("Mentor V2 prompt", () => {
       { role: "user", content: "newest" },
     ]);
   });
+
+  it("adds aggregate analysis evidence without note or photo fields", () => {
+    const prompt = buildMentorV2Prompt({
+      locale: "tr",
+      turn,
+      memories: [],
+      memoryEnabled: false,
+      analysisContext: {
+        focus: {
+          subjectName: "Matematik",
+          topicName: "Sayısal mantık",
+          source: "PHOTO_SIGNAL",
+          evidenceCount: 5,
+        },
+        dominantError: { errorType: "UNKNOWN_TOPIC", count: 4, sharePercent: 50 },
+        notebookStats: { savedCount: 8, reviewedCount: 3, dueCount: 2, healedCount: 1 },
+      },
+    });
+    expect(prompt).toContain("Sayısal mantık");
+    expect(prompt).toContain("UNKNOWN_TOPIC");
+    expect(prompt).not.toContain("storageKey");
+    expect(prompt).not.toContain("solutionNote");
+  });
 });

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { MockExamService } from "./mock-exam.service";
+import { AnalysisService } from "./analysis.service";
 
 const USER = "u1";
 const EXAM_ID = "e1-exam-uuid-0000-0000-000000000001";
@@ -86,6 +87,7 @@ describe("MockExamService", () => {
     listErrorTypeSignals: ReturnType<typeof vi.fn>;
   };
   let service: MockExamService;
+  let analysis: AnalysisService;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -114,9 +116,14 @@ describe("MockExamService", () => {
       contentPort as never,
       repo as never,
       photoRows as never,
-      notebookRows as never,
       i18nFake,
       storageFake as never,
+    );
+    analysis = new AnalysisService(
+      fakeDb, contentPort as never, repo as never,
+      { ...notebookRows, analysisStats: vi.fn(async () => ({ savedCount: 0, reviewedCount: 0, dueCount: 0, healedCount: 0 })) } as never,
+      { findLatestAnalysisTask: vi.fn(async () => undefined) } as never,
+      i18nFake,
     );
     contentPort.getExamById.mockResolvedValue({
       id: EXAM_ID,
@@ -326,7 +333,7 @@ describe("MockExamService", () => {
       { subjectRef: "tarih", count: 2 },
     ]);
 
-    await expect(service.getAnalysis(USER)).resolves.toMatchObject({
+    await expect(analysis.getAnalysis(USER)).resolves.toMatchObject({
       subjects: [
         {
           subjectRef: "turkce",
@@ -382,10 +389,11 @@ describe("MockExamService", () => {
       },
     ]);
 
-    const result = await service.getAnalysis(USER, EXAM_ID);
+    const result = await analysis.getAnalysis(USER, EXAM_ID);
 
     expect(result.photoTopicSignals).toEqual([
       {
+        sharePercent: 100,
         subjectRef: "turkce",
         subjectName: "Türkçe",
         topicRef: "paragraf",
@@ -493,7 +501,7 @@ describe("MockExamService", () => {
       { subjectRef: "turkce", count: 3 },
     ]);
 
-    const result = await service.getAnalysis(USER, EXAM_ID);
+    const result = await analysis.getAnalysis(USER, EXAM_ID);
 
     // The notebook scopes by a recency window, not by which mock exams happened to be recent:
     // most mistakes are logged while studying and carry no attempt at all.
@@ -537,7 +545,7 @@ describe("MockExamService", () => {
     ]);
     repo.maxTotalNet.mockResolvedValue("42.00");
 
-    await service.getAnalysis(USER, EXAM_ID);
+    await analysis.getAnalysis(USER, EXAM_ID);
 
     expect(repo.listTrend).toHaveBeenCalledWith(
       expect.anything(),

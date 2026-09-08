@@ -130,18 +130,23 @@ export function SessionDoneState({
               0,
             );
             if (coinEarned > 0) {
-              notifyCoinCelebration(coinEarned);
-            }
-            const rewardSummary = formatRewardSummary(completedNow, economyT);
-            if (rewardSummary) {
-              toast.success({
-                title:
-                  completedNow.length === 1
-                    ? panelT("quest_reward_single_title")
-                    : panelT("quest_reward_multi_title"),
-                message: panelT("quest_reward_message", { reward: rewardSummary }),
-                duration: 3000,
-              });
+              const coinLabel =
+                completedNow.length === 1
+                  ? (completedNow[0]?.title ?? panelT("quest_reward_single_title"))
+                  : panelT("quest_reward_multi_title");
+              notifyCoinCelebration(coinEarned, coinLabel);
+            } else {
+              const rewardSummary = formatRewardSummary(completedNow, economyT);
+              if (rewardSummary) {
+                toast.success({
+                  title:
+                    completedNow.length === 1
+                      ? panelT("quest_reward_single_title")
+                      : panelT("quest_reward_multi_title"),
+                  message: panelT("quest_reward_message", { reward: rewardSummary }),
+                  duration: 3000,
+                });
+              }
             }
           }
         }

@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
+import { CoinCelebrationProvider } from "@/lib/coin-celebration-context";
 import { AuthShell } from "./_components/auth-shell";
 
 export const metadata: Metadata = {
@@ -22,7 +23,9 @@ export default async function AuthLayout({
   const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.auth);
   return (
     <NextIntlClientProvider messages={messages}>
-      <AuthShell>{children}</AuthShell>
+      <CoinCelebrationProvider>
+        <AuthShell>{children}</AuthShell>
+      </CoinCelebrationProvider>
     </NextIntlClientProvider>
   );
 }

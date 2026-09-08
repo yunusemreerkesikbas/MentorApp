@@ -17,6 +17,8 @@ export type SessionPresetId = "25_5" | "50_10" | "custom";
 export const PlanTaskOriginType = {
   COMMUNITY_COACH: "COMMUNITY_COACH",
   AI_COACH: "AI_COACH",
+  /** Explicitly accepted task created from the deterministic analysis focus. */
+  ANALYSIS: "ANALYSIS",
   /** Assigned by a HUMAN coach over an active mentorship link (W8). Not the AI. */
   MENTORSHIP: "MENTORSHIP",
 } as const;
@@ -38,6 +40,16 @@ export interface AiCoachPlanTaskOriginDto {
   coachMessageId: string;
 }
 
+export interface AnalysisPlanTaskOriginDto {
+  type: typeof PlanTaskOriginType.ANALYSIS;
+  examId: string;
+  baselineMockExamId: string;
+  subjectRef: string;
+  topicRef?: string;
+  source: "PHOTO_SIGNAL" | "LOWEST_AVERAGE";
+  evidenceCount: number;
+}
+
 /**
  * Assigned by the student's human coach. Only the link id travels: the student has at most one
  * active coach, so the UI says "from your coach" and looks the name up once from
@@ -51,6 +63,7 @@ export interface MentorshipPlanTaskOriginDto {
 export type PlanTaskOriginDto =
   | CommunityCoachPlanTaskOriginDto
   | AiCoachPlanTaskOriginDto
+  | AnalysisPlanTaskOriginDto
   | MentorshipPlanTaskOriginDto;
 
 /** Projection of a `plan_tasks` row. */
@@ -292,6 +305,8 @@ export interface PhotoSubjectSignalDto {
   subjectRef: string;
   subjectName: string;
   count: number;
+  /** Share among notebook entries that have a subject label. */
+  sharePercent: number;
 }
 
 export interface PhotoTopicSignalDto {
@@ -300,6 +315,8 @@ export interface PhotoTopicSignalDto {
   topicRef: string;
   topicName: string;
   count: number;
+  /** Share among topic-labelled notebook entries in this subject. */
+  sharePercent: number;
 }
 
 /** Server-selected next study focus from personal analysis evidence. */
@@ -376,6 +393,55 @@ export interface GhostComparisonDto {
 export interface NotebookErrorSignalDto {
   errorType: NotebookErrorType;
   count: number;
+  /** Share among all notebook entries in the rolling signal window. */
+  sharePercent: number;
+}
+
+export interface AnalysisNotebookStatsDto {
+  windowDays: number;
+  savedCount: number;
+  reviewedCount: number;
+  dueCount: number;
+  healedCount: number;
+}
+
+export interface AnalysisImprovementCycleDto {
+  task: Pick<PlanTaskDto, "id" | "title" | "status" | "taskDate"> & {
+    createdAt: string;
+  };
+  focus: {
+    subjectRef: string;
+    subjectName: string;
+    topicRef?: string;
+    topicName?: string;
+    source: AnalysisFocusDto["source"];
+    evidenceCount: number;
+  };
+  baseline: {
+    mockExamId: string;
+    takenAt: string;
+    net: string;
+  } | null;
+  notebook: {
+    matchingCount: number;
+    reviewedAfterPlanCount: number;
+    dueCount: number;
+    healedCount: number;
+  };
+  steps: {
+    planned: true;
+    practiced: boolean;
+    measured: boolean;
+    closed: boolean;
+  };
+  followUp: {
+    mockExamId: string;
+    takenAt: string;
+    net: string;
+    delta: string;
+  } | null;
+  /** Backend-localized, neutral state/result sentence. */
+  message: string;
 }
 
 export interface CoachingAnalysisDto {
@@ -391,6 +457,9 @@ export interface CoachingAnalysisDto {
   notebookErrorSignals: NotebookErrorSignalDto[];
   /** Backend-localized reading of the distribution above; `null` when there is too little to say. */
   notebookErrorMessage: string | null;
+  notebookStats: AnalysisNotebookStatsDto;
+  /** V1 intentionally returns only the most recent analysis-origin loop. */
+  improvementCycle: AnalysisImprovementCycleDto | null;
   /** `null` until a mock-exam or photo signal supplies personal evidence. */
   nextFocus: AnalysisFocusDto | null;
   /** All-time best total net across all attempts; null when no attempts. */

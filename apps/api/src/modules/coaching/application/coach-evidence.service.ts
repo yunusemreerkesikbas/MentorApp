@@ -6,6 +6,7 @@ import { CONTENT_PORT, type ContentPort } from "../domain/content.port";
 import type { CoachEvidenceSnapshot } from "../domain/coach-evidence";
 import { todayIso } from "../domain/date.util";
 import { MockExamService } from "./mock-exam.service";
+import { AnalysisService } from "./analysis.service";
 import { MoodService } from "./mood.service";
 import { PlanService } from "./plan.service";
 import { SessionService } from "./session.service";
@@ -24,6 +25,7 @@ export class CoachEvidenceService {
     private readonly moods: MoodService,
     private readonly streak: StreakService,
     private readonly mockExams: MockExamService,
+    private readonly analysis: AnalysisService,
     private readonly vision: VisionService,
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly i18n: I18nService,
@@ -242,7 +244,7 @@ export class CoachEvidenceService {
   } | null> {
     const [list, analysis] = await Promise.all([
       this.mockExams.list(userId, { page: 1, pageSize: 1 }),
-      this.mockExams.getAnalysis(userId),
+      this.analysis.getAnalysis(userId),
     ]);
     const latest = list.items[0];
     if (!latest) return null;

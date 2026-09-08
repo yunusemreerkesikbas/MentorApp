@@ -30,15 +30,7 @@ import {
 } from "../domain/content.port";
 import { computeGhost } from "../domain/ghost";
 import { computeSubjectNet, computeTotalNet, formatNet } from "../domain/net";
-import { buildFocusTrend, selectAnalysisFocus } from "../domain/analysis-focus";
-import { selectErrorPattern } from "../domain/notebook-error-pattern.policy";
-import { MistakeNotebookRepository } from "../infrastructure/mistake-notebook.repository";
 
-/**
- * How far back the notebook weakness signals look. Long enough that a quiet fortnight does not
- * blank the analysis, short enough that a topic fixed two months ago stops being "your weakness".
- */
-const NOTEBOOK_SIGNAL_WINDOW_MS = 60 * 24 * 60 * 60 * 1000;
 import {
   MockExamRepository,
   type MockExamRow,
@@ -62,7 +54,6 @@ export class MockExamService {
     @Inject(CONTENT_PORT) private readonly content: ContentPort,
     private readonly mockExams: MockExamRepository,
     private readonly photoRows: MockExamPhotoRepository,
-    private readonly notebook: MistakeNotebookRepository,
     private readonly i18n: I18nService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     @Optional() private readonly events?: EventEmitter2,
@@ -228,221 +219,6 @@ export class MockExamService {
       );
       const dtos = await this.buildMockExamDtos(tx, items, subjectsMap);
       return { items: dtos, total, page: query.page, pageSize: query.pageSize };
-    });
-  }
-
-  async getAnalysis(
-    userId: string,
-    examId?: string,
-  ): Promise<CoachingAnalysisDto> {
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const trendRows = await this.mockExams.listTrend(tx, userId, 12, examId);
-      const breakdown = await this.mockExams.listSubjectBreakdown(
-        tx,
-        userId,
-        examId,
-      );
-      const recentRows = trendRows.slice(0, 4);
-      const recentIds = recentRows.map((row) => row.id);
-      const recentSubjectsByMockExamId =
-        await this.mockExams.listSubjectsByMockExamIds(tx, recentIds);
-
-      const examIds = [...new Set(trendRows.map((r) => r.examId))];
-      const [taxonomyEntries, topicTaxonomyEntries, examEntries] =
-        await Promise.all([
-          Promise.all(examIds.map((id) => this.content.listExamSubjects(id))),
-          Promise.all(examIds.map((id) => this.content.listExamTopics(id))),
-          Promise.all(examIds.map((id) => this.content.getExamById(id))),
-        ]);
-
-      const slugToName = new Map<string, string>();
-      const questionCountsBySlug = new Map<string, Set<number | null>>();
-      for (const taxonomy of taxonomyEntries) {
-        for (const subject of taxonomy) {
-          slugToName.set(subject.slug, subject.name);
-          const counts =
-            questionCountsBySlug.get(subject.slug) ?? new Set<number | null>();
-          counts.add(subject.questionCount ?? null);
-          questionCountsBySlug.set(subject.slug, counts);
-        }
-      }
-
-      const topicByKey = new Map(
-        topicTaxonomyEntries
-          .flat()
-          .map((topic) => [topic.subjectSlug + ":" + topic.slug, topic]),
-      );
-
-      const examNameById = new Map(
-        examIds.map((id, i) => [id, examEntries[i]?.name ?? "Deneme"]),
-      );
-      const trend = trendRows.map((row) => ({
-        id: row.id,
-        takenAt: row.takenAt.toISOString(),
-        totalNet: String(row.totalNet),
-        examName: examNameById.get(row.examId) ?? "Deneme",
-      }));
-
-      const recentTotals = new Map<string, { sum: number; count: number }>();
-      for (const rows of recentSubjectsByMockExamId.values()) {
-        for (const row of rows) {
-          const current = recentTotals.get(row.subjectRef) ?? {
-            sum: 0,
-            count: 0,
-          };
-          current.sum += Number(row.net);
-          current.count += 1;
-          recentTotals.set(row.subjectRef, current);
-        }
-      }
-      const recentAverageBySubject = new Map(
-        [...recentTotals].map(([subjectRef, total]) => [
-          subjectRef,
-          (total.sum / total.count).toFixed(2),
-        ]),
-      );
-
-      const toStrength = (
-        subjectRef: string,
-        averageNet: string,
-        attemptCount: number,
-        recentAverageNet: string | null = null,
-      ) => {
-        const counts = questionCountsBySlug.get(subjectRef);
-        const questionCount =
-          counts?.size === 1 ? ([...counts][0] ?? null) : null;
-        return {
-          subjectRef,
-          subjectName: slugToName.get(subjectRef) ?? subjectRef,
-          averageNet,
-          attemptCount,
-          questionCount,
-          normalizedAveragePercent:
-            questionCount != null && questionCount > 0
-              ? ((Number(averageNet) / questionCount) * 100).toFixed(2)
-              : null,
-          recentAverageNet,
-          /** Last-4-attempts average vs lifetime average — direction the subject is trending. */
-          netDelta:
-            recentAverageNet != null
-              ? (Number(recentAverageNet) - Number(averageNet)).toFixed(2)
-              : null,
-        };
-      };
-      const subjects = breakdown.map((row) =>
-        toStrength(
-          row.subjectRef,
-          row.avgNet,
-          row.attemptCount,
-          recentAverageBySubject.get(row.subjectRef) ?? null,
-        ),
-      );
-      const recentSubjects = [...recentTotals].map(([subjectRef, total]) =>
-        toStrength(
-          subjectRef,
-          (total.sum / total.count).toFixed(2),
-          total.count,
-        ),
-      );
-
-      /*
-       * Weakness signals come from the mistake notebook now, not from the retired photo-categorize
-       * card. Two things changed with the source: the scope is a recency window rather than "which
-       * mock exams were recent" (most mistakes are caught while studying and carry no attempt), and
-       * every entry now also says *why* it was missed — which is what `errorSignals` reads.
-       */
-      const notebookSince = new Date(Date.now() - NOTEBOOK_SIGNAL_WINDOW_MS);
-      const [photoSignals, topicSignalRows, errorSignals] = await Promise.all([
-        this.notebook.listSubjectSignals(tx, userId, examId, notebookSince),
-        this.notebook.listTopicSignals(tx, userId, examId, notebookSince),
-        this.notebook.listErrorTypeSignals(tx, userId, examId, notebookSince),
-      ]);
-      const errorPattern = selectErrorPattern(errorSignals);
-      const photoSubjectSignals = photoSignals.map((row) => ({
-        subjectRef: row.subjectRef,
-        subjectName: slugToName.get(row.subjectRef) ?? row.subjectRef,
-        count: row.count,
-      }));
-      const topicFocusSignals = topicSignalRows.flatMap((row) => {
-        const topic = topicByKey.get(row.subjectRef + ":" + row.topicRef);
-        return topic
-          ? [
-              {
-                subjectRef: row.subjectRef,
-                subjectName: topic.subjectName,
-                topicRef: row.topicRef,
-                topicName: topic.name,
-                count: row.count,
-                latestAt: new Date(row.latestAt).toISOString(),
-              },
-            ]
-          : [];
-      });
-      const photoTopicSignals = topicFocusSignals.map(
-        ({ latestAt: _latestAt, ...signal }) => signal,
-      );
-      const focus = selectAnalysisFocus(
-        recentSubjects,
-        photoSubjectSignals,
-        topicFocusSignals,
-      );
-      const focusTrend = focus
-        ? buildFocusTrend(
-            focus.subjectRef,
-            recentRows,
-            recentSubjectsByMockExamId,
-          )
-        : null;
-      const nextFocus =
-        focus && focusTrend
-          ? {
-              ...focus,
-              message: this.translateFocus(
-                focus.topicName
-                  ? "coaching.focus.PHOTO_TOPIC_REPEATED"
-                  : `coaching.focus.${focus.source}_${focus.evidenceLevel}`,
-                focus.subjectName,
-                focus.topicName,
-              ),
-              suggestedTaskTitle: this.translateFocus(
-                focus.topicName
-                  ? "coaching.focus.TASK_TITLE_PHOTO_TOPIC"
-                  : `coaching.focus.TASK_TITLE_${focus.source}`,
-                focus.subjectName,
-                focus.topicName,
-              ),
-              ...focusTrend,
-              trendMessage: this.translateFocus(
-                `coaching.focus.TREND_${focusTrend.trendDirection}`,
-                focus.subjectName,
-              ),
-            }
-          : null;
-
-      const ghost = await this.buildGhost(tx, userId, examId);
-      const personalRecordNet = await this.mockExams.maxTotalNet(
-        tx,
-        userId,
-        examId,
-      );
-      return {
-        trend,
-        subjects,
-        photoSubjectSignals,
-        photoTopicSignals,
-        notebookErrorSignals: errorSignals.map((signal) => ({
-          errorType: signal.errorType as NotebookErrorSignalDto["errorType"],
-          count: signal.count,
-        })),
-        notebookErrorMessage: errorPattern
-          ? this.i18n.translate(`coaching.notebook_pattern.${errorPattern}`, {
-              lang: I18nContext.current()?.lang ?? "tr",
-            })
-          : null,
-        nextFocus,
-        personalRecordNet,
-        ghost,
-      };
     });
   }
 
@@ -667,13 +443,6 @@ export class MockExamService {
         taxonomy.map((subject) => [subject.slug, subject.name]),
       ),
     };
-  }
-
-  private translateFocus(key: string, subject: string, topic?: string): string {
-    return this.i18n.translate(key, {
-      lang: I18nContext.current()?.lang,
-      args: { subject, topic },
-    }) as unknown as string;
   }
 
   private async buildMockExamDtos(

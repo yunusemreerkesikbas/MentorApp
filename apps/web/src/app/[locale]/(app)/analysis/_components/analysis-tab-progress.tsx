@@ -11,7 +11,7 @@ import { EmptyState } from "@/components/empty-state";
 import { InfoTooltip } from "@/components/info-tooltip";
 import { StatLineChart } from "@/components/stat-line-chart";
 import { AnalysisGhostTeaser } from "./analysis-ghost-teaser";
-import { AnalysisNextFocusCard } from "./analysis-next-focus-card";
+import { AnalysisImprovementLoopCard } from "./analysis-improvement-loop-card";
 import {
   formatTrendDate,
   sliceTrend,
@@ -21,9 +21,10 @@ import {
 
 interface AnalysisTabProgressProps {
   analysis: CoachingAnalysisDto | null;
+  examId: string;
 }
 
-export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
+export function AnalysisTabProgress({ analysis, examId }: AnalysisTabProgressProps) {
   const t = useTranslations("analysis");
   const locale = useLocale();
   const [window, setWindow] = useState<TrendWindow>("12");
@@ -48,7 +49,7 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
   );
   const ghost = analysis?.ghost ?? null;
 
-  if (!analysis || trend.length === 0) {
+  if (!analysis || (trend.length === 0 && !analysis.nextFocus && !analysis.improvementCycle)) {
     return (
       <div className="flex flex-col gap-6">
         <Card>
@@ -73,12 +74,12 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
 
   return (
     <div className="flex flex-col gap-6">
-      {analysis.nextFocus ? (
-        <AnalysisNextFocusCard focus={analysis.nextFocus} />
+      {analysis.nextFocus || analysis.improvementCycle ? (
+        <AnalysisImprovementLoopCard analysis={analysis} examId={examId} />
       ) : null}
 
-      <section aria-labelledby="analysis-evidence-heading">
-        <div className="flex items-center gap-1">
+      <details aria-labelledby="analysis-evidence-heading">
+        <summary className="flex min-h-11 cursor-pointer items-center gap-1 rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
           <h3
             id="analysis-evidence-heading"
             className="text-xl leading-tight font-semibold"
@@ -89,8 +90,7 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
           >
             {t("evidence_title")}
           </h3>
-          <InfoTooltip text={t("evidence_subtitle")} />
-        </div>
+        </summary>
 
         <div className="mt-4 flex flex-col gap-6">
           <div
@@ -165,6 +165,19 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
             {ghost ? null : <AnalysisGhostTeaser />}
           </div>
 
+          {ghost ? (
+            <Card>
+              <SectionHeading>{t("subject_latest_deltas")}</SectionHeading>
+              <dl className="mt-4 grid gap-3 sm:grid-cols-2">
+                {ghost.subjects.map((subject) => (
+                  <div key={subject.subjectRef} className="flex justify-between gap-3 text-sm">
+                    <dt>{subject.subjectName}</dt>
+                    <dd className="tabular-nums">{subject.previousNet ?? "…"} → {subject.latestNet} ({subject.delta ?? "…"})</dd>
+                  </div>
+                ))}
+              </dl>
+            </Card>
+          ) : null}
           {analysis.subjects.length > 0 ? (
             <Card>
               <SectionHeading>{t("subject_avg_title")}</SectionHeading>
@@ -226,6 +239,7 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                         ) : null}
                       </div>
 
+                      <p className="text-xs" style={{ color: "var(--color-secondary)" }}>{t("overall_average")}</p>
                       <div className="flex items-center gap-2">
                         <span
                           className="text-2xl font-bold leading-none tabular-nums"
@@ -262,6 +276,9 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
                           </span>
                         ) : null}
                       </div>
+                      <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                        {t("recent_average")}: <span className="tabular-nums">{subject.recentAverageNet ?? "…"}</span>
+                      </p>
                     </div>
                   );
                 })}
@@ -269,7 +286,7 @@ export function AnalysisTabProgress({ analysis }: AnalysisTabProgressProps) {
             </Card>
           ) : null}
         </div>
-      </section>
+      </details>
     </div>
   );
 }

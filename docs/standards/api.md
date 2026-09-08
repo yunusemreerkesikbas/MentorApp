@@ -111,6 +111,8 @@
 > `GET /v1/forum/threads/:id/coach-bridge` returns only public-safe structural eligibility;
 > `POST /v1/coach/chat{,/stream}` additively accepts `contextCommunityThreadId`, mutually exclusive
 > with `conversationId`; `GET /v1/coach/conversations/:id/messages` additively returns nullable
+> Analysis improvement V1 adds `POST /v1/coaching/analysis/plan-task` with a verified baseline and expected focus. Stale baseline/focus returns `409 ANALYSIS_FOCUS_CHANGED`; a pending task with the same baseline/focus is reused. Analysis reads add `notebookStats`, signal `sharePercent`, and `improvementCycle`. Notebook entry listing accepts `examId`, `mockExamId`, and `topicRef` under the existing user scope. Plan task origins add `ANALYSIS` without changing existing origin variants.
+>
 > `origin` and `communitySource`. Admin forum tag create/update additively accepts nullable
 > `coachIntent`. The feature is gated by `forum.coach_bridge.enabled` and sends no forum content or
 > identity data to the model.

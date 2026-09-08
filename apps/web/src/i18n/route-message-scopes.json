@@ -2,8 +2,8 @@
   "root": ["analyticsConsent"],
   "welcome": ["welcome"],
   "article": ["article", "knowledge", "ads"],
-  "auth": ["auth", "common"],
-  "onboarding": ["onboarding", "profile", "vision", "common"],
+  "auth": ["auth", "common", "economy"],
+  "onboarding": ["onboarding", "profile", "vision", "common", "economy"],
   "joinRoom": ["session_room"],
   "coaching": ["mentorship", "common", "nav"]
 }

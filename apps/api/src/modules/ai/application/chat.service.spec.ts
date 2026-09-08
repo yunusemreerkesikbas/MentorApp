@@ -1080,6 +1080,13 @@ describe("ChatService coin refund", () => {
     expect(llmCompleteStream).not.toHaveBeenCalled();
   });
 
+  it("does not expose a task marker from a selected-exam review", async () => {
+    llmComplete.mockResolvedValue({ text: 'Kısa tekrar. <<TASK{"title":"Unexpected task","subject":"Matematik"}>>', promptTokens: 1, completionTokens: 1, model: "fake" });
+    const result = await service.reply(USER, "Bu denemeyi yorumla", MSG_ID, undefined, MOCK_EXAM_ID);
+    expect(result.suggestedTask).toBeUndefined();
+    expect(result.reply).not.toContain("<<TASK");
+  });
+
   it("fails with stale context before spend when a referenced mock exam disappeared", async () => {
     lastN.mockResolvedValue(TAIL);
     getRequestContext.mockResolvedValue({ mockExamId: MOCK_EXAM_ID });

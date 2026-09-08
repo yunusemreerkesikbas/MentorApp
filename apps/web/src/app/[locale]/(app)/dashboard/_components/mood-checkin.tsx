@@ -50,6 +50,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     initial?.aiReflection ?? null,
   );
   const [reflecting, setReflecting] = useState(false);
+  const [speechModalOpen, setSpeechModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const autoPromptAttemptedRef = useRef(false);
 
@@ -106,8 +107,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
         setMood(result.mood);
         setMessage(result.message);
         setReflection(null);
-        if (reflectionAvailable) await generateReflection();
         onSaved?.(result);
+        if (reflectionAvailable) void generateReflection();
         return true;
       } catch (err) {
         showErrorToast({
@@ -131,7 +132,10 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const pickMood = useCallback(
     async (value: number) => {
       const saved = await saveMood(value, note);
-      if (saved) dialog.dismiss();
+      if (saved) {
+        dialog.dismiss();
+        setSpeechModalOpen(true);
+      }
     },
     [dialog, note, saveMood],
   );
@@ -208,5 +212,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
       reflectionAvailable === false && mood != null && reflection == null,
     openMoodDialog: () => openMoodDialog(),
     needsMoodToday: mood == null,
+    speechModalOpen,
+    openSpeechModal: () => setSpeechModalOpen(true),
+    closeSpeechModal: () => setSpeechModalOpen(false),
   };
 }

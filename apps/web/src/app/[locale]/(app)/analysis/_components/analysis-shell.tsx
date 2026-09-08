@@ -464,12 +464,13 @@ export function AnalysisShell() {
                 ) : null}
 
                 {tab === "progress" ? (
-                  <AnalysisTabProgress analysis={analysis} />
+                  <AnalysisTabProgress analysis={analysis} examId={exam?.id ?? ""} />
                 ) : null}
 
                 {tab === "mistakes" ? (
                   <AnalysisTabMistakes
                     analysis={analysis}
+                    examId={exam?.id ?? ""}
                   />
                 ) : null}
               </motion.div>

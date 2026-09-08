@@ -2,6 +2,7 @@ import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   ApplyPlanAdaptationResultDto,
+  AnalysisPlanTaskOriginDto,
   Paginated,
   CommunityCoachPlanTaskOriginDto,
   PlanTaskCalendarDto,
@@ -9,6 +10,7 @@ import type {
 } from "@mentor/types";
 import type {
   ApplyPlanAdaptationInput,
+  CreateAnalysisPlanTaskInput,
   CreatePlanTaskInput,
   ListPlanTasksQuery,
   PlanTaskCalendarQuery,
@@ -157,6 +159,58 @@ export class PlanService {
     });
     this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
     return result;
+  }
+
+  /** Persist one user-confirmed analysis focus, idempotent while the matching task is pending. */
+  async createFromAnalysis(
+    userId: string,
+    input: CreateAnalysisPlanTaskInput,
+    resolved: {
+      subjectName: string;
+      topicName?: string;
+      source: AnalysisPlanTaskOriginDto["source"];
+      evidenceCount: number;
+    },
+  ): Promise<PlanTaskDto> {
+    const taskDate = input.taskDate ?? todayIso();
+    this.assertTaskDateMutable(taskDate);
+    const result = await withUserContext(this.db, { userId }, async (tx) => {
+      await this.tasks.acquireUserLock(tx, userId);
+      const existing = await this.tasks.findPendingAnalysisTask(
+        tx,
+        userId,
+        input.examId,
+        input.baselineMockExamId,
+        input.expectedSubjectRef,
+        input.expectedTopicRef ?? undefined,
+      );
+      if (existing) return { task: toPlanTaskDto(existing), created: false };
+      const row = await this.tasks.create(tx, {
+        userId,
+        taskDate,
+        title: input.title,
+        subject: resolved.subjectName,
+        topic: resolved.topicName ?? null,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        description: input.description ?? null,
+        ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        originType: "ANALYSIS",
+        originRefId: input.examId,
+        originMeta: {
+          baselineMockExamId: input.baselineMockExamId,
+          subjectRef: input.expectedSubjectRef,
+          ...(input.expectedTopicRef && { topicRef: input.expectedTopicRef }),
+          source: resolved.source,
+          evidenceCount: resolved.evidenceCount,
+        },
+      });
+      return { task: toPlanTaskDto(row), created: true };
+    });
+    if (result.created) {
+      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
+    }
+    return result.task;
   }
 
   getAiCoachOutcomeSummary(userId: string) {
@@ -517,6 +571,9 @@ export class PlanService {
       }
       this.assertTaskDateMutable(existing.taskDate);
       this.assertMentorshipTaskEditable(existing.originType, input);
+      if (existing.originType === "ANALYSIS" && input.subject !== undefined && input.subject !== existing.subject) {
+        throw new DomainError(ErrorCode.ANALYSIS_FOCUS_CHANGED, HttpStatus.CONFLICT);
+      }
       const updated = await this.tasks.update(tx, userId, id, {
         ...(input.title !== undefined && { title: input.title }),
         ...(input.subject !== undefined && { subject: input.subject }),

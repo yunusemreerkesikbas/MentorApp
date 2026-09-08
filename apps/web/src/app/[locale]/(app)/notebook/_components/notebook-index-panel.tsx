@@ -1,11 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useId, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import Image from "next/image";
 import { CalendarOff, Check, FileText, LayoutGrid } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
+  ExamTopicDto,
   NotebookEntryDto,
   NotebookErrorType,
 } from "@mentor/types";
@@ -14,6 +15,16 @@ import { MenuSelect } from "@/components/menu-select";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { fetchNotebookEntries } from "@/lib/notebook";
+import {
+  notebookIndexFilterKey,
+  replaceNotebookIndexQuery,
+  parseNotebookIndexQuery,
+  type NotebookIndexFilters,
+} from "@/lib/notebook-index-query";
+import {
+  NotebookIndexFilterChips,
+  type NotebookIndexFilterChip,
+} from "./notebook-index-filter-chips";
 
 /**
  * Every mistake in the book, newest first — the screen that can reach an entry the others cannot.
@@ -35,6 +46,9 @@ const PAGE_SIZE = 20;
 
 export interface NotebookIndexPanelProps {
   subjects: ExamSubjectDto[];
+  topics: ExamTopicDto[];
+  initialFilters?: NotebookIndexFilters;
+  filterNames?: { exam?: string; mockExam?: string };
   /** Entry ids already arranged on one of the two open pages — they cannot be placed twice. */
   placedEntryIds: ReadonlySet<string>;
   /** Bumped by the shell whenever an entry is edited or deleted, so the list cannot go stale. */
@@ -53,6 +67,9 @@ export interface NotebookIndexPanelProps {
 
 export function NotebookIndexPanel({
   subjects,
+  topics,
+  initialFilters,
+  filterNames,
   placedEntryIds,
   refreshKey,
   onOpen,
@@ -62,12 +79,21 @@ export function NotebookIndexPanel({
   const t = useTranslations("notebook");
   const reactId = useId();
   const subjectLabelId = `notebook-index-subject-${reactId}`;
+  const topicLabelId = `notebook-index-topic-${reactId}`;
   const errorLabelId = `notebook-index-error-${reactId}`;
   const statusLabelId = `notebook-index-status-${reactId}`;
 
-  const [subjectRef, setSubjectRef] = useState("");
-  const [errorType, setErrorType] = useState("");
-  const [status, setStatus] = useState("");
+  const [restoredFilters] = useState(() => {
+    if (typeof window === "undefined") return initialFilters;
+    const query = parseNotebookIndexQuery(new URLSearchParams(window.location.search));
+    return query.open ? query.filters : initialFilters;
+  });
+  const [examId, setExamId] = useState(restoredFilters?.examId ?? "");
+  const [mockExamId, setMockExamId] = useState(restoredFilters?.mockExamId ?? "");
+  const [subjectRef, setSubjectRef] = useState(restoredFilters?.subjectRef ?? "");
+  const [topicRef, setTopicRef] = useState(restoredFilters?.topicRef ?? "");
+  const [errorType, setErrorType] = useState(restoredFilters?.errorType ?? "");
+  const [status, setStatus] = useState(restoredFilters?.status ?? "");
   /**
    * Ids ticked for a study session, by id rather than by row: the list is paginated and filterable,
    * and an index would point at a different card the moment either changes.
@@ -85,20 +111,39 @@ export function NotebookIndexPanel({
   const [busy, setBusy] = useState(false);
   const [loaded, setLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const filters: NotebookIndexFilters = {
+    ...(examId && { examId }),
+    ...(mockExamId && { mockExamId }),
+    ...(subjectRef && { subjectRef }),
+    ...(topicRef && { topicRef }),
+    ...(errorType && { errorType: errorType as NotebookErrorType }),
+    ...(status && { status: status as "ACTIVE" | "HEALED" | "ARCHIVED" }),
+  };
+  const filterKey = notebookIndexFilterKey(filters);
+  const activeFilterKeyRef = useRef(filterKey);
+  activeFilterKeyRef.current = filterKey;
+  const paginationRequestRef = useRef(0);
 
   const fetchPage = useCallback(
     (nextPage: number) =>
       fetchNotebookEntries({
         page: nextPage,
         pageSize: PAGE_SIZE,
+        ...(examId ? { examId } : {}),
+        ...(mockExamId ? { mockExamId } : {}),
         ...(subjectRef ? { subjectRef } : {}),
+        ...(topicRef ? { topicRef } : {}),
         ...(errorType ? { errorType: errorType as NotebookErrorType } : {}),
         ...(status
           ? { status: status as "ACTIVE" | "HEALED" | "ARCHIVED" }
           : {}),
       }),
-    [errorType, status, subjectRef],
+    [errorType, examId, mockExamId, status, subjectRef, topicRef],
   );
+
+  useEffect(() => {
+    replaceNotebookIndexQuery(filters);
+  }, [filterKey]);
 
   /**
    * Filters and outside edits both mean "the first page is no longer what the server would send".
@@ -109,6 +154,8 @@ export function NotebookIndexPanel({
    * arrive, which reads better than blanking the list on every filter tap.
    */
   useEffect(() => {
+    paginationRequestRef.current += 1;
+    setBusy(false);
     let cancelled = false;
     fetchPage(1)
       .then((result) => {
@@ -131,18 +178,57 @@ export function NotebookIndexPanel({
   }, [clearPicks, fetchPage, refreshKey, t]);
 
   function loadMore() {
+    const requestedFilterKey = filterKey;
+    const requestId = paginationRequestRef.current + 1;
+    paginationRequestRef.current = requestId;
     setBusy(true);
     setError(null);
     fetchPage(page + 1)
       .then((result) => {
+        if (
+          activeFilterKeyRef.current !== requestedFilterKey ||
+          paginationRequestRef.current !== requestId
+        ) return;
         // Later pages append — the same list growing, not a new one.
         setItems((current) => [...current, ...result.items]);
         setTotal(result.total);
         setPage((current) => current + 1);
       })
-      .catch(() => setError(t("error_index_load")))
-      .finally(() => setBusy(false));
+      .catch(() => {
+        if (activeFilterKeyRef.current === requestedFilterKey) {
+          setError(t("error_index_load"));
+        }
+      })
+      .finally(() => {
+        if (
+          activeFilterKeyRef.current === requestedFilterKey &&
+          paginationRequestRef.current === requestId
+        ) setBusy(false);
+      });
   }
+
+  const subjectName = subjects.find((subject) => subject.slug === subjectRef)?.name;
+  const topicName = topics.find((topic) => topic.slug === topicRef)?.name;
+  const chips: NotebookIndexFilterChip[] = [
+    ...(examId && filterNames?.exam
+      ? [{ key: "exam", label: filterNames.exam, onClear: () => setExamId("") }]
+      : []),
+    ...(mockExamId && filterNames?.mockExam
+      ? [{ key: "mockExam", label: filterNames.mockExam, onClear: () => setMockExamId("") }]
+      : []),
+    ...(subjectRef && subjectName
+      ? [{ key: "subject", label: subjectName, onClear: () => { setSubjectRef(""); setTopicRef(""); } }]
+      : []),
+    ...(topicRef && topicName
+      ? [{ key: "topic", label: topicName, onClear: () => setTopicRef("") }]
+      : []),
+    ...(errorType
+      ? [{ key: "errorType", label: t(`error_type.${errorType}`), onClear: () => setErrorType("") }]
+      : []),
+    ...(status
+      ? [{ key: "status", label: t(`index_status_${status.toLowerCase()}`), onClear: () => setStatus("") }]
+      : []),
+  ];
 
   return (
     <div className="flex flex-col gap-3">
@@ -164,9 +250,43 @@ export function NotebookIndexPanel({
               label: subject.name,
             })),
           ]}
-          onChange={setSubjectRef}
+          onChange={(next) => {
+            setSubjectRef(next);
+            setTopicRef("");
+          }}
         />
       </div>
+
+      {subjectRef ? (
+        <div className="flex flex-col gap-1">
+          <span id={topicLabelId} className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+            {t("index_filter_topic")}
+          </span>
+          <MenuSelect
+            value={topicRef}
+            aria-labelledby={topicLabelId}
+            options={[
+              { value: "", label: t("index_filter_all") },
+              ...topics
+                .filter((topic) => topic.subjectSlug === subjectRef)
+                .map((topic) => ({ value: topic.slug, label: topic.name })),
+            ]}
+            onChange={setTopicRef}
+          />
+        </div>
+      ) : null}
+
+      <NotebookIndexFilterChips
+        chips={chips}
+        onClearAll={() => {
+          setExamId("");
+          setMockExamId("");
+          setSubjectRef("");
+          setTopicRef("");
+          setErrorType("");
+          setStatus("");
+        }}
+      />
 
       <div className="flex flex-col gap-1">
         <span

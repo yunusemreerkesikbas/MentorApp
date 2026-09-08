@@ -4,7 +4,7 @@ import Image from "next/image";
 import { ArrowLeft } from "lucide-react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Button, TextsReveal } from "@mentor/ui";
+import { Button, StreamingText, TextsReveal } from "@mentor/ui";
 import { DashProgress } from "@/components/dash-progress";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 import { WELCOME_SCENE_ASSETS } from "@/lib/onboarding-assets";
@@ -91,15 +91,29 @@ export function WelcomeSlideLayout({
               exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -20 }}
               transition={{ duration: reduceMotion ? 0.12 : 0.3, ease: "easeOut" }}
             >
-              <div aria-hidden={!introComplete}>
-                <TextsReveal
-                  shown={introComplete}
-                  className="mt-3 text-left sm:mt-5"
-                  lines={[
-                    <h1 key="title" className="text-balance text-[1.625rem] font-semibold leading-tight text-[var(--color-main)] sm:text-[2rem]" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>,
-                    <p key="subtitle" className="mt-3 max-w-sm text-pretty text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>,
-                  ]}
-                />
+              <div className="mt-3 text-left sm:mt-5" aria-hidden={!introComplete}>
+                {slideKey === "intro" ? (
+                  introComplete ? (
+                    <>
+                      <h1 className="text-balance text-[1.625rem] font-semibold leading-tight text-[var(--color-main)] sm:text-[2rem]" style={{ fontFamily: "var(--font-heading)" }}>
+                        <StreamingText key={title} text={title} />
+                      </h1>
+                      <TextsReveal
+                        className="mt-3"
+                        lines={[
+                          <p key="subtitle" className="max-w-sm text-pretty text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>,
+                        ]}
+                      />
+                    </>
+                  ) : null
+                ) : (
+                  <TextsReveal
+                    lines={[
+                      <h1 key="title" className="text-balance text-[1.625rem] font-semibold leading-tight text-[var(--color-main)] sm:text-[2rem]" style={{ fontFamily: "var(--font-heading)" }}>{title}</h1>,
+                      <p key="subtitle" className="mt-3 max-w-sm text-pretty text-base leading-relaxed text-[var(--color-body)]" style={{ fontFamily: "var(--font-body)" }}>{subtitle}</p>,
+                    ]}
+                  />
+                )}
               </div>
               <div className="flex min-h-0 flex-1 items-center justify-center py-5 sm:py-7">
                 {slideKey === "intro" ? (

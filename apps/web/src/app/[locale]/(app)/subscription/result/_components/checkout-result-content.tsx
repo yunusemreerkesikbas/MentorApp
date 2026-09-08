@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
+import { notifyCoinCelebration, notifyEconomyChanged } from "@/lib/economy";
 
 const ConfettiBurst = dynamic(
   () =>
@@ -23,8 +24,21 @@ export function CheckoutResultContent() {
   const reduceMotion = Boolean(useReducedMotion());
   const router = useRouter();
   const t = useTranslations("checkout");
+  const tEconomy = useTranslations("economy");
   const ok = useSearchParams().get("status") === "success";
   const [confetti, setConfetti] = useState(ok && !reduceMotion);
+
+  useEffect(() => {
+    if (!ok) return;
+    notifyEconomyChanged();
+    const timer = window.setTimeout(() => {
+      notifyCoinCelebration(
+        20,
+        tEconomy("subscription_reward_label", { defaultValue: "İlk Abonelik Bonusu" }),
+      );
+    }, reduceMotion ? 200 : 1_200);
+    return () => window.clearTimeout(timer);
+  }, [ok, reduceMotion, tEconomy]);
 
   useEffect(() => {
     const previousOverflow = document.body.style.overflow;

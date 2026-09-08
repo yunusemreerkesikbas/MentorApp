@@ -3,10 +3,10 @@
 import { useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { DotLottieReact } from "@lottiefiles/dotlottie-react";
 import { Sparkles, X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { playCoinChime } from "@/lib/coin-sound";
+import { CoinCelebrationVisual } from "./coin-celebration-visual";
 
 export interface CoinCelebrationProps {
   amount: number;
@@ -19,10 +19,12 @@ type CelebrationStage = "blur" | "bg" | "coin" | "text";
 
 /**
  * Full-screen sequential coin reward celebration:
- * Step 1: Backdrop dims and blurs the screen.
- * Step 2: coin-bg.svg single-shot particle burst appears in center (plays once).
- * Step 3: coin.json 3D spinning Lottie coin pops in with golden glow & chime.
- * Step 4: +X Coin typography and labels reveal beneath the coin with spring effects.
+ * Step 1 (0ms): Backdrop dims & golden radial glow expands.
+ * Step 2 (60ms): coin-bg.svg single-shot particle burst appears in center.
+ * Step 3 (160ms): 3D spinning Lottie coin pops in with golden glow & chime.
+ * Step 4 (320ms): +X Coin typography, subtitle & primary CTA reveal beneath the coin.
+ *
+ * Designed with a 450ms click grace period to eliminate accidental dismisses.
  */
 export function CoinCelebration({
   amount,
@@ -33,17 +35,22 @@ export function CoinCelebration({
   const t = useTranslations("economy");
   const reduceMotion = useReducedMotion();
   const titleId = useId();
-  // Unique cache-buster so SVG SMIL timeline starts fresh at 0s on mount
-  const [renderKey] = useState(() => Date.now());
 
-  // Step-by-step progression: "blur" -> "bg" -> "coin" -> "text"
   const [stage, setStage] = useState<CelebrationStage>("blur");
+  const [canDismiss, setCanDismiss] = useState(Boolean(reduceMotion));
   const visibleStage: CelebrationStage = reduceMotion ? "text" : stage;
+
+  // Grace period prevents accidental tap/click from immediate dismiss
+  useEffect(() => {
+    if (reduceMotion) return;
+    const timer = setTimeout(() => setCanDismiss(true), 450);
+    return () => clearTimeout(timer);
+  }, [reduceMotion]);
 
   // Lock body scroll and register Escape listener
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") onClose();
+      if (e.key === "Escape" && canDismiss) onClose();
     }
     window.addEventListener("keydown", onKey);
     const prev = document.body.style.overflow;
@@ -52,30 +59,27 @@ export function CoinCelebration({
       window.removeEventListener("keydown", onKey);
       document.body.style.overflow = prev;
     };
-  }, [onClose]);
+  }, [canDismiss, onClose]);
 
-  // Step-by-step timer choreography
+  // Snappy step-by-step timer choreography (<350ms total sequence)
   useEffect(() => {
     if (reduceMotion) {
       void playCoinChime();
       return;
     }
 
-    // Step 1 -> Step 2: Show coin-bg burst after blur has settled (400ms)
     const timerBg = setTimeout(() => {
       setStage("bg");
-    }, 400);
+    }, 60);
 
-    // Step 2 -> Step 3: Show coin after coin-bg single burst has peaked (1450ms)
     const timerCoin = setTimeout(() => {
       setStage("coin");
       void playCoinChime();
-    }, 1450);
+    }, 160);
 
-    // Step 3 -> Step 4: Show texts after coin has landed and settled (2100ms)
     const timerText = setTimeout(() => {
       setStage("text");
-    }, 2100);
+    }, 320);
 
     return () => {
       clearTimeout(timerBg);
@@ -95,27 +99,28 @@ export function CoinCelebration({
 
   if (typeof document === "undefined") return null;
 
-  // Single-shot burst only active during "bg" and initial "coin" entrance
   const showBgBurst = visibleStage === "bg" || visibleStage === "coin";
   const showCoin = visibleStage === "coin" || visibleStage === "text";
   const showText = visibleStage === "text";
 
-  const content = (
-    <div
+  return createPortal(
+    <motion.div
       className="fixed inset-0 z-[120] flex items-center justify-center select-none"
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25, ease: "easeOut" }}
     >
-      {/* Step 1: Full-screen backdrop blur & dark veil - clicking anywhere dismisses */}
-      <motion.div
+      {/* Full-screen backdrop blur & dark veil */}
+      <div
         aria-hidden="true"
-        className="absolute inset-0 bg-black/70 backdrop-blur-md cursor-pointer"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ duration: reduceMotion ? 0 : 0.35, ease: "easeOut" }}
-        onClick={onClose}
+        className="absolute inset-0 bg-black/75 backdrop-blur-md cursor-pointer"
+        onClick={() => {
+          if (canDismiss) onClose();
+        }}
       />
 
       {/* Top-right prominent glassmorphic Close button */}
@@ -123,114 +128,34 @@ export function CoinCelebration({
         type="button"
         onClick={(e) => {
           e.stopPropagation();
-          onClose();
+          if (canDismiss) onClose();
         }}
         initial={{ opacity: 0, scale: 0.8 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.8 }}
-        transition={{ delay: reduceMotion ? 0 : 0.4, duration: 0.25 }}
+        transition={{ delay: reduceMotion ? 0 : 0.2, duration: 0.2 }}
         aria-label={t("celebration_close", { defaultValue: "Kapat" })}
         className="absolute top-5 right-5 sm:top-8 sm:right-8 z-30 flex size-10 sm:size-12 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer shadow-lg"
       >
         <X className="size-5 sm:size-6" />
       </motion.button>
 
-      {/* Center celebration stage with optical centering */}
+      {/* Center celebration stage with stopPropagation to prevent accidental dismiss */}
       <div
-        className="relative z-10 flex flex-col items-center justify-center -translate-y-8 sm:-translate-y-10 cursor-pointer pointer-events-auto select-none"
-        onClick={onClose}
+        className="relative z-10 flex flex-col items-center justify-center -translate-y-8 sm:-translate-y-10 pointer-events-auto select-none"
+        onClick={(e) => e.stopPropagation()}
       >
-        {/* Soft golden ambient radial glow behind everything */}
-        {visibleStage !== "blur" ? (
-          <motion.div
-            className="absolute size-72 sm:size-88 rounded-full blur-3xl opacity-45 pointer-events-none"
-            initial={{ opacity: 0, scale: 0.6 }}
-            animate={{ opacity: 0.45, scale: 1 }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-            style={{
-              background:
-                "radial-gradient(circle, rgba(255, 199, 0, 0.45) 0%, rgba(255, 160, 0, 0.15) 50%, transparent 75%)",
-            }}
-            aria-hidden="true"
-          />
-        ) : null}
+        {/* 3D coin, glowing halo, and single-shot particle burst */}
+        <CoinCelebrationVisual
+          size="lg"
+          showGlow={visibleStage !== "blur"}
+          showBurst={showBgBurst}
+          showCoin={showCoin}
+          reduceMotion={Boolean(reduceMotion)}
+        />
 
-        {/* Step 2: coin-bg.svg burst animation (single-shot, plays once and exits) */}
-        <AnimatePresence>
-          {showBgBurst ? (
-            <motion.div
-              key="coin-bg-burst"
-              className="pointer-events-none absolute flex items-center justify-center"
-              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.5 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, transition: { duration: 0.4 } }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : { type: "spring", stiffness: 320, damping: 22, duration: 0.45 }
-              }
-              aria-hidden="true"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={`/animation/coin-bg.svg?v=${renderKey}`}
-                alt=""
-                width={380}
-                height={380}
-                className="size-80 sm:size-96 max-w-none object-contain pointer-events-none"
-                draggable={false}
-              />
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
-
-        {/* Step 3: coin.json 3D rotating Lottie coin (fixed size container so it NEVER shifts) */}
-        <div className="relative size-44 sm:size-56 flex items-center justify-center pointer-events-none">
-          {showCoin ? (
-            <motion.div
-              className="size-full flex items-center justify-center pointer-events-none"
-              initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0, y: 24 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              transition={
-                reduceMotion
-                  ? { duration: 0 }
-                  : {
-                      type: "spring",
-                      stiffness: 440,
-                      damping: 18,
-                      mass: 0.9,
-                    }
-              }
-              aria-hidden="true"
-            >
-              {/* Centered blooming halo right behind the coin */}
-              <motion.div
-                className="absolute size-44 sm:size-56 rounded-full blur-2xl pointer-events-none"
-                initial={{ opacity: 0, scale: 0.6 }}
-                animate={{ opacity: 0.65, scale: 1 }}
-                transition={{ duration: 0.6, ease: "easeOut" }}
-                style={{
-                  background:
-                    "radial-gradient(circle, rgba(255, 220, 0, 0.75) 0%, rgba(255, 180, 0, 0.25) 55%, transparent 80%)",
-                }}
-              />
-
-              {/* Lottie 3D Coin Rotation with Sparkles */}
-              <div className="size-44 sm:size-56 flex items-center justify-center drop-shadow-[0_12px_36px_rgba(255,199,0,0.55)]">
-                <DotLottieReact
-                  src="/animation/coin.json"
-                  autoplay
-                  loop
-                  className="size-full object-contain pointer-events-none"
-                  renderConfig={{ autoResize: true, devicePixelRatio: 2 }}
-                />
-              </div>
-            </motion.div>
-          ) : null}
-        </div>
-
-        {/* Step 4: Text placed directly below the coin with absolute positioning to prevent ANY layout shift */}
-        <div className="absolute top-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-max max-w-[90vw] flex flex-col items-center pointer-events-none">
+        {/* Text & CTA placed directly below the coin */}
+        <div className="absolute top-[calc(100%+14px)] left-1/2 -translate-x-1/2 w-max max-w-[90vw] flex flex-col items-center">
           <AnimatePresence>
             {showText ? (
               <motion.div
@@ -239,31 +164,28 @@ export function CoinCelebration({
                 initial={
                   reduceMotion
                     ? { opacity: 0 }
-                    : { opacity: 0, y: 24, scale: 0.8 }
+                    : { opacity: 0, y: 16, scale: 0.85 }
                 }
                 animate={{
                   opacity: 1,
                   y: 0,
                   scale: 1,
                 }}
-                exit={{ opacity: 0, y: 12, scale: 0.9 }}
+                exit={{ opacity: 0, y: 10, scale: 0.9 }}
                 transition={
                   reduceMotion
                     ? { duration: 0 }
                     : {
                         type: "spring",
-                        stiffness: 380,
-                        damping: 20,
-                        mass: 0.85,
+                        stiffness: 420,
+                        damping: 22,
+                        mass: 0.8,
                       }
                 }
               >
                 {/* Soft ambient golden glow behind the text */}
-                <motion.div
-                  className="absolute -inset-4 rounded-full blur-xl pointer-events-none"
-                  initial={{ opacity: 0, scale: 0.7 }}
-                  animate={{ opacity: 0.5, scale: 1 }}
-                  transition={{ duration: 0.5, ease: "easeOut" }}
+                <div
+                  className="absolute -inset-4 rounded-full blur-xl pointer-events-none opacity-50"
                   style={{
                     background:
                       "radial-gradient(ellipse at center, rgba(255, 215, 0, 0.55) 0%, rgba(255, 160, 0, 0.15) 60%, transparent 80%)",
@@ -288,12 +210,11 @@ export function CoinCelebration({
                     {t("celebration_coin_reward", { count: amount })}
                   </span>
 
-                  {/* Sparkle star popping out on the top-right of the number */}
                   {!reduceMotion ? (
                     <motion.div
                       initial={{ opacity: 0, scale: 0, rotate: -45 }}
                       animate={{ opacity: 1, scale: 1, rotate: 0 }}
-                      transition={{ delay: 0.15, type: "spring", stiffness: 450, damping: 14 }}
+                      transition={{ delay: 0.1, type: "spring", stiffness: 450, damping: 14 }}
                       className="absolute -top-3 -right-6 text-[#FFE57F] pointer-events-none"
                     >
                       <Sparkles className="size-5 sm:size-6 drop-shadow-[0_0_12px_rgba(255,220,0,0.8)]" />
@@ -301,16 +222,12 @@ export function CoinCelebration({
                   ) : null}
                 </div>
 
-                {/* Subtitle text - clean typography without chip */}
+                {/* Subtitle text */}
                 <motion.div
-                  initial={
-                    reduceMotion
-                      ? { opacity: 0 }
-                      : { opacity: 0, y: 12 }
-                  }
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.16, duration: 0.35, ease: "easeOut" }}
-                  className="mt-2.5 flex flex-col items-center gap-1 text-center max-w-[340px]"
+                  transition={{ delay: 0.1, duration: 0.25, ease: "easeOut" }}
+                  className="mt-2 flex flex-col items-center gap-1 text-center max-w-[340px]"
                 >
                   {label ? (
                     <span className="text-white/60 text-xs font-semibold uppercase tracking-wider">
@@ -323,16 +240,29 @@ export function CoinCelebration({
                     })}
                   </span>
                 </motion.div>
+
+                {/* Prominent primary CTA button */}
+                <motion.button
+                  type="button"
+                  onClick={onClose}
+                  initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.85, y: 8 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ delay: reduceMotion ? 0 : 0.18, duration: 0.25 }}
+                  className="mt-4.5 inline-flex items-center justify-center rounded-full px-8 py-2 text-sm font-black tracking-wide text-slate-950 transition-all cursor-pointer shadow-[0_4px_20px_rgba(255,199,0,0.45)] hover:brightness-110 active:scale-95"
+                  style={{
+                    fontFamily: "var(--font-heading)",
+                    background:
+                      "linear-gradient(180deg, #FFF176 0%, #FFD54F 50%, #FFA000 100%)",
+                  }}
+                >
+                  {t("celebration_cta", { defaultValue: "Harika!" })}
+                </motion.button>
               </motion.div>
             ) : null}
           </AnimatePresence>
         </div>
       </div>
-    </div>
-  );
-
-  return createPortal(
-    <AnimatePresence>{content}</AnimatePresence>,
+    </motion.div>,
     document.body,
   );
 }

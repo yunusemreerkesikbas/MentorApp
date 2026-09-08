@@ -155,6 +155,9 @@ export function BottomSheetProvider({ children }: BottomSheetProviderProps) {
       setSheet({ ...current, busyApply: true });
       try {
         await current.onApply();
+      } catch {
+        // The form owns its error message and draft. Rejection keeps the sheet open.
+        return;
       } finally {
         if (sheetRef.current && !sheetRef.current.exiting) {
           setSheet({ ...sheetRef.current, busyApply: false });

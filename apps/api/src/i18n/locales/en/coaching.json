@@ -99,11 +99,11 @@
     "BELOW_PREVIOUS": "A little behind this time, it happens. Don't dwell on one attempt; look at your trend. I'm here."
   },
   "focus": {
-    "PHOTO_SIGNAL": "{subject} appears most often in your wrong-answer photos. Let's add it to your next plan.",
+    "PHOTO_SIGNAL": "{subject} appears most often in your mistake notebook. Let's add it to your next plan.",
     "LOWEST_AVERAGE": "A small review of {subject} could be a good next step.",
     "TASK_TITLE": "Review {subject}",
-    "PHOTO_SIGNAL_EARLY": "{subject} appeared in your first wrong-answer photo signal. We can treat it as a small starting step.",
-    "PHOTO_SIGNAL_REPEATED": "{subject} keeps appearing in your wrong-answer photos. Let's add it to your next plan.",
+    "PHOTO_SIGNAL_EARLY": "{subject} appeared in your first mistake notebook signal. We can treat it as a small starting step.",
+    "PHOTO_SIGNAL_REPEATED": "{subject} keeps appearing in your mistake notebook. Let's add it to your next plan.",
     "LOWEST_AVERAGE_EARLY": "{subject} needs a little more support in your first mock exam. A short review is a good start.",
     "LOWEST_AVERAGE_REPEATED": "{subject} keeps appearing as an area to strengthen. A short review is a good next step.",
     "TASK_TITLE_PHOTO_SIGNAL": "Review {subject} mistakes",
@@ -112,7 +112,7 @@
     "TREND_UP": "{subject} is moving upward in your recent attempts. A short review can help keep that rhythm.",
     "TREND_DOWN": "{subject} needed a little more support in your latest attempt. One short review is enough without overreading one result.",
     "TREND_STEADY": "{subject} stayed steady across your latest two attempts. A short review may create the next opening.",
-    "PHOTO_TOPIC_REPEATED": "{topic} within {subject} keeps appearing in your wrong-answer photos. A short topic review is a good next step.",
+    "PHOTO_TOPIC_REPEATED": "{topic} within {subject} keeps appearing in your mistake notebook. A short topic review is a good next step.",
     "TASK_TITLE_PHOTO_TOPIC": "Review {topic}"
   },
   "weekly": {
@@ -169,12 +169,18 @@
     "PERFORMANCE_EARLY": "This week's first signal is {net} net. The direction will become clearer with another week.",
     "PERFORMANCE_COMPARABLE": "Your weekly average is {net} net, a {delta} change from the previous week.",
     "PERFORMANCE_COMPARABLE_DOWN": "Your weekly average is {net} net, a {delta} change from the previous week. One week's result does not define your journey.",
-    "FOCUS_REPEATED_PHOTO_SIGNAL": "{subject} keeps appearing in your wrong-answer photos. A short review is a good next step.",
+    "FOCUS_REPEATED_PHOTO_SIGNAL": "{subject} keeps appearing in your mistake notebook. A short review is a good next step.",
     "FOCUS_WEEKLY_DECLINE": "{subject} needs the most support compared with last week. One short review is enough to start.",
     "FOCUS_LOWEST_NORMALIZED": "{subject} stands out as this week's focus after question-count normalization.",
     "FOCUS_SESSION_RHYTHM": "Let's keep the rhythm with two small focus sessions this week.",
     "TASK_SUBJECT": "Weekly {subject} review",
     "TASK_SESSION": "Plan two focus sessions"
+  },
+  "improvement_cycle": {
+    "BASELINE_MISSING": "The baseline mock exam is no longer available. Your task remains, but this loop's net change cannot be measured.",
+    "WAITING_PRACTICE": "Your focus is in the plan. The next step appears after you complete the task or review a matching mistake.",
+    "WAITING_MEASUREMENT": "The practice step is recorded. We will check the change in the next mock exam containing the same exam and subject.",
+    "RESULT": "Your {subject} net moved from {baseline} to {followUp}, a difference of {delta}."
   },
   "notebook_pattern": {
     "KNOWLEDGE_GAP": "Most of your recent mistakes are topics you did not know. Review genuinely helps here.",
