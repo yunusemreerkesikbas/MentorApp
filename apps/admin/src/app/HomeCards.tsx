@@ -18,7 +18,7 @@ interface HomeCard {
 const cards: HomeCard[] = [
     { href: '/content/articles', title: 'İçerik', desc: 'Bilgi-merkezi makalelerini düzenle ve yayınla.', icon: <FiBookOpen size={22} />, roles: ['EDITOR'] },
     { href: '/users', title: 'Kullanıcılar', desc: 'Kullanıcıları ara, rolleri yönet.', icon: <FiUsers size={22} />, roles: ['SUPPORT', 'FINANCE'] },
-    { href: '/coach-applications', title: 'Koç başvuruları', desc: 'Kürasyon kuyruğu: onaylamak COACH rolünü de verir.', icon: <FiUserCheck size={22} />, roles: ['SUPER_ADMIN'] },
+    { href: '/coach-applications', title: 'Koçlar', desc: 'Koç sicili: kayıt self servis, buradan durdurabilir ve iddiaları doğrulayabilirsin.', icon: <FiUserCheck size={22} />, roles: ['SUPER_ADMIN'] },
     { href: '/audit-log', title: 'Audit Log', desc: 'Tüm admin işlemlerinin kaydı (kim/ne/ne zaman).', icon: <FiFileText size={22} />, roles: ['SUPER_ADMIN'] },
 ]
 

@@ -28,6 +28,7 @@ import {
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
+import { MentorshipApplicationService } from "../application/mentorship-application.service";
 import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
 import { MentorshipBriefService } from "../application/mentorship-brief.service";
 import { MentorshipCohortBriefService } from "../application/mentorship-cohort-brief.service";
@@ -61,6 +62,7 @@ export class MentorshipCoachController {
   constructor(
     private readonly links: MentorshipLinkService,
     private readonly invites: MentorshipInviteService,
+    private readonly applications: MentorshipApplicationService,
     private readonly roster: MentorshipRosterService,
     private readonly assignments: MentorshipAssignmentService,
     private readonly templates: MentorshipTemplateService,
@@ -82,10 +84,19 @@ export class MentorshipCoachController {
     return this.links.getCoachOverview(user.id);
   }
 
+  /**
+   * Issue (or rotate) the invite code. THE gate (APP-089).
+   *
+   * `@Roles(COACH)` no longer means "somebody vetted this person": registration is self-service, so
+   * the role says only that they registered. A code is the one thing that can turn that claim into
+   * access to a real student, so a verified email and an ACTIVE registry row are checked here.
+   * `getCoachOverview` above withholds the code for the same reason, and says why.
+   */
   @Post("invite-code")
   @HttpCode(HttpStatus.OK)
   async rotateInviteCode(@CurrentUser() user: RequestUser): Promise<MentorshipInviteCodeDto> {
     await this.links.assertEnabled();
+    await this.applications.assertCanInvite(user.id);
     return this.invites.rotate(user.id);
   }
 

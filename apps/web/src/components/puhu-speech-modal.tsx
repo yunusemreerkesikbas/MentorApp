@@ -14,6 +14,14 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { ShimmerText, StreamingText } from "@mentor/ui";
 import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
+import { PuhuThoughtCloud } from "./puhu-thought-cloud";
+
+const SPEECH_FRAMES = [
+  PUHU_MOTION_FRAMES.default,
+  PUHU_MOTION_FRAMES.talkClosed,
+  PUHU_MOTION_FRAMES.blink,
+  PUHU_MOTION_FRAMES.lookDown,
+] as const;
 
 export interface PuhuSpeechModalProps {
   /** Controls overlay visibility */
@@ -119,7 +127,6 @@ export function PuhuSpeechModal({
     return () => window.clearInterval(interval);
   }, [isLoading, isOpen, isSpeaking, reduceMotion]);
 
-  // Current mascot frame
   const currentFrame = useMemo(() => {
     if (blinking) return PUHU_MOTION_FRAMES.blink;
     if (isLoading) return PUHU_MOTION_FRAMES.lookDown;
@@ -133,7 +140,7 @@ export function PuhuSpeechModal({
     <AnimatePresence>
       {isOpen ? (
         <motion.div
-          className="fixed inset-0 z-[120] flex items-center justify-center p-4 sm:p-6 select-none"
+          className="fixed inset-0 z-[120] flex items-center justify-center overflow-visible p-8 sm:p-10 select-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -168,31 +175,21 @@ export function PuhuSpeechModal({
             <X className="size-5" />
           </motion.button>
 
-          {/* Dialogue Stage */}
+          {/* Dialogue stage: Puhu bottom-left, thought cloud up and to the right */}
           <div
-            className="relative z-10 flex flex-col-reverse items-center gap-4 sm:flex-row sm:items-end sm:gap-6 pointer-events-auto max-w-full"
+            className="relative z-10 flex flex-row items-end overflow-visible pointer-events-auto max-w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Puhu Mascot */}
             <motion.div
-              className="relative shrink-0 size-20 sm:size-28 flex items-center justify-center"
+              className="relative z-20 isolate shrink-0 size-20 sm:size-28 flex items-center justify-center"
               initial={
                 reduceMotion
                   ? { opacity: 0 }
                   : { opacity: 0, scale: 0.85, y: 14 }
               }
-              animate={
-                isSpeaking && !reduceMotion
-                  ? { opacity: 1, scale: 1, y: [0, -3, 0] }
-                  : { opacity: 1, scale: 1, y: 0 }
-              }
-              transition={
-                isSpeaking && !reduceMotion
-                  ? { duration: 0.3, repeat: Infinity, ease: "easeInOut" }
-                  : { duration: 0.28, ease: "easeOut" }
-              }
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              transition={{ duration: 0.28, ease: "easeOut" }}
             >
-              {/* Subtle ambient glow beneath Puhu */}
               <div
                 className="absolute -bottom-2 inset-x-2 h-6 rounded-full blur-md opacity-30 pointer-events-none"
                 style={{
@@ -201,20 +198,22 @@ export function PuhuSpeechModal({
                 }}
                 aria-hidden="true"
               />
-              <Image
-                src={currentFrame}
-                alt=""
-                fill
-                priority
-                sizes="(max-width: 640px) 80px, 112px"
-                className="object-contain drop-shadow-md"
-                aria-hidden
-              />
+              {SPEECH_FRAMES.map((src) => (
+                <Image
+                  key={src}
+                  src={src}
+                  alt=""
+                  fill
+                  priority
+                  sizes="(max-width: 640px) 80px, 112px"
+                  className={`object-contain drop-shadow-md ${src === currentFrame ? "opacity-100" : "opacity-0"}`}
+                  aria-hidden
+                />
+              ))}
             </motion.div>
 
-            {/* Cloud Speech Bubble Container */}
             <motion.div
-              className="relative min-w-0 w-full max-w-[380px] sm:max-w-[480px] select-text"
+              className="relative z-10 min-w-0 w-full max-w-[380px] sm:max-w-[480px] mb-2 sm:mb-3 ml-1 sm:ml-2 select-text overflow-visible"
               initial={
                 reduceMotion
                   ? { opacity: 0 }
@@ -228,122 +227,61 @@ export function PuhuSpeechModal({
               }
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              {/* Outer Cloud Group with unified composite drop-shadow */}
-              <div className="relative filter drop-shadow-[0_16px_36px_rgba(0,0,0,0.25)]">
-                {/* Fluffy Cloud Lobe Spheres along top, sides and bottom */}
-                {/* Top left puff */}
-                <span
-                  className="absolute -top-5 left-10 size-14 sm:size-16 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Top center grand puff */}
-                <span
-                  className="absolute -top-7 sm:-top-8 left-1/2 -translate-x-1/2 size-20 sm:size-24 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Top right puff */}
-                <span
-                  className="absolute -top-4 sm:-top-5 right-12 size-14 sm:size-16 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Left side puff */}
-                <span
-                  className="absolute top-1/3 -left-3 size-12 sm:size-14 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Right side puff */}
-                <span
-                  className="absolute top-1/2 -right-3 -translate-y-1/2 size-12 sm:size-14 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Bottom left puff */}
-                <span
-                  className="absolute -bottom-3 left-16 size-12 sm:size-14 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-                {/* Bottom right puff */}
-                <span
-                  className="absolute -bottom-4 right-20 size-14 sm:size-16 rounded-full bg-[var(--color-surface)] pointer-events-none"
-                  aria-hidden="true"
-                />
-
-                {/* Cloud Thought Trail towards Puhu */}
-                {/* Desktop Trail: 3 diminishing cloud bubbles pointing down-left toward Puhu's head */}
-                <div
-                  className="hidden sm:block absolute -left-7 bottom-3 pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <span className="block size-6 rounded-full bg-[var(--color-surface)]" />
-                  <span className="block size-4 rounded-full bg-[var(--color-surface)] mt-1.5 -ml-3" />
-                  <span className="block size-2.5 rounded-full bg-[var(--color-surface)] mt-1 -ml-3" />
-                </div>
-
-                {/* Mobile Trail: 3 diminishing cloud bubbles pointing down toward Puhu */}
-                <div
-                  className="sm:hidden absolute left-1/2 -translate-x-1/2 -bottom-6 flex flex-col items-center pointer-events-none"
-                  aria-hidden="true"
-                >
-                  <span className="block size-5 rounded-full bg-[var(--color-surface)]" />
-                  <span className="block size-3.5 rounded-full bg-[var(--color-surface)] mt-1" />
-                  <span className="block size-2 rounded-full bg-[var(--color-surface)] mt-1" />
-                </div>
-
-                {/* Main Central Cloud Body */}
-                <div className="relative z-10 rounded-[2.5rem] sm:rounded-[3rem] bg-[var(--color-surface)] px-6 py-7 sm:px-9 sm:py-8 flex flex-col">
-                  {/* Optional Badge (if explicitly provided) */}
-                  {badgeText ? (
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <span className="text-xs font-bold text-[var(--color-secondary)]">
-                        {badgeText}
-                      </span>
-                    </div>
-                  ) : null}
-
-                  {/* Speech Text Zone */}
-                  <div className="min-h-[4rem] flex items-center">
-                    {isLoading ? (
-                      <p className="text-sm sm:text-base font-medium text-[var(--color-secondary)] py-1">
-                        <ShimmerText text={loadingText} />
-                      </p>
-                    ) : text ? (
-                      <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-body)]">
-                        <StreamingText
-                          text={text}
-                          onComplete={handleStreamComplete}
-                        />
-                      </p>
-                    ) : (
-                      <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-secondary)]">
-                        {loadingText}
-                      </p>
-                    )}
+              <PuhuThoughtCloud>
+                {badgeText ? (
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <span className="text-xs font-bold text-[var(--color-secondary)]">
+                      {badgeText}
+                    </span>
                   </div>
+                ) : null}
 
-                  {/* Action Button Row */}
-                  {actionLabel && (!isLoading || streamFinished) ? (
-                    <motion.div
-                      className="mt-3.5 flex justify-end"
-                      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.9, y: 4 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (onAction) {
-                            onAction();
-                          } else {
-                            onClose();
-                          }
-                        }}
-                        className="inline-flex items-center justify-center rounded-full px-6 py-2 text-sm font-bold bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-90 active:scale-95 transition-all shadow-md cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                      >
-                        {actionLabel}
-                      </button>
-                    </motion.div>
-                  ) : null}
+                <div className="min-h-16 flex items-center">
+                  {isLoading ? (
+                    <p className="text-sm sm:text-base font-medium text-[var(--color-secondary)] py-1">
+                      <ShimmerText text={loadingText} />
+                    </p>
+                  ) : text ? (
+                    <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-body)]">
+                      <StreamingText
+                        text={text}
+                        onComplete={handleStreamComplete}
+                      />
+                    </p>
+                  ) : (
+                    <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-secondary)]">
+                      {loadingText}
+                    </p>
+                  )}
                 </div>
-              </div>
+
+                {actionLabel && (!isLoading || streamFinished) ? (
+                  <motion.div
+                    className="mt-4 flex justify-end"
+                    initial={
+                      reduceMotion
+                        ? { opacity: 0 }
+                        : { opacity: 0, scale: 0.9, y: 4 }
+                    }
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (onAction) {
+                          onAction();
+                        } else {
+                          onClose();
+                        }
+                      }}
+                      className="inline-flex min-h-11 items-center justify-center rounded-full px-6 py-2 text-sm font-bold bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-90 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                    >
+                      {actionLabel}
+                    </button>
+                  </motion.div>
+                ) : null}
+              </PuhuThoughtCloud>
             </motion.div>
           </div>
         </motion.div>

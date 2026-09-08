@@ -88,11 +88,18 @@ audited) or one admin screen.
 
 | # | Step | What it opens | Cost | Turning it back off |
 |---|---|---|---|---|
-| 1 | `mentorship.applications.open = true` | The application form at `/koc-basvurusu`. **Students see nothing.** | None | Clean. Existing applications stay; the form says "closed". |
-| 2 | admin `/coach-applications` | Approve the first coaches. Approval also grants COACH. | None | A rejection does not revoke an already-granted role — that is a separate act. |
-| 3 | `mentorship.enabled = true` | The coach panel and the student's invite screen. | None | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
-| 4 | `mentorship.risk_digest.enabled = true` | The 07:00 UTC morning email. Do this **after** a cohort exists. | Email volume | Clean. |
+| 1 | `mentorship.applications.open = true` | Self-service coach registration: `/kayit?rol=koc` and the form at `/koc-basvurusu`. **Students see nothing.** | None | Clean. Existing coaches stay; the form says "closed". |
+| 2 | `mentorship.enabled = true` | The coach panel and the student's invite screen. | None | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
+| 3 | `mentorship.risk_digest.enabled = true` | The 07:00 UTC morning email. Do this **after** a cohort exists. | Email volume | Clean. |
+| 4 | **SMS OTP shipped** | Nothing by itself. It is the PREREQUISITE for step 5. | A provider bill | n/a |
 | 5 | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.** | `coaches x free_seats` in LLM budget | **NOT clean — see below.** |
+
+**Step 4 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
+human said yes to each one, so `coaches x free_seats` had a person in front of it. Registration is
+self-service now, so that number is bounded by how many verified email addresses somebody can
+produce, which is not a bound. Email verification stops nothing here — free addresses are
+unlimited — and SMS is the first thing that costs an attacker anything per account. Until it
+ships, `sponsorship_enabled = false` IS the defence.
 
 **Before step 5, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
 the cohort's 30-day LLM cost per seat — the number `mentorship.coach.free_seats` is calibrated
@@ -193,6 +200,92 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Koç kendi kaydını açıyor, admin geri alabiliyor (APP-089, 2026-09-08)** — APP-082 kürasyon
+  hattını kurmuştu ama koç adayının o hatta girebilmesi için önce **öğrenci** olması gerekiyordu:
+  `/koc-basvurusu` `(app)` altında, `(app)` de `hasCompletedOnboarding = username && examType`
+  kapısının arkasında. Yani koç, başvuru formunu görebilmek için beş adımlık öğrenci sihirbazını
+  bitirip hedef sınav seçiyor ve *"Bu yolun sonunda ne var?"* sorusuna kişisel bir hedef yazıyordu.
+  Sonra da linki profil listesinin dibinde bulması gerekiyordu. Kürasyonun bedeli, koçun kendini
+  öğrenci gibi tanıtmasıydı.
+
+  **Ön onay kalktı. Kürasyon kalkmadı, yeri değişti.** Kayıt `/kayit?rol=koc` ile self servis:
+  `signupSchema.intent` COACH rolünü anında veriyor. Bu güvenli, çünkü **COACH tek başına hiçbir
+  kapı açmıyor** — roster boş, her öğrenci-kapsamlı okuma zaten `requireActiveLink` üzerinden 404
+  dönüyor, ve öğrenci verisine giden tek yol olan **davet kodu** `assertCanInvite`'ın arkasında:
+  doğrulanmış e-posta + `ACTIVE` sicil satırı. Signup'ın verdiği şey yetki değil, **şekil**:
+  koça göre onboarding, nav ve ana ekran.
+
+  **Tablo aynı, anlamı değişti.** `mentorship_coach_applications` başvuru kuyruğu değil **koç
+  sicili** (migration `0108`): `PENDING|APPROVED|REJECTED` → `ACTIVE|PENDING|SUSPENDED`, default
+  `ACTIVE`. Tablo adı bilerek değişmedi, rename sıfır davranış için W6/W8/web'e yayılan bir churn
+  diff'i olurdu. `canApply` → `canRegister` ve reapply cooldown'ı (`reapply_after_days`) tamamen
+  gitti: bekletilecek bir ret yok. Yerine tek kural kaldı, ve asıl kural o: **adminin dokunduğu
+  satırı, hakkında olduğu kişi yeniden yazamaz** — kayıt `ACTIVE` yazdığı için, yeniden kaydolabilen
+  bir SUSPENDED koç kendi askısını siler.
+
+  **Adminin yönü tersine döndü.** `/admin/coaches`: `POST :userId/status` (ACTIVE rolü verir,
+  diğerleri geri alır) ve ayrı `POST :userId/verified-claims`. Ayrı olmaları önemli — statü "bu kişi
+  koçluk yapabilir mi", rozet "biz ne kontrol ettik"; birleşse geri açma işlemi kimsenin yeniden
+  okumadığı rozetleri sessizce yeniden iddia ederdi. **İki yazımın sırası kural:** çökme anında koçu
+  daha az yetkili bırakan sıra kazanır (verirken satır-sonra-rol, alırken rol-sonra-satır).
+
+  **Askıya alma sadece paneli kapatmıyor.** Kodlar veriliş anını aşar; öğrencilerin elinde kopyası
+  vardır. Bu yüzden `resolveInvitingCoach` hem `previewInvitation` hem `acceptInvitation` içinde
+  koçun hâlâ davet edebilir olduğunu kontrol ediyor, yoksa dağıtılmış her kod TTL'i boyunca canlı
+  kalırdı. Ret `INVALID`, "askıya alınmış" değil: kodu tutan kişi bize yabancı, askı da başkası
+  hakkında idari bir bilgi. Mevcut bağlantılar **sonlandırılmıyor** ve koltuklar geri alınmıyor —
+  koçun sorunu için öğrenciyi ay ortasında Premium'dan düşürmek yanlış fatura. Öğrenci
+  `/kocum`'da durumu görüyor: sessizleşen koç, umursamayan koç gibi okunuyordu.
+
+  **Öğrenciye dürüstlük tersine döndü.** `MentorshipCoachProfileDto.verifiedClaims` →
+  `claims: {claim, value, verified}[]`. Eskiden yalnız doğrulanmış iddialar giderdi, çünkü her koç
+  zaten bir incelemeden geçmişti; doğrulanmamış bir iddia doğrulanmışın yanında **bizim onayımız**
+  gibi okunurdu. Self servis kayıtta tehlikeli varsayılan tersine döndü: hiçbir şey göstermeyen ekran,
+  kontrol edilmiş koçla edilmemişi **aynı** gösteriyor, üstelik tam da öğrencinin mahrem verisini
+  paylaşmaya karar verdiği anda. Artık hepsi gidiyor, `verified` bayrağıyla, ve ekran ikisini
+  **görünür biçimde ayrı** render etmek zorunda.
+
+  **Rol yazımı W0'a taşındı.** `users.roles` identity'nin kolonu ama `grantRole` W6'daydı ve W8 oraya
+  import edemezdi (cycle). `UsersRepository.setRoles` + `UsersService.addRole/removeRole` tek
+  implementasyon oldu; `AdminUsersService` allowlist'i ve audit'i tutmaya devam ediyor.
+
+  **Usage:** koç → `/kayit?rol=koc` → onboarding koç dalı (`goal` yerine `coachProfile`, sınav sorusu
+  *"Hangi sınava koçluk yapıyorsun?"* olarak kalıyor) → `/kocluk`. Mevcut hesap → `/koc-basvurusu`.
+  Admin → `/coach-applications` (dosya yolu aynı, ekran "Koçlar").
+
+  **Gotchas:**
+  (1) **Sınav adımı koç dalında da duruyor**, ve bu bilinçli: `hasCompletedOnboarding` tüm `(app)`
+  yüzeyini `username && examType` ile kapatıyor, atlayan koç kendi profil ekranına bile giremezdi.
+  (2) Onboarding dalı **`user.roles`'tan** okunuyor, sessionStorage'dan değil — `JwtAuthGuard`
+  principal'ı her istekte DB'den okuduğu için sekme/yenileme/gün farkı bunu bozmuyor.
+  (3) `GET /coach-registration/mine` artık **zarf** döndürüyor (`registrationOpen`, `registration`,
+  `emailVerified`); kapalı kayıt eskiden yalnız doldurulmuş formu reddederek öğreniliyordu.
+  (4) `getCoachOverview` kodu **gizliyor, silmiyor** — geri açılan koçun öğrencilerdeki kodu
+  geçersizleşmesin diye. Sebep zarfta, panel hangisi olduğunu söylüyor.
+  (5) `MENTORSHIP_APPLICATION_TOO_SOON` **artık atılmıyor**; error-code bloğu append-only olduğu için
+  duruyor.
+  (6) `coach_profile_claim_*` etiketlerinden "doğrulandı" çıkarıldı — grup başlığı söylüyor, çip değil.
+  (7) Sponsorlu koltuk açılmadan önce **SMS OTP zorunlu**: koç sayısını sınırlayan şey artık insan
+  onayı değil, üretilebilir e-posta adresi sayısı. Bayrak sırası yukarıda güncellendi.
+  (8) **Şikayet kanalı kapsam dışı** (ürün kararı): ön onay kalktığı hâlde öğrenciden gelen tek
+  denetim sinyali destek e-postası. Roadmap §12'de açık madde olarak duruyor.
+  (9) **Kapsam dışı bir hata bu bilette düzeltildi:** koç dalının son adımı `/kocluk`'a inmiyordu,
+  ölçünce sebebin bu dala özgü olmadığı çıktı — `CloudTransitionProvider` overlay'i `initial={false}`
+  ile mount olduğu için `onAnimationComplete` hiç ateşlenmiyor, dolayısıyla **hiçbir** onboarding
+  yönlendirmesi gerçekleşmiyordu (öğrenci akışı dahil). Tek satırlık düzeltme ve gerekçesi
+  [motion.md](./motion.md) 2026-09-08 girdisinde.
+
+  **İlgili:** `packages/{types,validation}/src/mentorship.ts` · `packages/validation/src/auth.ts` ·
+  `apps/api/drizzle/0108_w8_coach_registry.sql` · `modules/mentorship/{domain/coach-registration.ts,
+  application/mentorship-application.service.ts,application/mentorship-link.service.ts,
+  infrastructure/mentorship-application.repository.ts,presentation/*}` ·
+  `modules/identity/{application/users.service.ts,application/auth.service.ts,infrastructure/users.repository.ts}` ·
+  `modules/admin/presentation/admin-coach-applications.controller.ts` ·
+  `apps/web/src/app/[locale]/(onboarding)/**` · `(auth)/signup/page.tsx` ·
+  `(app)/coach-application/**` · `(app)/my-coach/_components/coach-profile-card.tsx` ·
+  `(coach)/students/_components/{invite-lock.ts,coach-capacity-card.tsx,roster-shell.tsx}` ·
+  `apps/admin/src/app/(general)/coach-applications/page.tsx`
 
 - **Öğrencinin aynası — koçuma ne gidiyor (APP-087, 2026-09-07)** — APP-073 asimetriyi koç
   tarafında kapatmıştı: *"güven çizgisinin kaldıramayacağı tek asimetri, veriyi alan tarafın

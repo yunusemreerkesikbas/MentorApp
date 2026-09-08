@@ -493,7 +493,7 @@ export function AnalysisShell() {
   );
 
   return (
-    <main className="w-full" aria-label={t("title")}>
+    <main className="w-full min-w-0 [&_.t-skel]:grid-cols-[minmax(0,1fr)] [&_.t-skel-content]:min-w-0 [&_.t-skel-skeleton]:min-w-0" aria-label={t("title")}>
       <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
         <AnalysisSkeletonBlocks />
       </SkeletonGroup>

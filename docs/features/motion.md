@@ -50,6 +50,33 @@ import {
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-08 — Bulut geçişi hiç ilerlemiyordu (APP-089'da bulundu)
+
+`CloudTransitionProvider` faz makinesi doğruydu (`cloud-transition.spec.ts` onu zaten
+doğruluyordu) ama bileşen makineyi hiç çeviremiyordu: dıştaki overlay `initial={false}` ile
+mount oluyordu, bu da framer-motion'a *"animate hedefine animasyonsuz atla"* demek. Animasyon
+olmayınca **`onAnimationComplete` hiç ateşlenmiyor** — ve o callback, `"covered"` event'ini
+dispatch eden ve `navigate()` çağıran **tek** yer.
+
+Sonuç: faz sonsuza kadar `"covering"` kalıyor, yönlendirme hiç olmuyordu. `ROUTE_CHANGE_TIMEOUT_MS`
+kaçış kapısı da kurtarmıyordu, çünkü o effect yalnız `"covered"` fazında arm ediliyor ve o faza
+hiç ulaşılmıyordu.
+
+**Sahadaki belirti:** onboarding'i bitiren kullanıcı, tam ekran bulut overlay'inin altında
+tamamlama ekranında kalıyordu. `startCloudTransition` çağıran her yer etkileniyordu; APP-089'un koç
+dalı `/kocluk`'a inmediği için fark edildi, ama **öğrenci akışı da aynı şekilde takılıyordu.**
+
+**Düzeltme:** dış `motion.div` `initial={{ opacity: 0 }}` aldı, yani gerçek bir mount animasyonu
+var ve tamamlanınca callback ateşleniyor. İçteki `CloudFallbackLayer` transform'ları `initial={false}`
+kalmaya devam ediyor — onlar callback'e bağlı değil.
+
+**Gotcha:** faz geçişi bir animasyon callback'ine bağlı olduğu sürece, bu overlay'de
+`initial={false}` kullanılamaz. Regresyon koruması unit testte değil (reducer zaten yeşildi),
+`apps/web/e2e/coach-onboarding.spec.ts` içindeki URL assertion'ında.
+
+**İlgili:** `apps/web/src/lib/cloud-transition.tsx` · `apps/web/e2e/coach-onboarding.spec.ts`
+
+
 ### 2026-09-06 — CoinCelebration modularity & multi-flow integration
 
 - **What:** Modüler `CoinCelebrationVisual` (3D Lottie coin + tek seferlik burst + altın aura) ve `CoinCelebrationCard` (yerleşik zafer kartı) bileşenleri geliştirildi. `CoinCelebration` tam ekran modalı bu görsel çekirdekle sadeleştirildi (<250 satır). `economy-quests-card.tsx` içindeki `QuestSection` tamamlanma durumuna yerleşik 3D zafer kartı entegre edildi. `EconomyInviteCard`, `verify-email`, `checkout-result-content`, `panel-shell` ve `session-done-state` temas noktalarındaki coin kazanımları `notifyCoinCelebration` ile bağlandı. `CoinCelebrationProvider` kök `layout.tsx` seviyesine taşınarak evrensel hale getirildi.

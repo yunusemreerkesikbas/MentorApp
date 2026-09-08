@@ -32,7 +32,12 @@ type WebVitalRating = "good" | "needs-improvement" | "poor";
 
 export interface ProductAnalyticsParams {
   login: { method: "email" };
-  sign_up: { method: "email" };
+  /**
+   * `intent` splits the coach funnel from the student one (APP-089). Coaches drop off at a
+   * different step (their profile, not a study goal), so a single undifferentiated sign_up count
+   * would average two funnels that fail for unrelated reasons.
+   */
+  sign_up: { method: "email"; intent?: "student" | "coach" };
   tutorial_begin: Record<string, never>;
   tutorial_complete: Record<string, never>;
   begin_checkout: {

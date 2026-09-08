@@ -426,6 +426,11 @@ export async function mockAnalysisApi(
     }
     if (method === "GET" && path === `/v1/content/exams/${exam.slug}/subjects`)
       return json(route, subjects);
+    if (method === "GET" && path.startsWith("/v1/coaching/notebook/review-summary")) return json(route, {
+      workedCount: 3, revisitCount: 1, completedCount: 0, dueCount: 2, days: Number(url.searchParams.get("days") ?? 7), since: "2026-09-01T21:00:00Z",
+      focuses: [{ examId: exam.id, subjectRef: "matematik", subjectName: "Matematik", topicRef: "problemler", topicName: "Problemler" }, { examId: exam.id, subjectRef: "tarih", subjectName: "Tarih", topicRef: null, topicName: null }],
+    });
+    if (method === "GET" && path.startsWith("/v1/coaching/notebook/review-history")) return json(route, { items: [], total: 0, page: 1, pageSize: 10 });
     if (method === "GET" && path.startsWith("/v1/coaching/analysis?"))
       return json(route, analysis);
     if (method === "GET" && path.startsWith("/v1/mock-exams?")) {
@@ -501,7 +506,7 @@ export async function mockAnalysisApi(
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
   "access-control-allow-credentials": "true",
 };
 

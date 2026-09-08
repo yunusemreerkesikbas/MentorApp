@@ -91,6 +91,36 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **Signup niyeti ve rol yazımının identity'ye dönmesi (APP-089, 2026-09-08)** — `signupSchema` tek
+  bir alan kazandı: `intent: "STUDENT" | "COACH"`. Bu, kayıt gövdesinin kendi rolünü etkilemesine
+  izin verdiğimiz **tek** yer, ve güvenli olmasının nedeni COACH rolünün tek başına hiçbir kapı
+  açmaması: öğrenci verisine giden tek yol davet kodu, o da W8'in `assertCanInvite`'ı arkasında
+  (doğrulanmış e-posta + `ACTIVE` sicil satırı). Verdiği şey yetki değil, **şekil**: koça göre
+  onboarding, nav ve ana ekran. **Bu enum, tek başına bir şeye yetki veren hiçbir rolle
+  genişletilmemeli.**
+
+  İkinci değişiklik bir sahiplik düzeltmesi. `users.roles` identity'nin kolonu olduğu hâlde kilitli
+  read-modify-write W6'nın `AdminUsersRepository`'sindeydi, ve W8 oraya import edemezdi (admin
+  zaten mentorship'i import ediyor, ters yön cycle olurdu). Artık `UsersRepository.setRoles` tek
+  implementasyon; `UsersService.addRole/removeRole` W8'in seam'i, `AdminUsersService` ise
+  allowlist'i (`ASSIGNABLE_ROLES`) ve audit satırını tutmaya devam ediyor. `FOR UPDATE` önemli:
+  `roles` bir dizi ve çağıranlar tek değer ekleyip çıkarıyor, iki eşzamanlı yazım birbirinin
+  rolünü sessizce düşürürdü.
+
+  Ayrıca `UsersService.isEmailVerified` eklendi. `emailVerifiedAt` bugüne dek neredeyse hiçbir şeyi
+  kapatmıyordu (`EMAIL_NOT_VERIFIED` diye bir kod bile yoktu); self servis koç kaydıyla birlikte
+  **ulaşılabilir bir gelen kutusu koç olmanın tek bedeli** hâline geldiği için okuma identity'den
+  dışarı açıldı.
+
+  **Gotchas:** (1) Google signup yolu intent taşımıyor (OAuth state round-trip'i) — Google ile gelen
+  kullanıcı koç olmak için `/koc-basvurusu` ucunu kullanıyor, backlog. (2) Rol değişimi **anında**
+  etkili, re-login gerekmiyor: `JwtAuthGuard` principal'ı her istekte DB'den okuyor.
+
+  **İlgili:** `packages/validation/src/auth.ts` · `modules/identity/application/{auth,users}.service.ts` ·
+  `modules/identity/infrastructure/users.repository.ts` ·
+  `modules/admin/application/admin-users.service.ts` · ayrıntı için
+  [mentorship.md](./mentorship.md) APP-089 girdisi.
+
 - **İptal edilebilir oturumlar ve açık Google bağlama (2026-09-05)** — Erişim JWT'sine `sid`
   eklendi; global guard her istekte hesabın, oturumun ve güncel rollerin aktif olduğunu veritabanından
   doğruluyor. Refresh rotation, replay ile aile iptali, logout ve parola sıfırlama aynı kullanıcı kilit

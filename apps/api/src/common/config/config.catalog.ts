@@ -386,13 +386,7 @@ export const CONFIG_CATALOG = {
   ),
   "mentorship.applications.open": mentorshipFlag(
     false,
-    "Whether the coach application form accepts submissions. Deliberately separate from mentorship.enabled: applications have to be collectable before the coach surface opens, and this is the tap you close the day it does.",
-  ),
-  "mentorship.applications.reapply_after_days": mentorshipCount(
-    30,
-    1,
-    365,
-    "How long a rejected applicant waits before applying again. Without it a refusal is not a decision, it is a loop.",
+    "Whether self-service coach registration accepts anyone. Key name predates APP-089, which replaced the application queue with direct registration; the job is unchanged, so renaming it would cost a registry migration for nothing. Deliberately separate from mentorship.enabled: coaches have to be registerable before the coach surface opens, and this is the tap you close the day it does.",
   ),
   "mentorship.attention.ttl_days": mentorshipCount(
     7,

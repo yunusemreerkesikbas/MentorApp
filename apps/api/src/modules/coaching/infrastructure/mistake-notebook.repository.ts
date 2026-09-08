@@ -1,3 +1,4 @@
+import { notebookReviewWindow } from "../domain/notebook-review-window";
 import { Injectable } from "@nestjs/common";
 import {
   and,
@@ -415,11 +416,22 @@ export class MistakeNotebookRepository {
       topicRef?: string;
       errorType?: string;
       status?: string;
+      due?: "true";
+      revisit?: "true";
+      days?: 7 | 30;
+      sort?: "created" | "review";
       page: number;
       pageSize: number;
     },
   ): Promise<{ items: MistakeNotebookEntryRow[]; total: number }> {
     const where = and(
+      filters.revisit ? and(eq(mistakeNotebookEntries.status, "ACTIVE"), sql`exists (
+        select 1 from notebook_reviews r where r.entry_id = ${mistakeNotebookEntries.id}
+        and r.user_id = ${userId} and not r.solved and r.reviewed_at >= ${notebookReviewWindow(filters.days ?? 7, new Date())}
+        and not exists (select 1 from notebook_reviews newer where newer.entry_id = r.entry_id
+          and (newer.reviewed_at, newer.id) > (r.reviewed_at, r.id))
+      )`) : undefined,
+      filters.due ? and(eq(mistakeNotebookEntries.status, "ACTIVE"), lte(mistakeNotebookEntries.nextReviewAt, new Date())) : undefined,
       eq(mistakeNotebookEntries.userId, userId),
       ...(filters.examId
         ? [eq(mistakeNotebookEntries.examId, filters.examId)]
@@ -445,7 +457,7 @@ export class MistakeNotebookRepository {
         .select()
         .from(mistakeNotebookEntries)
         .where(where)
-        .orderBy(desc(mistakeNotebookEntries.createdAt))
+        .orderBy(filters.sort === "review" ? asc(mistakeNotebookEntries.nextReviewAt) : desc(mistakeNotebookEntries.createdAt), asc(mistakeNotebookEntries.id))
         .limit(filters.pageSize)
         .offset((filters.page - 1) * filters.pageSize),
       tx

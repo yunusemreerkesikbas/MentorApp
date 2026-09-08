@@ -1,11 +1,11 @@
 {
   "mood": {
-    "VERY_LOW": "Bugün ağır, biliyorum. Kendine nazik ol. Küçük bir mola da yolun parçası. Buradayım.",
+    "VERY_LOW": "Bugün ağır geliyor, biliyorum. Küçük bir mola da yolun parçası.",
     "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
-    "LOW": "Zor günler olur. Bugün tek bir küçük adım yeter, gerisi yarına kalsın. Buradayım.",
-    "OKAY": "Bugün böyle. Elinden geleni yap, bu yeterli. Yanındayım.",
-    "GOOD": "Enerjin yerinde. Bunu bugünün küçük bir adımına taşı, yeter.",
-    "GREAT": "İçinden geliyor bugün. Bu hali tek bir adıma bağla; gerisi gelir."
+    "LOW": "Zor bir gün olabilir. Tek bir küçük adım yeter, gerisi yarına.",
+    "OKAY": "Sakin bir gün. Bir göreve dokun, bu yeterli.",
+    "GOOD": "Enerjin yerinde. Bunu bir küçük adımla gerçek yap.",
+    "GREAT": "Bugün tam kıvamındasın. Bir göreve başla, gerisi gelir."
   },
   "motivation": {
     "START": "Bugün küçük bir adım at, yeterli. Yanındayım.",

@@ -8,11 +8,18 @@ import type { AuthUser, ExamType } from "@mentor/types";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
+import type { OnboardingAudience } from "../onboarding-flow";
 
 const OPTIONS: ExamType[] = ["KPSS", "YKS", "LGS"];
 
-export function ExamStep({ user, onSaved, onBack }: { user: AuthUser; onSaved: (examType: ExamType) => void; onBack: () => void }) {
+/**
+ * Which exam. Asked of a coach too, reworded (APP-089): the student is told to pick the exam they
+ * are sitting, the coach the exam they coach. Same column either way, and keeping it on the coach
+ * branch is what lets `hasCompletedOnboarding` stay untouched.
+ */
+export function ExamStep({ user, audience = "student", onSaved, onBack }: { user: AuthUser; audience?: OnboardingAudience; onSaved: (examType: ExamType) => void; onBack: () => void }) {
   const t = useTranslations("onboarding.exam");
+  const title = audience === "coach" ? t("title_coach") : t("title");
   const { setUserFromServer } = useAuth();
   const [selected, setSelected] = useState<ExamType | null>(user.examType);
   const [saving, setSaving] = useState(false);
@@ -30,9 +37,9 @@ export function ExamStep({ user, onSaved, onBack }: { user: AuthUser; onSaved: (
   }
 
   return (
-    <OnboardingStepLayout step={2} title={t("title")} onBack={onBack} primaryLabel={t("continue")} onPrimary={() => void save()} primaryBusy={saving} primaryDisabled={!selected || saving}>
+    <OnboardingStepLayout step={2} title={title} onBack={onBack} primaryLabel={t("continue")} onPrimary={() => void save()} primaryBusy={saving} primaryDisabled={!selected || saving}>
       <FormError message={error} />
-      <div role="radiogroup" aria-label={t("title")} className="mx-auto grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
+      <div role="radiogroup" aria-label={title} className="mx-auto grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
         {OPTIONS.map((value) => <OptionButton key={value} label={value} active={selected === value} disabled={saving} onClick={() => setSelected(value)} />)}
       </div>
     </OnboardingStepLayout>

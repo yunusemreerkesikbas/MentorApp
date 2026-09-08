@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-08 · Puhu speech modal flicker + free mood copy.** Trail dots stay inside the cloud so they no longer overlay Puhu. Talk/idle frames stay mounted (opacity swap) so free-tier rule copy cannot flash the mascot away. Mood fallback lines in `coaching.json` are punchier companion copy; `SERIOUS_DISTRESS` is unchanged. Usage unchanged. Gotcha: do not swap `next/image` `src` on the 140ms mouth loop. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.css`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
+- **2026-09-08 · Analysis V1.1 acceptance evidence.** Twelve scoped mobile/desktop browser cases passed: completed/deleted-baseline focus separation, verified locked plan labels, selected task date, conflict draft retention, filter clearing/reload and delayed-pagination rejection. The dedicated database flow also covers same-day/older attempt exclusion, first comparable attempt, plan-completion practice and topic-filter user isolation. Unit checks cover exact pending-task reuse (with and without topic), catalog pagination and query presentation. No workspace-wide CI or production deployment was performed.
+
+- **2026-09-08 · Analysis V1.1 flow hardening.** Completed loops retain their result while a separately labelled new focus starts only with explicit confirmation. Coach links select the completed comparison or active baseline and never substitute a deleted baseline. Analysis plan labels resolve from the paginated editorial catalog, fields remain locked, invalid dates cannot submit, and conflict errors keep the draft visible with a route back to analysis. Notebook filter chips show the selected scope and support individual/all clearing; pagination responses are tied to their filter generation. Usage: Analysis → Progress → new focus → Plan; filtered notebook links retain their query on reload. No new endpoint, schema or migration. Related: `analysis-cycle-view.ts`, `analysis-plan-focus.ts`, notebook index components, analysis/plan/notebook targeted tests.
+
+- **2026-09-07 · Puhu speech modal cloud bubble.** `PuhuSpeechModal` thought bubble is an SVG cloud silhouette with a two-dot trail toward Puhu at the cloud's bottom-left. Copy sits in an inner safe pad so scallops cannot clip text. Usage unchanged: `<PuhuSpeechModal isOpen … />`. Gotcha: do not flush the SVG to the content box's left edge or reintroduce a visible filled rectangle. Related: `apps/web/src/components/puhu-speech-modal.tsx`, `apps/web/src/components/puhu-thought-cloud.tsx`, `apps/web/src/components/puhu-thought-cloud.css`.
+
 - **2026-09-07 · Analysis V1 verification.** The dedicated database flow verifies owned baseline access, cross-user notebook isolation, pending-task reuse, notebook practice, neutral follow-up difference and stale-focus conflict. Mobile and desktop browser checks cover empty/first attempts, focus links and keyboard-operated evidence disclosure. TR/EN analysis/plan/notebook keys match. `analysis_action` uses the existing consent gate and explicitly projects action, focus source and cycle state only. Related tests: `analysis-improvement.e2e-spec.ts`, `analysis-cycle-reader.spec.ts`, `analysis-analytics.spec.ts`, `e2e/analysis.spec.ts`. No workspace-wide CI or production migration was run.
 
 - **2026-09-07 · Analysis improvement loop V1.** Extracted analysis reads into `AnalysisService`; added 60-day notebook totals, denominator-based signal percentages, and filtered notebook links. Analysis-origin tasks retain their baseline and fixed taxonomy focus; task completion or a subsequent notebook review marks practice, and the first newer comparable exam supplies a neutral net difference. Usage: Analysis → Progress → Add to my plan; Mistakes opens the filtered index. Apply migration `0107_analysis_origin.sql` before using the new endpoint. Deleted baselines preserve tasks but disable comparison. Related: coaching analysis services/repositories, shared coaching contracts, web analysis/plan/notebook components. Targeted verification only; database and browser acceptance remain separate checks.
@@ -4194,3 +4202,15 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
     - `study-session-shell.tsx` sadeleştirilerek okunabilirliği ve bakım kolaylığı artırıldı.
   - **Kullanım:** `SessionTopBar`, `SessionSetupSummary` ve `SessionFocusView` bileşenleri `study-session` içinde deklaratif olarak kullanılır.
   - **İlgili dosyalar:** `session-top-bar.tsx`, `session-setup-summary.tsx`, `session-focus-view.tsx`, `session-params.ts`, `study-session-shell.tsx`.
+
+- **Analysis review progress (2026-09-08)** — Analysis now opens on Progress, with a changeable
+  notebook focus, 7/30-day review counts and paginated answer history. Use Start review to open
+  the existing notebook deck for that exam/topic; when no cards are due, early practice remains
+  explicit. Return to analysis preserves the focus and period. Review history records all new
+  notebook answers atomically with the existing ladder; retries reuse a review UUID. Previous
+  answers are not backfilled. Counts represent self-reported answers, not topic mastery.
+  Current entry labels determine historical filtering; deleting an entry also deletes its history.
+  Due counts are current, while the other counts use Istanbul calendar-day windows. Apply migration
+  0109 before deploying the API/web changes; 0108 belongs to the existing coach-registry work.
+  Related: notebook-review.repository.ts, notebook-review.service.ts, notebook-review.controller.ts,
+  analysis-review-progress.tsx, notebook-focus-review.tsx, notebook-review-history.e2e-spec.ts.

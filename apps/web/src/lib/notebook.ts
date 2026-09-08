@@ -129,6 +129,10 @@ export async function fetchNotebookEntries(
   if (query.topicRef) qs.set("topicRef", query.topicRef);
   if (query.errorType) qs.set("errorType", query.errorType);
   if (query.status) qs.set("status", query.status);
+  if (query.due) qs.set("due", query.due);
+  if (query.revisit) qs.set("revisit", query.revisit);
+  if (query.days) qs.set("days", String(query.days));
+  if (query.sort) qs.set("sort", query.sort);
   return (await http<Paginated<NotebookEntryDto>>(
     `/v1/coaching/notebook/entries?${qs.toString()}`,
   )) as Paginated<NotebookEntryDto>;
@@ -174,10 +178,11 @@ export async function linkNotebookThread(
 export async function reviewNotebookEntry(
   id: string,
   solved: boolean,
+  reviewId: string = crypto.randomUUID(),
 ): Promise<NotebookEntryDto> {
   return (await http<NotebookEntryDto>(
     `/v1/coaching/notebook/entries/${id}/review`,
-    { method: "POST", body: JSON.stringify({ solved }) },
+    { method: "POST", body: JSON.stringify({ solved, reviewId }) },
   )) as NotebookEntryDto;
 }
 

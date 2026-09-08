@@ -136,10 +136,13 @@
   "COACHING_TASK_COACH_ASSIGNED": "Koçunun verdiği görevi düzenleyemezsin. Tamamlayabilir ya da silebilirsin.",
   "MENTORSHIP_ASSIGNMENT_TOO_FAR": "Bu kadar ileri bir tarihe ödev veremezsin.",
   "NOTIFICATIONS_PUSH_SUBSCRIPTION_LIMIT": "Bu hesap için bildirim alabilecek cihaz sınırına ulaştın.",
-  "MENTORSHIP_APPLICATIONS_CLOSED": "Şu anda koç başvurusu almıyoruz. Açıldığında duyuracağız.",
-  "MENTORSHIP_APPLICATION_PENDING": "Başvurun değerlendirmede. Sonuçlandığında haber vereceğiz.",
+  "MENTORSHIP_APPLICATIONS_CLOSED": "Şu anda yeni koç kaydı almıyoruz. Açıldığında duyuracağız.",
+  "MENTORSHIP_APPLICATION_PENDING": "Koç hesabın incelemede. Sonuçlandığında haber vereceğiz.",
   "MENTORSHIP_APPLICATION_TOO_SOON": "Yeniden başvurabilmen için biraz daha beklemen gerekiyor.",
-  "MENTORSHIP_APPLICATION_NOT_FOUND": "Böyle bir başvuru yok.",
-  "MENTORSHIP_ALREADY_COACH": "Zaten koçsun, başvurmana gerek yok.",
-  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Profilinde iletişim bilgisi paylaşamazsın. Telefon, e-posta, IBAN veya sosyal medya hesabını çıkarıp yeniden dene."
+  "MENTORSHIP_APPLICATION_NOT_FOUND": "Böyle bir koç kaydı yok.",
+  "MENTORSHIP_ALREADY_COACH": "Zaten koçsun, yeniden kaydolmana gerek yok.",
+  "MENTORSHIP_CONTACT_NOT_ALLOWED": "Profilinde iletişim bilgisi paylaşamazsın. Telefon, e-posta, IBAN veya sosyal medya hesabını çıkarıp yeniden dene.",
+  "MENTORSHIP_EMAIL_NOT_VERIFIED": "Davet kodun e-postanı doğruladıktan sonra açılıyor. Kutuna gelen bağlantıya dokunman yeterli.",
+  "MENTORSHIP_COACH_NOT_ACTIVE": "Koç hesabın şu anda açık değil, o yüzden davet kodu üretemiyorsun.",
+  "MENTORSHIP_COACH_SUSPENDED": "Koç hesabın durduruldu. Yeniden kaydolarak açılmıyor, bizimle iletişime geçebilirsin."
 }

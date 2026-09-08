@@ -1,11 +1,11 @@
 {
   "mood": {
-    "VERY_LOW": "I know today is heavy. Be gentle with yourself. A small pause is still part of the road. I'm here.",
+    "VERY_LOW": "Today feels heavy, I know. A small pause still counts.",
     "SERIOUS_DISTRESS": "You do not have to carry this alone. Contact someone you trust now; if you may hurt yourself, call your local emergency number or go to the nearest emergency department.",
-    "LOW": "Hard days happen. One small step today is enough; leave the rest for tomorrow. I'm here.",
-    "OKAY": "Today is today. Do what you can, that's enough. I'm here.",
-    "GOOD": "Your energy is here. Carry it into one small step today, that's enough.",
-    "GREAT": "It's coming from inside today. Put that into one step; the rest can follow."
+    "LOW": "Hard days happen. One small step today is enough.",
+    "OKAY": "A quiet day is still a day. One task is enough.",
+    "GOOD": "Your energy is here. Put it into one small step.",
+    "GREAT": "You're on a roll today. Start one task, the rest can follow."
   },
   "motivation": {
     "START": "Take one small step today, that's enough. I'm here.",

@@ -68,5 +68,24 @@ describe("analysis improvement loop (e2e)", () => {
     expect(result.body.improvementCycle).toMatchObject({ baseline: { mockExamId: baseline.body.id, net: "20.00" }, followUp: { mockExamId: next.body.id, net: "22.00", delta: "+2.00" }, steps: { practiced: true, measured: true } });
     const stale = await request(http).post("/v1/coaching/analysis/plan-task").set(auth()).send(input);
     expect(stale.status).toBe(409);
+
+    // The next loop can also practise by completing its plan, without another notebook review.
+    const current = await request(http).get("/v1/coaching/analysis").set(auth()).query({ examId });
+    const fresh = current.body.nextFocus;
+    const nextTask = await request(http).post("/v1/coaching/analysis/plan-task").set(auth()).send({ ...input, baselineMockExamId: fresh.recentTrend[0].mockExamId, expectedSubjectRef: fresh.subjectRef, expectedTopicRef: fresh.topicRef });
+    expect(nextTask.status).toBe(201);
+    expect((await request(http).patch(`/v1/plan-tasks/${nextTask.body.id}`).set(auth()).send({ status: "DONE" })).status).toBe(200);
+    const practiced = await request(http).get("/v1/coaching/analysis").set(auth()).query({ examId });
+    expect(practiced.body.improvementCycle).toMatchObject({ task: { id: nextTask.body.id }, steps: { practiced: true, measured: false } });
+
+    const taxonomy = await request(http).get("/v1/content/exams/kpss-lisans-2026/topics");
+    const topic = taxonomy.body.find((item: { subjectSlug: string }) => item.subjectSlug === "matematik");
+    expect(topic).toBeDefined();
+    const tagged = await request(http).post("/v1/coaching/notebook/entries").set(auth()).send({ examId, subjectRef: "matematik", topicRef: topic.slug, errorType: "UNKNOWN_TOPIC" });
+    expect(tagged.status).toBe(201);
+    const topicRows = await request(http).get("/v1/coaching/notebook/entries").set(auth()).query({ examId, topicRef: topic.slug });
+    expect(topicRows.body.items.map((item: { id: string }) => item.id)).toEqual([tagged.body.id]);
+    const foreignTopicRows = await request(http).get("/v1/coaching/notebook/entries").set({ Authorization: `Bearer ${otherToken}` }).query({ examId, topicRef: topic.slug });
+    expect(foreignTopicRows.body.items).toEqual([]);
   });
 });

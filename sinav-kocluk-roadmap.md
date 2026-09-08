@@ -209,6 +209,25 @@ Faz 3: Marketplace açılır. Forum itibarı = koçun vitrini/sıralaması/ilk m
 ### "Koç nasıl koç olur?"
 Açık kayıt değil, **kürasyon**: başvuru + belge (öğretmenlik/atanmışlık) + kısa değerlendirme. Forum performansı koçun **güven skorunu** besler → marketplace sıralamasının ham maddesi.
 
+> **REVİZYON (2026-09-08, APP-089): ön onay kalktı, kürasyon kalktı değil.** Koç `/kayit?rol=koc`
+> ile doğrudan kaydolur ve o an COACH rolünü alır. Gerekçe: ön onaylı hatta (APP-082) koç adayı
+> başvuru formuna ulaşmak için önce **öğrenci** sihirbazını bitirmek zorundaydı (hedef sınav seçmek,
+> kişisel hedef cümlesi yazmak), sonra da linki profil listesinin dibinde bulmak. Kürasyonun bedeli
+> koçun kendini öğrenci gibi tanıtması oluyordu.
+>
+> **Denetim kaldırılmadı, olaydan ÖNCEDEN olaydan SONRAYA taşındı:**
+> - **Giriş eşiği:** doğrulanmış e-posta. Davet kodu bundan önce çalışmaz.
+> - **Admin ters yönde yetkili:** `/admin/coaches` üzerinden bir koçu `PENDING`/`SUSPENDED` yapar →
+>   COACH rolü geri alınır, panel kapanır, **elindeki davet kodları geçersizleşir**. Bağlantılar ve
+>   koltuklar durur, hiçbiri silinmez; geri açmak her şeyi geri getirir.
+> - **Öğrenciye dürüstlük:** onay ekranı koçun beyanlarını **"doğrulanmadı" etiketiyle** gösterir.
+>   Doğrulanmış rozet yalnız adminin işaretlediği iddiada çıkar.
+>
+> **Kapanmayan boşluklar:** (a) e-posta hesap çiftliğini durdurmaz, o yüzden **SMS OTP,
+> `mentorship.seats.sponsorship_enabled` açılmadan önce gelmek zorunda** (§7 koltuk maliyeti);
+> (b) öğrenciden admine **şikayet kanalı bu bilette kapsam dışı bırakıldı**, tek sinyal destek
+> e-postası. §12'deki "koç vetting kriterleri" maddesi bu ikisiyle birlikte kapanır.
+
 ### Tehlike: Aracısızlaşma (disintermediation)
 Koç kitleye erişince öğrenciyi platform dışına kaçırabilir. Erken fazda engellenemez ama önemsiz (komisyon yok). Çözüm: **marketplace değerini (ödeme güvencesi, AI brief, takip, itibar) o kadar yüksek yap ki dışarı çıkmak koça zarar versin.**
 
@@ -732,7 +751,10 @@ Kendi JWT, Drizzle+Neon, Render, Cloudflare (WAF/Turnstile/R2/CDN), iyzico abone
 - [x] ~~Bilgi merkezi kapsamı~~ → **MVP = A-only (küratörlü içerik → SEO sayfası + grounded AI, kaynaklı); B → Faz 2.** NotebookLM = iç editör aracı. (bkz. §1)
 - [x] ~~Genel B katmanı (taban puanı/scraping/tahmin)~~ → **plandan çıkarıldı** (değer/risk dengesi olumsuz). Dar YKS tercih senaryosu yalnız resmî sürümlü veriyi ve sayısal farkı gösterir; olasılık/etiket/LLM yorumu kapsam dışıdır.
 - [ ] Topluluk-onay eşiğinin kalibrasyonu (canlı veriyle).
-- [ ] Koç vetting kriterleri (belge, mülakat, deneme katkısı) — netleştirilecek.
+- [ ] Koç vetting kriterleri — APP-089 ile **kısmen kapandı**: giriş eşiği doğrulanmış e-posta,
+      denetim adminin `PENDING`/`SUSPENDED` yetkisinde, iddialar öğrenciye "doğrulanmadı" etiketiyle
+      gidiyor. **Açık kalan iki parça:** (a) **SMS OTP** — sponsorlu koltuk açılmadan önce zorunlu;
+      (b) öğrenciden admine **şikayet kanalı** — ön onay kalktığı için tek denetim sinyali.
 - [ ] **(Backlog) C-snapshot tazeleme** (Faz 2 forum ile): event-tetikli geçersiz kılma (major-edit / sil / kalite-düşüş / TTL) + tipo significance-gate + yeniden-doğrula. Tasarım taslağı hazır; uygulama **backlog**.
 - [ ] **Wedge kararı** (§6): A-only kararıyla → **MVP edinim wedge'i bilgi-merkezi-SEO DEĞİL** (zayıf); içerik/organik + küçük-B2B flywheel + ücretsiz sosyal tier. Bilgi-merkezi-SEO wedge'i **Faz 2'de B-katmanı gelince güçlenir.** (Kesin edinim stratejisi açık.)
 - [x] ~~Mobil zamanlaması~~ → **Karar: responsive web MVP; mobil = #1 fast-follow (erken Faz 2).** Push eksiği web-push+e-posta ile köprülenir.

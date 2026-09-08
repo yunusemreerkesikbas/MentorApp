@@ -13,7 +13,7 @@ import {
   Put,
   Query,
 } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiTags, ApiBody, ApiQuery } from "@nestjs/swagger";
 import type {
   NotebookEntryDto,
   NotebookImageUploadUrlDto as NotebookImageUploadUrlResponse,
@@ -64,6 +64,17 @@ export class MistakeNotebookController {
    * what was arranged and `reviews/due` shows what is scheduled. This is the one that always can.
    */
   @Get("entries")
+  @ApiQuery({ name: "examId", required: false, type: String, format: "uuid" })
+  @ApiQuery({ name: "subjectRef", required: false, type: String })
+  @ApiQuery({ name: "topicRef", required: false, type: String })
+  @ApiQuery({ name: "errorType", required: false, type: String })
+  @ApiQuery({ name: "status", required: false, enum: ["ACTIVE", "ARCHIVED", "HEALED"] })
+  @ApiQuery({ name: "revisit", required: false, enum: ["true"] })
+  @ApiQuery({ name: "days", required: false, enum: [7, 30] })
+  @ApiQuery({ name: "due", required: false, enum: ["true"] })
+  @ApiQuery({ name: "sort", required: false, enum: ["created", "review"] })
+  @ApiQuery({ name: "page", required: false, type: Number })
+  @ApiQuery({ name: "pageSize", required: false, type: Number })
   listEntries(
     @CurrentUser() user: RequestUser,
     @Query() query: ListNotebookEntriesQueryDto,
@@ -87,6 +98,11 @@ export class MistakeNotebookController {
     return this.notebook.createEntry(user.id, dto);
   }
 
+  @Get("entries/:id")
+  getEntry(@CurrentUser() user: RequestUser, @Param("id", ParseUUIDPipe) id: string): Promise<NotebookEntryDto> {
+    return this.notebook.getEntry(user.id, id);
+  }
+
   @Patch("entries/:id")
   updateEntry(
     @CurrentUser() user: RequestUser,
@@ -98,13 +114,16 @@ export class MistakeNotebookController {
 
   /** "Could you do it this time?" — one boolean, and the interval ladder does the rest. */
   @Post("entries/:id/review")
+  @ApiBody({ schema: { type: "object", required: ["solved"], properties: {
+    solved: { type: "boolean" }, reviewId: { type: "string", format: "uuid" },
+  } } })
   @HttpCode(HttpStatus.OK)
   reviewEntry(
     @CurrentUser() user: RequestUser,
     @Param("id", ParseUUIDPipe) id: string,
     @Body() dto: ReviewNotebookEntryDto,
   ): Promise<NotebookEntryDto> {
-    return this.notebook.reviewEntry(user.id, id, dto.solved);
+    return this.notebook.reviewEntry(user.id, id, dto.solved, dto.reviewId, user.orgId);
   }
 
   /**

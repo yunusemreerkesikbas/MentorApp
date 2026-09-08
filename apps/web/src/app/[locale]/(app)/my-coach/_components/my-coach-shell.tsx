@@ -133,6 +133,17 @@ export function MyCoachShell() {
             </div>
           </Card>
 
+          {/* An admin stopped this coach (APP-089). The link is untouched and nothing was ended, but
+              they can no longer open this student's report — and a coach who has gone quiet for an
+              administrative reason otherwise reads as a coach who stopped caring. */}
+          {coach.coachStatus !== null && coach.coachStatus !== "ACTIVE" && (
+            <Card>
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                {t("my_coach_suspended")}
+              </p>
+            </Card>
+          )}
+
           {/* Re-readable after the fact: a student who agreed to something should not have to dig
               out the invite they used months ago to remember who they agreed with. */}
           <CoachProfileCard profile={coach.coachProfile} />

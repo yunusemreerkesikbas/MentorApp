@@ -337,6 +337,51 @@ interface MockPlanOptions {
   calendar?: { scale: "day" | "week" | "month" };
 }
 
+for (const conflict of [false, true]) {
+  test(`analysis V1.1 locked focus preserves draft or saves chosen date (${conflict ? "409" : "saved"})`, async ({ page }) => {
+    const tasks: PlanTaskDto[] = [];
+    await mockPlanApi(page, { preview: readyPreview, tasks });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    const examId = "11111111-1111-4111-8111-111111111111";
+    const bodies: Record<string, unknown>[] = [];
+    await page.route("**/v1/content/**", (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const exam = { id: examId, slug: "kpss-test", name: "KPSS", family: "KPSS" };
+      return json(route, path.endsWith("/subjects") ? [{ slug: "matematik", name: "Matematik", questionCount: 30 }] : path.endsWith("/topics") ? [{ slug: "problemler", subjectSlug: "matematik", name: "Problemler" }] : path.endsWith("/exams") ? { items: [exam], total: 1, page: 1, pageSize: 100 } : { exam, events: [] });
+    });
+    await page.route("**/v1/coaching/analysis/plan-task", (route) => {
+      if (route.request().method() === "OPTIONS") return json(route, null, 204);
+      const body = route.request().postDataJSON();
+      bodies.push(body);
+      if (conflict) return json(route, { code: "ANALYSIS_FOCUS_CHANGED", message: "Analiz odağın değişti." }, 409);
+      const created = { ...task, ...body, id: taskId, subject: "Matematik", topic: "Problemler" };
+      tasks.push(created);
+      return json(route, created, 201);
+    });
+    const query = new URLSearchParams({ add: "1", source: "analysis", examId, baselineMockExamId: taskId, subjectRef: "matematik", topicRef: "problemler", subject: "FORGED", topic: "FORGED", title: "Tekrar taslağı" });
+    await page.goto(`/plan?${query}`);
+    await expect(page.getByText("Matematik · Problemler", { exact: true })).toBeVisible();
+    await expect(page.getByText("FORGED", { exact: true })).toHaveCount(0);
+    const title = page.getByRole("textbox", { name: "Yeni görev", exact: true });
+    await title.fill("Korunan taslak");
+    const date = new Date(); date.setUTCDate(date.getUTCDate() + 2);
+    const chosen = date.toISOString().slice(0, 10);
+    await page.getByLabel("Tekrar tarihi").fill(chosen);
+    await page.getByRole("dialog").getByRole("button", { name: "Görev ekle", exact: true }).click();
+    await expect.poll(() => bodies.length).toBe(1);
+    expect(bodies[0]).toMatchObject({ taskDate: chosen, title: "Korunan taslak", expectedSubjectRef: "matematik", expectedTopicRef: "problemler" });
+    expect(bodies[0]).not.toHaveProperty("subject");
+    if (conflict) {
+      await expect(title).toHaveValue("Korunan taslak");
+      await expect(page.getByLabel("Tekrar tarihi")).toHaveValue(chosen);
+      await expect(page.getByRole("link", { name: "Güncel analize dön" })).toBeVisible();
+    } else {
+      await expect(title).toHaveCount(0);
+      await expect(page.getByText("Korunan taslak", { exact: true })).toBeVisible();
+    }
+  });
+}
+
 async function mockPlanApi(page: Page, options: MockPlanOptions) {
   let previewCalls = 0;
   let staleApply = options.staleApplyOnce ?? false;
@@ -478,7 +523,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
   "access-control-allow-credentials": "true",
 };
 

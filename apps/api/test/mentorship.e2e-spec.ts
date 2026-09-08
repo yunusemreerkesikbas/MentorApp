@@ -70,12 +70,26 @@ describe("mentorship (e2e)", () => {
   };
 
   /** Grant a role in the DB, then re-login so the JWT actually carries it. */
+  /**
+   * Grant a role in the DB, then re-login so the JWT actually carries it.
+   *
+   * COACH also gets what self-service registration would have written (APP-089): a verified email
+   * and an ACTIVE registry row. Without those the invite code is refused, which is the gate doing
+   * its job — but this suite is about the link lifecycle, not the gate, which has its own spec.
+   */
   const grantRoleAndRelogin = async (label: string, role: string, stamp: number): Promise<void> => {
     await svc(async (c) => {
       await c.query("update users set roles = array_append(roles,$1) where id=$2", [
         role,
         userId[label],
       ]);
+      if (role === UserRole.COACH) {
+        await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
+        await c.query(
+          "insert into mentorship_coach_applications (user_id, status, headline, bio) values ($1, $2, $3, $4) on conflict (user_id) do nothing",
+          [userId[label], "ACTIVE", "Test kocu", "Test koc profili."],
+        );
+      }
     });
     const login = await http()
       .post("/v1/auth/login")

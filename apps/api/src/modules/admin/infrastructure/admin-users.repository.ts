@@ -66,28 +66,9 @@ export class AdminUsersRepository {
     });
   }
 
-  /**
-   * Replace a user's role set atomically and return the before/after snapshots (for audit).
-   * The read + write share one SERVICE transaction so a concurrent toggle can't interleave.
-   */
-  async setRoles(
-    id: string,
-    compute: (current: string[]) => string[],
-  ): Promise<{ before: string[]; after: string[] } | undefined> {
-    return withServiceContext(this.db, async (tx: DatabaseTx) => {
-      const rows = await tx
-        .select({ roles: users.roles })
-        .from(users)
-        .where(eq(users.id, id))
-        .for("update")
-        .limit(1);
-      const current = rows[0]?.roles;
-      if (!current) return undefined;
-      const after = compute(current);
-      await tx.update(users).set({ roles: after }).where(eq(users.id, id));
-      return { before: current, after };
-    });
-  }
+  /* Role writes live in `UsersRepository.setRoles` (APP-089): identity owns `users.roles`, and W8
+     needs the same locked read-modify-write for coach registration. `AdminUsersService` reaches it
+     through `UsersService` and keeps the allowlist and the audit line on this side. */
 
   /** Set the account status; returns the before/after status for audit (undefined if missing). */
   async updateStatus(

@@ -137,6 +137,8 @@ export interface PromotionOffersDto { [key: string]: unknown }
 
 export interface CheckoutDto { [key: string]: unknown }
 
+export interface CreateAnalysisPlanTaskDto { [key: string]: unknown }
+
 export interface CompleteWeeklyReviewDto { [key: string]: unknown }
 
 export interface CreateMoodCheckinDto { [key: string]: unknown }
@@ -180,8 +182,6 @@ export interface NotebookImageUploadUrlDto { [key: string]: unknown }
 export interface CreateNotebookEntryDto { [key: string]: unknown }
 
 export interface UpdateNotebookEntryDto { [key: string]: unknown }
-
-export interface ReviewNotebookEntryDto { [key: string]: unknown }
 
 export interface LinkNotebookThreadDto { [key: string]: unknown }
 
@@ -227,7 +227,7 @@ export interface PollVoteDto { [key: string]: unknown }
 
 export interface CreateAdRewardSessionDto { [key: string]: unknown }
 
-export interface SubmitCoachApplicationDto { [key: string]: unknown }
+export interface RegisterCoachDto { [key: string]: unknown }
 
 export interface UpdateCoachProfileDto { [key: string]: unknown }
 
@@ -275,7 +275,9 @@ export interface CreateAnnouncementDto { [key: string]: unknown }
 
 export interface SendAnnouncementDto { [key: string]: unknown }
 
-export interface ReviewCoachApplicationDto { [key: string]: unknown }
+export interface SetCoachStatusDto { [key: string]: unknown }
+
+export interface VerifyCoachClaimsDto { [key: string]: unknown }
 
 export interface CelebrateAchievementsDto { [key: string]: unknown }
 
@@ -530,6 +532,44 @@ export const InfoArticleControllerGetFeaturedFamily = {
   LGS: 'LGS',
 } as const;
 
+export type NotebookReviewControllerSummaryParams = {
+pageSize?: number;
+page?: number;
+days?: NotebookReviewControllerSummaryDays;
+errorType?: string;
+topicRef?: string;
+subjectRef?: string;
+examId?: string;
+};
+
+export type NotebookReviewControllerSummaryDays = typeof NotebookReviewControllerSummaryDays[keyof typeof NotebookReviewControllerSummaryDays];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const NotebookReviewControllerSummaryDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
+
+export type NotebookReviewControllerHistoryParams = {
+pageSize?: number;
+page?: number;
+days?: NotebookReviewControllerHistoryDays;
+errorType?: string;
+topicRef?: string;
+subjectRef?: string;
+examId?: string;
+};
+
+export type NotebookReviewControllerHistoryDays = typeof NotebookReviewControllerHistoryDays[keyof typeof NotebookReviewControllerHistoryDays];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const NotebookReviewControllerHistoryDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
+
 export type CoachingControllerGetAnalysisParams = {
 examId?: string;
 };
@@ -540,6 +580,69 @@ examId: string;
 
 export type MockExamControllerListParams = {
 examId?: string;
+};
+
+export type MistakeNotebookControllerListEntriesParams = {
+pageSize?: number;
+page?: number;
+sort?: MistakeNotebookControllerListEntriesSort;
+due?: MistakeNotebookControllerListEntriesDue;
+days?: MistakeNotebookControllerListEntriesDays;
+revisit?: MistakeNotebookControllerListEntriesRevisit;
+status?: MistakeNotebookControllerListEntriesStatus;
+errorType?: string;
+topicRef?: string;
+subjectRef?: string;
+examId?: string;
+};
+
+export type MistakeNotebookControllerListEntriesSort = typeof MistakeNotebookControllerListEntriesSort[keyof typeof MistakeNotebookControllerListEntriesSort];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MistakeNotebookControllerListEntriesSort = {
+  created: 'created',
+  review: 'review',
+} as const;
+
+export type MistakeNotebookControllerListEntriesDue = typeof MistakeNotebookControllerListEntriesDue[keyof typeof MistakeNotebookControllerListEntriesDue];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MistakeNotebookControllerListEntriesDue = {
+  true: 'true',
+} as const;
+
+export type MistakeNotebookControllerListEntriesDays = typeof MistakeNotebookControllerListEntriesDays[keyof typeof MistakeNotebookControllerListEntriesDays];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MistakeNotebookControllerListEntriesDays = {
+  NUMBER_7: 7,
+  NUMBER_30: 30,
+} as const;
+
+export type MistakeNotebookControllerListEntriesRevisit = typeof MistakeNotebookControllerListEntriesRevisit[keyof typeof MistakeNotebookControllerListEntriesRevisit];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MistakeNotebookControllerListEntriesRevisit = {
+  true: 'true',
+} as const;
+
+export type MistakeNotebookControllerListEntriesStatus = typeof MistakeNotebookControllerListEntriesStatus[keyof typeof MistakeNotebookControllerListEntriesStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MistakeNotebookControllerListEntriesStatus = {
+  ACTIVE: 'ACTIVE',
+  ARCHIVED: 'ARCHIVED',
+  HEALED: 'HEALED',
+} as const;
+
+export type MistakeNotebookControllerReviewEntryBody = {
+  solved: boolean;
+  reviewId?: string;
 };
 
 export type ForumPublicControllerQuestionsParams = {
@@ -3332,6 +3435,86 @@ export const paymentsInternalControllerExpireSubscriptions = async ( options?: R
 
 
 
+export type notebookReviewControllerSummaryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebookReviewControllerSummaryResponseSuccess = (notebookReviewControllerSummaryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebookReviewControllerSummaryResponse = (notebookReviewControllerSummaryResponseSuccess)
+
+export const getNotebookReviewControllerSummaryUrl = (params?: NotebookReviewControllerSummaryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/coaching/notebook/review-summary?${stringifiedParams}` : `/v1/coaching/notebook/review-summary`
+}
+
+export const notebookReviewControllerSummary = async (params?: NotebookReviewControllerSummaryParams, options?: RequestInit): Promise<notebookReviewControllerSummaryResponse> => {
+  
+  return http<notebookReviewControllerSummaryResponse>(getNotebookReviewControllerSummaryUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type notebookReviewControllerHistoryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebookReviewControllerHistoryResponseSuccess = (notebookReviewControllerHistoryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebookReviewControllerHistoryResponse = (notebookReviewControllerHistoryResponseSuccess)
+
+export const getNotebookReviewControllerHistoryUrl = (params?: NotebookReviewControllerHistoryParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/coaching/notebook/review-history?${stringifiedParams}` : `/v1/coaching/notebook/review-history`
+}
+
+export const notebookReviewControllerHistory = async (params?: NotebookReviewControllerHistoryParams, options?: RequestInit): Promise<notebookReviewControllerHistoryResponse> => {
+  
+  return http<notebookReviewControllerHistoryResponse>(getNotebookReviewControllerHistoryUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type coachingControllerGetTodayResponse200 = {
   data: void
   status: 200
@@ -3400,6 +3583,40 @@ export const coachingControllerGetAnalysis = async (params?: CoachingControllerG
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type coachingControllerCreateAnalysisPlanTaskResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type coachingControllerCreateAnalysisPlanTaskResponseSuccess = (coachingControllerCreateAnalysisPlanTaskResponse201) & {
+  headers: Headers;
+};
+;
+
+export type coachingControllerCreateAnalysisPlanTaskResponse = (coachingControllerCreateAnalysisPlanTaskResponseSuccess)
+
+export const getCoachingControllerCreateAnalysisPlanTaskUrl = () => {
+
+
+  
+
+  return `/v1/coaching/analysis/plan-task`
+}
+
+export const coachingControllerCreateAnalysisPlanTask = async (createAnalysisPlanTaskDto: CreateAnalysisPlanTaskDto, options?: RequestInit): Promise<coachingControllerCreateAnalysisPlanTaskResponse> => {
+  
+  return http<coachingControllerCreateAnalysisPlanTaskResponse>(getCoachingControllerCreateAnalysisPlanTaskUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createAnalysisPlanTaskDto,)
   }
 );}
 
@@ -4777,17 +4994,24 @@ export type mistakeNotebookControllerListEntriesResponseSuccess = (mistakeNotebo
 
 export type mistakeNotebookControllerListEntriesResponse = (mistakeNotebookControllerListEntriesResponseSuccess)
 
-export const getMistakeNotebookControllerListEntriesUrl = () => {
+export const getMistakeNotebookControllerListEntriesUrl = (params?: MistakeNotebookControllerListEntriesParams,) => {
+  const normalizedParams = new URLSearchParams();
 
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
 
-  
+  const stringifiedParams = normalizedParams.toString();
 
-  return `/v1/coaching/notebook/entries`
+  return stringifiedParams.length > 0 ? `/v1/coaching/notebook/entries?${stringifiedParams}` : `/v1/coaching/notebook/entries`
 }
 
-export const mistakeNotebookControllerListEntries = async ( options?: RequestInit): Promise<mistakeNotebookControllerListEntriesResponse> => {
+export const mistakeNotebookControllerListEntries = async (params?: MistakeNotebookControllerListEntriesParams, options?: RequestInit): Promise<mistakeNotebookControllerListEntriesResponse> => {
   
-  return http<mistakeNotebookControllerListEntriesResponse>(getMistakeNotebookControllerListEntriesUrl(),
+  return http<mistakeNotebookControllerListEntriesResponse>(getMistakeNotebookControllerListEntriesUrl(params),
   {      
     ...options,
     method: 'GET'
@@ -4861,6 +5085,39 @@ export const mistakeNotebookControllerCreateUploadUrl = async (notebookImageUplo
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       notebookImageUploadUrlDto,)
+  }
+);}
+
+
+
+export type mistakeNotebookControllerGetEntryResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerGetEntryResponseSuccess = (mistakeNotebookControllerGetEntryResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerGetEntryResponse = (mistakeNotebookControllerGetEntryResponseSuccess)
+
+export const getMistakeNotebookControllerGetEntryUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebook/entries/${id}`
+}
+
+export const mistakeNotebookControllerGetEntry = async (id: string, options?: RequestInit): Promise<mistakeNotebookControllerGetEntryResponse> => {
+  
+  return http<mistakeNotebookControllerGetEntryResponse>(getMistakeNotebookControllerGetEntryUrl(id),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -4955,7 +5212,7 @@ export const getMistakeNotebookControllerReviewEntryUrl = (id: string,) => {
 }
 
 export const mistakeNotebookControllerReviewEntry = async (id: string,
-    reviewNotebookEntryDto: ReviewNotebookEntryDto, options?: RequestInit): Promise<mistakeNotebookControllerReviewEntryResponse> => {
+    mistakeNotebookControllerReviewEntryBody: MistakeNotebookControllerReviewEntryBody, options?: RequestInit): Promise<mistakeNotebookControllerReviewEntryResponse> => {
   
   return http<mistakeNotebookControllerReviewEntryResponse>(getMistakeNotebookControllerReviewEntryUrl(id),
   {      
@@ -4963,7 +5220,7 @@ export const mistakeNotebookControllerReviewEntry = async (id: string,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      reviewNotebookEntryDto,)
+      mistakeNotebookControllerReviewEntryBody,)
   }
 );}
 
@@ -7937,35 +8194,35 @@ export const adsInternalControllerExpireRewardSessions = async ( options?: Reque
 
 
 
-export type mentorshipApplicationControllerSubmitResponse201 = {
+export type mentorshipApplicationControllerRegisterResponse201 = {
   data: void
   status: 201
 }
     
-export type mentorshipApplicationControllerSubmitResponseSuccess = (mentorshipApplicationControllerSubmitResponse201) & {
+export type mentorshipApplicationControllerRegisterResponseSuccess = (mentorshipApplicationControllerRegisterResponse201) & {
   headers: Headers;
 };
 ;
 
-export type mentorshipApplicationControllerSubmitResponse = (mentorshipApplicationControllerSubmitResponseSuccess)
+export type mentorshipApplicationControllerRegisterResponse = (mentorshipApplicationControllerRegisterResponseSuccess)
 
-export const getMentorshipApplicationControllerSubmitUrl = () => {
+export const getMentorshipApplicationControllerRegisterUrl = () => {
 
 
   
 
-  return `/v1/mentorship/applications`
+  return `/v1/mentorship/coach-registration`
 }
 
-export const mentorshipApplicationControllerSubmit = async (submitCoachApplicationDto: SubmitCoachApplicationDto, options?: RequestInit): Promise<mentorshipApplicationControllerSubmitResponse> => {
+export const mentorshipApplicationControllerRegister = async (registerCoachDto: RegisterCoachDto, options?: RequestInit): Promise<mentorshipApplicationControllerRegisterResponse> => {
   
-  return http<mentorshipApplicationControllerSubmitResponse>(getMentorshipApplicationControllerSubmitUrl(),
+  return http<mentorshipApplicationControllerRegisterResponse>(getMentorshipApplicationControllerRegisterUrl(),
   {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      submitCoachApplicationDto,)
+      registerCoachDto,)
   }
 );}
 
@@ -7988,7 +8245,7 @@ export const getMentorshipApplicationControllerMineUrl = () => {
 
   
 
-  return `/v1/mentorship/applications/mine`
+  return `/v1/mentorship/coach-registration/mine`
 }
 
 export const mentorshipApplicationControllerMine = async ( options?: RequestInit): Promise<mentorshipApplicationControllerMineResponse> => {
@@ -8021,7 +8278,7 @@ export const getMentorshipApplicationControllerUpdateProfileUrl = () => {
 
   
 
-  return `/v1/mentorship/applications/mine`
+  return `/v1/mentorship/coach-registration/mine`
 }
 
 export const mentorshipApplicationControllerUpdateProfile = async (updateCoachProfileDto: UpdateCoachProfileDto, options?: RequestInit): Promise<mentorshipApplicationControllerUpdateProfileResponse> => {
@@ -8441,6 +8698,105 @@ export const mentorshipCoachControllerGenerateBrief = async (studentId: string, 
 
 
 
+export type mentorshipCoachControllerReadCohortBriefResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerReadCohortBriefResponseSuccess = (mentorshipCoachControllerReadCohortBriefResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerReadCohortBriefResponse = (mentorshipCoachControllerReadCohortBriefResponseSuccess)
+
+export const getMentorshipCoachControllerReadCohortBriefUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/brief`
+}
+
+export const mentorshipCoachControllerReadCohortBrief = async ( options?: RequestInit): Promise<mentorshipCoachControllerReadCohortBriefResponse> => {
+  
+  return http<mentorshipCoachControllerReadCohortBriefResponse>(getMentorshipCoachControllerReadCohortBriefUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerGenerateCohortBriefResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerGenerateCohortBriefResponseSuccess = (mentorshipCoachControllerGenerateCohortBriefResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerGenerateCohortBriefResponse = (mentorshipCoachControllerGenerateCohortBriefResponseSuccess)
+
+export const getMentorshipCoachControllerGenerateCohortBriefUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/brief`
+}
+
+export const mentorshipCoachControllerGenerateCohortBrief = async ( options?: RequestInit): Promise<mentorshipCoachControllerGenerateCohortBriefResponse> => {
+  
+  return http<mentorshipCoachControllerGenerateCohortBriefResponse>(getMentorshipCoachControllerGenerateCohortBriefUrl(),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipCoachControllerSuggestAssignmentsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipCoachControllerSuggestAssignmentsResponseSuccess = (mentorshipCoachControllerSuggestAssignmentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipCoachControllerSuggestAssignmentsResponse = (mentorshipCoachControllerSuggestAssignmentsResponseSuccess)
+
+export const getMentorshipCoachControllerSuggestAssignmentsUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/assignment-suggestions`
+}
+
+export const mentorshipCoachControllerSuggestAssignments = async (studentId: string, options?: RequestInit): Promise<mentorshipCoachControllerSuggestAssignmentsResponse> => {
+  
+  return http<mentorshipCoachControllerSuggestAssignmentsResponse>(getMentorshipCoachControllerSuggestAssignmentsUrl(studentId),
+  {      
+    ...options,
+    method: 'POST'
+    
+    
+  }
+);}
+
+
+
 export type mentorshipStudentControllerPreviewResponse200 = {
   data: void
   status: 200
@@ -8568,6 +8924,39 @@ export const mentorshipStudentControllerEndLink = async ( options?: RequestInit)
   {      
     ...options,
     method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipStudentControllerSharedDataResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipStudentControllerSharedDataResponseSuccess = (mentorshipStudentControllerSharedDataResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerSharedDataResponse = (mentorshipStudentControllerSharedDataResponseSuccess)
+
+export const getMentorshipStudentControllerSharedDataUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/my-coach/data`
+}
+
+export const mentorshipStudentControllerSharedData = async ( options?: RequestInit): Promise<mentorshipStudentControllerSharedDataResponse> => {
+  
+  return http<mentorshipStudentControllerSharedDataResponse>(getMentorshipStudentControllerSharedDataUrl(),
+  {      
+    ...options,
+    method: 'GET'
     
     
   }
@@ -10308,7 +10697,7 @@ export const getAdminCoachApplicationsControllerListUrl = () => {
 
   
 
-  return `/v1/admin/coach-applications`
+  return `/v1/admin/coaches`
 }
 
 export const adminCoachApplicationsControllerList = async ( options?: RequestInit): Promise<adminCoachApplicationsControllerListResponse> => {
@@ -10324,36 +10713,71 @@ export const adminCoachApplicationsControllerList = async ( options?: RequestIni
 
 
 
-export type adminCoachApplicationsControllerReviewResponse200 = {
+export type adminCoachApplicationsControllerSetStatusResponse200 = {
   data: void
   status: 200
 }
     
-export type adminCoachApplicationsControllerReviewResponseSuccess = (adminCoachApplicationsControllerReviewResponse200) & {
+export type adminCoachApplicationsControllerSetStatusResponseSuccess = (adminCoachApplicationsControllerSetStatusResponse200) & {
   headers: Headers;
 };
 ;
 
-export type adminCoachApplicationsControllerReviewResponse = (adminCoachApplicationsControllerReviewResponseSuccess)
+export type adminCoachApplicationsControllerSetStatusResponse = (adminCoachApplicationsControllerSetStatusResponseSuccess)
 
-export const getAdminCoachApplicationsControllerReviewUrl = (applicationId: string,) => {
+export const getAdminCoachApplicationsControllerSetStatusUrl = (userId: string,) => {
 
 
   
 
-  return `/v1/admin/coach-applications/${applicationId}/review`
+  return `/v1/admin/coaches/${userId}/status`
 }
 
-export const adminCoachApplicationsControllerReview = async (applicationId: string,
-    reviewCoachApplicationDto: ReviewCoachApplicationDto, options?: RequestInit): Promise<adminCoachApplicationsControllerReviewResponse> => {
+export const adminCoachApplicationsControllerSetStatus = async (userId: string,
+    setCoachStatusDto: SetCoachStatusDto, options?: RequestInit): Promise<adminCoachApplicationsControllerSetStatusResponse> => {
   
-  return http<adminCoachApplicationsControllerReviewResponse>(getAdminCoachApplicationsControllerReviewUrl(applicationId),
+  return http<adminCoachApplicationsControllerSetStatusResponse>(getAdminCoachApplicationsControllerSetStatusUrl(userId),
   {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
-      reviewCoachApplicationDto,)
+      setCoachStatusDto,)
+  }
+);}
+
+
+
+export type adminCoachApplicationsControllerVerifyClaimsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type adminCoachApplicationsControllerVerifyClaimsResponseSuccess = (adminCoachApplicationsControllerVerifyClaimsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type adminCoachApplicationsControllerVerifyClaimsResponse = (adminCoachApplicationsControllerVerifyClaimsResponseSuccess)
+
+export const getAdminCoachApplicationsControllerVerifyClaimsUrl = (userId: string,) => {
+
+
+  
+
+  return `/v1/admin/coaches/${userId}/verified-claims`
+}
+
+export const adminCoachApplicationsControllerVerifyClaims = async (userId: string,
+    verifyCoachClaimsDto: VerifyCoachClaimsDto, options?: RequestInit): Promise<adminCoachApplicationsControllerVerifyClaimsResponse> => {
+  
+  return http<adminCoachApplicationsControllerVerifyClaimsResponse>(getAdminCoachApplicationsControllerVerifyClaimsUrl(userId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      verifyCoachClaimsDto,)
   }
 );}
 

@@ -286,8 +286,8 @@ export function NotebookSidePanel({
         <NotebookAddPanel
           examId={exam.id}
           mockExamId={mockExamId}
-          subjects={(indexExam ?? exam).subjects}
-          topics={(indexExam ?? exam).topics}
+            subjects={exam.subjects}
+            topics={exam.topics}
           onCreated={onCreated}
           onCancel={onCollapse}
         />
@@ -307,9 +307,9 @@ export function NotebookSidePanel({
     }
     return (
       <Panel>
-        <NotebookIndexPanel
-          subjects={exam.subjects}
-          topics={exam.topics}
+          <NotebookIndexPanel
+            subjects={(indexExam ?? exam).subjects}
+            topics={(indexExam ?? exam).topics}
           initialFilters={initialIndexFilters}
           filterNames={indexFilterNames}
           placedEntryIds={placedEntryIds}

@@ -100,6 +100,47 @@ export class UsersService {
     return new Map(rows.map((row) => [row.userId, row]));
   }
 
+  /**
+   * Whether this account's email is verified (W8 seam, APP-089).
+   *
+   * The coach invite code is gated on it. Verification used to gate almost nothing, which was
+   * survivable while COACH was granted by hand; self-service registration makes a reachable inbox
+   * the one thing standing between a stranger and an invite code, so the read has to leave identity.
+   */
+  async isEmailVerified(userId: string): Promise<boolean> {
+    const user = await this.usersRepo.findByIdService(userId);
+    return user?.emailVerifiedAt != null;
+  }
+
+  /**
+   * Read-modify-write the role array under a row lock, returning before/after for the caller's
+   * audit trail. Undefined when there is no such user — callers decide whether that is a 404.
+   *
+   * Identity owns `users.roles`, so every writer comes through here: W6's admin grants and W8's
+   * coach registration alike. {@link addRole} / {@link removeRole} are the two shapes anyone has
+   * needed so far; this stays exposed for admin, which computes before/after in one pass.
+   *
+   * NOTE: no allowlist here on purpose. "Which roles may be assigned over the API" is a policy
+   * question, and it lives with the endpoint that answers it (`AdminUsersService.assertAssignable`)
+   * rather than in the column's owner, which also has to serve the signup path.
+   */
+  async setRoles(
+    userId: string,
+    compute: (roles: string[]) => string[],
+  ): Promise<{ before: string[]; after: string[] } | undefined> {
+    return this.usersRepo.setRoles(userId, compute);
+  }
+
+  /** Idempotent. Takes effect on the caller's very next request — the guard re-reads the DB. */
+  async addRole(userId: string, role: string): Promise<void> {
+    await this.setRoles(userId, (roles) => (roles.includes(role) ? roles : [...roles, role]));
+  }
+
+  /** Idempotent. Removing COACH is what closes every `@Roles(COACH)` endpoint at once. */
+  async removeRole(userId: string, role: string): Promise<void> {
+    await this.setRoles(userId, (roles) => roles.filter((r) => r !== role));
+  }
+
   /** Admin metrics dashboard (W6) — read-only user-base aggregate. */
   async getUserStats(): Promise<UserStats> {
     const s = await this.usersRepo.statsSnapshot();

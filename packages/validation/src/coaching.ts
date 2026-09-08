@@ -994,6 +994,10 @@ export const listNotebookEntriesQuerySchema = paginationQuerySchema.extend({
   topicRef: z.string().trim().min(1).max(120).optional(),
   errorType: z.enum(NOTEBOOK_ERROR_TYPES).optional(),
   status: z.enum(NOTEBOOK_ENTRY_STATUSES).optional(),
+  due: z.enum(["true"]).optional(),
+  revisit: z.enum(["true"]).optional(),
+  days: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30)])).optional(),
+  sort: z.enum(["created", "review"]).optional(),
 });
 export type ListNotebookEntriesQuery = z.infer<
   typeof listNotebookEntriesQuerySchema
@@ -1012,7 +1016,11 @@ export const linkNotebookThreadSchema = z.object({
 export type LinkNotebookThreadInput = z.infer<typeof linkNotebookThreadSchema>;
 
 /** The review answer. One boolean — "could you do it this time?" — and the ladder does the rest. */
-export const reviewNotebookEntrySchema = z.object({ solved: z.boolean() });
+export const reviewNotebookEntrySchema = z.object({ solved: z.boolean(), reviewId: z.string().uuid().optional() });
+export const notebookReviewQuerySchema = listNotebookEntriesQuerySchema.extend({
+  days: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30)])).default(7),
+});
+export type NotebookReviewQuery = z.infer<typeof notebookReviewQuerySchema>;
 export type ReviewNotebookEntryInput = z.infer<
   typeof reviewNotebookEntrySchema
 >;

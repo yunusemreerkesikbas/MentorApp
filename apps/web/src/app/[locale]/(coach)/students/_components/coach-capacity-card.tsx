@@ -6,6 +6,7 @@ import { Button, Card, Skeleton } from "@mentor/ui";
 import { getPathname } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { formatDate } from "../../_components/mentorship-format";
+import type { InviteLock } from "./invite-lock";
 
 /**
  * The invite code and the seat count, together, because they answer one question: can this coach
@@ -20,6 +21,7 @@ import { formatDate } from "../../_components/mentorship-format";
 export function CoachCapacityCard({
   loaded,
   inviteCode,
+  inviteLock,
   activeStudents,
   maxActiveStudents,
   freeSeats,
@@ -31,6 +33,8 @@ export function CoachCapacityCard({
 }: {
   loaded: boolean;
   inviteCode: MentorshipInviteCodeDto | null;
+  /** Why the code is withheld, if it is. Null means the coach simply has not issued one yet. */
+  inviteLock: InviteLock;
   activeStudents: number;
   maxActiveStudents: number;
   /** Sponsored seats included at no cost. */
@@ -131,6 +135,12 @@ export function CoachCapacityCard({
               {t("invite_rotate_warning")}
             </p>
           </>
+        ) : inviteLock !== null ? (
+          // No Create button: pressing it would 403. EMAIL is one click away and says so; STANDING
+          // is an admin decision, so the card explains rather than offering a dead end.
+          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+            {inviteLock === "EMAIL" ? t("coach_email_unverified") : t("invite_locked_standing")}
+          </p>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
