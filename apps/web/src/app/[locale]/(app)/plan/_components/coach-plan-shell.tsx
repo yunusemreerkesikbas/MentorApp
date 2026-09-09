@@ -53,15 +53,16 @@ export function CoachPlanShell() {
   const [roster, setRoster] = useState<MentorshipRosterRowDto[]>([]);
   const [items, setItems] = useState<CoachPlanItemDto[]>([]);
   const [selectedItem, setSelectedItem] = useState<CoachPlanItemDto | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(false);
+  const [loadedKey, setLoadedKey] = useState<string | null>(null);
+  const [errorKey, setErrorKey] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const range = useMemo(() => coachPlanRange(anchor, scale), [anchor, scale]);
+  const requestKey = `${range.from}:${range.to}:${studentId ?? "all"}:${reloadKey}`;
+  const loading = loadedKey !== requestKey && errorKey !== requestKey;
+  const error = errorKey === requestKey;
 
   useEffect(() => {
     let active = true;
-    setLoading(true);
-    setError(false);
     void Promise.all([
       fetchActiveRoster(),
       fetchCoachPlan({
@@ -72,6 +73,8 @@ export function CoachPlanShell() {
     ])
       .then(([rosterItems, planItems]) => {
         if (!active) return;
+        setErrorKey(null);
+        setLoadedKey(requestKey);
         const orderedItems = sortCoachPlanItems(planItems);
         setRoster(rosterItems);
         setItems(orderedItems);
@@ -88,15 +91,14 @@ export function CoachPlanShell() {
         }
       })
       .catch(() => {
-        if (active) setError(true);
-      })
-      .finally(() => {
-        if (active) setLoading(false);
+        if (!active) return;
+        setErrorKey(requestKey);
+        setLoadedKey(requestKey);
       });
     return () => {
       active = false;
     };
-  }, [initialQuery.eventId, range.from, range.to, reloadKey, studentId]);
+  }, [initialQuery.eventId, range.from, range.to, requestKey, studentId]);
 
   const selectItem = useCallback((item: CoachPlanItemDto) => {
     setSelectedItem(item);
