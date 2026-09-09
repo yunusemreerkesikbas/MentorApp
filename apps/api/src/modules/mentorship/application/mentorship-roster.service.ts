@@ -96,6 +96,7 @@ export class MentorshipRosterService {
         studentId: link.studentId,
         studentDisplayName: person?.displayName ?? "",
         studentUsername: person?.username ?? null,
+        avatarUrl: person?.avatarUrl ?? null,
         status: link.status as MentorshipLinkStatus,
         acceptedAt: link.acceptedAt?.toISOString() ?? null,
         endedAt: link.endedAt?.toISOString() ?? null,

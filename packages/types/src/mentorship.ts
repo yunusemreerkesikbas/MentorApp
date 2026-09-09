@@ -197,6 +197,8 @@ export interface MentorshipRosterRowDto {
   studentId: string;
   studentDisplayName: string;
   studentUsername: string | null;
+  /** Public URL resolved by identity; storage keys never leave W0. */
+  avatarUrl: string | null;
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
   endedAt: string | null;

@@ -1379,6 +1379,20 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   and transaction-bound; resolver callbacks must not decide lock order. Related:
   `mentorship-{event,link,assignment}.service.ts`.
 
+- **2026-09-09 — APP-091 role-aware coach plan UI.** Canonical `/plan` now keeps the existing
+  student plan unchanged and renders a week/month coach calendar for COACH accounts. The coach can
+  move by period, return to today, filter by every active roster student, open a day or read-only
+  task/event detail, and follow `?date=YYYY-MM-DD&event={id}` links. Roster, task participants and
+  event attendees use W0-resolved public avatar URLs; month cells show at most three unique
+  students plus `+N`, while personal items stay visible without a fake avatar. Usage: choose “Tüm
+  öğrenciler” or one avatar filter; the latter reloads `/v1/mentorship/plan` with `studentId`, so
+  W8 remains authoritative instead of hiding unrelated rows in the browser. The range client
+  drains every 100-row page in server order and fetches the complete active roster. Gotcha: role
+  selection only chooses the presentation; endpoint role and active-link checks remain the
+  security boundary. Related: `apps/web/.../plan/_components/coach-plan-*`,
+  `apps/web/src/lib/{coach-plan-calendar,mentorship}.ts`,
+  `mentorship-roster.service.ts`, `packages/types/src/mentorship.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block
