@@ -92,7 +92,9 @@ describe("MentorshipEventService", () => {
 
     await service.cancel(COACH, EVENT, { scope: "OCCURRENCE" });
 
-    expect(links.assertEnabled).toHaveBeenCalledBefore(planEvents.cancel);
+    expect(links.assertEnabled.mock.invocationCallOrder[0]).toBeLessThan(
+      planEvents.cancel.mock.invocationCallOrder[0]!,
+    );
     expect(planEvents.cancel).toHaveBeenCalledWith(COACH, EVENT, {
       scope: "OCCURRENCE",
     });
