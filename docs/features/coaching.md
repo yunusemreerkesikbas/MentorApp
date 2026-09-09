@@ -195,6 +195,10 @@ pnpm --filter @mentor/api test
   bileşik FK altında tutulur. İlgili: `packages/{types,validation}/src/coaching.ts`,
   `apps/api/src/database/schema.ts`, `0110_app_091_coach_plan_events.sql`.
 
+- **2026-09-09 · Puhu speech modal speech bubble.** Cloud silhouette dropped: CSS lobes looked like clip-art and drowned the copy. The modal is now a compact speech balloon (`--color-surface`, 16px radius, card shadow) with a caret toward Puhu. Mobile: bubble above, Puhu centered under it, max 320px. Desktop: Puhu left, balloon right. Usage unchanged: `<PuhuSpeechModal isOpen … />`. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.*`.
+
+- **2026-09-08 · Puhu trail + mood speech text race.** Thought-trail dots moved off the cloud art into the stage gap so they no longer sit on Puhu; cloud bottom-left inset tightened and bubble lifted. Premium mood speech stays on shimmer until AI reflection resolves (no rule-message → AI swap). Free still gets the rule line immediately. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.*`, `mood-checkin.tsx`, `panel-shell.tsx`.
+
 - **2026-09-08 · Puhu speech modal flicker + free mood copy.** Trail dots stay inside the cloud so they no longer overlay Puhu. Talk/idle frames stay mounted (opacity swap) so free-tier rule copy cannot flash the mascot away. Mood fallback lines in `coaching.json` are punchier companion copy; `SERIOUS_DISTRESS` is unchanged. Usage unchanged. Gotcha: do not swap `next/image` `src` on the 140ms mouth loop. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.css`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
 
 - **2026-09-08 · Analysis V1.1 acceptance evidence.** Twelve scoped mobile/desktop browser cases passed: completed/deleted-baseline focus separation, verified locked plan labels, selected task date, conflict draft retention, filter clearing/reload and delayed-pagination rejection. The dedicated database flow also covers same-day/older attempt exclusion, first comparable attempt, plan-completion practice and topic-filter user isolation. Unit checks cover exact pending-task reuse (with and without topic), catalog pagination and query presentation. No workspace-wide CI or production deployment was performed.
@@ -4321,3 +4325,24 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   mutability. Gotcha: cancelled rows return `COACHING_EVENT_CANCELLED_READONLY`, while past
   scheduled rows keep `COACHING_EVENT_DATE_READONLY`. Related: `plan-event-mutation.ts`,
   `plan-event-write.orchestrator.ts`, `plan-event-mutation.service.spec.ts`.
+
+- **Refined analysis workspace (2026-09-08)** — Progress now prioritizes the focus selector and
+  a single prominent Start review action. Plan/exam tracking expands within the focus surface,
+  without a nested card. Four review metrics share a responsive strip; answer history uses
+  separated rows and right-aligned scheduling on desktop. The period toggle has a visible
+  selected state, loading uses existing skeletons, and keyboard focus/reduced motion are supported.
+  Usage: choose a focus, optionally change the period, then start review; expand Plan and exam
+  tracking for existing plan/AI actions. Data calculations and review navigation are unchanged.
+  Visual changes are scoped to analysis rather than the global design system.
+  Related: analysis-review-progress.tsx, analysis-review-progress.module.css,
+  analysis-review-history.tsx, analysis-improvement-loop-card.tsx, analysis-review.spec.ts.
+
+- **Quiet Precision analysis controls (2026-09-08)** — The Progress review surface now uses the
+  shared `MenuSelect` for focus selection and `SlidingTabs` for the 7/30-day period. Review actions,
+  signal status, history scheduling, and Previous/Next pagination share a restrained graphite/cool
+  neutral hierarchy with explicit disabled, keyboard-focus, reduced-motion, mobile, and dark states.
+  Usage and API behavior are unchanged: select a focus and period, start review, then page through
+  recorded answers. The palette is intentionally scoped to this analysis surface rather than the
+  global design system. Related: `analysis-review-progress.tsx`,
+  `analysis-review-progress.module.css`, `analysis-review-history.tsx`,
+  `analysis-improvement-loop-card.tsx`, `analysis-review.spec.ts`.

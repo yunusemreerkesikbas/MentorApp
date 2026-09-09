@@ -253,8 +253,10 @@ test.describe("koç tarafı", () => {
     await page.getByLabel("Kurum").fill("Ankara Üniversitesi");
     await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
 
-    // No waiting room: the account is open, and the form gives way to the profile it just wrote.
-    await expect(page.getByText("Açık", { exact: true })).toBeVisible();
+    // No waiting room: the account is open, and the coach is handed to the profile they just
+    // wrote. Since APP-090 that profile lives on the coach surface, not in the student shell —
+    // this screen is only ever for somebody who is not a coach yet.
+    await expect(page).toHaveURL(/\/kocluk\/profil$/, { timeout: 10_000 });
     await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toHaveCount(0);
 
     // The admin's columns never travel from the client — the API refuses a body carrying them.
@@ -743,6 +745,11 @@ async function mockApi(
     if (method === "PUT" && /\/v1\/mentorship\/students\/[^/]+\/attention$/.test(path)) {
       attentionCalls.push((request.postDataJSON() as { attended: boolean }).attended);
       return json(route, null, 204);
+    }
+    // Registration grants COACH, and the screen re-reads the principal before navigating so the
+    // coach shell does not greet a brand-new coach with its role guard.
+    if (method === "GET" && path === "/v1/users/me") {
+      return json(route, { ...user, roles: ["STUDENT", "COACH"] });
     }
     if (method === "GET" && path === "/v1/mentorship/coach-registration/mine") {
       // The envelope, not the row: the form needs to know the intake is open BEFORE it is filled

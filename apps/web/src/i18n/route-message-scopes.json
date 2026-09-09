@@ -6,5 +6,5 @@
   "onboarding": ["onboarding", "profile", "vision", "common", "economy", "mentorship"],
   "joinRoom": ["session_room"],
   "plan": ["plan", "coachPlan"],
-  "coaching": ["mentorship", "common", "nav"]
+  "coaching": ["mentorship", "common", "nav", "notifications", "journey_levels", "countdown", "community"]
 }

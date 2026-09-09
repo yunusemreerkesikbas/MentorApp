@@ -3337,6 +3337,7 @@
     "coach_profile_unknown": "Bu koç hakkında henüz bir profil yok.",
     "coach_profile_verified_label": "Doğrulanan bilgiler",
     "coach_profile_declared_label": "Koçun kendi beyanı, henüz doğrulanmadı",
+    "coach_profile_missing": "Henüz bir profil yazmadın. Öğrenci sana bağlanmadan önce bu iki satırı okuyor, davet kodun da o zaman açılıyor.",
     "coach_profile_claim_INSTITUTION": "Kurum: {value}",
     "coach_profile_claim_BRANCH": "Branş: {value}",
     "coach_profile_claim_YEARS": "Deneyim: {value} yıl",

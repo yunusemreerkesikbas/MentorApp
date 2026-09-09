@@ -211,6 +211,71 @@ flag that cries wolf costs the coach more than it gives.
   `packages/{types,validation}/src/mentorship.ts`, `apps/api/src/database/schema.ts`,
   `0110_app_091_coach_plan_events.sql`.
 
+- **Koçun kendi dünyası: yönlendirme, ana ekran, bildirim (APP-090, 2026-09-08)** — APP-089 koçu
+  onboarding sonunda `/kocluk`'a indirdi ama **login'i değiştirmedi**: `postAuthDestination`
+  rollere hiç bakmıyordu, dolayısıyla koç ilk kayıtta doğru yere iniyor, **sonraki her girişte
+  öğrenci paneline** düşüyordu. O ekran koça yabancı: streak alevleri, Pomodoro ritüeli, "Bu yolun
+  sonunda ne var?" hedef kartı, otomatik açılan ruh hali modalı.
+
+  **Panel koça uyarlanmadı, koç panelden çıkarıldı.** `(coach)/layout.tsx` bu kararı zaten yazmıştı
+  ("*the student panel is a daily ritual; this is a work tool. Sharing one shell would put two
+  mental models in one chrome*"), ve `panel-shell.tsx` 1381 satır — `(app)` altında bugüne dek
+  **sıfır** rol dallanması vardı, oraya ilkini sokmak hem kuralı hem deseni bozardı.
+
+  **Blok listesi, allow-list değil.** `lib/coach-surface.ts`: öğrenci ritüeli (`/panel`,
+  `/seans`, `/analiz`, defterler, `/hedef`, AI companion `/koc`, `/kocum`, `/kocluk-daveti`) koça
+  kapalı; **`/plan` APP-091 ile role-aware bir koç çalışma yüzeyine dönüştü.** `/ayarlar`, `/profil`,
+  `/abonelik` (Koç Pro orada satılıyor), `/topluluk` ve `/bilgi` de açık kalıyor. Guard bir
+  nezaket, güvenlik sınırı değil — koçun kapalı bir ekranda göreceği tek
+  şey kendi boş verisi — o yüzden fail-open olması doğru: ileride eklenen bir `(app)` rotası koçu
+  sessizce kilitlemiyor. Yol eşleştirme **hem kanonik hem TR segmentini** kabul ediyor
+  (`app-sidebar.ts`'in deseni); tek form yazmak, yerelleştirilmiş yol geldiği anda sessizce
+  eşleşmeyi bırakırdı.
+
+  **`/kocluk` iki kolona çıktı.** Ayrım "ne sıklıkla değişiyor"a göre: solda bugünün işi (brifing →
+  sayı bandı → roster), sağda koçun göz ucuyla baktığı sabit gerçekler (sınav sayacı, davet kodu,
+  veri kapsamı, topluluk). Sayaç `/v1/coaching/today`'den DEĞİL — bir koça tek tarih için öğrenci
+  planı payload'u okutmak olurdu — mevcut `fetchExamCalendarByFamily` seam'inden geliyor.
+
+  **Kural tabanlı brifing tabanı denendi ve KESİLDİ.** Plan, brifing yokken kartı doldurmak için
+  `summarizeCohort` + `action_*` kopyasından deterministik bir özet öngörüyordu. Ekranda görülünce
+  üretebildiği her satırın — isim, risk çipleri, öneri — birkaç piksel aşağıdaki `StudentCard`'da
+  zaten durduğu çıktı; e2e "strict mode violation" olarak yakaladı, çünkü aynı cümle iki kez
+  render ediliyordu. Modelin kattığı şey `why` (birkaç sinyalden çıkarılmış tek gerekçe) ve duruma
+  özel `action`; ikisi de koçun zaten baktığı satırdan üretilemez. Kart kendi boş haline döndü.
+
+  **Bildirim çekmecesi koç kabuğuna da mount edildi.** Dört koça-yönelik bildirim tipi
+  (`MENTORSHIP_STUDENT_JOINED`, `_RISK_DIGEST`, `_ASSIGNMENT_DROPPED`, `_ASSIGNMENT_PROGRESSED`)
+  zaten üretiliyordu ama `NotificationDrawerShell` yalnız `(app)/app-shell.tsx`'te mount ediliyordu:
+  koç bunları görmek için öğrenci paneline dönmek zorundaydı, ve artık dönemiyor.
+
+  **Koç profili `(coach)` altına taşındı** (`/kocluk/profil`). `/koc-basvurusu` yalnız **kayıt
+  formu** olarak kalıyor — oraya giren kişi tanım gereği henüz koç değil.
+
+  **Usage:** koç login → `/kocluk`. Profil → `/kocluk/profil`. Mevcut hesap koç olmak isterse
+  `/koc-basvurusu`, kayıttan sonra profiline yönlendiriliyor.
+
+  **Gotchas:**
+  (1) **Yönlendirme rolü okur, sicil satırını değil.** Askıya alınan koçun COACH rolü geri alınıyor
+  ama sicil satırı adminin gerekçesiyle duruyor; satıra bakan bir yönlendirme onu `(coach)` guard'ına
+  fırlatır ve **gerekçeyi hiç okuyamazdı.** O yüzden `/koc-basvurusu` rolsüz-ama-satırlı kişiye
+  salt-okunur bir durum kartı gösteriyor.
+  (2) Kayıttan sonra `usersControllerMe` ile principal **yeniden okunuyor**: rol sunucuda anında
+  canlı ama sekmedeki kopya login'den kalma, ve `(coach)` guard'ı onu okuyor. Tazelemeden gitmek
+  yeni koçu "bu alan koçlar için" ekranına indirirdi.
+  (3) `CommunityCard` ve `SoftPromoShell` `(app)/dashboard/_components`'ten `src/components`'e
+  taşındı: `(coach)` `(app)/**`'dan import edemez, ve dolaylı import da ihlaldir.
+  (4) `(coach)` message scope'u büyüdü (`notifications`, `journey_levels`, `countdown`,
+  `community`) — `pickMessages` eksik namespace'te **throw ediyor**.
+  (5) Mobil tab bar rol filtresini **hiç uygulamıyordu**; koç `/topluluk`'ta beş ölü sekme
+  görüyordu ve `/kocluk`'a telefondan hiç ulaşamıyordu. Filtre iki listeye de bağlandı.
+
+  **İlgili:** `apps/web/src/lib/coach-surface.ts` (+spec) · `lib/post-auth-destination.ts` ·
+  `(app)/app-shell.tsx` · `components/app-nav.tsx` · `(coach)/coach-shell.tsx` ·
+  `(coach)/students/_components/{roster-shell,coach-countdown-card}.tsx` ·
+  `(coach)/students/profile/**` · `(app)/coach-application/_components/coach-application-shell.tsx` ·
+  `components/{community-card,soft-promo-shell}.tsx` · `e2e/coach-home.spec.ts`
+
 - **Koç kendi kaydını açıyor, admin geri alabiliyor (APP-089, 2026-09-08)** — APP-082 kürasyon
   hattını kurmuştu ama koç adayının o hatta girebilmesi için önce **öğrenci** olması gerekiyordu:
   `/koc-basvurusu` `(app)` altında, `(app)` de `hasCompletedOnboarding = username && examType`

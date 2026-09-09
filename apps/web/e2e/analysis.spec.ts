@@ -11,30 +11,77 @@ import {
 } from "./analysis.fixture";
 
 for (const deleted of [false, true]) {
-  test(`analysis V1.1 completed cycle keeps its focus separate (${deleted ? "deleted" : "completed"})`, async ({ page }) => {
+  test(`analysis V1.1 completed cycle keeps its focus separate (${deleted ? "deleted" : "completed"})`, async ({
+    page,
+  }) => {
     const baselineId = firstAnalysis.trend[0]!.id;
     const followId = multipleAnalysis.trend[0]!.id;
     const cycle: AnalysisImprovementCycleDto = {
-      task: { id: baselineId, title: "Eski tekrar", status: "DONE", taskDate: "2026-07-12", createdAt: "2026-07-12T12:00:00Z" },
-      focus: { subjectRef: "tarih", subjectName: "Tarih", source: "LOWEST_AVERAGE", evidenceCount: 2 },
-      baseline: deleted ? null : { mockExamId: baselineId, takenAt: "2026-07-10T12:00:00Z", net: "12.00" },
-      followUp: deleted ? null : { mockExamId: followId, takenAt: "2026-07-13T12:00:00Z", net: "14.00", delta: "+2.00" },
-      notebook: { matchingCount: 0, reviewedAfterPlanCount: 0, dueCount: 0, healedCount: 0 },
-      steps: { planned: true, practiced: true, measured: !deleted, closed: !deleted },
-      message: deleted ? "Başlangıç denemesi silindi." : "Tarih netin 12,00’dan 14,00’a geldi, fark +2,00.",
+      task: {
+        id: baselineId,
+        title: "Eski tekrar",
+        status: "DONE",
+        taskDate: "2026-07-12",
+        createdAt: "2026-07-12T12:00:00Z",
+      },
+      focus: {
+        subjectRef: "tarih",
+        subjectName: "Tarih",
+        source: "LOWEST_AVERAGE",
+        evidenceCount: 2,
+      },
+      baseline: deleted
+        ? null
+        : {
+            mockExamId: baselineId,
+            takenAt: "2026-07-10T12:00:00Z",
+            net: "12.00",
+          },
+      followUp: deleted
+        ? null
+        : {
+            mockExamId: followId,
+            takenAt: "2026-07-13T12:00:00Z",
+            net: "14.00",
+            delta: "+2.00",
+          },
+      notebook: {
+        matchingCount: 0,
+        reviewedAfterPlanCount: 0,
+        dueCount: 0,
+        healedCount: 0,
+      },
+      steps: {
+        planned: true,
+        practiced: true,
+        measured: !deleted,
+        closed: !deleted,
+      },
+      message: deleted
+        ? "Başlangıç denemesi silindi."
+        : "Tarih netin 12,00’dan 14,00’a geldi, fark +2,00.",
     };
-    await mockAnalysisApi(page, { analysis: { ...multipleAnalysis, improvementCycle: cycle } });
+    await mockAnalysisApi(page, {
+      analysis: { ...multipleAnalysis, improvementCycle: cycle },
+    });
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/analiz?tab=progress");
+    await page.getByText("Plan ve deneme takibi", { exact: true }).click();
     const card = page.getByTestId("analysis-improvement-cycle");
     await expect(card.getByText(cycle.message)).toBeVisible();
     await expect(card.getByText("Tarih", { exact: true })).toBeVisible();
     const proposal = card.getByTestId("analysis-next-proposal");
     await expect(proposal.getByText("Matematik · Problemler")).toBeVisible();
-    await expect(proposal.getByRole("link", { name: "Yeni odağı planıma ekle" })).toHaveAttribute("href", /subjectRef=matematik/);
+    await expect(
+      proposal.getByRole("link", { name: "Yeni odağı planıma ekle" }),
+    ).toHaveAttribute("href", /subjectRef=matematik/);
     const coach = card.getByRole("link", { name: "AI koçla değerlendir" });
     if (deleted) await expect(coach).toHaveCount(0);
-    else await expect(coach).toHaveAttribute("href", new RegExp(`contextMockExamId=${followId}`));
+    else
+      await expect(coach).toHaveAttribute(
+        "href",
+        new RegExp(`contextMockExamId=${followId}`),
+      );
   });
 }
 
@@ -102,12 +149,12 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
     "42.00",
   );
   await expect(firstPage.getByText(/Geçen denemeye göre/)).toHaveCount(0);
+  await firstPage.getByText("Plan ve deneme takibi", { exact: true }).click();
   await expect(
-    firstPage.getByTestId("analysis-improvement-cycle").getByText("Matematik", { exact: true }),
+    firstPage
+      .getByTestId("analysis-improvement-cycle")
+      .getByText("Matematik", { exact: true }),
   ).toBeVisible();
-  // The focus card used to be a collapsible `<details>`; it is now a flat card shown whenever
-  // there is a focus to show, and simply absent when there is not — no expand/collapse state
-  // left to assert on either side.
   await expect(
     firstPage.getByRole("heading", { name: "İyileşme döngüsü" }),
   ).toBeVisible();
@@ -135,8 +182,8 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
 
   await expect(page.getByTestId("analysis-latest-net")).toHaveText("48.00");
   await expect(page.getByTestId("analysis-net-delta")).toContainText("+6.00");
+  await page.getByText("Plan ve deneme takibi", { exact: true }).click();
   await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
-
   const planLinks = page.getByRole("link", { name: "Planıma ekle" });
   const plan = planLinks.first();
   const coach = page.getByRole("link", { name: "AI koçla değerlendir" });
@@ -167,7 +214,9 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
   // The evidence trend used to sit behind a keyboard-openable `<details>`; the focus card is now
   // a flat, always-expanded card (same redesign that dropped the "Haftanın Hikâyesi hazır" teaser
   // above), so its recent-trend block is already on screen with nothing left to open.
-  const evidence = page.locator("summary").filter({ hasText: "Kanıtlar ve geçmiş" });
+  const evidence = page
+    .locator("summary")
+    .filter({ hasText: "Kanıtlar ve geçmiş" });
   await evidence.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Net trendi" })).toBeVisible();
@@ -195,7 +244,7 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   });
   await page.goto("/analiz?tab=progress");
   await expect(
-    page.getByRole("heading", { name: "İyileşme döngüsü" }),
+    page.getByRole("heading", { name: "Bugünkü odağın" }),
   ).toBeVisible();
 
   await waitForRscRequestsToSettle(page);
@@ -311,9 +360,7 @@ test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
   // A count and a door, never twelve auto-created cards: the student picks which mistakes are
   // worth filing, which is the whole reason the review deck can be trusted.
   await expect(page.getByText(/12 yanlış var/)).toBeVisible();
-  await expect(
-    page.getByRole("link", { name: "Deftere geç" }),
-  ).toHaveAttribute(
+  await expect(page.getByRole("link", { name: "Deftere geç" })).toHaveAttribute(
     "href",
     "/yanlis-defteri?mockExam=12121212-1212-4121-8121-121212121212",
   );

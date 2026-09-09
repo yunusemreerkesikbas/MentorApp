@@ -14,7 +14,7 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { ShimmerText, StreamingText } from "@mentor/ui";
 import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
-import { PuhuThoughtCloud } from "./puhu-thought-cloud";
+import { PuhuSpeechBubble } from "./puhu-thought-cloud";
 
 const SPEECH_FRAMES = [
   PUHU_MOTION_FRAMES.default,
@@ -140,7 +140,7 @@ export function PuhuSpeechModal({
     <AnimatePresence>
       {isOpen ? (
         <motion.div
-          className="fixed inset-0 z-[120] flex items-center justify-center overflow-visible p-8 sm:p-10 select-none"
+          className="fixed inset-0 z-[120] flex items-center justify-center overflow-visible p-5 sm:p-10 select-none"
           role="dialog"
           aria-modal="true"
           aria-labelledby={titleId}
@@ -175,13 +175,13 @@ export function PuhuSpeechModal({
             <X className="size-5" />
           </motion.button>
 
-          {/* Dialogue stage: Puhu bottom-left, thought cloud up and to the right */}
+          {/* Dialogue stage: bubble above Puhu on mobile; Puhu then bubble on desktop */}
           <div
-            className="relative z-10 flex flex-row items-end overflow-visible pointer-events-auto max-w-full"
+            className="relative z-10 flex w-[min(100%,20rem)] flex-col items-center overflow-visible pointer-events-auto sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
-              className="relative z-20 isolate shrink-0 size-20 sm:size-28 flex items-center justify-center"
+              className="relative z-20 order-2 isolate mt-3 shrink-0 size-24 sm:order-1 sm:mt-0 sm:size-28 flex items-center justify-center"
               initial={
                 reduceMotion
                   ? { opacity: 0 }
@@ -205,7 +205,7 @@ export function PuhuSpeechModal({
                   alt=""
                   fill
                   priority
-                  sizes="(max-width: 640px) 80px, 112px"
+                  sizes="(max-width: 640px) 96px, 112px"
                   className={`object-contain drop-shadow-md ${src === currentFrame ? "opacity-100" : "opacity-0"}`}
                   aria-hidden
                 />
@@ -213,7 +213,7 @@ export function PuhuSpeechModal({
             </motion.div>
 
             <motion.div
-              className="relative z-10 min-w-0 w-full max-w-[380px] sm:max-w-[480px] mb-2 sm:mb-3 ml-1 sm:ml-2 select-text overflow-visible"
+              className="relative z-10 order-1 min-w-0 w-full sm:order-2 sm:w-auto sm:max-w-[22rem] select-text overflow-visible"
               initial={
                 reduceMotion
                   ? { opacity: 0 }
@@ -227,7 +227,7 @@ export function PuhuSpeechModal({
               }
               transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
             >
-              <PuhuThoughtCloud>
+              <PuhuSpeechBubble>
                 {badgeText ? (
                   <div className="flex items-center justify-between gap-2 mb-2">
                     <span className="text-xs font-bold text-[var(--color-secondary)]">
@@ -236,7 +236,7 @@ export function PuhuSpeechModal({
                   </div>
                 ) : null}
 
-                <div className="min-h-16 flex items-center">
+                <div className="flex items-center">
                   {isLoading ? (
                     <p className="text-sm sm:text-base font-medium text-[var(--color-secondary)] py-1">
                       <ShimmerText text={loadingText} />
@@ -257,7 +257,7 @@ export function PuhuSpeechModal({
 
                 {actionLabel && (!isLoading || streamFinished) ? (
                   <motion.div
-                    className="mt-4 flex justify-end"
+                    className="mt-3 flex justify-stretch sm:justify-end"
                     initial={
                       reduceMotion
                         ? { opacity: 0 }
@@ -275,13 +275,13 @@ export function PuhuSpeechModal({
                           onClose();
                         }
                       }}
-                      className="inline-flex min-h-11 items-center justify-center rounded-full px-6 py-2 text-sm font-bold bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-90 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                      className="inline-flex min-h-11 w-full sm:w-auto items-center justify-center rounded-[var(--radius-card)] sm:rounded-full px-6 py-2 text-sm font-bold bg-[var(--color-btn)] text-[var(--color-btn-label)] hover:opacity-90 active:scale-95 transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                     >
                       {actionLabel}
                     </button>
                   </motion.div>
                 ) : null}
-              </PuhuThoughtCloud>
+              </PuhuSpeechBubble>
             </motion.div>
           </div>
         </motion.div>

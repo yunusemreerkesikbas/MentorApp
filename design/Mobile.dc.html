@@ -1,0 +1,196 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap">
+  <style>
+    :root {
+      --color-main: #111111; --color-body: #333333; --color-secondary: #666666;
+      --color-btn: #000000; --color-btn-label: #ffffff;
+      --color-bg: #ffffff; --color-surface: #ffffff; --color-border: #ffffff;
+      --color-surface-container: #f0edec; --color-surface-translucent: rgba(255,255,255,0.5);
+      --color-progress: #55acee; --color-progress-track: #c3d9fd;
+      --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
+      --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
+      --radius-card: 10px;
+      --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
+      --sig-inactive: #f3705a; --sig-mood: #a78bda; --sig-net: #e0a300; --sig-plan: #55acee;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--color-bg); font-family: var(--font-body); color: var(--color-body); -webkit-font-smoothing: antialiased; }
+    a { color: var(--color-progress); text-decoration: none; }
+    a:hover { color: #3b8fd0; }
+    .num { font-variant-numeric: tabular-nums; }
+    .card { border-radius: var(--radius-card); border: 1px solid var(--color-border);
+            background: var(--color-surface-translucent); box-shadow: var(--shadow-card); padding: 16px; }
+    .sig { display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 10px 0 8px;
+           border-radius: 999px; border: 1px solid color-mix(in srgb, var(--color-secondary) 20%, transparent);
+           background: var(--color-surface); font-size: 12px; font-weight: 600; line-height: 1;
+           color: var(--color-body); white-space: nowrap; }
+    .sig i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+    .calm { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 500; color: var(--color-secondary); }
+    .new { display: inline-flex; align-items: center; height: 18px; padding: 0 7px; border-radius: 999px;
+           background: color-mix(in srgb, var(--color-progress) 16%, transparent); color: #1d6fbf;
+           font-size: 11px; font-weight: 700; line-height: 1; }
+    .count { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--color-body); }
+    .count b { font-weight: 700; font-variant-numeric: tabular-nums; color: var(--color-main); }
+    .count i { width: 6px; height: 6px; border-radius: 999px; flex: none; }
+    .btn-primary { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px;
+                   padding: 0 18px; width: 100%; border: none; border-radius: var(--radius-card);
+                   background: var(--color-btn); color: var(--color-btn-label);
+                   font-family: var(--font-body); font-size: 15px; font-weight: 700; }
+    .btn-quiet { display: inline-flex; align-items: center; justify-content: center; gap: 6px; height: 44px;
+                 padding: 0 12px; border: 1px solid color-mix(in srgb, var(--color-secondary) 22%, transparent);
+                 border-radius: var(--radius-card); background: var(--color-surface); color: var(--color-main);
+                 font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+    .meta { font-size: 12px; color: var(--color-secondary); }
+    .label { font-size: 12px; color: var(--color-secondary); line-height: 1.4; }
+    .value { font-size: 15px; font-weight: 600; color: var(--color-main); line-height: 1.4; }
+  </style>
+</helmet>
+
+<!-- 390×844. No painted status bar and no fake keyboard: the real ones render on top, and a
+     drawn copy reads as doubled-up chrome. -->
+<div style="position: relative; width: 390px; height: 844px; overflow: hidden; background: var(--color-bg)">
+
+  <!-- Top header — app-nav.tsx mobile: h-16, border-b, surface @90% + blur, px-4 -->
+  <header style="position: absolute; inset: 0 0 auto; z-index: 2; display: flex; align-items: center; gap: 12px;
+                 height: 64px; padding: 0 16px; border-bottom: 1px solid var(--color-border);
+                 background: color-mix(in srgb, var(--color-surface) 90%, transparent); backdrop-filter: blur(8px)">
+    <span style="display: grid; place-items: center; width: 44px; height: 44px; flex: none; border-radius: 999px;
+                 background: var(--color-surface-container); color: var(--color-secondary); font-size: 15px; font-weight: 700">M</span>
+    <div style="min-width: 0; flex: 1">
+      <p style="margin: 0; font-family: var(--font-heading); font-size: 16px; font-weight: 700; line-height: 1.2; color: var(--color-main)">İyi geceler</p>
+      <p style="margin: 1px 0 0; font-size: 14px; line-height: 1.3; color: var(--color-secondary)">Mert Aydın</p>
+    </div>
+    <span style="position: relative; display: grid; place-items: center; width: 44px; height: 44px; flex: none; color: var(--color-main)">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></svg>
+      <span style="position: absolute; top: 6px; right: 6px; display: grid; place-items: center; min-width: 16px; height: 16px;
+                   padding: 0 4px; border-radius: 999px; background: var(--color-progress); color: #fff; font-size: 10px; font-weight: 700">1</span>
+    </span>
+  </header>
+
+  <!-- Scroll body. pb clears the floating pill (~60 + gutter). -->
+  <div style="position: absolute; inset: 64px 0 0; padding: 16px 16px 96px; display: flex; flex-direction: column; gap: 12px">
+
+    <!-- Countdown first on a phone: it is one glance and it frames everything under it.
+         On the desktop it sits in the rail; here the rail collapses into the column. -->
+    <div class="card" style="display: flex; align-items: center; gap: 14px; padding: 14px 16px">
+      <span style="display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: var(--radius-card);
+                   background: var(--color-surface-container); color: var(--color-secondary)">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/></svg>
+      </span>
+      <div style="min-width: 0; flex: 1">
+        <p class="label" style="margin: 0">Sınava kalan</p>
+        <p style="margin: 1px 0 0; display: flex; align-items: baseline; gap: 5px">
+          <span class="num" style="font-family: var(--font-heading); font-size: 24px; font-weight: 700; line-height: 1.1; color: var(--color-main)">113</span>
+          <span style="font-size: 13px; font-weight: 600; color: var(--color-secondary)">gün</span>
+        </p>
+      </div>
+      <span class="meta" style="text-align: right">KPSS Lisans<br>30 Ara 2026</span>
+    </div>
+
+    <!-- Brief -->
+    <div class="card">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px">
+        <h2 style="margin: 0; font-family: var(--font-heading); font-size: 15px; font-weight: 700; color: var(--color-main)">Bugünün brifingi</h2>
+        <span style="display: grid; place-items: center; width: 36px; height: 36px; border-radius: var(--radius-card);
+                     border: 1px solid color-mix(in srgb, var(--color-secondary) 22%, transparent); color: var(--color-main)">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/></svg>
+        </span>
+      </div>
+      <p style="margin: 12px 0 0; font-size: 14px; line-height: 1.6; color: var(--color-body); text-wrap: pretty">Kohortun sakin sayılır, tek bir öğrenci geride kaldı.</p>
+      <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid color-mix(in srgb, var(--color-secondary) 14%, transparent)">
+        <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap">
+          <a href="#" style="font-size: 14px; font-weight: 700; color: var(--color-main)">Zeynep Kaya</a>
+          <span class="new">Yeni</span>
+          <span class="sig"><i style="background: var(--sig-inactive)"></i>Sessiz</span>
+        </div>
+        <p style="margin: 6px 0 0; font-size: 13px; line-height: 1.55; color: var(--color-body)">Altı gündür hiç çalışma kaydı yok.</p>
+        <p style="margin: 3px 0 0; font-size: 13px; line-height: 1.55; color: var(--color-secondary)">Kısa bir not bırak, nerede takıldığını sor.</p>
+      </div>
+    </div>
+
+    <!-- Cohort band -->
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 0 4px">
+      <p style="margin: 0; font-size: 14px; font-weight: 600; color: var(--color-main)">
+        <span class="num">3</span> öğrenciden <span class="num">1</span> tanesi ilgi bekliyor.
+      </p>
+      <span class="count"><i style="background: var(--sig-inactive)"></i><b>1</b> Sessiz</span>
+    </div>
+
+    <!-- Tabs -->
+    <div style="display: inline-flex; align-self: flex-start; padding: 4px; gap: 4px; border-radius: 999px; background: var(--color-surface-container)">
+      <span style="display: inline-flex; align-items: center; height: 34px; padding: 0 18px; border-radius: 999px;
+                   background: var(--color-surface); box-shadow: var(--shadow-card); font-size: 14px; font-weight: 700; color: var(--color-main)">Aktif</span>
+      <span style="display: inline-flex; align-items: center; height: 34px; padding: 0 18px; border-radius: 999px;
+                   font-size: 14px; font-weight: 600; color: var(--color-secondary)">Geçmiş</span>
+    </div>
+
+    <!-- Roster. The 4-up metric grid becomes 2×2 — four columns at 358px would put each value
+         under 80px and break "6 gün önce" onto two lines. -->
+    <div class="card">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <span style="font-size: 15px; font-weight: 700; color: var(--color-main)">Zeynep Kaya</span>
+        <span class="sig"><i style="background: var(--sig-inactive)"></i>Sessiz</span>
+      </div>
+      <dl style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 14px 0 0">
+        <div><dt class="label">Son aktiflik</dt><dd class="value num" style="margin: 2px 0 0">6 gün önce</dd></div>
+        <div><dt class="label">7 günlük çalışma</dt><dd class="value num" style="margin: 2px 0 0">0 dk</dd></div>
+        <div><dt class="label">Plan tamamlama</dt><dd class="value num" style="margin: 2px 0 0">%0</dd></div>
+        <div><dt class="label">Son net</dt><dd class="value" style="margin: 2px 0 0">Yok</dd></div>
+      </dl>
+      <p style="margin: 14px 0 0; font-size: 13px; line-height: 1.55; color: var(--color-body)">Kısa bir not bırak, nerede takıldığını sor.</p>
+      <!-- Full-width on a phone: it is the row's only action and a 36px inline button on the
+           right edge is a thumb miss. 44px floor. -->
+      <button class="btn-quiet" type="button" style="width: 100%; margin-top: 12px">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        İlgilendim
+      </button>
+    </div>
+
+    <div class="card" style="opacity: 0.82">
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px">
+        <span style="font-size: 15px; font-weight: 700; color: var(--color-main)">Cem Demir</span>
+        <span class="calm">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+          Yolunda
+        </span>
+      </div>
+      <dl style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 16px; margin: 14px 0 0">
+        <div><dt class="label">Son aktiflik</dt><dd class="value" style="margin: 2px 0 0">Bugün</dd></div>
+        <div><dt class="label">7 günlük çalışma</dt><dd class="value num" style="margin: 2px 0 0">320 dk</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <!-- Floating tab pill — app-nav.tsx: inset-x-3, h-60, radius 999, border, surface, shadow.
+       FOUR items, not the two the current filter produces: TAB_ITEMS keeps only `knowledge`
+       and `students` for a coach because Topluluk and Ayarlar are `sidebarOnly`, which leaves
+       a coach on a phone with a two-item pill and no way to their own profile. -->
+  <nav style="position: absolute; inset: auto 12px 12px; z-index: 2; display: flex; align-items: center;
+              height: 60px; padding: 0 6px; border-radius: 999px; border: 1px solid var(--color-border);
+              background: var(--color-surface); box-shadow: var(--shadow-card)">
+    <span style="position: relative; display: grid; place-items: center; flex: 1; height: 44px">
+      <span style="position: absolute; inset: 0 auto; width: 44px; height: 44px; border-radius: 999px; background: var(--color-btn)"></span>
+      <svg style="position: relative; color: var(--color-btn-label)" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"><path d="M18 21a8 8 0 0 0-12 0"/><circle cx="12" cy="11" r="4"/><circle cx="12" cy="12" r="10"/></svg>
+    </span>
+    <span style="display: grid; place-items: center; flex: 1; height: 44px; color: var(--color-secondary)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M6 9h4v4H6z"/><path d="M14 10h4M14 14h4"/></svg>
+    </span>
+    <span style="display: grid; place-items: center; flex: 1; height: 44px; color: var(--color-secondary)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </span>
+    <span style="display: grid; place-items: center; flex: 1; height: 44px; color: var(--color-secondary)">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2"/></svg>
+    </span>
+  </nav>
+</div>
+</x-dc>
+</body>
+</html>
