@@ -2,6 +2,14 @@ import { Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
+import {
+  deletePendingMentorshipGroup as deletePendingMentorshipGroupRows,
+  deletePendingMentorshipTask as deletePendingMentorshipTaskRow,
+  listOwnedCoachTasks,
+  updatePendingMentorshipGroup as updatePendingMentorshipGroupRows,
+  updatePendingMentorshipTask as updatePendingMentorshipTaskRow,
+  type MentorshipTaskScope,
+} from "./plan-task-mentorship.repository";
 
 export type PlanTaskRow = typeof planTasks.$inferSelect;
 export type NewPlanTask = typeof planTasks.$inferInsert;
@@ -189,6 +197,16 @@ export class PlanTaskRepository {
       .orderBy(asc(planTasks.taskDate), ...withinDayOrder);
   }
 
+  /** Coach's own calendar rows for the W8 aggregate. No student data enters this query. */
+  listOwnedForCoach(
+    tx: DatabaseTx,
+    coachId: string,
+    from: string,
+    to: string,
+  ): Promise<PlanTaskRow[]> {
+    return listOwnedCoachTasks(tx, coachId, from, to);
+  }
+
   async create(tx: DatabaseTx, data: NewPlanTask): Promise<PlanTaskRow> {
     const rows = await tx.insert(planTasks).values(data).returning();
     return rows[0]!;
@@ -259,12 +277,51 @@ export class PlanTaskRepository {
     return rows[0];
   }
 
+  async updatePendingMentorshipTask(
+    tx: DatabaseTx,
+    scope: MentorshipTaskScope,
+    id: string,
+    patch: Partial<NewPlanTask>,
+  ): Promise<PlanTaskRow | undefined> {
+    return updatePendingMentorshipTaskRow(tx, scope, id, patch);
+  }
+
+  async updatePendingMentorshipGroup(
+    tx: DatabaseTx,
+    scopes: MentorshipTaskScope[],
+    assignmentGroupId: string,
+    patch: Partial<NewPlanTask>,
+  ): Promise<PlanTaskRow[]> {
+    return updatePendingMentorshipGroupRows(
+      tx,
+      scopes,
+      assignmentGroupId,
+      patch,
+    );
+  }
+
   async delete(tx: DatabaseTx, userId: string, id: string): Promise<boolean> {
     const rows = await tx
       .delete(planTasks)
       .where(and(eq(planTasks.id, id), eq(planTasks.userId, userId)))
       .returning({ id: planTasks.id });
     return rows.length > 0;
+  }
+
+  async deletePendingMentorshipTask(
+    tx: DatabaseTx,
+    scope: MentorshipTaskScope,
+    id: string,
+  ): Promise<PlanTaskRow | undefined> {
+    return deletePendingMentorshipTaskRow(tx, scope, id);
+  }
+
+  async deletePendingMentorshipGroup(
+    tx: DatabaseTx,
+    scopes: MentorshipTaskScope[],
+    assignmentGroupId: string,
+  ): Promise<PlanTaskRow[]> {
+    return deletePendingMentorshipGroupRows(tx, scopes, assignmentGroupId);
   }
 
   /**

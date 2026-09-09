@@ -51,12 +51,18 @@ export class PlanTaskFeedbackListener {
           event.userId,
           displayName,
           event.title,
+          event.assignmentGroupId,
         ),
       );
       // Notify first, log second. Both can fail, and the timely signal is the half worth
       // protecting: a coach who hears nothing cannot intervene, while a missing history row only
       // costs them the retrospective. The log is what makes the report stop lying by omission.
-      await this.dropped.record(link.id, event.title, event.taskDate);
+      await this.dropped.record(
+        link.id,
+        event.title,
+        event.taskDate,
+        event.assignmentGroupId,
+      );
     });
   }
 

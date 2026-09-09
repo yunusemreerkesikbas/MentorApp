@@ -1,8 +1,12 @@
 import { z } from "zod";
 import {
+  cancelPlanEventSchema,
+  createPlanEventSchema,
+  isoDateSchema,
   planTaskFieldsSchema,
   refinePlanTaskTaxonomy,
   refinePlanTaskTimes,
+  updatePlanEventSchema,
 } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
 
@@ -130,6 +134,100 @@ export const createMentorshipBatchAssignmentSchema = z
 export type CreateMentorshipBatchAssignmentInput = z.infer<
   typeof createMentorshipBatchAssignmentSchema
 >;
+
+const mentorshipStudentIdsSchema = z
+  .array(z.string().uuid())
+  .min(1)
+  .max(MENTORSHIP_BATCH_ASSIGNMENT_MAX_STUDENTS)
+  .refine((studentIds) => new Set(studentIds).size === studentIds.length, {
+    message: "duplicate_student_id",
+  });
+
+const mentorshipAssignmentUpdateFieldsSchema = planTaskFieldsSchema
+  .omit({ description: true, sortOrder: true })
+  .partial()
+  .extend({
+    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+  });
+
+/** Coach edits may change wording/schedule only; status, origin and group id are absent. */
+export const updateMentorshipAssignmentSchema =
+  mentorshipAssignmentUpdateFieldsSchema
+    .strict()
+    .superRefine(refinePlanTaskTimes)
+    .superRefine(refinePlanTaskTaxonomy)
+    .refine((value) => Object.keys(value).length > 0, { message: "empty" });
+export type UpdateMentorshipAssignmentInput = z.infer<
+  typeof updateMentorshipAssignmentSchema
+>;
+
+export const updateMentorshipAssignmentGroupSchema =
+  mentorshipAssignmentUpdateFieldsSchema
+    .extend({ studentIds: mentorshipStudentIdsSchema })
+    .strict()
+    .superRefine(refinePlanTaskTimes)
+    .superRefine(refinePlanTaskTaxonomy);
+export type UpdateMentorshipAssignmentGroupInput = z.infer<
+  typeof updateMentorshipAssignmentGroupSchema
+>;
+
+export const removeMentorshipAssignmentGroupSchema = z
+  .object({ studentIds: mentorshipStudentIdsSchema })
+  .strict();
+export type RemoveMentorshipAssignmentGroupInput = z.infer<
+  typeof removeMentorshipAssignmentGroupSchema
+>;
+
+export const mentorshipAssignmentParamSchema = mentorshipStudentParamSchema.extend({
+  assignmentId: z.string().uuid(),
+});
+export const mentorshipAssignmentGroupParamSchema = z.object({
+  assignmentGroupId: z.string().uuid(),
+});
+export const mentorshipEventParamSchema = z.object({
+  eventId: z.string().uuid(),
+});
+
+/** Coach calendar range; pagination is applied after W8 groups tasks and merges events. */
+export const listMentorshipPlanQuerySchema = paginationQuerySchema
+  .extend({
+    from: isoDateSchema.optional(),
+    to: isoDateSchema.optional(),
+    studentId: z.string().uuid().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.from === undefined) !== (value.to === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "from_to_pair",
+        path: value.from ? ["to"] : ["from"],
+      });
+      return;
+    }
+    if (value.from && value.to && value.from > value.to) {
+      ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+      return;
+    }
+    if (value.from && value.to) {
+      const days =
+        Math.floor(
+          (new Date(`${value.to}T12:00:00Z`).getTime() -
+            new Date(`${value.from}T12:00:00Z`).getTime()) /
+            86_400_000,
+        ) + 1;
+      if (days > 62) {
+        ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+      }
+    }
+  });
+export type ListMentorshipPlanQuery = z.infer<
+  typeof listMentorshipPlanQuerySchema
+>;
+
+/** W8 reuses W2 event payloads but owns the role/link authorization boundary. */
+export const createMentorshipEventSchema = createPlanEventSchema;
+export const updateMentorshipEventSchema = updatePlanEventSchema;
+export const cancelMentorshipEventSchema = cancelPlanEventSchema;
 
 /** How many templates one coach may keep. Anti-abuse, not a business quota — hence a constant. */
 export const MENTORSHIP_TEMPLATE_MAX = 20;

@@ -17,6 +17,7 @@ import {
   hydratePlanEvents,
   findParticipantPlanEvents,
   listCoachPlanEvents,
+  listOwnedCoachPlanEvents,
   listFutureSeriesPlanEvents,
   listParticipantPlanEvents,
   removeFuturePlanEventAttendee,
@@ -265,6 +266,15 @@ export class PlanEventRepository {
       from,
       to,
     );
+  }
+
+  listOwnedForCoach(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    from: string,
+    to: string,
+  ): Promise<PlanEventRecord[]> {
+    return listOwnedCoachPlanEvents(tx, organizerUserId, from, to);
   }
 
   async removeFutureAttendee(

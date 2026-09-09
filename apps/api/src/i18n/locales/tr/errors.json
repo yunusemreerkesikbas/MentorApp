@@ -149,5 +149,7 @@
   "MENTORSHIP_CONTACT_NOT_ALLOWED": "Profilinde iletişim bilgisi paylaşamazsın. Telefon, e-posta, IBAN veya sosyal medya hesabını çıkarıp yeniden dene.",
   "MENTORSHIP_EMAIL_NOT_VERIFIED": "Davet kodun e-postanı doğruladıktan sonra açılıyor. Kutuna gelen bağlantıya dokunman yeterli.",
   "MENTORSHIP_COACH_NOT_ACTIVE": "Koç hesabın şu anda açık değil, o yüzden davet kodu üretemiyorsun.",
-  "MENTORSHIP_COACH_SUSPENDED": "Koç hesabın durduruldu. Yeniden kaydolarak açılmıyor, bizimle iletişime geçebilirsin."
+  "MENTORSHIP_COACH_SUSPENDED": "Koç hesabın durduruldu. Yeniden kaydolarak açılmıyor, bizimle iletişime geçebilirsin.",
+  "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "Bu ödev artık beklemede değil ya da bu bağlantıya ait değil.",
+  "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez."
 }

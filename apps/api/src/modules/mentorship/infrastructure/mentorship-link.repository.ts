@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, or, sql } from "drizzle-orm";
 import type { MentorshipRiskFlagId } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -117,6 +117,22 @@ export class MentorshipLinkRepository {
         .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
       return rows.map((row) => row.id);
     });
+  }
+
+  /** Internal W8 plan scope. Bounded by the configured active-student quota. */
+  listActiveByCoach(coachId: string): Promise<MentorshipLinkRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(coachStudents)
+        .where(
+          and(
+            eq(coachStudents.coachId, coachId),
+            eq(coachStudents.status, "ACTIVE"),
+          ),
+        )
+        .orderBy(asc(coachStudents.studentId)),
+    );
   }
 
   /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */

@@ -3,7 +3,7 @@ import { RequestMethod } from "@nestjs/common";
 import { UserRole } from "@mentor/types";
 import { ROLES_KEY } from "../../../common/auth/roles.decorator";
 import { PlanEventController } from "../../coaching/presentation/plan-event.controller";
-import { MentorshipCoachController } from "./mentorship-coach.controller";
+import { MentorshipPlanController } from "./mentorship-plan.controller";
 
 function routeMetadata(
   controller: object,
@@ -39,10 +39,10 @@ describe("coach plan route authorization boundary", () => {
   });
 
   it("places every new mutation behind the COACH mentorship controller", () => {
-    expect(Reflect.getMetadata(ROLES_KEY, MentorshipCoachController)).toEqual([
+    expect(Reflect.getMetadata(ROLES_KEY, MentorshipPlanController)).toEqual([
       UserRole.COACH,
     ]);
-    const prototype = MentorshipCoachController.prototype;
+    const prototype = MentorshipPlanController.prototype;
     expect(routeMetadata(prototype, "listPlan")).toEqual({
       path: "plan",
       method: RequestMethod.GET,

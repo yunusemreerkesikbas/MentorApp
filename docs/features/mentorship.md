@@ -1338,6 +1338,20 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
 
 ## Gotchas / Known issues
 
+- **2026-09-09 — APP-091 W8 koç planı orkestrasyonu.** Koç takvimi artık kendi görevlerini,
+  aktif bağlantılar üzerinden verdiği ödevleri ve düzenlediği etkinlikleri tek, gruplama sonrası
+  sayfalanan `GET /v1/mentorship/plan` yanıtında birleştiriyor. Çoklu ödev tek SERVICE
+  transaction'ında, tek `assignmentGroupId` ile ve öğrenci kilitleri sıralı alınarak yazılıyor;
+  tekli/grup düzenleme ve silme yalnız koçun yazdığı PENDING satırlara dokunuyor. Etkinlik
+  katılımcıları her create/update öncesi `requireActiveLink` ile doğrulanıyor; bağlantı biterken
+  gelecekteki katılımcı satırları ilişki ENDED yapılmadan kaldırılıyor. Koç görünümü öğrencinin
+  açıklamasını taşımaz; tam katılımcı kimlikleri yalnız bu COACH yüzeyindedir, öğrenci
+  `/plan-items` yanıtı count-only kalır. Kullanım: toplu ödev için `POST /mentorship/assignments`,
+  etkinlikler için `/mentorship/events`; grup mutasyonlarında aktif katılımcı `studentIds`
+  listesi gönderilir. Gotcha: grup çağrısı yalnız doğrulanan link kapsamını değiştirir ve DONE
+  satırları korur. İlgili: `mentorship-{assignment,event,plan-orchestration}.service.ts`,
+  `mentorship-plan.controller.ts`, W2 `plan-mentorship.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

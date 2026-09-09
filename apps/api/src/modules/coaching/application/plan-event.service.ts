@@ -47,6 +47,12 @@ export interface CoachPlanAggregate {
   events: PlanEventDto[];
 }
 
+export interface CoachPlanData {
+  personalTasks: PlanTaskDto[];
+  mentorshipTasks: Array<CoachPlanScope & { task: PlanTaskDto }>;
+  events: Array<{ event: PlanEventDto; attendeeIds: string[] }>;
+}
+
 @Injectable()
 export class PlanEventService {
   constructor(
@@ -255,6 +261,58 @@ export class PlanEventService {
           .filter((row) => row.attendeeIds.includes(scope.studentId))
           .map((row) => toPlanEventDto(row)),
       }));
+    });
+  }
+
+  /**
+   * W8-only aggregate seam. Raw attendee ids stay server-side and are reduced to the active-link
+   * allowlist before leaving W2; student/public DTOs remain count-only.
+   */
+  async listCoachPlanData(
+    organizerUserId: string,
+    scopes: CoachPlanScope[],
+    range: { from: string; to: string },
+  ): Promise<CoachPlanData> {
+    return withServiceContext(this.db, async (tx) => {
+      const [personalRows, taskRows, eventRows] = await Promise.all([
+        this.tasks.listOwnedForCoach(
+          tx,
+          organizerUserId,
+          range.from,
+          range.to,
+        ),
+        this.tasks.listMentorshipTasksForCoach(
+          tx,
+          scopes,
+          range.from,
+          range.to,
+        ),
+        this.repository.listOwnedForCoach(
+          tx,
+          organizerUserId,
+          range.from,
+          range.to,
+        ),
+      ]);
+      const allowedStudents = new Set(scopes.map((scope) => scope.studentId));
+      return {
+        personalTasks: personalRows.map(toPlanTaskDto),
+        mentorshipTasks: taskRows.flatMap((row) => {
+          const scope = scopes.find(
+            (candidate) =>
+              candidate.studentId === row.userId &&
+              candidate.mentorshipLinkId === row.originRefId,
+          );
+          return scope ? [{ ...scope, task: toPlanTaskDto(row) }] : [];
+        }),
+        events: eventRows.flatMap((row) => {
+          const attendeeIds = row.attendeeIds.filter((id) =>
+            allowedStudents.has(id),
+          );
+          if (row.attendeeIds.length > 0 && attendeeIds.length === 0) return [];
+          return [{ event: toPlanEventDto(row), attendeeIds }];
+        }),
+      };
     });
   }
 

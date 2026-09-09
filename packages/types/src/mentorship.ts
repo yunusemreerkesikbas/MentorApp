@@ -253,13 +253,17 @@ export interface CoachPlanParticipantDto {
   studentId: string;
   studentDisplayName: string;
   studentUsername: string | null;
+  /** Public URL resolved by identity; storage keys never leave W0. */
+  avatarUrl: string | null;
   taskId: string;
   status: "PENDING" | "DONE";
 }
 
-/** One coach-authored task grouped across every student who received it. */
+/** One task row on the coach calendar; grouped when an atomic assignment copied it to students. */
 export interface CoachPlanGroupedTaskDto {
-  assignmentGroupId: string;
+  /** Group id when multi-student; otherwise the underlying task id. */
+  id: string;
+  assignmentGroupId: string | null;
   taskDate: string;
   title: string;
   subject: string | null;
@@ -269,6 +273,22 @@ export interface CoachPlanGroupedTaskDto {
   coachNote: string | null;
   participants: CoachPlanParticipantDto[];
 }
+
+/** Full event attendee identity is exclusive to the coach-only aggregate. */
+export interface CoachPlanEventAttendeeDto {
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  avatarUrl: string | null;
+}
+
+export type CoachPlanEventDto = import("./coaching.js").PlanEventDto & {
+  attendees: CoachPlanEventAttendeeDto[];
+};
+
+export type CoachPlanItemDto =
+  | { kind: "TASK"; task: CoachPlanGroupedTaskDto }
+  | { kind: "EVENT"; event: CoachPlanEventDto };
 
 /** The single-student report. Numbers, dates, statuses and task headings — never free text. */
 export interface MentorshipStudentReportDto {

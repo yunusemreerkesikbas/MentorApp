@@ -216,6 +216,27 @@ export async function listCoachPlanEvents(
   return hydratePlanEvents(tx, rows);
 }
 
+/** Every event this coach organizes; W8 filters attendee identities to authorized links. */
+export async function listOwnedCoachPlanEvents(
+  tx: DatabaseTx,
+  organizerUserId: string,
+  from: string,
+  to: string,
+): Promise<PlanEventRecord[]> {
+  const rows = await tx
+    .select()
+    .from(planEvents)
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        gte(planEvents.eventDate, from),
+        lte(planEvents.eventDate, to),
+      ),
+    )
+    .orderBy(...eventOrder);
+  return hydratePlanEvents(tx, rows);
+}
+
 export async function removeFuturePlanEventAttendee(
   tx: DatabaseTx,
   organizerUserId: string,

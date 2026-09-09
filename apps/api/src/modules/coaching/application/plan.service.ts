@@ -43,6 +43,15 @@ import {
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository, type PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
+import {
+  createMentorshipBatch as createMentorshipBatchWrite,
+  removeMentorshipTask as removeMentorshipTaskWrite,
+  removeMentorshipTaskGroup as removeMentorshipTaskGroupWrite,
+  updateMentorshipTask as updateMentorshipTaskWrite,
+  updateMentorshipTaskGroup as updateMentorshipTaskGroupWrite,
+  type MentorshipAssignmentUpdate,
+  type MentorshipPlanScope,
+} from "./plan-mentorship";
 
 /**
  * What {@link PlanService.createFromMentorship} accepts: a plan task minus the student's own
@@ -355,6 +364,71 @@ export class PlanService {
     return result;
   }
 
+  /** W8 seam: one SERVICE transaction, one group id, stable student lock order. */
+  async createMentorshipBatch(
+    scopes: MentorshipPlanScope[],
+    input: MentorshipAssignmentInput,
+  ): Promise<PlanTaskDto[]> {
+    const withDate = { ...input, taskDate: input.taskDate ?? todayIso() };
+    this.assertTaskDateMutable(withDate.taskDate);
+    const result = await createMentorshipBatchWrite(
+      this.db,
+      this.tasks,
+      scopes,
+      withDate,
+    );
+    for (const scope of scopes) {
+      this.events.emit(
+        CoachingEventTopic.PLAN_TASK_CREATED,
+        new PlanTaskCreated(scope.studentId),
+      );
+    }
+    return result;
+  }
+
+  async updateMentorshipTask(
+    scope: MentorshipPlanScope,
+    taskId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto> {
+    if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
+    return updateMentorshipTaskWrite(this.db, this.tasks, scope, taskId, input);
+  }
+
+  async updateMentorshipTaskGroup(
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto[]> {
+    if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
+    return updateMentorshipTaskGroupWrite(
+      this.db,
+      this.tasks,
+      scopes,
+      assignmentGroupId,
+      input,
+    );
+  }
+
+  removeMentorshipTask(
+    scope: MentorshipPlanScope,
+    taskId: string,
+  ): Promise<void> {
+    return removeMentorshipTaskWrite(this.db, this.tasks, scope, taskId);
+  }
+
+  removeMentorshipTaskGroup(
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+  ): Promise<void> {
+    return removeMentorshipTaskGroupWrite(
+      this.db,
+      this.tasks,
+      scopes,
+      assignmentGroupId,
+    );
+  }
+
   /**
    * User-confirmed batch add (e.g. an accepted coach draft — the AI itself never writes here,
    * workstreams §2). All-or-nothing: every date is validated first, then one tx writes all rows.
@@ -646,6 +720,7 @@ export class PlanService {
         removed.title,
         removed.originType,
         removed.originRefId,
+        removed.assignmentGroupId,
       ),
     );
   }

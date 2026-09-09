@@ -4264,3 +4264,16 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   0109 before deploying the API/web changes; 0108 belongs to the existing coach-registry work.
   Related: notebook-review.repository.ts, notebook-review.service.ts, notebook-review.controller.ts,
   analysis-review-progress.tsx, notebook-focus-review.tsx, notebook-review-history.e2e-spec.ts.
+
+- **2026-09-09 — APP-091 koç planı W2 servis sınırı.** `PlanService` çok öğrencili bir
+  ödevi tek SERVICE-context transaction'ında yazar, öğrenci plan kilitlerini kararlı sırada alır
+  ve her satırda kendi mentorship link kaynağını korur. Koç mutasyonları yalnız bekleyen,
+  beklenen öğrenci+link+grup kapsamındaki satırlara uygulanır; durum, öğrenci açıklaması, kaynak
+  ve grup kimliği değiştirilemez. `PlanEventService.listCoachPlanData` yalnız W8'in önceden
+  yetkilendirdiği link kapsamını döndürür; herkese açık event DTO'su ve öğrenci `/plan-items`
+  yüzeyi katılımcı sayısından fazlasını göstermez. Eski `/plan-events` POST/PATCH/cancel yolları
+  kaldırıldı; katılımcı okumaları geriye uyumlu kaldı. Kullanım: bu seam'ler yalnız
+  `MentorshipModule` orkestrasyonundan çağrılır. Gotcha: koçun sildiği ödev öğrenci düşürmesi
+  olayı üretmez; öğrencinin mevcut silme akışı `assignmentGroupId` ile audit/event kaydını sürdürür.
+  İlgili: `plan-mentorship.ts`, `plan-task-mentorship.repository.ts`,
+  `plan-event.service.ts`, `plan-event.controller.ts`.

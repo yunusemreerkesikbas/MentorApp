@@ -17,6 +17,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
+import { PlanEventService } from "../../coaching/application/plan-event.service";
 import { toCoachNoteDto } from "../domain/coach-note";
 import {
   MentorshipEventTopic,
@@ -54,6 +55,7 @@ export class MentorshipLinkService {
     private readonly config: ConfigRegistryService,
     private readonly subscriptions: SubscriptionsService,
     private readonly events: EventEmitter2,
+    private readonly planEvents: PlanEventService,
   ) {}
 
   /** Runtime kill-switch (config registry). Every W8 entry point calls this first. */
@@ -92,6 +94,16 @@ export class MentorshipLinkService {
       throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return link;
+  }
+
+  async listActiveScopes(
+    coachId: string,
+  ): Promise<Array<{ studentId: string; mentorshipLinkId: string }>> {
+    const links = await this.links.listActiveByCoach(coachId);
+    return links.map((link) => ({
+      studentId: link.studentId,
+      mentorshipLinkId: link.id,
+    }));
   }
 
   /**
@@ -285,6 +297,9 @@ export class MentorshipLinkService {
   }
 
   private async endLink(link: MentorshipLinkRow, actorId: string): Promise<void> {
+    // Consent visibility closes before the relation. If cleanup fails, the link remains active
+    // and retryable instead of leaving future events visible behind an ENDED consent row.
+    await this.planEvents.removeFutureAttendee(link.coachId, link.studentId);
     const ended = await this.links.end(link.id, actorId);
     if (!ended) return; // already ENDED - idempotent
     const actor = await this.findPerson(actorId);

@@ -94,6 +94,7 @@ export class PlanTaskDeleted {
     readonly title: string,
     readonly originType: string | null,
     readonly originRefId: string | null,
+    readonly assignmentGroupId: string | null = null,
   ) {}
 }
 
