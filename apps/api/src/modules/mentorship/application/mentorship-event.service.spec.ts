@@ -171,7 +171,7 @@ describe("MentorshipEventService", () => {
   });
 
   it("validates replacement attendees on update and delegates OCCURRENCE/SERIES semantics", async () => {
-    const { service, links, planEvents } = setup();
+    const { service, planEvents } = setup();
 
     await service.update(COACH, EVENT, {
       scope: "SERIES",
