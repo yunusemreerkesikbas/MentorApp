@@ -30,74 +30,97 @@ export function CoachPlanMonth({
   const locale = useLocale();
   const t = useTranslations("coachPlan");
   const selectedItems = itemsForCoachPlanDay(items, selectedDate);
+  const weeks = Array.from({ length: 6 }, (_, index) =>
+    days.slice(index * 7, index * 7 + 7),
+  );
 
   return (
     <div className="flex flex-col gap-5">
       <div className="overflow-x-auto rounded-[var(--radius-card)] border"
         style={{ borderColor: "var(--color-border)" }}>
-        <div className="grid min-w-3xl grid-cols-7">
-          {coachPlanWeekdayLabels(locale).map((label) => (
-            <div
-              key={label}
-              className="border-b border-r px-2 py-3 text-center text-xs font-semibold capitalize"
-              style={{
-                backgroundColor: "var(--color-surface-container)",
-                borderColor: "var(--color-border)",
-                color: "var(--color-secondary)",
-              }}
-            >
-              {label}
-            </div>
-          ))}
-          {days.map((day) => {
-            const dayItems = itemsForCoachPlanDay(items, day);
-            const taskCount = dayItems.filter((item) => item.kind === "TASK").length;
-            const eventCount = dayItems.length - taskCount;
-            const avatars = uniqueStudentAvatars(dayItems, 3);
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => onSelectDate(day)}
-                aria-pressed={selectedDate === day}
-                aria-label={t("open_day", {
-                  date: formatDay(day, locale, "long"),
-                  count: dayItems.length,
+        <table className="w-full min-w-3xl table-fixed border-collapse">
+          <caption className="sr-only">{t("month_board")}</caption>
+          <thead>
+            <tr>
+              {coachPlanWeekdayLabels(locale).map((label) => (
+                <th
+                  key={label}
+                  scope="col"
+                  className="border-b border-r px-2 py-3 text-center text-xs font-semibold capitalize"
+                  style={{
+                    backgroundColor: "var(--color-surface-container)",
+                    borderColor: "var(--color-border)",
+                    color: "var(--color-secondary)",
+                  }}
+                >
+                  {label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {weeks.map((week) => (
+              <tr key={week[0]}>
+                {week.map((day) => {
+                  const dayItems = itemsForCoachPlanDay(items, day!);
+                  const taskCount = dayItems.filter((item) => item.kind === "TASK").length;
+                  const eventCount = dayItems.length - taskCount;
+                  const avatars = uniqueStudentAvatars(dayItems, 3);
+                  return (
+                    <td
+                      key={day}
+                      className="border-b border-r align-top"
+                      style={{
+                        borderColor: "var(--color-border)",
+                        opacity: day!.startsWith(month) ? 1 : 0.64,
+                      }}
+                    >
+                      <button
+                        type="button"
+                        onClick={() => onSelectDate(day!)}
+                        aria-pressed={selectedDate === day}
+                        aria-label={t("open_day", {
+                          date: formatDay(day!, locale, "long"),
+                          count: dayItems.length,
+                        })}
+                        className="flex min-h-32 w-full flex-col gap-2 p-2 text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                        style={{
+                          backgroundColor: selectedDate === day
+                            ? "var(--color-accent-soft)"
+                            : "var(--color-surface)",
+                        }}
+                      >
+                        <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+                          {formatDay(day!, locale, "numeric")}
+                        </span>
+                        {dayItems.length > 0 ? (
+                          <>
+                            <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                              {taskCount > 0 && t("task_count", { count: taskCount })}
+                              {taskCount > 0 && eventCount > 0 ? " · " : ""}
+                              {eventCount > 0 && t("event_count", { count: eventCount })}
+                            </span>
+                            <CoachPlanAvatarStack
+                              people={avatars.students}
+                              overflow={avatars.overflow}
+                              label={t("participants_named", {
+                                names: avatars.allNames.join(", "),
+                              })}
+                            />
+                          </>
+                        ) : (
+                          <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
+                            {t("day_empty_short")}
+                          </span>
+                        )}
+                      </button>
+                    </td>
+                  );
                 })}
-                className="flex min-h-32 flex-col gap-2 border-b border-r p-2 text-left focus-visible:z-10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                style={{
-                  backgroundColor: selectedDate === day
-                    ? "var(--color-accent-soft)"
-                    : "var(--color-surface)",
-                  borderColor: "var(--color-border)",
-                  opacity: day.startsWith(month) ? 1 : 0.64,
-                }}
-              >
-                <span className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-                  {formatDay(day, locale, "numeric")}
-                </span>
-                {dayItems.length > 0 ? (
-                  <>
-                    <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-                      {taskCount > 0 && t("task_count", { count: taskCount })}
-                      {taskCount > 0 && eventCount > 0 ? " · " : ""}
-                      {eventCount > 0 && t("event_count", { count: eventCount })}
-                    </span>
-                    <CoachPlanAvatarStack
-                      people={avatars.students}
-                      overflow={avatars.overflow}
-                      label={t("participant_count", { count: avatars.total })}
-                    />
-                  </>
-                ) : (
-                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-                    {t("day_empty_short")}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </div>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
 
       <section aria-labelledby="coach-plan-selected-day">

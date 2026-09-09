@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import type { CoachPlanItemDto } from "@mentor/types";
 import {
+  coachPlanQueryKey,
   coachPlanQueryTransition,
   coachPlanRange,
   coachPlanWeekdayLabels,
@@ -132,6 +133,7 @@ describe("coach plan day summaries", () => {
       students: [ayse, bora, can],
       overflow: 1,
       total: 4,
+      allNames: ["Ayşe", "Bora", "Can", "Deniz"],
     });
   });
 
@@ -145,6 +147,7 @@ describe("coach plan day summaries", () => {
       students: [],
       overflow: 0,
       total: 0,
+      allNames: [],
     });
   });
 
@@ -153,7 +156,10 @@ describe("coach plan day summaries", () => {
     if (redacted.kind === "EVENT") redacted.event.attendeeCount = 2;
 
     expect(isCoachPlanItemShared(redacted)).toBe(true);
-    expect(uniqueStudentAvatars([redacted], 3).total).toBe(0);
+    expect(uniqueStudentAvatars([redacted], 3)).toMatchObject({
+      total: 0,
+      allNames: [],
+    });
   });
 });
 
@@ -189,6 +195,17 @@ describe("coachPlanQueryTransition", () => {
 
   it("rejects an invalid transition date", () => {
     expect(coachPlanQueryTransition({ date: "2026-09-31", event: "event" })).toBeNull();
+  });
+
+  it("keeps the query key stable until date or event actually changes", () => {
+    const query = { date: "2026-09-10", event: "first" };
+    expect(coachPlanQueryKey(query)).toBe(coachPlanQueryKey({ ...query }));
+    expect(coachPlanQueryKey({ ...query, date: "2026-09-11" })).not.toBe(
+      coachPlanQueryKey(query),
+    );
+    expect(coachPlanQueryKey({ ...query, event: "second" })).not.toBe(
+      coachPlanQueryKey(query),
+    );
   });
 });
 

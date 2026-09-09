@@ -78,7 +78,12 @@ export function itemsForCoachPlanDay(
 export function uniqueStudentAvatars(
   items: readonly CoachPlanItemDto[],
   limit: number,
-): { students: CoachPlanAvatar[]; overflow: number; total: number } {
+): {
+  students: CoachPlanAvatar[];
+  overflow: number;
+  total: number;
+  allNames: string[];
+} {
   const students = new Map<string, CoachPlanAvatar>();
   for (const item of items) {
     const people = item.kind === "TASK" ? item.task.participants : item.event.attendees;
@@ -97,6 +102,7 @@ export function uniqueStudentAvatars(
     students: all.slice(0, limit),
     overflow: Math.max(0, all.length - limit),
     total: all.length,
+    allNames: all.map((student) => student.studentDisplayName),
   };
 }
 
@@ -116,6 +122,13 @@ export function coachPlanQueryTransition(query: {
     selectedDate: query.date,
     eventId: query.event?.trim() || null,
   };
+}
+
+export function coachPlanQueryKey(query: {
+  date: string | null;
+  event: string | null;
+}): string {
+  return JSON.stringify([query.date, query.event?.trim() || null]);
 }
 
 export function coachPlanWeekdayLabels(

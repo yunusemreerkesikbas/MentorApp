@@ -145,7 +145,7 @@ export function CoachPlanCalendarShell({
             variant="secondary"
             onClick={() => {
               if (rosterError) onRetryRoster();
-              setReloadKey((value) => value + 1);
+              if (planError) setReloadKey((value) => value + 1);
             }}
           >
             {t("retry")}

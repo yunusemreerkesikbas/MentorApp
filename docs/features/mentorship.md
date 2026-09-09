@@ -1400,7 +1400,9 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   calendar date. Historical events remain shared from `attendeeCount` even when no active identity
   can be shown. Month headings are visibly Monday-first, avatar overflow announces the total, and
   an opened read-only detail receives focus without trapping it. Role planners are separate dynamic
-  chunks. Related: `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
+  chunks. The month board uses native table headers/cells and names every unique overflow student
+  to assistive technology; retry restarts only the resource that failed. Related:
+  `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
   `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
 
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made

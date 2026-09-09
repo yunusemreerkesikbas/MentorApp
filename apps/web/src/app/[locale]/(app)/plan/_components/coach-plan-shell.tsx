@@ -3,7 +3,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import type { MentorshipRosterRowDto } from "@mentor/types";
-import { coachPlanQueryTransition } from "@/lib/coach-plan-calendar";
+import {
+  coachPlanQueryKey,
+  coachPlanQueryTransition,
+} from "@/lib/coach-plan-calendar";
 import { todayInIstanbul } from "@/lib/date-time";
 import { fetchActiveRoster } from "@/lib/mentorship";
 import { CoachPlanCalendarShell } from "./coach-plan-calendar-shell";
@@ -13,13 +16,14 @@ type RosterStatus = "loading" | "ready" | "error";
 /** Keeps roster lifecycle stable while query-keyed calendar state follows same-route deep links. */
 export function CoachPlanShell() {
   const searchParams = useSearchParams();
-  const transition = coachPlanQueryTransition({
+  const query = {
     date: searchParams.get("date"),
     event: searchParams.get("event"),
-  });
+  };
+  const transition = coachPlanQueryTransition(query);
   const initialDate = transition?.selectedDate ?? todayInIstanbul();
   const initialEventId = transition?.eventId ?? null;
-  const queryKey = `${searchParams.get("date") ?? ""}:${searchParams.get("event") ?? ""}`;
+  const queryKey = coachPlanQueryKey(query);
   const [roster, setRoster] = useState<MentorshipRosterRowDto[]>([]);
   const [rosterStatus, setRosterStatus] = useState<RosterStatus>("loading");
   const [rosterReload, setRosterReload] = useState(0);

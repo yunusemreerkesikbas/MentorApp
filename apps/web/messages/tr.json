@@ -1170,7 +1170,7 @@
     "personal": "Kişisel",
     "shared": "Paylaşılan",
     "participants_named": "Katılımcılar: {names}",
-    "participant_count": "{count} öğrenci",
+    "month_board": "Aylık koç planı takvimi",
     "day_empty": "Bu gün için plan yok.",
     "task_count": "{count} görev",
     "event_count": "{count} etkinlik",
