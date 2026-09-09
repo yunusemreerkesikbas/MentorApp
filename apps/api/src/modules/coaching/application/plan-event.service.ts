@@ -122,14 +122,21 @@ export class PlanEventService {
           attendeeIds,
           series,
         );
-        return { rows, series };
+        const occurrences = await this.repository.findOwnedByIds(
+          tx,
+          organizerUserId,
+          rows.map((row) => row.id),
+        );
+        return { rows, occurrences, series };
       },
     );
     this.events.emit(
       CoachingEventTopic.PLAN_EVENT_CREATED,
       new PlanEventCreated(
         organizerUserId,
-        result.rows.map((row) => this.toEventPayload(row, attendeeIds)),
+        result.occurrences.map((row) =>
+          this.toEventPayload(row, row.attendeeIds),
+        ),
       ),
     );
     return toPlanEventDto(result.rows[0]!, {

@@ -75,6 +75,11 @@ describe("PlanEventService create and read", () => {
       expect.objectContaining({ eventDate: "2026-09-23" }),
     ]);
     expect(repository.addAttendees.mock.calls[0]?.[1]).toHaveLength(6);
+    expect(repository.findOwnedByIds).toHaveBeenCalledWith(
+      expect.anything(),
+      ORGANIZER,
+      repository.rows.map((row) => row.id),
+    );
     expect(emitter.emit).toHaveBeenCalledWith(
       "coaching.plan-event.created",
       expect.objectContaining({

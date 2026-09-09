@@ -243,18 +243,21 @@ async function regenerateSeries(
     attendeeIds,
     series,
   );
-  const row = rows.find((candidate) => candidate.eventDate === startsOn) ?? rows[0];
+  const occurrences = await repository.findOwnedByIds(
+    tx,
+    organizerUserId,
+    rows.map((row) => row.id),
+  );
+  const row =
+    occurrences.find((candidate) => candidate.eventDate === startsOn) ??
+    occurrences[0];
   if (!row) notFound();
   return {
     dto: toPlanEventDto(row!, {
       attendeeCount: attendeeIds.length,
       series,
     }),
-    occurrences: rows.map((created) => ({
-      ...created,
-      attendeeIds,
-      series,
-    })),
+    occurrences,
   };
 }
 

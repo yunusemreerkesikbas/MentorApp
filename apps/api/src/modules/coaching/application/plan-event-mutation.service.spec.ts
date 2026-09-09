@@ -149,6 +149,15 @@ describe("PlanEventService mutation", () => {
       seriesId,
       expect.objectContaining({ startsOn: "2025-01-31" }),
     );
+    expect(repository.findOwnedByIds).toHaveBeenCalledWith(
+      expect.anything(),
+      ORGANIZER,
+      expect.arrayContaining(
+        repository.rows
+          .filter((row) => row.eventDate >= "2025-02-28")
+          .map((row) => row.id),
+      ),
+    );
     expect(repository.rows).toContain(past);
   });
 
