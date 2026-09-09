@@ -57,7 +57,7 @@ function setup(initial: Row[] = [], failStudentId?: string) {
   const rows = [...initial];
   const lockOrder: string[] = [];
   const db = {
-    transaction: async <T>(callback: (tx: unknown) => Promise<T>): Promise<T> => {
+    transaction: vi.fn(async <T>(callback: (tx: unknown) => Promise<T>): Promise<T> => {
       const snapshot = rows.map((item) => ({ ...item }));
       try {
         return await callback({ execute: vi.fn() });
@@ -65,7 +65,7 @@ function setup(initial: Row[] = [], failStudentId?: string) {
         rows.splice(0, rows.length, ...snapshot);
         throw error;
       }
-    },
+    }),
   };
   const tasks = {
     acquireUserLock: vi.fn(async (_tx, studentId: string) => {
@@ -168,7 +168,7 @@ function setup(initial: Row[] = [], failStudentId?: string) {
     { upsertTasksDone: vi.fn() } as never,
     { emit: vi.fn() } as never,
   );
-  return { service, tasks, rows, lockOrder };
+  return { service, tasks, rows, lockOrder, db };
 }
 
 describe("PlanService W8 assignment seams", () => {
@@ -282,5 +282,72 @@ describe("PlanService W8 assignment seams", () => {
 
     await service.removeMentorshipTaskGroup(scopes, GROUP);
     expect(rows.map((item) => item.id).sort()).toEqual(["done", "outsider"]);
+  });
+
+  it("uses the caller transaction for batch, single, and group mentorship mutations", async () => {
+    const pendingA = row({ id: "a" });
+    const pendingB = row({ id: "b", userId: STUDENT_B, originRefId: LINK_B });
+    const { service, tasks, db } = setup([pendingA, pendingB]);
+    const tx = { execute: vi.fn() };
+    const scopes = [
+      { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+      { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
+    ];
+
+    await service.createMentorshipBatchInTransaction(
+      tx as never,
+      scopes,
+      { title: "Yeni", taskDate: TODAY },
+    );
+    await service.updateMentorshipTaskInTransaction(
+      tx as never,
+      scopes[0]!,
+      pendingA.id,
+      { title: "Tekli" },
+    );
+    await service.updateMentorshipTaskGroupInTransaction(
+      tx as never,
+      scopes,
+      GROUP,
+      { title: "Grup" },
+    );
+    await service.removeMentorshipTaskInTransaction(
+      tx as never,
+      scopes[0]!,
+      pendingA.id,
+    );
+    await service.removeMentorshipTaskGroupInTransaction(
+      tx as never,
+      scopes,
+      GROUP,
+    );
+
+    expect(db.transaction).not.toHaveBeenCalled();
+    expect(tasks.create).toHaveBeenCalledWith(
+      tx,
+      expect.objectContaining({ originRefId: LINK_A }),
+    );
+    expect(tasks.updatePendingMentorshipTask).toHaveBeenCalledWith(
+      tx,
+      scopes[0],
+      pendingA.id,
+      expect.any(Object),
+    );
+    expect(tasks.updatePendingMentorshipGroup).toHaveBeenCalledWith(
+      tx,
+      scopes,
+      GROUP,
+      expect.any(Object),
+    );
+    expect(tasks.deletePendingMentorshipTask).toHaveBeenCalledWith(
+      tx,
+      scopes[0],
+      pendingA.id,
+    );
+    expect(tasks.deletePendingMentorshipGroup).toHaveBeenCalledWith(
+      tx,
+      scopes,
+      GROUP,
+    );
   });
 });

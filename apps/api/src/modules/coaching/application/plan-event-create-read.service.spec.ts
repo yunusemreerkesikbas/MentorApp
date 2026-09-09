@@ -124,4 +124,24 @@ describe("PlanEventService create and read", () => {
     });
     expect(page.items[0]).not.toHaveProperty("attendeeIds");
   });
+
+  it("creates through the caller transaction and publishes only when asked", async () => {
+    const { service, repository, emitter } = makeService([]);
+    const tx = { execute: vi.fn() };
+    const result = await service.createInTransaction(tx as never, ORGANIZER, {
+      title: "Birebir",
+      eventDate: "2026-09-10",
+      attendeeIds: [STUDENT_A],
+    });
+    expect(repository.createOccurrences).toHaveBeenCalledWith(
+      tx,
+      expect.any(Array),
+    );
+    expect(emitter.emit).not.toHaveBeenCalled();
+    service.publishCreated(ORGANIZER, result);
+    expect(emitter.emit).toHaveBeenCalledWith(
+      CoachingEventTopic.PLAN_EVENT_CREATED,
+      expect.any(Object),
+    );
+  });
 });

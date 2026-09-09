@@ -5,6 +5,8 @@ const COACH = "00000000-0000-4000-8000-000000000001";
 const STUDENT_A = "00000000-0000-4000-8000-000000000002";
 const STUDENT_B = "00000000-0000-4000-8000-000000000003";
 const EVENT = "00000000-0000-4000-8000-000000000010";
+const REPLACEMENT = "00000000-0000-4000-8000-000000000011";
+const TX = { execute: vi.fn() };
 
 function setup(rejectStudent?: string) {
   const links = {
@@ -17,11 +19,38 @@ function setup(rejectStudent?: string) {
       if (studentId === rejectStudent) throw new Error("inactive link");
       return { id: `link:${studentId}`, studentId };
     }),
+    withActiveLinksLocked: vi.fn(
+      async (
+        _coachId: string,
+        requested:
+          | string[]
+          | ((tx: unknown) => Promise<string[]>),
+        callback: (tx: unknown) => Promise<unknown>,
+      ) => {
+        const studentIds =
+          typeof requested === "function" ? await requested(TX) : requested;
+        if (studentIds.includes(rejectStudent ?? "")) {
+          throw new Error("inactive link");
+        }
+        return callback(TX);
+      },
+    ),
   };
   const planEvents = {
     create: vi.fn(async (_coachId, input) => ({ id: EVENT, ...input })),
     update: vi.fn(async (_coachId, _eventId, input) => ({ id: EVENT, ...input })),
     cancel: vi.fn(),
+    createInTransaction: vi.fn(async () => ({
+      dto: { id: EVENT },
+      occurrences: [],
+    })),
+    updateInTransaction: vi.fn(async () => ({
+      dto: { id: REPLACEMENT },
+      occurrences: [],
+    })),
+    listEventAttendeeIdsInTransaction: vi.fn(async () => [STUDENT_A]),
+    publishCreated: vi.fn(),
+    publishUpdated: vi.fn(),
     getCoachEventData: vi.fn(async () => ({
       event: {
         id: EVENT,
@@ -81,8 +110,12 @@ describe("MentorshipEventService", () => {
       }),
     ).rejects.toThrow("inactive link");
 
-    expect(links.requireActiveLink).toHaveBeenCalledTimes(2);
-    expect(planEvents.create).not.toHaveBeenCalled();
+    expect(links.withActiveLinksLocked).toHaveBeenCalledWith(
+      COACH,
+      [STUDENT_A, STUDENT_B],
+      expect.any(Function),
+    );
+    expect(planEvents.createInTransaction).not.toHaveBeenCalled();
   });
 
   it("allows a personal event with no attendees", async () => {
@@ -95,8 +128,11 @@ describe("MentorshipEventService", () => {
     });
 
     expect(links.assertEnabled).toHaveBeenCalledOnce();
-    expect(links.requireActiveLink).not.toHaveBeenCalled();
-    expect(planEvents.create).toHaveBeenCalledOnce();
+    expect(planEvents.createInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      expect.objectContaining({ attendeeIds: [] }),
+    );
   });
 
   it("returns full public attendee identities on the coach-only event DTO", async () => {
@@ -131,7 +167,7 @@ describe("MentorshipEventService", () => {
         attendeeIds: [COACH],
       }),
     ).rejects.toMatchObject({ code: "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE" });
-    expect(planEvents.create).not.toHaveBeenCalled();
+    expect(planEvents.createInTransaction).not.toHaveBeenCalled();
   });
 
   it("validates replacement attendees on update and delegates OCCURRENCE/SERIES semantics", async () => {
@@ -143,13 +179,16 @@ describe("MentorshipEventService", () => {
       attendeeIds: [STUDENT_A, STUDENT_B],
     });
 
-    expect(links.requireActiveLink).toHaveBeenNthCalledWith(1, COACH, STUDENT_A);
-    expect(links.requireActiveLink).toHaveBeenNthCalledWith(2, COACH, STUDENT_B);
-    expect(planEvents.update).toHaveBeenCalledWith(COACH, EVENT, {
-      scope: "SERIES",
-      title: "Yeni görüşme",
-      attendeeIds: [STUDENT_A, STUDENT_B],
-    });
+    expect(planEvents.updateInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      EVENT,
+      {
+        scope: "SERIES",
+        title: "Yeni görüşme",
+        attendeeIds: [STUDENT_A, STUDENT_B],
+      },
+    );
   });
 
   it("cancels only after the mentorship kill switch passes", async () => {
@@ -163,5 +202,37 @@ describe("MentorshipEventService", () => {
     expect(planEvents.cancel).toHaveBeenCalledWith(COACH, EVENT, {
       scope: "OCCURRENCE",
     });
+  });
+
+  it("hydrates the replacement id returned by a regenerated SERIES update", async () => {
+    const { service, planEvents } = setup();
+    await service.update(COACH, EVENT, {
+      scope: "SERIES",
+      eventDate: "2026-09-12",
+      attendeeIds: [STUDENT_A],
+    });
+    expect(planEvents.getCoachEventData).toHaveBeenCalledWith(
+      COACH,
+      REPLACEMENT,
+      expect.any(Array),
+    );
+  });
+
+  it("rejects more than 100 attendees before opening the locked-link transaction", async () => {
+    const { service, links, planEvents } = setup();
+    const attendeeIds = Array.from(
+      { length: 101 },
+      (_, index) =>
+        `00000000-0000-4000-8000-${String(index + 100).padStart(12, "0")}`,
+    );
+    await expect(
+      service.create(COACH, {
+        title: "Kalabalık",
+        eventDate: "2026-09-10",
+        attendeeIds,
+      }),
+    ).rejects.toMatchObject({ code: "MENTORSHIP_EVENT_ATTENDEE_LIMIT" });
+    expect(links.withActiveLinksLocked).not.toHaveBeenCalled();
+    expect(planEvents.createInTransaction).not.toHaveBeenCalled();
   });
 });

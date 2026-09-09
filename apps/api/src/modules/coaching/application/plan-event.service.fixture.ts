@@ -175,6 +175,7 @@ function makeRepository(initial = [eventRow()]) {
       ),
     ),
     listAuthorizedForCoach: vi.fn(async () => rows),
+    listOwnedForCoach: vi.fn(async () => rows),
     removeFutureAttendee: vi.fn(async () => 2),
   };
 }
@@ -184,6 +185,7 @@ export function makeService(initial?: ReturnType<typeof eventRow>[]) {
   const tasks = {
     findByIds: vi.fn(async () => []),
     listMentorshipTasksForCoach: vi.fn(async () => []),
+    listOwnedForCoach: vi.fn(async () => []),
   };
   const emitter = { emit: vi.fn() };
   return {

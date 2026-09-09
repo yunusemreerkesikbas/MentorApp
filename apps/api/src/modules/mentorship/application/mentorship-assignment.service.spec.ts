@@ -9,6 +9,7 @@ const LINK_A = "00000000-0000-4000-8000-000000000012";
 const LINK_B = "00000000-0000-4000-8000-000000000013";
 const TASK = "00000000-0000-4000-8000-000000000020";
 const GROUP = "00000000-0000-4000-8000-000000000021";
+const TX = { execute: vi.fn() };
 
 function setup(rejectStudent?: string) {
   const links = {
@@ -20,6 +21,27 @@ function setup(rejectStudent?: string) {
         studentId,
       };
     }),
+    withActiveLinksLocked: vi.fn(
+      async (
+        _coachId: string,
+        studentIds: string[],
+        callback: (
+          tx: unknown,
+          scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
+        ) => Promise<unknown>,
+      ) => {
+        if (studentIds.includes(rejectStudent ?? "")) {
+          throw new Error("inactive link");
+        }
+        return callback(
+          TX,
+          studentIds.map((studentId) => ({
+            studentId,
+            mentorshipLinkId: studentId === STUDENT_A ? LINK_A : LINK_B,
+          })),
+        );
+      },
+    ),
   };
   const plan = {
     createFromMentorship: vi.fn(async () => []),
@@ -28,6 +50,19 @@ function setup(rejectStudent?: string) {
     removeMentorshipTask: vi.fn(),
     updateMentorshipTaskGroup: vi.fn(async () => []),
     removeMentorshipTaskGroup: vi.fn(),
+    createFromMentorshipInTransaction: vi.fn(async () => [
+      {
+        id: TASK,
+        taskDate: todayIso(),
+        origin: { type: "MENTORSHIP", linkId: LINK_A },
+      },
+    ]),
+    createMentorshipBatchInTransaction: vi.fn(async () => []),
+    updateMentorshipTaskInTransaction: vi.fn(async () => ({ id: TASK })),
+    removeMentorshipTaskInTransaction: vi.fn(),
+    updateMentorshipTaskGroupInTransaction: vi.fn(async () => []),
+    removeMentorshipTaskGroupInTransaction: vi.fn(),
+    publishMentorshipTasksCreated: vi.fn(),
   };
   const service = new MentorshipAssignmentService(
     links as never,
@@ -48,8 +83,13 @@ describe("MentorshipAssignmentService orchestration", () => {
 
     await service.assignBatch(COACH, input);
 
-    expect(links.requireActiveLink).toHaveBeenCalledTimes(2);
-    expect(plan.createMentorshipBatch).toHaveBeenCalledWith(
+    expect(links.withActiveLinksLocked).toHaveBeenCalledWith(
+      COACH,
+      [STUDENT_B, STUDENT_A],
+      expect.any(Function),
+    );
+    expect(plan.createMentorshipBatchInTransaction).toHaveBeenCalledWith(
+      TX,
       [
         { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
         { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
@@ -68,7 +108,7 @@ describe("MentorshipAssignmentService orchestration", () => {
       }),
     ).rejects.toThrow("inactive link");
 
-    expect(plan.createMentorshipBatch).not.toHaveBeenCalled();
+    expect(plan.createMentorshipBatchInTransaction).not.toHaveBeenCalled();
   });
 
   it("validates the whole batch horizon before W2 is called", async () => {
@@ -84,7 +124,7 @@ describe("MentorshipAssignmentService orchestration", () => {
       }),
     ).rejects.toMatchObject({ code: "MENTORSHIP_ASSIGNMENT_TOO_FAR" });
 
-    expect(plan.createMentorshipBatch).not.toHaveBeenCalled();
+    expect(plan.createMentorshipBatchInTransaction).not.toHaveBeenCalled();
   });
 
   it("passes the expected active link into single update and delete", async () => {
@@ -96,10 +136,17 @@ describe("MentorshipAssignmentService orchestration", () => {
     await service.removeOne(COACH, STUDENT_A, TASK);
 
     const scope = { studentId: STUDENT_A, mentorshipLinkId: LINK_A };
-    expect(plan.updateMentorshipTask).toHaveBeenCalledWith(scope, TASK, {
-      title: "Yeni başlık",
-    });
-    expect(plan.removeMentorshipTask).toHaveBeenCalledWith(scope, TASK);
+    expect(plan.updateMentorshipTaskInTransaction).toHaveBeenCalledWith(
+      TX,
+      scope,
+      TASK,
+      { title: "Yeni başlık" },
+    );
+    expect(plan.removeMentorshipTaskInTransaction).toHaveBeenCalledWith(
+      TX,
+      scope,
+      TASK,
+    );
   });
 
   it("authorizes every group student before group mutation", async () => {
@@ -117,9 +164,29 @@ describe("MentorshipAssignmentService orchestration", () => {
       { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
       { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
     ];
-    expect(plan.updateMentorshipTaskGroup).toHaveBeenCalledWith(scopes, GROUP, {
-      title: "Yeni grup",
+    expect(plan.updateMentorshipTaskGroupInTransaction).toHaveBeenCalledWith(
+      TX,
+      scopes,
+      GROUP,
+      { title: "Yeni grup" },
+    );
+    expect(plan.removeMentorshipTaskGroupInTransaction).toHaveBeenCalledWith(
+      TX,
+      scopes,
+      GROUP,
+    );
+  });
+
+  it("uses the locked link transaction for the preserved multi-task route", async () => {
+    const { service, plan } = setup();
+    await service.assign(COACH, STUDENT_A, {
+      tasks: [{ title: "Paragraf" }],
     });
-    expect(plan.removeMentorshipTaskGroup).toHaveBeenCalledWith(scopes, GROUP);
+    expect(plan.createFromMentorshipInTransaction).toHaveBeenCalledWith(
+      TX,
+      STUDENT_A,
+      [{ title: "Paragraf" }],
+      LINK_A,
+    );
   });
 });

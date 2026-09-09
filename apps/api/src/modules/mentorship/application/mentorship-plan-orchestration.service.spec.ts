@@ -200,4 +200,137 @@ describe("MentorshipPlanOrchestrationService", () => {
       { from: "2026-09-09", to: "2026-09-20" },
     );
   });
+
+  it("splits one assignment group by visible signature after pending-only edits", async () => {
+    const done = {
+      studentId: STUDENT_A,
+      mentorshipLinkId: LINK_A,
+      task: task({
+        id: "00000000-0000-4000-8000-000000000051",
+        assignmentGroupId: GROUP,
+        taskDate: "2026-09-10",
+        title: "Eski başlık",
+        status: "DONE",
+      }),
+    };
+    const pending = {
+      studentId: STUDENT_B,
+      mentorshipLinkId: LINK_B,
+      task: task({
+        id: "00000000-0000-4000-8000-000000000052",
+        assignmentGroupId: GROUP,
+        taskDate: "2026-09-11",
+        title: "Yeni başlık",
+        status: "PENDING",
+      }),
+    };
+    const coaching = {
+      listCoachPlanData: vi
+        .fn()
+        .mockResolvedValueOnce({
+          personalTasks: [],
+          mentorshipTasks: [done, pending],
+          events: [],
+        })
+        .mockResolvedValueOnce({
+          personalTasks: [],
+          mentorshipTasks: [pending, done],
+          events: [],
+        }),
+    };
+    const service = new MentorshipPlanOrchestrationService(
+      {
+        assertEnabled: vi.fn(),
+        listActiveScopes: vi.fn(async () => [
+          { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+          { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
+        ]),
+      } as never,
+      coaching as never,
+      { listDisplayIdentities: vi.fn(async () => new Map()) } as never,
+    );
+    const query = {
+      from: "2026-09-10",
+      to: "2026-09-11",
+      page: 1,
+      pageSize: 20,
+    };
+
+    const first = await service.list(COACH, query);
+    const second = await service.list(COACH, query);
+    const firstTasks = first.items.filter((item) => item.kind === "TASK");
+    const secondTasks = second.items.filter((item) => item.kind === "TASK");
+
+    expect(firstTasks).toHaveLength(2);
+    expect(firstTasks.map((item) => item.task.taskDate)).toEqual([
+      "2026-09-10",
+      "2026-09-11",
+    ]);
+    expect(firstTasks.map((item) => item.task.id)).toEqual(
+      secondTasks.map((item) => item.task.id),
+    );
+    expect(new Set(firstTasks.map((item) => item.task.id)).size).toBe(2);
+    expect(coaching.listCoachPlanData).toHaveBeenCalledWith(
+      COACH,
+      expect.any(Array),
+      { from: "2026-09-10", to: "2026-09-11" },
+    );
+  });
+
+  it("student filtering excludes personal and unrelated coach calendar items", async () => {
+    const relatedEvent = event({
+      id: "00000000-0000-4000-8000-000000000061",
+    });
+    const service = new MentorshipPlanOrchestrationService(
+      {
+        assertEnabled: vi.fn(),
+        requireActiveLink: vi.fn(async () => ({ id: LINK_A })),
+      } as never,
+      {
+        listCoachPlanData: vi.fn(async () => ({
+          personalTasks: [task({ title: "Koçun kişisel görevi" })],
+          mentorshipTasks: [
+            {
+              studentId: STUDENT_A,
+              mentorshipLinkId: LINK_A,
+              task: task({ id: "assigned-a" }),
+            },
+          ],
+          events: [
+            { event: event({ id: "personal", attendeeCount: 0 }), attendeeIds: [] },
+            { event: relatedEvent, attendeeIds: [STUDENT_A] },
+            {
+              event: event({ id: "unrelated", attendeeCount: 1 }),
+              attendeeIds: [],
+            },
+          ],
+        })),
+      } as never,
+      { listDisplayIdentities: vi.fn(async () => new Map()) } as never,
+    );
+
+    const result = await service.list(COACH, {
+      from: "2026-09-09",
+      to: "2026-09-20",
+      studentId: STUDENT_A,
+      page: 1,
+      pageSize: 20,
+    });
+
+    expect(result.items).toHaveLength(2);
+    expect(result.items).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          kind: "TASK",
+          task: expect.objectContaining({ title: "Paragraf" }),
+        }),
+        expect.objectContaining({
+          kind: "EVENT",
+          event: expect.objectContaining({ id: relatedEvent.id }),
+        }),
+      ]),
+    );
+    expect(JSON.stringify(result)).not.toContain("Koçun kişisel görevi");
+    expect(JSON.stringify(result)).not.toContain("unrelated");
+  });
 });

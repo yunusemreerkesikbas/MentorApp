@@ -10,6 +10,7 @@ const STUDENT = "22222222-2222-4222-8222-222222222222";
 const OTHER_COACH = "33333333-3333-4333-8333-333333333333";
 const OTHER_STUDENT = "44444444-4444-4444-8444-444444444444";
 const CODE = "MENTOR-KOC-ABCDEF012345";
+const TX = { execute: vi.fn() };
 
 const config: Record<string, number | boolean> = {
   "mentorship.enabled": true,
@@ -90,6 +91,27 @@ function setup(
       row.attendedFlags = null;
       return row;
     }),
+    lockActiveInTransaction: vi.fn(
+      async (_tx: unknown, coachId: string, studentIds: string[]) =>
+        rows
+          .filter(
+            (row) =>
+              row.coachId === coachId &&
+              row.status === "ACTIVE" &&
+              studentIds.includes(row.studentId),
+          )
+          .sort((left, right) => left.studentId.localeCompare(right.studentId)),
+    ),
+    endInTransaction: vi.fn(
+      async (_tx: unknown, linkId: string, endedBy: string) => {
+        const row = rows.find((candidate) => candidate.id === linkId);
+        if (!row || row.status !== "ACTIVE") return undefined;
+        row.status = "ENDED";
+        row.endedAt = new Date();
+        row.endedBy = endedBy;
+        return row;
+      },
+    ),
     setCoachNote: vi.fn(async (linkId: string, body: string | null) => {
       const row = rows.find((r) => r.id === linkId);
       if (!row || row.status !== "ACTIVE") return undefined;
@@ -133,6 +155,12 @@ function setup(
   };
   const planEvents = {
     removeFutureAttendee: vi.fn(async () => 2),
+    removeFutureAttendeeInTransaction: vi.fn(async () => 2),
+  };
+  const db = {
+    transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
+      callback(TX),
+    ),
   };
 
   // Paid seats come from the coach's own plan; 0 unless a test says otherwise, which is what
@@ -157,6 +185,7 @@ function setup(
     subscriptions as never,
     events as never,
     planEvents as never,
+    db as never,
   );
   return {
     service,
@@ -168,6 +197,7 @@ function setup(
     subscriptions,
     events,
     planEvents,
+    db,
     emitted,
     rows,
   };
@@ -217,6 +247,44 @@ describe("MentorshipLinkService", () => {
       expect(await codeOf(() => service.requireActiveLink(OTHER_COACH, STUDENT))).toBe(
         ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
       );
+    });
+
+    it("rechecks every active link under stable row locks and passes that tx to the callback", async () => {
+      const second = link({
+        id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
+        studentId: OTHER_STUDENT,
+      });
+      const { service, links } = setup({ rows: [link(), second] });
+      const callback = vi.fn(async () => "written");
+      await expect(
+        service.withActiveLinksLocked(
+          COACH,
+          [OTHER_STUDENT, STUDENT],
+          callback,
+        ),
+      ).resolves.toBe("written");
+      expect(links.lockActiveInTransaction).toHaveBeenCalledWith(
+        TX,
+        COACH,
+        [STUDENT, OTHER_STUDENT].sort(),
+      );
+      expect(callback).toHaveBeenCalledWith(TX, [
+        { studentId: STUDENT, mentorshipLinkId: link().id },
+        { studentId: OTHER_STUDENT, mentorshipLinkId: second.id },
+      ]);
+    });
+
+    it("does not invoke the transaction callback when a locked link is no longer active", async () => {
+      const { service } = setup({ rows: [link()] });
+      const callback = vi.fn();
+      await expect(
+        service.withActiveLinksLocked(
+          COACH,
+          [STUDENT, OTHER_STUDENT],
+          callback,
+        ),
+      ).rejects.toMatchObject({ code: ErrorCode.MENTORSHIP_LINK_NOT_FOUND });
+      expect(callback).not.toHaveBeenCalled();
     });
   });
 
@@ -347,9 +415,14 @@ describe("MentorshipLinkService", () => {
       const { service, rows, links, planEvents } = setup({ rows: [link()] });
       await service.endByCoach(COACH, STUDENT);
       expect(rows[0]!.endedBy).toBe(COACH);
-      expect(planEvents.removeFutureAttendee).toHaveBeenCalledWith(COACH, STUDENT);
-      expect(planEvents.removeFutureAttendee.mock.invocationCallOrder[0]).toBeLessThan(
-        links.end.mock.invocationCallOrder[0]!,
+      expect(planEvents.removeFutureAttendeeInTransaction).toHaveBeenCalledWith(
+        TX,
+        COACH,
+        STUDENT,
+      );
+      expect(links.endInTransaction).toHaveBeenCalledWith(TX, link().id, COACH);
+      expect(planEvents.removeFutureAttendeeInTransaction.mock.invocationCallOrder[0]).toBeLessThan(
+        links.endInTransaction.mock.invocationCallOrder[0]!,
       );
     });
 

@@ -291,4 +291,29 @@ describe("PlanEventService mutation", () => {
       code: ErrorCode.COACHING_EVENT_DATE_READONLY,
     });
   });
+
+  it("updates through the caller transaction and returns the current event id", async () => {
+    const original = eventRow();
+    const { service, repository, emitter } = makeService([original]);
+    const tx = { execute: vi.fn() };
+    const result = await service.updateInTransaction(
+      tx as never,
+      ORGANIZER,
+      original.id,
+      { scope: "OCCURRENCE", title: "Yeni başlık" },
+    );
+    expect(repository.updateOccurrence).toHaveBeenCalledWith(
+      tx,
+      ORGANIZER,
+      original.id,
+      expect.any(Object),
+    );
+    expect(result.dto.id).toBe(original.id);
+    expect(emitter.emit).not.toHaveBeenCalled();
+    service.publishUpdated(ORGANIZER, result);
+    expect(emitter.emit).toHaveBeenCalledWith(
+      CoachingEventTopic.PLAN_EVENT_UPDATED,
+      expect.any(Object),
+    );
+  });
 });

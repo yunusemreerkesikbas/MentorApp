@@ -89,4 +89,59 @@ describe("PlanEventService boundaries", () => {
       "2026-09-09",
     );
   });
+
+  it("keeps all organized events while exposing only active-link attendee ids", async () => {
+    const personal = eventRow({
+      id: "00000000-0000-4000-8000-000000000071",
+      attendeeIds: [],
+      attendeeCount: 0,
+    });
+    const formerStudent = eventRow({
+      id: "00000000-0000-4000-8000-000000000072",
+      attendeeIds: ["00000000-0000-4000-8000-000000000099"],
+      attendeeCount: 1,
+    });
+    const { service } = makeService([personal, formerStudent]);
+
+    const result = await service.listCoachPlanData(
+      ORGANIZER,
+      [
+        {
+          mentorshipLinkId: "00000000-0000-4000-8000-000000000098",
+          studentId: STUDENT_A,
+        },
+      ],
+      { from: "2026-09-01", to: "2026-09-30" },
+    );
+
+    expect(result.events).toEqual([
+      expect.objectContaining({
+        event: expect.objectContaining({ id: personal.id, attendeeCount: 0 }),
+        attendeeIds: [],
+      }),
+      expect.objectContaining({
+        event: expect.objectContaining({
+          id: formerStudent.id,
+          attendeeCount: 1,
+        }),
+        attendeeIds: [],
+      }),
+    ]);
+  });
+
+  it("uses the caller transaction for link-end attendee cleanup", async () => {
+    const { service, repository } = makeService();
+    const tx = { execute: vi.fn() };
+    await service.removeFutureAttendeeInTransaction(
+      tx as never,
+      ORGANIZER,
+      STUDENT_A,
+    );
+    expect(repository.removeFutureAttendee).toHaveBeenCalledWith(
+      tx,
+      ORGANIZER,
+      STUDENT_A,
+      "2026-09-09",
+    );
+  });
 });
