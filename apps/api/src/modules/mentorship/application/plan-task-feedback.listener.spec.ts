@@ -30,9 +30,22 @@ function setup(link?: { id: string; coachId: string; status: string } | undefine
 }
 
 const activeLink = { id: LINK, coachId: COACH, status: "ACTIVE" };
+const GROUP = "44444444-4444-4444-8444-444444444444";
 
-const deleted = (originType: string | null, originRefId: string | null) =>
-  new PlanTaskDeleted(STUDENT, "task-1", "2026-09-10", "Paragraf 20 soru", originType, originRefId);
+const deleted = (
+  originType: string | null,
+  originRefId: string | null,
+  assignmentGroupId?: string,
+) =>
+  new PlanTaskDeleted(
+    STUDENT,
+    "task-1",
+    "2026-09-10",
+    "Paragraf 20 soru",
+    originType,
+    originRefId,
+    assignmentGroupId,
+  );
 
 const completed = (originType: string | null, originRefId: string | null) =>
   new PlanTaskCompleted(STUDENT, "task-1", "2026-09-10", originType, originRefId);
@@ -69,7 +82,24 @@ describe("PlanTaskFeedbackListener", () => {
   it("logs the drop so the report can show it after the notification is gone", async () => {
     const { listener, dropped } = setup(activeLink);
     await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
-    expect(dropped.record).toHaveBeenCalledWith(LINK, "Paragraf 20 soru", "2026-09-10");
+    expect(dropped.record).toHaveBeenCalledWith(
+      LINK,
+      "Paragraf 20 soru",
+      "2026-09-10",
+      null,
+    );
+  });
+
+  it("keeps the assignment group in dropped audit and event projections", async () => {
+    const { listener, dropped, emitted } = setup(activeLink);
+    await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK, GROUP));
+    expect(dropped.record).toHaveBeenCalledWith(
+      LINK,
+      "Paragraf 20 soru",
+      "2026-09-10",
+      GROUP,
+    );
+    expect(emitted[0]!.payload).toMatchObject({ assignmentGroupId: GROUP });
   });
 
   it("does not log a completion — a done task is still in the plan, marked DONE", async () => {
