@@ -145,6 +145,14 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · APP-091 sözleşme ve seri bütünlüğü düzeltmeleri.** Etkinlik-seri ilişkisi artık
+  `(series_id, organizer_user_id)` bileşik FK'siyle aynı organizatörü zorunlu kılıyor. DATE bitişi
+  create girdisinde `eventDate` öncesine, update girdisinde iki tarih birlikte geldiğinde başlangıç
+  öncesine kurulamaz. Genel W2 etkinlik sözleşmesindeki belgesiz 20 katılımcı sınırı kaldırıldı;
+  benzersiz UUID kontrolü devam ediyor. Kullanım değişmedi. İlgili:
+  `schema.ts`, `coaching.ts`, `plan-event-validation.spec.ts`,
+  `0110_app_091_coach_plan_events.sql`.
+
 - **2026-09-09 · Koç planı etkinlik sözleşmeleri ve veri zemini (APP-091).** Tek seferlik ve
   DAILY/WEEKLY/MONTHLY tekrar eden plan etkinlikleri için ortak DTO/Zod sözleşmeleri eklendi;
   tekrar sayısı sınırda 100 ile sınırlandı, tarih/saat ve tekil katılımcı kontrolleri görev

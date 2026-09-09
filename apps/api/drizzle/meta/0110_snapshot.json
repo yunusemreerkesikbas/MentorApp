@@ -1,5 +1,5 @@
 {
-  "id": "1ce13a83-e2bc-417e-9c15-6bbd579c9819",
+  "id": "be16f72a-f4e7-437d-a8de-8cf400bc5ce4",
   "prevId": "f0187a7b-e37f-4761-ba08-d745b3b5c15f",
   "version": "7",
   "dialect": "postgresql",
@@ -9077,6 +9077,27 @@
         }
       },
       "indexes": {
+        "plan_event_series_id_organizer_unique_idx": {
+          "name": "plan_event_series_id_organizer_unique_idx",
+          "columns": [
+            {
+              "expression": "id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "organizer_user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "plan_event_series_organizer_start_idx": {
           "name": "plan_event_series_organizer_start_idx",
           "columns": [
@@ -9312,19 +9333,6 @@
         }
       },
       "foreignKeys": {
-        "plan_events_series_id_plan_event_series_id_fk": {
-          "name": "plan_events_series_id_plan_event_series_id_fk",
-          "tableFrom": "plan_events",
-          "tableTo": "plan_event_series",
-          "columnsFrom": [
-            "series_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "plan_events_organizer_user_id_users_id_fk": {
           "name": "plan_events_organizer_user_id_users_id_fk",
           "tableFrom": "plan_events",
@@ -9349,6 +9357,21 @@
             "id"
           ],
           "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "plan_events_series_organizer_fk": {
+          "name": "plan_events_series_organizer_fk",
+          "tableFrom": "plan_events",
+          "tableTo": "plan_event_series",
+          "columnsFrom": [
+            "series_id",
+            "organizer_user_id"
+          ],
+          "columnsTo": [
+            "id",
+            "organizer_user_id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

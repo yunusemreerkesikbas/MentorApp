@@ -1347,6 +1347,10 @@ export const planEventSeries = pgTable(
       .defaultNow(),
   },
   (t) => [
+    uniqueIndex("plan_event_series_id_organizer_unique_idx").on(
+      t.id,
+      t.organizerUserId,
+    ),
     index("plan_event_series_organizer_start_idx").on(
       t.organizerUserId,
       t.startsOn,
@@ -1386,9 +1390,7 @@ export const planEvents = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    seriesId: uuid("series_id").references(() => planEventSeries.id, {
-      onDelete: "cascade",
-    }),
+    seriesId: uuid("series_id"),
     organizerUserId: uuid("organizer_user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -1418,6 +1420,11 @@ export const planEvents = pgTable(
       t.id,
       t.organizerUserId,
     ),
+    foreignKey({
+      name: "plan_events_series_organizer_fk",
+      columns: [t.seriesId, t.organizerUserId],
+      foreignColumns: [planEventSeries.id, planEventSeries.organizerUserId],
+    }).onDelete("cascade"),
     check(
       "plan_events_status_chk",
       sql`${t.status} in ('SCHEDULED', 'CANCELLED')`,

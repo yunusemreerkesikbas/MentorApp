@@ -293,12 +293,10 @@ export type PlanTaskCalendarQuery = z.infer<typeof planTaskCalendarQuerySchema>;
 
 export const PLAN_EVENT_TITLE_MAX = 200;
 export const PLAN_EVENT_DESCRIPTION_MAX = PLAN_TASK_DESCRIPTION_MAX;
-export const PLAN_EVENT_ATTENDEE_MAX = 20;
 export const PLAN_EVENT_RECURRENCE_MAX_COUNT = 100;
 
 const planEventAttendeeIdsSchema = z
   .array(z.string().uuid())
-  .max(PLAN_EVENT_ATTENDEE_MAX)
   .refine((ids) => new Set(ids).size === ids.length, {
     message: "duplicate_attendee",
   });
@@ -334,12 +332,34 @@ const planEventFieldsSchema = z.object({
   attendeeIds: planEventAttendeeIdsSchema.default([]),
 });
 
+function refinePlanEventRecurrenceDate(
+  value: {
+    eventDate?: string;
+    recurrence?: z.infer<typeof planEventRecurrenceSchema> | null;
+  },
+  ctx: z.RefinementCtx,
+): void {
+  if (
+    value.eventDate === undefined ||
+    value.recurrence?.end.kind !== "DATE" ||
+    value.recurrence.end.date >= value.eventDate
+  ) {
+    return;
+  }
+  ctx.addIssue({
+    code: "custom",
+    message: "recurrence_end_before_start",
+    path: ["recurrence", "end", "date"],
+  });
+}
+
 export const createPlanEventSchema = planEventFieldsSchema
   .extend({
     recurrence: planEventRecurrenceSchema.nullish(),
   })
   .strict()
-  .superRefine(refinePlanTaskTimes);
+  .superRefine(refinePlanTaskTimes)
+  .superRefine(refinePlanEventRecurrenceDate);
 export type CreatePlanEventInput = z.infer<typeof createPlanEventSchema>;
 
 export const updatePlanEventSchema = z
@@ -355,6 +375,7 @@ export const updatePlanEventSchema = z
   })
   .strict()
   .superRefine(refinePlanTaskTimes)
+  .superRefine(refinePlanEventRecurrenceDate)
   .refine(
     (value) =>
       Object.entries(value).some(
