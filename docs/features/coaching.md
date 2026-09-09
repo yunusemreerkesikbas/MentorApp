@@ -145,6 +145,19 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · APP-091 plan etkinliği alan modeli ve API.** Tek seferlik veya DAILY/WEEKLY/
+  MONTHLY etkinlikler artık `/v1/plan-events` üzerinden tek işlemde oluşturuluyor; DATE bitişi
+  dahil, COUNT ilk buluşmayı sayıyor ve ayın eksik günleri özgün güne göre ay sonuna sıkıştırılıyor.
+  OCCURRENCE yalnız seçili gelecekteki kaydı, SERIES yalnız bugün ve sonrasını güncelliyor veya
+  iptal ediyor; tekrar kuralı değişince geçmiş korunup gelecek kayıtlar yeniden üretiliyor.
+  `/v1/plan-items`, mevcut tarih/aralık ve sayfalama sorgusuyla görevleri ve katılımcısı olunan
+  etkinlikleri tek sıralı akışta döndürüyor. Kullanım: etkinlik iptali
+  `POST /v1/plan-events/:id/cancel`, kapsam gövdede `OCCURRENCE` veya `SERIES`. Gotcha:
+  öğrenci/genel DTO'sunda katılımcı kimlikleri yok; yalnız `attendeeCount` var. W8, yetkilendirdiği
+  link/öğrenci çiftleriyle dışa açılan servisleri çağırır ve link bittiğinde gelecekteki katılımı
+  kaldırır. İlgili: `plan-event-{recurrence,service,repository,controller}.ts`,
+  `plan-item-{service,repository}.ts`, `0111_unknown_the_hand.sql`.
+
 - **2026-09-09 · APP-091 sözleşme ve seri bütünlüğü düzeltmeleri.** Etkinlik-seri ilişkisi artık
   `(series_id, organizer_user_id)` bileşik FK'siyle aynı organizatörü zorunlu kılıyor. DATE bitişi
   create girdisinde `eventDate` öncesine, update girdisinde iki tarih birlikte geldiğinde başlangıç
