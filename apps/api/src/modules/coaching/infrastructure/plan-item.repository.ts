@@ -61,7 +61,7 @@ export class PlanItemRepository {
       tx.execute(sql`select count(*)::int as count from (${union}) plan_items`),
     ]);
     return {
-      refs: page.rows as PlanItemRef[],
+      refs: page.rows as unknown as PlanItemRef[],
       total: Number((count.rows[0] as { count?: number } | undefined)?.count ?? 0),
     };
   }
