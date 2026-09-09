@@ -2,6 +2,7 @@
 
 import type { CoachPlanItemDto } from "@mentor/types";
 import { useTranslations } from "next-intl";
+import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 
 export function coachPlanItemId(item: CoachPlanItemDto): string {
@@ -57,7 +58,7 @@ export function CoachPlanItemCard({
             {t(item.kind === "TASK" ? "type_task" : "type_event")}
           </span>
           <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {t(people.length === 0 ? "personal" : "shared")}
+            {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
           </span>
         </span>
         <span className="text-xs tabular-nums" style={{ color: "var(--color-secondary)" }}>

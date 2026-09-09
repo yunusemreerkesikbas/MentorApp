@@ -3,6 +3,7 @@
 import type { CoachPlanItemDto } from "@mentor/types";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  coachPlanWeekdayLabels,
   itemsForCoachPlanDay,
   uniqueStudentAvatars,
 } from "@/lib/coach-plan-calendar";
@@ -35,12 +36,24 @@ export function CoachPlanMonth({
       <div className="overflow-x-auto rounded-[var(--radius-card)] border"
         style={{ borderColor: "var(--color-border)" }}>
         <div className="grid min-w-3xl grid-cols-7">
+          {coachPlanWeekdayLabels(locale).map((label) => (
+            <div
+              key={label}
+              className="border-b border-r px-2 py-3 text-center text-xs font-semibold capitalize"
+              style={{
+                backgroundColor: "var(--color-surface-container)",
+                borderColor: "var(--color-border)",
+                color: "var(--color-secondary)",
+              }}
+            >
+              {label}
+            </div>
+          ))}
           {days.map((day) => {
             const dayItems = itemsForCoachPlanDay(items, day);
             const taskCount = dayItems.filter((item) => item.kind === "TASK").length;
             const eventCount = dayItems.length - taskCount;
             const avatars = uniqueStudentAvatars(dayItems, 3);
-            const names = avatars.students.map((student) => student.studentDisplayName).join(", ");
             return (
               <button
                 key={day}
@@ -73,7 +86,7 @@ export function CoachPlanMonth({
                     <CoachPlanAvatarStack
                       people={avatars.students}
                       overflow={avatars.overflow}
-                      label={t("participants_named", { names })}
+                      label={t("participant_count", { count: avatars.total })}
                     />
                   </>
                 ) : (

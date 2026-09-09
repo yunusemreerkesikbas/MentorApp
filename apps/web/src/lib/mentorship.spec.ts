@@ -23,6 +23,7 @@ describe("fetchCoachPlan", () => {
   });
 
   it("collects every bounded page without changing backend order", async () => {
+    const controller = new AbortController();
     mockedHttp
       .mockResolvedValueOnce({
         items: [{ kind: "TASK", task: { id: "first" } }],
@@ -41,17 +42,46 @@ describe("fetchCoachPlan", () => {
       from: "2026-09-07",
       to: "2026-09-13",
       studentId: "00000000-0000-4000-8000-000000000002",
+      signal: controller.signal,
     });
 
     expect(result.map((item) => item.kind)).toEqual(["TASK", "EVENT"]);
     expect(mockedHttp).toHaveBeenNthCalledWith(
       1,
       "/v1/mentorship/plan?from=2026-09-07&to=2026-09-13&studentId=00000000-0000-4000-8000-000000000002&page=1&pageSize=100",
+      { signal: controller.signal },
     );
     expect(mockedHttp).toHaveBeenNthCalledWith(
       2,
       "/v1/mentorship/plan?from=2026-09-07&to=2026-09-13&studentId=00000000-0000-4000-8000-000000000002&page=2&pageSize=100",
+      { signal: controller.signal },
     );
+  });
+
+  it("stops pagination when an obsolete request is aborted", async () => {
+    const controller = new AbortController();
+    let resolvePage!: (value: unknown) => void;
+    mockedHttp.mockImplementationOnce(
+      () => new Promise((resolve) => {
+        resolvePage = resolve;
+      }),
+    );
+    const pending = fetchCoachPlan({
+      from: "2026-09-07",
+      to: "2026-09-13",
+      signal: controller.signal,
+    });
+
+    controller.abort();
+    resolvePage({
+      items: [{ kind: "TASK", task: { id: "stale" } }],
+      total: 2,
+      page: 1,
+      pageSize: 100,
+    });
+
+    await expect(pending).rejects.toMatchObject({ name: "AbortError" });
+    expect(mockedHttp).toHaveBeenCalledTimes(1);
   });
 });
 
@@ -61,6 +91,7 @@ describe("fetchActiveRoster", () => {
   });
 
   it("collects every active roster page for the filter", async () => {
+    const controller = new AbortController();
     mockedHttp
       .mockResolvedValueOnce({
         items: [{ studentId: "first" }],
@@ -75,12 +106,13 @@ describe("fetchActiveRoster", () => {
         pageSize: 100,
       });
 
-    const result = await fetchActiveRoster();
+    const result = await fetchActiveRoster(controller.signal);
 
     expect(result.map((row) => row.studentId)).toEqual(["first", "second"]);
     expect(mockedHttp).toHaveBeenNthCalledWith(
       2,
       "/v1/mentorship/students?status=ACTIVE&page=2&pageSize=100",
+      { signal: controller.signal },
     );
   });
 });

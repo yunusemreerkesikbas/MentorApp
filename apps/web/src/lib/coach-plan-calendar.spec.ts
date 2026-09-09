@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { CoachPlanItemDto } from "@mentor/types";
 import {
+  coachPlanQueryTransition,
   coachPlanRange,
+  coachPlanWeekdayLabels,
+  isCoachPlanItemShared,
   itemsForCoachPlanDay,
   parseCoachPlanSelection,
   sortCoachPlanItems,
@@ -128,6 +131,7 @@ describe("coach plan day summaries", () => {
     expect(uniqueStudentAvatars(items, 3)).toEqual({
       students: [ayse, bora, can],
       overflow: 1,
+      total: 4,
     });
   });
 
@@ -140,7 +144,16 @@ describe("coach plan day summaries", () => {
     expect(uniqueStudentAvatars([personalTask, personalEvent], 3)).toEqual({
       students: [],
       overflow: 0,
+      total: 0,
     });
+  });
+
+  it("uses attendeeCount to retain shared semantics when attendee identities are redacted", () => {
+    const redacted = event("historical", "2026-09-09", "12:00");
+    if (redacted.kind === "EVENT") redacted.event.attendeeCount = 2;
+
+    expect(isCoachPlanItemShared(redacted)).toBe(true);
+    expect(uniqueStudentAvatars([redacted], 3).total).toBe(0);
   });
 });
 
@@ -157,5 +170,38 @@ describe("parseCoachPlanSelection", () => {
       { date: "2026-09-31", event: " " },
       { from: "2026-09-07", to: "2026-09-13" },
     )).toEqual({ date: null, eventId: null });
+  });
+});
+
+describe("coachPlanQueryTransition", () => {
+  it("derives fresh anchor and selection state for each same-route query transition", () => {
+    expect(coachPlanQueryTransition({ date: "2026-09-10", event: "first" })).toEqual({
+      anchor: "2026-09-10",
+      selectedDate: "2026-09-10",
+      eventId: "first",
+    });
+    expect(coachPlanQueryTransition({ date: "2026-10-22", event: "second" })).toEqual({
+      anchor: "2026-10-22",
+      selectedDate: "2026-10-22",
+      eventId: "second",
+    });
+  });
+
+  it("rejects an invalid transition date", () => {
+    expect(coachPlanQueryTransition({ date: "2026-09-31", event: "event" })).toBeNull();
+  });
+});
+
+describe("coachPlanWeekdayLabels", () => {
+  it("returns seven locale-aware headings starting on Monday", () => {
+    expect(coachPlanWeekdayLabels("en-US", "short")).toEqual([
+      "Mon",
+      "Tue",
+      "Wed",
+      "Thu",
+      "Fri",
+      "Sat",
+      "Sun",
+    ]);
   });
 });

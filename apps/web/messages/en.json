@@ -1170,6 +1170,7 @@
     "personal": "Personal",
     "shared": "Shared",
     "participants_named": "Participants: {names}",
+    "participant_count": "{count, plural, one {# student} other {# students}}",
     "day_empty": "No plans for this day.",
     "task_count": "{count, plural, one {# task} other {# tasks}}",
     "event_count": "{count, plural, one {# event} other {# events}}",

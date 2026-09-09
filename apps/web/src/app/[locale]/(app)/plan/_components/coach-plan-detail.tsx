@@ -1,9 +1,11 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import type { CoachPlanItemDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
+import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 
 export function CoachPlanDetail({
@@ -19,15 +21,26 @@ export function CoachPlanDetail({
   const date = item.kind === "TASK" ? item.task.taskDate : item.event.eventDate;
   const people = item.kind === "TASK" ? item.task.participants : item.event.attendees;
   const names = people.map((person) => person.studentDisplayName).join(", ");
+  const detailRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    detailRef.current?.focus();
+  }, [item]);
 
   return (
-    <aside aria-labelledby="coach-plan-detail-title">
+    <aside
+      ref={detailRef}
+      tabIndex={-1}
+      aria-live="polite"
+      aria-labelledby="coach-plan-detail-title"
+      className="focus:outline-none"
+    >
       <Card className="flex flex-col gap-4">
         <div className="flex items-start justify-between gap-3">
           <div>
             <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
               {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
-              {t(people.length === 0 ? "personal" : "shared")}
+              {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
             </p>
             <h2
               id="coach-plan-detail-title"

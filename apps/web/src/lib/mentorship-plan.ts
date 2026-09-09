@@ -19,14 +19,17 @@ import { http } from "@mentor/api-client";
 const PAGE_SIZE = 100;
 
 /** Complete active roster for calendar filters; a coach must never lose students after page one. */
-export async function fetchActiveRoster(): Promise<MentorshipRosterRowDto[]> {
+export async function fetchActiveRoster(signal?: AbortSignal): Promise<MentorshipRosterRowDto[]> {
   const items: MentorshipRosterRowDto[] = [];
   let page = 1;
   let total = 0;
   do {
+    signal?.throwIfAborted();
     const result = (await http<Paginated<MentorshipRosterRowDto>>(
       `/v1/mentorship/students?status=ACTIVE&page=${page}&pageSize=${PAGE_SIZE}`,
+      { signal },
     )) as Paginated<MentorshipRosterRowDto>;
+    signal?.throwIfAborted();
     items.push(...result.items);
     total = result.total;
     if (result.items.length === 0 && items.length < total) {
@@ -42,18 +45,22 @@ export async function fetchCoachPlan(input: {
   from: string;
   to: string;
   studentId?: string;
+  signal?: AbortSignal;
 }): Promise<CoachPlanItemDto[]> {
   const items: CoachPlanItemDto[] = [];
   let page = 1;
   let total = 0;
   do {
+    input.signal?.throwIfAborted();
     const query = new URLSearchParams({ from: input.from, to: input.to });
     if (input.studentId) query.set("studentId", input.studentId);
     query.set("page", String(page));
     query.set("pageSize", String(PAGE_SIZE));
     const result = (await http<Paginated<CoachPlanItemDto>>(
       `/v1/mentorship/plan?${query}`,
+      { signal: input.signal },
     )) as Paginated<CoachPlanItemDto>;
+    input.signal?.throwIfAborted();
     items.push(...result.items);
     total = result.total;
     if (result.items.length === 0 && items.length < total) {

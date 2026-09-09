@@ -78,7 +78,7 @@ export function itemsForCoachPlanDay(
 export function uniqueStudentAvatars(
   items: readonly CoachPlanItemDto[],
   limit: number,
-): { students: CoachPlanAvatar[]; overflow: number } {
+): { students: CoachPlanAvatar[]; overflow: number; total: number } {
   const students = new Map<string, CoachPlanAvatar>();
   for (const item of items) {
     const people = item.kind === "TASK" ? item.task.participants : item.event.attendees;
@@ -96,7 +96,36 @@ export function uniqueStudentAvatars(
   return {
     students: all.slice(0, limit),
     overflow: Math.max(0, all.length - limit),
+    total: all.length,
   };
+}
+
+export function isCoachPlanItemShared(item: CoachPlanItemDto): boolean {
+  return item.kind === "TASK"
+    ? item.task.participants.length > 0
+    : item.event.attendeeCount > 0;
+}
+
+export function coachPlanQueryTransition(query: {
+  date: string | null;
+  event: string | null;
+}): { anchor: string; selectedDate: string; eventId: string | null } | null {
+  if (!query.date || !isIsoDate(query.date)) return null;
+  return {
+    anchor: query.date,
+    selectedDate: query.date,
+    eventId: query.event?.trim() || null,
+  };
+}
+
+export function coachPlanWeekdayLabels(
+  locale: string,
+  width: "short" | "long" = "short",
+): string[] {
+  const formatter = new Intl.DateTimeFormat(locale, { weekday: width });
+  return Array.from({ length: 7 }, (_, index) =>
+    formatter.format(new Date(`2026-09-${String(7 + index).padStart(2, "0")}T12:00:00Z`)),
+  );
 }
 
 export function parseCoachPlanSelection(

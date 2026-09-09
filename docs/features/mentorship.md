@@ -1393,6 +1393,16 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   `apps/web/src/lib/{coach-plan-calendar,mentorship}.ts`,
   `mentorship-roster.service.ts`, `packages/types/src/mentorship.ts`.
 
+- **2026-09-09 — APP-091 coach plan review hardening.** Same-route `date`/`event` query changes now
+  re-key only calendar state, load the new range and select the returned event without reloading
+  the mounted roster. Roster and plan pagination forward abort signals, stop obsolete page loops,
+  and treat cancellation as lifecycle rather than an error. “Bugün” uses the Europe/Istanbul
+  calendar date. Historical events remain shared from `attendeeCount` even when no active identity
+  can be shown. Month headings are visibly Monday-first, avatar overflow announces the total, and
+  an opened read-only detail receives focus without trapping it. Role planners are separate dynamic
+  chunks. Related: `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
+  `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block
