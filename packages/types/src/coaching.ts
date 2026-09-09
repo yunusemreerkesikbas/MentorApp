@@ -111,7 +111,8 @@ export interface PlanEventDto {
   startTime: string | null;
   endTime: string | null;
   status: PlanEventStatus;
-  attendeeIds: string[];
+  /** Anonymous participant count. Raw attendee IDs never cross the student/public boundary. */
+  attendeeCount: number;
   recurrence: PlanEventRecurrenceDto | null;
   createdAt: string;
   updatedAt: string;

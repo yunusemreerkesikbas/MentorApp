@@ -1404,6 +1404,8 @@ export const planEvents = pgTable(
       .$type<"SCHEDULED" | "CANCELLED">()
       .notNull()
       .default("SCHEDULED"),
+    /** Denormalized so participant-scoped RLS can expose a count without exposing other IDs. */
+    attendeeCount: integer("attendee_count").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -1428,6 +1430,7 @@ export const planEvents = pgTable(
       "plan_events_time_range_chk",
       sql`${t.endTime} is null or (${t.startTime} is not null and ${t.endTime} > ${t.startTime})`,
     ),
+    check("plan_events_attendee_count_chk", sql`${t.attendeeCount} >= 0`),
     pgPolicy("plan_events_read", {
       for: "select",
       using: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR EXISTS (

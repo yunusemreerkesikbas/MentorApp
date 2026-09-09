@@ -1,0 +1,162 @@
+import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import type { DatabaseTx } from "../../../database/drizzle";
+import {
+  planEventAttendees,
+  planEventSeries,
+  planEvents,
+} from "../../../database/schema";
+import type {
+  PlanEventRecord,
+  PlanEventRow,
+} from "./plan-event.repository";
+
+export async function hydratePlanEvents(
+  tx: DatabaseTx,
+  rows: PlanEventRow[],
+): Promise<PlanEventRecord[]> {
+  if (rows.length === 0) return [];
+  const eventIds = rows.map((row) => row.id);
+  const seriesIds = [
+    ...new Set(rows.flatMap((row) => (row.seriesId ? [row.seriesId] : []))),
+  ];
+  const [attendees, series] = await Promise.all([
+    tx
+      .select()
+      .from(planEventAttendees)
+      .where(inArray(planEventAttendees.eventId, eventIds)),
+    seriesIds.length
+      ? tx
+          .select()
+          .from(planEventSeries)
+          .where(inArray(planEventSeries.id, seriesIds))
+      : Promise.resolve([]),
+  ]);
+  const attendeeMap = new Map<string, string[]>();
+  for (const attendee of attendees) {
+    const ids = attendeeMap.get(attendee.eventId) ?? [];
+    ids.push(attendee.attendeeUserId);
+    attendeeMap.set(attendee.eventId, ids);
+  }
+  const seriesMap = new Map(series.map((row) => [row.id, row]));
+  return rows.map((row) => ({
+    ...row,
+    attendeeIds: attendeeMap.get(row.id) ?? [],
+    series: row.seriesId ? (seriesMap.get(row.seriesId) ?? null) : null,
+  }));
+}
+
+export async function replacePlanEventAttendees(
+  tx: DatabaseTx,
+  organizerUserId: string,
+  eventIds: string[],
+  attendeeUserIds: string[],
+): Promise<void> {
+  if (eventIds.length === 0) return;
+  await tx
+    .delete(planEventAttendees)
+    .where(
+      and(
+        eq(planEventAttendees.organizerUserId, organizerUserId),
+        inArray(planEventAttendees.eventId, eventIds),
+      ),
+    );
+  if (attendeeUserIds.length > 0) {
+    await tx.insert(planEventAttendees).values(
+      eventIds.flatMap((eventId) =>
+        attendeeUserIds.map((attendeeUserId) => ({
+          eventId,
+          organizerUserId,
+          attendeeUserId,
+        })),
+      ),
+    );
+  }
+  await tx
+    .update(planEvents)
+    .set({ attendeeCount: attendeeUserIds.length, updatedAt: new Date() })
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        inArray(planEvents.id, eventIds),
+      ),
+    );
+}
+
+export async function listCoachPlanEvents(
+  tx: DatabaseTx,
+  organizerUserId: string,
+  studentIds: string[],
+  from: string,
+  to: string,
+): Promise<PlanEventRecord[]> {
+  if (studentIds.length === 0) return [];
+  const rows = await tx
+    .select()
+    .from(planEvents)
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        gte(planEvents.eventDate, from),
+        lte(planEvents.eventDate, to),
+        sql`exists (
+          select 1 from ${planEventAttendees}
+          where ${planEventAttendees.eventId} = ${planEvents.id}
+            and ${planEventAttendees.attendeeUserId} in (${sql.join(
+              studentIds.map((id) => sql`${id}`),
+              sql`, `,
+            )})
+        )`,
+      ),
+    )
+    .orderBy(
+      planEvents.eventDate,
+      sql`${planEvents.startTime} asc nulls first`,
+      planEvents.createdAt,
+      planEvents.id,
+    );
+  return hydratePlanEvents(tx, rows);
+}
+
+export async function removeFuturePlanEventAttendee(
+  tx: DatabaseTx,
+  organizerUserId: string,
+  attendeeUserId: string,
+  from: string,
+): Promise<number> {
+  const eventIds = tx
+    .select({ id: planEvents.id })
+    .from(planEvents)
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        gte(planEvents.eventDate, from),
+      ),
+    );
+  const removed = await tx
+    .delete(planEventAttendees)
+    .where(
+      and(
+        eq(planEventAttendees.organizerUserId, organizerUserId),
+        eq(planEventAttendees.attendeeUserId, attendeeUserId),
+        inArray(planEventAttendees.eventId, eventIds),
+      ),
+    )
+    .returning({ eventId: planEventAttendees.eventId });
+  if (removed.length === 0) return 0;
+  await tx
+    .update(planEvents)
+    .set({
+      attendeeCount: sql`greatest(${planEvents.attendeeCount} - 1, 0)`,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        inArray(
+          planEvents.id,
+          removed.map((row) => row.eventId),
+        ),
+      ),
+    );
+  return removed.length;
+}

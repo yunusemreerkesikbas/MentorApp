@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
 
@@ -141,6 +141,52 @@ export class PlanTaskRepository {
       .where(and(eq(planTasks.id, id), eq(planTasks.userId, userId)))
       .limit(1);
     return rows[0];
+  }
+
+  async findByIds(
+    tx: DatabaseTx,
+    userId: string,
+    ids: string[],
+  ): Promise<PlanTaskRow[]> {
+    if (ids.length === 0) return [];
+    return tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(eq(planTasks.userId, userId), inArray(planTasks.id, ids)),
+      );
+  }
+
+  /**
+   * W8 read seam. The caller has already authorized every link/student pair; both values remain
+   * in the SQL predicate so SERVICE RLS context cannot widen the read accidentally.
+   */
+  listMentorshipTasksForCoach(
+    tx: DatabaseTx,
+    scopes: Array<{ mentorshipLinkId: string; studentId: string }>,
+    from: string,
+    to: string,
+  ): Promise<PlanTaskRow[]> {
+    if (scopes.length === 0) return Promise.resolve([]);
+    return tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.originType, "MENTORSHIP"),
+          gte(planTasks.taskDate, from),
+          lte(planTasks.taskDate, to),
+          or(
+            ...scopes.map((scope) =>
+              and(
+                eq(planTasks.userId, scope.studentId),
+                eq(planTasks.originRefId, scope.mentorshipLinkId),
+              ),
+            ),
+          ),
+        ),
+      )
+      .orderBy(asc(planTasks.taskDate), ...withinDayOrder);
   }
 
   async create(tx: DatabaseTx, data: NewPlanTask): Promise<PlanTaskRow> {

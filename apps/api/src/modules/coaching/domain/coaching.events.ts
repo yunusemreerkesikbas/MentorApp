@@ -14,6 +14,9 @@ export const CoachingEventTopic = {
   PLAN_TASK_CREATED: "coaching.plan-task-created",
   PLAN_TASK_DELETED: "coaching.plan-task-deleted",
   PLAN_ADAPTED: "coaching.plan-adapted",
+  PLAN_EVENT_CREATED: "coaching.plan-event-created",
+  PLAN_EVENT_UPDATED: "coaching.plan-event-updated",
+  PLAN_EVENT_CANCELLED: "coaching.plan-event-cancelled",
   VISION_BOARD_SAVED: "coaching.vision-board-saved",
   MOCK_EXAM_CREATED: "coaching.mock-exam-created",
   NOTEBOOK_ENTRY_REVIEWED: "coaching.notebook-entry-reviewed",
@@ -101,6 +104,21 @@ export class PlanTaskCreated {
 export class PlanAdapted {
   constructor(readonly userId: string, readonly adaptedAt = new Date()) {}
 }
+
+export class PlanEventCreated {
+  constructor(
+    readonly eventId: string,
+    readonly organizerUserId: string,
+    readonly recipientUserIds: string[],
+    readonly title: string,
+    readonly eventDate: string,
+    readonly startTime: string | null,
+  ) {}
+}
+
+export class PlanEventUpdated extends PlanEventCreated {}
+
+export class PlanEventCancelled extends PlanEventCreated {}
 
 export class VisionBoardSaved {
   constructor(readonly userId: string, readonly savedAt = new Date()) {}
