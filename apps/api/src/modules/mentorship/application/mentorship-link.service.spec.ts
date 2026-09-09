@@ -131,6 +131,9 @@ function setup(
       return true;
     }),
   };
+  const planEvents = {
+    removeFutureAttendee: vi.fn(async () => 2),
+  };
 
   // Paid seats come from the coach's own plan; 0 unless a test says otherwise, which is what
   // every coach looks like until seat billing is switched on.
@@ -153,6 +156,7 @@ function setup(
     configRegistry as never,
     subscriptions as never,
     events as never,
+    planEvents as never,
   );
   return {
     service,
@@ -163,6 +167,7 @@ function setup(
     configRegistry,
     subscriptions,
     events,
+    planEvents,
     emitted,
     rows,
   };
@@ -339,9 +344,13 @@ describe("MentorshipLinkService", () => {
     });
 
     it("lets the coach end it too", async () => {
-      const { service, rows } = setup({ rows: [link()] });
+      const { service, rows, links, planEvents } = setup({ rows: [link()] });
       await service.endByCoach(COACH, STUDENT);
       expect(rows[0]!.endedBy).toBe(COACH);
+      expect(planEvents.removeFutureAttendee).toHaveBeenCalledWith(COACH, STUDENT);
+      expect(planEvents.removeFutureAttendee.mock.invocationCallOrder[0]).toBeLessThan(
+        links.end.mock.invocationCallOrder[0]!,
+      );
     });
 
     it("is idempotent — a second end emits nothing", async () => {
