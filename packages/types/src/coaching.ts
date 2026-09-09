@@ -66,6 +66,57 @@ export type PlanTaskOriginDto =
   | AnalysisPlanTaskOriginDto
   | MentorshipPlanTaskOriginDto;
 
+export const PlanEventRecurrenceFrequency = {
+  DAILY: "DAILY",
+  WEEKLY: "WEEKLY",
+  MONTHLY: "MONTHLY",
+} as const;
+export type PlanEventRecurrenceFrequency =
+  (typeof PlanEventRecurrenceFrequency)[keyof typeof PlanEventRecurrenceFrequency];
+
+export const PlanEventStatus = {
+  SCHEDULED: "SCHEDULED",
+  CANCELLED: "CANCELLED",
+} as const;
+export type PlanEventStatus =
+  (typeof PlanEventStatus)[keyof typeof PlanEventStatus];
+
+/** Whether a mutation applies only to one materialized event or its whole recurrence series. */
+export const PlanEventMutationScope = {
+  OCCURRENCE: "OCCURRENCE",
+  SERIES: "SERIES",
+} as const;
+export type PlanEventMutationScope =
+  (typeof PlanEventMutationScope)[keyof typeof PlanEventMutationScope];
+
+export type PlanEventRecurrenceEndDto =
+  | { kind: "DATE"; date: string }
+  | { kind: "COUNT"; count: number };
+
+export interface PlanEventRecurrenceDto {
+  frequency: PlanEventRecurrenceFrequency;
+  timeZone: "Europe/Istanbul";
+  startsOn: string;
+  end: PlanEventRecurrenceEndDto;
+}
+
+export interface PlanEventDto {
+  id: string;
+  seriesId: string | null;
+  organizerUserId: string;
+  orgId: string | null;
+  title: string;
+  description: string | null;
+  eventDate: string;
+  startTime: string | null;
+  endTime: string | null;
+  status: PlanEventStatus;
+  attendeeIds: string[];
+  recurrence: PlanEventRecurrenceDto | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 /** Projection of a `plan_tasks` row. */
 export interface PlanTaskDto {
   id: string;
@@ -90,7 +141,21 @@ export interface PlanTaskDto {
   coachNote: string | null;
   /** Nullable additive provenance; legacy and manually-created tasks have no origin. */
   origin: PlanTaskOriginDto | null;
+  /** Shared id for one coach task atomically assigned to multiple students. */
+  assignmentGroupId: string | null;
 }
+
+export interface PlanTaskPlanItemDto {
+  kind: "TASK";
+  task: PlanTaskDto;
+}
+
+export interface PlanEventPlanItemDto {
+  kind: "EVENT";
+  event: PlanEventDto;
+}
+
+export type PlanItemDto = PlanTaskPlanItemDto | PlanEventPlanItemDto;
 
 export type CoachPlanAdaptationSource = "PLAN" | "MOOD" | "SESSION";
 export type CoachPlanAdaptationStatus = "READY" | "NO_CHANGE";

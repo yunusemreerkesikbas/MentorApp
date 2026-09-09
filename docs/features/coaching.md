@@ -145,6 +145,17 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · Koç planı etkinlik sözleşmeleri ve veri zemini (APP-091).** Tek seferlik ve
+  DAILY/WEEKLY/MONTHLY tekrar eden plan etkinlikleri için ortak DTO/Zod sözleşmeleri eklendi;
+  tekrar sayısı sınırda 100 ile sınırlandı, tarih/saat ve tekil katılımcı kontrolleri görev
+  yardımcılarıyla aynı kuralları kullanıyor. `plan_event_series`, `plan_events` ve
+  `plan_event_attendees` tabloları Europe/Istanbul duvar saati, SCHEDULED/CANCELLED durumu,
+  zincirleme silme ve organizatör/katılımcı RLS politikalarıyla oluşturuldu. Kullanım: sonraki API
+  dilimleri bu sözleşmeleri doğrudan `@mentor/types` ve `@mentor/validation` üzerinden tüketir.
+  Gotcha: katılımcı satırındaki `organizer_user_id`, döngüsel RLS sorgusunu önlemek için etkinlikle
+  bileşik FK altında tutulur. İlgili: `packages/{types,validation}/src/coaching.ts`,
+  `apps/api/src/database/schema.ts`, `0110_app_091_coach_plan_events.sql`.
+
 - **2026-09-08 · Puhu speech modal flicker + free mood copy.** Trail dots stay inside the cloud so they no longer overlay Puhu. Talk/idle frames stay mounted (opacity swap) so free-tier rule copy cannot flash the mascot away. Mood fallback lines in `coaching.json` are punchier companion copy; `SERIOUS_DISTRESS` is unchanged. Usage unchanged. Gotcha: do not swap `next/image` `src` on the 140ms mouth loop. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.css`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
 
 - **2026-09-08 · Analysis V1.1 acceptance evidence.** Twelve scoped mobile/desktop browser cases passed: completed/deleted-baseline focus separation, verified locked plan labels, selected task date, conflict draft retention, filter clearing/reload and delayed-pagination rejection. The dedicated database flow also covers same-day/older attempt exclusion, first comparable attempt, plan-completion practice and topic-filter user isolation. Unit checks cover exact pending-task reuse (with and without topic), catalog pagination and query presentation. No workspace-wide CI or production deployment was performed.

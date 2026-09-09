@@ -222,6 +222,8 @@ export interface MentorshipRosterRowDto {
  * student's own note and never appears here.
  */
 export interface MentorshipReportPlanTaskDto {
+  id: string;
+  assignmentGroupId: string | null;
   taskDate: string;
   title: string;
   subject: string | null;
@@ -241,10 +243,33 @@ export interface MentorshipReportPlanTaskDto {
  * without this a dropped assignment reads as one that was never given.
  */
 export interface MentorshipDroppedAssignmentDto {
+  assignmentGroupId: string | null;
   /** The day it had been assigned for. */
   taskDate: string;
   title: string;
   droppedAt: string;
+}
+
+/** Per-student outcome inside one atomic coach assignment group. */
+export interface CoachPlanParticipantDto {
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  taskId: string;
+  status: "PENDING" | "DONE";
+}
+
+/** One coach-authored task grouped across every student who received it. */
+export interface CoachPlanGroupedTaskDto {
+  assignmentGroupId: string;
+  taskDate: string;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  coachNote: string | null;
+  participants: CoachPlanParticipantDto[];
 }
 
 /** The single-student report. Numbers, dates, statuses and task headings — never free text. */
@@ -273,7 +298,11 @@ export interface MentorshipStudentReportDto {
     activeDays28d: number;
   };
   planCompletionRate7d: number | null;
-  mockTrend: { takenAt: string; totalNet: number; publisherName: string | null }[];
+  mockTrend: {
+    takenAt: string;
+    totalNet: number;
+    publisherName: string | null;
+  }[];
   latestMockSubjects: {
     subjectRef: string;
     correct: number;
@@ -478,7 +507,8 @@ export const MentorshipClaim = {
   BRANCH: "BRANCH",
   YEARS: "YEARS",
 } as const;
-export type MentorshipClaimId = (typeof MentorshipClaim)[keyof typeof MentorshipClaim];
+export type MentorshipClaimId =
+  (typeof MentorshipClaim)[keyof typeof MentorshipClaim];
 
 /** The applicant's own view: where their application stands and, if refused, why. */
 export interface MentorshipApplicationDto {

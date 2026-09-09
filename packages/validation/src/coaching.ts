@@ -13,6 +13,8 @@ import {
   NOTEBOOK_INK_TOOLS,
   NOTEBOOK_PAPERS,
   NOTEBOOK_SOURCES,
+  PlanEventMutationScope,
+  PlanEventRecurrenceFrequency,
   VISION_BOARD_FRAMES,
   VISION_BOARD_TEXTURES,
   VISION_IMAGE_FRAMES,
@@ -286,6 +288,88 @@ export const planTaskCalendarQuerySchema = z
     }
   });
 export type PlanTaskCalendarQuery = z.infer<typeof planTaskCalendarQuerySchema>;
+
+/* -------------------------------- plan events -------------------------------- */
+
+export const PLAN_EVENT_TITLE_MAX = 200;
+export const PLAN_EVENT_DESCRIPTION_MAX = PLAN_TASK_DESCRIPTION_MAX;
+export const PLAN_EVENT_ATTENDEE_MAX = 20;
+export const PLAN_EVENT_RECURRENCE_MAX_COUNT = 100;
+
+const planEventAttendeeIdsSchema = z
+  .array(z.string().uuid())
+  .max(PLAN_EVENT_ATTENDEE_MAX)
+  .refine((ids) => new Set(ids).size === ids.length, {
+    message: "duplicate_attendee",
+  });
+
+export const planEventRecurrenceEndSchema = z.discriminatedUnion("kind", [
+  z
+    .object({
+      kind: z.literal("DATE"),
+      date: isoDateSchema,
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal("COUNT"),
+      count: z.number().int().min(2).max(PLAN_EVENT_RECURRENCE_MAX_COUNT),
+    })
+    .strict(),
+]);
+
+export const planEventRecurrenceSchema = z
+  .object({
+    frequency: z.nativeEnum(PlanEventRecurrenceFrequency),
+    end: planEventRecurrenceEndSchema,
+  })
+  .strict();
+
+const planEventFieldsSchema = z.object({
+  title: z.string().trim().min(1).max(PLAN_EVENT_TITLE_MAX),
+  description: z.string().trim().max(PLAN_EVENT_DESCRIPTION_MAX).nullish(),
+  eventDate: isoDateSchema,
+  startTime: hhmmSchema.nullish(),
+  endTime: hhmmSchema.nullish(),
+  attendeeIds: planEventAttendeeIdsSchema.default([]),
+});
+
+export const createPlanEventSchema = planEventFieldsSchema
+  .extend({
+    recurrence: planEventRecurrenceSchema.nullish(),
+  })
+  .strict()
+  .superRefine(refinePlanTaskTimes);
+export type CreatePlanEventInput = z.infer<typeof createPlanEventSchema>;
+
+export const updatePlanEventSchema = z
+  .object({
+    scope: z.nativeEnum(PlanEventMutationScope),
+    title: z.string().trim().min(1).max(PLAN_EVENT_TITLE_MAX).optional(),
+    description: z.string().trim().max(PLAN_EVENT_DESCRIPTION_MAX).nullish(),
+    eventDate: isoDateSchema.optional(),
+    startTime: hhmmSchema.nullish(),
+    endTime: hhmmSchema.nullish(),
+    attendeeIds: planEventAttendeeIdsSchema.optional(),
+    recurrence: planEventRecurrenceSchema.nullish(),
+  })
+  .strict()
+  .superRefine(refinePlanTaskTimes)
+  .refine(
+    (value) =>
+      Object.entries(value).some(
+        ([key, field]) => key !== "scope" && field !== undefined,
+      ),
+    { message: "empty_update" },
+  );
+export type UpdatePlanEventInput = z.infer<typeof updatePlanEventSchema>;
+
+export const cancelPlanEventSchema = z
+  .object({
+    scope: z.nativeEnum(PlanEventMutationScope),
+  })
+  .strict();
+export type CancelPlanEventInput = z.infer<typeof cancelPlanEventSchema>;
 
 /* ------------------------------- study sessions ------------------------------- */
 
@@ -996,7 +1080,10 @@ export const listNotebookEntriesQuerySchema = paginationQuerySchema.extend({
   status: z.enum(NOTEBOOK_ENTRY_STATUSES).optional(),
   due: z.enum(["true"]).optional(),
   revisit: z.enum(["true"]).optional(),
-  days: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30)])).optional(),
+  days: z.coerce
+    .number()
+    .pipe(z.union([z.literal(7), z.literal(30)]))
+    .optional(),
   sort: z.enum(["created", "review"]).optional(),
 });
 export type ListNotebookEntriesQuery = z.infer<
@@ -1016,9 +1103,15 @@ export const linkNotebookThreadSchema = z.object({
 export type LinkNotebookThreadInput = z.infer<typeof linkNotebookThreadSchema>;
 
 /** The review answer. One boolean — "could you do it this time?" — and the ladder does the rest. */
-export const reviewNotebookEntrySchema = z.object({ solved: z.boolean(), reviewId: z.string().uuid().optional() });
+export const reviewNotebookEntrySchema = z.object({
+  solved: z.boolean(),
+  reviewId: z.string().uuid().optional(),
+});
 export const notebookReviewQuerySchema = listNotebookEntriesQuerySchema.extend({
-  days: z.coerce.number().pipe(z.union([z.literal(7), z.literal(30)])).default(7),
+  days: z.coerce
+    .number()
+    .pipe(z.union([z.literal(7), z.literal(30)]))
+    .default(7),
 });
 export type NotebookReviewQuery = z.infer<typeof notebookReviewQuerySchema>;
 export type ReviewNotebookEntryInput = z.infer<
