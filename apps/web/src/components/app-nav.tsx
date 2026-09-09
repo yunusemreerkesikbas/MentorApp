@@ -41,6 +41,7 @@ import {
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
+import { isCoach } from "@/lib/coach-surface";
 import {
   ECONOMY_CHANGED_EVENT,
   fetchEconomyBalance,
@@ -59,16 +60,27 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  * Public profile is avatar-only on mobile; sidebar keeps Ayarlar + Topluluk.
  */
 
+/**
+ * `studentOnly` marks the daily ritual and the study tools — the surfaces `isStudentOnlyPath`
+ * bounces a coach away from (APP-090). Rendering them for a coach would be five links that all
+ * redirect, which is worse than no link at all.
+ *
+ * It is set here rather than derived from `isStudentOnlyPath(href)` on purpose: `/knowledge` is a
+ * student route by feel but is deliberately NOT blocked (a coach relays official exam facts to
+ * their students), so the two lists agree on nine entries and disagree on that one. Deriving would
+ * hide the disagreement.
+ */
 const NAV_ITEMS = [
-  { href: "/dashboard", labelKey: "home", icon: House },
-  { href: "/plan", labelKey: "plan", icon: Calendar },
+  { href: "/dashboard", labelKey: "home", icon: House, studentOnly: true },
+  { href: "/plan", labelKey: "plan", icon: Calendar, studentOnly: true },
   {
     href: "/coach",
     labelKey: "coach",
     icon: MessageCircle,
     sidebarExclude: true,
+    studentOnly: true,
   },
-  { href: "/analysis", labelKey: "analysis", icon: ChartColumn },
+  { href: "/analysis", labelKey: "analysis", icon: ChartColumn, studentOnly: true },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
      path is the review notification, not a tab the user hunts for. */
@@ -77,16 +89,19 @@ const NAV_ITEMS = [
     labelKey: "notebook",
     icon: NotebookPen,
     sidebarOnly: true,
+    studentOnly: true,
   },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
-  /* Human-coach surface (W8). Sidebar-only and role-gated: the mobile tab pill is a student
-     surface, and a coach does roster work at a desk. `/students` (TR `/kocluk`) is NOT `/coach`, which
-     is the AI companion chat above. */
+  /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
+     NOT `/coach`, which is the AI companion chat above.
+
+     No longer `sidebarOnly`: it used to read "a coach does roster work at a desk", but that left a
+     coach on a phone with no way into their own surface at all. The role filter below now runs on
+     the tab bar too, so this costs a student nothing. */
   {
     href: "/students",
     labelKey: "students",
     icon: UsersRound,
-    sidebarOnly: true,
     roles: [UserRole.COACH],
   },
   {
@@ -105,17 +120,23 @@ const SIDEBAR_ITEMS = NAV_ITEMS.filter(
 );
 
 /**
- * An item with no `roles` is open to everyone; otherwise the user must hold one of them.
+ * An item with no `roles` is open to everyone; otherwise the user must hold one of them. A
+ * `studentOnly` item is hidden from a coach, whom the `(app)` guard would redirect anyway.
  * This is presentation only — every gated surface re-checks server-side.
+ *
+ * Applied to BOTH lists since APP-090. It used to run only on the sidebar, so the mobile tab bar
+ * rendered its five items raw: a coach saw `/panel`, `/plan`, `/koc` and `/analiz` as live tabs
+ * and no way to reach `/kocluk`.
  */
 function visibleTo(
   items: readonly (typeof NAV_ITEMS)[number][],
   roles: readonly string[] | undefined,
 ) {
-  return items.filter(
-    (item) =>
-      !("roles" in item) || item.roles.some((role) => (roles ?? []).includes(role)),
-  );
+  const coach = isCoach({ roles: roles ?? [] });
+  return items.filter((item) => {
+    if ("studentOnly" in item && item.studentOnly && coach) return false;
+    return !("roles" in item) || item.roles.some((role) => (roles ?? []).includes(role));
+  });
 }
 
 const sidebarIconBtn =
@@ -213,11 +234,13 @@ export function AppNav() {
           className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
           aria-label={t("aria_label")}
         >
-          <MobileTabBar pathname={pathname} />
+          <MobileTabBar pathname={pathname} user={user} />
         </nav>
       )}
 
-      {!pathname.startsWith("/coach") && !hideMobileChrome ? (
+      {/* The AI companion FAB. Hidden from a coach (APP-090): it opens `/coach`, which the `(app)`
+          guard bounces them out of, so for them it is a button that goes nowhere. */}
+      {!pathname.startsWith("/coach") && !hideMobileChrome && !isCoach(user) ? (
         <DesktopCoachFab />
       ) : null}
     </>
@@ -365,7 +388,7 @@ function DesktopSidebar({
   );
 }
 
-function MobileTabBar({ pathname }: { pathname: string }) {
+function MobileTabBar({ pathname, user }: { pathname: string; user: AuthUser | null }) {
   const t = useTranslations("nav");
   const reduceMotion = useReducedMotion();
   const tabTransition = reduceMotion
@@ -381,7 +404,7 @@ function MobileTabBar({ pathname }: { pathname: string }) {
         reduceMotion ? { duration: 0 } : { duration: 0.28, ease: TAB_EASE }
       }
     >
-      {TAB_ITEMS.map((item) => (
+      {visibleTo(TAB_ITEMS, user?.roles).map((item) => (
         <MobileTabLink
           key={item.href}
           item={item}

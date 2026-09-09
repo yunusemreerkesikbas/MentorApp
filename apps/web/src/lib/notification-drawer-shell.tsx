@@ -136,7 +136,11 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       getUnseenJourneyLevelCelebrations(),
     ]).then(([notificationsResult, achievementsResult, journeyResult]) => {
       if (notificationsResult.status === "fulfilled") {
-        setData(notificationsResult.value);
+        // `?? EMPTY` for the reason the comment above gives, which this line was missing: an empty
+        // body resolves to `undefined` inside `fulfilled`, and the first read of `.items` takes the
+        // whole page to the error boundary. Found when APP-090 mounted this drawer on the coach
+        // surface as well, doubling how much a single unguarded read can take down.
+        setData(notificationsResult.value ?? EMPTY);
       }
       if (achievementsResult.status === "fulfilled") {
         setAchievementCelebrations(achievementsResult.value?.celebrations ?? []);

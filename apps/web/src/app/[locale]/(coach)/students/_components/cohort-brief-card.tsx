@@ -37,7 +37,8 @@ export function CohortBriefCard() {
       toast.error({
         title: common("error_title"),
         // The API localizes its own messages, including the quota refusal.
-        message: err instanceof ApiClientError ? err.message : common("error_unknown"),
+        message:
+          err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
     [toast, common],
@@ -82,7 +83,10 @@ export function CohortBriefCard() {
     <Card>
       <div className="flex flex-col gap-3">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
+          <h2
+            className="text-sm font-semibold"
+            style={{ color: "var(--color-main)" }}
+          >
             {t("cohort_brief_title")}
           </h2>
           <Button type="button" variant="soft" busy={busy} onClick={run}>
@@ -91,6 +95,13 @@ export function CohortBriefCard() {
         </div>
 
         {brief === null ? (
+          /*
+           * No brief written yet. APP-090 tried a rule-based stand-in here and cut it: every line it
+           * could produce — the name, the risk chips, the `action_*` suggestion — is already on the
+           * `StudentCard` a few pixels below, so the card said the roster twice. What the model adds
+           * is `why` (one reason drawn across several signals) and a situation-specific `action`,
+           * and neither can be faked from the same row the coach is already looking at.
+           */
           <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
             {t("cohort_brief_empty")}
           </p>
@@ -102,7 +113,10 @@ export function CohortBriefCard() {
               {brief.overall || t("cohort_brief_all_clear")}
             </p>
             {hasLines && (
-              <ul className="flex flex-col gap-3" aria-label={t("cohort_brief_list_label")}>
+              <ul
+                className="flex flex-col gap-3"
+                aria-label={t("cohort_brief_list_label")}
+              >
                 {brief.items.map((item) => (
                   <li
                     key={item.studentId}
@@ -129,10 +143,16 @@ export function CohortBriefCard() {
                         <RiskChip key={flag} flag={flag} />
                       ))}
                     </div>
-                    <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--color-body)" }}
+                    >
                       {item.why}
                     </p>
-                    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                    <p
+                      className="text-sm"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
                       {item.action}
                     </p>
                   </li>
@@ -140,7 +160,9 @@ export function CohortBriefCard() {
               </ul>
             )}
             <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("cohort_brief_since", { date: formatDate(brief.generatedAt, locale) })}
+              {t("cohort_brief_since", {
+                date: formatDate(brief.generatedAt, locale),
+              })}
               {brief.model === "cache" ? ` · ${t("cohort_brief_cached")}` : ""}
             </p>
           </>

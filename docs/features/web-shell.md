@@ -63,6 +63,39 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-08 — Rol farkındalığı kabuğa girdi (APP-090)
+
+`postAuthDestination` ve `AppNav` bugüne dek rol bilmiyordu; tek istisna sidebar'daki `/students`
+öğesiydi. APP-090 üçünü değiştirdi:
+
+- **Giriş yönlendirmesi role bakıyor.** Koç `/kocluk`'a iner, öğrenci `/panel`'e. `next` koç için
+  bilerek yok sayılıyor: ürettiğimiz her `next` bir öğrenci deep-link'i ve hepsi koça kapalı, yani
+  onurlandırmak koçu bir kare sonra guard'ın geri attığı ekrana göndermek olurdu.
+- **`(app)` guard'ı üçüncü dalını aldı.** `isStudentOnlyPath` (bkz. `lib/coach-surface.ts`) koçu
+  öğrenci ritüelinden `/kocluk`'a çeviriyor. Koşul **hem effect'te hem render kapısında**: yalnız
+  effect'te olsaydı yönlendirme inene kadar bir kare öğrenci paneli boyanırdı.
+- **Nav filtresi mobil tab bar'a da uygulandı.** `visibleTo` yalnız `SIDEBAR_ITEMS`'a koşuyordu, o
+  yüzden `TAB_ITEMS` ham render ediliyordu: koç `/topluluk` gibi ortak bir ekranda beş ölü sekme
+  görüyor, buna karşılık `/kocluk` `sidebarOnly` olduğu için telefondan kendi paneline **hiç**
+  giremiyordu. `studentOnly` işareti + `/students`'in `sidebarOnly`'den çıkması ikisini birden
+  kapattı. Bir de AI companion FAB'ı koça gizlendi: `/coach` ona kapalı, yani hiçbir yere gitmeyen
+  bir düğmeydi.
+
+**`studentOnly` neden `isStudentOnlyPath(href)`'ten türetilmiyor:** `/knowledge` his olarak öğrenci
+rotası ama **bilerek engellenmiyor** (koç resmî sınav bilgisini öğrencisine aktarıyor). İki liste
+dokuz maddede aynı, bir maddede ayrışıyor; türetmek o ayrışmayı gizlerdi.
+
+**Bildirim çekmecesinde bir boşluk kapandı:** `setData(notificationsResult.value)` korumasızdı.
+Hemen üstündeki yorum bu hata sınıfını (boş gövde → `undefined` → ilk `.items` okuması sayfayı
+error boundary'ye götürür) kutlamalar için anlatıyor ama `setData` atlanmıştı. Çekmece artık iki
+yüzeyde mount edildiği için tek korumasız okumanın götürebileceği alan iki katına çıktı; `?? EMPTY`
+eklendi.
+
+**İlgili:** `lib/coach-surface.ts` · `lib/post-auth-destination.ts` · `(app)/app-shell.tsx` ·
+`components/app-nav.tsx` · `lib/notification-drawer-shell.tsx` · ayrıntı için
+[mentorship.md](./mentorship.md) APP-090 girdisi.
+
+
 - **Sheet içeriğinin kendi i18n provider'ı + çekmecenin boş yanıt koruması (APP-073, 2026-09-05)** —
   Kırık test suite'ini toparlarken çıkan iki gerçek kullanıcı hatası. İkisi de kabuğun kendisinde.
   **(1) Sheet içeriği ham çeviri anahtarı gösteriyordu.** `BottomSheetProviderShell` kök layout'ta,

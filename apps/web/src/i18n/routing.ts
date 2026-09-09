@@ -49,6 +49,12 @@ export const routing = defineRouting({
      * student's transparency view.
      */
     "/students": { tr: "/kocluk", en: "/coaching/students" },
+    /* Before the dynamic sibling on purpose. The App Router resolves the static segment first at
+       the filesystem level, and keeping the same order here means the two files read the same way. */
+    "/students/profile": {
+      tr: "/kocluk/profil",
+      en: "/coaching/students/profile",
+    },
     "/students/[studentId]": {
       tr: "/kocluk/[studentId]",
       en: "/coaching/students/[studentId]",

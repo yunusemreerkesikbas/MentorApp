@@ -49,6 +49,7 @@
 | APP-073 | Test suite repair: two shell bugs the stale suites were hiding + provider pinning |
 | APP-074…APP-088 | Registry gap — recorded in the matching `docs/features/*.md` timelines |
 | APP-089 | W8 coach self-registration + coach onboarding branch; admin gains suspend/reinstate |
+| APP-090 | Coach home: role-aware routing, `(app)` block list, coach nav + notifications, two-column `/kocluk` |
 > Next number = last row + 1. Add a row when opening a branch.
 
 ## Standards (binding)

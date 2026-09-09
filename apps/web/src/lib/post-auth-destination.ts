@@ -1,4 +1,5 @@
 import type { AuthUser } from "@mentor/types";
+import { COACH_HOME, isCoach } from "./coach-surface";
 
 /**
  * Where a `?next=` value is allowed to send someone after auth. Only same-origin absolute
@@ -28,12 +29,19 @@ export function safeNextPath(next: string | null | undefined): string | null {
  * `next` (an invite link the user followed before signing up) wins only once onboarding is
  * complete: dropping someone straight into a study room before they have a username and an
  * exam would seat them at a table the app can't yet describe them at.
+ *
+ * A COACH goes to their own surface, and `next` is deliberately ignored for them (APP-090). Every
+ * `next` this app produces is a student deep link — a study-room invite, a coach-invitation code —
+ * and all of them sit behind `isStudentOnlyPath`, so honouring one would route a coach straight
+ * into a screen the `(app)` guard bounces them out of a frame later. `onboardingDestination` made
+ * the same call in APP-089.
  */
 export function postAuthDestination(
   user: AuthUser,
   next?: string | null,
 ): string {
   if (!hasCompletedOnboarding(user)) return "/onboarding";
+  if (isCoach(user)) return COACH_HOME;
   return safeNextPath(next) ?? "/dashboard";
 }
 

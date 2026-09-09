@@ -53,13 +53,21 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const [speechModalOpen, setSpeechModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const autoPromptAttemptedRef = useRef(false);
+  const reflectionAvailableRef = useRef(reflectionAvailable);
+  const reflectRequestIdRef = useRef(0);
+  const pageHydratedReflectRef = useRef(false);
+
+  reflectionAvailableRef.current = reflectionAvailable;
 
   const generateReflection = useCallback(async () => {
+    const requestId = ++reflectRequestIdRef.current;
     setReflecting(true);
+    setReflection(null);
     try {
       const res = (await aiMoodControllerReflect()) as unknown as
         | { data?: MoodReflectionDto }
         | MoodReflectionDto;
+      if (requestId !== reflectRequestIdRef.current) return;
       const dto =
         (res as { data?: MoodReflectionDto }).data ??
         (res as MoodReflectionDto);
@@ -67,7 +75,9 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     } catch {
       /* Fall back to the rule-based message; reflection is a premium enhancement. */
     } finally {
-      setReflecting(false);
+      if (requestId === reflectRequestIdRef.current) {
+        setReflecting(false);
+      }
     }
   }, []);
 
@@ -77,7 +87,10 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     setMood(initial?.mood ?? null);
     setMessage(initial?.message ?? null);
     setNote(initial?.struggleNote ?? "");
-    setReflection(initial?.aiReflection ?? null);
+    // Only adopt a server AI note; never wipe a local reflection with a null initial.
+    if (initial?.aiReflection) {
+      setReflection(initial.aiReflection);
+    }
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [initial]);
 
@@ -87,7 +100,14 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
       if (!active) return;
       const available = isPremiumFeatureAvailable(view, "mood.reflection");
       setReflectionAvailable(available);
-      if (available && initial?.mood != null && initial.aiReflection == null) {
+      // One page-load hydrate when today's mood exists but AI note was never fetched.
+      if (
+        available &&
+        !pageHydratedReflectRef.current &&
+        initial?.mood != null &&
+        initial.aiReflection == null
+      ) {
+        pageHydratedReflectRef.current = true;
         void generateReflection();
       }
     });
@@ -96,10 +116,22 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     };
   }, [generateReflection, initial?.aiReflection, initial?.mood]);
 
+  const resolveReflectionAvailable = useCallback(async () => {
+    if (reflectionAvailableRef.current != null) {
+      return reflectionAvailableRef.current;
+    }
+    const view = await fetchSubscriptionView();
+    const available = isPremiumFeatureAvailable(view, "mood.reflection");
+    setReflectionAvailable(available);
+    reflectionAvailableRef.current = available;
+    return available;
+  }, []);
+
   const saveMood = useCallback(
     async (value: number, struggleNote: string) => {
       setBusy(true);
       try {
+        const canReflect = await resolveReflectionAvailable();
         const result = (await coachingControllerUpsertMood({
           mood: value,
           struggleNote: struggleNote.trim() || undefined,
@@ -107,8 +139,15 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
         setMood(result.mood);
         setMessage(result.message);
         setReflection(null);
+        pageHydratedReflectRef.current = true;
+        if (canReflect) {
+          // Shimmer before onSaved/parent re-render can flash the rule message.
+          setReflecting(true);
+        }
         onSaved?.(result);
-        if (reflectionAvailable) void generateReflection();
+        if (canReflect) {
+          void generateReflection();
+        }
         return true;
       } catch (err) {
         showErrorToast({
@@ -126,7 +165,13 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
         setBusy(false);
       }
     },
-    [generateReflection, onSaved, reflectionAvailable, showErrorToast, tCommon],
+    [
+      generateReflection,
+      onSaved,
+      resolveReflectionAvailable,
+      showErrorToast,
+      tCommon,
+    ],
   );
 
   const pickMood = useCallback(
@@ -203,11 +248,18 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     openMoodDialog();
   }, [mood, openMoodDialog]);
 
+  const expectAiReflection = reflectionAvailable === true;
+  const speechLoading = expectAiReflection && reflecting;
+  // Premium: never stream the rule fallback first. Free / AI failure: rule message.
+  const speechText = speechLoading ? null : (reflection ?? message);
+
   return {
     mood,
     message,
     reflection,
     reflecting,
+    speechLoading,
+    speechText,
     reflectionLocked:
       reflectionAvailable === false && mood != null && reflection == null,
     openMoodDialog: () => openMoodDialog(),
