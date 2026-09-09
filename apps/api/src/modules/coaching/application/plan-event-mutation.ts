@@ -4,11 +4,6 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { todayInIstanbul } from "../domain/date.util";
-import {
-  generatePlanEventDates,
-  PlanEventRecurrenceError,
-  type PlanEventRecurrenceRule,
-} from "../domain/plan-event-recurrence";
 import type {
   NewPlanEvent,
   PlanEventRecord,
@@ -16,6 +11,10 @@ import type {
   PlanEventSeriesRow,
 } from "../infrastructure/plan-event.repository";
 import { toPlanEventDto } from "./plan-event.mapper";
+import {
+  generateEventDates,
+  recurrenceFromSeries,
+} from "./plan-event-recurrence-policy";
 
 export interface PlanEventMutationResult {
   dto: ReturnType<typeof toPlanEventDto>;
@@ -29,23 +28,6 @@ export function sanitizeAttendees(
   return [...new Set(ids)].filter((id) => id !== organizerUserId);
 }
 
-export function generateEventDates(rule: PlanEventRecurrenceRule): string[] {
-  try {
-    return generatePlanEventDates(rule);
-  } catch (error) {
-    if (error instanceof PlanEventRecurrenceError) {
-      throw new DomainError(
-        error.reason === "TOO_LONG" ||
-          error.reason === "TOO_MANY_OCCURRENCES"
-          ? ErrorCode.COACHING_EVENT_RECURRENCE_LIMIT
-          : ErrorCode.COACHING_EVENT_RECURRENCE_INVALID,
-        HttpStatus.BAD_REQUEST,
-      );
-    }
-    throw error;
-  }
-}
-
 export async function createEventRows(
   repository: PlanEventRepository,
   tx: DatabaseTx,
@@ -55,12 +37,12 @@ export async function createEventRows(
     "title" | "description" | "startTime" | "endTime"
   >,
   dates: string[],
-  attendeeIds: string[],
+  attendeeIdsByOccurrence: string[][],
   series: PlanEventSeriesRow | null,
 ) {
   const rows = await repository.createOccurrences(
     tx,
-    dates.map((eventDate) => ({
+    dates.map((eventDate, index) => ({
       seriesId: series?.id ?? null,
       organizerUserId,
       orgId: null,
@@ -70,13 +52,13 @@ export async function createEventRows(
       startTime: input.startTime ?? null,
       endTime: input.endTime ?? null,
       status: "SCHEDULED" as const,
-      attendeeCount: attendeeIds.length,
+      attendeeCount: attendeeIdsByOccurrence[index]?.length ?? 0,
     })),
   );
   await repository.addAttendees(
     tx,
-    rows.flatMap((row) =>
-      attendeeIds.map((attendeeUserId) => ({
+    rows.flatMap((row, index) =>
+      (attendeeIdsByOccurrence[index] ?? []).map((attendeeUserId) => ({
         eventId: row.id,
         organizerUserId,
         attendeeUserId,
@@ -210,9 +192,23 @@ async function regenerateSeries(
 ): Promise<PlanEventMutationResult> {
   const startsOn = input.eventDate ?? existing.series!.startsOn;
   if (input.eventDate !== undefined) assertMutableDate(startsOn);
-  const recurrence = input.recurrence ?? toRule(existing.series!);
+  const recurrence =
+    input.recurrence ?? recurrenceFromSeries(existing.series!);
+  const today = todayInIstanbul();
   const dates = generateEventDates({ ...recurrence, startsOn }).filter(
-    (date) => date >= todayInIstanbul(),
+    (date) => date >= today,
+  );
+  const existingFuture =
+    input.attendeeIds === undefined
+      ? await repository.listFutureSeries(
+          tx,
+          organizerUserId,
+          existing.seriesId!,
+          today,
+        )
+      : [];
+  const attendeeIdsByOccurrence = dates.map(
+    (_, index) => existingFuture[index]?.attendeeIds ?? attendeeIds,
   );
   const seriesPatch = {
     frequency: recurrence.frequency,
@@ -231,7 +227,7 @@ async function regenerateSeries(
     tx,
     organizerUserId,
     existing.seriesId!,
-    todayInIstanbul(),
+    today,
   );
   const series = { ...existing.series!, ...seriesPatch };
   const rows = await createEventRows(
@@ -240,7 +236,7 @@ async function regenerateSeries(
     organizerUserId,
     { ...existing, ...input },
     dates,
-    attendeeIds,
+    attendeeIdsByOccurrence,
     series,
   );
   const occurrences = await repository.findOwnedByIds(
@@ -254,7 +250,7 @@ async function regenerateSeries(
   if (!row) notFound();
   return {
     dto: toPlanEventDto(row!, {
-      attendeeCount: attendeeIds.length,
+      attendeeCount: row!.attendeeCount,
       series,
     }),
     occurrences,
@@ -268,15 +264,6 @@ function eventPatch(input: UpdatePlanEventInput): Partial<NewPlanEvent> {
     ...(input.eventDate !== undefined && { eventDate: input.eventDate }),
     ...(input.startTime !== undefined && { startTime: input.startTime }),
     ...(input.endTime !== undefined && { endTime: input.endTime }),
-  };
-}
-
-function toRule(series: PlanEventSeriesRow) {
-  return {
-    frequency: series.frequency,
-    end: series.endsOn
-      ? ({ kind: "DATE", date: series.endsOn } as const)
-      : ({ kind: "COUNT", count: series.occurrenceCount! } as const),
   };
 }
 

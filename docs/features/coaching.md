@@ -145,6 +145,13 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · APP-091 seri katılımcı koruması.** Tekrar/tarih değişikliği sırasında
+  `attendeeIds` gönderilmezse gelecekteki etkinliklerin farklı katılımcı kümeleri sıralarına göre
+  yeni kayıtlara taşınıyor; yeni kural fazladan kayıt üretirse yalnız bu ek kayıtlar seçili
+  etkinliğin katılımcılarını devralıyor. Açık katılımcı güncellemesi yine tüm etkilenen geleceğe
+  uygulanıyor. Okuma ve yazma toplu; kayıt başına sorgu yok. İlgili:
+  `plan-event-{mutation,recurrence-policy}.ts`, `plan-event.repository{,.helpers}.ts`.
+
 - **2026-09-09 · APP-091 etkinlik takvimi inceleme düzeltmeleri.** Etkinliklerde "bugün" artık
   yalnız Europe/Istanbul takvimine göre hesaplanıyor; diğer koçluk akışlarının UTC günü değişmedi.
   Seri yeniden üretimi, tarih özellikle değiştirilmedikçe özgün başlangıç gününü koruyor; böylece
@@ -167,7 +174,7 @@ pnpm --filter @mentor/api test
   öğrenci/genel DTO'sunda katılımcı kimlikleri yok; yalnız `attendeeCount` var. W8, yetkilendirdiği
   link/öğrenci çiftleriyle dışa açılan servisleri çağırır ve link bittiğinde gelecekteki katılımı
   kaldırır. İlgili: `plan-event-{recurrence,service,repository,controller}.ts`,
-  `plan-item-{service,repository}.ts`, `0111_unknown_the_hand.sql`.
+  `plan-item-{service,repository}.ts`, `0110_app_091_coach_plan_events.sql`.
 
 - **2026-09-09 · APP-091 sözleşme ve seri bütünlüğü düzeltmeleri.** Etkinlik-seri ilişkisi artık
   `(series_id, organizer_user_id)` bileşik FK'siyle aynı organizatörü zorunlu kılıyor. DATE bitişi

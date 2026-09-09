@@ -17,6 +17,7 @@ import {
   hydratePlanEvents,
   findParticipantPlanEvents,
   listCoachPlanEvents,
+  listFutureSeriesPlanEvents,
   listParticipantPlanEvents,
   removeFuturePlanEventAttendee,
   replacePlanEventAttendees,
@@ -122,6 +123,20 @@ export class PlanEventRepository {
         ),
       );
     return hydratePlanEvents(tx, rows);
+  }
+
+  listFutureSeries(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    seriesId: string,
+    from: string,
+  ): Promise<PlanEventRecord[]> {
+    return listFutureSeriesPlanEvents(
+      tx,
+      organizerUserId,
+      seriesId,
+      from,
+    );
   }
 
   async listParticipantPaged(

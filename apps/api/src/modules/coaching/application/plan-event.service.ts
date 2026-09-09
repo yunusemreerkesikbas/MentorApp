@@ -28,12 +28,12 @@ import { toPlanEventDto } from "./plan-event.mapper";
 import {
   assertMutableDate,
   createEventRows,
-  generateEventDates,
   invalidScope,
   notFound,
   sanitizeAttendees,
   updateEvent,
 } from "./plan-event-mutation";
+import { generateEventDates } from "./plan-event-recurrence-policy";
 
 export interface CoachPlanScope {
   mentorshipLinkId: string;
@@ -119,7 +119,7 @@ export class PlanEventService {
           organizerUserId,
           input,
           dates,
-          attendeeIds,
+          dates.map(() => attendeeIds),
           series,
         );
         const occurrences = await this.repository.findOwnedByIds(

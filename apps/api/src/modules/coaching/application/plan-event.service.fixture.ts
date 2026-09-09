@@ -83,6 +83,16 @@ function makeRepository(initial = [eventRow()]) {
         (row) => ids.includes(row.id) && row.organizerUserId === organizerId,
       ),
     ),
+    listFutureSeries: vi.fn(async (_tx, organizerId, seriesId, from) =>
+      rows
+        .filter(
+          (row) =>
+            row.organizerUserId === organizerId &&
+            row.seriesId === seriesId &&
+            row.eventDate >= from,
+        )
+        .sort((left, right) => left.eventDate.localeCompare(right.eventDate)),
+    ),
     updateOccurrence: vi.fn(async (_tx, organizerId, id, patch) => {
       const row = rows.find(
         (candidate) =>

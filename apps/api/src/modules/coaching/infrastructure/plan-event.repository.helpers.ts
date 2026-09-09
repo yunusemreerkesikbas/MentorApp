@@ -94,6 +94,26 @@ export async function findParticipantPlanEvents(
   return hydratePlanEvents(tx, rows);
 }
 
+export async function listFutureSeriesPlanEvents(
+  tx: DatabaseTx,
+  organizerUserId: string,
+  seriesId: string,
+  from: string,
+): Promise<PlanEventRecord[]> {
+  const rows = await tx
+    .select()
+    .from(planEvents)
+    .where(
+      and(
+        eq(planEvents.organizerUserId, organizerUserId),
+        eq(planEvents.seriesId, seriesId),
+        gte(planEvents.eventDate, from),
+      ),
+    )
+    .orderBy(...eventOrder);
+  return hydratePlanEvents(tx, rows);
+}
+
 export async function hydratePlanEvents(
   tx: DatabaseTx,
   rows: PlanEventRow[],
