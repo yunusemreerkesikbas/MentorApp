@@ -3,12 +3,18 @@ import { and, eq, isNotNull, lte, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
-import { mistakeNotebookEntries, users } from "../../../database/schema";
+import {
+  mistakeNotebookEntries,
+  planEventAttendees,
+  planEvents,
+  users,
+} from "../../../database/schema";
 import { UserStatus } from "../../identity/domain/identity.constants";
 import type {
   CoachingQueryPort,
   DailyReminderCandidate,
   NotebookReviewCandidate,
+  PlanEventReminderOccurrence,
 } from "../../coaching/domain/coaching-query.port";
 
 /** SERVICE-scoped queries for W5 daily reminder eligibility. */
@@ -76,6 +82,36 @@ export class CoachingQueryAdapter implements CoachingQueryPort {
         )
         .groupBy(users.id, users.email, users.displayName);
       return rows;
+    });
+  }
+
+  async getPlanEventReminderOccurrence(
+    eventId: string,
+  ): Promise<PlanEventReminderOccurrence | null> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .select({
+          eventId: planEvents.id,
+          organizerUserId: planEvents.organizerUserId,
+          title: planEvents.title,
+          eventDate: planEvents.eventDate,
+          startTime: planEvents.startTime,
+          status: planEvents.status,
+          attendeeUserIds: sql<string[]>`coalesce((
+            select array_agg(${planEventAttendees.attendeeUserId}::text)
+            from ${planEventAttendees}
+            where ${planEventAttendees.eventId} = ${planEvents.id}
+          ), array[]::text[])`,
+        })
+        .from(planEvents)
+        .where(eq(planEvents.id, eventId))
+        .limit(1);
+      const row = rows[0];
+      if (!row) return null;
+      return {
+        ...row,
+        startTime: row.startTime?.slice(0, 5) ?? null,
+      };
     });
   }
 }

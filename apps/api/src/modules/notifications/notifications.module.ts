@@ -16,6 +16,7 @@ import { DailyReminderService } from "./application/daily-reminder.service";
 import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
 import { MentorshipRiskDigestService } from "./application/mentorship-risk-digest.service";
 import { AnnouncementDispatchHandler } from "./application/handlers/announcement-dispatch.handler";
+import { PlanEventReminderHandler } from "./application/handlers/plan-event-reminder.handler";
 import { SendEmailHandler } from "./application/handlers/send-email.handler";
 import { SendPushHandler } from "./application/handlers/send-push.handler";
 import { SessionReturnReminderHandler } from "./application/handlers/session-return-reminder.handler";
@@ -24,6 +25,7 @@ import { JobRunnerService } from "./application/job-runner.service";
 import { BuddyActivityListener } from "./application/listeners/buddy-activity.listener";
 import { StudyRoomActivityListener } from "./application/listeners/study-room-activity.listener";
 import { CoachingEventsListener } from "./application/listeners/coaching-events.listener";
+import { PlanEventNotificationsListener } from "./application/listeners/plan-event-notifications.listener";
 import { ForumEventsListener } from "./application/listeners/forum-events.listener";
 import { IdentityEventsListener } from "./application/listeners/identity-events.listener";
 import { MentorshipEventsListener } from "./application/listeners/mentorship-events.listener";
@@ -66,6 +68,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     JobHandlersRegistrar,
     SendEmailHandler,
     SendPushHandler,
+    PlanEventReminderHandler,
     SessionReturnReminderHandler,
     AnnouncementDispatchHandler,
     NotificationsService,
@@ -80,6 +83,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     PaymentsEventsListener,
     PromotionEventsListener,
     CoachingEventsListener,
+    PlanEventNotificationsListener,
     MentorshipEventsListener,
     BuddyActivityListener,
     StudyRoomActivityListener,

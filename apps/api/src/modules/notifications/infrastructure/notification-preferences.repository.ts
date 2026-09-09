@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { notificationPreferences } from "../../../database/schema";
 
@@ -56,5 +56,16 @@ export class NotificationPreferencesRepository {
       .where(eq(notificationPreferences.userId, userId))
       .limit(1);
     return rows[0];
+  }
+
+  async findByUserIdsService(
+    tx: DatabaseTx,
+    userIds: string[],
+  ): Promise<NotificationPreferencesRow[]> {
+    if (userIds.length === 0) return [];
+    return tx
+      .select()
+      .from(notificationPreferences)
+      .where(inArray(notificationPreferences.userId, userIds));
   }
 }

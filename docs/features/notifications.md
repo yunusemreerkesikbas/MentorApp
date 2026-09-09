@@ -99,6 +99,19 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **Plan etkinliği bildirimleri ve 15 dakika hatırlatması (APP-091, 2026-09-09)** — W2'nin
+  `coaching.plan-event.created|updated|cancelled` olayları, koç hariç her güncel katılımcıya seri
+  başına tek PLAN özeti üretir; bağlantı o katılımcının ilk etkilenen kaydını açar. Saatli oluşturma
+  ve güncellemeler `notifications.plan-event-reminder` işini İstanbul başlangıcından 15 dakika
+  öncesine kurar. İşleyici etkinliği ve güncel alıcıları yalnız `COACHING_QUERY_PORT` üzerinden
+  yeniden okur; silinmiş, iptal edilmiş, tüm gün, başlamış veya saati değişmiş eski işler sessizce
+  biter. Kullanım: plan etkinliği akışında ek kurulum yoktur; in-app her güncel organizatör ve
+  katılımcıya, push yalnız mevcut tercihi açık olanlara gider. Gotcha: eski işler kuyrukta bilerek
+  kalır; `plan-event:{eventId}:{userId}:{expectedStartAt}` anahtarı retry ve çift işi tekilleştirir.
+  Bildirim verisi etkinlik başlık/tarih/saatini taşır, başka katılımcı kimliği taşımaz. İlgili:
+  `plan-event-notifications.listener.ts`, `plan-event-reminder.handler.ts`,
+  `coaching-query.port.ts`, `coaching-query.adapter.ts`.
+
 - **Push SSRF koruması ve canlı oturum kontrolü (2026-09-05)** — Push aboneliği yalnız bilinen
   Chrome/Firefox/Safari/Windows sağlayıcı alan adlarını, HTTPS/443 ve kullanıcı bilgisiz URL'leri kabul
   ediyor. Kayıtta ve gönderimden hemen önce DNS çözülerek özel, loopback, link-local ve ayrılmış IP'ler

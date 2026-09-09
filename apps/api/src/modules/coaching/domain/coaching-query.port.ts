@@ -15,9 +15,23 @@ export interface NotebookReviewCandidate extends DailyReminderCandidate {
   dueCount: number;
 }
 
+export interface PlanEventReminderOccurrence {
+  eventId: string;
+  organizerUserId: string;
+  title: string;
+  eventDate: string;
+  startTime: string | null;
+  status: "SCHEDULED" | "CANCELLED";
+  attendeeUserIds: string[];
+}
+
 export interface CoachingQueryPort {
   /** Active users with no study session AND no mood check-in on `dateIso` (YYYY-MM-DD). */
   listDailyReminderCandidates(dateIso: string): Promise<DailyReminderCandidate[]>;
   /** Active users with at least one mistake-notebook entry due for review at `now`. */
   listNotebookReviewCandidates(now: Date): Promise<NotebookReviewCandidate[]>;
+  /** Current event state and recipients for stale-safe reminder execution. */
+  getPlanEventReminderOccurrence(
+    eventId: string,
+  ): Promise<PlanEventReminderOccurrence | null>;
 }

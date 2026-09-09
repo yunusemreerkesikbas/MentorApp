@@ -14,6 +14,7 @@ export const JobName = {
   SEND_PUSH: "notifications.send-push",
   DISPATCH_DAILY_REMINDERS: "notifications.dispatch-daily-reminders",
   SESSION_RETURN_REMINDER: "notifications.session-return-reminder",
+  PLAN_EVENT_REMINDER: "notifications.plan-event-reminder",
   DISPATCH_ANNOUNCEMENT: "notifications.dispatch-announcement",
 } as const;
 export type JobName = (typeof JobName)[keyof typeof JobName];
@@ -43,5 +44,6 @@ export const EMAIL_COPY_KEY: Record<string, string> = {
 export const DeliveryTemplate = {
   SESSION_RETURN: "coaching.session-return",
   NOTEBOOK_REVIEW: "coaching.notebook-review",
+  PLAN_EVENT_REMINDER: "coaching.plan-event-reminder",
 } as const;
 export type DeliveryTemplate = (typeof DeliveryTemplate)[keyof typeof DeliveryTemplate];

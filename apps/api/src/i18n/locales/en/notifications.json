@@ -40,6 +40,26 @@
       "title": "Today's plan is done",
       "body": "{count} tasks finished. You took good care of yourself today."
     },
+    "planEventCreated": {
+      "register": "companion",
+      "title": "An event was added to your plan",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventUpdated": {
+      "register": "companion",
+      "title": "Event updated",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventCancelled": {
+      "register": "companion",
+      "title": "Event cancelled",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventReminder": {
+      "register": "companion",
+      "title": "Your event is coming up",
+      "body": "\"{eventTitle}\", {eventDate} at {eventTime}. It starts in 15 minutes."
+    },
     "dailyReminder": {
       "register": "puhu",
       "title": "Take a step today",
