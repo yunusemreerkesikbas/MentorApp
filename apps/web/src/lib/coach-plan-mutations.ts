@@ -179,7 +179,7 @@ export function buildCoachEventUpdate(
   values: CoachEventFormValues,
   scope: PlanEventMutationScope,
   original: CoachPlanEventDto,
-): UpdatePlanEventInput {
+): UpdatePlanEventInput | null {
   const create = buildCoachEventCreate(values);
   const update: UpdatePlanEventInput = { scope };
   if (create.title !== original.title) update.title = create.title;
@@ -200,7 +200,7 @@ export function buildCoachEventUpdate(
   ) {
     update.recurrence = create.recurrence;
   }
-  return update;
+  return Object.keys(update).length === 1 ? null : update;
 }
 
 export function eventMutationScope(

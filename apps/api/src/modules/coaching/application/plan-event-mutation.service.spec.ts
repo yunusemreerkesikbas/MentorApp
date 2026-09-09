@@ -211,6 +211,102 @@ describe("PlanEventService mutation", () => {
     expect(repository.updateOccurrence).not.toHaveBeenCalled();
   });
 
+  it("rejects a past series update without touching future rows or publishing", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-01",
+      endsOn: null,
+      occurrenceCount: 4,
+    };
+    const selected = eventRow({ seriesId, series, eventDate: "2026-09-08" });
+    const future = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-15",
+    });
+    const { service, repository, emitter } = makeService([selected, future]);
+
+    await expect(service.update(ORGANIZER, selected.id, {
+      scope: "SERIES",
+      title: "Geçmişten değişiklik",
+    })).rejects.toMatchObject({
+      code: ErrorCode.COACHING_EVENT_DATE_READONLY,
+    });
+    expect(repository.updateFutureOccurrences).not.toHaveBeenCalled();
+    expect(repository.updateSeries).not.toHaveBeenCalled();
+    expect(emitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a past series cancel without touching future rows or publishing", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-01",
+      endsOn: null,
+      occurrenceCount: 4,
+    };
+    const selected = eventRow({ seriesId, series, eventDate: "2026-09-08" });
+    const future = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-15",
+    });
+    const { service, repository, emitter } = makeService([selected, future]);
+
+    await expect(
+      service.cancel(ORGANIZER, selected.id, { scope: "SERIES" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.COACHING_EVENT_DATE_READONLY,
+    });
+    expect(repository.cancelFutureSeries).not.toHaveBeenCalled();
+    expect(emitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a cancelled occurrence cancel without writing or publishing", async () => {
+    const selected = eventRow({ status: "CANCELLED" });
+    const { service, repository, emitter } = makeService([selected]);
+
+    await expect(
+      service.cancel(ORGANIZER, selected.id, { scope: "OCCURRENCE" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.COACHING_EVENT_CANCELLED_READONLY,
+    });
+    expect(repository.cancelOccurrence).not.toHaveBeenCalled();
+    expect(emitter.emit).not.toHaveBeenCalled();
+  });
+
+  it("rejects a cancelled series member cancel without touching future rows or publishing", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-01",
+      endsOn: null,
+      occurrenceCount: 4,
+    };
+    const selected = eventRow({ seriesId, series, status: "CANCELLED" });
+    const future = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-15",
+    });
+    const { service, repository, emitter } = makeService([selected, future]);
+
+    await expect(
+      service.cancel(ORGANIZER, selected.id, { scope: "SERIES" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.COACHING_EVENT_CANCELLED_READONLY,
+    });
+    expect(repository.cancelFutureSeries).not.toHaveBeenCalled();
+    expect(emitter.emit).not.toHaveBeenCalled();
+  });
+
   it("keeps the original monthly anchor when regenerating through a clamped occurrence", async () => {
     vi.setSystemTime(new Date("2025-02-28T12:00:00.000Z"));
     const seriesId = "00000000-0000-4000-8000-000000000020";

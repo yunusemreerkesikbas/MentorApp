@@ -81,29 +81,33 @@ export function CoachPlanEventForm({
   const [error, setError] = useState<string | null>(null);
   const showRecurrence = mode.kind === "CREATE" ||
     Boolean(initial?.seriesId && scope === "SERIES");
+  const values = {
+    title,
+    description,
+    eventDate,
+    startTime,
+    endTime,
+    attendeeIds,
+    recurrenceFrequency: frequency,
+    recurrenceEndKind: endKind,
+    recurrenceCount: count,
+    recurrenceEndDate: endDate,
+  };
+  const effectiveScope = initial
+    ? eventMutationScope(initial.seriesId, scope)
+    : null;
+  const eventUpdate = initial && effectiveScope
+    ? buildCoachEventUpdate(values, effectiveScope, initial)
+    : null;
 
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
-    const values = {
-      title,
-      description,
-      eventDate,
-      startTime,
-      endTime,
-      attendeeIds,
-      recurrenceFrequency: frequency,
-      recurrenceEndKind: endKind,
-      recurrenceCount: count,
-      recurrenceEndDate: endDate,
-    };
-    const effectiveScope = initial
-      ? eventMutationScope(initial.seriesId, scope)
-      : null;
     if (initial?.seriesId && !effectiveScope) {
       setError(t("scope_required"));
       return;
     }
+    if (editing && !eventUpdate) return;
     setBusy(true);
     try {
       if (mode.kind === "CREATE") {
@@ -113,9 +117,7 @@ export function CoachPlanEventForm({
       } else {
         await updateCoachPlanEvent(
           mode.event.id,
-          updateMentorshipEventSchema.parse(
-            buildCoachEventUpdate(values, effectiveScope!, mode.event),
-          ),
+          updateMentorshipEventSchema.parse(eventUpdate),
         );
       }
       onSuccess(t(editing ? "event_updated" : "event_created"));
@@ -242,7 +244,11 @@ export function CoachPlanEventForm({
           <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
             {t("form_cancel")}
           </Button>
-          <Button type="submit" busy={busy}>
+          <Button
+            type="submit"
+            busy={busy}
+            disabled={busy || (editing && !eventUpdate)}
+          >
             {t(editing ? "save_changes" : "create_event")}
           </Button>
         </div>

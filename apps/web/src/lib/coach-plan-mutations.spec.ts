@@ -311,4 +311,19 @@ describe("eventMutationScope", () => {
     expect(update).not.toHaveProperty("recurrence");
     expect(update).toMatchObject({ scope: "OCCURRENCE", attendeeIds: [] });
   });
+
+  it("returns no mutation for an unchanged event edit", () => {
+    expect(buildCoachEventUpdate({
+      title: "Görüşme",
+      description: "",
+      eventDate: "2026-09-12",
+      startTime: "11:00",
+      endTime: "11:30",
+      attendeeIds: [STUDENT_A],
+      recurrenceFrequency: "WEEKLY",
+      recurrenceEndKind: "COUNT",
+      recurrenceCount: 4,
+      recurrenceEndDate: "",
+    }, "SERIES", planEvent())).toBeNull();
+  });
 });

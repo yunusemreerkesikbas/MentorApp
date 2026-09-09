@@ -4312,3 +4312,12 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   immutable history, not scheduled work. Related: `plan-event-mutation.ts`,
   `plan-event-recurrence-policy.ts`, `plan-event.repository.ts`,
   `plan-event-mutation.service.spec.ts`.
+
+- **2026-09-09 — APP-091 selected-occurrence mutation guard.** W2 event update and cancel now
+  share one guard: the selected stored occurrence must still be SCHEDULED and must be today or
+  later in Istanbul. The rule applies before OCCURRENCE/SERIES branching, so a past or cancelled
+  series member cannot mutate future rows and a rejected call publishes no domain event. Usage:
+  callers may choose scope only after selecting the occurrence; scope never overrides occurrence
+  mutability. Gotcha: cancelled rows return `COACHING_EVENT_CANCELLED_READONLY`, while past
+  scheduled rows keep `COACHING_EVENT_DATE_READONLY`. Related: `plan-event-mutation.ts`,
+  `plan-event-write.orchestrator.ts`, `plan-event-mutation.service.spec.ts`.

@@ -1438,6 +1438,12 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   `lib/coach-plan-{calendar,mutations}.ts`, `packages/validation/src/mentorship.ts`,
   `plan-task-mentorship.repository.ts`, `e2e/coach-plan.spec.ts`.
 
+- **2026-09-09 — APP-091 unchanged event edit guard.** Event update payload construction now
+  returns no mutation when every editable value matches the selected event. The edit form disables
+  Save in that state and also exits silently on programmatic submission, so `{scope}` is never sent
+  and no generic validation error is shown. Choosing a series scope alone is not a change. Related:
+  `coach-plan-event-form.tsx`, `lib/coach-plan-mutations.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

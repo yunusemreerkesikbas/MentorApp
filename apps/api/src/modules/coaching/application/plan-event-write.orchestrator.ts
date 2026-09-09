@@ -19,6 +19,7 @@ import {
 } from "../infrastructure/plan-event.repository";
 import { toPlanEventDto } from "./plan-event.mapper";
 import {
+  assertExistingEventMutable,
   assertMutableDate,
   createEventRows,
   invalidScope,
@@ -133,8 +134,8 @@ export class PlanEventWriteOrchestrator {
     input: CancelPlanEventInput,
   ): Promise<PlanEventRecord[]> {
     const existing = await this.requireOwned(tx, organizerUserId, eventId);
+    assertExistingEventMutable(existing);
     if (input.scope === "OCCURRENCE") {
-      assertMutableDate(existing.eventDate);
       const cancelled = await this.repository.cancelOccurrence(
         tx,
         organizerUserId,

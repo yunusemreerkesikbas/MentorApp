@@ -76,7 +76,7 @@ export async function updateEvent(
   existing: PlanEventRecord,
   input: UpdatePlanEventInput,
 ): Promise<PlanEventMutationResult> {
-  if (existing.status === "CANCELLED") cancelledReadonly();
+  assertExistingEventMutable(existing);
   if (input.scope === "OCCURRENCE") {
     return updateOccurrence(repository, tx, organizerUserId, existing, input);
   }
@@ -91,7 +91,6 @@ async function updateOccurrence(
   input: UpdatePlanEventInput,
 ): Promise<PlanEventMutationResult> {
   if (input.recurrence !== undefined) invalidScope();
-  assertMutableDate(existing.eventDate);
   if (input.eventDate) assertMutableDate(input.eventDate);
   const attendeeIds =
     input.attendeeIds === undefined
@@ -276,6 +275,13 @@ export function assertMutableDate(date: string): void {
       HttpStatus.FORBIDDEN,
     );
   }
+}
+
+export function assertExistingEventMutable(
+  existing: Pick<PlanEventRecord, "eventDate" | "status">,
+): void {
+  if (existing.status !== "SCHEDULED") cancelledReadonly();
+  assertMutableDate(existing.eventDate);
 }
 
 export function notFound(): never {
