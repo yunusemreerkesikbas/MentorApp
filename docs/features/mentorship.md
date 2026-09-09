@@ -1360,8 +1360,9 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   the gate. SERIES edits hydrate W2's returned replacement event id. The aggregate keeps organized
   personal/former-attendee events while hydrating only active identities; student filtering removes
   unrelated personal items. Grouped tasks split by their visible signature when DONE history and
-  edited PENDING rows diverge. Usage: all coach assignment/event mutations must use
-  `withActiveLinksLocked`; never precheck and write in separate transactions. Gotcha:
+  edited PENDING rows diverge. Usage: open `withServiceTransaction`, take any required W2 lock,
+  then call `requireActiveLinksInTransaction` before the W2 write; never precheck and write in
+  separate transactions. Gotcha:
   `assignmentGroupId` remains the mutation key, while `CoachPlanGroupedTaskDto.id` is a stable
   display-group key. Related: `mentorship-link.repository.ts`,
   `mentorship-{assignment,event,link,plan-orchestration}.service.ts`.
