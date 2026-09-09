@@ -62,7 +62,12 @@ export class MentorshipRosterService {
     now = new Date(),
   ): Promise<Paginated<MentorshipRosterRowDto>> {
     await this.linkService.assertEnabled();
-    const { rows, total } = await this.links.listByCoach(coachId, status, page, pageSize);
+    const { rows, total } = await this.links.listByCoach(
+      coachId,
+      status,
+      page,
+      pageSize,
+    );
     if (rows.length === 0) return { items: [], total, page, pageSize };
 
     // Only ACTIVE links get metrics. Ending a link revokes consent, so the history tab shows that
@@ -70,18 +75,22 @@ export class MentorshipRosterService {
     const activeStudentIds = rows
       .filter((row) => row.status === "ACTIVE")
       .map((row) => row.studentId);
-    const [people, snapshots, thresholds, attentionTtlDays] = await Promise.all([
-      this.users.listDisplayIdentities(rows.map((row) => row.studentId)),
-      this.evidence.listCohortSnapshots(activeStudentIds, now),
-      this.thresholds(),
-      this.config.get("mentorship.attention.ttl_days"),
-    ]);
+    const [people, snapshots, thresholds, attentionTtlDays] = await Promise.all(
+      [
+        this.users.listDisplayIdentities(rows.map((row) => row.studentId)),
+        this.evidence.listCohortSnapshots(activeStudentIds, now),
+        this.thresholds(),
+        this.config.get("mentorship.attention.ttl_days"),
+      ],
+    );
     const today = todayIso(now);
 
     const items = rows.map((link): MentorshipRosterRowDto => {
       const person = people.get(link.studentId);
       const snapshot = snapshots.get(link.studentId);
-      const flags = snapshot ? evaluateRiskFlags(snapshot, thresholds, today) : [];
+      const flags = snapshot
+        ? evaluateRiskFlags(snapshot, thresholds, today)
+        : [];
       return {
         linkId: link.id,
         studentId: link.studentId,
@@ -151,7 +160,9 @@ export class MentorshipRosterService {
     const snapshot = snapshots.get(studentId);
     // No snapshot means no evidence to triage. An empty mark is still worth writing: it records
     // that the coach looked, and `needsAttention` reads it as covering nothing if flags appear.
-    const flags = snapshot ? evaluateRiskFlags(snapshot, thresholds, todayIso(now)) : [];
+    const flags = snapshot
+      ? evaluateRiskFlags(snapshot, thresholds, todayIso(now))
+      : [];
     await this.links.setAttention(link.id, flags);
   }
 
@@ -166,17 +177,27 @@ export class MentorshipRosterService {
 
     // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
     // previous coach on a task that outlived their link must not be readable by the current one.
-    const droppedSince = addDays(todayIso(now), -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1));
-    const [person, profile, report, snapshots, thresholds, attentionTtlDays, dropped] =
-      await Promise.all([
-        this.users.listDisplayIdentities([studentId]),
-        this.users.getDiscoveryProfile(studentId),
-        this.evidence.getStudentReport(studentId, now, link.id),
-        this.evidence.listCohortSnapshots([studentId], now),
-        this.thresholds(),
-        this.config.get("mentorship.attention.ttl_days"),
-        this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
-      ]);
+    const droppedSince = addDays(
+      todayIso(now),
+      -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1),
+    );
+    const [
+      person,
+      profile,
+      report,
+      snapshots,
+      thresholds,
+      attentionTtlDays,
+      dropped,
+    ] = await Promise.all([
+      this.users.listDisplayIdentities([studentId]),
+      this.users.getDiscoveryProfile(studentId),
+      this.evidence.getStudentReport(studentId, now, link.id),
+      this.evidence.listCohortSnapshots([studentId], now),
+      this.thresholds(),
+      this.config.get("mentorship.attention.ttl_days"),
+      this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
+    ]);
     const snapshot = snapshots.get(studentId)!;
     const flags = evaluateRiskFlags(snapshot, thresholds, todayIso(now));
 
@@ -203,6 +224,7 @@ export class MentorshipRosterService {
       // What the living plan cannot say: these were assigned and then removed. Same `link.id`
       // scope as the plan rows, so a previous coach's assignments stay invisible.
       droppedAssignments: dropped.map((row) => ({
+        assignmentGroupId: row.assignmentGroupId,
         taskDate: row.taskDate,
         title: row.taskTitle,
         droppedAt: row.droppedAt.toISOString(),
@@ -211,11 +233,12 @@ export class MentorshipRosterService {
   }
 
   private async thresholds(): Promise<RiskThresholds> {
-    const [inactiveDays, planCompletionFloor, lowMoodCeiling] = await Promise.all([
-      this.config.get("mentorship.risk.inactive_days"),
-      this.config.get("mentorship.risk.plan_completion_floor"),
-      this.config.get("mentorship.risk.low_mood_ceiling"),
-    ]);
+    const [inactiveDays, planCompletionFloor, lowMoodCeiling] =
+      await Promise.all([
+        this.config.get("mentorship.risk.inactive_days"),
+        this.config.get("mentorship.risk.plan_completion_floor"),
+        this.config.get("mentorship.risk.low_mood_ceiling"),
+      ]);
     return { inactiveDays, planCompletionFloor, lowMoodCeiling };
   }
 }

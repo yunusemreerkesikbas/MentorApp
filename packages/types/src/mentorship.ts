@@ -222,8 +222,6 @@ export interface MentorshipRosterRowDto {
  * student's own note and never appears here.
  */
 export interface MentorshipReportPlanTaskDto {
-  id: string;
-  assignmentGroupId: string | null;
   taskDate: string;
   title: string;
   subject: string | null;
