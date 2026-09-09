@@ -7,6 +7,8 @@ type ValidationSurface = {
   updatePlanEventSchema?: z.ZodTypeAny;
   cancelPlanEventSchema?: z.ZodTypeAny;
   createMentorshipBatchAssignmentSchema?: z.ZodTypeAny;
+  updateMentorshipAssignmentSchema?: z.ZodTypeAny;
+  updateMentorshipAssignmentGroupSchema?: z.ZodTypeAny;
 };
 
 const schemas = validation as ValidationSurface;
@@ -192,6 +194,43 @@ describe("coach plan event validation", () => {
           (_, index) =>
             `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
         ),
+      }).success,
+    ).toBe(false);
+  });
+
+  it("limits assignment edits to coach-owned schedule/content fields", () => {
+    expect(schemas.updateMentorshipAssignmentSchema).toBeDefined();
+    expect(schemas.updateMentorshipAssignmentGroupSchema).toBeDefined();
+    if (
+      !schemas.updateMentorshipAssignmentSchema ||
+      !schemas.updateMentorshipAssignmentGroupSchema
+    ) {
+      return;
+    }
+    expect(
+      schemas.updateMentorshipAssignmentSchema.safeParse({
+        title: "Yeni başlık",
+        subject: "Türkçe",
+        topic: "Paragraf",
+        taskDate: "2026-09-16",
+        startTime: "10:00",
+        endTime: "11:00",
+        coachNote: "20 soru",
+      }).success,
+    ).toBe(true);
+    for (const forbidden of [
+      { status: "DONE" },
+      { description: "student-private" },
+      { origin: null },
+      { assignmentGroupId: null },
+    ]) {
+      expect(
+        schemas.updateMentorshipAssignmentSchema.safeParse(forbidden).success,
+      ).toBe(false);
+    }
+    expect(
+      schemas.updateMentorshipAssignmentGroupSchema.safeParse({
+        studentIds: [firstStudentId],
       }).success,
     ).toBe(false);
   });
