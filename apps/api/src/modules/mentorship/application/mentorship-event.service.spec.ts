@@ -18,11 +18,50 @@ function setup(rejectStudent?: string) {
     create: vi.fn(async (_coachId, input) => ({ id: EVENT, ...input })),
     update: vi.fn(async (_coachId, _eventId, input) => ({ id: EVENT, ...input })),
     cancel: vi.fn(),
+    getCoachEventData: vi.fn(async () => ({
+      event: {
+        id: EVENT,
+        seriesId: null,
+        organizerUserId: COACH,
+        orgId: null,
+        title: "Görüşme",
+        description: null,
+        eventDate: "2026-09-10",
+        startTime: null,
+        endTime: null,
+        status: "SCHEDULED",
+        attendeeCount: 1,
+        recurrence: null,
+        createdAt: "2026-09-09T10:00:00.000Z",
+        updatedAt: "2026-09-09T10:00:00.000Z",
+      },
+      attendeeIds: [STUDENT_A],
+    })),
+  };
+  const users = {
+    listDisplayIdentities: vi.fn(async () =>
+      new Map([
+        [
+          STUDENT_A,
+          {
+            userId: STUDENT_A,
+            displayName: "Ayşe",
+            username: "ayse",
+            avatarUrl: "https://cdn.example/ayse.png",
+          },
+        ],
+      ]),
+    ),
   };
   return {
     links,
     planEvents,
-    service: new MentorshipEventService(links as never, planEvents as never),
+    users,
+    service: new MentorshipEventService(
+      links as never,
+      planEvents as never,
+      users as never,
+    ),
   };
 }
 
@@ -54,6 +93,28 @@ describe("MentorshipEventService", () => {
     expect(links.assertEnabled).toHaveBeenCalledOnce();
     expect(links.requireActiveLink).not.toHaveBeenCalled();
     expect(planEvents.create).toHaveBeenCalledOnce();
+  });
+
+  it("returns full public attendee identities on the coach-only event DTO", async () => {
+    const { service } = setup();
+
+    const created = await service.create(COACH, {
+      title: "Görüşme",
+      eventDate: "2026-09-10",
+      attendeeIds: [STUDENT_A],
+    });
+
+    expect(created).toMatchObject({
+      attendees: [
+        {
+          studentId: STUDENT_A,
+          studentDisplayName: "Ayşe",
+          studentUsername: "ayse",
+          avatarUrl: "https://cdn.example/ayse.png",
+        },
+      ],
+    });
+    expect(JSON.stringify(created)).not.toContain("avatarStorageKey");
   });
 
   it("refuses the implicit organizer as an attendee", async () => {
