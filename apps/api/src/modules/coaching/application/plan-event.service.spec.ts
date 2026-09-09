@@ -413,8 +413,19 @@ describe("PlanEventService", () => {
 
   it("cancels only today and future occurrences for SERIES", async () => {
     const seriesId = "00000000-0000-4000-8000-000000000020";
-    const selected = eventRow({ seriesId });
-    const { service, repository } = makeService([selected]);
+    const selected = eventRow({
+      seriesId,
+      attendeeCount: 1,
+      attendeeIds: [STUDENT_A],
+    });
+    const later = eventRow({
+      id: "00000000-0000-4000-8000-000000000013",
+      seriesId,
+      eventDate: "2026-09-17",
+      attendeeCount: 1,
+      attendeeIds: [STUDENT_B],
+    });
+    const { service, repository, emitter } = makeService([selected, later]);
 
     await service.cancel(ORGANIZER, selected.id, { scope: "SERIES" });
 
@@ -423,6 +434,12 @@ describe("PlanEventService", () => {
       ORGANIZER,
       seriesId,
       "2026-09-09",
+    );
+    expect(emitter.emit).toHaveBeenCalledWith(
+      CoachingEventTopic.PLAN_EVENT_CANCELLED,
+      expect.objectContaining({
+        recipientUserIds: [STUDENT_A, STUDENT_B],
+      }),
     );
   });
 

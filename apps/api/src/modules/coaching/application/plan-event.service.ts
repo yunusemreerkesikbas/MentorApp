@@ -186,30 +186,34 @@ export class PlanEventService {
       async (tx) => {
         await this.repository.acquireOrganizerLock(tx, organizerUserId);
         const existing = await this.requireOwned(tx, organizerUserId, id);
+        let recipientIds = existing.attendeeIds;
         if (input.scope === "OCCURRENCE") {
           assertMutableDate(existing.eventDate);
           await this.repository.cancelOccurrence(tx, organizerUserId, id);
         } else {
           if (!existing.seriesId) invalidScope();
-          await this.repository.cancelFutureSeries(
+          const cancelled = await this.repository.cancelFutureSeries(
             tx,
             organizerUserId,
             existing.seriesId!,
             todayIso(),
           );
+          recipientIds = [
+            ...new Set(cancelled.flatMap((row) => row.attendeeIds)),
+          ];
         }
-        return existing;
+        return { event: existing, recipientIds };
       },
     );
     this.events.emit(
       CoachingEventTopic.PLAN_EVENT_CANCELLED,
       new PlanEventCancelled(
-        emitted.id,
+        emitted.event.id,
         organizerUserId,
-        emitted.attendeeIds,
-        emitted.title,
-        emitted.eventDate,
-        emitted.startTime?.slice(0, 5) ?? null,
+        emitted.recipientIds,
+        emitted.event.title,
+        emitted.event.eventDate,
+        emitted.event.startTime?.slice(0, 5) ?? null,
       ),
     );
   }

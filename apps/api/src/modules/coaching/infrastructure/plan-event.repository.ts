@@ -262,15 +262,20 @@ export class PlanEventRepository {
     });
   }
 
-  cancelFutureSeries(
+  async cancelFutureSeries(
     tx: DatabaseTx,
     organizerUserId: string,
     seriesId: string,
     from: string,
-  ): Promise<PlanEventRow[]> {
-    return this.updateFutureOccurrences(tx, organizerUserId, seriesId, from, {
-      status: "CANCELLED",
-    });
+  ): Promise<PlanEventRecord[]> {
+    const rows = await this.updateFutureOccurrences(
+      tx,
+      organizerUserId,
+      seriesId,
+      from,
+      { status: "CANCELLED" },
+    );
+    return hydratePlanEvents(tx, rows);
   }
 
   async listAuthorizedForCoach(
