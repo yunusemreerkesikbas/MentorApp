@@ -3,7 +3,6 @@
 import type { CoachPlanItemDto } from "@mentor/types";
 import { useTranslations } from "next-intl";
 import {
-  coachPlanItemDomId,
   isCoachPlanItemShared,
 } from "@/lib/coach-plan-calendar";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
@@ -12,6 +11,11 @@ export function coachPlanItemId(item: CoachPlanItemDto): string {
   return item.kind === "TASK" ? item.task.id : item.event.id;
 }
 
+export type CoachPlanItemSelect = (
+  item: CoachPlanItemDto,
+  trigger: HTMLButtonElement,
+) => void;
+
 export function CoachPlanItemCard({
   item,
   selected,
@@ -19,7 +23,7 @@ export function CoachPlanItemCard({
 }: {
   item: CoachPlanItemDto;
   selected: boolean;
-  onSelect: (item: CoachPlanItemDto) => void;
+  onSelect: CoachPlanItemSelect;
 }) {
   const t = useTranslations("coachPlan");
   const data = item.kind === "TASK" ? item.task : item.event;
@@ -34,9 +38,8 @@ export function CoachPlanItemCard({
 
   return (
     <button
-      id={coachPlanItemDomId(item)}
       type="button"
-      onClick={() => onSelect(item)}
+      onClick={(event) => onSelect(item, event.currentTarget)}
       aria-pressed={selected}
       className="flex min-h-11 w-full flex-col gap-2 rounded-[var(--radius-card)] border p-3 text-left shadow-[var(--shadow-card)] transition-shadow hover:shadow-[var(--shadow-card-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{

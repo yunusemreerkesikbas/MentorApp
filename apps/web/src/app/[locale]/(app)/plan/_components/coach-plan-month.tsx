@@ -8,7 +8,11 @@ import {
   uniqueStudentAvatars,
 } from "@/lib/coach-plan-calendar";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
-import { CoachPlanItemCard, coachPlanItemId } from "./coach-plan-item-card";
+import {
+  CoachPlanItemCard,
+  coachPlanItemId,
+  type CoachPlanItemSelect,
+} from "./coach-plan-item-card";
 
 export function CoachPlanMonth({
   days,
@@ -25,7 +29,7 @@ export function CoachPlanMonth({
   selectedDate: string;
   selectedId: string | null;
   onSelectDate: (date: string) => void;
-  onSelectItem: (item: CoachPlanItemDto) => void;
+  onSelectItem: CoachPlanItemSelect;
 }) {
   const locale = useLocale();
   const t = useTranslations("coachPlan");

@@ -3,7 +3,11 @@
 import type { CoachPlanItemDto } from "@mentor/types";
 import { useLocale, useTranslations } from "next-intl";
 import { itemsForCoachPlanDay } from "@/lib/coach-plan-calendar";
-import { CoachPlanItemCard, coachPlanItemId } from "./coach-plan-item-card";
+import {
+  CoachPlanItemCard,
+  coachPlanItemId,
+  type CoachPlanItemSelect,
+} from "./coach-plan-item-card";
 
 export function CoachPlanWeek({
   days,
@@ -14,7 +18,7 @@ export function CoachPlanWeek({
   days: readonly string[];
   items: readonly CoachPlanItemDto[];
   selectedId: string | null;
-  onSelect: (item: CoachPlanItemDto) => void;
+  onSelect: CoachPlanItemSelect;
 }) {
   const locale = useLocale();
   const t = useTranslations("coachPlan");
@@ -65,7 +69,7 @@ function DayColumn({
   locale: string;
   dayItems: CoachPlanItemDto[];
   selectedId: string | null;
-  onSelect: (item: CoachPlanItemDto) => void;
+  onSelect: CoachPlanItemSelect;
   emptyLabel: string;
   mobile?: boolean;
 }) {

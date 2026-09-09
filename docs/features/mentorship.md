@@ -1402,8 +1402,9 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   an opened read-only detail receives focus without trapping it. Role planners are separate dynamic
   chunks. The month board uses native table headers/cells and names every unique overflow student
   to assistive technology; retry restarts only the resource that failed. A query event is consumed
-  only by the first successful range load, closing detail restores its item trigger, and error
-  states temporarily hide any preserved detail selection. Related:
+  only by the first successful range load, closing detail restores the exact still-connected
+  button that opened it (no shared DOM ids), and error states temporarily hide any preserved
+  detail selection. Related:
   `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
   `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
 

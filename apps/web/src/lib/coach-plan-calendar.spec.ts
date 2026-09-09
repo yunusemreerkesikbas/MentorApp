@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import type { CoachPlanItemDto } from "@mentor/types";
 import {
   coachPlanQueryKey,
@@ -8,8 +8,8 @@ import {
   consumeInitialCoachPlanEvent,
   isCoachPlanItemShared,
   itemsForCoachPlanDay,
-  coachPlanItemDomId,
   parseCoachPlanSelection,
+  restoreCoachPlanTrigger,
   sortCoachPlanItems,
   uniqueStudentAvatars,
 } from "./coach-plan-calendar";
@@ -248,12 +248,17 @@ describe("consumeInitialCoachPlanEvent", () => {
   });
 });
 
-describe("coachPlanItemDomId", () => {
-  it("is stable and separates task and event trigger ids", () => {
-    const taskItem = task("same-id", "2026-09-10", null);
-    const eventItem = event("same-id", "2026-09-10", null);
-    expect(coachPlanItemDomId(taskItem)).toBe(coachPlanItemDomId(taskItem));
-    expect(coachPlanItemDomId(taskItem)).not.toBe(coachPlanItemDomId(eventItem));
+describe("restoreCoachPlanTrigger", () => {
+  it("focuses only the exact trigger that is still connected", () => {
+    const connectedFocus = vi.fn();
+    const disconnectedFocus = vi.fn();
+
+    restoreCoachPlanTrigger({ isConnected: true, focus: connectedFocus });
+    restoreCoachPlanTrigger({ isConnected: false, focus: disconnectedFocus });
+    restoreCoachPlanTrigger(null);
+
+    expect(connectedFocus).toHaveBeenCalledOnce();
+    expect(disconnectedFocus).not.toHaveBeenCalled();
   });
 });
 

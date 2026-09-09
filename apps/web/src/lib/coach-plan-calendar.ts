@@ -149,9 +149,15 @@ export function consumeInitialCoachPlanEvent(
   return { applied: true, pendingEventId: null, item: item ?? null };
 }
 
-export function coachPlanItemDomId(item: CoachPlanItemDto): string {
-  const id = item.kind === "TASK" ? item.task.id : item.event.id;
-  return `coach-plan-${item.kind.toLowerCase()}-${encodeURIComponent(id)}`;
+export interface CoachPlanFocusTrigger {
+  readonly isConnected: boolean;
+  focus: () => void;
+}
+
+export function restoreCoachPlanTrigger(
+  trigger: CoachPlanFocusTrigger | null,
+): void {
+  if (trigger?.isConnected) trigger.focus();
 }
 
 export function coachPlanWeekdayLabels(

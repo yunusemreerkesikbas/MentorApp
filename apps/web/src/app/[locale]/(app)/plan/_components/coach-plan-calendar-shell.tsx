@@ -5,9 +5,9 @@ import type { CoachPlanItemDto, MentorshipRosterRowDto } from "@mentor/types";
 import { Button, Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import {
-  coachPlanItemDomId,
   coachPlanRange,
   consumeInitialCoachPlanEvent,
+  restoreCoachPlanTrigger,
   sortCoachPlanItems,
   type CoachPlanScale,
 } from "@/lib/coach-plan-calendar";
@@ -49,6 +49,7 @@ export function CoachPlanCalendarShell({
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const initialEventStateRef = useRef({ pendingEventId: initialEventId });
+  const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const range = useMemo(() => coachPlanRange(anchor, scale), [anchor, scale]);
   const requestKey = `${range.from}:${range.to}:${studentId ?? "all"}:${reloadKey}`;
   const planLoading = loadedKey !== requestKey && errorKey !== requestKey;
@@ -77,6 +78,7 @@ export function CoachPlanCalendarShell({
           pendingEventId: initialSelection.pendingEventId,
         };
         if (initialSelection.applied) {
+          detailTriggerRef.current = null;
           setSelectedItem(initialSelection.item);
           if (initialSelection.item?.kind === "EVENT") {
             setSelectedDate(initialSelection.item.event.eventDate);
@@ -94,7 +96,8 @@ export function CoachPlanCalendarShell({
     };
   }, [range.from, range.to, requestKey, studentId]);
 
-  const selectItem = useCallback((item: CoachPlanItemDto) => {
+  const selectItem = useCallback((item: CoachPlanItemDto, trigger: HTMLButtonElement) => {
+    detailTriggerRef.current = trigger;
     setSelectedItem(item);
     setSelectedDate(item.kind === "TASK" ? item.task.taskDate : item.event.eventDate);
   }, []);
@@ -116,12 +119,10 @@ export function CoachPlanCalendarShell({
 
   const closeDetail = useCallback(() => {
     if (!selectedItem) return;
-    const triggerId = coachPlanItemDomId(selectedItem);
+    const trigger = detailTriggerRef.current;
+    detailTriggerRef.current = null;
     setSelectedItem(null);
-    requestAnimationFrame(() => {
-      const trigger = document.getElementById(triggerId);
-      if (trigger instanceof HTMLElement) trigger.focus();
-    });
+    requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
   }, [selectedItem]);
 
   if (planLoading || rosterLoading) return <CoachPlanSkeleton />;
