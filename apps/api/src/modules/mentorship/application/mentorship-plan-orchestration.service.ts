@@ -84,6 +84,7 @@ export class MentorshipPlanOrchestrationService {
     return {
       id: task.id,
       assignmentGroupId: null,
+      status: task.status,
       taskDate: task.taskDate,
       title: task.title,
       subject: task.subject,
@@ -110,6 +111,7 @@ export class MentorshipPlanOrchestrationService {
           ? `${row.task.assignmentGroupId}:${shortHash(signature)}`
           : row.task.id,
         assignmentGroupId: row.task.assignmentGroupId,
+        status: null,
         taskDate: row.task.taskDate,
         title: row.task.title,
         subject: row.task.subject,

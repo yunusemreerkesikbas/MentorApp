@@ -6,14 +6,23 @@ import type { CoachPlanItemDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
+import type { CoachTaskMutationTarget } from "@/lib/coach-plan-mutations";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
+import { CoachPlanDetailActions } from "./coach-plan-detail-actions";
 
 export function CoachPlanDetail({
   item,
   onClose,
+  onEdit,
+  onMutationSuccess,
 }: {
   item: CoachPlanItemDto;
   onClose: () => void;
+  onEdit: (
+    trigger: HTMLButtonElement,
+    target: CoachTaskMutationTarget | null,
+  ) => void;
+  onMutationSuccess: (message: string) => void;
 }) {
   const locale = useLocale();
   const t = useTranslations("coachPlan");
@@ -97,6 +106,11 @@ export function CoachPlanDetail({
             <p className="text-sm" style={{ color: "var(--color-body)" }}>{names}</p>
           </div>
         )}
+        <CoachPlanDetailActions
+          item={item}
+          onEdit={onEdit}
+          onSuccess={onMutationSuccess}
+        />
       </Card>
     </aside>
   );

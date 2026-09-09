@@ -1408,6 +1408,20 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
   `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
 
+- **2026-09-09 — APP-091 coach plan task and event actions.** The coach calendar now creates
+  personal tasks/events when no attendee is selected, sends one atomic assignment request for a
+  selected cohort, and sends recurrence rules to W8 without materializing occurrences in the
+  browser. Pending personal/assignment tasks can be edited or removed; group calls contain only
+  the currently displayed PENDING students. Scheduled current/future events can be edited or
+  cancelled, and series actions require an explicit occurrence/series scope. Usage: open “Yeni
+  görev” or “Yeni etkinlik” from the toolbar, or open a mutable detail and choose edit/remove.
+  Successful writes close the action, toast, and reload the current server-filtered range.
+  Gotchas: task recipients stay read-only while editing, completed participants remain history,
+  and W2 does not expose personal-task date edits, so that date is visibly locked. Timed events
+  announce the 15-minute reminder rule; all-day events announce that no reminder is sent.
+  Related: `coach-plan-{task,event}-form.tsx`, `coach-plan-detail-actions.tsx`,
+  `lib/coach-plan-mutations.ts`, `e2e/coach-plan.spec.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

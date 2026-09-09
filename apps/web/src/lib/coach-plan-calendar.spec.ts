@@ -29,6 +29,7 @@ function task(
     task: {
       id,
       assignmentGroupId: null,
+      status: participants.length === 0 ? "PENDING" : null,
       taskDate,
       title: id,
       subject: null,

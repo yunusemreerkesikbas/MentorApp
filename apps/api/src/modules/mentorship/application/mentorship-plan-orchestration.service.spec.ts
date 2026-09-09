@@ -130,6 +130,19 @@ describe("MentorshipPlanOrchestrationService", () => {
 
     expect(result.total).toBe(3);
     expect(result.items.map((item) => item.kind)).toEqual(["TASK", "TASK", "EVENT"]);
+    const personal = result.items.find(
+      (item) =>
+        item.kind === "TASK" &&
+        item.task.id === "00000000-0000-4000-8000-000000000040",
+    );
+    expect(personal).toMatchObject({
+      kind: "TASK",
+      task: {
+        id: "00000000-0000-4000-8000-000000000040",
+        status: "PENDING",
+        participants: [],
+      },
+    });
     const grouped = result.items.find(
       (item) => item.kind === "TASK" && item.task.assignmentGroupId === GROUP,
     );

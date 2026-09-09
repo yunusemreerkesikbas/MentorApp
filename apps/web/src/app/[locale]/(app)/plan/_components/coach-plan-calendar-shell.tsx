@@ -13,9 +13,14 @@ import {
 } from "@/lib/coach-plan-calendar";
 import { todayInIstanbul } from "@/lib/date-time";
 import { fetchCoachPlan } from "@/lib/mentorship";
+import { useMentorToast } from "@/lib/mentor-toast";
 import { CoachPlanDetail } from "./coach-plan-detail";
 import { coachPlanItemId } from "./coach-plan-item-card";
 import { CoachPlanMonth } from "./coach-plan-month";
+import {
+  CoachPlanOpenFormPanel,
+  type CoachPlanOpenForm,
+} from "./coach-plan-open-form";
 import { CoachPlanSkeleton } from "./coach-plan-skeleton";
 import { CoachPlanToolbar } from "./coach-plan-toolbar";
 import { CoachPlanWeek } from "./coach-plan-week";
@@ -39,6 +44,7 @@ export function CoachPlanCalendarShell({
 }: CoachPlanCalendarShellProps) {
   const locale = useLocale();
   const t = useTranslations("coachPlan");
+  const toast = useMentorToast();
   const [scale, setScale] = useState<CoachPlanScale>("week");
   const [anchor, setAnchor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);
@@ -48,8 +54,10 @@ export function CoachPlanCalendarShell({
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const [openForm, setOpenForm] = useState<CoachPlanOpenForm | null>(null);
   const initialEventStateRef = useRef({ pendingEventId: initialEventId });
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const formTriggerRef = useRef<HTMLButtonElement | null>(null);
   const range = useMemo(() => coachPlanRange(anchor, scale), [anchor, scale]);
   const requestKey = `${range.from}:${range.to}:${studentId ?? "all"}:${reloadKey}`;
   const planLoading = loadedKey !== requestKey && errorKey !== requestKey;
@@ -125,6 +133,28 @@ export function CoachPlanCalendarShell({
     requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
   }, [selectedItem]);
 
+  const closeForm = useCallback(() => {
+    const trigger = formTriggerRef.current;
+    formTriggerRef.current = null;
+    setOpenForm(null);
+    requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
+  }, []);
+
+  const mutationSucceeded = useCallback((message: string) => {
+    formTriggerRef.current = null;
+    setOpenForm(null);
+    setSelectedItem(null);
+    setReloadKey((value) => value + 1);
+    toast.success({ title: message });
+  }, [toast]);
+
+  const creationSucceeded = useCallback((message: string) => {
+    formTriggerRef.current = null;
+    setOpenForm(null);
+    setReloadKey((value) => value + 1);
+    toast.success({ title: message });
+  }, [toast]);
+
   if (planLoading || rosterLoading) return <CoachPlanSkeleton />;
   const error = planError || rosterError;
   const selectedId = selectedItem ? coachPlanItemId(selectedItem) : null;
@@ -152,6 +182,14 @@ export function CoachPlanCalendarShell({
           setAnchor(today);
           setSelectedDate(today);
           setSelectedItem(null);
+        }}
+        onNewTask={(trigger) => {
+          formTriggerRef.current = trigger;
+          setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
+        }}
+        onNewEvent={(trigger) => {
+          formTriggerRef.current = trigger;
+          setOpenForm({ kind: "EVENT_CREATE", initialDate: selectedDate });
         }}
       />
 
@@ -203,7 +241,28 @@ export function CoachPlanCalendarShell({
       )}
 
       {!error && selectedItem && (
-        <CoachPlanDetail item={selectedItem} onClose={closeDetail} />
+        <CoachPlanDetail
+          item={selectedItem}
+          onClose={closeDetail}
+          onEdit={(trigger, target) => {
+            formTriggerRef.current = trigger;
+            if (selectedItem.kind === "TASK" && target) {
+              setOpenForm({ kind: "TASK_EDIT", task: selectedItem.task, target });
+            } else if (selectedItem.kind === "EVENT") {
+              setOpenForm({ kind: "EVENT_EDIT", event: selectedItem.event });
+            }
+          }}
+          onMutationSuccess={mutationSucceeded}
+        />
+      )}
+      {openForm && (
+        <CoachPlanOpenFormPanel
+          form={openForm}
+          roster={roster}
+          onClose={closeForm}
+          onCreationSuccess={creationSucceeded}
+          onMutationSuccess={mutationSucceeded}
+        />
       )}
     </main>
   );

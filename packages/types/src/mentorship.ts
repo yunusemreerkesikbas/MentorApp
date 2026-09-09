@@ -266,6 +266,8 @@ export interface CoachPlanGroupedTaskDto {
   /** Stable display-group id; signature suffix separates historical and edited group variants. */
   id: string;
   assignmentGroupId: string | null;
+  /** Personal-task status; shared rows expose per-participant status instead. */
+  status: "PENDING" | "DONE" | null;
   taskDate: string;
   title: string;
   subject: string | null;

@@ -1,7 +1,8 @@
 "use client";
 
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarPlus, ChevronLeft, ChevronRight, ListPlus } from "lucide-react";
 import type { MentorshipRosterRowDto } from "@mentor/types";
+import { Button } from "@mentor/ui";
 import { useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/user-avatar";
 import type { CoachPlanScale } from "@/lib/coach-plan-calendar";
@@ -16,6 +17,8 @@ export function CoachPlanToolbar({
   onPrevious,
   onNext,
   onToday,
+  onNewTask,
+  onNewEvent,
 }: {
   scale: CoachPlanScale;
   dateLabel: string;
@@ -26,6 +29,8 @@ export function CoachPlanToolbar({
   onPrevious: () => void;
   onNext: () => void;
   onToday: () => void;
+  onNewTask: (trigger: HTMLButtonElement) => void;
+  onNewEvent: (trigger: HTMLButtonElement) => void;
 }) {
   const t = useTranslations("coachPlan");
 
@@ -40,27 +45,37 @@ export function CoachPlanToolbar({
             {t("subtitle")}
           </p>
         </div>
-        <div
-          className="flex rounded-[var(--radius-card)] p-1"
-          style={{ backgroundColor: "var(--color-surface-container)" }}
-          aria-label={t("scale_label")}
-        >
-          {(["week", "month"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => onScale(value)}
-              aria-pressed={scale === value}
-              className="min-h-11 rounded-[var(--radius-card)] px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              style={{
-                backgroundColor: scale === value ? "var(--color-surface)" : "transparent",
-                color: "var(--color-main)",
-                boxShadow: scale === value ? "var(--shadow-card)" : "none",
-              }}
-            >
-              {t(value)}
-            </button>
-          ))}
+        <div className="flex flex-wrap justify-end gap-2">
+          <Button type="button" variant="secondary" onClick={(event) => onNewTask(event.currentTarget)}>
+            <ListPlus aria-hidden size={18} />
+            {t("new_task")}
+          </Button>
+          <Button type="button" variant="secondary" onClick={(event) => onNewEvent(event.currentTarget)}>
+            <CalendarPlus aria-hidden size={18} />
+            {t("new_event")}
+          </Button>
+          <div
+            className="flex rounded-[var(--radius-card)] p-1"
+            style={{ backgroundColor: "var(--color-surface-container)" }}
+            aria-label={t("scale_label")}
+          >
+            {(["week", "month"] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => onScale(value)}
+                aria-pressed={scale === value}
+                className="min-h-11 rounded-[var(--radius-card)] px-4 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{
+                  backgroundColor: scale === value ? "var(--color-surface)" : "transparent",
+                  color: "var(--color-main)",
+                  boxShadow: scale === value ? "var(--shadow-card)" : "none",
+                }}
+              >
+                {t(value)}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
