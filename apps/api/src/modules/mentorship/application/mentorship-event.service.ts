@@ -27,11 +27,15 @@ export class MentorshipEventService {
   ): Promise<CoachPlanEventDto> {
     await this.links.assertEnabled();
     this.assertAttendeeInput(coachId, input.attendeeIds);
-    const result = await this.links.withActiveLinksLocked(
-      coachId,
-      input.attendeeIds,
-      (tx) => this.events.createInTransaction(tx, coachId, input),
-    );
+    const result = await this.links.withServiceTransaction(async (tx) => {
+      await this.events.lockOrganizerInTransaction(tx, coachId);
+      await this.links.requireActiveLinksInTransaction(
+        tx,
+        coachId,
+        input.attendeeIds,
+      );
+      return this.events.createInTransaction(tx, coachId, input);
+    });
     this.events.publishCreated(coachId, result);
     return this.hydrate(coachId, result.dto.id);
   }
@@ -45,20 +49,22 @@ export class MentorshipEventService {
     if (input.attendeeIds !== undefined) {
       this.assertAttendeeInput(coachId, input.attendeeIds);
     }
-    const result = await this.links.withActiveLinksLocked(
-      coachId,
-      async (tx) => {
-        const existingIds =
-          await this.events.listEventAttendeeIdsInTransaction(
-            tx,
-            coachId,
-            eventId,
-            input.scope,
-          );
-        return input.attendeeIds ?? existingIds;
-      },
-      (tx) => this.events.updateInTransaction(tx, coachId, eventId, input),
-    );
+    const result = await this.links.withServiceTransaction(async (tx) => {
+      await this.events.lockOrganizerInTransaction(tx, coachId);
+      const existingIds =
+        await this.events.listEventAttendeeIdsInTransaction(
+          tx,
+          coachId,
+          eventId,
+          input.scope,
+        );
+      await this.links.requireActiveLinksInTransaction(
+        tx,
+        coachId,
+        input.attendeeIds ?? existingIds,
+      );
+      return this.events.updateInTransaction(tx, coachId, eventId, input);
+    });
     this.events.publishUpdated(coachId, result);
     return this.hydrate(coachId, result.dto.id);
   }
@@ -69,7 +75,23 @@ export class MentorshipEventService {
     input: CancelPlanEventInput,
   ): Promise<void> {
     await this.links.assertEnabled();
-    return this.events.cancel(coachId, eventId, input);
+    const rows = await this.links.withServiceTransaction(async (tx) => {
+      await this.events.lockOrganizerInTransaction(tx, coachId);
+      const attendeeIds =
+        await this.events.listEventAttendeeIdsInTransaction(
+          tx,
+          coachId,
+          eventId,
+          input.scope,
+        );
+      await this.links.requireActiveLinksInTransaction(
+        tx,
+        coachId,
+        attendeeIds,
+      );
+      return this.events.cancelInTransaction(tx, coachId, eventId, input);
+    });
+    this.events.publishCancelled(coachId, rows);
   }
 
   private assertAttendeeInput(

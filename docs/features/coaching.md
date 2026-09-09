@@ -4289,3 +4289,15 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   publisher after commit. Gotcha: SERIES regeneration may replace the selected occurrence id, so
   callers must use `result.dto.id`. Related: `plan.service.ts`, `plan-mentorship.ts`,
   `plan-event.service.ts`, `plan-event-write.orchestrator.ts`.
+
+- **2026-09-09 — APP-091 explicit event transaction lock seam.** W2 exposes
+  `lockOrganizerInTransaction`, attendee-resolution, create/update/cancel writes, and separate
+  post-commit publishers. W8 therefore controls one shared SERVICE transaction without touching
+  W2 persistence and can guarantee organizer lock → active-link row locks → event write for every
+  mutation. The write methods no longer reacquire the organizer lock after link locking.
+  Link-end attendance cleanup remains organizer-lock-free. Usage: callers must take the organizer
+  lock before invoking an event `*InTransaction` write and publish only after the transaction
+  resolves. Gotcha: SERIES cancellation attendee resolution covers every future occurrence, not
+  only the selected row. Coach aggregate querying moved to `plan-event-coach-query.ts` so the
+  public service remains below 300 lines. Related: `plan-event.service.ts`,
+  `plan-event-write.orchestrator.ts`, `plan-event-coach-query.ts`.

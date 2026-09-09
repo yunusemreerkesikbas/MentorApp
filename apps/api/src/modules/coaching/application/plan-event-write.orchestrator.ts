@@ -35,6 +35,13 @@ export class PlanEventWriteOrchestrator {
     private readonly events: EventEmitter2,
   ) {}
 
+  lockOrganizerInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+  ): Promise<void> {
+    return this.repository.acquireOrganizerLock(tx, organizerUserId);
+  }
+
   async createInTransaction(
     tx: DatabaseTx,
     organizerUserId: string,
@@ -45,7 +52,6 @@ export class PlanEventWriteOrchestrator {
     const dates = input.recurrence
       ? generateEventDates({ ...input.recurrence, startsOn: input.eventDate })
       : [input.eventDate];
-    await this.repository.acquireOrganizerLock(tx, organizerUserId);
     const series = input.recurrence
       ? await this.repository.createSeries(tx, {
           organizerUserId,
@@ -92,7 +98,6 @@ export class PlanEventWriteOrchestrator {
     eventId: string,
     input: UpdatePlanEventInput,
   ): Promise<PlanEventMutationResult> {
-    await this.repository.acquireOrganizerLock(tx, organizerUserId);
     const existing = await this.requireOwned(tx, organizerUserId, eventId);
     return updateEvent(
       this.repository,
@@ -109,7 +114,6 @@ export class PlanEventWriteOrchestrator {
     eventId: string,
     scope: UpdatePlanEventInput["scope"],
   ): Promise<string[]> {
-    await this.repository.acquireOrganizerLock(tx, organizerUserId);
     const existing = await this.requireOwned(tx, organizerUserId, eventId);
     if (scope !== "SERIES") return existing.attendeeIds;
     if (!existing.seriesId) invalidScope();
@@ -128,7 +132,6 @@ export class PlanEventWriteOrchestrator {
     eventId: string,
     input: CancelPlanEventInput,
   ): Promise<PlanEventRecord[]> {
-    await this.repository.acquireOrganizerLock(tx, organizerUserId);
     const existing = await this.requireOwned(tx, organizerUserId, eventId);
     if (input.scope === "OCCURRENCE") {
       assertMutableDate(existing.eventDate);

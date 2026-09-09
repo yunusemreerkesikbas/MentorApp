@@ -1366,6 +1366,18 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   display-group key. Related: `mentorship-link.repository.ts`,
   `mentorship-{assignment,event,link,plan-orchestration}.service.ts`.
 
+- **2026-09-09 — APP-091 organizer-first event lock order.** Create, update, and cancel now open
+  one W8 SERVICE transaction and follow the same order: W2 organizer advisory lock, ordered ACTIVE
+  link row locks/recheck, then the W2 event write. Cancellation resolves every affected occurrence
+  attendee in that transaction; an ended/missing link aborts before cancellation, while personal
+  events with no attendees remain valid. Publication occurs only after the shared transaction
+  commits. Link end deliberately takes only the link row before W2 attendance cleanup, so it never
+  waits on the event organizer lock and a waiting event mutation rechecks consent after the end.
+  Usage: open `withServiceTransaction`, call `lockOrganizerInTransaction`, then
+  `requireActiveLinksInTransaction`, then the W2 mutation seam. Gotcha: the link gate is explicit
+  and transaction-bound; resolver callbacks must not decide lock order. Related:
+  `mentorship-{event,link,assignment}.service.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

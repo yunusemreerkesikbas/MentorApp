@@ -1,6 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
-import type { Paginated, PlanEventDto, PlanTaskDto } from "@mentor/types";
+import type { Paginated, PlanEventDto } from "@mentor/types";
 import type {
   CancelPlanEventInput,
   CreatePlanEventInput,
@@ -13,40 +13,29 @@ import { withServiceContext, withUserContext } from "../../../database/rls";
 import { PlanEventRepository } from "../infrastructure/plan-event.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { todayInIstanbul } from "../domain/date.util";
-import { toPlanTaskDto } from "./coaching.mappers";
 import { toPlanEventDto } from "./plan-event.mapper";
-import { notFound, type PlanEventMutationResult } from "./plan-event-mutation";
+import type { PlanEventMutationResult } from "./plan-event-mutation";
+import {
+  type CoachPlanAggregate,
+  type CoachPlanData,
+  PlanEventCoachQuery,
+  type CoachPlanScope,
+} from "./plan-event-coach-query";
 import { PlanEventWriteOrchestrator } from "./plan-event-write.orchestrator";
-
-export interface CoachPlanScope {
-  mentorshipLinkId: string;
-  studentId: string;
-}
-
-export interface CoachPlanAggregate {
-  mentorshipLinkId: string;
-  studentId: string;
-  tasks: PlanTaskDto[];
-  events: PlanEventDto[];
-}
-
-export interface CoachPlanData {
-  personalTasks: PlanTaskDto[];
-  mentorshipTasks: Array<CoachPlanScope & { task: PlanTaskDto }>;
-  events: Array<{ event: PlanEventDto; attendeeIds: string[] }>;
-}
 
 @Injectable()
 export class PlanEventService {
   private readonly writes: PlanEventWriteOrchestrator;
+  private readonly coachQuery: PlanEventCoachQuery;
 
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly repository: PlanEventRepository,
-    private readonly tasks: PlanTaskRepository,
+    tasks: PlanTaskRepository,
     events: EventEmitter2,
   ) {
     this.writes = new PlanEventWriteOrchestrator(repository, events);
+    this.coachQuery = new PlanEventCoachQuery(db, repository, tasks);
   }
 
   async list(
@@ -79,7 +68,10 @@ export class PlanEventService {
     const result = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      (tx) => this.createInTransaction(tx, organizerUserId, input),
+      async (tx) => {
+        await this.lockOrganizerInTransaction(tx, organizerUserId);
+        return this.createInTransaction(tx, organizerUserId, input);
+      },
     );
     this.publishCreated(organizerUserId, result);
     return result.dto;
@@ -91,6 +83,13 @@ export class PlanEventService {
     input: CreatePlanEventInput,
   ): Promise<PlanEventMutationResult> {
     return this.writes.createInTransaction(tx, organizerUserId, input);
+  }
+
+  lockOrganizerInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+  ): Promise<void> {
+    return this.writes.lockOrganizerInTransaction(tx, organizerUserId);
   }
 
   publishCreated(
@@ -108,7 +107,10 @@ export class PlanEventService {
     const result = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      (tx) => this.updateInTransaction(tx, organizerUserId, id, input),
+      async (tx) => {
+        await this.lockOrganizerInTransaction(tx, organizerUserId);
+        return this.updateInTransaction(tx, organizerUserId, id, input);
+      },
     );
     this.publishUpdated(organizerUserId, result);
     return result.dto;
@@ -157,8 +159,32 @@ export class PlanEventService {
     const rows = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      (tx) => this.writes.cancelInTransaction(tx, organizerUserId, id, input),
+      async (tx) => {
+        await this.lockOrganizerInTransaction(tx, organizerUserId);
+        return this.cancelInTransaction(tx, organizerUserId, id, input);
+      },
     );
+    this.publishCancelled(organizerUserId, rows);
+  }
+
+  cancelInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    eventId: string,
+    input: CancelPlanEventInput,
+  ) {
+    return this.writes.cancelInTransaction(
+      tx,
+      organizerUserId,
+      eventId,
+      input,
+    );
+  }
+
+  publishCancelled(
+    organizerUserId: string,
+    rows: Parameters<PlanEventWriteOrchestrator["publishCancelled"]>[1],
+  ): void {
     this.writes.publishCancelled(organizerUserId, rows);
   }
 
@@ -167,38 +193,7 @@ export class PlanEventService {
     scopes: CoachPlanScope[],
     range: { from: string; to: string },
   ): Promise<CoachPlanAggregate[]> {
-    if (scopes.length === 0) return [];
-    return withServiceContext(this.db, async (tx) => {
-      const studentIds = [...new Set(scopes.map((scope) => scope.studentId))];
-      const [eventRows, taskRows] = await Promise.all([
-        this.repository.listAuthorizedForCoach(
-          tx,
-          organizerUserId,
-          studentIds,
-          range.from,
-          range.to,
-        ),
-        this.tasks.listMentorshipTasksForCoach(
-          tx,
-          scopes,
-          range.from,
-          range.to,
-        ),
-      ]);
-      return scopes.map((scope) => ({
-        ...scope,
-        tasks: taskRows
-          .filter(
-            (row) =>
-              row.userId === scope.studentId &&
-              row.originRefId === scope.mentorshipLinkId,
-          )
-          .map(toPlanTaskDto),
-        events: eventRows
-          .filter((row) => row.attendeeIds.includes(scope.studentId))
-          .map((row) => toPlanEventDto(row)),
-      }));
-    });
+    return this.coachQuery.listAuthorized(organizerUserId, scopes, range);
   }
 
   async listCoachPlanData(
@@ -206,46 +201,7 @@ export class PlanEventService {
     scopes: CoachPlanScope[],
     range: { from: string; to: string },
   ): Promise<CoachPlanData> {
-    return withServiceContext(this.db, async (tx) => {
-      const [personalRows, taskRows, eventRows] = await Promise.all([
-        this.tasks.listOwnedForCoach(
-          tx,
-          organizerUserId,
-          range.from,
-          range.to,
-        ),
-        this.tasks.listMentorshipTasksForCoach(
-          tx,
-          scopes,
-          range.from,
-          range.to,
-        ),
-        this.repository.listOwnedForCoach(
-          tx,
-          organizerUserId,
-          range.from,
-          range.to,
-        ),
-      ]);
-      const allowedStudents = new Set(scopes.map((scope) => scope.studentId));
-      return {
-        personalTasks: personalRows.map(toPlanTaskDto),
-        mentorshipTasks: taskRows.flatMap((row) => {
-          const scope = scopes.find(
-            (candidate) =>
-              candidate.studentId === row.userId &&
-              candidate.mentorshipLinkId === row.originRefId,
-          );
-          return scope ? [{ ...scope, task: toPlanTaskDto(row) }] : [];
-        }),
-        events: eventRows.map((row) => {
-          const attendeeIds = row.attendeeIds.filter((id) =>
-            allowedStudents.has(id),
-          );
-          return { event: toPlanEventDto(row), attendeeIds };
-        }),
-      };
-    });
+    return this.coachQuery.listAggregate(organizerUserId, scopes, range);
   }
 
   async getCoachEventData(
@@ -253,20 +209,11 @@ export class PlanEventService {
     eventId: string,
     authorizedStudentIds: string[],
   ): Promise<{ event: PlanEventDto; attendeeIds: string[] }> {
-    return withServiceContext(this.db, async (tx) => {
-      const row = await this.repository.findOwnedById(
-        tx,
-        organizerUserId,
-        eventId,
-      );
-      if (!row) notFound();
-      const allowed = new Set(authorizedStudentIds);
-      const attendeeIds = row!.attendeeIds.filter((id) => allowed.has(id));
-      return {
-        event: toPlanEventDto(row!),
-        attendeeIds,
-      };
-    });
+    return this.coachQuery.getEvent(
+      organizerUserId,
+      eventId,
+      authorizedStudentIds,
+    );
   }
 
   removeFutureAttendee(

@@ -100,45 +100,37 @@ export class MentorshipLinkService {
     return link;
   }
 
-  async withActiveLinksLocked<T>(
-    coachId: string,
-    requestedStudentIds:
-      | string[]
-      | ((tx: DatabaseTx) => Promise<string[]>),
-    callback: (
-      tx: DatabaseTx,
-      scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
-    ) => Promise<T>,
+  withServiceTransaction<T>(
+    callback: (tx: DatabaseTx) => Promise<T>,
   ): Promise<T> {
-    return withServiceContext(this.db, async (tx) => {
-      const resolved =
-        typeof requestedStudentIds === "function"
-          ? await requestedStudentIds(tx)
-          : requestedStudentIds;
-      const studentIds = [...new Set(resolved)].sort();
-      const locked = await this.links.lockActiveInTransaction(
-        tx,
-        coachId,
-        studentIds,
+    return withServiceContext(this.db, callback);
+  }
+
+  async requireActiveLinksInTransaction(
+    tx: DatabaseTx,
+    coachId: string,
+    requestedStudentIds: string[],
+  ): Promise<Array<{ studentId: string; mentorshipLinkId: string }>> {
+    const studentIds = [...new Set(requestedStudentIds)].sort();
+    const locked = await this.links.lockActiveInTransaction(
+      tx,
+      coachId,
+      studentIds,
+    );
+    const byStudent = new Map(locked.map((link) => [link.studentId, link]));
+    if (
+      locked.length !== studentIds.length ||
+      studentIds.some((studentId) => !byStudent.has(studentId))
+    ) {
+      throw new DomainError(
+        ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
       );
-      const byStudent = new Map(locked.map((link) => [link.studentId, link]));
-      if (
-        locked.length !== studentIds.length ||
-        studentIds.some((studentId) => !byStudent.has(studentId))
-      ) {
-        throw new DomainError(
-          ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
-          HttpStatus.NOT_FOUND,
-        );
-      }
-      return callback(
-        tx,
-        studentIds.map((studentId) => ({
-          studentId,
-          mentorshipLinkId: byStudent.get(studentId)!.id,
-        })),
-      );
-    });
+    }
+    return studentIds.map((studentId) => ({
+      studentId,
+      mentorshipLinkId: byStudent.get(studentId)!.id,
+    }));
   }
 
   async listActiveScopes(
@@ -345,10 +337,12 @@ export class MentorshipLinkService {
     studentId: string,
     actorId: string,
   ): Promise<void> {
-    const ended = await this.withActiveLinksLocked(
-      coachId,
-      [studentId],
-      async (tx, [scope]) => {
+    const ended = await this.withServiceTransaction(async (tx) => {
+      const [scope] = await this.requireActiveLinksInTransaction(
+        tx,
+        coachId,
+        [studentId],
+      );
         await this.planEvents.removeFutureAttendeeInTransaction(
           tx,
           coachId,
@@ -359,8 +353,7 @@ export class MentorshipLinkService {
           scope!.mentorshipLinkId,
           actorId,
         );
-      },
-    );
+    });
     if (!ended) return; // already ENDED - idempotent
     const actor = await this.findPerson(actorId);
     this.events.emit(
