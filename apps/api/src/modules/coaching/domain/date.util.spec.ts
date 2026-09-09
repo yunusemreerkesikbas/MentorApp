@@ -6,6 +6,7 @@ import {
   isoWeekKey,
   isoWeekStart,
   monthKey,
+  todayInIstanbul,
   toIsoDate,
 } from "./date.util";
 
@@ -33,6 +34,15 @@ describe("date.util", () => {
 
   it("renders a Date as a UTC iso date", () => {
     expect(toIsoDate(new Date("2026-06-10T22:30:00Z"))).toBe("2026-06-10");
+  });
+
+  it("derives Istanbul today on both sides of local midnight", () => {
+    expect(todayInIstanbul(new Date("2026-09-08T20:59:59.999Z"))).toBe(
+      "2026-09-08",
+    );
+    expect(todayInIstanbul(new Date("2026-09-08T21:00:00.000Z"))).toBe(
+      "2026-09-09",
+    );
   });
 
   it("derives the ISO week key (Monday start, zero-padded)", () => {

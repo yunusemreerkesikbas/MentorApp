@@ -83,3 +83,26 @@ it("returns a single ordered page of own tasks and participant-safe events", asy
   expect(result.items[1]).not.toHaveProperty("event.attendeeIds");
   expect(result).toMatchObject({ total: 2, page: 1, pageSize: 20 });
 });
+
+it("uses Istanbul today when the aggregate query omits its date", async () => {
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-09-08T21:30:00.000Z"));
+  const items = {
+    listPaged: vi.fn(async () => ({ refs: [], total: 0 })),
+  };
+  const service = new PlanItemService(
+    fakeDb,
+    items as never,
+    { findByIds: vi.fn(async () => []) } as never,
+    { findParticipantByIds: vi.fn(async () => []) } as never,
+  );
+
+  await service.list(USER, { page: 1, pageSize: 20 });
+
+  expect(items.listPaged).toHaveBeenCalledWith(
+    expect.anything(),
+    USER,
+    expect.objectContaining({ date: "2026-09-09" }),
+  );
+  vi.useRealTimers();
+});

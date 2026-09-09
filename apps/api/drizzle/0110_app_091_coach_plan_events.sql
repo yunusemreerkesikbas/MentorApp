@@ -38,11 +38,13 @@ CREATE TABLE "plan_events" (
 	"start_time" time,
 	"end_time" time,
 	"status" text DEFAULT 'SCHEDULED' NOT NULL,
+	"attendee_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "plan_events_id_organizer_unique" UNIQUE("id","organizer_user_id"),
 	CONSTRAINT "plan_events_status_chk" CHECK ("plan_events"."status" in ('SCHEDULED', 'CANCELLED')),
-	CONSTRAINT "plan_events_time_range_chk" CHECK ("plan_events"."end_time" is null or ("plan_events"."start_time" is not null and "plan_events"."end_time" > "plan_events"."start_time"))
+	CONSTRAINT "plan_events_time_range_chk" CHECK ("plan_events"."end_time" is null or ("plan_events"."start_time" is not null and "plan_events"."end_time" > "plan_events"."start_time")),
+	CONSTRAINT "plan_events_attendee_count_chk" CHECK ("plan_events"."attendee_count" >= 0)
 );
 --> statement-breakpoint
 ALTER TABLE "plan_events" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint

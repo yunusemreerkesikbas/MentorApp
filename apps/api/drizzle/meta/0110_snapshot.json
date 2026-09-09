@@ -1,5 +1,5 @@
 {
-  "id": "8df8c02e-5d64-4259-9e6e-8c6fd154045c",
+  "id": "535e29cc-2a49-4b42-ba99-86cb530f4098",
   "prevId": "f0187a7b-e37f-4761-ba08-d745b3b5c15f",
   "version": "7",
   "dialect": "postgresql",
@@ -9240,6 +9240,13 @@
           "notNull": true,
           "default": "'SCHEDULED'"
         },
+        "attendee_count": {
+          "name": "attendee_count",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
         "created_at": {
           "name": "created_at",
           "type": "timestamp with time zone",
@@ -9382,6 +9389,10 @@
         "plan_events_time_range_chk": {
           "name": "plan_events_time_range_chk",
           "value": "\"plan_events\".\"end_time\" is null or (\"plan_events\".\"start_time\" is not null and \"plan_events\".\"end_time\" > \"plan_events\".\"start_time\")"
+        },
+        "plan_events_attendee_count_chk": {
+          "name": "plan_events_attendee_count_chk",
+          "value": "\"plan_events\".\"attendee_count\" >= 0"
         }
       },
       "isRLSEnabled": true

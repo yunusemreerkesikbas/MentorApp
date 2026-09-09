@@ -7,7 +7,7 @@ import { withUserContext } from "../../../database/rls";
 import { PlanEventRepository } from "../infrastructure/plan-event.repository";
 import { PlanItemRepository } from "../infrastructure/plan-item.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
-import { todayIso } from "../domain/date.util";
+import { todayInIstanbul } from "../domain/date.util";
 import { toPlanTaskDto } from "./coaching.mappers";
 import { toPlanEventDto } from "./plan-event.mapper";
 
@@ -26,7 +26,7 @@ export class PlanItemService {
   ): Promise<Paginated<PlanItemDto>> {
     const effectiveQuery = {
       ...query,
-      date: query.from ? undefined : (query.date ?? todayIso()),
+      date: query.from ? undefined : (query.date ?? todayInIstanbul()),
     };
     return withUserContext(this.db, { userId }, async (tx) => {
       const page = await this.items.listPaged(tx, userId, effectiveQuery);

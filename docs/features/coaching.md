@@ -145,6 +145,17 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · APP-091 etkinlik takvimi inceleme düzeltmeleri.** Etkinliklerde "bugün" artık
+  yalnız Europe/Istanbul takvimine göre hesaplanıyor; diğer koçluk akışlarının UTC günü değişmedi.
+  Seri yeniden üretimi, tarih özellikle değiştirilmedikçe özgün başlangıç gününü koruyor; böylece
+  31 Ocak serisindeki 28 Şubat kaydı üzerinden düzenleme Mart'ı yeniden 31'e bağlıyor. Oluşturma,
+  güncelleme ve iptal domain event'leri artık etkilenen her kaydı kendi kimliği, başlık/tarih/saat
+  ve güncel alıcılarıyla taşıyor; özel açıklamalar event'e girmiyor. Konular
+  `coaching.plan-event.{created,updated,cancelled}` biçiminde. `attendee_count`, henüz
+  yayımlanmamış APP-091 migrasyonunda 0110'a birleştirildi. Kullanım değişmedi. İlgili:
+  `date.util.ts`, `plan-event-{service,mutation,repository}.ts`, `coaching.events.ts`,
+  `0110_app_091_coach_plan_events.sql`.
+
 - **2026-09-09 · APP-091 plan etkinliği alan modeli ve API.** Tek seferlik veya DAILY/WEEKLY/
   MONTHLY etkinlikler artık `/v1/plan-events` üzerinden tek işlemde oluşturuluyor; DATE bitişi
   dahil, COUNT ilk buluşmayı sayıyor ve ayın eksik günleri özgün güne göre ay sonuna sıkıştırılıyor.

@@ -3,7 +3,7 @@ import type { CreatePlanEventInput, UpdatePlanEventInput } from "@mentor/validat
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { DatabaseTx } from "../../../database/drizzle";
-import { todayIso } from "../domain/date.util";
+import { todayInIstanbul } from "../domain/date.util";
 import {
   generatePlanEventDates,
   PlanEventRecurrenceError,
@@ -19,7 +19,7 @@ import { toPlanEventDto } from "./plan-event.mapper";
 
 export interface PlanEventMutationResult {
   dto: ReturnType<typeof toPlanEventDto>;
-  recipientIds: string[];
+  occurrences: PlanEventRecord[];
 }
 
 export function sanitizeAttendees(
@@ -133,7 +133,13 @@ async function updateOccurrence(
       attendeeCount: attendeeIds.length,
       series: existing.series,
     }),
-    recipientIds: attendeeIds,
+    occurrences: [
+      {
+        ...updated!,
+        attendeeIds,
+        series: existing.series,
+      },
+    ],
   };
 }
 
@@ -165,7 +171,7 @@ async function updateSeries(
     tx,
     organizerUserId,
     existing.seriesId!,
-    todayIso(),
+    todayInIstanbul(),
     eventPatch(input),
   );
   if (input.attendeeIds !== undefined) {
@@ -176,14 +182,21 @@ async function updateSeries(
       attendeeIds,
     );
   }
-  const row = rows.find((candidate) => candidate.id === existing.id) ?? rows[0];
+  const occurrences = await repository.findOwnedByIds(
+    tx,
+    organizerUserId,
+    rows.map((row) => row.id),
+  );
+  const row =
+    occurrences.find((candidate) => candidate.id === existing.id) ??
+    occurrences[0];
   if (!row) notFound();
   return {
     dto: toPlanEventDto(row!, {
-      attendeeCount: attendeeIds.length,
-      series: existing.series,
+      attendeeCount: row!.attendeeCount,
+      series: row!.series,
     }),
-    recipientIds: attendeeIds,
+    occurrences,
   };
 }
 
@@ -195,11 +208,11 @@ async function regenerateSeries(
   input: UpdatePlanEventInput,
   attendeeIds: string[],
 ): Promise<PlanEventMutationResult> {
-  const startsOn = input.eventDate ?? existing.eventDate;
-  assertMutableDate(startsOn);
+  const startsOn = input.eventDate ?? existing.series!.startsOn;
+  if (input.eventDate !== undefined) assertMutableDate(startsOn);
   const recurrence = input.recurrence ?? toRule(existing.series!);
   const dates = generateEventDates({ ...recurrence, startsOn }).filter(
-    (date) => date >= todayIso(),
+    (date) => date >= todayInIstanbul(),
   );
   const seriesPatch = {
     frequency: recurrence.frequency,
@@ -218,7 +231,7 @@ async function regenerateSeries(
     tx,
     organizerUserId,
     existing.seriesId!,
-    todayIso(),
+    todayInIstanbul(),
   );
   const series = { ...existing.series!, ...seriesPatch };
   const rows = await createEventRows(
@@ -237,7 +250,11 @@ async function regenerateSeries(
       attendeeCount: attendeeIds.length,
       series,
     }),
-    recipientIds: attendeeIds,
+    occurrences: rows.map((created) => ({
+      ...created,
+      attendeeIds,
+      series,
+    })),
   };
 }
 
@@ -261,7 +278,7 @@ function toRule(series: PlanEventSeriesRow) {
 }
 
 export function assertMutableDate(date: string): void {
-  if (date < todayIso()) {
+  if (date < todayInIstanbul()) {
     throw new DomainError(
       ErrorCode.COACHING_EVENT_DATE_READONLY,
       HttpStatus.FORBIDDEN,

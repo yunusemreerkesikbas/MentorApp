@@ -1,4 +1,14 @@
-import { and, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import {
+  and,
+  asc,
+  eq,
+  gte,
+  inArray,
+  lte,
+  or,
+  sql,
+} from "drizzle-orm";
+import type { ListPlanTasksQuery } from "@mentor/validation";
 import type { DatabaseTx } from "../../../database/drizzle";
 import {
   planEventAttendees,
@@ -9,6 +19,80 @@ import type {
   PlanEventRecord,
   PlanEventRow,
 } from "./plan-event.repository";
+
+const eventOrder = [
+  asc(planEvents.eventDate),
+  sql`${planEvents.startTime} asc nulls first`,
+  asc(planEvents.createdAt),
+  asc(planEvents.id),
+];
+
+function eventDateFilter(query: ListPlanTasksQuery) {
+  return query.from && query.to
+    ? and(
+        gte(planEvents.eventDate, query.from),
+        lte(planEvents.eventDate, query.to),
+      )
+    : eq(planEvents.eventDate, query.date!);
+}
+
+function participantFilter(participantUserId: string) {
+  return or(
+    eq(planEvents.organizerUserId, participantUserId),
+    sql`exists (
+      select 1 from ${planEventAttendees}
+      where ${planEventAttendees.eventId} = ${planEvents.id}
+        and ${planEventAttendees.attendeeUserId} = ${participantUserId}
+    )`,
+  );
+}
+
+export async function listParticipantPlanEvents(
+  tx: DatabaseTx,
+  participantUserId: string,
+  query: ListPlanTasksQuery,
+): Promise<{ items: PlanEventRecord[]; total: number }> {
+  const where = and(
+    participantFilter(participantUserId),
+    eventDateFilter(query),
+  );
+  const [rows, count] = await Promise.all([
+    tx
+      .select()
+      .from(planEvents)
+      .where(where)
+      .orderBy(...eventOrder)
+      .limit(query.pageSize)
+      .offset((query.page - 1) * query.pageSize),
+    tx
+      .select({ count: sql<number>`count(*)::int` })
+      .from(planEvents)
+      .where(where),
+  ]);
+  return {
+    items: await hydratePlanEvents(tx, rows),
+    total: count[0]?.count ?? 0,
+  };
+}
+
+export async function findParticipantPlanEvents(
+  tx: DatabaseTx,
+  participantUserId: string,
+  ids: string[],
+): Promise<PlanEventRecord[]> {
+  if (ids.length === 0) return [];
+  const rows = await tx
+    .select()
+    .from(planEvents)
+    .where(
+      and(
+        inArray(planEvents.id, ids),
+        participantFilter(participantUserId),
+      ),
+    )
+    .orderBy(...eventOrder);
+  return hydratePlanEvents(tx, rows);
+}
 
 export async function hydratePlanEvents(
   tx: DatabaseTx,
@@ -108,12 +192,7 @@ export async function listCoachPlanEvents(
         )`,
       ),
     )
-    .orderBy(
-      planEvents.eventDate,
-      sql`${planEvents.startTime} asc nulls first`,
-      planEvents.createdAt,
-      planEvents.id,
-    );
+    .orderBy(...eventOrder);
   return hydratePlanEvents(tx, rows);
 }
 

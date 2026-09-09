@@ -14,6 +14,7 @@ import {
   CoachingEventTopic,
   PlanEventCancelled,
   PlanEventCreated,
+  type PlanEventOccurrencePayload,
   PlanEventUpdated,
 } from "../domain/coaching.events";
 import {
@@ -21,7 +22,7 @@ import {
   type PlanEventRecord,
 } from "../infrastructure/plan-event.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
-import { todayIso } from "../domain/date.util";
+import { todayInIstanbul } from "../domain/date.util";
 import { toPlanTaskDto } from "./coaching.mappers";
 import { toPlanEventDto } from "./plan-event.mapper";
 import {
@@ -61,7 +62,7 @@ export class PlanEventService {
   ): Promise<Paginated<PlanEventDto>> {
     const effectiveQuery = {
       ...query,
-      date: query.from ? undefined : (query.date ?? todayIso()),
+      date: query.from ? undefined : (query.date ?? todayInIstanbul()),
     };
     return withUserContext(this.db, { userId: participantUserId }, async (tx) => {
       const page = await this.repository.listParticipantPaged(
@@ -121,21 +122,17 @@ export class PlanEventService {
           attendeeIds,
           series,
         );
-        return { row: rows[0]!, series };
+        return { rows, series };
       },
     );
     this.events.emit(
       CoachingEventTopic.PLAN_EVENT_CREATED,
       new PlanEventCreated(
-        result.row.id,
         organizerUserId,
-        attendeeIds,
-        result.row.title,
-        result.row.eventDate,
-        result.row.startTime?.slice(0, 5) ?? null,
+        result.rows.map((row) => this.toEventPayload(row, attendeeIds)),
       ),
     );
-    return toPlanEventDto(result.row, {
+    return toPlanEventDto(result.rows[0]!, {
       attendeeCount: attendeeIds.length,
       series: result.series,
     });
@@ -164,12 +161,10 @@ export class PlanEventService {
     this.events.emit(
       CoachingEventTopic.PLAN_EVENT_UPDATED,
       new PlanEventUpdated(
-        result.dto.id,
         organizerUserId,
-        result.recipientIds,
-        result.dto.title,
-        result.dto.eventDate,
-        result.dto.startTime,
+        result.occurrences.map((row) =>
+          this.toEventPayload(row, row.attendeeIds),
+        ),
       ),
     );
     return result.dto;
@@ -186,34 +181,33 @@ export class PlanEventService {
       async (tx) => {
         await this.repository.acquireOrganizerLock(tx, organizerUserId);
         const existing = await this.requireOwned(tx, organizerUserId, id);
-        let recipientIds = existing.attendeeIds;
+        let occurrences = [existing];
         if (input.scope === "OCCURRENCE") {
           assertMutableDate(existing.eventDate);
-          await this.repository.cancelOccurrence(tx, organizerUserId, id);
+          const cancelled = await this.repository.cancelOccurrence(
+            tx,
+            organizerUserId,
+            id,
+          );
+          if (!cancelled) notFound();
+          occurrences = [{ ...existing, ...cancelled! }];
         } else {
           if (!existing.seriesId) invalidScope();
-          const cancelled = await this.repository.cancelFutureSeries(
+          occurrences = await this.repository.cancelFutureSeries(
             tx,
             organizerUserId,
             existing.seriesId!,
-            todayIso(),
+            todayInIstanbul(),
           );
-          recipientIds = [
-            ...new Set(cancelled.flatMap((row) => row.attendeeIds)),
-          ];
         }
-        return { event: existing, recipientIds };
+        return occurrences;
       },
     );
     this.events.emit(
       CoachingEventTopic.PLAN_EVENT_CANCELLED,
       new PlanEventCancelled(
-        emitted.event.id,
         organizerUserId,
-        emitted.recipientIds,
-        emitted.event.title,
-        emitted.event.eventDate,
-        emitted.event.startTime?.slice(0, 5) ?? null,
+        emitted.map((row) => this.toEventPayload(row, row.attendeeIds)),
       ),
     );
   }
@@ -266,7 +260,7 @@ export class PlanEventService {
         tx,
         organizerUserId,
         studentId,
-        todayIso(),
+        todayInIstanbul(),
       ),
     );
   }
@@ -279,5 +273,21 @@ export class PlanEventService {
     const row = await this.repository.findOwnedById(tx, organizerUserId, id);
     if (!row) notFound();
     return row!;
+  }
+
+  private toEventPayload(
+    row: Pick<
+      PlanEventRecord,
+      "id" | "title" | "eventDate" | "startTime"
+    >,
+    recipientUserIds: string[],
+  ): PlanEventOccurrencePayload {
+    return {
+      eventId: row.id,
+      title: row.title,
+      eventDate: row.eventDate,
+      startTime: row.startTime?.slice(0, 5) ?? null,
+      recipientUserIds,
+    };
   }
 }

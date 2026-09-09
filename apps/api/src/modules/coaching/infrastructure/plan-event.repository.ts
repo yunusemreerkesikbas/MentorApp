@@ -1,12 +1,9 @@
 import { Injectable } from "@nestjs/common";
 import {
   and,
-  asc,
   eq,
   gte,
   inArray,
-  lte,
-  or,
   sql,
 } from "drizzle-orm";
 import type { ListPlanTasksQuery } from "@mentor/validation";
@@ -18,7 +15,9 @@ import {
 } from "../../../database/schema";
 import {
   hydratePlanEvents,
+  findParticipantPlanEvents,
   listCoachPlanEvents,
+  listParticipantPlanEvents,
   removeFuturePlanEventAttendee,
   replacePlanEventAttendees,
 } from "./plan-event.repository.helpers";
@@ -31,23 +30,6 @@ export type NewPlanEventSeries = typeof planEventSeries.$inferInsert;
 export interface PlanEventRecord extends PlanEventRow {
   attendeeIds: string[];
   series: PlanEventSeriesRow | null;
-}
-
-const eventOrder = [
-  asc(planEvents.eventDate),
-  sql`${planEvents.startTime} asc nulls first`,
-  asc(planEvents.createdAt),
-  asc(planEvents.id),
-];
-
-function dateFilter(query: ListPlanTasksQuery) {
-  if (query.from && query.to) {
-    return and(
-      gte(planEvents.eventDate, query.from),
-      lte(planEvents.eventDate, query.to),
-    );
-  }
-  return eq(planEvents.eventDate, query.date!);
 }
 
 @Injectable()
@@ -124,42 +106,9 @@ export class PlanEventRepository {
     return (await hydratePlanEvents(tx, rows))[0];
   }
 
-  async listParticipantPaged(
+  async findOwnedByIds(
     tx: DatabaseTx,
-    participantUserId: string,
-    query: ListPlanTasksQuery,
-  ): Promise<{ items: PlanEventRecord[]; total: number }> {
-    const participant = or(
-      eq(planEvents.organizerUserId, participantUserId),
-      sql`exists (
-        select 1 from ${planEventAttendees}
-        where ${planEventAttendees.eventId} = ${planEvents.id}
-          and ${planEventAttendees.attendeeUserId} = ${participantUserId}
-      )`,
-    );
-    const where = and(participant, dateFilter(query));
-    const [rows, count] = await Promise.all([
-      tx
-        .select()
-        .from(planEvents)
-        .where(where)
-        .orderBy(...eventOrder)
-        .limit(query.pageSize)
-        .offset((query.page - 1) * query.pageSize),
-      tx
-        .select({ count: sql<number>`count(*)::int` })
-        .from(planEvents)
-        .where(where),
-    ]);
-    return {
-      items: await hydratePlanEvents(tx, rows),
-      total: count[0]?.count ?? 0,
-    };
-  }
-
-  async findParticipantByIds(
-    tx: DatabaseTx,
-    participantUserId: string,
+    organizerUserId: string,
     ids: string[],
   ): Promise<PlanEventRecord[]> {
     if (ids.length === 0) return [];
@@ -168,18 +117,27 @@ export class PlanEventRepository {
       .from(planEvents)
       .where(
         and(
+          eq(planEvents.organizerUserId, organizerUserId),
           inArray(planEvents.id, ids),
-          or(
-            eq(planEvents.organizerUserId, participantUserId),
-            sql`exists (
-              select 1 from ${planEventAttendees}
-              where ${planEventAttendees.eventId} = ${planEvents.id}
-                and ${planEventAttendees.attendeeUserId} = ${participantUserId}
-            )`,
-          ),
         ),
       );
     return hydratePlanEvents(tx, rows);
+  }
+
+  async listParticipantPaged(
+    tx: DatabaseTx,
+    participantUserId: string,
+    query: ListPlanTasksQuery,
+  ): Promise<{ items: PlanEventRecord[]; total: number }> {
+    return listParticipantPlanEvents(tx, participantUserId, query);
+  }
+
+  async findParticipantByIds(
+    tx: DatabaseTx,
+    participantUserId: string,
+    ids: string[],
+  ): Promise<PlanEventRecord[]> {
+    return findParticipantPlanEvents(tx, participantUserId, ids);
   }
 
   async updateOccurrence(

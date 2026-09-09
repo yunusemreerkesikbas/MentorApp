@@ -1,2 +1,0 @@
-ALTER TABLE "plan_events" ADD COLUMN "attendee_count" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
-ALTER TABLE "plan_events" ADD CONSTRAINT "plan_events_attendee_count_chk" CHECK ("plan_events"."attendee_count" >= 0);
