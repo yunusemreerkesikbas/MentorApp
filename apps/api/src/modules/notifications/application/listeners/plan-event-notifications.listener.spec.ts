@@ -21,6 +21,7 @@ function occurrence(
     title: "Haftalık görüşme",
     eventDate: "2026-09-10",
     startTime: "10:30",
+    status: "SCHEDULED",
     recipientUserIds: [ATTENDEE_A],
     ...overrides,
   };
@@ -134,9 +135,42 @@ describe("PlanEventNotificationsListener", () => {
     );
   });
 
-  it("uses operation-specific copy without carrying attendee identities in stored data", async () => {
+  it("does not schedule a timed cancelled occurrence carried by an updated event", async () => {
+    const { listener, queue } = makeListener();
+
+    await listener.onUpdated(
+      new PlanEventUpdated(ORGANIZER, [
+        occurrence({ status: "CANCELLED" }),
+      ]),
+    );
+
+    expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("selects localized all-day lifecycle templates without a time argument", async () => {
     const { listener, notifications } = makeListener();
     const event = occurrence({ startTime: null });
+
+    await listener.onCreated(new PlanEventCreated(ORGANIZER, [event]));
+    await listener.onUpdated(new PlanEventUpdated(ORGANIZER, [event]));
+    await listener.onCancelled(new PlanEventCancelled(ORGANIZER, [event]));
+
+    expect(notifications.createFromTemplate.mock.calls.map((call) => call[2])).toEqual([
+      NotificationCopyKey.PLAN_EVENT_CREATED_ALL_DAY,
+      NotificationCopyKey.PLAN_EVENT_UPDATED_ALL_DAY,
+      NotificationCopyKey.PLAN_EVENT_CANCELLED_ALL_DAY,
+    ]);
+    for (const call of notifications.createFromTemplate.mock.calls) {
+      expect(call[4]?.args).toEqual({
+        eventTitle: event.title,
+        eventDate: event.eventDate,
+      });
+    }
+  });
+
+  it("uses operation-specific copy without carrying attendee identities in stored data", async () => {
+    const { listener, notifications } = makeListener();
+    const event = occurrence();
 
     await listener.onUpdated(new PlanEventUpdated(ORGANIZER, [event]));
     await listener.onCancelled(new PlanEventCancelled(ORGANIZER, [event]));

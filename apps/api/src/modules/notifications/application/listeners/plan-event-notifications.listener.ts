@@ -41,11 +41,13 @@ function firstOccurrenceByRecipient(
 }
 
 function copyArgs(occurrence: PlanEventOccurrencePayload) {
-  return {
+  const base = {
     eventTitle: occurrence.title,
     eventDate: occurrence.eventDate,
-    eventTime: occurrence.startTime,
   };
+  return occurrence.startTime
+    ? { ...base, eventTime: occurrence.startTime }
+    : base;
 }
 
 function eventLink(occurrence: PlanEventOccurrencePayload): string {
@@ -63,7 +65,11 @@ export class PlanEventNotificationsListener {
   @OnEvent(CoachingEventTopic.PLAN_EVENT_CREATED)
   async onCreated(event: PlanEventCreated): Promise<void> {
     await Promise.allSettled([
-      this.notifyAttendees(event, NotificationCopyKey.PLAN_EVENT_CREATED),
+      this.notifyAttendees(
+        event,
+        NotificationCopyKey.PLAN_EVENT_CREATED,
+        NotificationCopyKey.PLAN_EVENT_CREATED_ALL_DAY,
+      ),
       this.scheduleReminders(event),
     ]);
   }
@@ -71,7 +77,11 @@ export class PlanEventNotificationsListener {
   @OnEvent(CoachingEventTopic.PLAN_EVENT_UPDATED)
   async onUpdated(event: PlanEventUpdated): Promise<void> {
     await Promise.allSettled([
-      this.notifyAttendees(event, NotificationCopyKey.PLAN_EVENT_UPDATED),
+      this.notifyAttendees(
+        event,
+        NotificationCopyKey.PLAN_EVENT_UPDATED,
+        NotificationCopyKey.PLAN_EVENT_UPDATED_ALL_DAY,
+      ),
       this.scheduleReminders(event),
     ]);
   }
@@ -79,20 +89,25 @@ export class PlanEventNotificationsListener {
   @OnEvent(CoachingEventTopic.PLAN_EVENT_CANCELLED)
   async onCancelled(event: PlanEventCancelled): Promise<void> {
     await Promise.allSettled([
-      this.notifyAttendees(event, NotificationCopyKey.PLAN_EVENT_CANCELLED),
+      this.notifyAttendees(
+        event,
+        NotificationCopyKey.PLAN_EVENT_CANCELLED,
+        NotificationCopyKey.PLAN_EVENT_CANCELLED_ALL_DAY,
+      ),
     ]);
   }
 
   private async notifyAttendees(
     event: PlanEventCreated,
-    templateKey: NotificationCopyKeyType,
+    timedTemplateKey: NotificationCopyKeyType,
+    allDayTemplateKey: NotificationCopyKeyType,
   ): Promise<void> {
     await Promise.allSettled(
       [...firstOccurrenceByRecipient(event)].map(([userId, occurrence]) =>
         this.notifications.createFromTemplate(
           userId,
           "PLAN",
-          templateKey,
+          occurrence.startTime ? timedTemplateKey : allDayTemplateKey,
           eventLink(occurrence),
           { args: copyArgs(occurrence) },
         ),
@@ -103,6 +118,7 @@ export class PlanEventNotificationsListener {
   private async scheduleReminders(event: PlanEventCreated): Promise<void> {
     const now = new Date();
     const jobs = event.occurrences.flatMap((occurrence) => {
+      if (occurrence.status !== "SCHEDULED") return [];
       const schedule = planEventReminderSchedule(occurrence, now);
       if (!schedule) return [];
       return [

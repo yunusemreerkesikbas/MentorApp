@@ -269,10 +269,12 @@ describe("PlanEventService mutation", () => {
         occurrences: [
           expect.objectContaining({
             eventId: first.id,
+            status: "CANCELLED",
             recipientUserIds: [STUDENT_A],
           }),
           expect.objectContaining({
             eventId: second.id,
+            status: "CANCELLED",
             recipientUserIds: [STUDENT_B],
           }),
         ],

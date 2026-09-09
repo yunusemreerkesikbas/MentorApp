@@ -44,6 +44,7 @@ describe("PlanEventService create and read", () => {
             title: "Birebir",
             eventDate: "2026-09-10",
             startTime: null,
+            status: "SCHEDULED",
             recipientUserIds: [STUDENT_A],
           }),
         ],

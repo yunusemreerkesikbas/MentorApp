@@ -193,4 +193,17 @@ describe("PlanEventReminderHandler", () => {
 
     expect(notifications.createFromTemplate).toHaveBeenCalled();
   });
+
+  it("rejects reminder payloads with unknown keys before querying coaching", async () => {
+    const { handler, coaching } = makeHandler();
+
+    await expect(
+      handler.handle({
+        eventId: EVENT_ID,
+        expectedStartAt: EXPECTED_START_AT,
+        attendeeUserIds: [ATTENDEE_A],
+      }),
+    ).rejects.toThrow();
+    expect(coaching.getPlanEventReminderOccurrence).not.toHaveBeenCalled();
+  });
 });

@@ -55,6 +55,21 @@
       "title": "Event cancelled",
       "body": "\"{eventTitle}\", {eventDate} {eventTime}."
     },
+    "planEventCreatedAllDay": {
+      "register": "companion",
+      "title": "An event was added to your plan",
+      "body": "\"{eventTitle}\", all day on {eventDate}."
+    },
+    "planEventUpdatedAllDay": {
+      "register": "companion",
+      "title": "Event updated",
+      "body": "\"{eventTitle}\", all day on {eventDate}."
+    },
+    "planEventCancelledAllDay": {
+      "register": "companion",
+      "title": "Event cancelled",
+      "body": "\"{eventTitle}\", the all-day event on {eventDate}."
+    },
     "planEventReminder": {
       "register": "companion",
       "title": "Your event is coming up",

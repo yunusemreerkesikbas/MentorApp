@@ -18,7 +18,7 @@ import { planEventStartAt } from "../plan-event-reminder-time";
 const payloadSchema = z.object({
   eventId: z.string().uuid(),
   expectedStartAt: z.string().datetime({ offset: true }),
-});
+}).strict();
 
 function copyArgs(event: PlanEventReminderOccurrence) {
   return {

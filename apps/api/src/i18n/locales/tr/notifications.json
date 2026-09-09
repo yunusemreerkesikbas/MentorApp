@@ -55,6 +55,21 @@
       "title": "Etkinlik iptal edildi",
       "body": "\"{eventTitle}\", {eventDate} {eventTime}."
     },
+    "planEventCreatedAllDay": {
+      "register": "companion",
+      "title": "Planına bir etkinlik eklendi",
+      "body": "\"{eventTitle}\", {eventDate} tarihinde tüm gün."
+    },
+    "planEventUpdatedAllDay": {
+      "register": "companion",
+      "title": "Etkinlik güncellendi",
+      "body": "\"{eventTitle}\", {eventDate} tarihinde tüm gün."
+    },
+    "planEventCancelledAllDay": {
+      "register": "companion",
+      "title": "Etkinlik iptal edildi",
+      "body": "\"{eventTitle}\", {eventDate} tarihindeki tüm gün etkinliği."
+    },
     "planEventReminder": {
       "register": "companion",
       "title": "Etkinliğin yaklaşıyor",

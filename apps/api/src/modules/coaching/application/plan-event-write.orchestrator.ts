@@ -202,6 +202,7 @@ export class PlanEventWriteOrchestrator {
       title: row.title,
       eventDate: row.eventDate,
       startTime: row.startTime?.slice(0, 5) ?? null,
+      status: row.status,
       recipientUserIds: row.attendeeIds,
     };
   }

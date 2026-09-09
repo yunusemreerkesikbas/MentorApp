@@ -111,6 +111,7 @@ export interface PlanEventOccurrencePayload {
   title: string;
   eventDate: string;
   startTime: string | null;
+  status: "SCHEDULED" | "CANCELLED";
   recipientUserIds: string[];
 }
 
