@@ -1,5 +1,5 @@
 import type { AuthUser } from "@mentor/types";
-import { COACH_HOME, isCoach, isStudentOnlyPath } from "./coach-surface";
+import { COACH_HOME, isCoach } from "./coach-surface";
 
 /**
  * Where a `?next=` value is allowed to send someone after auth. Only same-origin absolute
@@ -31,9 +31,8 @@ export function safeNextPath(next: string | null | undefined): string | null {
  * exam would seat them at a table the app can't yet describe them at.
  *
  * A COACH normally goes to their own surface. APP-090 ignored every `next` because every route
- * produced at the time was student-only. APP-091 made `/plan` role-aware, so safe, non-blocked
- * deep links are now honoured while study-room and student-mentorship links still fall back to
- * the coach home.
+ * produced at the time was student-only. APP-091 adds one narrow exception for the now role-aware
+ * `/plan`; study-room and student-mentorship links still fall back to the coach home.
  */
 export function postAuthDestination(
   user: AuthUser,
@@ -42,7 +41,9 @@ export function postAuthDestination(
   if (!hasCompletedOnboarding(user)) return "/onboarding";
   if (isCoach(user)) {
     const safeNext = safeNextPath(next);
-    return safeNext && !isStudentOnlyPath(safeNext) ? safeNext : COACH_HOME;
+    return safeNext && /^\/(?:[a-z]{2}\/)?plan(?:[/?#]|$)/.test(safeNext)
+      ? safeNext
+      : COACH_HOME;
   }
   return safeNextPath(next) ?? "/dashboard";
 }
