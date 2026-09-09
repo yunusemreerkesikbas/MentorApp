@@ -261,7 +261,7 @@ export interface CoachPlanParticipantDto {
 
 /** One task row on the coach calendar; grouped when an atomic assignment copied it to students. */
 export interface CoachPlanGroupedTaskDto {
-  /** Group id when multi-student; otherwise the underlying task id. */
+  /** Stable display-group id; signature suffix separates historical and edited group variants. */
   id: string;
   assignmentGroupId: string | null;
   taskDate: string;

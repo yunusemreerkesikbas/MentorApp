@@ -3,8 +3,7 @@ import { HttpStatus } from "@nestjs/common";
 import type { PlanTaskDto } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import type { Database } from "../../../database/drizzle";
-import { withServiceContext } from "../../../database/rls";
+import type { DatabaseTx } from "../../../database/drizzle";
 import type { PlanTaskRepository, PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
 import type { MentorshipAssignmentInput } from "./plan.service";
@@ -49,107 +48,97 @@ async function lockScopes(
   for (const studentId of studentIds) await tasks.acquireUserLock(tx, studentId);
 }
 
-export async function createMentorshipBatch(
-  db: Database,
+export async function createMentorshipBatchInTransaction(
+  tx: DatabaseTx,
   tasks: PlanTaskRepository,
   scopes: MentorshipPlanScope[],
   input: MentorshipAssignmentInput & { taskDate: string },
 ): Promise<PlanTaskDto[]> {
   const assignmentGroupId = randomUUID();
-  return withServiceContext(db, async (tx) => {
-    await lockScopes(tasks, tx, scopes);
-    const rows: PlanTaskRow[] = [];
-    for (const scope of scopes) {
-      rows.push(
-        await tasks.create(tx, {
-          userId: scope.studentId,
-          taskDate: input.taskDate,
-          title: input.title,
-          subject: input.subject ?? null,
-          topic: input.topic ?? null,
-          startTime: input.startTime ?? null,
-          endTime: input.endTime ?? null,
-          description: null,
-          coachNote: input.coachNote ?? null,
-          ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-          originType: "MENTORSHIP",
-          originRefId: scope.mentorshipLinkId,
-          originMeta: null,
-          assignmentGroupId,
-        }),
-      );
-    }
-    return rows.map(toPlanTaskDto);
-  });
+  await lockScopes(tasks, tx, scopes);
+  const rows: PlanTaskRow[] = [];
+  for (const scope of scopes) {
+    rows.push(
+      await tasks.create(tx, {
+        userId: scope.studentId,
+        taskDate: input.taskDate,
+        title: input.title,
+        subject: input.subject ?? null,
+        topic: input.topic ?? null,
+        startTime: input.startTime ?? null,
+        endTime: input.endTime ?? null,
+        description: null,
+        coachNote: input.coachNote ?? null,
+        ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+        originType: "MENTORSHIP",
+        originRefId: scope.mentorshipLinkId,
+        originMeta: null,
+        assignmentGroupId,
+      }),
+    );
+  }
+  return rows.map(toPlanTaskDto);
 }
 
-export async function updateMentorshipTask(
-  db: Database,
+export async function updateMentorshipTaskInTransaction(
+  tx: DatabaseTx,
   tasks: PlanTaskRepository,
   scope: MentorshipPlanScope,
   taskId: string,
   input: Partial<MentorshipAssignmentUpdate>,
 ): Promise<PlanTaskDto> {
-  return withServiceContext(db, async (tx) => {
-    await tasks.acquireUserLock(tx, scope.studentId);
-    const row = await tasks.updatePendingMentorshipTask(
-      tx,
-      scope,
-      taskId,
-      mutablePatch(input),
-    );
-    if (!row) notEditable();
-    return toPlanTaskDto(row!);
-  });
+  await tasks.acquireUserLock(tx, scope.studentId);
+  const row = await tasks.updatePendingMentorshipTask(
+    tx,
+    scope,
+    taskId,
+    mutablePatch(input),
+  );
+  if (!row) notEditable();
+  return toPlanTaskDto(row!);
 }
 
-export async function updateMentorshipTaskGroup(
-  db: Database,
+export async function updateMentorshipTaskGroupInTransaction(
+  tx: DatabaseTx,
   tasks: PlanTaskRepository,
   scopes: MentorshipPlanScope[],
   assignmentGroupId: string,
   input: Partial<MentorshipAssignmentUpdate>,
 ): Promise<PlanTaskDto[]> {
-  return withServiceContext(db, async (tx) => {
-    await lockScopes(tasks, tx, scopes);
-    const rows = await tasks.updatePendingMentorshipGroup(
-      tx,
-      scopes,
-      assignmentGroupId,
-      mutablePatch(input),
-    );
-    if (rows.length === 0) notEditable();
-    return rows.map(toPlanTaskDto);
-  });
+  await lockScopes(tasks, tx, scopes);
+  const rows = await tasks.updatePendingMentorshipGroup(
+    tx,
+    scopes,
+    assignmentGroupId,
+    mutablePatch(input),
+  );
+  if (rows.length === 0) notEditable();
+  return rows.map(toPlanTaskDto);
 }
 
-export async function removeMentorshipTask(
-  db: Database,
+export async function removeMentorshipTaskInTransaction(
+  tx: DatabaseTx,
   tasks: PlanTaskRepository,
   scope: MentorshipPlanScope,
   taskId: string,
 ): Promise<void> {
-  await withServiceContext(db, async (tx) => {
-    await tasks.acquireUserLock(tx, scope.studentId);
-    if (!(await tasks.deletePendingMentorshipTask(tx, scope, taskId))) {
-      notEditable();
-    }
-  });
+  await tasks.acquireUserLock(tx, scope.studentId);
+  if (!(await tasks.deletePendingMentorshipTask(tx, scope, taskId))) {
+    notEditable();
+  }
 }
 
-export async function removeMentorshipTaskGroup(
-  db: Database,
+export async function removeMentorshipTaskGroupInTransaction(
+  tx: DatabaseTx,
   tasks: PlanTaskRepository,
   scopes: MentorshipPlanScope[],
   assignmentGroupId: string,
 ): Promise<void> {
-  await withServiceContext(db, async (tx) => {
-    await lockScopes(tasks, tx, scopes);
-    const rows = await tasks.deletePendingMentorshipGroup(
-      tx,
-      scopes,
-      assignmentGroupId,
-    );
-    if (rows.length === 0) notEditable();
-  });
+  await lockScopes(tasks, tx, scopes);
+  const rows = await tasks.deletePendingMentorshipGroup(
+    tx,
+    scopes,
+    assignmentGroupId,
+  );
+  if (rows.length === 0) notEditable();
 }

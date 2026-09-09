@@ -4277,3 +4277,15 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   olayı üretmez; öğrencinin mevcut silme akışı `assignmentGroupId` ile audit/event kaydını sürdürür.
   İlgili: `plan-mentorship.ts`, `plan-task-mentorship.repository.ts`,
   `plan-event.service.ts`, `plan-event.controller.ts`.
+
+- **2026-09-09 — APP-091 transaction-aware W8 seams.** W2 now exposes caller-transaction
+  variants for mentorship task batch/single/group mutations and event create/update, while W2
+  continues to own every `plan_tasks`/event repository call. Domain events are published only
+  after W8's outer transaction commits. Link-end attendance cleanup also accepts that transaction.
+  `PlanEventService` returns every coach-organized event in range and preserves truthful
+  `attendeeCount`; only the active-link allowlist of attendee ids crosses its W8 seam. Event write
+  orchestration moved to `plan-event-write.orchestrator.ts`, keeping the facade below 300 lines.
+  Usage: W8 calls `*InTransaction` only from its locked consent callback, then invokes the matching
+  publisher after commit. Gotcha: SERIES regeneration may replace the selected occurrence id, so
+  callers must use `result.dto.id`. Related: `plan.service.ts`, `plan-mentorship.ts`,
+  `plan-event.service.ts`, `plan-event-write.orchestrator.ts`.

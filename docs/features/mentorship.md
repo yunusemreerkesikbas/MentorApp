@@ -1352,6 +1352,20 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   satırları korur. İlgili: `mentorship-{assignment,event,plan-orchestration}.service.ts`,
   `mentorship-plan.controller.ts`, W2 `plan-mentorship.ts`.
 
+- **2026-09-09 — APP-091 active-link transaction gate hardening.** Coach plan writes now run
+  inside one W8-owned SERVICE transaction that locks the relevant ACTIVE `coach_students` rows
+  with `FOR UPDATE` in stable student-id order, rechecks consent under lock, and passes that same
+  transaction to W2. Link end uses the identical lock, removes future event attendance through
+  W2, and transitions the link to ENDED atomically. Event input is capped at 100 attendees before
+  the gate. SERIES edits hydrate W2's returned replacement event id. The aggregate keeps organized
+  personal/former-attendee events while hydrating only active identities; student filtering removes
+  unrelated personal items. Grouped tasks split by their visible signature when DONE history and
+  edited PENDING rows diverge. Usage: all coach assignment/event mutations must use
+  `withActiveLinksLocked`; never precheck and write in separate transactions. Gotcha:
+  `assignmentGroupId` remains the mutation key, while `CoachPlanGroupedTaskDto.id` is a stable
+  display-group key. Related: `mentorship-link.repository.ts`,
+  `mentorship-{assignment,event,link,plan-orchestration}.service.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

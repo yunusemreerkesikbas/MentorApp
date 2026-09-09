@@ -11,6 +11,8 @@ import { PlanEventService } from "../../coaching/application/plan-event.service"
 import { UsersService } from "../../identity/application/users.service";
 import { MentorshipLinkService } from "./mentorship-link.service";
 
+const MENTORSHIP_EVENT_ATTENDEE_MAX = 100;
+
 @Injectable()
 export class MentorshipEventService {
   constructor(
@@ -24,9 +26,14 @@ export class MentorshipEventService {
     input: CreatePlanEventInput,
   ): Promise<CoachPlanEventDto> {
     await this.links.assertEnabled();
-    await this.authorizeAttendees(coachId, input.attendeeIds);
-    const event = await this.events.create(coachId, input);
-    return this.hydrate(coachId, event.id);
+    this.assertAttendeeInput(coachId, input.attendeeIds);
+    const result = await this.links.withActiveLinksLocked(
+      coachId,
+      input.attendeeIds,
+      (tx) => this.events.createInTransaction(tx, coachId, input),
+    );
+    this.events.publishCreated(coachId, result);
+    return this.hydrate(coachId, result.dto.id);
   }
 
   async update(
@@ -36,10 +43,24 @@ export class MentorshipEventService {
   ): Promise<CoachPlanEventDto> {
     await this.links.assertEnabled();
     if (input.attendeeIds !== undefined) {
-      await this.authorizeAttendees(coachId, input.attendeeIds);
+      this.assertAttendeeInput(coachId, input.attendeeIds);
     }
-    await this.events.update(coachId, eventId, input);
-    return this.hydrate(coachId, eventId);
+    const result = await this.links.withActiveLinksLocked(
+      coachId,
+      async (tx) => {
+        const existingIds =
+          await this.events.listEventAttendeeIdsInTransaction(
+            tx,
+            coachId,
+            eventId,
+            input.scope,
+          );
+        return input.attendeeIds ?? existingIds;
+      },
+      (tx) => this.events.updateInTransaction(tx, coachId, eventId, input),
+    );
+    this.events.publishUpdated(coachId, result);
+    return this.hydrate(coachId, result.dto.id);
   }
 
   async cancel(
@@ -51,21 +72,23 @@ export class MentorshipEventService {
     return this.events.cancel(coachId, eventId, input);
   }
 
-  private async authorizeAttendees(
+  private assertAttendeeInput(
     coachId: string,
     attendeeIds: string[],
-  ): Promise<void> {
+  ): void {
+    if (attendeeIds.length > MENTORSHIP_EVENT_ATTENDEE_MAX) {
+      throw new DomainError(
+        ErrorCode.MENTORSHIP_EVENT_ATTENDEE_LIMIT,
+        HttpStatus.BAD_REQUEST,
+        { max: MENTORSHIP_EVENT_ATTENDEE_MAX },
+      );
+    }
     if (attendeeIds.includes(coachId)) {
       throw new DomainError(
         ErrorCode.MENTORSHIP_EVENT_ORGANIZER_ATTENDEE,
         HttpStatus.BAD_REQUEST,
       );
     }
-    await Promise.all(
-      attendeeIds.map((studentId) =>
-        this.links.requireActiveLink(coachId, studentId),
-      ),
-    );
   }
 
   private async hydrate(

@@ -109,6 +109,13 @@ function setup(
         row.status = "ENDED";
         row.endedAt = new Date();
         row.endedBy = endedBy;
+        row.coachNote = null;
+        row.coachNoteAt = null;
+        row.brief = null;
+        row.briefAt = null;
+        row.briefFingerprint = null;
+        row.attendedAt = null;
+        row.attendedFlags = null;
         return row;
       },
     ),

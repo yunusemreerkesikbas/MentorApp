@@ -151,5 +151,6 @@
   "MENTORSHIP_COACH_NOT_ACTIVE": "Koç hesabın şu anda açık değil, o yüzden davet kodu üretemiyorsun.",
   "MENTORSHIP_COACH_SUSPENDED": "Koç hesabın durduruldu. Yeniden kaydolarak açılmıyor, bizimle iletişime geçebilirsin.",
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "Bu ödev artık beklemede değil ya da bu bağlantıya ait değil.",
-  "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez."
+  "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez.",
+  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "Bir etkinliğe en fazla {max} öğrenci eklenebilir."
 }

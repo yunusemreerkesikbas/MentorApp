@@ -151,5 +151,6 @@
   "MENTORSHIP_COACH_NOT_ACTIVE": "Your coach account is not open right now, so you cannot issue an invite code.",
   "MENTORSHIP_COACH_SUSPENDED": "Your coach account has been stopped. Registering again will not reopen it, so get in touch with us.",
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "This assignment is no longer pending or does not belong to this link.",
-  "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "The event organizer cannot also appear in the attendee list."
+  "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "The event organizer cannot also appear in the attendee list.",
+  "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "An event can include at most {max} students."
 }

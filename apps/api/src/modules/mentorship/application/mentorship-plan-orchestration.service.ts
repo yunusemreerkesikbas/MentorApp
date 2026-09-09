@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { Injectable } from "@nestjs/common";
 import type {
   CoachPlanEventAttendeeDto,
@@ -39,13 +40,23 @@ export class MentorshipPlanOrchestrationService {
         scopes.map((scope) => scope.studentId),
       ),
     ]);
+    const mentorshipTasks = query.studentId
+      ? data.mentorshipTasks.filter(
+          (row) => row.studentId === query.studentId,
+        )
+      : data.mentorshipTasks;
+    const events = query.studentId
+      ? data.events.filter(({ attendeeIds }) =>
+          attendeeIds.includes(query.studentId!),
+        )
+      : data.events;
     const items = [
-      ...data.personalTasks.map((task) => ({
+      ...(query.studentId ? [] : data.personalTasks).map((task) => ({
         kind: "TASK" as const,
         task: this.personalTask(task),
       })),
-      ...this.groupAssignments(data.mentorshipTasks, identities),
-      ...data.events.map(({ event, attendeeIds }) => ({
+      ...this.groupAssignments(mentorshipTasks, identities),
+      ...events.map(({ event, attendeeIds }) => ({
         kind: "EVENT" as const,
         event: {
           ...event,
@@ -90,9 +101,14 @@ export class MentorshipPlanOrchestrationService {
   ): Array<{ kind: "TASK"; task: CoachPlanGroupedTaskDto }> {
     const groups = new Map<string, CoachPlanGroupedTaskDto>();
     for (const row of rows) {
-      const key = row.task.assignmentGroupId ?? row.task.id;
+      const signature = visibleTaskSignature(row.task);
+      const key = row.task.assignmentGroupId
+        ? `${row.task.assignmentGroupId}:${signature}`
+        : row.task.id;
       const group = groups.get(key) ?? {
-        id: key,
+        id: row.task.assignmentGroupId
+          ? `${row.task.assignmentGroupId}:${shortHash(signature)}`
+          : row.task.id,
         assignmentGroupId: row.task.assignmentGroupId,
         taskDate: row.task.taskDate,
         title: row.task.title,
@@ -133,6 +149,22 @@ export class MentorshipPlanOrchestrationService {
       avatarUrl: identity?.avatarUrl ?? null,
     };
   }
+}
+
+function visibleTaskSignature(task: PlanTaskDto): string {
+  return JSON.stringify([
+    task.taskDate,
+    task.title,
+    task.subject,
+    task.topic,
+    task.startTime,
+    task.endTime,
+    task.coachNote,
+  ]);
+}
+
+function shortHash(value: string): string {
+  return createHash("sha256").update(value).digest("hex").slice(0, 16);
 }
 
 function compareCoachPlanItems(left: CoachPlanItemDto, right: CoachPlanItemDto) {

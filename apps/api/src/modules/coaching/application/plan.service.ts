@@ -17,7 +17,7 @@ import type {
   UpdatePlanTaskInput,
 } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -44,11 +44,11 @@ import { DailyActivityRepository } from "../infrastructure/daily-activity.reposi
 import { PlanTaskRepository, type PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
 import {
-  createMentorshipBatch as createMentorshipBatchWrite,
-  removeMentorshipTask as removeMentorshipTaskWrite,
-  removeMentorshipTaskGroup as removeMentorshipTaskGroupWrite,
-  updateMentorshipTask as updateMentorshipTaskWrite,
-  updateMentorshipTaskGroup as updateMentorshipTaskGroupWrite,
+  createMentorshipBatchInTransaction as createMentorshipBatchWrite,
+  removeMentorshipTaskInTransaction as removeMentorshipTaskWrite,
+  removeMentorshipTaskGroupInTransaction as removeMentorshipTaskGroupWrite,
+  updateMentorshipTaskInTransaction as updateMentorshipTaskWrite,
+  updateMentorshipTaskGroupInTransaction as updateMentorshipTaskGroupWrite,
   type MentorshipAssignmentUpdate,
   type MentorshipPlanScope,
 } from "./plan-mentorship";
@@ -328,40 +328,48 @@ export class PlanService {
     inputs: MentorshipAssignmentInput[],
     linkId: string,
   ): Promise<PlanTaskDto[]> {
+    const result = await withServiceContext(this.db, (tx) =>
+      this.createFromMentorshipInTransaction(tx, studentId, inputs, linkId),
+    );
+    this.publishMentorshipTasksCreated(
+      result.length > 0 ? [studentId] : [],
+    );
+    return result;
+  }
+
+  async createFromMentorshipInTransaction(
+    tx: DatabaseTx,
+    studentId: string,
+    inputs: MentorshipAssignmentInput[],
+    linkId: string,
+  ): Promise<PlanTaskDto[]> {
     const withDates = inputs.map((input) => ({
       ...input,
       taskDate: input.taskDate ?? todayIso(),
     }));
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
-    const result = await withUserContext(this.db, { userId: studentId }, async (tx) => {
-      await this.tasks.acquireUserLock(tx, studentId);
-      const rows = [];
-      for (const input of withDates) {
-        rows.push(
-          await this.tasks.create(tx, {
-            userId: studentId,
-            taskDate: input.taskDate,
-            title: input.title,
-            subject: input.subject ?? null,
-            topic: input.topic ?? null,
-            startTime: input.startTime ?? null,
-            endTime: input.endTime ?? null,
-            // The student's own box stays empty — a coach writes into `coachNote`, never here.
-            description: null,
-            coachNote: input.coachNote ?? null,
-            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-            originType: "MENTORSHIP",
-            originRefId: linkId,
-            originMeta: null,
-          }),
-        );
-      }
-      return rows.map(toPlanTaskDto);
-    });
-    if (result.length > 0) {
-      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(studentId));
+    await this.tasks.acquireUserLock(tx, studentId);
+    const rows = [];
+    for (const input of withDates) {
+      rows.push(
+        await this.tasks.create(tx, {
+          userId: studentId,
+          taskDate: input.taskDate,
+          title: input.title,
+          subject: input.subject ?? null,
+          topic: input.topic ?? null,
+          startTime: input.startTime ?? null,
+          endTime: input.endTime ?? null,
+          description: null,
+          coachNote: input.coachNote ?? null,
+          ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+          originType: "MENTORSHIP",
+          originRefId: linkId,
+          originMeta: null,
+        }),
+      );
     }
-    return result;
+    return rows.map(toPlanTaskDto);
   }
 
   /** W8 seam: one SERVICE transaction, one group id, stable student lock order. */
@@ -369,21 +377,30 @@ export class PlanService {
     scopes: MentorshipPlanScope[],
     input: MentorshipAssignmentInput,
   ): Promise<PlanTaskDto[]> {
+    const result = await withServiceContext(this.db, (tx) =>
+      this.createMentorshipBatchInTransaction(tx, scopes, input),
+    );
+    this.publishMentorshipTasksCreated(scopes.map((scope) => scope.studentId));
+    return result;
+  }
+
+  createMentorshipBatchInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    input: MentorshipAssignmentInput,
+  ): Promise<PlanTaskDto[]> {
     const withDate = { ...input, taskDate: input.taskDate ?? todayIso() };
     this.assertTaskDateMutable(withDate.taskDate);
-    const result = await createMentorshipBatchWrite(
-      this.db,
-      this.tasks,
-      scopes,
-      withDate,
-    );
-    for (const scope of scopes) {
+    return createMentorshipBatchWrite(tx, this.tasks, scopes, withDate);
+  }
+
+  publishMentorshipTasksCreated(studentIds: string[]): void {
+    for (const studentId of studentIds) {
       this.events.emit(
         CoachingEventTopic.PLAN_TASK_CREATED,
-        new PlanTaskCreated(scope.studentId),
+        new PlanTaskCreated(studentId),
       );
     }
-    return result;
   }
 
   async updateMentorshipTask(
@@ -391,8 +408,19 @@ export class PlanService {
     taskId: string,
     input: Partial<MentorshipAssignmentUpdate>,
   ): Promise<PlanTaskDto> {
+    return withServiceContext(this.db, (tx) =>
+      this.updateMentorshipTaskInTransaction(tx, scope, taskId, input),
+    );
+  }
+
+  updateMentorshipTaskInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+    taskId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto> {
     if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
-    return updateMentorshipTaskWrite(this.db, this.tasks, scope, taskId, input);
+    return updateMentorshipTaskWrite(tx, this.tasks, scope, taskId, input);
   }
 
   async updateMentorshipTaskGroup(
@@ -400,9 +428,25 @@ export class PlanService {
     assignmentGroupId: string,
     input: Partial<MentorshipAssignmentUpdate>,
   ): Promise<PlanTaskDto[]> {
+    return withServiceContext(this.db, (tx) =>
+      this.updateMentorshipTaskGroupInTransaction(
+        tx,
+        scopes,
+        assignmentGroupId,
+        input,
+      ),
+    );
+  }
+
+  updateMentorshipTaskGroupInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto[]> {
     if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
     return updateMentorshipTaskGroupWrite(
-      this.db,
+      tx,
       this.tasks,
       scopes,
       assignmentGroupId,
@@ -414,15 +458,39 @@ export class PlanService {
     scope: MentorshipPlanScope,
     taskId: string,
   ): Promise<void> {
-    return removeMentorshipTaskWrite(this.db, this.tasks, scope, taskId);
+    return withServiceContext(this.db, (tx) =>
+      this.removeMentorshipTaskInTransaction(tx, scope, taskId),
+    );
+  }
+
+  removeMentorshipTaskInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+    taskId: string,
+  ): Promise<void> {
+    return removeMentorshipTaskWrite(tx, this.tasks, scope, taskId);
   }
 
   removeMentorshipTaskGroup(
     scopes: MentorshipPlanScope[],
     assignmentGroupId: string,
   ): Promise<void> {
+    return withServiceContext(this.db, (tx) =>
+      this.removeMentorshipTaskGroupInTransaction(
+        tx,
+        scopes,
+        assignmentGroupId,
+      ),
+    );
+  }
+
+  removeMentorshipTaskGroupInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+  ): Promise<void> {
     return removeMentorshipTaskGroupWrite(
-      this.db,
+      tx,
       this.tasks,
       scopes,
       assignmentGroupId,

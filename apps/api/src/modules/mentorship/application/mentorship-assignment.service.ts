@@ -46,17 +46,28 @@ export class MentorshipAssignmentService {
     input: CreateMentorshipAssignmentsInput,
   ): Promise<PlanTaskDto[]> {
     await this.links.assertEnabled();
-    // The gate first, always: a coach may only write into a student who accepted them.
-    const link = await this.links.requireActiveLink(coachId, studentId);
     this.assertWithinHorizon(input.tasks);
-
-    const tasks = await this.plan.createFromMentorship(studentId, input.tasks, link.id);
+    const result = await this.links.withActiveLinksLocked(
+      coachId,
+      [studentId],
+      async (tx, [scope]) => ({
+        scope: scope!,
+        tasks: await this.plan.createFromMentorshipInTransaction(
+          tx,
+          studentId,
+          input.tasks,
+          scope!.mentorshipLinkId,
+        ),
+      }),
+    );
+    const { scope, tasks } = result;
+    this.plan.publishMentorshipTasksCreated(tasks.length > 0 ? [studentId] : []);
 
     const coach = (await this.users.listDisplayIdentities([coachId])).get(coachId);
     this.events.emit(
       MentorshipEventTopic.ASSIGNMENTS_CREATED,
       new MentorshipAssignmentsCreated(
-        link.id,
+        scope.mentorshipLinkId,
         coachId,
         studentId,
         coach?.displayName ?? "",
@@ -76,9 +87,22 @@ export class MentorshipAssignmentService {
     input: CreateMentorshipBatchAssignmentInput,
   ): Promise<PlanTaskDto[]> {
     await this.links.assertEnabled();
-    const scopes = await this.authorizeStudents(coachId, input.studentIds);
     this.assertWithinHorizon([input.task]);
-    const tasks = await this.plan.createMentorshipBatch(scopes, input.task);
+    const { scopes, tasks } = await this.links.withActiveLinksLocked(
+      coachId,
+      input.studentIds,
+      async (tx, scopes) => ({
+        scopes,
+        tasks: await this.plan.createMentorshipBatchInTransaction(
+          tx,
+          scopes,
+          input.task,
+        ),
+      }),
+    );
+    this.plan.publishMentorshipTasksCreated(
+      scopes.map((scope) => scope.studentId),
+    );
     const coach = (await this.users.listDisplayIdentities([coachId])).get(coachId);
     for (const scope of scopes) {
       const task = tasks.find(
@@ -109,12 +133,17 @@ export class MentorshipAssignmentService {
     input: UpdateMentorshipAssignmentInput,
   ): Promise<PlanTaskDto> {
     await this.links.assertEnabled();
-    const link = await this.links.requireActiveLink(coachId, studentId);
     this.assertWithinHorizon([input]);
-    return this.plan.updateMentorshipTask(
-      { studentId, mentorshipLinkId: link.id },
-      taskId,
-      input,
+    return this.links.withActiveLinksLocked(
+      coachId,
+      [studentId],
+      (tx, [scope]) =>
+        this.plan.updateMentorshipTaskInTransaction(
+          tx,
+          scope!,
+          taskId,
+          input,
+        ),
     );
   }
 
@@ -124,10 +153,11 @@ export class MentorshipAssignmentService {
     taskId: string,
   ): Promise<void> {
     await this.links.assertEnabled();
-    const link = await this.links.requireActiveLink(coachId, studentId);
-    return this.plan.removeMentorshipTask(
-      { studentId, mentorshipLinkId: link.id },
-      taskId,
+    return this.links.withActiveLinksLocked(
+      coachId,
+      [studentId],
+      (tx, [scope]) =>
+        this.plan.removeMentorshipTaskInTransaction(tx, scope!, taskId),
     );
   }
 
@@ -138,12 +168,17 @@ export class MentorshipAssignmentService {
   ): Promise<PlanTaskDto[]> {
     await this.links.assertEnabled();
     const { studentIds, ...patch } = input;
-    const scopes = await this.authorizeStudents(coachId, studentIds);
     this.assertWithinHorizon([patch]);
-    return this.plan.updateMentorshipTaskGroup(
-      scopes,
-      assignmentGroupId,
-      patch,
+    return this.links.withActiveLinksLocked(
+      coachId,
+      studentIds,
+      (tx, scopes) =>
+        this.plan.updateMentorshipTaskGroupInTransaction(
+          tx,
+          scopes,
+          assignmentGroupId,
+          patch,
+        ),
     );
   }
 
@@ -153,20 +188,16 @@ export class MentorshipAssignmentService {
     input: RemoveMentorshipAssignmentGroupInput,
   ): Promise<void> {
     await this.links.assertEnabled();
-    const scopes = await this.authorizeStudents(coachId, input.studentIds);
-    return this.plan.removeMentorshipTaskGroup(scopes, assignmentGroupId);
-  }
-
-  private async authorizeStudents(coachId: string, studentIds: string[]) {
-    const links = await Promise.all(
-      studentIds.map((studentId) =>
-        this.links.requireActiveLink(coachId, studentId),
-      ),
+    return this.links.withActiveLinksLocked(
+      coachId,
+      input.studentIds,
+      (tx, scopes) =>
+        this.plan.removeMentorshipTaskGroupInTransaction(
+          tx,
+          scopes,
+          assignmentGroupId,
+        ),
     );
-    return links.map((link, index) => ({
-      studentId: studentIds[index]!,
-      mentorshipLinkId: link.id,
-    }));
   }
 
   /** The past is refused by coaching's own `assertTaskDateMutable`; this bounds the other end. */

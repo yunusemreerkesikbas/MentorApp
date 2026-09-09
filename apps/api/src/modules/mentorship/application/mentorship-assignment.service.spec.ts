@@ -35,7 +35,7 @@ function setup(rejectStudent?: string) {
         }
         return callback(
           TX,
-          studentIds.map((studentId) => ({
+          [...studentIds].sort().map((studentId) => ({
             studentId,
             mentorshipLinkId: studentId === STUDENT_A ? LINK_A : LINK_B,
           })),
@@ -91,8 +91,8 @@ describe("MentorshipAssignmentService orchestration", () => {
     expect(plan.createMentorshipBatchInTransaction).toHaveBeenCalledWith(
       TX,
       [
-        { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
         { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+        { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
       ],
       input.task,
     );

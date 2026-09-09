@@ -10,30 +10,13 @@ import type {
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import {
-  CoachingEventTopic,
-  PlanEventCancelled,
-  PlanEventCreated,
-  type PlanEventOccurrencePayload,
-  PlanEventUpdated,
-} from "../domain/coaching.events";
-import {
-  PlanEventRepository,
-  type PlanEventRecord,
-} from "../infrastructure/plan-event.repository";
+import { PlanEventRepository } from "../infrastructure/plan-event.repository";
 import { PlanTaskRepository } from "../infrastructure/plan-task.repository";
 import { todayInIstanbul } from "../domain/date.util";
 import { toPlanTaskDto } from "./coaching.mappers";
 import { toPlanEventDto } from "./plan-event.mapper";
-import {
-  assertMutableDate,
-  createEventRows,
-  invalidScope,
-  notFound,
-  sanitizeAttendees,
-  updateEvent,
-} from "./plan-event-mutation";
-import { generateEventDates } from "./plan-event-recurrence-policy";
+import { notFound, type PlanEventMutationResult } from "./plan-event-mutation";
+import { PlanEventWriteOrchestrator } from "./plan-event-write.orchestrator";
 
 export interface CoachPlanScope {
   mentorshipLinkId: string;
@@ -55,12 +38,16 @@ export interface CoachPlanData {
 
 @Injectable()
 export class PlanEventService {
+  private readonly writes: PlanEventWriteOrchestrator;
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly repository: PlanEventRepository,
     private readonly tasks: PlanTaskRepository,
-    private readonly events: EventEmitter2,
-  ) {}
+    events: EventEmitter2,
+  ) {
+    this.writes = new PlanEventWriteOrchestrator(repository, events);
+  }
 
   async list(
     participantUserId: string,
@@ -89,66 +76,28 @@ export class PlanEventService {
     organizerUserId: string,
     input: CreatePlanEventInput,
   ): Promise<PlanEventDto> {
-    assertMutableDate(input.eventDate);
-    const attendeeIds = sanitizeAttendees(input.attendeeIds, organizerUserId);
-    const dates = input.recurrence
-      ? generateEventDates({
-          ...input.recurrence,
-          startsOn: input.eventDate,
-        })
-      : [input.eventDate];
     const result = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      async (tx) => {
-        await this.repository.acquireOrganizerLock(tx, organizerUserId);
-        const series = input.recurrence
-          ? await this.repository.createSeries(tx, {
-              organizerUserId,
-              orgId: null,
-              frequency: input.recurrence.frequency,
-              timeZone: "Europe/Istanbul",
-              startsOn: input.eventDate,
-              endsOn:
-                input.recurrence.end.kind === "DATE"
-                  ? input.recurrence.end.date
-                  : null,
-              occurrenceCount:
-                input.recurrence.end.kind === "COUNT"
-                  ? input.recurrence.end.count
-                  : null,
-            })
-          : null;
-        const rows = await createEventRows(
-          this.repository,
-          tx,
-          organizerUserId,
-          input,
-          dates,
-          dates.map(() => attendeeIds),
-          series,
-        );
-        const occurrences = await this.repository.findOwnedByIds(
-          tx,
-          organizerUserId,
-          rows.map((row) => row.id),
-        );
-        return { rows, occurrences, series };
-      },
+      (tx) => this.createInTransaction(tx, organizerUserId, input),
     );
-    this.events.emit(
-      CoachingEventTopic.PLAN_EVENT_CREATED,
-      new PlanEventCreated(
-        organizerUserId,
-        result.occurrences.map((row) =>
-          this.toEventPayload(row, row.attendeeIds),
-        ),
-      ),
-    );
-    return toPlanEventDto(result.rows[0]!, {
-      attendeeCount: attendeeIds.length,
-      series: result.series,
-    });
+    this.publishCreated(organizerUserId, result);
+    return result.dto;
+  }
+
+  createInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    input: CreatePlanEventInput,
+  ): Promise<PlanEventMutationResult> {
+    return this.writes.createInTransaction(tx, organizerUserId, input);
+  }
+
+  publishCreated(
+    organizerUserId: string,
+    result: PlanEventMutationResult,
+  ): void {
+    this.writes.publishCreated(organizerUserId, result);
   }
 
   async update(
@@ -159,28 +108,45 @@ export class PlanEventService {
     const result = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      async (tx) => {
-        await this.repository.acquireOrganizerLock(tx, organizerUserId);
-        const existing = await this.requireOwned(tx, organizerUserId, id);
-        return updateEvent(
-          this.repository,
-          tx,
-          organizerUserId,
-          existing,
-          input,
-        );
-      },
+      (tx) => this.updateInTransaction(tx, organizerUserId, id, input),
     );
-    this.events.emit(
-      CoachingEventTopic.PLAN_EVENT_UPDATED,
-      new PlanEventUpdated(
-        organizerUserId,
-        result.occurrences.map((row) =>
-          this.toEventPayload(row, row.attendeeIds),
-        ),
-      ),
-    );
+    this.publishUpdated(organizerUserId, result);
     return result.dto;
+  }
+
+  updateInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    eventId: string,
+    input: UpdatePlanEventInput,
+  ): Promise<PlanEventMutationResult> {
+    return this.writes.updateInTransaction(
+      tx,
+      organizerUserId,
+      eventId,
+      input,
+    );
+  }
+
+  publishUpdated(
+    organizerUserId: string,
+    result: PlanEventMutationResult,
+  ): void {
+    this.writes.publishUpdated(organizerUserId, result);
+  }
+
+  listEventAttendeeIdsInTransaction(
+    tx: DatabaseTx,
+    organizerUserId: string,
+    eventId: string,
+    scope: UpdatePlanEventInput["scope"],
+  ): Promise<string[]> {
+    return this.writes.listAttendeeIdsInTransaction(
+      tx,
+      organizerUserId,
+      eventId,
+      scope,
+    );
   }
 
   async cancel(
@@ -188,41 +154,12 @@ export class PlanEventService {
     id: string,
     input: CancelPlanEventInput,
   ): Promise<void> {
-    const emitted = await withUserContext(
+    const rows = await withUserContext(
       this.db,
       { userId: organizerUserId },
-      async (tx) => {
-        await this.repository.acquireOrganizerLock(tx, organizerUserId);
-        const existing = await this.requireOwned(tx, organizerUserId, id);
-        let occurrences = [existing];
-        if (input.scope === "OCCURRENCE") {
-          assertMutableDate(existing.eventDate);
-          const cancelled = await this.repository.cancelOccurrence(
-            tx,
-            organizerUserId,
-            id,
-          );
-          if (!cancelled) notFound();
-          occurrences = [{ ...existing, ...cancelled! }];
-        } else {
-          if (!existing.seriesId) invalidScope();
-          occurrences = await this.repository.cancelFutureSeries(
-            tx,
-            organizerUserId,
-            existing.seriesId!,
-            todayInIstanbul(),
-          );
-        }
-        return occurrences;
-      },
+      (tx) => this.writes.cancelInTransaction(tx, organizerUserId, id, input),
     );
-    this.events.emit(
-      CoachingEventTopic.PLAN_EVENT_CANCELLED,
-      new PlanEventCancelled(
-        organizerUserId,
-        emitted.map((row) => this.toEventPayload(row, row.attendeeIds)),
-      ),
-    );
+    this.writes.publishCancelled(organizerUserId, rows);
   }
 
   async listAuthorizedForCoach(
@@ -264,10 +201,6 @@ export class PlanEventService {
     });
   }
 
-  /**
-   * W8-only aggregate seam. Raw attendee ids stay server-side and are reduced to the active-link
-   * allowlist before leaving W2; student/public DTOs remain count-only.
-   */
   async listCoachPlanData(
     organizerUserId: string,
     scopes: CoachPlanScope[],
@@ -305,12 +238,11 @@ export class PlanEventService {
           );
           return scope ? [{ ...scope, task: toPlanTaskDto(row) }] : [];
         }),
-        events: eventRows.flatMap((row) => {
+        events: eventRows.map((row) => {
           const attendeeIds = row.attendeeIds.filter((id) =>
             allowedStudents.has(id),
           );
-          if (row.attendeeIds.length > 0 && attendeeIds.length === 0) return [];
-          return [{ event: toPlanEventDto(row), attendeeIds }];
+          return { event: toPlanEventDto(row), attendeeIds };
         }),
       };
     });
@@ -331,10 +263,7 @@ export class PlanEventService {
       const allowed = new Set(authorizedStudentIds);
       const attendeeIds = row!.attendeeIds.filter((id) => allowed.has(id));
       return {
-        event: {
-          ...toPlanEventDto(row!),
-          attendeeCount: attendeeIds.length,
-        },
+        event: toPlanEventDto(row!),
         attendeeIds,
       };
     });
@@ -354,29 +283,16 @@ export class PlanEventService {
     );
   }
 
-  private async requireOwned(
+  removeFutureAttendeeInTransaction(
     tx: DatabaseTx,
     organizerUserId: string,
-    id: string,
-  ): Promise<PlanEventRecord> {
-    const row = await this.repository.findOwnedById(tx, organizerUserId, id);
-    if (!row) notFound();
-    return row!;
-  }
-
-  private toEventPayload(
-    row: Pick<
-      PlanEventRecord,
-      "id" | "title" | "eventDate" | "startTime"
-    >,
-    recipientUserIds: string[],
-  ): PlanEventOccurrencePayload {
-    return {
-      eventId: row.id,
-      title: row.title,
-      eventDate: row.eventDate,
-      startTime: row.startTime?.slice(0, 5) ?? null,
-      recipientUserIds,
-    };
+    studentId: string,
+  ): Promise<number> {
+    return this.repository.removeFutureAttendee(
+      tx,
+      organizerUserId,
+      studentId,
+      todayInIstanbul(),
+    );
   }
 }

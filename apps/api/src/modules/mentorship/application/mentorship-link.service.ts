@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   MENTORSHIP_DATA_SCOPE,
@@ -15,6 +15,9 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { DRIZZLE } from "../../../database/database.constants";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
+import { withServiceContext } from "../../../database/rls";
 import { UsersService } from "../../identity/application/users.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { PlanEventService } from "../../coaching/application/plan-event.service";
@@ -56,6 +59,7 @@ export class MentorshipLinkService {
     private readonly subscriptions: SubscriptionsService,
     private readonly events: EventEmitter2,
     private readonly planEvents: PlanEventService,
+    @Inject(DRIZZLE) private readonly db: Database,
   ) {}
 
   /** Runtime kill-switch (config registry). Every W8 entry point calls this first. */
@@ -94,6 +98,47 @@ export class MentorshipLinkService {
       throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     return link;
+  }
+
+  async withActiveLinksLocked<T>(
+    coachId: string,
+    requestedStudentIds:
+      | string[]
+      | ((tx: DatabaseTx) => Promise<string[]>),
+    callback: (
+      tx: DatabaseTx,
+      scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
+    ) => Promise<T>,
+  ): Promise<T> {
+    return withServiceContext(this.db, async (tx) => {
+      const resolved =
+        typeof requestedStudentIds === "function"
+          ? await requestedStudentIds(tx)
+          : requestedStudentIds;
+      const studentIds = [...new Set(resolved)].sort();
+      const locked = await this.links.lockActiveInTransaction(
+        tx,
+        coachId,
+        studentIds,
+      );
+      const byStudent = new Map(locked.map((link) => [link.studentId, link]));
+      if (
+        locked.length !== studentIds.length ||
+        studentIds.some((studentId) => !byStudent.has(studentId))
+      ) {
+        throw new DomainError(
+          ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
+          HttpStatus.NOT_FOUND,
+        );
+      }
+      return callback(
+        tx,
+        studentIds.map((studentId) => ({
+          studentId,
+          mentorshipLinkId: byStudent.get(studentId)!.id,
+        })),
+      );
+    });
   }
 
   async listActiveScopes(
@@ -284,8 +329,7 @@ export class MentorshipLinkService {
   /** Coach ends the link. */
   async endByCoach(coachId: string, studentId: string): Promise<void> {
     await this.assertEnabled();
-    const link = await this.requireActiveLink(coachId, studentId);
-    await this.endLink(link, coachId);
+    await this.endLink(coachId, studentId, coachId);
   }
 
   /** Student ends the link. Unilateral by design: consent is revocable at any time (KVKK). */
@@ -293,22 +337,38 @@ export class MentorshipLinkService {
     await this.assertEnabled();
     const link = await this.links.findActiveByStudent(studentId);
     if (!link) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
-    await this.endLink(link, studentId);
+    await this.endLink(link.coachId, studentId, studentId);
   }
 
-  private async endLink(link: MentorshipLinkRow, actorId: string): Promise<void> {
-    // Consent visibility closes before the relation. If cleanup fails, the link remains active
-    // and retryable instead of leaving future events visible behind an ENDED consent row.
-    await this.planEvents.removeFutureAttendee(link.coachId, link.studentId);
-    const ended = await this.links.end(link.id, actorId);
+  private async endLink(
+    coachId: string,
+    studentId: string,
+    actorId: string,
+  ): Promise<void> {
+    const ended = await this.withActiveLinksLocked(
+      coachId,
+      [studentId],
+      async (tx, [scope]) => {
+        await this.planEvents.removeFutureAttendeeInTransaction(
+          tx,
+          coachId,
+          studentId,
+        );
+        return this.links.endInTransaction(
+          tx,
+          scope!.mentorshipLinkId,
+          actorId,
+        );
+      },
+    );
     if (!ended) return; // already ENDED - idempotent
     const actor = await this.findPerson(actorId);
     this.events.emit(
       MentorshipEventTopic.LINK_ENDED,
       new MentorshipLinkEnded(
-        link.id,
-        link.coachId,
-        link.studentId,
+        ended.id,
+        ended.coachId,
+        ended.studentId,
         actorId,
         actor?.displayName ?? "",
       ),
