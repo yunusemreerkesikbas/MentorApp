@@ -2,7 +2,10 @@
 
 import type { CoachPlanItemDto } from "@mentor/types";
 import { useTranslations } from "next-intl";
-import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
+import {
+  coachPlanItemDomId,
+  isCoachPlanItemShared,
+} from "@/lib/coach-plan-calendar";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 
 export function coachPlanItemId(item: CoachPlanItemDto): string {
@@ -31,6 +34,7 @@ export function CoachPlanItemCard({
 
   return (
     <button
+      id={coachPlanItemDomId(item)}
       type="button"
       onClick={() => onSelect(item)}
       aria-pressed={selected}

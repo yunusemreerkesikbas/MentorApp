@@ -131,6 +131,29 @@ export function coachPlanQueryKey(query: {
   return JSON.stringify([query.date, query.event?.trim() || null]);
 }
 
+export function consumeInitialCoachPlanEvent(
+  state: { pendingEventId: string | null },
+  items: readonly CoachPlanItemDto[],
+): {
+  applied: boolean;
+  pendingEventId: null;
+  item: CoachPlanItemDto | null;
+} {
+  if (state.pendingEventId === null) {
+    return { applied: false, pendingEventId: null, item: null };
+  }
+  const item = items.find(
+    (candidate) =>
+      candidate.kind === "EVENT" && candidate.event.id === state.pendingEventId,
+  );
+  return { applied: true, pendingEventId: null, item: item ?? null };
+}
+
+export function coachPlanItemDomId(item: CoachPlanItemDto): string {
+  const id = item.kind === "TASK" ? item.task.id : item.event.id;
+  return `coach-plan-${item.kind.toLowerCase()}-${encodeURIComponent(id)}`;
+}
+
 export function coachPlanWeekdayLabels(
   locale: string,
   width: "short" | "long" = "short",

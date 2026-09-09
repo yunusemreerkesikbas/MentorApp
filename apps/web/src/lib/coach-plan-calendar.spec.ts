@@ -5,8 +5,10 @@ import {
   coachPlanQueryTransition,
   coachPlanRange,
   coachPlanWeekdayLabels,
+  consumeInitialCoachPlanEvent,
   isCoachPlanItemShared,
   itemsForCoachPlanDay,
+  coachPlanItemDomId,
   parseCoachPlanSelection,
   sortCoachPlanItems,
   uniqueStudentAvatars,
@@ -206,6 +208,52 @@ describe("coachPlanQueryTransition", () => {
     expect(coachPlanQueryKey({ ...query, event: "second" })).not.toBe(
       coachPlanQueryKey(query),
     );
+  });
+});
+
+describe("consumeInitialCoachPlanEvent", () => {
+  it("applies a query event only on the first successful load", () => {
+    const matching = event("deep-link", "2026-09-10", "10:00");
+    const first = consumeInitialCoachPlanEvent(
+      { pendingEventId: "deep-link" },
+      [matching],
+    );
+    const later = consumeInitialCoachPlanEvent(
+      { pendingEventId: first.pendingEventId },
+      [matching],
+    );
+
+    expect(first).toEqual({
+      applied: true,
+      pendingEventId: null,
+      item: matching,
+    });
+    expect(later).toEqual({
+      applied: false,
+      pendingEventId: null,
+      item: null,
+    });
+  });
+
+  it("consumes a missing query event without reopening it on later ranges", () => {
+    const first = consumeInitialCoachPlanEvent(
+      { pendingEventId: "not-loaded" },
+      [],
+    );
+    expect(first).toEqual({
+      applied: true,
+      pendingEventId: null,
+      item: null,
+    });
+  });
+});
+
+describe("coachPlanItemDomId", () => {
+  it("is stable and separates task and event trigger ids", () => {
+    const taskItem = task("same-id", "2026-09-10", null);
+    const eventItem = event("same-id", "2026-09-10", null);
+    expect(coachPlanItemDomId(taskItem)).toBe(coachPlanItemDomId(taskItem));
+    expect(coachPlanItemDomId(taskItem)).not.toBe(coachPlanItemDomId(eventItem));
   });
 });
 

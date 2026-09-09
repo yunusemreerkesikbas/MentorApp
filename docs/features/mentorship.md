@@ -1401,7 +1401,9 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   can be shown. Month headings are visibly Monday-first, avatar overflow announces the total, and
   an opened read-only detail receives focus without trapping it. Role planners are separate dynamic
   chunks. The month board uses native table headers/cells and names every unique overflow student
-  to assistive technology; retry restarts only the resource that failed. Related:
+  to assistive technology; retry restarts only the resource that failed. A query event is consumed
+  only by the first successful range load, closing detail restores its item trigger, and error
+  states temporarily hide any preserved detail selection. Related:
   `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
   `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
 

@@ -1,11 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { CoachPlanItemDto, MentorshipRosterRowDto } from "@mentor/types";
 import { Button, Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import {
+  coachPlanItemDomId,
   coachPlanRange,
+  consumeInitialCoachPlanEvent,
   sortCoachPlanItems,
   type CoachPlanScale,
 } from "@/lib/coach-plan-calendar";
@@ -46,6 +48,7 @@ export function CoachPlanCalendarShell({
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
+  const initialEventStateRef = useRef({ pendingEventId: initialEventId });
   const range = useMemo(() => coachPlanRange(anchor, scale), [anchor, scale]);
   const requestKey = `${range.from}:${range.to}:${studentId ?? "all"}:${reloadKey}`;
   const planLoading = loadedKey !== requestKey && errorKey !== requestKey;
@@ -66,13 +69,19 @@ export function CoachPlanCalendarShell({
         setErrorKey(null);
         setLoadedKey(requestKey);
         setItems(orderedItems);
-        const deepLinked = initialEventId
-          ? orderedItems.find(
-              (item) => item.kind === "EVENT" && item.event.id === initialEventId,
-            )
-          : undefined;
-        setSelectedItem(deepLinked ?? null);
-        if (deepLinked?.kind === "EVENT") setSelectedDate(deepLinked.event.eventDate);
+        const initialSelection = consumeInitialCoachPlanEvent(
+          initialEventStateRef.current,
+          orderedItems,
+        );
+        initialEventStateRef.current = {
+          pendingEventId: initialSelection.pendingEventId,
+        };
+        if (initialSelection.applied) {
+          setSelectedItem(initialSelection.item);
+          if (initialSelection.item?.kind === "EVENT") {
+            setSelectedDate(initialSelection.item.event.eventDate);
+          }
+        }
       })
       .catch((error: unknown) => {
         if (!active || isAbortError(error)) return;
@@ -83,7 +92,7 @@ export function CoachPlanCalendarShell({
       active = false;
       controller.abort();
     };
-  }, [initialEventId, range.from, range.to, requestKey, studentId]);
+  }, [range.from, range.to, requestKey, studentId]);
 
   const selectItem = useCallback((item: CoachPlanItemDto) => {
     setSelectedItem(item);
@@ -104,6 +113,16 @@ export function CoachPlanCalendarShell({
     setAnchor(selectedDate);
     setSelectedItem(null);
   }, [selectedDate]);
+
+  const closeDetail = useCallback(() => {
+    if (!selectedItem) return;
+    const triggerId = coachPlanItemDomId(selectedItem);
+    setSelectedItem(null);
+    requestAnimationFrame(() => {
+      const trigger = document.getElementById(triggerId);
+      if (trigger instanceof HTMLElement) trigger.focus();
+    });
+  }, [selectedItem]);
 
   if (planLoading || rosterLoading) return <CoachPlanSkeleton />;
   const error = planError || rosterError;
@@ -182,8 +201,8 @@ export function CoachPlanCalendarShell({
         />
       )}
 
-      {selectedItem && (
-        <CoachPlanDetail item={selectedItem} onClose={() => setSelectedItem(null)} />
+      {!error && selectedItem && (
+        <CoachPlanDetail item={selectedItem} onClose={closeDetail} />
       )}
     </main>
   );
