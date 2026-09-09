@@ -39,6 +39,7 @@ const task: PlanTaskDto = {
   topic: null,
   coachNote: null,
   origin: null,
+  assignmentGroupId: null,
 };
 
 const readyPreview: CoachPlanAdaptationDto = {
@@ -195,6 +196,7 @@ const timedTask: PlanTaskDto = {
   topic: null,
   coachNote: null,
   origin: null,
+  assignmentGroupId: null,
 };
 
 test.describe("Takvim", () => {
