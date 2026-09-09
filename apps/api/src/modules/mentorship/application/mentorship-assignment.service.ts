@@ -179,7 +179,7 @@ export class MentorshipAssignmentService {
     input: UpdateMentorshipAssignmentGroupInput,
   ): Promise<PlanTaskDto[]> {
     await this.links.assertEnabled();
-    const { studentIds, ...patch } = input;
+    const { studentIds, expectedSignature, ...patch } = input;
     this.assertWithinHorizon([patch]);
     return this.links.withServiceTransaction(async (tx) => {
       const scopes = await this.links.requireActiveLinksInTransaction(
@@ -192,6 +192,7 @@ export class MentorshipAssignmentService {
         scopes,
         assignmentGroupId,
         patch,
+        expectedSignature,
       );
     });
   }
@@ -212,6 +213,7 @@ export class MentorshipAssignmentService {
         tx,
         scopes,
         assignmentGroupId,
+        input.expectedSignature,
       );
     });
   }

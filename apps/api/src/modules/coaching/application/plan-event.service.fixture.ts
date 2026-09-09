@@ -107,7 +107,8 @@ function makeRepository(initial = [eventRow()]) {
           (row) =>
             row.organizerUserId === organizerId &&
             row.seriesId === seriesId &&
-            row.eventDate >= from,
+            row.eventDate >= from &&
+            row.status === "SCHEDULED",
         );
         affected.forEach((row) => Object.assign(row, patch));
         return affected;
@@ -120,7 +121,8 @@ function makeRepository(initial = [eventRow()]) {
           if (
             row.organizerUserId === organizerId &&
             row.seriesId === seriesId &&
-            row.eventDate >= from
+            row.eventDate >= from &&
+            row.status === "SCHEDULED"
           ) {
             rows.splice(index, 1);
           }
@@ -151,7 +153,8 @@ function makeRepository(initial = [eventRow()]) {
         (row) =>
           row.organizerUserId === organizerId &&
           row.seriesId === seriesId &&
-          row.eventDate >= from,
+          row.eventDate >= from &&
+          row.status === "SCHEDULED",
       );
       affected.forEach((row) => {
         row.status = "CANCELLED";

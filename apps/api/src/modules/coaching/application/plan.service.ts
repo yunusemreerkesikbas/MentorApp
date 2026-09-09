@@ -50,6 +50,7 @@ import {
   updateMentorshipTaskInTransaction as updateMentorshipTaskWrite,
   updateMentorshipTaskGroupInTransaction as updateMentorshipTaskGroupWrite,
   type MentorshipAssignmentUpdate,
+  type MentorshipAssignmentVisibleSignature,
   type MentorshipPlanScope,
 } from "./plan-mentorship";
 
@@ -427,6 +428,7 @@ export class PlanService {
     scopes: MentorshipPlanScope[],
     assignmentGroupId: string,
     input: Partial<MentorshipAssignmentUpdate>,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
   ): Promise<PlanTaskDto[]> {
     return withServiceContext(this.db, (tx) =>
       this.updateMentorshipTaskGroupInTransaction(
@@ -434,6 +436,7 @@ export class PlanService {
         scopes,
         assignmentGroupId,
         input,
+        expectedSignature,
       ),
     );
   }
@@ -443,6 +446,7 @@ export class PlanService {
     scopes: MentorshipPlanScope[],
     assignmentGroupId: string,
     input: Partial<MentorshipAssignmentUpdate>,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
   ): Promise<PlanTaskDto[]> {
     if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
     return updateMentorshipTaskGroupWrite(
@@ -451,6 +455,7 @@ export class PlanService {
       scopes,
       assignmentGroupId,
       input,
+      expectedSignature,
     );
   }
 
@@ -474,12 +479,14 @@ export class PlanService {
   removeMentorshipTaskGroup(
     scopes: MentorshipPlanScope[],
     assignmentGroupId: string,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
   ): Promise<void> {
     return withServiceContext(this.db, (tx) =>
       this.removeMentorshipTaskGroupInTransaction(
         tx,
         scopes,
         assignmentGroupId,
+        expectedSignature,
       ),
     );
   }
@@ -488,12 +495,14 @@ export class PlanService {
     tx: DatabaseTx,
     scopes: MentorshipPlanScope[],
     assignmentGroupId: string,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
   ): Promise<void> {
     return removeMentorshipTaskGroupWrite(
       tx,
       this.tasks,
       scopes,
       assignmentGroupId,
+      expectedSignature,
     );
   }
 

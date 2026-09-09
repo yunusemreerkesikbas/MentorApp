@@ -10,6 +10,15 @@ const LINK_B = "00000000-0000-4000-8000-000000000013";
 const TASK = "00000000-0000-4000-8000-000000000020";
 const GROUP = "00000000-0000-4000-8000-000000000021";
 const TX = { execute: vi.fn() };
+const expectedSignature = {
+  taskDate: todayIso(),
+  title: "Paragraf",
+  subject: null,
+  topic: null,
+  startTime: null,
+  endTime: null,
+  coachNote: null,
+};
 
 function setup(rejectStudent?: string) {
   const links = {
@@ -147,10 +156,12 @@ describe("MentorshipAssignmentService orchestration", () => {
 
     await service.updateGroup(COACH, GROUP, {
       studentIds: [STUDENT_A, STUDENT_B],
+      expectedSignature,
       title: "Yeni grup",
     });
     await service.removeGroup(COACH, GROUP, {
       studentIds: [STUDENT_A, STUDENT_B],
+      expectedSignature,
     });
 
     const scopes = [
@@ -162,11 +173,13 @@ describe("MentorshipAssignmentService orchestration", () => {
       scopes,
       GROUP,
       { title: "Yeni grup" },
+      expectedSignature,
     );
     expect(plan.removeMentorshipTaskGroupInTransaction).toHaveBeenCalledWith(
       TX,
       scopes,
       GROUP,
+      expectedSignature,
     );
   });
 

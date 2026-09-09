@@ -9,6 +9,7 @@ type ValidationSurface = {
   createMentorshipBatchAssignmentSchema?: z.ZodTypeAny;
   updateMentorshipAssignmentSchema?: z.ZodTypeAny;
   updateMentorshipAssignmentGroupSchema?: z.ZodTypeAny;
+  removeMentorshipAssignmentGroupSchema?: z.ZodTypeAny;
 };
 
 const schemas = validation as ValidationSurface;
@@ -26,6 +27,15 @@ const recurringEvent = {
   startTime: "18:00",
   endTime: "19:00",
   attendeeIds: [firstStudentId, secondStudentId],
+};
+const expectedTaskSignature = {
+  taskDate: "2026-09-15",
+  title: "Paragraf",
+  subject: "Türkçe",
+  topic: null,
+  startTime: null,
+  endTime: null,
+  coachNote: "20 soru",
 };
 
 describe("coach plan event validation", () => {
@@ -233,5 +243,32 @@ describe("coach plan event validation", () => {
         studentIds: [firstStudentId],
       }).success,
     ).toBe(false);
+  });
+
+  it("requires the visible task signature on group update and delete", () => {
+    expect(schemas.updateMentorshipAssignmentGroupSchema).toBeDefined();
+    expect(schemas.removeMentorshipAssignmentGroupSchema).toBeDefined();
+    if (
+      !schemas.updateMentorshipAssignmentGroupSchema ||
+      !schemas.removeMentorshipAssignmentGroupSchema
+    ) {
+      return;
+    }
+    expect(schemas.updateMentorshipAssignmentGroupSchema.safeParse({
+      studentIds: [firstStudentId],
+      expectedSignature: expectedTaskSignature,
+      title: "Yeni başlık",
+    }).success).toBe(true);
+    expect(schemas.removeMentorshipAssignmentGroupSchema.safeParse({
+      studentIds: [firstStudentId],
+      expectedSignature: expectedTaskSignature,
+    }).success).toBe(true);
+    expect(schemas.updateMentorshipAssignmentGroupSchema.safeParse({
+      studentIds: [firstStudentId],
+      title: "Yeni başlık",
+    }).success).toBe(false);
+    expect(schemas.removeMentorshipAssignmentGroupSchema.safeParse({
+      studentIds: [firstStudentId],
+    }).success).toBe(false);
   });
 });

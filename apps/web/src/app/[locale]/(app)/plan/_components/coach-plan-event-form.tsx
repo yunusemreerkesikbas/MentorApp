@@ -19,6 +19,7 @@ import {
   buildCoachEventUpdate,
   eventMutationScope,
 } from "@/lib/coach-plan-mutations";
+import { todayInIstanbul } from "@/lib/date-time";
 import {
   createCoachPlanEvent,
   updateCoachPlanEvent,
@@ -113,7 +114,7 @@ export function CoachPlanEventForm({
         await updateCoachPlanEvent(
           mode.event.id,
           updateMentorshipEventSchema.parse(
-            buildCoachEventUpdate(values, effectiveScope!),
+            buildCoachEventUpdate(values, effectiveScope!, mode.event),
           ),
         );
       }
@@ -151,6 +152,7 @@ export function CoachPlanEventForm({
           type="date"
           label={t("form_date")}
           value={eventDate}
+          min={todayInIstanbul()}
           required
           disabled={busy}
           onChange={(event) => setEventDate(event.target.value)}

@@ -160,6 +160,19 @@ export function restoreCoachPlanTrigger(
   if (trigger?.isConnected) trigger.focus();
 }
 
+export function reconcileCoachPlanSelection(
+  selected: CoachPlanItemDto | null,
+  items: readonly CoachPlanItemDto[],
+): CoachPlanItemDto | null {
+  if (!selected) return null;
+  return items.find((item) =>
+    item.kind === selected.kind &&
+    (item.kind === "TASK"
+      ? item.task.id === (selected.kind === "TASK" ? selected.task.id : "")
+      : item.event.id === (selected.kind === "EVENT" ? selected.event.id : ""))
+  ) ?? null;
+}
+
 export function coachPlanWeekdayLabels(
   locale: string,
   width: "short" | "long" = "short",

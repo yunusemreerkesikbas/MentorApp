@@ -18,6 +18,7 @@ import {
   buildCoachTaskUpdate,
   type CoachTaskMutationTarget,
 } from "@/lib/coach-plan-mutations";
+import { todayInIstanbul } from "@/lib/date-time";
 import {
   assignTasksBatch,
   updateAssignment,
@@ -147,6 +148,7 @@ export function CoachPlanTaskForm({
           type="date"
           label={t("form_date")}
           value={taskDate}
+          min={todayInIstanbul()}
           required
           disabled={busy || personalEdit}
           onChange={(event) => setTaskDate(event.target.value)}

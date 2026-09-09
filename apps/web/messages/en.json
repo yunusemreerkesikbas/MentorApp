@@ -1172,6 +1172,7 @@
     "participants_named": "Participants: {names}",
     "month_board": "Monthly coach plan calendar",
     "day_empty": "No plans for this day.",
+    "select_date": "Select {date}",
     "task_count": "{count, plural, one {# task} other {# tasks}}",
     "event_count": "{count, plural, one {# event} other {# events}}",
     "day_empty_short": "Empty",

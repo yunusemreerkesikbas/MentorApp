@@ -53,6 +53,16 @@ function row(overrides: Partial<Row>): Row {
   };
 }
 
+const expectedSignature = {
+  taskDate: TODAY,
+  title: "Paragraf",
+  subject: "Türkçe",
+  topic: null,
+  startTime: null,
+  endTime: null,
+  coachNote: null,
+};
+
 function setup(initial: Row[] = [], failStudentId?: string) {
   const rows = [...initial];
   const lockOrder: string[] = [];
@@ -106,6 +116,7 @@ function setup(initial: Row[] = [], failStudentId?: string) {
         _tx,
         scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
         groupId: string,
+        expected: typeof expectedSignature,
         patch: Partial<Row>,
       ) => {
         const allowed = new Set(
@@ -115,7 +126,8 @@ function setup(initial: Row[] = [], failStudentId?: string) {
           (item) =>
             item.assignmentGroupId === groupId &&
             item.status === "PENDING" &&
-            allowed.has(`${item.userId}:${item.originRefId}`),
+            allowed.has(`${item.userId}:${item.originRefId}`) &&
+            matchesSignature(item, expected),
         );
         affected.forEach((item) => Object.assign(item, patch));
         return affected;
@@ -143,6 +155,7 @@ function setup(initial: Row[] = [], failStudentId?: string) {
         _tx,
         scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
         groupId: string,
+        expected: typeof expectedSignature,
       ) => {
         const allowed = new Set(
           scopes.map((scope) => `${scope.studentId}:${scope.mentorshipLinkId}`),
@@ -153,7 +166,8 @@ function setup(initial: Row[] = [], failStudentId?: string) {
           if (
             item.assignmentGroupId === groupId &&
             item.status === "PENDING" &&
-            allowed.has(`${item.userId}:${item.originRefId}`)
+            allowed.has(`${item.userId}:${item.originRefId}`) &&
+            matchesSignature(item, expected)
           ) {
             removed.push(...rows.splice(index, 1));
           }
@@ -169,6 +183,12 @@ function setup(initial: Row[] = [], failStudentId?: string) {
     { emit: vi.fn() } as never,
   );
   return { service, tasks, rows, lockOrder, db };
+}
+
+function matchesSignature(item: Row, expected: typeof expectedSignature): boolean {
+  return Object.entries(expected).every(
+    ([key, value]) => item[key as keyof Row] === value,
+  );
 }
 
 describe("PlanService W8 assignment seams", () => {
@@ -275,19 +295,73 @@ describe("PlanService W8 assignment seams", () => {
     const changed = await service.updateMentorshipTaskGroup(scopes, GROUP, {
       taskDate: TODAY,
       title: "Grup başlığı",
-    });
+    }, expectedSignature);
     expect(changed.map((item) => item.id).sort()).toEqual(["a", "b"]);
     expect(doneB.title).toBe("Paragraf");
     expect(outsider.title).toBe("Paragraf");
 
-    await service.removeMentorshipTaskGroup(scopes, GROUP);
+    await service.removeMentorshipTaskGroup(
+      scopes,
+      GROUP,
+      { ...expectedSignature, title: "Grup başlığı" },
+    );
     expect(rows.map((item) => item.id).sort()).toEqual(["done", "outsider"]);
+  });
+
+  it("rolls back a group update when one requested pending row has a newer signature", async () => {
+    const pendingA = row({ id: "a" });
+    const pendingB = row({
+      id: "b",
+      userId: STUDENT_B,
+      originRefId: LINK_B,
+      title: "Newer variant",
+    });
+    const { service, rows } = setup([pendingA, pendingB]);
+    const scopes = [
+      { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+      { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
+    ];
+
+    await expect(service.updateMentorshipTaskGroup(
+      scopes,
+      GROUP,
+      { title: "Stale edit" },
+      expectedSignature,
+    )).rejects.toMatchObject({
+      code: "MENTORSHIP_ASSIGNMENT_STALE",
+    });
+    expect(rows.map(({ title }) => title)).toEqual(["Paragraf", "Newer variant"]);
+  });
+
+  it("rolls back a group delete when one requested pending row has a newer signature", async () => {
+    const pendingA = row({ id: "a" });
+    const pendingB = row({
+      id: "b",
+      userId: STUDENT_B,
+      originRefId: LINK_B,
+      startTime: "09:00",
+    });
+    const { service, rows } = setup([pendingA, pendingB]);
+    const scopes = [
+      { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+      { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
+    ];
+
+    await expect(service.removeMentorshipTaskGroup(
+      scopes,
+      GROUP,
+      expectedSignature,
+    )).rejects.toMatchObject({
+      code: "MENTORSHIP_ASSIGNMENT_STALE",
+    });
+    expect(rows.map(({ id }) => id).sort()).toEqual(["a", "b"]);
   });
 
   it("uses the caller transaction for batch, single, and group mentorship mutations", async () => {
     const pendingA = row({ id: "a" });
     const pendingB = row({ id: "b", userId: STUDENT_B, originRefId: LINK_B });
-    const { service, tasks, db } = setup([pendingA, pendingB]);
+    const single = row({ id: "single", assignmentGroupId: null });
+    const { service, tasks, db } = setup([pendingA, pendingB, single]);
     const tx = { execute: vi.fn() };
     const scopes = [
       { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
@@ -302,7 +376,7 @@ describe("PlanService W8 assignment seams", () => {
     await service.updateMentorshipTaskInTransaction(
       tx as never,
       scopes[0]!,
-      pendingA.id,
+      single.id,
       { title: "Tekli" },
     );
     await service.updateMentorshipTaskGroupInTransaction(
@@ -310,16 +384,18 @@ describe("PlanService W8 assignment seams", () => {
       scopes,
       GROUP,
       { title: "Grup" },
+      expectedSignature,
     );
     await service.removeMentorshipTaskInTransaction(
       tx as never,
       scopes[0]!,
-      pendingA.id,
+      single.id,
     );
     await service.removeMentorshipTaskGroupInTransaction(
       tx as never,
       scopes,
       GROUP,
+      { ...expectedSignature, title: "Grup" },
     );
 
     expect(db.transaction).not.toHaveBeenCalled();
@@ -330,24 +406,26 @@ describe("PlanService W8 assignment seams", () => {
     expect(tasks.updatePendingMentorshipTask).toHaveBeenCalledWith(
       tx,
       scopes[0],
-      pendingA.id,
+      single.id,
       expect.any(Object),
     );
     expect(tasks.updatePendingMentorshipGroup).toHaveBeenCalledWith(
       tx,
       scopes,
       GROUP,
+      expectedSignature,
       expect.any(Object),
     );
     expect(tasks.deletePendingMentorshipTask).toHaveBeenCalledWith(
       tx,
       scopes[0],
-      pendingA.id,
+      single.id,
     );
     expect(tasks.deletePendingMentorshipGroup).toHaveBeenCalledWith(
       tx,
       scopes,
       GROUP,
+      { ...expectedSignature, title: "Grup" },
     );
   });
 });

@@ -4,7 +4,11 @@ import type { PlanTaskDto } from "@mentor/types";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { DatabaseTx } from "../../../database/drizzle";
-import type { PlanTaskRepository, PlanTaskRow } from "../infrastructure/plan-task.repository";
+import type {
+  PlanTaskRepository,
+  PlanTaskRow,
+} from "../infrastructure/plan-task.repository";
+import type { MentorshipTaskVisibleSignature } from "../infrastructure/plan-task-mentorship.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
 import type { MentorshipAssignmentInput } from "./plan.service";
 
@@ -17,10 +21,19 @@ export type MentorshipAssignmentUpdate = Pick<
   MentorshipAssignmentInput,
   "title" | "subject" | "topic" | "taskDate" | "startTime" | "endTime" | "coachNote"
 >;
+export type MentorshipAssignmentVisibleSignature =
+  MentorshipTaskVisibleSignature;
 
 function notEditable(): never {
   throw new DomainError(
     ErrorCode.MENTORSHIP_ASSIGNMENT_NOT_EDITABLE,
+    HttpStatus.CONFLICT,
+  );
+}
+
+function staleAssignment(): never {
+  throw new DomainError(
+    ErrorCode.MENTORSHIP_ASSIGNMENT_STALE,
     HttpStatus.CONFLICT,
   );
 }
@@ -104,15 +117,17 @@ export async function updateMentorshipTaskGroupInTransaction(
   scopes: MentorshipPlanScope[],
   assignmentGroupId: string,
   input: Partial<MentorshipAssignmentUpdate>,
+  expectedSignature: MentorshipTaskVisibleSignature,
 ): Promise<PlanTaskDto[]> {
   await lockScopes(tasks, tx, scopes);
   const rows = await tasks.updatePendingMentorshipGroup(
     tx,
     scopes,
     assignmentGroupId,
+    expectedSignature,
     mutablePatch(input),
   );
-  if (rows.length === 0) notEditable();
+  if (rows.length !== scopes.length) staleAssignment();
   return rows.map(toPlanTaskDto);
 }
 
@@ -133,12 +148,14 @@ export async function removeMentorshipTaskGroupInTransaction(
   tasks: PlanTaskRepository,
   scopes: MentorshipPlanScope[],
   assignmentGroupId: string,
+  expectedSignature: MentorshipTaskVisibleSignature,
 ): Promise<void> {
   await lockScopes(tasks, tx, scopes);
   const rows = await tasks.deletePendingMentorshipGroup(
     tx,
     scopes,
     assignmentGroupId,
+    expectedSignature,
   );
-  if (rows.length === 0) notEditable();
+  if (rows.length !== scopes.length) staleAssignment();
 }

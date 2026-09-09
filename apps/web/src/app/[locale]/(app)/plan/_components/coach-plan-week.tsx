@@ -12,12 +12,16 @@ import {
 export function CoachPlanWeek({
   days,
   items,
+  selectedDate,
   selectedId,
+  onSelectDate,
   onSelect,
 }: {
   days: readonly string[];
   items: readonly CoachPlanItemDto[];
+  selectedDate: string;
   selectedId: string | null;
+  onSelectDate: (date: string) => void;
   onSelect: CoachPlanItemSelect;
 }) {
   const locale = useLocale();
@@ -32,9 +36,12 @@ export function CoachPlanWeek({
             day={day}
             locale={locale}
             dayItems={itemsForCoachPlanDay(items, day)}
+            selected={selectedDate === day}
             selectedId={selectedId}
+            onSelectDate={onSelectDate}
             onSelect={onSelect}
             emptyLabel={t("day_empty")}
+            selectLabel={t("select_date", { date: day })}
           />
         ))}
       </div>
@@ -45,9 +52,12 @@ export function CoachPlanWeek({
             day={day}
             locale={locale}
             dayItems={itemsForCoachPlanDay(items, day)}
+            selected={selectedDate === day}
             selectedId={selectedId}
+            onSelectDate={onSelectDate}
             onSelect={onSelect}
             emptyLabel={t("day_empty")}
+            selectLabel={t("select_date", { date: day })}
             mobile
           />
         ))}
@@ -60,17 +70,23 @@ function DayColumn({
   day,
   locale,
   dayItems,
+  selected,
   selectedId,
+  onSelectDate,
   onSelect,
   emptyLabel,
+  selectLabel,
   mobile = false,
 }: {
   day: string;
   locale: string;
   dayItems: CoachPlanItemDto[];
+  selected: boolean;
   selectedId: string | null;
+  onSelectDate: (date: string) => void;
   onSelect: CoachPlanItemSelect;
   emptyLabel: string;
+  selectLabel: string;
   mobile?: boolean;
 }) {
   const label = new Intl.DateTimeFormat(locale, {
@@ -87,11 +103,20 @@ function DayColumn({
         borderColor: "var(--color-border)",
       }}
     >
-      <h2
-        className="mb-2 text-sm font-semibold capitalize"
-        style={{ color: "var(--color-main)" }}
-      >
-        {label}
+      <h2 className="mb-2">
+        <button
+          type="button"
+          aria-label={selectLabel}
+          aria-pressed={selected}
+          onClick={() => onSelectDate(day)}
+          className="flex min-h-11 w-full items-center rounded-[var(--radius-control)] px-2 text-left text-sm font-semibold capitalize focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          style={{
+            color: "var(--color-main)",
+            backgroundColor: selected ? "var(--color-soft)" : "transparent",
+          }}
+        >
+          {label}
+        </button>
       </h2>
       {dayItems.length === 0 ? (
         <p className="py-3 text-xs" style={{ color: "var(--color-secondary)" }}>

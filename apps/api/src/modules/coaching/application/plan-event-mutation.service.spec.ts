@@ -88,6 +88,129 @@ describe("PlanEventService mutation", () => {
     expect(past.title).toBe("Haftalık görüşme");
   });
 
+  it("does not update cancelled exceptions during a title-only series edit", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-10",
+      endsOn: null,
+      occurrenceCount: 3,
+    };
+    const scheduled = eventRow({ seriesId, series });
+    const cancelled = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-17",
+      status: "CANCELLED",
+    });
+    const { service, repository } = makeService([scheduled, cancelled]);
+
+    await service.update(ORGANIZER, scheduled.id, {
+      scope: "SERIES",
+      title: "Yeni seri",
+    });
+
+    expect(scheduled.title).toBe("Yeni seri");
+    expect(cancelled.title).toBe("Haftalık görüşme");
+    expect(repository.createOccurrences).not.toHaveBeenCalled();
+  });
+
+  it("replaces attendees only on future scheduled series occurrences", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-10",
+      endsOn: null,
+      occurrenceCount: 3,
+    };
+    const scheduled = eventRow({ seriesId, series, attendeeIds: [STUDENT_A] });
+    const cancelled = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-17",
+      status: "CANCELLED",
+      attendeeIds: [STUDENT_A],
+    });
+    const { service, repository } = makeService([scheduled, cancelled]);
+
+    await service.update(ORGANIZER, scheduled.id, {
+      scope: "SERIES",
+      attendeeIds: [STUDENT_B],
+    });
+
+    expect(repository.replaceAttendees).toHaveBeenCalledWith(
+      expect.anything(),
+      ORGANIZER,
+      [scheduled.id],
+      [STUDENT_B],
+    );
+    expect(scheduled.attendeeIds).toEqual([STUDENT_B]);
+    expect(cancelled.attendeeIds).toEqual([STUDENT_A]);
+  });
+
+  it("preserves a cancelled date exception and attendees by date during regeneration", async () => {
+    const seriesId = "00000000-0000-4000-8000-000000000020";
+    const series = {
+      id: seriesId,
+      frequency: "WEEKLY",
+      startsOn: "2026-09-10",
+      endsOn: null,
+      occurrenceCount: 3,
+    };
+    const first = eventRow({
+      seriesId,
+      series,
+      attendeeCount: 1,
+      attendeeIds: [STUDENT_A],
+    });
+    const cancelled = eventRow({
+      id: "00000000-0000-4000-8000-000000000012",
+      seriesId,
+      series,
+      eventDate: "2026-09-17",
+      status: "CANCELLED",
+      attendeeCount: 1,
+      attendeeIds: [STUDENT_B],
+    });
+    const third = eventRow({
+      id: "00000000-0000-4000-8000-000000000013",
+      seriesId,
+      series,
+      eventDate: "2026-09-24",
+      attendeeCount: 1,
+      attendeeIds: [STUDENT_B],
+    });
+    const { service, repository } = makeService([first, cancelled, third]);
+
+    await service.update(ORGANIZER, first.id, {
+      scope: "SERIES",
+      recurrence: { frequency: "WEEKLY", end: { kind: "COUNT", count: 4 } },
+    });
+
+    expect(repository.rows.filter((row) => row.eventDate === "2026-09-17"))
+      .toEqual([cancelled]);
+    expect(cancelled.status).toBe("CANCELLED");
+    expect(repository.rows.find((row) => row.eventDate === "2026-09-24")?.attendeeIds)
+      .toEqual([STUDENT_B]);
+  });
+
+  it("rejects direct updates to a cancelled occurrence", async () => {
+    const cancelled = eventRow({ status: "CANCELLED" });
+    const { service, repository } = makeService([cancelled]);
+
+    await expect(service.update(ORGANIZER, cancelled.id, {
+      scope: "OCCURRENCE",
+      title: "Yeniden açma",
+    })).rejects.toMatchObject({
+      code: ErrorCode.COACHING_EVENT_CANCELLED_READONLY,
+    });
+    expect(repository.updateOccurrence).not.toHaveBeenCalled();
+  });
+
   it("keeps the original monthly anchor when regenerating through a clamped occurrence", async () => {
     vi.setSystemTime(new Date("2025-02-28T12:00:00.000Z"));
     const seriesId = "00000000-0000-4000-8000-000000000020";

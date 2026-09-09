@@ -34,6 +34,7 @@
   "COACHING_EVENT_SCOPE_INVALID": "This action cannot be applied to the selected event scope.",
   "COACHING_EVENT_RECURRENCE_INVALID": "The recurrence cannot end before the event starts.",
   "COACHING_EVENT_RECURRENCE_LIMIT": "Recurring events can span at most 12 months or 100 meetings.",
+  "COACHING_EVENT_CANCELLED_READONLY": "A cancelled event can no longer be changed.",
   "ANALYSIS_FOCUS_CHANGED": "Your analysis focus has changed. You can connect the current signal to your plan.",
   "COACHING_SESSION_NOT_FOUND": "This study session was not found.",
   "COACHING_SESSION_ALREADY_CLOSED": "This study session is already completed.",
@@ -151,6 +152,7 @@
   "MENTORSHIP_COACH_NOT_ACTIVE": "Your coach account is not open right now, so you cannot issue an invite code.",
   "MENTORSHIP_COACH_SUSPENDED": "Your coach account has been stopped. Registering again will not reopen it, so get in touch with us.",
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "This assignment is no longer pending or does not belong to this link.",
+  "MENTORSHIP_ASSIGNMENT_STALE": "This task changed after you opened it. Open the current plan and try again.",
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "The event organizer cannot also appear in the attendee list.",
   "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "An event can include at most {max} students."
 }

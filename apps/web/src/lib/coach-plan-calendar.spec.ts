@@ -9,6 +9,7 @@ import {
   isCoachPlanItemShared,
   itemsForCoachPlanDay,
   parseCoachPlanSelection,
+  reconcileCoachPlanSelection,
   restoreCoachPlanTrigger,
   sortCoachPlanItems,
   uniqueStudentAvatars,
@@ -260,6 +261,23 @@ describe("restoreCoachPlanTrigger", () => {
 
     expect(connectedFocus).toHaveBeenCalledOnce();
     expect(disconnectedFocus).not.toHaveBeenCalled();
+  });
+});
+
+describe("reconcileCoachPlanSelection", () => {
+  it("replaces a selected detail with the fresh authoritative row", () => {
+    const selected = task("task-1", "2026-09-09", null);
+    const fresh = task("task-1", "2026-09-09", "10:00");
+
+    expect(reconcileCoachPlanSelection(selected, [fresh])).toBe(fresh);
+  });
+
+  it("clears selection when the row disappeared or its grouped signature id changed", () => {
+    const selected = task("group:old-signature", "2026-09-09", null);
+    const changed = task("group:new-signature", "2026-09-09", null);
+
+    expect(reconcileCoachPlanSelection(selected, [])).toBeNull();
+    expect(reconcileCoachPlanSelection(selected, [changed])).toBeNull();
   });
 });
 

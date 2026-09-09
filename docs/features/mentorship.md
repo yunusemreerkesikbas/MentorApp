@@ -1422,6 +1422,22 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   Related: `coach-plan-{task,event}-form.tsx`, `coach-plan-detail-actions.tsx`,
   `lib/coach-plan-mutations.ts`, `e2e/coach-plan.spec.ts`.
 
+- **2026-09-09 — APP-091 coach plan mutation integrity.** Group task update/delete bodies now
+  carry the selected card's complete visible signature plus its PENDING student ids. W2 checks
+  every requested row against that signature under the existing per-student locks; a stale or
+  partial match raises a localized conflict and rolls the whole transaction back. Series event
+  forms diff against the selected event, so title/attendee-only edits omit unchanged date and
+  recurrence fields and stay on W2's non-regeneration path. Authoritative reloads replace an open
+  detail with the fresh row or close it when its id/signature disappeared. Week headings are
+  44px-selectable creation dates, task/event date inputs use Istanbul today as their native
+  minimum, and destructive scope plus focus reset after confirmation dismissal. Usage: select an
+  empty future week day before opening a creation form. Gotcha: the 120-day assignment horizon is
+  currently a backend-only policy constant, not a shared client contract, so the form deliberately
+  has no hardcoded `max`; W8 remains authoritative. Related:
+  `coach-plan-{calendar-shell,week,detail-actions}.tsx`,
+  `lib/coach-plan-{calendar,mutations}.ts`, `packages/validation/src/mentorship.ts`,
+  `plan-task-mentorship.repository.ts`, `e2e/coach-plan.spec.ts`.
+
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`
   on every request, so a freshly granted COACH sees the surface at once. The Tutorials block

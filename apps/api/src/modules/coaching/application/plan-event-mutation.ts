@@ -13,6 +13,7 @@ import type {
 import { toPlanEventDto } from "./plan-event.mapper";
 import {
   generateEventDates,
+  preserveSeriesExceptions,
   recurrenceFromSeries,
 } from "./plan-event-recurrence-policy";
 
@@ -75,6 +76,7 @@ export async function updateEvent(
   existing: PlanEventRecord,
   input: UpdatePlanEventInput,
 ): Promise<PlanEventMutationResult> {
+  if (existing.status === "CANCELLED") cancelledReadonly();
   if (input.scope === "OCCURRENCE") {
     return updateOccurrence(repository, tx, organizerUserId, existing, input);
   }
@@ -198,17 +200,17 @@ async function regenerateSeries(
   const dates = generateEventDates({ ...recurrence, startsOn }).filter(
     (date) => date >= today,
   );
-  const existingFuture =
-    input.attendeeIds === undefined
-      ? await repository.listFutureSeries(
-          tx,
-          organizerUserId,
-          existing.seriesId!,
-          today,
-        )
-      : [];
-  const attendeeIdsByOccurrence = dates.map(
-    (_, index) => existingFuture[index]?.attendeeIds ?? attendeeIds,
+  const existingFuture = await repository.listFutureSeries(
+    tx,
+    organizerUserId,
+    existing.seriesId!,
+    today,
+  );
+  const preserved = preserveSeriesExceptions(
+    dates,
+    existingFuture,
+    attendeeIds,
+    input.attendeeIds === undefined ? undefined : attendeeIds,
   );
   const seriesPatch = {
     frequency: recurrence.frequency,
@@ -235,8 +237,8 @@ async function regenerateSeries(
     tx,
     organizerUserId,
     { ...existing, ...input },
-    dates,
-    attendeeIdsByOccurrence,
+    preserved.dates,
+    preserved.attendeeIdsByOccurrence,
     series,
   );
   const occurrences = await repository.findOwnedByIds(
@@ -287,5 +289,12 @@ export function invalidScope(): never {
   throw new DomainError(
     ErrorCode.COACHING_EVENT_SCOPE_INVALID,
     HttpStatus.BAD_REQUEST,
+  );
+}
+
+function cancelledReadonly(): never {
+  throw new DomainError(
+    ErrorCode.COACHING_EVENT_CANCELLED_READONLY,
+    HttpStatus.CONFLICT,
   );
 }

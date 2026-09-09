@@ -1172,6 +1172,7 @@
     "participants_named": "Katılımcılar: {names}",
     "month_board": "Aylık koç planı takvimi",
     "day_empty": "Bu gün için plan yok.",
+    "select_date": "{date} tarihini seç",
     "task_count": "{count} görev",
     "event_count": "{count} etkinlik",
     "day_empty_short": "Boş",

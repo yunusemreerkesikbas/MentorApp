@@ -152,11 +152,21 @@ describe("coach plan mutations", () => {
   });
 
   it("updates and removes selected members of an assignment group", async () => {
+    const expectedSignature = {
+      taskDate: "2026-09-10",
+      title: "Eski başlık",
+      subject: null,
+      topic: null,
+      startTime: null,
+      endTime: null,
+      coachNote: null,
+    };
     const update = {
       studentIds: ["00000000-0000-4000-8000-000000000002"],
+      expectedSignature,
       title: "Yeni başlık",
     };
-    const remove = { studentIds: update.studentIds };
+    const remove = { studentIds: update.studentIds, expectedSignature };
     await updateAssignmentGroup("group id", update);
     await removeAssignmentGroup("group id", remove);
     expect(mockedHttp).toHaveBeenNthCalledWith(

@@ -33,3 +33,32 @@ export function recurrenceFromSeries(series: PlanEventSeriesRow) {
       : ({ kind: "COUNT", count: series.occurrenceCount! } as const),
   };
 }
+
+export function preserveSeriesExceptions(
+  dates: string[],
+  existing: Array<{
+    eventDate: string;
+    status: "SCHEDULED" | "CANCELLED";
+    attendeeIds: string[];
+  }>,
+  fallbackAttendeeIds: string[],
+  replacementAttendeeIds?: string[],
+): { dates: string[]; attendeeIdsByOccurrence: string[][] } {
+  const cancelledDates = new Set(
+    existing
+      .filter((row) => row.status === "CANCELLED")
+      .map((row) => row.eventDate),
+  );
+  const scheduledDates = dates.filter((date) => !cancelledDates.has(date));
+  const existingByDate = new Map(
+    existing.map((row) => [row.eventDate, row] as const),
+  );
+  return {
+    dates: scheduledDates,
+    attendeeIdsByOccurrence: scheduledDates.map((date) =>
+      replacementAttendeeIds ??
+      existingByDate.get(date)?.attendeeIds ??
+      fallbackAttendeeIds
+    ),
+  };
+}

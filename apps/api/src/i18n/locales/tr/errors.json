@@ -34,6 +34,7 @@
   "COACHING_EVENT_SCOPE_INVALID": "Bu işlem seçilen etkinlik kapsamına uygulanamaz.",
   "COACHING_EVENT_RECURRENCE_INVALID": "Tekrar bitişi etkinliğin başlangıcından önce olamaz.",
   "COACHING_EVENT_RECURRENCE_LIMIT": "Tekrarlanan etkinlikler en fazla 12 ay veya 100 buluşma içerebilir.",
+  "COACHING_EVENT_CANCELLED_READONLY": "İptal edilmiş bir etkinlik artık değiştirilemez.",
   "ANALYSIS_FOCUS_CHANGED": "Analiz odağın güncellendi. Yeni sinyali birlikte plana bağlayabiliriz.",
   "COACHING_SESSION_NOT_FOUND": "Bu çalışma seansı bulunamadı.",
   "COACHING_SESSION_ALREADY_CLOSED": "Bu çalışma seansı zaten tamamlanmış.",
@@ -151,6 +152,7 @@
   "MENTORSHIP_COACH_NOT_ACTIVE": "Koç hesabın şu anda açık değil, o yüzden davet kodu üretemiyorsun.",
   "MENTORSHIP_COACH_SUSPENDED": "Koç hesabın durduruldu. Yeniden kaydolarak açılmıyor, bizimle iletişime geçebilirsin.",
   "MENTORSHIP_ASSIGNMENT_NOT_EDITABLE": "Bu ödev artık beklemede değil ya da bu bağlantıya ait değil.",
+  "MENTORSHIP_ASSIGNMENT_STALE": "Bu görev sen açtıktan sonra değişti. Güncel planı açıp bir daha deneyelim.",
   "MENTORSHIP_EVENT_ORGANIZER_ATTENDEE": "Etkinliği oluşturan kişi katılımcı listesine eklenemez.",
   "MENTORSHIP_EVENT_ATTENDEE_LIMIT": "Bir etkinliğe en fazla {max} öğrenci eklenebilir."
 }

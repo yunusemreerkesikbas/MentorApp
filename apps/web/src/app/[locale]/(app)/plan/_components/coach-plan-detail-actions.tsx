@@ -11,6 +11,7 @@ import {
   taskMutationTarget,
   type CoachTaskMutationTarget,
 } from "@/lib/coach-plan-mutations";
+import { restoreCoachPlanTrigger } from "@/lib/coach-plan-calendar";
 import { todayInIstanbul } from "@/lib/date-time";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -74,6 +75,7 @@ export function CoachPlanDetailActions({
       } else {
         await removeAssignmentGroup(taskTarget.assignmentGroupId, {
           studentIds: taskTarget.studentIds,
+          expectedSignature: taskTarget.expectedSignature,
         });
       }
       onSuccess(t("task_removed"));
@@ -94,12 +96,15 @@ export function CoachPlanDetailActions({
     const effectiveScope = eventMutationScope(item.event.seriesId, selected);
     if (!effectiveScope) return;
     if (scopePrompt) setScopePrompt(false);
+    setScope(null);
+    const trigger = cancelTriggerRef.current;
     const confirmed = await dialog.confirm({
       title: t("cancel_event_title"),
       message: t("cancel_event_body"),
       confirmLabel: t("cancel_event"),
       cancelLabel: t("form_cancel"),
     });
+    requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
     if (!confirmed) return;
     setBusy(true);
     try {
@@ -136,11 +141,10 @@ export function CoachPlanDetailActions({
           onClick={(event) => {
             if (item.kind === "TASK") {
               void removeTask();
-            } else if (item.event.seriesId) {
-              cancelTriggerRef.current = event.currentTarget;
-              setScopePrompt(true);
             } else {
-              void cancelEvent("OCCURRENCE");
+              cancelTriggerRef.current = event.currentTarget;
+              if (item.event.seriesId) setScopePrompt(true);
+              else void cancelEvent("OCCURRENCE");
             }
           }}
         >

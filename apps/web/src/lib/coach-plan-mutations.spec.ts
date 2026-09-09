@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { CoachPlanGroupedTaskDto } from "@mentor/types";
+import type { CoachPlanEventDto, CoachPlanGroupedTaskDto } from "@mentor/types";
 import {
   buildCoachEventCreate,
   buildCoachEventUpdate,
@@ -28,6 +28,39 @@ function task(
     endTime: null,
     coachNote: null,
     participants: [],
+    ...overrides,
+  };
+}
+
+function planEvent(
+  overrides: Partial<CoachPlanEventDto> = {},
+): CoachPlanEventDto {
+  return {
+    id: "00000000-0000-4000-8000-000000000030",
+    seriesId: "00000000-0000-4000-8000-000000000031",
+    organizerUserId: "00000000-0000-4000-8000-000000000099",
+    orgId: null,
+    title: "Görüşme",
+    description: null,
+    eventDate: "2026-09-12",
+    startTime: "11:00",
+    endTime: "11:30",
+    status: "SCHEDULED",
+    attendeeCount: 1,
+    recurrence: {
+      frequency: "WEEKLY",
+      timeZone: "Europe/Istanbul",
+      startsOn: "2026-09-12",
+      end: { kind: "COUNT", count: 4 },
+    },
+    createdAt: "2026-09-01T00:00:00.000Z",
+    updatedAt: "2026-09-01T00:00:00.000Z",
+    attendees: [{
+      studentId: STUDENT_A,
+      studentDisplayName: "Ayşe",
+      studentUsername: null,
+      avatarUrl: null,
+    }],
     ...overrides,
   };
 }
@@ -141,6 +174,15 @@ describe("taskMutationTarget", () => {
       kind: "GROUP",
       assignmentGroupId: "00000000-0000-4000-8000-000000000020",
       studentIds: [STUDENT_B],
+      expectedSignature: {
+        taskDate: "2026-09-10",
+        title: "Paragraf",
+        subject: null,
+        topic: null,
+        startTime: null,
+        endTime: null,
+        coachNote: null,
+      },
     });
     expect(buildCoachTaskUpdate(target!, {
       title: "  Yeni paragraf ",
@@ -150,6 +192,15 @@ describe("taskMutationTarget", () => {
       coachNote: "",
     })).toEqual({
       studentIds: [STUDENT_B],
+      expectedSignature: {
+        taskDate: "2026-09-10",
+        title: "Paragraf",
+        subject: null,
+        topic: null,
+        startTime: null,
+        endTime: null,
+        coachNote: null,
+      },
       title: "Yeni paragraf",
       taskDate: "2026-09-11",
       startTime: null,
@@ -224,7 +275,7 @@ describe("eventMutationScope", () => {
       .toBe(false);
   });
 
-  it("builds an event update with the chosen scope and active attendees", () => {
+  it("omits unchanged series date and recurrence from title and attendee edits", () => {
     expect(buildCoachEventUpdate({
       title: "  Yeni görüşme ",
       description: "",
@@ -232,19 +283,14 @@ describe("eventMutationScope", () => {
       startTime: "11:00",
       endTime: "11:30",
       attendeeIds: [STUDENT_B],
-      recurrenceFrequency: "NONE",
+      recurrenceFrequency: "WEEKLY",
       recurrenceEndKind: "COUNT",
-      recurrenceCount: 2,
+      recurrenceCount: 4,
       recurrenceEndDate: "",
-    }, "SERIES")).toEqual({
+    }, "SERIES", planEvent())).toEqual({
       scope: "SERIES",
       title: "Yeni görüşme",
-      description: null,
-      eventDate: "2026-09-12",
-      startTime: "11:00",
-      endTime: "11:30",
       attendeeIds: [STUDENT_B],
-      recurrence: null,
     });
   });
 
@@ -260,7 +306,7 @@ describe("eventMutationScope", () => {
       recurrenceEndKind: "COUNT",
       recurrenceCount: 4,
       recurrenceEndDate: "",
-    }, "OCCURRENCE");
+    }, "OCCURRENCE", planEvent());
 
     expect(update).not.toHaveProperty("recurrence");
     expect(update).toMatchObject({ scope: "OCCURRENCE", attendeeIds: [] });

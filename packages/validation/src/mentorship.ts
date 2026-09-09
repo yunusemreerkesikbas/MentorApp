@@ -150,6 +150,21 @@ const mentorshipAssignmentUpdateFieldsSchema = planTaskFieldsSchema
     coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
   });
 
+export const mentorshipAssignmentVisibleSignatureSchema = z
+  .object({
+    taskDate: planTaskFieldsSchema.shape.taskDate.unwrap(),
+    title: planTaskFieldsSchema.shape.title,
+    subject: planTaskFieldsSchema.shape.subject.unwrap(),
+    topic: planTaskFieldsSchema.shape.topic.unwrap(),
+    startTime: planTaskFieldsSchema.shape.startTime.unwrap(),
+    endTime: planTaskFieldsSchema.shape.endTime.unwrap(),
+    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullable(),
+  })
+  .strict();
+export type MentorshipAssignmentVisibleSignature = z.infer<
+  typeof mentorshipAssignmentVisibleSignatureSchema
+>;
+
 /** Coach edits may change wording/schedule only; status, origin and group id are absent. */
 export const updateMentorshipAssignmentSchema =
   mentorshipAssignmentUpdateFieldsSchema
@@ -163,12 +178,18 @@ export type UpdateMentorshipAssignmentInput = z.infer<
 
 export const updateMentorshipAssignmentGroupSchema =
   mentorshipAssignmentUpdateFieldsSchema
-    .extend({ studentIds: mentorshipStudentIdsSchema })
+    .extend({
+      studentIds: mentorshipStudentIdsSchema,
+      expectedSignature: mentorshipAssignmentVisibleSignatureSchema,
+    })
     .strict()
     .superRefine(refinePlanTaskTimes)
     .superRefine(refinePlanTaskTaxonomy)
     .refine(
-      (value) => Object.keys(value).some((key) => key !== "studentIds"),
+      (value) =>
+        Object.keys(value).some(
+          (key) => key !== "studentIds" && key !== "expectedSignature",
+        ),
       { message: "empty" },
     );
 export type UpdateMentorshipAssignmentGroupInput = z.infer<
@@ -176,7 +197,10 @@ export type UpdateMentorshipAssignmentGroupInput = z.infer<
 >;
 
 export const removeMentorshipAssignmentGroupSchema = z
-  .object({ studentIds: mentorshipStudentIdsSchema })
+  .object({
+    studentIds: mentorshipStudentIdsSchema,
+    expectedSignature: mentorshipAssignmentVisibleSignatureSchema,
+  })
   .strict();
 export type RemoveMentorshipAssignmentGroupInput = z.infer<
   typeof removeMentorshipAssignmentGroupSchema

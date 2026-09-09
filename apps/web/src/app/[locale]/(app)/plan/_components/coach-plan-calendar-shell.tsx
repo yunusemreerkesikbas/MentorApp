@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from "next-intl";
 import {
   coachPlanRange,
   consumeInitialCoachPlanEvent,
+  reconcileCoachPlanSelection,
   restoreCoachPlanTrigger,
   sortCoachPlanItems,
   type CoachPlanScale,
@@ -91,6 +92,12 @@ export function CoachPlanCalendarShell({
           if (initialSelection.item?.kind === "EVENT") {
             setSelectedDate(initialSelection.item.event.eventDate);
           }
+        } else {
+          setSelectedItem((current) => {
+            const fresh = reconcileCoachPlanSelection(current, orderedItems);
+            if (!fresh) detailTriggerRef.current = null;
+            return fresh;
+          });
         }
       })
       .catch((error: unknown) => {
@@ -209,35 +216,45 @@ export function CoachPlanCalendarShell({
             {t("retry")}
           </Button>
         </Card>
-      ) : items.length === 0 ? (
-        <Card>
-          <h2 className="font-semibold" style={{ color: "var(--color-main)" }}>
-            {t("empty_title")}
-          </h2>
-          <p className="mt-1" style={{ color: "var(--color-secondary)" }}>
-            {t(studentId ? "empty_filtered" : "empty_body")}
-          </p>
-        </Card>
-      ) : scale === "week" ? (
-        <CoachPlanWeek
-          days={range.days}
-          items={items}
-          selectedId={selectedId}
-          onSelect={selectItem}
-        />
       ) : (
-        <CoachPlanMonth
-          days={range.days}
-          month={anchor.slice(0, 7)}
-          items={items}
-          selectedDate={selectedDate}
-          selectedId={selectedId}
-          onSelectDate={(date) => {
-            setSelectedDate(date);
-            setSelectedItem(null);
-          }}
-          onSelectItem={selectItem}
-        />
+        <>
+          {items.length === 0 && (
+            <Card>
+              <h2 className="font-semibold" style={{ color: "var(--color-main)" }}>
+                {t("empty_title")}
+              </h2>
+              <p className="mt-1" style={{ color: "var(--color-secondary)" }}>
+                {t(studentId ? "empty_filtered" : "empty_body")}
+              </p>
+            </Card>
+          )}
+          {scale === "week" ? (
+            <CoachPlanWeek
+              days={range.days}
+              items={items}
+              selectedDate={selectedDate}
+              selectedId={selectedId}
+              onSelectDate={(date) => {
+                setSelectedDate(date);
+                setSelectedItem(null);
+              }}
+              onSelect={selectItem}
+            />
+          ) : (
+            <CoachPlanMonth
+              days={range.days}
+              month={anchor.slice(0, 7)}
+              items={items}
+              selectedDate={selectedDate}
+              selectedId={selectedId}
+              onSelectDate={(date) => {
+                setSelectedDate(date);
+                setSelectedItem(null);
+              }}
+              onSelectItem={selectItem}
+            />
+          )}
+        </>
       )}
 
       {!error && selectedItem && (

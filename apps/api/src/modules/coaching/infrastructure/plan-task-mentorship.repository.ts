@@ -1,4 +1,4 @@
-import { and, asc, eq, gte, lte, or } from "drizzle-orm";
+import { and, asc, eq, gte, isNull, lte, or } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
 import type { NewPlanTask, PlanTaskRow } from "./plan-task.repository";
@@ -8,6 +8,17 @@ export interface MentorshipTaskScope {
   mentorshipLinkId: string;
 }
 
+export type MentorshipTaskVisibleSignature = Pick<
+  PlanTaskRow,
+  | "taskDate"
+  | "title"
+  | "subject"
+  | "topic"
+  | "startTime"
+  | "endTime"
+  | "coachNote"
+>;
+
 const scopePredicate = (scopes: MentorshipTaskScope[]) =>
   or(
     ...scopes.map((scope) =>
@@ -16,6 +27,29 @@ const scopePredicate = (scopes: MentorshipTaskScope[]) =>
         eq(planTasks.originRefId, scope.mentorshipLinkId),
       ),
     ),
+  );
+
+const nullableTextPredicate = (
+  column:
+    | typeof planTasks.subject
+    | typeof planTasks.topic
+    | typeof planTasks.startTime
+    | typeof planTasks.endTime
+    | typeof planTasks.coachNote,
+  value: string | null,
+) => value === null ? isNull(column) : eq(column, value);
+
+const visibleSignaturePredicate = (
+  signature: MentorshipTaskVisibleSignature,
+) =>
+  and(
+    eq(planTasks.taskDate, signature.taskDate),
+    eq(planTasks.title, signature.title),
+    nullableTextPredicate(planTasks.subject, signature.subject),
+    nullableTextPredicate(planTasks.topic, signature.topic),
+    nullableTextPredicate(planTasks.startTime, signature.startTime),
+    nullableTextPredicate(planTasks.endTime, signature.endTime),
+    nullableTextPredicate(planTasks.coachNote, signature.coachNote),
   );
 
 export function listOwnedCoachTasks(
@@ -63,6 +97,7 @@ export function updatePendingMentorshipGroup(
   tx: DatabaseTx,
   scopes: MentorshipTaskScope[],
   assignmentGroupId: string,
+  expectedSignature: MentorshipTaskVisibleSignature,
   patch: Partial<NewPlanTask>,
 ): Promise<PlanTaskRow[]> {
   if (scopes.length === 0) return Promise.resolve([]);
@@ -75,6 +110,7 @@ export function updatePendingMentorshipGroup(
         eq(planTasks.status, "PENDING"),
         eq(planTasks.originType, "MENTORSHIP"),
         scopePredicate(scopes),
+        visibleSignaturePredicate(expectedSignature),
       ),
     )
     .returning();
@@ -104,6 +140,7 @@ export function deletePendingMentorshipGroup(
   tx: DatabaseTx,
   scopes: MentorshipTaskScope[],
   assignmentGroupId: string,
+  expectedSignature: MentorshipTaskVisibleSignature,
 ): Promise<PlanTaskRow[]> {
   if (scopes.length === 0) return Promise.resolve([]);
   return tx
@@ -114,6 +151,7 @@ export function deletePendingMentorshipGroup(
         eq(planTasks.status, "PENDING"),
         eq(planTasks.originType, "MENTORSHIP"),
         scopePredicate(scopes),
+        visibleSignaturePredicate(expectedSignature),
       ),
     )
     .returning();

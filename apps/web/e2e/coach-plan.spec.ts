@@ -55,6 +55,10 @@ test("empty attendees create personal task and event while a cohort uses one bat
   });
 
   await page.getByRole("button", { name: "Yeni etkinlik" }).click();
+  await expect(
+    page.getByRole("dialog", { name: "Yeni etkinlik" })
+      .getByLabel("Tarih", { exact: true }),
+  ).toHaveAttribute("min", todayIso());
   await page.getByLabel("Başlık").fill("Haftalık hazırlık");
   await page.getByLabel("Tekrar").selectOption("WEEKLY");
   await page.getByLabel("Tekrar bitişi").selectOption("COUNT");
@@ -132,12 +136,62 @@ test("group mutations keep done students historical and series cancel requires s
   await page.getByLabel("Başlık").fill("Yeni paragraf");
   await page.getByRole("dialog").getByRole("button", { name: "Değişiklikleri kaydet" }).click();
   await expect.poll(() => api.groupUpdates.length).toBe(1);
-  expect(api.groupUpdates[0]).toMatchObject({ studentIds: [STUDENT_B] });
+  expect(api.groupUpdates[0]).toMatchObject({
+    studentIds: [STUDENT_B],
+    expectedSignature: {
+      taskDate: todayIso(),
+      title: "Paragraf",
+      subject: null,
+      topic: null,
+      startTime: null,
+      endTime: null,
+      coachNote: null,
+    },
+  });
+
+  await page.getByRole("button", { name: /Paragraf/ }).click();
+  await page.getByRole("button", { name: "Kaldır" }).click();
+  await page.getByRole("button", { name: "Görevi kaldır" }).click();
+  await expect.poll(() => api.groupDeletes.length).toBe(1);
+  expect(api.groupDeletes[0]).toEqual({
+    studentIds: [STUDENT_B],
+    expectedSignature: {
+      taskDate: todayIso(),
+      title: "Paragraf",
+      subject: null,
+      topic: null,
+      startTime: null,
+      endTime: null,
+      coachNote: null,
+    },
+  });
 
   await page.getByRole("button", { name: /Haftalık görüşme/ }).click();
-  await page.getByRole("button", { name: "İptal et" }).click();
+  await page.getByRole("button", { name: "Düzenle" }).click();
+  await page.getByRole("radio", { name: "Tüm seri" }).check();
+  await page.getByLabel("Başlık").fill("Yeni görüşme");
+  await page.getByRole("checkbox", { name: /Bora/ }).check();
+  await page.getByRole("dialog").getByRole("button", { name: "Değişiklikleri kaydet" }).click();
+  await expect.poll(() => api.eventUpdates.length).toBe(1);
+  expect(api.eventUpdates[0]).toEqual({
+    scope: "SERIES",
+    title: "Yeni görüşme",
+    attendeeIds: [STUDENT_B],
+  });
+
+  await page.getByRole("button", { name: /Haftalık görüşme/ }).click();
+  const cancel = page.getByRole("button", { name: "İptal et" });
+  await cancel.click();
   await expect(page.getByRole("dialog", { name: "Etkinlik kapsamı" })).toBeVisible();
   expect(api.eventCancels).toHaveLength(0);
+  await page.getByRole("radio", { name: "Tüm seri" }).check();
+  await page.getByRole("button", { name: "Devam et" }).click();
+  await page.getByRole("dialog", { name: "Etkinlik iptal edilsin mi?" })
+    .getByRole("button", { name: "Vazgeç" }).click();
+  await expect(cancel).toBeFocused();
+  await cancel.click();
+  await expect(page.getByRole("radio", { name: "Tüm seri" })).not.toBeChecked();
+  await expect(page.getByRole("radio", { name: "Yalnızca bu etkinlik" })).not.toBeChecked();
   await page.getByRole("radio", { name: "Tüm seri" }).check();
   await page.getByRole("button", { name: "Devam et" }).click();
   await page.getByRole("button", { name: "Etkinliği iptal et" }).click();
@@ -157,6 +211,36 @@ test("surfaces backend-localized mutation errors", async ({ page }) => {
   await expect(
     page.getByRole("dialog").getByRole("alert"),
   ).toContainText("Bu görev şu anda oluşturulamadı.");
+});
+
+test("reloads selected detail from authority and creates on a selected future day", async ({
+  page,
+}) => {
+  const initial = personalTask("Eski başlık");
+  const api = await mockCoachPlanApi(page, [initial]);
+  await page.goto("/plan");
+
+  await page.getByRole("button", { name: /Eski başlık/ }).click();
+  api.planItems = [personalTask("Güncel başlık")];
+  await page.getByRole("button", { name: "Yeni etkinlik" }).click();
+  const eventDialog = page.getByRole("dialog", { name: "Yeni etkinlik" });
+  await eventDialog.getByLabel("Başlık").fill("Yenilemeyi tetikle");
+  await eventDialog.getByRole("button", { name: "Etkinliği oluştur" }).click();
+
+  await expect(page.getByRole("heading", { name: "Güncel başlık" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Eski başlık" })).toHaveCount(0);
+
+  const future = addDays(todayIso(), 1);
+  await page.getByRole("button", { name: `${future} tarihini seç` }).click();
+  await page.getByRole("button", { name: "Yeni görev" }).click();
+  const taskDialog = page.getByRole("dialog", { name: "Yeni görev" });
+  await expect(taskDialog.getByLabel("Tarih", { exact: true })).toHaveValue(future);
+  await expect(taskDialog.getByLabel("Tarih", { exact: true }))
+    .toHaveAttribute("min", todayIso());
+  await taskDialog.getByLabel("Başlık").fill("Yarının görevi");
+  await taskDialog.getByRole("button", { name: "Görevi oluştur" }).click();
+  await expect.poll(() => api.personalTasks.length).toBe(1);
+  expect(api.personalTasks[0]).toMatchObject({ taskDate: future });
 });
 
 function rosterRow(studentId: string, studentDisplayName: string): MentorshipRosterRowDto {
@@ -207,6 +291,25 @@ function participant(
   };
 }
 
+function personalTask(title: string): CoachPlanItemDto {
+  return {
+    kind: "TASK",
+    task: {
+      id: "00000000-0000-4000-8000-000000000040",
+      assignmentGroupId: null,
+      status: "PENDING",
+      taskDate: todayIso(),
+      title,
+      subject: null,
+      topic: null,
+      startTime: null,
+      endTime: null,
+      coachNote: null,
+      participants: [],
+    },
+  };
+}
+
 async function mockCoachPlanApi(
   page: Page,
   initialItems: CoachPlanItemDto[] = [],
@@ -216,8 +319,11 @@ async function mockCoachPlanApi(
     batchTasks: [] as Record<string, unknown>[],
     events: [] as Record<string, unknown>[],
     groupUpdates: [] as Record<string, unknown>[],
+    groupDeletes: [] as Record<string, unknown>[],
+    eventUpdates: [] as Record<string, unknown>[],
     eventCancels: [] as Record<string, unknown>[],
     failNextTask: false,
+    planItems: initialItems,
   };
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
@@ -242,8 +348,8 @@ async function mockCoachPlanApi(
     }
     if (method === "GET" && pathname === "/v1/mentorship/plan") {
       return json(route, {
-        items: initialItems,
-        total: initialItems.length,
+        items: state.planItems,
+        total: state.planItems.length,
         page: 1,
         pageSize: 100,
       });
@@ -275,6 +381,20 @@ async function mockCoachPlanApi(
       return json(route, []);
     }
     if (
+      method === "DELETE" &&
+      pathname === "/v1/mentorship/assignment-groups/00000000-0000-4000-8000-000000000020"
+    ) {
+      state.groupDeletes.push(request.postDataJSON());
+      return json(route, null, 204);
+    }
+    if (
+      method === "PATCH" &&
+      pathname === "/v1/mentorship/events/00000000-0000-4000-8000-000000000030"
+    ) {
+      state.eventUpdates.push(request.postDataJSON());
+      return json(route, {});
+    }
+    if (
       method === "POST" &&
       pathname === "/v1/mentorship/events/00000000-0000-4000-8000-000000000030/cancel"
     ) {
@@ -293,6 +413,12 @@ function todayIso(): string {
   return new Intl.DateTimeFormat("en-CA", {
     timeZone: "Europe/Istanbul",
   }).format(new Date());
+}
+
+function addDays(value: string, days: number): string {
+  const date = new Date(`${value}T12:00:00Z`);
+  date.setUTCDate(date.getUTCDate() + days);
+  return date.toISOString().slice(0, 10);
 }
 
 const corsHeaders = {

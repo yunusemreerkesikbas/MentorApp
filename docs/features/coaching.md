@@ -4301,3 +4301,14 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   only the selected row. Coach aggregate querying moved to `plan-event-coach-query.ts` so the
   public service remains below 300 lines. Related: `plan-event.service.ts`,
   `plan-event-write.orchestrator.ts`, `plan-event-coach-query.ts`.
+
+- **2026-09-09 — APP-091 recurring-event exception integrity.** W2 now rejects updates whose
+  selected occurrence is already CANCELLED with a stable localized conflict. Non-regenerating
+  series edits update and replace attendees only on future SCHEDULED rows. Intentional date/rule
+  regeneration keeps future cancelled exceptions in place, excludes their dates from newly
+  scheduled rows, and preserves attendee sets by calendar date instead of occurrence index.
+  Usage: omit unchanged recurrence/date fields to take the non-regeneration path. Gotcha:
+  cancelled exception rows survive even when a revised rule no longer emits their date; they are
+  immutable history, not scheduled work. Related: `plan-event-mutation.ts`,
+  `plan-event-recurrence-policy.ts`, `plan-event.repository.ts`,
+  `plan-event-mutation.service.spec.ts`.

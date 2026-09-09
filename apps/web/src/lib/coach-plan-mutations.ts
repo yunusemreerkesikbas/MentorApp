@@ -1,4 +1,5 @@
 import type {
+  CoachPlanEventDto,
   CoachPlanGroupedTaskDto,
   PlanEventMutationScope,
 } from "@mentor/types";
@@ -6,6 +7,7 @@ import type {
   CreateMentorshipBatchAssignmentInput,
   CreatePlanEventInput,
   CreatePlanTaskInput,
+  MentorshipAssignmentVisibleSignature,
   UpdateMentorshipAssignmentGroupInput,
   UpdateMentorshipAssignmentInput,
   UpdatePlanEventInput,
@@ -52,7 +54,12 @@ export function buildCoachTaskCreate(
 export type CoachTaskMutationTarget =
   | { kind: "PERSONAL"; taskId: string }
   | { kind: "ASSIGNMENT"; studentId: string; taskId: string }
-  | { kind: "GROUP"; assignmentGroupId: string; studentIds: string[] };
+  | {
+      kind: "GROUP";
+      assignmentGroupId: string;
+      studentIds: string[];
+      expectedSignature: MentorshipAssignmentVisibleSignature;
+    };
 
 export function taskMutationTarget(
   task: CoachPlanGroupedTaskDto,
@@ -71,6 +78,7 @@ export function taskMutationTarget(
       kind: "GROUP",
       assignmentGroupId: task.assignmentGroupId,
       studentIds: pending.map((participant) => participant.studentId),
+      expectedSignature: taskVisibleSignature(task),
     };
   }
   if (pending.length !== 1) return null;
@@ -108,8 +116,26 @@ export function buildCoachTaskUpdate(
     coachNote: optionalText(values.coachNote),
   };
   return target.kind === "GROUP"
-    ? { studentIds: target.studentIds, ...assignment }
+    ? {
+        studentIds: target.studentIds,
+        expectedSignature: target.expectedSignature,
+        ...assignment,
+      }
     : assignment;
+}
+
+function taskVisibleSignature(
+  task: CoachPlanGroupedTaskDto,
+): MentorshipAssignmentVisibleSignature {
+  return {
+    taskDate: task.taskDate,
+    title: task.title,
+    subject: task.subject,
+    topic: task.topic,
+    startTime: task.startTime,
+    endTime: task.endTime,
+    coachNote: task.coachNote,
+  };
 }
 
 export interface CoachEventFormValues {
@@ -152,23 +178,29 @@ export function buildCoachEventCreate(
 export function buildCoachEventUpdate(
   values: CoachEventFormValues,
   scope: PlanEventMutationScope,
+  original: CoachPlanEventDto,
 ): UpdatePlanEventInput {
   const create = buildCoachEventCreate(values);
-  if (scope === "OCCURRENCE") {
-    return {
-      scope,
-      title: create.title,
-      description: create.description,
-      eventDate: create.eventDate,
-      startTime: create.startTime,
-      endTime: create.endTime,
-      attendeeIds: create.attendeeIds,
-    };
+  const update: UpdatePlanEventInput = { scope };
+  if (create.title !== original.title) update.title = create.title;
+  if (create.description !== original.description) {
+    update.description = create.description;
   }
-  return {
-    scope,
-    ...create,
-  };
+  if (create.eventDate !== original.eventDate) {
+    update.eventDate = create.eventDate;
+  }
+  if (create.startTime !== original.startTime) update.startTime = create.startTime;
+  if (create.endTime !== original.endTime) update.endTime = create.endTime;
+  if (!sameIds(create.attendeeIds, original.attendees.map(({ studentId }) => studentId))) {
+    update.attendeeIds = create.attendeeIds;
+  }
+  if (
+    scope === "SERIES" &&
+    !sameRecurrence(create.recurrence, original.recurrence)
+  ) {
+    update.recurrence = create.recurrence;
+  }
+  return update;
 }
 
 export function eventMutationScope(
@@ -192,4 +224,24 @@ function optionalText(value: string): string | null {
 
 function optionalTime(value: string): string | null {
   return value === "" ? null : value;
+}
+
+function sameIds(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length &&
+    left.every((id) => right.includes(id));
+}
+
+function sameRecurrence(
+  left: CreatePlanEventInput["recurrence"],
+  right: CoachPlanEventDto["recurrence"],
+): boolean {
+  if (left == null || right == null) return left == null && right == null;
+  if (left.frequency !== right.frequency || left.end.kind !== right.end.kind) {
+    return false;
+  }
+  return left.end.kind === "COUNT" && right.end.kind === "COUNT"
+    ? left.end.count === right.end.count
+    : left.end.kind === "DATE" &&
+        right.end.kind === "DATE" &&
+        left.end.date === right.end.date;
 }

@@ -190,6 +190,7 @@ export class PlanEventRepository {
           eq(planEvents.organizerUserId, organizerUserId),
           eq(planEvents.seriesId, seriesId),
           gte(planEvents.eventDate, from),
+          eq(planEvents.status, "SCHEDULED"),
         ),
       )
       .returning();
@@ -208,6 +209,7 @@ export class PlanEventRepository {
           eq(planEvents.organizerUserId, organizerUserId),
           eq(planEvents.seriesId, seriesId),
           gte(planEvents.eventDate, from),
+          eq(planEvents.status, "SCHEDULED"),
         ),
       );
   }

@@ -8,6 +8,7 @@ import {
   listOwnedCoachTasks,
   updatePendingMentorshipGroup as updatePendingMentorshipGroupRows,
   updatePendingMentorshipTask as updatePendingMentorshipTaskRow,
+  type MentorshipTaskVisibleSignature,
   type MentorshipTaskScope,
 } from "./plan-task-mentorship.repository";
 
@@ -290,12 +291,14 @@ export class PlanTaskRepository {
     tx: DatabaseTx,
     scopes: MentorshipTaskScope[],
     assignmentGroupId: string,
+    expectedSignature: MentorshipTaskVisibleSignature,
     patch: Partial<NewPlanTask>,
   ): Promise<PlanTaskRow[]> {
     return updatePendingMentorshipGroupRows(
       tx,
       scopes,
       assignmentGroupId,
+      expectedSignature,
       patch,
     );
   }
@@ -320,8 +323,14 @@ export class PlanTaskRepository {
     tx: DatabaseTx,
     scopes: MentorshipTaskScope[],
     assignmentGroupId: string,
+    expectedSignature: MentorshipTaskVisibleSignature,
   ): Promise<PlanTaskRow[]> {
-    return deletePendingMentorshipGroupRows(tx, scopes, assignmentGroupId);
+    return deletePendingMentorshipGroupRows(
+      tx,
+      scopes,
+      assignmentGroupId,
+      expectedSignature,
+    );
   }
 
   /**
