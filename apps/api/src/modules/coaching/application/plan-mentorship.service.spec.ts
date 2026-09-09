@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PlanService } from "./plan.service";
 
-const COACH = "00000000-0000-4000-8000-000000000001";
 const STUDENT_A = "00000000-0000-4000-8000-000000000002";
 const STUDENT_B = "00000000-0000-4000-8000-000000000003";
 const LINK_A = "00000000-0000-4000-8000-000000000012";
