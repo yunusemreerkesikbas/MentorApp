@@ -166,7 +166,11 @@ export const updateMentorshipAssignmentGroupSchema =
     .extend({ studentIds: mentorshipStudentIdsSchema })
     .strict()
     .superRefine(refinePlanTaskTimes)
-    .superRefine(refinePlanTaskTaxonomy);
+    .superRefine(refinePlanTaskTaxonomy)
+    .refine(
+      (value) => Object.keys(value).some((key) => key !== "studentIds"),
+      { message: "empty" },
+    );
 export type UpdateMentorshipAssignmentGroupInput = z.infer<
   typeof updateMentorshipAssignmentGroupSchema
 >;
