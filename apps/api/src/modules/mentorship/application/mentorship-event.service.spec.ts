@@ -224,7 +224,7 @@ describe("MentorshipEventService", () => {
   });
 
   it("validates replacement attendees on update and delegates OCCURRENCE/SERIES semantics", async () => {
-    const { service, links, planEvents } = setup();
+    const { service, links, planEvents, commit } = setup();
 
     await service.update(COACH, EVENT, {
       scope: "SERIES",
@@ -259,6 +259,9 @@ describe("MentorshipEventService", () => {
     expect(
       links.requireActiveLinksInTransaction.mock.invocationCallOrder[0],
     ).toBeLessThan(planEvents.updateInTransaction.mock.invocationCallOrder[0]!);
+    expect(commit.mock.invocationCallOrder[0]).toBeLessThan(
+      planEvents.publishUpdated.mock.invocationCallOrder[0]!,
+    );
   });
 
   it("resolves attendees and cancels after organizer and active-link locks in the same tx", async () => {

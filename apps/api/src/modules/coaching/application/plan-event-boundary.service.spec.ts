@@ -143,5 +143,6 @@ describe("PlanEventService boundaries", () => {
       STUDENT_A,
       "2026-09-09",
     );
+    expect(repository.acquireOrganizerLock).not.toHaveBeenCalled();
   });
 });
