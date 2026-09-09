@@ -99,12 +99,12 @@ export class MentorshipAssignmentService {
           input.studentIds,
         );
         return {
-        scopes,
-        tasks: await this.plan.createMentorshipBatchInTransaction(
-          tx,
           scopes,
-          input.task,
-        ),
+          tasks: await this.plan.createMentorshipBatchInTransaction(
+            tx,
+            scopes,
+            input.task,
+          ),
         };
       },
     );

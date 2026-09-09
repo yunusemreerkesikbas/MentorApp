@@ -343,16 +343,16 @@ export class MentorshipLinkService {
         coachId,
         [studentId],
       );
-        await this.planEvents.removeFutureAttendeeInTransaction(
-          tx,
-          coachId,
-          studentId,
-        );
-        return this.links.endInTransaction(
-          tx,
-          scope!.mentorshipLinkId,
-          actorId,
-        );
+      await this.planEvents.removeFutureAttendeeInTransaction(
+        tx,
+        coachId,
+        studentId,
+      );
+      return this.links.endInTransaction(
+        tx,
+        scope!.mentorshipLinkId,
+        actorId,
+      );
     });
     if (!ended) return; // already ENDED - idempotent
     const actor = await this.findPerson(actorId);
