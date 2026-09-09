@@ -27,6 +27,7 @@ import {
   text,
   time,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   vector,
@@ -1347,10 +1348,7 @@ export const planEventSeries = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("plan_event_series_id_organizer_unique_idx").on(
-      t.id,
-      t.organizerUserId,
-    ),
+    unique("plan_event_series_id_organizer_unique").on(t.id, t.organizerUserId),
     index("plan_event_series_organizer_start_idx").on(
       t.organizerUserId,
       t.startsOn,
@@ -1416,10 +1414,7 @@ export const planEvents = pgTable(
   (t) => [
     index("plan_events_organizer_date_idx").on(t.organizerUserId, t.eventDate),
     index("plan_events_series_date_idx").on(t.seriesId, t.eventDate),
-    uniqueIndex("plan_events_id_organizer_unique_idx").on(
-      t.id,
-      t.organizerUserId,
-    ),
+    unique("plan_events_id_organizer_unique").on(t.id, t.organizerUserId),
     foreignKey({
       name: "plan_events_series_organizer_fk",
       columns: [t.seriesId, t.organizerUserId],

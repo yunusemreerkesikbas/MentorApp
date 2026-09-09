@@ -1,5 +1,5 @@
 {
-  "id": "be16f72a-f4e7-437d-a8de-8cf400bc5ce4",
+  "id": "8df8c02e-5d64-4259-9e6e-8c6fd154045c",
   "prevId": "f0187a7b-e37f-4761-ba08-d745b3b5c15f",
   "version": "7",
   "dialect": "postgresql",
@@ -9077,27 +9077,6 @@
         }
       },
       "indexes": {
-        "plan_event_series_id_organizer_unique_idx": {
-          "name": "plan_event_series_id_organizer_unique_idx",
-          "columns": [
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "organizer_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
         "plan_event_series_organizer_start_idx": {
           "name": "plan_event_series_organizer_start_idx",
           "columns": [
@@ -9149,7 +9128,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "plan_event_series_id_organizer_unique": {
+          "name": "plan_event_series_id_organizer_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organizer_user_id"
+          ]
+        }
+      },
       "policies": {
         "plan_event_series_owner": {
           "name": "plan_event_series_owner",
@@ -9309,27 +9297,6 @@
           "concurrently": false,
           "method": "btree",
           "with": {}
-        },
-        "plan_events_id_organizer_unique_idx": {
-          "name": "plan_events_id_organizer_unique_idx",
-          "columns": [
-            {
-              "expression": "id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "organizer_user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
         }
       },
       "foreignKeys": {
@@ -9376,7 +9343,16 @@
         }
       },
       "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
+      "uniqueConstraints": {
+        "plan_events_id_organizer_unique": {
+          "name": "plan_events_id_organizer_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "organizer_user_id"
+          ]
+        }
+      },
       "policies": {
         "plan_events_read": {
           "name": "plan_events_read",
