@@ -8,31 +8,41 @@ const EVENT = "00000000-0000-4000-8000-000000000010";
 const REPLACEMENT = "00000000-0000-4000-8000-000000000011";
 const TX = { execute: vi.fn() };
 
-function setup(rejectStudent?: string) {
+function setup({
+  rejectStudent,
+  attendeeIds = [STUDENT_A],
+  failCommit = false,
+}: {
+  rejectStudent?: string;
+  attendeeIds?: string[];
+  failCommit?: boolean;
+} = {}) {
+  const commit = vi.fn();
   const links = {
     assertEnabled: vi.fn(),
     listActiveScopes: vi.fn(async () => [
       { studentId: STUDENT_A, mentorshipLinkId: `link:${STUDENT_A}` },
       { studentId: STUDENT_B, mentorshipLinkId: `link:${STUDENT_B}` },
     ]),
-    requireActiveLink: vi.fn(async (_coachId: string, studentId: string) => {
-      if (studentId === rejectStudent) throw new Error("inactive link");
-      return { id: `link:${studentId}`, studentId };
-    }),
-    withActiveLinksLocked: vi.fn(
+    withServiceTransaction: vi.fn(
       async (
-        _coachId: string,
-        requested:
-          | string[]
-          | ((tx: unknown) => Promise<string[]>),
         callback: (tx: unknown) => Promise<unknown>,
       ) => {
-        const studentIds =
-          typeof requested === "function" ? await requested(TX) : requested;
+        const result = await callback(TX);
+        if (failCommit) throw new Error("commit failed");
+        commit();
+        return result;
+      },
+    ),
+    requireActiveLinksInTransaction: vi.fn(
+      async (_tx: unknown, _coachId: string, studentIds: string[]) => {
         if (studentIds.includes(rejectStudent ?? "")) {
           throw new Error("inactive link");
         }
-        return callback(TX);
+        return studentIds.map((studentId) => ({
+          studentId,
+          mentorshipLinkId: `link:${studentId}`,
+        }));
       },
     ),
   };
@@ -40,6 +50,7 @@ function setup(rejectStudent?: string) {
     create: vi.fn(async (_coachId, input) => ({ id: EVENT, ...input })),
     update: vi.fn(async (_coachId, _eventId, input) => ({ id: EVENT, ...input })),
     cancel: vi.fn(),
+    lockOrganizerInTransaction: vi.fn(),
     createInTransaction: vi.fn(async () => ({
       dto: { id: EVENT },
       occurrences: [],
@@ -48,9 +59,11 @@ function setup(rejectStudent?: string) {
       dto: { id: REPLACEMENT },
       occurrences: [],
     })),
-    listEventAttendeeIdsInTransaction: vi.fn(async () => [STUDENT_A]),
+    listEventAttendeeIdsInTransaction: vi.fn(async () => attendeeIds),
+    cancelInTransaction: vi.fn(async () => []),
     publishCreated: vi.fn(),
     publishUpdated: vi.fn(),
+    publishCancelled: vi.fn(),
     getCoachEventData: vi.fn(async () => ({
       event: {
         id: EVENT,
@@ -90,6 +103,7 @@ function setup(rejectStudent?: string) {
     links,
     planEvents,
     users,
+    commit,
     service: new MentorshipEventService(
       links as never,
       planEvents as never,
@@ -100,7 +114,9 @@ function setup(rejectStudent?: string) {
 
 describe("MentorshipEventService", () => {
   it("validates every attendee link before W2 creates anything", async () => {
-    const { service, links, planEvents } = setup(STUDENT_B);
+    const { service, links, planEvents } = setup({
+      rejectStudent: STUDENT_B,
+    });
 
     await expect(
       service.create(COACH, {
@@ -110,16 +126,25 @@ describe("MentorshipEventService", () => {
       }),
     ).rejects.toThrow("inactive link");
 
-    expect(links.withActiveLinksLocked).toHaveBeenCalledWith(
+    expect(planEvents.lockOrganizerInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+    );
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
       COACH,
       [STUDENT_A, STUDENT_B],
-      expect.any(Function),
+    );
+    expect(
+      planEvents.lockOrganizerInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0]!,
     );
     expect(planEvents.createInTransaction).not.toHaveBeenCalled();
   });
 
-  it("allows a personal event with no attendees", async () => {
-    const { service, links, planEvents } = setup();
+  it("locks organizer, then active links, then creates with the same transaction", async () => {
+    const { service, links, planEvents, commit } = setup();
 
     await service.create(COACH, {
       title: "Hazırlık",
@@ -128,15 +153,35 @@ describe("MentorshipEventService", () => {
     });
 
     expect(links.assertEnabled).toHaveBeenCalledOnce();
+    expect(planEvents.lockOrganizerInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+    );
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      [],
+    );
     expect(planEvents.createInTransaction).toHaveBeenCalledWith(
       TX,
       COACH,
       expect.objectContaining({ attendeeIds: [] }),
     );
+    expect(
+      planEvents.lockOrganizerInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0]!,
+    );
+    expect(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(planEvents.createInTransaction.mock.invocationCallOrder[0]!);
+    expect(commit.mock.invocationCallOrder[0]).toBeLessThan(
+      planEvents.publishCreated.mock.invocationCallOrder[0]!,
+    );
   });
 
   it("returns full public attendee identities on the coach-only event DTO", async () => {
-    const { service } = setup();
+    const { service, links, planEvents } = setup();
 
     const created = await service.create(COACH, {
       title: "Görüşme",
@@ -155,6 +200,14 @@ describe("MentorshipEventService", () => {
       ],
     });
     expect(JSON.stringify(created)).not.toContain("avatarStorageKey");
+    expect(
+      planEvents.lockOrganizerInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0]!,
+    );
+    expect(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(planEvents.createInTransaction.mock.invocationCallOrder[0]!);
   });
 
   it("refuses the implicit organizer as an attendee", async () => {
@@ -171,7 +224,7 @@ describe("MentorshipEventService", () => {
   });
 
   it("validates replacement attendees on update and delegates OCCURRENCE/SERIES semantics", async () => {
-    const { service, planEvents } = setup();
+    const { service, links, planEvents } = setup();
 
     await service.update(COACH, EVENT, {
       scope: "SERIES",
@@ -189,19 +242,97 @@ describe("MentorshipEventService", () => {
         attendeeIds: [STUDENT_A, STUDENT_B],
       },
     );
+    expect(planEvents.lockOrganizerInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+    );
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      [STUDENT_A, STUDENT_B],
+    );
+    expect(
+      planEvents.lockOrganizerInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0]!,
+    );
+    expect(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(planEvents.updateInTransaction.mock.invocationCallOrder[0]!);
   });
 
-  it("cancels only after the mentorship kill switch passes", async () => {
-    const { service, links, planEvents } = setup();
-
-    await service.cancel(COACH, EVENT, { scope: "OCCURRENCE" });
-
-    expect(links.assertEnabled.mock.invocationCallOrder[0]).toBeLessThan(
-      planEvents.cancel.mock.invocationCallOrder[0]!,
-    );
-    expect(planEvents.cancel).toHaveBeenCalledWith(COACH, EVENT, {
-      scope: "OCCURRENCE",
+  it("resolves attendees and cancels after organizer and active-link locks in the same tx", async () => {
+    const { service, links, planEvents, commit } = setup({
+      attendeeIds: [STUDENT_B, STUDENT_A],
     });
+
+    const input = { scope: "OCCURRENCE" as const };
+    await service.cancel(COACH, EVENT, input);
+
+    expect(planEvents.lockOrganizerInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+    );
+    expect(planEvents.listEventAttendeeIdsInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      EVENT,
+      "OCCURRENCE",
+    );
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      [STUDENT_B, STUDENT_A],
+    );
+    expect(planEvents.cancelInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      EVENT,
+      input,
+    );
+    expect(
+      planEvents.lockOrganizerInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0]!,
+    );
+    expect(
+      links.requireActiveLinksInTransaction.mock.invocationCallOrder[0],
+    ).toBeLessThan(planEvents.cancelInTransaction.mock.invocationCallOrder[0]!);
+    expect(commit.mock.invocationCallOrder[0]).toBeLessThan(
+      planEvents.publishCancelled.mock.invocationCallOrder[0]!,
+    );
+  });
+
+  it("refuses cancellation when an affected attendee link ended", async () => {
+    const { service, planEvents } = setup({
+      attendeeIds: [STUDENT_A, STUDENT_B],
+      rejectStudent: STUDENT_B,
+    });
+    await expect(
+      service.cancel(COACH, EVENT, { scope: "SERIES" }),
+    ).rejects.toThrow("inactive link");
+    expect(planEvents.cancelInTransaction).not.toHaveBeenCalled();
+    expect(planEvents.publishCancelled).not.toHaveBeenCalled();
+  });
+
+  it("allows cancellation of a personal event with no attendee links", async () => {
+    const { service, links, planEvents } = setup({ attendeeIds: [] });
+    await service.cancel(COACH, EVENT, { scope: "OCCURRENCE" });
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
+      COACH,
+      [],
+    );
+    expect(planEvents.cancelInTransaction).toHaveBeenCalledOnce();
+  });
+
+  it("does not publish cancellation when the shared transaction rolls back", async () => {
+    const { service, planEvents } = setup({ failCommit: true });
+    await expect(
+      service.cancel(COACH, EVENT, { scope: "OCCURRENCE" }),
+    ).rejects.toThrow("commit failed");
+    expect(planEvents.cancelInTransaction).toHaveBeenCalledOnce();
+    expect(planEvents.publishCancelled).not.toHaveBeenCalled();
   });
 
   it("hydrates the replacement id returned by a regenerated SERIES update", async () => {
@@ -232,7 +363,7 @@ describe("MentorshipEventService", () => {
         attendeeIds,
       }),
     ).rejects.toMatchObject({ code: "MENTORSHIP_EVENT_ATTENDEE_LIMIT" });
-    expect(links.withActiveLinksLocked).not.toHaveBeenCalled();
+    expect(links.withServiceTransaction).not.toHaveBeenCalled();
     expect(planEvents.createInTransaction).not.toHaveBeenCalled();
   });
 });

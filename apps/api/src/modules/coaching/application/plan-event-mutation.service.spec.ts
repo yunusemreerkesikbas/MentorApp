@@ -296,6 +296,7 @@ describe("PlanEventService mutation", () => {
     const original = eventRow();
     const { service, repository, emitter } = makeService([original]);
     const tx = { execute: vi.fn() };
+    await service.lockOrganizerInTransaction(tx as never, ORGANIZER);
     const result = await service.updateInTransaction(
       tx as never,
       ORGANIZER,
@@ -309,10 +310,36 @@ describe("PlanEventService mutation", () => {
       expect.any(Object),
     );
     expect(result.dto.id).toBe(original.id);
+    expect(repository.acquireOrganizerLock).toHaveBeenCalledTimes(1);
     expect(emitter.emit).not.toHaveBeenCalled();
     service.publishUpdated(ORGANIZER, result);
     expect(emitter.emit).toHaveBeenCalledWith(
       CoachingEventTopic.PLAN_EVENT_UPDATED,
+      expect.any(Object),
+    );
+  });
+
+  it("cancels and publishes separately through the caller transaction", async () => {
+    const original = eventRow({ attendeeIds: [STUDENT_A] });
+    const { service, repository, emitter } = makeService([original]);
+    const tx = { execute: vi.fn() };
+    await service.lockOrganizerInTransaction(tx as never, ORGANIZER);
+    const rows = await service.cancelInTransaction(
+      tx as never,
+      ORGANIZER,
+      original.id,
+      { scope: "OCCURRENCE" },
+    );
+    expect(repository.cancelOccurrence).toHaveBeenCalledWith(
+      tx,
+      ORGANIZER,
+      original.id,
+    );
+    expect(repository.acquireOrganizerLock).toHaveBeenCalledTimes(1);
+    expect(emitter.emit).not.toHaveBeenCalled();
+    service.publishCancelled(ORGANIZER, rows);
+    expect(emitter.emit).toHaveBeenCalledWith(
+      CoachingEventTopic.PLAN_EVENT_CANCELLED,
       expect.any(Object),
     );
   });

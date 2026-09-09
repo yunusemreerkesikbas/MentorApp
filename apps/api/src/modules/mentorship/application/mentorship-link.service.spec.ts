@@ -256,42 +256,44 @@ describe("MentorshipLinkService", () => {
       );
     });
 
-    it("rechecks every active link under stable row locks and passes that tx to the callback", async () => {
+    it("opens one SERVICE transaction and rechecks links under stable row locks", async () => {
       const second = link({
         id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
         studentId: OTHER_STUDENT,
       });
       const { service, links } = setup({ rows: [link(), second] });
       const callback = vi.fn(async () => "written");
+      await expect(service.withServiceTransaction(callback)).resolves.toBe(
+        "written",
+      );
+      expect(callback).toHaveBeenCalledWith(TX);
+
       await expect(
-        service.withActiveLinksLocked(
+        service.requireActiveLinksInTransaction(
+          TX as never,
           COACH,
           [OTHER_STUDENT, STUDENT],
-          callback,
         ),
-      ).resolves.toBe("written");
+      ).resolves.toEqual([
+        { studentId: STUDENT, mentorshipLinkId: link().id },
+        { studentId: OTHER_STUDENT, mentorshipLinkId: second.id },
+      ]);
       expect(links.lockActiveInTransaction).toHaveBeenCalledWith(
         TX,
         COACH,
         [STUDENT, OTHER_STUDENT].sort(),
       );
-      expect(callback).toHaveBeenCalledWith(TX, [
-        { studentId: STUDENT, mentorshipLinkId: link().id },
-        { studentId: OTHER_STUDENT, mentorshipLinkId: second.id },
-      ]);
     });
 
-    it("does not invoke the transaction callback when a locked link is no longer active", async () => {
+    it("refuses when a locked link is no longer active", async () => {
       const { service } = setup({ rows: [link()] });
-      const callback = vi.fn();
       await expect(
-        service.withActiveLinksLocked(
+        service.requireActiveLinksInTransaction(
+          TX as never,
           COACH,
           [STUDENT, OTHER_STUDENT],
-          callback,
         ),
       ).rejects.toMatchObject({ code: ErrorCode.MENTORSHIP_LINK_NOT_FOUND });
-      expect(callback).not.toHaveBeenCalled();
     });
   });
 

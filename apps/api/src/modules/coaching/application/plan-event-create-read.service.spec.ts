@@ -128,6 +128,7 @@ describe("PlanEventService create and read", () => {
   it("creates through the caller transaction and publishes only when asked", async () => {
     const { service, repository, emitter } = makeService([]);
     const tx = { execute: vi.fn() };
+    await service.lockOrganizerInTransaction(tx as never, ORGANIZER);
     const result = await service.createInTransaction(tx as never, ORGANIZER, {
       title: "Birebir",
       eventDate: "2026-09-10",
@@ -137,6 +138,10 @@ describe("PlanEventService create and read", () => {
       tx,
       expect.any(Array),
     );
+    expect(repository.acquireOrganizerLock).toHaveBeenCalledTimes(1);
+    expect(
+      repository.acquireOrganizerLock.mock.invocationCallOrder[0],
+    ).toBeLessThan(repository.createOccurrences.mock.invocationCallOrder[0]!);
     expect(emitter.emit).not.toHaveBeenCalled();
     service.publishCreated(ORGANIZER, result);
     expect(emitter.emit).toHaveBeenCalledWith(

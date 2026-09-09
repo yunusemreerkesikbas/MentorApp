@@ -21,25 +21,18 @@ function setup(rejectStudent?: string) {
         studentId,
       };
     }),
-    withActiveLinksLocked: vi.fn(
-      async (
-        _coachId: string,
-        studentIds: string[],
-        callback: (
-          tx: unknown,
-          scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
-        ) => Promise<unknown>,
-      ) => {
+    withServiceTransaction: vi.fn(
+      async (callback: (tx: unknown) => Promise<unknown>) => callback(TX),
+    ),
+    requireActiveLinksInTransaction: vi.fn(
+      async (_tx: unknown, _coachId: string, studentIds: string[]) => {
         if (studentIds.includes(rejectStudent ?? "")) {
           throw new Error("inactive link");
         }
-        return callback(
-          TX,
-          [...studentIds].sort().map((studentId) => ({
+        return [...studentIds].sort().map((studentId) => ({
             studentId,
             mentorshipLinkId: studentId === STUDENT_A ? LINK_A : LINK_B,
-          })),
-        );
+          }));
       },
     ),
   };
@@ -83,10 +76,10 @@ describe("MentorshipAssignmentService orchestration", () => {
 
     await service.assignBatch(COACH, input);
 
-    expect(links.withActiveLinksLocked).toHaveBeenCalledWith(
+    expect(links.requireActiveLinksInTransaction).toHaveBeenCalledWith(
+      TX,
       COACH,
       [STUDENT_B, STUDENT_A],
-      expect.any(Function),
     );
     expect(plan.createMentorshipBatchInTransaction).toHaveBeenCalledWith(
       TX,
