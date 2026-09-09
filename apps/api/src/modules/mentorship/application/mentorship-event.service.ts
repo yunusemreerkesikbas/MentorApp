@@ -1,5 +1,5 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
-import type { PlanEventDto } from "@mentor/types";
+import type { CoachPlanEventDto } from "@mentor/types";
 import type {
   CancelPlanEventInput,
   CreatePlanEventInput,
@@ -8,6 +8,7 @@ import type {
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { PlanEventService } from "../../coaching/application/plan-event.service";
+import { UsersService } from "../../identity/application/users.service";
 import { MentorshipLinkService } from "./mentorship-link.service";
 
 @Injectable()
@@ -15,27 +16,30 @@ export class MentorshipEventService {
   constructor(
     private readonly links: MentorshipLinkService,
     private readonly events: PlanEventService,
+    private readonly users: UsersService,
   ) {}
 
   async create(
     coachId: string,
     input: CreatePlanEventInput,
-  ): Promise<PlanEventDto> {
+  ): Promise<CoachPlanEventDto> {
     await this.links.assertEnabled();
     await this.authorizeAttendees(coachId, input.attendeeIds);
-    return this.events.create(coachId, input);
+    const event = await this.events.create(coachId, input);
+    return this.hydrate(coachId, event.id);
   }
 
   async update(
     coachId: string,
     eventId: string,
     input: UpdatePlanEventInput,
-  ): Promise<PlanEventDto> {
+  ): Promise<CoachPlanEventDto> {
     await this.links.assertEnabled();
     if (input.attendeeIds !== undefined) {
       await this.authorizeAttendees(coachId, input.attendeeIds);
     }
-    return this.events.update(coachId, eventId, input);
+    await this.events.update(coachId, eventId, input);
+    return this.hydrate(coachId, eventId);
   }
 
   async cancel(
@@ -62,5 +66,30 @@ export class MentorshipEventService {
         this.links.requireActiveLink(coachId, studentId),
       ),
     );
+  }
+
+  private async hydrate(
+    coachId: string,
+    eventId: string,
+  ): Promise<CoachPlanEventDto> {
+    const scopes = await this.links.listActiveScopes(coachId);
+    const data = await this.events.getCoachEventData(
+      coachId,
+      eventId,
+      scopes.map((scope) => scope.studentId),
+    );
+    const people = await this.users.listDisplayIdentities(data.attendeeIds);
+    return {
+      ...data.event,
+      attendees: data.attendeeIds.map((studentId) => {
+        const person = people.get(studentId);
+        return {
+          studentId,
+          studentDisplayName: person?.displayName ?? "",
+          studentUsername: person?.username ?? null,
+          avatarUrl: person?.avatarUrl ?? null,
+        };
+      }),
+    };
   }
 }

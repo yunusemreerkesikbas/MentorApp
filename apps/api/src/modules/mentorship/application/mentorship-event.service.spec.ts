@@ -9,6 +9,10 @@ const EVENT = "00000000-0000-4000-8000-000000000010";
 function setup(rejectStudent?: string) {
   const links = {
     assertEnabled: vi.fn(),
+    listActiveScopes: vi.fn(async () => [
+      { studentId: STUDENT_A, mentorshipLinkId: `link:${STUDENT_A}` },
+      { studentId: STUDENT_B, mentorshipLinkId: `link:${STUDENT_B}` },
+    ]),
     requireActiveLink: vi.fn(async (_coachId: string, studentId: string) => {
       if (studentId === rejectStudent) throw new Error("inactive link");
       return { id: `link:${studentId}`, studentId };

@@ -14,9 +14,9 @@ import { Throttle } from "@nestjs/throttler";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   UserRole,
+  type CoachPlanEventDto,
   type CoachPlanItemDto,
   type Paginated,
-  type PlanEventDto,
   type PlanTaskDto,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
@@ -124,7 +124,7 @@ export class MentorshipPlanController {
   createPlanEvent(
     @CurrentUser() user: RequestUser,
     @Body() input: CreateMentorshipEventDto,
-  ): Promise<PlanEventDto> {
+  ): Promise<CoachPlanEventDto> {
     return this.events.create(user.id, input);
   }
 
@@ -133,7 +133,7 @@ export class MentorshipPlanController {
     @CurrentUser() user: RequestUser,
     @Param() params: MentorshipEventParamDto,
     @Body() input: UpdateMentorshipEventDto,
-  ): Promise<PlanEventDto> {
+  ): Promise<CoachPlanEventDto> {
     return this.events.update(user.id, params.eventId, input);
   }
 

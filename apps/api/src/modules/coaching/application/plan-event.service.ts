@@ -316,6 +316,30 @@ export class PlanEventService {
     });
   }
 
+  async getCoachEventData(
+    organizerUserId: string,
+    eventId: string,
+    authorizedStudentIds: string[],
+  ): Promise<{ event: PlanEventDto; attendeeIds: string[] }> {
+    return withServiceContext(this.db, async (tx) => {
+      const row = await this.repository.findOwnedById(
+        tx,
+        organizerUserId,
+        eventId,
+      );
+      if (!row) notFound();
+      const allowed = new Set(authorizedStudentIds);
+      const attendeeIds = row!.attendeeIds.filter((id) => allowed.has(id));
+      return {
+        event: {
+          ...toPlanEventDto(row!),
+          attendeeCount: attendeeIds.length,
+        },
+        attendeeIds,
+      };
+    });
+  }
+
   removeFutureAttendee(
     organizerUserId: string,
     studentId: string,
