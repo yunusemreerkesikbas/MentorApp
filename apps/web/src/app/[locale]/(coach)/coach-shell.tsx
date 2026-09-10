@@ -65,7 +65,10 @@ export function CoachShell({ children }: { children: ReactNode }) {
 
   return (
     <NotificationDrawerShell>
-      <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
+      <div
+        className="min-h-screen"
+        style={{ backgroundColor: "var(--color-bg)" }}
+      >
         <AppNav />
         <div
           className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}

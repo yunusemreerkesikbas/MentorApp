@@ -226,8 +226,8 @@ flag that cries wolf costs the coach more than it gives.
   sonunda ne var?" hedef kartı, otomatik açılan ruh hali modalı.
 
   **Panel koça uyarlanmadı, koç panelden çıkarıldı.** `(coach)/layout.tsx` bu kararı zaten yazmıştı
-  ("*the student panel is a daily ritual; this is a work tool. Sharing one shell would put two
-  mental models in one chrome*"), ve `panel-shell.tsx` 1381 satır — `(app)` altında bugüne dek
+  ("_the student panel is a daily ritual; this is a work tool. Sharing one shell would put two
+  mental models in one chrome_"), ve `panel-shell.tsx` 1381 satır — `(app)` altında bugüne dek
   **sıfır** rol dallanması vardı, oraya ilkini sokmak hem kuralı hem deseni bozardı.
 
   **Blok listesi, allow-list değil.** `lib/coach-surface.ts`: öğrenci ritüeli (`/panel`,
