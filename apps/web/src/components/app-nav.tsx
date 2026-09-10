@@ -18,7 +18,12 @@ import { useEffect, useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { UserRole, type AuthUser, type EconomyBalance, type SubscriptionView } from "@mentor/types";
+import {
+  UserRole,
+  type AuthUser,
+  type EconomyBalance,
+  type SubscriptionView,
+} from "@mentor/types";
 import { NotificationBell } from "@mentor/ui";
 import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
@@ -80,7 +85,12 @@ const NAV_ITEMS = [
     sidebarExclude: true,
     studentOnly: true,
   },
-  { href: "/analysis", labelKey: "analysis", icon: ChartColumn, studentOnly: true },
+  {
+    href: "/analysis",
+    labelKey: "analysis",
+    icon: ChartColumn,
+    studentOnly: true,
+  },
   { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
   /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
      path is the review notification, not a tab the user hunts for. */
@@ -135,7 +145,10 @@ function visibleTo(
   const coach = isCoach({ roles: roles ?? [] });
   return items.filter((item) => {
     if ("studentOnly" in item && item.studentOnly && coach) return false;
-    return !("roles" in item) || item.roles.some((role) => (roles ?? []).includes(role));
+    return (
+      !("roles" in item) ||
+      item.roles.some((role) => (roles ?? []).includes(role))
+    );
   });
 }
 
@@ -344,7 +357,7 @@ function DesktopSidebar({
       >
         <div className="mb-4 flex items-center justify-between gap-2">
           <Link
-            href="/dashboard"
+            href={isCoach(user) ? "/students" : "/dashboard"}
             className="inline-flex min-h-11 items-center text-2xl font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{
               color: "var(--color-main)",
@@ -388,7 +401,13 @@ function DesktopSidebar({
   );
 }
 
-function MobileTabBar({ pathname, user }: { pathname: string; user: AuthUser | null }) {
+function MobileTabBar({
+  pathname,
+  user,
+}: {
+  pathname: string;
+  user: AuthUser | null;
+}) {
   const t = useTranslations("nav");
   const reduceMotion = useReducedMotion();
   const tabTransition = reduceMotion

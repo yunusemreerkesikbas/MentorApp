@@ -11,7 +11,8 @@ import { CoachShell } from "./coach-shell";
  *
  *  - the student panel is a daily ritual (streak, mood, ghost); this is a work tool (roster,
  *    report, assignments). Sharing one shell would put two mental models in one chrome.
- *  - it carries only the `mentorship` messages, so the student bundle does not grow.
+ *  - it carries the scoped mentorship and shared chrome messages, so the full student catalog
+ *    does not cross into the coach bundle.
  *
  * Nothing in here may import from `(app)/**`. The roadmap (§9) puts this surface in its own
  * `apps/panel` app once the coach cohort justifies one; keeping the dependency arrow one-way
@@ -30,7 +31,10 @@ export default async function CoachLayout({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  const messages = pickMessages(await getMessages(), ROUTE_MESSAGE_SCOPES.coaching);
+  const messages = pickMessages(
+    await getMessages(),
+    ROUTE_MESSAGE_SCOPES.coaching,
+  );
   return (
     <NextIntlClientProvider messages={messages}>
       <CoachShell>{children}</CoachShell>
