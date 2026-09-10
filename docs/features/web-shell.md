@@ -63,6 +63,15 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-10 — Dev başlangıcı workspace paketlerini önce derliyor
+
+`pnpm dev` artık uygulama sunucularını başlatmadan önce bağımlı workspace paketlerinin `build`
+görevlerini tamamlar. Böylece branch değişiminden sonra Git tarafından izlenmeyen eski bir `dist`
+çıktısı (`@mentor/validation` gibi) yeni kaynak export'larını gölgeleyemez. Kullanım değişmedi:
+geliştirme için `pnpm dev` yeterlidir. Gotcha: çalışan bir dev sürecinde branch değiştirildiyse süreç
+yeniden başlatılmalıdır; başlangıç sıralaması hâlihazırda çalışan Node sürecini yenilemez. İlgili:
+`turbo.json`, `packages/validation/package.json`.
+
 ### 2026-09-09 — `/plan` koç için role-aware oldu (APP-091)
 
 APP-091, APP-090'ın öğrenci-only blok listesinden `/plan`ı çıkardı. Route aynı kaldı; öğrenci mevcut
