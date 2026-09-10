@@ -202,6 +202,14 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **Koçluk kabuğu ortak AppNav kullanıyor (2026-09-10)** - `/kocluk`, koç profili ve öğrenci
+  detayları artık panelle aynı `AppNav` kabuğunu kullanır: masaüstünde açılıp daralabilen sol
+  sidebar, mobilde ortak üst başlık ve alt tab bar görünür. `(coach)` route grubu ile COACH guard'ı
+  değişmedi; yalnız navigasyon kopyası kaldırıldı. Kullanım: tüm koç rotalarında chrome otomatik
+  gelir. Gotcha: koç görünürlüğü `AppNav.visibleTo` üzerinden role-aware filtrelenir; koç kabuğunda
+  ikinci bir menü veya rol filtresi eklenmemelidir. İlgili: `coach-shell.tsx`, `app-nav.tsx`,
+  `e2e/coach-home.spec.ts`.
+
 - **Koç planında atomik çoklu atama sözleşmesi (APP-091, 2026-09-09)** - Bir görevi 1-20 benzersiz
   öğrenciye tek işlemde verecek katı Zod girdisi ile gruplu görev/katılımcı DTO'ları eklendi.
   Öğrencinin `description` alanı koç sözleşmesine alınmadı. `plan_tasks` ve silinen atama günlüğü
