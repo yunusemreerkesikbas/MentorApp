@@ -175,14 +175,45 @@ test.describe("koçun kendi dünyası", () => {
     await expect(page.getByText("Ruh hali")).toHaveCount(0);
   });
 
-  test("koç kabuğu bildirim ziline ve kendi navigasyonuna sahip", async ({ page }) => {
+  test("koç kabuğu panelle aynı masaüstü sidebarını kullanır", async (
+    { page },
+    testInfo,
+  ) => {
+    test.skip(testInfo.project.name !== "desktop-chromium");
     await page.goto("/kocluk");
 
-    // Four coach-directed notification types are generated server-side; before APP-090 a coach had
-    // to walk back into the student panel to see any of them, and now they cannot.
+    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Öğrencilerim" })).toBeVisible();
     await expect(page.getByRole("button", { name: "Bildirimler", exact: false })).toBeVisible();
-    // The way back to the student panel is gone, because the panel is gone for them.
+    await expect(
+      page.locator("header").getByText("Mentor", { exact: true }),
+    ).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
+  });
+
+  test("koç kabuğu mobilde panel üst ve alt navigasyonunu kullanır", async (
+    { page },
+    testInfo,
+  ) => {
+    test.skip(testInfo.project.name !== "mobile-chromium");
+    await page.goto("/kocluk");
+
+    await expect(page.locator("header")).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Ana menü" }),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Öğrencilerim" })).toBeVisible();
+  });
+
+  test("ortak sidebar koç profil alt rotasında da korunur", async (
+    { page },
+    testInfo,
+  ) => {
+    test.skip(testInfo.project.name !== "desktop-chromium");
+    await page.goto("/kocluk/profil");
+
+    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+    await expect(page.getByRole("link", { name: "Öğrencilerim" })).toBeVisible();
   });
 
   test("öğrenci paneli öğrenci için bozulmadı", async ({ page }) => {
