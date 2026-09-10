@@ -211,6 +211,9 @@ test.describe("koçun kendi dünyası", () => {
       page.getByRole("button", { name: "Bildirimler", exact: false }),
     ).toBeVisible();
     await expect(
+      page.getByTestId("app-sidebar").getByRole("link", { name: "Mentor" }),
+    ).toHaveAttribute("href", "/kocluk");
+    await expect(
       page.locator("header").getByText("Mentor", { exact: true }),
     ).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
