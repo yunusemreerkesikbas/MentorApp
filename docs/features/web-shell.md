@@ -63,6 +63,16 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-09 — `/plan` koç için role-aware oldu (APP-091)
+
+APP-091, APP-090'ın öğrenci-only blok listesinden `/plan`ı çıkardı. Route aynı kaldı; öğrenci mevcut
+planını, COACH rolü ise hafta/ay koç takvimini görür. `AppShell` sessiz auth yenilemesi sırasında
+route'un kendi iskeletini gösterir ve koç render kapısında `/kocluk`'a sıçratılmaz. Mobil/masaüstü
+nav'daki Plan öğesi de koç için görünür. Güvenli `/plan?date=…&event=…` giriş yönlendirmeleri artık
+korunur; gerçekten student-only bir `next` hâlâ koç ana ekranına düşer. İlgili:
+`app-shell.tsx`, `app-nav.tsx`, `lib/{coach-surface,post-auth-destination}.ts`,
+`plan/_components/role-aware-plan-shell.tsx`.
+
 ### 2026-09-08 — Rol farkındalığı kabuğa girdi (APP-090)
 
 `postAuthDestination` ve `AppNav` bugüne dek rol bilmiyordu; tek istisna sidebar'daki `/students`

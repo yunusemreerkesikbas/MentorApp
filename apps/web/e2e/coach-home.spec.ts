@@ -140,7 +140,8 @@ test.describe("koçun kendi dünyası", () => {
   });
 
   test("öğrenci ritüelinin geri kalanı da kapalı", async ({ page }) => {
-    for (const path of ["/plan", "/analiz", "/kocum"]) {
+    // APP-091 made `/plan` role-aware; it is now a coach work surface, not a blocked ritual.
+    for (const path of ["/analiz", "/kocum"]) {
       await page.goto(path);
       await expect(page, path).toHaveURL(/\/kocluk$/, { timeout: 10_000 });
     }

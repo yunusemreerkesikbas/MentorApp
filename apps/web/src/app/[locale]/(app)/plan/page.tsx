@@ -1,5 +1,5 @@
 import { setRequestLocale } from "@/i18n/locale";
-import { PlanShell } from "./_components/plan-shell";
+import { RoleAwarePlanShell } from "./_components/role-aware-plan-shell";
 
 export default async function PlanPage({
   params,
@@ -8,5 +8,5 @@ export default async function PlanPage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <PlanShell />;
+  return <RoleAwarePlanShell />;
 }

@@ -30,18 +30,21 @@ export function safeNextPath(next: string | null | undefined): string | null {
  * complete: dropping someone straight into a study room before they have a username and an
  * exam would seat them at a table the app can't yet describe them at.
  *
- * A COACH goes to their own surface, and `next` is deliberately ignored for them (APP-090). Every
- * `next` this app produces is a student deep link — a study-room invite, a coach-invitation code —
- * and all of them sit behind `isStudentOnlyPath`, so honouring one would route a coach straight
- * into a screen the `(app)` guard bounces them out of a frame later. `onboardingDestination` made
- * the same call in APP-089.
+ * A COACH normally goes to their own surface. APP-090 ignored every `next` because every route
+ * produced at the time was student-only. APP-091 adds one narrow exception for the now role-aware
+ * `/plan`; study-room and student-mentorship links still fall back to the coach home.
  */
 export function postAuthDestination(
   user: AuthUser,
   next?: string | null,
 ): string {
   if (!hasCompletedOnboarding(user)) return "/onboarding";
-  if (isCoach(user)) return COACH_HOME;
+  if (isCoach(user)) {
+    const safeNext = safeNextPath(next);
+    return safeNext && /^\/(?:[a-z]{2}\/)?plan(?:[/?#]|$)/.test(safeNext)
+      ? safeNext
+      : COACH_HOME;
+  }
   return safeNextPath(next) ?? "/dashboard";
 }
 

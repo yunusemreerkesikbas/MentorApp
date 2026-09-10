@@ -1,4 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
+import enNotifications from "../../../i18n/locales/en/notifications.json";
+import trNotifications from "../../../i18n/locales/tr/notifications.json";
 import { NotificationCopyKey, streakMilestoneCopyKey } from "../domain/notification-copy";
 import { NotificationsCopyService } from "./notifications-copy.service";
 
@@ -14,6 +16,32 @@ function makeService(translations: Record<string, string> = {}) {
     translate,
     service: new NotificationsCopyService({ translate } as never),
   };
+}
+
+const catalogs: Record<string, unknown> = {
+  en: enNotifications,
+  tr: trNotifications,
+};
+
+function realCopyService() {
+  const translate = (
+    key: string,
+    options?: { lang?: string; args?: Record<string, unknown> },
+  ) => {
+    let value: unknown = catalogs[options?.lang ?? "tr"];
+    for (const segment of key.split(".").slice(1)) {
+      value =
+        typeof value === "object" && value !== null
+          ? (value as Record<string, unknown>)[segment]
+          : undefined;
+    }
+    if (typeof value !== "string") return key;
+    for (const [name, raw] of Object.entries(options?.args ?? {})) {
+      value = value.replaceAll(`{${name}}`, String(raw));
+    }
+    return value;
+  };
+  return new NotificationsCopyService({ translate } as never);
 }
 
 describe("NotificationsCopyService", () => {
@@ -71,4 +99,27 @@ describe("NotificationsCopyService", () => {
     expect(email.greeting).toBe("");
     expect(email.cta).toBe("");
   });
+
+  it.each(["tr", "en"])(
+    "resolves every all-day lifecycle template from the real %s catalog without a blank time",
+    (lang) => {
+      const service = realCopyService();
+      const keys = [
+        NotificationCopyKey.PLAN_EVENT_CREATED_ALL_DAY,
+        NotificationCopyKey.PLAN_EVENT_UPDATED_ALL_DAY,
+        NotificationCopyKey.PLAN_EVENT_CANCELLED_ALL_DAY,
+      ];
+
+      for (const key of keys) {
+        const copy = service.resolve(
+          key,
+          { eventTitle: "Deneme", eventDate: "2026-09-10" },
+          lang,
+        );
+        expect(copy.body).toContain("Deneme");
+        expect(copy.body).toContain("2026-09-10");
+        expect(copy.body).not.toMatch(/\{eventTime\}|null|undefined/i);
+      }
+    },
+  );
 });

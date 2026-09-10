@@ -12,8 +12,16 @@ import {
   extensionForAvatarMime,
   isValidAvatarStorageKey,
 } from "../domain/avatar";
-import { UsersRepository, type DisplayIdentity } from "../infrastructure/users.repository";
+import { UsersRepository } from "../infrastructure/users.repository";
 import { toAuthUser } from "./auth.service";
+
+/** Public display identity for cross-module people lists. Never contains an object-storage key. */
+export interface DisplayIdentity {
+  userId: string;
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
+}
 
 /** Admin metrics: user-base snapshot (W6). */
 export interface UserStats {
@@ -97,7 +105,19 @@ export class UsersService {
    */
   async listDisplayIdentities(userIds: string[]): Promise<Map<string, DisplayIdentity>> {
     const rows = await this.usersRepo.listDisplayByIds(userIds);
-    return new Map(rows.map((row) => [row.userId, row]));
+    return new Map(
+      rows.map((row) => [
+        row.userId,
+        {
+          userId: row.userId,
+          displayName: row.displayName,
+          username: row.username,
+          avatarUrl: row.avatarStorageKey
+            ? this.storage.getPublicUrl(row.avatarStorageKey)
+            : null,
+        },
+      ]),
+    );
   }
 
   /**

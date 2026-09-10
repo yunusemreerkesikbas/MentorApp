@@ -1,8 +1,12 @@
 import { z } from "zod";
 import {
+  cancelPlanEventSchema,
+  createPlanEventSchema,
+  isoDateSchema,
   planTaskFieldsSchema,
   refinePlanTaskTaxonomy,
   refinePlanTaskTimes,
+  updatePlanEventSchema,
 } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
 
@@ -21,18 +25,24 @@ export const mentorshipInviteCodeParamSchema = z.object({
     .toUpperCase()
     .regex(MENTORSHIP_INVITE_CODE_PATTERN, "invalid_code"),
 });
-export type MentorshipInviteCodeParam = z.infer<typeof mentorshipInviteCodeParamSchema>;
+export type MentorshipInviteCodeParam = z.infer<
+  typeof mentorshipInviteCodeParamSchema
+>;
 
 export const listMentorshipStudentsQuerySchema = paginationQuerySchema.extend({
   /** Default ACTIVE — a coach's roster is the active cohort; ENDED is opt-in history. */
   status: z.enum(["ACTIVE", "ENDED"]).default("ACTIVE"),
 });
-export type ListMentorshipStudentsQuery = z.infer<typeof listMentorshipStudentsQuerySchema>;
+export type ListMentorshipStudentsQuery = z.infer<
+  typeof listMentorshipStudentsQuerySchema
+>;
 
 export const mentorshipStudentParamSchema = z.object({
   studentId: z.string().uuid(),
 });
-export type MentorshipStudentParam = z.infer<typeof mentorshipStudentParamSchema>;
+export type MentorshipStudentParam = z.infer<
+  typeof mentorshipStudentParamSchema
+>;
 
 /** A coach's instruction on one assignment. Short on purpose: it renders inline under the task. */
 export const MENTORSHIP_COACH_NOTE_MAX = 500;
@@ -53,7 +63,9 @@ export const mentorshipCoachNoteSchema = z
       .transform((value) => (value === null || value === "" ? null : value)),
   })
   .strict();
-export type MentorshipCoachNoteInput = z.infer<typeof mentorshipCoachNoteSchema>;
+export type MentorshipCoachNoteInput = z.infer<
+  typeof mentorshipCoachNoteSchema
+>;
 
 /**
  * "I have dealt with this student" — the mark that turns the roster from a list into a worklist.
@@ -64,8 +76,12 @@ export type MentorshipCoachNoteInput = z.infer<typeof mentorshipCoachNoteSchema>
  *
  * `.strict()` for that reason too — sending `flags` is a 400, not a silently dropped field.
  */
-export const mentorshipAttentionSchema = z.object({ attended: z.boolean() }).strict();
-export type MentorshipAttentionInput = z.infer<typeof mentorshipAttentionSchema>;
+export const mentorshipAttentionSchema = z
+  .object({ attended: z.boolean() })
+  .strict();
+export type MentorshipAttentionInput = z.infer<
+  typeof mentorshipAttentionSchema
+>;
 
 /**
  * One assigned task. Reuses the plan-task shape so a coach cannot write something the student could
@@ -79,7 +95,12 @@ export type MentorshipAttentionInput = z.infer<typeof mentorshipAttentionSchema>
 export const mentorshipAssignmentTaskSchema = planTaskFieldsSchema
   .omit({ description: true })
   .extend({
-    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+    coachNote: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MENTORSHIP_COACH_NOTE_MAX)
+      .nullish(),
   })
   // `.strict()`: a dropped field must be REFUSED, not silently stripped. Accepting a description
   // and quietly discarding it would leave the coach believing they wrote a note that never existed.
@@ -94,6 +115,147 @@ export const createMentorshipAssignmentsSchema = z.object({
 export type CreateMentorshipAssignmentsInput = z.infer<
   typeof createMentorshipAssignmentsSchema
 >;
+
+export const MENTORSHIP_BATCH_ASSIGNMENT_MAX_STUDENTS = 20;
+
+/** One task assigned atomically to a bounded, duplicate-free student cohort. */
+export const createMentorshipBatchAssignmentSchema = z
+  .object({
+    studentIds: z
+      .array(z.string().uuid())
+      .min(1)
+      .max(MENTORSHIP_BATCH_ASSIGNMENT_MAX_STUDENTS)
+      .refine((studentIds) => new Set(studentIds).size === studentIds.length, {
+        message: "duplicate_student_id",
+      }),
+    task: mentorshipAssignmentTaskSchema,
+  })
+  .strict();
+export type CreateMentorshipBatchAssignmentInput = z.infer<
+  typeof createMentorshipBatchAssignmentSchema
+>;
+
+const mentorshipStudentIdsSchema = z
+  .array(z.string().uuid())
+  .min(1)
+  .max(MENTORSHIP_BATCH_ASSIGNMENT_MAX_STUDENTS)
+  .refine((studentIds) => new Set(studentIds).size === studentIds.length, {
+    message: "duplicate_student_id",
+  });
+
+const mentorshipAssignmentUpdateFieldsSchema = planTaskFieldsSchema
+  .omit({ description: true, sortOrder: true })
+  .partial()
+  .extend({
+    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+  });
+
+export const mentorshipAssignmentVisibleSignatureSchema = z
+  .object({
+    taskDate: planTaskFieldsSchema.shape.taskDate.unwrap(),
+    title: planTaskFieldsSchema.shape.title,
+    subject: planTaskFieldsSchema.shape.subject.unwrap(),
+    topic: planTaskFieldsSchema.shape.topic.unwrap(),
+    startTime: planTaskFieldsSchema.shape.startTime.unwrap(),
+    endTime: planTaskFieldsSchema.shape.endTime.unwrap(),
+    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullable(),
+  })
+  .strict();
+export type MentorshipAssignmentVisibleSignature = z.infer<
+  typeof mentorshipAssignmentVisibleSignatureSchema
+>;
+
+/** Coach edits may change wording/schedule only; status, origin and group id are absent. */
+export const updateMentorshipAssignmentSchema =
+  mentorshipAssignmentUpdateFieldsSchema
+    .strict()
+    .superRefine(refinePlanTaskTimes)
+    .superRefine(refinePlanTaskTaxonomy)
+    .refine((value) => Object.keys(value).length > 0, { message: "empty" });
+export type UpdateMentorshipAssignmentInput = z.infer<
+  typeof updateMentorshipAssignmentSchema
+>;
+
+export const updateMentorshipAssignmentGroupSchema =
+  mentorshipAssignmentUpdateFieldsSchema
+    .extend({
+      studentIds: mentorshipStudentIdsSchema,
+      expectedSignature: mentorshipAssignmentVisibleSignatureSchema,
+    })
+    .strict()
+    .superRefine(refinePlanTaskTimes)
+    .superRefine(refinePlanTaskTaxonomy)
+    .refine(
+      (value) =>
+        Object.keys(value).some(
+          (key) => key !== "studentIds" && key !== "expectedSignature",
+        ),
+      { message: "empty" },
+    );
+export type UpdateMentorshipAssignmentGroupInput = z.infer<
+  typeof updateMentorshipAssignmentGroupSchema
+>;
+
+export const removeMentorshipAssignmentGroupSchema = z
+  .object({
+    studentIds: mentorshipStudentIdsSchema,
+    expectedSignature: mentorshipAssignmentVisibleSignatureSchema,
+  })
+  .strict();
+export type RemoveMentorshipAssignmentGroupInput = z.infer<
+  typeof removeMentorshipAssignmentGroupSchema
+>;
+
+export const mentorshipAssignmentParamSchema = mentorshipStudentParamSchema.extend({
+  assignmentId: z.string().uuid(),
+});
+export const mentorshipAssignmentGroupParamSchema = z.object({
+  assignmentGroupId: z.string().uuid(),
+});
+export const mentorshipEventParamSchema = z.object({
+  eventId: z.string().uuid(),
+});
+
+/** Coach calendar range; pagination is applied after W8 groups tasks and merges events. */
+export const listMentorshipPlanQuerySchema = paginationQuerySchema
+  .extend({
+    from: isoDateSchema.optional(),
+    to: isoDateSchema.optional(),
+    studentId: z.string().uuid().optional(),
+  })
+  .superRefine((value, ctx) => {
+    if ((value.from === undefined) !== (value.to === undefined)) {
+      ctx.addIssue({
+        code: "custom",
+        message: "from_to_pair",
+        path: value.from ? ["to"] : ["from"],
+      });
+      return;
+    }
+    if (value.from && value.to && value.from > value.to) {
+      ctx.addIssue({ code: "custom", message: "invalid_range", path: ["to"] });
+      return;
+    }
+    if (value.from && value.to) {
+      const days =
+        Math.floor(
+          (new Date(`${value.to}T12:00:00Z`).getTime() -
+            new Date(`${value.from}T12:00:00Z`).getTime()) /
+            86_400_000,
+        ) + 1;
+      if (days > 62) {
+        ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+      }
+    }
+  });
+export type ListMentorshipPlanQuery = z.infer<
+  typeof listMentorshipPlanQuerySchema
+>;
+
+/** W8 reuses W2 event payloads but owns the role/link authorization boundary. */
+export const createMentorshipEventSchema = createPlanEventSchema;
+export const updateMentorshipEventSchema = updatePlanEventSchema;
+export const cancelMentorshipEventSchema = cancelPlanEventSchema;
 
 /** How many templates one coach may keep. Anti-abuse, not a business quota — hence a constant. */
 export const MENTORSHIP_TEMPLATE_MAX = 20;
@@ -122,13 +284,20 @@ export const mentorshipTemplateTaskSchema = planTaskFieldsSchema
   .extend({
     /** 0..20 — days from the program's first day (three weeks, matching the 21-task ceiling). */
     dayIndex: z.coerce.number().int().min(0).max(20),
-    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+    coachNote: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MENTORSHIP_COACH_NOTE_MAX)
+      .nullish(),
   })
   // `.strict()` for the same reason the assignment schema is strict: a field we drop must be
   // refused, never silently stripped.
   .strict()
   .superRefine(refinePlanTaskTaxonomy);
-export type MentorshipTemplateTaskInput = z.infer<typeof mentorshipTemplateTaskSchema>;
+export type MentorshipTemplateTaskInput = z.infer<
+  typeof mentorshipTemplateTaskSchema
+>;
 
 /**
  * Save (or overwrite) a template. There is no update endpoint: `(coach_id, name)` is unique and
@@ -146,12 +315,16 @@ export const saveMentorshipTemplateSchema = z
     tasks: mentorshipTemplateTaskSchema.array().min(1).max(21),
   })
   .strict();
-export type SaveMentorshipTemplateInput = z.infer<typeof saveMentorshipTemplateSchema>;
+export type SaveMentorshipTemplateInput = z.infer<
+  typeof saveMentorshipTemplateSchema
+>;
 
 export const mentorshipTemplateParamSchema = z.object({
   templateId: z.string().uuid(),
 });
-export type MentorshipTemplateParam = z.infer<typeof mentorshipTemplateParamSchema>;
+export type MentorshipTemplateParam = z.infer<
+  typeof mentorshipTemplateParamSchema
+>;
 
 /* --- Coach registry (W8 self-service registration, roadmap §5 REVISED by APP-089) ---------- */
 
@@ -202,10 +375,16 @@ export type SetCoachStatusInput = z.infer<typeof setCoachStatusSchema>;
  */
 export const verifyCoachClaimsSchema = z
   .object({
-    verifiedClaims: z.enum(["INSTITUTION", "BRANCH", "YEARS"]).array().max(3).default([]),
+    verifiedClaims: z
+      .enum(["INSTITUTION", "BRANCH", "YEARS"])
+      .array()
+      .max(3)
+      .default([]),
   })
   .strict()
-  .transform((value) => ({ verifiedClaims: [...new Set(value.verifiedClaims)] }));
+  .transform((value) => ({
+    verifiedClaims: [...new Set(value.verifiedClaims)],
+  }));
 export type VerifyCoachClaimsInput = z.infer<typeof verifyCoachClaimsSchema>;
 
 export const listCoachesQuerySchema = z.object({

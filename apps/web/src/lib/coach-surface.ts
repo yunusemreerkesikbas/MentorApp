@@ -1,7 +1,7 @@
 import { UserRole } from "@mentor/types";
 
 /**
- * Where a coach lives, and which student surfaces they never see (APP-090).
+ * Where a coach lives, and which student-only surfaces they never see (APP-090/APP-091).
  *
  * APP-089 gave a coach their own onboarding and landed them on `/students`, but only once — login
  * still sent every authenticated user to `/dashboard`, so from the second visit onwards a coach
@@ -35,7 +35,6 @@ export function isCoach(user: { roles: readonly string[] } | null | undefined): 
  */
 const STUDENT_ONLY = [
   "dashboard|panel",
-  "plan",
   "study-session|seans",
   "analysis|analiz",
   "notebook|yanlis-defteri",

@@ -197,6 +197,8 @@ export interface MentorshipRosterRowDto {
   studentId: string;
   studentDisplayName: string;
   studentUsername: string | null;
+  /** Public URL resolved by identity; storage keys never leave W0. */
+  avatarUrl: string | null;
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
   endedAt: string | null;
@@ -241,11 +243,56 @@ export interface MentorshipReportPlanTaskDto {
  * without this a dropped assignment reads as one that was never given.
  */
 export interface MentorshipDroppedAssignmentDto {
+  assignmentGroupId: string | null;
   /** The day it had been assigned for. */
   taskDate: string;
   title: string;
   droppedAt: string;
 }
+
+/** Per-student outcome inside one atomic coach assignment group. */
+export interface CoachPlanParticipantDto {
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  /** Public URL resolved by identity; storage keys never leave W0. */
+  avatarUrl: string | null;
+  taskId: string;
+  status: "PENDING" | "DONE";
+}
+
+/** One task row on the coach calendar; grouped when an atomic assignment copied it to students. */
+export interface CoachPlanGroupedTaskDto {
+  /** Stable display-group id; signature suffix separates historical and edited group variants. */
+  id: string;
+  assignmentGroupId: string | null;
+  /** Personal-task status; shared rows expose per-participant status instead. */
+  status: "PENDING" | "DONE" | null;
+  taskDate: string;
+  title: string;
+  subject: string | null;
+  topic: string | null;
+  startTime: string | null;
+  endTime: string | null;
+  coachNote: string | null;
+  participants: CoachPlanParticipantDto[];
+}
+
+/** Full event attendee identity is exclusive to the coach-only aggregate. */
+export interface CoachPlanEventAttendeeDto {
+  studentId: string;
+  studentDisplayName: string;
+  studentUsername: string | null;
+  avatarUrl: string | null;
+}
+
+export type CoachPlanEventDto = import("./coaching.js").PlanEventDto & {
+  attendees: CoachPlanEventAttendeeDto[];
+};
+
+export type CoachPlanItemDto =
+  | { kind: "TASK"; task: CoachPlanGroupedTaskDto }
+  | { kind: "EVENT"; event: CoachPlanEventDto };
 
 /** The single-student report. Numbers, dates, statuses and task headings — never free text. */
 export interface MentorshipStudentReportDto {
@@ -273,7 +320,11 @@ export interface MentorshipStudentReportDto {
     activeDays28d: number;
   };
   planCompletionRate7d: number | null;
-  mockTrend: { takenAt: string; totalNet: number; publisherName: string | null }[];
+  mockTrend: {
+    takenAt: string;
+    totalNet: number;
+    publisherName: string | null;
+  }[];
   latestMockSubjects: {
     subjectRef: string;
     correct: number;
@@ -478,7 +529,8 @@ export const MentorshipClaim = {
   BRANCH: "BRANCH",
   YEARS: "YEARS",
 } as const;
-export type MentorshipClaimId = (typeof MentorshipClaim)[keyof typeof MentorshipClaim];
+export type MentorshipClaimId =
+  (typeof MentorshipClaim)[keyof typeof MentorshipClaim];
 
 /** The applicant's own view: where their application stands and, if refused, why. */
 export interface MentorshipApplicationDto {

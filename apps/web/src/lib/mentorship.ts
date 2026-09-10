@@ -16,8 +16,12 @@ import type {
   Paginated,
   PlanTaskDto,
 } from "@mentor/types";
-import type { RegisterCoachInput, UpdateCoachProfileInput } from "@mentor/validation";
+import type {
+  RegisterCoachInput,
+  UpdateCoachProfileInput,
+} from "@mentor/validation";
 import { http } from "@mentor/api-client";
+export * from "./mentorship-plan";
 
 /**
  * Typed wrappers over the human-coach surface (`/v1/mentorship`). Hand-written `http` calls,

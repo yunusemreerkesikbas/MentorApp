@@ -18,7 +18,6 @@ describe("isStudentOnlyPath", () => {
   it("blocks the daily ritual and the study tools", () => {
     for (const path of [
       "/dashboard",
-      "/plan",
       "/study-session",
       "/study-session/history",
       "/analysis",
@@ -63,9 +62,11 @@ describe("isStudentOnlyPath", () => {
   });
 
   it("leaves the account surfaces a coach genuinely needs", () => {
-    // Blocking any of these would be a bug, not a feature: Koç Pro is bought on /abonelik, and a
-    // coach locked out of /ayarlar cannot change their password or delete their account.
+    // APP-091 makes `/plan` role-aware. Blocking any of these would be a bug, not a feature:
+    // Koç Pro is bought on /abonelik, and a coach locked out of /ayarlar cannot change their
+    // password or delete their account.
     for (const path of [
+      "/plan",
       "/settings",
       "/ayarlar",
       "/profile",

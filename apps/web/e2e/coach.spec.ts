@@ -75,6 +75,7 @@ const pendingToday: TodayPanelResponse = {
       topic: null,
       coachNote: null,
       origin: null,
+      assignmentGroupId: null,
     },
   ],
   nextAction: {

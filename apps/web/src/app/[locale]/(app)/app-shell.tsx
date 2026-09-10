@@ -38,6 +38,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (status === "authenticated" && bouncedToCoachHome) router.replace(COACH_HOME);
   }, [status, user, router, bouncedToCoachHome]);
 
+  // `/plan` owns a role-aware loading skeleton. Let that route render while the silent refresh
+  // resolves; every other app route keeps the shared guard fallback below.
+  if (status === "loading" && pathname === "/plan") {
+    return (
+      <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
+        {children}
+      </div>
+    );
+  }
+
   // `bouncedToCoachHome` is in the render gate as well as the effect: without it the student panel
   // paints for one frame before the replace lands, which is the exact screen this ticket exists to
   // stop a coach from seeing.

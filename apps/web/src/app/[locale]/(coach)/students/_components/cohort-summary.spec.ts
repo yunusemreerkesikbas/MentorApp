@@ -20,6 +20,7 @@ function row(
     studentId: "student",
     studentDisplayName: "Ada",
     studentUsername: null,
+    avatarUrl: null,
     status: "ACTIVE",
     acceptedAt: "2026-09-01T00:00:00.000Z",
     endedAt: null,

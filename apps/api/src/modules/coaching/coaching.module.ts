@@ -11,6 +11,8 @@ import { NotebookForumListener } from "./application/notebook-forum.listener";
 import { MockExamService } from "./application/mock-exam.service";
 import { AnalysisService } from "./application/analysis.service";
 import { AnalysisPlanTaskService } from "./application/analysis-plan-task.service";
+import { PlanEventService } from "./application/plan-event.service";
+import { PlanItemService } from "./application/plan-item.service";
 import { PlanService } from "./application/plan.service";
 import { SessionService } from "./application/session.service";
 import { StudyRoomService } from "./application/study-room.service";
@@ -34,6 +36,8 @@ import { COACHING_QUERY_PORT } from "./domain/coaching-query.port";
 import { DailyActivityRepository } from "./infrastructure/daily-activity.repository";
 import { MoodCheckinRepository } from "./infrastructure/mood-checkin.repository";
 import { PlanTaskRepository } from "./infrastructure/plan-task.repository";
+import { PlanEventRepository } from "./infrastructure/plan-event.repository";
+import { PlanItemRepository } from "./infrastructure/plan-item.repository";
 import { StreakFreezeRepository } from "./infrastructure/streak-freeze.repository";
 import { StreakStateRepository } from "./infrastructure/streak-state.repository";
 import { StudyRoomRepository } from "./infrastructure/study-room.repository";
@@ -51,6 +55,7 @@ import { MistakeNotebookController } from "./presentation/mistake-notebook.contr
 import { NotebooksController } from "./presentation/notebooks.controller";
 import { MockExamController } from "./presentation/mock-exam.controller";
 import { PlanTaskController } from "./presentation/plan-task.controller";
+import { PlanEventController } from "./presentation/plan-event.controller";
 import { StudyRoomController } from "./presentation/study-room.controller";
 import { StudySessionController } from "./presentation/study-session.controller";
 
@@ -66,6 +71,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
   controllers: [
     NotebookReviewController,
     CoachingController,
+    PlanEventController,
     PlanTaskController,
     StudySessionController,
     StudyRoomController,
@@ -76,6 +82,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
   providers: [
     NotebookReviewRepository,
     NotebookReviewService,
+    PlanEventService,
+    PlanItemService,
     PlanService,
     MistakeNotebookService,
     NotebookForumListener,
@@ -99,6 +107,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CohortEvidenceService,
     CoachingAchievementEvidenceService,
     CoachingErasureRepository,
+    PlanEventRepository,
+    PlanItemRepository,
     PlanTaskRepository,
     StudySessionRepository,
     StudyRoomRepository,
@@ -130,6 +140,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MockExamService,
     AnalysisService,
     MoodService,
+    PlanEventService,
+    PlanItemService,
     PlanService,
     SessionService,
     StudyRoomService,

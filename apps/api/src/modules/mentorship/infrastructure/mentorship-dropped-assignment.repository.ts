@@ -13,9 +13,19 @@ export type MentorshipDroppedAssignmentRow =
 export class MentorshipDroppedAssignmentRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async record(linkId: string, taskTitle: string, taskDate: string): Promise<void> {
+  async record(
+    linkId: string,
+    taskTitle: string,
+    taskDate: string,
+    assignmentGroupId: string | null,
+  ): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
-      await tx.insert(mentorshipDroppedAssignments).values({ linkId, taskTitle, taskDate });
+      await tx.insert(mentorshipDroppedAssignments).values({
+        linkId,
+        taskTitle,
+        taskDate,
+        assignmentGroupId,
+      });
     });
   }
 

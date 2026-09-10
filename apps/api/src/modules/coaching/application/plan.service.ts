@@ -17,7 +17,7 @@ import type {
   UpdatePlanTaskInput,
 } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -43,6 +43,16 @@ import {
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { PlanTaskRepository, type PlanTaskRow } from "../infrastructure/plan-task.repository";
 import { toPlanTaskDto } from "./coaching.mappers";
+import {
+  createMentorshipBatchInTransaction as createMentorshipBatchWrite,
+  removeMentorshipTaskInTransaction as removeMentorshipTaskWrite,
+  removeMentorshipTaskGroupInTransaction as removeMentorshipTaskGroupWrite,
+  updateMentorshipTaskInTransaction as updateMentorshipTaskWrite,
+  updateMentorshipTaskGroupInTransaction as updateMentorshipTaskGroupWrite,
+  type MentorshipAssignmentUpdate,
+  type MentorshipAssignmentVisibleSignature,
+  type MentorshipPlanScope,
+} from "./plan-mentorship";
 
 /**
  * What {@link PlanService.createFromMentorship} accepts: a plan task minus the student's own
@@ -319,40 +329,181 @@ export class PlanService {
     inputs: MentorshipAssignmentInput[],
     linkId: string,
   ): Promise<PlanTaskDto[]> {
+    const result = await withServiceContext(this.db, (tx) =>
+      this.createFromMentorshipInTransaction(tx, studentId, inputs, linkId),
+    );
+    this.publishMentorshipTasksCreated(
+      result.length > 0 ? [studentId] : [],
+    );
+    return result;
+  }
+
+  async createFromMentorshipInTransaction(
+    tx: DatabaseTx,
+    studentId: string,
+    inputs: MentorshipAssignmentInput[],
+    linkId: string,
+  ): Promise<PlanTaskDto[]> {
     const withDates = inputs.map((input) => ({
       ...input,
       taskDate: input.taskDate ?? todayIso(),
     }));
     for (const input of withDates) this.assertTaskDateMutable(input.taskDate);
-    const result = await withUserContext(this.db, { userId: studentId }, async (tx) => {
-      await this.tasks.acquireUserLock(tx, studentId);
-      const rows = [];
-      for (const input of withDates) {
-        rows.push(
-          await this.tasks.create(tx, {
-            userId: studentId,
-            taskDate: input.taskDate,
-            title: input.title,
-            subject: input.subject ?? null,
-            topic: input.topic ?? null,
-            startTime: input.startTime ?? null,
-            endTime: input.endTime ?? null,
-            // The student's own box stays empty — a coach writes into `coachNote`, never here.
-            description: null,
-            coachNote: input.coachNote ?? null,
-            ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
-            originType: "MENTORSHIP",
-            originRefId: linkId,
-            originMeta: null,
-          }),
-        );
-      }
-      return rows.map(toPlanTaskDto);
-    });
-    if (result.length > 0) {
-      this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(studentId));
+    await this.tasks.acquireUserLock(tx, studentId);
+    const rows = [];
+    for (const input of withDates) {
+      rows.push(
+        await this.tasks.create(tx, {
+          userId: studentId,
+          taskDate: input.taskDate,
+          title: input.title,
+          subject: input.subject ?? null,
+          topic: input.topic ?? null,
+          startTime: input.startTime ?? null,
+          endTime: input.endTime ?? null,
+          description: null,
+          coachNote: input.coachNote ?? null,
+          ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
+          originType: "MENTORSHIP",
+          originRefId: linkId,
+          originMeta: null,
+        }),
+      );
     }
+    return rows.map(toPlanTaskDto);
+  }
+
+  /** W8 seam: one SERVICE transaction, one group id, stable student lock order. */
+  async createMentorshipBatch(
+    scopes: MentorshipPlanScope[],
+    input: MentorshipAssignmentInput,
+  ): Promise<PlanTaskDto[]> {
+    const result = await withServiceContext(this.db, (tx) =>
+      this.createMentorshipBatchInTransaction(tx, scopes, input),
+    );
+    this.publishMentorshipTasksCreated(scopes.map((scope) => scope.studentId));
     return result;
+  }
+
+  createMentorshipBatchInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    input: MentorshipAssignmentInput,
+  ): Promise<PlanTaskDto[]> {
+    const withDate = { ...input, taskDate: input.taskDate ?? todayIso() };
+    this.assertTaskDateMutable(withDate.taskDate);
+    return createMentorshipBatchWrite(tx, this.tasks, scopes, withDate);
+  }
+
+  publishMentorshipTasksCreated(studentIds: string[]): void {
+    for (const studentId of studentIds) {
+      this.events.emit(
+        CoachingEventTopic.PLAN_TASK_CREATED,
+        new PlanTaskCreated(studentId),
+      );
+    }
+  }
+
+  async updateMentorshipTask(
+    scope: MentorshipPlanScope,
+    taskId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto> {
+    return withServiceContext(this.db, (tx) =>
+      this.updateMentorshipTaskInTransaction(tx, scope, taskId, input),
+    );
+  }
+
+  updateMentorshipTaskInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+    taskId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+  ): Promise<PlanTaskDto> {
+    if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
+    return updateMentorshipTaskWrite(tx, this.tasks, scope, taskId, input);
+  }
+
+  async updateMentorshipTaskGroup(
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
+  ): Promise<PlanTaskDto[]> {
+    return withServiceContext(this.db, (tx) =>
+      this.updateMentorshipTaskGroupInTransaction(
+        tx,
+        scopes,
+        assignmentGroupId,
+        input,
+        expectedSignature,
+      ),
+    );
+  }
+
+  updateMentorshipTaskGroupInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    input: Partial<MentorshipAssignmentUpdate>,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
+  ): Promise<PlanTaskDto[]> {
+    if (input.taskDate !== undefined) this.assertTaskDateMutable(input.taskDate);
+    return updateMentorshipTaskGroupWrite(
+      tx,
+      this.tasks,
+      scopes,
+      assignmentGroupId,
+      input,
+      expectedSignature,
+    );
+  }
+
+  removeMentorshipTask(
+    scope: MentorshipPlanScope,
+    taskId: string,
+  ): Promise<void> {
+    return withServiceContext(this.db, (tx) =>
+      this.removeMentorshipTaskInTransaction(tx, scope, taskId),
+    );
+  }
+
+  removeMentorshipTaskInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+    taskId: string,
+  ): Promise<void> {
+    return removeMentorshipTaskWrite(tx, this.tasks, scope, taskId);
+  }
+
+  removeMentorshipTaskGroup(
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
+  ): Promise<void> {
+    return withServiceContext(this.db, (tx) =>
+      this.removeMentorshipTaskGroupInTransaction(
+        tx,
+        scopes,
+        assignmentGroupId,
+        expectedSignature,
+      ),
+    );
+  }
+
+  removeMentorshipTaskGroupInTransaction(
+    tx: DatabaseTx,
+    scopes: MentorshipPlanScope[],
+    assignmentGroupId: string,
+    expectedSignature: MentorshipAssignmentVisibleSignature,
+  ): Promise<void> {
+    return removeMentorshipTaskGroupWrite(
+      tx,
+      this.tasks,
+      scopes,
+      assignmentGroupId,
+      expectedSignature,
+    );
   }
 
   /**
@@ -646,6 +797,7 @@ export class PlanService {
         removed.title,
         removed.originType,
         removed.originRefId,
+        removed.assignmentGroupId,
       ),
     );
   }

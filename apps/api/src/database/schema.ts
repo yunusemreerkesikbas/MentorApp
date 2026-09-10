@@ -27,6 +27,7 @@ import {
   text,
   time,
   timestamp,
+  unique,
   uniqueIndex,
   uuid,
   vector,
@@ -289,13 +290,18 @@ export const mentorshipDroppedAssignments = pgTable(
       .references(() => coachStudents.id, { onDelete: "cascade" }),
     /** The heading the coach gave it. No `description`: that column is the student's own words. */
     taskTitle: text("task_title").notNull(),
+    /** Shared by every copied task created by one atomic multi-student assignment. */
+    assignmentGroupId: uuid("assignment_group_id"),
     /** The day it had been assigned for, so the report can slot it back into the right week. */
     taskDate: date("task_date").notNull(),
     droppedAt: timestamp("dropped_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
   },
-  (t) => [index("mentorship_dropped_assignments_link_idx").on(t.linkId, t.droppedAt)],
+  (t) => [
+    index("mentorship_dropped_assignments_link_idx").on(t.linkId, t.droppedAt),
+    index("mentorship_dropped_assignments_group_idx").on(t.assignmentGroupId),
+  ],
 );
 
 /**
@@ -356,7 +362,10 @@ export const mentorshipProgramTemplates = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("mentorship_program_templates_coach_name_idx").on(t.coachId, t.name),
+    uniqueIndex("mentorship_program_templates_coach_name_idx").on(
+      t.coachId,
+      t.name,
+    ),
     index("mentorship_program_templates_coach_idx").on(t.coachId, t.updatedAt),
   ],
 );
@@ -436,7 +445,10 @@ export const mentorshipCoachApplications = pgTable(
   (t) => [
     uniqueIndex("mentorship_coach_applications_user_idx").on(t.userId),
     /** The registry's only read pattern: one status, oldest first. */
-    index("mentorship_coach_applications_status_idx").on(t.status, t.submittedAt),
+    index("mentorship_coach_applications_status_idx").on(
+      t.status,
+      t.submittedAt,
+    ),
     check(
       "mentorship_coach_applications_status_chk",
       sql`${t.status} in ('ACTIVE', 'PENDING', 'SUSPENDED')`,
@@ -1268,6 +1280,8 @@ export const planTasks = pgTable(
           evidenceCount: number;
         }
     >(),
+    /** Shared by every copied task created by one atomic multi-student assignment. */
+    assignmentGroupId: uuid("assignment_group_id"),
     sortOrder: integer("sort_order").notNull().default(0),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
@@ -1278,6 +1292,7 @@ export const planTasks = pgTable(
   },
   (t) => [
     index("plan_tasks_user_date_idx").on(t.userId, t.taskDate),
+    index("plan_tasks_assignment_group_idx").on(t.assignmentGroupId),
     uniqueIndex("plan_tasks_ai_coach_origin_idx")
       .on(t.originRefId)
       .where(sql`${t.originType} = 'AI_COACH'`),
@@ -1304,6 +1319,170 @@ export const planTasks = pgTable(
     ),
   ],
 );
+
+/** Recurrence metadata for materialized plan events. Europe/Istanbul is the product wall clock. */
+export const planEventSeries = pgTable(
+  "plan_event_series",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    organizerUserId: uuid("organizer_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    frequency: text("frequency")
+      .$type<"DAILY" | "WEEKLY" | "MONTHLY">()
+      .notNull(),
+    timeZone: text("time_zone").notNull().default("Europe/Istanbul"),
+    startsOn: date("starts_on").notNull(),
+    endsOn: date("ends_on"),
+    occurrenceCount: integer("occurrence_count"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique("plan_event_series_id_organizer_unique").on(t.id, t.organizerUserId),
+    index("plan_event_series_organizer_start_idx").on(
+      t.organizerUserId,
+      t.startsOn,
+    ),
+    check(
+      "plan_event_series_frequency_chk",
+      sql`${t.frequency} in ('DAILY', 'WEEKLY', 'MONTHLY')`,
+    ),
+    check(
+      "plan_event_series_time_zone_chk",
+      sql`${t.timeZone} = 'Europe/Istanbul'`,
+    ),
+    check(
+      "plan_event_series_end_chk",
+      sql`(${t.endsOn} is null) <> (${t.occurrenceCount} is null)`,
+    ),
+    check(
+      "plan_event_series_end_date_chk",
+      sql`${t.endsOn} is null or ${t.endsOn} >= ${t.startsOn}`,
+    ),
+    check(
+      "plan_event_series_count_chk",
+      sql`${t.occurrenceCount} is null or ${t.occurrenceCount} between 2 and 100`,
+    ),
+    pgPolicy("plan_event_series_owner", {
+      for: "all",
+      using: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
+
+/** A one-off event or one materialized occurrence in a recurrence series. */
+export const planEvents = pgTable(
+  "plan_events",
+  {
+    id: uuid("id")
+      .primaryKey()
+      .default(sql`gen_random_uuid()`),
+    seriesId: uuid("series_id"),
+    organizerUserId: uuid("organizer_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "set null",
+    }),
+    title: text("title").notNull(),
+    description: text("description"),
+    eventDate: date("event_date").notNull(),
+    startTime: time("start_time"),
+    endTime: time("end_time"),
+    status: text("status")
+      .$type<"SCHEDULED" | "CANCELLED">()
+      .notNull()
+      .default("SCHEDULED"),
+    /** Denormalized so participant-scoped RLS can expose a count without exposing other IDs. */
+    attendeeCount: integer("attendee_count").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    index("plan_events_organizer_date_idx").on(t.organizerUserId, t.eventDate),
+    index("plan_events_series_date_idx").on(t.seriesId, t.eventDate),
+    unique("plan_events_id_organizer_unique").on(t.id, t.organizerUserId),
+    foreignKey({
+      name: "plan_events_series_organizer_fk",
+      columns: [t.seriesId, t.organizerUserId],
+      foreignColumns: [planEventSeries.id, planEventSeries.organizerUserId],
+    }).onDelete("cascade"),
+    check(
+      "plan_events_status_chk",
+      sql`${t.status} in ('SCHEDULED', 'CANCELLED')`,
+    ),
+    check(
+      "plan_events_time_range_chk",
+      sql`${t.endTime} is null or (${t.startTime} is not null and ${t.endTime} > ${t.startTime})`,
+    ),
+    check("plan_events_attendee_count_chk", sql`${t.attendeeCount} >= 0`),
+    pgPolicy("plan_events_read", {
+      for: "select",
+      using: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR EXISTS (
+        SELECT 1 FROM plan_event_attendees
+        WHERE plan_event_attendees.event_id = ${t.id}
+          AND plan_event_attendees.attendee_user_id = nullif(current_setting('app.user_id', true), '')::uuid
+      ) OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+    pgPolicy("plan_events_write", {
+      for: "all",
+      using: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
+
+/** Event membership. The composite key is the duplicate-attendee guard. */
+export const planEventAttendees = pgTable(
+  "plan_event_attendees",
+  {
+    eventId: uuid("event_id").notNull(),
+    /**
+     * Duplicated under a composite FK so attendee RLS can authorize the organizer without querying
+     * `plan_events` and recursively re-entering the event policy.
+     */
+    organizerUserId: uuid("organizer_user_id").notNull(),
+    attendeeUserId: uuid("attendee_user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.eventId, t.attendeeUserId] }),
+    foreignKey({
+      name: "plan_event_attendees_event_organizer_fk",
+      columns: [t.eventId, t.organizerUserId],
+      foreignColumns: [planEvents.id, planEvents.organizerUserId],
+    }).onDelete("cascade"),
+    index("plan_event_attendees_attendee_idx").on(t.attendeeUserId, t.eventId),
+    pgPolicy("plan_event_attendees_read", {
+      for: "select",
+      using: sql`${t.attendeeUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR ${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+    pgPolicy("plan_event_attendees_write", {
+      for: "all",
+      using: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`${t.organizerUserId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
 
 /** A Pomodoro/focus session (start → complete/abandon). */
 export const studySessions = pgTable(
@@ -2177,7 +2356,10 @@ export const announcements = pgTable(
   },
   (t) => [
     index("announcements_created_idx").on(t.createdAt),
-    check("announcements_status_check", sql`${t.status} IN ('DRAFT', 'SENDING', 'SENT')`),
+    check(
+      "announcements_status_check",
+      sql`${t.status} IN ('DRAFT', 'SENDING', 'SENT')`,
+    ),
   ],
 );
 
@@ -2289,7 +2471,9 @@ export const coinGrantReservations = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "cascade",
+    }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -2305,8 +2489,15 @@ export const coinGrantReservations = pgTable(
       .defaultNow(),
   },
   (t) => [
-    uniqueIndex("coin_grant_reservations_source_ref_unique_idx").on(t.source, t.refId),
-    index("coin_grant_reservations_user_status_expiry_idx").on(t.userId, t.status, t.expiresAt),
+    uniqueIndex("coin_grant_reservations_source_ref_unique_idx").on(
+      t.source,
+      t.refId,
+    ),
+    index("coin_grant_reservations_user_status_expiry_idx").on(
+      t.userId,
+      t.status,
+      t.expiresAt,
+    ),
     index("coin_grant_reservations_user_created_idx").on(t.userId, t.createdAt),
     check("coin_grant_reservations_amount_positive", sql`${t.amount} > 0`),
     check(
@@ -2327,7 +2518,9 @@ export const adRewardSessions = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "cascade",
+    }),
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
@@ -2342,11 +2535,19 @@ export const adRewardSessions = pgTable(
     rejectionCode: text("rejection_code"),
     idempotencyKey: uuid("idempotency_key"),
     providerTransactionId: text("provider_transaction_id"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
-    index("ad_reward_sessions_user_status_expiry_idx").on(t.userId, t.status, t.expiresAt),
+    index("ad_reward_sessions_user_status_expiry_idx").on(
+      t.userId,
+      t.status,
+      t.expiresAt,
+    ),
     index("ad_reward_sessions_user_created_idx").on(t.userId, t.createdAt),
     index("ad_reward_sessions_status_expiry_idx").on(t.status, t.expiresAt),
     uniqueIndex("ad_reward_sessions_user_idempotency_unique_idx")
@@ -3786,11 +3987,19 @@ export const promotions = pgTable(
     endsAt: timestamp("ends_at", { withTimezone: true }),
     /** null = unlimited. Enforced under an advisory lock, counted from the redemption rows. */
     maxRedemptions: integer("max_redemptions"),
-    maxRedemptionsPerUser: integer("max_redemptions_per_user").notNull().default(1),
+    maxRedemptionsPerUser: integer("max_redemptions_per_user")
+      .notNull()
+      .default(1),
     isActive: boolean("is_active").notNull().default(true),
-    createdBy: uuid("created_by").references(() => users.id, { onDelete: "set null" }),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdBy: uuid("created_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     // Case-insensitive, and only among active rows: a retired code may be reissued later.
@@ -3813,7 +4022,10 @@ export const promotions = pgTable(
       "promotions_rule_type_check",
       sql`${t.ruleType} in ('ANYONE', 'NEW_USER', 'ACTIVE_DAYS', 'WIN_BACK')`,
     ),
-    check("promotions_discount_type_check", sql`${t.discountType} in ('PERCENT', 'FIXED')`),
+    check(
+      "promotions_discount_type_check",
+      sql`${t.discountType} in ('PERCENT', 'FIXED')`,
+    ),
     check(
       "promotions_window_order",
       sql`${t.startsAt} is null or ${t.endsAt} is null or ${t.endsAt} > ${t.startsAt}`,
@@ -3832,7 +4044,9 @@ export const promotionRedemptions = pgTable(
     id: uuid("id")
       .primaryKey()
       .default(sql`gen_random_uuid()`),
-    orgId: uuid("org_id").references(() => organizations.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id").references(() => organizations.id, {
+      onDelete: "cascade",
+    }),
     promotionId: uuid("promotion_id")
       .notNull()
       .references(() => promotions.id),
@@ -3849,23 +4063,42 @@ export const promotionRedemptions = pgTable(
     /** Decremented on every succeeded charge; at 0 the next renewal is at the list price. */
     periodsRemaining: integer("periods_remaining").notNull(),
     status: text("status").notNull().default("RESERVED"),
-    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (t) => [
     // One promotion per subscription — a second checkout for the same sub cannot stack a discount.
     uniqueIndex("promotion_redemptions_subscription_unique_idx")
       .on(t.subscriptionId)
       .where(sql`${t.subscriptionId} is not null`),
-    index("promotion_redemptions_user_promotion_idx").on(t.userId, t.promotionId),
-    index("promotion_redemptions_promotion_status_idx").on(t.promotionId, t.status),
+    index("promotion_redemptions_user_promotion_idx").on(
+      t.userId,
+      t.promotionId,
+    ),
+    index("promotion_redemptions_promotion_status_idx").on(
+      t.promotionId,
+      t.status,
+    ),
     check(
       "promotion_redemptions_price_consistent",
       sql`${t.chargedPriceMinor} = ${t.listPriceMinor} - ${t.discountMinor}`,
     ),
-    check("promotion_redemptions_charge_positive", sql`${t.chargedPriceMinor} > 0`),
-    check("promotion_redemptions_discount_positive", sql`${t.discountMinor} > 0`),
-    check("promotion_redemptions_periods_nonnegative", sql`${t.periodsRemaining} >= 0`),
+    check(
+      "promotion_redemptions_charge_positive",
+      sql`${t.chargedPriceMinor} > 0`,
+    ),
+    check(
+      "promotion_redemptions_discount_positive",
+      sql`${t.discountMinor} > 0`,
+    ),
+    check(
+      "promotion_redemptions_periods_nonnegative",
+      sql`${t.periodsRemaining} >= 0`,
+    ),
     check(
       "promotion_redemptions_status_check",
       sql`${t.status} in ('RESERVED', 'APPLIED', 'VOIDED')`,
@@ -3874,25 +4107,35 @@ export const promotionRedemptions = pgTable(
 );
 
 // W2: immutable review outcomes; deleted with their source entry.
-export const notebookReviews = pgTable("notebook_reviews", {
-  id: uuid("id").primaryKey(),
-  userId: uuid("user_id").notNull().references(() => users.id, { onDelete: "cascade" }),
-  orgId: uuid("org_id"),
-  entryId: uuid("entry_id").notNull().references(() => mistakeNotebookEntries.id, { onDelete: "cascade" }),
-  reviewedAt: timestamp("reviewed_at", { withTimezone: true }).notNull().defaultNow(),
-  solved: boolean("solved").notNull(),
-  early: boolean("early").notNull(),
-  beforeStatus: text("before_status").notNull(),
-  afterStatus: text("after_status").notNull(),
-  beforeCount: integer("before_count").notNull(),
-  afterCount: integer("after_count").notNull(),
-  nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
-}, (t) => [
-  index("notebook_reviews_user_time_idx").on(t.userId, t.reviewedAt),
-  index("notebook_reviews_entry_idx").on(t.entryId),
-  pgPolicy("notebook_reviews_owner", {
-    for: "all",
-    using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
-    withCheck: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
-  }),
-]).enableRLS();
+export const notebookReviews = pgTable(
+  "notebook_reviews",
+  {
+    id: uuid("id").primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id, { onDelete: "cascade" }),
+    orgId: uuid("org_id"),
+    entryId: uuid("entry_id")
+      .notNull()
+      .references(() => mistakeNotebookEntries.id, { onDelete: "cascade" }),
+    reviewedAt: timestamp("reviewed_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    solved: boolean("solved").notNull(),
+    early: boolean("early").notNull(),
+    beforeStatus: text("before_status").notNull(),
+    afterStatus: text("after_status").notNull(),
+    beforeCount: integer("before_count").notNull(),
+    afterCount: integer("after_count").notNull(),
+    nextReviewAt: timestamp("next_review_at", { withTimezone: true }),
+  },
+  (t) => [
+    index("notebook_reviews_user_time_idx").on(t.userId, t.reviewedAt),
+    index("notebook_reviews_entry_idx").on(t.entryId),
+    pgPolicy("notebook_reviews_owner", {
+      for: "all",
+      using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid OR current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();

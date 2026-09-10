@@ -107,10 +107,17 @@ describe("postAuthDestination for a coach (APP-090)", () => {
   });
 
   it("ignores a next that would land them on a blocked student screen", () => {
-    // Every `next` this app produces is a student deep link, and all of them sit behind
-    // `isStudentOnlyPath`. Honouring one would route a coach into a screen the `(app)` guard
-    // bounces them out of a frame later — a redirect flash instead of a destination.
+    // Honouring this would route a coach into a screen the `(app)` guard bounces them out of.
     expect(postAuthDestination(user(coach), "/join-room?kod=MASA-A1B2C3")).toBe("/students");
+  });
+
+  it("honours the role-aware plan deep link", () => {
+    expect(
+      postAuthDestination(
+        user(coach),
+        "/plan?date=2026-09-09&event=11111111-1111-4111-8111-111111111111",
+      ),
+    ).toBe("/plan?date=2026-09-09&event=11111111-1111-4111-8111-111111111111");
   });
 
   it("still onboards a coach whose profile is unfinished", () => {

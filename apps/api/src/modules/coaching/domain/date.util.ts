@@ -35,6 +35,21 @@ export function todayIso(now: Date = new Date()): IsoDate {
   return toIsoDate(now);
 }
 
+const ISTANBUL_DATE_FORMATTER = new Intl.DateTimeFormat("en", {
+  timeZone: "Europe/Istanbul",
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+});
+
+/** Europe/Istanbul calendar date for event scheduling; does not change legacy UTC-day features. */
+export function todayInIstanbul(now: Date = new Date()): IsoDate {
+  const parts = ISTANBUL_DATE_FORMATTER.formatToParts(now);
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value;
+  return `${value("year")}-${value("month")}-${value("day")}`;
+}
+
 /** "YYYY-MM" month key for monthly freeze-token resets. */
 export function monthKey(date: IsoDate): string {
   return date.slice(0, 7);

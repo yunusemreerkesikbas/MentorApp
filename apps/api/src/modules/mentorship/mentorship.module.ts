@@ -6,8 +6,10 @@ import { IdentityModule } from "../identity/identity.module";
 import { MentorshipApplicationService } from "./application/mentorship-application.service";
 import { MentorshipErasureService } from "./application/mentorship-erasure.service";
 import { MentorshipAssignmentService } from "./application/mentorship-assignment.service";
+import { MentorshipEventService } from "./application/mentorship-event.service";
 import { MentorshipInviteService } from "./application/mentorship-invite.service";
 import { MentorshipLinkService } from "./application/mentorship-link.service";
+import { MentorshipPlanOrchestrationService } from "./application/mentorship-plan-orchestration.service";
 import { MentorshipBriefService } from "./application/mentorship-brief.service";
 import { MentorshipCohortBriefService } from "./application/mentorship-cohort-brief.service";
 import { MentorshipRosterService } from "./application/mentorship-roster.service";
@@ -25,6 +27,7 @@ import { MentorshipTemplateRepository } from "./infrastructure/mentorship-templa
 import { MENTORSHIP_QUERY_PORT } from "./domain/mentorship-query.port";
 import { MentorshipApplicationController } from "./presentation/mentorship-application.controller";
 import { MentorshipCoachController } from "./presentation/mentorship-coach.controller";
+import { MentorshipPlanController } from "./presentation/mentorship-plan.controller";
 import { MentorshipStudentController } from "./presentation/mentorship-student.controller";
 
 /**
@@ -47,6 +50,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
   controllers: [
     MentorshipApplicationController,
     MentorshipCoachController,
+    MentorshipPlanController,
     MentorshipStudentController,
   ],
   providers: [
@@ -58,6 +62,8 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipSuggestionService,
     MentorshipSelfViewService,
     MentorshipAssignmentService,
+    MentorshipEventService,
+    MentorshipPlanOrchestrationService,
     MentorshipTemplateService,
     MentorshipApplicationService,
     MentorshipErasureService,

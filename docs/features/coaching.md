@@ -145,6 +145,56 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-09 · APP-091 seri katılımcı koruması.** Tekrar/tarih değişikliği sırasında
+  `attendeeIds` gönderilmezse gelecekteki etkinliklerin farklı katılımcı kümeleri sıralarına göre
+  yeni kayıtlara taşınıyor; yeni kural fazladan kayıt üretirse yalnız bu ek kayıtlar seçili
+  etkinliğin katılımcılarını devralıyor. Açık katılımcı güncellemesi yine tüm etkilenen geleceğe
+  uygulanıyor. Okuma ve yazma toplu; kayıt başına sorgu yok. İlgili:
+  `plan-event-{mutation,recurrence-policy}.ts`, `plan-event.repository{,.helpers}.ts`.
+
+- **2026-09-09 · APP-091 etkinlik takvimi inceleme düzeltmeleri.** Etkinliklerde "bugün" artık
+  yalnız Europe/Istanbul takvimine göre hesaplanıyor; diğer koçluk akışlarının UTC günü değişmedi.
+  Seri yeniden üretimi, tarih özellikle değiştirilmedikçe özgün başlangıç gününü koruyor; böylece
+  31 Ocak serisindeki 28 Şubat kaydı üzerinden düzenleme Mart'ı yeniden 31'e bağlıyor. Oluşturma,
+  güncelleme ve iptal domain event'leri artık etkilenen her kaydı kendi kimliği, başlık/tarih/saat
+  ve güncel alıcılarıyla taşıyor; özel açıklamalar event'e girmiyor. Konular
+  `coaching.plan-event.{created,updated,cancelled}` biçiminde. `attendee_count`, henüz
+  yayımlanmamış APP-091 migrasyonunda 0110'a birleştirildi. Kullanım değişmedi. İlgili:
+  `date.util.ts`, `plan-event-{service,mutation,repository}.ts`, `coaching.events.ts`,
+  `0110_app_091_coach_plan_events.sql`.
+
+- **2026-09-09 · APP-091 plan etkinliği alan modeli ve API.** Tek seferlik veya DAILY/WEEKLY/
+  MONTHLY etkinlikler artık `/v1/plan-events` üzerinden tek işlemde oluşturuluyor; DATE bitişi
+  dahil, COUNT ilk buluşmayı sayıyor ve ayın eksik günleri özgün güne göre ay sonuna sıkıştırılıyor.
+  OCCURRENCE yalnız seçili gelecekteki kaydı, SERIES yalnız bugün ve sonrasını güncelliyor veya
+  iptal ediyor; tekrar kuralı değişince geçmiş korunup gelecek kayıtlar yeniden üretiliyor.
+  `/v1/plan-items`, mevcut tarih/aralık ve sayfalama sorgusuyla görevleri ve katılımcısı olunan
+  etkinlikleri tek sıralı akışta döndürüyor. Kullanım: etkinlik iptali
+  `POST /v1/plan-events/:id/cancel`, kapsam gövdede `OCCURRENCE` veya `SERIES`. Gotcha:
+  öğrenci/genel DTO'sunda katılımcı kimlikleri yok; yalnız `attendeeCount` var. W8, yetkilendirdiği
+  link/öğrenci çiftleriyle dışa açılan servisleri çağırır ve link bittiğinde gelecekteki katılımı
+  kaldırır. İlgili: `plan-event-{recurrence,service,repository,controller}.ts`,
+  `plan-item-{service,repository}.ts`, `0110_app_091_coach_plan_events.sql`.
+
+- **2026-09-09 · APP-091 sözleşme ve seri bütünlüğü düzeltmeleri.** Etkinlik-seri ilişkisi artık
+  `(series_id, organizer_user_id)` bileşik FK'siyle aynı organizatörü zorunlu kılıyor. DATE bitişi
+  create girdisinde `eventDate` öncesine, update girdisinde iki tarih birlikte geldiğinde başlangıç
+  öncesine kurulamaz. Genel W2 etkinlik sözleşmesindeki belgesiz 20 katılımcı sınırı kaldırıldı;
+  benzersiz UUID kontrolü devam ediyor. Kullanım değişmedi. İlgili:
+  `schema.ts`, `coaching.ts`, `plan-event-validation.spec.ts`,
+  `0110_app_091_coach_plan_events.sql`.
+
+- **2026-09-09 · Koç planı etkinlik sözleşmeleri ve veri zemini (APP-091).** Tek seferlik ve
+  DAILY/WEEKLY/MONTHLY tekrar eden plan etkinlikleri için ortak DTO/Zod sözleşmeleri eklendi;
+  tekrar sayısı sınırda 100 ile sınırlandı, tarih/saat ve tekil katılımcı kontrolleri görev
+  yardımcılarıyla aynı kuralları kullanıyor. `plan_event_series`, `plan_events` ve
+  `plan_event_attendees` tabloları Europe/Istanbul duvar saati, SCHEDULED/CANCELLED durumu,
+  zincirleme silme ve organizatör/katılımcı RLS politikalarıyla oluşturuldu. Kullanım: sonraki API
+  dilimleri bu sözleşmeleri doğrudan `@mentor/types` ve `@mentor/validation` üzerinden tüketir.
+  Gotcha: katılımcı satırındaki `organizer_user_id`, döngüsel RLS sorgusunu önlemek için etkinlikle
+  bileşik FK altında tutulur. İlgili: `packages/{types,validation}/src/coaching.ts`,
+  `apps/api/src/database/schema.ts`, `0110_app_091_coach_plan_events.sql`.
+
 - **2026-09-09 · Puhu speech modal speech bubble.** Cloud silhouette dropped: CSS lobes looked like clip-art and drowned the copy. The modal is now a compact speech balloon (`--color-surface`, 16px radius, card shadow) with a caret toward Puhu. Mobile: bubble above, Puhu centered under it, max 320px. Desktop: Puhu left, balloon right. Usage unchanged: `<PuhuSpeechModal isOpen … />`. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.*`.
 
 - **2026-09-08 · Puhu trail + mood speech text race.** Thought-trail dots moved off the cloud art into the stage gap so they no longer sit on Puhu; cloud bottom-left inset tightened and bubble lifted. Premium mood speech stays on shimmer until AI reflection resolves (no rule-message → AI swap). Free still gets the rule line immediately. Related: `puhu-speech-modal.tsx`, `puhu-thought-cloud.*`, `mood-checkin.tsx`, `panel-shell.tsx`.
@@ -4218,6 +4268,63 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   0109 before deploying the API/web changes; 0108 belongs to the existing coach-registry work.
   Related: notebook-review.repository.ts, notebook-review.service.ts, notebook-review.controller.ts,
   analysis-review-progress.tsx, notebook-focus-review.tsx, notebook-review-history.e2e-spec.ts.
+
+- **2026-09-09 — APP-091 koç planı W2 servis sınırı.** `PlanService` çok öğrencili bir
+  ödevi tek SERVICE-context transaction'ında yazar, öğrenci plan kilitlerini kararlı sırada alır
+  ve her satırda kendi mentorship link kaynağını korur. Koç mutasyonları yalnız bekleyen,
+  beklenen öğrenci+link+grup kapsamındaki satırlara uygulanır; durum, öğrenci açıklaması, kaynak
+  ve grup kimliği değiştirilemez. `PlanEventService.listCoachPlanData` yalnız W8'in önceden
+  yetkilendirdiği link kapsamını döndürür; herkese açık event DTO'su ve öğrenci `/plan-items`
+  yüzeyi katılımcı sayısından fazlasını göstermez. Eski `/plan-events` POST/PATCH/cancel yolları
+  kaldırıldı; katılımcı okumaları geriye uyumlu kaldı. Kullanım: bu seam'ler yalnız
+  `MentorshipModule` orkestrasyonundan çağrılır. Gotcha: koçun sildiği ödev öğrenci düşürmesi
+  olayı üretmez; öğrencinin mevcut silme akışı `assignmentGroupId` ile audit/event kaydını sürdürür.
+  İlgili: `plan-mentorship.ts`, `plan-task-mentorship.repository.ts`,
+  `plan-event.service.ts`, `plan-event.controller.ts`.
+
+- **2026-09-09 — APP-091 transaction-aware W8 seams.** W2 now exposes caller-transaction
+  variants for mentorship task batch/single/group mutations and event create/update, while W2
+  continues to own every `plan_tasks`/event repository call. Domain events are published only
+  after W8's outer transaction commits. Link-end attendance cleanup also accepts that transaction.
+  `PlanEventService` returns every coach-organized event in range and preserves truthful
+  `attendeeCount`; only the active-link allowlist of attendee ids crosses its W8 seam. Event write
+  orchestration moved to `plan-event-write.orchestrator.ts`, keeping the facade below 300 lines.
+  Usage: W8 calls `*InTransaction` only from its locked consent callback, then invokes the matching
+  publisher after commit. Gotcha: SERIES regeneration may replace the selected occurrence id, so
+  callers must use `result.dto.id`. Related: `plan.service.ts`, `plan-mentorship.ts`,
+  `plan-event.service.ts`, `plan-event-write.orchestrator.ts`.
+
+- **2026-09-09 — APP-091 explicit event transaction lock seam.** W2 exposes
+  `lockOrganizerInTransaction`, attendee-resolution, create/update/cancel writes, and separate
+  post-commit publishers. W8 therefore controls one shared SERVICE transaction without touching
+  W2 persistence and can guarantee organizer lock → active-link row locks → event write for every
+  mutation. The write methods no longer reacquire the organizer lock after link locking.
+  Link-end attendance cleanup remains organizer-lock-free. Usage: callers must take the organizer
+  lock before invoking an event `*InTransaction` write and publish only after the transaction
+  resolves. Gotcha: SERIES cancellation attendee resolution covers every future occurrence, not
+  only the selected row. Coach aggregate querying moved to `plan-event-coach-query.ts` so the
+  public service remains below 300 lines. Related: `plan-event.service.ts`,
+  `plan-event-write.orchestrator.ts`, `plan-event-coach-query.ts`.
+
+- **2026-09-09 — APP-091 recurring-event exception integrity.** W2 now rejects updates whose
+  selected occurrence is already CANCELLED with a stable localized conflict. Non-regenerating
+  series edits update and replace attendees only on future SCHEDULED rows. Intentional date/rule
+  regeneration keeps future cancelled exceptions in place, excludes their dates from newly
+  scheduled rows, and preserves attendee sets by calendar date instead of occurrence index.
+  Usage: omit unchanged recurrence/date fields to take the non-regeneration path. Gotcha:
+  cancelled exception rows survive even when a revised rule no longer emits their date; they are
+  immutable history, not scheduled work. Related: `plan-event-mutation.ts`,
+  `plan-event-recurrence-policy.ts`, `plan-event.repository.ts`,
+  `plan-event-mutation.service.spec.ts`.
+
+- **2026-09-09 — APP-091 selected-occurrence mutation guard.** W2 event update and cancel now
+  share one guard: the selected stored occurrence must still be SCHEDULED and must be today or
+  later in Istanbul. The rule applies before OCCURRENCE/SERIES branching, so a past or cancelled
+  series member cannot mutate future rows and a rejected call publishes no domain event. Usage:
+  callers may choose scope only after selecting the occurrence; scope never overrides occurrence
+  mutability. Gotcha: cancelled rows return `COACHING_EVENT_CANCELLED_READONLY`, while past
+  scheduled rows keep `COACHING_EVENT_DATE_READONLY`. Related: `plan-event-mutation.ts`,
+  `plan-event-write.orchestrator.ts`, `plan-event-mutation.service.spec.ts`.
 
 - **Refined analysis workspace (2026-09-08)** — Progress now prioritizes the focus selector and
   a single prominent Start review action. Plan/exam tracking expands within the focus surface,

@@ -12,9 +12,9 @@ exchange **is** the double opt-in (§9): issuing the code is the coach's consent
 student's. There is no separate coach-approval step, and no student is ever linked without acting.
 
 From that link the coach gets, in this slice, a roster. The metrics and the report arrive with the
-next slice; the assignment surface with the one after. What the coach can *ever* see is already
+next slice; the assignment surface with the one after. What the coach can _ever_ see is already
 fixed and shipped as a contract: `MENTORSHIP_DATA_SCOPE` in `@mentor/types`, rendered verbatim on
-the consent screen and on the student's `/my-coach` view. The one thing a coach *writes* into the
+the consent screen and on the student's `/my-coach` view. The one thing a coach _writes_ into the
 student's world is an assignment, and `plan_tasks.coach_note` carries their instruction with it —
 their words, read back only to them, never mixed into the student's own `description`.
 
@@ -29,7 +29,7 @@ chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel.
 - **`coach_students` is reused, not renamed.** The table has existed since `drizzle/0001` (guardrail
   §4 #7, "org/coach-ready from day one") and has always meant the human relation. Renaming an empty
   table to match a namespace would cost a risky migration and a drizzle snapshot divergence for no
-  behavioural gain. Everything *new* is `mentorship_*`.
+  behavioural gain. Everything _new_ is `mentorship_*`.
 - **Ending a link stops the data, not just the badge.** The roster's metrics live in a nullable
   `metrics` sub-object that is `null` for any non-ACTIVE link, so "a coach who no longer follows
   this student sees no numbers" is enforced by the DTO shape rather than remembered by whoever
@@ -86,13 +86,13 @@ that cannot work: a student who redeems a code before any coach exists gets "inv
 surface is a promise nobody can keep. Each step below is one `POST /v1/admin/config` (SUPER_ADMIN,
 audited) or one admin screen.
 
-| # | Step | What it opens | Cost | Turning it back off |
-|---|---|---|---|---|
-| 1 | `mentorship.applications.open = true` | Self-service coach registration: `/kayit?rol=koc` and the form at `/koc-basvurusu`. **Students see nothing.** | None | Clean. Existing coaches stay; the form says "closed". |
-| 2 | `mentorship.enabled = true` | The coach panel and the student's invite screen. | None | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
-| 3 | `mentorship.risk_digest.enabled = true` | The 07:00 UTC morning email. Do this **after** a cohort exists. | Email volume | Clean. |
-| 4 | **SMS OTP shipped** | Nothing by itself. It is the PREREQUISITE for step 5. | A provider bill | n/a |
-| 5 | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.** | `coaches x free_seats` in LLM budget | **NOT clean — see below.** |
+| #   | Step                                          | What it opens                                                                                                 | Cost                                 | Turning it back off                                                                                                          |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `mentorship.applications.open = true`         | Self-service coach registration: `/kayit?rol=koc` and the form at `/koc-basvurusu`. **Students see nothing.** | None                                 | Clean. Existing coaches stay; the form says "closed".                                                                        |
+| 2   | `mentorship.enabled = true`                   | The coach panel and the student's invite screen.                                                              | None                                 | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
+| 3   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
+| 4   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 5.                                                         | A provider bill                      | n/a                                                                                                                          |
+| 5   | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.**                                                                    | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
 
 **Step 4 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
 human said yes to each one, so `coaches x free_seats` had a person in front of it. Registration is
@@ -117,6 +117,7 @@ against. It exists precisely so this flag is not flipped on a guess (APP-077).
 one config write. Links, applications and assignments are untouched — nothing is deleted by a flag.
 
 ```bash
+
 ```
 
 ```http
@@ -147,26 +148,26 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `GET /v1/mentorship/overview` | The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract mirrored back to them (`@Roles(COACH)`) |
-| `POST /v1/mentorship/invite-code` | Rotate the code; the previous one stops working immediately (`@Roles(COACH)`) |
-| `GET /v1/mentorship/students` | Roster + rule-based risk flags, worst first; `?status=ENDED` for history |
-| `GET /v1/mentorship/students/:studentId` | One student's report (gate applies) |
-| `POST /v1/mentorship/students/:studentId/assignments` | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies) |
-| `PUT /v1/mentorship/students/:studentId/note` | The coach's standing note to this student; `{ body: null }` clears it (gate applies) |
-| `DELETE /v1/mentorship/students/:studentId` | Coach ends the link (gate applies) |
-| `GET /v1/mentorship/templates` | The coach's saved weekly programs (`@Roles(COACH)`) |
-| `POST /v1/mentorship/templates` | Save a program, upserting on `(coach, name)` — there is no PUT because saving over a name is the edit |
-| `DELETE /v1/mentorship/templates/:templateId` | Delete one of the coach's own; another coach's id is a 404 |
-| `GET /v1/mentorship/brief` | The stored cohort brief. Free — no LLM call, no quota, so the panel may ask on load (`@Roles(COACH)`) |
-| `POST /v1/mentorship/brief` | Write one. Unchanged cohort returns the stored text and spends nothing (`@Roles(COACH)`, 10/min) |
-| `POST /v1/mentorship/students/:studentId/assignment-suggestions` | A week of AI-drafted homework for the composer. Writes nothing; uncached (gate applies, 10/min) |
-| `POST /v1/mentorship/invitations/preview` | Consent screen input: who the coach is + the exact data scope |
-| `POST /v1/mentorship/invitations/accept` | Student's half of the double opt-in → ACTIVE |
-| `GET /v1/mentorship/my-coach` | Student transparency: who my coach is, what they see |
-| `GET /v1/mentorship/my-coach/data` | The same contract with the actual figures in it: how much is travelling under each scope key. No coach-authored field can appear — the snapshot is fetched without a link id |
-| `DELETE /v1/mentorship/my-coach` | Student revokes consent, unilaterally (KVKK) |
+| Endpoint                                                         | Purpose                                                                                                                                                                      |
+| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `GET /v1/mentorship/overview`                                    | The coach's landing state: invite code, seats taken out of the cap, and the data-scope contract mirrored back to them (`@Roles(COACH)`)                                      |
+| `POST /v1/mentorship/invite-code`                                | Rotate the code; the previous one stops working immediately (`@Roles(COACH)`)                                                                                                |
+| `GET /v1/mentorship/students`                                    | Roster + rule-based risk flags, worst first; `?status=ENDED` for history                                                                                                     |
+| `GET /v1/mentorship/students/:studentId`                         | One student's report (gate applies)                                                                                                                                          |
+| `POST /v1/mentorship/students/:studentId/assignments`            | Assign 1..21 plan tasks in one call — title, subject, `topic`, `coachNote` (gate applies)                                                                                    |
+| `PUT /v1/mentorship/students/:studentId/note`                    | The coach's standing note to this student; `{ body: null }` clears it (gate applies)                                                                                         |
+| `DELETE /v1/mentorship/students/:studentId`                      | Coach ends the link (gate applies)                                                                                                                                           |
+| `GET /v1/mentorship/templates`                                   | The coach's saved weekly programs (`@Roles(COACH)`)                                                                                                                          |
+| `POST /v1/mentorship/templates`                                  | Save a program, upserting on `(coach, name)` — there is no PUT because saving over a name is the edit                                                                        |
+| `DELETE /v1/mentorship/templates/:templateId`                    | Delete one of the coach's own; another coach's id is a 404                                                                                                                   |
+| `GET /v1/mentorship/brief`                                       | The stored cohort brief. Free — no LLM call, no quota, so the panel may ask on load (`@Roles(COACH)`)                                                                        |
+| `POST /v1/mentorship/brief`                                      | Write one. Unchanged cohort returns the stored text and spends nothing (`@Roles(COACH)`, 10/min)                                                                             |
+| `POST /v1/mentorship/students/:studentId/assignment-suggestions` | A week of AI-drafted homework for the composer. Writes nothing; uncached (gate applies, 10/min)                                                                              |
+| `POST /v1/mentorship/invitations/preview`                        | Consent screen input: who the coach is + the exact data scope                                                                                                                |
+| `POST /v1/mentorship/invitations/accept`                         | Student's half of the double opt-in → ACTIVE                                                                                                                                 |
+| `GET /v1/mentorship/my-coach`                                    | Student transparency: who my coach is, what they see                                                                                                                         |
+| `GET /v1/mentorship/my-coach/data`                               | The same contract with the actual figures in it: how much is travelling under each scope key. No coach-authored field can appear — the snapshot is fetched without a link id |
+| `DELETE /v1/mentorship/my-coach`                                 | Student revokes consent, unilaterally (KVKK)                                                                                                                                 |
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
 `MENTORSHIP_INVITE_EXPIRED` · `MENTORSHIP_ALREADY_LINKED` · `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` ·
@@ -188,18 +189,27 @@ hallucinated "this student is struggling" is worse than no signal. Rules live in
 `domain/risk-flags.ts` (pure, 18 unit tests); thresholds are config, so they calibrate from live
 data without a deploy.
 
-| Flag | Fires when | Threshold key |
-|---|---|---|
-| `INACTIVE` | No completed session or done task for longer than the idle window (a student who never started counts) | `mentorship.risk.inactive_days` |
-| `LOW_MOOD` | Weekly mean check-in at or below the ceiling | `mentorship.risk.low_mood_ceiling` |
-| `NET_DROP` | Latest mock net strictly below the mean of the three before it | — |
-| `PLAN_SLIPPING` | Weekly plan completion below the floor | `mentorship.risk.plan_completion_floor` |
+| Flag            | Fires when                                                                                             | Threshold key                           |
+| --------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------- |
+| `INACTIVE`      | No completed session or done task for longer than the idle window (a student who never started counts) | `mentorship.risk.inactive_days`         |
+| `LOW_MOOD`      | Weekly mean check-in at or below the ceiling                                                           | `mentorship.risk.low_mood_ceiling`      |
+| `NET_DROP`      | Latest mock net strictly below the mean of the three before it                                         | —                                       |
+| `PLAN_SLIPPING` | Weekly plan completion below the floor                                                                 | `mentorship.risk.plan_completion_floor` |
 
 Two silences are deliberately NOT flagged: a student who planned nothing (`planCompletionRate7d`
 is null, not zero) and one who never checked in. Absence of data is not evidence of trouble, and a
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **Koç planında atomik çoklu atama sözleşmesi (APP-091, 2026-09-09)** - Bir görevi 1-20 benzersiz
+  öğrenciye tek işlemde verecek katı Zod girdisi ile gruplu görev/katılımcı DTO'ları eklendi.
+  Öğrencinin `description` alanı koç sözleşmesine alınmadı. `plan_tasks` ve silinen atama günlüğü
+  nullable `assignment_group_id` ve grup sorgusu indeksleri kazandı. Kullanım: sonraki servis
+  dilimi her öğrenci kopyasına aynı grup UUID'sini yazar. Gotcha: grup kimliği bir sahiplik veya
+  yetki kanıtı değildir; aktif bağ kontrolü yine mentorship servisinde yapılır. İlgili:
+  `packages/{types,validation}/src/mentorship.ts`, `apps/api/src/database/schema.ts`,
+  `0110_app_091_coach_plan_events.sql`.
 
 - **Koçun kendi dünyası: yönlendirme, ana ekran, bildirim (APP-090, 2026-09-08)** — APP-089 koçu
   onboarding sonunda `/kocluk`'a indirdi ama **login'i değiştirmedi**: `postAuthDestination`
@@ -212,10 +222,11 @@ flag that cries wolf costs the coach more than it gives.
   mental models in one chrome*"), ve `panel-shell.tsx` 1381 satır — `(app)` altında bugüne dek
   **sıfır** rol dallanması vardı, oraya ilkini sokmak hem kuralı hem deseni bozardı.
 
-  **Blok listesi, allow-list değil.** `lib/coach-surface.ts`: öğrenci ritüeli (`/panel`, `/plan`,
+  **Blok listesi, allow-list değil.** `lib/coach-surface.ts`: öğrenci ritüeli (`/panel`,
   `/seans`, `/analiz`, defterler, `/hedef`, AI companion `/koc`, `/kocum`, `/kocluk-daveti`) koça
-  kapalı; **`/ayarlar`, `/profil`, `/abonelik` (Koç Pro orada satılıyor), `/topluluk` ve `/bilgi`
-  açık kalıyor.** Guard bir nezaket, güvenlik sınırı değil — koçun kapalı bir ekranda göreceği tek
+  kapalı; **`/plan` APP-091 ile role-aware bir koç çalışma yüzeyine dönüştü.** `/ayarlar`, `/profil`,
+  `/abonelik` (Koç Pro orada satılıyor), `/topluluk` ve `/bilgi` de açık kalıyor. Guard bir
+  nezaket, güvenlik sınırı değil — koçun kapalı bir ekranda göreceği tek
   şey kendi boş verisi — o yüzden fail-open olması doğru: ileride eklenen bir `(app)` rotası koçu
   sessizce kilitlemiyor. Yol eşleştirme **hem kanonik hem TR segmentini** kabul ediyor
   (`app-sidebar.ts`'in deseni); tek form yazmak, yerelleştirilmiş yol geldiği anda sessizce
@@ -269,7 +280,7 @@ flag that cries wolf costs the coach more than it gives.
   hattını kurmuştu ama koç adayının o hatta girebilmesi için önce **öğrenci** olması gerekiyordu:
   `/koc-basvurusu` `(app)` altında, `(app)` de `hasCompletedOnboarding = username && examType`
   kapısının arkasında. Yani koç, başvuru formunu görebilmek için beş adımlık öğrenci sihirbazını
-  bitirip hedef sınav seçiyor ve *"Bu yolun sonunda ne var?"* sorusuna kişisel bir hedef yazıyordu.
+  bitirip hedef sınav seçiyor ve _"Bu yolun sonunda ne var?"_ sorusuna kişisel bir hedef yazıyordu.
   Sonra da linki profil listesinin dibinde bulması gerekiyordu. Kürasyonun bedeli, koçun kendini
   öğrenci gibi tanıtmasıydı.
 
@@ -315,7 +326,7 @@ flag that cries wolf costs the coach more than it gives.
   implementasyon oldu; `AdminUsersService` allowlist'i ve audit'i tutmaya devam ediyor.
 
   **Usage:** koç → `/kayit?rol=koc` → onboarding koç dalı (`goal` yerine `coachProfile`, sınav sorusu
-  *"Hangi sınava koçluk yapıyorsun?"* olarak kalıyor) → `/kocluk`. Mevcut hesap → `/koc-basvurusu`.
+  _"Hangi sınava koçluk yapıyorsun?"_ olarak kalıyor) → `/kocluk`. Mevcut hesap → `/koc-basvurusu`.
   Admin → `/coach-applications` (dosya yolu aynı, ekran "Koçlar").
 
   **Gotchas:**
@@ -342,8 +353,8 @@ flag that cries wolf costs the coach more than it gives.
 
   **İlgili:** `packages/{types,validation}/src/mentorship.ts` · `packages/validation/src/auth.ts` ·
   `apps/api/drizzle/0108_w8_coach_registry.sql` · `modules/mentorship/{domain/coach-registration.ts,
-  application/mentorship-application.service.ts,application/mentorship-link.service.ts,
-  infrastructure/mentorship-application.repository.ts,presentation/*}` ·
+application/mentorship-application.service.ts,application/mentorship-link.service.ts,
+infrastructure/mentorship-application.repository.ts,presentation/*}` ·
   `modules/identity/{application/users.service.ts,application/auth.service.ts,infrastructure/users.repository.ts}` ·
   `modules/admin/presentation/admin-coach-applications.controller.ts` ·
   `apps/web/src/app/[locale]/(onboarding)/**` · `(auth)/signup/page.tsx` ·
@@ -352,14 +363,14 @@ flag that cries wolf costs the coach more than it gives.
   `apps/admin/src/app/(general)/coach-applications/page.tsx`
 
 - **Öğrencinin aynası — koçuma ne gidiyor (APP-087, 2026-09-07)** — APP-073 asimetriyi koç
-  tarafında kapatmıştı: *"güven çizgisinin kaldıramayacağı tek asimetri, veriyi alan tarafın
-  sınırları hakkında veren taraftan az bilmesi."* Öğrenci tarafında o liste hâlâ **sözdü**:
+  tarafında kapatmıştı: _"güven çizgisinin kaldıramayacağı tek asimetri, veriyi alan tarafın
+  sınırları hakkında veren taraftan az bilmesi."_ Öğrenci tarafında o liste hâlâ **sözdü**:
   `/kocum` "çalışma süren, seans sayın, aktif günlerin ve serin" diyordu ama **kaç** olduğunu
   söylemiyordu. Öğrenci neyin türünü biliyor, miktarını bilmiyordu.
   `GET /v1/mentorship/my-coach/data` her kapsam satırının yanına o an koça giden fiilî değeri
   koyuyor. Vaat, rapora dönüşüyor.
   **Seam zaten öğrenci için tasarlanmıştı.** `CohortEvidenceService.getStudentReport(studentId,
-  now?, mentorshipLinkId?)` koç id'si almıyor ve link id'si opsiyonel; kendi dokümanı "W8 dışındaki
+now?, mentorshipLinkId?)` koç id'si almıyor ve link id'si opsiyonel; kendi dokümanı "W8 dışındaki
   çağıranlar onu atlar, `coachNote` ve `assignedByCoach` almaz" diyor. Öğrenci kendisi için
   çağırdığında koçun özel alanları **argüman verilmediği için** gelmiyor — sonradan filtrelenmesi
   gereken, unutulabilecek bir şey değil, **var olmayan bir parametre**. Yeni sorgu, yeni tablo,
@@ -541,7 +552,7 @@ flag that cries wolf costs the coach more than it gives.
   okunup hiçbir şey yapmayan bir şema yem, ve bir sonraki kişi doğrulanmış başlık lazım olunca ona
   uzanır.
   **(2) Harness üretim hattını elle kopyalıyordu ve kopya bayatlamıştı.** `main.ts` `bodyParser:
-  false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT'unu **atlıyor**, çünkü
+false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT'unu **atlıyor**, çünkü
   alıcı ham akışa ihtiyaç duyuyor. 31 e2e dosyasının **hiçbiri** onu çağırmıyordu; forum spec'i
   `express.raw`'ı APP-080'de ölen bir rotaya (`/v1/storage/fake-upload`) besliyordu. Sonuç: varsayılan
   ayrıştırıcı gövdeyi yiyor, alıcı boş okuyor, 400. `test/app-harness.ts` artık `src/`'den **aynı
@@ -768,7 +779,7 @@ flag that cries wolf costs the coach more than it gives.
   (koç, koçlanıyor olmaktan koltuk türetemez) ve premium vermeyen durumlar (INCOMPLETE bir checkout
   henüz hiçbir şey satın almamıştır).
   **`mentorship.seats.billing_enabled` gerçek bir kapı.** Kapalıyken koç planları katalogda
-  **listelenmiyor** *ve* id'yle checkout **reddediliyor** (`PAYMENT_DISABLED`). Yalnız listeden
+  **listelenmiyor** _ve_ id'yle checkout **reddediliyor** (`PAYMENT_DISABLED`). Yalnız listeden
   gizlemek bir UI geleneği olurdu; iyzico doğrulanmadan satın alınabilir bir plan göstermek de
   olmayan bir akışı vaat etmek olurdu.
   **Fiyatlar PLACEHOLDER** — 999₺/10 koltuk, 1999₺/25. Faz-0 WTP araştırması hâlâ açık (roadmap §12).
@@ -833,8 +844,8 @@ flag that cries wolf costs the coach more than it gives.
 
 - **Sponsorluk görünürlüğü ve acil fren (APP-077, 2026-09-05)** — APP-076
   `mentorship.coach.free_seats`'i "tüm maliyet riskini tutan tek düğme" diye tanımladı ama o
-  düğmenin ne yaptığını gösteren hiçbir şey yoktu: `countByStatus()` sponsor satırlarını *aktif
-  olarak* filtreliyor ve başka hiçbir sorgu geri saymıyordu, `ai_usage`'ın da `subscriptions` ile
+  düğmenin ne yaptığını gösteren hiçbir şey yoktu: `countByStatus()` sponsor satırlarını _aktif
+  olarak_ filtreliyor ve başka hiçbir sorgu geri saymıyordu, `ai_usage`'ın da `subscriptions` ile
   hiçbir join'i yok. Yani "koltuk başına ne harcıyorum" — free_seats'in doğru olup olmadığına karar
   veren tek sayı — sorulamıyordu bile. Bayrağı canlıda açmanın ön koşulu buydu.
   **`GET /v1/admin/metrics/sponsorship`** — canlı koltuk sayısı, ayarın kendisi, kohortun 1/7/30
@@ -1232,7 +1243,7 @@ flag that cries wolf costs the coach more than it gives.
   `packages/validation/src/notifications.ts`.
 
 - **Koçun günlük müdahale uyarısı (APP-067, 2026-09-03)** — Risk triyajı bugüne kadar yalnız
-  *pull* idi: koç panele girmedikçe hiçbir şey duymuyordu, ve 20 öğrencili bir koç haftada iki kez
+  _pull_ idi: koç panele girmedikçe hiçbir şey duymuyordu, ve 20 öğrencili bir koç haftada iki kez
   girerse "3 gün inaktif" sinyali ölü doğuyordu. Roadmap §9'un istediği veri-tetikli müdahale
   uyarısı artık cron'la gidiyor: `POST /v1/internal/cron/dispatch-mentorship-risk-digest`,
   `render.yaml`'da `"0 7 * * *"` UTC (= 10:00 TRT). In-app her zaman, e-posta
@@ -1391,6 +1402,112 @@ flag that cries wolf costs the coach more than it gives.
   [`coaching.md`](./coaching.md) (`CohortEvidenceService`).
 
 ## Gotchas / Known issues
+
+- **2026-09-09 — APP-091 W8 koç planı orkestrasyonu.** Koç takvimi artık kendi görevlerini,
+  aktif bağlantılar üzerinden verdiği ödevleri ve düzenlediği etkinlikleri tek, gruplama sonrası
+  sayfalanan `GET /v1/mentorship/plan` yanıtında birleştiriyor. Çoklu ödev tek SERVICE
+  transaction'ında, tek `assignmentGroupId` ile ve öğrenci kilitleri sıralı alınarak yazılıyor;
+  tekli/grup düzenleme ve silme yalnız koçun yazdığı PENDING satırlara dokunuyor. Etkinlik
+  katılımcıları her create/update öncesi `requireActiveLink` ile doğrulanıyor; bağlantı biterken
+  gelecekteki katılımcı satırları ilişki ENDED yapılmadan kaldırılıyor. Koç görünümü öğrencinin
+  açıklamasını taşımaz; tam katılımcı kimlikleri yalnız bu COACH yüzeyindedir, öğrenci
+  `/plan-items` yanıtı count-only kalır. Kullanım: toplu ödev için `POST /mentorship/assignments`,
+  etkinlikler için `/mentorship/events`; grup mutasyonlarında aktif katılımcı `studentIds`
+  listesi gönderilir. Gotcha: grup çağrısı yalnız doğrulanan link kapsamını değiştirir ve DONE
+  satırları korur. İlgili: `mentorship-{assignment,event,plan-orchestration}.service.ts`,
+  `mentorship-plan.controller.ts`, W2 `plan-mentorship.ts`.
+
+- **2026-09-09 — APP-091 active-link transaction gate hardening.** Coach plan writes now run
+  inside one W8-owned SERVICE transaction that locks the relevant ACTIVE `coach_students` rows
+  with `FOR UPDATE` in stable student-id order, rechecks consent under lock, and passes that same
+  transaction to W2. Link end uses the identical lock, removes future event attendance through
+  W2, and transitions the link to ENDED atomically. Event input is capped at 100 attendees before
+  the gate. SERIES edits hydrate W2's returned replacement event id. The aggregate keeps organized
+  personal/former-attendee events while hydrating only active identities; student filtering removes
+  unrelated personal items. Grouped tasks split by their visible signature when DONE history and
+  edited PENDING rows diverge. Usage: open `withServiceTransaction`, take any required W2 lock,
+  then call `requireActiveLinksInTransaction` before the W2 write; never precheck and write in
+  separate transactions. Gotcha:
+  `assignmentGroupId` remains the mutation key, while `CoachPlanGroupedTaskDto.id` is a stable
+  display-group key. Related: `mentorship-link.repository.ts`,
+  `mentorship-{assignment,event,link,plan-orchestration}.service.ts`.
+
+- **2026-09-09 — APP-091 organizer-first event lock order.** Create, update, and cancel now open
+  one W8 SERVICE transaction and follow the same order: W2 organizer advisory lock, ordered ACTIVE
+  link row locks/recheck, then the W2 event write. Cancellation resolves every affected occurrence
+  attendee in that transaction; an ended/missing link aborts before cancellation, while personal
+  events with no attendees remain valid. Publication occurs only after the shared transaction
+  commits. Link end deliberately takes only the link row before W2 attendance cleanup, so it never
+  waits on the event organizer lock and a waiting event mutation rechecks consent after the end.
+  Usage: open `withServiceTransaction`, call `lockOrganizerInTransaction`, then
+  `requireActiveLinksInTransaction`, then the W2 mutation seam. Gotcha: the link gate is explicit
+  and transaction-bound; resolver callbacks must not decide lock order. Related:
+  `mentorship-{event,link,assignment}.service.ts`.
+
+- **2026-09-09 — APP-091 role-aware coach plan UI.** Canonical `/plan` now keeps the existing
+  student plan unchanged and renders a week/month coach calendar for COACH accounts. The coach can
+  move by period, return to today, filter by every active roster student, open a day or read-only
+  task/event detail, and follow `?date=YYYY-MM-DD&event={id}` links. Roster, task participants and
+  event attendees use W0-resolved public avatar URLs; month cells show at most three unique
+  students plus `+N`, while personal items stay visible without a fake avatar. Usage: choose “Tüm
+  öğrenciler” or one avatar filter; the latter reloads `/v1/mentorship/plan` with `studentId`, so
+  W8 remains authoritative instead of hiding unrelated rows in the browser. The range client
+  drains every 100-row page in server order and fetches the complete active roster. Gotcha: role
+  selection only chooses the presentation; endpoint role and active-link checks remain the
+  security boundary. Related: `apps/web/.../plan/_components/coach-plan-*`,
+  `apps/web/src/lib/{coach-plan-calendar,mentorship}.ts`,
+  `mentorship-roster.service.ts`, `packages/types/src/mentorship.ts`.
+
+- **2026-09-09 — APP-091 coach plan review hardening.** Same-route `date`/`event` query changes now
+  re-key only calendar state, load the new range and select the returned event without reloading
+  the mounted roster. Roster and plan pagination forward abort signals, stop obsolete page loops,
+  and treat cancellation as lifecycle rather than an error. “Bugün” uses the Europe/Istanbul
+  calendar date. Historical events remain shared from `attendeeCount` even when no active identity
+  can be shown. Month headings are visibly Monday-first, avatar overflow announces the total, and
+  an opened read-only detail receives focus without trapping it. Role planners are separate dynamic
+  chunks. The month board uses native table headers/cells and names every unique overflow student
+  to assistive technology; retry restarts only the resource that failed. A query event is consumed
+  only by the first successful range load, closing detail restores the exact still-connected
+  button that opened it (no shared DOM ids), and error states temporarily hide any preserved
+  detail selection. Related:
+  `coach-plan-{shell,calendar-shell,month,detail,item-card}.tsx`,
+  `lib/{coach-plan-calendar,date-time,mentorship-plan}.ts`.
+
+- **2026-09-09 — APP-091 coach plan task and event actions.** The coach calendar now creates
+  personal tasks/events when no attendee is selected, sends one atomic assignment request for a
+  selected cohort, and sends recurrence rules to W8 without materializing occurrences in the
+  browser. Pending personal/assignment tasks can be edited or removed; group calls contain only
+  the currently displayed PENDING students. Scheduled current/future events can be edited or
+  cancelled, and series actions require an explicit occurrence/series scope. Usage: open “Yeni
+  görev” or “Yeni etkinlik” from the toolbar, or open a mutable detail and choose edit/remove.
+  Successful writes close the action, toast, and reload the current server-filtered range.
+  Gotchas: task recipients stay read-only while editing, completed participants remain history,
+  and W2 does not expose personal-task date edits, so that date is visibly locked. Timed events
+  announce the 15-minute reminder rule; all-day events announce that no reminder is sent.
+  Related: `coach-plan-{task,event}-form.tsx`, `coach-plan-detail-actions.tsx`,
+  `lib/coach-plan-mutations.ts`, `e2e/coach-plan.spec.ts`.
+
+- **2026-09-09 — APP-091 coach plan mutation integrity.** Group task update/delete bodies now
+  carry the selected card's complete visible signature plus its PENDING student ids. W2 checks
+  every requested row against that signature under the existing per-student locks; a stale or
+  partial match raises a localized conflict and rolls the whole transaction back. Series event
+  forms diff against the selected event, so title/attendee-only edits omit unchanged date and
+  recurrence fields and stay on W2's non-regeneration path. Authoritative reloads replace an open
+  detail with the fresh row or close it when its id/signature disappeared. Week headings are
+  44px-selectable creation dates, task/event date inputs use Istanbul today as their native
+  minimum, and destructive scope plus focus reset after confirmation dismissal. Usage: select an
+  empty future week day before opening a creation form. Gotcha: the 120-day assignment horizon is
+  currently a backend-only policy constant, not a shared client contract, so the form deliberately
+  has no hardcoded `max`; W8 remains authoritative. Related:
+  `coach-plan-{calendar-shell,week,detail-actions}.tsx`,
+  `lib/coach-plan-{calendar,mutations}.ts`, `packages/validation/src/mentorship.ts`,
+  `plan-task-mentorship.repository.ts`, `e2e/coach-plan.spec.ts`.
+
+- **2026-09-09 — APP-091 unchanged event edit guard.** Event update payload construction now
+  returns no mutation when every editable value matches the selected event. The edit form disables
+  Save in that state and also exits silently on programmatic submission, so `{scope}` is never sent
+  and no generic validation error is shown. Choosing a series scope alone is not a change. Related:
+  `coach-plan-event-form.tsx`, `lib/coach-plan-mutations.ts`.
 
 - ~~**Role changes need a re-login.**~~ **Stale — corrected 2026-09-07.** APP-080 made
   `JwtAuthGuard` resolve the principal through `TokenService.validateSession`, which joins `users`

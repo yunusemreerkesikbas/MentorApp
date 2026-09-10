@@ -16,11 +16,12 @@ export interface CohortPeer {
   avatarStorageKey: string | null;
 }
 
-/** Display-only identity for cross-module people lists (no email, no status, no PII). */
-export interface DisplayIdentity {
+/** Storage-bearing row stays private to identity; UsersService resolves it to a public URL. */
+export interface DisplayIdentityRow {
   userId: string;
   displayName: string;
   username: string | null;
+  avatarStorageKey: string | null;
 }
 
 export interface PublicUserSearchRow {
@@ -204,7 +205,7 @@ export class UsersRepository {
    * a coach's roster row must not silently vanish because the student was suspended or never
    * picked a handle. Display fields only — email and every other PII stays inside identity.
    */
-  async listDisplayByIds(ids: string[]): Promise<DisplayIdentity[]> {
+  async listDisplayByIds(ids: string[]): Promise<DisplayIdentityRow[]> {
     if (ids.length === 0) return [];
     return withServiceContext(this.db, (tx) =>
       tx
@@ -212,6 +213,7 @@ export class UsersRepository {
           userId: users.id,
           displayName: sql<string>`coalesce(${users.displayName}, '')`,
           username: sql<string | null>`${users.username}`,
+          avatarStorageKey: sql<string | null>`${users.avatarStorageKey}`,
         })
         .from(users)
         .where(inArray(users.id, ids)),

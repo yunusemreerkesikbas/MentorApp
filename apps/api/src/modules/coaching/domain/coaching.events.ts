@@ -14,6 +14,9 @@ export const CoachingEventTopic = {
   PLAN_TASK_CREATED: "coaching.plan-task-created",
   PLAN_TASK_DELETED: "coaching.plan-task-deleted",
   PLAN_ADAPTED: "coaching.plan-adapted",
+  PLAN_EVENT_CREATED: "coaching.plan-event.created",
+  PLAN_EVENT_UPDATED: "coaching.plan-event.updated",
+  PLAN_EVENT_CANCELLED: "coaching.plan-event.cancelled",
   VISION_BOARD_SAVED: "coaching.vision-board-saved",
   MOCK_EXAM_CREATED: "coaching.mock-exam-created",
   NOTEBOOK_ENTRY_REVIEWED: "coaching.notebook-entry-reviewed",
@@ -91,6 +94,7 @@ export class PlanTaskDeleted {
     readonly title: string,
     readonly originType: string | null,
     readonly originRefId: string | null,
+    readonly assignmentGroupId: string | null = null,
   ) {}
 }
 
@@ -101,6 +105,26 @@ export class PlanTaskCreated {
 export class PlanAdapted {
   constructor(readonly userId: string, readonly adaptedAt = new Date()) {}
 }
+
+export interface PlanEventOccurrencePayload {
+  eventId: string;
+  title: string;
+  eventDate: string;
+  startTime: string | null;
+  status: "SCHEDULED" | "CANCELLED";
+  recipientUserIds: string[];
+}
+
+export class PlanEventCreated {
+  constructor(
+    readonly organizerUserId: string,
+    readonly occurrences: PlanEventOccurrencePayload[],
+  ) {}
+}
+
+export class PlanEventUpdated extends PlanEventCreated {}
+
+export class PlanEventCancelled extends PlanEventCreated {}
 
 export class VisionBoardSaved {
   constructor(readonly userId: string, readonly savedAt = new Date()) {}

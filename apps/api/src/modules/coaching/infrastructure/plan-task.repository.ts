@@ -1,7 +1,16 @@
 import { Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gte, inArray, lte, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import type { DatabaseTx } from "../../../database/drizzle";
 import { planTasks } from "../../../database/schema";
+import {
+  deletePendingMentorshipGroup as deletePendingMentorshipGroupRows,
+  deletePendingMentorshipTask as deletePendingMentorshipTaskRow,
+  listOwnedCoachTasks,
+  updatePendingMentorshipGroup as updatePendingMentorshipGroupRows,
+  updatePendingMentorshipTask as updatePendingMentorshipTaskRow,
+  type MentorshipTaskVisibleSignature,
+  type MentorshipTaskScope,
+} from "./plan-task-mentorship.repository";
 
 export type PlanTaskRow = typeof planTasks.$inferSelect;
 export type NewPlanTask = typeof planTasks.$inferInsert;
@@ -143,6 +152,62 @@ export class PlanTaskRepository {
     return rows[0];
   }
 
+  async findByIds(
+    tx: DatabaseTx,
+    userId: string,
+    ids: string[],
+  ): Promise<PlanTaskRow[]> {
+    if (ids.length === 0) return [];
+    return tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(eq(planTasks.userId, userId), inArray(planTasks.id, ids)),
+      );
+  }
+
+  /**
+   * W8 read seam. The caller has already authorized every link/student pair; both values remain
+   * in the SQL predicate so SERVICE RLS context cannot widen the read accidentally.
+   */
+  listMentorshipTasksForCoach(
+    tx: DatabaseTx,
+    scopes: Array<{ mentorshipLinkId: string; studentId: string }>,
+    from: string,
+    to: string,
+  ): Promise<PlanTaskRow[]> {
+    if (scopes.length === 0) return Promise.resolve([]);
+    return tx
+      .select()
+      .from(planTasks)
+      .where(
+        and(
+          eq(planTasks.originType, "MENTORSHIP"),
+          gte(planTasks.taskDate, from),
+          lte(planTasks.taskDate, to),
+          or(
+            ...scopes.map((scope) =>
+              and(
+                eq(planTasks.userId, scope.studentId),
+                eq(planTasks.originRefId, scope.mentorshipLinkId),
+              ),
+            ),
+          ),
+        ),
+      )
+      .orderBy(asc(planTasks.taskDate), ...withinDayOrder);
+  }
+
+  /** Coach's own calendar rows for the W8 aggregate. No student data enters this query. */
+  listOwnedForCoach(
+    tx: DatabaseTx,
+    coachId: string,
+    from: string,
+    to: string,
+  ): Promise<PlanTaskRow[]> {
+    return listOwnedCoachTasks(tx, coachId, from, to);
+  }
+
   async create(tx: DatabaseTx, data: NewPlanTask): Promise<PlanTaskRow> {
     const rows = await tx.insert(planTasks).values(data).returning();
     return rows[0]!;
@@ -213,12 +278,59 @@ export class PlanTaskRepository {
     return rows[0];
   }
 
+  async updatePendingMentorshipTask(
+    tx: DatabaseTx,
+    scope: MentorshipTaskScope,
+    id: string,
+    patch: Partial<NewPlanTask>,
+  ): Promise<PlanTaskRow | undefined> {
+    return updatePendingMentorshipTaskRow(tx, scope, id, patch);
+  }
+
+  async updatePendingMentorshipGroup(
+    tx: DatabaseTx,
+    scopes: MentorshipTaskScope[],
+    assignmentGroupId: string,
+    expectedSignature: MentorshipTaskVisibleSignature,
+    patch: Partial<NewPlanTask>,
+  ): Promise<PlanTaskRow[]> {
+    return updatePendingMentorshipGroupRows(
+      tx,
+      scopes,
+      assignmentGroupId,
+      expectedSignature,
+      patch,
+    );
+  }
+
   async delete(tx: DatabaseTx, userId: string, id: string): Promise<boolean> {
     const rows = await tx
       .delete(planTasks)
       .where(and(eq(planTasks.id, id), eq(planTasks.userId, userId)))
       .returning({ id: planTasks.id });
     return rows.length > 0;
+  }
+
+  async deletePendingMentorshipTask(
+    tx: DatabaseTx,
+    scope: MentorshipTaskScope,
+    id: string,
+  ): Promise<PlanTaskRow | undefined> {
+    return deletePendingMentorshipTaskRow(tx, scope, id);
+  }
+
+  async deletePendingMentorshipGroup(
+    tx: DatabaseTx,
+    scopes: MentorshipTaskScope[],
+    assignmentGroupId: string,
+    expectedSignature: MentorshipTaskVisibleSignature,
+  ): Promise<PlanTaskRow[]> {
+    return deletePendingMentorshipGroupRows(
+      tx,
+      scopes,
+      assignmentGroupId,
+      expectedSignature,
+    );
   }
 
   /**

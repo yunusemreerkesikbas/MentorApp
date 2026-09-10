@@ -40,6 +40,41 @@
       "title": "Bugünün planı tamam",
       "body": "{count} görev bitti. Bugün kendine iyi baktın."
     },
+    "planEventCreated": {
+      "register": "companion",
+      "title": "Planına bir etkinlik eklendi",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventUpdated": {
+      "register": "companion",
+      "title": "Etkinlik güncellendi",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventCancelled": {
+      "register": "companion",
+      "title": "Etkinlik iptal edildi",
+      "body": "\"{eventTitle}\", {eventDate} {eventTime}."
+    },
+    "planEventCreatedAllDay": {
+      "register": "companion",
+      "title": "Planına bir etkinlik eklendi",
+      "body": "\"{eventTitle}\", {eventDate} tarihinde tüm gün."
+    },
+    "planEventUpdatedAllDay": {
+      "register": "companion",
+      "title": "Etkinlik güncellendi",
+      "body": "\"{eventTitle}\", {eventDate} tarihinde tüm gün."
+    },
+    "planEventCancelledAllDay": {
+      "register": "companion",
+      "title": "Etkinlik iptal edildi",
+      "body": "\"{eventTitle}\", {eventDate} tarihindeki tüm gün etkinliği."
+    },
+    "planEventReminder": {
+      "register": "companion",
+      "title": "Etkinliğin yaklaşıyor",
+      "body": "\"{eventTitle}\", {eventDate} saat {eventTime}. 15 dakika sonra başlıyor."
+    },
     "dailyReminder": {
       "register": "puhu",
       "title": "Bugün bir adım at",

@@ -67,12 +67,12 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  *
  * It is set here rather than derived from `isStudentOnlyPath(href)` on purpose: `/knowledge` is a
  * student route by feel but is deliberately NOT blocked (a coach relays official exam facts to
- * their students), so the two lists agree on nine entries and disagree on that one. Deriving would
- * hide the disagreement.
+ * their students), while APP-091 made `/plan` role-aware. Keeping the flags explicit makes both
+ * exceptions visible.
  */
 const NAV_ITEMS = [
   { href: "/dashboard", labelKey: "home", icon: House, studentOnly: true },
-  { href: "/plan", labelKey: "plan", icon: Calendar, studentOnly: true },
+  { href: "/plan", labelKey: "plan", icon: Calendar },
   {
     href: "/coach",
     labelKey: "coach",

@@ -446,6 +446,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   delete-account flow deliberately ignores it (the account is already gone) and still navigates.
 - Related: `lib/auth-context.tsx`, `_components/account-links-card.tsx`, `messages/{tr,en}.json`.
 
+### 2026-09-09 — Public display identity avatar seam
+
+- `UsersService.listDisplayIdentities` now resolves `avatarStorageKey` through `StoragePort` and
+  returns only `avatarUrl`; the key remains inside identity. W8 uses this for coach-plan task
+  participants and event attendees, with `null` when no avatar exists.
+- Usage: cross-module people lists consume `{ userId, displayName, username, avatarUrl }`; they
+  never construct storage URLs. Related: `users.service.ts`, `users.repository.ts`,
+  `mentorship-plan-orchestration.service.ts`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

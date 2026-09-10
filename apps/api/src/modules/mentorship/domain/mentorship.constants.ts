@@ -120,6 +120,7 @@ export class MentorshipAssignmentDropped {
     readonly studentId: string,
     readonly studentDisplayName: string,
     readonly taskTitle: string,
+    readonly assignmentGroupId: string | null = null,
   ) {}
 }
 

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, desc, eq, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
 import type { MentorshipRiskFlagId } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -56,6 +56,26 @@ export class MentorshipLinkRepository {
         .limit(1);
       return rows[0];
     });
+  }
+
+  lockActiveInTransaction(
+    tx: DatabaseTx,
+    coachId: string,
+    studentIds: string[],
+  ): Promise<MentorshipLinkRow[]> {
+    if (studentIds.length === 0) return Promise.resolve([]);
+    return tx
+      .select()
+      .from(coachStudents)
+      .where(
+        and(
+          eq(coachStudents.coachId, coachId),
+          inArray(coachStudents.studentId, studentIds),
+          eq(coachStudents.status, "ACTIVE"),
+        ),
+      )
+      .orderBy(asc(coachStudents.studentId))
+      .for("update");
   }
 
   /** The student's current coach, if any. The partial unique index guarantees at most one. */
@@ -117,6 +137,22 @@ export class MentorshipLinkRepository {
         .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
       return rows.map((row) => row.id);
     });
+  }
+
+  /** Internal W8 plan scope. Bounded by the configured active-student quota. */
+  listActiveByCoach(coachId: string): Promise<MentorshipLinkRow[]> {
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(coachStudents)
+        .where(
+          and(
+            eq(coachStudents.coachId, coachId),
+            eq(coachStudents.status, "ACTIVE"),
+          ),
+        )
+        .orderBy(asc(coachStudents.studentId)),
+    );
   }
 
   /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */
@@ -195,34 +231,37 @@ export class MentorshipLinkRepository {
 
   /** ACTIVE → ENDED (idempotent). Returns the row only if this call performed the transition. */
   end(linkId: string, endedBy: string): Promise<MentorshipLinkRow | undefined> {
+    return withServiceContext(this.db, (tx) =>
+      this.endInTransaction(tx, linkId, endedBy),
+    );
+  }
+
+  async endInTransaction(
+    tx: DatabaseTx,
+    linkId: string,
+    endedBy: string,
+  ): Promise<MentorshipLinkRow | undefined> {
     const now = new Date();
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .update(coachStudents)
-        // The note goes with the link. Re-linking revives this very row (`onConflictDoUpdate`
-        // with `setWhere: status = 'ENDED'`), so a note left behind would resurface months later.
-        .set({
-          status: "ENDED",
-          endedAt: now,
-          endedBy,
-          coachNote: null,
-          coachNoteAt: null,
-          // The brief goes with the note, and for the same reason: re-linking revives this very
-          // row, and an AI summary of a relationship both sides walked away from must not
-          // reappear months later as if it described the new one.
-          brief: null,
-          briefAt: null,
-          briefFingerprint: null,
-          // Same rule once more: a revived row carrying an old "I dealt with this" would open the
-          // new relationship looking handled, and the roster would stay quiet about it.
-          attendedAt: null,
-          attendedFlags: null,
-          updatedAt: now,
-        })
-        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
-        .returning();
-      return rows[0];
-    });
+    const rows = await tx
+      .update(coachStudents)
+      .set({
+        status: "ENDED",
+        endedAt: now,
+        endedBy,
+        coachNote: null,
+        coachNoteAt: null,
+        brief: null,
+        briefAt: null,
+        briefFingerprint: null,
+        attendedAt: null,
+        attendedFlags: null,
+        updatedAt: now,
+      })
+      .where(
+        and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")),
+      )
+      .returning();
+    return rows[0];
   }
 
   /** The coach's standing note. `null` clears it; one row per link, overwritten in place. */

@@ -7,6 +7,7 @@ import {
   createMockExamSchema,
   createNotebookEntrySchema,
   createNotebookSchema,
+  createPlanEventSchema,
   createPlanTaskSchema,
   linkNotebookThreadSchema,
   listNotebookEntriesQuerySchema,
@@ -14,6 +15,7 @@ import {
   notebookImageUploadUrlSchema,
   putNotebookPageSchema,
   reviewNotebookEntrySchema,
+  cancelPlanEventSchema,
   updateNotebookEntrySchema,
   updateNotebookSchema,
   listMockExamsQuerySchema,
@@ -26,6 +28,7 @@ import {
   sessionFeedbackSchema,
   startStudySessionSchema,
   updateMockExamSchema,
+  updatePlanEventSchema,
   updatePlanTaskSchema,
   updateStudySessionSchema,
   upsertVisionSchema,
@@ -40,6 +43,9 @@ import {
 import { createZodDto } from "../../../common/validation/zod-dto";
 
 export class CreatePlanTaskDto extends createZodDto(createPlanTaskSchema) {}
+export class CreatePlanEventDto extends createZodDto(createPlanEventSchema) {}
+export class UpdatePlanEventDto extends createZodDto(updatePlanEventSchema) {}
+export class CancelPlanEventDto extends createZodDto(cancelPlanEventSchema) {}
 /** Body for POST /v1/plan-tasks/bulk (user-confirmed batch add — e.g. accepted coach draft). */
 export class BulkCreatePlanTasksDto extends createZodDto(
   bulkCreatePlanTasksSchema,

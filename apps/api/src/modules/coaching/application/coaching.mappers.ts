@@ -35,6 +35,7 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
     description: row.description,
     coachNote: row.coachNote,
     origin: toPlanTaskOriginDto(row),
+    assignmentGroupId: row.assignmentGroupId,
   };
 }
 
@@ -131,10 +132,11 @@ export function toStudySessionDto(
     sessionMood: row.sessionMood ?? null,
     struggleNote: row.struggleNote ?? null,
     aiReflection: row.aiReflection ?? null,
-    aiSuggestedTask: (row.aiSuggestedTask as {
-      title: string;
-      subject: string | null;
-    } | null) ?? null,
+    aiSuggestedTask:
+      (row.aiSuggestedTask as {
+        title: string;
+        subject: string | null;
+      } | null) ?? null,
     countsAsFocusSession,
     planTaskAutoCompleted: extras?.planTaskAutoCompleted ?? false,
   };
