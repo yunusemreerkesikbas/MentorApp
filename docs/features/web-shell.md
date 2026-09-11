@@ -63,6 +63,15 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-11 — Clean incremental TypeScript çıktısını da sıfırlıyor
+
+Workspace `clean` scriptleri artık `dist` ve `.turbo` ile birlikte `tsconfig.tsbuildinfo`yu da
+siler. Önceden `dist` silinip incremental durum dosyası kaldığında sonraki `tsc` paketi güncel
+sanıyor, çıktı üretmiyor ve bağımlı paketler eksik declaration'lardan `unknown/{}` tipleri
+çıkarıyordu. Kullanım: `pnpm clean` veya paket bazında `pnpm --filter <paket> run clean`; sonraki
+build gerçek bir emit yapar. Gotcha: `dist` ile incremental durum dosyası birlikte silinmelidir.
+İlgili: `apps/api/package.json`, `packages/{types,validation,core,ui,api-client}/package.json`.
+
 ### 2026-09-10 — Dev başlangıcı workspace paketlerini önce derliyor
 
 `pnpm dev` artık uygulama sunucularını başlatmadan önce bağımlı workspace paketlerinin `build`

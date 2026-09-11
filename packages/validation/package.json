@@ -17,7 +17,7 @@
     "dev": "tsc -p tsconfig.json --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "lint": "eslint .",
-    "clean": "rimraf dist .turbo"
+    "clean": "rimraf dist .turbo tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "zod": "^3.24.1"
