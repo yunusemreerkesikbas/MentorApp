@@ -269,7 +269,7 @@ export function CoachPlanCalendarShell({
     selectedDate,
     itemsByDate,
     holidaysByDate: holidays,
-    namespace: "coachPlan",
+    namespace: "coachPlan" as const,
     onDateChange: (date: string) => selectDate(date, false),
     onOpenItem: selectItem,
     onCreateAt: (iso: string, startTime: string) =>
