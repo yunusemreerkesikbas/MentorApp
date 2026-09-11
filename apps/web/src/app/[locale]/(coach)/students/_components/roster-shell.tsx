@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -39,7 +39,7 @@ export function RosterShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("ACTIVE");
   // The loaded tab travels with its rows, so switching tabs shows the skeleton without a
@@ -60,16 +60,14 @@ export function RosterShell() {
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      toastError({
         title: common("error_title"),
         // The API already localizes its messages; the client does not re-translate them.
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [toastError, common],
   );
-  const showErrorRef = useRef(showError);
-  showErrorRef.current = showError;
 
   useEffect(() => {
     let active = true;
@@ -80,14 +78,14 @@ export function RosterShell() {
       .catch((err: unknown) => {
         if (!active) return;
         setLoaded({ tab, items: [] });
-        // The fetch key is the tab. showError toasts, and a new toast identity must not
-        // refetch: 429 → toast → effect → 429 is how this screen hammered the API.
-        showErrorRef.current(err);
+        // Depend on toastError, not the whole toast object: a new toast identity
+        // would refetch, 429, toast, forever.
+        showError(err);
       });
     return () => {
       active = false;
     };
-  }, [tab]);
+  }, [tab, showError]);
 
   const rows = loaded?.tab === tab ? loaded.items : null;
 
