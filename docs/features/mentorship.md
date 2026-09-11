@@ -202,6 +202,17 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-11 — Coach plan Takvim chrome.** The coach `/plan` calendar now uses the student
+  Takvim frame: left rail (mini calendar, student filter, selected-day list), Gün/Hafta/Ay
+  hour grid, mobile date strip and agenda, hover preview. Chip color comes from the attendee
+  set; personal items stay neutral; task vs event is a glyph. Empty-slot and FAB opens an
+  action sheet, then the existing right-drawer forms. Toolbar create buttons are unchanged.
+  Usage: open `/plan` as COACH. Gotcha: detail stays a live overlay so an authoritative reload
+  can replace the open row; do not freeze it in an imperative bottom sheet. Keep the toolbar at
+  `z-50` so create still works while that overlay is open. Related:
+  `coach-plan-calendar-shell.tsx`, `plan-calendar-{frame,item}.ts*`,
+  `lib/coach-plan-calendar-item.ts`, `e2e/coach-plan.spec.ts`.
+
 - **Koçluk kabuğu ortak AppNav kullanıyor (2026-09-10)** - `/kocluk`, koç profili ve öğrenci
   detayları artık panelle aynı `AppNav` kabuğunu kullanır: masaüstünde açılıp daralabilen sol
   sidebar, mobilde ortak üst başlık ve alt tab bar görünür. `(coach)` route grubu ile COACH guard'ı

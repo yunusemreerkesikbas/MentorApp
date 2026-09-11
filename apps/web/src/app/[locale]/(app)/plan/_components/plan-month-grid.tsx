@@ -1,15 +1,21 @@
 "use client";
 
-import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
+import type { PublicHolidayDto } from "@mentor/types";
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
+import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
 import {
   PlanEventChip,
   spotlightDelay,
   type PlanEventHoverHandler,
 } from "./plan-event-chip";
-import { formatDateLabel, isPastDate, todayIso } from "./plan-utils";
+import {
+  formatDateLabel,
+  isPastDate,
+  todayIso,
+  type PlanCalendarCopyNamespace,
+} from "./plan-utils";
 
 const WEEKDAY_KEYS = [
   "week_mon",
@@ -29,30 +35,32 @@ const MAX_CHIPS = 3;
  * still uses the picker, but a 6×7 board with event chips per cell is less code standalone than
  * overriding the picker's day rendering.
  */
-export function PlanMonthGrid({
+export function PlanMonthGrid<T>({
   monthAnchor,
   selectedDate,
-  tasksByDate,
+  itemsByDate,
   holidaysByDate,
-  highlightSubject,
+  highlightGroup,
+  namespace = "plan",
   onDateChange,
-  onOpenTask,
+  onOpenItem,
   onCreateAt,
   onHover,
 }: {
   /** Any ISO date inside the month being shown. */
   monthAnchor: string;
   selectedDate: string;
-  tasksByDate: Record<string, PlanTaskDto[]>;
+  itemsByDate: Record<string, PlanCalendarItem<T>[]>;
   holidaysByDate: Record<string, PublicHolidayDto>;
   /** Legend selection — everything else fades back. Null = no highlight. */
-  highlightSubject: string | null;
+  highlightGroup: string | null;
+  namespace?: PlanCalendarCopyNamespace;
   onDateChange: (iso: string) => void;
-  onOpenTask: (task: PlanTaskDto) => void;
+  onOpenItem: (source: T, trigger: HTMLButtonElement) => void;
   onCreateAt: (iso: string) => void;
-  onHover: PlanEventHoverHandler;
+  onHover: PlanEventHoverHandler<T>;
 }) {
-  const t = useTranslations("plan");
+  const t = useTranslations(namespace);
   const tPanel = useTranslations("panel");
   const locale = useLocale();
   const today = todayIso();
@@ -87,13 +95,13 @@ export function PlanMonthGrid({
           its min-height and leaves dead space under the last week. */}
       <div className="grid min-h-0 flex-1 grid-cols-7 grid-rows-6 gap-1">
         {days.map((iso) => {
-          const tasks = tasksByDate[iso] ?? [];
+          const items = itemsByDate[iso] ?? [];
           const outside = iso.slice(0, 7) !== monthKey;
           const isToday = iso === today;
           const isSelected = iso === selectedDate;
           const dayReadOnly = isPastDate(iso);
-          const shown = tasks.slice(0, MAX_CHIPS);
-          const overflow = tasks.length - shown.length;
+          const shown = items.slice(0, MAX_CHIPS);
+          const overflow = items.length - shown.length;
           const dayLabel = formatDateLabel(iso, locale, t("today"), {
             alwaysFull: true,
           });
@@ -156,24 +164,25 @@ export function PlanMonthGrid({
               ) : null}
 
               <div className="relative flex min-w-0 flex-col gap-0.5">
-                {shown.map((task) => {
-                  const matches = task.subject?.trim() === highlightSubject;
+                {shown.map((item) => {
+                  const matches =
+                    item.groupKey !== null && item.groupKey === highlightGroup;
                   const spotlight =
-                    highlightSubject === null
+                    highlightGroup === null
                       ? "off"
                       : matches
                         ? "lit"
                         : "dimmed";
                   return (
                     <PlanEventChip
-                      key={task.id}
-                      task={task}
+                      key={item.id}
+                      item={item}
                       variant="month"
                       spotlight={spotlight}
                       spotlightDelayMs={
                         spotlight === "lit" ? spotlightDelay(litIndex++) : 0
                       }
-                      onOpen={onOpenTask}
+                      onOpen={onOpenItem}
                       onHover={onHover}
                     />
                   );

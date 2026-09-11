@@ -57,7 +57,9 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const reflectRequestIdRef = useRef(0);
   const pageHydratedReflectRef = useRef(false);
 
-  reflectionAvailableRef.current = reflectionAvailable;
+  useEffect(() => {
+    reflectionAvailableRef.current = reflectionAvailable;
+  }, [reflectionAvailable]);
 
   const generateReflection = useCallback(async () => {
     const requestId = ++reflectRequestIdRef.current;

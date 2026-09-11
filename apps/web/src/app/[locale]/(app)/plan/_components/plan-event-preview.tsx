@@ -1,13 +1,16 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
 import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { planEventColor } from "@/lib/plan-event-colors";
-import { formatDateLabel, formatTimeRange } from "./plan-utils";
+import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
+import {
+  formatDateLabel,
+  formatTimeRange,
+  type PlanCalendarCopyNamespace,
+} from "./plan-utils";
 
-export interface PlanEventPreviewState {
-  task: PlanTaskDto;
+export interface PlanEventPreviewState<T> {
+  item: PlanCalendarItem<T>;
   rect: DOMRect;
 }
 
@@ -15,16 +18,19 @@ const CARD_WIDTH = 260;
 const GAP = 8;
 
 /**
- * Hover/focus preview for a calendar event. One instance per calendar surface, positioned from
+ * Hover/focus preview for a calendar item. One instance per calendar surface, positioned from
  * the anchor's bounding rect — read-only, so it needs no focus management: pointer users read it,
- * keyboard users get it on focus, Esc dismisses, and clicking the chip is what opens the editor.
+ * keyboard users get it on focus, Esc dismisses, and clicking the chip is what opens the detail.
  */
-export function usePlanEventPreview() {
-  const [preview, setPreview] = useState<PlanEventPreviewState | null>(null);
+export function usePlanEventPreview<T>() {
+  const [preview, setPreview] = useState<PlanEventPreviewState<T> | null>(null);
 
-  const onHover = useCallback((task: PlanTaskDto, anchor: HTMLElement | null) => {
-    setPreview(anchor ? { task, rect: anchor.getBoundingClientRect() } : null);
-  }, []);
+  const onHover = useCallback(
+    (item: PlanCalendarItem<T>, anchor: HTMLElement | null) => {
+      setPreview(anchor ? { item, rect: anchor.getBoundingClientRect() } : null);
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!preview) return;
@@ -44,14 +50,19 @@ export function usePlanEventPreview() {
   return { preview, onHover };
 }
 
-export function PlanEventPreview({ preview }: { preview: PlanEventPreviewState | null }) {
-  const t = useTranslations("plan");
+export function PlanEventPreview<T>({
+  preview,
+  namespace = "plan",
+}: {
+  preview: PlanEventPreviewState<T> | null;
+  namespace?: PlanCalendarCopyNamespace;
+}) {
+  const t = useTranslations(namespace);
   const locale = useLocale();
   if (!preview) return null;
 
-  const { task, rect } = preview;
-  const color = planEventColor(task.subject);
-  const range = formatTimeRange(task.startTime, task.endTime);
+  const { item, rect } = preview;
+  const range = formatTimeRange(item.startTime, item.endTime);
 
   // Flip to the left / above when the card would leave the viewport.
   const left = Math.max(
@@ -73,13 +84,13 @@ export function PlanEventPreview({ preview }: { preview: PlanEventPreviewState |
         <span
           aria-hidden
           className="mt-1 h-3 w-1 shrink-0 rounded-full"
-          style={{ backgroundColor: color.bar }}
+          style={{ backgroundColor: item.color.bar }}
         />
         <p
           className="min-w-0 text-sm font-bold leading-snug"
           style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
         >
-          {task.title}
+          {item.title}
         </p>
       </div>
 
@@ -87,30 +98,32 @@ export function PlanEventPreview({ preview }: { preview: PlanEventPreviewState |
         <div className="flex gap-1.5">
           <dt className="sr-only">{t("calendar_preview_when")}</dt>
           <dd>
-            {formatDateLabel(task.taskDate, locale, t("today"), { alwaysFull: true })}
+            {formatDateLabel(item.date, locale, t("today"), { alwaysFull: true })}
             {range ? ` · ${range}` : ` · ${t("all_day")}`}
           </dd>
         </div>
-        {task.subject ? (
+        {item.meta ? (
           <div className="flex gap-1.5">
-            <dt className="sr-only">{t("subject")}</dt>
-            <dd>{task.subject}</dd>
+            <dt className="sr-only">{t("calendar_preview_meta")}</dt>
+            <dd>{item.meta}</dd>
           </div>
         ) : null}
       </dl>
 
-      {task.description ? (
+      {item.description ? (
         <p
           className="line-clamp-4 text-xs leading-relaxed"
           style={{ color: "var(--color-body)" }}
         >
-          {task.description}
+          {item.description}
         </p>
       ) : null}
 
-      <p className="text-[11px]" style={{ color: "var(--color-secondary)" }}>
-        {task.status === "DONE" ? t("calendar_preview_done") : t("calendar_preview_hint")}
-      </p>
+      {item.hint ? (
+        <p className="text-[11px]" style={{ color: "var(--color-secondary)" }}>
+          {item.hint}
+        </p>
+      ) : null}
     </div>
   );
 }

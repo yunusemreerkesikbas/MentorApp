@@ -31,7 +31,7 @@ import { CoachPlanFormPanel } from "./coach-plan-form-panel";
 import { CoachPlanTimeFields } from "./coach-plan-form-fields";
 
 type TaskFormMode =
-  | { kind: "CREATE"; initialDate: string }
+  | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
   | {
       kind: "EDIT";
       task: CoachPlanGroupedTaskDto;
@@ -59,7 +59,9 @@ export function CoachPlanTaskForm({
   const [taskDate, setTaskDate] = useState(
     initialTask?.taskDate ?? (mode.kind === "CREATE" ? mode.initialDate : ""),
   );
-  const [startTime, setStartTime] = useState(initialTask?.startTime ?? "");
+  const [startTime, setStartTime] = useState(
+    initialTask?.startTime ?? (mode.kind === "CREATE" ? mode.initialStartTime ?? "" : ""),
+  );
   const [endTime, setEndTime] = useState(initialTask?.endTime ?? "");
   const [coachNote, setCoachNote] = useState(initialTask?.coachNote ?? "");
   const [attendeeIds, setAttendeeIds] = useState(initialAttendees);
