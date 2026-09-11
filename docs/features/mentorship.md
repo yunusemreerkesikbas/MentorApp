@@ -202,6 +202,13 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-11 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was firing every ~50ms
+  until the global throttle returned 429. Cause: `RosterShell` listed `showError` in the fetch
+  effect deps; a failed request toasted, toast identity changed, the effect refetched, toasted
+  again. Usage: open `/kocluk` as COACH; a roster error now toasts once. Gotcha: toast helpers
+  must not be fetch keys. Roster/plan page collection also stops if the server ignores `page`
+  or walks past 10 pages. Related: `roster-shell.tsx`, `mentorship-plan.ts`, `mentor-toast.ts`.
+
 - **2026-09-11 — Coach plan Takvim chrome.** The coach `/plan` calendar now uses the student
   Takvim frame: left rail (mini calendar, student filter, selected-day list), Gün/Hafta/Ay
   hour grid, mobile date strip and agenda, hover preview. Chip color comes from the attendee

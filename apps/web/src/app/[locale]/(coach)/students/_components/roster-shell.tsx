@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -68,6 +68,8 @@ export function RosterShell() {
     },
     [toast, common],
   );
+  const showErrorRef = useRef(showError);
+  showErrorRef.current = showError;
 
   useEffect(() => {
     let active = true;
@@ -78,12 +80,14 @@ export function RosterShell() {
       .catch((err: unknown) => {
         if (!active) return;
         setLoaded({ tab, items: [] });
-        showError(err);
+        // The fetch key is the tab. showError toasts, and a new toast identity must not
+        // refetch: 429 → toast → effect → 429 is how this screen hammered the API.
+        showErrorRef.current(err);
       });
     return () => {
       active = false;
     };
-  }, [tab, showError]);
+  }, [tab]);
 
   const rows = loaded?.tab === tab ? loaded.items : null;
 
