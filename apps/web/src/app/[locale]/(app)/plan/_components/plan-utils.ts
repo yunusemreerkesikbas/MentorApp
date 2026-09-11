@@ -1,6 +1,8 @@
 export type PlanViewMode = "list" | "timeline" | "calendar";
 /** Zoom level inside the Takvim view. */
 export type PlanCalendarScale = "day" | "week" | "month";
+/** Shared Takvim chrome copy. Keys the grids read must exist in both namespaces. */
+export type PlanCalendarCopyNamespace = "plan" | "coachPlan";
 
 const VIEW_STORAGE_KEY = "mentor.plan.viewMode";
 const SCALE_STORAGE_KEY = "mentor.plan.calendarScale";
@@ -134,15 +136,20 @@ export function persistViewMode(mode: PlanViewMode): void {
   window.localStorage.setItem(VIEW_STORAGE_KEY, mode);
 }
 
-export function readStoredCalendarScale(): PlanCalendarScale {
+export function readStoredCalendarScale(
+  storageKey: string = SCALE_STORAGE_KEY,
+): PlanCalendarScale {
   if (typeof window === "undefined") return "week";
-  const raw = window.localStorage.getItem(SCALE_STORAGE_KEY);
+  const raw = window.localStorage.getItem(storageKey);
   if (raw === "day" || raw === "week" || raw === "month") return raw;
   return "week";
 }
 
-export function persistCalendarScale(scale: PlanCalendarScale): void {
-  window.localStorage.setItem(SCALE_STORAGE_KEY, scale);
+export function persistCalendarScale(
+  scale: PlanCalendarScale,
+  storageKey: string = SCALE_STORAGE_KEY,
+): void {
+  window.localStorage.setItem(storageKey, scale);
 }
 
 /** Same month, day 1 — the anchor the month grid and its arrows work from. */

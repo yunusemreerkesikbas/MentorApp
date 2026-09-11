@@ -1,11 +1,16 @@
 "use client";
 
-import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
+import type { PublicHolidayDto } from "@mentor/types";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { layoutDayEvents } from "@/lib/plan-calendar-layout";
-import { planEventColor } from "@/lib/plan-event-colors";
-import { formatTimeRange, isPastDate, todayIso } from "./plan-utils";
+import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
+import {
+  formatTimeRange,
+  isPastDate,
+  todayIso,
+  type PlanCalendarCopyNamespace,
+} from "./plan-utils";
 
 /** DOM id for a day block, so scroll-spy can measure without refs per day. */
 function agendaDayId(iso: string): string {
@@ -19,23 +24,25 @@ const SPY_TOLERANCE_PX = 8;
  * Mobile "Ajanda": every day of the visible month as a section, newest scroll position wins.
  * Scrolling re-selects the day under the top edge, which is what drives the date strip above.
  */
-export function PlanMobileAgenda({
+export function PlanMobileAgenda<T>({
   days,
   selectedDate,
-  tasksByDate,
+  itemsByDate,
   holidaysByDate,
+  namespace = "plan",
   onDateChange,
-  onOpenTask,
+  onOpenItem,
 }: {
   /** The visible month's days, in order. */
   days: string[];
   selectedDate: string;
-  tasksByDate: Record<string, PlanTaskDto[]>;
+  itemsByDate: Record<string, PlanCalendarItem<T>[]>;
   holidaysByDate: Record<string, PublicHolidayDto>;
+  namespace?: PlanCalendarCopyNamespace;
   onDateChange: (iso: string) => void;
-  onOpenTask: (task: PlanTaskDto) => void;
+  onOpenItem: (source: T, trigger: HTMLButtonElement) => void;
 }) {
-  const t = useTranslations("plan");
+  const t = useTranslations(namespace);
   const locale = useLocale();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const today = todayIso();
@@ -46,10 +53,10 @@ export function PlanMobileAgenda({
   const sections = useMemo(
     () =>
       days.map((iso) => {
-        const dayTasks = tasksByDate[iso] ?? [];
-        return { iso, ...layoutDayEvents(dayTasks), count: dayTasks.length };
+        const dayItems = itemsByDate[iso] ?? [];
+        return { iso, ...layoutDayEvents(dayItems), count: dayItems.length };
       }),
-    [days, tasksByDate],
+    [days, itemsByDate],
   );
 
   const scrollToDay = useCallback((iso: string) => {
@@ -180,19 +187,17 @@ export function PlanMobileAgenda({
             ) : (
               <ul className="flex flex-col gap-2">
                 {[
-                  ...allDay.map((task) => ({ task, range: null as string | null })),
+                  ...allDay.map((item) => ({ item, range: null as string | null })),
                   ...timed.map(({ event }) => ({
-                    task: event,
+                    item: event,
                     range: formatTimeRange(event.startTime, event.endTime),
                   })),
-                ].map(({ task, range }) => {
-                  const color = planEventColor(task.subject);
-                  const done = task.status === "DONE";
+                ].map(({ item, range }) => {
                   return (
-                    <li key={task.id}>
+                    <li key={item.id}>
                       <button
                         type="button"
-                        onClick={() => onOpenTask(task)}
+                        onClick={(event) => onOpenItem(item.source, event.currentTarget)}
                         className="flex w-full min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] px-1 py-1.5 text-left focus-visible:outline-none focus-visible:ring-2"
                       >
                         <span
@@ -204,21 +209,21 @@ export function PlanMobileAgenda({
                         <span
                           aria-hidden
                           className="mt-1 h-4 w-1 shrink-0 rounded-full"
-                          style={{ backgroundColor: color.bar }}
+                          style={{ backgroundColor: item.color.bar }}
                         />
                         <span className="flex min-w-0 flex-1 flex-col">
                           <span
-                            className={`truncate text-base ${done ? "line-through opacity-70" : "font-medium"}`}
+                            className={`truncate text-base ${item.muted ? "line-through opacity-70" : "font-medium"}`}
                             style={{ color: "var(--color-main)" }}
                           >
-                            {task.title}
+                            {item.title}
                           </span>
-                          {task.subject ? (
+                          {item.meta ? (
                             <span
                               className="truncate text-xs"
                               style={{ color: "var(--color-secondary)" }}
                             >
-                              {task.subject}
+                              {item.meta}
                             </span>
                           ) : null}
                         </span>

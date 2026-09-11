@@ -30,89 +30,106 @@ export function CoachPlanDetail({
   const date = item.kind === "TASK" ? item.task.taskDate : item.event.eventDate;
   const people = item.kind === "TASK" ? item.task.participants : item.event.attendees;
   const names = people.map((person) => person.studentDisplayName).join(", ");
-  const detailRef = useRef<HTMLElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    detailRef.current?.focus();
+    panelRef.current?.focus();
   }, [item]);
 
   return (
-    <aside
-      ref={detailRef}
-      tabIndex={-1}
-      aria-live="polite"
-      aria-labelledby="coach-plan-detail-title"
-      className="focus:outline-none"
+    <div
+      className="fixed inset-0 z-40 flex items-end justify-center p-3 sm:items-center sm:p-5"
+      style={{ background: "color-mix(in srgb, var(--color-main) 45%, transparent)" }}
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
     >
-      <Card className="flex flex-col gap-4">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-              {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
-              {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
-            </p>
-            <h2
-              id="coach-plan-detail-title"
-              className="mt-1 text-lg font-semibold"
+      <aside
+        ref={panelRef}
+        tabIndex={-1}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="coach-plan-detail-title"
+        className="w-full max-w-xl focus:outline-none"
+        onKeyDown={(event) => {
+          if (event.key === "Escape") onClose();
+        }}
+      >
+        <Card className="flex flex-col gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
+                {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
+                {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
+              </p>
+              <h2
+                id="coach-plan-detail-title"
+                className="mt-1 text-lg font-semibold"
+                style={{ color: "var(--color-main)" }}
+              >
+                {data.title}
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label={t("close_details")}
+              className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{ color: "var(--color-main)" }}
             >
-              {data.title}
-            </h2>
+              <X aria-hidden size={22} />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label={t("close_details")}
-            className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: "var(--color-main)" }}
-          >
-            <X aria-hidden size={22} />
-          </button>
-        </div>
-        <dl className="grid gap-3 sm:grid-cols-2">
-          <Detail label={t("detail_date")} value={new Intl.DateTimeFormat(locale, {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-            year: "numeric",
-          }).format(new Date(`${date}T12:00:00Z`))} />
-          <Detail
-            label={t("detail_time")}
-            value={data.startTime
-              ? data.endTime
-                ? `${data.startTime}–${data.endTime}`
-                : data.startTime
-              : t("all_day")}
-          />
-          {item.kind === "TASK" && item.task.subject && (
+          <dl className="grid gap-3 sm:grid-cols-2">
             <Detail
-              label={t("detail_subject")}
-              value={[item.task.subject, item.task.topic].filter(Boolean).join(" · ")}
+              label={t("detail_date")}
+              value={new Intl.DateTimeFormat(locale, {
+                weekday: "long",
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              }).format(new Date(`${date}T12:00:00Z`))}
             />
-          )}
-          {item.kind === "TASK" && item.task.coachNote && (
-            <Detail label={t("detail_note")} value={item.task.coachNote} />
-          )}
-          {item.kind === "EVENT" && item.event.description && (
-            <Detail label={t("detail_description")} value={item.event.description} />
-          )}
-        </dl>
-        {people.length > 0 && (
-          <div className="flex flex-wrap items-center gap-3">
-            <CoachPlanAvatarStack
-              people={people}
-              label={t("participants_named", { names })}
+            <Detail
+              label={t("detail_time")}
+              value={
+                data.startTime
+                  ? data.endTime
+                    ? `${data.startTime}–${data.endTime}`
+                    : data.startTime
+                  : t("all_day")
+              }
             />
-            <p className="text-sm" style={{ color: "var(--color-body)" }}>{names}</p>
-          </div>
-        )}
-        <CoachPlanDetailActions
-          item={item}
-          onEdit={onEdit}
-          onSuccess={onMutationSuccess}
-        />
-      </Card>
-    </aside>
+            {item.kind === "TASK" && item.task.subject ? (
+              <Detail
+                label={t("detail_subject")}
+                value={[item.task.subject, item.task.topic].filter(Boolean).join(" · ")}
+              />
+            ) : null}
+            {item.kind === "TASK" && item.task.coachNote ? (
+              <Detail label={t("detail_note")} value={item.task.coachNote} />
+            ) : null}
+            {item.kind === "EVENT" && item.event.description ? (
+              <Detail label={t("detail_description")} value={item.event.description} />
+            ) : null}
+          </dl>
+          {people.length > 0 ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <CoachPlanAvatarStack
+                people={people}
+                label={t("participants_named", { names })}
+              />
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>{names}</p>
+            </div>
+          ) : null}
+          <CoachPlanDetailActions
+            item={item}
+            onEdit={onEdit}
+            onSuccess={onMutationSuccess}
+          />
+        </Card>
+      </aside>
+    </div>
   );
 }
 

@@ -1,13 +1,19 @@
 "use client";
 
-import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
+import type { PublicHolidayDto } from "@mentor/types";
 import { motion, useReducedMotion } from "framer-motion";
 import { useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
-import { planEventColor } from "@/lib/plan-event-colors";
+import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
 import { spotlightDelay } from "./plan-event-chip";
-import { isPastDate, monthStart, todayIso, weekDates } from "./plan-utils";
+import {
+  isPastDate,
+  monthStart,
+  todayIso,
+  weekDates,
+  type PlanCalendarCopyNamespace,
+} from "./plan-utils";
 
 const WEEKDAY_KEYS = [
   "week_mon",
@@ -52,32 +58,34 @@ const selectedPillTransition = {
  * the row offset both interpolate with the pointer, so there is no separate "strip" and "month
  * grid" to reconcile. Releasing past the halfway point snaps to Ay, below it back to Gün.
  */
-export function PlanMobileDateStrip({
+export function PlanMobileDateStrip<T>({
   selectedDate,
   weekStartDate,
-  tasksByDate,
+  itemsByDate,
   holidaysByDate,
-  highlightSubject,
+  highlightGroup,
   expanded,
+  namespace = "plan",
   onDateChange,
-  onOpenTask,
+  onOpenItem,
   onExpand,
   onCollapse,
 }: {
   selectedDate: string;
   weekStartDate: string;
-  tasksByDate: Record<string, PlanTaskDto[]>;
+  itemsByDate: Record<string, PlanCalendarItem<T>[]>;
   holidaysByDate: Record<string, PublicHolidayDto>;
   /** Legend selection — everything else fades back. Null = no highlight. */
-  highlightSubject: string | null;
+  highlightGroup: string | null;
   /** True while Ay is the active scale. */
   expanded: boolean;
+  namespace?: PlanCalendarCopyNamespace;
   onDateChange: (iso: string) => void;
-  onOpenTask: (task: PlanTaskDto) => void;
+  onOpenItem: (source: T, trigger: HTMLButtonElement) => void;
   onExpand: () => void;
   onCollapse: () => void;
 }) {
-  const t = useTranslations("plan");
+  const t = useTranslations(namespace);
   const tPanel = useTranslations("panel");
   const reduceMotion = useReducedMotion();
   const today = todayIso();
@@ -154,9 +162,9 @@ export function PlanMobileDateStrip({
           }}
         >
           {days.map((iso) => {
-            const tasks = tasksByDate[iso] ?? [];
-            const shown = tasks.slice(0, MAX_CHIPS);
-            const overflow = tasks.length - shown.length;
+            const items = itemsByDate[iso] ?? [];
+            const shown = items.slice(0, MAX_CHIPS);
+            const overflow = items.length - shown.length;
             const isSelected = iso === selectedDate;
             const isToday = iso === today;
             const outside = iso.slice(0, 7) !== monthAnchor.slice(0, 7);
@@ -173,6 +181,7 @@ export function PlanMobileDateStrip({
               >
                 <button
                   type="button"
+                  data-date={iso}
                   onClick={() => onDateChange(iso)}
                   aria-pressed={isSelected}
                   aria-current={isToday ? "date" : undefined}
@@ -224,32 +233,31 @@ export function PlanMobileDateStrip({
                       {holiday.name}
                     </span>
                   ) : null}
-                  {shown.map((task) => {
-                    const color = planEventColor(task.subject);
-                    const matches = task.subject?.trim() === highlightSubject;
-                    const lit = highlightSubject !== null && matches;
-                    const faded = highlightSubject !== null && !matches;
+                  {shown.map((item) => {
+                    const matches =
+                      item.groupKey !== null && item.groupKey === highlightGroup;
+                    const lit = highlightGroup !== null && matches;
+                    const faded = highlightGroup !== null && !matches;
                     return (
                       <button
-                        key={task.id}
+                        key={item.id}
                         type="button"
-                        onClick={() => onOpenTask(task)}
+                        onClick={(event) => onOpenItem(item.source, event.currentTarget)}
                         className="w-full cursor-pointer truncate rounded-[3px] border-l-2 px-0.5 text-left text-[8px] leading-[1.35] transition-[opacity,filter,box-shadow] duration-[260ms] ease-[cubic-bezier(0.22,1,0.36,1)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:duration-150"
                         style={{
-                          backgroundColor: color.bg,
-                          borderLeftColor: color.bar,
+                          backgroundColor: item.color.bg,
+                          borderLeftColor: item.color.bar,
                           color: "var(--color-main)",
                           opacity: faded ? 0.32 : 1,
                           filter: faded ? "saturate(0.35)" : undefined,
-                          boxShadow: lit ? `0 0 0 1px ${color.bar}` : undefined,
+                          boxShadow: lit ? `0 0 0 1px ${item.color.bar}` : undefined,
                           transitionDelay: lit
                             ? `${spotlightDelay(litIndex++)}ms`
                             : undefined,
-                          textDecoration:
-                            task.status === "DONE" ? "line-through" : undefined,
+                          textDecoration: item.muted ? "line-through" : undefined,
                         }}
                       >
-                        {task.title}
+                        {item.title}
                       </button>
                     );
                   })}

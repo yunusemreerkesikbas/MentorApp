@@ -145,6 +145,13 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-11 — Shared Takvim item model.** Plan calendar grids (hour, month, mobile strip,
+  agenda, hover preview) now render `PlanCalendarItem<T>` instead of `PlanTaskDto`. The student
+  adapter (`planTaskCalendarItem`) keeps the same pixels; the coach calendar reuses the same
+  components. Usage: student `/plan` Takvim is unchanged. Gotcha: pass `loadMarkedDates` into
+  `PlanWeekMiniCalendar` — it no longer calls the student calendar-dates API itself. Related:
+  `lib/plan-calendar-item.ts`, `plan-{time-grid,month-grid,event-chip,calendar-view}.tsx`.
+
 - **2026-09-09 · APP-091 seri katılımcı koruması.** Tekrar/tarih değişikliği sırasında
   `attendeeIds` gönderilmezse gelecekteki etkinliklerin farklı katılımcı kümeleri sıralarına göre
   yeni kayıtlara taşınıyor; yeni kural fazladan kayıt üretirse yalnız bu ek kayıtlar seçili

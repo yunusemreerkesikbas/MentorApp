@@ -84,6 +84,14 @@ function event(
 }
 
 describe("coachPlanRange", () => {
+  it("returns a single-day window", () => {
+    expect(coachPlanRange("2026-09-11", "day")).toEqual({
+      from: "2026-09-11",
+      to: "2026-09-11",
+      days: ["2026-09-11"],
+    });
+  });
+
   it("returns a Monday-first seven-day week", () => {
     expect(coachPlanRange("2026-09-09", "week")).toEqual({
       from: "2026-09-07",

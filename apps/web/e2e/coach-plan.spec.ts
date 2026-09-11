@@ -127,7 +127,7 @@ test("group mutations keep done students historical and series cancel requires s
   const api = await mockCoachPlanApi(page, items);
   await page.goto("/plan");
 
-  await page.getByRole("button", { name: /Paragraf/ }).click();
+  await page.getByRole("button", { name: /Paragraf/ }).first().click();
   const edit = page.getByRole("button", { name: "Düzenle" });
   await edit.click();
   await page.getByRole("dialog").getByRole("button", { name: "Vazgeç" }).click();
@@ -149,7 +149,7 @@ test("group mutations keep done students historical and series cancel requires s
     },
   });
 
-  await page.getByRole("button", { name: /Paragraf/ }).click();
+  await page.getByRole("button", { name: /Paragraf/ }).first().click();
   await page.getByRole("button", { name: "Kaldır" }).click();
   await page.getByRole("button", { name: "Görevi kaldır" }).click();
   await expect.poll(() => api.groupDeletes.length).toBe(1);
@@ -166,7 +166,7 @@ test("group mutations keep done students historical and series cancel requires s
     },
   });
 
-  await page.getByRole("button", { name: /Haftalık görüşme/ }).click();
+  await page.getByRole("button", { name: /Haftalık görüşme/ }).first().click();
   await page.getByRole("button", { name: "Düzenle" }).click();
   await page.getByRole("radio", { name: "Tüm seri" }).check();
   await page.getByLabel("Başlık").fill("Yeni görüşme");
@@ -179,7 +179,7 @@ test("group mutations keep done students historical and series cancel requires s
     attendeeIds: [STUDENT_B],
   });
 
-  await page.getByRole("button", { name: /Haftalık görüşme/ }).click();
+  await page.getByRole("button", { name: /Haftalık görüşme/ }).first().click();
   const cancel = page.getByRole("button", { name: "İptal et" });
   await cancel.click();
   await expect(page.getByRole("dialog", { name: "Etkinlik kapsamı" })).toBeVisible();
@@ -220,7 +220,7 @@ test("reloads selected detail from authority and creates on a selected future da
   const api = await mockCoachPlanApi(page, [initial]);
   await page.goto("/plan");
 
-  await page.getByRole("button", { name: /Eski başlık/ }).click();
+  await page.getByRole("button", { name: /Eski başlık/ }).first().click();
   api.planItems = [personalTask("Güncel başlık")];
   await page.getByRole("button", { name: "Yeni etkinlik" }).click();
   const eventDialog = page.getByRole("dialog", { name: "Yeni etkinlik" });
@@ -230,8 +230,10 @@ test("reloads selected detail from authority and creates on a selected future da
   await expect(page.getByRole("heading", { name: "Güncel başlık" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Eski başlık" })).toHaveCount(0);
 
+  await page.getByRole("button", { name: "Detayı kapat" }).click();
+  await page.getByRole("tab", { name: "Gün" }).click();
+  await page.getByRole("button", { name: "Sonraki gün" }).click();
   const future = addDays(todayIso(), 1);
-  await page.getByRole("button", { name: `${future} tarihini seç` }).click();
   await page.getByRole("button", { name: "Yeni görev" }).click();
   const taskDialog = page.getByRole("dialog", { name: "Yeni görev" });
   await expect(taskDialog.getByLabel("Tarih", { exact: true })).toHaveValue(future);
@@ -353,6 +355,9 @@ async function mockCoachPlanApi(
         page: 1,
         pageSize: 100,
       });
+    }
+    if (method === "GET" && pathname === "/v1/content/holidays") {
+      return json(route, []);
     }
     if (method === "POST" && pathname === "/v1/plan-tasks") {
       if (state.failNextTask) {

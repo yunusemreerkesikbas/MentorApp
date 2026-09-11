@@ -1,11 +1,14 @@
 "use client";
-import { Plus } from "lucide-react";
 
 import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
+import { planTaskCalendarItems } from "@/lib/plan-calendar-item";
+import { listPlanTaskCalendarDates } from "@/lib/plan-tasks";
+import { PlanCalendarFab } from "./plan-calendar-fab";
+import { PlanCalendarFrame } from "./plan-calendar-frame";
 import { PlanCalendarHeader } from "./plan-calendar-header";
 import { PlanCalendarSkeleton } from "./plan-content-skeleton";
 import { PlanDayTodoList } from "./plan-day-todo-list";
@@ -80,13 +83,21 @@ export function PlanCalendarView({
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
-  const { preview, onHover } = usePlanEventPreview();
+  const { preview, onHover } = usePlanEventPreview<PlanTaskDto>();
   const [pickedSubject, setPickedSubject] = useState<string | null>(null);
   const monthAnchor = monthStart(selectedDate);
   const monthDays = useMemo(() => {
     const d = new Date(`${monthAnchor}T12:00:00`);
     return monthGridDays(d.getFullYear(), d.getMonth());
   }, [monthAnchor]);
+  const itemsByDate = useMemo(
+    () =>
+      planTaskCalendarItems(tasksByDate, {
+        done: t("calendar_preview_done"),
+        hint: t("calendar_preview_hint"),
+      }),
+    [t, tasksByDate],
+  );
 
   /**
    * The legend only exists on Ay, and a subject can vanish when the user steps to a month where
@@ -140,10 +151,10 @@ export function PlanCalendarView({
   // covers the quick glance, so the click is free to carry the fuller view (with Edit / Sil).
   const gridProps = {
     selectedDate,
-    weekTasks: tasksByDate,
+    itemsByDate,
     holidaysByDate,
     onDateChange,
-    onOpenTask: onOpenEvent,
+    onOpenItem: onOpenEvent,
     onCreateAt: (iso: string, startTime: string) =>
       addOnCalendar({ taskDate: iso, startTime }),
     onHover,
@@ -152,101 +163,92 @@ export function PlanCalendarView({
   const monthProps = {
     monthAnchor,
     selectedDate,
-    tasksByDate,
+    itemsByDate,
     holidaysByDate,
-    highlightSubject,
+    highlightGroup: highlightSubject,
     onDateChange,
-    onOpenTask: onOpenEvent,
+    onOpenItem: onOpenEvent,
     onCreateAt: (iso: string) => addOnCalendar({ taskDate: iso }),
     onHover,
   };
 
   return (
     <>
-      {/* grid-rows minmax(0,1fr): without it the row is `auto`, the children size to content and
-          the min-h-0 chain below them has nothing to shrink against. */}
-      <div className="lg:grid lg:min-h-0 lg:flex-1 lg:grid-cols-[minmax(280px,320px)_minmax(0,1fr)] lg:grid-rows-[minmax(0,1fr)] lg:gap-6">
-        {/* Planning rail: month picker on top, the picked day's todos underneath. */}
-        <div className="hidden lg:flex lg:min-h-0 lg:flex-col lg:gap-4">
-          <PlanWeekMiniCalendar
-            selectedDate={selectedDate}
-            weekStartDate={weekStartDate}
-            onDateChange={onDateChange}
-          />
-          <Card className="flex min-h-0 flex-1 flex-col overflow-y-auto">
-            <PlanDayTodoList {...todoProps} />
-          </Card>
-        </div>
+      <PlanCalendarFrame
+        rail={
+          <>
+            <PlanWeekMiniCalendar
+              selectedDate={selectedDate}
+              weekStartDate={weekStartDate}
+              loadMarkedDates={listPlanTaskCalendarDates}
+              onDateChange={onDateChange}
+            />
+            <Card className="flex min-h-0 flex-1 flex-col overflow-y-auto">
+              <PlanDayTodoList {...todoProps} />
+            </Card>
+          </>
+        }
+      >
+        <div className="shrink-0">{header}</div>
 
-        {/* Tighter gutter on mobile so the seven day columns get the width instead. */}
-        <Card className="flex min-w-0 flex-col gap-4 !p-3 lg:!p-6 lg:min-h-0 lg:flex-1">
-          <div className="shrink-0">{header}</div>
+        {/* Mobile: one board serves as both the date strip and the month view — dragging its
+            handle reveals the remaining weeks, so Ay needs no separate grid underneath. */}
+        <PlanMobileDateStrip
+          weekStartDate={weekStartDate}
+          selectedDate={selectedDate}
+          itemsByDate={itemsByDate}
+          holidaysByDate={holidaysByDate}
+          highlightGroup={highlightSubject}
+          expanded={scale === "month"}
+          onDateChange={onDateChange}
+          onOpenItem={onOpenEvent}
+          onExpand={() => onScaleChange("month")}
+          onCollapse={() => onScaleChange("day")}
+        />
 
-          {/* Mobile: one board serves as both the date strip and the month view — dragging its
-              handle reveals the remaining weeks, so Ay needs no separate grid underneath. */}
-          <PlanMobileDateStrip
-            weekStartDate={weekStartDate}
-            selectedDate={selectedDate}
-            tasksByDate={tasksByDate}
-            holidaysByDate={holidaysByDate}
-            highlightSubject={highlightSubject}
-            expanded={scale === "month"}
-            onDateChange={onDateChange}
-            onOpenTask={onOpenEvent}
-            onExpand={() => onScaleChange("month")}
-            onCollapse={() => onScaleChange("day")}
-          />
+        {scale === "month" ? (
+          <>
+            <div className="hidden lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+              <PlanMonthGrid {...monthProps} />
+            </div>
+            {/* Decodes the colors AND doubles as the highlight control — mobile's board is the
+                expanded strip above, so one legend serves both. */}
+            <PlanSubjectLegend
+              monthKey={monthKey}
+              tasksByDate={tasksByDate}
+              activeSubject={highlightSubject}
+              onSelect={setPickedSubject}
+            />
+          </>
+        ) : scale === "day" ? (
+          <PlanTimeGrid {...gridProps} days={[selectedDate]} readOnlyAll={readOnly} />
+        ) : (
+          <>
+            {/* Hafta: full seven-column grid on desktop only. */}
+            <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+              <PlanTimeGrid {...gridProps} days={weekDates(weekStartDate)} />
+            </div>
+            <PlanMobileAgenda
+              days={monthDays}
+              selectedDate={selectedDate}
+              itemsByDate={itemsByDate}
+              holidaysByDate={holidaysByDate}
+              onDateChange={onDateChange}
+              onOpenItem={onOpenEvent}
+            />
+          </>
+        )}
+      </PlanCalendarFrame>
 
-          {scale === "month" ? (
-            <>
-              <div className="hidden lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
-                <PlanMonthGrid {...monthProps} />
-              </div>
-              {/* Decodes the colors AND doubles as the highlight control — mobile's board is the
-                  expanded strip above, so one legend serves both. */}
-              <PlanSubjectLegend
-                monthKey={monthKey}
-                tasksByDate={tasksByDate}
-                activeSubject={highlightSubject}
-                onSelect={setPickedSubject}
-              />
-            </>
-          ) : scale === "day" ? (
-            <PlanTimeGrid {...gridProps} days={[selectedDate]} readOnlyAll={readOnly} />
-          ) : (
-            <>
-              {/* Hafta: full seven-column grid on desktop only. */}
-              <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
-                <PlanTimeGrid {...gridProps} days={weekDates(weekStartDate)} />
-              </div>
-              <PlanMobileAgenda
-                days={monthDays}
-                selectedDate={selectedDate}
-                tasksByDate={tasksByDate}
-                holidaysByDate={holidaysByDate}
-                onDateChange={onDateChange}
-                onOpenTask={onOpenEvent}
-              />
-            </>
-          )}
-        </Card>
-      </div>
-
-      {/* Mobile add affordance — sits above the app tab bar. */}
       {!readOnly ? (
-        <button
-          type="button"
-          onClick={() => addOnCalendar({ taskDate: selectedDate })}
-          aria-label={t("calendar_add_on", {
+        <PlanCalendarFab
+          label={t("calendar_add_on", {
             date: formatDateLabel(selectedDate, locale, t("today"), {
               alwaysFull: true,
             }),
           })}
-          className="fixed right-5 bottom-[calc(96px+env(safe-area-inset-bottom))] z-40 flex size-14 cursor-pointer items-center justify-center rounded-full shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 lg:hidden"
-          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
-        >
-          <Plus size={26} strokeWidth={2.5} aria-hidden />
-        </button>
+          onClick={() => addOnCalendar({ taskDate: selectedDate })}
+        />
       ) : null}
 
       <PlanEventPreview preview={preview} />

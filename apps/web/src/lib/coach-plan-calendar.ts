@@ -1,6 +1,8 @@
 import type { CoachPlanItemDto } from "@mentor/types";
 
-export type CoachPlanScale = "week" | "month";
+export type CoachPlanScale = "day" | "week" | "month";
+
+export const COACH_PLAN_SCALE_STORAGE_KEY = "mentor.coachPlan.calendarScale";
 
 export interface CoachPlanRange {
   from: string;
@@ -40,6 +42,9 @@ function mondayOnOrBefore(value: string): string {
 }
 
 export function coachPlanRange(anchor: string, scale: CoachPlanScale): CoachPlanRange {
+  if (scale === "day") {
+    return { from: anchor, to: anchor, days: [anchor] };
+  }
   const monthStart = `${anchor.slice(0, 7)}-01`;
   const from = mondayOnOrBefore(scale === "week" ? anchor : monthStart);
   const dayCount = scale === "week" ? 7 : 42;
@@ -104,6 +109,10 @@ export function uniqueStudentAvatars(
     total: all.length,
     allNames: all.map((student) => student.studentDisplayName),
   };
+}
+
+export function coachPlanItemId(item: CoachPlanItemDto): string {
+  return item.kind === "TASK" ? item.task.id : item.event.id;
 }
 
 export function isCoachPlanItemShared(item: CoachPlanItemDto): boolean {

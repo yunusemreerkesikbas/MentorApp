@@ -9,10 +9,12 @@ export interface CoachPlanAvatarPerson {
 export function CoachPlanAvatarStack({
   people,
   overflow = 0,
+  size = 28,
   label,
 }: {
   people: readonly CoachPlanAvatarPerson[];
   overflow?: number;
+  size?: number;
   label: string;
 }) {
   if (people.length === 0) return null;
@@ -24,7 +26,7 @@ export function CoachPlanAvatarStack({
           key={person.studentId}
           name={person.studentDisplayName}
           src={person.avatarUrl}
-          size={28}
+          size={size}
           className={index === 0 ? "" : "-ml-2"}
         />
       ))}
