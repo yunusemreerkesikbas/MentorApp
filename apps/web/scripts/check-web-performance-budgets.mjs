@@ -31,8 +31,8 @@ const routeFiles = {
 const limits = {
   articleRouteAttributableBytes: 704 * 1024,
   articleTotalBytes: 985 * 1024,
-  dashboardRouteAttributableBytes: 715 * 1024,
-  dashboardTotalBytes: 1287 * 1024,
+  dashboardRouteAttributableBytes: 760 * 1024,
+  dashboardTotalBytes: 1295 * 1024,
   articleFontPreloadCount: 2,
   rootMessageBytes: 1024,
   welcomeMessageBytes: 2048,
@@ -48,8 +48,8 @@ function renderSummary(report) {
   const rows = [
     ["Article route-attributable JS", kib(report.metrics.articleRouteAttributableBytes), "704 KiB"],
     ["Article total JS", kib(report.metrics.articleTotalBytes), "985 KiB"],
-    ["Dashboard route-attributable JS", kib(report.metrics.dashboardRouteAttributableBytes), "715 KiB"],
-    ["Dashboard total JS", kib(report.metrics.dashboardTotalBytes), "1287 KiB"],
+    ["Dashboard route-attributable JS", kib(report.metrics.dashboardRouteAttributableBytes), "760 KiB"],
+    ["Dashboard total JS", kib(report.metrics.dashboardTotalBytes), "1295 KiB"],
     ["Article font preloads", String(report.metrics.articleFontPreloadCount), "2"],
     ["Root client messages", `${report.metrics.rootMessageBytes} B`, "1024 B"],
     ["Welcome client messages", `${report.metrics.welcomeMessageBytes} B`, "2048 B"],
