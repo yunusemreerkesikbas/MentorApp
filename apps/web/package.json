@@ -16,7 +16,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node --test scripts/dev-command.spec.mjs scripts/web-performance-budgets.spec.mjs && vitest run",
     "test:e2e": "playwright test",
-    "clean": "rimraf .next .turbo"
+    "clean": "rimraf .next .turbo tsconfig.tsbuildinfo"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.1.1",

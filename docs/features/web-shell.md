@@ -70,7 +70,8 @@ siler. Önceden `dist` silinip incremental durum dosyası kaldığında sonraki 
 sanıyor, çıktı üretmiyor ve bağımlı paketler eksik declaration'lardan `unknown/{}` tipleri
 çıkarıyordu. Kullanım: `pnpm clean` veya paket bazında `pnpm --filter <paket> run clean`; sonraki
 build gerçek bir emit yapar. Gotcha: `dist` ile incremental durum dosyası birlikte silinmelidir.
-İlgili: `apps/api/package.json`, `packages/{types,validation,core,ui,api-client}/package.json`.
+İlgili: `apps/{api,web}/package.json`,
+`packages/{types,validation,core,ui,api-client}/package.json`.
 
 ### 2026-09-10 — Dev başlangıcı workspace paketlerini önce derliyor
 
