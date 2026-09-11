@@ -57,15 +57,23 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const headers = {
-      "access-control-allow-origin": request.headers().origin ?? "http://localhost:3100",
+      "access-control-allow-origin":
+        request.headers().origin ?? "http://localhost:3100",
       "access-control-allow-credentials": "true",
-      "access-control-allow-headers": "content-type, authorization, accept-language",
+      "access-control-allow-headers":
+        "content-type, authorization, accept-language",
       "access-control-allow-methods": "GET, POST, PUT, PATCH, DELETE, OPTIONS",
     };
     const json = (body: unknown, status = 200) =>
-      route.fulfill({ status, contentType: "application/json", headers, body: JSON.stringify(body) });
+      route.fulfill({
+        status,
+        contentType: "application/json",
+        headers,
+        body: JSON.stringify(body),
+      });
 
-    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (request.method() === "OPTIONS")
+      return route.fulfill({ status: 204, headers });
     if (request.method() === "POST" && path === "/v1/auth/refresh") {
       return json({ accessToken: "test-token", expiresIn: 3600, user });
     }
@@ -74,7 +82,10 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
     }
     if (path === "/v1/mentorship/overview") {
       return json({
-        inviteCode: { code: "MENTOR-KOC-ABCDEF123456", expiresAt: "2026-12-01T00:00:00.000Z" },
+        inviteCode: {
+          code: "MENTOR-KOC-ABCDEF123456",
+          expiresAt: "2026-12-01T00:00:00.000Z",
+        },
         activeStudents: 1,
         maxActiveStudents: 20,
         freeSeats: 3,
@@ -105,7 +116,8 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
       });
     }
     // No cohort brief has ever been written — the case the rule-based floor exists for.
-    if (path === "/v1/mentorship/brief") return route.fulfill({ status: 204, headers });
+    if (path === "/v1/mentorship/brief")
+      return route.fulfill({ status: 204, headers });
     if (path.startsWith("/v1/content/exams/by-type/")) {
       return json({
         exam: { id: "e1", slug: "kpss-lisans-2026", name: "KPSS Lisans 2026" },
@@ -116,9 +128,11 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
         daysUntilNextEvent: null,
       });
     }
-    if (path === "/v1/forum/zones") return json({ items: [{ id: "z1", slug: "kpss" }], total: 1 });
+    if (path === "/v1/forum/zones")
+      return json({ items: [{ id: "z1", slug: "kpss" }], total: 1 });
     // The drawer is part of the coach chrome now, so its three calls run on every page here.
-    if (path === "/v1/notifications") return json({ items: [], unreadCount: 0, total: 0 });
+    if (path === "/v1/notifications")
+      return json({ items: [], unreadCount: 0, total: 0 });
     if (path.startsWith("/v1/achievements") || path.startsWith("/v1/journey")) {
       return json({ celebrations: [] });
     }
@@ -131,7 +145,9 @@ test.describe("koçun kendi dünyası", () => {
     await mockApi(page, COACH);
   });
 
-  test("öğrenci paneline giden koç kendi paneline yönlendirilir", async ({ page }) => {
+  test("öğrenci paneline giden koç kendi paneline yönlendirilir", async ({
+    page,
+  }) => {
     await page.goto("/panel");
     await expect(page).toHaveURL(/\/kocluk$/, { timeout: 10_000 });
     // And the screen this ticket exists to stop them seeing never renders, not even for a frame.
@@ -162,27 +178,72 @@ test.describe("koçun kendi dünyası", () => {
     // The brief card leads the page, and its unwritten state stays one line. APP-090 tried a
     // rule-based stand-in here and cut it: every line it could produce is already on the roster
     // card below, so each sentence appeared twice on one screen.
-    await expect(page.getByText("1 öğrenciden 1 tanesi ilgi bekliyor.")).toHaveCount(1);
-    await expect(page.getByText("Ona bir not bırak, nerede kaldığını sor.")).toHaveCount(1);
+    await expect(
+      page.getByText("1 öğrenciden 1 tanesi ilgi bekliyor."),
+    ).toHaveCount(1);
+    await expect(
+      page.getByText("Ona bir not bırak, nerede kaldığını sor."),
+    ).toHaveCount(1);
 
     // The right rail: the exam the coach coaches, and the forum that is their showcase.
     await expect(page.getByText("Sınava kalan")).toBeVisible();
     await expect(page.getByText("113")).toBeVisible();
-    await expect(page.getByText("KPSS Lisans 2026", { exact: false })).toBeVisible();
+    await expect(
+      page.getByText("KPSS Lisans 2026", { exact: false }),
+    ).toBeVisible();
 
     // And none of the student ritual came along.
     await expect(page.getByText("Bugünkü ritim")).toHaveCount(0);
     await expect(page.getByText("Ruh hali")).toHaveCount(0);
   });
 
-  test("koç kabuğu bildirim ziline ve kendi navigasyonuna sahip", async ({ page }) => {
+  test("koç kabuğu panelle aynı masaüstü sidebarını kullanır", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium");
     await page.goto("/kocluk");
 
-    // Four coach-directed notification types are generated server-side; before APP-090 a coach had
-    // to walk back into the student panel to see any of them, and now they cannot.
-    await expect(page.getByRole("button", { name: "Bildirimler", exact: false })).toBeVisible();
-    // The way back to the student panel is gone, because the panel is gone for them.
+    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Öğrencilerim" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Bildirimler", exact: false }),
+    ).toBeVisible();
+    await expect(
+      page.getByTestId("app-sidebar").getByRole("link", { name: "Mentor" }),
+    ).toHaveAttribute("href", "/kocluk");
+    await expect(
+      page.locator("header").getByText("Mentor", { exact: true }),
+    ).toHaveCount(0);
     await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
+  });
+
+  test("koç kabuğu mobilde panel üst ve alt navigasyonunu kullanır", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile-chromium");
+    await page.goto("/kocluk");
+
+    await expect(page.locator("header")).toBeVisible();
+    await expect(
+      page.getByRole("navigation", { name: "Ana menü" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Öğrencilerim" }),
+    ).toBeVisible();
+  });
+
+  test("ortak sidebar koç profil alt rotasında da korunur", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop-chromium");
+    await page.goto("/kocluk/profil");
+
+    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Öğrencilerim" }),
+    ).toBeVisible();
   });
 
   test("öğrenci paneli öğrenci için bozulmadı", async ({ page }) => {
