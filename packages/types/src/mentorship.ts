@@ -371,15 +371,119 @@ export interface MentorshipProgramTemplateDto {
 /**
  * The coach's AI brief over one student's report.
  *
- * Cached on the link row rather than in a table of its own: it is one text per relationship,
- * overwritten in place, exactly like the coach's standing note — and being on the link means KVKK
- * erasure, which deletes links outright, carries it away with no extra clause.
+ * Two stores, two jobs (APP-093). The link row keeps the LATEST text as a fingerprint-keyed cache,
+ * so a coach opening the same unchanged student twice pays once; `mentorship_student_briefs` keeps
+ * the RECORD of every brief actually written, which is what {@link MentorshipBriefDeltaDto} is
+ * measured against. Erasure deletes links outright and the history cascades with them, so neither
+ * store needs a clause of its own.
  */
 export interface MentorshipBriefDto {
   brief: string;
   /** The model that wrote it, or `"cache"` when the stored one still matches the report. */
   model: string;
   generatedAt: string;
+  /**
+   * What moved since the previous brief of this relationship period, or null when there is no
+   * previous one to measure against. Never model-authored — see {@link MentorshipBriefDeltaDto}.
+   */
+  delta: MentorshipBriefDeltaDto | null;
+}
+
+/**
+ * One number that moved between two briefs.
+ *
+ * `change` travels precomputed because the client does not do arithmetic on domain values
+ * (`docs/standards/frontend.md`): the band renders what the backend decided moved, and two
+ * surfaces cannot disagree about a subtraction they never both perform.
+ */
+export interface MentorshipBriefMetricChangeDto {
+  previous: number;
+  current: number;
+  /** `current - previous`. */
+  change: number;
+}
+
+/**
+ * What the COACH did between the two briefs.
+ *
+ * This is the half that makes the delta a continuity rather than a diff. A brief that says "still
+ * slipping" reads differently when the coach knows they assigned six tasks and opened a follow-up
+ * in the meantime, and the coach should not have to remember that themselves.
+ *
+ * Counts only. What was assigned, what the follow-up said and what the coach wrote in it stay out:
+ * the model reads this shape, and the coach's own sentences are deliberately kept away from it for
+ * the reason `ai/domain/mentorship-brief-prompt.ts` gives about `coachNote`.
+ *
+ * The assignment counts are read off the report the coach is looking at, not off `plan_tasks`:
+ * that table belongs to W2 and W8 calls its service rather than its rows. So they are bounded by
+ * the report's own plan window the same way the list on screen is, which also means the number
+ * always matches something the coach can check by scrolling.
+ */
+export interface MentorshipBriefCoachActionsDto {
+  /** The coach marked this student handled (`attended_at`) inside the window. */
+  attended: boolean;
+  followupsOpened: number;
+  followupsClosed: number;
+  /** Coach-assigned tasks dated on or after the previous brief. */
+  assignmentsScheduled: number;
+  /** How many of those the student finished. */
+  assignmentsCompleted: number;
+  /** Coach-assigned tasks the student deleted since the previous brief. */
+  assignmentsDropped: number;
+}
+
+/**
+ * The movement between the previous brief and this one.
+ *
+ * Rule-based, not model-authored — the same line `MentorshipCohortBriefItemDto` draws. Every field
+ * here is computed by `mentorship/domain/brief-delta.ts` from the two stored evidence snapshots,
+ * and the model receives it as input rather than producing it. It never receives the previous
+ * brief's PROSE: a model handed its own last answer agrees with it instead of reading the numbers,
+ * and a reading that drifted once would then confirm itself every week.
+ *
+ * A metric is null when it did not move, or when either side has no data. Absence of data is not
+ * movement, for the same reason `risk-flags.ts` refuses to flag a student who planned nothing.
+ */
+export interface MentorshipBriefDeltaDto {
+  /** When the brief this one is measured against was written. */
+  previousGeneratedAt: string;
+  /** Flags the previous brief did not carry. */
+  flagsAdded: MentorshipRiskFlagId[];
+  /** Flags the previous brief carried and this one does not. */
+  flagsResolved: MentorshipRiskFlagId[];
+  planCompletion: MentorshipBriefMetricChangeDto | null;
+  activeDays7d: MentorshipBriefMetricChangeDto | null;
+  focusMinutes7d: MentorshipBriefMetricChangeDto | null;
+  sessions7d: MentorshipBriefMetricChangeDto | null;
+  /** Mocks entered since the previous brief. */
+  mocksSince: number;
+  /** Latest net against the latest the previous brief saw; null until two comparable mocks exist. */
+  net: MentorshipBriefMetricChangeDto | null;
+  /** Mean check-in level. A score, never a diagnosis. */
+  moodMean: MentorshipBriefMetricChangeDto | null;
+  coachActions: MentorshipBriefCoachActionsDto;
+  /**
+   * True when nothing above moved and the coach did nothing in between. The report can still have
+   * changed in ways this delta does not report (a task title, a dropped row), which is why a fresh
+   * brief can be written and land here: the band then says so plainly instead of rendering no chips.
+   */
+  quiet: boolean;
+}
+
+/**
+ * One brief the coach was actually shown, kept so the next one has something to measure against.
+ *
+ * Scoped to the relationship period: re-linking rotates `coach_students.period_id`, so briefs
+ * written about a relationship both sides walked away from never resurface — the rule APP-071 set
+ * for the standing note and the follow-up cycle kept.
+ */
+export interface MentorshipBriefHistoryItemDto {
+  id: string;
+  brief: string;
+  model: string;
+  generatedAt: string;
+  /** Null on the first brief of a period: there was nothing to measure it against. */
+  delta: MentorshipBriefDeltaDto | null;
 }
 
 /**

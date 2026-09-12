@@ -8,6 +8,7 @@ import {
   mentorshipAssignmentParamSchema,
   mentorshipEventParamSchema,
   removeMentorshipAssignmentGroupSchema,
+  listMentorshipBriefHistoryQuerySchema,
   listMentorshipStudentsQuerySchema,
   mentorshipAttentionSchema,
   mentorshipCoachNoteSchema,
@@ -28,6 +29,9 @@ export class ListMentorshipStudentsQueryDto extends createZodDto(
   listMentorshipStudentsQuerySchema,
 ) {}
 export class MentorshipStudentParamDto extends createZodDto(mentorshipStudentParamSchema) {}
+export class ListMentorshipBriefHistoryQueryDto extends createZodDto(
+  listMentorshipBriefHistoryQuerySchema,
+) {}
 export class CreateMentorshipAssignmentsDto extends createZodDto(
   createMentorshipAssignmentsSchema,
 ) {}

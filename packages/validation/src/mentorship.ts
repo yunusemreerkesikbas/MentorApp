@@ -412,3 +412,14 @@ export const updateCoachProfileSchema = z
   })
   .strict();
 export type UpdateCoachProfileInput = z.infer<typeof updateCoachProfileSchema>;
+
+/**
+ * The coach paging back through briefs written about one student (APP-093).
+ *
+ * `studentId` rides the path, so the query carries only the page. The active-link gate still runs
+ * server-side: a coach who no longer follows this student gets a 404, not an empty page.
+ */
+export const listMentorshipBriefHistoryQuerySchema = paginationQuerySchema;
+export type ListMentorshipBriefHistoryQuery = z.infer<
+  typeof listMentorshipBriefHistoryQuerySchema
+>;

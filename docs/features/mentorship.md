@@ -133,6 +133,8 @@ DELETE /v1/mentorship/templates/:templateId        -> 204
 GET    /v1/mentorship/brief                        -> MentorshipCohortBriefDto | (empty = never written)
 POST   /v1/mentorship/brief                        -> writes one; unchanged cohort returns the stored text
 POST   /v1/mentorship/students/:id/assignment-suggestions -> a week of drafts for the composer (writes nothing)
+POST   /v1/mentorship/students/:id/brief           -> MentorshipBriefDto (carries `delta`; null on the first)
+GET    /v1/mentorship/students/:id/brief-history   -> Paginated<MentorshipBriefHistoryItemDto> (free)
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
@@ -163,6 +165,7 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `GET /v1/mentorship/brief`                                       | The stored cohort brief. Free — no LLM call, no quota, so the panel may ask on load (`@Roles(COACH)`)                                                                        |
 | `POST /v1/mentorship/brief`                                      | Write one. Unchanged cohort returns the stored text and spends nothing (`@Roles(COACH)`, 10/min)                                                                             |
 | `POST /v1/mentorship/students/:studentId/assignment-suggestions` | A week of AI-drafted homework for the composer. Writes nothing; uncached (gate applies, 10/min)                                                                              |
+| `GET /v1/mentorship/students/:studentId/brief-history`           | The briefs already written in this relationship period, newest first. Free: the rows were paid for once. Bounded by `mentorship.brief.history_limit`; empty after a re-link (gate applies) |
 | `POST /v1/mentorship/invitations/preview`                        | Consent screen input: who the coach is + the exact data scope                                                                                                                |
 | `POST /v1/mentorship/invitations/accept`                         | Student's half of the double opt-in → ACTIVE                                                                                                                                 |
 | `GET /v1/mentorship/my-coach`                                    | Student transparency: who my coach is, what they see                                                                                                                         |
@@ -177,7 +180,9 @@ Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_
 (20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
 `mentorship.risk.plan_completion_floor` (0.5) · `mentorship.risk.low_mood_ceiling` (2) ·
 `mentorship.risk_digest.enabled` (flag, default **false**) ·
-`mentorship.risk_digest.repeat_after_days` (7).
+`mentorship.risk_digest.repeat_after_days` (7) ·
+`mentorship.brief.history_limit` (20 — stored briefs per relationship period; 1 = pre-APP-093
+behaviour, no brief ever has a previous one to compare against).
 
 Cron: `POST /v1/internal/cron/dispatch-mentorship-risk-digest` (`CronSecretGuard`, 07:00 UTC) —
 the coach's daily risk digest. Only pairs the previous digest did not carry are worth sending.
@@ -201,6 +206,70 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-12 — APP-093 brifinge hafıza: "geçen brifingten bu yana".** Tekil öğrenci brifingi
+  amnezikti. `coach_students.brief` tek metin kolonu, her yazımda üstüne yazılıyor; ikinci brifing
+  birincinin neyi işaretlediğini, koçun o arada ne yaptığını, neyin değiştiğini bilmiyordu. Koç her
+  hafta aynı termometreyi okuyordu.
+
+  **İki store, iki iş.** Link satırı (`brief`/`brief_at`/`brief_fingerprint`) aynen kaldı: en son
+  metin, rapor parmak iziyle anahtarlanmış **cache**, `end()` onu temizlemeye devam ediyor. Yeni
+  `mentorship_student_briefs` ise **kayıt**: modelin fiilen yazdığı her brifing. **Cache isabetinde
+  satır yazılmıyor**, çünkü yazılan bir şey yok. Metin iki yerde duruyor ve bu bilinçli: kolonları
+  kaldırmak sıcak yolda migration + `end()` + erasure + mapper dokunuşu demek, ve `brief_at` zaten
+  açık duran şeffaflık maddesinin referansı.
+
+  **Fark deterministik, model üretmiyor.** `domain/brief-delta.ts` saf ve testli, `risk-flags.ts` ile
+  `attention.ts`'in yanında: bayrak küme farkı, plan tamamlama / aktif gün / odak / seans / net /
+  mod hareketleri, araya giren deneme sayısı, ve `coachActions` (ilgilendim işareti, açılan-kapanan
+  follow-up, verilen-tamamlanan-silinen ödev). İki kural her alanda geçerli: **veri yokluğu hareket
+  değildir** (bir tarafı null olan metrik null döner, sıfıra düşüş değil) ve **sıfır haber değildir**
+  (değişmeyen sayı da null döner). `coachActions` bu özelliği bir diff olmaktan çıkarıp sürekliliğe
+  çeviren şey; ödev sayıları `plan_tasks`'tan değil koçun ekranda gördüğü rapordan okunuyor, çünkü o
+  tablo W2'nin ve raporun kendi penceresiyle sınırlı olmak sayının koçun kaydırarak doğrulayabileceği
+  bir şey kalmasını sağlıyor.
+
+  **Model kendi metnini okumuyor.** Prompt v2 kanıta ek olarak `delta` alıyor ve birinci bölümü
+  değişimle açıyor; bir önceki brifingin **düzyazısını almıyor**. Gerekçe dosyanın kendi gerekçesi:
+  `coachNote` tam bu yüzden kesiliyor ("modeli sayıları okumak yerine kendisiyle hemfikir olmaya
+  davet eder"), ve modelin kendi son cevabı bunun biriken hâli olurdu. Prompt ayrıca nedensellik
+  iddiasını yasaklıyor: "ödevden sonra yükseldi" evet, "ödev verdiğin için yükseldi" hayır.
+
+  **Kullanım:** `mentorship.enabled` açıkken koç → `/kocluk/<öğrenci>` → "Brifing al". İlk brifingte
+  bant yok (karşılaştıracak şey yok). İkincisinde üstte "Geçen brifingten bu yana" bandı, altında
+  tembel yüklenen "Önceki brifingler" listesi (ücretsiz, ne model ne kota). Saklama:
+  `mentorship.brief.history_limit` (varsayılan 20, dönem başına); `1` fiilen APP-093 öncesi davranış.
+
+  **Gotchas:**
+  (1) **`delta` fingerprint'e girmiyor, girmemeli.** Fark bir önceki brifinge göre ölçülüyor, yani
+  brifingi yazmak farkı değiştiriyor; hash'e koymak değişmemiş bir raporun cache anahtarını onu
+  anlatan brifing saklandığı anda geçersiz kılardı ve her ikinci çağrı aynı metni ikinci kez satın
+  alırdı.
+  (2) **İlk brifingte `delta` boş nesne değil `null`.** "Hiçbir şey değişmedi" ile "karşılaştıracak
+  bir şey yoktu" farklı cümleler; prompt da null'da delta kurallarını tamamen düşürüyor, yoksa
+  anlatacak değişim olmayan bir modele değişim anlattırmış olursunuz.
+  (3) **Cache'li yanıtta delta yalnız parmak izi tutarsa dönüyor.** Farklı bir fingerprint altında
+  yazılmış geçmiş satırı başka bir brifingi anlatır; onu bu metinle eşleştirmek bandın "-den bu yana"
+  tarihini yanlış ana bağlardı.
+  (4) **Prompt v1 → v2 tüm cache'leri geçersiz kıldı.** Sürüm fingerprint hash'inin içinde; bu
+  tasarım gereği, ama açıldığı gün ilk brifingler yeniden üretilecek.
+  (5) **Şeffaflık maddesi bilerek açık kaldı.** `MENTORSHIP_DATA_SCOPE` zaten `AI_BRIEF` taşıyor, yani
+  yeni bir veri **türü** eklenmedi; ama artık aynı türün **geçmişi** saklanıyor ve öğrenciye söylenen
+  değişmedi. Backlog'daki "AI brief transparency — open" kapanmıyor, gerçek bir koç kohortuyla
+  yeniden değerlendirilecek. Sessizce kapanmış saymak APP-087'nin özellikle tarttığı kararı
+  görünmez kılardı.
+  (6) **Yol üstünde bir hata düzeltildi:** `buildMentorshipBriefEvidence` modele
+  `report.moodTrend.slice(-TREND_LIMIT)` veriyordu. `moodTrend` newest-first ve mod penceresi 14 gün,
+  dolayısıyla model **en eski 5 check-in'i** alıp "bu hafta ne oldu" sorusunu cevaplıyordu. Artık
+  `slice(0, TREND_LIMIT)`, hemen üstündeki `mockTrend` ile aynı.
+
+  **İlgili:** `mentorship/domain/brief-delta.ts` (+spec) ·
+  `mentorship/infrastructure/mentorship-brief-history.repository.ts` ·
+  `mentorship/application/mentorship-brief.service.ts` · `ai/domain/mentorship-brief-prompt.ts` ·
+  `database/schema.ts` (`mentorship_student_briefs`) · `drizzle/0113_app_093_brief_history.sql` ·
+  `(coach)/students/[studentId]/_components/brief-{card,delta-band,history-list}.tsx` ·
+  `config.catalog.ts` (`mentorship.brief.history_limit`).
+  Tasarım: [brief continuity](../plans/2026-09-12-mentorship-brief-continuity-design.md).
 
 - **2026-09-12 — Follow-up ekranlarının i18n anahtarları eksikti.** APP-092 altı follow-up
   bileşenini master'a aldı ama `apps/web/messages/{tr,en}.json` içine **tek bir anahtar yazmadı**:
@@ -1737,10 +1806,14 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   evidence is ever wanted, the honest path is `mock_exam_photo_categorizations.topic_ref` — a label
   attached to a mock exam, already inside the `MOCK_EXAMS` scope the student consented to. Not the
   notebook.
-- **AI brief transparency — open.** `coach_students.brief_at` records when a brief was last written
-  about a student, and APP-087 deliberately does not show it: the scope line already says a coach
-  MAY run an AI summary, and "your coach ran one on the 5th" is a decision about surveillance-feel
-  rather than a number that screen was asked to report. Worth revisiting with a real coach cohort.
+- **AI brief transparency — still open, and APP-093 deliberately left it that way.**
+  `coach_students.brief_at` records when a brief was last written about a student, and APP-087
+  deliberately does not show it: the scope line already says a coach MAY run an AI summary, and
+  "your coach ran one on the 5th" is a decision about surveillance-feel rather than a number that
+  screen was asked to report. APP-093 changed the weight of the question without answering it — the
+  brief now has a stored HISTORY rather than one overwritten row, so more is kept about a student
+  than before, even though `AI_BRIEF` already covers the kind. The student surface was left
+  untouched on purpose. Worth revisiting with a real coach cohort.
 - Move the surface to `apps/panel` when the coach cohort justifies its own app (roadmap §9).
 
 ## Related

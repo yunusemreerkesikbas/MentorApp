@@ -1,5 +1,9 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
-import { PremiumFeatureId, type MentorshipStudentReportDto } from "@mentor/types";
+import {
+  PremiumFeatureId,
+  type MentorshipBriefDeltaDto,
+  type MentorshipStudentReportDto,
+} from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -39,8 +43,14 @@ export class MentorshipBriefService {
     private readonly featureGate: PremiumFeatureGateService,
   ) {}
 
+  /**
+   * `delta` is W8's, computed from two stored snapshots before this is called. It arrives as an
+   * argument for the same reason the report does: this service must not be able to reach for
+   * coach-student state, and taking both as inputs means it cannot.
+   */
   async generate(
     report: MentorshipStudentReportDto,
+    delta: MentorshipBriefDeltaDto | null,
     coach: { id: string; roles: string[] },
     locale: PromptLocale,
   ): Promise<{ text: string; model: string }> {
@@ -54,7 +64,11 @@ export class MentorshipBriefService {
       PremiumFeatureId.MENTORSHIP_BRIEF,
     );
 
-    const prompt = buildMentorshipBriefPrompt(buildMentorshipBriefEvidence(report), locale);
+    const prompt = buildMentorshipBriefPrompt(
+      buildMentorshipBriefEvidence(report),
+      delta,
+      locale,
+    );
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete(prompt);
     await this.usage.append({

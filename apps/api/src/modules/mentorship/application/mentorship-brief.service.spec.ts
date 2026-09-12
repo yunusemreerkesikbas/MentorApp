@@ -34,18 +34,50 @@ const report = (over: Partial<MentorshipStudentReportDto> = {}): MentorshipStude
   ...over,
 });
 
+const PERIOD = "33333333-3333-4333-8333-333333333333";
+const HISTORY_LIMIT = 20;
+
+/** A stored history row, the thing a new brief measures itself against. */
+function historyRow(over: Partial<Record<string, unknown>> = {}) {
+  return {
+    id: "brief-1",
+    linkId: "link-1",
+    periodId: PERIOD,
+    brief: "Onceki brief",
+    model: "fake-model",
+    fingerprint: "other-fingerprint",
+    snapshot: {
+      riskFlags: [],
+      planCompletionRate7d: 0.1,
+      sessions7d: 0,
+      focusMinutes7d: 0,
+      activeDays7d: 0,
+      latestMockAt: null,
+      latestNet: null,
+      moodMean: null,
+      attendedAt: null,
+    },
+    delta: null,
+    generatedAt: new Date("2026-09-03T09:00:00Z"),
+    ...over,
+  };
+}
+
 function setup(link: {
   brief?: string | null;
   briefAt?: Date | null;
   briefFingerprint?: string | null;
   /** The link stopped being ACTIVE while the model was still writing. */
   linkEnded?: boolean;
+  /** The previous brief of this period, if any. */
+  previous?: ReturnType<typeof historyRow> | null;
 }) {
   const current = report();
   const links = {
     assertEnabled: vi.fn(async () => undefined),
     requireActiveLink: vi.fn(async () => ({
       id: "link-1",
+      periodId: PERIOD,
       brief: link.brief ?? null,
       briefAt: link.briefAt ?? null,
       briefFingerprint: link.briefFingerprint ?? null,
@@ -57,16 +89,30 @@ function setup(link: {
       link.linkEnded ? undefined : new Date("2026-09-05T12:00:00Z"),
     ),
   };
+  const history = {
+    findLatest: vi.fn(async () => link.previous ?? undefined),
+    append: vi.fn(async () => historyRow()),
+    list: vi.fn(async () => ({ rows: [], total: 0 })),
+  };
+  const followups = {
+    countInWindow: vi.fn(async () => ({ opened: 0, closed: 0 })),
+  };
+  const config = { get: vi.fn(async () => HISTORY_LIMIT) };
   const writer = { generate: vi.fn(async () => ({ text: "Yeni brief", model: "fake-model" })) };
   return {
     service: new MentorshipBriefService(
       roster as never,
       links as never,
       repo as never,
+      history as never,
+      followups as never,
+      config as never,
       writer as never,
     ),
     roster,
     repo,
+    history,
+    followups,
     writer,
     current,
   };
@@ -104,6 +150,7 @@ describe("MentorshipBriefService", () => {
       brief: "Eski brief",
       model: "cache",
       generatedAt: "2026-09-04T09:00:00.000Z",
+      delta: null,
     });
     expect(writer.generate).not.toHaveBeenCalled();
     expect(repo.setBrief).not.toHaveBeenCalled();
@@ -127,7 +174,7 @@ describe("MentorshipBriefService", () => {
     const { service, writer } = setup({});
     await service.generate(COACH, STUDENT);
     // The actor is not the subject: the coach's id and roles decide the quota and the meter row.
-    expect(writer.generate).toHaveBeenCalledWith(expect.anything(), COACH, "tr");
+    expect(writer.generate).toHaveBeenCalledWith(expect.anything(), null, COACH, "tr");
   });
 });
 
@@ -142,5 +189,119 @@ describe("MentorshipBriefService — the link ends mid-generation", () => {
     await expect(service.generate(COACH, STUDENT)).rejects.toMatchObject({
       code: "MENTORSHIP_LINK_NOT_FOUND",
     });
+  });
+
+  it("records nothing in the history either", async () => {
+    // A history row for a brief the coach was never shown would become the baseline the NEXT brief
+    // measures against, so the memory would start from something that never happened.
+    const { service, history } = setup({ linkEnded: true });
+    await expect(service.generate(COACH, STUDENT)).rejects.toThrow();
+    expect(history.append).not.toHaveBeenCalled();
+  });
+});
+
+/** APP-093: the link row stays the cache, and this table becomes the memory. */
+describe("MentorshipBriefService — brief memory", () => {
+  it("records the brief it just wrote, with the snapshot the next one will measure against", async () => {
+    const { service, history, current } = setup({});
+    await service.generate(COACH, STUDENT);
+
+    expect(history.append).toHaveBeenCalledOnce();
+    const [row, limit] = history.append.mock.calls[0]!;
+    expect(row).toMatchObject({ linkId: "link-1", periodId: PERIOD, brief: "Yeni brief" });
+    expect(row.snapshot.planCompletionRate7d).toBe(current.planCompletionRate7d);
+    expect(limit).toBe(HISTORY_LIMIT);
+  });
+
+  it("records no delta on the first brief of a relationship", async () => {
+    // Not an empty delta: "nothing changed" and "there was nothing to compare" are different
+    // statements, and the band only renders the first one.
+    const { service, history, writer } = setup({ previous: null });
+    await service.generate(COACH, STUDENT);
+    expect(history.append.mock.calls[0]![0].delta).toBeNull();
+    expect(writer.generate.mock.calls[0]![1]).toBeNull();
+  });
+
+  it("measures the second brief against the first and hands the model the movement", async () => {
+    const { service, writer } = setup({ previous: historyRow() });
+    const result = await service.generate(COACH, STUDENT);
+
+    // The stored snapshot had 0.1 completion and no flags; the report has 0.2 and INACTIVE.
+    expect(result.delta).toMatchObject({
+      previousGeneratedAt: "2026-09-03T09:00:00.000Z",
+      flagsAdded: ["INACTIVE"],
+      planCompletion: { previous: 0.1, current: 0.2, change: 0.1 },
+      quiet: false,
+    });
+    // Same object the model was given: the delta is an input to the prompt, never its output.
+    expect(writer.generate.mock.calls[0]![1]).toEqual(result.delta);
+  });
+
+  it("counts the coach's follow-up activity from the previous brief onwards", async () => {
+    const { service, followups } = setup({ previous: historyRow() });
+    followups.countInWindow.mockResolvedValueOnce({ opened: 2, closed: 1 });
+
+    const result = await service.generate(COACH, STUDENT);
+    expect(followups.countInWindow).toHaveBeenCalledWith(
+      "link-1",
+      PERIOD,
+      new Date("2026-09-03T09:00:00Z"),
+    );
+    expect(result.delta?.coachActions).toMatchObject({
+      followupsOpened: 2,
+      followupsClosed: 1,
+    });
+  });
+
+  it("adds nothing to the history when the cache answers", async () => {
+    // No model ran, so there is no new brief to remember — and re-recording the cached one would
+    // reset the baseline every time the coach opened the page.
+    const unchanged = mentorshipBriefFingerprint(report(), "tr");
+    const { service, history } = setup({
+      brief: "Eski brief",
+      briefAt: new Date("2026-09-04T09:00:00Z"),
+      briefFingerprint: unchanged,
+      previous: historyRow({ fingerprint: unchanged }),
+    });
+
+    await service.generate(COACH, STUDENT);
+    expect(history.append).not.toHaveBeenCalled();
+  });
+
+  it("hands back the cached brief's own delta, not a newer row's", async () => {
+    const unchanged = mentorshipBriefFingerprint(report(), "tr");
+    const stored = { previousGeneratedAt: "2026-09-01T09:00:00.000Z", quiet: true };
+    const { service } = setup({
+      brief: "Eski brief",
+      briefAt: new Date("2026-09-04T09:00:00Z"),
+      briefFingerprint: unchanged,
+      previous: historyRow({ fingerprint: unchanged, delta: stored }),
+    });
+
+    const result = await service.generate(COACH, STUDENT);
+    expect(result.delta).toEqual(stored);
+  });
+
+  it("shows no delta beside a cached brief the stored row does not describe", async () => {
+    // A history row written under a different fingerprint belongs to a different brief. Pairing it
+    // with this text would date the band's "since" to a moment that has nothing to do with it.
+    const unchanged = mentorshipBriefFingerprint(report(), "tr");
+    const { service } = setup({
+      brief: "Eski brief",
+      briefAt: new Date("2026-09-04T09:00:00Z"),
+      briefFingerprint: unchanged,
+      previous: historyRow({ fingerprint: "something-else", delta: { quiet: true } }),
+    });
+
+    const result = await service.generate(COACH, STUDENT);
+    expect(result.delta).toBeNull();
+  });
+});
+
+describe("MentorshipBriefService — reading the history", () => {
+  it("goes through the gate before reading anything", async () => {
+    const { service, history } = setup({});
+    await service.listHistory(COACH.id, STUDENT, 1, 10);
+    expect(history.list).toHaveBeenCalledWith("link-1", PERIOD, 1, 10);
   });
 });

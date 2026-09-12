@@ -389,6 +389,12 @@ export const CONFIG_CATALOG = {
     false,
     "Whether self-service coach registration accepts anyone. Key name predates APP-089, which replaced the application queue with direct registration; the job is unchanged, so renaming it would cost a registry migration for nothing. Deliberately separate from mentorship.enabled: coaches have to be registerable before the coach surface opens, and this is the tap you close the day it does.",
   ),
+  "mentorship.brief.history_limit": mentorshipCount(
+    20,
+    1,
+    100,
+    "How many AI briefs are kept per coach-student relationship period. The stored briefs are what a new one measures change against, so this bounds both the storage and how far back the panel can read. 1 keeps only the latest, which is the pre-APP-093 behaviour: no brief ever has a previous one to compare itself to.",
+  ),
   "mentorship.attention.ttl_days": mentorshipCount(
     7,
     1,

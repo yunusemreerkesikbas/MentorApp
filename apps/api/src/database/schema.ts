@@ -4175,3 +4175,107 @@ export const mentorshipFollowups = pgTable("mentorship_followups", {
     withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
   }),
 ]).enableRLS();
+
+/**
+ * What one brief was measured against (APP-093).
+ *
+ * Deliberately NOT the whole `MentorshipBriefEvidence` the model reads. This is the measuring
+ * stick for the next delta, and nothing else needs to survive: task titles, dropped rows and the
+ * full mock list are in the report the next brief recomputes anyway, and storing them here would
+ * keep a second copy of a student's week around for no question it answers (KVKK minimisation, §4).
+ *
+ * `latestMockAt` rather than a count: mocks arrive, they do not disappear, so "what came after this
+ * date" is stable where "how many were in a windowed list" is not.
+ */
+export type MentorshipBriefSnapshot = {
+  riskFlags: string[];
+  planCompletionRate7d: number | null;
+  sessions7d: number;
+  focusMinutes7d: number;
+  activeDays7d: number;
+  /** Newest mock the report carried, so the next brief can count what arrived after it. */
+  latestMockAt: string | null;
+  latestNet: number | null;
+  /** Mean check-in level over the report's mood window. A score, never a diagnosis. */
+  moodMean: number | null;
+  /** `coach_students.attended_at` when this brief was written — the floor of the action window. */
+  attendedAt: string | null;
+};
+
+/**
+ * The movement this brief was written against, frozen as the coach saw it.
+ *
+ * Mirrors `MentorshipBriefDeltaDto` the way `MentorshipCohortBriefItem` mirrors its DTO: the schema
+ * file does not import `@mentor/types`, and the stored shape is allowed to outlive a DTO edit.
+ *
+ * Storing it looks redundant next to {@link MentorshipBriefSnapshot} — two snapshots do determine
+ * every metric between them — but `coachActions` is counted over rows that can later be closed,
+ * replaced or deleted. Recomputing it months from now would quietly produce a different history
+ * than the one the coach read, so the counted half is written down rather than re-derived.
+ */
+export type MentorshipBriefDeltaRecord = {
+  previousGeneratedAt: string;
+  flagsAdded: string[];
+  flagsResolved: string[];
+  planCompletion: { previous: number; current: number; change: number } | null;
+  activeDays7d: { previous: number; current: number; change: number } | null;
+  focusMinutes7d: { previous: number; current: number; change: number } | null;
+  sessions7d: { previous: number; current: number; change: number } | null;
+  mocksSince: number;
+  net: { previous: number; current: number; change: number } | null;
+  moodMean: { previous: number; current: number; change: number } | null;
+  coachActions: {
+    attended: boolean;
+    followupsOpened: number;
+    followupsClosed: number;
+    assignmentsScheduled: number;
+    assignmentsCompleted: number;
+    assignmentsDropped: number;
+  };
+  quiet: boolean;
+};
+
+/**
+ * W8 per-student brief history (APP-093) — the record, next to the link row's cache.
+ *
+ * `coach_students.brief/brief_at/brief_fingerprint` stay exactly as they were: the LATEST text,
+ * keyed by a fingerprint, so an unchanged student costs one LLM call instead of two. This table is
+ * the other job — every brief actually written, so the next one can open with what changed instead
+ * of starting over. A row is appended only when a model wrote something; a cache hit adds nothing.
+ *
+ * Period-scoped like `mentorship_followups`: re-linking rotates `coach_students.period_id`, so
+ * briefs about a relationship both sides walked away from never resurface (APP-071's rule for the
+ * standing note, kept). Ending a link therefore needs no delete here, and `end()` keeps clearing
+ * only the cache.
+ *
+ * `link_id` is a real FK with ON DELETE CASCADE and erasure DELETES links rather than anonymizing
+ * them, so this table needs no clause in `MentorshipErasureService` — the same reasoning
+ * `mentorship_dropped_assignments` and `mentorship_followups` already rely on.
+ */
+export const mentorshipStudentBriefs = pgTable(
+  "mentorship_student_briefs",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    periodId: uuid("period_id").notNull(),
+    brief: text("brief").notNull(),
+    /** The model that wrote it. Never `"cache"` — a cache hit writes no row. */
+    model: text("model").notNull(),
+    /** Hash of the shaped evidence + locale + prompt version, same key the link-row cache uses. */
+    fingerprint: text("fingerprint").notNull(),
+    snapshot: jsonb("snapshot").$type<MentorshipBriefSnapshot>().notNull(),
+    /** Null on the first brief of a period: there was nothing to measure it against. */
+    delta: jsonb("delta").$type<MentorshipBriefDeltaRecord>(),
+    generatedAt: timestamp("generated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    index("mentorship_student_briefs_period_idx").on(t.linkId, t.periodId, t.generatedAt),
+    pgPolicy("mentorship_student_briefs_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();

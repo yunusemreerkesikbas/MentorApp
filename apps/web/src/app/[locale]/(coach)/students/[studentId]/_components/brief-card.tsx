@@ -3,10 +3,13 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
+import type { MentorshipBriefDeltaDto } from "@mentor/types";
 import { Button, Card } from "@mentor/ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { generateBrief } from "@/lib/mentorship";
 import { formatDate } from "../../../_components/mentorship-format";
+import { BriefDeltaBand } from "./brief-delta-band";
+import { BriefHistoryList } from "./brief-history-list";
 
 /**
  * The coach's AI brief over this student's report (roadmap §9's "koç zekâ katmanı").
@@ -22,13 +25,22 @@ import { formatDate } from "../../../_components/mentorship-format";
  *
  * The rule-based risk chips stay above this card and are not replaced by it: a deterministic flag
  * a coach can trust beats a sentence they have to second-guess, and the brief says so in its copy.
+ *
+ * Since APP-093 a brief also carries what MOVED since the previous one. The band is rendered only
+ * when there is a previous brief to measure against: on the first one `delta` is null, and a band
+ * saying "nothing changed" would be answering a question nobody could have asked yet.
  */
 export function BriefCard({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
   const toast = useMentorToast();
-  const [brief, setBrief] = useState<{ text: string; at: string; cached: boolean } | null>(null);
+  const [brief, setBrief] = useState<{
+    text: string;
+    at: string;
+    cached: boolean;
+    delta: MentorshipBriefDeltaDto | null;
+  } | null>(null);
   const [busy, setBusy] = useState(false);
 
   async function run() {
@@ -39,6 +51,7 @@ export function BriefCard({ studentId }: { studentId: string }) {
         text: result.brief,
         at: result.generatedAt,
         cached: result.model === "cache",
+        delta: result.delta,
       });
     } catch (err) {
       toast.error({
@@ -67,6 +80,7 @@ export function BriefCard({ studentId }: { studentId: string }) {
         </p>
         {brief && (
           <>
+            {brief.delta && <BriefDeltaBand delta={brief.delta} />}
             <p className="whitespace-pre-line text-sm" style={{ color: "var(--color-body)" }}>
               {brief.text}
             </p>
@@ -74,6 +88,9 @@ export function BriefCard({ studentId }: { studentId: string }) {
               {t("brief_since", { date: formatDate(brief.at, locale) })}
               {brief.cached ? ` · ${t("brief_cached")}` : ""}
             </p>
+            <div className="border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
+              <BriefHistoryList studentId={studentId} />
+            </div>
           </>
         )}
       </div>

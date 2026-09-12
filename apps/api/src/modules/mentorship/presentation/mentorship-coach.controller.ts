@@ -15,6 +15,7 @@ import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import {
   UserRole,
   type MentorshipBriefDto,
+  type MentorshipBriefHistoryItemDto,
   type MentorshipCoachOverviewDto,
   type MentorshipAssignmentSuggestionsDto,
   type MentorshipCohortBriefDto,
@@ -39,6 +40,7 @@ import { MentorshipRosterService } from "../application/mentorship-roster.servic
 import { MentorshipTemplateService } from "../application/mentorship-template.service";
 import {
   CreateMentorshipAssignmentsDto,
+  ListMentorshipBriefHistoryQueryDto,
   ListMentorshipStudentsQueryDto,
   MentorshipAttentionDto,
   MentorshipCoachNoteDto,
@@ -215,6 +217,30 @@ export class MentorshipCoachController {
     @Param() params: MentorshipStudentParamDto,
   ): Promise<MentorshipBriefDto> {
     return this.brief.generate({ id: user.id, roles: user.roles }, params.studentId);
+  }
+
+  /**
+   * Every brief written about this student in the CURRENT relationship period, newest first.
+   *
+   * GET and free, unlike the POST above: these rows were already paid for once, and charging a
+   * coach to re-read what they were told would make the memory a thing they avoid opening. Bounded
+   * by `mentorship.brief.history_limit`, and empty until a brief has been generated.
+   *
+   * Re-linking rotates the period, so a revived relationship starts blank here rather than handing
+   * a coach back briefs about a relationship both sides had walked away from.
+   */
+  @Get("students/:studentId/brief-history")
+  listBriefHistory(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+    @Query() query: ListMentorshipBriefHistoryQueryDto,
+  ): Promise<Paginated<MentorshipBriefHistoryItemDto>> {
+    return this.brief.listHistory(
+      user.id,
+      params.studentId,
+      query.page,
+      query.pageSize,
+    );
   }
 
   /**
