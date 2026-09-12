@@ -99,6 +99,22 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Follow-up notification version lock.** Shared-event delivery rechecks PENDING + OPEN
+  without matching `followups.version`; responded events match `response_version` so a later date
+  bump cannot swallow the queued notify. Usage: unchanged templates and dedupe keys
+  (`mentorship-followup-{kind}:{id}:{eventVersion}`). Gotcha: the event version is still the
+  write's version for dedupe; only the live-row lookup changed. Related:
+  `mentorship-followup.repository.ts`, `mentorship-followup.ts`.
+
+- **2026-09-12 — Mentorship follow-up notifications.** Shared decisions notify the student and
+  student responses notify the coach through ID-only mentorship events. Follow-up text and private
+  notes are never copied into notifications or email. Due follow-ups use the existing job queue and
+  daily dispatcher, one summary per coach/Istanbul day, with preference-aware email and live access/
+  due-state checks at delivery. Usage: enable mentorship and its followups flag, create a dated
+  follow-up, and run `POST /v1/internal/cron/dispatch-daily-reminders`. Closed records, ended links, and previous relationship
+  periods do not produce due notifications. Related: notifications followup service/listener and
+  mentorship's exported followup notification read seam.
+
 - **Plan etkinliği bildirimleri ve 15 dakika hatırlatması (APP-091, 2026-09-09)** — W2'nin
   `coaching.plan-event.created|updated|cancelled` olayları, koç hariç her güncel katılımcıya seri
   başına tek PLAN özeti üretir; bağlantı o katılımcının ilk etkilenen kaydını açar. Saatli oluşturma

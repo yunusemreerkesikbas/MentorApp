@@ -202,6 +202,31 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Follow-up review fixes.** Shared notification lookup no longer matches the mutable
+  row version, so a later date change cannot drop a still-pending shared event; responded events
+  lock to `responseVersion`. Coach inbox now hides when the flag is off (`MENTORSHIP_FOLLOWUP_DISABLED`)
+  instead of showing a generic error. History date inputs resync after refresh; the student-report
+  follow-up panel ignores superseded fetches. Web calls go through `lib/mentorship-followups.ts`.
+  Usage: enable both mentorship flags, share a decision, then change its date; the student still
+  gets the share notification. Gotcha: closed or already-answered records still suppress send.
+  Related: `mentorship-followup.repository.ts`, `mentorship-followups.ts`, follow-up web components.
+
+- **2026-09-12 — Coach follow-up cycle.** Coaches can record an action with a private note,
+  optionally share an immutable decision, and set an Istanbul calendar date for another check.
+  Students see only shared decisions under My coach and can accept or request a change while
+  the record is open. Coach inbox filtering happens before pagination and includes change
+  requests and due checks even when the student has no risk flags. Usage: enable
+  `mentorship.followups.enabled` alongside `mentorship.enabled`, open a student report, and
+  create a follow-up; close the old record before creating a replacement decision. Existing
+  attention marks, standing notes, assignments, and AI summaries are independent. Gotchas:
+  title/private note never enter the student DTO, AI, or notification payload; dates are day-based,
+  not appointments. Ending a link closes both sides' access; rejoining starts a new relationship
+  period and does not reopen old records. Account erasure removes records with their link.
+  Notifications contain no record text and due delivery rechecks current access and state.
+  Related: `modules/mentorship/*/*followup*`, `modules/notifications/*/*followup*`,
+  `packages/{types,validation}/src/mentorship-followup.ts`, and the web follow-up components.
+  Design/contract: [follow-up implementation](../plans/2026-09-12-mentorship-followups.md).
+
 - **2026-09-11 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was firing every ~50ms
   until the global throttle returned 429. Cause: `RosterShell` listed `showError` in the fetch
   effect deps; a failed request toasted, toast identity changed, the effect refetched, toasted

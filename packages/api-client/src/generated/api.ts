@@ -227,6 +227,159 @@ export interface PollVoteDto { [key: string]: unknown }
 
 export interface CreateAdRewardSessionDto { [key: string]: unknown }
 
+export interface FollowupAvailabilityResponseDto {
+  enabled: boolean;
+}
+
+export type CoachFollowupResponseDtoResponse = typeof CoachFollowupResponseDtoResponse[keyof typeof CoachFollowupResponseDtoResponse];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachFollowupResponseDtoResponse = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  CHANGE_REQUESTED: 'CHANGE_REQUESTED',
+} as const;
+
+export type CoachFollowupResponseDtoStatus = typeof CoachFollowupResponseDtoStatus[keyof typeof CoachFollowupResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const CoachFollowupResponseDtoStatus = {
+  OPEN: 'OPEN',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface CoachFollowupResponseDto {
+  id: string;
+  studentId: string;
+  studentDisplayName: string;
+  title: string;
+  /** @nullable */
+  privateNote: string | null;
+  /** @nullable */
+  sharedDecision: string | null;
+  response: CoachFollowupResponseDtoResponse;
+  /** @nullable */
+  followUpDate: string | null;
+  status: CoachFollowupResponseDtoStatus;
+  version: number;
+  /** @nullable */
+  replacesId: string | null;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  respondedAt: string | null;
+  /** @nullable */
+  closedAt: string | null;
+}
+
+export interface CoachFollowupPageDto {
+  items: CoachFollowupResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export interface CreateMentorshipFollowupDto {
+  operationId: string;
+  /**
+   * @minLength 1
+   * @maxLength 120
+   */
+  title: string;
+  /**
+   * @maxLength 2000
+   * @nullable
+   */
+  privateNote?: string | null;
+  /**
+   * @maxLength 2000
+   * @nullable
+   */
+  sharedDecision?: string | null;
+  /** @nullable */
+  followUpDate?: string | null;
+  /** @nullable */
+  replacesId?: string | null;
+}
+
+export type UpdateMentorshipFollowupDtoStatus = typeof UpdateMentorshipFollowupDtoStatus[keyof typeof UpdateMentorshipFollowupDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const UpdateMentorshipFollowupDtoStatus = {
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface UpdateMentorshipFollowupDto {
+  /** @minimum 1 */
+  version: number;
+  /** @nullable */
+  followUpDate?: string | null;
+  status?: UpdateMentorshipFollowupDtoStatus;
+}
+
+export type SharedFollowupResponseDtoResponse = typeof SharedFollowupResponseDtoResponse[keyof typeof SharedFollowupResponseDtoResponse];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SharedFollowupResponseDtoResponse = {
+  PENDING: 'PENDING',
+  ACCEPTED: 'ACCEPTED',
+  CHANGE_REQUESTED: 'CHANGE_REQUESTED',
+} as const;
+
+export type SharedFollowupResponseDtoStatus = typeof SharedFollowupResponseDtoStatus[keyof typeof SharedFollowupResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SharedFollowupResponseDtoStatus = {
+  OPEN: 'OPEN',
+  COMPLETED: 'COMPLETED',
+  CANCELLED: 'CANCELLED',
+} as const;
+
+export interface SharedFollowupResponseDto {
+  id: string;
+  sharedDecision: string;
+  response: SharedFollowupResponseDtoResponse;
+  /** @nullable */
+  followUpDate: string | null;
+  status: SharedFollowupResponseDtoStatus;
+  version: number;
+  createdAt: string;
+  updatedAt: string;
+  /** @nullable */
+  respondedAt: string | null;
+  /** @nullable */
+  closedAt: string | null;
+}
+
+export interface SharedFollowupPageDto {
+  items: SharedFollowupResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
+export type RespondMentorshipFollowupDtoResponse = typeof RespondMentorshipFollowupDtoResponse[keyof typeof RespondMentorshipFollowupDtoResponse];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RespondMentorshipFollowupDtoResponse = {
+  ACCEPTED: 'ACCEPTED',
+  CHANGE_REQUESTED: 'CHANGE_REQUESTED',
+} as const;
+
+export interface RespondMentorshipFollowupDto {
+  /** @minimum 1 */
+  version: number;
+  response: RespondMentorshipFollowupDtoResponse;
+}
+
 export interface RegisterCoachDto { [key: string]: unknown }
 
 export interface UpdateCoachProfileDto { [key: string]: unknown }
@@ -238,6 +391,20 @@ export interface MentorshipCoachNoteDto { [key: string]: unknown }
 export interface MentorshipAttentionDto { [key: string]: unknown }
 
 export interface SaveMentorshipTemplateDto { [key: string]: unknown }
+
+export interface CreateMentorshipBatchAssignmentDto { [key: string]: unknown }
+
+export interface UpdateMentorshipAssignmentDto { [key: string]: unknown }
+
+export interface UpdateMentorshipAssignmentGroupDto { [key: string]: unknown }
+
+export interface RemoveMentorshipAssignmentGroupDto { [key: string]: unknown }
+
+export interface CreateMentorshipEventDto { [key: string]: unknown }
+
+export interface UpdateMentorshipEventDto { [key: string]: unknown }
+
+export interface CancelMentorshipEventDto { [key: string]: unknown }
 
 export interface MentorshipInviteCodeParamDto { [key: string]: unknown }
 
@@ -704,6 +871,41 @@ export type MistakeNotebookControllerReviewEntryBody = {
 
 export type ForumPublicControllerQuestionsParams = {
 limit: string;
+};
+
+export type MentorshipFollowupControllerListFollowupsParams = {
+studentId?: string;
+view?: MentorshipFollowupControllerListFollowupsView;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type MentorshipFollowupControllerListFollowupsView = typeof MentorshipFollowupControllerListFollowupsView[keyof typeof MentorshipFollowupControllerListFollowupsView];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MentorshipFollowupControllerListFollowupsView = {
+  ALL: 'ALL',
+  ACTIONABLE: 'ACTIONABLE',
+} as const;
+
+export type MentorshipFollowupControllerListSharedFollowupsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
 };
 
 export type CommunityControllerGetLeaderboardParams = {
@@ -4117,6 +4319,72 @@ export const coachingControllerRefreshPreferenceSimulation = async (refreshPrefe
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       refreshPreferenceSimulationDto,)
+  }
+);}
+
+
+
+export type planEventControllerListEventsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type planEventControllerListEventsResponseSuccess = (planEventControllerListEventsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type planEventControllerListEventsResponse = (planEventControllerListEventsResponseSuccess)
+
+export const getPlanEventControllerListEventsUrl = () => {
+
+
+  
+
+  return `/v1/plan-events`
+}
+
+export const planEventControllerListEvents = async ( options?: RequestInit): Promise<planEventControllerListEventsResponse> => {
+  
+  return http<planEventControllerListEventsResponse>(getPlanEventControllerListEventsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type planEventControllerListItemsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type planEventControllerListItemsResponseSuccess = (planEventControllerListItemsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type planEventControllerListItemsResponse = (planEventControllerListItemsResponseSuccess)
+
+export const getPlanEventControllerListItemsUrl = () => {
+
+
+  
+
+  return `/v1/plan-items`
+}
+
+export const planEventControllerListItems = async ( options?: RequestInit): Promise<planEventControllerListItemsResponse> => {
+  
+  return http<planEventControllerListItemsResponse>(getPlanEventControllerListItemsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 
@@ -8251,6 +8519,154 @@ export const adsInternalControllerExpireRewardSessions = async ( options?: Reque
 
 
 
+export const getMentorshipFollowupControllerGetFollowupAvailabilityUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/followups/availability`
+}
+
+export const mentorshipFollowupControllerGetFollowupAvailability = async ( options?: RequestInit): Promise<FollowupAvailabilityResponseDto> => {
+  
+  return http<FollowupAvailabilityResponseDto>(getMentorshipFollowupControllerGetFollowupAvailabilityUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getMentorshipFollowupControllerListFollowupsUrl = (params?: MentorshipFollowupControllerListFollowupsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/mentorship/followups?${stringifiedParams}` : `/v1/mentorship/followups`
+}
+
+export const mentorshipFollowupControllerListFollowups = async (params?: MentorshipFollowupControllerListFollowupsParams, options?: RequestInit): Promise<CoachFollowupPageDto> => {
+  
+  return http<CoachFollowupPageDto>(getMentorshipFollowupControllerListFollowupsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getMentorshipFollowupControllerCreateFollowupUrl = (studentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/followups`
+}
+
+export const mentorshipFollowupControllerCreateFollowup = async (studentId: string,
+    createMentorshipFollowupDto: CreateMentorshipFollowupDto, options?: RequestInit): Promise<CoachFollowupResponseDto> => {
+  
+  return http<CoachFollowupResponseDto>(getMentorshipFollowupControllerCreateFollowupUrl(studentId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMentorshipFollowupDto,)
+  }
+);}
+
+
+
+export const getMentorshipFollowupControllerUpdateFollowupUrl = (studentId: string,
+    followupId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/followups/${followupId}`
+}
+
+export const mentorshipFollowupControllerUpdateFollowup = async (studentId: string,
+    followupId: string,
+    updateMentorshipFollowupDto: UpdateMentorshipFollowupDto, options?: RequestInit): Promise<CoachFollowupResponseDto> => {
+  
+  return http<CoachFollowupResponseDto>(getMentorshipFollowupControllerUpdateFollowupUrl(studentId,followupId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMentorshipFollowupDto,)
+  }
+);}
+
+
+
+export const getMentorshipFollowupControllerListSharedFollowupsUrl = (params?: MentorshipFollowupControllerListSharedFollowupsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/mentorship/my-coach/followups?${stringifiedParams}` : `/v1/mentorship/my-coach/followups`
+}
+
+export const mentorshipFollowupControllerListSharedFollowups = async (params?: MentorshipFollowupControllerListSharedFollowupsParams, options?: RequestInit): Promise<SharedFollowupPageDto> => {
+  
+  return http<SharedFollowupPageDto>(getMentorshipFollowupControllerListSharedFollowupsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getMentorshipFollowupControllerRespondToFollowupUrl = (followupId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/my-coach/followups/${followupId}/response`
+}
+
+export const mentorshipFollowupControllerRespondToFollowup = async (followupId: string,
+    respondMentorshipFollowupDto: RespondMentorshipFollowupDto, options?: RequestInit): Promise<SharedFollowupResponseDto> => {
+  
+  return http<SharedFollowupResponseDto>(getMentorshipFollowupControllerRespondToFollowupUrl(followupId),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      respondMentorshipFollowupDto,)
+  }
+);}
+
+
+
 export type mentorshipApplicationControllerRegisterResponse201 = {
   data: void
   status: 201
@@ -8849,6 +9265,319 @@ export const mentorshipCoachControllerSuggestAssignments = async (studentId: str
     method: 'POST'
     
     
+  }
+);}
+
+
+
+export type mentorshipPlanControllerListPlanResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipPlanControllerListPlanResponseSuccess = (mentorshipPlanControllerListPlanResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerListPlanResponse = (mentorshipPlanControllerListPlanResponseSuccess)
+
+export const getMentorshipPlanControllerListPlanUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/plan`
+}
+
+export const mentorshipPlanControllerListPlan = async ( options?: RequestInit): Promise<mentorshipPlanControllerListPlanResponse> => {
+  
+  return http<mentorshipPlanControllerListPlanResponse>(getMentorshipPlanControllerListPlanUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipPlanControllerAssignBatchResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mentorshipPlanControllerAssignBatchResponseSuccess = (mentorshipPlanControllerAssignBatchResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerAssignBatchResponse = (mentorshipPlanControllerAssignBatchResponseSuccess)
+
+export const getMentorshipPlanControllerAssignBatchUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/assignments`
+}
+
+export const mentorshipPlanControllerAssignBatch = async (createMentorshipBatchAssignmentDto: CreateMentorshipBatchAssignmentDto, options?: RequestInit): Promise<mentorshipPlanControllerAssignBatchResponse> => {
+  
+  return http<mentorshipPlanControllerAssignBatchResponse>(getMentorshipPlanControllerAssignBatchUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMentorshipBatchAssignmentDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerUpdateAssignmentResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipPlanControllerUpdateAssignmentResponseSuccess = (mentorshipPlanControllerUpdateAssignmentResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerUpdateAssignmentResponse = (mentorshipPlanControllerUpdateAssignmentResponseSuccess)
+
+export const getMentorshipPlanControllerUpdateAssignmentUrl = (studentId: string,
+    assignmentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/assignments/${assignmentId}`
+}
+
+export const mentorshipPlanControllerUpdateAssignment = async (studentId: string,
+    assignmentId: string,
+    updateMentorshipAssignmentDto: UpdateMentorshipAssignmentDto, options?: RequestInit): Promise<mentorshipPlanControllerUpdateAssignmentResponse> => {
+  
+  return http<mentorshipPlanControllerUpdateAssignmentResponse>(getMentorshipPlanControllerUpdateAssignmentUrl(studentId,assignmentId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMentorshipAssignmentDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerRemoveAssignmentResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipPlanControllerRemoveAssignmentResponseSuccess = (mentorshipPlanControllerRemoveAssignmentResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerRemoveAssignmentResponse = (mentorshipPlanControllerRemoveAssignmentResponseSuccess)
+
+export const getMentorshipPlanControllerRemoveAssignmentUrl = (studentId: string,
+    assignmentId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/students/${studentId}/assignments/${assignmentId}`
+}
+
+export const mentorshipPlanControllerRemoveAssignment = async (studentId: string,
+    assignmentId: string, options?: RequestInit): Promise<mentorshipPlanControllerRemoveAssignmentResponse> => {
+  
+  return http<mentorshipPlanControllerRemoveAssignmentResponse>(getMentorshipPlanControllerRemoveAssignmentUrl(studentId,assignmentId),
+  {      
+    ...options,
+    method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipPlanControllerUpdateAssignmentGroupResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipPlanControllerUpdateAssignmentGroupResponseSuccess = (mentorshipPlanControllerUpdateAssignmentGroupResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerUpdateAssignmentGroupResponse = (mentorshipPlanControllerUpdateAssignmentGroupResponseSuccess)
+
+export const getMentorshipPlanControllerUpdateAssignmentGroupUrl = (assignmentGroupId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/assignment-groups/${assignmentGroupId}`
+}
+
+export const mentorshipPlanControllerUpdateAssignmentGroup = async (assignmentGroupId: string,
+    updateMentorshipAssignmentGroupDto: UpdateMentorshipAssignmentGroupDto, options?: RequestInit): Promise<mentorshipPlanControllerUpdateAssignmentGroupResponse> => {
+  
+  return http<mentorshipPlanControllerUpdateAssignmentGroupResponse>(getMentorshipPlanControllerUpdateAssignmentGroupUrl(assignmentGroupId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMentorshipAssignmentGroupDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerRemoveAssignmentGroupResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipPlanControllerRemoveAssignmentGroupResponseSuccess = (mentorshipPlanControllerRemoveAssignmentGroupResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerRemoveAssignmentGroupResponse = (mentorshipPlanControllerRemoveAssignmentGroupResponseSuccess)
+
+export const getMentorshipPlanControllerRemoveAssignmentGroupUrl = (assignmentGroupId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/assignment-groups/${assignmentGroupId}`
+}
+
+export const mentorshipPlanControllerRemoveAssignmentGroup = async (assignmentGroupId: string,
+    removeMentorshipAssignmentGroupDto: RemoveMentorshipAssignmentGroupDto, options?: RequestInit): Promise<mentorshipPlanControllerRemoveAssignmentGroupResponse> => {
+  
+  return http<mentorshipPlanControllerRemoveAssignmentGroupResponse>(getMentorshipPlanControllerRemoveAssignmentGroupUrl(assignmentGroupId),
+  {      
+    ...options,
+    method: 'DELETE',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      removeMentorshipAssignmentGroupDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerCreatePlanEventResponse201 = {
+  data: void
+  status: 201
+}
+    
+export type mentorshipPlanControllerCreatePlanEventResponseSuccess = (mentorshipPlanControllerCreatePlanEventResponse201) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerCreatePlanEventResponse = (mentorshipPlanControllerCreatePlanEventResponseSuccess)
+
+export const getMentorshipPlanControllerCreatePlanEventUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/events`
+}
+
+export const mentorshipPlanControllerCreatePlanEvent = async (createMentorshipEventDto: CreateMentorshipEventDto, options?: RequestInit): Promise<mentorshipPlanControllerCreatePlanEventResponse> => {
+  
+  return http<mentorshipPlanControllerCreatePlanEventResponse>(getMentorshipPlanControllerCreatePlanEventUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      createMentorshipEventDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerUpdatePlanEventResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mentorshipPlanControllerUpdatePlanEventResponseSuccess = (mentorshipPlanControllerUpdatePlanEventResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerUpdatePlanEventResponse = (mentorshipPlanControllerUpdatePlanEventResponseSuccess)
+
+export const getMentorshipPlanControllerUpdatePlanEventUrl = (eventId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/events/${eventId}`
+}
+
+export const mentorshipPlanControllerUpdatePlanEvent = async (eventId: string,
+    updateMentorshipEventDto: UpdateMentorshipEventDto, options?: RequestInit): Promise<mentorshipPlanControllerUpdatePlanEventResponse> => {
+  
+  return http<mentorshipPlanControllerUpdatePlanEventResponse>(getMentorshipPlanControllerUpdatePlanEventUrl(eventId),
+  {      
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      updateMentorshipEventDto,)
+  }
+);}
+
+
+
+export type mentorshipPlanControllerCancelPlanEventResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipPlanControllerCancelPlanEventResponseSuccess = (mentorshipPlanControllerCancelPlanEventResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipPlanControllerCancelPlanEventResponse = (mentorshipPlanControllerCancelPlanEventResponseSuccess)
+
+export const getMentorshipPlanControllerCancelPlanEventUrl = (eventId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/events/${eventId}/cancel`
+}
+
+export const mentorshipPlanControllerCancelPlanEvent = async (eventId: string,
+    cancelMentorshipEventDto: CancelMentorshipEventDto, options?: RequestInit): Promise<mentorshipPlanControllerCancelPlanEventResponse> => {
+  
+  return http<mentorshipPlanControllerCancelPlanEventResponse>(getMentorshipPlanControllerCancelPlanEventUrl(eventId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      cancelMentorshipEventDto,)
   }
 );}
 

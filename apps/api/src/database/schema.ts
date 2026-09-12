@@ -176,6 +176,8 @@ export const coachStudents = pgTable(
     endedAt: timestamp("ended_at", { withTimezone: true }),
     /** Who ended it — either party may (`users.id`); null while the link lives. */
     endedBy: uuid("ended_by").references(() => users.id),
+    /** Rotated on re-link so records from a previous relationship never become visible again. */
+    periodId: uuid("period_id").notNull().defaultRandom(),
     /**
      * The coach's standing note to this student, shown on their `/my-coach` screen. One row,
      * overwritten in place: this is a note, not a thread, and in-app conversation is Phase 3
@@ -4139,3 +4141,37 @@ export const notebookReviews = pgTable(
     }),
   ],
 ).enableRLS();
+
+/* W8 follow-ups: private service-only rows; student reads use an explicit safe projection. */
+export const mentorshipFollowups = pgTable("mentorship_followups", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  linkId: uuid("link_id").notNull().references(() => coachStudents.id, { onDelete: "cascade" }),
+  periodId: uuid("period_id").notNull(),
+  operationId: uuid("operation_id").notNull(),
+  requestHash: text("request_hash").notNull(),
+  responseVersion: integer("response_version"),
+  title: varchar("title", { length: 120 }).notNull(),
+  privateNote: text("private_note"),
+  sharedDecision: text("shared_decision"),
+  response: text("response").$type<"PENDING" | "ACCEPTED" | "CHANGE_REQUESTED">().notNull().default("PENDING"),
+  followUpDate: date("follow_up_date"),
+  status: text("status").$type<"OPEN" | "COMPLETED" | "CANCELLED">().notNull().default("OPEN"),
+  version: integer("version").notNull().default(1),
+  replacesId: uuid("replaces_id").references((): AnyPgColumn => mentorshipFollowups.id, { onDelete: "set null" }),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  respondedAt: timestamp("responded_at", { withTimezone: true }),
+  closedAt: timestamp("closed_at", { withTimezone: true }),
+}, (t) => [
+  uniqueIndex("mentorship_followups_operation_idx").on(t.linkId, t.periodId, t.operationId),
+  index("mentorship_followups_period_idx").on(t.linkId, t.periodId, t.createdAt),
+  index("mentorship_followups_due_idx").on(t.status, t.followUpDate),
+  check("mentorship_followups_status_check", sql`${t.status} IN ('OPEN', 'COMPLETED', 'CANCELLED')`),
+  check("mentorship_followups_response_check", sql`${t.response} IN ('PENDING', 'ACCEPTED', 'CHANGE_REQUESTED')`),
+  check("mentorship_followups_version_check", sql`${t.version} > 0`),
+  pgPolicy("mentorship_followups_service", {
+    for: "all",
+    using: sql`current_setting('app.role', true) = 'SERVICE'`,
+    withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+  }),
+]).enableRLS();

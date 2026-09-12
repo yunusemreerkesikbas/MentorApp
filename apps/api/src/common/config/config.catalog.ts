@@ -332,6 +332,7 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the human coach surface (coach roster, invite codes, assignments). Off = W8 endpoints 403.",
   ),
+  "mentorship.followups.enabled": mentorshipFlag(false, "Gate for coach follow-up records and shared decisions."),
   "mentorship.coach.max_active_students": mentorshipCount(
     20,
     1,

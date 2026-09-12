@@ -10,6 +10,12 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   /** Stretch to the container width (Nuton primary button is full-width 335px on mobile). */
   fullWidth?: boolean;
   /**
+   * Sizing:
+   * - `md` (default): Nuton standard CTA, 50px tall, `px-6 py-3 text-base font-bold`.
+   * - `sm`: compact / dialog CTA, 42px tall, `px-4 py-2.5 text-sm font-semibold`.
+   */
+  size?: "sm" | "md";
+  /**
    * `primary` = black fill (default Nuton).
    * `secondary` = transparent + subtle border.
    * `accent` = progress/accent fill (soft primary CTAs).
@@ -20,10 +26,10 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
 }
 
 /** Inline loading spinner (thin-line, DESIGN.md §7); respects reduced motion via CSS. */
-function Spinner() {
+function Spinner({ size = 18 }: { size?: number }) {
   return (
     <LoaderCircle
-      size={18}
+      size={size}
       strokeWidth={2.5}
       className="animate-spin motion-reduce:animate-none"
       aria-hidden
@@ -38,7 +44,8 @@ function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
   switch (variant) {
     case "secondary":
       return {
-        className: "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]",
+        className:
+          "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]",
         style: {
           backgroundColor: "transparent",
           color: "var(--color-main)",
@@ -102,24 +109,29 @@ export function Button({
   children,
   busy,
   fullWidth,
+  size = "md",
   variant = "primary",
   disabled,
   className,
   ...rest
 }: ButtonProps) {
   const look = variantStyles(variant);
+  const sizeStyles =
+    size === "sm"
+      ? "px-4 py-2.5 text-sm font-semibold"
+      : "px-6 py-3 text-base font-bold";
   return (
     <button
       {...rest}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex cursor-pointer items-center justify-center gap-2 rounded-[var(--radius-card)] border px-6 py-3 text-base font-bold outline-none transition-[opacity,background-color,box-shadow,transform] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${look.className} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
+      className={`inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-card)] border ${sizeStyles} outline-none transition-[opacity,background-color,box-shadow,transform] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${look.className} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
       style={{
         ...look.style,
         fontFamily: "var(--font-body)",
       }}
     >
-      {busy ? <Spinner /> : null}
+      {busy ? <Spinner size={size === "sm" ? 16 : 18} /> : null}
       {children}
     </button>
   );

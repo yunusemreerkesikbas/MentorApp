@@ -40,6 +40,9 @@ export const NotificationCopyKey = {
   MENTORSHIP_ASSIGNMENT_DROPPED: "mentorshipAssignmentDropped",
   MENTORSHIP_ASSIGNMENT_PROGRESSED: "mentorshipAssignmentProgressed",
   MENTORSHIP_COACH_NOTE: "mentorshipCoachNote",
+  MENTORSHIP_FOLLOWUP_SHARED: "mentorshipFollowupShared",
+  MENTORSHIP_FOLLOWUP_RESPONDED: "mentorshipFollowupResponded",
+  MENTORSHIP_FOLLOWUP_DUE: "mentorshipFollowupDue",
   /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
   WIN_BACK_OFFER: "winBackOffer",
 } as const;

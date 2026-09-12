@@ -116,21 +116,32 @@ export function AnalysisReviewProgress({
           <h2 id="review-focus-heading" className={styles.eyebrow}>
             {t("focus")}
           </h2>
-          <div className={styles.focusField}>
-            <span id="review-focus-label" className={styles.focusLabel}>
-              {t("choose")}
-            </span>
-            <MenuSelect
-              id="analysis-review-focus"
-              className={styles.focusSelect}
-              value={focus}
-              options={focusOptions}
-              aria-labelledby="review-focus-label"
-              onChange={(value) => {
-                setFocus(value);
-                setPage(1);
-              }}
-            />
+          <div className={styles.focusControls}>
+            <div className={styles.focusField}>
+              <span id="review-focus-label" className={styles.focusLabel}>
+                {t("choose")}
+              </span>
+              <MenuSelect
+                id="analysis-review-focus"
+                className={styles.focusSelect}
+                value={focus}
+                options={focusOptions}
+                aria-labelledby="review-focus-label"
+                onChange={(value) => {
+                  setFocus(value);
+                  setPage(1);
+                }}
+              />
+            </div>
+            {data && (
+              <Link
+                className={styles.start}
+                href={{ pathname: "/notebook", query: reviewQuery }}
+              >
+                {t("start", { count: data.summary.dueCount })}
+                <ArrowRight size={16} aria-hidden="true" />
+              </Link>
+            )}
           </div>
           {focus ===
             [
@@ -140,15 +151,6 @@ export function AnalysisReviewProgress({
             <p className={styles.reason}>{analysis?.nextFocus?.message}</p>
           )}
         </div>
-        {data && (
-          <Link
-            className={styles.start}
-            href={{ pathname: "/notebook", query: reviewQuery }}
-          >
-            {t("start", { count: data.summary.dueCount })}
-            <ArrowRight size={18} aria-hidden="true" />
-          </Link>
-        )}
         {analysis && (
           <details className={styles.plan}>
             <summary>

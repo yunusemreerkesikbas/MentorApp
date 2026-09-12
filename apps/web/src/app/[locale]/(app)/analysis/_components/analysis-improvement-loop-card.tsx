@@ -59,10 +59,10 @@ export function AnalysisImprovementLoopCard({
   const Surface = embedded ? "div" : Card;
   return (
     <Surface
-      className="flex flex-col gap-5"
+      className={styles.cycleRoot}
       data-testid="analysis-improvement-cycle"
     >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className={styles.cycleHeader}>
         <SectionHeading
           subtitle={cycle?.message ?? analysis.nextFocus?.message}
         >
@@ -78,15 +78,12 @@ export function AnalysisImprovementLoopCard({
         </span>
       </div>
 
-      <div>
-        <p className="text-xl font-bold" style={{ color: "var(--color-main)" }}>
+      <div className={styles.cycleSubject}>
+        <p className={styles.cycleSubjectName}>
           {focus.subjectName}
         </p>
         {focus.topicName ? (
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-body)" }}
-          >
+          <p className={styles.cycleTopic}>
             {focus.topicName}
           </p>
         ) : null}
@@ -125,10 +122,10 @@ export function AnalysisImprovementLoopCard({
         })}
       </ol>
 
-      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+      <div className={styles.cycleActions}>
         {proposal ? (
           <div
-            className="flex w-full flex-col gap-2"
+            className={styles.cycleProposal}
             data-testid="analysis-next-proposal"
           >
             {cycle ? (

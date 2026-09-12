@@ -13,6 +13,7 @@ import { todayIso } from "../../../coaching/domain/date.util";
 const LINK = "11111111-1111-4111-8111-111111111111";
 const COACH = "22222222-2222-4222-8222-222222222222";
 const STUDENT = "33333333-3333-4333-8333-333333333333";
+const FOLLOWUP = "44444444-4444-4444-8444-444444444444";
 
 interface Sent {
   userId: string;
@@ -21,7 +22,9 @@ interface Sent {
   options?: { args?: Record<string, unknown>; dedupeKey?: string };
 }
 
-function setup() {
+function setup(options: {
+  target?: { recipientId: string; link: string } | null;
+} = {}) {
   const sent: Sent[] = [];
   const notifications = {
     createFromTemplate: vi.fn(
@@ -31,7 +34,22 @@ function setup() {
       },
     ),
   };
-  return { listener: new MentorshipEventsListener(notifications as never), sent, notifications };
+  const followups = {
+    getNotificationTarget: vi.fn().mockResolvedValue(
+      options.target === undefined
+        ? { recipientId: STUDENT, link: "/my-coach" }
+        : options.target,
+    ),
+  };
+  return {
+    listener: Reflect.construct(MentorshipEventsListener, [
+      notifications,
+      followups,
+    ]) as MentorshipEventsListener,
+    sent,
+    notifications,
+    followups,
+  };
 }
 
 describe("MentorshipEventsListener", () => {
@@ -118,5 +136,50 @@ describe("MentorshipEventsListener", () => {
         new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "X"),
       ),
     ).resolves.toBeUndefined();
+  });
+
+  it("resolves a shared follow-up from ids and sends no follow-up contents", async () => {
+    const { listener, sent, followups } = setup();
+
+    await listener.onFollowupShared({ followupId: FOLLOWUP, version: 3 });
+
+    expect(followups.getNotificationTarget).toHaveBeenCalledWith(FOLLOWUP, "shared", 3);
+    expect(sent).toEqual([
+      expect.objectContaining({
+        userId: STUDENT,
+        templateKey: "mentorshipFollowupShared",
+        linkUrl: "/my-coach",
+        options: expect.objectContaining({
+          dedupeKey: `mentorship-followup-shared:${FOLLOWUP}:3`,
+        }),
+      }),
+    ]);
+    expect(sent[0]!.options?.args).toBeUndefined();
+  });
+
+  it("resolves a response from ids and dedupes an event redelivery", async () => {
+    const { listener, sent, followups } = setup({
+      target: { recipientId: COACH, link: `/students/${STUDENT}` },
+    });
+
+    await listener.onFollowupResponded({ followupId: FOLLOWUP, version: 4 });
+
+    expect(followups.getNotificationTarget).toHaveBeenCalledWith(FOLLOWUP, "responded", 4);
+    expect(sent[0]).toMatchObject({
+      userId: COACH,
+      templateKey: "mentorshipFollowupResponded",
+      linkUrl: `/students/${STUDENT}`,
+    });
+    expect(sent[0]!.options?.dedupeKey).toBe(
+      `mentorship-followup-responded:${FOLLOWUP}:4`,
+    );
+  });
+
+  it("drops stale follow-up events when the mentorship seam no longer resolves them", async () => {
+    const { listener, sent } = setup({ target: null });
+
+    await listener.onFollowupShared({ followupId: FOLLOWUP, version: 2 });
+
+    expect(sent).toHaveLength(0);
   });
 });

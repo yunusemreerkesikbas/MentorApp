@@ -1,9 +1,16 @@
 "use client";
-import { HelpCircle, Languages, MessageSquare, Moon, Share2, Sun } from "lucide-react";
+import {
+  HelpCircle,
+  Languages,
+  MessageSquare,
+  Moon,
+  Share2,
+  Sun,
+} from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { useTransition } from "react";
-import { Card, SectionHeading } from "@mentor/ui";
+import { Card } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { getProfileLinks } from "@/lib/profile-links";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -56,15 +63,25 @@ export function ApplicationSupportCard() {
   }
 
   return (
-    <Card solid className="p-4">
-      <SectionHeading>{t("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
-        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-[var(--color-surface)] px-3 py-1.5">
+    <Card solid className="p-2 sm:p-2.5">
+      <div className="px-2 pt-1 pb-1.5">
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {t("title")}
+        </h2>
+      </div>
+      <div className="flex flex-col gap-0.5">
+        <div className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
-              <Languages size={20} aria-hidden />
+            <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
+              <Languages size={18} aria-hidden />
             </span>
-            <span className="truncate text-base font-bold text-[var(--color-main)]">
+            <span
+              className="truncate text-sm font-medium text-[var(--color-main)]"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
               {t("language")}
             </span>
           </span>
@@ -76,7 +93,7 @@ export function ApplicationSupportCard() {
                 disabled={isPending}
                 aria-pressed={locale === item}
                 onClick={() => switchLocale(item)}
-                className="min-h-11 rounded-[var(--radius-card)] px-3 text-sm font-bold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
+                className="min-h-8 rounded-lg px-2.5 text-xs font-semibold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
                 style={{
                   color:
                     locale === item
@@ -93,12 +110,19 @@ export function ApplicationSupportCard() {
             ))}
           </span>
         </div>
-        <div className="flex min-h-14 w-full min-w-0 items-center justify-between gap-2 bg-[var(--color-surface)] px-3 py-1.5">
+        <div className="flex min-h-11 w-full min-w-0 items-center justify-between gap-2 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
           <span className="flex min-w-0 items-center gap-3">
-            <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
-              {theme === "dark" ? <Moon size={20} aria-hidden /> : <Sun size={20} aria-hidden />}
+            <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
+              {theme === "dark" ? (
+                <Moon size={18} aria-hidden />
+              ) : (
+                <Sun size={18} aria-hidden />
+              )}
             </span>
-            <span className="truncate text-base font-bold text-[var(--color-main)]">
+            <span
+              className="truncate text-sm font-medium text-[var(--color-main)]"
+              style={{ fontFamily: "var(--font-body)" }}
+            >
               {t("theme")}
             </span>
           </span>
@@ -109,7 +133,7 @@ export function ApplicationSupportCard() {
                 type="button"
                 aria-pressed={theme === item}
                 onClick={() => setTheme(item)}
-                className="min-h-11 rounded-[var(--radius-card)] px-3 text-sm font-bold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                className="min-h-8 rounded-lg px-2.5 text-xs font-semibold transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
                 style={{
                   color:
                     theme === item
@@ -128,19 +152,19 @@ export function ApplicationSupportCard() {
         </div>
 
         <ListRow
-          icon={<Share2 size={20} aria-hidden />}
+          icon={<Share2 size={18} aria-hidden />}
           onClick={() => void handleShare()}
           showChevron={false}
         >
           {t("recommend")}
         </ListRow>
-        <ListRow href="/knowledge" icon={<HelpCircle size={20} aria-hidden />}>
+        <ListRow href="/knowledge" icon={<HelpCircle size={18} aria-hidden />}>
           {t("help")}
         </ListRow>
         {links.feedbackUrl ? (
           <ListRow
             externalHref={links.feedbackUrl}
-            icon={<MessageSquare size={20} aria-hidden />}
+            icon={<MessageSquare size={18} aria-hidden />}
           >
             {t("feedback")}
           </ListRow>

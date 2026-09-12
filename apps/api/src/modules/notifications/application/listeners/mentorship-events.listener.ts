@@ -10,6 +10,7 @@ import {
   MentorshipLinkEnded,
 } from "../../../mentorship/domain/mentorship.constants";
 import { todayIso } from "../../../coaching/domain/date.util";
+import { MentorshipFollowupService } from "../../../mentorship/application/mentorship-followup.service";
 import { NotificationCopyKey } from "../../domain/notification-copy";
 import { NotificationsService } from "../notifications.service";
 
@@ -25,7 +26,20 @@ import { NotificationsService } from "../notifications.service";
  */
 @Injectable()
 export class MentorshipEventsListener {
-  constructor(private readonly notifications: NotificationsService) {}
+  constructor(
+    private readonly notifications: NotificationsService,
+    private readonly followups: MentorshipFollowupService,
+  ) {}
+
+  @OnEvent("mentorship.followup.shared")
+  async onFollowupShared(event: { followupId: string; version: number }): Promise<void> {
+    await this.sendFollowupNotification(event, "shared");
+  }
+
+  @OnEvent("mentorship.followup.responded")
+  async onFollowupResponded(event: { followupId: string; version: number }): Promise<void> {
+    await this.sendFollowupNotification(event, "responded");
+  }
 
   /** The coach hears that their invite was accepted; the student already saw the confirmation. */
   @OnEvent(MentorshipEventTopic.LINK_ACCEPTED)
@@ -136,5 +150,36 @@ export class MentorshipEventsListener {
         { args: { name: event.actorDisplayName } },
       )
       .catch(() => {});
+  }
+
+  /**
+   * Follow-up events carry ids only. The owning module rechecks the flag, active period, OPEN
+   * status and version before notifications learns even who should receive the message.
+   */
+  private async sendFollowupNotification(
+    event: { followupId: string; version: number },
+    kind: "shared" | "responded",
+  ): Promise<void> {
+    try {
+      const target = await this.followups.getNotificationTarget(
+        event.followupId,
+        kind,
+        event.version,
+      );
+      if (!target) return;
+      await this.notifications.createFromTemplate(
+        target.recipientId,
+        "MENTORSHIP",
+        kind === "shared"
+          ? NotificationCopyKey.MENTORSHIP_FOLLOWUP_SHARED
+          : NotificationCopyKey.MENTORSHIP_FOLLOWUP_RESPONDED,
+        target.link,
+        {
+          dedupeKey: `mentorship-followup-${kind}:${event.followupId}:${event.version}`,
+        },
+      );
+    } catch {
+      // The follow-up write is already committed. Notification delivery stays best-effort.
+    }
   }
 }

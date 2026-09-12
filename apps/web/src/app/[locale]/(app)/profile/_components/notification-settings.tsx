@@ -4,7 +4,7 @@ import { Bell, Mail, Smartphone, Tag } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
-import { Card, SectionHeading, Skeleton, SkeletonGroup, Toggle } from "@mentor/ui";
+import { Card, Skeleton, SkeletonGroup, Toggle } from "@mentor/ui";
 import type { NotificationPreferencesDto } from "@mentor/types";
 import {
   ApiClientError,
@@ -70,23 +70,23 @@ export function NotificationSettings() {
   };
 
   const settingsBody = (
-    <Card id="notification-settings" solid className="p-4">
-      <SectionHeading
-        action={
-          <span className="grid size-10 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
-            <Bell size={20} aria-hidden />
-          </span>
-        }
-      >
-        {t("title")}
-      </SectionHeading>
+    <Card id="notification-settings" solid className="p-2 sm:p-2.5">
+      <div className="flex items-center justify-between px-2 pt-1 pb-1.5">
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {t("title")}
+        </h2>
+        <Bell size={16} className="text-[var(--color-secondary)]" aria-hidden />
+      </div>
       {error ? <FormError message={error} /> : null}
-      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
+      <div className="flex flex-col gap-0.5">
         <ToggleRow
           checked={emailEnabled}
           description={t("email_desc")}
           disabled={saving || loading}
-          icon={<Mail size={20} aria-hidden />}
+          icon={<Mail size={18} aria-hidden />}
           label={t("email")}
           onChange={(next) => {
             const prev = emailEnabled;
@@ -101,7 +101,7 @@ export function NotificationSettings() {
           checked={pushEnabled}
           description={t("push_desc")}
           disabled={saving || loading}
-          icon={<Smartphone size={20} aria-hidden />}
+          icon={<Smartphone size={18} aria-hidden />}
           label={t("push")}
           onChange={(next) => {
             const prev = pushEnabled;
@@ -118,7 +118,7 @@ export function NotificationSettings() {
           checked={campaignsEnabled}
           description={t("campaigns_desc")}
           disabled={saving || loading}
-          icon={<Tag size={20} aria-hidden />}
+          icon={<Tag size={18} aria-hidden />}
           label={t("campaigns")}
           onChange={(next) => {
             const prev = campaignsEnabled;
@@ -134,16 +134,12 @@ export function NotificationSettings() {
   );
 
   return (
-    <SkeletonGroup
-      label={t("title")}
-      loading={loading}
-      revealed={settingsBody}
-    >
-      <Card solid className="p-4">
-        <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-4 h-14 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
-        <Skeleton className="mt-3 h-14 rounded-[var(--radius-card)]" />
+    <SkeletonGroup label={t("title")} loading={loading} revealed={settingsBody}>
+      <Card solid className="p-2 sm:p-2.5">
+        <Skeleton className="h-4 w-36 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
+        <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
       </Card>
     </SkeletonGroup>
   );
@@ -165,16 +161,19 @@ function ToggleRow({
   onChange: (checked: boolean) => void;
 }) {
   return (
-    <div className="flex min-h-16 min-w-0 items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-3 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)]">
+    <div className="flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]">
       <span className="flex min-w-0 items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]">
+        <span className="flex size-7 shrink-0 items-center justify-center text-[var(--color-secondary)]">
           {icon}
         </span>
         <span className="min-w-0">
-          <span className="block truncate text-base font-bold text-[var(--color-main)]">
+          <span
+            className="block truncate text-sm font-medium leading-5 text-[var(--color-main)]"
+            style={{ fontFamily: "var(--font-body)" }}
+          >
             {label}
           </span>
-          <span className="mt-0.5 hidden text-sm leading-5 text-[var(--color-secondary)] sm:block">
+          <span className="mt-0.5 hidden text-xs leading-4 text-[var(--color-secondary)] sm:block">
             {description}
           </span>
         </span>

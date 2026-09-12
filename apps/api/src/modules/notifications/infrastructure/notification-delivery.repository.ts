@@ -39,4 +39,25 @@ export class NotificationDeliveryRepository {
       .returning({ id: notificationDeliveries.id });
     return rows.length > 0;
   }
+
+  async release(
+    tx: DatabaseTx,
+    data: {
+      userId: string;
+      channel: string;
+      template: string;
+      dedupeKey: string;
+    },
+  ): Promise<void> {
+    await tx
+      .delete(notificationDeliveries)
+      .where(
+        and(
+          eq(notificationDeliveries.userId, data.userId),
+          eq(notificationDeliveries.channel, data.channel),
+          eq(notificationDeliveries.template, data.template),
+          eq(notificationDeliveries.dedupeKey, data.dedupeKey),
+        ),
+      );
+  }
 }

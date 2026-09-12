@@ -4,7 +4,11 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import type { AuthUser, SubscriptionView } from "@mentor/types";
-import { ApiClientError, subscriptionsControllerGetMine, usersControllerMe } from "@mentor/api-client";
+import {
+  ApiClientError,
+  subscriptionsControllerGetMine,
+  usersControllerMe,
+} from "@mentor/api-client";
 import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
@@ -26,7 +30,11 @@ type LoadState =
 /**
  * /settings orchestrator — account hub only; public identity lives under /community/member.
  */
-export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?: boolean }) {
+export function ProfileShell({
+  openProfileEditor = false,
+}: {
+  openProfileEditor?: boolean;
+}) {
   const t = useTranslations("profile");
   const { setUserFromServer } = useAuth();
   const reduceMotion = useReducedMotion();
@@ -125,7 +133,9 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
 
         <aside className="flex min-w-0 flex-col gap-5 lg:gap-6 xl:sticky xl:top-8 xl:self-start">
           {hasSocialLinks ? (
-            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <motion.div
+              variants={reduceMotion ? undefined : staggerItemVariants}
+            >
               <SocialFollowCard />
             </motion.div>
           ) : null}
@@ -151,7 +161,11 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
 
   return (
     <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
-      <SkeletonGroup label={t("loading")} loading={loading} revealed={readyBody}>
+      <SkeletonGroup
+        label={t("loading")}
+        loading={loading}
+        revealed={readyBody}
+      >
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
           <ProfileSkeletonBlocks />
         </div>
@@ -180,26 +194,29 @@ function ProfileSkeletonBlocks() {
           <Skeleton className="h-6 w-48 rounded-[var(--radius-card)]" />
           <div className="mt-4 grid gap-2">
             {[0, 1, 2].map((item) => (
-              <Skeleton key={item} className="h-12 rounded-[var(--radius-card)]" />
+              <Skeleton
+                key={item}
+                className="h-12 rounded-[var(--radius-card)]"
+              />
             ))}
           </div>
         </Card>
       </section>
       <aside className="flex flex-col gap-6">
-        <Card>
-          <Skeleton className="h-6 w-44 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        <Card className="p-2.5">
+          <Skeleton className="h-4 w-44 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
         </Card>
-        <Card>
-          <Skeleton className="h-6 w-24 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        <Card className="p-2.5">
+          <Skeleton className="h-4 w-24 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
         </Card>
-        <Card>
-          <Skeleton className="h-6 w-32 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-4 h-12 rounded-[var(--radius-card)]" />
-          <Skeleton className="mt-3 h-12 rounded-[var(--radius-card)]" />
+        <Card className="p-2.5">
+          <Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-2.5 h-10 rounded-[var(--radius-card)]" />
+          <Skeleton className="mt-1 h-10 rounded-[var(--radius-card)]" />
         </Card>
       </aside>
     </>

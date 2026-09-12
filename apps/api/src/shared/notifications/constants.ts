@@ -27,6 +27,7 @@ export const EmailTemplate = {
   SUBSCRIPTION_WELCOME: "payments.subscription-welcome",
   DAILY_REMINDER: "coaching.daily-reminder",
   MENTORSHIP_RISK_DIGEST: "mentorship.risk-digest",
+  MENTORSHIP_FOLLOWUP_DUE: "mentorship.followup-due",
 } as const;
 export type EmailTemplate = (typeof EmailTemplate)[keyof typeof EmailTemplate];
 
@@ -38,6 +39,7 @@ export const EMAIL_COPY_KEY: Record<string, string> = {
   "payments.subscription-welcome": "paymentsWelcome",
   "coaching.daily-reminder": "dailyReminder",
   "mentorship.risk-digest": "mentorshipRiskDigest",
+  "mentorship.followup-due": "mentorshipFollowupDue",
 };
 
 /** Delivery / schedule template ids (notification_deliveries.template — not only email). */

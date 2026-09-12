@@ -12,6 +12,13 @@ export default defineConfig({
       client: "fetch",
       override: {
         mutator: { path: "./src/http.ts", name: "http" },
+        // Our mutator returns the parsed body. Scope this to the new contract so
+        // existing generated callers keep their current public types.
+        tags: {
+          "mentorship-followups": {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+        },
       },
     },
   },
