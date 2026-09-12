@@ -1,4 +1,7 @@
 import { Module } from "@nestjs/common";
+import { MentorshipFollowupService } from "./application/mentorship-followup.service";
+import { MentorshipFollowupRepository } from "./infrastructure/mentorship-followup.repository";
+import { MentorshipFollowupController } from "./presentation/mentorship-followup.controller";
 import { AiModule } from "../ai/ai.module";
 import { CoachingModule } from "../coaching/coaching.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -48,12 +51,15 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
   // event would arrive far too late. One-way still: payments imports identity/promotions/coaching.
   imports: [IdentityModule, CoachingModule, AiModule, PaymentsModule],
   controllers: [
+    MentorshipFollowupController,
     MentorshipApplicationController,
     MentorshipCoachController,
     MentorshipPlanController,
     MentorshipStudentController,
   ],
   providers: [
+    MentorshipFollowupService,
+    MentorshipFollowupRepository,
     MentorshipLinkService,
     MentorshipInviteService,
     MentorshipRosterService,
@@ -81,6 +87,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
   // goes admin → mentorship: the COACH role lives in W6 and admin performs that write itself, so
   // this module never has to reach back and no cycle can form.
   exports: [
+    MentorshipFollowupService,
     MentorshipLinkService,
     MentorshipErasureService,
     MentorshipApplicationService,

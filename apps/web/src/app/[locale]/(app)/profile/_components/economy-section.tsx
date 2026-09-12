@@ -9,7 +9,7 @@ import type {
   QuestProgressView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card, SectionHeading } from "@mentor/ui";
+import { Card } from "@mentor/ui";
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import {
@@ -162,36 +162,37 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
 
   return (
     <>
-    <Card solid className="p-4">
-      <SectionHeading>{profile("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
-        <ListRow
-          icon={<Coins size={22} aria-hidden />}
-          onClick={showBalance}
-        >
-          {t("balance_title")}
-        </ListRow>
-        <ListRow
-          icon={<ListChecks size={22} aria-hidden />}
-          onClick={showQuests}
-        >
-          {t("quests_title")}
-        </ListRow>
-        <ListRow
-          icon={<Gift size={22} aria-hidden />}
-          onClick={showInvite}
-        >
-          {t("invite_title")}
-        </ListRow>
-      </div>
-    </Card>
-    {inviteOpen ? (
-      <EconomyInviteCard
-        code={state.invite.code}
-        onClose={() => setInviteOpen(false)}
-        onRedeemed={() => void reload()}
-      />
-    ) : null}
+      <Card solid className="p-2 sm:p-2.5">
+        <div className="px-2 pt-1 pb-1.5">
+          <h2
+            className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+            style={{ fontFamily: "var(--font-heading)" }}
+          >
+            {profile("title")}
+          </h2>
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <ListRow icon={<Coins size={18} aria-hidden />} onClick={showBalance}>
+            {t("balance_title")}
+          </ListRow>
+          <ListRow
+            icon={<ListChecks size={18} aria-hidden />}
+            onClick={showQuests}
+          >
+            {t("quests_title")}
+          </ListRow>
+          <ListRow icon={<Gift size={18} aria-hidden />} onClick={showInvite}>
+            {t("invite_title")}
+          </ListRow>
+        </div>
+      </Card>
+      {inviteOpen ? (
+        <EconomyInviteCard
+          code={state.invite.code}
+          onClose={() => setInviteOpen(false)}
+          onRedeemed={() => void reload()}
+        />
+      ) : null}
     </>
   );
 }

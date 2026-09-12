@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipSharedDataDto, MyCoachDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -11,6 +11,7 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endMyCoachLink, fetchMyCoach, fetchSharedData } from "@/lib/mentorship";
 import { CoachProfileCard } from "./coach-profile-card";
+import { SharedFollowupsCard } from "./shared-followups-card";
 import { scopeValue } from "./scope-values";
 
 /**
@@ -21,7 +22,7 @@ export function MyCoachShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
   const [coach, setCoach] = useState<MyCoachDto | null>(null);
   const [shared, setShared] = useState<MentorshipSharedDataDto | null>(null);
@@ -31,13 +32,15 @@ export function MyCoachShell() {
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      toastError({
         title: common("error_title"),
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [toastError, common],
   );
+  const showErrorRef = useRef(showError);
+  showErrorRef.current = showError;
 
   const load = useCallback(() => {
     // Beside the coach fetch, never behind it (`standards/frontend.md`: no waterfalls). The mirror
@@ -58,10 +61,10 @@ export function MyCoachShell() {
           setOff(true);
           return;
         }
-        showError(err);
+        showErrorRef.current(err);
       })
       .finally(() => setLoaded(true));
-  }, [showError]);
+  }, []);
 
   useEffect(load, [load]);
 
@@ -166,6 +169,8 @@ export function MyCoachShell() {
               </p>
             </Card>
           ) : null}
+
+          <SharedFollowupsCard />
 
           <DataScopeCard scope={coach.dataScope} values={shared} />
         </>

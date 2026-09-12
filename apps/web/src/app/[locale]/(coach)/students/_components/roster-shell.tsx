@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -24,6 +24,7 @@ import { CoachScopeCard } from "./coach-scope-card";
 import { CohortBriefCard } from "./cohort-brief-card";
 import { compareByAttention, summarizeCohort } from "./cohort-summary";
 import { CohortSummaryCard } from "./cohort-summary-card";
+import { FollowupInboxCard } from "./followup-inbox-card";
 import { RosterContentSkeleton } from "./roster-content-skeleton";
 import { StudentCard } from "./student-card";
 
@@ -39,7 +40,7 @@ export function RosterShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("ACTIVE");
   // The loaded tab travels with its rows, so switching tabs shows the skeleton without a
@@ -60,14 +61,16 @@ export function RosterShell() {
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      toastError({
         title: common("error_title"),
         // The API already localizes its messages; the client does not re-translate them.
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [toastError, common],
   );
+  const showErrorRef = useRef(showError);
+  showErrorRef.current = showError;
 
   useEffect(() => {
     let active = true;
@@ -78,12 +81,14 @@ export function RosterShell() {
       .catch((err: unknown) => {
         if (!active) return;
         setLoaded({ tab, items: [] });
-        showError(err);
+        // Read through a ref: showing the toast must not retrigger this fetch. The toast
+        // object identity used to change on every stack update, which 429'd the roster.
+        showErrorRef.current(err);
       });
     return () => {
       active = false;
     };
-  }, [tab, showError]);
+  }, [tab]);
 
   const rows = loaded?.tab === tab ? loaded.items : null;
 
@@ -195,6 +200,8 @@ export function RosterShell() {
         {tab === "ACTIVE" && <CohortBriefCard />}
 
         {tab === "ACTIVE" && <CohortSummaryCard summary={summary} />}
+
+        {tab === "ACTIVE" && <FollowupInboxCard />}
 
         <SegmentPillControl
         items={[

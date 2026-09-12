@@ -106,6 +106,13 @@ export class MentorshipLinkService {
     return withServiceContext(this.db, callback);
   }
 
+  /** Same authorization gate while holding the relationship row through the caller's commit. */
+  async requireActiveLinkInTransaction(tx: DatabaseTx, coachId: string, studentId: string): Promise<MentorshipLinkRow> {
+    const [link] = await this.links.lockActiveInTransaction(tx, coachId, [studentId]);
+    if (!link) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return link;
+  }
+
   async requireActiveLinksInTransaction(
     tx: DatabaseTx,
     coachId: string,

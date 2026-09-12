@@ -1,12 +1,25 @@
 "use client";
-import { CalendarDays, ChevronRight, CreditCard, GraduationCap, LogOut, Scale, Trash2, UserRound } from "lucide-react";
+import {
+  CalendarDays,
+  ChevronRight,
+  CreditCard,
+  GraduationCap,
+  LogOut,
+  Scale,
+  Trash2,
+  UserRound,
+} from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useState, type ComponentProps, type ReactElement } from "react";
 import type { AuthUser, ExamType, ExamVariant } from "@mentor/types";
-import { ApiClientError, http, usersControllerUpdateMe } from "@mentor/api-client";
-import { Card, SectionHeading } from "@mentor/ui";
+import {
+  ApiClientError,
+  http,
+  usersControllerUpdateMe,
+} from "@mentor/api-client";
+import { Card } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
@@ -34,33 +47,48 @@ export function ListRow({
   showChevron?: boolean;
   trailing?: ReactElement;
 }) {
-  // Nuton list item ~56px (DESIGN.md §4); keep ≥44px touch via min-h-11.
+  // Compact list item (44px min touch target, reduced padding matching reference design).
   const className =
-    "flex min-h-14 w-full min-w-0 items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-1.5 text-left transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
+    "group flex min-h-11 w-full min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 text-left transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
   const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
-      <span className="grid size-9 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-main)]" style={style}>
+      <span
+        className="flex size-7 shrink-0 items-center justify-center transition-colors"
+        style={{
+          color: danger ? "var(--color-danger)" : "var(--color-secondary)",
+        }}
+      >
         {icon}
       </span>
       <span className="min-w-0">
         <span
-          className="block truncate text-base font-bold"
-          style={{ fontFamily: "var(--font-body)" }}
+          className="block truncate text-sm font-medium leading-5"
+          style={{
+            color: danger ? "var(--color-danger)" : "var(--color-main)",
+            fontFamily: "var(--font-body)",
+          }}
         >
           {children}
         </span>
         {description ? (
-          <span className="mt-0.5 block truncate text-sm text-[var(--color-secondary)]">
+          <span className="mt-0.5 block truncate text-xs text-[var(--color-secondary)]">
             {description}
           </span>
         ) : null}
       </span>
     </span>
   );
-  const end = trailing ?? (showChevron ? (
-    <ChevronRight className="shrink-0 text-[var(--color-secondary)]" size={20} strokeWidth={2} aria-hidden />
-  ) : null);
+  const end =
+    trailing ??
+    (showChevron ? (
+      <ChevronRight
+        className="shrink-0 text-[var(--color-secondary)]/60 transition-colors group-hover:text-[var(--color-secondary)]"
+        size={16}
+        strokeWidth={2}
+        aria-hidden
+      />
+    ) : null);
 
   if (href) {
     return (
@@ -184,7 +212,10 @@ export function AccountLinksCard({
     } catch (err) {
       toast.error({
         title: tExam("save_error"),
-        message: err instanceof ApiClientError ? err.body.message : tExam("save_error"),
+        message:
+          err instanceof ApiClientError
+            ? err.body.message
+            : tExam("save_error"),
         duration: 3000,
       });
     }
@@ -222,47 +253,63 @@ export function AccountLinksCard({
   }
 
   return (
-    <Card solid className="p-4">
-      <SectionHeading>{tAccount("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
+    <Card solid className="p-2 sm:p-2.5">
+      <div className="px-2 pt-1 pb-1.5">
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {tAccount("title")}
+        </h2>
+      </div>
+      <div className="flex flex-col gap-0.5">
         <ListRow
-          icon={<GraduationCap size={22} aria-hidden />}
+          icon={<GraduationCap size={19} aria-hidden />}
           description={examSummary}
           onClick={() => void openExamSheet()}
         >
           {t("exam_label")}
         </ListRow>
         <ListRow
-          icon={<CalendarDays size={22} aria-hidden />}
+          icon={<CalendarDays size={19} aria-hidden />}
           description={joined}
           showChevron={false}
         >
           {t("member_since")}
         </ListRow>
-        <ListRow href="/subscription" icon={<CreditCard size={20} aria-hidden />}>
+        <ListRow
+          href="/subscription"
+          icon={<CreditCard size={18} aria-hidden />}
+        >
           {tAccount("subscription")}
         </ListRow>
         {/* The only way into the mentorship flow. /my-coach answers both states on its own: no
             coach yet -> the invite-code screen, linked -> the data-scope contract. A student
             handed a code looks under "Koçum", so the row carries no separate hint. */}
-        <ListRow href="/my-coach" icon={<UserRound size={20} aria-hidden />}>
+        <ListRow href="/my-coach" icon={<UserRound size={18} aria-hidden />}>
           {tMentorship("my_coach_title")}
         </ListRow>
         {/* The other direction: becoming one. Always visible rather than gated on the flag —
             the screen behind it says "closed" for itself, and a row that appears and disappears
             with a config change is a row nobody can be told to look for. */}
-        <ListRow href="/coach-application" icon={<GraduationCap size={20} aria-hidden />}>
+        <ListRow
+          href="/coach-application"
+          icon={<GraduationCap size={19} aria-hidden />}
+        >
           {tMentorship("application_title")}
         </ListRow>
         {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
         <ListRow
-          href={{ pathname: "/legal/[slug]", params: { slug: "kullanim-kosullari" } }}
-          icon={<Scale size={20} aria-hidden />}
+          href={{
+            pathname: "/legal/[slug]",
+            params: { slug: "kullanim-kosullari" },
+          }}
+          icon={<Scale size={18} aria-hidden />}
         >
           {tLegal("profile_section")}
         </ListRow>
         <ListRow
-          icon={<LogOut size={20} aria-hidden />}
+          icon={<LogOut size={18} aria-hidden />}
           onClick={() => {
             void logout().catch(() => {
               toast.error({ title: tAccount("logout_error"), duration: 3000 });
@@ -274,7 +321,7 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow
           danger
-          icon={<Trash2 size={20} aria-hidden />}
+          icon={<Trash2 size={18} aria-hidden />}
           onClick={() => void deleteAccount()}
           showChevron={false}
         >
@@ -282,7 +329,9 @@ export function AccountLinksCard({
         </ListRow>
       </div>
       {deleteError ? (
-        <div className="mt-3"><FormError message={deleteError} /></div>
+        <div className="mt-2 px-1">
+          <FormError message={deleteError} />
+        </div>
       ) : null}
     </Card>
   );

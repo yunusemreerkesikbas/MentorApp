@@ -2962,6 +2962,44 @@
         ]
       }
     },
+    "/v1/plan-events": {
+      "get": {
+        "operationId": "PlanEventController_listEvents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
+    "/v1/plan-items": {
+      "get": {
+        "operationId": "PlanEventController_listItems",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/plan-tasks": {
       "get": {
         "operationId": "PlanTaskController_list",
@@ -6525,6 +6563,227 @@
         ]
       }
     },
+    "/v1/mentorship/followups/availability": {
+      "get": {
+        "operationId": "MentorshipFollowupController_getFollowupAvailability",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FollowupAvailabilityResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
+    "/v1/mentorship/followups": {
+      "get": {
+        "operationId": "MentorshipFollowupController_listFollowups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachFollowupPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/followups": {
+      "post": {
+        "operationId": "MentorshipFollowupController_createFollowup",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMentorshipFollowupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachFollowupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/followups/{followupId}": {
+      "patch": {
+        "operationId": "MentorshipFollowupController_updateFollowup",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "followupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMentorshipFollowupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CoachFollowupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/followups": {
+      "get": {
+        "operationId": "MentorshipFollowupController_listSharedFollowups",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedFollowupPageDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/followups/{followupId}/response": {
+      "put": {
+        "operationId": "MentorshipFollowupController_respondToFollowup",
+        "parameters": [
+          {
+            "name": "followupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RespondMentorshipFollowupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharedFollowupResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-followups"
+        ]
+      }
+    },
     "/v1/mentorship/coach-registration": {
       "post": {
         "operationId": "MentorshipApplicationController_register",
@@ -6978,6 +7237,313 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/plan": {
+      "get": {
+        "operationId": "MentorshipPlanController_listPlan",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/assignments": {
+      "post": {
+        "operationId": "MentorshipPlanController_assignBatch",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMentorshipBatchAssignmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/assignments/{assignmentId}": {
+      "patch": {
+        "operationId": "MentorshipPlanController_updateAssignment",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMentorshipAssignmentDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "delete": {
+        "operationId": "MentorshipPlanController_removeAssignment",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "assignmentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/assignment-groups/{assignmentGroupId}": {
+      "patch": {
+        "operationId": "MentorshipPlanController_updateAssignmentGroup",
+        "parameters": [
+          {
+            "name": "assignmentGroupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMentorshipAssignmentGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      },
+      "delete": {
+        "operationId": "MentorshipPlanController_removeAssignmentGroup",
+        "parameters": [
+          {
+            "name": "assignmentGroupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RemoveMentorshipAssignmentGroupDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/events": {
+      "post": {
+        "operationId": "MentorshipPlanController_createPlanEvent",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateMentorshipEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/events/{eventId}": {
+      "patch": {
+        "operationId": "MentorshipPlanController_updatePlanEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMentorshipEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/events/{eventId}/cancel": {
+      "post": {
+        "operationId": "MentorshipPlanController_cancelPlanEvent",
+        "parameters": [
+          {
+            "name": "eventId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelMentorshipEventDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -9616,6 +10182,238 @@
         "type": "object",
         "properties": {}
       },
+      "FollowupAvailabilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
+      "CoachFollowupResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "privateNote": {
+            "type": "string",
+            "nullable": true
+          },
+          "sharedDecision": {
+            "type": "string",
+            "nullable": true
+          },
+          "response": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CHANGE_REQUESTED"
+            ]
+          },
+          "followUpDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "respondedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "studentId",
+          "studentDisplayName",
+          "title",
+          "privateNote",
+          "sharedDecision",
+          "response",
+          "followUpDate",
+          "status",
+          "version",
+          "replacesId",
+          "createdAt",
+          "updatedAt",
+          "respondedAt",
+          "closedAt"
+        ]
+      },
+      "CoachFollowupPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CoachFollowupResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "CreateMentorshipFollowupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateMentorshipFollowupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "SharedFollowupResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "sharedDecision": {
+            "type": "string"
+          },
+          "response": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "ACCEPTED",
+              "CHANGE_REQUESTED"
+            ]
+          },
+          "followUpDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "version": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "respondedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          },
+          "closedAt": {
+            "type": "string",
+            "nullable": true,
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "sharedDecision",
+          "response",
+          "followUpDate",
+          "status",
+          "version",
+          "createdAt",
+          "updatedAt",
+          "respondedAt",
+          "closedAt"
+        ]
+      },
+      "SharedFollowupPageDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SharedFollowupResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "RespondMentorshipFollowupDto": {
+        "type": "object",
+        "properties": {}
+      },
       "RegisterCoachDto": {
         "type": "object",
         "properties": {}
@@ -9637,6 +10435,34 @@
         "properties": {}
       },
       "SaveMentorshipTemplateDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateMentorshipBatchAssignmentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateMentorshipAssignmentDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateMentorshipAssignmentGroupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "RemoveMentorshipAssignmentGroupDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CreateMentorshipEventDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "UpdateMentorshipEventDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "CancelMentorshipEventDto": {
         "type": "object",
         "properties": {}
       },

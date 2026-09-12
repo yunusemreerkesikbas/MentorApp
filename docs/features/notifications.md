@@ -99,6 +99,15 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Mentorship follow-up notifications.** Shared decisions notify the student and
+  student responses notify the coach through ID-only mentorship events. Follow-up text and private
+  notes are never copied into notifications or email. Due follow-ups use the existing job queue and
+  daily dispatcher, one summary per coach/Istanbul day, with preference-aware email and live access/
+  due-state checks at delivery. Usage: enable mentorship and its followups flag, create a dated
+  follow-up, and run the daily dispatcher. Closed records, ended links, and previous relationship
+  periods do not produce due notifications. Related: notifications followup service/listener and
+  mentorship's exported followup notification read seam.
+
 - **Plan etkinliği bildirimleri ve 15 dakika hatırlatması (APP-091, 2026-09-09)** — W2'nin
   `coaching.plan-event.created|updated|cancelled` olayları, koç hariç her güncel katılımcıya seri
   başına tek PLAN özeti üretir; bağlantı o katılımcının ilk etkilenen kaydını açar. Saatli oluşturma

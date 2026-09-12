@@ -13,6 +13,7 @@ import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorsh
 import { AssignTaskForm } from "./assign-task-form";
 import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
+import { FollowupPanel } from "./followup-panel";
 import {
   formatDate,
   formatMood,
@@ -191,6 +192,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
       <BriefCard key={studentId} studentId={studentId} />
 
       <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
+
+      <FollowupPanel studentId={studentId} />
 
       <AssignTaskForm
         studentId={studentId}

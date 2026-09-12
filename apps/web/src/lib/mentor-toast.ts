@@ -38,36 +38,52 @@ function withMentorDefaults(
   };
 }
 
-/** Web wrapper: injects the i18n dismiss label + the variant status icon. */
+/** Web wrapper: injects the i18n dismiss label + the variant status icon.
+ *  `error`/`show` stay stable across stack updates; do not put the returned object in effect deps. */
 export function useMentorToast() {
   const toast = useToast();
   const t = useTranslations("common.toast");
   const dismissLabel = t("dismiss");
+  const { show: pushToast, dismiss, dismissAll, toasts } = toast;
 
   const show = useCallback(
     (options: MentorToastOptions) =>
-      toast.show(withMentorDefaults(options, dismissLabel)),
-    [dismissLabel, toast],
+      pushToast(withMentorDefaults(options, dismissLabel)),
+    [dismissLabel, pushToast],
   );
 
-  const variantShow = useCallback(
-    (variant: ToastVariant) =>
-      (options: Omit<MentorToastOptions, "variant">) =>
-        show({ ...options, variant }),
+  const success = useCallback(
+    (options: Omit<MentorToastOptions, "variant">) =>
+      show({ ...options, variant: "success" }),
+    [show],
+  );
+  const error = useCallback(
+    (options: Omit<MentorToastOptions, "variant">) =>
+      show({ ...options, variant: "error" }),
+    [show],
+  );
+  const warning = useCallback(
+    (options: Omit<MentorToastOptions, "variant">) =>
+      show({ ...options, variant: "warning" }),
+    [show],
+  );
+  const info = useCallback(
+    (options: Omit<MentorToastOptions, "variant">) =>
+      show({ ...options, variant: "info" }),
     [show],
   );
 
   return useMemo(
     () => ({
-      toasts: toast.toasts,
+      toasts,
       show,
-      dismiss: toast.dismiss,
-      dismissAll: toast.dismissAll,
-      success: variantShow("success"),
-      error: variantShow("error"),
-      warning: variantShow("warning"),
-      info: variantShow("info"),
+      dismiss,
+      dismissAll,
+      success,
+      error,
+      warning,
+      info,
     }),
-    [show, toast, variantShow],
+    [dismiss, dismissAll, error, info, show, success, toasts, warning],
   );
 }

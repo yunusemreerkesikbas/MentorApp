@@ -1,0 +1,1 @@
+ALTER TABLE "mentorship_followups" ADD COLUMN "response_version" integer;

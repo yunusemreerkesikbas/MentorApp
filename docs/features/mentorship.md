@@ -202,6 +202,30 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was retrying every render
+  because the roster error handler lived in the fetch effect deps and `useMentorToast()` changed
+  identity whenever a toast appeared. A failed roster read (including missing `coach_students.period_id`
+  before migration `0111`) opened a toast, which retriggered the fetch until the global throttler
+  returned 429. Usage: open `/kocluk`; one roster request on tab change, not a tight loop. Apply
+  `0111_w8_mentorship_followups.sql` or the same select still 500s once, without looping. Related:
+  `roster-shell.tsx`, `my-coach-shell.tsx`, `mentor-toast.ts`.
+
+- **2026-09-12 — Coach follow-up cycle.** Coaches can record an action with a private note,
+  optionally share an immutable decision, and set an Istanbul calendar date for another check.
+  Students see only shared decisions under My coach and can accept or request a change while
+  the record is open. Coach inbox filtering happens before pagination and includes change
+  requests and due checks even when the student has no risk flags. Usage: enable
+  `mentorship.followups.enabled` alongside `mentorship.enabled`, open a student report, and
+  create a follow-up; close the old record before creating a replacement decision. Existing
+  attention marks, standing notes, assignments, and AI summaries are independent. Gotchas:
+  title/private note never enter the student DTO, AI, or notification payload; dates are day-based,
+  not appointments. Ending a link closes both sides' access; rejoining starts a new relationship
+  period and does not reopen old records. Account erasure removes records with their link.
+  Notifications contain no record text and due delivery rechecks current access and state.
+  Related: `modules/mentorship/*/*followup*`, `modules/notifications/*/*followup*`,
+  `packages/{types,validation}/src/mentorship-followup.ts`, and the web follow-up components.
+  Design/contract: [follow-up implementation](../plans/2026-09-12-mentorship-followups.md).
+
 - **Koçluk kabuğu ortak AppNav kullanıyor (2026-09-10)** - `/kocluk`, koç profili ve öğrenci
   detayları artık panelle aynı `AppNav` kabuğunu kullanır: masaüstünde açılıp daralabilen sol
   sidebar, mobilde ortak üst başlık ve alt tab bar görünür. `(coach)` route grubu ile COACH guard'ı

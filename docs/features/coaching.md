@@ -4346,3 +4346,12 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   global design system. Related: `analysis-review-progress.tsx`,
   `analysis-review-progress.module.css`, `analysis-review-history.tsx`,
   `analysis-improvement-loop-card.tsx`, `analysis-review.spec.ts`.
+
+- **Quiet Precision control refinement (2026-09-11)** — The 7/30-day selector keeps the shared
+  `SlidingTabs` appearance without analysis-only visual overrides and uses a compact, right-aligned
+  track on desktop. “Bugünkü odağın” places the existing, narrower `MenuSelect` and review action on
+  one aligned row. The improvement cycle now groups its heading/source, subject/topic, four states,
+  and compact actions into a denser hierarchy while preserving 44px targets. Usage and data behavior
+  are unchanged. On narrow screens the focus controls and period selector expand safely to one row.
+  Related: `analysis-review-progress.tsx`, `analysis-review-progress.module.css`,
+  `analysis-improvement-loop-card.tsx`.

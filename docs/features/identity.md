@@ -58,36 +58,36 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ### Auth endpoints
 
-| Method | Path | Notes |
-|---|---|---|
-| POST | `/v1/auth/signup` | KVKK consent required; Turnstile when secret set |
-| POST | `/v1/auth/login` | Enumeration-safe (same 401 + dummy-hash timing) |
-| GET | `/v1/auth/google/status` | Public Google button availability (`enabled`, plus flag/config diagnostics) |
-| GET | `/v1/auth/google/start` | Starts Google OAuth (`mode=login|signup`; signup requires KVKK flag) |
-| GET | `/v1/auth/google/callback` | Google callback; sets Mentor refresh cookie then redirects to web |
-| GET | `/v1/users/me/auth-accounts/google` | Current user's Google-link status |
-| POST | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start |
-| POST | `/v1/auth/refresh` | Cookie-scoped `/v1/auth`; rotation + reuse detection |
-| POST | `/v1/auth/logout` | Revokes refresh family |
-| POST | `/v1/auth/verify-email` | Consumes `email_tokens` |
-| POST | `/v1/auth/forgot-password` | Always 200 (hides existence) |
-| POST | `/v1/auth/reset-password` | Revokes all sessions |
-| GET / PATCH | `/v1/users/me` | Minimal onboarding: displayName / username / examType / examDate |
-| POST | `/v1/users/me/verification-email` | Authenticated resend for the current user's verification email |
-| POST | `/v1/users/me/avatar-upload-url` | One-use, session-bound upload capability for current user's JPEG/PNG avatar |
+| Method      | Path                                      | Notes                                                                       |
+| ----------- | ----------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
+| POST        | `/v1/auth/signup`                         | KVKK consent required; Turnstile when secret set                            |
+| POST        | `/v1/auth/login`                          | Enumeration-safe (same 401 + dummy-hash timing)                             |
+| GET         | `/v1/auth/google/status`                  | Public Google button availability (`enabled`, plus flag/config diagnostics) |
+| GET         | `/v1/auth/google/start`                   | Starts Google OAuth (`mode=login                                            | signup`; signup requires KVKK flag) |
+| GET         | `/v1/auth/google/callback`                | Google callback; sets Mentor refresh cookie then redirects to web           |
+| GET         | `/v1/users/me/auth-accounts/google`       | Current user's Google-link status                                           |
+| POST        | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start                      |
+| POST        | `/v1/auth/refresh`                        | Cookie-scoped `/v1/auth`; rotation + reuse detection                        |
+| POST        | `/v1/auth/logout`                         | Revokes refresh family                                                      |
+| POST        | `/v1/auth/verify-email`                   | Consumes `email_tokens`                                                     |
+| POST        | `/v1/auth/forgot-password`                | Always 200 (hides existence)                                                |
+| POST        | `/v1/auth/reset-password`                 | Revokes all sessions                                                        |
+| GET / PATCH | `/v1/users/me`                            | Minimal onboarding: displayName / username / examType / examDate            |
+| POST        | `/v1/users/me/verification-email`         | Authenticated resend for the current user's verification email              |
+| POST        | `/v1/users/me/avatar-upload-url`          | One-use, session-bound upload capability for current user's JPEG/PNG avatar |
 
 ## API
 
-| Endpoint | Purpose |
-|---|---|
-| `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Auth lifecycle |
-| `GET /v1/auth/google/{status,start,callback}` | Google OAuth sign-in/sign-up |
-| `GET/POST /v1/users/me/auth-accounts/google{,/start}` | Inspect/start explicit Google account linking |
-| `GET /v1/users/me` | Current user (consumed by coaching, notifications, admin) |
-| `PATCH /v1/users/me` | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
-| `POST /v1/users/me/verification-email` | Resend verification email for current user |
-| `POST /v1/users/me/avatar-upload-url` | Create user-scoped avatar upload URL |
-| `DELETE /v1/account` | Self-service KVKK erasure ("hesabımı sil") — irreversible |
+| Endpoint                                                                                  | Purpose                                                                          |
+| ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
+| `POST /v1/auth/{signup,login,refresh,logout,verify-email,forgot-password,reset-password}` | Auth lifecycle                                                                   |
+| `GET /v1/auth/google/{status,start,callback}`                                             | Google OAuth sign-in/sign-up                                                     |
+| `GET/POST /v1/users/me/auth-accounts/google{,/start}`                                     | Inspect/start explicit Google account linking                                    |
+| `GET /v1/users/me`                                                                        | Current user (consumed by coaching, notifications, admin)                        |
+| `PATCH /v1/users/me`                                                                      | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
+| `POST /v1/users/me/verification-email`                                                    | Resend verification email for current user                                       |
+| `POST /v1/users/me/avatar-upload-url`                                                     | Create user-scoped avatar upload URL                                             |
+| `DELETE /v1/account`                                                                      | Self-service KVKK erasure ("hesabımı sil") — irreversible                        |
 
 ## Geliştirmeler (timeline)
 
@@ -209,6 +209,8 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   Usage: `/giris` → moon/sun. Related: `auth-shell.tsx`, `google-auth-button.tsx`,
   `circular-back-link.tsx`, `docs/features/web-shell.md`.
 
+- **Settings/Profil minimalist liste, link padding ve Google hesabı modal sadeleştirmesi (2026-09-12)** — `/ayarlar` ve `/profil` sayfalarındaki liste satırlarının görünümü referans tasarıma uygun şekilde minimize edildi. `ListRow` yüksekliği `min-h-14`'ten `min-h-11` (44px erişilebilir dokunmatik hedef) seviyesine, metin boyutu `text-base font-bold`'dan `text-sm font-medium` seviyesine çekildi. İkonlar `size-[18px]` narin çizgi ikonlarına dönüştürülerek 36px/40px'lik kaba kutular kaldırıldı. Kart içi sert `divide-y` çizgileri yerine yumuşak `rounded-xl` hover zeminine sahip `gap-0.5` akışı getirildi. `GoogleAccountCard` doğrudan sayfada büyük form göstermek yerine diğer linklerle aynı minimalist `ListRow` stiline çekildi; tıklandığında Google hesap bağlama / durum detayını içeren modal açılıyor. `NotificationSettings` toggle satırları ve `ApplicationSupportCard` dil/tema kontrolleri de aynı minimalist hiyerarşiyle kompakt hale getirildi. Related: `account-links-card.tsx`, `economy-section.tsx`, `notification-settings.tsx`, `application-support-card.tsx`, `google-account-card.tsx`, `social-follow-card.tsx`, `profile-shell.tsx`.
+
 - **Settings light/dark surfaces (2026-08-15)** — `/ayarlar` list rows, notification toggles,
   profile edit chips, and invite redeem dock use `--color-surface` / `--color-btn-label`.
   Appearance (Açık/Koyu) sits next to language in the App card so mobile can switch
@@ -244,7 +246,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   `ProfileCard`'da bio (3-satır clamp) + website (düz metin — kart zaten `<Link>`, nested-anchor'dan
   kaçınıldı). i18n: `profile.edit.{bio,website}_*`, `topluluk.edit_profile`. Testler: `UsersService.updateMe`
   unit +1 (bio/website patch, null clear), forum e2e profil testine bio/website assertion. **Kapsam dışı**:
-  bio'da @mention/link render, community içi inline form, website unfurl/favicon, çoklu sosyal link. *(APP-024)*
+  bio'da @mention/link render, community içi inline form, website unfurl/favicon, çoklu sosyal link. _(APP-024)_
 - **Signup username + hedef alanları** — web `/kayit` formu artık zorunlu `username` ve opsiyonel
   `goalTitle` alır. `username` identity signup payload'ına yazılır; `/v1` geriye uyumluluğu için API
   alanı opsiyonel kalır, eski/Google client'lar onboarding username adımını kullanmaya devam eder.
@@ -254,13 +256,13 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   onboarding profile/goal inputları aynen kalır. Gotcha: hedef kaydı signup'ı bloklamaz; kullanıcı
   isterse onboarding/hedef ekranında tekrar düzenleyebilir. Related: `signupSchema`,
   `AuthService.signup`, `kayit/page.tsx`, `coachingControllerUpsertVision`, `auth.e2e-spec.ts`.
-  *(2026-07-05.)*
+  _(2026-07-05.)_
 - **Auth ekranı sadeleştirme** — `/giris` ve `/kayit` kartındaki üst marka/tagline metni kaldırıldı;
   form başlığı tek odak olarak kaldı. Google OAuth aksiyonu artık görselde yalnızca Google logosu olan
   48px ikon butonu olarak render edilir, erişilebilir adı lokalize `auth.google.continue` üzerinden
   korunur. Usage: `identity.google_oauth.enabled` açıksa ikon butonu divider altında görünür. Gotcha:
   signup tarafında Google başlangıcı hâlâ KVKK checkbox kabulünü ister. Related:
-  `auth-shell.tsx`, `google-auth-button.tsx`. *(2026-07-05.)*
+  `auth-shell.tsx`, `google-auth-button.tsx`. _(2026-07-05.)_
 - **Auth ekranı redesign** — web `/giris` ve `/kayit` yüzeyleri referans mobil auth düzenine
   yaklaştırıldı: mevcut pastel blob arka plan korunur, ortak `AuthShell` dar beyaz mobil ekran
   yüzeyi verir, form başlıkları ortalanır, ana CTA Google girişinden önce gelir ve alt geçiş linkleri
@@ -268,13 +270,13 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   ve Google/KVKK davranışı korunur. Gotcha: Google butonu hâlâ `identity.google_oauth.enabled`
   kapalıysa render edilmez; KVKK kabulü signup Google başlangıcından önce zorunlu kalır. Related:
   `auth-shell.tsx`, `auth-nav-link.tsx`, `giris/page.tsx`, `kayit/page.tsx`, `messages/{tr,en}.json`.
-  *(2026-07-05.)*
+  _(2026-07-05.)_
 - **Onboarding username kapısı** — post-auth tamamlanma kuralı artık `username + examType`
   gerektirir; Google callback de `examType` olsa bile username yoksa `/onboarding`'e döner. Username
   uniqueness yeni endpoint ile ön-kontrol yapılmadan mevcut case-insensitive DB unique index ve
   `PATCH /v1/users/me` duplicate → `AUTH_USERNAME_IN_USE` akışıyla çözülür. Gotcha: `users.username`
   nullable kalır; auth hesabı onboarding tamamlanmadan yaratılır. Related: `GoogleAuthService`,
-  `UsersService`, `usernameSchema`. *(2026-07-03.)*
+  `UsersService`, `usernameSchema`. _(2026-07-03.)_
 - **Google ile giriş** — `GET /v1/auth/google/start` ve callback eklendi; backend Google OAuth
   authorization code akışını `google-auth-library` ile doğrular, sadece `openid email profile`
   scope ister ve Google tokenlarını saklamaz. Usage: admin `/config` ekranında
@@ -286,7 +288,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   döner ve start 503 verir. Bu ilk sürümün doğrulanmış e-posta ile otomatik bağlama davranışı
   2026-09-05 güvenlik paketinde kaldırıldı; mevcut hesaplar yalnız Ayarlar'dan açık işlemle bağlanır.
   Related: `GoogleAuthService`, `CONFIG_CATALOG`,
-  `user_auth_accounts`, `google-auth-button.tsx`. *(2026-07-03.)*
+  `user_auth_accounts`, `google-auth-button.tsx`. _(2026-07-03.)_
 - **Profile avatar V1** — `users.avatar_storage_key` nullable kolonu eklendi; auth/session ve
   `GET/PATCH /v1/users/me` artık `avatarUrl` döner. Akış: client
   `POST /v1/users/me/avatar-upload-url` ile JPEG/PNG için user-scoped key alır
@@ -297,7 +299,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   web origin'inden `<img>` render edilebilmesi için sadece bu dev object response'u
   `Cross-Origin-Resource-Policy: cross-origin` döner. Related:
   `UsersService`, `FakeStorageController`, `StoragePort`, `packages/{types,validation}/src/auth.ts`,
-  `apps/api/drizzle/0031_perfect_leech.sql`. *(2026-07-03.)*
+  `apps/api/drizzle/0031_perfect_leech.sql`. _(2026-07-03.)_
 - **Profile verification resend** — `/profil` üzerindeki "Doğrulama bekliyor" chip'i artık
   auth'lu `POST /v1/users/me/verification-email` çağırır; backend mevcut verification token email
   kuyruğunu tekrar kullanır ve kullanıcı zaten doğrulanmışsa no-op döner. Usage: kullanıcı avatar
@@ -310,13 +312,13 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   resend denemelerini sayar; signup sırasında gönderilen ilk doğrulama e-postası bu pencereye dahil
   değildir. Email adresi body'de taşınmaz. Related: `AuthService.resendVerificationEmail`,
   `UsersController`, `email_verification_resend_attempts`,
-  `profile-header.tsx`, `@mentor/api-client`. *(2026-07-03.)*
+  `profile-header.tsx`, `@mentor/api-client`. _(2026-07-03.)_
 - **Silent refresh race fix** — Web `AuthProvider` refresh isteklerini tek uçuşta birleştirir ve
   eski refresh sonuçlarının daha yeni login/signup/profile state'ini ezmesini engeller. Usage:
   uygulama ilk açıldığında `/v1/auth/refresh` login ile yarışsa bile başarılı login oturumu
   korunur. Gotcha: refresh cookie hâlâ tek kullanımlık rotasyon + reuse detection kullanır; client
   sadece aynı tab içindeki benign yarışı söndürür. Related: `apps/web/src/lib/auth-context.tsx`.
-  *(2026-07-03.)*
+  _(2026-07-03.)_
 - **Username alanı** — `users.username` nullable + unique eklendi; `PATCH /v1/users/me` username
   günceller, `GET /v1/users/me` `AuthUser.username` döner. Format: `a-z`, `0-9`, `_`, 3-24
   karakter; duplicate → `AUTH_USERNAME_IN_USE`. Forum author görünümü `username ?? displayName`
@@ -327,16 +329,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   detection); enumeration-safe login; argon2id; KVKK consent; Turnstile; global JwtAuthGuard +
   RolesGuard; full auth endpoints + `GET/PATCH /users/me`. orval api-client codegen activated (fetch
   mutator, `credentials:'include'` + bearer + `ApiClientError`). Web `(auth)` pages + `AuthProvider`
-  (access token in memory + silent refresh + scheduled re-refresh) + guarded `(app)` group. 55 tests. *(0010.)*
+  (access token in memory + silent refresh + scheduled re-refresh) + guarded `(app)` group. 55 tests. _(0010.)_
 - **Code-review fixes** — throttling was silently a no-op (`throttlers: []` → named `default`
   throttler so `@Throttle` overrides apply; re-test 10×401 → 429); invalid-but-regex-passing examDate
   → 500 fixed at both belts (zod refine for real calendar date + `22007/22008` in the pg-error
   mapper → 400); signup check-then-insert race → catch `23505` → `AUTH_EMAIL_IN_USE`; removed the
-  `false as never` KVKK cast. Verified non-issues: `DUMMY_HASH`, SameSite=lax, garbage bearer → 401. *(0011.)*
+  `false as never` KVKK cast. Verified non-issues: `DUMMY_HASH`, SameSite=lax, garbage bearer → 401. _(0011.)_
 - **Web auth UI polish** — shared `AuthShell` for all `(auth)` routes (Mentor branding, motion card,
   "Ana sayfaya dön" link); `AuthNavLink` for cross-page nav (44px touch, heading font, no bare
   underline); all pages use `SectionHeading` + consistent form spacing; KVKK checkbox min touch
-  target; `eposta-dogrula` eslint-safe `useEffect` with active flag. *(0036.)*
+  target; `eposta-dogrula` eslint-safe `useEffect` with active flag. _(0036.)_
 - **Mount silent-refresh hardened against dev boot race** — `Failed to fetch` on `/v1/auth/refresh`
   right after `pnpm dev` (API not listening yet) or during a `nest --watch` recompile. Two fixes:
   (1) `AuthProvider.silentRefresh` retries network errors 3× (300/600ms) and only a real
@@ -344,7 +346,7 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
   (2) web `dev` script gates on `scripts/wait-for-port.mjs 3001` so cold boot never fires at a
   down API (times out → starts anyway, so FE-only work isn't blocked). Admin got the same treatment:
   `dev` port gate + `authProvider` mount `/users/me` retries network errors 3× (axios `!err.response`),
-  so the boot race no longer leaves the panel stuck with a null admin. *(0037.)*
+  so the boot race no longer leaves the panel stuck with a null admin. _(0037.)_
 - **Dev boot race — wait gate + backoff widened (2026-07-23)** — Cold `pnpm dev` on Windows often
   took Nest >30s to `listen()`; `wait-for-port` timed out (`starting anyway`), Next served `/giris`
   while API was still mapping routes → `ERR_CONNECTION_REFUSED` on `/v1/auth/google/status` and
@@ -454,6 +456,15 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 - Usage: cross-module people lists consume `{ userId, displayName, username, avatarUrl }`; they
   never construct storage URLs. Related: `users.service.ts`, `users.repository.ts`,
   `mentorship-plan-orchestration.service.ts`.
+
+### 2026-09-12 — Settings page minimalist redesign & Google account linking modal
+
+- Profile/settings rows minimized (`min-h-11`, delicate icons, refined category headings).
+- `GoogleAccountCard` transformed into a standard `ListRow` triggering a bottom sheet / modal.
+- `Button` in `@mentor/ui` gained `size="sm"` (`px-4 py-2.5 text-sm font-semibold`) and `whitespace-nowrap`
+  so modal buttons never break onto multiple lines across any viewport width.
+- Related: `apps/web/src/app/[locale]/(app)/profile/_components/google-account-card.tsx`,
+  `packages/ui/src/components/button.tsx`, `messages/{tr,en}.json`.
 
 ## Gotchas / Known issues
 
