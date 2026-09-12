@@ -29,9 +29,13 @@ export function FollowupStatus({
           className="rounded-full border px-3 py-1 text-xs font-semibold"
           style={{
             borderColor:
-              response === "ACCEPTED" ? "var(--color-success)" : "var(--color-accent)",
+              response === "ACCEPTED"
+                ? "var(--color-success)"
+                : "var(--color-accent)",
             color:
-              response === "ACCEPTED" ? "var(--color-success)" : "var(--color-main)",
+              response === "ACCEPTED"
+                ? "var(--color-success)"
+                : "var(--color-main)",
           }}
         >
           {t(`followup_response_${response}`)}

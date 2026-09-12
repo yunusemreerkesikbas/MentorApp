@@ -29,6 +29,11 @@
       "cancel": "Vazgeç",
       "close": "Kapat"
     },
+    "date_picker": {
+      "title": "Tarih seç",
+      "apply": "Uygula",
+      "today": "Bugün"
+    },
     "premium_member": "Premium üye"
   },
   "welcome": {

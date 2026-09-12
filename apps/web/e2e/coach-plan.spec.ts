@@ -37,6 +37,11 @@ async function openCompose(page: Page, action: "Yeni görev" | "Yeni etkinlik") 
   await page.getByRole("button", { name: action, exact: true }).click();
 }
 
+async function chooseMenu(page: Page, label: string, option: string) {
+  await page.getByRole("button", { name: label, exact: true }).click();
+  await page.getByRole("option", { name: option, exact: true }).click();
+}
+
 test("empty attendees create personal task and event while a cohort uses one batch", async ({
   page,
 }) => {
@@ -62,11 +67,11 @@ test("empty attendees create personal task and event while a cohort uses one bat
   await openCompose(page, "Yeni etkinlik");
   await expect(
     page.getByRole("dialog", { name: "Yeni etkinlik" })
-      .getByLabel("Tarih", { exact: true }),
-  ).toHaveAttribute("min", todayIso());
+      .getByRole("button", { name: "Tarih", exact: true }),
+  ).toHaveAttribute("data-min", todayIso());
   await page.getByLabel("Başlık").fill("Haftalık hazırlık");
-  await page.getByLabel("Tekrar").selectOption("WEEKLY");
-  await page.getByLabel("Tekrar bitişi").selectOption("COUNT");
+  await chooseMenu(page, "Tekrar", "Her hafta");
+  await chooseMenu(page, "Tekrar bitişi", "Tekrar sayısıyla");
   await page.getByRole("spinbutton", { name: "Tekrar sayısı" }).fill("4");
   await page.getByRole("dialog").getByRole("button", { name: "Etkinliği oluştur" }).click();
   await expect.poll(() => api.events.length).toBe(1);
@@ -241,9 +246,9 @@ test("reloads selected detail from authority and creates on a selected future da
   const future = addDays(todayIso(), 1);
   await openCompose(page, "Yeni görev");
   const taskDialog = page.getByRole("dialog", { name: "Yeni görev" });
-  await expect(taskDialog.getByLabel("Tarih", { exact: true })).toHaveValue(future);
-  await expect(taskDialog.getByLabel("Tarih", { exact: true }))
-    .toHaveAttribute("min", todayIso());
+  const dateField = taskDialog.getByRole("button", { name: "Tarih", exact: true });
+  await expect(dateField).toHaveAttribute("data-iso", future);
+  await expect(dateField).toHaveAttribute("data-min", todayIso());
   await taskDialog.getByLabel("Başlık").fill("Yarının görevi");
   await taskDialog.getByRole("button", { name: "Görevi oluştur" }).click();
   await expect.poll(() => api.personalTasks.length).toBe(1);

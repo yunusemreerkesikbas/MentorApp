@@ -147,17 +147,17 @@ pnpm --filter @mentor/api test
 
 - **2026-09-12 — Koç planı gooey compose + okunur overlay.** Başlıktaki Yeni görev /
   Yeni etkinlik butonları sağ-alt plus menüye taşındı (`CoachPlanComposeFab`). SVG gooey
-  filter yalnız blob dairelerde; etiketler filter dışında. Form desktop'ta sağ drawer,
-  mobilde ~%90 bottom-sheet (handle + sürükleyerek kapat). Detay kompakt inspector
-  (desktop kart, mobil kısa sheet). Scrim `backdrop-blur` + yüzey `surface 92%`; eski
-  yarı saydam `Card` takvimi panelin içinden gösteriyordu. Kullanım: plus → görev/etkinlik;
-  takvim hücresi hâlâ action-sheet. Gotcha: `prefers-reduced-transparency` blur'u kapatır;
-  `prefers-reduced-motion` kaymayı opacity'ye indirir. Compose FAB `z-51` detail'in (`z-40`)
-  üstünde kalır ki inspector açıkken oluşturma sürsün; form overlay sonra mount olup `z-50`
-  ile FAB'ı örter. İlgili:
-  `coach-plan-{compose-fab,overlay,form-panel,detail,toolbar,calendar-shell}.tsx`.
-  Gotcha: compose FAB `z-51` sits above detail (`z-40`) so create stays reachable while an
-  inspector is open; the form overlay mounts later at `z-50` and covers the FAB.
+  filter yalnız blob dairelerde; etiket ve ikon aynı `y` satırında hizalanır. Form
+  desktop'ta sağ drawer, mobilde ~%90 bottom-sheet. Detay kompakt inspector. Scrim
+  `backdrop-blur` + yüzey `surface 92%`. Tarih `DateField` + paylaşılan `DatePickerSheet`
+  (plan/analiz sarmalayıcıları ince kaldı); tekrar `MenuSelect`/`PopoverMenu`; katılımcı
+  `CheckBox` (`@mentor/ui`, auth cookie ile aynı). Kullanım: plus → görev/etkinlik;
+  takvim hücresi hâlâ action-sheet. Gotcha: form açıkken FAB unmount olur (drawer'ın
+  üstüne binmesin). Tarih + başlangıç/bitiş saati tek satır ve aynı alan yüksekliği.
+  Takvim ikonun altında 20rem popover (viewport'a sıkıştırılır; gün ızgarası taşmaz).
+  Tekrar her zaman 1/3 sütun; bitiş türü ve sayı/tarih aynı satırda açılır. İlgili:
+  `coach-plan-{compose-fab,overlay,form-panel,detail,toolbar,calendar-shell,attendees,form-fields}.tsx`,
+  `components/{date-picker-sheet,date-field,menu-select,popover-menu}.tsx`.
 
 - **2026-09-11 — Shared Takvim item model.** Plan calendar grids (hour, month, mobile strip,
   agenda, hover preview) now render `PlanCalendarItem<T>` instead of `PlanTaskDto`. The student

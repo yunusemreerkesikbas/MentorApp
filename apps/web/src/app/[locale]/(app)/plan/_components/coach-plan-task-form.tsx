@@ -28,7 +28,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { createPlanTask, updatePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanAttendees } from "./coach-plan-attendees";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
-import { CoachPlanTimeFields } from "./coach-plan-form-fields";
+import { CoachPlanWhenFields } from "./coach-plan-form-fields";
 
 type TaskFormMode =
   | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
@@ -146,27 +146,22 @@ export function CoachPlanTaskForm({
           disabled={busy}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <TextField
-          type="date"
-          label={t("form_date")}
-          value={taskDate}
-          min={todayInIstanbul()}
-          required
-          disabled={busy || personalEdit}
-          onChange={(event) => setTaskDate(event.target.value)}
+        <CoachPlanWhenFields
+          date={taskDate}
+          minDate={todayInIstanbul()}
+          dateDisabled={personalEdit}
+          startTime={startTime}
+          endTime={endTime}
+          disabled={busy}
+          onDate={setTaskDate}
+          onStartTime={setStartTime}
+          onEndTime={setEndTime}
         />
         {personalEdit && (
           <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
             {t("personal_task_date_fixed")}
           </p>
         )}
-        <CoachPlanTimeFields
-          startTime={startTime}
-          endTime={endTime}
-          disabled={busy}
-          onStartTime={setStartTime}
-          onEndTime={setEndTime}
-        />
         <CoachPlanAttendees
           roster={roster}
           selectedIds={attendeeIds}

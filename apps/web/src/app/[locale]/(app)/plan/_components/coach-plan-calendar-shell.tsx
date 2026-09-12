@@ -399,6 +399,7 @@ export function CoachPlanCalendarShell({
             </PlanCalendarFrame>
           </div>
           <CoachPlanComposeFab
+            hidden={Boolean(openForm)}
             onNewTask={(trigger) => {
               formTriggerRef.current = trigger;
               setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
