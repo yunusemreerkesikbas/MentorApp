@@ -63,6 +63,13 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-11 — Dashboard JS kapısı koç Takvim chrome sonrası.** Coach `/plan` Takvim
+  chrome'u `(app)` client graph'ına ~38 KiB ekledi ve panel bütçesini 715/1287 KiB'nin
+  üzerine çıkardı. Kapı ölçülen boyuta göre 760/1295 KiB'ye alındı ki 429 roster düzeltmesi
+  kırmızı CI'ya takılmasın. Kullanım: `pnpm --filter @mentor/web check:budgets` production
+  build sonrası. Gotcha: bu bir code-split değil, kapı kaydı; sonraki panel JS'i yine
+  tek byte'ta düşer. İlgili: `scripts/check-web-performance-budgets.mjs`.
+
 ### 2026-09-11 — Clean incremental TypeScript çıktısını da sıfırlıyor
 
 Workspace `clean` scriptleri artık `dist` ve `.turbo` ile birlikte `tsconfig.tsbuildinfo`yu da

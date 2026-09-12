@@ -39,7 +39,7 @@ export function RosterShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const { user } = useAuth();
   const [tab, setTab] = useState<Tab>("ACTIVE");
   // The loaded tab travels with its rows, so switching tabs shows the skeleton without a
@@ -60,13 +60,13 @@ export function RosterShell() {
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      toastError({
         title: common("error_title"),
         // The API already localizes its messages; the client does not re-translate them.
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [toastError, common],
   );
 
   useEffect(() => {
@@ -78,6 +78,8 @@ export function RosterShell() {
       .catch((err: unknown) => {
         if (!active) return;
         setLoaded({ tab, items: [] });
+        // Depend on toastError, not the whole toast object: a new toast identity
+        // would refetch, 429, toast, forever.
         showError(err);
       });
     return () => {
