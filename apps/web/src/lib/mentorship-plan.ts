@@ -17,27 +17,48 @@ import type {
 import { http } from "@mentor/api-client";
 
 const PAGE_SIZE = 100;
+/** Seat cap is dozens; ten pages is already far past that. A runaway total must not hammer the API. */
+const MAX_PAGES = 10;
 
-/** Complete active roster for calendar filters; a coach must never lose students after page one. */
-export async function fetchActiveRoster(signal?: AbortSignal): Promise<MentorshipRosterRowDto[]> {
-  const items: MentorshipRosterRowDto[] = [];
+async function collectAllPages<T>(
+  label: string,
+  loadPage: (page: number) => Promise<Paginated<T>>,
+  signal?: AbortSignal,
+): Promise<T[]> {
+  const items: T[] = [];
   let page = 1;
   let total = 0;
   do {
+    if (page > MAX_PAGES) {
+      throw new Error(`${label} pagination exceeded ${MAX_PAGES} pages`);
+    }
     signal?.throwIfAborted();
-    const result = (await http<Paginated<MentorshipRosterRowDto>>(
-      `/v1/mentorship/students?status=ACTIVE&page=${page}&pageSize=${PAGE_SIZE}`,
-      { signal },
-    )) as Paginated<MentorshipRosterRowDto>;
+    const result = await loadPage(page);
     signal?.throwIfAborted();
+    if (result.page !== page) {
+      throw new Error(`${label} pagination ignored the page cursor`);
+    }
+    if (result.items.length === 0 && items.length < result.total) {
+      throw new Error(`${label} pagination ended before total was reached`);
+    }
     items.push(...result.items);
     total = result.total;
-    if (result.items.length === 0 && items.length < total) {
-      throw new Error("Active roster pagination ended before total was reached");
-    }
     page += 1;
   } while (items.length < total);
   return items;
+}
+
+/** Complete active roster for calendar filters; a coach must never lose students after page one. */
+export async function fetchActiveRoster(signal?: AbortSignal): Promise<MentorshipRosterRowDto[]> {
+  return collectAllPages(
+    "Active roster",
+    (page) =>
+      http<Paginated<MentorshipRosterRowDto>>(
+        `/v1/mentorship/students?status=ACTIVE&page=${page}&pageSize=${PAGE_SIZE}`,
+        { signal },
+      ) as Promise<Paginated<MentorshipRosterRowDto>>,
+    signal,
+  );
 }
 
 /** All calendar rows for one bounded range, preserving the server's authoritative order. */
@@ -47,28 +68,20 @@ export async function fetchCoachPlan(input: {
   studentId?: string;
   signal?: AbortSignal;
 }): Promise<CoachPlanItemDto[]> {
-  const items: CoachPlanItemDto[] = [];
-  let page = 1;
-  let total = 0;
-  do {
-    input.signal?.throwIfAborted();
-    const query = new URLSearchParams({ from: input.from, to: input.to });
-    if (input.studentId) query.set("studentId", input.studentId);
-    query.set("page", String(page));
-    query.set("pageSize", String(PAGE_SIZE));
-    const result = (await http<Paginated<CoachPlanItemDto>>(
-      `/v1/mentorship/plan?${query}`,
-      { signal: input.signal },
-    )) as Paginated<CoachPlanItemDto>;
-    input.signal?.throwIfAborted();
-    items.push(...result.items);
-    total = result.total;
-    if (result.items.length === 0 && items.length < total) {
-      throw new Error("Coach plan pagination ended before total was reached");
-    }
-    page += 1;
-  } while (items.length < total);
-  return items;
+  return collectAllPages(
+    "Coach plan",
+    (page) => {
+      const query = new URLSearchParams({ from: input.from, to: input.to });
+      if (input.studentId) query.set("studentId", input.studentId);
+      query.set("page", String(page));
+      query.set("pageSize", String(PAGE_SIZE));
+      return http<Paginated<CoachPlanItemDto>>(
+        `/v1/mentorship/plan?${query}`,
+        { signal: input.signal },
+      ) as Promise<Paginated<CoachPlanItemDto>>;
+    },
+    input.signal,
+  );
 }
 
 export async function assignTasksBatch(

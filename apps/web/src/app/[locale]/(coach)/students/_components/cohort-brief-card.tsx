@@ -29,21 +29,24 @@ export function CohortBriefCard() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const [brief, setBrief] = useState<MentorshipCohortBriefDto | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busy, setBusy] = useState(false);
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      // The stable helper, not the whole toast object: `useMentorToast` memoizes on
+      // `toast.toasts`, so the object's identity changes on every toast. Depending on the object
+      // is what made the roster refetch itself into a 429 (mentorship.md, 2026-09-11).
+      toastError({
         title: common("error_title"),
         // The API localizes its own messages, including the quota refusal.
         message:
           err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [toastError, common],
   );
 
   useEffect(() => {

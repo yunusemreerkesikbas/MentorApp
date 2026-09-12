@@ -83,6 +83,20 @@ describe("fetchCoachPlan", () => {
     await expect(pending).rejects.toMatchObject({ name: "AbortError" });
     expect(mockedHttp).toHaveBeenCalledTimes(1);
   });
+
+  it("stops when the server keeps echoing page one", async () => {
+    mockedHttp.mockResolvedValue({
+      items: [{ kind: "TASK", task: { id: "same" } }],
+      total: 3,
+      page: 1,
+      pageSize: 100,
+    });
+
+    await expect(
+      fetchCoachPlan({ from: "2026-09-07", to: "2026-09-13" }),
+    ).rejects.toThrow("page cursor");
+    expect(mockedHttp).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe("fetchActiveRoster", () => {
@@ -114,6 +128,33 @@ describe("fetchActiveRoster", () => {
       "/v1/mentorship/students?status=ACTIVE&page=2&pageSize=100",
       { signal: controller.signal },
     );
+  });
+
+  it("stops when the server keeps echoing page one", async () => {
+    mockedHttp.mockResolvedValue({
+      items: [{ studentId: "same" }],
+      total: 3,
+      page: 1,
+      pageSize: 100,
+    });
+
+    await expect(fetchActiveRoster()).rejects.toThrow("page cursor");
+    expect(mockedHttp).toHaveBeenCalledTimes(2);
+  });
+
+  it("stops after the page cap when total never runs out", async () => {
+    mockedHttp.mockImplementation(async () => {
+      const page = mockedHttp.mock.calls.length;
+      return {
+        items: [{ studentId: `s${page}` }],
+        total: 10_000,
+        page,
+        pageSize: 100,
+      };
+    });
+
+    await expect(fetchActiveRoster()).rejects.toThrow("exceeded 10 pages");
+    expect(mockedHttp).toHaveBeenCalledTimes(10);
   });
 });
 

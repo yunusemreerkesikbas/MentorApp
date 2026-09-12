@@ -23,7 +23,7 @@ import { CoachScopeModal } from "./coach-scope-modal";
 export function CoachScopeCard() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
-  const toast = useMentorToast();
+  const { error: toastError } = useMentorToast();
   const [scope, setScope] = useState<readonly MentorshipDataScopeKey[] | null>(null);
   const [open, setOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -40,7 +40,7 @@ export function CoachScopeCard() {
       setScope(overview.dataScope);
       setOpen(true);
     } catch (err) {
-      toast.error({
+      toastError({
         title: common("error_title"),
         // The API localizes its own messages, including the `mentorship.enabled` refusal.
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),

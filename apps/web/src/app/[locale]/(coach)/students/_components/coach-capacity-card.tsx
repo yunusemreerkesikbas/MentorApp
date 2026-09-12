@@ -62,7 +62,7 @@ export function CoachCapacityCard({
 }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
-  const toast = useMentorToast();
+  const { success: toastSuccess } = useMentorToast();
   const dialog = useMentorDialog();
   const [revealed, setRevealed] = useState(false);
   const full = loaded && activeStudents >= maxActiveStudents;
@@ -70,7 +70,7 @@ export function CoachCapacityCard({
   async function copyToClipboard(text: string, title: string) {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success({ title });
+      toastSuccess({ title });
     } catch {
       /* Clipboard can be blocked; "Göster" is the way back to the code either way. */
     }

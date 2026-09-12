@@ -290,6 +290,15 @@ cohort-summary-band,coach-capacity-card,roster-content-skeleton}.tsx` ·
   `(app)/profile/_components/{profile-shell,coach-scope-card,coach-scope-modal}.tsx` ·
   `components/app-nav.tsx` · `messages/{tr,en}.json` · `e2e/coach-home.spec.ts`
 
+- **2026-09-11 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was firing every ~50ms
+  until the global throttle returned 429. Cause: `RosterShell` listed `showError` in the fetch
+  effect deps; a failed request toasted, toast identity changed, the effect refetched, toasted
+  again. Usage: open `/kocluk` as COACH; a roster error now toasts once. Gotcha: depend on the
+  stable `toast.error` helper, not the whole toast object, and do not write that callback into a
+  ref during render (`react-hooks/refs`). Roster/plan page collection also stops if the server
+  ignores `page` or walks past 10 pages. Related: `roster-shell.tsx`, `mentorship-plan.ts`,
+  `mentor-toast.ts`.
+
 - **2026-09-11 — Coach plan Takvim chrome.** The coach `/plan` calendar now uses the student
   Takvim frame: left rail (mini calendar, student filter, selected-day list), Gün/Hafta/Ay
   hour grid, mobile date strip and agenda, hover preview. Chip color comes from the attendee
