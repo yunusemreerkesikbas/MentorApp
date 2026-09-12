@@ -202,6 +202,41 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Follow-up ekranlarının i18n anahtarları eksikti.** APP-092 altı follow-up
+  bileşenini master'a aldı ama `apps/web/messages/{tr,en}.json` içine **tek bir anahtar yazmadı**:
+  39 statik `t("...")` anahtarı ve iki dinamik aile (`followup_status_*`, `followup_response_*`)
+  her iki dilde de yoktu, toplam 45 anahtar. Üç yüzey birden konsola `IntlError: MISSING_MESSAGE`
+  döküyordu: `/kocluk` (gelen kutusu kartı), `/kocluk/[studentId]` (panel, form, geçmiş) ve
+  `/kocum` (paylaşılan kararlar). Kopya hiçbir yerde tanımlı olmadığı için yazıldı; register
+  baştan sona **companion** (koç bir iş aracı kullanıyor, öğrenci gerçek bir ilişkiyi okuyor),
+  mevcut `mentorship` anahtarlarının tonuna uyduruldu.
+
+  **Güven çizgisi kopyada taşınıyor (§4 #5).** Koçun yazdığı iki kutu birbirine benziyor ama
+  biri öğrenciye gidiyor, diğeri gitmiyor; ipuçları bunu açıkça söylüyor:
+  `followup_private_hint` "Yalnız sende kalır. Öğrencin de yapay zekâ da görmez.",
+  `followup_shared_hint` "Öğrencin bunu görür. Yazdıktan sonra değiştirilemez." Bu iki satır
+  süs değil, koçun yanlış kutuya yazmasını engelleyen şey.
+
+  **Kullanım:** `mentorship.enabled` + `mentorship.followups.enabled` açıkken üç ekran da temiz.
+
+  **Gotchas:**
+  (1) **Bayrak kapalıyken de hata düşüyordu**, ve bu kusur duruyor:
+  `followup-inbox-card.tsx` `if (enabled === false) return null;` diyor ama `enabled`
+  availability isteği dönene kadar `null`, dolayısıyla kart ilk render'da başlığıyla çiziliyor.
+  Anahtarlar geldiği için artık zararsız; asıl düzeltme kartın `enabled === true` olmadan hiç
+  render etmemesi.
+  (2) **CI bunu yakalayamazdı.** `i18n/scoped-messages.spec.ts` yalnız **namespace** düzeyinde
+  TR/EN aynalığına bakıyor; kodda çağrılan bir anahtarın mesaj dosyasında var olup olmadığını
+  denetleyen hiçbir guard yok. Statik `t("...")` çağrılarını tarayan bir spec bu sınıf hatayı
+  kapatır, **backlog'a alındı** (dinamik `` t(`x_${...}`) `` çağrıları doğası gereği taranamaz).
+  (3) Anahtarlar namespace'in **sonuna** eklendi. Namespace alfabetik değil; sıralamak 90
+  satırlık iş için 427 satırlık churn diff'i üretiyor.
+
+  **İlgili:** `apps/web/messages/{tr,en}.json` · `components/mentorship/followup-status.tsx` ·
+  `(coach)/students/_components/followup-inbox-card.tsx` ·
+  `(coach)/students/[studentId]/_components/followup-{panel,create-form,history-item}.tsx` ·
+  `(app)/my-coach/_components/shared-followups-card.tsx`
+
 - **2026-09-12 — Follow-up review fixes.** Shared notification lookup no longer matches the mutable
   row version, so a later date change cannot drop a still-pending shared event; responded events
   lock to `responseVersion`. Coach inbox now hides when the flag is off (`MENTORSHIP_FOLLOWUP_DISABLED`)
