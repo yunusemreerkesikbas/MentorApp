@@ -204,6 +204,21 @@
       "register": "companion",
       "title": "A note from your coach",
       "body": "{name} left you a note."
+    },
+    "mentorshipFollowupShared": {
+      "register": "companion",
+      "title": "Your coach shared a decision",
+      "body": "You can read it on My coach."
+    },
+    "mentorshipFollowupResponded": {
+      "register": "companion",
+      "title": "Your student replied to a follow-up",
+      "body": "You can open it from the inbox."
+    },
+    "mentorshipFollowupDue": {
+      "register": "companion",
+      "title": "You have {count} follow-ups to look at today",
+      "body": "Open follow-ups are waiting on your student list."
     }
   },
   "email": {
@@ -242,6 +257,12 @@
       "subject": "Mentor: {count} students worth a look today",
       "greeting": "Hi {displayName},",
       "body": "{names} may be struggling lately. You can check their reports in the panel.",
+      "cta": "Open my students"
+    },
+    "mentorshipFollowupDue": {
+      "subject": "Mentor: You have {count} follow-ups to look at today",
+      "greeting": "Hi {displayName},",
+      "body": "Open follow-ups are waiting on your student list.",
       "cta": "Open my students"
     }
   }

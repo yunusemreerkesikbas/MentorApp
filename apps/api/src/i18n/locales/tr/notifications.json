@@ -204,6 +204,21 @@
       "register": "companion",
       "title": "Koçundan bir not",
       "body": "{name} sana bir not bıraktı."
+    },
+    "mentorshipFollowupShared": {
+      "register": "companion",
+      "title": "Koçun bir karar paylaştı",
+      "body": "Kararı Koçum sayfasında görebilirsin."
+    },
+    "mentorshipFollowupResponded": {
+      "register": "companion",
+      "title": "Öğrencin takip kararına yanıt verdi",
+      "body": "Gelen kutusundan bakabilirsin."
+    },
+    "mentorshipFollowupDue": {
+      "register": "companion",
+      "title": "Bugün bakman gereken {count} takip var",
+      "body": "Öğrenci listenden açık takipleri görebilirsin."
     }
   },
   "email": {
@@ -242,6 +257,12 @@
       "subject": "Mentor: Bugün bakmaya değer {count} öğrenci",
       "greeting": "Merhaba {displayName},",
       "body": "{names} son günlerde zorlanıyor olabilir. Panelde raporlarına göz atabilirsin.",
+      "cta": "Öğrencilerime bak"
+    },
+    "mentorshipFollowupDue": {
+      "subject": "Mentor: Bugün bakman gereken {count} takip var",
+      "greeting": "Merhaba {displayName},",
+      "body": "Açık takipler öğrenci listende seni bekliyor.",
       "cta": "Öğrencilerime bak"
     }
   }

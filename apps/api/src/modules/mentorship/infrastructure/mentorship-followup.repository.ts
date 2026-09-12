@@ -60,7 +60,10 @@ export class MentorshipFollowupRepository {
 
   notificationTarget(id: string, kind: "shared" | "responded", version: number) {
     return withServiceContext(this.db, async (tx) => {
-      const [row] = await tx.select({ coachId: coachStudents.coachId, studentId: coachStudents.studentId }).from(followups).innerJoin(coachStudents, currentPeriod).where(and(eq(followups.id, id), eq(followups.version, version), eq(followups.status, "OPEN"), isNotNull(followups.sharedDecision), kind === "shared" ? eq(followups.response, "PENDING") : or(eq(followups.response, "ACCEPTED"), eq(followups.response, "CHANGE_REQUESTED"))));
+      const kindWhere = kind === "shared"
+        ? eq(followups.response, "PENDING")
+        : and(or(eq(followups.response, "ACCEPTED"), eq(followups.response, "CHANGE_REQUESTED")), eq(followups.responseVersion, version));
+      const [row] = await tx.select({ coachId: coachStudents.coachId, studentId: coachStudents.studentId }).from(followups).innerJoin(coachStudents, currentPeriod).where(and(eq(followups.id, id), eq(followups.status, "OPEN"), isNotNull(followups.sharedDecision), kindWhere));
       return row;
     });
   }

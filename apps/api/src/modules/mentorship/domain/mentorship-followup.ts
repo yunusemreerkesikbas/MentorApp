@@ -25,3 +25,21 @@ export function toCoachFollowup(row: FollowupRow, studentId: string, studentDisp
 export function followupToday(now: Date): string {
   return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul", year: "numeric", month: "2-digit", day: "2-digit" }).format(now);
 }
+
+/**
+ * Pre-send check for follow-up notifications. Shared events stay valid after later
+ * date/status-preserving writes; responded events lock to `responseVersion`.
+ * SQL in `MentorshipFollowupRepository.notificationTarget` must stay equivalent.
+ */
+export function followupNotificationIsCurrent(
+  kind: "shared" | "responded",
+  eventVersion: number,
+  row: Pick<FollowupRow, "status" | "sharedDecision" | "response" | "responseVersion">,
+): boolean {
+  if (row.status !== "OPEN" || row.sharedDecision === null) return false;
+  if (kind === "shared") return row.response === "PENDING";
+  return (
+    (row.response === "ACCEPTED" || row.response === "CHANGE_REQUESTED") &&
+    row.responseVersion === eventVersion
+  );
+}

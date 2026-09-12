@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { MentorshipFollowupDto, MentorshipFollowupStatus } from "@mentor/types";
 import { Button, Card, TextField } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
@@ -27,6 +27,10 @@ export function FollowupHistoryItem({
   const locale = useLocale();
   const [date, setDate] = useState(item.followUpDate ?? "");
   const [busyAction, setBusyAction] = useState<"date" | MentorshipFollowupStatus | null>(null);
+
+  useEffect(() => {
+    setDate(item.followUpDate ?? "");
+  }, [item.id, item.version, item.followUpDate]);
 
   async function saveDate() {
     setBusyAction("date");

@@ -31,15 +31,17 @@ export function FollowupPanel({ studentId }: { studentId: string }) {
   const [error, setError] = useState<string | null>(null);
   const [replacement, setReplacement] = useState<MentorshipFollowupDto | null>(null);
   const [reload, setReload] = useState(0);
+  const generationRef = useRef(0);
 
   const loadPage = useCallback(
-    async (nextPage: number) => {
+    async (generation: number, nextPage: number) => {
       const result = await fetchMentorshipFollowups({
         studentId,
         view: "ALL",
         page: nextPage,
         pageSize: PAGE_SIZE,
       });
+      if (generation !== generationRef.current) return;
       setItems((current) =>
         nextPage === 1 ? result.items : appendUniqueById(current, result.items),
       );
@@ -50,18 +52,19 @@ export function FollowupPanel({ studentId }: { studentId: string }) {
   );
 
   useEffect(() => {
+    const generation = ++generationRef.current;
     let active = true;
     setLoading(true);
     setError(null);
     fetchFollowupAvailability()
       .then(async (availability) => {
-        if (!active) return;
+        if (!active || generation !== generationRef.current) return;
         setEnabled(availability.enabled);
         if (!availability.enabled) return;
-        await loadPage(1);
+        await loadPage(generation, 1);
       })
       .catch((failure: unknown) => {
-        if (!active) return;
+        if (!active || generation !== generationRef.current) return;
         if (
           failure instanceof ApiClientError &&
           failure.body.code === "MENTORSHIP_FOLLOWUP_DISABLED"
@@ -72,7 +75,7 @@ export function FollowupPanel({ studentId }: { studentId: string }) {
         setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
       })
       .finally(() => {
-        if (active) setLoading(false);
+        if (active && generation === generationRef.current) setLoading(false);
       });
     return () => {
       active = false;
@@ -96,13 +99,14 @@ export function FollowupPanel({ studentId }: { studentId: string }) {
   );
 
   async function loadMore() {
+    const generation = generationRef.current;
     setLoadingMore(true);
     try {
-      await loadPage(page + 1);
+      await loadPage(generation, page + 1);
     } catch (failure) {
-      handleError(failure);
+      if (generation === generationRef.current) handleError(failure);
     } finally {
-      setLoadingMore(false);
+      if (generation === generationRef.current) setLoadingMore(false);
     }
   }
 

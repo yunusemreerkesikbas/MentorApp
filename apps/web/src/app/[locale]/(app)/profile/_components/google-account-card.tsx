@@ -72,7 +72,7 @@ export function GoogleAccountCard() {
     sheet.show({
       title: t("title"),
       layout: "filter",
-      dismissOnBackdrop: true,
+      dismissOnBackdrop: false,
       children: (
         <GoogleAccountModalContent
           state={state.value}

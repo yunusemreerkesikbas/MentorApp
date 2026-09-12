@@ -56,6 +56,13 @@ export function FollowupInboxCard() {
       })
       .catch((failure: unknown) => {
         if (!active) return;
+        if (
+          failure instanceof ApiClientError &&
+          failure.body.code === "MENTORSHIP_FOLLOWUP_DISABLED"
+        ) {
+          setEnabled(false);
+          return;
+        }
         setError(
           failure instanceof ApiClientError ? failure.message : common("error_unknown"),
         );
@@ -74,6 +81,10 @@ export function FollowupInboxCard() {
     try {
       await loadPage(page + 1);
     } catch (failure) {
+      if (failure instanceof ApiClientError && failure.body.code === "MENTORSHIP_FOLLOWUP_DISABLED") {
+        setEnabled(false);
+        return;
+      }
       setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
     } finally {
       setLoadingMore(false);

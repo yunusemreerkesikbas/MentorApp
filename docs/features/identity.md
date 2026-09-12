@@ -59,11 +59,11 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 ### Auth endpoints
 
 | Method      | Path                                      | Notes                                                                       |
-| ----------- | ----------------------------------------- | --------------------------------------------------------------------------- | ----------------------------------- |
+| ----------- | ----------------------------------------- | --------------------------------------------------------------------------- |
 | POST        | `/v1/auth/signup`                         | KVKK consent required; Turnstile when secret set                            |
 | POST        | `/v1/auth/login`                          | Enumeration-safe (same 401 + dummy-hash timing)                             |
 | GET         | `/v1/auth/google/status`                  | Public Google button availability (`enabled`, plus flag/config diagnostics) |
-| GET         | `/v1/auth/google/start`                   | Starts Google OAuth (`mode=login                                            | signup`; signup requires KVKK flag) |
+| GET         | `/v1/auth/google/start`                   | Starts Google OAuth (`mode=login \| signup`; signup requires KVKK flag) |
 | GET         | `/v1/auth/google/callback`                | Google callback; sets Mentor refresh cookie then redirects to web           |
 | GET         | `/v1/users/me/auth-accounts/google`       | Current user's Google-link status                                           |
 | POST        | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start                      |
@@ -90,6 +90,11 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `DELETE /v1/account`                                                                      | Self-service KVKK erasure ("hesabımı sil") — irreversible                        |
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-12 — Auth table render and Google link sheet.** The auth endpoint table in this doc
+  kept three columns; Google linking no longer dismisses the password sheet on backdrop while
+  OAuth start is in flight. Usage: profile → Google → password → connect. Related:
+  `google-account-card.tsx`.
 
 - **Signup niyeti ve rol yazımının identity'ye dönmesi (APP-089, 2026-09-08)** — `signupSchema` tek
   bir alan kazandı: `intent: "STUDENT" | "COACH"`. Bu, kayıt gövdesinin kendi rolünü etkilemesine

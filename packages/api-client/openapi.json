@@ -6592,7 +6592,51 @@
     "/v1/mentorship/followups": {
       "get": {
         "operationId": "MentorshipFollowupController_listFollowups",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "default": "ALL",
+              "type": "string",
+              "enum": [
+                "ALL",
+                "ACTIONABLE"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -6621,9 +6665,10 @@
         "parameters": [
           {
             "name": "studentId",
-            "in": "path",
             "required": true,
+            "in": "path",
             "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -6665,18 +6710,20 @@
         "operationId": "MentorshipFollowupController_updateFollowup",
         "parameters": [
           {
-            "name": "studentId",
-            "in": "path",
+            "name": "followupId",
             "required": true,
+            "in": "path",
             "schema": {
+              "format": "uuid",
               "type": "string"
             }
           },
           {
-            "name": "followupId",
-            "in": "path",
+            "name": "studentId",
             "required": true,
+            "in": "path",
             "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -6716,7 +6763,29 @@
     "/v1/mentorship/my-coach/followups": {
       "get": {
         "operationId": "MentorshipFollowupController_listSharedFollowups",
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "",
@@ -6745,9 +6814,10 @@
         "parameters": [
           {
             "name": "followupId",
-            "in": "path",
             "required": true,
+            "in": "path",
             "schema": {
+              "format": "uuid",
               "type": "string"
             }
           }
@@ -10312,11 +10382,65 @@
       },
       "CreateMentorshipFollowupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "privateNote": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "sharedDecision": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 2000
+          },
+          "followUpDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "operationId",
+          "title"
+        ]
       },
       "UpdateMentorshipFollowupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "followUpDate": {
+            "type": "string",
+            "nullable": true,
+            "format": "date"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "version"
+        ]
       },
       "SharedFollowupResponseDto": {
         "type": "object",
@@ -10412,7 +10536,23 @@
       },
       "RespondMentorshipFollowupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "version": {
+            "type": "number",
+            "minimum": 1
+          },
+          "response": {
+            "type": "string",
+            "enum": [
+              "ACCEPTED",
+              "CHANGE_REQUESTED"
+            ]
+          }
+        },
+        "required": [
+          "version",
+          "response"
+        ]
       },
       "RegisterCoachDto": {
         "type": "object",
