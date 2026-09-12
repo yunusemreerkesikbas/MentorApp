@@ -3146,8 +3146,6 @@
     "group_earlier": "Earlier"
   },
   "mentorship": {
-    "roster_title": "My students",
-    "roster_subtitle": "Who has fallen behind, who is on track. Whoever needs you most is at the top.",
     "roster_empty_title": "No students yet",
     "roster_empty_body": "Share your invite code and the students who accept show up here. Until they accept you see none of their data.",
     "roster_ended_empty_title": "Nothing in your history",
@@ -3171,12 +3169,11 @@
     "template_skipped": "{count} tasks did not fit under the 21 limit.",
     "template_topics_cleared": "Topics were cleared on {count} tasks; the template was saved for a different exam.",
     "invite_title": "Your invite code",
-    "invite_body": "The link forms when your student enters this code and confirms.",
     "invite_none": "You do not have a code yet.",
     "invite_create": "Create a code",
     "invite_rotate": "Issue a new code",
     "invite_rotate_warning": "Issuing a new code stops the old one working.",
-    "invite_copy": "Copy",
+    "invite_copy": "Copy the code",
     "invite_copied": "Code copied",
     "invite_copy_link": "Copy link",
     "invite_link_copied": "Invite link copied",
@@ -3306,7 +3303,7 @@
     "cohort_all_clear": "Everyone is on track.",
     "cohort_flags_label": "Risk breakdown",
     "cohort_needs_attention": "{count} of {total} students need attention.",
-    "cohort_plan_adherence": "Plan adherence {rate} ({count} students)",
+    "cohort_plan_adherence": "Plan adherence {rate} · {count} students",
     "cohort_plan_adherence_none": "Nobody has planned anything yet",
     "assign_week_next": "Next week",
     "assign_repeat_week": "Copy last week",
@@ -3390,6 +3387,15 @@
     "scope_value_MOCK_EXAMS": "{count} attempts, the latest on {date}. You see every net on your own analysis screen.",
     "scope_value_PLAN_TASK_TITLES": "{count} task titles from the last {days} days.",
     "scope_value_PLAN_RATE": "Completion rate last week: {percent}%.",
-    "scope_value_MOOD_LEVEL": "{count} check-ins in {days} days, averaging {average}."
+    "scope_value_MOOD_LEVEL": "{count} check-ins in {days} days, averaging {average}.",
+    "roster_tabs_label": "Student list",
+    "invite_hint": "The link forms when your student enters this code and confirms. Your invite code opens once you verify your email.",
+    "invite_reveal": "Show the code",
+    "invite_hide": "Hide the code",
+    "invite_rotate_confirm_title": "Issue a new code?",
+    "invite_rotate_confirm_action": "Issue a new code",
+    "coach_scope_subtitle": "This is exactly what your student agreed to when they linked.",
+    "coach_scope_row_body": "The data scope your student agreed to",
+    "coach_scope_writes_title": "What you can write"
   }
 }

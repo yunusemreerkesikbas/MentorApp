@@ -172,7 +172,9 @@ test.describe("koç tarafı", () => {
     await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto("/kocluk");
 
-    await expect(page.getByText(INVITE_CODE)).toBeVisible();
+    // Masked at rest: the code is a bearer secret and copying never needed it visible.
+    await expect(page.getByText(INVITE_CODE)).toHaveCount(0);
+    await expect(page.getByText("MENTOR-KOC-••••••••••••")).toBeVisible();
 
     await page.getByRole("button", { name: "Linki kopyala" }).click();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
@@ -195,12 +197,12 @@ test.describe("koç tarafı", () => {
     await expect(page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor.")).toBeVisible();
     // The average leaves Bora out: he planned nothing, and counting that as 0% would report a
     // cohort that never opened the plan screen as one that plans and fails.
-    await expect(page.getByText("Plan uyumu %50 (2 öğrenci)")).toBeVisible();
+    await expect(page.getByText("Plan uyumu %50 · 2 öğrenci")).toBeVisible();
 
     // Severity order, not the order the API happened to evaluate the flags in: the roster row
     // for Ada lists PLAN_SLIPPING first, and the breakdown still puts INACTIVE at the front.
     const chips = page.getByRole("list", { name: "Risk dağılımı" }).getByRole("listitem");
-    await expect(chips).toHaveText(["Sessiz · 1", "Morali düşük · 1", "Plan aksıyor · 1"]);
+    await expect(chips).toHaveText(["1 Sessiz", "1 Morali düşük", "1 Plan aksıyor"]);
 
     // One suggestion per student, for their worst flag — LOW_MOOD outranks PLAN_SLIPPING even
     // though the API lists it second.
@@ -234,7 +236,7 @@ test.describe("koç tarafı", () => {
 
     // The flag itself is untouched — the mark quiets the worklist, it does not edit the data.
     const chips = page.getByRole("list", { name: "Risk dağılımı" }).getByRole("listitem");
-    await expect(chips).toHaveText(["Sessiz · 1", "Plan aksıyor · 1"]);
+    await expect(chips).toHaveText(["1 Sessiz", "1 Plan aksıyor"]);
 
     // And it is reversible from the same spot.
     await page.getByRole("button", { name: "İşareti kaldır" }).click();
@@ -410,15 +412,23 @@ test.describe("koç tarafı", () => {
     await expect(page.getByRole("button", { name: "Yeni kod üret" })).toBeEnabled();
   });
 
-  test("koç kendi veri kapsamını okuyabilir", async ({ page }) => {
+  test("koç kendi veri kapsamını Ayarlar'dan okuyabilir", async ({ page }) => {
     await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
-    await page.goto("/kocluk");
 
-    // Open by default on an empty roster: the coach's first screen is the one moment they have
-    // nothing else to read, and the student saw this same contract before consenting.
-    await expect(page.getByText("Günlük mod puanı (1-5)")).toBeVisible();
+    // It used to be a permanent accordion on the roster. A consent document is read once when the
+    // coach starts and re-read when they wonder, so it lives in settings and opens on demand.
+    await page.goto("/kocluk");
+    await expect(page.getByText("Günlük mod puanı (1-5)")).toHaveCount(0);
+
+    await page.goto("/ayarlar");
+    await page.getByRole("button", { name: /Öğrencinde neyi görürsün/ }).click();
+
+    const contract = page.getByRole("dialog");
+    await expect(contract.getByText("Günlük mod puanı (1-5)")).toBeVisible();
+    // The student saw this same contract before consenting, and this is the half a coach must
+    // not skim (AGENTS §4 #5).
     await expect(
-      page.getByText("Öğrencinin AI koçla konuştukları", { exact: false }),
+      contract.getByText("Öğrencinin AI koçla konuştukları", { exact: false }),
     ).toBeVisible();
   });
 

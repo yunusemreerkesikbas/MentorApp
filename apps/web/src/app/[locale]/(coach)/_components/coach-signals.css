@@ -1,0 +1,28 @@
+/*
+ * Signal hues for the coach surface. Local to `(coach)` on purpose: these four are triage
+ * vocabulary, not product palette, and `@mentor/ui` should not grow a token that only one
+ * route group can read.
+ *
+ * The class is applied once, on the coach shell's outer element; every signal below inherits
+ * from there. Scoping to a class rather than `:root` is what keeps them out of the student
+ * surface even though the stylesheet is global.
+ *
+ * Hue answers "which signal", never "how bad". The roster is already sorted worst-first, so
+ * ordering is the list's job; nothing here paints a student red.
+ *
+ * No `html.dark` block, and that is measured rather than forgotten: every value below is a
+ * mid-tone, so the dark surface (#1a1d24) gives it MORE separation than white does, not less
+ * (5.8:1, 5.9:1, 7.7:1, 7.0:1 respectively). A dark override would be a second value to keep
+ * correct for no gain.
+ */
+
+.coach-signals {
+  /* No completed session or done task inside the idle window. `--color-streak`. */
+  --sig-inactive: #f3705a;
+  /* Weekly mean mood at or below the floor. `--color-chip`, darkened to carry on white. */
+  --sig-mood: #a78bda;
+  /* Latest mock net below the mean of the three before it. `--color-star`, darkened. */
+  --sig-net: #e0a300;
+  /* Weekly plan completion below the floor. `--color-progress`. */
+  --sig-plan: #55acee;
+}

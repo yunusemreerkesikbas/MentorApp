@@ -11,9 +11,20 @@ import {
   relativeDay,
 } from "../../_components/mentorship-format";
 import { NoRiskChip, RiskChip } from "../../_components/risk-chip";
-import { AttentionButton } from "./attention-button";
+import { AttentionButton, AttentionStatus } from "./attention-button";
 import { worstFlag } from "./cohort-summary";
 
+/**
+ * One roster row.
+ *
+ * The card used to be three stacked bands — flags, metrics, then a suggestion, then a mark row —
+ * so a list of them read as a wall. Now the row's one action sits on the same line as the one
+ * sentence about it, under a single hairline: header, numbers, and a band that is only there
+ * when there is something to do.
+ *
+ * A calm student gets no pill, no suggestion and no button. Nothing to do should read as nothing
+ * to do, rather than as a row that merely happens to be further down the list.
+ */
 export function StudentCard({
   row,
   locale,
@@ -44,9 +55,9 @@ export function StudentCard({
   const worst = worstFlag(row.riskFlags);
 
   const content = (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="font-semibold" style={{ color: "var(--color-main)" }}>
+        <span className="text-base font-bold" style={{ color: "var(--color-main)" }}>
           {row.studentDisplayName}
         </span>
         <div className="flex flex-wrap items-center gap-1.5">
@@ -58,7 +69,9 @@ export function StudentCard({
         </div>
       </div>
       {metrics ? (
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-2 sm:grid-cols-4">
+        // Two columns on a phone: four at 358px would put each value under 80px and break
+        // "6 gün önce" onto two lines.
+        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
           <Metric label={t("metric_last_active")} value={lastLabel} />
           <Metric
             label={t("metric_focus_7d")}
@@ -80,33 +93,61 @@ export function StudentCard({
             : t("ended_no_access")}
         </p>
       )}
-      {/* "Ne yapmalı", for the worst flag only: one suggestion a coach acts on beats four they
-          skim. Plain text on purpose — the whole card is already a link to the report, where
-          both the note field and the composer live, and an anchor inside an anchor is invalid. */}
-      {worst !== null && metrics && (
-        <p className="text-sm" style={{ color: "var(--color-body)" }}>
-          {t(`action_${worst}`)}
-        </p>
-      )}
     </div>
   );
 
-  // The mark is offered only where there is something to attend to. A calm student needs no
-  // button, and an ended link has no window left to look through.
-  const attention = onAttention && metrics && row.riskFlags.length > 0 && (
-    <AttentionButton attendedAt={row.attendedAt} busy={busy} onToggle={onAttention} />
+  /*
+   * The band is offered only where there is something to attend to: a calm student needs no
+   * button, and an ended link has no window left to look through.
+   *
+   * Its text slot carries the suggestion for the worst flag before the mark, and the readback
+   * after it. One suggestion a coach acts on beats four they skim, and once they have acted the
+   * suggestion is the wrong sentence to still be showing.
+   */
+  const band = onAttention && metrics && row.riskFlags.length > 0 && (
+    <div
+      className="flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      style={{ borderColor: "color-mix(in srgb, var(--color-secondary) 14%, transparent)" }}
+    >
+      {row.attendedAt !== null ? (
+        <AttentionStatus attendedAt={row.attendedAt} />
+      ) : (
+        worst !== null && (
+          <p className="m-0 text-sm" style={{ color: "var(--color-body)" }}>
+            {t(`action_${worst}`)}
+          </p>
+        )
+      )}
+      <div className="w-full sm:w-fit sm:flex-none">
+        <AttentionButton
+          fullWidth
+          attendedAt={row.attendedAt}
+          busy={busy}
+          onToggle={onAttention}
+        />
+      </div>
+    </div>
   );
 
-  // The Card is the outer element, not the Link: the button below has to sit OUTSIDE the anchor
-  // (a button inside an anchor is invalid HTML), and wrapping the whole card in one would trap it.
+  // The Card is the outer element, not the Link: the button in the band has to sit OUTSIDE the
+  // anchor (a button inside an anchor is invalid HTML), and wrapping the whole card would trap it.
   // An ended link is history — its report is closed, so nothing there looks clickable.
   return (
     <Card>
       <div
-        className="flex flex-col gap-3"
-        // A handled student stays fully legible; only the emphasis drops, so the eye lands on the
-        // rows still waiting. Hiding anything here would be editing the data, not the worklist.
-        style={row.attendedAt !== null ? { opacity: 0.72 } : undefined}
+        className="flex flex-col gap-4"
+        /*
+         * Two different quiets. A handled student keeps every flag and number — only the emphasis
+         * drops, so the eye lands on the rows still waiting. A calm one is dimmer still, because
+         * there is nothing under it at all. Hiding either would be editing the worklist.
+         */
+        style={
+          row.attendedAt !== null
+            ? { opacity: 0.72 }
+            : metrics !== null && row.riskFlags.length === 0
+              ? { opacity: 0.82 }
+              : undefined
+        }
       >
         {clickable ? (
           <Link
@@ -118,7 +159,7 @@ export function StudentCard({
         ) : (
           content
         )}
-        {attention}
+        {band}
       </div>
     </Card>
   );
@@ -127,10 +168,13 @@ export function StudentCard({
 function Metric({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs" style={{ color: "var(--color-secondary)" }}>
+      <dt className="text-xs leading-snug" style={{ color: "var(--color-secondary)" }}>
         {label}
       </dt>
-      <dd className="text-sm font-medium" style={{ color: "var(--color-main)" }}>
+      <dd
+        className="mt-0.5 text-[15px] font-semibold leading-snug tabular-nums"
+        style={{ color: "var(--color-main)" }}
+      >
         {value}
       </dd>
     </div>

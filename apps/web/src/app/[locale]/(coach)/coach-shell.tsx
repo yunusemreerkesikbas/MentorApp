@@ -66,7 +66,7 @@ export function CoachShell({ children }: { children: ReactNode }) {
   return (
     <NotificationDrawerShell>
       <div
-        className="min-h-screen"
+        className="coach-signals min-h-screen"
         style={{ backgroundColor: "var(--color-bg)" }}
       >
         <AppNav />

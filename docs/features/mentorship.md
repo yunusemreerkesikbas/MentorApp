@@ -227,6 +227,94 @@ flag that cries wolf costs the coach more than it gives.
   `packages/{types,validation}/src/mentorship-followup.ts`, and the web follow-up components.
   Design/contract: [follow-up implementation](../plans/2026-09-12-mentorship-followups.md).
 
+- **2026-09-12 — `/kocluk` redesign: sinyal dili, tek birincil eylem, taşınan sözleşme.**
+  Tasarım incelemesi dört yerde takıldı ve dördü de yerleşim değil karar sorunuydu.
+
+  **Çip sistemi anlam taşımıyordu.** Dört ayrı KİND aynı mor `Chip`'i giyiyordu: bir kişi
+  hakkındaki risk bayrağı, kohort genelinde bir sayım, "Yeni", ve durum. Dört anlam tek biçimde
+  olunca hiçbiri kendisi gibi okunmuyor; en kötüsü iki bayrak taşıyan bir satırda, çünkü gözün
+  onları ayıracak hiçbir şeyi kalmıyor. Artık ayrımı **renk değil biçim** taşıyor:
+  bayrak = ince çerçeve + sinyali adlandıran 6px nokta (`SignalPill`); sayım = hap değil, tabular
+  sayı + nokta (`SignalCount`); "Yeni" = aksan renginde mikro hap (`NewBadge`); "Yolunda" = hap
+  bile değil, sessiz metin (`CalmLabel`). Nokta rengi **kimlik** taşıyor, sıra değil — sıralamayı
+  roster zaten yapıyor, ve hiçbir öğrenci kırmızıya boyanmıyor.
+
+  **Token'lar `(coach)` yüzeyine yerel** (`_components/coach-signals.css`, kabuğun dış
+  elemanındaki `.coach-signals` sınıfına kapsanmış). `@mentor/ui`'ye girmediler: bunlar ürün
+  paleti değil triyaj sözcükleri, ve tek bir rota grubunun okuduğu bir token paylaşılan temada
+  taşınacak ikinci bir şey olurdu. **Koyu tema override'ı yok, ve bu unutma değil ölçüm:** dördü
+  de orta tonlu, dolayısıyla koyu zemin (#1a1d24) onlara beyazdan **daha çok** ayrışma veriyor
+  (5.8:1, 5.9:1, 7.7:1, 7.0:1).
+
+  **`SectionHeading` gitti.** "Öğrencilerim" koçun az önce tıkladığı nav öğesini tekrar ediyordu,
+  alt satır da listenin zaten gösterdiği sıralamayı anlatıyordu — sayfadaki tek şeyin üstünde iki
+  satır kroşe. `roster_title` / `roster_subtitle` kullanımdan düştü.
+
+  **Sayı bandı artık `Card` değil.** İçeriği tek cümle ve birkaç sayıydı — üzerinde eylem
+  yapılacak bir nesne değil bir ölçüm — ve kart çerçevesi onu brifingle roster arasında okunacak
+  üçüncü bir şey gibi gösteriyordu. (`cohort-summary-card.tsx` -> `cohort-summary-band.tsx`;
+  `cohort-summary.ts` ve 147 satırlık spec'i hiç açılmadı.)
+
+  **Roster satırı üç yığılı şerit olmaktan çıktı.** Tek hairline altında bir bant: solda tek
+  cümlelik öneri, sağda "İlgilendim". Bant yalnız yapılacak bir şey varken duruyor; sakin öğrenci
+  hap, öneri ve düğme almıyor. Bandın metin yuvası **işaretten önce öneriyi, sonra okumayı**
+  taşıyor — ikisi alternatif, ve koç eylemi yaptıktan sonra öneri gösterilecek yanlış cümle.
+  Bu yüzden `AttentionButton` okuma satırını bıraktı (`AttentionStatus` ayrıldı): kendi satırını
+  taşıyan bir düğme ikisini birden dayatırdı.
+
+  **Davet kartı: tek birincil eylem, maskeli kod, onaylı rotasyon.** Kart eskiden copy /
+  copy-link / rotate'i eşit ağırlıkta sunuyordu; koçun fiilen gönderdiği şey link, o yüzden buton
+  o oldu. Kod **bearer secret**: onu okuyan kişi öğrenci olarak bağlanabiliyor, ve kopyalamak için
+  görmeye gerek yok — artık maskeli duruyor, "Göster" bilinçli bir eylem, kopyalama her zaman
+  gerçek kodu veriyor. Rotasyon geri alınamaz ve **öğrencilerin elindeki her kopyayı** öldürür;
+  karttaki en sessiz kontrolün tek tıkına asılamayacak kadar ağır, o yüzden `useMentorDialog()`
+  onayının arkasına alındı (emsal: `student-report-shell.tsx` bağ sonlandırma). İlk kodu
+  **üretmek** onay istemiyor: hiçbir şeyi geçersizleştirmiyor, ve öğrenilip geçilen bir prompt
+  asıl riskli basışta hiç yokmuş kadar kötü.
+
+  **Veri kapsamı sözleşmesi `/ayarlar`'a taşındı.** Rail'de kalıcı bir akordeondu; bir onay
+  sözleşmesi koç işe başlarken bir kez, sonra merak ettikçe okunur. Artık koç için Ayarlar'da tek
+  satır, `@mentor/ui` `Modal` (native `<dialog>`, top layer) açıyor. `dataScope` **satıra
+  basılınca** okunuyor, mount'ta değil: Ayarlar'ı öğrenci koçtan çok daha sık açıyor.
+  `isCoach(user)` kapısı gerçek: uç `@Roles(COACH)`, öğrenciye gösterilse 403'e açılan bir kapı
+  olurdu.
+
+  **Usage:** koç login -> `/kocluk`. Sözleşme: `/ayarlar` -> "Öğrencinde neyi görürsün".
+
+  **Gotchas:**
+  (1) **`(coach)` -> `(app)` import etmez, ters yön serbest.** Kapsam kartı `(app)/profile/
+_components` altında ve `src/lib/mentorship.ts`'i çağırıyor; o dosya zaten uygulama geneli, yeni
+  bir sınır açmıyor. `(app)` layout'u `pickMessages` kullanmadığı için `mentorship` namespace'i
+  orada hazır — `route-message-scopes.json` açılmadı.
+  (2) **Kart ve düğme dolgusu artboard'u değil primitive'i izliyor.** Tasarım roster kartına 20px
+  (mobilde 16) ve 36px sessiz düğme veriyor; `Card` `p-6`, `Button` `px-6 py-3`. Tailwind aynı
+  aileden iki utility'yi class attribute sırasına göre değil kendi sırasına göre çözüyor, yani
+  `className="p-5"` sessizce kaybedebilir. Redesign'ın özü yerleşim; 4px'lik fark tasarım
+  sisteminin kararı ve AGENTS §7'nin "sihirli sayı yok" kuralı zaten orayı işaret ediyor.
+  **Tek istisna davet kartındaki 36px ikon düğmeleri** — yerel bir `IconButton`, çünkü paylaşılan
+  `Button` etiketli bir eylem için boyutlanmış ve orada etiket gürültü olurdu.
+  (3) **`RiskChip` üç yerde okunuyor** (roster, brifing, öğrenci raporu); yeni hapı üçü de aldı.
+  Rapor sayfası bu ticket'ın kapsamında değildi ama gözle doğrulandı.
+  (4) **`invite_rotate_warning` yeniden kullanıldı**, `invite_rotate_confirm_body` açılmadı: uyarı
+  kopyası zaten tam olarak onay mesajı, ikinci bir anahtar aynı cümleyi iki yerde bakımı demekti.
+  Aynı gerekçeyle kapatma etiketi `common.dialog.close`.
+  (5) **Sayaç mobilde yukarı ALINMADI.** Tasarımın mobil artboard'u sayacı en üste koyuyor
+  ("bir bakış, altındaki her şeyi çerçeveliyor"). Denendi ve geri alındı: tek instance iki yerde
+  olamıyor, yani ya ikinci bir `CoachCountdownCard` (tek tarih için iki takvim isteği) ya da
+  satır yayan bir grid gerekiyor. İkincisi denendi ve masaüstünde iki şeyi birden bozdu — rail'in
+  ilk satırı esneyip sayacın altında boşluk bıraktı, ve içerik sidebar'ın altına kaydı. Dört
+  kelimelik bir kart ikisine de değmez; APP-090'ın "telefon işin üstünde açılır" kararı duruyor.
+  (6) **e2e mock'u gerçek olmayan bir kapsam anahtarı taşıyordu** (`FOCUS_MINUTES`), ve `/v1/users/me`
+  catch-all'dan 204 dönüyordu; ikisi de düzeltildi, yoksa Ayarlar ekranı kullanıcısız kalıyordu.
+
+  **İlgili:** `(coach)/_components/{coach-signals.css,signal-pill.tsx,risk-chip.tsx}` ·
+  `(coach)/{layout,coach-shell}.tsx` ·
+  `(coach)/students/_components/{roster-shell,student-card,attention-button,cohort-brief-card,
+cohort-summary-band,coach-capacity-card,roster-content-skeleton}.tsx` ·
+  `(coach)/students/_components/invite-code.ts(+spec)` ·
+  `(app)/profile/_components/{profile-shell,coach-scope-card,coach-scope-modal}.tsx` ·
+  `components/app-nav.tsx` · `messages/{tr,en}.json` · `e2e/coach-home.spec.ts`
+
 - **2026-09-11 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was firing every ~50ms
   until the global throttle returned 429. Cause: `RosterShell` listed `showError` in the fetch
   effect deps; a failed request toasted, toast identity changed, the effect refetched, toasted
