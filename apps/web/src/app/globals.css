@@ -506,6 +506,7 @@ html.mentor-sheet-open {
 
 .mentor-plan-day-picker .rdp-month_grid {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
 }
 
@@ -622,6 +623,30 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker .rdp-button_previous:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+.mentor-plan-day-picker-popover.mentor-plan-day-picker-wrap {
+  border: none;
+  margin: 0;
+  max-width: none;
+  padding: 0.75rem;
+}
+
+.mentor-plan-day-picker-popover .mentor-plan-day-picker {
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-nav_button-height: 2.25rem;
+  --rdp-nav_button-width: 2.25rem;
+}
+
+.mentor-plan-day-picker-popover .rdp-root,
+.mentor-plan-day-picker-popover .rdp-months,
+.mentor-plan-day-picker-popover .rdp-month,
+.mentor-plan-day-picker-popover .rdp-month_grid {
+  min-width: 0;
+  width: 100%;
 }
 
 .mentor-plan-week-mini-calendar .mentor-plan-day-picker {

@@ -29,8 +29,8 @@ import { CoachPlanAttendees } from "./coach-plan-attendees";
 import { CoachPlanEventScopeChoices } from "./coach-plan-event-scope";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
 import {
-  CoachPlanSelect,
-  CoachPlanTimeFields,
+  CoachPlanRecurrenceFields,
+  CoachPlanWhenFields,
 } from "./coach-plan-form-fields";
 
 type EventFormMode =
@@ -152,19 +152,13 @@ export function CoachPlanEventForm({
           disabled={busy}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <TextField
-          type="date"
-          label={t("form_date")}
-          value={eventDate}
-          min={todayInIstanbul()}
-          required
-          disabled={busy}
-          onChange={(event) => setEventDate(event.target.value)}
-        />
-        <CoachPlanTimeFields
+        <CoachPlanWhenFields
+          date={eventDate}
+          minDate={todayInIstanbul()}
           startTime={startTime}
           endTime={endTime}
           disabled={busy}
+          onDate={setEventDate}
           onStartTime={setStartTime}
           onEndTime={setEndTime}
         />
@@ -188,58 +182,23 @@ export function CoachPlanEventForm({
           <CoachPlanEventScopeChoices value={scope} disabled={busy} onChange={setScope} />
         )}
         {showRecurrence && (
-          <>
-            <CoachPlanSelect
-              label={t("recurrence")}
-              value={frequency}
-              disabled={busy}
-              onChange={(event) => setFrequency(event.target.value as typeof frequency)}
-            >
-              {(initial?.seriesId
-                ? (["DAILY", "WEEKLY", "MONTHLY"] as const)
-                : (["NONE", "DAILY", "WEEKLY", "MONTHLY"] as const)
-              ).map((value) => (
-                <option key={value} value={value}>
-                  {t(`recurrence_${value.toLowerCase()}`)}
-                </option>
-              ))}
-            </CoachPlanSelect>
-            {frequency !== "NONE" && (
-              <div className="grid gap-3 sm:grid-cols-2">
-                <CoachPlanSelect
-                  label={t("recurrence_end")}
-                  value={endKind}
-                  disabled={busy}
-                  onChange={(event) => setEndKind(event.target.value as typeof endKind)}
-                >
-                  <option value="COUNT">{t("recurrence_count")}</option>
-                  <option value="DATE">{t("recurrence_date")}</option>
-                </CoachPlanSelect>
-                {endKind === "COUNT" ? (
-                  <TextField
-                    type="number"
-                    label={t("recurrence_count_label")}
-                    value={count}
-                    min={2}
-                    max={100}
-                    required
-                    disabled={busy}
-                    onChange={(event) => setCount(event.target.valueAsNumber)}
-                  />
-                ) : (
-                  <TextField
-                    type="date"
-                    label={t("recurrence_end_date")}
-                    value={endDate}
-                    min={eventDate}
-                    required
-                    disabled={busy}
-                    onChange={(event) => setEndDate(event.target.value)}
-                  />
-                )}
-              </div>
-            )}
-          </>
+          <CoachPlanRecurrenceFields
+            frequency={frequency}
+            frequencies={
+              initial?.seriesId
+                ? ["DAILY", "WEEKLY", "MONTHLY"]
+                : ["NONE", "DAILY", "WEEKLY", "MONTHLY"]
+            }
+            endKind={endKind}
+            count={count}
+            endDate={endDate}
+            minEndDate={eventDate}
+            disabled={busy}
+            onFrequency={(next) => setFrequency(next as typeof frequency)}
+            onEndKind={setEndKind}
+            onCount={setCount}
+            onEndDate={setEndDate}
+          />
         )}
         <FormError message={error} />
         <div className="flex flex-wrap justify-end gap-2">

@@ -1,69 +1,172 @@
 "use client";
 
-import type { SelectHTMLAttributes } from "react";
+import { useId } from "react";
 import { TextField } from "@mentor/ui";
 import { useTranslations } from "next-intl";
+import { DateField } from "@/components/date-field";
+import { MenuSelect, type MenuSelectOption } from "@/components/menu-select";
 
-export function CoachPlanTimeFields({
+export function CoachPlanWhenFields({
+  date,
+  minDate,
+  dateDisabled,
   startTime,
   endTime,
   disabled,
+  onDate,
   onStartTime,
   onEndTime,
 }: {
+  date: string;
+  minDate?: string;
+  dateDisabled?: boolean;
   startTime: string;
   endTime: string;
   disabled?: boolean;
+  onDate: (value: string) => void;
   onStartTime: (value: string) => void;
   onEndTime: (value: string) => void;
 }) {
   const t = useTranslations("coachPlan");
   return (
-    <div className="grid gap-3 sm:grid-cols-2">
-      <TextField
-        type="time"
-        label={t("start_time")}
-        value={startTime}
-        disabled={disabled}
-        onChange={(event) => onStartTime(event.target.value)}
+    <div className="grid grid-cols-3 gap-3">
+      <DateField
+        label={t("form_date")}
+        value={date}
+        min={minDate}
+        required
+        disabled={disabled || dateDisabled}
+        onChange={onDate}
       />
-      <TextField
-        type="time"
-        label={t("end_time")}
-        value={endTime}
-        disabled={disabled}
-        onChange={(event) => onEndTime(event.target.value)}
-      />
+      <div className="min-w-0">
+        <TextField
+          type="time"
+          label={t("start_time")}
+          value={startTime}
+          disabled={disabled}
+          onChange={(event) => onStartTime(event.target.value)}
+        />
+      </div>
+      <div className="min-w-0">
+        <TextField
+          type="time"
+          label={t("end_time")}
+          value={endTime}
+          disabled={disabled}
+          onChange={(event) => onEndTime(event.target.value)}
+        />
+      </div>
     </div>
   );
 }
 
-export function CoachPlanSelect({
-  label,
-  children,
-  ...props
-}: SelectHTMLAttributes<HTMLSelectElement> & {
-  label: string;
+export function CoachPlanRecurrenceFields({
+  frequency,
+  frequencies,
+  endKind,
+  count,
+  endDate,
+  minEndDate,
+  disabled,
+  onFrequency,
+  onEndKind,
+  onCount,
+  onEndDate,
+}: {
+  frequency: string;
+  frequencies: readonly string[];
+  endKind: "COUNT" | "DATE";
+  count: number;
+  endDate: string;
+  minEndDate: string;
+  disabled?: boolean;
+  onFrequency: (value: string) => void;
+  onEndKind: (value: "COUNT" | "DATE") => void;
+  onCount: (value: number) => void;
+  onEndDate: (value: string) => void;
 }) {
+  const t = useTranslations("coachPlan");
   return (
-    <label className="flex flex-col gap-1">
+    <div className="grid grid-cols-3 gap-3">
+      <CoachPlanMenuField
+        label={t("recurrence")}
+        value={frequency}
+        disabled={disabled}
+        onChange={onFrequency}
+        options={frequencies.map((item) => ({
+          value: item,
+          label: t(`recurrence_${item.toLowerCase()}`),
+        }))}
+      />
+      {frequency !== "NONE" ? (
+        <>
+          <CoachPlanMenuField
+            label={t("recurrence_end")}
+            value={endKind}
+            disabled={disabled}
+            onChange={(next) => onEndKind(next as "COUNT" | "DATE")}
+            options={[
+              { value: "COUNT", label: t("recurrence_count") },
+              { value: "DATE", label: t("recurrence_date") },
+            ]}
+          />
+          {endKind === "COUNT" ? (
+            <TextField
+              type="number"
+              label={t("recurrence_count_label")}
+              value={count}
+              min={2}
+              max={100}
+              required
+              disabled={disabled}
+              onChange={(event) => onCount(event.target.valueAsNumber)}
+            />
+          ) : (
+            <DateField
+              label={t("recurrence_end_date")}
+              value={endDate}
+              min={minEndDate}
+              required
+              disabled={disabled}
+              onChange={onEndDate}
+            />
+          )}
+        </>
+      ) : null}
+    </div>
+  );
+}
+
+export function CoachPlanMenuField({
+  label,
+  value,
+  options,
+  disabled,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: readonly MenuSelectOption[];
+  disabled?: boolean;
+  onChange: (value: string) => void;
+}) {
+  const labelId = useId();
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
       <span
+        id={labelId}
         className="text-xs font-semibold"
         style={{ color: "var(--color-secondary)" }}
       >
         {label}
       </span>
-      <select
-        {...props}
-        className="min-h-11 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-4 py-2 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{
-          color: "var(--color-body)",
-          borderColor: "var(--color-border)",
-          boxShadow: "var(--shadow-card)",
-        }}
-      >
-        {children}
-      </select>
-    </label>
+      <MenuSelect
+        value={value}
+        options={options}
+        disabled={disabled}
+        aria-labelledby={labelId}
+        onChange={onChange}
+      />
+    </div>
   );
 }

@@ -16,7 +16,7 @@ export interface BottomSheetViewportProps {
 }
 
 /**
- * Portaled bottom sheet (Stitch Prompt 03): backdrop z-40, panel z-50.
+ * Portaled bottom sheet: backdrop z-55, panel z-56 (above app overlays at z-50).
  * Mobile: slide from bottom. Desktop: centered dialog (no drag handle).
  */
 export function BottomSheetViewport({
@@ -46,7 +46,7 @@ export function BottomSheetViewport({
   if (!mounted || !sheet) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[40]">
+    <div className="fixed inset-0 z-[55]">
       <button
         type="button"
         aria-label={closeLabel}
@@ -57,7 +57,7 @@ export function BottomSheetViewport({
         } motion-reduce:transition-none`}
         onClick={onBackdropClick}
       />
-      <div className="pointer-events-none fixed inset-0 z-[50] flex max-lg:items-end lg:items-center lg:justify-center lg:p-5">
+      <div className="pointer-events-none fixed inset-0 z-[56] flex max-lg:items-end lg:items-center lg:justify-center lg:p-5">
         <div
           className={`pointer-events-auto w-full ${
             sheet.size === "full"

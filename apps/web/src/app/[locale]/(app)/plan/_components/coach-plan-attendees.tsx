@@ -1,6 +1,7 @@
 "use client";
 
 import type { MentorshipRosterRowDto } from "@mentor/types";
+import { CheckBox } from "@mentor/ui";
 import { useTranslations } from "next-intl";
 import { UserAvatar } from "@/components/user-avatar";
 
@@ -36,10 +37,11 @@ export function CoachPlanAttendees({
       <div className="grid gap-2 sm:grid-cols-2">
         {roster.map((student) => {
           const checked = selected.has(student.studentId);
+          const labelId = `attendee-${student.studentId}`;
           return (
-            <label
+            <div
               key={student.studentId}
-              className="flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border px-3 py-2"
+              className="flex min-h-11 cursor-pointer items-center gap-3 rounded-[var(--radius-card)] border px-3 py-2"
               style={{
                 borderColor: checked
                   ? "var(--color-focus-ring)"
@@ -47,29 +49,37 @@ export function CoachPlanAttendees({
                 backgroundColor: "var(--color-surface)",
                 color: "var(--color-main)",
               }}
+              onClick={(event) => {
+                if (readOnly) return;
+                if ((event.target as HTMLElement).closest('[role="checkbox"]')) return;
+                onChange(
+                  checked
+                    ? selectedIds.filter((id) => id !== student.studentId)
+                    : [...selectedIds, student.studentId],
+                );
+              }}
             >
-              <input
-                type="checkbox"
+              <CheckBox
                 checked={checked}
                 disabled={readOnly}
-                onChange={() => {
+                aria-labelledby={labelId}
+                onChange={(next) => {
                   onChange(
-                    checked
-                      ? selectedIds.filter((id) => id !== student.studentId)
-                      : [...selectedIds, student.studentId],
+                    next
+                      ? [...selectedIds, student.studentId]
+                      : selectedIds.filter((id) => id !== student.studentId),
                   );
                 }}
-                className="size-5 accent-[var(--color-btn)]"
               />
               <UserAvatar
                 name={student.studentDisplayName}
                 src={student.avatarUrl}
                 size={32}
               />
-              <span className="text-sm font-medium">
+              <span id={labelId} className="text-sm font-medium">
                 {student.studentDisplayName}
               </span>
-            </label>
+            </div>
           );
         })}
       </div>

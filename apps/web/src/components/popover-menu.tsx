@@ -2,11 +2,17 @@
 
 import {
   createContext,
+  useCallback,
   useContext,
+  useEffect,
   useId,
+  useLayoutEffect,
+  useRef,
   useState,
+  type CSSProperties,
   type ReactNode,
 } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 
 const menuTransition = {
@@ -42,8 +48,11 @@ export interface PopoverMenuProps {
   matchTriggerWidth?: boolean;
   /** Extra classes on the floating panel (e.g. `w-48`, `min-w-[14rem]`). */
   menuClassName?: string;
-  /** `menu` for action lists; `listbox` for single-select fields. */
-  panelRole?: "menu" | "listbox";
+  /** Used to clamp the portaled panel inside the viewport (date pickers). */
+  panelWidth?: number;
+  overflow?: "hidden" | "visible";
+  /** `menu` for action lists; `listbox` for single-select fields; `dialog` for pickers. */
+  panelRole?: "menu" | "listbox" | "dialog";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
 }
@@ -51,6 +60,8 @@ export interface PopoverMenuProps {
 /**
  * Shared floating action/select menu — PlanTaskMenu visual (radius token, soft card shadow,
  * click-away backdrop, reduced-motion aware enter). Use with `PopoverMenuItem`.
+ * The panel portals to `document.body` and anchors to the trigger so overflow parents
+ * (drawers, sheets) cannot clip it or send it behind a modal layer.
  */
 export function PopoverMenu({
   trigger,
@@ -59,6 +70,8 @@ export function PopoverMenu({
   side = "bottom",
   matchTriggerWidth = false,
   menuClassName,
+  panelWidth,
+  overflow = "hidden",
   panelRole = "menu",
   open: openProp,
   onOpenChange,
@@ -66,7 +79,9 @@ export function PopoverMenu({
   const reactId = useId();
   const menuId = `popover-menu-${reactId}`;
   const reduceMotion = useReducedMotion();
+  const anchorRef = useRef<HTMLDivElement>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const [anchor, setAnchor] = useState<DOMRect | null>(null);
   const open = openProp ?? uncontrolledOpen;
 
   function setOpen(next: boolean) {
@@ -78,58 +93,141 @@ export function PopoverMenu({
     setOpen(false);
   }
 
-  const widthClass = matchTriggerWidth
-    ? "left-0 right-0 w-full"
-    : align === "left"
-      ? "left-0"
-      : "right-0";
-  const sideClass = side === "top" ? "bottom-full mb-1 origin-bottom" : "mt-1 origin-top";
+  const syncAnchor = useCallback(() => {
+    const node = anchorRef.current;
+    if (!node) return;
+    setAnchor(node.getBoundingClientRect());
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setAnchor(null);
+      return;
+    }
+    syncAnchor();
+    window.addEventListener("resize", syncAnchor);
+    window.addEventListener("scroll", syncAnchor, true);
+    return () => {
+      window.removeEventListener("resize", syncAnchor);
+      window.removeEventListener("scroll", syncAnchor, true);
+    };
+  }, [open, syncAnchor]);
+
+  useEffect(() => {
+    if (!open) return;
+    function onKey(event: KeyboardEvent) {
+      if (event.key !== "Escape") return;
+      event.preventDefault();
+      event.stopPropagation();
+      close();
+    }
+    window.addEventListener("keydown", onKey, true);
+    return () => window.removeEventListener("keydown", onKey, true);
+  }, [open]);
+
   const closedOffset = side === "top" ? 4 : -4;
+  const panelStyle = panelPosition(anchor, {
+    align,
+    side,
+    matchTriggerWidth,
+    panelWidth,
+  });
+
+  const panel = (
+    <AnimatePresence>
+      {open && anchor ? (
+        <PopoverMenuContext.Provider value={{ close }}>
+          <div
+            className="fixed inset-0 z-[60]"
+            onClick={close}
+            aria-hidden
+          />
+          <motion.div
+            key={menuId}
+            id={menuId}
+            role={panelRole}
+            className={[
+              "z-[61] rounded-[var(--radius-card)] bg-[var(--color-surface)]",
+              overflow === "hidden" ? "overflow-hidden" : "overflow-visible",
+              optsSideOrigin(side),
+              menuClassName ?? (matchTriggerWidth ? "py-1" : "w-48 py-1"),
+            ]
+              .filter(Boolean)
+              .join(" ")}
+            style={{
+              ...panelStyle,
+              border:
+                "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
+              boxShadow: "var(--shadow-card)",
+            }}
+            initial={
+              reduceMotion ? false : { opacity: 0, scaleY: 0.85, y: closedOffset }
+            }
+            animate={{ opacity: 1, scaleY: 1, y: 0 }}
+            exit={
+              reduceMotion ? undefined : { opacity: 0, scaleY: 0.9, y: closedOffset }
+            }
+            transition={reduceMotion ? { duration: 0 } : menuTransition}
+          >
+            {children}
+          </motion.div>
+        </PopoverMenuContext.Provider>
+      ) : null}
+    </AnimatePresence>
+  );
 
   return (
-    <div className="relative">
+    <div ref={anchorRef} className="relative">
       {trigger({ open, setOpen, menuId })}
-
-      {open ? (
-        <div className="fixed inset-0 z-40" onClick={close} aria-hidden />
-      ) : null}
-
-      <AnimatePresence>
-        {open ? (
-          <PopoverMenuContext.Provider value={{ close }}>
-            <motion.div
-              key={menuId}
-              id={menuId}
-              role={panelRole}
-              className={[
-                "absolute z-50 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface)] py-1",
-                widthClass,
-                sideClass,
-                menuClassName ?? (matchTriggerWidth ? "" : "w-48"),
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              style={{
-                border:
-                  "1px solid color-mix(in srgb, var(--color-main) 8%, transparent)",
-                boxShadow: "var(--shadow-card)",
-              }}
-              initial={
-                reduceMotion ? false : { opacity: 0, scaleY: 0.85, y: closedOffset }
-              }
-              animate={{ opacity: 1, scaleY: 1, y: 0 }}
-              exit={
-                reduceMotion ? undefined : { opacity: 0, scaleY: 0.9, y: closedOffset }
-              }
-              transition={reduceMotion ? { duration: 0 } : menuTransition}
-            >
-              {children}
-            </motion.div>
-          </PopoverMenuContext.Provider>
-        ) : null}
-      </AnimatePresence>
+      {typeof document === "undefined"
+        ? null
+        : createPortal(panel, document.body)}
     </div>
   );
+}
+
+function optsSideOrigin(side: PopoverMenuSide) {
+  return side === "top" ? "origin-bottom" : "origin-top";
+}
+
+function panelPosition(
+  box: DOMRect | null,
+  opts: {
+    align: PopoverMenuAlign;
+    side: PopoverMenuSide;
+    matchTriggerWidth: boolean;
+    panelWidth?: number;
+  },
+): CSSProperties {
+  if (!box) return { position: "fixed" };
+  const gutter = 16;
+  const style: CSSProperties = { position: "fixed" };
+  if (opts.side === "top") {
+    style.bottom = window.innerHeight - box.top + 4;
+  } else {
+    style.top = box.bottom + 4;
+  }
+  if (opts.matchTriggerWidth) {
+    style.left = Math.max(gutter, box.left);
+    style.width = box.width;
+    return style;
+  }
+  if (opts.panelWidth) {
+    let left = opts.align === "right" ? box.right - opts.panelWidth : box.left;
+    left = Math.min(
+      Math.max(gutter, left),
+      window.innerWidth - opts.panelWidth - gutter,
+    );
+    style.left = left;
+    style.width = opts.panelWidth;
+    return style;
+  }
+  if (opts.align === "right") {
+    style.right = Math.max(gutter, window.innerWidth - box.right);
+  } else {
+    style.left = Math.max(gutter, box.left);
+  }
+  return style;
 }
 
 export interface PopoverMenuItemProps {
