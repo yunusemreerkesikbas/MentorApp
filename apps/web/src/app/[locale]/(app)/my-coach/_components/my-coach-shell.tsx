@@ -40,7 +40,9 @@ export function MyCoachShell() {
     [toastError, common],
   );
   const showErrorRef = useRef(showError);
-  showErrorRef.current = showError;
+  useEffect(() => {
+    showErrorRef.current = showError;
+  }, [showError]);
 
   const load = useCallback(() => {
     // Beside the coach fetch, never behind it (`standards/frontend.md`: no waterfalls). The mirror

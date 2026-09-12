@@ -11,9 +11,9 @@ import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorship";
 import { AssignTaskForm } from "./assign-task-form";
+import { CoachFollowupsCard } from "@/components/mentorship/coach-followups-card";
 import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
-import { FollowupPanel } from "./followup-panel";
 import {
   formatDate,
   formatMood,
@@ -192,8 +192,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
       <BriefCard key={studentId} studentId={studentId} />
 
       <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
+      <CoachFollowupsCard key={studentId} studentId={studentId} />
 
-      <FollowupPanel studentId={studentId} />
 
       <AssignTaskForm
         studentId={studentId}

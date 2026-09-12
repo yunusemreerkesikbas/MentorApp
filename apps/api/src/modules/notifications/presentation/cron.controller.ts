@@ -29,9 +29,7 @@ export class CronController {
 
   @Post("dispatch-daily-reminders")
   async dispatchDailyReminders() {
-    const reminders = await this.dailyReminders.dispatchForToday();
-    await this.followupDue.dispatchDaily();
-    return reminders;
+    return this.dailyReminders.dispatchForToday();
   }
 
   /** Its own trigger, not folded into the daily reminder: different audience, different cadence. */
@@ -45,7 +43,11 @@ export class CronController {
    * the coach should read a picture the students' own nudge has already had a chance to change.
    */
   @Post("dispatch-mentorship-risk-digest")
-  dispatchMentorshipRiskDigest() {
-    return this.mentorshipRiskDigest.dispatchDaily();
+  async dispatchMentorshipRiskDigest() {
+    const [risk] = await Promise.all([
+      this.mentorshipRiskDigest.dispatchDaily(),
+      this.followupDue.dispatchDaily(),
+    ]);
+    return risk;
   }
 }

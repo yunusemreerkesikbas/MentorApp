@@ -145,6 +145,20 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-12 — Koç planı gooey compose + okunur overlay.** Başlıktaki Yeni görev /
+  Yeni etkinlik butonları sağ-alt plus menüye taşındı (`CoachPlanComposeFab`). SVG gooey
+  filter yalnız blob dairelerde; etiketler filter dışında. Form desktop'ta sağ drawer,
+  mobilde ~%90 bottom-sheet (handle + sürükleyerek kapat). Detay kompakt inspector
+  (desktop kart, mobil kısa sheet). Scrim `backdrop-blur` + yüzey `surface 92%`; eski
+  yarı saydam `Card` takvimi panelin içinden gösteriyordu. Kullanım: plus → görev/etkinlik;
+  takvim hücresi hâlâ action-sheet. Gotcha: `prefers-reduced-transparency` blur'u kapatır;
+  `prefers-reduced-motion` kaymayı opacity'ye indirir. Compose FAB `z-51` detail'in (`z-40`)
+  üstünde kalır ki inspector açıkken oluşturma sürsün; form overlay sonra mount olup `z-50`
+  ile FAB'ı örter. İlgili:
+  `coach-plan-{compose-fab,overlay,form-panel,detail,toolbar,calendar-shell}.tsx`.
+  Gotcha: compose FAB `z-51` sits above detail (`z-40`) so create stays reachable while an
+  inspector is open; the form overlay mounts later at `z-50` and covers the FAB.
+
 - **2026-09-11 — Shared Takvim item model.** Plan calendar grids (hour, month, mobile strip,
   agenda, hover preview) now render `PlanCalendarItem<T>` instead of `PlanTaskDto`. The student
   adapter (`planTaskCalendarItem`) keeps the same pixels; the coach calendar reuses the same

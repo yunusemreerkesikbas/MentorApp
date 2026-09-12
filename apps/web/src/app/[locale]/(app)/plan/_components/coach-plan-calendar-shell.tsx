@@ -26,7 +26,7 @@ import { fetchCoachPlan } from "@/lib/mentorship";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { listPublicHolidaysByDate } from "@/lib/plan-tasks";
-import { PlanCalendarFab } from "./plan-calendar-fab";
+import { AnimatePresence } from "framer-motion";
 import { PlanCalendarFrame } from "./plan-calendar-frame";
 import { PlanCalendarHeader } from "./plan-calendar-header";
 import { PlanEventPreview, usePlanEventPreview } from "./plan-event-preview";
@@ -50,6 +50,7 @@ import {
 import { CoachPlanRail } from "./coach-plan-rail";
 import { CoachPlanSkeleton } from "./coach-plan-skeleton";
 import { CoachPlanStudentFilter } from "./coach-plan-student-filter";
+import { CoachPlanComposeFab } from "./coach-plan-compose-fab";
 import { CoachPlanToolbar } from "./coach-plan-toolbar";
 
 interface CoachPlanCalendarShellProps {
@@ -279,19 +280,7 @@ export function CoachPlanCalendarShell({
 
   return (
     <main className="flex w-full flex-col gap-3 px-2 py-4 lg:h-dvh lg:px-6 lg:py-4">
-      {/* Above the live detail overlay (z-40). The form drawer is z-50 and still covers this. */}
-      <div className="relative z-50">
-        <CoachPlanToolbar
-          onNewTask={(trigger) => {
-            formTriggerRef.current = trigger;
-            setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
-          }}
-          onNewEvent={(trigger) => {
-            formTriggerRef.current = trigger;
-            setOpenForm({ kind: "EVENT_CREATE", initialDate: selectedDate });
-          }}
-        />
-      </div>
+      <CoachPlanToolbar />
 
       {error ? (
         <Card className="flex flex-col items-start gap-3">
@@ -409,38 +398,50 @@ export function CoachPlanCalendarShell({
               )}
             </PlanCalendarFrame>
           </div>
-          <PlanCalendarFab
-            label={t("calendar_add_on", { date: selectedDate })}
-            onClick={() => void openCreateChooser({ date: selectedDate })}
+          <CoachPlanComposeFab
+            onNewTask={(trigger) => {
+              formTriggerRef.current = trigger;
+              setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
+            }}
+            onNewEvent={(trigger) => {
+              formTriggerRef.current = trigger;
+              setOpenForm({ kind: "EVENT_CREATE", initialDate: selectedDate });
+            }}
           />
           <PlanEventPreview preview={preview} namespace="coachPlan" />
         </>
       )}
 
-      {!error && selectedItem ? (
-        <CoachPlanDetail
-          item={selectedItem}
-          onClose={closeDetail}
-          onEdit={(trigger, target) => {
-            formTriggerRef.current = trigger;
-            if (selectedItem.kind === "TASK" && target) {
-              setOpenForm({ kind: "TASK_EDIT", task: selectedItem.task, target });
-            } else if (selectedItem.kind === "EVENT") {
-              setOpenForm({ kind: "EVENT_EDIT", event: selectedItem.event });
-            }
-          }}
-          onMutationSuccess={mutationSucceeded}
-        />
-      ) : null}
-      {openForm ? (
-        <CoachPlanOpenFormPanel
-          form={openForm}
-          roster={roster}
-          onClose={closeForm}
-          onCreationSuccess={creationSucceeded}
-          onMutationSuccess={mutationSucceeded}
-        />
-      ) : null}
+      <AnimatePresence>
+        {!error && selectedItem ? (
+          <CoachPlanDetail
+            key={selectedItem.kind === "TASK" ? selectedItem.task.id : selectedItem.event.id}
+            item={selectedItem}
+            onClose={closeDetail}
+            onEdit={(trigger, target) => {
+              formTriggerRef.current = trigger;
+              if (selectedItem.kind === "TASK" && target) {
+                setOpenForm({ kind: "TASK_EDIT", task: selectedItem.task, target });
+              } else if (selectedItem.kind === "EVENT") {
+                setOpenForm({ kind: "EVENT_EDIT", event: selectedItem.event });
+              }
+            }}
+            onMutationSuccess={mutationSucceeded}
+          />
+        ) : null}
+      </AnimatePresence>
+      <AnimatePresence>
+        {openForm ? (
+          <CoachPlanOpenFormPanel
+            key={openForm.kind}
+            form={openForm}
+            roster={roster}
+            onClose={closeForm}
+            onCreationSuccess={creationSucceeded}
+            onMutationSuccess={mutationSucceeded}
+          />
+        ) : null}
+      </AnimatePresence>
     </main>
   );
 }

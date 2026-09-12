@@ -32,19 +32,24 @@ const roster: MentorshipRosterRowDto[] = [
   rosterRow(STUDENT_B, "Bora"),
 ];
 
+async function openCompose(page: Page, action: "Yeni görev" | "Yeni etkinlik") {
+  await page.getByRole("button", { name: "Oluştur menüsünü aç" }).click();
+  await page.getByRole("button", { name: action, exact: true }).click();
+}
+
 test("empty attendees create personal task and event while a cohort uses one batch", async ({
   page,
 }) => {
   const api = await mockCoachPlanApi(page);
   await page.goto("/plan");
 
-  await page.getByRole("button", { name: "Yeni görev" }).click();
+  await openCompose(page, "Yeni görev");
   await page.getByLabel("Başlık").fill("Kendi hazırlığım");
   await page.getByRole("dialog").getByRole("button", { name: "Görevi oluştur" }).click();
   await expect.poll(() => api.personalTasks.length).toBe(1);
   expect(api.personalTasks[0]).not.toHaveProperty("coachNote");
 
-  await page.getByRole("button", { name: "Yeni görev" }).click();
+  await openCompose(page, "Yeni görev");
   await page.getByLabel("Başlık").fill("Paragraf");
   await page.getByRole("checkbox", { name: /Ayşe/ }).check();
   await page.getByRole("checkbox", { name: /Bora/ }).check();
@@ -54,7 +59,7 @@ test("empty attendees create personal task and event while a cohort uses one bat
     studentIds: [STUDENT_A, STUDENT_B],
   });
 
-  await page.getByRole("button", { name: "Yeni etkinlik" }).click();
+  await openCompose(page, "Yeni etkinlik");
   await expect(
     page.getByRole("dialog", { name: "Yeni etkinlik" })
       .getByLabel("Tarih", { exact: true }),
@@ -204,7 +209,7 @@ test("surfaces backend-localized mutation errors", async ({ page }) => {
   api.failNextTask = true;
   await page.goto("/plan");
 
-  await page.getByRole("button", { name: "Yeni görev" }).click();
+  await openCompose(page, "Yeni görev");
   await page.getByLabel("Başlık").fill("Hata örneği");
   await page.getByRole("dialog").getByRole("button", { name: "Görevi oluştur" }).click();
 
@@ -222,7 +227,7 @@ test("reloads selected detail from authority and creates on a selected future da
 
   await page.getByRole("button", { name: /Eski başlık/ }).first().click();
   api.planItems = [personalTask("Güncel başlık")];
-  await page.getByRole("button", { name: "Yeni etkinlik" }).click();
+  await openCompose(page, "Yeni etkinlik");
   const eventDialog = page.getByRole("dialog", { name: "Yeni etkinlik" });
   await eventDialog.getByLabel("Başlık").fill("Yenilemeyi tetikle");
   await eventDialog.getByRole("button", { name: "Etkinliği oluştur" }).click();
@@ -234,7 +239,7 @@ test("reloads selected detail from authority and creates on a selected future da
   await page.getByRole("tab", { name: "Gün" }).click();
   await page.getByRole("button", { name: "Sonraki gün" }).click();
   const future = addDays(todayIso(), 1);
-  await page.getByRole("button", { name: "Yeni görev" }).click();
+  await openCompose(page, "Yeni görev");
   const taskDialog = page.getByRole("dialog", { name: "Yeni görev" });
   await expect(taskDialog.getByLabel("Tarih", { exact: true })).toHaveValue(future);
   await expect(taskDialog.getByLabel("Tarih", { exact: true }))

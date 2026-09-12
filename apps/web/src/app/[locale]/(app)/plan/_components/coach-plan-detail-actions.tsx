@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { ApiClientError } from "@mentor/api-client";
 import type { CoachPlanItemDto, PlanEventMutationScope } from "@mentor/types";
 import { Button } from "@mentor/ui";
@@ -151,8 +152,10 @@ export function CoachPlanDetailActions({
           {t(item.kind === "TASK" ? "remove" : "cancel")}
         </Button>
       </div>
-      {scopePrompt && (
+      <AnimatePresence>
+      {scopePrompt ? (
         <CoachPlanFormPanel
+          key="event-scope"
           title={t("event_scope")}
           busy={busy}
           onClose={closeScopePrompt}
@@ -172,7 +175,8 @@ export function CoachPlanDetailActions({
             </div>
           </div>
         </CoachPlanFormPanel>
-      )}
+      ) : null}
+      </AnimatePresence>
     </>
   );
 }

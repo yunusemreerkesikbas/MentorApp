@@ -9,9 +9,11 @@ import { useTranslations } from "next-intl";
 export function FollowupStatus({
   status,
   response,
+  shared = false,
 }: {
   status: MentorshipFollowupStatus;
   response: MentorshipFollowupResponse;
+  shared?: boolean;
 }) {
   const t = useTranslations("mentorship");
   return (
@@ -22,7 +24,7 @@ export function FollowupStatus({
       >
         {t(`followup_status_${status}`)}
       </span>
-      {response !== "PENDING" ? (
+      {shared ? (
         <span
           className="rounded-full border px-3 py-1 text-xs font-semibold"
           style={{

@@ -3,12 +3,12 @@
 import { useEffect, useRef } from "react";
 import { X } from "lucide-react";
 import type { CoachPlanItemDto } from "@mentor/types";
-import { Card } from "@mentor/ui";
 import { useLocale, useTranslations } from "next-intl";
 import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
 import type { CoachTaskMutationTarget } from "@/lib/coach-plan-mutations";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 import { CoachPlanDetailActions } from "./coach-plan-detail-actions";
+import { CoachPlanOverlay, CoachPlanOverlayBody } from "./coach-plan-overlay";
 
 export function CoachPlanDetail({
   item,
@@ -30,32 +30,21 @@ export function CoachPlanDetail({
   const date = item.kind === "TASK" ? item.task.taskDate : item.event.eventDate;
   const people = item.kind === "TASK" ? item.task.participants : item.event.attendees;
   const names = people.map((person) => person.studentDisplayName).join(", ");
-  const panelRef = useRef<HTMLElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    panelRef.current?.focus();
+    closeRef.current?.focus();
   }, [item]);
 
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center p-3 sm:items-center sm:p-5"
-      style={{ background: "color-mix(in srgb, var(--color-main) 45%, transparent)" }}
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose();
-      }}
+    <CoachPlanOverlay
+      variant="inspector"
+      layer="detail"
+      labelledBy="coach-plan-detail-title"
+      onClose={onClose}
     >
-      <aside
-        ref={panelRef}
-        tabIndex={-1}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="coach-plan-detail-title"
-        className="w-full max-w-xl focus:outline-none"
-        onKeyDown={(event) => {
-          if (event.key === "Escape") onClose();
-        }}
-      >
-        <Card className="flex flex-col gap-4">
+      <CoachPlanOverlayBody>
+        <div className="flex flex-col gap-4">
           <div className="flex items-start justify-between gap-3">
             <div>
               <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
@@ -71,10 +60,11 @@ export function CoachPlanDetail({
               </h2>
             </div>
             <button
+              ref={closeRef}
               type="button"
               onClick={onClose}
               aria-label={t("close_details")}
-              className="flex size-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
               style={{ color: "var(--color-main)" }}
             >
               <X aria-hidden size={22} />
@@ -127,9 +117,9 @@ export function CoachPlanDetail({
             onEdit={onEdit}
             onSuccess={onMutationSuccess}
           />
-        </Card>
-      </aside>
-    </div>
+        </div>
+      </CoachPlanOverlayBody>
+    </CoachPlanOverlay>
   );
 }
 

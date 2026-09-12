@@ -6,6 +6,7 @@ import { withServiceContext } from "../../../../database/rls";
 import { EMAIL_PORT, type EmailPort } from "../../../../shared/ports/email.port";
 import { UsersService } from "../../../identity/application/users.service";
 import { MentorshipFollowupService } from "../../../mentorship/application/mentorship-followup.service";
+import { followupToday } from "../../../mentorship/domain/mentorship-followup";
 import { EmailTemplate } from "../../domain/notifications.constants";
 import { NotificationDeliveryRepository } from "../../infrastructure/notification-delivery.repository";
 import { NotificationPreferencesRepository } from "../../infrastructure/notification-preferences.repository";
@@ -38,13 +39,18 @@ export class SendEmailHandler {
     private readonly users: UsersService,
   ) {}
 
-  async handle(payload: unknown): Promise<void> {
+  async handle(payload: unknown, now = new Date()): Promise<void> {
     const guarded = followupDuePayloadSchema.safeParse(payload);
     if (guarded.success) {
-      await this.sendFollowupDue(guarded.data);
+      await this.sendFollowupDue(guarded.data, now);
       return;
     }
     const data = sendEmailPayloadSchema.parse(payload);
+    // This template must never fall through to delivery without its access guard.
+    if (data.template === EmailTemplate.MENTORSHIP_FOLLOWUP_DUE) {
+      followupDuePayloadSchema.parse(payload);
+      return;
+    }
     await this.email.sendTransactional({
       to: data.to,
       template: data.template as EmailTemplate,
@@ -54,9 +60,11 @@ export class SendEmailHandler {
 
   private async sendFollowupDue(
     payload: z.infer<typeof followupDuePayloadSchema>,
+    now: Date,
   ): Promise<void> {
     const { coachId, dedupeKey } = payload.executionGuard;
-    const count = await this.followups.getDueCount(coachId, new Date());
+    if (dedupeKey !== `mentorship-followup-due:${followupToday(now)}`) return;
+    const count = await this.followups.getDueCount(coachId, now);
     if (count === 0) return;
 
     const prefs = await withServiceContext(this.db, (tx) =>
