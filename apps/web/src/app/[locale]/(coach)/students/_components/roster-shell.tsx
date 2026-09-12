@@ -23,6 +23,7 @@ import { CoachCountdownCard } from "./coach-countdown-card";
 import { CohortBriefCard } from "./cohort-brief-card";
 import { compareByAttention, summarizeCohort } from "./cohort-summary";
 import { CohortSummaryBand } from "./cohort-summary-band";
+import { FollowupInboxCard } from "./followup-inbox-card";
 import { RosterContentSkeleton } from "./roster-content-skeleton";
 import { StudentCard } from "./student-card";
 
@@ -205,6 +206,8 @@ export function RosterShell() {
         {tab === "ACTIVE" && <CohortBriefCard />}
 
         {tab === "ACTIVE" && <CohortSummaryBand summary={summary} />}
+
+        {tab === "ACTIVE" && <FollowupInboxCard />}
 
         <SegmentPillControl
           items={[

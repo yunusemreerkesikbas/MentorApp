@@ -38,7 +38,8 @@ function withMentorDefaults(
   };
 }
 
-/** Web wrapper: injects the i18n dismiss label + the variant status icon. */
+/** Web wrapper: injects the i18n dismiss label + the variant status icon.
+ *  `error`/`show` stay stable across stack updates; do not put the returned object in effect deps. */
 export function useMentorToast() {
   const toast = useToast();
   const t = useTranslations("common.toast");

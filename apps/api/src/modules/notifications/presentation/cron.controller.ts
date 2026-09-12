@@ -5,6 +5,7 @@ import { DailyReminderService } from "../application/daily-reminder.service";
 import { JobRunnerService } from "../application/job-runner.service";
 import { NotebookReviewReminderService } from "../application/notebook-review-reminder.service";
 import { MentorshipRiskDigestService } from "../application/mentorship-risk-digest.service";
+import { MentorshipFollowupDueService } from "../application/mentorship-followup-due.service";
 import { CronSecretGuard } from "../../../common/auth/cron-secret.guard";
 
 /** Internal cron triggers (Render Cron → HTTP, no continuous polling). */
@@ -18,6 +19,7 @@ export class CronController {
     private readonly dailyReminders: DailyReminderService,
     private readonly notebookReviews: NotebookReviewReminderService,
     private readonly mentorshipRiskDigest: MentorshipRiskDigestService,
+    private readonly followupDue: MentorshipFollowupDueService,
   ) {}
 
   @Post("process-jobs")
@@ -26,8 +28,10 @@ export class CronController {
   }
 
   @Post("dispatch-daily-reminders")
-  dispatchDailyReminders() {
-    return this.dailyReminders.dispatchForToday();
+  async dispatchDailyReminders() {
+    const reminders = await this.dailyReminders.dispatchForToday();
+    await this.followupDue.dispatchDaily();
+    return reminders;
   }
 
   /** Its own trigger, not folded into the daily reminder: different audience, different cadence. */

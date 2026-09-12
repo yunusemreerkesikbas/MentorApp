@@ -218,7 +218,7 @@ export class MentorshipLinkRepository {
         .values({ coachId, studentId, status: "ACTIVE", source: "INVITE", acceptedAt: now })
         .onConflictDoUpdate({
           target: [coachStudents.coachId, coachStudents.studentId],
-          set: { status: "ACTIVE", acceptedAt: now, endedAt: null, endedBy: null, updatedAt: now },
+          set: { status: "ACTIVE", acceptedAt: now, endedAt: null, endedBy: null, updatedAt: now, periodId: sql`gen_random_uuid()` },
           // Only a dormant link may be revived; an already-ACTIVE row is left untouched so the
           // caller's ALREADY_LINKED check stays authoritative.
           setWhere: eq(coachStudents.status, "ENDED"),

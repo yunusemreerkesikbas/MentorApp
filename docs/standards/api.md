@@ -223,3 +223,20 @@ Authenticated self-service, free-tier endpoints owned by coaching:
 - POST /v1/coaching/notebook/entries/:id/review accepts optional reviewId UUID alongside solved.
   A retry with the same ID and answer replays the recorded outcome; a changed answer is rejected.
   Legacy requests without reviewId remain accepted. This does not change the review ladder.
+
+### Mentorship follow-ups (2026-09-12)
+
+All routes require JWT and the mentorship/followups feature flags. Coach routes require COACH;
+student routes expose only shared decisions for the current active relationship period.
+
+| Method and route | Contract |
+| --- | --- |
+| GET `/v1/mentorship/followups/availability` | Feature availability; authenticated, usable while the followups flag is off. |
+| GET `/v1/mentorship/followups` | Paginated coach history or ACTIONABLE inbox; optional studentId, view, page, pageSize. Filtering/sorting precede pagination. |
+| POST `/v1/mentorship/students/:studentId/followups` | Create an immutable action/decision with operationId retry protection and optional closed predecessor. |
+| PATCH `/v1/mentorship/students/:studentId/followups/:followupId` | Version-checked reschedule, complete, or cancel of an open record. |
+| GET `/v1/mentorship/my-coach/followups` | Paginated shared decisions; private title/note are absent from the response schema. |
+| PUT `/v1/mentorship/my-coach/followups/:followupId/response` | Version-checked ACCEPTED or CHANGE_REQUESTED response on an open decision. |
+
+Missing/foreign/ended/previous-period resources return 404; stale mutations or changed operationId
+payloads return 409. Dates are Istanbul calendar dates. Existing mentorship endpoints are unchanged.

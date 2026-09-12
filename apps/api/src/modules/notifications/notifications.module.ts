@@ -15,6 +15,7 @@ import { MentorshipModule } from "../mentorship/mentorship.module";
 import { DailyReminderService } from "./application/daily-reminder.service";
 import { NotebookReviewReminderService } from "./application/notebook-review-reminder.service";
 import { MentorshipRiskDigestService } from "./application/mentorship-risk-digest.service";
+import { MentorshipFollowupDueService } from "./application/mentorship-followup-due.service";
 import { AnnouncementDispatchHandler } from "./application/handlers/announcement-dispatch.handler";
 import { PlanEventReminderHandler } from "./application/handlers/plan-event-reminder.handler";
 import { SendEmailHandler } from "./application/handlers/send-email.handler";
@@ -79,6 +80,7 @@ import { NotificationsController } from "./presentation/notifications.controller
     DailyReminderService,
     NotebookReviewReminderService,
     MentorshipRiskDigestService,
+    MentorshipFollowupDueService,
     SessionReturnReminderService,
     PaymentsEventsListener,
     PromotionEventsListener,

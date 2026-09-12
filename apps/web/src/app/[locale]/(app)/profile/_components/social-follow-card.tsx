@@ -2,7 +2,7 @@
 import { ExternalLink } from "lucide-react";
 
 import { useTranslations } from "next-intl";
-import { Card, SectionHeading } from "@mentor/ui";
+import { Card } from "@mentor/ui";
 import { getProfileLinks } from "@/lib/profile-links";
 
 export function SocialFollowCard() {
@@ -12,28 +12,38 @@ export function SocialFollowCard() {
   if (links.length === 0) return null;
 
   return (
-    <Card solid className="p-4">
-      <SectionHeading subtitle={t("subtitle")}>{t("title")}</SectionHeading>
-      <div className="mt-3 divide-y divide-[var(--color-border)] overflow-hidden rounded-[var(--radius-card)]">
+    <Card solid className="p-2 sm:p-2.5">
+      <div className="px-2 pt-1 pb-1.5">
+        <h2
+          className="text-xs font-semibold uppercase tracking-wider text-[var(--color-secondary)]"
+          style={{ fontFamily: "var(--font-heading)" }}
+        >
+          {t("title")}
+        </h2>
+      </div>
+      <div className="flex flex-col gap-0.5">
         {links.map((link) => (
           <a
             key={link.id}
             href={link.href}
             target="_blank"
             rel="noreferrer"
-            className="flex min-h-[60px] min-w-0 items-center justify-between gap-3 bg-[var(--color-surface)] px-3 py-2 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="group flex min-h-11 min-w-0 items-center justify-between gap-3 rounded-[calc(var(--radius-card)-2px)] px-3 py-1.5 transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
           >
             <span className="flex min-w-0 items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] text-sm font-bold text-[var(--color-main)]">
+              <span className="flex size-7 shrink-0 items-center justify-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] text-xs font-semibold text-[var(--color-main)]">
                 {link.shortLabel}
               </span>
-              <span className="truncate text-sm font-bold text-[var(--color-main)]">
+              <span
+                className="truncate text-sm font-medium text-[var(--color-main)]"
+                style={{ fontFamily: "var(--font-body)" }}
+              >
                 {link.label}
               </span>
             </span>
             <ExternalLink
-              size={16}
-              className="shrink-0 text-[var(--color-secondary)]"
+              size={15}
+              className="shrink-0 text-[var(--color-secondary)]/60 transition-colors group-hover:text-[var(--color-secondary)]"
               aria-hidden
             />
           </a>
