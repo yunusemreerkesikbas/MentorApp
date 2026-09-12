@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -69,8 +69,6 @@ export function RosterShell() {
     },
     [toastError, common],
   );
-  const showErrorRef = useRef(showError);
-  showErrorRef.current = showError;
 
   useEffect(() => {
     let active = true;
@@ -81,14 +79,14 @@ export function RosterShell() {
       .catch((err: unknown) => {
         if (!active) return;
         setLoaded({ tab, items: [] });
-        // Read through a ref: showing the toast must not retrigger this fetch. The toast
-        // object identity used to change on every stack update, which 429'd the roster.
-        showErrorRef.current(err);
+        // Depend on toastError, not the whole toast object: a new toast identity
+        // would refetch, 429, toast, forever.
+        showError(err);
       });
     return () => {
       active = false;
     };
-  }, [tab]);
+  }, [tab, showError]);
 
   const rows = loaded?.tab === tab ? loaded.items : null;
 

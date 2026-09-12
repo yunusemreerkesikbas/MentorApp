@@ -1,10 +1,15 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { CoachPlanItemDto, MentorshipRosterRowDto } from "@mentor/types";
+import type {
+  CoachPlanItemDto,
+  MentorshipRosterRowDto,
+  PublicHolidayDto,
+} from "@mentor/types";
 import { Button, Card } from "@mentor/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import {
+  COACH_PLAN_SCALE_STORAGE_KEY,
   coachPlanRange,
   consumeInitialCoachPlanEvent,
   reconcileCoachPlanSelection,
@@ -12,19 +17,40 @@ import {
   sortCoachPlanItems,
   type CoachPlanScale,
 } from "@/lib/coach-plan-calendar";
+import {
+  coachPlanCalendarItems,
+  coachPlanMarkedDates,
+} from "@/lib/coach-plan-calendar-item";
 import { todayInIstanbul } from "@/lib/date-time";
 import { fetchCoachPlan } from "@/lib/mentorship";
+import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { listPublicHolidaysByDate } from "@/lib/plan-tasks";
+import { PlanCalendarFab } from "./plan-calendar-fab";
+import { PlanCalendarFrame } from "./plan-calendar-frame";
+import { PlanCalendarHeader } from "./plan-calendar-header";
+import { PlanEventPreview, usePlanEventPreview } from "./plan-event-preview";
+import { PlanMobileAgenda } from "./plan-mobile-agenda";
+import { PlanMobileDateStrip } from "./plan-mobile-date-strip";
+import { PlanMonthGrid } from "./plan-month-grid";
+import { PlanTimeGrid } from "./plan-time-grid";
+import {
+  persistCalendarScale,
+  readStoredCalendarScale,
+  shiftDate,
+  shiftMonth,
+  weekDates,
+  weekStart,
+} from "./plan-utils";
 import { CoachPlanDetail } from "./coach-plan-detail";
-import { coachPlanItemId } from "./coach-plan-item-card";
-import { CoachPlanMonth } from "./coach-plan-month";
 import {
   CoachPlanOpenFormPanel,
   type CoachPlanOpenForm,
 } from "./coach-plan-open-form";
+import { CoachPlanRail } from "./coach-plan-rail";
 import { CoachPlanSkeleton } from "./coach-plan-skeleton";
+import { CoachPlanStudentFilter } from "./coach-plan-student-filter";
 import { CoachPlanToolbar } from "./coach-plan-toolbar";
-import { CoachPlanWeek } from "./coach-plan-week";
 
 interface CoachPlanCalendarShellProps {
   initialDate: string;
@@ -43,15 +69,17 @@ export function CoachPlanCalendarShell({
   rosterError,
   onRetryRoster,
 }: CoachPlanCalendarShellProps) {
-  const locale = useLocale();
   const t = useTranslations("coachPlan");
   const toast = useMentorToast();
+  const { actionSheet } = useMentorBottomSheet();
+  const { preview, onHover } = usePlanEventPreview<CoachPlanItemDto>();
   const [scale, setScale] = useState<CoachPlanScale>("week");
   const [anchor, setAnchor] = useState(initialDate);
   const [selectedDate, setSelectedDate] = useState(initialDate);
   const [studentId, setStudentId] = useState<string | null>(null);
   const [items, setItems] = useState<CoachPlanItemDto[]>([]);
   const [selectedItem, setSelectedItem] = useState<CoachPlanItemDto | null>(null);
+  const [holidays, setHolidays] = useState<Record<string, PublicHolidayDto>>({});
   const [loadedKey, setLoadedKey] = useState<string | null>(null);
   const [errorKey, setErrorKey] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
@@ -59,10 +87,32 @@ export function CoachPlanCalendarShell({
   const initialEventStateRef = useRef({ pendingEventId: initialEventId });
   const detailTriggerRef = useRef<HTMLButtonElement | null>(null);
   const formTriggerRef = useRef<HTMLButtonElement | null>(null);
-  const range = useMemo(() => coachPlanRange(anchor, scale), [anchor, scale]);
+  const weekStartDate = weekStart(selectedDate);
+  const range = useMemo(
+    () => coachPlanRange(selectedDate, "month"),
+    [selectedDate],
+  );
   const requestKey = `${range.from}:${range.to}:${studentId ?? "all"}:${reloadKey}`;
   const planLoading = loadedKey !== requestKey && errorKey !== requestKey;
   const planError = errorKey === requestKey;
+  const itemLabels = useMemo(
+    () => ({
+      personal: t("personal"),
+      cancelled: t("event_cancelled"),
+      hint: t("calendar_preview_hint"),
+    }),
+    [t],
+  );
+  const itemsByDate = useMemo(
+    () => coachPlanCalendarItems(items, range.days, itemLabels),
+    [itemLabels, items, range.days],
+  );
+
+  useEffect(() => {
+    // Reads localStorage after mount so the stored scale can't cause an SSR mismatch.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setScale(readStoredCalendarScale(COACH_PLAN_SCALE_STORAGE_KEY));
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -111,34 +161,56 @@ export function CoachPlanCalendarShell({
     };
   }, [range.from, range.to, requestKey, studentId]);
 
+  useEffect(() => {
+    let active = true;
+    void listPublicHolidaysByDate(range.from, range.to)
+      .then((data) => {
+        if (active) setHolidays(data);
+      })
+      .catch(() => {
+        if (active) setHolidays({});
+      });
+    return () => {
+      active = false;
+    };
+  }, [range.from, range.to]);
+
+  const loadMarkedDates = useCallback(
+    async (from: string, to: string) => {
+      const plan = await fetchCoachPlan({
+        from,
+        to,
+        ...(studentId ? { studentId } : {}),
+      });
+      return coachPlanMarkedDates(plan);
+    },
+    [studentId],
+  );
+
+  const selectDate = useCallback((date: string, clearSelection = true) => {
+    setSelectedDate(date);
+    setAnchor(date);
+    if (clearSelection) setSelectedItem(null);
+  }, []);
+
   const selectItem = useCallback((item: CoachPlanItemDto, trigger: HTMLButtonElement) => {
     detailTriggerRef.current = trigger;
     setSelectedItem(item);
     setSelectedDate(item.kind === "TASK" ? item.task.taskDate : item.event.eventDate);
   }, []);
 
-  const navigate = useCallback((direction: -1 | 1) => {
-    const next = scale === "week"
-      ? shiftDays(anchor, direction * 7)
-      : shiftMonths(anchor, direction);
-    setAnchor(next);
-    setSelectedDate(next);
-    setSelectedItem(null);
-  }, [anchor, scale]);
-
   const chooseScale = useCallback((next: CoachPlanScale) => {
     setScale(next);
+    persistCalendarScale(next, COACH_PLAN_SCALE_STORAGE_KEY);
     setAnchor(selectedDate);
-    setSelectedItem(null);
   }, [selectedDate]);
 
   const closeDetail = useCallback(() => {
-    if (!selectedItem) return;
     const trigger = detailTriggerRef.current;
     detailTriggerRef.current = null;
     setSelectedItem(null);
     requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
-  }, [selectedItem]);
+  }, []);
 
   const closeForm = useCallback(() => {
     const trigger = formTriggerRef.current;
@@ -151,6 +223,7 @@ export function CoachPlanCalendarShell({
     formTriggerRef.current = null;
     setOpenForm(null);
     setSelectedItem(null);
+    detailTriggerRef.current = null;
     setReloadKey((value) => value + 1);
     toast.success({ title: message });
   }, [toast]);
@@ -162,43 +235,63 @@ export function CoachPlanCalendarShell({
     toast.success({ title: message });
   }, [toast]);
 
+  const openCreateChooser = useCallback(
+    async (input: { date: string; startTime?: string; trigger?: HTMLButtonElement }) => {
+      if (input.trigger) formTriggerRef.current = input.trigger;
+      const choice = await actionSheet({
+        title: t("new_item_title"),
+        actions: [
+          { id: "task", label: t("new_task"), showChevron: false },
+          { id: "event", label: t("new_event"), showChevron: false },
+        ],
+      });
+      if (choice === "task") {
+        setOpenForm({
+          kind: "TASK_CREATE",
+          initialDate: input.date,
+          initialStartTime: input.startTime,
+        });
+      } else if (choice === "event") {
+        setOpenForm({
+          kind: "EVENT_CREATE",
+          initialDate: input.date,
+          initialStartTime: input.startTime,
+        });
+      }
+    },
+    [actionSheet, t],
+  );
+
   if (planLoading || rosterLoading) return <CoachPlanSkeleton />;
   const error = planError || rosterError;
-  const selectedId = selectedItem ? coachPlanItemId(selectedItem) : null;
-  const dateLabel = scale === "week"
-    ? formatWeekLabel(range.from, range.to, locale)
-    : new Intl.DateTimeFormat(locale, { month: "long", year: "numeric" })
-        .format(new Date(`${anchor.slice(0, 7)}-01T12:00:00Z`));
+  const dayItems = itemsByDate[selectedDate] ?? [];
+  const gridProps = {
+    selectedDate,
+    itemsByDate,
+    holidaysByDate: holidays,
+    namespace: "coachPlan" as const,
+    onDateChange: (date: string) => selectDate(date, false),
+    onOpenItem: selectItem,
+    onCreateAt: (iso: string, startTime: string) =>
+      void openCreateChooser({ date: iso, startTime }),
+    onHover,
+  };
 
   return (
-    <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-6 sm:px-8 lg:py-10">
-      <CoachPlanToolbar
-        scale={scale}
-        dateLabel={dateLabel}
-        roster={roster}
-        studentId={studentId}
-        onScale={chooseScale}
-        onStudent={(next) => {
-          setStudentId(next);
-          setSelectedItem(null);
-        }}
-        onPrevious={() => navigate(-1)}
-        onNext={() => navigate(1)}
-        onToday={() => {
-          const today = todayInIstanbul();
-          setAnchor(today);
-          setSelectedDate(today);
-          setSelectedItem(null);
-        }}
-        onNewTask={(trigger) => {
-          formTriggerRef.current = trigger;
-          setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
-        }}
-        onNewEvent={(trigger) => {
-          formTriggerRef.current = trigger;
-          setOpenForm({ kind: "EVENT_CREATE", initialDate: selectedDate });
-        }}
-      />
+    <main className="flex w-full flex-col gap-3 px-2 py-4 lg:h-dvh lg:px-6 lg:py-4">
+      {/* Above the live detail overlay (z-40). The form drawer is z-50 and still covers this. */}
+      <div className="relative z-50">
+        <CoachPlanToolbar
+          onNewTask={(trigger) => {
+            formTriggerRef.current = trigger;
+            setOpenForm({ kind: "TASK_CREATE", initialDate: selectedDate });
+          }}
+          onNewEvent={(trigger) => {
+            formTriggerRef.current = trigger;
+            setOpenForm({ kind: "EVENT_CREATE", initialDate: selectedDate });
+          }}
+        />
+      </div>
 
       {error ? (
         <Card className="flex flex-col items-start gap-3">
@@ -218,46 +311,113 @@ export function CoachPlanCalendarShell({
         </Card>
       ) : (
         <>
-          {items.length === 0 && (
-            <Card>
-              <h2 className="font-semibold" style={{ color: "var(--color-main)" }}>
-                {t("empty_title")}
-              </h2>
-              <p className="mt-1" style={{ color: "var(--color-secondary)" }}>
-                {t(studentId ? "empty_filtered" : "empty_body")}
-              </p>
-            </Card>
-          )}
-          {scale === "week" ? (
-            <CoachPlanWeek
-              days={range.days}
-              items={items}
-              selectedDate={selectedDate}
-              selectedId={selectedId}
-              onSelectDate={(date) => {
-                setSelectedDate(date);
+          <div className="lg:hidden">
+            <CoachPlanStudentFilter
+              roster={roster}
+              studentId={studentId}
+              onStudent={(next) => {
+                setStudentId(next);
                 setSelectedItem(null);
               }}
-              onSelect={selectItem}
             />
-          ) : (
-            <CoachPlanMonth
-              days={range.days}
-              month={anchor.slice(0, 7)}
-              items={items}
-              selectedDate={selectedDate}
-              selectedId={selectedId}
-              onSelectDate={(date) => {
-                setSelectedDate(date);
-                setSelectedItem(null);
-              }}
-              onSelectItem={selectItem}
-            />
-          )}
+          </div>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <PlanCalendarFrame
+              rail={
+                <CoachPlanRail
+                  selectedDate={selectedDate}
+                  weekStartDate={weekStartDate}
+                  roster={roster}
+                  studentId={studentId}
+                  dayItems={dayItems}
+                  loadMarkedDates={loadMarkedDates}
+                  onDateChange={(date) => selectDate(date)}
+                  onStudent={(next) => {
+                    setStudentId(next);
+                    setSelectedItem(null);
+                  }}
+                  onOpen={selectItem}
+                  onAdd={() => void openCreateChooser({ date: selectedDate })}
+                />
+              }
+            >
+              <div className="shrink-0">
+                <PlanCalendarHeader
+                  scale={scale}
+                  selectedDate={selectedDate}
+                  weekStartDate={weekStartDate}
+                  monthAnchor={`${anchor.slice(0, 7)}-01`}
+                  namespace="coachPlan"
+                  onScaleChange={chooseScale}
+                  onStep={(direction) => {
+                    const next =
+                      scale === "day"
+                        ? shiftDate(selectedDate, direction)
+                        : scale === "week"
+                          ? shiftDate(weekStartDate, direction * 7)
+                          : shiftMonth(selectedDate, direction);
+                    selectDate(next);
+                  }}
+                  onToday={() => selectDate(todayInIstanbul())}
+                />
+              </div>
+              <PlanMobileDateStrip
+                weekStartDate={weekStartDate}
+                selectedDate={selectedDate}
+                itemsByDate={itemsByDate}
+                holidaysByDate={holidays}
+                highlightGroup={null}
+                expanded={scale === "month"}
+                namespace="coachPlan"
+                onDateChange={(date) => selectDate(date)}
+                onOpenItem={selectItem}
+                onExpand={() => chooseScale("month")}
+                onCollapse={() => chooseScale("day")}
+              />
+              {scale === "month" ? (
+                <div className="hidden lg:block lg:min-h-0 lg:flex-1 lg:overflow-y-auto">
+                  <PlanMonthGrid
+                    monthAnchor={`${anchor.slice(0, 7)}-01`}
+                    selectedDate={selectedDate}
+                    itemsByDate={itemsByDate}
+                    holidaysByDate={holidays}
+                    highlightGroup={null}
+                    namespace="coachPlan"
+                    onDateChange={(date) => selectDate(date)}
+                    onOpenItem={selectItem}
+                    onCreateAt={(iso) => void openCreateChooser({ date: iso })}
+                    onHover={onHover}
+                  />
+                </div>
+              ) : scale === "day" ? (
+                <PlanTimeGrid {...gridProps} days={[selectedDate]} />
+              ) : (
+                <>
+                  <div className="hidden lg:flex lg:min-h-0 lg:flex-1 lg:flex-col">
+                    <PlanTimeGrid {...gridProps} days={weekDates(weekStartDate)} />
+                  </div>
+                  <PlanMobileAgenda
+                    days={range.days}
+                    selectedDate={selectedDate}
+                    itemsByDate={itemsByDate}
+                    holidaysByDate={holidays}
+                    namespace="coachPlan"
+                    onDateChange={(date) => selectDate(date, false)}
+                    onOpenItem={selectItem}
+                  />
+                </>
+              )}
+            </PlanCalendarFrame>
+          </div>
+          <PlanCalendarFab
+            label={t("calendar_add_on", { date: selectedDate })}
+            onClick={() => void openCreateChooser({ date: selectedDate })}
+          />
+          <PlanEventPreview preview={preview} namespace="coachPlan" />
         </>
       )}
 
-      {!error && selectedItem && (
+      {!error && selectedItem ? (
         <CoachPlanDetail
           item={selectedItem}
           onClose={closeDetail}
@@ -271,8 +431,8 @@ export function CoachPlanCalendarShell({
           }}
           onMutationSuccess={mutationSucceeded}
         />
-      )}
-      {openForm && (
+      ) : null}
+      {openForm ? (
         <CoachPlanOpenFormPanel
           form={openForm}
           roster={roster}
@@ -280,7 +440,7 @@ export function CoachPlanCalendarShell({
           onCreationSuccess={creationSucceeded}
           onMutationSuccess={mutationSucceeded}
         />
-      )}
+      ) : null}
     </main>
   );
 }
@@ -289,27 +449,4 @@ function isAbortError(error: unknown): boolean {
   return error instanceof DOMException
     ? error.name === "AbortError"
     : error instanceof Error && error.name === "AbortError";
-}
-
-function shiftDays(value: string, amount: number): string {
-  const date = new Date(`${value}T12:00:00Z`);
-  date.setUTCDate(date.getUTCDate() + amount);
-  return date.toISOString().slice(0, 10);
-}
-
-function shiftMonths(value: string, amount: number): string {
-  const date = new Date(`${value.slice(0, 7)}-01T12:00:00Z`);
-  date.setUTCMonth(date.getUTCMonth() + amount);
-  return date.toISOString().slice(0, 10);
-}
-
-function formatWeekLabel(from: string, to: string, locale: string): string {
-  const formatter = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
-  });
-  return `${formatter.format(new Date(`${from}T12:00:00Z`))} – ${formatter.format(
-    new Date(`${to}T12:00:00Z`),
-  )}`;
 }

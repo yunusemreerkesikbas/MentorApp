@@ -44,12 +44,14 @@ export function useMentorToast() {
   const toast = useToast();
   const t = useTranslations("common.toast");
   const dismissLabel = t("dismiss");
-  const { show: pushToast, dismiss, dismissAll, toasts } = toast;
+  const showToast = toast.show;
+  const dismiss = toast.dismiss;
+  const dismissAll = toast.dismissAll;
 
   const show = useCallback(
     (options: MentorToastOptions) =>
-      pushToast(withMentorDefaults(options, dismissLabel)),
-    [dismissLabel, pushToast],
+      showToast(withMentorDefaults(options, dismissLabel)),
+    [dismissLabel, showToast],
   );
 
   const success = useCallback(
@@ -75,7 +77,7 @@ export function useMentorToast() {
 
   return useMemo(
     () => ({
-      toasts,
+      toasts: toast.toasts,
       show,
       dismiss,
       dismissAll,
@@ -84,6 +86,6 @@ export function useMentorToast() {
       warning,
       info,
     }),
-    [dismiss, dismissAll, error, info, show, success, toasts, warning],
+    [dismiss, dismissAll, error, info, show, success, toast.toasts, warning],
   );
 }

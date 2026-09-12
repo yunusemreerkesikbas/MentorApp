@@ -34,7 +34,7 @@ import {
 } from "./coach-plan-form-fields";
 
 type EventFormMode =
-  | { kind: "CREATE"; initialDate: string }
+  | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
   | { kind: "EDIT"; event: CoachPlanEventDto };
 
 export function CoachPlanEventForm({
@@ -58,7 +58,9 @@ export function CoachPlanEventForm({
   const [eventDate, setEventDate] = useState(
     initial?.eventDate ?? (mode.kind === "CREATE" ? mode.initialDate : ""),
   );
-  const [startTime, setStartTime] = useState(initial?.startTime ?? "");
+  const [startTime, setStartTime] = useState(
+    initial?.startTime ?? (mode.kind === "CREATE" ? mode.initialStartTime ?? "" : ""),
+  );
   const [endTime, setEndTime] = useState(initial?.endTime ?? "");
   const [description, setDescription] = useState(initial?.description ?? "");
   const [attendeeIds, setAttendeeIds] = useState(

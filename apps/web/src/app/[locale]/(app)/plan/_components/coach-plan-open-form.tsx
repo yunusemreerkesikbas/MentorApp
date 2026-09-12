@@ -6,8 +6,8 @@ import { CoachPlanEventForm } from "./coach-plan-event-form";
 import { CoachPlanTaskForm } from "./coach-plan-task-form";
 
 export type CoachPlanOpenForm =
-  | { kind: "TASK_CREATE"; initialDate: string }
-  | { kind: "EVENT_CREATE"; initialDate: string }
+  | { kind: "TASK_CREATE"; initialDate: string; initialStartTime?: string }
+  | { kind: "EVENT_CREATE"; initialDate: string; initialStartTime?: string }
   | {
       kind: "TASK_EDIT";
       task: Extract<CoachPlanItemDto, { kind: "TASK" }>["task"];
@@ -34,7 +34,11 @@ export function CoachPlanOpenFormPanel({
   if (form.kind === "TASK_CREATE") {
     return (
       <CoachPlanTaskForm
-        mode={{ kind: "CREATE", initialDate: form.initialDate }}
+        mode={{
+          kind: "CREATE",
+          initialDate: form.initialDate,
+          initialStartTime: form.initialStartTime,
+        }}
         roster={roster}
         onClose={onClose}
         onSuccess={onCreationSuccess}
@@ -54,7 +58,11 @@ export function CoachPlanOpenFormPanel({
   if (form.kind === "EVENT_CREATE") {
     return (
       <CoachPlanEventForm
-        mode={{ kind: "CREATE", initialDate: form.initialDate }}
+        mode={{
+          kind: "CREATE",
+          initialDate: form.initialDate,
+          initialStartTime: form.initialStartTime,
+        }}
         roster={roster}
         onClose={onClose}
         onSuccess={onCreationSuccess}

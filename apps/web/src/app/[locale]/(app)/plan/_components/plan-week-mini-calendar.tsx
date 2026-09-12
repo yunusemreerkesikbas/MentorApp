@@ -7,7 +7,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocale } from "next-intl";
 import "react-day-picker/style.css";
 import { Card } from "@mentor/ui";
-import { listPlanTaskCalendarDates } from "@/lib/plan-tasks";
 import { monthIsoBounds, todayIso, weekDates } from "./plan-utils";
 
 function isoToLocalDate(iso: string): Date {
@@ -45,10 +44,12 @@ function PlanPickerChevron({
 export function PlanWeekMiniCalendar({
   selectedDate,
   weekStartDate,
+  loadMarkedDates,
   onDateChange,
 }: {
   selectedDate: string;
   weekStartDate: string;
+  loadMarkedDates: (from: string, to: string) => Promise<string[]>;
   onDateChange: (iso: string) => void;
 }) {
   const locale = useLocale();
@@ -77,7 +78,7 @@ export function PlanWeekMiniCalendar({
   useEffect(() => {
     let active = true;
     const { from, to } = monthIsoBounds(monthYear, monthIndex);
-    listPlanTaskCalendarDates(from, to)
+    void loadMarkedDates(from, to)
       .then((dates) => {
         if (!active) return;
         setPlannedDates(new Set(dates));
@@ -88,7 +89,7 @@ export function PlanWeekMiniCalendar({
     return () => {
       active = false;
     };
-  }, [monthYear, monthIndex]);
+  }, [monthYear, monthIndex, loadMarkedDates]);
 
   return (
     <Card className="overflow-hidden p-4">

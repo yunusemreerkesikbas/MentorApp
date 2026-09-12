@@ -1,6 +1,6 @@
 "use client";
 
-import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
+import type { PublicHolidayDto } from "@mentor/types";
 import { useEffect, useMemo, useRef } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import {
@@ -8,12 +8,14 @@ import {
   hhmmFromMinutes,
   layoutDayEvents,
 } from "@/lib/plan-calendar-layout";
+import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
 import { PlanEventChip, type PlanEventHoverHandler } from "./plan-event-chip";
 import {
   formatDayNumber,
   formatWeekdayShort,
   isPastDate,
   todayIso,
+  type PlanCalendarCopyNamespace,
 } from "./plan-utils";
 
 /** One hour of column height. Kept in px (not %) so a day scrolls instead of squashing. */
@@ -26,38 +28,40 @@ const HOURS = Array.from({ length: 24 }, (_, i) => i);
  * Hour grid for the Gün (one column) and Hafta (seven columns) scales — same component, the
  * column count is just `days.length`. All-day items sit in a pinned row above the scroller.
  */
-export function PlanTimeGrid({
+export function PlanTimeGrid<T>({
   days,
   selectedDate,
-  weekTasks,
+  itemsByDate,
   holidaysByDate,
   readOnlyAll,
+  namespace = "plan",
   onDateChange,
-  onOpenTask,
+  onOpenItem,
   onCreateAt,
   onHover,
 }: {
   days: string[];
   selectedDate: string;
-  weekTasks: Record<string, PlanTaskDto[]>;
+  itemsByDate: Record<string, PlanCalendarItem<T>[]>;
   holidaysByDate: Record<string, PublicHolidayDto>;
   /** Whole surface is read-only (past week) — slot clicks are disabled. */
   readOnlyAll?: boolean;
+  namespace?: PlanCalendarCopyNamespace;
   onDateChange: (iso: string) => void;
-  onOpenTask: (task: PlanTaskDto) => void;
-  /** Empty-slot click → add sheet prefilled with the day and the clicked hour. */
+  onOpenItem: (source: T, trigger: HTMLButtonElement) => void;
+  /** Empty-slot click → create flow prefilled with the day and the clicked hour. */
   onCreateAt: (iso: string, startTime: string) => void;
-  onHover: PlanEventHoverHandler;
+  onHover: PlanEventHoverHandler<T>;
 }) {
-  const t = useTranslations("plan");
+  const t = useTranslations(namespace);
   const locale = useLocale();
   const scrollerRef = useRef<HTMLDivElement>(null);
   const today = todayIso();
   const multiDay = days.length > 1;
 
   const layouts = useMemo(
-    () => days.map((iso) => ({ iso, ...layoutDayEvents(weekTasks[iso] ?? []) })),
-    [days, weekTasks],
+    () => days.map((iso) => ({ iso, ...layoutDayEvents(itemsByDate[iso] ?? []) })),
+    [days, itemsByDate],
   );
 
   const hasHoliday = days.some((iso) => holidaysByDate[iso]);
@@ -66,10 +70,10 @@ export function PlanTimeGrid({
   const firstMinute = useMemo(
     () =>
       earliestStartMinute(
-        days.flatMap((iso) => weekTasks[iso] ?? []),
+        days.flatMap((iso) => itemsByDate[iso] ?? []),
         DEFAULT_SCROLL_MINUTE,
       ),
-    [days, weekTasks],
+    [days, itemsByDate],
   );
 
   // Land on the first event (or 07:00) so the user isn't staring at empty night hours.
@@ -98,6 +102,7 @@ export function PlanTimeGrid({
             <button
               key={iso}
               type="button"
+              data-date={iso}
               onClick={() => onDateChange(iso)}
               aria-pressed={isSelected}
               aria-current={isToday ? "date" : undefined}
@@ -164,12 +169,12 @@ export function PlanTimeGrid({
                     {holiday.name}
                   </span>
                 ) : null}
-                {day.allDay.map((task) => (
+                {day.allDay.map((item) => (
                   <PlanEventChip
-                    key={task.id}
-                    task={task}
+                    key={item.id}
+                    item={item}
                     variant="month"
-                    onOpen={onOpenTask}
+                    onOpen={onOpenItem}
                     onHover={onHover}
                   />
                 ))}
@@ -236,18 +241,18 @@ export function PlanTimeGrid({
                   />
                 ))}
 
-                {day.timed.map((item) => (
+                {day.timed.map((placed) => (
                   <PlanEventChip
-                    key={item.event.id}
-                    task={item.event}
+                    key={placed.event.id}
+                    item={placed.event}
                     variant="block"
-                    onOpen={onOpenTask}
+                    onOpen={onOpenItem}
                     onHover={onHover}
                     style={{
-                      top: `${item.topPct}%`,
-                      height: `${item.heightPct}%`,
-                      left: `calc(${(item.col / item.colCount) * 100}% + 2px)`,
-                      width: `calc(${100 / item.colCount}% - 4px)`,
+                      top: `${placed.topPct}%`,
+                      height: `${placed.heightPct}%`,
+                      left: `calc(${(placed.col / placed.colCount) * 100}% + 2px)`,
+                      width: `calc(${100 / placed.colCount}% - 4px)`,
                     }}
                   />
                 ))}

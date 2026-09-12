@@ -207,15 +207,9 @@ flag that cries wolf costs the coach more than it gives.
   lock to `responseVersion`. Coach inbox now hides when the flag is off (`MENTORSHIP_FOLLOWUP_DISABLED`)
   instead of showing a generic error. History date inputs resync after refresh; the student-report
   follow-up panel ignores superseded fetches. Web calls go through `lib/mentorship-followups.ts`.
-  Usage: enable both mentorship flags, share a decision, then change its date — the student still
+  Usage: enable both mentorship flags, share a decision, then change its date; the student still
   gets the share notification. Gotcha: closed or already-answered records still suppress send.
-  Related: `mentorship-followup.repository.ts`, `mentorship-followups.ts`, follow-up web components. `GET /v1/mentorship/students` was retrying every render
-  because the roster error handler lived in the fetch effect deps and `useMentorToast()` changed
-  identity whenever a toast appeared. A failed roster read (including missing `coach_students.period_id`
-  before migration `0111`) opened a toast, which retriggered the fetch until the global throttler
-  returned 429. Usage: open `/kocluk`; one roster request on tab change, not a tight loop. Apply
-  `0111_w8_mentorship_followups.sql` or the same select still 500s once, without looping. Related:
-  `roster-shell.tsx`, `my-coach-shell.tsx`, `mentor-toast.ts`.
+  Related: `mentorship-followup.repository.ts`, `mentorship-followups.ts`, follow-up web components.
 
 - **2026-09-12 — Coach follow-up cycle.** Coaches can record an action with a private note,
   optionally share an immutable decision, and set an Istanbul calendar date for another check.
@@ -232,6 +226,26 @@ flag that cries wolf costs the coach more than it gives.
   Related: `modules/mentorship/*/*followup*`, `modules/notifications/*/*followup*`,
   `packages/{types,validation}/src/mentorship-followup.ts`, and the web follow-up components.
   Design/contract: [follow-up implementation](../plans/2026-09-12-mentorship-followups.md).
+
+- **2026-09-11 — Roster 429 fetch loop.** `GET /v1/mentorship/students` was firing every ~50ms
+  until the global throttle returned 429. Cause: `RosterShell` listed `showError` in the fetch
+  effect deps; a failed request toasted, toast identity changed, the effect refetched, toasted
+  again. Usage: open `/kocluk` as COACH; a roster error now toasts once. Gotcha: depend on the
+  stable `toast.error` helper, not the whole toast object, and do not write that callback into a
+  ref during render (`react-hooks/refs`). Roster/plan page collection also stops if the server
+  ignores `page` or walks past 10 pages. Related: `roster-shell.tsx`, `mentorship-plan.ts`,
+  `mentor-toast.ts`.
+
+- **2026-09-11 — Coach plan Takvim chrome.** The coach `/plan` calendar now uses the student
+  Takvim frame: left rail (mini calendar, student filter, selected-day list), Gün/Hafta/Ay
+  hour grid, mobile date strip and agenda, hover preview. Chip color comes from the attendee
+  set; personal items stay neutral; task vs event is a glyph. Empty-slot and FAB opens an
+  action sheet, then the existing right-drawer forms. Toolbar create buttons are unchanged.
+  Usage: open `/plan` as COACH. Gotcha: detail stays a live overlay so an authoritative reload
+  can replace the open row; do not freeze it in an imperative bottom sheet. Keep the toolbar at
+  `z-50` so create still works while that overlay is open. Related:
+  `coach-plan-calendar-shell.tsx`, `plan-calendar-{frame,item}.ts*`,
+  `lib/coach-plan-calendar-item.ts`, `e2e/coach-plan.spec.ts`.
 
 - **Koçluk kabuğu ortak AppNav kullanıyor (2026-09-10)** - `/kocluk`, koç profili ve öğrenci
   detayları artık panelle aynı `AppNav` kabuğunu kullanır: masaüstünde açılıp daralabilen sol

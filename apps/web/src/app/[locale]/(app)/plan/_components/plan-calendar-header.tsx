@@ -9,6 +9,7 @@ import {
   formatMonthTitle,
   formatWeekRangeLabel,
   weekDates,
+  type PlanCalendarCopyNamespace,
   type PlanCalendarScale,
 } from "./plan-utils";
 
@@ -20,6 +21,7 @@ export function PlanCalendarHeader({
   selectedDate,
   weekStartDate,
   monthAnchor,
+  namespace = "plan",
   onScaleChange,
   onStep,
   onToday,
@@ -28,12 +30,13 @@ export function PlanCalendarHeader({
   selectedDate: string;
   weekStartDate: string;
   monthAnchor: string;
+  namespace?: PlanCalendarCopyNamespace;
   onScaleChange: (scale: PlanCalendarScale) => void;
   /** −1 / +1 period at the current scale. */
   onStep: (direction: -1 | 1) => void;
   onToday: () => void;
 }) {
-  const t = useTranslations("plan");
+  const t = useTranslations(namespace);
   const locale = useLocale();
 
   const title =
