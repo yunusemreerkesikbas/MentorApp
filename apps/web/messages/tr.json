@@ -3141,8 +3141,6 @@
     "group_earlier": "Daha eski"
   },
   "mentorship": {
-    "roster_title": "Öğrencilerim",
-    "roster_subtitle": "Kim geride kaldı, kim yolunda. En çok ilgi isteyen üstte.",
     "roster_empty_title": "Henüz öğrencin yok",
     "roster_empty_body": "Davet kodunu paylaş, kabul eden öğrenciler burada görünsün. Kabul edene kadar hiçbir verisini görmezsin.",
     "roster_ended_empty_title": "Geçmişte kimse yok",
@@ -3166,12 +3164,11 @@
     "template_skipped": "{count} görev 21 sınırına sığmadı.",
     "template_topics_cleared": "{count} görevin konusu kaldırıldı; şablon başka bir sınav için kaydedilmiş.",
     "invite_title": "Davet kodun",
-    "invite_body": "Öğrencin bu kodu girip onayladığında bağlantı kurulur.",
     "invite_none": "Henüz bir kodun yok.",
     "invite_create": "Kod oluştur",
     "invite_rotate": "Yeni kod üret",
     "invite_rotate_warning": "Yeni kod ürettiğinde eskisi çalışmayı bırakır.",
-    "invite_copy": "Kopyala",
+    "invite_copy": "Kodu kopyala",
     "invite_copied": "Kod kopyalandı",
     "invite_copy_link": "Linki kopyala",
     "invite_link_copied": "Davet linki kopyalandı",
@@ -3301,7 +3298,7 @@
     "cohort_all_clear": "Herkes yolunda.",
     "cohort_flags_label": "Risk dağılımı",
     "cohort_needs_attention": "{total} öğrenciden {count} tanesi ilgi bekliyor.",
-    "cohort_plan_adherence": "Plan uyumu {rate} ({count} öğrenci)",
+    "cohort_plan_adherence": "Plan uyumu {rate} · {count} öğrenci",
     "cohort_plan_adherence_none": "Henüz kimse plan yapmamış",
     "assign_week_next": "Sonraki hafta",
     "assign_repeat_week": "Geçen haftayı kopyala",
@@ -3385,6 +3382,15 @@
     "scope_value_MOCK_EXAMS": "{count} deneme, sonuncusu {date}. Netlerinin tamamını analiz ekranında görüyorsun.",
     "scope_value_PLAN_TASK_TITLES": "Son {days} günden {count} görev başlığı.",
     "scope_value_PLAN_RATE": "Son haftada tamamlama oranın: %{percent}.",
-    "scope_value_MOOD_LEVEL": "Son {days} günde {count} kayıt, ortalaman {average}."
+    "scope_value_MOOD_LEVEL": "Son {days} günde {count} kayıt, ortalaman {average}.",
+    "roster_tabs_label": "Öğrenci listesi",
+    "invite_hint": "Öğrencin bu kodu girip onayladığında bağlantı kurulur. Davet kodun e-postanı doğrulayınca açılıyor.",
+    "invite_reveal": "Kodu göster",
+    "invite_hide": "Kodu gizle",
+    "invite_rotate_confirm_title": "Yeni kod üretilsin mi?",
+    "invite_rotate_confirm_action": "Yeni kod üret",
+    "coach_scope_subtitle": "Öğrencin bağlanırken tam olarak bunu onayladı.",
+    "coach_scope_row_body": "Öğrencinin onayladığı veri kapsamı",
+    "coach_scope_writes_title": "Ne yazabilirsin"
   }
 }

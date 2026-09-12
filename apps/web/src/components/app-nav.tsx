@@ -122,12 +122,30 @@ const NAV_ITEMS = [
   },
 ] as const;
 
-const TAB_ITEMS = NAV_ITEMS.filter(
-  (i) => !("sidebarOnly" in i && i.sidebarOnly),
-);
+type NavItem = (typeof NAV_ITEMS)[number];
+
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
 );
+
+/**
+ * The mobile tab pill, per role.
+ *
+ * `sidebarOnly` is a STUDENT-side decision: their pill is full at five, so Topluluk and Ayarlar
+ * were pushed to the sidebar to make room for the daily ritual. Applied to a coach it took away
+ * two of the few surfaces they have — a coach on a phone could reach neither their own settings
+ * nor the forum, which roadmap §5 makes their showcase.
+ *
+ * So a coach's pill mirrors their sidebar instead. That is also exactly five items, because
+ * `visibleTo` drops every `studentOnly` entry before this list is rendered. The desktop sidebar
+ * is untouched in both roles — `sidebarOnly` items already render there.
+ */
+function tabItemsFor(roles: readonly string[] | undefined): readonly NavItem[] {
+  const items = isCoach({ roles: roles ?? [] })
+    ? SIDEBAR_ITEMS
+    : NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
+  return visibleTo(items, roles);
+}
 
 /**
  * An item with no `roles` is open to everyone; otherwise the user must hold one of them. A
@@ -423,7 +441,7 @@ function MobileTabBar({
         reduceMotion ? { duration: 0 } : { duration: 0.28, ease: TAB_EASE }
       }
     >
-      {visibleTo(TAB_ITEMS, user?.roles).map((item) => (
+      {tabItemsFor(user?.roles).map((item) => (
         <MobileTabLink
           key={item.href}
           item={item}
@@ -444,7 +462,7 @@ function MobileTabLink({
   reduceMotion,
   transition,
 }: {
-  item: (typeof TAB_ITEMS)[number];
+  item: NavItem;
   label: string;
   active: boolean;
   reduceMotion: boolean;

@@ -5,6 +5,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { CoachShell } from "./coach-shell";
+// Signal hues for the roster, scoped to `.coach-signals` on the shell below.
+import "./_components/coach-signals.css";
 
 /**
  * The HUMAN coach surface (W8). Deliberately its own route group, not part of `(app)`:

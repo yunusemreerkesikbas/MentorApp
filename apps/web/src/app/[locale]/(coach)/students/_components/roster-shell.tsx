@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { SectionHeading, SkeletonGroup } from "@mentor/ui";
+import { SkeletonGroup } from "@mentor/ui";
 import { CommunityCard } from "@/components/community-card";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
@@ -20,10 +20,9 @@ import { inviteLockOf, type InviteLock } from "./invite-lock";
 import { useAuth } from "@/lib/auth-context";
 import { CoachCapacityCard } from "./coach-capacity-card";
 import { CoachCountdownCard } from "./coach-countdown-card";
-import { CoachScopeCard } from "./coach-scope-card";
 import { CohortBriefCard } from "./cohort-brief-card";
 import { compareByAttention, summarizeCohort } from "./cohort-summary";
-import { CohortSummaryCard } from "./cohort-summary-card";
+import { CohortSummaryBand } from "./cohort-summary-band";
 import { RosterContentSkeleton } from "./roster-content-skeleton";
 import { StudentCard } from "./student-card";
 
@@ -31,9 +30,9 @@ type Tab = "ACTIVE" | "ENDED";
 
 /**
  * The coach's landing screen. It orchestrates two fetches and hands the rendering to the cards
- * below it; the summary band, the seat counter and the scope mirror are all read off data this
- * screen already has, so "who needs me / how is the group / can I take another student" is one
- * page load rather than three.
+ * below it; the summary band and the seat counter are both read off data this screen already has,
+ * so "who needs me / how is the group / can I take another student" is one page load rather than
+ * three.
  */
 export function RosterShell() {
   const t = useTranslations("mentorship");
@@ -181,77 +180,86 @@ export function RosterShell() {
    * Two columns since APP-090, because this stopped being a page a coach visits and became the
    * page they land on. The split is by how often a thing changes: the left column is today's work
    * (who is waiting, and why), the right is the standing facts a coach glances at (how long until
-   * the exam, how many seats are left, what students agreed to share).
+   * the exam, how many seats are left, where the community is).
    *
-   * One column below `xl`, in this order, so a phone still opens on the work.
+   * One column below `xl`, in this order, so a phone still opens on the work (APP-090).
+   *
+   * The design's mobile artboard leads with the countdown instead. Not taken: one instance cannot
+   * be in two places, so honouring it means either a second `CoachCountdownCard` (two calendar
+   * fetches for one date) or a row-spanning grid, which stretches the rail's first row and leaves
+   * a hole under the countdown on the desktop. A card four words tall is not worth either.
    */
   return (
-    <div className="grid min-w-0 gap-6 xl:grid-cols-[minmax(0,1.7fr)_minmax(300px,0.85fr)] xl:items-start">
-      <section className="flex min-w-0 flex-col gap-6">
-        <SectionHeading subtitle={t("roster_subtitle")}>{t("roster_title")}</SectionHeading>
-
-        {/* Above the counts on purpose: the summary says how many are waiting, the brief says who
-            and why. Both are ACTIVE-only — the history tab describes closed windows. */}
+    <div className="grid min-w-0 max-w-[1120px] gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.85fr)] xl:items-start">
+      <section className="flex min-w-0 flex-col gap-4">
+        {/*
+         * No heading. "Öğrencilerim" restated the nav item the coach had just clicked, and the
+         * subtitle described the sort order the list below already demonstrates — two lines of
+         * chrome above the only thing on the page.
+         *
+         * Above the counts on purpose: the summary says how many are waiting, the brief says who
+         * and why. Both are ACTIVE-only — the history tab describes closed windows.
+         */}
         {tab === "ACTIVE" && <CohortBriefCard />}
 
-        {tab === "ACTIVE" && <CohortSummaryCard summary={summary} />}
+        {tab === "ACTIVE" && <CohortSummaryBand summary={summary} />}
 
         <SegmentPillControl
-        items={[
-          { id: "ACTIVE", label: t("tab_active") },
-          { id: "ENDED", label: t("tab_ended") },
-        ]}
-        value={tab}
-        onChange={(id) => setTab(id as Tab)}
-        ariaLabel={t("roster_title")}
-        layoutId="mentorship-roster-tabs"
-      />
+          items={[
+            { id: "ACTIVE", label: t("tab_active") },
+            { id: "ENDED", label: t("tab_ended") },
+          ]}
+          value={tab}
+          onChange={(id) => setTab(id as Tab)}
+          ariaLabel={t("roster_tabs_label")}
+          layoutId="mentorship-roster-tabs"
+        />
 
-      <SkeletonGroup
-        label={t("loading")}
-        loading={ordered === null}
-        revealed={
-          ordered === null ? (
-            <div className="flex flex-col gap-3" aria-hidden>
-              <div className="h-28" />
-              <div className="h-28" />
-              <div className="h-28" />
-            </div>
-          ) : ordered.length === 0 ? (
-            <EmptyState
-              title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
-              description={
-                tab === "ACTIVE" ? t("roster_empty_body") : t("roster_ended_empty_body")
-              }
-              puhuVariant="encouraging"
-            />
-          ) : (
-            <ul className="flex flex-col gap-3">
-              {ordered.map((row) => (
-                <li key={row.linkId}>
-                  <StudentCard
-                    row={row}
-                    locale={locale}
-                    clickable={tab === "ACTIVE"}
-                    busy={marking === row.studentId}
-                    onAttention={
-                      tab === "ACTIVE"
-                        ? (attended) => void toggleAttention(row.studentId, attended)
-                        : undefined
-                    }
-                  />
-                </li>
-              ))}
-            </ul>
-          )
-        }
+        <SkeletonGroup
+          label={t("loading")}
+          loading={ordered === null}
+          revealed={
+            ordered === null ? (
+              <div className="flex flex-col gap-3" aria-hidden>
+                <div className="h-36" />
+                <div className="h-36" />
+                <div className="h-36" />
+              </div>
+            ) : ordered.length === 0 ? (
+              <EmptyState
+                title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
+                description={
+                  tab === "ACTIVE" ? t("roster_empty_body") : t("roster_ended_empty_body")
+                }
+                puhuVariant="encouraging"
+              />
+            ) : (
+              <ul className="flex flex-col gap-3">
+                {ordered.map((row) => (
+                  <li key={row.linkId}>
+                    <StudentCard
+                      row={row}
+                      locale={locale}
+                      clickable={tab === "ACTIVE"}
+                      busy={marking === row.studentId}
+                      onAttention={
+                        tab === "ACTIVE"
+                          ? (attended) => void toggleAttention(row.studentId, attended)
+                          : undefined
+                      }
+                    />
+                  </li>
+                ))}
+              </ul>
+            )
+          }
           className="flex flex-col gap-3"
         >
           <RosterContentSkeleton />
         </SkeletonGroup>
       </section>
 
-      <aside className="flex min-w-0 flex-col gap-5">
+      <aside className="flex min-w-0 flex-col gap-4">
         {/* The exam the coach coaches, not one they are sitting (APP-089 reframed `examType`).
             Its own endpoint rather than `/v1/coaching/today`, which would hand a coach a student's
             plan payload to read one date off. */}
@@ -271,11 +279,9 @@ export function RosterShell() {
           onRotate={rotate}
         />
 
-        {overview !== null && (
-          // Open on the empty roster: that screen is the coach's first, and it is the one moment
-          // they have nothing else to read.
-          <CoachScopeCard scope={overview.dataScope} defaultOpen={summary.total === 0} />
-        )}
+        {/* The data-scope contract used to live here as a permanent accordion. It is a consent
+            document — read once when the coach starts, re-read when they wonder — so it moved to
+            /ayarlar, where a row that opens on demand is what that shape actually is. */}
 
         {/* Roadmap §5 makes the forum the coach's showcase and the raw material of their trust
             score, so this is not the student's promo strip wearing a coach hat. */}

@@ -8,8 +8,10 @@ import { ApiClientError, subscriptionsControllerGetMine, usersControllerMe } fro
 import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { useAuth } from "@/lib/auth-context";
+import { isCoach } from "@/lib/coach-surface";
 import { AccountLinksCard } from "./account-links-card";
 import { ApplicationSupportCard } from "./application-support-card";
+import { CoachScopeCard } from "./coach-scope-card";
 import { EconomySection } from "./economy-section";
 import { NotificationSettings } from "./notification-settings";
 import { GoogleAccountCard } from "./google-account-card";
@@ -109,6 +111,15 @@ export function ProfileShell({ openProfileEditor = false }: { openProfileEditor?
               }}
             />
           </motion.div>
+
+          {/* The coach's half of the consent contract. Only for a coach: `dataScope` comes from a
+              `@Roles(COACH)` endpoint, so for a student this row would open onto a 403. It sits
+              first because it is the one setting that is about somebody else's data. */}
+          {isCoach(user) && (
+            <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+              <CoachScopeCard />
+            </motion.div>
+          )}
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <NotificationSettings />

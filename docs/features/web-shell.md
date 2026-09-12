@@ -63,6 +63,26 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-12 — Mobil tab bar koç için rol farkındalığı kazandı
+
+`sidebarOnly` bir ÖĞRENCİ kararıydı: öğrencinin pill'i beşte doluyor, o yüzden Topluluk ve Ayarlar
+sidebar'a itilmişti ki günlük ritüele yer kalsın. Aynı bayrak koça uygulanınca koçun sahip olduğu
+az sayıda yüzeyden ikisini birden alıyordu — koç telefondan ne kendi **Ayarlar**'ına ne de roadmap
+§5'in kendi vitrini saydığı **Topluluk**'a ulaşabiliyordu.
+
+`TAB_ITEMS` modül sabiti olmaktan çıkıp `tabItemsFor(roles)`'a döndü: koçun pill'i artık
+sidebar'ının aynası (`SIDEBAR_ITEMS`), öğrencininki eskisi gibi `sidebarOnly` filtresi. Koçun
+listesi de beş öğe, çünkü `visibleTo` her `studentOnly` girdisini zaten düşürüyor.
+
+**Masaüstü sidebar iki rolde de değişmedi** — `sidebarOnly` öğeleri orada zaten görünüyordu.
+
+**Gotcha:** tasarımın mobil artboard'u dört sekme ve içlerinde "Profil" gösteriyor. `Profil` bugün
+bir nav öğesi değil; eklemek sidebar'ı da değiştirirdi, ve bu ticket'ın kısıtı sidebar'a
+dokunmamaktı. Koç kendi profiline `/kocluk/profil`'den ulaşmaya devam ediyor.
+
+**İlgili:** `components/app-nav.tsx` · `e2e/coach-home.spec.ts` ·
+[mentorship.md](./mentorship.md) 2026-09-12 girdisi.
+
 ### 2026-09-11 — Clean incremental TypeScript çıktısını da sıfırlıyor
 
 Workspace `clean` scriptleri artık `dist` ve `.turbo` ile birlikte `tsconfig.tsbuildinfo`yu da

@@ -77,6 +77,12 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
     if (request.method() === "POST" && path === "/v1/auth/refresh") {
       return json({ accessToken: "test-token", expiresIn: 3600, user });
     }
+    if (path === "/v1/users/me") return json(user);
+    // The settings screen reads this one and dereferences the body; a bare 204 from the catch-all
+    // below throws before the page paints. Pre-existing, and only visible now that a test actually
+    // renders /ayarlar rather than just checking its URL.
+    if (path === "/v1/users/me/auth-accounts/google")
+      return json({ enabled: false, linked: false, email: null });
     if (path === "/v1/mentorship/students") {
       return json({ items: [ROSTER_ROW], total: 1, page: 1, pageSize: 100 });
     }
@@ -92,7 +98,7 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
         paidSeats: 0,
         usedSeats: 0,
         sponsorshipEnabled: false,
-        dataScope: ["FOCUS_MINUTES"],
+        dataScope: ["ACTIVITY", "MOCK_EXAMS"],
       });
     }
     if (path === "/v1/mentorship/coach-registration/mine") {
@@ -251,5 +257,105 @@ test.describe("koçun kendi dünyası", () => {
     await mockApi(page, { ...COACH, roles: ["STUDENT"] });
     await page.goto("/panel");
     await expect(page).not.toHaveURL(/\/kocluk$/);
+  });
+});
+
+/**
+ * The `/kocluk` redesign.
+ *
+ * Three of these hold decisions rather than pixels: the invite code is a bearer secret and rests
+ * masked, rotation kills every copy already handed out so it asks first, and the data-scope
+ * contract is a consent document that belongs in settings rather than beside a list opened every
+ * morning. The fourth holds the bug the mobile artboard surfaced — a coach with no way to their
+ * own settings from a phone.
+ */
+test.describe("koçluk paneli redesign", () => {
+  test.beforeEach(async ({ page }) => {
+    await mockApi(page, COACH);
+  });
+
+  test("davet kodu maskeli duruyor, göstermek bilinçli bir tık", async ({
+    page,
+  }) => {
+    await page.goto("/kocluk");
+
+    // Prefix visible (it is structure, not the secret), secret hidden one dot per character.
+    await expect(page.getByText("MENTOR-KOC-••••••••••••")).toBeVisible();
+    await expect(page.getByText("MENTOR-KOC-ABCDEF123456")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "Kodu göster" }).click();
+    await expect(page.getByText("MENTOR-KOC-ABCDEF123456")).toBeVisible();
+
+    await page.getByRole("button", { name: "Kodu gizle" }).click();
+    await expect(page.getByText("MENTOR-KOC-ABCDEF123456")).toHaveCount(0);
+  });
+
+  test("yeni kod üretmek önce onay ister, vazgeçmek kodu bırakır", async ({
+    page,
+  }) => {
+    await page.goto("/kocluk");
+
+    await page.getByRole("button", { name: "Yeni kod üret" }).click();
+    await expect(page.getByText("Yeni kod üretilsin mi?")).toBeVisible();
+    await expect(
+      page.getByText("Yeni kod ürettiğinde eskisi çalışmayı bırakır."),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Vazgeç" }).click();
+    await expect(page.getByText("Yeni kod üretilsin mi?")).toHaveCount(0);
+    // Nothing rotated: the card still holds the code it opened with.
+    await expect(page.getByText("MENTOR-KOC-••••••••••••")).toBeVisible();
+  });
+
+  test("veri kapsamı panelden kalktı, Ayarlar'da açılıyor", async ({ page }) => {
+    await page.goto("/kocluk");
+    await expect(page.getByText("Öğrencinde neyi görürsün")).toHaveCount(0);
+    // The heading went with it: it restated the nav item the coach had just clicked.
+    await expect(
+      page.getByText("Kim geride kaldı, kim yolunda.", { exact: false }),
+    ).toHaveCount(0);
+
+    await page.goto("/ayarlar");
+    await page
+      .getByRole("button", { name: /Öğrencinde neyi görürsün/ })
+      .click();
+
+    const contract = page.getByRole("dialog");
+    await expect(contract).toBeVisible();
+    await expect(
+      contract.getByText("Öğrencin bağlanırken tam olarak bunu onayladı."),
+    ).toBeVisible();
+    // The half a coach must not skim (AGENTS §4 #5).
+    await expect(contract.getByText("Neyi göremezsin")).toBeVisible();
+  });
+
+  test("kapsam satırı öğrenciye görünmüyor", async ({ page }) => {
+    // It reads a `@Roles(COACH)` endpoint, so for a student it would be a door onto a 403.
+    await mockApi(page, { ...COACH, roles: ["STUDENT"] });
+    await page.goto("/ayarlar");
+    await expect(page.getByText("Öğrencinde neyi görürsün")).toHaveCount(0);
+  });
+
+  test("koç mobil tab barından Ayarlar'a ve Topluluk'a ulaşıyor", async ({
+    page,
+  }, testInfo) => {
+    test.skip(testInfo.project.name !== "mobile-chromium");
+    await page.goto("/kocluk");
+
+    // `sidebarOnly` used to hide Topluluk and Ayarlar from every pill, which for a coach meant
+    // no way to their own settings or to the forum from a phone at all.
+    const tabs = page.getByRole("navigation", { name: "Ana menü" });
+    for (const name of [
+      "Plan",
+      "Bilgi",
+      "Topluluk",
+      "Öğrencilerim",
+      "Ayarlar",
+    ]) {
+      await expect(tabs.getByRole("link", { name }), name).toBeVisible();
+    }
+    // And none of the student ritual came with them.
+    await expect(tabs.getByRole("link", { name: "Anasayfa" })).toHaveCount(0);
+    await expect(tabs.getByRole("link", { name: "Analiz" })).toHaveCount(0);
   });
 });

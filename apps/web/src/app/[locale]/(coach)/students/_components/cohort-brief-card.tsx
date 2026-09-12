@@ -4,12 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipCohortBriefDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, Chip } from "@mentor/ui";
+import { RefreshCw } from "lucide-react";
+import { Button, Card } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { fetchCohortBrief, generateCohortBrief } from "@/lib/mentorship";
 import { formatDate } from "../../_components/mentorship-format";
 import { RiskChip } from "../../_components/risk-chip";
+import { NewBadge } from "../../_components/signal-pill";
 
 /**
  * The coach's morning read: who is waiting, across the whole roster, in one paragraph plus a line
@@ -82,14 +84,15 @@ export function CohortBriefCard() {
   return (
     <Card>
       <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
           <h2
-            className="text-sm font-semibold"
+            className="text-base font-bold"
             style={{ color: "var(--color-main)" }}
           >
             {t("cohort_brief_title")}
           </h2>
-          <Button type="button" variant="soft" busy={busy} onClick={run}>
+          <Button type="button" variant="secondary" busy={busy} onClick={run}>
+            {!busy && <RefreshCw aria-hidden size={15} strokeWidth={2} />}
             {brief ? t("cohort_brief_refresh") : t("cohort_brief_action")}
           </Button>
         </div>
@@ -107,7 +110,10 @@ export function CohortBriefCard() {
           </p>
         ) : (
           <>
-            <p className="text-sm" style={{ color: "var(--color-body)" }}>
+            <p
+              className="text-pretty text-[15px] leading-relaxed"
+              style={{ color: "var(--color-body)" }}
+            >
               {/* An empty roster morning has no sentence to show, and inventing one would be the
                   model writing about nobody. The copy says the quiet part plainly instead. */}
               {brief.overall || t("cohort_brief_all_clear")}
@@ -120,8 +126,11 @@ export function CohortBriefCard() {
                 {brief.items.map((item) => (
                   <li
                     key={item.studentId}
-                    className="flex flex-col gap-1.5 border-t pt-3"
-                    style={{ borderColor: "var(--color-surface-container)" }}
+                    className="flex flex-col gap-1.5 border-t pt-4"
+                    style={{
+                      borderColor:
+                        "color-mix(in srgb, var(--color-secondary) 14%, transparent)",
+                    }}
                   >
                     <div className="flex flex-wrap items-center gap-1.5">
                       <Link
@@ -129,28 +138,24 @@ export function CohortBriefCard() {
                           pathname: "/students/[studentId]",
                           params: { studentId: item.studentId },
                         }}
-                        className="text-sm font-semibold underline-offset-2 hover:underline"
+                        className="text-[15px] font-bold underline-offset-2 hover:underline"
                         style={{ color: "var(--color-main)" }}
                       >
                         {item.studentDisplayName}
                       </Link>
-                      {item.isNew && (
-                        <Chip size="sm" className="normal-case">
-                          {t("cohort_brief_new")}
-                        </Chip>
-                      )}
+                      {item.isNew && <NewBadge>{t("cohort_brief_new")}</NewBadge>}
                       {item.riskFlags.map((flag) => (
                         <RiskChip key={flag} flag={flag} />
                       ))}
                     </div>
                     <p
-                      className="text-sm"
+                      className="text-sm leading-relaxed"
                       style={{ color: "var(--color-body)" }}
                     >
                       {item.why}
                     </p>
                     <p
-                      className="text-sm"
+                      className="text-sm leading-relaxed"
                       style={{ color: "var(--color-secondary)" }}
                     >
                       {item.action}
