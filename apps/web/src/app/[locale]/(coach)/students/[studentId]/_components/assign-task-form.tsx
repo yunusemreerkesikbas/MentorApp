@@ -7,24 +7,42 @@ import type {
   MentorshipReportPlanTaskDto,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, TextAreaField, TextField } from "@mentor/ui";
+import { Button } from "@mentor/ui";
+import {
+  CoachTextArea,
+  CoachTextField,
+  INSET_GROUP_CLASS,
+  INSET_ROW_CLASS,
+  NOTE_CLASS,
+  PANEL_BODY_CLASS,
+  PANEL_FOOTER_CLASS,
+  SUBHEAD_CLASS,
+  TextButton,
+} from "@/components/mentorship/coach-ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks, type MentorshipAssignmentDraft } from "@/lib/mentorship";
 import { useExamTopicTaxonomy } from "@/lib/use-exam-topic-taxonomy";
+import { ComposerDayPicker } from "./composer-day-picker";
 import { ComposerSelect, labelOptions } from "./composer-select";
 import { addDaysIso, todayLocalIso } from "./composer-dates";
 import { buildRepeatDrafts } from "./repeat-week";
-import { TemplateBar } from "./template-bar";
+import {
+  SuggestButton,
+  TemplateLoadSelect,
+  TemplateSaveRow,
+  useProgramTemplates,
+} from "./template-bar";
 import { buildTemplateDrafts } from "./template-apply";
 
 /**
- * The week composer: a coach plans a week and sends it in ONE request.
+ * The week composer: a coach plans a week and sends it in ONE request. It is the body of the
+ * "Haftayı planla" panel, which stays mounted while closed, so a half-built week survives closing it.
  *
  * The API has taken an array since the assignment slice shipped (`max(21)` — three weeks of days);
  * only the form was single-task. 21 is not re-declared here, it IS the schema's ceiling surfaced
  * as a UI limit, so the two cannot drift.
  *
- * Drafts are grouped by day rather than laid out as a 7-column grid: a grid of four-field cells
+ * Drafts are listed by day rather than laid out as a 7-column grid: a grid of four-field cells
  * collapses badly on the tablet a coach actually holds, and "pick a day, add to it" is the same
  * plan with none of the layout.
  */
@@ -45,6 +63,7 @@ export function AssignTaskForm({
   studentExamType,
   previousTasks,
   onAssigned,
+  onCancel,
 }: {
   studentId: string;
   studentName: string;
@@ -52,11 +71,13 @@ export function AssignTaskForm({
   /** The report's plan rows, already loaded by the page — the source for "copy last week". */
   previousTasks: readonly MentorshipReportPlanTaskDto[];
   onAssigned: () => void;
+  onCancel: () => void;
 }) {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
   const toast = useMentorToast();
+  const [templates, setTemplates] = useProgramTemplates();
 
   // The taxonomy follows the STUDENT's exam, never the coach's — a coach may hold students on
   // different tracks, and the wrong topic list is worse than none.
@@ -75,8 +96,21 @@ export function AssignTaskForm({
     () => Array.from({ length: DAYS_IN_WEEK }, (_, i) => addDaysIso(weekStart, i)),
     [weekStart],
   );
-  const dayFormat = useMemo(
-    () => new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric", month: "short" }),
+  const counts = useMemo(() => {
+    const byDay = new Map<string, number>();
+    for (const draft of drafts) byDay.set(draft.taskDate, (byDay.get(draft.taskDate) ?? 0) + 1);
+    return byDay;
+  }, [drafts]);
+  const ordered = useMemo(
+    () => [...drafts].sort((a, b) => a.taskDate.localeCompare(b.taskDate)),
+    [drafts],
+  );
+  const selectedFormat = useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }),
+    [locale],
+  );
+  const shortFormat = useMemo(
+    () => new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric" }),
     [locale],
   );
   const topics = subject === "" ? [] : (topicsBySubject.get(subject) ?? []);
@@ -85,6 +119,12 @@ export function AssignTaskForm({
   // Asking for one draft is enough to know whether the button has anything to do.
   const canRepeat =
     !atCeiling && buildRepeatDrafts(previousTasks, days, today, 1).length > 0;
+
+  /** Moving the week moves the selection with it, so a draft never lands on a day out of view. */
+  function showWeek(start: string) {
+    setWeekStart(start);
+    setSelectedDate(start);
+  }
 
   function repeatWeek() {
     const copied = buildRepeatDrafts(previousTasks, days, today, MAX_TASKS - drafts.length);
@@ -101,18 +141,10 @@ export function AssignTaskForm({
    * topics dropped here, and the coach can see and fix that before it reaches a student's plan.
    */
   function loadTemplate(template: MentorshipProgramTemplateDto) {
-    const load = buildTemplateDrafts(
-      template,
-      days[0]!,
-      studentExamType,
-      MAX_TASKS - drafts.length,
-    );
+    const load = buildTemplateDrafts(template, days[0]!, studentExamType, MAX_TASKS - drafts.length);
     setDrafts((prev) => [
       ...prev,
-      ...load.drafts.map((draft, index) => ({
-        ...draft,
-        key: `template-${Date.now()}-${index}`,
-      })),
+      ...load.drafts.map((draft, index) => ({ ...draft, key: `template-${Date.now()}-${index}` })),
     ]);
     // Say what was thinned. A template that quietly loses half its tasks is worse than one that
     // refuses to load, because the coach assigns the remainder believing it is the whole program.
@@ -145,10 +177,6 @@ export function AssignTaskForm({
     setTitle("");
     setTopic("");
     setCoachNote("");
-  }
-
-  function removeDraft(key: string) {
-    setDrafts((prev) => prev.filter((draft) => draft.key !== key));
   }
 
   async function submit(event: React.FormEvent) {
@@ -185,170 +213,154 @@ export function AssignTaskForm({
   }
 
   return (
-    <Card>
-      <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-        {t("assign_title")}
-      </h2>
-      <p className="mb-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("assign_body")}
-      </p>
+    <form className="flex min-h-full flex-col" onSubmit={submit}>
+      <div className={PANEL_BODY_CLASS}>
+        <section className="flex flex-col gap-2">
+          <h3 className={SUBHEAD_CLASS}>{t("assign_quick_start")}</h3>
+          <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-end">
+            <Button
+              type="button"
+              variant="soft"
+              size="sm"
+              fullWidth
+              className="min-h-11"
+              onClick={repeatWeek}
+              disabled={!canRepeat}
+            >
+              {t("assign_repeat_week")}
+            </Button>
+            <TemplateLoadSelect templates={templates} disabled={busy || atCeiling} onLoad={loadTemplate} />
+            <SuggestButton studentId={studentId} disabled={busy || atCeiling} onLoad={loadTemplate} />
+          </div>
+          <p className={NOTE_CLASS}>{t("suggest_hint")}</p>
+        </section>
 
-      <form className="flex flex-col gap-4" onSubmit={submit}>
-        <TemplateBar
-          studentId={studentId}
-          drafts={drafts}
-          examType={studentExamType}
-          disabled={busy || atCeiling}
-          onLoad={loadTemplate}
-        />
-
-        <div className="flex flex-wrap items-center gap-2">
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setWeekStart(today)}
-            disabled={weekStart === today}
-          >
-            {t("assign_week_this")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => setWeekStart(addDaysIso(weekStart, DAYS_IN_WEEK))}
-          >
-            {t("assign_week_next")}
-          </Button>
-          <Button type="button" variant="secondary" onClick={repeatWeek} disabled={!canRepeat}>
-            {t("assign_repeat_week")}
-          </Button>
-        </div>
-
-        <div className="flex flex-wrap gap-1.5" role="group" aria-label={t("assign_week_pick")}>
-          {days.map((day) => {
-            const count = drafts.filter((draft) => draft.taskDate === day).length;
-            const active = day === selectedDate;
-            return (
-              <button
-                key={day}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setSelectedDate(day)}
-                className="min-h-11 rounded-[var(--radius-card)] border px-3 text-xs focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                style={{
-                  borderColor: active ? "var(--color-main)" : "var(--color-border)",
-                  background: active ? "var(--color-main)" : "var(--color-bg)",
-                  color: active ? "var(--color-bg)" : "var(--color-main)",
-                }}
-              >
-                {dayFormat.format(new Date(`${day}T00:00:00`))}
-                {count > 0 ? ` · ${count}` : ""}
-              </button>
-            );
-          })}
-        </div>
-
-        <TextField
-          label={t("assign_task_title")}
-          value={title}
-          maxLength={200}
-          onChange={(event) => setTitle(event.target.value)}
-        />
-
-        <div className="grid gap-3 sm:grid-cols-2">
-          <ComposerSelect
-            label={t("assign_subject")}
-            value={subject}
-            placeholder={t("assign_subject_none")}
-            options={labelOptions(subjects)}
-            disabled={!loaded || subjects.length === 0}
-            onChange={(next) => {
-              setSubject(next);
-              // The old topic belongs to the old subject; keeping it would send a mismatched pair.
-              setTopic("");
-            }}
+        <section className="flex flex-col gap-2.5">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className={SUBHEAD_CLASS}>{t("assign_week_pick")}</h3>
+            <div className="flex items-center gap-1">
+              <TextButton onClick={() => showWeek(today)} disabled={weekStart === today}>
+                {t("assign_week_this")}
+              </TextButton>
+              <TextButton onClick={() => showWeek(addDaysIso(weekStart, DAYS_IN_WEEK))}>
+                {t("assign_week_next")}
+              </TextButton>
+            </div>
+          </div>
+          <ComposerDayPicker
+            days={days}
+            selectedDate={selectedDate}
+            counts={counts}
+            onSelect={setSelectedDate}
           />
-          <ComposerSelect
-            label={t("assign_topic")}
-            value={topic}
-            placeholder={t("assign_topic_none")}
-            options={labelOptions(topics)}
-            disabled={subject === "" || topics.length === 0}
-            onChange={setTopic}
+        </section>
+
+        <section className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
+          <h3 className="coach-headline text-[var(--color-main)]">
+            {selectedFormat.format(new Date(`${selectedDate}T00:00:00`))}
+          </h3>
+          <CoachTextField
+            label={t("assign_task_title")}
+            value={title}
+            maxLength={200}
+            data-autofocus=""
+            onChange={(event) => setTitle(event.target.value)}
           />
-        </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <ComposerSelect
+              label={t("assign_subject")}
+              value={subject}
+              placeholder={t("assign_subject_none")}
+              options={labelOptions(subjects)}
+              disabled={!loaded || subjects.length === 0}
+              onChange={(next) => {
+                setSubject(next);
+                // The old topic belongs to the old subject; keeping it would send a mismatched pair.
+                setTopic("");
+              }}
+            />
+            <ComposerSelect
+              label={t("assign_topic")}
+              value={topic}
+              placeholder={t("assign_topic_none")}
+              options={labelOptions(topics)}
+              disabled={subject === "" || topics.length === 0}
+              onChange={setTopic}
+            />
+          </div>
+          <CoachTextArea
+            label={t("assign_note")}
+            hint={t("assign_note_hint")}
+            value={coachNote}
+            rows={2}
+            maxLength={COACH_NOTE_MAX}
+            onChange={(event) => setCoachNote(event.target.value)}
+          />
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="soft"
+              size="sm"
+              className="min-h-11"
+              onClick={addDraft}
+              disabled={title.trim() === "" || atCeiling}
+            >
+              {t("assign_add_to_day")}
+            </Button>
+          </div>
+        </section>
 
-        <TextAreaField
-          label={t("assign_note")}
-          hint={t("assign_note_hint")}
-          value={coachNote}
-          rows={2}
-          maxLength={COACH_NOTE_MAX}
-          onChange={(event) => setCoachNote(event.target.value)}
-        />
-
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={addDraft}
-            disabled={title.trim() === "" || atCeiling}
-          >
-            {t("assign_add_to_day")}
-          </Button>
-          <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-            {t("assign_count", { count: drafts.length, max: MAX_TASKS })}
-          </span>
-        </div>
-
-        {drafts.length > 0 ? (
-          <ul className="flex flex-col gap-2 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
-            {days
-              .filter((day) => drafts.some((draft) => draft.taskDate === day))
-              .map((day) => (
-                <li key={day}>
-                  <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-                    {dayFormat.format(new Date(`${day}T00:00:00`))}
-                  </p>
-                  <ul className="mt-1 flex flex-col gap-1">
-                    {drafts
-                      .filter((draft) => draft.taskDate === day)
-                      .map((draft) => (
-                        <li
-                          key={draft.key}
-                          className="flex items-baseline justify-between gap-2 text-sm"
-                        >
-                          <span style={{ color: "var(--color-main)" }}>
-                            {draft.title}
-                            {draft.subject ? (
-                              <span style={{ color: "var(--color-secondary)" }}>
-                                {" · "}
-                                {draft.subject}
-                                {draft.topic ? ` › ${draft.topic}` : ""}
-                              </span>
-                            ) : null}
-                          </span>
-                          <button
-                            type="button"
-                            onClick={() => removeDraft(draft.key)}
-                            className="shrink-0 text-xs underline-offset-4 hover:underline"
-                            style={{ color: "var(--color-secondary)" }}
-                          >
-                            {t("assign_remove")}
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
+        {ordered.length > 0 ? (
+          <section className="flex flex-col gap-2">
+            <h3 className={SUBHEAD_CLASS}>{t("assign_in_program")}</h3>
+            <ul className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
+              {ordered.map((draft) => (
+                <li key={draft.key} className={`${INSET_ROW_CLASS} items-start`}>
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <span className="coach-body text-[var(--color-main)]">{draft.title}</span>
+                    <span className="coach-footnote text-[var(--color-secondary)]">
+                      {[
+                        shortFormat.format(new Date(`${draft.taskDate}T00:00:00`)),
+                        draft.subject ? [draft.subject, draft.topic].filter(Boolean).join(" › ") : null,
+                        draft.coachNote,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </span>
+                  </div>
+                  <TextButton tone="muted" onClick={() => removeDraft(draft.key)}>
+                    {t("assign_remove")}
+                  </TextButton>
                 </li>
               ))}
-          </ul>
+            </ul>
+          </section>
         ) : null}
 
-        <div>
-          <Button type="submit" busy={busy} disabled={drafts.length === 0}>
+        <TemplateSaveRow
+          templates={templates}
+          setTemplates={setTemplates}
+          drafts={drafts}
+          examType={studentExamType}
+          disabled={busy}
+        />
+      </div>
+
+      <div className={`${PANEL_FOOTER_CLASS} justify-between`}>
+        <span className="coach-footnote tabular-nums text-[var(--color-secondary)]">
+          {t("assign_count", { count: drafts.length, max: MAX_TASKS })}
+        </span>
+        <div className="flex items-center gap-1">
+          <TextButton onClick={onCancel}>{t("confirm_cancel")}</TextButton>
+          <Button type="submit" size="sm" className="min-h-11" busy={busy} disabled={drafts.length === 0}>
             {t("assign_action", { count: drafts.length })}
           </Button>
         </div>
-      </form>
-    </Card>
+      </div>
+    </form>
   );
+
+  function removeDraft(key: string) {
+    setDrafts((prev) => prev.filter((draft) => draft.key !== key));
+  }
 }

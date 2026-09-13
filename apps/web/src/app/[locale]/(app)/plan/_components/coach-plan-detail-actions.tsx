@@ -24,6 +24,7 @@ import {
 import { deletePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanEventScopeChoices } from "./coach-plan-event-scope";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
+import { CoachPlanOverlayBody, CoachPlanOverlayFooter } from "./coach-plan-overlay";
 
 export function CoachPlanDetailActions({
   item,
@@ -126,7 +127,7 @@ export function CoachPlanDetailActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+      <CoachPlanOverlayFooter>
         <Button
           type="button"
           variant="secondary"
@@ -151,7 +152,7 @@ export function CoachPlanDetailActions({
         >
           {t(item.kind === "TASK" ? "remove" : "cancel")}
         </Button>
-      </div>
+      </CoachPlanOverlayFooter>
       <AnimatePresence>
       {scopePrompt ? (
         <CoachPlanFormPanel
@@ -160,20 +161,22 @@ export function CoachPlanDetailActions({
           busy={busy}
           onClose={closeScopePrompt}
         >
-          <div className="flex flex-col gap-4">
+          <CoachPlanOverlayBody>
             <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
               {t("cancel_scope_body")}
             </p>
-            <CoachPlanEventScopeChoices value={scope} onChange={setScope} />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={closeScopePrompt}>
-                {t("form_cancel")}
-              </Button>
-              <Button type="button" disabled={!scope} onClick={() => void cancelEvent(scope)}>
-                {t("continue")}
-              </Button>
+            <div className="mt-4">
+              <CoachPlanEventScopeChoices value={scope} onChange={setScope} />
             </div>
-          </div>
+          </CoachPlanOverlayBody>
+          <CoachPlanOverlayFooter>
+            <Button type="button" variant="secondary" onClick={closeScopePrompt}>
+              {t("form_cancel")}
+            </Button>
+            <Button type="button" disabled={!scope} onClick={() => void cancelEvent(scope)}>
+              {t("continue")}
+            </Button>
+          </CoachPlanOverlayFooter>
         </CoachPlanFormPanel>
       ) : null}
       </AnimatePresence>

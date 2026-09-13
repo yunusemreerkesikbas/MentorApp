@@ -81,10 +81,7 @@ export function CoachPlanOverlay({
         type="button"
         tabIndex={-1}
         aria-hidden
-        className="absolute inset-0 cursor-default backdrop-blur-xl [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none"
-        style={{
-          background: "color-mix(in srgb, var(--color-main) 55%, transparent)",
-        }}
+        className="absolute inset-0 cursor-default bg-[#111111]/40 backdrop-blur-sm [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none"
         variants={{
           hidden: { opacity: 0 },
           shown: { opacity: 1, transition: { duration: openDur, ease: EASE } },
@@ -108,7 +105,7 @@ export function CoachPlanOverlay({
           if (busy) return;
           if (info.offset.y > 80 || info.velocity.y > 500) onClose();
         }}
-        className={`relative flex min-h-0 flex-col overflow-hidden border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_92%,transparent)] shadow-[var(--shadow-card)] backdrop-blur-2xl backdrop-saturate-[190%] [@media(prefers-reduced-transparency:reduce)]:bg-[var(--color-surface)] [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none ${
+        className={`relative flex min-h-0 flex-col overflow-hidden border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)] ${
           sheet
             ? `w-full rounded-t-[var(--radius-card)] ${drawer ? "max-h-[90dvh]" : "max-h-[60dvh]"}`
             : drawer
@@ -138,15 +135,31 @@ export function CoachPlanOverlay({
             />
           </div>
         ) : null}
-        {children}
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       </motion.aside>
     </motion.div>
   );
 }
 
+export function CoachPlanOverlayHeader({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex shrink-0 items-start justify-between gap-3 px-6 pb-3 pt-5 lg:pt-6">
+      {children}
+    </div>
+  );
+}
+
 export function CoachPlanOverlayBody({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-0 flex-1 overflow-y-auto px-6 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-1">
+    <div className="min-h-0 flex-1 overflow-y-auto px-6 py-2">
+      {children}
+    </div>
+  );
+}
+
+export function CoachPlanOverlayFooter({ children }: { children: ReactNode }) {
+  return (
+    <div className="flex shrink-0 justify-end gap-2 border-t border-[var(--color-border)] px-6 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
       {children}
     </div>
   );

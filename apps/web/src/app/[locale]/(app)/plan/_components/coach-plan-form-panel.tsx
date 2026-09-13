@@ -3,7 +3,10 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { CoachPlanOverlay, CoachPlanOverlayBody } from "./coach-plan-overlay";
+import {
+  CoachPlanOverlay,
+  CoachPlanOverlayHeader,
+} from "./coach-plan-overlay";
 
 export function CoachPlanFormPanel({
   title,
@@ -34,29 +37,27 @@ export function CoachPlanFormPanel({
       busy={busy}
       onClose={onClose}
     >
-      <CoachPlanOverlayBody>
-        <div className="mb-5 flex items-start justify-between gap-3">
-          <h2
-            ref={headingRef}
-            id="coach-plan-form-title"
-            className="text-xl font-semibold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {title}
-          </h2>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={busy}
-            aria-label={t("form_close")}
-            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed"
-            style={{ color: "var(--color-main)" }}
-          >
-            <X aria-hidden size={22} />
-          </button>
-        </div>
-        {children}
-      </CoachPlanOverlayBody>
+      <CoachPlanOverlayHeader>
+        <h2
+          ref={headingRef}
+          id="coach-plan-form-title"
+          className="text-xl font-semibold"
+          style={{ color: "var(--color-main)" }}
+        >
+          {title}
+        </h2>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={busy}
+          aria-label={t("form_close")}
+          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed"
+          style={{ color: "var(--color-main)" }}
+        >
+          <X aria-hidden size={22} />
+        </button>
+      </CoachPlanOverlayHeader>
+      {children}
     </CoachPlanOverlay>
   );
 }

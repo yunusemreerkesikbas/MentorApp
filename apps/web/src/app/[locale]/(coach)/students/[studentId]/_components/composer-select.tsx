@@ -1,5 +1,7 @@
 "use client";
 
+import { COACH_FIELD_CLASS } from "@/components/mentorship/coach-ui";
+
 /**
  * A native `<select>`: it opens the platform's own picker, is keyboard- and screen-reader-correct
  * for free, and costs no bundle. A combobox library for three dropdowns would never earn its weight.
@@ -28,13 +30,13 @@ export function ComposerSelect({
   onChange: (next: string) => void;
 }) {
   return (
-    <label className="grid gap-1 text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-      {label}
+    <label className="flex min-w-0 flex-col gap-1.5">
+      <span className="coach-footnote font-semibold text-[var(--color-secondary)]">{label}</span>
       <select
         value={value}
         disabled={disabled}
         onChange={(event) => onChange(event.target.value)}
-        className="min-h-11 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-bg)] px-2 text-sm text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
+        className={COACH_FIELD_CLASS}
       >
         <option value="">{placeholder}</option>
         {options.map((option) => (

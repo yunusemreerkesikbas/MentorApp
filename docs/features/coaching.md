@@ -153,11 +153,29 @@ pnpm --filter @mentor/api test
   (plan/analiz sarmalayıcıları ince kaldı); tekrar `MenuSelect`/`PopoverMenu`; katılımcı
   `CheckBox` (`@mentor/ui`, auth cookie ile aynı). Kullanım: plus → görev/etkinlik;
   takvim hücresi hâlâ action-sheet. Gotcha: form açıkken FAB unmount olur (drawer'ın
-  üstüne binmesin). Tarih + başlangıç/bitiş saati tek satır ve aynı alan yüksekliği.
-  Takvim ikonun altında 20rem popover (viewport'a sıkıştırılır; gün ızgarası taşmaz).
-  Tekrar her zaman 1/3 sütun; bitiş türü ve sayı/tarih aynı satırda açılır. İlgili:
+  üstüne binmesin). Tarih + başlangıç/bitiş saati tek satır. Takvim ikonun altında 20rem
+  popover. Tekrar 1/3 sütun. Sayfa başlığı gizlendi; öğrenci planındaki gibi geri oku
+  `/students`e gider. Form aksiyonları overlay footer'da sağ altta. Drawer inputları
+  `compact` (px-3 / text-sm); 44px min-height durur. İlgili:
   `coach-plan-{compose-fab,overlay,form-panel,detail,toolbar,calendar-shell,attendees,form-fields}.tsx`,
   `components/{date-picker-sheet,date-field,menu-select,popover-menu}.tsx`.
+
+- **2026-09-12 — Koç planı overlay dark scrim + avatar.** Form/detay scrim artık
+  dialog ile aynı `#111111/40` + `backdrop-blur-sm` (önceki `--color-main` mix
+  dark temada süt sis üretiyordu). Drawer paneli opak `--color-surface`.
+  `UserAvatar` fallback chip tokenleri + `--color-main` harf; halka
+  `color-mix(main 16%)`. Katılımcı satırı `surface-container` / seçilince
+  `accent-soft`. Kullanım: Yeni etkinlik drawer. Gotcha: `frame="strong"`
+  (profil) halkası değişmedi. Plus menü scrim’i aynı dim (`coach-plan-compose-fab`).
+  İlgili: `coach-plan-overlay.tsx`, `coach-plan-compose-fab.tsx`,
+  `coach-plan-attendees.tsx`, `components/user-avatar.tsx`.
+
+- **2026-09-12 — Koç planı katılımcı satırı + saat picker.** “N öğrenci seçildi”
+  kopyası kalktı; satır zeminsiz, yalnız border. Native `type=time` (OS mavi
+  AM/PM) yerine `TimeField`: saat ikonu + 24s iki sütun (saat / 5 dk), panel
+  seçimde kapanmaz. Kullanım: Yeni görev/etkinlik. Gotcha: dakika 5’lik adım;
+  öğrenci `plan-add-task-form` hâlâ native time. İlgili: `time-field.tsx`,
+  `coach-plan-{form-fields,attendees}.tsx`.
 
 - **2026-09-11 — Shared Takvim item model.** Plan calendar grids (hour, month, mobile strip,
   agenda, hover preview) now render `PlanCalendarItem<T>` instead of `PlanTaskDto`. The student

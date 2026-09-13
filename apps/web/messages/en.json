@@ -34,6 +34,11 @@
       "apply": "Apply",
       "today": "Today"
     },
+    "time_picker": {
+      "title": "Choose a time",
+      "hour": "Hour",
+      "minute": "Minute"
+    },
     "premium_member": "Premium member"
   },
   "welcome": {
@@ -1165,7 +1170,7 @@
   "coachPlan": {
     "loading": "Loading coach plan",
     "title": "Coach Plan",
-    "subtitle": "See student tasks and shared events in one calendar.",
+    "back": "Back",
     "scale_label": "Calendar scale",
     "week": "Week",
     "month": "Month",
@@ -1213,14 +1218,10 @@
     "start_time": "Start time",
     "end_time": "End time",
     "attendees": "Attendees",
-    "attendees_empty": "If you select no one, this step stays only in your plan.",
-    "attendees_selected": "{count} students selected.",
     "attendees_read_only": "Task recipients cannot be changed in this edit.",
     "coach_note_optional": "Coach note (optional)",
     "description_optional": "Description (optional)",
     "personal_task_date_fixed": "The personal task date cannot be changed in this edit.",
-    "timed_reminder": "Timed events receive a reminder 15 minutes beforehand.",
-    "all_day_no_reminder": "All-day events do not receive reminders.",
     "recurrence": "Recurrence",
     "recurrence_none": "Does not repeat",
     "recurrence_daily": "Daily",
@@ -3444,6 +3445,34 @@
     "followup_status_CANCELLED": "Cancelled",
     "followup_response_PENDING": "Awaiting response",
     "followup_response_ACCEPTED": "Accepted",
-    "followup_response_CHANGE_REQUESTED": "Change requested"
+    "followup_response_CHANGE_REQUESTED": "Change requested",
+    "report_plan_week": "Plan the week",
+    "report_more_actions": "More actions",
+    "report_actions_label": "Actions for this student",
+    "report_bar_note": "Note",
+    "report_bar_followups": "Follow-up",
+    "report_bar_plan": "Plan",
+    "report_week_title": "This week",
+    "report_week_done": "done",
+    "report_week_pending": "pending",
+    "report_week_day_label": "{day}: {done} done, {pending} pending",
+    "report_week_none_from_you": "You haven't assigned a task in the last two weeks.",
+    "value_streak_longest": "{current} · longest {longest}",
+    "metric_sessions_active_days": "Sessions · active days",
+    "report_mocks_trend_label": "Total net, last {count} mock exams",
+    "report_mood_window": "Last 14 days. A blank day means no entry.",
+    "report_mood_entry": "{date}: {level}",
+    "report_mood_last": "Last entry {date}",
+    "report_mood_level_1": "Draining",
+    "report_mood_level_2": "Low",
+    "report_mood_level_3": "Balanced",
+    "report_mood_level_4": "Good",
+    "report_mood_level_5": "Great",
+    "followup_recent_title": "Follow-ups",
+    "followup_total": "{count, plural, one {# record} other {# records}}",
+    "followup_none_open": "No open follow-ups.",
+    "assign_quick_start": "Quick start",
+    "assign_in_program": "In this program",
+    "template_save_title": "Keep this week as a template"
   }
 }

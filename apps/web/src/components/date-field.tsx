@@ -58,7 +58,7 @@ export function DateField({
         menuClassName="w-80 p-0"
         trigger={({ open: menuOpen, setOpen: setMenuOpen, menuId }) => (
           <div
-            className="flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3"
+            className="flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-3 py-2"
             style={{
               color: "var(--color-body)",
               borderColor: "var(--color-border)",
@@ -66,7 +66,7 @@ export function DateField({
               fontFamily: "var(--font-body)",
             }}
           >
-            <span className="min-w-0 flex-1 truncate text-base">{display}</span>
+            <span className="min-w-0 flex-1 truncate text-sm">{display}</span>
             <button
               type="button"
               disabled={disabled}

@@ -202,6 +202,48 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-13 — Coach student report redesigned as a workspace.** `/kocluk/[studentId]` went from
+  ten stacked cards (three forms above the numbers) to a read-and-act layout approved on a design
+  canvas: a header (name, since, exam, flags, İlgilendim, an overflow holding "Bağlantıyı
+  sonlandır"), a status column (AI brief, this-week strip, activity, plan with topic progress and
+  dropped assignments, mocks with a neutral trend line, a mood strip in words) and, from `xl`, a
+  sticky action rail (note, follow-up summary, "Haftayı planla"). Below `xl` the rail becomes a bar
+  above the tab pill and every action opens the same side panel. Usage: new coach blocks read the
+  `.coach-theme` tokens and `components/mentorship/coach-ui.tsx` (`InsetSection`, `TextButton`,
+  `CoachTextField`…). The theme lives in `(coach)/_components/coach-theme.css` (renamed from
+  `coach-signals.css`) and sits on the shell's content wrapper only, so AppNav is unchanged; the
+  roster and the coach profile keep their structure and just inherit the tokens. Gotchas:
+  (1) `coach-panel.tsx` is an inline fixed drawer, not `showModal()`: a top-layer modal would leave
+  the root confirm dialog, toasts and portaled menus inert beneath it. It stays mounted, so a
+  half-built week survives closing it. (2) A portaled layer needs `coach-theme` on its own panel
+  (`PopoverMenu menuClassName`). (3) `planTasks` has no upper date bound, so the week strip shows
+  upcoming coach tasks. (4) The rail and the panel share one `useCoachFollowups` read. (5) e2e:
+  composer steps open "Haftayı planla" first, mobile steps open the bar, follow-up assertions are
+  scoped to the dialog. Related: `students/[studentId]/_components/{student-report-shell,report-*,
+  coach-panel,week-strip}.tsx`, `components/mentorship/{coach-ui,coach-followups-card,
+  followup-create-form,coach-followup-item}.tsx`.
+
+- **2026-09-12 — Follow-up development seed.** An idempotent, production-blocked seed now creates
+  six realistic follow-up states for each active student of an existing coach: due/pending,
+  overdue/change-requested, future/accepted, private-only, completed, and a linked replacement.
+  Run `pnpm --filter @mentor/api seed:mentorship-followups -- --coach-email=<email>`; add
+  `--student-email=<email>` to target one active relationship. The script does not create accounts
+  or links, and refuses inactive users, non-coaches, ended links, and production environments.
+  Re-running resets only its deterministic records in the current relationship period. Related:
+  `apps/api/scripts/seed-mentorship-followups.ts`, `apps/api/src/mentorship-followup-seed-script.spec.ts`.
+
+- **2026-09-12 — Follow-up integration and verification.** Consolidated coach history, creation,
+  pagination, and request cancellation under `components/mentorship`; student decisions retain a
+  separate public DTO. Usage: create a record in the student report, then manage due/change-requested
+  records from the coach inbox. Empty, loading, retry, disabled, and TR/EN states are covered by
+  mobile/desktop browser checks (6 passed); real database/HTTP coverage verifies privacy, concurrent
+  writes, replacement, idempotency, pagination, and relationship periods (8 passed). The morning
+  `dispatch-mentorship-risk-digest` cron also dispatches follow-up summaries independently of the risk
+  flag; email delivery drops stale-day jobs and rechecks due records and preferences. Migration and
+  feature-flag rollout remain required before enabling the feature in another environment.
+  Related: `apps/web/e2e/mentorship-followups.spec.ts`, `apps/api/test/mentorship-followups.e2e-spec.ts`,
+  `notifications/presentation/cron.controller.ts`, `notifications/application/handlers/send-email.handler.ts`.
+
 - **2026-09-12 — Follow-up ekranlarının i18n anahtarları eksikti.** APP-092 altı follow-up
   bileşenini master'a aldı ama `apps/web/messages/{tr,en}.json` içine **tek bir anahtar yazmadı**:
   39 statik `t("...")` anahtarı ve iki dinamik aile (`followup_status_*`, `followup_response_*`)
@@ -228,7 +270,7 @@ flag that cries wolf costs the coach more than it gives.
   (2) **CI bunu yakalayamazdı.** `i18n/scoped-messages.spec.ts` yalnız **namespace** düzeyinde
   TR/EN aynalığına bakıyor; kodda çağrılan bir anahtarın mesaj dosyasında var olup olmadığını
   denetleyen hiçbir guard yok. Statik `t("...")` çağrılarını tarayan bir spec bu sınıf hatayı
-  kapatır, **backlog'a alındı** (dinamik `` t(`x_${...}`) `` çağrıları doğası gereği taranamaz).
+  kapatır, **backlog'a alındı** (dinamik ``t(`x_${...}`)`` çağrıları doğası gereği taranamaz).
   (3) Anahtarlar namespace'in **sonuna** eklendi. Namespace alfabetik değil; sıralamak 90
   satırlık iş için 427 satırlık churn diff'i üretiyor.
 

@@ -22,6 +22,7 @@
     "seed:forum": "ts-node -T scripts/seed-forum.ts",
     "achievements:backfill": "ts-node -T scripts/backfill-achievements.ts",
     "seed:analysis-demo": "ts-node -T scripts/seed-analysis-demo.ts",
+    "seed:mentorship-followups": "ts-node -T scripts/seed-mentorship-followups.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",

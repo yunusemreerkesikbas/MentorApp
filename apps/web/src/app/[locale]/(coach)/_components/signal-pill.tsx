@@ -21,7 +21,7 @@ import type { ReactNode } from "react";
  *  - {@link CalmLabel} — not a pill at all. "Nothing is wrong" must not carry the visual weight
  *    of a finding, or it competes with real flags two rows down.
  *
- * Hues come from `coach-signals.css`, scoped to the shell's `.coach-signals` class.
+ * Hues come from `coach-theme.css`, scoped to the shell's `.coach-signals` class.
  */
 
 /** A `--sig-*` custom property name, e.g. `"--sig-inactive"`. */

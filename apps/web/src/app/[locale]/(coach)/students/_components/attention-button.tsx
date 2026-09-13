@@ -22,12 +22,15 @@ export function AttentionButton({
   busy,
   onToggle,
   fullWidth,
+  size,
 }: {
   attendedAt: string | null;
   busy: boolean;
   onToggle: (attended: boolean) => void;
   /** Full width on a phone: it is the row's only action and a thumb misses an inline button. */
   fullWidth?: boolean;
+  /** `sm` in the report header, which shares a line with the name; still a 44px target. */
+  size?: "sm" | "md";
 }) {
   const t = useTranslations("mentorship");
   const marked = attendedAt !== null;
@@ -37,6 +40,8 @@ export function AttentionButton({
       type="button"
       variant={marked ? "ghost" : "secondary"}
       fullWidth={fullWidth}
+      size={size}
+      className={size === "sm" ? "min-h-11" : undefined}
       // `disabled`, not `busy`: the update is optimistic, so the row already shows the new state
       // and a spinner would contradict it.
       disabled={busy}

@@ -60,10 +60,7 @@ export function CoachPlanComposeFab({
             key="compose-scrim"
             type="button"
             aria-label={t("compose_close")}
-            className="fixed inset-0 z-[45] cursor-default"
-            style={{
-              background: "color-mix(in srgb, var(--color-main) 20%, transparent)",
-            }}
+            className="fixed inset-0 z-[45] cursor-default bg-[#111111]/40 backdrop-blur-sm [@media(prefers-reduced-transparency:reduce)]:backdrop-blur-none"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}

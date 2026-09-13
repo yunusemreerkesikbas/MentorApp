@@ -8,7 +8,11 @@ import { isCoachPlanItemShared } from "@/lib/coach-plan-calendar";
 import type { CoachTaskMutationTarget } from "@/lib/coach-plan-mutations";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 import { CoachPlanDetailActions } from "./coach-plan-detail-actions";
-import { CoachPlanOverlay, CoachPlanOverlayBody } from "./coach-plan-overlay";
+import {
+  CoachPlanOverlay,
+  CoachPlanOverlayBody,
+  CoachPlanOverlayHeader,
+} from "./coach-plan-overlay";
 
 export function CoachPlanDetail({
   item,
@@ -43,33 +47,33 @@ export function CoachPlanDetail({
       labelledBy="coach-plan-detail-title"
       onClose={onClose}
     >
-      <CoachPlanOverlayBody>
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-                {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
-                {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
-              </p>
-              <h2
-                id="coach-plan-detail-title"
-                className="mt-1 text-lg font-semibold"
-                style={{ color: "var(--color-main)" }}
-              >
-                {data.title}
-              </h2>
-            </div>
-            <button
-              ref={closeRef}
-              type="button"
-              onClick={onClose}
-              aria-label={t("close_details")}
-              className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      <CoachPlanOverlayHeader>
+          <div>
+            <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
+              {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
+              {t(isCoachPlanItemShared(item) ? "shared" : "personal")}
+            </p>
+            <h2
+              id="coach-plan-detail-title"
+              className="mt-1 text-lg font-semibold"
               style={{ color: "var(--color-main)" }}
             >
-              <X aria-hidden size={22} />
-            </button>
+              {data.title}
+            </h2>
           </div>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={onClose}
+            aria-label={t("close_details")}
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: "var(--color-main)" }}
+          >
+            <X aria-hidden size={22} />
+          </button>
+      </CoachPlanOverlayHeader>
+      <CoachPlanOverlayBody>
+        <div className="flex flex-col gap-4">
           <dl className="grid gap-3 sm:grid-cols-2">
             <Detail
               label={t("detail_date")}
@@ -112,13 +116,13 @@ export function CoachPlanDetail({
               <p className="text-sm" style={{ color: "var(--color-body)" }}>{names}</p>
             </div>
           ) : null}
-          <CoachPlanDetailActions
-            item={item}
-            onEdit={onEdit}
-            onSuccess={onMutationSuccess}
-          />
         </div>
       </CoachPlanOverlayBody>
+      <CoachPlanDetailActions
+        item={item}
+        onEdit={onEdit}
+        onSuccess={onMutationSuccess}
+      />
     </CoachPlanOverlay>
   );
 }

@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card } from "@mentor/ui";
+import { Button } from "@mentor/ui";
+import { INSET_GROUP_CLASS, InsetSection, TextButton } from "@/components/mentorship/coach-ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { generateBrief } from "@/lib/mentorship";
 import { formatDate } from "../../../_components/mentorship-format";
@@ -20,7 +21,7 @@ import { formatDate } from "../../../_components/mentorship-format";
  * brief is an AI summary of one student's numbers, and showing it under another student's name is
  * the one failure this card cannot have.
  *
- * The rule-based risk chips stay above this card and are not replaced by it: a deterministic flag
+ * The rule-based risk chips stay in the header and are not replaced by it: a deterministic flag
  * a coach can trust beats a sentence they have to second-guess, and the brief says so in its copy.
  */
 export function BriefCard({ studentId }: { studentId: string }) {
@@ -52,31 +53,38 @@ export function BriefCard({ studentId }: { studentId: string }) {
   }
 
   return (
-    <Card>
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h2 className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-            {t("brief_title")}
-          </h2>
-          <Button type="button" variant="soft" busy={busy} onClick={run}>
-            {brief ? t("brief_refresh") : t("brief_action")}
+    <InsetSection
+      title={t("brief_title")}
+      action={
+        brief ? (
+          <TextButton aria-busy={busy || undefined} disabled={busy} onClick={run}>
+            {t("brief_refresh")}
+          </TextButton>
+        ) : null
+      }
+    >
+      {brief ? (
+        <div className={`${INSET_GROUP_CLASS} flex flex-col gap-2.5 p-4`}>
+          <p className="coach-body max-w-[68ch] whitespace-pre-line text-pretty text-[var(--color-body)]">
+            {brief.text}
+          </p>
+          <p className="coach-footnote text-[var(--color-secondary)]">
+            {t("brief_since", { date: formatDate(brief.at, locale) })}
+            {brief.cached ? ` · ${t("brief_cached")}` : ""}
+          </p>
+          <p className="coach-footnote text-[var(--color-secondary)]">{t("brief_body")}</p>
+        </div>
+      ) : (
+        <div className={`${INSET_GROUP_CLASS} flex flex-wrap items-center justify-between gap-3 p-4`}>
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <p className="coach-body text-[var(--color-main)]">{t("brief_empty")}</p>
+            <p className="coach-footnote text-[var(--color-secondary)]">{t("brief_body")}</p>
+          </div>
+          <Button type="button" variant="soft" size="sm" className="min-h-11" busy={busy} onClick={run}>
+            {t("brief_action")}
           </Button>
         </div>
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {brief ? t("brief_body") : t("brief_empty")}
-        </p>
-        {brief && (
-          <>
-            <p className="whitespace-pre-line text-sm" style={{ color: "var(--color-body)" }}>
-              {brief.text}
-            </p>
-            <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("brief_since", { date: formatDate(brief.at, locale) })}
-              {brief.cached ? ` · ${t("brief_cached")}` : ""}
-            </p>
-          </>
-        )}
-      </div>
-    </Card>
+      )}
+    </InsetSection>
   );
 }

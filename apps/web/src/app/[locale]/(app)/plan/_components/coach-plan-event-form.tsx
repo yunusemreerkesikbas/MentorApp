@@ -32,6 +32,7 @@ import {
   CoachPlanRecurrenceFields,
   CoachPlanWhenFields,
 } from "./coach-plan-form-fields";
+import { CoachPlanOverlayBody, CoachPlanOverlayFooter } from "./coach-plan-overlay";
 
 type EventFormMode =
   | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
@@ -142,8 +143,11 @@ export function CoachPlanEventForm({
       busy={busy}
       onClose={onClose}
     >
-      <form className="flex flex-col gap-4" onSubmit={submit}>
+      <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+        <CoachPlanOverlayBody>
+        <div className="flex flex-col gap-4">
         <TextField
+          dense
           label={t("form_title")}
           value={title}
           required
@@ -162,10 +166,8 @@ export function CoachPlanEventForm({
           onStartTime={setStartTime}
           onEndTime={setEndTime}
         />
-        <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t(startTime ? "timed_reminder" : "all_day_no_reminder")}
-        </p>
         <TextAreaField
+          dense
           label={t("description_optional")}
           value={description}
           maxLength={2000}
@@ -201,7 +203,9 @@ export function CoachPlanEventForm({
           />
         )}
         <FormError message={error} />
-        <div className="flex flex-wrap justify-end gap-2">
+        </div>
+        </CoachPlanOverlayBody>
+        <CoachPlanOverlayFooter>
           <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
             {t("form_cancel")}
           </Button>
@@ -212,7 +216,7 @@ export function CoachPlanEventForm({
           >
             {t(editing ? "save_changes" : "create_event")}
           </Button>
-        </div>
+        </CoachPlanOverlayFooter>
       </form>
     </CoachPlanFormPanel>
   );

@@ -443,6 +443,7 @@ test.describe("koç tarafı", () => {
   test("geçen haftayı kopyala yalnız koçun kendi satırlarını taslağa alır", async ({ page }) => {
     await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
 
     const repeat = page.getByRole("button", { name: "Geçen haftayı kopyala" });
     await expect(repeat).toBeEnabled();
@@ -461,6 +462,7 @@ test.describe("koç tarafı", () => {
   test("şablon kaydı programı gün ofsetine çevirir, tarihe değil", async ({ page }) => {
     const api = await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
 
     // Compose two tasks on two different days of the shown week.
     await page.getByLabel("Görev", { exact: true }).fill("İlk görev");
@@ -511,6 +513,7 @@ test.describe("koç tarafı", () => {
       ],
     });
     await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
 
     await page.getByLabel("Şablondan yükle").selectOption({ label: "YKS haftası · 1 görev" });
 
@@ -525,6 +528,10 @@ test.describe("koç tarafı", () => {
   test("not yazmak öğrenciye giden tek yönlü kaydı gönderir", async ({ page }) => {
     const api = await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
     await page.goto(`/kocluk/${STUDENT_ID}`);
+    // Below xl the note sits behind the action bar rather than in the rail.
+    if (test.info().project.name === "mobile-chromium") {
+      await page.getByRole("button", { name: "Öğrenciye notun" }).click();
+    }
 
     const field = page.getByRole("textbox", { name: "Öğrenciye notun" });
     await field.fill("Bu hafta paragrafa ağırlık ver.");
@@ -533,6 +540,14 @@ test.describe("koç tarafı", () => {
     await expect.poll(() => api.noteBodies).toEqual(["Bu hafta paragrafa ağırlık ver."]);
   });
 });
+
+/**
+ * The week composer lives in the report's side panel. The rail button (xl) and the action bar
+ * button (below xl) share the accessible name, so one click works on both projects.
+ */
+async function openWeekPlanner(page: Page) {
+  await page.getByRole("button", { name: "Haftayı planla" }).click();
+}
 
 /**
  * One ACTIVE roster row. Metrics carry the numbers the header's cohort band averages; `riskFlags`
