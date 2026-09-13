@@ -1,6 +1,12 @@
 import { resolveAvatarUrl } from "@/lib/avatar";
 
-const AVATAR_COLORS = ["#BEA1FE", "#9BC1FB", "#BDEBFF", "#DDACE5", "#D6DBFD"];
+const AVATAR_COLORS = [
+  "var(--color-chip)",
+  "var(--color-accent-soft)",
+  "var(--color-streak-soft)",
+  "var(--color-progress-track)",
+  "var(--color-surface-container)",
+];
 
 function colorFor(name: string): string {
   const value = name.split("").reduce((total, character) => total + character.charCodeAt(0), 0);
@@ -29,7 +35,7 @@ export function UserAvatar({ alt = "", className = "", frame = "default", name, 
   const frameClass =
     frame === "strong"
       ? "ring-4 ring-white outline outline-1 outline-offset-4 outline-black/20"
-      : "ring-1 ring-black/15";
+      : "ring-1 ring-[color-mix(in_srgb,var(--color-main)_16%,transparent)]";
   const sharedClass = `flex shrink-0 rounded-full object-cover ${frameClass} ${className}`;
   const style = { width: size, height: size, minWidth: size };
 

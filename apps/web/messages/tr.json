@@ -34,6 +34,11 @@
       "apply": "Uygula",
       "today": "Bugün"
     },
+    "time_picker": {
+      "title": "Saat seç",
+      "hour": "Saat",
+      "minute": "Dakika"
+    },
     "premium_member": "Premium üye"
   },
   "welcome": {
@@ -1165,7 +1170,7 @@
   "coachPlan": {
     "loading": "Koç planı yükleniyor",
     "title": "Koç Planı",
-    "subtitle": "Öğrencilerinin görevlerini ve ortak etkinlikleri aynı takvimde gör.",
+    "back": "Geri",
     "scale_label": "Takvim ölçeği",
     "week": "Hafta",
     "month": "Ay",
@@ -1213,14 +1218,10 @@
     "start_time": "Başlangıç saati",
     "end_time": "Bitiş saati",
     "attendees": "Katılımcılar",
-    "attendees_empty": "Kimseyi seçmezsen bu adım yalnızca senin planında kalır.",
-    "attendees_selected": "{count} öğrenci seçildi.",
     "attendees_read_only": "Görevin alıcıları bu düzenlemede değiştirilemez.",
     "coach_note_optional": "Koç notu (opsiyonel)",
     "description_optional": "Açıklama (opsiyonel)",
     "personal_task_date_fixed": "Kişisel görevin tarihi bu düzenlemede değiştirilemez.",
-    "timed_reminder": "Saatli etkinlik için 15 dakika önce hatırlatma gider.",
-    "all_day_no_reminder": "Tüm gün etkinliklerine hatırlatma gitmez.",
     "recurrence": "Tekrar",
     "recurrence_none": "Tekrarlanmaz",
     "recurrence_daily": "Her gün",
@@ -3444,6 +3445,34 @@
     "followup_status_CANCELLED": "İptal edildi",
     "followup_response_PENDING": "Yanıt bekliyor",
     "followup_response_ACCEPTED": "Kabul edildi",
-    "followup_response_CHANGE_REQUESTED": "Değişiklik istendi"
+    "followup_response_CHANGE_REQUESTED": "Değişiklik istendi",
+    "report_plan_week": "Haftayı planla",
+    "report_more_actions": "Diğer işlemler",
+    "report_actions_label": "Öğrenciyle ilgili işlemler",
+    "report_bar_note": "Not",
+    "report_bar_followups": "Takip",
+    "report_bar_plan": "Planla",
+    "report_week_title": "Bu hafta",
+    "report_week_done": "yapıldı",
+    "report_week_pending": "bekliyor",
+    "report_week_day_label": "{day}: {done} yapıldı, {pending} bekliyor",
+    "report_week_none_from_you": "Son iki haftada senin verdiğin bir görev yok.",
+    "value_streak_longest": "{current} · en uzun {longest}",
+    "metric_sessions_active_days": "Seans · aktif gün",
+    "report_mocks_trend_label": "Toplam net, son {count} deneme",
+    "report_mood_window": "Son 14 gün. Boş gün, kayıt yok demek.",
+    "report_mood_entry": "{date}: {level}",
+    "report_mood_last": "Son kayıt {date}",
+    "report_mood_level_1": "Yorucu",
+    "report_mood_level_2": "Durgun",
+    "report_mood_level_3": "Dengeli",
+    "report_mood_level_4": "İyi",
+    "report_mood_level_5": "Harika",
+    "followup_recent_title": "Takip",
+    "followup_total": "{count} kayıt",
+    "followup_none_open": "Açık takip yok.",
+    "assign_quick_start": "Hızlı başlangıç",
+    "assign_in_program": "Bu programda",
+    "template_save_title": "Bu haftayı şablon olarak sakla"
   }
 }

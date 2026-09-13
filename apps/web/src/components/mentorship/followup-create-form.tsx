@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState, type FormEvent } from "react";
+import { UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
@@ -10,10 +11,23 @@ import {
   operationForDraft,
   type PendingFollowupOperation,
 } from "@/lib/mentorship-followup-state";
+import {
+  CoachTextArea,
+  CoachTextField,
+  INSET_GROUP_CLASS,
+  NOTE_CLASS,
+  PANEL_BODY_CLASS,
+  PANEL_FOOTER_CLASS,
+  TextButton,
+} from "./coach-ui";
 
-const fieldClass =
-  "min-h-11 w-full rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-[var(--color-main)] focus-visible:outline-2 focus-visible:outline-[var(--color-focus-ring)]";
-
+/**
+ * A follow-up record, written in the report's side panel.
+ *
+ * The two text boxes look alike but only one reaches the student, so the form is split along that
+ * line: the private group first, then the shared decision in its own group with the "shared" cue in
+ * the accent. The submit label repeats it, and changes the moment a shared decision is typed.
+ */
 export function FollowupCreateForm({
   studentId,
   replacesId,
@@ -49,9 +63,7 @@ export function FollowupCreateForm({
       followUpDate: followUpDate || null,
       replacesId,
     };
-    pending.current = operationForDraft(pending.current, draft, () =>
-      crypto.randomUUID(),
-    );
+    pending.current = operationForDraft(pending.current, draft, () => crypto.randomUUID());
     try {
       await createFollowup(studentId, {
         ...draft,
@@ -59,11 +71,7 @@ export function FollowupCreateForm({
       });
       onSaved();
     } catch (failure) {
-      setError(
-        failure instanceof ApiClientError
-          ? failure.message
-          : common("error_unknown"),
-      );
+      setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
     } finally {
       submitting.current = false;
       setBusy(false);
@@ -71,80 +79,71 @@ export function FollowupCreateForm({
   }
 
   return (
-    <form
-      onSubmit={(event) => void submit(event)}
-      className="mt-4 flex flex-col gap-4"
-    >
-      {replacesId && (
-        <p className="text-sm">{t("followup_replacement_hint")}</p>
-      )}
-      <label className="flex flex-col gap-1 text-sm">
-        {t("followup_title_label")}
-        <input
-          autoFocus
-          required
-          maxLength={120}
-          value={title}
-          onChange={(event) => setTitle(event.target.value)}
-          className={fieldClass}
-          disabled={busy}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        {t("followup_private_label")}
-        <span className="text-xs text-[var(--color-secondary)]">
-          {t("followup_private_hint")}
-        </span>
-        <textarea
-          rows={3}
-          maxLength={2000}
-          value={privateNote}
-          onChange={(event) => setPrivateNote(event.target.value)}
-          className={fieldClass}
-          disabled={busy}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        {t("followup_shared_label")}
-        <span className="text-xs text-[var(--color-secondary)]">
-          {t("followup_shared_hint")}
-        </span>
-        <textarea
-          rows={3}
-          maxLength={2000}
-          value={sharedDecision}
-          onChange={(event) => setSharedDecision(event.target.value)}
-          className={fieldClass}
-          disabled={busy}
-        />
-      </label>
-      <label className="flex flex-col gap-1 text-sm">
-        {t("followup_date_label")}
-        <input
+    <form onSubmit={(event) => void submit(event)} className="flex min-h-full flex-col">
+      <div className={PANEL_BODY_CLASS}>
+        {replacesId ? <p className={NOTE_CLASS}>{t("followup_replacement_hint")}</p> : null}
+
+        <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
+          <CoachTextField
+            label={t("followup_title_label")}
+            required
+            maxLength={120}
+            value={title}
+            disabled={busy}
+            // Focus lands here whether the panel opens on the form or switches to it.
+            autoFocus
+            data-autofocus=""
+            onChange={(event) => setTitle(event.target.value)}
+          />
+          <CoachTextArea
+            label={t("followup_private_label")}
+            hint={t("followup_private_hint")}
+            rows={3}
+            maxLength={2000}
+            value={privateNote}
+            disabled={busy}
+            onChange={(event) => setPrivateNote(event.target.value)}
+          />
+        </div>
+
+        <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
+          <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--coach-accent-text)]">
+            <UsersRound aria-hidden size={15} strokeWidth={2} />
+            {t("followup_shared_hint")}
+          </p>
+          <CoachTextArea
+            label={t("followup_shared_label")}
+            rows={3}
+            maxLength={2000}
+            value={sharedDecision}
+            disabled={busy}
+            onChange={(event) => setSharedDecision(event.target.value)}
+          />
+        </div>
+
+        <CoachTextField
           type="date"
+          label={t("followup_date_label")}
           min={istanbulDate()}
           value={followUpDate}
+          disabled={busy}
           onChange={(event) => setFollowUpDate(event.target.value)}
-          className={fieldClass}
-          disabled={busy}
+          className="sm:max-w-64"
         />
-      </label>
-      {error && <p role="alert">{error}</p>}
-      <div className="flex flex-wrap gap-2">
-        <Button type="submit" busy={busy} disabled={!title.trim()}>
-          {t(
-            sharedDecision.trim()
-              ? "followup_save_share"
-              : "followup_save_private",
-          )}
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={busy}
-          onClick={onCancel}
-        >
+
+        {error ? (
+          <p role="alert" className="coach-body text-[var(--color-danger)]">
+            {error}
+          </p>
+        ) : null}
+      </div>
+
+      <div className={`${PANEL_FOOTER_CLASS} justify-end`}>
+        <TextButton disabled={busy} onClick={onCancel}>
           {t("followup_cancel_form")}
+        </TextButton>
+        <Button type="submit" size="sm" className="min-h-11" busy={busy} disabled={!title.trim()}>
+          {t(sharedDecision.trim() ? "followup_save_share" : "followup_save_private")}
         </Button>
       </div>
     </form>

@@ -21,7 +21,7 @@ const initial: MentorshipFollowupDto = {
   closedAt: null,
 };
 async function mockApi(page: Page, coach: boolean, enabled = true) {
-  let items: MentorshipFollowupDto[] = coach ? [] : [{ ...initial }];
+  const items: MentorshipFollowupDto[] = coach ? [] : [{ ...initial }];
   const writes: Record<string, unknown>[] = [];
   let failNextRead = false;
   const user = {
@@ -199,27 +199,33 @@ test("coach creates, reschedules, closes and replaces a shared decision", async 
 }) => {
   const api = await mockApi(page, true);
   await page.goto(`/kocluk/${STUDENT}`);
+  // Below xl the rail is an action bar: open the history panel, then compose from inside it.
+  if (test.info().project.name === "mobile-chromium") {
+    await page.getByRole("button", { name: "Takip geçmişi" }).click();
+  }
   await page
     .getByRole("button", { name: "Takip kaydı oluştur", exact: true })
     .click();
-  await page.getByLabel(/Aksiyon başlığı/).fill("Haftalık görüşme");
-  await page.getByLabel(/Koça özel not/).fill("Görüşme öncesi notum");
-  await page
+  // Only the open side panel counts; on a wide screen the rail repeats the latest records.
+  const panel = page.getByRole("dialog");
+  await panel.getByLabel(/Aksiyon başlığı/).fill("Haftalık görüşme");
+  await panel.getByLabel(/Koça özel not/).fill("Görüşme öncesi notum");
+  await panel
     .getByLabel(/Ortak karar/)
     .fill("Bu hafta iki kısa oturum deneyelim.");
-  await page
+  await panel
     .getByRole("button", { name: "Kaydet ve ortak kararı öğrenciyle paylaş" })
     .click();
-  await expect(page.getByText("Yanıt bekliyor", { exact: true })).toBeVisible();
+  await expect(panel.getByText("Yanıt bekliyor", { exact: true })).toBeVisible();
   expect(api.writes[0]).toHaveProperty("operationId");
-  await page.getByLabel(/Tekrar kontrol tarihi/).fill("2099-01-01");
-  await page.getByRole("button", { name: "Tarihi kaydet" }).click();
+  await panel.getByLabel(/Tekrar kontrol tarihi/).fill("2099-01-01");
+  await panel.getByRole("button", { name: "Tarihi kaydet" }).click();
   await expect.poll(() => api.writes.length).toBe(2);
-  await page.getByRole("button", { name: "Takibi tamamla" }).click();
-  await expect(page.getByText("Tamamlandı", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Yerine yeni kayıt oluştur" }).click();
-  await page.getByLabel(/Aksiyon başlığı/).fill("Yeni karar");
-  await page
+  await panel.getByRole("button", { name: "Takibi tamamla" }).click();
+  await expect(panel.getByText("Tamamlandı", { exact: true })).toBeVisible();
+  await panel.getByRole("button", { name: "Yerine yeni kayıt oluştur" }).click();
+  await panel.getByLabel(/Aksiyon başlığı/).fill("Yeni karar");
+  await panel
     .getByRole("button", { name: "Yalnızca benim için kaydet" })
     .click();
   await expect.poll(() => api.writes.length).toBe(4);

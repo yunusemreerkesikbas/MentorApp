@@ -5,6 +5,7 @@ import { TextField } from "@mentor/ui";
 import { useTranslations } from "next-intl";
 import { DateField } from "@/components/date-field";
 import { MenuSelect, type MenuSelectOption } from "@/components/menu-select";
+import { TimeField } from "@/components/time-field";
 
 export function CoachPlanWhenFields({
   date,
@@ -38,24 +39,18 @@ export function CoachPlanWhenFields({
         disabled={disabled || dateDisabled}
         onChange={onDate}
       />
-      <div className="min-w-0">
-        <TextField
-          type="time"
-          label={t("start_time")}
-          value={startTime}
-          disabled={disabled}
-          onChange={(event) => onStartTime(event.target.value)}
-        />
-      </div>
-      <div className="min-w-0">
-        <TextField
-          type="time"
-          label={t("end_time")}
-          value={endTime}
-          disabled={disabled}
-          onChange={(event) => onEndTime(event.target.value)}
-        />
-      </div>
+      <TimeField
+        label={t("start_time")}
+        value={startTime}
+        disabled={disabled}
+        onChange={onStartTime}
+      />
+      <TimeField
+        label={t("end_time")}
+        value={endTime}
+        disabled={disabled}
+        onChange={onEndTime}
+      />
     </div>
   );
 }
@@ -113,6 +108,7 @@ export function CoachPlanRecurrenceFields({
           {endKind === "COUNT" ? (
             <TextField
               type="number"
+              dense
               label={t("recurrence_count_label")}
               value={count}
               min={2}
@@ -164,6 +160,7 @@ export function CoachPlanMenuField({
         value={value}
         options={options}
         disabled={disabled}
+        textSize="sm"
         aria-labelledby={labelId}
         onChange={onChange}
       />

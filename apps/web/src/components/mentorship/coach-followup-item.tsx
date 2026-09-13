@@ -6,6 +6,7 @@ import type { MentorshipFollowupDto } from "@mentor/types";
 import { Button } from "@mentor/ui";
 import { updateFollowup } from "@/lib/mentorship-followups";
 import { istanbulDate } from "@/lib/mentorship-followup-state";
+import { CoachTextField, INSET_GROUP_CLASS, TextButton } from "./coach-ui";
 import { FollowupStatus } from "./followup-status";
 
 export function CoachFollowupItem({
@@ -24,6 +25,7 @@ export function CoachFollowupItem({
   const [date, setDate] = useState(item.followUpDate ?? "");
   const [busy, setBusy] = useState(false);
   const locked = useRef(false);
+
   async function mutate(status?: "COMPLETED" | "CANCELLED") {
     if (locked.current) return;
     locked.current = true;
@@ -41,78 +43,92 @@ export function CoachFollowupItem({
       setBusy(false);
     }
   }
+
   return (
-    <article className="flex flex-col gap-3 border-t border-[var(--color-border)] py-4">
-      <h3 className="font-semibold">{item.title}</h3>
-      <p className="text-xs text-[var(--color-secondary)]">
-        {new Date(item.createdAt).toLocaleDateString(locale)}
-      </p>
-      <FollowupStatus
-        status={item.status}
-        response={item.response}
-        shared={item.sharedDecision !== null}
-      />
-      {item.privateNote && (
-        <div>
-          <p className="text-xs font-semibold">{t("followup_private_hint")}</p>
-          <p className="whitespace-pre-wrap break-words text-sm">
-            {item.privateNote}
+    <article className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <h3 className="coach-body font-semibold text-[var(--color-main)]">{item.title}</h3>
+          <p className="coach-footnote text-[var(--color-secondary)]">
+            {new Date(item.createdAt).toLocaleDateString(locale, {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
-      )}
-      {item.sharedDecision && (
-        <div>
-          <p className="text-xs font-semibold">{t("followup_shared_hint")}</p>
-          <p className="whitespace-pre-wrap break-words text-sm">
-            {item.sharedDecision}
-          </p>
+        <FollowupStatus
+          status={item.status}
+          response={item.response}
+          shared={item.sharedDecision !== null}
+        />
+      </div>
+
+      {item.privateNote || item.sharedDecision ? (
+        <div className="grid gap-3 sm:grid-cols-2">
+          {item.privateNote ? (
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="coach-caption font-semibold text-[var(--color-secondary)]">
+                {t("followup_private_hint")}
+              </p>
+              <p className="coach-body whitespace-pre-wrap break-words text-[var(--color-body)]">
+                {item.privateNote}
+              </p>
+            </div>
+          ) : null}
+          {item.sharedDecision ? (
+            <div className="flex min-w-0 flex-col gap-1">
+              <p className="coach-caption font-semibold text-[var(--coach-accent-text)]">
+                {t("followup_shared_hint")}
+              </p>
+              <p className="coach-body whitespace-pre-wrap break-words text-[var(--color-body)]">
+                {item.sharedDecision}
+              </p>
+            </div>
+          ) : null}
         </div>
-      )}
-      {item.replacesId && (
-        <p className="text-xs">{t("followup_replacement_hint")}</p>
-      )}
+      ) : null}
+
+      {item.replacesId ? (
+        <p className="coach-footnote text-[var(--color-secondary)]">{t("followup_replacement_hint")}</p>
+      ) : null}
+
       {item.status === "OPEN" ? (
-        <div className="flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm">
-            {t("followup_date_label")}
-            <input
-              type="date"
-              min={istanbulDate()}
-              value={date}
-              disabled={busy}
-              onChange={(event) => setDate(event.target.value)}
-              className="min-h-11 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3"
-            />
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="secondary"
-              busy={busy}
-              disabled={date === (item.followUpDate ?? "")}
-              onClick={() => void mutate()}
-            >
-              {t("followup_reschedule")}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={() => void mutate("COMPLETED")}
-            >
-              {t("followup_complete")}
-            </Button>
-            <Button
-              variant="secondary"
-              disabled={busy}
-              onClick={() => void mutate("CANCELLED")}
-            >
-              {t("followup_cancel")}
-            </Button>
-          </div>
+        <div className="flex flex-wrap items-end gap-2 border-t border-[var(--color-border)] pt-3">
+          <CoachTextField
+            type="date"
+            label={t("followup_date_label")}
+            min={istanbulDate()}
+            value={date}
+            disabled={busy}
+            onChange={(event) => setDate(event.target.value)}
+            className="w-full sm:w-48"
+          />
+          <TextButton
+            disabled={busy || date === (item.followUpDate ?? "")}
+            onClick={() => void mutate()}
+          >
+            {t("followup_reschedule")}
+          </TextButton>
+          <span className="hidden flex-1 sm:block" />
+          <TextButton tone="muted" disabled={busy} onClick={() => void mutate("CANCELLED")}>
+            {t("followup_cancel")}
+          </TextButton>
+          <Button
+            type="button"
+            variant="soft"
+            size="sm"
+            className="min-h-11"
+            disabled={busy}
+            onClick={() => void mutate("COMPLETED")}
+          >
+            {t("followup_complete")}
+          </Button>
         </div>
       ) : (
-        <Button variant="secondary" onClick={onReplace}>
-          {t("followup_replace")}
-        </Button>
+        <div className="flex justify-end border-t border-[var(--color-border)] pt-1">
+          <TextButton onClick={onReplace}>{t("followup_replace")}</TextButton>
+        </div>
       )}
     </article>
   );

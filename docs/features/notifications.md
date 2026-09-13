@@ -111,7 +111,7 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   notes are never copied into notifications or email. Due follow-ups use the existing job queue and
   daily dispatcher, one summary per coach/Istanbul day, with preference-aware email and live access/
   due-state checks at delivery. Usage: enable mentorship and its followups flag, create a dated
-  follow-up, and run `POST /v1/internal/cron/dispatch-daily-reminders`. Closed records, ended links, and previous relationship
+  follow-up, and run `POST /v1/internal/cron/dispatch-mentorship-risk-digest`. Closed records, ended links, and previous relationship
   periods do not produce due notifications. Related: notifications followup service/listener and
   mentorship's exported followup notification read seam.
 

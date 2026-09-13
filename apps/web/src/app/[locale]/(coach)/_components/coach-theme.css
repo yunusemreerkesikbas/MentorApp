@@ -1,0 +1,147 @@
+/*
+ * The coach surface's own visual layer. Local to `(coach)` on purpose: this is a work tool with its
+ * own look (grouped inset sections, system type, one accent), and `@mentor/ui` should not grow
+ * tokens that only one route group can read. Everything below is scoped to a class, which is what
+ * keeps it out of the student surface even though the stylesheet is global.
+ */
+
+/*
+ * Signal hues. The class is applied once, on the coach shell's outer element; every signal below
+ * inherits from there.
+ *
+ * Hue answers "which signal", never "how bad". The roster is already sorted worst-first, so
+ * ordering is the list's job; nothing here paints a student red.
+ *
+ * No `html.dark` block, and that is measured rather than forgotten: every value below is a
+ * mid-tone, so the dark surface gives it MORE separation than white does, not less
+ * (5.8:1, 5.9:1, 7.7:1, 7.0:1 respectively). A dark override would be a second value to keep
+ * correct for no gain.
+ */
+.coach-signals {
+  /* No completed session or done task inside the idle window. `--color-streak`. */
+  --sig-inactive: #f3705a;
+  /* Weekly mean mood at or below the floor. `--color-chip`, darkened to carry on white. */
+  --sig-mood: #a78bda;
+  /* Latest mock net below the mean of the three before it. `--color-star`, darkened. */
+  --sig-net: #e0a300;
+  /* Weekly plan completion below the floor. `--color-progress`. */
+  --sig-plan: #55acee;
+}
+
+/*
+ * The coach workspace theme (Apple HIG lane, approved on the design canvas 2026-09-13).
+ *
+ * It re-points the shared `--color-*`, radius, shadow and font tokens for its subtree, so the
+ * `@mentor/ui` primitives (Button, TextField, Card, Skeleton…) take the coach look without a fork.
+ * The shell puts it on the CONTENT wrapper, never on AppNav: the nav stays identical between coach
+ * and student routes.
+ *
+ * No background here on purpose. The shell paints `--color-bg` itself, so a portaled menu can wear
+ * this class for its tokens without inheriting the page colour.
+ *
+ * Contrast (measured): secondary text 6.3:1 on the page and 6.8:1 on a group in light, 8.4:1 and
+ * 7.6:1 in dark; the accent carries white labels at 5.4:1 and sits at 5.0:1 as text on the page.
+ */
+.coach-theme {
+  --font-body: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", system-ui, sans-serif;
+  --font-heading: var(--font-body);
+  --radius-card: 12px;
+  /* Layers, not shadows: a group is told apart by its fill. */
+  --shadow-card: none;
+  --shadow-card-hover: none;
+
+  --color-bg: oklch(0.972 0.003 255);
+  --color-surface: oklch(1 0 0);
+  --color-surface-translucent: oklch(1 0 0);
+  --color-surface-container: oklch(0.955 0.004 255);
+  --color-border: oklch(0.9 0.004 255);
+  --color-main: oklch(0.21 0.006 255);
+  --color-body: oklch(0.26 0.006 255);
+  --color-secondary: oklch(0.47 0.01 255);
+
+  /* The one accent: primary fills, links, the selected day. Not a status. */
+  --color-accent: #3567c0;
+  --color-progress: #3567c0;
+  --color-accent-soft: color-mix(in oklch, #3567c0 14%, white);
+  --color-btn: #3567c0;
+  --color-btn-label: #ffffff;
+  --color-focus-ring: #3567c0;
+
+  --coach-accent-text: #3567c0;
+  /* Hollow "pending" marks. Indicator contrast, not text. */
+  --coach-tertiary: oklch(0.55 0.01 255);
+  --coach-scrim: rgb(17 19 24 / 0.28);
+  --coach-panel-shadow: 0 24px 64px rgb(17 19 24 / 0.18);
+  /* The floating action bar is the one thing content scrolls under; a fill alone cannot lift it. */
+  --coach-bar-shadow: 0 8px 24px rgb(17 19 24 / 0.14);
+
+  font-family: var(--font-body);
+  color: var(--color-body);
+}
+
+html.dark .coach-theme {
+  --color-bg: oklch(0.16 0.004 255);
+  --color-surface: oklch(0.215 0.005 255);
+  --color-surface-translucent: oklch(0.215 0.005 255);
+  --color-surface-container: oklch(0.27 0.006 255);
+  --color-border: oklch(0.32 0.006 255);
+  --color-main: oklch(0.96 0.003 255);
+  --color-body: oklch(0.9 0.004 255);
+  --color-secondary: oklch(0.74 0.008 255);
+
+  --color-accent-soft: color-mix(in oklch, #3567c0 26%, oklch(0.215 0.005 255));
+  --color-focus-ring: #8db3f0;
+
+  --coach-accent-text: #8db3f0;
+  --coach-tertiary: oklch(0.62 0.008 255);
+  --coach-scrim: rgb(0 0 0 / 0.5);
+  --coach-panel-shadow: 0 24px 64px rgb(0 0 0 / 0.5);
+  --coach-bar-shadow: 0 8px 24px rgb(0 0 0 / 0.55);
+}
+
+/*
+ * The workspace type scale: fixed rem steps (product register), one family. Weight lives in the
+ * step for titles only, so a label can still take `font-semibold` next to body copy.
+ */
+.coach-large-title {
+  font-size: 1.75rem;
+  line-height: 2.125rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.coach-title {
+  font-size: 1.375rem;
+  line-height: 1.75rem;
+  font-weight: 700;
+}
+
+.coach-headline {
+  font-size: 1.0625rem;
+  line-height: 1.375rem;
+  font-weight: 600;
+}
+
+.coach-body {
+  font-size: 0.9375rem;
+  line-height: 1.3125rem;
+}
+
+.coach-footnote {
+  font-size: 0.8125rem;
+  line-height: 1.125rem;
+}
+
+.coach-caption {
+  font-size: 0.75rem;
+  line-height: 1rem;
+}
+
+@media (min-width: 640px) {
+  .coach-large-title {
+    font-size: 1.875rem;
+    line-height: 2.25rem;
+  }
+}
