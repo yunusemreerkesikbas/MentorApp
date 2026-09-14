@@ -15,6 +15,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { addDays, todayIso } from "../../coaching/domain/date.util";
 import {
   MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD,
+  MentorshipAssignmentsChanged,
   MentorshipAssignmentsCreated,
   MentorshipEventTopic,
 } from "../domain/mentorship.constants";
@@ -142,19 +143,24 @@ export class MentorshipAssignmentService {
   ): Promise<PlanTaskDto> {
     await this.links.assertEnabled();
     this.assertWithinHorizon([input]);
-    return this.links.withServiceTransaction(async (tx) => {
+    const { scope, task } = await this.links.withServiceTransaction(async (tx) => {
       const [scope] = await this.links.requireActiveLinksInTransaction(
         tx,
         coachId,
         [studentId],
       );
-      return this.plan.updateMentorshipTaskInTransaction(
-        tx,
-        scope!,
-        taskId,
-        input,
-      );
+      return {
+        scope: scope!,
+        task: await this.plan.updateMentorshipTaskInTransaction(
+          tx,
+          scope!,
+          taskId,
+          input,
+        ),
+      };
     });
+    await this.publishChanged(coachId, [scope], () => task.taskDate);
+    return task;
   }
 
   async removeOne(
@@ -163,14 +169,16 @@ export class MentorshipAssignmentService {
     taskId: string,
   ): Promise<void> {
     await this.links.assertEnabled();
-    return this.links.withServiceTransaction(async (tx) => {
+    const scope = await this.links.withServiceTransaction(async (tx) => {
       const [scope] = await this.links.requireActiveLinksInTransaction(
         tx,
         coachId,
         [studentId],
       );
-      return this.plan.removeMentorshipTaskInTransaction(tx, scope!, taskId);
+      await this.plan.removeMentorshipTaskInTransaction(tx, scope!, taskId);
+      return scope!;
     });
+    await this.publishChanged(coachId, [scope], () => null);
   }
 
   async updateGroup(
@@ -181,20 +189,34 @@ export class MentorshipAssignmentService {
     await this.links.assertEnabled();
     const { studentIds, expectedSignature, ...patch } = input;
     this.assertWithinHorizon([patch]);
-    return this.links.withServiceTransaction(async (tx) => {
+    const { scopes, tasks } = await this.links.withServiceTransaction(async (tx) => {
       const scopes = await this.links.requireActiveLinksInTransaction(
         tx,
         coachId,
         studentIds,
       );
-      return this.plan.updateMentorshipTaskGroupInTransaction(
-        tx,
+      return {
         scopes,
-        assignmentGroupId,
-        patch,
-        expectedSignature,
-      );
+        tasks: await this.plan.updateMentorshipTaskGroupInTransaction(
+          tx,
+          scopes,
+          assignmentGroupId,
+          patch,
+          expectedSignature,
+        ),
+      };
     });
+    await this.publishChanged(
+      coachId,
+      scopes,
+      (scope) =>
+        tasks.find(
+          (task) =>
+            task.origin?.type === "MENTORSHIP" &&
+            task.origin.linkId === scope.mentorshipLinkId,
+        )?.taskDate ?? null,
+    );
+    return tasks;
   }
 
   async removeGroup(
@@ -203,19 +225,45 @@ export class MentorshipAssignmentService {
     input: RemoveMentorshipAssignmentGroupInput,
   ): Promise<void> {
     await this.links.assertEnabled();
-    return this.links.withServiceTransaction(async (tx) => {
+    const scopes = await this.links.withServiceTransaction(async (tx) => {
       const scopes = await this.links.requireActiveLinksInTransaction(
         tx,
         coachId,
         input.studentIds,
       );
-      return this.plan.removeMentorshipTaskGroupInTransaction(
+      await this.plan.removeMentorshipTaskGroupInTransaction(
         tx,
         scopes,
         assignmentGroupId,
         input.expectedSignature,
       );
+      return scopes;
     });
+    await this.publishChanged(coachId, scopes, () => null);
+  }
+
+  /**
+   * After commit, one event per student whose plan changed under them. The write refuses a task it
+   * could not touch, so reaching here means every scope really changed.
+   */
+  private async publishChanged(
+    coachId: string,
+    scopes: Array<{ studentId: string; mentorshipLinkId: string }>,
+    taskDateFor: (scope: { studentId: string; mentorshipLinkId: string }) => string | null,
+  ): Promise<void> {
+    const coach = (await this.users.listDisplayIdentities([coachId])).get(coachId);
+    for (const scope of scopes) {
+      this.events.emit(
+        MentorshipEventTopic.ASSIGNMENTS_CHANGED,
+        new MentorshipAssignmentsChanged(
+          scope.mentorshipLinkId,
+          coachId,
+          scope.studentId,
+          coach?.displayName ?? "",
+          taskDateFor(scope),
+        ),
+      );
+    }
   }
 
   /** The past is refused by coaching's own `assertTaskDateMutable`; this bounds the other end. */

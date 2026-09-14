@@ -47,5 +47,9 @@ export const DeliveryTemplate = {
   SESSION_RETURN: "coaching.session-return",
   NOTEBOOK_REVIEW: "coaching.notebook-review",
   PLAN_EVENT_REMINDER: "coaching.plan-event-reminder",
+  /** New and changed coach assignments share it, so one daily key caps the student at one push. */
+  MENTORSHIP_PLAN: "mentorship.plan",
+  MENTORSHIP_FOLLOWUP_SHARED: "mentorship.followup-shared",
+  PLAN_EVENT_CHANGE: "coaching.plan-event-change",
 } as const;
 export type DeliveryTemplate = (typeof DeliveryTemplate)[keyof typeof DeliveryTemplate];

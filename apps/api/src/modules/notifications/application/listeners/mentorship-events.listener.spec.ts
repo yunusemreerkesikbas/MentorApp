@@ -3,6 +3,7 @@ import { MentorshipEventsListener } from "./mentorship-events.listener";
 import {
   MentorshipAssignmentDropped,
   MentorshipAssignmentProgressed,
+  MentorshipAssignmentsChanged,
   MentorshipAssignmentsCreated,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
@@ -19,7 +20,11 @@ interface Sent {
   userId: string;
   templateKey: string;
   linkUrl?: string;
-  options?: { args?: Record<string, unknown>; dedupeKey?: string };
+  options?: {
+    args?: Record<string, unknown>;
+    dedupeKey?: string;
+    push?: { template: string; dedupeKey: string };
+  };
 }
 
 function setup(options: {
@@ -181,5 +186,67 @@ describe("MentorshipEventsListener", () => {
     await listener.onFollowupShared({ followupId: FOLLOWUP, version: 2 });
 
     expect(sent).toHaveLength(0);
+  });
+
+  it("pushes the student about new work under the daily plan push key", async () => {
+    const { listener, sent } = setup();
+    await listener.onAssignmentsCreated(
+      new MentorshipAssignmentsCreated(LINK, COACH, STUDENT, "Koç Mert", 1, "2026-09-11"),
+    );
+    expect(sent[0]!.options?.push).toEqual({
+      template: "mentorship.plan",
+      dedupeKey: `mentorship-plan:${STUDENT}:${todayIso()}`,
+    });
+  });
+
+  it("pushes a shared decision once per decision version", async () => {
+    const { listener, sent } = setup();
+    await listener.onFollowupShared({ followupId: FOLLOWUP, version: 3 });
+    expect(sent[0]!.options?.push).toEqual({
+      template: "mentorship.followup-shared",
+      dedupeKey: `mentorship-followup-shared:${FOLLOWUP}:3`,
+    });
+  });
+
+  it("keeps coach-facing news, the coach's note and link endings out of push", async () => {
+    const { listener, sent } = setup({
+      target: { recipientId: COACH, link: `/students/${STUDENT}` },
+    });
+    await listener.onLinkAccepted(
+      new MentorshipLinkAccepted(LINK, COACH, STUDENT, "Ayşe", "Koç Mert", "NONE"),
+    );
+    await listener.onAssignmentDropped(
+      new MentorshipAssignmentDropped(LINK, COACH, STUDENT, "Ayşe", "Paragraf"),
+    );
+    await listener.onAssignmentProgressed(
+      new MentorshipAssignmentProgressed(LINK, COACH, STUDENT, "Ayşe"),
+    );
+    await listener.onFollowupResponded({ followupId: FOLLOWUP, version: 4 });
+    await listener.onLinkEnded(new MentorshipLinkEnded(LINK, COACH, STUDENT, STUDENT, "Ayşe"));
+    await listener.onLinkEnded(new MentorshipLinkEnded(LINK, COACH, STUDENT, COACH, "Koç Mert"));
+    await listener.onNoteUpdated(new MentorshipNoteUpdated(LINK, COACH, STUDENT, "Koç Mert"));
+
+    expect(sent).toHaveLength(7);
+    expect(sent.filter((s) => s.options?.push !== undefined)).toEqual([]);
+  });
+
+  it("tells the student their coach changed the plan, pushing under the same daily key as new work", async () => {
+    const { listener, sent } = setup();
+    await listener.onAssignmentsChanged(
+      new MentorshipAssignmentsChanged(LINK, COACH, STUDENT, "Koç Mert", "2026-09-15"),
+    );
+    await listener.onAssignmentsChanged(
+      new MentorshipAssignmentsChanged(LINK, COACH, STUDENT, "Koç Mert", null),
+    );
+
+    expect(sent.map((s) => s.linkUrl)).toEqual(["/plan?date=2026-09-15", "/plan"]);
+    expect(sent[0]).toMatchObject({ userId: STUDENT, templateKey: "mentorshipAssignmentsChanged" });
+    // One inbox line a day keeps the sentence true after several edits; sharing the new-work push
+    // key means a busy coach day still reaches the student's lock screen once.
+    expect(sent[0]!.options).toEqual({
+      args: { name: "Koç Mert" },
+      dedupeKey: `mentorship-plan-change:${STUDENT}:${todayIso()}`,
+      push: { template: "mentorship.plan", dedupeKey: `mentorship-plan:${STUDENT}:${todayIso()}` },
+    });
   });
 });

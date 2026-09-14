@@ -17,9 +17,11 @@ import type {
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { PushEndpointPolicy } from "../../../shared/adapters/push/push-endpoint-policy";
+import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
 import { NotificationStreamService } from "./notification-stream.service";
 export { REALTIME_QUEUE_TTL_MS } from "./notification-stream.service";
 import type { NotificationCopyKey } from "../domain/notification-copy";
+import { JobName } from "../domain/notifications.constants";
 import { NotificationsCopyService } from "./notifications-copy.service";
 import { NotificationPreferencesRepository } from "../infrastructure/notification-preferences.repository";
 import { PushSubscriptionRepository } from "../infrastructure/push-subscription.repository";
@@ -41,6 +43,7 @@ export class NotificationsService {
     private readonly streams: NotificationStreamService,
     private readonly registry: ConfigRegistryService,
     private readonly endpoints: PushEndpointPolicy,
+    @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
   ) {}
 
   createStreamToken(userId: string, sessionId: string): string {
@@ -133,15 +136,39 @@ export class NotificationsService {
       data?: Record<string, unknown>;
       notifyRealtime?: boolean;
       lang?: string;
+      /** Also push the row to the recipient's browsers; `template` + `dedupeKey` identify the delivery. */
+      push?: { template: string; dedupeKey: string };
     },
   ): Promise<boolean> {
     const args = options?.args ?? {};
     const { title, body } = this.copy.resolve(templateKey, args, options?.lang);
-    return this.createInApp(userId, category, title, body, linkUrl, {
+    const created = await this.createInApp(userId, category, title, body, linkUrl, {
       dedupeKey: options?.dedupeKey,
       notifyRealtime: options?.notifyRealtime,
       data: { ...options?.data, templateKey, args },
     });
+    if (created && options?.push) {
+      await this.enqueuePush(userId, title, body, linkUrl, options.push);
+    }
+    return created;
+  }
+
+  /**
+   * Push rides on a row that was actually written: a deduped row means the recipient already
+   * heard this. No preference row means push was never subscribed (`subscribePush` creates one).
+   */
+  private async enqueuePush(
+    userId: string,
+    title: string,
+    body: string,
+    url: string | undefined,
+    push: { template: string; dedupeKey: string },
+  ): Promise<void> {
+    const prefs = await withServiceContext(this.db, (tx) =>
+      this.preferences.findByUserIdService(tx, userId),
+    );
+    if (!prefs?.pushEnabled) return;
+    await this.queue.enqueue(JobName.SEND_PUSH, { userId, title, body, url, ...push });
   }
 
   /** Called by DailyReminderService and future event listeners (SERVICE context). */

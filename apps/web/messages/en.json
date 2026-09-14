@@ -917,12 +917,10 @@
       "push_desc": "Daily rhythm and plan reminders from the browser.",
       "campaigns": "Campaign notifications",
       "campaigns_desc": "Discount and campaign announcements. Off means no channel at all.",
-      "push_permission": "Allow push notifications",
       "push_not_configured": "Push configuration is not ready yet.",
       "push_not_supported": "Your browser doesn't support web push.",
       "push_denied": "Notification permission was denied.",
-      "push_subscribe_error": "Subscription could not be created.",
-      "push_enabled": "Push notifications enabled."
+      "push_subscribe_error": "Subscription could not be created."
     },
     "earned": {
       "title": "Earned rights",

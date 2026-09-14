@@ -917,12 +917,10 @@
       "push_desc": "Tarayıcıdan günlük ritim ve plan hatırlatmaları.",
       "campaigns": "Kampanya bildirimleri",
       "campaigns_desc": "İndirim ve kampanya duyuruları. Kapatırsan hiçbir kanaldan gelmez.",
-      "push_permission": "Push izni ver",
       "push_not_configured": "Push yapılandırması henüz hazır değil.",
       "push_not_supported": "Tarayıcın web push desteklemiyor.",
       "push_denied": "Bildirim izni verilmedi.",
-      "push_subscribe_error": "Abonelik oluşturulamadı.",
-      "push_enabled": "Push bildirimleri açıldı."
+      "push_subscribe_error": "Abonelik oluşturulamadı."
     },
     "earned": {
       "title": "Kazanımlar",

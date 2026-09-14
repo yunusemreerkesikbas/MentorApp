@@ -27,4 +27,21 @@ describe("SendPushHandler network boundaries", () => {
     await expect(handler.handle(data)).rejects.toThrow("temporary provider failure");
     expect(send).toHaveBeenCalledOnce();
   });
+
+  it("records no delivery for a user without a subscription, so a later subscriber is still reached", async () => {
+    const db = { transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => fn({ execute: vi.fn() })) };
+    const deliveries = { exists: vi.fn().mockResolvedValue(false), tryRecord: vi.fn().mockResolvedValue(true) };
+    const send = vi.fn();
+    const handler = new SendPushHandler(db as never, { send }, {
+      listByUserId: vi.fn().mockResolvedValue([]),
+    } as never,
+    deliveries as never,
+    { claim: vi.fn(), release: vi.fn(), complete: vi.fn() } as never,
+    { get: vi.fn().mockResolvedValue(10_000) } as never);
+
+    await handler.handle(data);
+
+    expect(send).not.toHaveBeenCalled();
+    expect(deliveries.tryRecord).not.toHaveBeenCalled();
+  });
 });

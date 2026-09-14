@@ -227,6 +227,28 @@ flag that cries wolf costs the coach more than it gives.
   `useEffectEvent` ile güncel `busy` okur. **Gotcha:** eski kuyruktaki job'larda `coachRoles` anahtarı
   zod tarafından atılır, sorun değil.
 
+- **2026-09-14 — Koçun ödev düzenleme ve silmesi öğrenciye gidiyor; öğrenciye push (APP-094).**
+  Asimetri kapandı: öğrenci koç ödevini silince koç haber alıyordu, ama koç ödevi başka güne
+  taşıyınca ya da silince (`updateOne/removeOne/updateGroup/removeGroup`) hiçbir event yoktu ve
+  öğrencinin planı sessizce değişiyordu. **Model:** yeni `mentorship.assignments.changed`
+  (`MentorshipAssignmentsChanged`; `taskDate` silmede `null`). `MentorshipAssignmentService`
+  commit'ten sonra öğrenci başına bir event yayar; grup güncellemesinde tarih, görevin
+  `origin.linkId`'si ile eşleştirilir. W2'ye (`plan-mentorship.ts`, `PlanService`) dokunulmadı:
+  yazma fonksiyonları eşleşme yoksa zaten fırlatıyor, event'e varmak başarı demek.
+  **Bildirim:** öğrenciye in-app "Koçundan plan güncellemesi", link `/plan?date=` (silmede `/plan`),
+  öğrenci başına günde 1 satır (`mentorship-plan-change:{studentId}:{gün}`), görev başlığı yok.
+  **Push (yalnız öğrenci):** ödev verme ve değiştirme tek anahtarı paylaşır, günde en fazla 1;
+  takip kararı paylaşımı karar başına 1. Koça push yok (risk özetiyle aynı gerekçe). Push altyapısı
+  ve etkinlik push'u: [`notifications.md`](./notifications.md) 2026-09-14 girdisi.
+  **Gotchas:** (1) Koç adı tek `listDisplayIdentities` çağrısıyla çözülür; çözülemezse kopya boş
+  isimle gider (mevcut atama bildirimleriyle aynı). (2) Koçun kendi silmesi `PLAN_TASK_DELETED`
+  yaymaz; bu yüzden koça "öğrenci ödevi çıkardı" bildirimi gitmez ve düşürülen ödev günlüğü koçun
+  silmesini kaydetmez. Bu ayrım `PlanTaskFeedbackListener`'ın doğruluğu için şart. (3) e2e:
+  "coach-assigned homework" bloğunda tarih taşıma → öğrenci kutusu (poll). **İlgili:**
+  `mentorship/domain/mentorship.constants.ts`, `mentorship/application/mentorship-assignment.service.ts`,
+  `notifications/application/listeners/mentorship-events.listener.ts`,
+  `i18n/locales/{tr,en}/notifications.json`, `test/mentorship.e2e-spec.ts`.
+
 - **2026-09-14 — Completed-week coach evaluation, evidence-bound AI brief and print archive.**
   The student workspace now compares the selected completed Monday-Sunday week with its predecessor:
   recorded focus, qualifying sessions, active days, planned/completed tasks, subject allocation and

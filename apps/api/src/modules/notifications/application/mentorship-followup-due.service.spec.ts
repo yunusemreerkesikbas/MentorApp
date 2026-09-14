@@ -1,8 +1,10 @@
+import { Logger } from "@nestjs/common";
 import { describe, expect, it, vi } from "vitest";
 import { EmailTemplate, JobName } from "../domain/notifications.constants";
 import { MentorshipFollowupDueService } from "./mentorship-followup-due.service";
 
 const COACH = "11111111-1111-4111-8111-111111111111";
+const OTHER_COACH = "22222222-2222-4222-8222-222222222222";
 const ISTANBUL_NEXT_DAY = new Date("2026-09-10T21:30:00.000Z");
 
 function setup(dueCount = 2) {
@@ -80,5 +82,40 @@ describe("MentorshipFollowupDueService", () => {
     );
     expect(new Set(emailKeys)).toEqual(new Set(["mentorship-followup-due:2026-09-11"]));
     expect(new Set(appKeys)).toEqual(new Set(["mentorship-followup-due:2026-09-11"]));
+  });
+
+  it("keeps dispatching to the next coach when one coach's summary fails", async () => {
+    vi.spyOn(Logger.prototype, "error").mockImplementation(() => undefined);
+    const { service, followups, queue, notifications } = setup(1);
+    followups.listDueCoachIds.mockResolvedValue([COACH, OTHER_COACH]);
+    notifications.createFromTemplate.mockRejectedValueOnce(new Error("inbox down"));
+
+    await expect(service.dispatchDaily(ISTANBUL_NEXT_DAY)).resolves.toEqual({
+      sent: 1,
+      skipped: 1,
+    });
+
+    expect(notifications.createFromTemplate).toHaveBeenLastCalledWith(
+      OTHER_COACH,
+      "MENTORSHIP",
+      "mentorshipFollowupDue",
+      "/students",
+      expect.anything(),
+    );
+    expect(queue.enqueue).toHaveBeenCalledOnce();
+    expect(queue.enqueue.mock.calls[0]![1].executionGuard.coachId).toBe(OTHER_COACH);
+  });
+
+  it("counts a repeated run as skipped yet still queues the claim-guarded email", async () => {
+    const { service, queue, notifications } = setup(1);
+    notifications.createFromTemplate.mockResolvedValue(false);
+
+    await expect(service.dispatchDaily(ISTANBUL_NEXT_DAY)).resolves.toEqual({
+      sent: 0,
+      skipped: 1,
+    });
+    // A run that wrote the inbox row but died before queueing still gets its email next time;
+    // SendEmailHandler's delivery claim is what stops a second send.
+    expect(queue.enqueue).toHaveBeenCalledOnce();
   });
 });

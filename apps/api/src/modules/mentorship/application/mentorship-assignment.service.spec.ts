@@ -60,20 +60,95 @@ function setup(rejectStudent?: string) {
       },
     ]),
     createMentorshipBatchInTransaction: vi.fn(async () => []),
-    updateMentorshipTaskInTransaction: vi.fn(async () => ({ id: TASK })),
+    updateMentorshipTaskInTransaction: vi.fn(async () => ({
+      id: TASK,
+      taskDate: "2026-09-15",
+      origin: { type: "MENTORSHIP", linkId: LINK_A },
+    })),
     removeMentorshipTaskInTransaction: vi.fn(),
-    updateMentorshipTaskGroupInTransaction: vi.fn(async () => []),
+    // Returned out of scope order, with a different date per student, so matching is by link.
+    updateMentorshipTaskGroupInTransaction: vi.fn(async () =>
+      [LINK_B, LINK_A].map((linkId) => ({
+        id: `${linkId}-task`,
+        taskDate: linkId === LINK_A ? todayIso() : addDays(todayIso(), 1),
+        origin: { type: "MENTORSHIP", linkId },
+      })),
+    ),
     removeMentorshipTaskGroupInTransaction: vi.fn(),
     publishMentorshipTasksCreated: vi.fn(),
   };
+  const events = { emit: vi.fn() };
   const service = new MentorshipAssignmentService(
     links as never,
     plan as never,
     { listDisplayIdentities: vi.fn(async () => new Map()) } as never,
-    { emit: vi.fn() } as never,
+    events as never,
   );
-  return { service, links, plan };
+  return { service, links, plan, events };
 }
+
+describe("MentorshipAssignmentService change announcements", () => {
+  const CHANGED = "mentorship.assignments.changed";
+
+  it("announces an edit with the task's new date and a removal without one", async () => {
+    const { service, events } = setup();
+
+    await service.updateOne(COACH, STUDENT_A, TASK, { taskDate: "2026-09-15" });
+    await service.removeOne(COACH, STUDENT_A, TASK);
+
+    expect(events.emit.mock.calls).toEqual([
+      [
+        CHANGED,
+        expect.objectContaining({
+          linkId: LINK_A,
+          coachId: COACH,
+          studentId: STUDENT_A,
+          taskDate: "2026-09-15",
+        }),
+      ],
+      [
+        CHANGED,
+        expect.objectContaining({
+          linkId: LINK_A,
+          coachId: COACH,
+          studentId: STUDENT_A,
+          taskDate: null,
+        }),
+      ],
+    ]);
+  });
+
+  it("announces a group edit and removal once per student, each with their own task", async () => {
+    const { service, events } = setup();
+    const studentIds = [STUDENT_A, STUDENT_B];
+
+    await service.updateGroup(COACH, GROUP, { studentIds, expectedSignature, title: "Yeni grup" });
+    await service.removeGroup(COACH, GROUP, { studentIds, expectedSignature });
+
+    expect(
+      events.emit.mock.calls.map(([topic, event]) => [
+        topic,
+        event.studentId,
+        event.linkId,
+        event.taskDate,
+      ]),
+    ).toEqual([
+      [CHANGED, STUDENT_A, LINK_A, todayIso()],
+      [CHANGED, STUDENT_B, LINK_B, addDays(todayIso(), 1)],
+      [CHANGED, STUDENT_A, LINK_A, null],
+      [CHANGED, STUDENT_B, LINK_B, null],
+    ]);
+  });
+
+  it("announces nothing when the write is refused", async () => {
+    const { service, plan, events } = setup();
+    plan.removeMentorshipTaskInTransaction.mockRejectedValueOnce(new Error("not editable"));
+
+    await expect(service.removeOne(COACH, STUDENT_A, TASK)).rejects.toThrow("not editable");
+
+    expect(events.emit).not.toHaveBeenCalled();
+  });
+});
 
 describe("MentorshipAssignmentService orchestration", () => {
   it("authorizes every student before one atomic W2 batch call", async () => {

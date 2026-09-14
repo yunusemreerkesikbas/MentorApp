@@ -180,6 +180,11 @@
       "title": "Tasks from your coach",
       "body": "{name} added {count} tasks to your plan."
     },
+    "mentorshipAssignmentsChanged": {
+      "register": "companion",
+      "title": "A plan update from your coach",
+      "body": "{name} changed tasks in your plan."
+    },
     "mentorshipLinkEnded": {
       "register": "companion",
       "title": "The coaching link ended",
