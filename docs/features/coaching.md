@@ -145,6 +145,18 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-14 — Weekly coach-report evidence seam.** Coaching now exposes one aggregate service
+  for mentorship instead of allowing W8 to query W2 tables. It shares the recap's completed
+  Europe/Istanbul week boundary, activity-day calculation and configured minimum focus duration,
+  then adds current/previous task totals, subject allocation and exact-scope mock comparison.
+  Unclassified sessions are returned as a separate bucket; missing data is preserved and never
+  translated to "did not study". **Usage:** `MentorshipWeeklyEvidenceService.getSnapshot` is the
+  only W8 read seam. **Gotchas:** mock attempts from different `exam_id` values never share an
+  average, even when they belong to the same exam family; all calculations stay on the backend.
+  **Related:** `application/mentorship-weekly-evidence.service.ts`,
+  `infrastructure/mentorship-weekly-evidence.repository.ts`,
+  `domain/mentorship-weekly-{report,snapshot}.ts`.
+
 - **2026-09-12 — Koç planı gooey compose + okunur overlay.** Başlıktaki Yeni görev /
   Yeni etkinlik butonları sağ-alt plus menüye taşındı (`CoachPlanComposeFab`). SVG gooey
   filter yalnız blob dairelerde; etiket ve ikon aynı `y` satırında hizalanır. Form
@@ -167,7 +179,7 @@ pnpm --filter @mentor/api test
   `color-mix(main 16%)`. Katılımcı satırı `surface-container` / seçilince
   `accent-soft`. Kullanım: Yeni etkinlik drawer. Gotcha: `frame="strong"`
   (profil) halkası değişmedi. Plus menü scrim’i aynı dim (`coach-plan-compose-fab`).
-  İlgili: `coach-plan-overlay.tsx`, `coach-plan-compose-fab.tsx`,
+  İlgili: `components/coach-overlay.tsx` (eskiden `coach-plan-overlay.tsx`), `coach-plan-compose-fab.tsx`,
   `coach-plan-attendees.tsx`, `components/user-avatar.tsx`.
 
 - **2026-09-12 — Koç planı katılımcı satırı + saat picker.** “N öğrenci seçildi”

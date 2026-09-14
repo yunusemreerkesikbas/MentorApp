@@ -18,8 +18,9 @@ import { MentorshipTemplateRepository } from "../infrastructure/mentorship-templ
  * refuses to let them edit, pointing at a link row that no longer exists. The tasks stay (they are
  * the student's work), but the provenance goes with the coach.
  *
- * `mentorship_dropped_assignments` needs no clause here: its `link_id` is a real FK with
- * ON DELETE CASCADE onto `coach_students`, so purging the links takes the drop log with them.
+ * `mentorship_dropped_assignments` and `mentorship_weekly_reports` need no clause here: their
+ * `link_id` is a real FK with ON DELETE CASCADE onto `coach_students`, so purging the links takes
+ * the drop log, immutable snapshots, coach evaluation and AI brief with them.
  * That is only true because links are deleted rather than anonymized — if that ever changes, the
  * log has to be purged explicitly.
  *

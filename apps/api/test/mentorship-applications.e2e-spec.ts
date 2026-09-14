@@ -119,8 +119,6 @@ describe("mentorship coach registry (e2e)", () => {
 
     stamp = Date.now();
     for (const label of ["admin", "student", "student2", "outsider"]) await signup(label);
-    // The one signup that carries the intent — the APP-089 entry point.
-    await signup("coach", "COACH");
 
     await svc(async (c) => {
       await c.query("update users set roles = array_append(roles,$1) where id=$2", [
@@ -130,6 +128,9 @@ describe("mentorship coach registry (e2e)", () => {
     });
     await relogin("admin");
     await setOpen(true);
+    // The one signup that carries the intent — the APP-089 entry point. It needs the intake open:
+    // a shut intake refuses the intent rather than minting a coach who cannot finish onboarding.
+    await signup("coach", "COACH");
     // The coach surface itself, so the panel assertions mean something. The two flags stay
     // independent by design — this suite is the one place both are on at once.
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
@@ -188,6 +189,21 @@ describe("mentorship coach registry (e2e)", () => {
     const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
     expect(state.body.registrationOpen).toBe(false);
     await setOpen(true);
+  });
+
+  it("tells the unauthenticated signup screen whether coach signup is open", async () => {
+    // The refused coach-intent signup itself is proven in auth.service.spec: a sixth POST /auth/signup
+    // here would hit the 5/min signup throttle, not the intake gate.
+    await setOpen(false);
+    try {
+      const shut = await http().get("/v1/auth/coach-signup/status");
+      expect(shut.status).toBe(200);
+      expect(shut.body).toEqual({ open: false });
+    } finally {
+      // Reopen before anything can throw past it: every later test registers against an open intake.
+      await setOpen(true);
+    }
+    expect((await http().get("/v1/auth/coach-signup/status")).body).toEqual({ open: true });
   });
 
   it("refuses a body that tries to badge itself", async () => {

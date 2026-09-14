@@ -206,8 +206,9 @@ test("coach creates, reschedules, closes and replaces a shared decision", async 
   await page
     .getByRole("button", { name: "Takip kaydı oluştur", exact: true })
     .click();
-  // Only the open side panel counts; on a wide screen the rail repeats the latest records.
-  const panel = page.getByRole("dialog");
+  // Only the open side panel counts; on a wide screen the rail repeats the latest records. `first()`
+  // because the date field's calendar is a second dialog while open, portaled after the panel.
+  const panel = page.getByRole("dialog").first();
   await panel.getByLabel(/Aksiyon başlığı/).fill("Haftalık görüşme");
   await panel.getByLabel(/Koça özel not/).fill("Görüşme öncesi notum");
   await panel
@@ -218,7 +219,13 @@ test("coach creates, reschedules, closes and replaces a shared decision", async 
     .click();
   await expect(panel.getByText("Yanıt bekliyor", { exact: true })).toBeVisible();
   expect(api.writes[0]).toHaveProperty("operationId");
-  await panel.getByLabel(/Tekrar kontrol tarihi/).fill("2099-01-01");
+  await panel.getByRole("button", { name: /Tekrar kontrol tarihi/ }).click();
+  // The shared calendar: "Bugün" is the earliest allowed check date and needs no month navigation.
+  await page
+    .getByRole("dialog")
+    .last()
+    .getByRole("button", { name: "Bugün", exact: true })
+    .click();
   await panel.getByRole("button", { name: "Tarihi kaydet" }).click();
   await expect.poll(() => api.writes.length).toBe(2);
   await panel.getByRole("button", { name: "Takibi tamamla" }).click();

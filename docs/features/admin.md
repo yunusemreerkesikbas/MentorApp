@@ -97,7 +97,10 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
-- **Koç vetting kuyruğu (APP-082, 2026-09-06)** — Elle `POST /v1/admin/users/:id/roles/COACH`
+- **Koç vetting kuyruğu (APP-082, 2026-09-06)** — **Güncel değil:** APP-089 (2026-09-08) ön onayı
+  kaldırdı. Bugünkü uçlar `GET /v1/admin/coaches?status=`, `POST /v1/admin/coaches/:userId/status`,
+  `POST /v1/admin/coaches/:userId/verified-claims`; ekran onay kuyruğu değil koç sicili. Aşağısı tarihçe.
+  Elle `POST /v1/admin/users/:id/roles/COACH`
   çağırmanın yerini alan kürasyon ekranı: `GET /v1/admin/coach-applications?status=` +
   `POST /v1/admin/coach-applications/:id/review` (`@Audit(COACH_APPLICATION_REVIEW)`,
   `@Roles(SUPER_ADMIN)` — bir başvuruyu onaylamak o rolü vermenin ta kendisi, dolayısıyla doğrudan

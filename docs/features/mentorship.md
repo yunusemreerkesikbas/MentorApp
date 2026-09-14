@@ -59,7 +59,8 @@ chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel.
   `@mentor/types`) = the admin sub-roles + COACH, so `POST /v1/admin/users/:id/roles/COACH` and the
   admin UI's role toggles work with no new endpoint and no new screen. COACH is absent from
   `ADMIN_PANEL_ROLES`, so granting it never opens the admin panel (§9 "delegated authority is not
-  admin access"). Coach onboarding is curation, not open registration (§5) — this is the curation.
+  admin access"). This endpoint is now the manual override only: since APP-089 coach registration
+  is self-service with no approval, gated by `mentorship.applications.open`.
 
 ## Tutorials / Guides
 
@@ -70,42 +71,44 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 
 # The flag is OFF by default — turn it on from the admin config screen or:
 #   POST /v1/admin/config  { "key": "mentorship.enabled", "value": true }   (SUPER_ADMIN)
+# Weekly reports have their own rollout switch after the base surface:
+#   POST /v1/admin/config  { "key": "mentorship.weekly_reports.enabled", "value": true }
 # Make someone a coach:
 #   POST /v1/admin/users/:userId/roles/COACH                                (SUPER_ADMIN, audited)
 #   No re-login needed since APP-080: JwtAuthGuard resolves the principal through
 #   TokenService.validateSession, which joins `users` on every request, so the role is live
-#   at once. Curation now runs through the application queue instead
-#   (POST /v1/mentorship/applications -> admin /coach-applications); this endpoint stays as
-#   the manual override.
+#   at once. Coaches normally register themselves (/kayit?rol=koc or /koc-ol ->
+#   POST /v1/mentorship/coach-registration, no approval); this endpoint stays as the manual override.
 ```
 
 ## Going live — the flag order
 
-Five flags, and the order is the whole point. Turning `mentorship.enabled` on first opens a screen
+Six steps, and the order is the whole point. Turning `mentorship.enabled` on first opens a screen
 that cannot work: a student who redeems a code before any coach exists gets "invalid code", and the
 surface is a promise nobody can keep. Each step below is one `POST /v1/admin/config` (SUPER_ADMIN,
 audited) or one admin screen.
 
 | #   | Step                                          | What it opens                                                                                                 | Cost                                 | Turning it back off                                                                                                          |
 | --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `mentorship.applications.open = true`         | Self-service coach registration: `/kayit?rol=koc` and the form at `/koc-basvurusu`. **Students see nothing.** | None                                 | Clean. Existing coaches stay; the form says "closed".                                                                        |
+| 1   | `mentorship.applications.open = true`         | Self-service coach registration: `/kayit?rol=koc`, the form at `/koc-ol` and the profile row. **Students see nothing.** | None                                 | Clean. Existing coaches stay; entry points hide, `?rol=koc` says "closed" and the API refuses the intent.                                                                      |
 | 2   | `mentorship.enabled = true`                   | The coach panel and the student's invite screen.                                                              | None                                 | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
-| 3   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
-| 4   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 5.                                                         | A provider bill                      | n/a                                                                                                                          |
-| 5   | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.**                                                                    | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
+| 3   | `mentorship.weekly_reports.enabled = true`    | Completed-week comparison, explicit AI preparation and finalized print view in the student report.          | LLM cost only when a coach requests a brief | Clean. Existing snapshots remain stored but unreachable.                                                               |
+| 4   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
+| 5   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 6.                                                         | A provider bill                      | n/a                                                                                                                          |
+| 6   | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.**                                                                    | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
 
-**Step 4 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
+**Step 5 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
 human said yes to each one, so `coaches x free_seats` had a person in front of it. Registration is
 self-service now, so that number is bounded by how many verified email addresses somebody can
 produce, which is not a bound. Email verification stops nothing here — free addresses are
 unlimited — and SMS is the first thing that costs an attacker anything per account. Until it
 ships, `sponsorship_enabled = false` IS the defence.
 
-**Before step 5, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
+**Before step 6, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
 the cohort's 30-day LLM cost per seat — the number `mentorship.coach.free_seats` is calibrated
 against. It exists precisely so this flag is not flipped on a guess (APP-077).
 
-**Two knobs at step 5, two different severities, and neither is the other's undo:**
+**Two knobs at step 6, two different severities, and neither is the other's undo:**
 
 - `mentorship.seats.sponsorship_enabled = false` is the **emergency brake**: it expires live seats
   immediately, not just future ones. An operator hitting it means "now", not "from the next student".
@@ -113,7 +116,7 @@ against. It exists precisely so this flag is not flipped on a guess (APP-077).
 - `mentorship.coach.free_seats` lowered is **not retroactive**: it shapes who gets a seat next, it
   does not take back one already granted. Deciding which existing seats to revoke would be arbitrary.
 
-**Rollback of the whole surface** is step 3 alone: `mentorship.enabled = false` closes every door in
+**Rollback of the whole surface** is step 2 alone: `mentorship.enabled = false` closes every door in
 one config write. Links, applications and assignments are untouched — nothing is deleted by a flag.
 
 ```bash
@@ -133,6 +136,12 @@ DELETE /v1/mentorship/templates/:templateId        -> 204
 GET    /v1/mentorship/brief                        -> MentorshipCohortBriefDto | (empty = never written)
 POST   /v1/mentorship/brief                        -> writes one; unchanged cohort returns the stored text
 POST   /v1/mentorship/students/:id/assignment-suggestions -> a week of drafts for the composer (writes nothing)
+GET    /v1/mentorship/students/:id/weekly-reports/preview  -> live completed-week comparison
+GET    /v1/mentorship/students/:id/weekly-reports/brief    -> current explicit brief status
+POST   /v1/mentorship/students/:id/weekly-reports/brief    -> queues an evidence-bound brief
+POST   /v1/mentorship/students/:id/weekly-reports/finalize -> freezes a versioned report
+GET    /v1/mentorship/students/:id/weekly-reports          -> finalized archive
+GET    /v1/mentorship/students/:id/weekly-reports/:reportId{/share} -> full coach / safe print projection
 
 ### Student (no role required)
 POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coachUsername, dataScope }
@@ -201,6 +210,93 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-14 — PR #102 review düzeltmeleri (haftalık rapor + koç yüzeyi).** CodeRabbit'in 12
+  bulgusu doğrulandı ve kapatıldı. **API:** (1) `finalize` replay'i artık isteği kontrol ediyor:
+  aynı `operationId` farklı fingerprint/hafta/değerlendirme ile gelirse eski rapor dönmez, 409
+  `MENTORSHIP_WEEKLY_REPORT_CONFLICT` (hem ön kontrol hem kilit altındaki replay). Hash kolonu yok,
+  satır alanları karşılaştırılır; `replacesId` karşılaştırılmaz (satırda çözülmüş sürüm durur).
+  (2) Brief job'u `maxAttempts: 1`: retry aynı ücretli çağrıyı tekrarlıyor ve `BRIEF_FAILED` sonrası
+  `BRIEF_READY`'ye dönüp koçun kendi tekrar denemesiyle yarışıyordu. Hata = FAILED, koç butondan
+  yeniden ister. (3) Job payload'ında `coachRoles` yok; gate rolleri DB'den taze okur (kuyrukta
+  bekleyen STAFF ipucu kaldırılmış rolü yaşatmasın). (4) Writer, bozuk model yanıtında da
+  `ai_usage` yazar (append parse'tan önce, diğer writer'larla aynı). **Web:** plan paneli gönderim
+  sürerken kapanmaz, taslak butonları kilitli (`busy` shell'de); brief polling geçici hatada durmaz
+  (backoff, tek toast); 409 sonrası başarılı reload'da hata toast'u yok; yüzde `Intl` percent ile
+  (en `50%`, tr `%50`); arşiv tek sayfa `pageSize: 100` (ceiling notu kodda); overlay Escape
+  `useEffectEvent` ile güncel `busy` okur. **Gotcha:** eski kuyruktaki job'larda `coachRoles` anahtarı
+  zod tarafından atılır, sorun değil.
+
+- **2026-09-14 — Completed-week coach evaluation, evidence-bound AI brief and print archive.**
+  The student workspace now compares the selected completed Monday-Sunday week with its predecessor:
+  recorded focus, qualifying sessions, active days, planned/completed tasks, subject allocation and
+  mock results from one exact exam scope. Missing records remain distinct from zero completion. AI
+  runs only after the coach asks, receives aggregate allowlisted evidence, can return at most three
+  observation/evidence/uncertainty/question findings, and is rejected if it cites an unknown evidence
+  id. Finalization freezes the snapshot, locale, prompt version, optional coach evaluation and brief;
+  retries reuse an operation id and corrections form a serial version chain under a database lock.
+  Concurrent brief requests use an atomic draft claim, so only one request can enqueue generation.
+  The A4 browser print route consumes a separate projection that omits evidence, the coach-only brief,
+  conversation questions, private notes and mood. **Usage:** enable `mentorship.enabled`, then
+  `mentorship.weekly_reports.enabled`; open a student, choose a completed week, optionally generate
+  the preparation note, review the shared evaluation, finalize and open the print view. **Gotchas:**
+  access is limited to the current active relationship period; changed source data invalidates a live
+  preview; different mock scopes never mix; AI failure does not block statistics or finalization;
+  erasing a link cascades its report archive. Migration: `0113_right_thena.sql`. **Related:**
+  `mentorship-weekly-report.{controller,dto,service,repository}.ts`,
+  `coaching/{application/mentorship-weekly-evidence.service.ts,domain/mentorship-weekly-snapshot.ts}`,
+  `ai/{application/mentorship-weekly-brief-writer.service.ts,domain/mentorship-weekly-brief-prompt.ts}`,
+  `apps/web/**/weekly-report-*`, `packages/{types,validation}/src/mentorship-weekly-report.ts`.
+
+- **2026-09-14 — Davet kartı, doğrulanmamış e-postayı Create butonuna bağladı.** EMAIL kilidi artık
+  inline paragraf değil: kart standart boş kod görünümü (`Henüz bir kodun yok.` + `Kod oluştur`).
+  Tık confirm açar; onay `POST /v1/users/me/verification-email` yollar (profildeki yeniden gönder
+  ile aynı). Başarı `invite_email_verify_sent_*` info diyaloğu. STANDING hâlâ butonsuz paragraf.
+  **Usage:** `/kocluk` → Kod oluştur → Doğrulama gönder. Kutudaki link mevcut `/eposta-dogrula`
+  (identity); yeni URL yok. **Gotchas:** (1) Mail gitmeden kod oluşmaz; rotate çağrılmaz.
+  (2) Koç profilindeki `coach_email_unverified` cümlesi duruyor. (3) Rate limit backend mesajıyla
+  toast. (4) `(coach)` mesajları `profile` namespace taşımaz, gönderildi/hata kopyası mentorship
+  altında (profildeki cümlelerle aynı). **İlgili:** `(coach)/students/_components/{coach-capacity-card.tsx,invite-lock.ts}` ·
+  `apps/web/e2e/coach-home.spec.ts`
+
+- **2026-09-14 — Koç kaydı flag'e uçtan uca bağlandı, "başvuru" kalıntıları temizlendi.** Review
+  sorusu: "kendi koçumuz yok, neden biz onaylayalım?" Cevap: onaylamıyoruz, APP-089'dan beri kayıt
+  anında `ACTIVE`. Ama ürün başvuru gibi görünüyordu, ve varsayılan config'de gerçekten takılıyordu:
+  `mentorship.applications.open = false` iken signup `intent: COACH` rolü veriyor, onboarding'in
+  atlanamayan son adımı ise 403 alıyordu. Sonuç sicil satırı olmayan, davet kodu kilitli bir "yarım koç".
+  **Değişenler:** (1) `AuthService.signup` intake kapalıyken COACH intent'ini hesap oluşmadan
+  `MENTORSHIP_APPLICATIONS_CLOSED` (403) ile reddediyor. (2) `GET /v1/auth/coach-signup/status`
+  (public, `google/status` deseni) → `{ open }`; web `lib/coach-signup.ts` fail-closed okuyor.
+  (3) Signup'taki koç linki ve profildeki "Koç ol" satırı flag'i izliyor (satır koçlara da gizli);
+  `?rol=koc` kapalıyken form yerine kapalı notu gösteriyor. (4) URL `/koc-basvurusu` → `/koc-ol`
+  (EN `/become-a-coach`); canonical route anahtarı `/coach-application` ve klasör bilerek aynı.
+  Canlıya hiç çıkmadığı için redirect yok. (5) "Başvurunu okuyup değerlendiriyoruz" alt başlığı ve
+  kimsenin okumadığı serbest not alanı kalktı; koç profili kendi `profile_subtitle`'ını kullanıyor.
+  **Dokunulmayan:** admin durdurma/iddia doğrulama, PENDING, davet kodu kapısı, tablo ve flag adları.
+  **Gotchas:** (a) Flag kapalıyken askıya alınmış bir koç profil satırını görmez; admin gerekçesini
+  `/koc-ol`'u URL'den açarak okur. (b) Status okuması başarısızsa giriş noktaları gizlenir, API zaten
+  intent'i kendisi reddediyor. (c) Registry e2e artık koç signup'ından önce intake'i açıyor.
+  **İlgili:** `modules/identity/{application/auth.service.ts,presentation/auth.controller.ts}` ·
+  `common/config/config.catalog.ts` (`FeatureFlag.MENTORSHIP_APPLICATIONS_OPEN`) ·
+  `apps/web/src/lib/coach-signup.ts` · `(auth)/signup/page.tsx` · `(app)/profile/_components/account-links-card.tsx` ·
+  `(app)/coach-application/**` · `i18n/routing.ts` · `test/mentorship-applications.e2e-spec.ts`
+
+- **2026-09-13 — Report panel on the shared coach overlay; shared form controls.** The report's
+  side panel now uses the coach calendar's overlay, moved from `(app)/plan/_components/
+  coach-plan-overlay.tsx` to `components/coach-overlay.tsx` (`CoachOverlay`,
+  `CoachOverlayHeader/Body/Footer`), because `(coach)` may not import from `(app)`. Desktop: right
+  drawer; mobile: bottom sheet with drag-to-dismiss. It unmounts on close, so the week composer's
+  drafts live in `StudentReportShell` (`AssignDraft[]`) and `page.tsx` keys the shell by
+  `studentId`. Fields, dropdowns and dates are the shared `TextField`/`TextAreaField` (`dense`),
+  `MenuSelect` (through `ComposerSelect`, the empty value as a real first option) and `DateField`;
+  plain text buttons became `Button` ghost/secondary, and `coach-ui.tsx` keeps only the inset
+  grouping. Shared additions: `DateField` `clearLabel` (an optional date can be removed again) and
+  `menuClassName` on `DateField`/`MenuSelect`; `CoachOverlay` `grouped` (page-coloured panel for
+  inset groups), focus return on close and a wrapping footer. Gotchas: a portaled calendar or menu
+  wears the coach tokens only with `COACH_POPOVER_CLASS`; an empty `DateField` opens its calendar on
+  `min` (or today). e2e: the template menu is clicked instead of `selectOption`, the follow-up date
+  is picked with "Bugün", and the panel is `getByRole("dialog").first()` because an open calendar is
+  a second dialog. Supersedes gotcha (1) of the entry below.
 
 - **2026-09-13 — Coach student report redesigned as a workspace.** `/kocluk/[studentId]` went from
   ten stacked cards (three forms above the numbers) to a read-and-act layout approved on a design

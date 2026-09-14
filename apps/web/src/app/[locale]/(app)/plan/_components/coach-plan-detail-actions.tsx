@@ -24,7 +24,7 @@ import {
 import { deletePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanEventScopeChoices } from "./coach-plan-event-scope";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
-import { CoachPlanOverlayBody, CoachPlanOverlayFooter } from "./coach-plan-overlay";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 
 export function CoachPlanDetailActions({
   item,
@@ -127,7 +127,7 @@ export function CoachPlanDetailActions({
 
   return (
     <>
-      <CoachPlanOverlayFooter>
+      <CoachOverlayFooter>
         <Button
           type="button"
           variant="secondary"
@@ -152,7 +152,7 @@ export function CoachPlanDetailActions({
         >
           {t(item.kind === "TASK" ? "remove" : "cancel")}
         </Button>
-      </CoachPlanOverlayFooter>
+      </CoachOverlayFooter>
       <AnimatePresence>
       {scopePrompt ? (
         <CoachPlanFormPanel
@@ -161,22 +161,22 @@ export function CoachPlanDetailActions({
           busy={busy}
           onClose={closeScopePrompt}
         >
-          <CoachPlanOverlayBody>
+          <CoachOverlayBody>
             <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
               {t("cancel_scope_body")}
             </p>
             <div className="mt-4">
               <CoachPlanEventScopeChoices value={scope} onChange={setScope} />
             </div>
-          </CoachPlanOverlayBody>
-          <CoachPlanOverlayFooter>
+          </CoachOverlayBody>
+          <CoachOverlayFooter>
             <Button type="button" variant="secondary" onClick={closeScopePrompt}>
               {t("form_cancel")}
             </Button>
             <Button type="button" disabled={!scope} onClick={() => void cancelEvent(scope)}>
               {t("continue")}
             </Button>
-          </CoachPlanOverlayFooter>
+          </CoachOverlayFooter>
         </CoachPlanFormPanel>
       ) : null}
       </AnimatePresence>

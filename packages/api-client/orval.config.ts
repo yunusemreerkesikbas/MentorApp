@@ -18,6 +18,9 @@ export default defineConfig({
           "mentorship-followups": {
             fetch: { includeHttpResponseReturnType: false },
           },
+          "mentorship-weekly-reports": {
+            fetch: { includeHttpResponseReturnType: false },
+          },
         },
       },
     },

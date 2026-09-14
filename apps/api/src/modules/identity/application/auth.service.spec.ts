@@ -53,6 +53,53 @@ function makeService(count: number) {
   return { emailTokenRepo, queue, service };
 }
 
+describe("AuthService coach signup gate", () => {
+  function makeSignupService(open: boolean) {
+    const usersRepo = {
+      findByEmailService: vi.fn(async () => undefined),
+      createService: vi.fn(),
+    };
+    const configRegistry = {
+      get: vi.fn(async (key: string) => (key === "mentorship.applications.open" ? open : 0)),
+    };
+    const service = new AuthService(
+      usersRepo as never,
+      {} as never,
+      {} as never,
+      { assertValid: vi.fn(async () => undefined) } as never,
+      {} as never,
+      configRegistry as never,
+      {} as never,
+      {} as never,
+    );
+    return { usersRepo, service };
+  }
+
+  it("refuses a coach signup while the intake is shut, before any account exists", async () => {
+    const { usersRepo, service } = makeSignupService(false);
+
+    await expect(
+      service.signup({
+        email: "koc@example.com",
+        password: "Sifre1234",
+        displayName: "Koç",
+        kvkkAccepted: true,
+        intent: "COACH",
+      }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED,
+      httpStatus: HttpStatus.FORBIDDEN,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
+    expect(usersRepo.createService).not.toHaveBeenCalled();
+  });
+
+  it("reports the intake the way the signup screen reads it", async () => {
+    await expect(makeSignupService(true).service.coachSignupStatus()).resolves.toEqual({ open: true });
+    await expect(makeSignupService(false).service.coachSignupStatus()).resolves.toEqual({ open: false });
+  });
+});
+
 describe("AuthService.resendVerificationEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 

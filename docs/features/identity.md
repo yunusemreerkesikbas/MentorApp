@@ -91,6 +91,17 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-14 — Koç signup'ı durum bilinene kadar form göstermiyor.** `?rol=koc` ile
+  `coachOpen === null` iken (status isteği sürüyor) skeleton render edilir; önceden kapalı intake'te
+  form bir an görünüp doldurulabiliyordu. `fetchCoachSignupOpen` hata durumunda `false` döner.
+
+- **2026-09-14 — Signup koç intent'i intake flag'ine bağlandı.** `intent: COACH`, artık
+  `mentorship.applications.open` kapalıyken hesap oluşturulmadan 403 `MENTORSHIP_APPLICATIONS_CLOSED`
+  alıyor; önceden rol veriliyor ve koç onboarding'in son adımında takılıyordu. Yeni public
+  `GET /v1/auth/coach-signup/status` → `{ open }`, signup ekranı formu göstermeden önce soruyor.
+  Gotcha: kontrol e-posta var mı sorgusundan önce, yani kapalı intake'te kullanıcı adı/e-posta
+  çakışması hiç raporlanmıyor. Ayrıntı: [mentorship.md](./mentorship.md) 2026-09-14 girdisi.
+
 - **2026-09-12 — Auth table render and Google link sheet.** The auth endpoint table in this doc
   kept three columns; Google linking no longer dismisses the password sheet on backdrop while
   OAuth start is in flight. Usage: profile → Google → password → connect. Related:

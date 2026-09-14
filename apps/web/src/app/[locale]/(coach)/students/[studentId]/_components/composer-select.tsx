@@ -1,10 +1,14 @@
 "use client";
 
-import { COACH_FIELD_CLASS } from "@/components/mentorship/coach-ui";
+import { useId } from "react";
+import { MenuSelect } from "@/components/menu-select";
+import { COACH_POPOVER_CLASS } from "@/components/mentorship/coach-ui";
 
 /**
- * A native `<select>`: it opens the platform's own picker, is keyboard- and screen-reader-correct
- * for free, and costs no bundle. A combobox library for three dropdowns would never earn its weight.
+ * A labelled `MenuSelect`, the same dropdown the coach calendar's forms use.
+ *
+ * The menu shows the selected option's label and has no placeholder of its own, so the empty value
+ * is a real first option ("Ders seçme", "Bir şablon seç").
  *
  * Options are `{ value, label }` pairs rather than plain strings because the template picker keys
  * on an id while the taxonomy pickers key on the label itself; one component, two shapes of data.
@@ -29,23 +33,26 @@ export function ComposerSelect({
   disabled: boolean;
   onChange: (next: string) => void;
 }) {
+  const labelId = useId();
   return (
-    <label className="flex min-w-0 flex-col gap-1.5">
-      <span className="coach-footnote font-semibold text-[var(--color-secondary)]">{label}</span>
-      <select
-        value={value}
-        disabled={disabled}
-        onChange={(event) => onChange(event.target.value)}
-        className={COACH_FIELD_CLASS}
+    <div className="flex min-w-0 flex-col gap-1">
+      <span
+        id={labelId}
+        className="text-xs font-semibold"
+        style={{ color: "var(--color-secondary)", fontFamily: "var(--font-heading)" }}
       >
-        <option value="">{placeholder}</option>
-        {options.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-    </label>
+        {label}
+      </span>
+      <MenuSelect
+        value={value}
+        options={[{ value: "", label: placeholder }, ...options]}
+        disabled={disabled}
+        textSize="sm"
+        aria-labelledby={labelId}
+        menuClassName={COACH_POPOVER_CLASS}
+        onChange={onChange}
+      />
+    </div>
   );
 }
 

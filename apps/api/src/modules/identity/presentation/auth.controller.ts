@@ -16,7 +16,7 @@ import {
   REFRESH_COOKIE,
   REFRESH_COOKIE_PATH,
 } from "../domain/identity.constants";
-import { AuthService, type AuthResult } from "../application/auth.service";
+import { AuthService, type AuthResult, type CoachSignupStatus } from "../application/auth.service";
 import { GoogleAuthService, type GoogleOAuthState, type GoogleOAuthStatus } from "../application/google-auth.service";
 import {
   ForgotPasswordDto,
@@ -90,6 +90,12 @@ export class AuthController {
   @Get("google/status")
   googleStatus(): Promise<GoogleOAuthStatus> {
     return this.googleAuth.status();
+  }
+
+  /** Whether coach signup is open (`mentorship.applications.open`), asked before the form is shown. */
+  @Get("coach-signup/status")
+  coachSignupStatus(): Promise<CoachSignupStatus> {
+    return this.auth.coachSignupStatus();
   }
 
   @Get("google/callback")

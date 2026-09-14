@@ -29,7 +29,7 @@ import { createPlanTask, updatePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanAttendees } from "./coach-plan-attendees";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
 import { CoachPlanWhenFields } from "./coach-plan-form-fields";
-import { CoachPlanOverlayBody, CoachPlanOverlayFooter } from "./coach-plan-overlay";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 
 type TaskFormMode =
   | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
@@ -138,7 +138,7 @@ export function CoachPlanTaskForm({
       onClose={onClose}
     >
       <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
-        <CoachPlanOverlayBody>
+        <CoachOverlayBody>
         <div className="flex flex-col gap-4">
         <TextField
           dense
@@ -185,15 +185,15 @@ export function CoachPlanTaskForm({
         )}
         <FormError message={error} />
         </div>
-        </CoachPlanOverlayBody>
-        <CoachPlanOverlayFooter>
+        </CoachOverlayBody>
+        <CoachOverlayFooter>
           <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
             {t("form_cancel")}
           </Button>
           <Button type="submit" busy={busy}>
             {t(editing ? "save_changes" : "create_task")}
           </Button>
-        </CoachPlanOverlayFooter>
+        </CoachOverlayFooter>
       </form>
     </CoachPlanFormPanel>
   );

@@ -5,8 +5,9 @@ import type { MentorshipCoachRegistrationStateDto } from "@mentor/types";
  *
  * The overview endpoint nulls the code without saying why, because the reason lives in the
  * registration state and duplicating it onto the overview would be two sources for one fact.
- * The card needs the difference anyway: EMAIL is something the coach fixes in one click, STANDING
- * is somebody else's decision and there is nothing for them to press.
+ * The card needs the difference anyway: EMAIL is something the coach clears from the Create
+ * button (confirm, then resend the verification mail), STANDING is somebody else's decision and
+ * there is nothing for them to press.
  */
 export type InviteLock = "EMAIL" | "STANDING" | null;
 

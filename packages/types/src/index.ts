@@ -127,3 +127,4 @@ export * from "./google-linking.js";
 
 export * from "./notebook-review.js";
 export * from "./mentorship-followup.js";
+export * from "./mentorship-weekly-report.js";

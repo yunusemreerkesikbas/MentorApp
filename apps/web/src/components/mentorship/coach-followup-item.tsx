@@ -4,9 +4,10 @@ import { useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipFollowupDto } from "@mentor/types";
 import { Button } from "@mentor/ui";
+import { DateField } from "@/components/date-field";
 import { updateFollowup } from "@/lib/mentorship-followups";
 import { istanbulDate } from "@/lib/mentorship-followup-state";
-import { CoachTextField, INSET_GROUP_CLASS, TextButton } from "./coach-ui";
+import { COACH_POPOVER_CLASS, INSET_GROUP_CLASS } from "./coach-ui";
 import { FollowupStatus } from "./followup-status";
 
 export function CoachFollowupItem({
@@ -94,26 +95,43 @@ export function CoachFollowupItem({
       ) : null}
 
       {item.status === "OPEN" ? (
-        <div className="flex flex-wrap items-end gap-2 border-t border-[var(--color-border)] pt-3">
-          <CoachTextField
-            type="date"
-            label={t("followup_date_label")}
-            min={istanbulDate()}
-            value={date}
-            disabled={busy}
-            onChange={(event) => setDate(event.target.value)}
-            className="w-full sm:w-48"
-          />
-          <TextButton
+        // Two rows: rescheduling changes the record, closing it ends it, and a panel is too narrow to
+        // hold both groups on one line without the last button falling onto a row of its own.
+        <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
+          <div className="flex flex-wrap items-end gap-2">
+          <div className="min-w-0 flex-1 sm:max-w-52">
+            <DateField
+              label={t("followup_date_label")}
+              value={date}
+              min={istanbulDate()}
+              disabled={busy}
+              clearLabel={t("followup_date_clear")}
+              menuClassName={COACH_POPOVER_CLASS}
+              onChange={setDate}
+            />
+          </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            className="min-h-11"
             disabled={busy || date === (item.followUpDate ?? "")}
             onClick={() => void mutate()}
           >
             {t("followup_reschedule")}
-          </TextButton>
-          <span className="hidden flex-1 sm:block" />
-          <TextButton tone="muted" disabled={busy} onClick={() => void mutate("CANCELLED")}>
+          </Button>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11"
+            disabled={busy}
+            onClick={() => void mutate("CANCELLED")}
+          >
             {t("followup_cancel")}
-          </TextButton>
+          </Button>
           <Button
             type="button"
             variant="soft"
@@ -124,10 +142,13 @@ export function CoachFollowupItem({
           >
             {t("followup_complete")}
           </Button>
+          </div>
         </div>
       ) : (
-        <div className="flex justify-end border-t border-[var(--color-border)] pt-1">
-          <TextButton onClick={onReplace}>{t("followup_replace")}</TextButton>
+        <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
+          <Button type="button" variant="secondary" size="sm" className="min-h-11" onClick={onReplace}>
+            {t("followup_replace")}
+          </Button>
         </div>
       )}
     </article>

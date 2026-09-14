@@ -93,7 +93,6 @@ export function CoachApplicationShell() {
         institution: text("institution"),
         branch: text("branch"),
         years: years === null ? null : Number(years),
-        note: text("note"),
       });
       setState((current) =>
         current === null ? current : { ...current, registration: created },
@@ -203,13 +202,7 @@ export function CoachApplicationShell() {
               max={60}
               label={t("application_years_label")}
             />
-            <TextAreaField
-              name="note"
-              label={t("application_note_label")}
-              placeholder={t("application_note_placeholder")}
-              maxLength={1000}
-              rows={3}
-            />
+            {/* No free-text note: it was written for a reviewer, and nobody reviews a registration. */}
 
             <FormError message={error} />
             <Button type="submit" busy={busy}>

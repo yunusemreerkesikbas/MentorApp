@@ -4,22 +4,16 @@ import { useRef, useState, type FormEvent } from "react";
 import { UsersRound } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
+import { Button, TextAreaField, TextField } from "@mentor/ui";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
+import { DateField } from "@/components/date-field";
 import { createFollowup } from "@/lib/mentorship-followups";
 import {
   istanbulDate,
   operationForDraft,
   type PendingFollowupOperation,
 } from "@/lib/mentorship-followup-state";
-import {
-  CoachTextArea,
-  CoachTextField,
-  INSET_GROUP_CLASS,
-  NOTE_CLASS,
-  PANEL_BODY_CLASS,
-  PANEL_FOOTER_CLASS,
-  TextButton,
-} from "./coach-ui";
+import { COACH_POPOVER_CLASS, INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
 
 /**
  * A follow-up record, written in the report's side panel.
@@ -79,73 +73,87 @@ export function FollowupCreateForm({
   }
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="flex min-h-full flex-col">
-      <div className={PANEL_BODY_CLASS}>
-        {replacesId ? <p className={NOTE_CLASS}>{t("followup_replacement_hint")}</p> : null}
+    <form onSubmit={(event) => void submit(event)} className="flex min-h-0 flex-1 flex-col">
+      <CoachOverlayBody>
+        <div className="flex flex-col gap-5 pb-4">
+          {replacesId ? <p className={NOTE_CLASS}>{t("followup_replacement_hint")}</p> : null}
 
-        <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
-          <CoachTextField
-            label={t("followup_title_label")}
-            required
-            maxLength={120}
-            value={title}
-            disabled={busy}
-            // Focus lands here whether the panel opens on the form or switches to it.
-            autoFocus
-            data-autofocus=""
-            onChange={(event) => setTitle(event.target.value)}
-          />
-          <CoachTextArea
-            label={t("followup_private_label")}
-            hint={t("followup_private_hint")}
-            rows={3}
-            maxLength={2000}
-            value={privateNote}
-            disabled={busy}
-            onChange={(event) => setPrivateNote(event.target.value)}
-          />
+          <div className={`${INSET_GROUP_CLASS} flex flex-col gap-4 p-4`}>
+            <TextField
+              dense
+              label={t("followup_title_label")}
+              required
+              maxLength={120}
+              value={title}
+              disabled={busy}
+              // Focus lands here whether the panel opens on the form or switches to it.
+              autoFocus
+              data-autofocus=""
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <TextAreaField
+              dense
+              label={t("followup_private_label")}
+              hint={t("followup_private_hint")}
+              rows={3}
+              maxLength={2000}
+              value={privateNote}
+              disabled={busy}
+              onChange={(event) => setPrivateNote(event.target.value)}
+            />
+          </div>
+
+          <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
+            <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--coach-accent-text)]">
+              <UsersRound aria-hidden size={15} strokeWidth={2} />
+              {t("followup_shared_hint")}
+            </p>
+            <TextAreaField
+              dense
+              label={t("followup_shared_label")}
+              rows={3}
+              maxLength={2000}
+              value={sharedDecision}
+              disabled={busy}
+              onChange={(event) => setSharedDecision(event.target.value)}
+            />
+          </div>
+
+          <div className="sm:max-w-64">
+            <DateField
+              label={t("followup_date_label")}
+              value={followUpDate}
+              min={istanbulDate()}
+              disabled={busy}
+              clearLabel={t("followup_date_clear")}
+              menuClassName={COACH_POPOVER_CLASS}
+              onChange={setFollowUpDate}
+            />
+          </div>
+
+          {error ? (
+            <p role="alert" className="text-sm" style={{ color: "var(--color-danger)" }}>
+              {error}
+            </p>
+          ) : null}
         </div>
+      </CoachOverlayBody>
 
-        <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
-          <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--coach-accent-text)]">
-            <UsersRound aria-hidden size={15} strokeWidth={2} />
-            {t("followup_shared_hint")}
-          </p>
-          <CoachTextArea
-            label={t("followup_shared_label")}
-            rows={3}
-            maxLength={2000}
-            value={sharedDecision}
-            disabled={busy}
-            onChange={(event) => setSharedDecision(event.target.value)}
-          />
-        </div>
-
-        <CoachTextField
-          type="date"
-          label={t("followup_date_label")}
-          min={istanbulDate()}
-          value={followUpDate}
+      <CoachOverlayFooter>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          className="min-h-11"
           disabled={busy}
-          onChange={(event) => setFollowUpDate(event.target.value)}
-          className="sm:max-w-64"
-        />
-
-        {error ? (
-          <p role="alert" className="coach-body text-[var(--color-danger)]">
-            {error}
-          </p>
-        ) : null}
-      </div>
-
-      <div className={`${PANEL_FOOTER_CLASS} justify-end`}>
-        <TextButton disabled={busy} onClick={onCancel}>
+          onClick={onCancel}
+        >
           {t("followup_cancel_form")}
-        </TextButton>
+        </Button>
         <Button type="submit" size="sm" className="min-h-11" busy={busy} disabled={!title.trim()}>
           {t(sharedDecision.trim() ? "followup_save_share" : "followup_save_private")}
         </Button>
-      </div>
+      </CoachOverlayFooter>
     </form>
   );
 }

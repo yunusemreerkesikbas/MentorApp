@@ -2,12 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
-import { CheckBox, SectionHeading } from "@mentor/ui";
+import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
+import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
 import { trackProductEvent } from "@/lib/analytics";
+import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 import {
@@ -58,6 +59,18 @@ export default function SignupPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const kvkkLabelId = useId();
+  /** `mentorship.applications.open`. Null while unknown: neither the link nor the closed notice shows. */
+  const [coachOpen, setCoachOpen] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetchCoachSignupOpen().then((open) => {
+      if (active) setCoachOpen(open);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   function requireKvkk() {
     if (!kvkkChecked) setError(translate("kvkk_error"));
@@ -103,6 +116,36 @@ export default function SignupPage() {
       setTurnstileToken(null);
       setTurnstileResetKey((value) => value + 1);
     }
+  }
+
+  // Coach intake unknown yet: a placeholder, never a form that may be closed.
+  if (isCoach && coachOpen === null) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <Skeleton className="mx-auto h-7 w-2/3" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+    );
+  }
+
+  // Coach intake shut: say so instead of offering a form the API would refuse on submit.
+  if (isCoach && coachOpen === false) {
+    return (
+      <div className="flex flex-col gap-4">
+        <SectionHeading as="h2" className="items-center text-center">
+          {translate("coach_closed_title")}
+        </SectionHeading>
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {translate("coach_closed_body")}
+        </p>
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {translate("login_prompt")}{" "}
+          <AuthNavLink href="/login">{translate("login_link")}</AuthNavLink>
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -176,8 +219,8 @@ export default function SignupPage() {
       </p>
       {/* Quiet, and below the fold of the form on purpose. Registration is open to anyone who wants
           it, but a loud second button would invite every new student to wonder if they should be a
-          coach — the intake is self-service, not something to upsell. */}
-      {!isCoach && (
+          coach — the intake is self-service, not something to upsell. Hidden while the intake is shut. */}
+      {!isCoach && coachOpen === true && (
         <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
           {/* Object form, not a string: `@/i18n/navigation` types hrefs against the route map, so
               the query has to travel beside the pathname rather than glued onto it. */}

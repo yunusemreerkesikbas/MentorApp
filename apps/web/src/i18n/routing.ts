@@ -59,10 +59,14 @@ export const routing = defineRouting({
       tr: "/kocluk/[studentId]",
       en: "/coaching/students/[studentId]",
     },
+    "/students/[studentId]/weekly-reports/[reportId]/print": {
+      tr: "/kocluk/[studentId]/haftalik-raporlar/[reportId]/yazdir",
+      en: "/coaching/students/[studentId]/weekly-reports/[reportId]/print",
+    },
     "/my-coach": { tr: "/kocum", en: "/my-coach" },
     "/coach-invitation": { tr: "/kocluk-daveti", en: "/coach-invitation" },
-    /** Becoming a coach (curation, roadmap §5) — distinct from ACCEPTING one above. */
-    "/coach-application": { tr: "/koc-basvurusu", en: "/coach-application" },
+    /** Becoming a coach (self-service registration, no approval) — distinct from ACCEPTING one above. */
+    "/coach-application": { tr: "/koc-ol", en: "/become-a-coach" },
 
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },

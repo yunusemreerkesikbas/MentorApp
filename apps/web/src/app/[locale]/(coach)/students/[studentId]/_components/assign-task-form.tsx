@@ -1,23 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, type Dispatch, type SetStateAction } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type {
   MentorshipProgramTemplateDto,
   MentorshipReportPlanTaskDto,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
+import { Button, TextAreaField, TextField } from "@mentor/ui";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 import {
-  CoachTextArea,
-  CoachTextField,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   NOTE_CLASS,
-  PANEL_BODY_CLASS,
-  PANEL_FOOTER_CLASS,
   SUBHEAD_CLASS,
-  TextButton,
 } from "@/components/mentorship/coach-ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks, type MentorshipAssignmentDraft } from "@/lib/mentorship";
@@ -36,7 +32,8 @@ import { buildTemplateDrafts } from "./template-apply";
 
 /**
  * The week composer: a coach plans a week and sends it in ONE request. It is the body of the
- * "Haftayı planla" panel, which stays mounted while closed, so a half-built week survives closing it.
+ * "Haftayı planla" panel. The panel unmounts when it closes, so the drafts are owned by the report
+ * shell and passed in: a half-built week survives closing it, or a stray swipe on the phone sheet.
  *
  * The API has taken an array since the assignment slice shipped (`max(21)` — three weeks of days);
  * only the form was single-task. 21 is not re-declared here, it IS the schema's ceiling surfaced
@@ -50,8 +47,9 @@ import { buildTemplateDrafts } from "./template-apply";
 const DAYS_IN_WEEK = 7;
 const MAX_TASKS = 21;
 const COACH_NOTE_MAX = 500;
+const SMALL_BUTTON = "min-h-11";
 
-interface Draft extends MentorshipAssignmentDraft {
+export interface AssignDraft extends MentorshipAssignmentDraft {
   /** Local-only key: drafts are unsaved rows, so nothing server-side can identify them yet. */
   key: string;
   taskDate: string;
@@ -62,6 +60,10 @@ export function AssignTaskForm({
   studentName,
   studentExamType,
   previousTasks,
+  drafts,
+  onDraftsChange: setDrafts,
+  busy,
+  onBusyChange: setBusy,
   onAssigned,
   onCancel,
 }: {
@@ -70,6 +72,11 @@ export function AssignTaskForm({
   studentExamType: string | null;
   /** The report's plan rows, already loaded by the page — the source for "copy last week". */
   previousTasks: readonly MentorshipReportPlanTaskDto[];
+  drafts: readonly AssignDraft[];
+  onDraftsChange: Dispatch<SetStateAction<AssignDraft[]>>;
+  /** Owned by the shell, which also locks the panel: closing mid-send would remount an idle form. */
+  busy: boolean;
+  onBusyChange: (busy: boolean) => void;
   onAssigned: () => void;
   onCancel: () => void;
 }) {
@@ -85,12 +92,10 @@ export function AssignTaskForm({
 
   const [weekStart, setWeekStart] = useState(todayLocalIso());
   const [selectedDate, setSelectedDate] = useState(todayLocalIso());
-  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [coachNote, setCoachNote] = useState("");
-  const [busy, setBusy] = useState(false);
 
   const days = useMemo(
     () => Array.from({ length: DAYS_IN_WEEK }, (_, i) => addDaysIso(weekStart, i)),
@@ -179,6 +184,10 @@ export function AssignTaskForm({
     setCoachNote("");
   }
 
+  function removeDraft(key: string) {
+    setDrafts((prev) => prev.filter((draft) => draft.key !== key));
+  }
+
   async function submit(event: React.FormEvent) {
     event.preventDefault();
     if (drafts.length === 0) return;
@@ -213,154 +222,176 @@ export function AssignTaskForm({
   }
 
   return (
-    <form className="flex min-h-full flex-col" onSubmit={submit}>
-      <div className={PANEL_BODY_CLASS}>
-        <section className="flex flex-col gap-2">
-          <h3 className={SUBHEAD_CLASS}>{t("assign_quick_start")}</h3>
-          <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-end">
-            <Button
-              type="button"
-              variant="soft"
-              size="sm"
-              fullWidth
-              className="min-h-11"
-              onClick={repeatWeek}
-              disabled={!canRepeat}
-            >
-              {t("assign_repeat_week")}
-            </Button>
-            <TemplateLoadSelect templates={templates} disabled={busy || atCeiling} onLoad={loadTemplate} />
-            <SuggestButton studentId={studentId} disabled={busy || atCeiling} onLoad={loadTemplate} />
-          </div>
-          <p className={NOTE_CLASS}>{t("suggest_hint")}</p>
-        </section>
-
-        <section className="flex flex-col gap-2.5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <h3 className={SUBHEAD_CLASS}>{t("assign_week_pick")}</h3>
-            <div className="flex items-center gap-1">
-              <TextButton onClick={() => showWeek(today)} disabled={weekStart === today}>
-                {t("assign_week_this")}
-              </TextButton>
-              <TextButton onClick={() => showWeek(addDaysIso(weekStart, DAYS_IN_WEEK))}>
-                {t("assign_week_next")}
-              </TextButton>
-            </div>
-          </div>
-          <ComposerDayPicker
-            days={days}
-            selectedDate={selectedDate}
-            counts={counts}
-            onSelect={setSelectedDate}
-          />
-        </section>
-
-        <section className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
-          <h3 className="coach-headline text-[var(--color-main)]">
-            {selectedFormat.format(new Date(`${selectedDate}T00:00:00`))}
-          </h3>
-          <CoachTextField
-            label={t("assign_task_title")}
-            value={title}
-            maxLength={200}
-            data-autofocus=""
-            onChange={(event) => setTitle(event.target.value)}
-          />
-          <div className="grid gap-3 sm:grid-cols-2">
-            <ComposerSelect
-              label={t("assign_subject")}
-              value={subject}
-              placeholder={t("assign_subject_none")}
-              options={labelOptions(subjects)}
-              disabled={!loaded || subjects.length === 0}
-              onChange={(next) => {
-                setSubject(next);
-                // The old topic belongs to the old subject; keeping it would send a mismatched pair.
-                setTopic("");
-              }}
-            />
-            <ComposerSelect
-              label={t("assign_topic")}
-              value={topic}
-              placeholder={t("assign_topic_none")}
-              options={labelOptions(topics)}
-              disabled={subject === "" || topics.length === 0}
-              onChange={setTopic}
-            />
-          </div>
-          <CoachTextArea
-            label={t("assign_note")}
-            hint={t("assign_note_hint")}
-            value={coachNote}
-            rows={2}
-            maxLength={COACH_NOTE_MAX}
-            onChange={(event) => setCoachNote(event.target.value)}
-          />
-          <div className="flex justify-end">
-            <Button
-              type="button"
-              variant="soft"
-              size="sm"
-              className="min-h-11"
-              onClick={addDraft}
-              disabled={title.trim() === "" || atCeiling}
-            >
-              {t("assign_add_to_day")}
-            </Button>
-          </div>
-        </section>
-
-        {ordered.length > 0 ? (
+    <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+      <CoachOverlayBody>
+        <div className="flex flex-col gap-5 pb-4">
           <section className="flex flex-col gap-2">
-            <h3 className={SUBHEAD_CLASS}>{t("assign_in_program")}</h3>
-            <ul className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
-              {ordered.map((draft) => (
-                <li key={draft.key} className={`${INSET_ROW_CLASS} items-start`}>
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <span className="coach-body text-[var(--color-main)]">{draft.title}</span>
-                    <span className="coach-footnote text-[var(--color-secondary)]">
-                      {[
-                        shortFormat.format(new Date(`${draft.taskDate}T00:00:00`)),
-                        draft.subject ? [draft.subject, draft.topic].filter(Boolean).join(" › ") : null,
-                        draft.coachNote,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-                  </div>
-                  <TextButton tone="muted" onClick={() => removeDraft(draft.key)}>
-                    {t("assign_remove")}
-                  </TextButton>
-                </li>
-              ))}
-            </ul>
+            <h3 className={SUBHEAD_CLASS}>{t("assign_quick_start")}</h3>
+            <div className="grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-end">
+              <Button
+                type="button"
+                variant="soft"
+                size="sm"
+                fullWidth
+                className={SMALL_BUTTON}
+                onClick={repeatWeek}
+                disabled={busy || !canRepeat}
+              >
+                {t("assign_repeat_week")}
+              </Button>
+              <TemplateLoadSelect templates={templates} disabled={busy || atCeiling} onLoad={loadTemplate} />
+              <SuggestButton studentId={studentId} disabled={busy || atCeiling} onLoad={loadTemplate} />
+            </div>
+            <p className={NOTE_CLASS}>{t("suggest_hint")}</p>
           </section>
-        ) : null}
 
-        <TemplateSaveRow
-          templates={templates}
-          setTemplates={setTemplates}
-          drafts={drafts}
-          examType={studentExamType}
-          disabled={busy}
-        />
-      </div>
+          <section className="flex flex-col gap-2.5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className={SUBHEAD_CLASS}>{t("assign_week_pick")}</h3>
+              <div className="flex items-center gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={SMALL_BUTTON}
+                  onClick={() => showWeek(today)}
+                  disabled={weekStart === today}
+                >
+                  {t("assign_week_this")}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className={SMALL_BUTTON}
+                  onClick={() => showWeek(addDaysIso(weekStart, DAYS_IN_WEEK))}
+                >
+                  {t("assign_week_next")}
+                </Button>
+              </div>
+            </div>
+            <ComposerDayPicker
+              days={days}
+              selectedDate={selectedDate}
+              counts={counts}
+              onSelect={setSelectedDate}
+            />
+          </section>
 
-      <div className={`${PANEL_FOOTER_CLASS} justify-between`}>
-        <span className="coach-footnote tabular-nums text-[var(--color-secondary)]">
-          {t("assign_count", { count: drafts.length, max: MAX_TASKS })}
-        </span>
-        <div className="flex items-center gap-1">
-          <TextButton onClick={onCancel}>{t("confirm_cancel")}</TextButton>
-          <Button type="submit" size="sm" className="min-h-11" busy={busy} disabled={drafts.length === 0}>
-            {t("assign_action", { count: drafts.length })}
-          </Button>
+          <section className={`${INSET_GROUP_CLASS} flex flex-col gap-4 p-4`}>
+            <div className="flex flex-wrap items-baseline justify-between gap-2">
+              <h3 className="coach-headline text-[var(--color-main)]">
+                {selectedFormat.format(new Date(`${selectedDate}T00:00:00`))}
+              </h3>
+              <span className="text-xs tabular-nums" style={{ color: "var(--color-secondary)" }}>
+                {t("assign_count", { count: drafts.length, max: MAX_TASKS })}
+              </span>
+            </div>
+            <TextField
+              dense
+              label={t("assign_task_title")}
+              value={title}
+              maxLength={200}
+              data-autofocus=""
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <ComposerSelect
+                label={t("assign_subject")}
+                value={subject}
+                placeholder={t("assign_subject_none")}
+                options={labelOptions(subjects)}
+                disabled={!loaded || subjects.length === 0}
+                onChange={(next) => {
+                  setSubject(next);
+                  // The old topic belongs to the old subject; keeping it would send a mismatched pair.
+                  setTopic("");
+                }}
+              />
+              <ComposerSelect
+                label={t("assign_topic")}
+                value={topic}
+                placeholder={t("assign_topic_none")}
+                options={labelOptions(topics)}
+                disabled={subject === "" || topics.length === 0}
+                onChange={setTopic}
+              />
+            </div>
+            <TextAreaField
+              dense
+              label={t("assign_note")}
+              hint={t("assign_note_hint")}
+              value={coachNote}
+              rows={2}
+              maxLength={COACH_NOTE_MAX}
+              onChange={(event) => setCoachNote(event.target.value)}
+            />
+            <div className="flex justify-end">
+              <Button
+                type="button"
+                variant="soft"
+                size="sm"
+                className={SMALL_BUTTON}
+                onClick={addDraft}
+                disabled={busy || title.trim() === "" || atCeiling}
+              >
+                {t("assign_add_to_day")}
+              </Button>
+            </div>
+          </section>
+
+          {ordered.length > 0 ? (
+            <section className="flex flex-col gap-2">
+              <h3 className={SUBHEAD_CLASS}>{t("assign_in_program")}</h3>
+              <ul className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
+                {ordered.map((draft) => (
+                  <li key={draft.key} className={`${INSET_ROW_CLASS} items-start`}>
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <span className="coach-body text-[var(--color-main)]">{draft.title}</span>
+                      <span className="coach-footnote text-[var(--color-secondary)]">
+                        {[
+                          shortFormat.format(new Date(`${draft.taskDate}T00:00:00`)),
+                          draft.subject ? [draft.subject, draft.topic].filter(Boolean).join(" › ") : null,
+                          draft.coachNote,
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className={SMALL_BUTTON}
+                      disabled={busy}
+                      onClick={() => removeDraft(draft.key)}
+                    >
+                      {t("assign_remove")}
+                    </Button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          <TemplateSaveRow
+            templates={templates}
+            setTemplates={setTemplates}
+            drafts={drafts}
+            examType={studentExamType}
+            disabled={busy}
+          />
         </div>
-      </div>
+      </CoachOverlayBody>
+
+      <CoachOverlayFooter>
+        <Button type="button" variant="secondary" size="sm" className={SMALL_BUTTON} disabled={busy} onClick={onCancel}>
+          {t("confirm_cancel")}
+        </Button>
+        <Button type="submit" size="sm" className={SMALL_BUTTON} busy={busy} disabled={drafts.length === 0}>
+          {t("assign_action", { count: drafts.length })}
+        </Button>
+      </CoachOverlayFooter>
     </form>
   );
-
-  function removeDraft(key: string) {
-    setDrafts((prev) => prev.filter((draft) => draft.key !== key));
-  }
 }

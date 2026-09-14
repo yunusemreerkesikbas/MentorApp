@@ -10,6 +10,10 @@
  * Base step ships only the `jobs` table (queue substrate). Feature tables arrive with their modules.
  */
 import { sql } from "drizzle-orm";
+import type {
+  MentorshipWeeklyBriefDto,
+  MentorshipWeeklySnapshotDto,
+} from "@mentor/types";
 import {
   type AnyPgColumn,
   boolean,
@@ -4143,35 +4147,146 @@ export const notebookReviews = pgTable(
 ).enableRLS();
 
 /* W8 follow-ups: private service-only rows; student reads use an explicit safe projection. */
-export const mentorshipFollowups = pgTable("mentorship_followups", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  linkId: uuid("link_id").notNull().references(() => coachStudents.id, { onDelete: "cascade" }),
-  periodId: uuid("period_id").notNull(),
-  operationId: uuid("operation_id").notNull(),
-  requestHash: text("request_hash").notNull(),
-  responseVersion: integer("response_version"),
-  title: varchar("title", { length: 120 }).notNull(),
-  privateNote: text("private_note"),
-  sharedDecision: text("shared_decision"),
-  response: text("response").$type<"PENDING" | "ACCEPTED" | "CHANGE_REQUESTED">().notNull().default("PENDING"),
-  followUpDate: date("follow_up_date"),
-  status: text("status").$type<"OPEN" | "COMPLETED" | "CANCELLED">().notNull().default("OPEN"),
-  version: integer("version").notNull().default(1),
-  replacesId: uuid("replaces_id").references((): AnyPgColumn => mentorshipFollowups.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  respondedAt: timestamp("responded_at", { withTimezone: true }),
-  closedAt: timestamp("closed_at", { withTimezone: true }),
-}, (t) => [
-  uniqueIndex("mentorship_followups_operation_idx").on(t.linkId, t.periodId, t.operationId),
-  index("mentorship_followups_period_idx").on(t.linkId, t.periodId, t.createdAt),
-  index("mentorship_followups_due_idx").on(t.status, t.followUpDate),
-  check("mentorship_followups_status_check", sql`${t.status} IN ('OPEN', 'COMPLETED', 'CANCELLED')`),
-  check("mentorship_followups_response_check", sql`${t.response} IN ('PENDING', 'ACCEPTED', 'CHANGE_REQUESTED')`),
-  check("mentorship_followups_version_check", sql`${t.version} > 0`),
-  pgPolicy("mentorship_followups_service", {
-    for: "all",
-    using: sql`current_setting('app.role', true) = 'SERVICE'`,
-    withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
-  }),
-]).enableRLS();
+export const mentorshipFollowups = pgTable(
+  "mentorship_followups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    periodId: uuid("period_id").notNull(),
+    operationId: uuid("operation_id").notNull(),
+    requestHash: text("request_hash").notNull(),
+    responseVersion: integer("response_version"),
+    title: varchar("title", { length: 120 }).notNull(),
+    privateNote: text("private_note"),
+    sharedDecision: text("shared_decision"),
+    response: text("response")
+      .$type<"PENDING" | "ACCEPTED" | "CHANGE_REQUESTED">()
+      .notNull()
+      .default("PENDING"),
+    followUpDate: date("follow_up_date"),
+    status: text("status")
+      .$type<"OPEN" | "COMPLETED" | "CANCELLED">()
+      .notNull()
+      .default("OPEN"),
+    version: integer("version").notNull().default(1),
+    replacesId: uuid("replaces_id").references(
+      (): AnyPgColumn => mentorshipFollowups.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("mentorship_followups_operation_idx").on(
+      t.linkId,
+      t.periodId,
+      t.operationId,
+    ),
+    index("mentorship_followups_period_idx").on(
+      t.linkId,
+      t.periodId,
+      t.createdAt,
+    ),
+    index("mentorship_followups_due_idx").on(t.status, t.followUpDate),
+    check(
+      "mentorship_followups_status_check",
+      sql`${t.status} IN ('OPEN', 'COMPLETED', 'CANCELLED')`,
+    ),
+    check(
+      "mentorship_followups_response_check",
+      sql`${t.response} IN ('PENDING', 'ACCEPTED', 'CHANGE_REQUESTED')`,
+    ),
+    check("mentorship_followups_version_check", sql`${t.version} > 0`),
+    pgPolicy("mentorship_followups_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
+
+/* W8 completed-week reports. Version 0 is the mutable draft; finalized versions are append-only. */
+export const mentorshipWeeklyReports = pgTable(
+  "mentorship_weekly_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    periodId: uuid("period_id").notNull(),
+    weekStart: date("week_start").notNull(),
+    weekEnd: date("week_end").notNull(),
+    locale: varchar("locale", { length: 5 }).notNull().default("tr"),
+    version: integer("version").notNull().default(0),
+    status: text("status")
+      .$type<
+        "DRAFT" | "BRIEF_PENDING" | "BRIEF_READY" | "BRIEF_FAILED" | "FINALIZED"
+      >()
+      .notNull()
+      .default("DRAFT"),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    snapshot: jsonb("snapshot").$type<MentorshipWeeklySnapshotDto>().notNull(),
+    brief: jsonb("brief").$type<MentorshipWeeklyBriefDto>(),
+    briefLocale: varchar("brief_locale", { length: 5 }),
+    briefPromptVersion: text("brief_prompt_version"),
+    coachEvaluation: text("coach_evaluation"),
+    replacesId: uuid("replaces_id").references(
+      (): AnyPgColumn => mentorshipWeeklyReports.id,
+      { onDelete: "set null" },
+    ),
+    operationId: uuid("operation_id"),
+    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("mentorship_weekly_reports_version_idx").on(
+      t.linkId,
+      t.periodId,
+      t.weekStart,
+      t.version,
+    ),
+    uniqueIndex("mentorship_weekly_reports_operation_idx")
+      .on(t.linkId, t.periodId, t.operationId)
+      .where(sql`${t.operationId} is not null`),
+    index("mentorship_weekly_reports_archive_idx").on(
+      t.linkId,
+      t.periodId,
+      t.finalizedAt,
+    ),
+    check(
+      "mentorship_weekly_reports_status_check",
+      sql`${t.status} IN ('DRAFT', 'BRIEF_PENDING', 'BRIEF_READY', 'BRIEF_FAILED', 'FINALIZED')`,
+    ),
+    check("mentorship_weekly_reports_version_check", sql`${t.version} >= 0`),
+    check(
+      "mentorship_weekly_reports_locale_check",
+      sql`${t.locale} IN ('tr', 'en')`,
+    ),
+    check(
+      "mentorship_weekly_reports_brief_locale_check",
+      sql`${t.briefLocale} IS NULL OR ${t.briefLocale} IN ('tr', 'en')`,
+    ),
+    check(
+      "mentorship_weekly_reports_finalized_check",
+      sql`(${t.status} = 'FINALIZED' AND ${t.version} > 0 AND ${t.finalizedAt} IS NOT NULL) OR (${t.status} <> 'FINALIZED' AND ${t.version} = 0 AND ${t.finalizedAt} IS NULL)`,
+    ),
+    pgPolicy("mentorship_weekly_reports_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();

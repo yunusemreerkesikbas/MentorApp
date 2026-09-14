@@ -3,6 +3,7 @@
 import { useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Copy, Eye, EyeOff, Info, Link2 } from "lucide-react";
+import { ApiClientError, usersControllerResendVerificationEmail } from "@mentor/api-client";
 import type { MentorshipInviteCodeDto } from "@mentor/types";
 import { Button, Card, Skeleton } from "@mentor/ui";
 import { getPathname } from "@/i18n/navigation";
@@ -62,10 +63,12 @@ export function CoachCapacityCard({
 }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
-  const { success: toastSuccess } = useMentorToast();
+  const { success: toastSuccess, error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
   const [revealed, setRevealed] = useState(false);
+  const [verifying, setVerifying] = useState(false);
   const full = loaded && activeStudents >= maxActiveStudents;
+  const actionBusy = busy || verifying;
 
   async function copyToClipboard(text: string, title: string) {
     try {
@@ -91,11 +94,49 @@ export function CoachCapacityCard({
   }
 
   /**
+   * EMAIL is the one lock the coach can clear. The card looks like the empty-code state so they
+   * press the same button; the prompt is the explanation that used to sit as a dead paragraph.
+   */
+  async function requestEmailVerification() {
+    const confirmed = await dialog.confirm({
+      title: t("invite_email_verify_title"),
+      message: t("invite_email_verify_message"),
+      confirmLabel: t("invite_email_verify_confirm"),
+      cancelLabel: t("confirm_cancel"),
+    });
+    if (!confirmed) return;
+    setVerifying(true);
+    try {
+      await usersControllerResendVerificationEmail();
+      await dialog.info({
+        title: t("invite_email_verify_sent_title"),
+        message: t("invite_email_verify_sent_message"),
+        okLabel: t("invite_email_verify_sent_ok"),
+        closeLabel: t("invite_email_verify_sent_ok"),
+      });
+    } catch (err) {
+      toastError({
+        title: t("invite_email_verify_send_error_title"),
+        message:
+          err instanceof ApiClientError
+            ? err.message
+            : t("invite_email_verify_send_error_message"),
+      });
+    } finally {
+      setVerifying(false);
+    }
+  }
+
+  /**
    * Confirmed only when a code exists. Creating the first one invalidates nothing, so asking then
    * would be a prompt with no stake in it — and a prompt a coach learns to dismiss is worse than
    * none at all on the press that does have a stake.
    */
   async function rotate() {
+    if (inviteLock === "EMAIL") {
+      await requestEmailVerification();
+      return;
+    }
     if (inviteCode !== null) {
       const confirmed = await dialog.confirm({
         title: t("invite_rotate_confirm_title"),
@@ -204,7 +245,7 @@ export function CoachCapacityCard({
               </span>
               <button
                 type="button"
-                disabled={busy}
+                disabled={actionBusy}
                 onClick={rotate}
                 className="cursor-pointer text-[13px] font-semibold underline decoration-1 underline-offset-[3px] disabled:cursor-not-allowed disabled:opacity-60"
                 style={{ color: "var(--color-secondary)" }}
@@ -213,20 +254,18 @@ export function CoachCapacityCard({
               </button>
             </div>
           </>
-        ) : inviteLock !== null ? (
-          // No Create button: pressing it would 403. EMAIL is one click away and says so; STANDING
-          // is an admin decision, so the card explains rather than offering a dead end. These two
-          // stay full paragraphs rather than folding into the hint above — a hint is not where you
-          // tell somebody why the thing in front of them is blocked.
+        ) : inviteLock === "STANDING" ? (
+          // Pressing Create would 403. STANDING is somebody else's decision, so the card explains
+          // rather than offering a dead end. EMAIL uses the empty-code UI and asks in a confirm.
           <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {inviteLock === "EMAIL" ? t("coach_email_unverified") : t("invite_locked_standing")}
+            {t("invite_locked_standing")}
           </p>
         ) : (
           <div className="flex flex-wrap items-center gap-3">
             <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
               {t("invite_none")}
             </span>
-            <Button busy={busy} onClick={rotate}>
+            <Button busy={actionBusy} onClick={() => void rotate()}>
               {t("invite_create")}
             </Button>
           </div>
