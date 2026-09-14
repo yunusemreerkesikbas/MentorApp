@@ -260,6 +260,20 @@ export const CONFIG_CATALOG = {
   "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
   "storage.upload.ticket_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Single-use upload ticket lifetime in seconds." },
   "storage.upload.stream_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(10).max(120), default: 60, sensitive: false, description: "Maximum duration for an authorized upload stream." },
+  // Purchase channels (APP-096) for student plans. Coach seat plans have their own pair under
+  // mentorship.seats.*; both resolve per plan in payments/domain/purchase-channel.ts.
+  "payments.web.enabled": flag(
+    true,
+    "Student plans: new web checkouts. Off refuses checkout and hides the web buy button; open subscriptions, renewals, cancel and refunds are untouched.",
+  ),
+  "payments.mobile.enabled": flag(
+    false,
+    "Student plans are sold through App Store / Google Play. Keep plans.priceMinor equal to the store price: the web shows the catalog price when it sends buyers to a store. Until the mobile app ships, its only effect is arming payments.web.redirect_to_mobile.",
+  ),
+  "payments.web.redirect_to_mobile": flag(
+    false,
+    "While an audience's web checkout is off, show App Store / Google Play buttons on the web instead of 'coming soon'. Only for audiences whose store channel is on (payments.mobile.enabled, mentorship.seats.mobile_billing_enabled).",
+  ),
   "promotions.enabled": promotionsFlag(
     false,
     "Global promotions kill-switch — off means every checkout pays the list price.",
@@ -349,7 +363,11 @@ export const CONFIG_CATALOG = {
   ),
   "mentorship.seats.billing_enabled": mentorshipFlag(
     false,
-    "List the coach-pro seat plans as purchasable. Off keeps them out of the catalog AND refuses checkout on them, so no paywall promises a purchase flow the payment provider cannot yet complete.",
+    "Coach seat plans: new web checkouts. Off refuses checkout on them and, unless mentorship.seats.mobile_billing_enabled is on, keeps them out of the catalog, so no paywall promises a purchase flow nobody can complete.",
+  ),
+  "mentorship.seats.mobile_billing_enabled": mentorshipFlag(
+    false,
+    "Coach seat plans are sold through App Store / Google Play. Lists them even with web billing off, so the web can send coaches to a store (with payments.web.redirect_to_mobile). Keep plans.priceMinor equal to the store price.",
   ),
   "mentorship.coach.free_seats": mentorshipCostCount(
     3,

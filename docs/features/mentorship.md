@@ -211,6 +211,33 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-15 — Weekly report development seed.** A production-blocked, idempotent seed prepares
+  the two completed weeks needed to exercise the coach report from an active relationship: nine
+  completed focus sessions, eleven planned tasks with different completion rates, one unclassified
+  session and two same-scope mock attempts with publisher and subject breakdowns. **Usage:**
+  `pnpm --filter @mentor/api seed:mentorship-weekly-report -- --coach-email=<email>
+  --student-email=<email>`. Omit `student-email` to seed every active student linked to that coach.
+  The command deliberately does not insert a finalized report or call AI; generate the brief and
+  finalize through the real coach UI. Re-running moves the stable demo rows to the latest two
+  completed Istanbul weeks and updates them in place. **Related:**
+  `scripts/seed-mentorship-weekly-report.ts`, `scripts/mentorship-weekly-report-demo.schedule.ts`,
+  `src/mentorship-weekly-report-seed-script.spec.ts`.
+
+- **2026-09-15 — Koç Pro için web ve mağaza kanalı flag'leri (APP-096).** Koç koltuk planları artık
+  iki kanaldan satılabilir: `mentorship.seats.billing_enabled` yeni anlamıyla **koç web checkout'u**,
+  yeni `mentorship.seats.mobile_billing_enabled` App Store / Google Play kanalı. Koç planı iki
+  kanaldan biri açıkken katalogda listelenir; web kapalı, mağaza açık ve
+  `payments.web.redirect_to_mobile` açıkken `/abonelik` koça mağaza butonları gösterir. Öğrenci
+  kanallarından (`payments.web.enabled`, `payments.mobile.enabled`) bağımsız: öğrenci web'i kapalıyken
+  koç web'den ödemeye devam edebilir. `/abonelik` planları artık role göre süzüyor; koç yalnız koç
+  planlarını, öğrenci yalnız öğrenci planlarını görür (önceden `billing_enabled` açıldığı an öğrenci
+  de Koç Pro'yu görecekti). Karar tablosu ve ortak gotcha'lar: [payments.md](./payments.md) APP-096.
+  Gotcha: mobil uygulamada koç satın alma ekranı yok ve mağaza satın alımı henüz abonelik satırı
+  yazmıyor (IAP makbuz doğrulaması backlog'da). `mobile_billing_enabled`'ı o ikisi gelmeden açmak,
+  koçu satın alamayacağı bir mağazaya yollar.
+  İlgili: `modules/payments/domain/purchase-channel.ts`, `common/config/config.catalog.ts`,
+  `mentorship-link.service.ts` (yorum), `apps/web/src/app/[locale]/(app)/subscription/_components/subscription-shell.tsx`.
+
 - **2026-09-14 — PR #102 review düzeltmeleri (haftalık rapor + koç yüzeyi).** CodeRabbit'in 12
   bulgusu doğrulandı ve kapatıldı. **API:** (1) `finalize` replay'i artık isteği kontrol ediyor:
   aynı `operationId` farklı fingerprint/hafta/değerlendirme ile gelirse eski rapor dönmez, 409

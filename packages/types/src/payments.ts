@@ -41,11 +41,20 @@ export interface PlanDto {
   trialDays: number;
   /**
    * Sponsored coach seats this plan grants (W8). 0 on every student plan — a non-zero value is
-   * what makes it a coach plan, and the catalog hides those until seat billing is switched on.
+   * what makes it a coach plan, and the catalog hides those until a coach purchase channel opens.
    */
   seatCount: number;
-  /** Backend-owned availability; false while the real payment provider is not active. */
+  /**
+   * A web checkout can complete for this plan: the payment provider is live AND the plan's audience
+   * has its web channel on (`payments.web.enabled` / `mentorship.seats.billing_enabled`).
+   * Backend-owned; clients never re-derive it.
+   */
   purchaseEnabled: boolean;
+  /**
+   * The web cannot sell this plan but App Store / Google Play can: show store buttons instead of
+   * "coming soon". Always false while `purchaseEnabled` is true.
+   */
+  redirectToMobile: boolean;
 }
 
 export interface SubscriptionDto {

@@ -67,6 +67,15 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **Panel açılışında spotlight ile mood üst üste binmiyor (2026-09-14)** — Unseen
+  kutlama kuyruğu (`NotificationDrawerShell`) artık `CelebrationOverlayProvider` ile
+  "fetch bitti mi / sahnede kutlama var mı" yayınlıyor. Dashboard mood auto-prompt ve
+  Puhu koç notu bu kapı kapanana kadar bekliyor: önce cinematic, kapanınca günlük
+  check-in. Kampanya modalı zaten DOM'daki dialog'a çekiliyordu; mood/spotlight
+  birbirini bilmiyordu. Kullanım değişmedi. Gotcha: fetch settle olmadan mood açılırsa
+  yarış geri gelir — `ready` false iken prompt yok. İlgili: `celebration-overlay.tsx`,
+  `celebration-queue.ts`, `notification-drawer-shell.tsx`, `mood-checkin.tsx`.
+
 - **Spotlight kutlamasında odak iadesi kararlılaştırıldı (2026-09-02)** — Kutlama sırasında
   `busy` veya hata state'i değiştiğinde parent'ın yeni `onClose` callback'i focus-trap effect'ini
   söküp yeniden kuruyor, böylece kapanışta sayfadaki önceki kontrol yerine artık DOM'dan kaldırılmış

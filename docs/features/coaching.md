@@ -145,6 +145,13 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-14 — Mood auto-prompt waits for journey/achievement overlay.** Dashboard mood
+  wheel and Puhu coach note no longer open on top of the journey spotlight. They wait until
+  unseen celebrations have been fetched and the current cinematic is dismissed. Usage
+  unchanged (soft once-per-day auto-prompt; hero tile still opens anytime). Gotcha: do not
+  auto-open mood before `CelebrationOverlayProvider.ready`. Related: `mood-checkin.tsx`,
+  `celebration-overlay.tsx`, `notification-drawer-shell.tsx`.
+
 - **2026-09-14 — Weekly coach-report evidence seam.** Coaching now exposes one aggregate service
   for mentorship instead of allowing W8 to query W2 tables. It shares the recap's completed
   Europe/Istanbul week boundary, activity-day calculation and configured minimum focus duration,

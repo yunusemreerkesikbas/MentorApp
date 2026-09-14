@@ -24,6 +24,10 @@ import {
   COACH_RETURN_TO_STORAGE_KEY,
   safeInternalReturnTo,
 } from "@/lib/community-coach-bridge";
+import { useAuth } from "@/lib/auth-context";
+import { isCoach } from "@/lib/coach-surface";
+import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
+import { StoreButtons } from "@/components/premium/store-buttons";
 import {
   SubscriptionSkeletonBlocks,
 } from "./subscription-content-skeleton";
@@ -92,6 +96,7 @@ export function SubscriptionShell() {
   const locale = useLocale();
   const searchParams = useSearchParams();
   const { confirm, info } = useMentorDialog();
+  const { user } = useAuth();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [view, setView] = useState<SubscriptionView | null>(null);
   const [consent, setConsent] = useState(false);
@@ -241,7 +246,11 @@ export function SubscriptionShell() {
 
   const loading = loadState.status === "loading";
   const plans = loadState.status === "ready" ? loadState.plans : [];
-  const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
+  // A coach is offered seat plans, a student the student plans. The open subscription's own plan is
+  // still looked up in the full list below: a coach may hold a student plan from before.
+  const catalog = plansForAudience(plans, isCoach(user));
+  const mode = purchaseMode(catalog, getStoreLinks());
+  const purchaseEnabled = mode === "checkout";
   const ent = view?.entitlement;
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
@@ -411,6 +420,15 @@ export function SubscriptionShell() {
                     </span>
                   </span>
                 </label>
+              ) : mode === "store" ? (
+                <Card>
+                  <div className="flex flex-col items-start gap-3">
+                    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                      {t("store_handoff")}
+                    </p>
+                    <StoreButtons links={getStoreLinks()} />
+                  </div>
+                </Card>
               ) : (
                 <Card>
                   <div className="flex flex-col items-start gap-3">
@@ -425,10 +443,10 @@ export function SubscriptionShell() {
 
             <motion.div
               // One plan must not sit in a half-width column (the catalog is monthly-only today).
-              className={`grid gap-4 ${plans.length > 1 ? "sm:grid-cols-2" : ""}`}
+              className={`grid gap-4 ${catalog.length > 1 ? "sm:grid-cols-2" : ""}`}
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
-              {plans.map((catalogPlan) => (
+              {catalog.map((catalogPlan) => (
                 <motion.div
                   key={catalogPlan.id}
                   variants={reduceMotion ? undefined : staggerItemVariants}
@@ -462,14 +480,17 @@ export function SubscriptionShell() {
                     >
                       {t("trial_days", { days: catalogPlan.trialDays })}
                     </p>
-                    <Button
-                      disabled={!catalogPlan.purchaseEnabled || !consent}
-                      busy={busy}
-                      onClick={() => void checkout(catalogPlan)}
-                      className={compactButtonClass}
-                    >
-                      {t(catalogPlan.purchaseEnabled ? "start_trial" : "coming_soon")}
-                    </Button>
+                    {/* In store mode the single store block above is the buy action, not a button per card. */}
+                    {mode === "store" ? null : (
+                      <Button
+                        disabled={!catalogPlan.purchaseEnabled || !consent}
+                        busy={busy}
+                        onClick={() => void checkout(catalogPlan)}
+                        className={compactButtonClass}
+                      >
+                        {t(catalogPlan.purchaseEnabled ? "start_trial" : "coming_soon")}
+                      </Button>
+                    )}
                   </Card>
                 </motion.div>
               ))}

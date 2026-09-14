@@ -29,6 +29,7 @@ const plans: PlanDto[] = [
     trialDays: 7,
     seatCount: 0,
   purchaseEnabled: false,
+  redirectToMobile: false,
   },
 ];
 

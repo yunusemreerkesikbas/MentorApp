@@ -41,7 +41,11 @@ function isFeatureDisabled(error: unknown): boolean {
 export function useWeeklyReportCard(studentId: string) {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
-  const toast = useMentorToast();
+  const {
+    error: showToastError,
+    success: showToastSuccess,
+    warning: showToastWarning,
+  } = useMentorToast();
   const [preview, setPreview] =
     useState<MentorshipWeeklyReportPreviewDto | null>(null);
   const [archive, setArchive] = useState<MentorshipWeeklyReportListItemDto[]>(
@@ -59,7 +63,7 @@ export function useWeeklyReportCard(studentId: string) {
 
   const showError = useCallback(
     (error: unknown) => {
-      toast.error({
+      showToastError({
         title: common("error_title"),
         message:
           error instanceof ApiClientError
@@ -67,7 +71,7 @@ export function useWeeklyReportCard(studentId: string) {
             : common("error_unknown"),
       });
     },
-    [common, toast],
+    [common, showToastError],
   );
 
   const acceptPreview = useCallback(
@@ -211,7 +215,7 @@ export function useWeeklyReportCard(studentId: string) {
       if (error instanceof ApiClientError && error.status === 409) {
         try {
           await reloadSelected();
-          toast.warning({
+          showToastWarning({
             title: common("error_title"),
             message: t("weekly_report_preview_changed"),
           });
@@ -259,12 +263,12 @@ export function useWeeklyReportCard(studentId: string) {
         has_brief: result.brief !== null,
         has_coach_evaluation: result.coachEvaluation !== null,
       });
-      toast.success({ title: t("weekly_report_finalized") });
+      showToastSuccess({ title: t("weekly_report_finalized") });
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 409) {
         try {
           await reloadSelected();
-          toast.warning({
+          showToastWarning({
             title: common("error_title"),
             message: t("weekly_report_preview_changed"),
           });

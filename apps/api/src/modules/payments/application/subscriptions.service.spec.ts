@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { CONFIG_CATALOG, type ConfigKey } from "../../../common/config/config.catalog";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { SubscriptionsService, nextPeriodEnd } from "./subscriptions.service";
 
@@ -78,11 +79,24 @@ const DISCOUNTED_OFFER = {
   },
 };
 
+/** The DB-backed registry at its catalog defaults (production today), with per-test overrides. */
+function registryWith(overrides: Partial<Record<ConfigKey, unknown>> = {}) {
+  return {
+    get: vi.fn(async (key: ConfigKey) =>
+      key in overrides ? overrides[key] : CONFIG_CATALOG[key].default,
+    ),
+  };
+}
+
 describe("SubscriptionsService payment availability", () => {
-  function makeService(provider: "fake" | "disabled") {
+  function makeService(
+    provider: "fake" | "disabled",
+    flags: Partial<Record<ConfigKey, unknown>> = {},
+    plans: Array<typeof plan> = [plan],
+  ) {
     const plansRepo = {
-      findActive: vi.fn().mockResolvedValue([plan]),
-      findById: vi.fn().mockResolvedValue(plan),
+      findActive: vi.fn().mockResolvedValue(plans),
+      findById: vi.fn().mockResolvedValue(plans[0]),
     };
     const config = {
       get: vi.fn((key: string) =>
@@ -101,8 +115,7 @@ describe("SubscriptionsService payment availability", () => {
       {} as never,
       {} as never,
       config as never,
-      // The DB-backed registry: seat billing off, like production.
-      { get: vi.fn(async () => false) } as never,
+      registryWith(flags) as never,
       paymentProvider as never,
       {} as never,
     );
@@ -126,10 +139,49 @@ describe("SubscriptionsService payment availability", () => {
     });
     expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
   });
+
+  it("hands students to the stores while their web checkout is off", async () => {
+    const { service } = makeService("fake", {
+      "payments.web.enabled": false,
+      "payments.mobile.enabled": true,
+      "payments.web.redirect_to_mobile": true,
+    });
+
+    await expect(service.listPlans()).resolves.toEqual([
+      expect.objectContaining({ id: plan.id, purchaseEnabled: false, redirectToMobile: true }),
+    ]);
+  });
+
+  it("lists a coach plan through the coach store channel alone", async () => {
+    const coachPlan = { ...plan, id: "coach-pro-10", seatCount: 10 };
+    const { service } = makeService(
+      "fake",
+      { "mentorship.seats.mobile_billing_enabled": true, "payments.web.redirect_to_mobile": true },
+      [plan, coachPlan],
+    );
+
+    await expect(service.listPlans()).resolves.toEqual([
+      expect.objectContaining({ id: plan.id, purchaseEnabled: true, redirectToMobile: false }),
+      expect.objectContaining({ id: coachPlan.id, purchaseEnabled: false, redirectToMobile: true }),
+    ]);
+  });
+
+  it("refuses a student checkout by id while student web checkout is off", async () => {
+    const { service, paymentProvider } = makeService("fake", { "payments.web.enabled": false });
+
+    await expect(service.checkout(USER, plan.id)).rejects.toMatchObject({
+      code: ErrorCode.PAYMENT_DISABLED,
+      httpStatus: 503,
+    });
+    expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
 });
 
 describe("SubscriptionsService checkout with a promotion", () => {
-  function makeService(offer: typeof LIST_OFFER) {
+  function makeService(
+    offer: typeof LIST_OFFER,
+    flags: Partial<Record<ConfigKey, unknown>> = {},
+  ) {
     const tx = { execute: vi.fn() };
     const db = { transaction: vi.fn(async (fn: (t: unknown) => unknown) => fn(tx)) };
     const plansRepo = {
@@ -170,13 +222,60 @@ describe("SubscriptionsService checkout with a promotion", () => {
       { listActiveDatesSince: vi.fn(async () => []) } as never,
       {} as never,
       config as never,
-      // The DB-backed registry: seat billing off, like production.
-      { get: vi.fn(async () => false) } as never,
+      registryWith(flags) as never,
       paymentProvider as never,
       {} as never,
     );
     return { service, subsRepo, promotions, paymentProvider, db, tx };
   }
+
+  /** A subscriber whose paid period ran out last month: the win-back audience. */
+  const LAPSED_SUBSCRIPTION = {
+    id: "sub-0",
+    userId: USER.id,
+    planId: plan.id,
+    status: "EXPIRED",
+    provider: "FAKE",
+    providerRef: "ref-0",
+    sponsorLinkId: null,
+    trialEndsAt: null,
+    currentPeriodStart: new Date("2026-07-01T00:00:00Z"),
+    currentPeriodEnd: new Date("2026-08-01T00:00:00Z"),
+    cancelAtPeriodEnd: false,
+    createdAt: new Date("2026-07-01T00:00:00Z"),
+  };
+
+  it("resolves no promotion for plans the web cannot sell", async () => {
+    const { service } = makeService(DISCOUNTED_OFFER, { "payments.web.enabled": false });
+
+    await expect(service.resolveOffers(USER)).resolves.toEqual({ offers: {}, available: [] });
+  });
+
+  it("rejects a typed code while the web cannot sell any plan", async () => {
+    const { service } = makeService(DISCOUNTED_OFFER, { "payments.web.enabled": false });
+
+    await expect(service.resolveOffers(USER, "HOSGELDIN")).rejects.toMatchObject({
+      code: ErrorCode.PAYMENT_DISABLED,
+      httpStatus: 503,
+    });
+  });
+
+  it("offers a lapsed subscriber the win-back discount while the web sells the plan", async () => {
+    const { service, subsRepo } = makeService(DISCOUNTED_OFFER);
+    subsRepo.findLatestForUser.mockResolvedValue(LAPSED_SUBSCRIPTION);
+
+    await expect(service.findWinBackOffer(USER.id)).resolves.toMatchObject({
+      planId: plan.id,
+      discountMinor: 4980,
+    });
+  });
+
+  it("stays silent on win-back while the web cannot sell the plan", async () => {
+    const { service, subsRepo } = makeService(DISCOUNTED_OFFER, { "payments.web.enabled": false });
+    subsRepo.findLatestForUser.mockResolvedValue(LAPSED_SUBSCRIPTION);
+
+    await expect(service.findWinBackOffer(USER.id)).resolves.toBeNull();
+  });
 
   it("sends the discounted amount to the provider, keeping the list price intact", async () => {
     const { service, paymentProvider } = makeService(DISCOUNTED_OFFER);

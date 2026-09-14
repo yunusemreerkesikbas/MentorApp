@@ -63,6 +63,13 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-14 — Panel mood vs journey spotlight sıraya alındı
+
+Panel boot'ta mood check-in (tekerlek + Puhu koç notu) ile journey spotlight aynı anda
+`aria-modal` dialog açıyordu. Kutlama kuyruğu artık overlay kapısı yayınlıyor; mood o kapı
+boşalınca auto-prompt ediyor. Kullanım değişmedi. İlgili: `celebration-overlay.tsx`,
+`mood-checkin.tsx`, `notification-drawer-shell.tsx`, [community.md](./community.md).
+
 ### 2026-09-12 — Mobil tab bar koç için rol farkındalığı kazandı
 
 `sidebarOnly` bir ÖĞRENCİ kararıydı: öğrencinin pill'i beşte doluyor, o yüzden Topluluk ve Ayarlar

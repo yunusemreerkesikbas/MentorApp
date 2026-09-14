@@ -152,7 +152,26 @@ test("yazdırma görünümü yalnız paylaşılabilir sözleşmeyi kullanır", a
   );
 });
 
-async function mockWeeklyReportApi(page: Page) {
+test("detay raporu başarısız olduğunda isteği sonsuz tekrarlamaz", async ({
+  page,
+}) => {
+  const api = await mockWeeklyReportApi(page, { failStudentReport: true });
+
+  await page.goto(`/kocluk/${STUDENT_ID}`);
+  await expect(
+    page.getByRole("heading", { name: "Bu alan koçlar için" }),
+  ).toBeVisible();
+  await expect.poll(() => api.studentReportCalls).toBeGreaterThan(0);
+  const settledCalls = api.studentReportCalls;
+  expect(settledCalls).toBeLessThanOrEqual(2);
+  await page.waitForTimeout(1_000);
+  expect(api.studentReportCalls).toBe(settledCalls);
+});
+
+async function mockWeeklyReportApi(
+  page: Page,
+  options: { failStudentReport?: boolean } = {},
+) {
   const user: AuthUser = {
     id: COACH_ID,
     email: "koc@test.local",
@@ -174,6 +193,7 @@ async function mockWeeklyReportApi(page: Page) {
   let finalized = false;
   const finalizeBodies: Record<string, unknown>[] = [];
   const requestedPaths: string[] = [];
+  let studentReportCalls = 0;
 
   const preview = (withBrief: boolean) => ({
     draftId: "44444444-4444-4444-8444-444444444444",
@@ -233,6 +253,14 @@ async function mockWeeklyReportApi(page: Page) {
       method === "GET" &&
       url.pathname === `/v1/mentorship/students/${STUDENT_ID}`
     ) {
+      studentReportCalls += 1;
+      if (options.failStudentReport) {
+        return json(
+          route,
+          { code: "INTERNAL_ERROR", message: "Bir şeyler ters gitti." },
+          500,
+        );
+      }
       return json(route, studentReport());
     }
     if (
@@ -313,6 +341,9 @@ async function mockWeeklyReportApi(page: Page) {
   return {
     get briefCalls() {
       return briefCalls;
+    },
+    get studentReportCalls() {
+      return studentReportCalls;
     },
     finalizeBodies,
     requestedPaths,
