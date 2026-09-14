@@ -12,25 +12,39 @@ import {
   notificationsControllerUpdatePreferences,
 } from "@mentor/api-client";
 import { FormError } from "@/components/form";
+import {
+  browserPushSupport,
+  hasBrowserPushSubscription,
+  subscribeBrowserPush,
+  unsubscribeBrowserPush,
+  type BrowserPushSupport,
+} from "@/lib/web-push";
 
 export function NotificationSettings() {
   const t = useTranslations("profile.notifications");
   const [emailEnabled, setEmailEnabled] = useState(true);
-  const [pushEnabled, setPushEnabled] = useState(true);
+  const [pushEnabled, setPushEnabled] = useState(false);
   const [campaignsEnabled, setCampaignsEnabled] = useState(true);
+  const [pushSupport, setPushSupport] = useState<BrowserPushSupport>("ready");
+  const [pushNotice, setPushNotice] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
-    notificationsControllerGetPreferences()
-      .then((res) => {
+    Promise.all([
+      notificationsControllerGetPreferences(),
+      hasBrowserPushSubscription().catch(() => false),
+    ])
+      .then(([res, subscribed]) => {
         if (!active) return;
         const prefs = res as unknown as NotificationPreferencesDto;
         setEmailEnabled(prefs.emailEnabled);
-        setPushEnabled(prefs.pushEnabled);
+        // The stored flag defaults to on for everyone; on here means this browser really receives.
+        setPushEnabled(prefs.pushEnabled && subscribed);
         setCampaignsEnabled(prefs.campaignsEnabled);
+        setPushSupport(browserPushSupport());
       })
       .catch((err) => {
         if (!active) return;
@@ -47,15 +61,17 @@ export function NotificationSettings() {
   const savePreferences = async (
     patch: Partial<NotificationPreferencesDto>,
     rollback: Partial<NotificationPreferencesDto>,
-  ) => {
+  ): Promise<boolean> => {
     setSaving(true);
     setError(null);
     try {
       const res = await notificationsControllerUpdatePreferences(patch);
       const prefs = res as unknown as NotificationPreferencesDto;
       setEmailEnabled(prefs.emailEnabled);
-      setPushEnabled(prefs.pushEnabled);
       setCampaignsEnabled(prefs.campaignsEnabled);
+      // Push shows this browser, not only the stored flag, so only a push save may move it.
+      if (patch.pushEnabled !== undefined) setPushEnabled(prefs.pushEnabled);
+      return true;
     } catch (err) {
       if (rollback.emailEnabled !== undefined)
         setEmailEnabled(rollback.emailEnabled);
@@ -64,10 +80,39 @@ export function NotificationSettings() {
       if (rollback.campaignsEnabled !== undefined)
         setCampaignsEnabled(rollback.campaignsEnabled);
       setError(err instanceof ApiClientError ? err.message : t("save_error"));
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  const togglePush = async (next: boolean) => {
+    setPushNotice(null);
+    if (!next) {
+      setPushEnabled(false);
+      // Unsubscribe only once the server agrees, so a failed save leaves both sides as they were.
+      if (await savePreferences({ pushEnabled: false }, { pushEnabled: true })) {
+        await unsubscribeBrowserPush();
+      }
+      return;
+    }
+    setSaving(true);
+    const result = await subscribeBrowserPush();
+    setSaving(false);
+    if (result !== "subscribed") {
+      setPushNotice(t(result === "denied" ? "push_denied" : "push_subscribe_error"));
+      return;
+    }
+    setPushEnabled(true);
+    await savePreferences({ pushEnabled: true }, { pushEnabled: false });
+  };
+
+  const pushHint =
+    pushSupport === "unsupported"
+      ? t("push_not_supported")
+      : pushSupport === "unconfigured"
+        ? t("push_not_configured")
+        : pushNotice;
 
   const settingsBody = (
     <Card id="notification-settings" solid className="p-2 sm:p-2.5">
@@ -100,15 +145,24 @@ export function NotificationSettings() {
         <ToggleRow
           checked={pushEnabled}
           description={t("push_desc")}
-          disabled={saving || loading}
+          disabled={saving || loading || pushSupport !== "ready"}
           icon={<Smartphone size={18} aria-hidden />}
           label={t("push")}
-          onChange={(next) => {
-            const prev = pushEnabled;
-            setPushEnabled(next);
-            void savePreferences({ pushEnabled: next }, { pushEnabled: prev });
-          }}
+          onChange={(next) => void togglePush(next)}
         />
+        {/* Always mounted so a screen reader hears the hint when it appears; the row description
+            above is hidden on phones, which is where a denied permission most often happens. */}
+        <p
+          role="status"
+          className={
+            pushHint
+              ? "px-3 pb-1.5 text-xs leading-4 text-[var(--color-secondary)]"
+              : "sr-only"
+          }
+          style={{ fontFamily: "var(--font-body)" }}
+        >
+          {pushHint}
+        </p>
         {/*
           Commercial messages, unlike the two reminder channels above. Off silences every channel
           for them — the inbox included — because "in-app is always written" is a rule for

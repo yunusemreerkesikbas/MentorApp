@@ -3,6 +3,7 @@ import { OnEvent } from "@nestjs/event-emitter";
 import {
   MentorshipAssignmentDropped,
   MentorshipAssignmentProgressed,
+  MentorshipAssignmentsChanged,
   MentorshipAssignmentsCreated,
   MentorshipEventTopic,
   MentorshipNoteUpdated,
@@ -12,14 +13,27 @@ import {
 import { todayIso } from "../../../coaching/domain/date.util";
 import { MentorshipFollowupService } from "../../../mentorship/application/mentorship-followup.service";
 import { NotificationCopyKey } from "../../domain/notification-copy";
+import { DeliveryTemplate } from "../../domain/notifications.constants";
 import { NotificationsService } from "../notifications.service";
+
+/** New and changed assignments share one key, so the student gets at most one plan push a day. */
+function planPush(studentId: string) {
+  return {
+    template: DeliveryTemplate.MENTORSHIP_PLAN,
+    dedupeKey: `mentorship-plan:${studentId}:${todayIso()}`,
+  };
+}
 
 /**
  * Mentorship domain events → in-app notifications (W8).
  *
- * All five are transactional, not campaign: something happened to a relationship the person is
- * in, so they land in the inbox regardless of campaign preferences (email/push still honour the
- * per-user channel switches inside NotificationsService).
+ * All of them are transactional, not campaign: something happened to a relationship the person is
+ * in, so they land in the inbox regardless of campaign preferences.
+ *
+ * Push is narrower on purpose. Only what changes the student's own plan (new or changed work, a
+ * shared decision) also reaches their browser, under the push preference. The coach is never
+ * pushed: their news waits in the inbox and the morning digests, the way the risk digest already
+ * treats a coach's day.
  *
  * Every send is best-effort. The link and the assignment are already committed when we get here;
  * a notification failure must not surface as an error to the coach who assigned the work.
@@ -65,7 +79,32 @@ export class MentorshipEventsListener {
           ? NotificationCopyKey.MENTORSHIP_ASSIGNED_SINGULAR
           : NotificationCopyKey.MENTORSHIP_ASSIGNED_PLURAL,
         `/plan?date=${event.firstTaskDate}`,
-        { args: { name: event.coachDisplayName, count: event.taskCount } },
+        {
+          args: { name: event.coachDisplayName, count: event.taskCount },
+          push: planPush(event.studentId),
+        },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * The coach edited or removed work already in the student's plan. One inbox line a day, like the
+   * note: "your coach changed your plan" stays true however many edits follow, and no title rides
+   * along because the plan itself is where the student reads what changed.
+   */
+  @OnEvent(MentorshipEventTopic.ASSIGNMENTS_CHANGED)
+  async onAssignmentsChanged(event: MentorshipAssignmentsChanged): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.studentId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_ASSIGNMENTS_CHANGED,
+        event.taskDate ? `/plan?date=${event.taskDate}` : "/plan",
+        {
+          args: { name: event.coachDisplayName },
+          dedupeKey: `mentorship-plan-change:${event.studentId}:${todayIso()}`,
+          push: planPush(event.studentId),
+        },
       )
       .catch(() => {});
   }
@@ -167,6 +206,7 @@ export class MentorshipEventsListener {
         event.version,
       );
       if (!target) return;
+      const dedupeKey = `mentorship-followup-${kind}:${event.followupId}:${event.version}`;
       await this.notifications.createFromTemplate(
         target.recipientId,
         "MENTORSHIP",
@@ -175,7 +215,12 @@ export class MentorshipEventsListener {
           : NotificationCopyKey.MENTORSHIP_FOLLOWUP_RESPONDED,
         target.link,
         {
-          dedupeKey: `mentorship-followup-${kind}:${event.followupId}:${event.version}`,
+          dedupeKey,
+          // A shared decision is the student's to act on; a response is the coach's inbox news.
+          push:
+            kind === "shared"
+              ? { template: DeliveryTemplate.MENTORSHIP_FOLLOWUP_SHARED, dedupeKey }
+              : undefined,
         },
       );
     } catch {

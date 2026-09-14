@@ -25,7 +25,10 @@ daily reminder (no session + no mood today).
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
   `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
-- **Web Push:** VAPID keypair; `sw.js` + profil notification settings. Endpoints are restricted to
+- **Web Push:** VAPID keypair. The browser subscribes through `apps/web/src/lib/web-push.ts`, driven
+  by the push toggle in profile/settings (on subscribes, off unsubscribes); `sw.js` shows and routes
+  the notification. Event-driven senders opt in per call with
+  `createFromTemplate(..., { push })` (APP-094). Endpoints are restricted to
   known browser push providers over HTTPS/443, DNS is resolved before registration and every send,
   private/reserved destinations and redirects are rejected, and requests use bounded timeouts.
   Daily reminders dedupe via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
@@ -82,6 +85,12 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 |---|---|
 | `POST /v1/internal/cron/process-jobs` | Run queued jobs (CRON_SECRET-gated) |
 | `POST /v1/internal/cron/dispatch-daily-reminders` | Dispatch daily reminder jobs (CRON_SECRET-gated) |
+| `POST /v1/internal/cron/dispatch-notebook-reviews` | Dispatch due notebook review reminders (CRON_SECRET-gated) |
+| `POST /v1/internal/cron/dispatch-mentorship-risk-digest` | Coach risk digest + follow-up due summaries, 07:00 UTC (CRON_SECRET-gated) |
+| `POST /v1/notifications/push-subscriptions` | Register this browser's push endpoint (JWT; endpoint policy + per-user limit) |
+| `DELETE /v1/notifications/push-subscriptions` | Remove a push endpoint (JWT; body `endpoint`) |
+| `GET /v1/notifications/preferences` | Email / push / campaign switches (JWT) |
+| `PATCH /v1/notifications/preferences` | Update the switches (JWT) |
 | `GET /v1/notifications` | List in-app notifications (JWT; query: `category`, `page`) |
 | `PATCH /v1/notifications/read-all` | Mark all unread as read (JWT; 204) |
 | `PATCH /v1/notifications/:id/read` | Mark one notification as read (JWT) |
@@ -98,6 +107,44 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 | `PATCH /v1/admin/config/:key` | Update a config/flag value (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-14 — Web push yeniden bağlandı, koç→öğrenci olaylarına push (APP-094).** Denetimde
+  push'un uçtan uca ölü olduğu çıktı: APP-017 (`10c85d16`, 2026-06-30) bildirim ayarları bileşenini
+  yeniden yazarken `serviceWorker.register` + `pushManager.subscribe` + abonelik POST'unu silmişti.
+  Toggle yalnız `pushEnabled` yazıyordu; 15 dk etkinlik hatırlatması dahil her push işi sıfır
+  aboneliğe gidiyordu. **İstemci:** `lib/web-push.ts` (destek, izin, abonelik yardımcıları).
+  Toggle açılınca izin ister, SW'yi kaydeder, abone olur ve uç noktayı API'ye yollar; kapanınca
+  önce tercihi kaydeder, sonra aboneliği siler. Toggle yalnız bu tarayıcı gerçekten alıyorsa açık
+  görünür (DB bayrağı herkeste varsayılan `true`). `sw.js` açık sekmeyi odaklayıp yönlendiriyor
+  (`clients.claim` + `navigate`); yeni pencere yalnız sekme yoksa. **API:**
+  `createFromTemplate(..., { push: { template, dedupeKey } })`. Push yalnız in-app satırı gerçekten
+  yazıldıysa ve tercih satırı `pushEnabled` ise kuyruğa girer. Tercih satırı yoksa kullanıcı hiç
+  abone olmamıştır (`subscribePush` satırı oluşturur), iş kuyruğa hiç girmez. **Push alan olaylar
+  (yalnız öğrenci):** koç ödev verdi, düzenledi ya da sildi (`mentorship.plan`,
+  `mentorship-plan:{studentId}:{UTC günü}`; üçü tek anahtar, günde 1 push) · takip kararı paylaşıldı
+  (`mentorship.followup-shared`, karar + version) · etkinlik oluşturuldu, güncellendi, iptal edildi
+  (`coaching.plan-event-change`, `plan-event-push:{step}:{eventId}`, güncellemede + gün). Koça push
+  yok: risk özetindeki "koçun gününü bölmemeli" kararı. `SendPushHandler` boş abonelik listesinde
+  artık teslimat kaydetmiyor; aynı günlük anahtarla sonradan abone olanın push'u yutuluyordu.
+  **Takip-vadesi dispatcher'ı:** koç başına hata izolasyonu; `sent` yalnız yeni satırı sayar.
+  **Kullanım:** API `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` ve web `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+  aynı public key ile set → `/ayarlar` → Push bildirimleri. Yeni push göndericisi: listener'da
+  `push` opsiyonu ver, şablonu `DeliveryTemplate`'e ekle. **Gotchas:** (1) Web anahtarı build'e
+  gömülür; değişince web yeniden build edilmeli ve API anahtarıyla eşleşmeli (`render.yaml` iki
+  servis, `sync: false`). (2) iOS Safari push'u yalnız ana ekrana eklenmiş PWA'ya verir; repoda
+  manifest yok, orada toggle "desteklemiyor" der. (3) Push metni in-app kopyasıyla aynıdır ve istek
+  bağlamının diliyle ya da `tr` ile çözülür; `users`'ta locale olmadığı için alıcının dili bilinmez.
+  (4) Tarayıcı aboneliği döndürürse (`pushsubscriptionchange`) yeniden abonelik yok; eski uç nokta
+  ilk 404/410'da silinir, kullanıcı ayarlardan tekrar açar. (5) `ci.yml`'da e2e için sahte
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` var; yerelde anahtarsız build'de ilgili e2e atlanır. (6)
+  `profile.spec.ts` APP-080'den beri düşüyordu: mock'ta `/v1/users/me/auth-accounts/google` yoktu,
+  boş 204 gövdesinde `GoogleAccountCard` `.enabled` okuyup sayfayı çökertiyordu; mock eklendi.
+  **İlgili:**
+  `notifications.service.ts`, `send-push.handler.ts`, `mentorship-events.listener.ts`,
+  `plan-event-notifications.listener.ts`, `mentorship-followup-due.service.ts`,
+  `shared/notifications/constants.ts`, `apps/web/src/lib/web-push.ts`,
+  `(app)/profile/_components/notification-settings.tsx`, `apps/web/public/sw.js`,
+  `apps/web/e2e/profile.spec.ts`, [`mentorship.md`](./mentorship.md).
 
 - **2026-09-12 — Follow-up notification version lock.** Shared-event delivery rechecks PENDING + OPEN
   without matching `followups.version`; responded events match `response_version` so a later date
@@ -406,6 +453,11 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   çağrılmıyor).
 - Duyuru için push/e-posta kanalları · premium/free ve tekil kullanıcı hedefleme · kategori bazlı
   bildirim tercihi (`notification_preferences` migration'ı) · duyuru okunma oranı metriği.
+- **Koç↔öğrenci denetiminden kalanlar (APP-094):** koç tamamlama bildirimlerini günlük özete
+  çevirme (20 öğrenci = akşam 20 satır) · etkinlik oluştur/güncelle in-app dedupe'u · kullanıcı
+  locale kolonu (push ve e-posta dili) · `pushsubscriptionchange` / açılışta abonelik yeniden
+  senkronu · iOS için PWA manifest · takip topic'lerinin `MentorshipEventTopic`'e taşınması · takip
+  bildirimleri için API e2e.
 - Re-validate overrides on read against the (possibly evolved) catalog schema · cache the in-flight
   load promise · optionally Turkish catalog descriptions · multi-instance cache invalidation (pub/sub).
 

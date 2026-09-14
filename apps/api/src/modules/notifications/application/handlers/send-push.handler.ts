@@ -40,7 +40,9 @@ export class SendPushHandler {
       if (await this.deliveries.exists(tx, delivery)) return null;
       return this.subscriptions.listByUserId(tx, data.userId);
     });
-    if (!subs) return;
+    // No subscription is not a delivery: recording one would swallow a push to someone who
+    // subscribes later under the same key (a daily key spans hours).
+    if (!subs?.length) return;
     const timeoutMs = await this.registry.get("notifications.push.request_timeout_ms") as number;
     for (const sub of subs) {
       const identity = { userId: data.userId, template: data.template, dedupeKey: data.dedupeKey,

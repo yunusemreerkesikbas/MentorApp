@@ -55,6 +55,72 @@ test("hesap silme satırı açıklamayı paylaşılan onay dialogunda gösterir"
   await expect(api.deleteAccountCalls).toBe(0);
 });
 
+// Guards APP-017's regression: the settings toggle only flipped a flag and no browser was ever
+// subscribed, so every push job reached zero endpoints.
+test("push anahtarı tarayıcıyı abone edip uç noktayı API'ye kaydeder", async ({ page }) => {
+  test.skip(!process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY, "build has no VAPID public key");
+  await mockProfileApi(page);
+  const subscriptions: unknown[] = [];
+  const preferencePatches: unknown[] = [];
+  // Registered after the shared mock, so it answers first and hands everything else back.
+  await page.route("http://localhost:3001/v1/notifications/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const method = request.method();
+    if (method === "GET" && path === "/v1/notifications/preferences") {
+      return json(route, { emailEnabled: true, pushEnabled: false, campaignsEnabled: true });
+    }
+    if (method === "POST" && path === "/v1/notifications/push-subscriptions") {
+      subscriptions.push(request.postDataJSON());
+      return json(route, null, 204);
+    }
+    if (method === "PATCH" && path === "/v1/notifications/preferences") {
+      preferencePatches.push(request.postDataJSON());
+      return json(route, { emailEnabled: true, pushEnabled: true, campaignsEnabled: true });
+    }
+    return route.fallback();
+  });
+  await page.addInitScript(() => {
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
+    const endpoint = "https://fcm.googleapis.com/fcm/send/e2e";
+    const registration = {
+      pushManager: {
+        getSubscription: async () => null,
+        subscribe: async () => ({
+          endpoint,
+          toJSON: () => ({ endpoint, keys: { p256dh: "p256dh-e2e", auth: "auth-e2e" } }),
+        }),
+      },
+    };
+    Object.defineProperty(window, "Notification", {
+      configurable: true,
+      value: { permission: "default", requestPermission: async () => "granted" },
+    });
+    Object.defineProperty(navigator, "serviceWorker", {
+      configurable: true,
+      value: {
+        register: async () => registration,
+        getRegistration: async () => undefined,
+        ready: Promise.resolve(registration),
+      },
+    });
+  });
+
+  await page.goto("/profil");
+  const toggle = page.getByRole("switch", { name: "Push bildirimleri" });
+  await expect(toggle).toHaveAttribute("aria-checked", "false");
+  await toggle.click();
+
+  await expect(toggle).toHaveAttribute("aria-checked", "true");
+  expect(subscriptions).toEqual([
+    {
+      endpoint: "https://fcm.googleapis.com/fcm/send/e2e",
+      keys: { p256dh: "p256dh-e2e", auth: "auth-e2e" },
+    },
+  ]);
+  expect(preferencePatches).toEqual([{ pushEnabled: true }]);
+});
+
 async function mockProfileApi(page: Page) {
   let deleteAccountCalls = 0;
 
@@ -69,6 +135,10 @@ async function mockProfileApi(page: Page) {
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    // The Google card reads `.enabled` off this body; the empty catch-all 204 crashed the page.
+    if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
+      return json(route, { enabled: false, linked: false, providerEmail: null, canLink: false });
+    }
     if (method === "GET" && path.startsWith("/v1/notifications?")) {
       return json(route, {
         items: [],

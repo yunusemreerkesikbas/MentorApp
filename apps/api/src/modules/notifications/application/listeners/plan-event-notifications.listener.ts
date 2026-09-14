@@ -8,13 +8,16 @@ import {
   type PlanEventOccurrencePayload,
   PlanEventUpdated,
 } from "../../../coaching/domain/coaching.events";
+import { todayIso } from "../../../coaching/domain/date.util";
 import {
   NotificationCopyKey,
   type NotificationCopyKey as NotificationCopyKeyType,
 } from "../../domain/notification-copy";
-import { JobName } from "../../domain/notifications.constants";
+import { DeliveryTemplate, JobName } from "../../domain/notifications.constants";
 import { NotificationsService } from "../notifications.service";
 import { planEventReminderSchedule } from "../plan-event-reminder-time";
+
+type LifecycleStep = "created" | "updated" | "cancelled";
 
 function orderedOccurrences(
   occurrences: PlanEventOccurrencePayload[],
@@ -54,6 +57,18 @@ function eventLink(occurrence: PlanEventOccurrencePayload): string {
   return `/plan?date=${encodeURIComponent(occurrence.eventDate)}&event=${encodeURIComponent(occurrence.eventId)}`;
 }
 
+/**
+ * Creation and cancellation happen once per event; edits repeat, so they share one push a day.
+ * A single key for all three would let a same-day creation swallow the cancellation push.
+ */
+function pushFor(step: LifecycleStep, occurrence: PlanEventOccurrencePayload) {
+  const day = step === "updated" ? `:${todayIso()}` : "";
+  return {
+    template: DeliveryTemplate.PLAN_EVENT_CHANGE,
+    dedupeKey: `plan-event-push:${step}:${occurrence.eventId}${day}`,
+  };
+}
+
 /** Best-effort W2 lifecycle summaries and reminder scheduling after commit. */
 @Injectable()
 export class PlanEventNotificationsListener {
@@ -67,6 +82,7 @@ export class PlanEventNotificationsListener {
     await Promise.allSettled([
       this.notifyAttendees(
         event,
+        "created",
         NotificationCopyKey.PLAN_EVENT_CREATED,
         NotificationCopyKey.PLAN_EVENT_CREATED_ALL_DAY,
       ),
@@ -79,6 +95,7 @@ export class PlanEventNotificationsListener {
     await Promise.allSettled([
       this.notifyAttendees(
         event,
+        "updated",
         NotificationCopyKey.PLAN_EVENT_UPDATED,
         NotificationCopyKey.PLAN_EVENT_UPDATED_ALL_DAY,
       ),
@@ -91,6 +108,7 @@ export class PlanEventNotificationsListener {
     await Promise.allSettled([
       this.notifyAttendees(
         event,
+        "cancelled",
         NotificationCopyKey.PLAN_EVENT_CANCELLED,
         NotificationCopyKey.PLAN_EVENT_CANCELLED_ALL_DAY,
       ),
@@ -99,6 +117,7 @@ export class PlanEventNotificationsListener {
 
   private async notifyAttendees(
     event: PlanEventCreated,
+    step: LifecycleStep,
     timedTemplateKey: NotificationCopyKeyType,
     allDayTemplateKey: NotificationCopyKeyType,
   ): Promise<void> {
@@ -109,7 +128,7 @@ export class PlanEventNotificationsListener {
           "PLAN",
           occurrence.startTime ? timedTemplateKey : allDayTemplateKey,
           eventLink(occurrence),
-          { args: copyArgs(occurrence) },
+          { args: copyArgs(occurrence), push: pushFor(step, occurrence) },
         ),
       ),
     );

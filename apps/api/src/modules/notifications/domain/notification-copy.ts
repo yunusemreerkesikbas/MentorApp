@@ -39,6 +39,7 @@ export const NotificationCopyKey = {
   MENTORSHIP_RISK_DIGEST: "mentorshipRiskDigest",
   MENTORSHIP_ASSIGNMENT_DROPPED: "mentorshipAssignmentDropped",
   MENTORSHIP_ASSIGNMENT_PROGRESSED: "mentorshipAssignmentProgressed",
+  MENTORSHIP_ASSIGNMENTS_CHANGED: "mentorshipAssignmentsChanged",
   MENTORSHIP_COACH_NOTE: "mentorshipCoachNote",
   MENTORSHIP_FOLLOWUP_SHARED: "mentorshipFollowupShared",
   MENTORSHIP_FOLLOWUP_RESPONDED: "mentorshipFollowupResponded",

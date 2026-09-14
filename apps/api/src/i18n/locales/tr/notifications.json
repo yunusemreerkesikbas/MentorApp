@@ -180,6 +180,11 @@
       "title": "Koçundan görevler",
       "body": "{name} planına {count} görev ekledi."
     },
+    "mentorshipAssignmentsChanged": {
+      "register": "companion",
+      "title": "Koçundan plan güncellemesi",
+      "body": "{name} planındaki görevlerde değişiklik yaptı."
+    },
     "mentorshipLinkEnded": {
       "register": "companion",
       "title": "Koçluk bağlantısı sona erdi",

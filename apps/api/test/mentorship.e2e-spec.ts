@@ -632,6 +632,28 @@ describe("mentorship (e2e)", () => {
       expect(res.body.code).toBe("VALIDATION_ERROR");
     });
 
+    it("tells the student when the coach moves an assignment to another day", async () => {
+      // The plan is the student's to rely on: a task moved without a word leaves them working from
+      // a stale day. Delivered off a fire-and-forget emit like the drop notice above, so poll.
+      const assign = await http()
+        .post(`/v1/mentorship/students/${userId.student}/assignments`)
+        .set(auth("coach"))
+        .send({ tasks: [{ title: "Taşınacak görev", taskDate: isoDaysFromNow(1) }] });
+      expect(assign.status).toBe(201);
+
+      const moved = await http()
+        .patch(`/v1/mentorship/students/${userId.student}/assignments/${assign.body[0].id}`)
+        .set(auth("coach"))
+        .send({ taskDate: isoDaysFromNow(2) });
+      expect(moved.status).toBe(200);
+
+      const changed = await pollForNotification(
+        "student",
+        (n) => n.linkUrl === `/plan?date=${isoDaysFromNow(2)}` && n.body.includes("değişiklik"),
+      );
+      expect(changed).toBeDefined();
+    });
+
     describe("the coach's own note", () => {
       let notedTaskId = "";
 

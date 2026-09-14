@@ -36,6 +36,7 @@ export const MentorshipEventTopic = {
   ASSIGNMENTS_CREATED: "mentorship.assignments.created",
   ASSIGNMENT_DROPPED: "mentorship.assignment.dropped",
   ASSIGNMENT_PROGRESSED: "mentorship.assignment.progressed",
+  ASSIGNMENTS_CHANGED: "mentorship.assignments.changed",
   NOTE_UPDATED: "mentorship.note.updated",
 } as const;
 
@@ -94,6 +95,21 @@ export class MentorshipAssignmentsCreated {
     readonly taskCount: number,
     /** Earliest assigned date, so the notification can link to the day the work starts. */
     readonly firstTaskDate: string,
+  ) {}
+}
+
+/**
+ * A coach edited or removed pending assignments. The student hears about it: the plan is theirs to
+ * rely on, and a task that moves or vanishes without a word leaves them working from a stale day.
+ * `taskDate` is the edited task's date, and null for a removal, which has no day left to open.
+ */
+export class MentorshipAssignmentsChanged {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly coachDisplayName: string,
+    readonly taskDate: string | null,
   ) {}
 }
 
