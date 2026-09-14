@@ -211,6 +211,22 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-14 — PR #102 review düzeltmeleri (haftalık rapor + koç yüzeyi).** CodeRabbit'in 12
+  bulgusu doğrulandı ve kapatıldı. **API:** (1) `finalize` replay'i artık isteği kontrol ediyor:
+  aynı `operationId` farklı fingerprint/hafta/değerlendirme ile gelirse eski rapor dönmez, 409
+  `MENTORSHIP_WEEKLY_REPORT_CONFLICT` (hem ön kontrol hem kilit altındaki replay). Hash kolonu yok,
+  satır alanları karşılaştırılır; `replacesId` karşılaştırılmaz (satırda çözülmüş sürüm durur).
+  (2) Brief job'u `maxAttempts: 1`: retry aynı ücretli çağrıyı tekrarlıyor ve `BRIEF_FAILED` sonrası
+  `BRIEF_READY`'ye dönüp koçun kendi tekrar denemesiyle yarışıyordu. Hata = FAILED, koç butondan
+  yeniden ister. (3) Job payload'ında `coachRoles` yok; gate rolleri DB'den taze okur (kuyrukta
+  bekleyen STAFF ipucu kaldırılmış rolü yaşatmasın). (4) Writer, bozuk model yanıtında da
+  `ai_usage` yazar (append parse'tan önce, diğer writer'larla aynı). **Web:** plan paneli gönderim
+  sürerken kapanmaz, taslak butonları kilitli (`busy` shell'de); brief polling geçici hatada durmaz
+  (backoff, tek toast); 409 sonrası başarılı reload'da hata toast'u yok; yüzde `Intl` percent ile
+  (en `50%`, tr `%50`); arşiv tek sayfa `pageSize: 100` (ceiling notu kodda); overlay Escape
+  `useEffectEvent` ile güncel `busy` okur. **Gotcha:** eski kuyruktaki job'larda `coachRoles` anahtarı
+  zod tarafından atılır, sorun değil.
+
 - **2026-09-14 — Completed-week coach evaluation, evidence-bound AI brief and print archive.**
   The student workspace now compares the selected completed Monday-Sunday week with its predecessor:
   recorded focus, qualifying sessions, active days, planned/completed tasks, subject allocation and

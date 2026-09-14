@@ -30,7 +30,11 @@ export function formatWeeklyMetric(
   locale: string,
 ): string {
   if (value === null) return locale === "tr" ? "Yok" : "None";
-  if (kind === "COMPLETION_RATE") return `%${Math.round(value * 100)}`;
+  if (kind === "COMPLETION_RATE")
+    return new Intl.NumberFormat(locale, {
+      style: "percent",
+      maximumFractionDigits: 0,
+    }).format(value);
   if (kind === "FOCUS_MINUTES")
     return `${Math.round(value)} ${locale === "tr" ? "dk" : "min"}`;
   return new Intl.NumberFormat(locale).format(value);
@@ -87,7 +91,9 @@ export async function fetchWeeklyReportArchive(
 ): Promise<Paginated<MentorshipWeeklyReportListItemDto>> {
   return (await mentorshipWeeklyReportControllerList(studentId, {
     page: 1,
-    pageSize: 20,
+    // ponytail: one page at the schema max (~100 finalized versions, well over a prep year of weeks).
+    // Add "load more" on `total` if a link ever outgrows it; finalize is unaffected either way.
+    pageSize: 100,
   })) as Paginated<MentorshipWeeklyReportListItemDto>;
 }
 

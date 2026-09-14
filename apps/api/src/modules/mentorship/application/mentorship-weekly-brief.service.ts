@@ -18,7 +18,7 @@ export const MENTORSHIP_WEEKLY_BRIEF_JOB = "mentorship.generate-weekly-brief";
 const mentorshipWeeklyBriefJobSchema = z.object({
   draftId: z.string().min(1),
   coachId: z.string().min(1),
-  coachRoles: z.array(z.string()),
+  // No roles here: a queued hint would keep a revoked STAFF entitlement alive. The gate reads them fresh.
   studentId: z.string().min(1),
   weekStart: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   sourceFingerprint: z.string().regex(/^[a-f0-9]{64}$/),
@@ -96,14 +96,15 @@ export class MentorshipWeeklyBriefService {
         {
           draftId,
           coachId: coach.id,
-          coachRoles: coach.roles,
           studentId,
           weekStart: input.weekStart,
           sourceFingerprint: input.sourceFingerprint,
           locale,
           promptVersion: MENTORSHIP_WEEKLY_BRIEF_PROMPT_VERSION,
         },
-        { maxAttempts: 3 },
+        // ponytail: one attempt. A retry repeats the paid model call and races the coach's own retry
+        // (the failure already shows BRIEF_FAILED with the button live). Persist-only retries if needed.
+        { maxAttempts: 1 },
       );
     } catch (error) {
       await this.reports.setBriefResult(
@@ -137,7 +138,7 @@ export class MentorshipWeeklyBriefService {
     try {
       const result = await this.writer.generate(
         before.snapshot,
-        { id: payload.coachId, roles: payload.coachRoles },
+        { id: payload.coachId, roles: undefined },
         payload.locale,
       );
       // The student can write data while the model works. Rebuild and compare before persisting.

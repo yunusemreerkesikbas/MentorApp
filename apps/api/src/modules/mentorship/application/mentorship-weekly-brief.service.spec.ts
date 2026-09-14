@@ -41,7 +41,7 @@ describe("MentorshipWeeklyBriefService", () => {
         draftId: "draft-1",
         sourceFingerprint: "a".repeat(64),
       }),
-      { maxAttempts: 3 },
+      { maxAttempts: 1 },
     );
   });
 
@@ -63,7 +63,6 @@ describe("MentorshipWeeklyBriefService", () => {
     await service.handle({
       draftId: "draft-1",
       coachId: "coach-1",
-      coachRoles: ["COACH"],
       studentId: "student-1",
       weekStart: "2026-08-31",
       sourceFingerprint: "a".repeat(64),
@@ -226,7 +225,6 @@ describe("MentorshipWeeklyBriefService", () => {
       service.handle({
         draftId: "draft-1",
         coachId: "coach-1",
-        coachRoles: ["COACH"],
         studentId: "student-1",
         weekStart: "2026-08-31",
         sourceFingerprint: "a".repeat(64),

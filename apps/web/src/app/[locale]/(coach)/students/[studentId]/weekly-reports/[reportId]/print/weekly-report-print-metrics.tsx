@@ -46,11 +46,15 @@ export function WeeklyReportPrintMetrics({
   const t = useTranslations("mentorship");
   const locale = useLocale();
   const number = new Intl.NumberFormat(locale);
+  const percentFormat = new Intl.NumberFormat(locale, {
+    style: "percent",
+    maximumFractionDigits: 0,
+  });
   const missing = t("weekly_report_missing");
   const net = (value: number | null) =>
     value === null ? missing : number.format(value);
   const percent = (value: number | null) =>
-    value === null ? missing : `%${Math.round(value * 100)}`;
+    value === null ? missing : percentFormat.format(value);
   const rows = [
     [
       t("weekly_report_focus"),

@@ -62,6 +62,8 @@ export function AssignTaskForm({
   previousTasks,
   drafts,
   onDraftsChange: setDrafts,
+  busy,
+  onBusyChange: setBusy,
   onAssigned,
   onCancel,
 }: {
@@ -72,6 +74,9 @@ export function AssignTaskForm({
   previousTasks: readonly MentorshipReportPlanTaskDto[];
   drafts: readonly AssignDraft[];
   onDraftsChange: Dispatch<SetStateAction<AssignDraft[]>>;
+  /** Owned by the shell, which also locks the panel: closing mid-send would remount an idle form. */
+  busy: boolean;
+  onBusyChange: (busy: boolean) => void;
   onAssigned: () => void;
   onCancel: () => void;
 }) {
@@ -91,7 +96,6 @@ export function AssignTaskForm({
   const [subject, setSubject] = useState("");
   const [topic, setTopic] = useState("");
   const [coachNote, setCoachNote] = useState("");
-  const [busy, setBusy] = useState(false);
 
   const days = useMemo(
     () => Array.from({ length: DAYS_IN_WEEK }, (_, i) => addDaysIso(weekStart, i)),
@@ -231,7 +235,7 @@ export function AssignTaskForm({
                 fullWidth
                 className={SMALL_BUTTON}
                 onClick={repeatWeek}
-                disabled={!canRepeat}
+                disabled={busy || !canRepeat}
               >
                 {t("assign_repeat_week")}
               </Button>
@@ -329,7 +333,7 @@ export function AssignTaskForm({
                 size="sm"
                 className={SMALL_BUTTON}
                 onClick={addDraft}
-                disabled={title.trim() === "" || atCeiling}
+                disabled={busy || title.trim() === "" || atCeiling}
               >
                 {t("assign_add_to_day")}
               </Button>
@@ -359,6 +363,7 @@ export function AssignTaskForm({
                       variant="ghost"
                       size="sm"
                       className={SMALL_BUTTON}
+                      disabled={busy}
                       onClick={() => removeDraft(draft.key)}
                     >
                       {t("assign_remove")}
@@ -380,7 +385,7 @@ export function AssignTaskForm({
       </CoachOverlayBody>
 
       <CoachOverlayFooter>
-        <Button type="button" variant="secondary" size="sm" className={SMALL_BUTTON} onClick={onCancel}>
+        <Button type="button" variant="secondary" size="sm" className={SMALL_BUTTON} disabled={busy} onClick={onCancel}>
           {t("confirm_cancel")}
         </Button>
         <Button type="submit" size="sm" className={SMALL_BUTTON} busy={busy} disabled={drafts.length === 0}>

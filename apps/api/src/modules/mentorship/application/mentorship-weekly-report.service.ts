@@ -136,7 +136,9 @@ export class MentorshipWeeklyReportService {
       prepared.link.id,
       prepared.link.periodId,
     );
+    const weekStart = prepared.snapshot.period.startDate;
     if (replay) {
+      this.assertSameRequest(replay, input, weekStart);
       return this.toDto(replay, studentId, prepared.studentDisplayName);
     }
     if (prepared.sourceFingerprint !== input.sourceFingerprint) {
@@ -179,6 +181,8 @@ export class MentorshipWeeklyReportService {
       }
       throw error;
     }
+    // The repository replays under its lock too (a concurrent retry won the race); same rule there.
+    this.assertSameRequest(row, input, weekStart);
     return this.toDto(row, studentId, prepared.studentDisplayName);
   }
 
@@ -255,6 +259,29 @@ export class MentorshipWeeklyReportService {
       row,
       studentDisplayName: identities.get(studentId)?.displayName ?? "",
     };
+  }
+
+  /**
+   * An operationId names ONE finalization. Reused for a different week, fingerprint or evaluation it
+   * must not answer with the old report as if the new one had been saved. `replacesId` is left out:
+   * the row stores the version the repository resolved under its lock, not what the client sent.
+   */
+  private assertSameRequest(
+    row: MentorshipWeeklyReportRow,
+    input: FinalizeMentorshipWeeklyReportInput,
+    /** The normalized period start the request resolved to, not the raw query value. */
+    weekStart: string,
+  ): void {
+    if (
+      row.sourceFingerprint !== input.sourceFingerprint ||
+      row.weekStart !== weekStart ||
+      row.coachEvaluation !== (input.coachEvaluation?.trim() || null)
+    ) {
+      throw new DomainError(
+        ErrorCode.MENTORSHIP_WEEKLY_REPORT_CONFLICT,
+        HttpStatus.CONFLICT,
+      );
+    }
   }
 
   private toListItem(

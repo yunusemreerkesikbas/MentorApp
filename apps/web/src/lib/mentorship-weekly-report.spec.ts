@@ -11,6 +11,8 @@ describe("mentorship weekly report helpers", () => {
     expect(formatWeeklyMetric("COMPLETION_RATE", null, "tr")).toBe("Yok");
     expect(formatWeeklyMetric("COMPLETION_RATE", null, "en")).toBe("None");
     expect(formatWeeklyMetric("COMPLETION_RATE", 0, "tr")).toBe("%0");
+    expect(formatWeeklyMetric("COMPLETION_RATE", 0.5, "tr")).toBe("%50");
+    expect(formatWeeklyMetric("COMPLETION_RATE", 0.5, "en")).toBe("50%");
     expect(formatWeeklyMetric("FOCUS_MINUTES", 125, "tr")).toBe("125 dk");
   });
 });

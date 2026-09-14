@@ -91,6 +91,10 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-14 — Koç signup'ı durum bilinene kadar form göstermiyor.** `?rol=koc` ile
+  `coachOpen === null` iken (status isteği sürüyor) skeleton render edilir; önceden kapalı intake'te
+  form bir an görünüp doldurulabiliyordu. `fetchCoachSignupOpen` hata durumunda `false` döner.
+
 - **2026-09-14 — Signup koç intent'i intake flag'ine bağlandı.** `intent: COACH`, artık
   `mentorship.applications.open` kapalıyken hesap oluşturulmadan 403 `MENTORSHIP_APPLICATIONS_CLOSED`
   alıyor; önceden rol veriliyor ve koç onboarding'in son adımında takılıyordu. Yeni public

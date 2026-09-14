@@ -73,7 +73,8 @@ describe("MentorshipWeeklyBriefWriterService", () => {
     );
   });
 
-  it("rejects a model response without valid evidence references", async () => {
+  it("rejects a model response without valid evidence references, still recording its usage", async () => {
+    const append = vi.fn();
     const service = new MentorshipWeeklyBriefWriterService(
       {
         complete: vi.fn(async () => ({
@@ -84,7 +85,7 @@ describe("MentorshipWeeklyBriefWriterService", () => {
         })),
       } as never,
       { get: vi.fn(async () => true) } as never,
-      { append: vi.fn() } as never,
+      { append } as never,
       { assertWithinBudget: vi.fn() } as never,
       { assertAllowed: vi.fn() } as never,
     );
@@ -99,5 +100,6 @@ describe("MentorshipWeeklyBriefWriterService", () => {
         "tr",
       ),
     ).rejects.toThrow("AI_MALFORMED_RESPONSE");
+    expect(append).toHaveBeenCalledOnce();
   });
 });

@@ -27,7 +27,8 @@ export class MentorshipWeeklyBriefWriterService {
 
   async generate(
     snapshot: MentorshipWeeklySnapshotDto,
-    coach: { id: string; roles: string[] },
+    /** `roles` undefined = the entitlement reads current roles from the DB (queued callers). */
+    coach: { id: string; roles: string[] | undefined },
     locale: PromptLocale,
   ) {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
@@ -42,10 +43,7 @@ export class MentorshipWeeklyBriefWriterService {
     const result = await this.llm.complete(
       buildMentorshipWeeklyBriefPrompt(snapshot, locale),
     );
-    const parsed = parseMentorshipWeeklyBrief(result.text, snapshot.evidence);
-    if (parsed.kind === "MALFORMED") {
-      throw new DomainError("AI_MALFORMED_RESPONSE", HttpStatus.BAD_GATEWAY);
-    }
+    // Recorded before parsing: a malformed answer still spent the tokens.
     await this.usage.append({
       ...(result.budgetReservationId
         ? { budgetReservationId: result.budgetReservationId }
@@ -61,6 +59,10 @@ export class MentorshipWeeklyBriefWriterService {
         result.completionTokens,
       ),
     });
+    const parsed = parseMentorshipWeeklyBrief(result.text, snapshot.evidence);
+    if (parsed.kind === "MALFORMED") {
+      throw new DomainError("AI_MALFORMED_RESPONSE", HttpStatus.BAD_GATEWAY);
+    }
     return { findings: parsed.findings, model: result.model };
   }
 }

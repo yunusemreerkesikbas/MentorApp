@@ -2,6 +2,7 @@
 
 import {
   useEffect,
+  useEffectEvent,
   useRef,
   useState,
   type KeyboardEvent,
@@ -48,9 +49,8 @@ export function CoachOverlay({
     typeof window !== "undefined" && window.matchMedia(DESKTOP_QUERY).matches,
   );
 
-  const latest = useRef({ busy, onClose });
-  useEffect(() => {
-    latest.current = { busy, onClose };
+  const onEscape = useEffectEvent(() => {
+    if (!busy) onClose();
   });
 
   /*
@@ -66,8 +66,8 @@ export function CoachOverlay({
     openOverlays.push(token);
     function onKey(event: globalThis.KeyboardEvent) {
       if (event.key !== "Escape" || event.defaultPrevented) return;
-      if (openOverlays.at(-1) !== token || latest.current.busy) return;
-      latest.current.onClose();
+      if (openOverlays.at(-1) !== token) return;
+      onEscape();
     }
     window.addEventListener("keydown", onKey);
     return () => {

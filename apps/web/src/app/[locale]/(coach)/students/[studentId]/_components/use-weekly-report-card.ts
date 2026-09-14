@@ -132,6 +132,7 @@ export function useWeeklyReportCard(studentId: string) {
   useEffect(() => {
     if (!preview || preview.status !== "BRIEF_PENDING") return;
     let cancelled = false;
+    let failures = 0;
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const poll = async () => {
       try {
@@ -140,12 +141,20 @@ export function useWeeklyReportCard(studentId: string) {
           preview.snapshot.period.startDate,
         );
         if (cancelled) return;
+        failures = 0;
         setPreview(next);
         if (next.status === "BRIEF_PENDING") {
           timeout = setTimeout(() => void poll(), BRIEF_POLL_INTERVAL_MS);
         }
       } catch (error) {
-        if (!cancelled) showError(error);
+        if (cancelled) return;
+        // A blip must not strand the card on "pending": keep polling, backing off, and toast once.
+        if (failures === 0) showError(error);
+        failures += 1;
+        timeout = setTimeout(
+          () => void poll(),
+          BRIEF_POLL_INTERVAL_MS * 2 ** Math.min(failures, 4),
+        );
       }
     };
     timeout = setTimeout(() => void poll(), BRIEF_POLL_INTERVAL_MS);
@@ -202,10 +211,14 @@ export function useWeeklyReportCard(studentId: string) {
       if (error instanceof ApiClientError && error.status === 409) {
         try {
           await reloadSelected();
+          toast.warning({
+            title: common("error_title"),
+            message: t("weekly_report_preview_changed"),
+          });
         } catch (reloadError) {
           showError(reloadError);
-          return;
         }
+        return;
       }
       showError(error);
     } finally {

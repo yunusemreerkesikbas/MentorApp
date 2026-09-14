@@ -825,6 +825,15 @@ async function mockApi(
       };
       return json(route, application, 201);
     }
+    // The report embeds the weekly-report card. The 204 fallback reads as a broken preview and its
+    // error toast lands on the plan panel's buttons; the flag-off answer keeps the card quiet.
+    if (path.startsWith(`/v1/mentorship/students/${STUDENT_ID}/weekly-reports`)) {
+      return json(
+        route,
+        { code: "MENTORSHIP_WEEKLY_REPORT_DISABLED", message: "kapalı" },
+        404,
+      );
+    }
     if (method === "GET" && path.startsWith("/v1/content/exams/")) {
       return json(route, [
         {

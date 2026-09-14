@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
-import { CheckBox, SectionHeading } from "@mentor/ui";
+import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
@@ -116,6 +116,18 @@ export default function SignupPage() {
       setTurnstileToken(null);
       setTurnstileResetKey((value) => value + 1);
     }
+  }
+
+  // Coach intake unknown yet: a placeholder, never a form that may be closed.
+  if (isCoach && coachOpen === null) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <Skeleton className="mx-auto h-7 w-2/3" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+    );
   }
 
   // Coach intake shut: say so instead of offering a form the API would refuse on submit.

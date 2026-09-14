@@ -178,9 +178,10 @@ describe("MentorshipWeeklyReportService", () => {
       id: "report-1",
       locale: "tr",
       version: 1,
-      sourceFingerprint: "f".repeat(64),
+      weekStart: "2026-08-31",
+      sourceFingerprint: "0".repeat(64),
       snapshot,
-      coachEvaluation: "Önceki kayıt",
+      coachEvaluation: "Tekrar gönderim",
       brief: null,
       replacesId: null,
       finalizedAt: new Date("2026-09-07T10:00:00.000Z"),
@@ -194,6 +195,32 @@ describe("MentorshipWeeklyReportService", () => {
     });
 
     expect(result.id).toBe("report-1");
+    expect(finalize).not.toHaveBeenCalled();
+  });
+
+  it("refuses to replay an operationId reused for a different finalization", async () => {
+    const { service, findFinalizedByOperation, finalize } = build();
+    findFinalizedByOperation.mockResolvedValueOnce({
+      id: "report-1",
+      locale: "tr",
+      version: 1,
+      weekStart: "2026-08-31",
+      sourceFingerprint: "0".repeat(64),
+      snapshot,
+      coachEvaluation: "Önceki kayıt",
+      brief: null,
+      replacesId: null,
+      finalizedAt: new Date("2026-09-07T10:00:00.000Z"),
+    });
+
+    await expect(
+      service.finalize("coach-1", "student-1", {
+        weekStart: "2026-08-31",
+        sourceFingerprint: "0".repeat(64),
+        operationId: "00000000-0000-4000-8000-000000000001",
+        coachEvaluation: "Farklı değerlendirme",
+      }),
+    ).rejects.toMatchObject({ code: "MENTORSHIP_WEEKLY_REPORT_CONFLICT" });
     expect(finalize).not.toHaveBeenCalled();
   });
 
@@ -222,6 +249,7 @@ describe("MentorshipWeeklyReportService", () => {
       id: "report-2",
       locale: "tr",
       version: 2,
+      weekStart: "2026-08-31",
       sourceFingerprint: live.sourceFingerprint,
       snapshot,
       coachEvaluation: null,

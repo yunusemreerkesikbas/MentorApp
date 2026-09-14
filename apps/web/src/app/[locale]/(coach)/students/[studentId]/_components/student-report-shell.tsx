@@ -52,6 +52,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   const [compose, setCompose] = useState<FollowupCompose | null>(null);
   // Held here, not in the composer: the panel unmounts on close, and a half-built week must not.
   const [drafts, setDrafts] = useState<AssignDraft[]>([]);
+  // Also held here: the panel must not close (and remount an idle form over the same drafts) mid-send.
+  const [assigning, setAssigning] = useState(false);
   // Started beside the report request, not after it: the two reads do not depend on each other.
   const followups = useCoachFollowups(studentId);
 
@@ -194,6 +196,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
             key="plan"
             title={t("report_plan_week")}
             subtitle={t("assign_body")}
+            busy={assigning}
             onClose={closePanel}
           >
             <AssignTaskForm
@@ -203,6 +206,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
               previousTasks={report.planTasks}
               drafts={drafts}
               onDraftsChange={setDrafts}
+              busy={assigning}
+              onBusyChange={setAssigning}
               onAssigned={() => {
                 closePanel();
                 load();
