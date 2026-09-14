@@ -13,7 +13,7 @@ import { Link } from "@/i18n/navigation";
 import { fetchCoachRegistrationState, updateCoachProfile } from "@/lib/mentorship";
 
 /**
- * The coach's own profile page (APP-090 moved it here from `/koc-basvurusu`).
+ * The coach's own profile page (APP-090 moved it here from the registration form, now `/koc-ol`).
  *
  * Self-fetching because it is a page root now, not a card the registration screen handed props to.
  * The endpoint is the same one the roster header reads, so this costs a call the coach was already
@@ -37,7 +37,7 @@ export function CoachProfileShell() {
 
   return (
     <div className="flex flex-col gap-6">
-      <SectionHeading subtitle={t("application_subtitle")}>
+      <SectionHeading subtitle={t("profile_subtitle")}>
         {t("application_title")}
       </SectionHeading>
 

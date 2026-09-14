@@ -52,7 +52,25 @@ const ROSTER_ROW = {
   needsAttention: true,
 };
 
-async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
+async function mockApi(
+  page: import("@playwright/test").Page,
+  user: AuthUser,
+  options?: {
+    emailVerified?: boolean;
+    inviteCode?: { code: string; expiresAt: string } | null;
+    verificationEmailCalls?: { count: number };
+    rotateInviteCalls?: { count: number };
+  },
+) {
+  const emailVerified = options?.emailVerified ?? user.emailVerified;
+  const inviteCode =
+    options && "inviteCode" in options
+      ? options.inviteCode
+      : {
+          code: "MENTOR-KOC-ABCDEF123456",
+          expiresAt: "2026-12-01T00:00:00.000Z",
+        };
+
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
@@ -86,12 +104,20 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
     if (path === "/v1/mentorship/students") {
       return json({ items: [ROSTER_ROW], total: 1, page: 1, pageSize: 100 });
     }
+    if (request.method() === "POST" && path === "/v1/users/me/verification-email") {
+      if (options?.verificationEmailCalls) options.verificationEmailCalls.count += 1;
+      return json({ ok: true });
+    }
+    if (request.method() === "POST" && path === "/v1/mentorship/invite-code") {
+      if (options?.rotateInviteCalls) options.rotateInviteCalls.count += 1;
+      return json({
+        code: "MENTOR-KOC-ROTATEDCODE12",
+        expiresAt: "2026-12-15T00:00:00.000Z",
+      });
+    }
     if (path === "/v1/mentorship/overview") {
       return json({
-        inviteCode: {
-          code: "MENTOR-KOC-ABCDEF123456",
-          expiresAt: "2026-12-01T00:00:00.000Z",
-        },
+        inviteCode,
         activeStudents: 1,
         maxActiveStudents: 20,
         freeSeats: 3,
@@ -104,7 +130,7 @@ async function mockApi(page: import("@playwright/test").Page, user: AuthUser) {
     if (path === "/v1/mentorship/coach-registration/mine") {
       return json({
         registrationOpen: true,
-        emailVerified: true,
+        emailVerified,
         registration: {
           id: "reg-1",
           status: "ACTIVE",
@@ -288,6 +314,36 @@ test.describe("koçluk paneli redesign", () => {
 
     await page.getByRole("button", { name: "Kodu gizle" }).click();
     await expect(page.getByText("MENTOR-KOC-ABCDEF123456")).toHaveCount(0);
+  });
+
+  test("doğrulanmamış e-postada kod oluştur onaylar ve maili gönderir", async ({
+    page,
+  }) => {
+    const verificationEmailCalls = { count: 0 };
+    const rotateInviteCalls = { count: 0 };
+    await mockApi(
+      page,
+      { ...COACH, emailVerified: false },
+      {
+        emailVerified: false,
+        inviteCode: null,
+        verificationEmailCalls,
+        rotateInviteCalls,
+      },
+    );
+    await page.goto("/kocluk");
+
+    await expect(page.getByText("e-postanı doğrulayınca", { exact: false })).toHaveCount(0);
+    await expect(page.getByText("Henüz bir kodun yok.")).toBeVisible();
+    await page.getByRole("button", { name: "Kod oluştur" }).click();
+
+    const prompt = page.getByRole("dialog");
+    await expect(prompt.getByText("Önce e-postanı doğrula")).toBeVisible();
+    await prompt.getByRole("button", { name: "Doğrulama gönder" }).click();
+
+    await expect(page.getByText("Doğrulama e-postası gönderildi")).toBeVisible();
+    expect(verificationEmailCalls.count).toBe(1);
+    expect(rotateInviteCalls.count).toBe(0);
   });
 
   test("yeni kod üretmek önce onay ister, vazgeçmek kodu bırakır", async ({

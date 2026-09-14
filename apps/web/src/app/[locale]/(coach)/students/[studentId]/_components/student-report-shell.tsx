@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -15,7 +16,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorship";
-import { AssignTaskForm } from "./assign-task-form";
+import { AssignTaskForm, type AssignDraft } from "./assign-task-form";
 import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
 import { CoachPanel } from "./coach-panel";
@@ -27,6 +28,7 @@ import { ReportMood } from "./report-mood";
 import { ReportPlan } from "./report-plan";
 import { ReportWeekStrip } from "./report-week-strip";
 import { StudentReportContentSkeleton } from "./student-report-content-skeleton";
+import { WeeklyReportCard } from "./weekly-report-card";
 
 /**
  * The coach's workspace for one student (design canvas approved 2026-09-13): the status on the
@@ -48,6 +50,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   const [busy, setBusy] = useState(false);
   const [panel, setPanel] = useState<ReportPanel | null>(null);
   const [compose, setCompose] = useState<FollowupCompose | null>(null);
+  // Held here, not in the composer: the panel unmounts on close, and a half-built week must not.
+  const [drafts, setDrafts] = useState<AssignDraft[]>([]);
   // Started beside the report request, not after it: the two reads do not depend on each other.
   const followups = useCoachFollowups(studentId);
 
@@ -162,6 +166,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
             {/* Keyed: moving between students must remount this, or a brief about one could be
                 read under another's name while a stale request is still in flight. */}
             <BriefCard key={studentId} studentId={studentId} />
+            <WeeklyReportCard key={`weekly-${studentId}`} studentId={studentId} />
             <ReportWeekStrip tasks={report.planTasks} />
             <ReportActivity report={report} />
             <ReportPlan report={report} />
@@ -183,55 +188,59 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         />
       </div>
 
-      <CoachPanel
-        open={panel === "plan"}
-        title={t("report_plan_week")}
-        subtitle={t("assign_body")}
-        onClose={closePanel}
-      >
-        <AssignTaskForm
-          key={studentId}
-          studentId={studentId}
-          studentName={report.studentDisplayName}
-          studentExamType={report.studentExamType}
-          previousTasks={report.planTasks}
-          onAssigned={() => {
-            closePanel();
-            load();
-          }}
-          onCancel={closePanel}
-        />
-      </CoachPanel>
-
-      <CoachPanel open={panel === "note"} title={t("note_title")} onClose={closePanel}>
-        {/* Mounted on open: a note is a few words, and the rail holds the long-lived copy. */}
-        {panel === "note" ? (
-          <CoachNoteCard
-            inPanel
-            studentId={studentId}
-            note={report.coachNote}
-            onSaved={() => {
-              closePanel();
-              load();
-            }}
-          />
+      <AnimatePresence>
+        {panel === "plan" ? (
+          <CoachPanel
+            key="plan"
+            title={t("report_plan_week")}
+            subtitle={t("assign_body")}
+            onClose={closePanel}
+          >
+            <AssignTaskForm
+              studentId={studentId}
+              studentName={report.studentDisplayName}
+              studentExamType={report.studentExamType}
+              previousTasks={report.planTasks}
+              drafts={drafts}
+              onDraftsChange={setDrafts}
+              onAssigned={() => {
+                closePanel();
+                load();
+              }}
+              onCancel={closePanel}
+            />
+          </CoachPanel>
         ) : null}
-      </CoachPanel>
 
-      {followupsEnabled ? (
-        <CoachPanel
-          open={panel === "followups"}
-          title={compose ? t("followup_create") : t("followup_history_title")}
-          onClose={closePanel}
-        >
-          <CoachFollowupsPanel
-            resource={followups}
-            studentId={studentId}
-            compose={compose}
-            onCompose={setCompose}
-          />
-        </CoachPanel>
-      ) : null}
+        {panel === "note" ? (
+          <CoachPanel key="note" title={t("note_title")} onClose={closePanel}>
+            <CoachNoteCard
+              inPanel
+              studentId={studentId}
+              note={report.coachNote}
+              onSaved={() => {
+                closePanel();
+                load();
+              }}
+            />
+          </CoachPanel>
+        ) : null}
+
+        {panel === "followups" && followupsEnabled ? (
+          <CoachPanel
+            key="followups"
+            title={compose ? t("followup_create") : t("followup_history_title")}
+            onClose={closePanel}
+          >
+            <CoachFollowupsPanel
+              resource={followups}
+              studentId={studentId}
+              compose={compose}
+              onCompose={setCompose}
+            />
+          </CoachPanel>
+        ) : null}
+      </AnimatePresence>
     </>
   );
 }

@@ -6,7 +6,8 @@ import { useLocale, useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
 import type { MentorshipFollowupDto } from "@mentor/types";
 import { fetchMentorshipFollowups } from "@/lib/mentorship-followups";
-import { INSET_GROUP_CLASS, NOTE_CLASS, PANEL_BODY_CLASS, TextButton } from "./coach-ui";
+import { CoachOverlayBody } from "@/components/coach-overlay";
+import { INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
 import { CoachFollowupItem } from "./coach-followup-item";
 import { FollowupCreateForm } from "./followup-create-form";
 import { FollowupPageState, FollowupPagination } from "./followup-page-state";
@@ -106,7 +107,9 @@ export function CoachFollowupsSummary({
           <Plus aria-hidden size={16} strokeWidth={2.25} />
           {t("followup_create")}
         </Button>
-        <TextButton onClick={onOpenHistory}>{t("followup_history_title")}</TextButton>
+        <Button type="button" variant="ghost" size="sm" fullWidth className="min-h-11" onClick={onOpenHistory}>
+          {t("followup_history_title")}
+        </Button>
       </div>
     </section>
   );
@@ -144,7 +147,8 @@ export function CoachFollowupsPanel({
   }
 
   return (
-    <div className={PANEL_BODY_CLASS}>
+    <CoachOverlayBody>
+      <div className="flex flex-col gap-5 pb-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className={`${NOTE_CLASS} max-w-[48ch]`}>{t("followup_history_body")}</p>
         <Button
@@ -175,6 +179,7 @@ export function CoachFollowupsPanel({
         </div>
         {resource.data ? <FollowupPagination {...resource.data} onChange={resource.setPage} /> : null}
       </FollowupPageState>
-    </div>
+      </div>
+    </CoachOverlayBody>
   );
 }

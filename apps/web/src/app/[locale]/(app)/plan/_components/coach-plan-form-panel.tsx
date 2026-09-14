@@ -4,9 +4,9 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 import { useTranslations } from "next-intl";
 import {
-  CoachPlanOverlay,
-  CoachPlanOverlayHeader,
-} from "./coach-plan-overlay";
+  CoachOverlay,
+  CoachOverlayHeader,
+} from "@/components/coach-overlay";
 
 export function CoachPlanFormPanel({
   title,
@@ -30,14 +30,14 @@ export function CoachPlanFormPanel({
   }, []);
 
   return (
-    <CoachPlanOverlay
+    <CoachOverlay
       variant="drawer"
       layer="form"
       labelledBy="coach-plan-form-title"
       busy={busy}
       onClose={onClose}
     >
-      <CoachPlanOverlayHeader>
+      <CoachOverlayHeader>
         <h2
           ref={headingRef}
           id="coach-plan-form-title"
@@ -56,8 +56,8 @@ export function CoachPlanFormPanel({
         >
           <X aria-hidden size={22} />
         </button>
-      </CoachPlanOverlayHeader>
+      </CoachOverlayHeader>
       {children}
-    </CoachPlanOverlay>
+    </CoachOverlay>
   );
 }

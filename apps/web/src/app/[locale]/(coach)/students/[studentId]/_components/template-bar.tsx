@@ -4,13 +4,8 @@ import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
 import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
-import {
-  CoachTextField,
-  NOTE_CLASS,
-  SUBHEAD_CLASS,
-  TextButton,
-} from "@/components/mentorship/coach-ui";
+import { Button, TextField } from "@mentor/ui";
+import { NOTE_CLASS, SUBHEAD_CLASS } from "@/components/mentorship/coach-ui";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -226,7 +221,8 @@ export function TemplateSaveRow({
     <section className="flex flex-col gap-2">
       <h3 className={SUBHEAD_CLASS}>{t("template_save_title")}</h3>
       <div className="flex flex-wrap items-end gap-2">
-        <CoachTextField
+        <TextField
+          dense
           label={t("template_name")}
           value={name}
           maxLength={60}
@@ -245,9 +241,16 @@ export function TemplateSaveRow({
           {t("template_save")}
         </Button>
         {named ? (
-          <TextButton tone="danger" disabled={busy} onClick={() => remove(named)}>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="min-h-11"
+            disabled={busy}
+            onClick={() => remove(named)}
+          >
             {t("template_delete_action")}
-          </TextButton>
+          </Button>
         ) : null}
       </div>
       <p className={NOTE_CLASS}>{t("template_hint")}</p>

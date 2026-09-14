@@ -333,6 +333,10 @@ export const CONFIG_CATALOG = {
     "Gate for the human coach surface (coach roster, invite codes, assignments). Off = W8 endpoints 403.",
   ),
   "mentorship.followups.enabled": mentorshipFlag(false, "Gate for coach follow-up records and shared decisions."),
+  "mentorship.weekly_reports.enabled": mentorshipFlag(
+    false,
+    "Gate for completed-week coach reports, AI findings, archive and printable student views.",
+  ),
   "mentorship.coach.max_active_students": mentorshipCount(
     20,
     1,
@@ -857,6 +861,7 @@ export const FeatureFlag = {
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",
+  MENTORSHIP_APPLICATIONS_OPEN: "mentorship.applications.open",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {

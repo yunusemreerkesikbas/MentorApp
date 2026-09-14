@@ -8,6 +8,7 @@ import { PremiumFeatureGateService } from "./application/premium-feature-gate.se
 import { AssignmentSuggestionService } from "./application/assignment-suggestion.service";
 import { CohortBriefService } from "./application/cohort-brief.service";
 import { MentorshipBriefService } from "./application/mentorship-brief.service";
+import { MentorshipWeeklyBriefWriterService } from "./application/mentorship-weekly-brief-writer.service";
 import { ContentModule } from "../content/content.module";
 import { EconomyModule } from "../economy/economy.module";
 import { IdentityModule } from "../identity/identity.module";
@@ -116,6 +117,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     AssignmentSuggestionService,
     CohortBriefService,
     MentorshipBriefService,
+    MentorshipWeeklyBriefWriterService,
     PhotoCategorizeService,
     PhotoUploadService,
     ContextBuilder,
@@ -210,6 +212,7 @@ import { CronSecretGuard } from "../../common/auth/cron-secret.guard";
     CoachFeedbackStatsService,
     AiErasureService,
     MentorshipBriefService,
+    MentorshipWeeklyBriefWriterService,
     CohortBriefService,
     AssignmentSuggestionService,
   ],

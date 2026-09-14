@@ -246,7 +246,7 @@ test.describe("koç tarafı", () => {
 
   test("koç kaydoluyor ve hesabı anında açılıyor", async ({ page }) => {
     const api = await mockApi(page, { roles: ["STUDENT"], myCoach: null });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     await page.getByLabel("Tek cümlede sen").fill("KPSS Türkçe koçu");
     await page
@@ -268,7 +268,7 @@ test.describe("koç tarafı", () => {
 
   test("kayıt kapalıyken form hiç gösterilmiyor", async ({ page }) => {
     await mockApi(page, { roles: ["STUDENT"], myCoach: null, applicationsClosed: true });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     // The state arrives with the page now. Before APP-089 this was discoverable only by filling the
     // whole form and reading the 403 back, which is not a thing to do to somebody signup sent here.
@@ -296,7 +296,7 @@ test.describe("koç tarafı", () => {
         verifiedClaims: [],
       },
     });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     // The one blocker a coach can clear themselves, so it is the one this card names.
     await expect(page.getByText("e-postanı doğrulayınca", { exact: false })).toBeVisible();
@@ -321,7 +321,7 @@ test.describe("koç tarafı", () => {
         verifiedClaims: [],
       },
     });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     // The admin's words, verbatim. One-way: a decision, not a conversation.
     await expect(page.getByText("Şikayet üzerine durduruldu.")).toBeVisible();
@@ -349,7 +349,7 @@ test.describe("koç tarafı", () => {
         verifiedClaims: ["INSTITUTION", "BRANCH"],
       },
     });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     // The badge says what was CHECKED, never "this coach is good".
     await expect(page.getByText("Kurum doğrulandı")).toBeVisible();
@@ -376,7 +376,7 @@ test.describe("koç tarafı", () => {
         verifiedClaims: ["INSTITUTION"],
       },
     });
-    await page.goto("/koc-basvurusu");
+    await page.goto("/koc-ol");
 
     await page.getByRole("button", { name: "Profili düzenle" }).click();
     // The vetted claims are not in the form: they are what an admin checked, and a coach who could
@@ -515,7 +515,9 @@ test.describe("koç tarafı", () => {
     await page.goto(`/kocluk/${STUDENT_ID}`);
     await openWeekPlanner(page);
 
-    await page.getByLabel("Şablondan yükle").selectOption({ label: "YKS haftası · 1 görev" });
+    // The shared MenuSelect: the trigger is named by its label, the rows are options.
+    await page.getByRole("button", { name: "Şablondan yükle", exact: true }).click();
+    await page.getByRole("option", { name: "YKS haftası · 1 görev", exact: true }).click();
 
     await expect(page.getByText("1/21 görev")).toBeVisible();
     // Said out loud, not silently thinned: `topic` is a soft ref into the content taxonomy and the

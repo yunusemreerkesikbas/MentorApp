@@ -13,6 +13,7 @@ import type {
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { Env } from "../../../config/env.validation";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
@@ -33,6 +34,10 @@ export interface AuthResult {
   tokens: IssuedTokens;
 }
 
+export interface CoachSignupStatus {
+  open: boolean;
+}
+
 @Injectable()
 export class AuthService {
   private readonly logger = new Logger(AuthService.name);
@@ -50,6 +55,12 @@ export class AuthService {
 
   async signup(input: SignupInput): Promise<AuthResult> {
     await this.turnstile.assertValid(input.turnstileToken);
+
+    // A shut intake must not mint half a coach: COACH without the registry row that
+    // `POST /v1/mentorship/coach-registration` refuses to write, stuck on the last onboarding step.
+    if (input.intent === "COACH" && !(await this.coachSignupStatus()).open) {
+      throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
+    }
 
     const existing = await this.usersRepo.findByEmailService(input.email);
     if (existing) {
@@ -93,6 +104,14 @@ export class AuthService {
       organizationId: user.organizationId,
     });
     return { user: toAuthUser(user, this.storage), tokens };
+  }
+
+  /**
+   * Whether a coach may sign up right now. Read by the unauthenticated signup screen so it can say
+   * "closed" before the form is filled, instead of discovering it from a refused submission.
+   */
+  async coachSignupStatus(): Promise<CoachSignupStatus> {
+    return { open: await this.configRegistry.get(FeatureFlag.MENTORSHIP_APPLICATIONS_OPEN) };
   }
 
   async login(input: LoginInput): Promise<AuthResult> {

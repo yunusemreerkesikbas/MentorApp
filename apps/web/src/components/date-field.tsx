@@ -1,10 +1,11 @@
 "use client";
 
 import { useId, useState } from "react";
-import { CalendarDays } from "lucide-react";
+import { CalendarDays, X } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import { DatePickerSheet } from "@/components/date-picker-sheet";
 import { PopoverMenu } from "@/components/popover-menu";
+import { todayInIstanbul } from "@/lib/date-time";
 
 const DATE_PICKER_WIDTH = 320;
 
@@ -14,6 +15,8 @@ export function DateField({
   min,
   disabled,
   required,
+  clearLabel,
+  menuClassName,
   onChange,
 }: {
   label: string;
@@ -21,6 +24,10 @@ export function DateField({
   min?: string;
   disabled?: boolean;
   required?: boolean;
+  /** For optional dates only: while a date is set, shows a remove button that sets `""`. */
+  clearLabel?: string;
+  /** Extra classes on the portaled calendar panel (e.g. a scoped theme class). */
+  menuClassName?: string;
   onChange: (value: string) => void;
 }) {
   const t = useTranslations("common.date_picker");
@@ -55,7 +62,7 @@ export function DateField({
         overflow="visible"
         open={open}
         onOpenChange={setOpen}
-        menuClassName="w-80 p-0"
+        menuClassName={`w-80 p-0 ${menuClassName ?? ""}`}
         trigger={({ open: menuOpen, setOpen: setMenuOpen, menuId }) => (
           <div
             className="flex min-h-11 w-full items-center gap-2 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-3 py-2"
@@ -67,6 +74,17 @@ export function DateField({
             }}
           >
             <span className="min-w-0 flex-1 truncate text-sm">{display}</span>
+            {clearLabel && value && !disabled ? (
+              <button
+                type="button"
+                aria-label={clearLabel}
+                title={clearLabel}
+                onClick={() => onChange("")}
+                className="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] outline-none hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              >
+                <X className="size-4" style={{ color: "var(--color-secondary)" }} strokeWidth={2} aria-hidden />
+              </button>
+            ) : null}
             <button
               type="button"
               disabled={disabled}
@@ -95,7 +113,8 @@ export function DateField({
       >
         <DatePickerSheet
           variant="popover"
-          defaultValue={value}
+          // An empty optional field has no month to open on; start from the earliest allowed day.
+          defaultValue={value || min || todayInIstanbul()}
           min={min}
           onChange={(next) => {
             onChange(next);

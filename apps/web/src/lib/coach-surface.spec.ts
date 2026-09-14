@@ -97,8 +97,8 @@ describe("isStudentOnlyPath", () => {
       "/kocluk/11111111-1111-4111-8111-111111111111",
       "/coaching/students", // contains "coach"
       "/coaching/students/11111111-1111-4111-8111-111111111111",
-      "/koc-basvurusu", // contains "koc" — the registration form, reached BEFORE anyone is a coach
-      "/coach-application",
+      "/koc-ol", // contains "koc" — the registration form, reached BEFORE anyone is a coach
+      "/become-a-coach",
     ]) {
       expect(isStudentOnlyPath(path), path).toBe(false);
     }

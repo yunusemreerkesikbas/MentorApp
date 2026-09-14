@@ -78,7 +78,9 @@ export function toWebVitalAnalyticsParams(metric: {
   const name = metric.name as WebVitalName;
   return {
     metric_name: name,
-    metric_value: Math.round(name === "CLS" ? metric.value * 1000 : metric.value),
+    metric_value: Math.round(
+      name === "CLS" ? metric.value * 1000 : metric.value,
+    ),
     metric_rating: metric.rating,
     navigation_type: metric.navigationType,
   };
@@ -211,6 +213,26 @@ export interface WeeklyRecapAnalyticsParams {
 }
 export type WeeklyRecapAnalyticsEvent = keyof WeeklyRecapAnalyticsParams;
 
+export interface MentorshipWeeklyReportAnalyticsParams {
+  mentorship_weekly_report_view: {
+    surface: "student_report";
+    has_previous_activity: boolean;
+  };
+  mentorship_weekly_brief_request: {
+    surface: "student_report";
+  };
+  mentorship_weekly_report_finalize: {
+    surface: "student_report";
+    has_brief: boolean;
+    has_coach_evaluation: boolean;
+  };
+  mentorship_weekly_report_print_open: {
+    surface: "print_preview";
+  };
+}
+export type MentorshipWeeklyReportAnalyticsEvent =
+  keyof MentorshipWeeklyReportAnalyticsParams;
+
 declare global {
   interface Window {
     dataLayer?: unknown[];
@@ -275,5 +297,12 @@ export function trackWeeklyRecapEvent<Event extends WeeklyRecapAnalyticsEvent>(
   event: Event,
   params: WeeklyRecapAnalyticsParams[Event],
 ): void {
+  trackEvent(event, params);
+}
+
+/** Consent-gated weekly-report events. Types exclude identities, report content and metrics. */
+export function trackMentorshipWeeklyReportEvent<
+  Event extends MentorshipWeeklyReportAnalyticsEvent,
+>(event: Event, params: MentorshipWeeklyReportAnalyticsParams[Event]): void {
   trackEvent(event, params);
 }

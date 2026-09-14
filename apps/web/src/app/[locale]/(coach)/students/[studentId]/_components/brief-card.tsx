@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
-import { INSET_GROUP_CLASS, InsetSection, TextButton } from "@/components/mentorship/coach-ui";
+import { INSET_GROUP_CLASS, InsetSection } from "@/components/mentorship/coach-ui";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { generateBrief } from "@/lib/mentorship";
 import { formatDate } from "../../../_components/mentorship-format";
@@ -57,9 +57,9 @@ export function BriefCard({ studentId }: { studentId: string }) {
       title={t("brief_title")}
       action={
         brief ? (
-          <TextButton aria-busy={busy || undefined} disabled={busy} onClick={run}>
+          <Button type="button" variant="ghost" size="sm" className="min-h-11" busy={busy} onClick={run}>
             {t("brief_refresh")}
-          </TextButton>
+          </Button>
         ) : null
       }
     >

@@ -278,6 +278,20 @@
         ]
       }
     },
+    "/v1/auth/coach-signup/status": {
+      "get": {
+        "operationId": "AuthController_coachSignupStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/google/callback": {
       "get": {
         "operationId": "AuthController_googleCallback",
@@ -7740,6 +7754,328 @@
         ]
       }
     },
+    "/v1/mentorship/students/{studentId}/weekly-reports/preview": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_preview",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/brief": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_readBrief",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      },
+      "post": {
+        "operationId": "MentorshipWeeklyReportController_generateBrief",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/finalize": {
+      "post": {
+        "operationId": "MentorshipWeeklyReportController_finalize",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalizeMentorshipWeeklyReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/{reportId}/share": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_share",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportShareResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/{reportId}": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_get",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
     "/v1/admin/users": {
       "get": {
         "operationId": "AdminUsersController_searchUsers",
@@ -10609,6 +10945,713 @@
       "MentorshipInviteCodeParamDto": {
         "type": "object",
         "properties": {}
+      },
+      "MentorshipWeeklyPeriodResponseDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "Europe/Istanbul"
+            ]
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "previousStartDate",
+          "previousEndDate",
+          "timeZone"
+        ]
+      },
+      "MentorshipWeeklyMetricsResponseDto": {
+        "type": "object",
+        "properties": {
+          "focusMinutes": {
+            "type": "number"
+          },
+          "sessions": {
+            "type": "number"
+          },
+          "activeDays": {
+            "type": "number"
+          },
+          "plannedTasks": {
+            "type": "number"
+          },
+          "completedTasks": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number",
+            "nullable": true
+          },
+          "hasRecordedActivity": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "focusMinutes",
+          "sessions",
+          "activeDays",
+          "plannedTasks",
+          "completedTasks",
+          "completionRate",
+          "hasRecordedActivity"
+        ]
+      },
+      "MentorshipWeeklyDeltasResponseDto": {
+        "type": "object",
+        "properties": {
+          "focusMinutes": {
+            "type": "number"
+          },
+          "sessions": {
+            "type": "number"
+          },
+          "activeDays": {
+            "type": "number"
+          },
+          "plannedTasks": {
+            "type": "number"
+          },
+          "completedTasks": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "focusMinutes",
+          "sessions",
+          "activeDays",
+          "plannedTasks",
+          "completedTasks",
+          "completionRate"
+        ]
+      },
+      "MentorshipWeeklySubjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentFocusMinutes": {
+            "type": "number"
+          },
+          "currentSessions": {
+            "type": "number"
+          },
+          "previousFocusMinutes": {
+            "type": "number"
+          },
+          "previousSessions": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "subjectRef",
+          "currentFocusMinutes",
+          "currentSessions",
+          "previousFocusMinutes",
+          "previousSessions"
+        ]
+      },
+      "MentorshipWeeklyMockSubjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string"
+          },
+          "currentAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "previousAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentAttemptCount": {
+            "type": "number"
+          },
+          "previousAttemptCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "subjectRef",
+          "currentAverageNet",
+          "previousAverageNet",
+          "currentAttemptCount",
+          "previousAttemptCount"
+        ]
+      },
+      "MentorshipWeeklyMockResponseDto": {
+        "type": "object",
+        "properties": {
+          "examScopeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentAttemptCount": {
+            "type": "number"
+          },
+          "previousAttemptCount": {
+            "type": "number"
+          },
+          "currentAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "previousAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentPublishers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "previousPublishers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyMockSubjectResponseDto"
+            }
+          }
+        },
+        "required": [
+          "examScopeName",
+          "currentAttemptCount",
+          "previousAttemptCount",
+          "currentAverageNet",
+          "previousAverageNet",
+          "currentPublishers",
+          "previousPublishers",
+          "subjects"
+        ]
+      },
+      "MentorshipWeeklyEvidenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FOCUS_MINUTES",
+              "SESSIONS",
+              "ACTIVE_DAYS",
+              "PLANNED_TASKS",
+              "COMPLETED_TASKS",
+              "COMPLETION_RATE",
+              "MOCK_AVERAGE"
+            ]
+          },
+          "current": {
+            "type": "number",
+            "nullable": true
+          },
+          "previous": {
+            "type": "number",
+            "nullable": true
+          },
+          "delta": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "current",
+          "previous",
+          "delta"
+        ]
+      },
+      "MentorshipWeeklySnapshotResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "current": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "deltas": {
+            "$ref": "#/components/schemas/MentorshipWeeklyDeltasResponseDto"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklySubjectResponseDto"
+            }
+          },
+          "mocks": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMockResponseDto"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyEvidenceResponseDto"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NO_CURRENT_ACTIVITY",
+                "NO_PREVIOUS_ACTIVITY",
+                "NO_CURRENT_MOCK",
+                "NO_PREVIOUS_MOCK",
+                "MIXED_MOCK_SCOPE",
+                "UNCLASSIFIED_SESSIONS"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "current",
+          "previous",
+          "deltas",
+          "subjects",
+          "mocks",
+          "evidence",
+          "limitations"
+        ]
+      },
+      "MentorshipWeeklyBriefFindingResponseDto": {
+        "type": "object",
+        "properties": {
+          "observation": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uncertainty": {
+            "type": "string"
+          },
+          "conversationQuestion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "observation",
+          "evidenceIds",
+          "uncertainty",
+          "conversationQuestion"
+        ]
+      },
+      "MentorshipWeeklyBriefResponseDto": {
+        "type": "object",
+        "properties": {
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyBriefFindingResponseDto"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "promptVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "findings",
+          "model",
+          "generatedAt",
+          "locale",
+          "promptVersion"
+        ]
+      },
+      "MentorshipWeeklyPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "draftId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "BRIEF_PENDING",
+              "BRIEF_READY",
+              "BRIEF_FAILED",
+              "FINALIZED"
+            ]
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
+          },
+          "brief": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "draftId",
+          "studentId",
+          "studentDisplayName",
+          "sourceFingerprint",
+          "status",
+          "snapshot",
+          "brief"
+        ]
+      },
+      "MentorshipWeeklyBriefDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "weekStart",
+          "sourceFingerprint"
+        ]
+      },
+      "FinalizeMentorshipWeeklyReportDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1200
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "weekStart",
+          "sourceFingerprint",
+          "operationId"
+        ]
+      },
+      "MentorshipWeeklyReportResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true
+          },
+          "brief": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "period",
+          "version",
+          "finalizedAt",
+          "replacesId",
+          "studentId",
+          "studentDisplayName",
+          "sourceFingerprint",
+          "snapshot",
+          "coachEvaluation",
+          "brief"
+        ]
+      },
+      "MentorshipWeeklyReportListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "period",
+          "version",
+          "finalizedAt",
+          "replacesId"
+        ]
+      },
+      "MentorshipWeeklyReportPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyReportListItemResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "MentorshipWeeklyShareSnapshotResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "current": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "deltas": {
+            "$ref": "#/components/schemas/MentorshipWeeklyDeltasResponseDto"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklySubjectResponseDto"
+            }
+          },
+          "mocks": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMockResponseDto"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NO_CURRENT_ACTIVITY",
+                "NO_PREVIOUS_ACTIVITY",
+                "NO_CURRENT_MOCK",
+                "NO_PREVIOUS_MOCK",
+                "MIXED_MOCK_SCOPE",
+                "UNCLASSIFIED_SESSIONS"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "current",
+          "previous",
+          "deltas",
+          "subjects",
+          "mocks",
+          "limitations"
+        ]
+      },
+      "MentorshipWeeklyReportShareResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "coachDisplayName": {
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklyShareSnapshotResponseDto"
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "studentDisplayName",
+          "coachDisplayName",
+          "period",
+          "version",
+          "finalizedAt",
+          "snapshot",
+          "coachEvaluation"
+        ]
       },
       "UpdateUserStatusDto": {
         "type": "object",

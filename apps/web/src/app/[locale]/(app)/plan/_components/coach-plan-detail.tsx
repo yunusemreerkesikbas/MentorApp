@@ -9,10 +9,10 @@ import type { CoachTaskMutationTarget } from "@/lib/coach-plan-mutations";
 import { CoachPlanAvatarStack } from "./coach-plan-avatar-stack";
 import { CoachPlanDetailActions } from "./coach-plan-detail-actions";
 import {
-  CoachPlanOverlay,
-  CoachPlanOverlayBody,
-  CoachPlanOverlayHeader,
-} from "./coach-plan-overlay";
+  CoachOverlay,
+  CoachOverlayBody,
+  CoachOverlayHeader,
+} from "@/components/coach-overlay";
 
 export function CoachPlanDetail({
   item,
@@ -41,13 +41,13 @@ export function CoachPlanDetail({
   }, [item]);
 
   return (
-    <CoachPlanOverlay
+    <CoachOverlay
       variant="inspector"
       layer="detail"
       labelledBy="coach-plan-detail-title"
       onClose={onClose}
     >
-      <CoachPlanOverlayHeader>
+      <CoachOverlayHeader>
           <div>
             <p className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
               {t(item.kind === "TASK" ? "type_task" : "type_event")} ·{" "}
@@ -71,8 +71,8 @@ export function CoachPlanDetail({
           >
             <X aria-hidden size={22} />
           </button>
-      </CoachPlanOverlayHeader>
-      <CoachPlanOverlayBody>
+      </CoachOverlayHeader>
+      <CoachOverlayBody>
         <div className="flex flex-col gap-4">
           <dl className="grid gap-3 sm:grid-cols-2">
             <Detail
@@ -117,13 +117,13 @@ export function CoachPlanDetail({
             </div>
           ) : null}
         </div>
-      </CoachPlanOverlayBody>
+      </CoachOverlayBody>
       <CoachPlanDetailActions
         item={item}
         onEdit={onEdit}
         onSuccess={onMutationSuccess}
       />
-    </CoachPlanOverlay>
+    </CoachOverlay>
   );
 }
 

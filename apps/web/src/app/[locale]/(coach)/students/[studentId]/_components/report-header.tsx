@@ -3,6 +3,7 @@
 import { ChevronLeft, Ellipsis } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
+import { COACH_POPOVER_CLASS } from "@/components/mentorship/coach-ui";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "../../../_components/mentorship-format";
@@ -77,7 +78,7 @@ export function ReportHeader({
           <PopoverMenu
             align="right"
             // The menu portals to <body>, outside the themed subtree; the class brings the tokens.
-            menuClassName="coach-theme w-56 py-1"
+            menuClassName={`${COACH_POPOVER_CLASS} w-56 py-1`}
             trigger={({ open, setOpen, menuId }) => (
               <button
                 type="button"
