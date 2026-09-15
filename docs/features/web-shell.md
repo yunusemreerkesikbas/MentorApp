@@ -859,3 +859,26 @@ eklendi.
   CSS clouds remain safe fallbacks until the complete asset set is delivered. Related:
   `_components/welcome/*`, `(auth)/_components/auth-shell.tsx`, `lib/cloud-transition.tsx`,
   `public/visuals/onboarding/README.md`, `messages/{tr,en}.json`.
+
+### 2026-09-16 — Welcome and onboarding on the play surface
+
+- Welcome and onboarding use the scoped `.onboarding-play-theme` (DESIGN.md §2.5): blue ledge CTA,
+  16px choice cards, 12px progress pill. The auth sheet and `(app)` are untouched.
+- `/` is "Puhu'nun bir günü": four swipeable scenes on a native scroll-snap track. "Devam et" on
+  slides 1-3, "Atla" jumps to the last slide, which shows "Başlayalım" (signup) and "Zaten hesabım
+  var" (login). Each clip plays from the top when its slide settles and holds the last frame;
+  neighbours preload; reduced motion shows the end frame. Gotcha: `step` follows the scroll only
+  after it rests (90 ms), otherwise a smooth jump from 1 to 4 flashes through 2 and 3.
+- Onboarding order: intro → exam → (KPSS) level → why → field → daily goal → profile → "Yolun
+  hazır". Coaches skip why/field/daily goal and get the coach profile before the profile step. The
+  username is last on purpose: `hasCompletedOnboarding` stays false until the final question.
+- Why + field are written to the goal board once, when the field step is left. The upsert replaces
+  every field, so an existing board is never overwritten; `goalTitle` is derived from the answer
+  ("Eğitim alanında ilerlemek").
+- Push permission is asked in the same tap as the daily goal "Devam" (Safari/Firefox need the
+  gesture), behind a Puhu layer whose "Şimdilik geç" never waits on the browser prompt. No layer when
+  permission is already decided, unsupported or VAPID is unconfigured.
+- Assets: `public/visuals/onboarding/welcome-scene-*` (watermark row cropped, ~1.2 Mbps) and
+  `public/mascot/career-3d/*`; see the folder README. Related: `components/onboarding-play/*`,
+  `_components/welcome/*`, `(onboarding)/_components/**`, `lib/onboarding-assets.ts`,
+  `e2e/onboarding-redesign.spec.ts`, `e2e/coach-onboarding.spec.ts`.

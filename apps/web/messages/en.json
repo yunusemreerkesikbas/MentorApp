@@ -43,21 +43,19 @@
   },
   "welcome": {
     "loading": "Loading…",
-    "back_aria": "Go to previous slide",
     "progress_aria": "Intro slide {current} of {total}",
+    "go_to_slide": "Go to slide {current}",
     "continue": "Continue",
     "skip": "Skip",
-    "register": "Sign up",
-    "login": "Sign in",
+    "start": "Let's start",
+    "have_account": "I already have an account",
     "slide1": {
       "title": "Hi, I'm Puhu.",
-      "title_lead": "Hi, I'm",
-      "title_emphasis": "Puhu.",
       "subtitle": "Let's take the road to your exam together."
     },
     "slide2": {
-      "title": "I'm here when it gets hard.",
-      "subtitle": "Tell me what's on your mind. We'll find the next step together."
+      "title": "Your AI coach is there when it gets hard.",
+      "subtitle": "Say what's on your mind. We'll find the next step in your plan together."
     },
     "slide3": {
       "title": "Today's small step.",
@@ -2593,47 +2591,81 @@
     "back": "Back",
     "back_aria": "Go to previous step",
     "progress_aria": "Onboarding step {current} of {total}",
-    "progress_label": "Step {current} of {total}",
     "welcome": {
-      "title": "Let's get to know you a little.",
+      "title": "Hi {name}! Let's get to know you a little.",
       "subtitle": "A few short answers will help me prepare your dashboard for you.",
-      "continue": "Continue"
-    },
-    "profile": {
-      "title": "What username should the community know you by?",
-      "username_label": "Username",
-      "username_placeholder": "example_user",
-      "username_hint": "3-24 characters · lowercase letters, numbers, and underscore.",
-      "avatar_label": "Profile photo",
-      "avatar_title": "Would you like to add a profile photo?",
-      "avatar_change": "Choose photo",
-      "avatar_remove": "Remove",
-      "avatar_type_error": "You can only upload JPEG or PNG.",
-      "avatar_too_big": "Profile photo must be under 2 MB.",
-      "avatar_upload_error": "Could not upload profile photo.",
-      "skip": "Skip for now",
-      "form_error": "Username doesn't match.",
-      "save_error": "It didn't save just now. Let's try again in a moment.",
       "continue": "Continue"
     },
     "exam": {
       "title": "Which exam are you preparing for?",
+      "title_coach": "Which exam do you coach for?",
+      "options": {
+        "KPSS": "For public-sector posts",
+        "YKS": "University entrance",
+        "LGS": "High school entrance"
+      },
       "continue": "Continue",
-      "save_error": "It didn't save just now. Let's try again in a moment.",
-      "title_coach": "Which exam do you coach for?"
+      "save_error": "It didn't save just now. Let's try again in a moment."
     },
     "kpss_level": {
       "title": "Which KPSS level are you preparing for?",
       "continue": "Continue",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
-    "goal": {
-      "title": "What is waiting at the end of this road?",
-      "subtitle": "Write it in one sentence if you like.",
-      "hint": "You can add more detail to your goal board later.",
-      "save": "Continue",
+    "why": {
+      "title": "What does this exam mean to you?",
+      "options": {
+        "dream_job": "My dream job",
+        "secure_future": "A secure future",
+        "family": "For my family",
+        "prove_myself": "Proving myself",
+        "fresh_start": "A fresh start",
+        "other": "Another reason"
+      },
+      "continue": "Continue",
+      "skip": "Skip for now"
+    },
+    "field": {
+      "title": "Which field do you want to grow in?",
+      "subtitle": "Puhu appears on your goal board in this field.",
+      "goal_title": "Growing in {field}",
+      "goal_title_exam": "Moving forward on the {exam} road",
+      "continue": "Continue",
       "skip": "Skip for now",
       "save_error": "It didn't save just now. Let's try again in a moment."
+    },
+    "daily_goal": {
+      "title": "How long do you want to focus each day?",
+      "caption": "You can change it any time.",
+      "recommended": "Recommended",
+      "minutes": "{minutes} min a day",
+      "levels": {
+        "15": "Warm-up",
+        "30": "Steady",
+        "60": "Committed",
+        "90": "Intense"
+      },
+      "continue": "Continue",
+      "skip": "Skip for now",
+      "save_error": "It didn't save just now. Let's try again in a moment."
+    },
+    "push": {
+      "title": "Let me gently remind you of your {minutes}-minute goal.",
+      "body": "If you allow it, I'll leave you a short note each day.",
+      "skip": "Skip for now"
+    },
+    "profile": {
+      "title": "How should the community know you?",
+      "username_label": "Username",
+      "username_placeholder": "example_user",
+      "username_hint": "3-24 characters · lowercase letters, numbers, and underscore.",
+      "avatar_add": "Add a photo (optional)",
+      "avatar_change": "Change photo",
+      "avatar_type_error": "You can only upload JPEG or PNG.",
+      "avatar_too_big": "Profile photo must be under 2 MB.",
+      "avatar_upload_error": "Could not upload profile photo.",
+      "save_error": "It didn't save just now. Let's try again in a moment.",
+      "continue": "Continue"
     },
     "coach_profile": {
       "title": "How should we introduce you to a student?",
@@ -2643,10 +2675,14 @@
       "save_error": "That did not save. Let's try again in a moment."
     },
     "complete": {
-      "title": "We're ready. Your first step is waiting.",
+      "title": "Your path is ready.",
       "subtitle": "Your countdown and today's plan are waiting on the dashboard.",
-      "countdown_teaser": "Your exam countdown is on the dashboard. From the verified official calendar.",
-      "map_cta": "Mark your goal on the map →",
+      "summary_label": "Your choices",
+      "summary_goal": "{minutes} min of focus a day",
+      "summary_field": "Field: {field}",
+      "summary_reminder": "Reminders on",
+      "countdown_title": "Your exam countdown is on the dashboard.",
+      "countdown_source": "From the verified official calendar.",
       "go_panel": "Go to dashboard",
       "title_coach": "Your coach account is ready.",
       "verify_email_coach": "Verify your email and your invite code is yours."
@@ -3486,6 +3522,11 @@
     "template_save_title": "Keep this week as a template",
     "followup_date_clear": "Remove date",
     "weekly_report_title": "Weekly review",
+    "weekly_report_summary_title": "Last week's summary",
+    "weekly_report_open": "Open review",
+    "weekly_report_status_draft": "Draft",
+    "weekly_report_status_finalized": "Finalized",
+    "weekly_report_plan_short": "Tasks",
     "weekly_report_period": "{start} - {end}",
     "weekly_report_previous_week": "Previous week",
     "weekly_report_next_week": "Next week",
@@ -3552,7 +3593,10 @@
     "weekly_report_print_title": "Weekly student review",
     "weekly_report_prepared_by": "Prepared by: {coach}",
     "weekly_report_prepared_at": "Prepared: {date}",
-    "weekly_report_print": "Print / Save as PDF",
+    "weekly_report_print": "Print",
+    "weekly_report_download": "Download PDF",
+    "weekly_report_downloading": "Preparing PDF",
+    "weekly_report_download_failed": "The PDF could not be prepared. Try again.",
     "weekly_report_print_note": "This report summarizes activity logged in the app. Missing records do not mean no work was done.",
     "weekly_report_back": "Back to student report"
   }

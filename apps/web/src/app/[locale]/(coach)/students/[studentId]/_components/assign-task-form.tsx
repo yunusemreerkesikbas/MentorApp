@@ -10,6 +10,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button, TextAreaField, TextField } from "@mentor/ui";
 import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   NOTE_CLASS,
@@ -343,7 +344,7 @@ export function AssignTaskForm({
           {ordered.length > 0 ? (
             <section className="flex flex-col gap-2">
               <h3 className={SUBHEAD_CLASS}>{t("assign_in_program")}</h3>
-              <ul className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
+              <ul className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}>
                 {ordered.map((draft) => (
                   <li key={draft.key} className={`${INSET_ROW_CLASS} items-start`}>
                     <div className="flex min-w-0 flex-col gap-0.5">

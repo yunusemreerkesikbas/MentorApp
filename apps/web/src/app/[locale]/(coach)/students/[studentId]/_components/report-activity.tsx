@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   InsetSection,
@@ -56,8 +57,8 @@ export function ReportActivity({ report }: { report: MentorshipStudentReportDto 
         {columns.map((rows, column) => (
           <dl
             key={column}
-            className={`divide-y divide-[var(--color-border)] ${
-              column === 1 ? "border-t border-[var(--color-border)] sm:border-l sm:border-t-0" : ""
+            className={`${INSET_DIVIDE_CLASS} ${
+              column === 1 ? "border-t border-[var(--color-surface-container)] sm:border-l sm:border-t-0" : ""
             }`}
           >
             {rows.map(([label, value]) => (

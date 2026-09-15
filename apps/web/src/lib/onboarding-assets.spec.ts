@@ -1,10 +1,11 @@
-import { readFile } from "node:fs/promises";
+import { access, readFile } from "node:fs/promises";
 import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 import sharp from "sharp";
+import { CAREER_GROUPS } from "@mentor/types";
 
-import { PUHU_MOTION_FRAMES } from "./onboarding-assets";
+import { PUHU_MOTION_FRAMES, WELCOME_SCENES, careerPuhu3d } from "./onboarding-assets";
 
 function readPngContract(buffer: Buffer) {
   return {
@@ -48,5 +49,14 @@ describe("Puhu onboarding motion assets", () => {
       });
       expect(await readOuterPaddingMaxAlpha(file), `${source} outer padding`).toBe(0);
     }
+  });
+
+  it("ships every welcome clip, poster and career tile the app points at", async () => {
+    const sources = [
+      ...WELCOME_SCENES.flatMap((scene) => [scene.video, scene.start, scene.end]),
+      ...CAREER_GROUPS.map(careerPuhu3d),
+    ];
+    // `access` rejects on a missing file, which fails the test with the path in the message.
+    await Promise.all(sources.map((source) => access(path.join(process.cwd(), "public", source))));
   });
 });

@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   InsetSection,
@@ -46,9 +47,9 @@ export function ReportMocks({ report }: { report: MentorshipStudentReportDto }) 
 
   return (
     <InsetSection title={t("report_mocks")}>
-      <div className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
+      <div className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}>
         <div className="grid md:grid-cols-[minmax(0,1fr)_17.5rem]">
-          <ul className="divide-y divide-[var(--color-border)]">
+          <ul className={INSET_DIVIDE_CLASS}>
             {mocks.map((mock, index) => (
               <li key={mock.takenAt} className={INSET_ROW_CLASS}>
                 <span className="coach-body min-w-0 text-[var(--color-secondary)]">
@@ -93,7 +94,7 @@ export function ReportMocks({ report }: { report: MentorshipStudentReportDto }) 
                     <th className="py-2 text-right font-medium">{t("report_subject_table_net")}</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[var(--color-border)] text-[var(--color-main)]">
+                <tbody className={`${INSET_DIVIDE_CLASS} text-[var(--color-main)]`}>
                   {subjects.map((subject) => (
                     <tr key={subject.subjectRef}>
                       <td className="py-2">{subject.subjectRef}</td>

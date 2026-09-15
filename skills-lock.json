@@ -25,6 +25,18 @@
       "skillPath": "skills/apple-design/SKILL.md",
       "computedHash": "0d19303902efa64eace10e6b183eb29ef3220d424c1a7fd1eafc52adde216932"
     },
+    "appllama-app-design-skill": {
+      "source": "appllama/appllama-skills",
+      "sourceType": "github",
+      "skillPath": "skills/appllama-app-design-skill/SKILL.md",
+      "computedHash": "da526c7d4224c76b59ae4692ce9933f66153a9eb868cc51a51f007296faa54ee"
+    },
+    "appllama-usage": {
+      "source": "appllama/appllama-skills",
+      "sourceType": "github",
+      "skillPath": "skills/appllama-usage/SKILL.md",
+      "computedHash": "aa07926c5280b696bfad5186e3bb36e461b78f843bf55f523b36521f49f015ec"
+    },
     "ask-sonner": {
       "source": "emilkowalski/skills",
       "sourceType": "github",

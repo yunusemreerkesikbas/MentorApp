@@ -4,6 +4,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklyReportListItemDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   NOTE_CLASS,
@@ -12,9 +13,11 @@ import {
 export function WeeklyReportArchive({
   studentId,
   items,
+  showTitle = true,
 }: {
   studentId: string;
   items: MentorshipWeeklyReportListItemDto[];
+  showTitle?: boolean;
 }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
@@ -27,19 +30,22 @@ export function WeeklyReportArchive({
   return (
     <section
       className="flex flex-col gap-2"
-      aria-labelledby="weekly-archive-title"
+      aria-labelledby={showTitle ? "weekly-archive-title" : undefined}
+      aria-label={showTitle ? undefined : t("weekly_report_archive")}
     >
-      <h3
-        id="weekly-archive-title"
-        className="coach-headline px-1 text-[var(--color-main)]"
-      >
-        {t("weekly_report_archive")}
-      </h3>
+      {showTitle ? (
+        <h3
+          id="weekly-archive-title"
+          className="coach-headline px-1 text-[var(--color-main)]"
+        >
+          {t("weekly_report_archive")}
+        </h3>
+      ) : null}
       {items.length === 0 ? (
         <p className={NOTE_CLASS}>{t("weekly_report_archive_empty")}</p>
       ) : (
         <div
-          className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}
+          className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}
         >
           {items.map((item) => (
             <div key={item.id} className={INSET_ROW_CLASS}>

@@ -7,7 +7,7 @@ import { Button } from "@mentor/ui";
 import type { MentorshipFollowupDto } from "@mentor/types";
 import { fetchMentorshipFollowups } from "@/lib/mentorship-followups";
 import { CoachOverlayBody } from "@/components/coach-overlay";
-import { INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
+import { INSET_DIVIDE_CLASS, INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
 import { CoachFollowupItem } from "./coach-followup-item";
 import { FollowupCreateForm } from "./followup-create-form";
 import { FollowupPageState, FollowupPagination } from "./followup-page-state";
@@ -86,7 +86,7 @@ export function CoachFollowupsSummary({
               {total > 0 ? t("followup_none_open") : t("followup_history_empty")}
             </p>
           ) : (
-            <ul className="flex flex-col divide-y divide-[var(--color-border)]">
+            <ul className={`flex flex-col ${INSET_DIVIDE_CLASS}`}>
               {open.map((item) => (
                 <li key={item.id} className="flex flex-col gap-1.5 py-2.5 first:pt-1">
                   <span className="coach-body font-semibold text-[var(--color-main)]">{item.title}</span>
@@ -102,7 +102,7 @@ export function CoachFollowupsSummary({
           )}
         </FollowupPageState>
       </div>
-      <div className="flex flex-col gap-1 border-t border-[var(--color-border)] px-4 py-3">
+      <div className="flex flex-col gap-1 border-t border-[var(--color-surface-container)] px-4 py-3">
         <Button type="button" variant="soft" size="sm" fullWidth className="min-h-11" onClick={onCreate}>
           <Plus aria-hidden size={16} strokeWidth={2.25} />
           {t("followup_create")}

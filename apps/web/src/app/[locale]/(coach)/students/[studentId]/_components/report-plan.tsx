@@ -4,6 +4,7 @@ import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   InsetSection,
@@ -11,7 +12,7 @@ import {
   SUBHEAD_CLASS,
 } from "@/components/mentorship/coach-ui";
 
-const LIST_CLASS = `${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`;
+const LIST_CLASS = `${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`;
 
 /**
  * The living plan, and beside it what the coach's assignments turned into: stuck topics and the
@@ -44,7 +45,7 @@ export function ReportPlan({ report }: { report: MentorshipStudentReportDto }) {
                 <span className="coach-body flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[var(--color-main)]">
                   {task.title}
                   {task.assignedByCoach ? (
-                    <span className="coach-caption rounded-md bg-[var(--color-accent-soft)] px-1.5 py-px font-semibold text-[var(--coach-accent-text)]">
+                    <span className="coach-caption rounded-md bg-[var(--color-accent-soft)] px-1.5 py-px font-semibold text-[var(--color-accent)]">
                       {t("report_plan_from_you")}
                     </span>
                   ) : null}

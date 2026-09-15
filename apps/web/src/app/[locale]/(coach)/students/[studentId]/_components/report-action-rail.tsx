@@ -75,7 +75,7 @@ export function ReportActionBar({
     <div
       role="group"
       aria-label={t("report_actions_label")}
-      className={`fixed inset-x-3 z-10 mb-3 flex gap-1.5 rounded-2xl bg-[var(--color-surface)] p-1.5 shadow-[var(--coach-bar-shadow)] ring-1 ring-[var(--color-border)] lg:left-[calc(var(--app-sidebar-width)+0.75rem)] xl:hidden ${MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS}`}
+      className={`fixed inset-x-3 z-10 mb-3 flex gap-1.5 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-1.5 shadow-[var(--shadow-card)] ring-1 ring-[var(--color-surface-container)] lg:left-[calc(var(--app-sidebar-width)+0.75rem)] xl:hidden ${MOBILE_TAB_BAR_STICKY_BOTTOM_CLASS}`}
     >
       <button
         type="button"

@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipReportPlanTaskDto } from "@mentor/types";
-import { INSET_GROUP_CLASS, InsetSection } from "@/components/mentorship/coach-ui";
+import { INSET_DIVIDE_CLASS, INSET_GROUP_CLASS, InsetSection } from "@/components/mentorship/coach-ui";
 import { todayLocalIso } from "./composer-dates";
 import { buildWeekStrip, summarizeMine } from "./week-strip";
 
@@ -11,7 +11,7 @@ import { buildWeekStrip, summarizeMine } from "./week-strip";
 const MAX_MARKS = 3;
 
 const DONE_MARK = "size-2 rounded-full bg-[var(--color-main)]";
-const PENDING_MARK = "size-2 rounded-full shadow-[inset_0_0_0_1.5px_var(--coach-tertiary)]";
+const PENDING_MARK = "size-2 rounded-full shadow-[inset_0_0_0_1.5px_var(--color-secondary)]";
 
 /**
  * "Did they do what was planned this week", at a glance, above the numbers. Every task counts, the
@@ -33,7 +33,7 @@ export function ReportWeekStrip({ tasks }: { tasks: readonly MentorshipReportPla
 
   return (
     <InsetSection title={t("report_week_title")}>
-      <div className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}>
+      <div className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}>
         <ol className="grid grid-cols-7 gap-1 px-2 py-3">
           {days.map((day) => {
             const date = new Date(`${day.date}T00:00:00`);
@@ -70,7 +70,7 @@ export function ReportWeekStrip({ tasks }: { tasks: readonly MentorshipReportPla
                   aria-hidden
                   className={`coach-body grid size-8 place-items-center rounded-full font-semibold tabular-nums ${
                     day.isToday
-                      ? "bg-[var(--color-accent)] text-[var(--color-btn-label)]"
+                      ? "bg-[var(--color-btn)] text-[var(--color-btn-label)]"
                       : "text-[var(--color-main)]"
                   }`}
                 >

@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { CoachShell } from "./coach-shell";
-// Signal hues and the coach workspace theme, scoped to `.coach-signals` / `.coach-theme` on the shell.
+// Signal hues and the denser type scale, scoped to `.coach-signals` / `.coach-*` on the shell.
 import "./_components/coach-theme.css";
 
 /**
@@ -13,6 +13,8 @@ import "./_components/coach-theme.css";
  *
  *  - the student panel is a daily ritual (streak, mood, ghost); this is a work tool (roster,
  *    report, assignments). Sharing one shell would put two mental models in one chrome.
+ *    Visual language is Nuton (same tokens as `/panel`); the difference is density and inset
+ *    grouping, not a second brand.
  *  - it carries the scoped mentorship and shared chrome messages, so the full student catalog
  *    does not cross into the coach bundle.
  *
