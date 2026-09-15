@@ -229,6 +229,9 @@ export interface MentorshipWeeklyReportAnalyticsParams {
   mentorship_weekly_report_print_open: {
     surface: "print_preview";
   };
+  mentorship_weekly_report_pdf_download: {
+    surface: "print_preview";
+  };
 }
 export type MentorshipWeeklyReportAnalyticsEvent =
   keyof MentorshipWeeklyReportAnalyticsParams;

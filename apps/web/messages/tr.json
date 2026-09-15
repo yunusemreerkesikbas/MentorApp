@@ -43,21 +43,19 @@
   },
   "welcome": {
     "loading": "Yükleniyor…",
-    "back_aria": "Önceki slayta dön",
     "progress_aria": "Tanıtım slaytı {current} / {total}",
-    "continue": "Devam",
+    "go_to_slide": "{current}. slayta geç",
+    "continue": "Devam et",
     "skip": "Atla",
-    "register": "Kayıt ol",
-    "login": "Giriş yap",
+    "start": "Başlayalım",
+    "have_account": "Zaten hesabım var",
     "slide1": {
       "title": "Selam, ben Puhu.",
-      "title_lead": "Selam, ben",
-      "title_emphasis": "Puhu.",
       "subtitle": "Sınav yolunda birlikte ilerleyelim."
     },
     "slide2": {
-      "title": "Zorlandığında buradayım.",
-      "subtitle": "Ne varsa anlat. Bir sonraki adımı birlikte bulalım."
+      "title": "Zorlandığında AI koçun yanında.",
+      "subtitle": "Ne varsa anlat. Planına göre bir sonraki adımı birlikte bulalım."
     },
     "slide3": {
       "title": "Bugünün küçük adımı.",
@@ -2593,47 +2591,81 @@
     "back": "Geri",
     "back_aria": "Önceki adıma dön",
     "progress_aria": "Onboarding adımı {current} / {total}",
-    "progress_label": "Adım {current} / {total}",
     "welcome": {
-      "title": "Şimdi seni biraz tanıyalım.",
+      "title": "Merhaba {name}! Şimdi seni biraz tanıyalım.",
       "subtitle": "Birkaç kısa cevapla panelini sana göre hazırlayacağım.",
-      "continue": "Devam"
-    },
-    "profile": {
-      "title": "Toplulukta seni hangi kullanıcı adıyla tanıyalım?",
-      "username_label": "Kullanıcı adı",
-      "username_placeholder": "ornek_kullanici",
-      "username_hint": "3-24 karakter · küçük harf, rakam ve alt çizgi.",
-      "avatar_label": "Profil fotoğrafı",
-      "avatar_title": "Bir profil fotoğrafı eklemek ister misin?",
-      "avatar_change": "Fotoğraf seç",
-      "avatar_remove": "Kaldır",
-      "avatar_type_error": "Yalnızca JPEG veya PNG yükleyebilirsin.",
-      "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
-      "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
-      "skip": "Şimdilik geç",
-      "form_error": "Kullanıcı adı uymadı.",
-      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
       "continue": "Devam"
     },
     "exam": {
       "title": "Hangi sınava hazırlanıyorsun?",
+      "title_coach": "Hangi sınava koçluk yapıyorsun?",
+      "options": {
+        "KPSS": "Kamu kadroları için",
+        "YKS": "Üniversiteye giriş",
+        "LGS": "Liseye geçiş"
+      },
       "continue": "Devam",
-      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
-      "title_coach": "Hangi sınava koçluk yapıyorsun?"
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
     "kpss_level": {
       "title": "KPSS’nin hangi düzeyine hazırlanıyorsun?",
       "continue": "Devam",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
-    "goal": {
-      "title": "Bu yolun sonunda ne var?",
-      "subtitle": "İstersen tek cümleyle yaz.",
-      "hint": "Hedef panonu daha sonra ayrıntılandırabilirsin.",
-      "save": "Devam et",
+    "why": {
+      "title": "Bu sınav senin için ne demek?",
+      "options": {
+        "dream_job": "Hayalimdeki iş",
+        "secure_future": "Güvenceli gelecek",
+        "family": "Ailem için",
+        "prove_myself": "Kendimi kanıtlamak",
+        "fresh_start": "Yeni bir başlangıç",
+        "other": "Başka bir sebep"
+      },
+      "continue": "Devam",
+      "skip": "Şimdilik geç"
+    },
+    "field": {
+      "title": "Hangi alanda ilerlemek istersin?",
+      "subtitle": "Puhu hedef panonda bu alanla görünür.",
+      "goal_title": "{field} alanında ilerlemek",
+      "goal_title_exam": "{exam} yolunda ilerlemek",
+      "continue": "Devam",
       "skip": "Şimdilik geç",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+    },
+    "daily_goal": {
+      "title": "Günde ne kadar odaklanmak istersin?",
+      "caption": "İstediğin zaman değiştirebilirsin.",
+      "recommended": "Önerilen",
+      "minutes": "Günde {minutes} dk",
+      "levels": {
+        "15": "Isınma",
+        "30": "Düzenli",
+        "60": "Kararlı",
+        "90": "Yoğun"
+      },
+      "continue": "Devam",
+      "skip": "Şimdilik geç",
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+    },
+    "push": {
+      "title": "Günde {minutes} dk hedefini nazikçe hatırlatayım.",
+      "body": "İzin verirsen her gün kısa bir not bırakırım.",
+      "skip": "Şimdilik geç"
+    },
+    "profile": {
+      "title": "Toplulukta seni nasıl tanıyalım?",
+      "username_label": "Kullanıcı adı",
+      "username_placeholder": "ornek_kullanici",
+      "username_hint": "3-24 karakter · küçük harf, rakam ve alt çizgi.",
+      "avatar_add": "Fotoğraf ekle (isteğe bağlı)",
+      "avatar_change": "Fotoğrafı değiştir",
+      "avatar_type_error": "Yalnızca JPEG veya PNG yükleyebilirsin.",
+      "avatar_too_big": "Profil fotoğrafı 2 MB altında olmalı.",
+      "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
+      "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim.",
+      "continue": "Devam"
     },
     "coach_profile": {
       "title": "Öğrenciye kendini nasıl anlatalım?",
@@ -2643,10 +2675,14 @@
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
     "complete": {
-      "title": "Hazırız. İlk adımın seni bekliyor.",
+      "title": "Yolun hazır.",
       "subtitle": "Panelinde geri sayım ve bugünün planı seni bekliyor.",
-      "countdown_teaser": "Sınav geri sayımın panelde. Kaynak gösterilmiş resmî takvimden.",
-      "map_cta": "Hedefini haritada işaretle →",
+      "summary_label": "Seçimlerin",
+      "summary_goal": "Günde {minutes} dk odak",
+      "summary_field": "Alan: {field}",
+      "summary_reminder": "Hatırlatma açık",
+      "countdown_title": "Sınav geri sayımın panelde.",
+      "countdown_source": "Kaynak gösterilmiş resmî takvimden.",
       "go_panel": "Panele git",
       "title_coach": "Koç hesabın hazır.",
       "verify_email_coach": "Davet kodun için e-postanı doğrulaman yeterli."
@@ -3486,6 +3522,11 @@
     "template_save_title": "Bu haftayı şablon olarak sakla",
     "followup_date_clear": "Tarihi kaldır",
     "weekly_report_title": "Haftalık değerlendirme",
+    "weekly_report_summary_title": "Geçen haftanın özeti",
+    "weekly_report_open": "Değerlendirmeyi aç",
+    "weekly_report_status_draft": "Taslak",
+    "weekly_report_status_finalized": "Sonlandırıldı",
+    "weekly_report_plan_short": "Görevler",
     "weekly_report_period": "{start} - {end}",
     "weekly_report_previous_week": "Önceki hafta",
     "weekly_report_next_week": "Sonraki hafta",
@@ -3552,7 +3593,10 @@
     "weekly_report_print_title": "Haftalık öğrenci değerlendirmesi",
     "weekly_report_prepared_by": "Hazırlayan: {coach}",
     "weekly_report_prepared_at": "Hazırlanma: {date}",
-    "weekly_report_print": "Yazdır / PDF olarak kaydet",
+    "weekly_report_print": "Yazdır",
+    "weekly_report_download": "PDF indir",
+    "weekly_report_downloading": "PDF hazırlanıyor",
+    "weekly_report_download_failed": "PDF hazırlanamadı. Tekrar deneyebilirsin.",
     "weekly_report_print_note": "Bu rapor, uygulamaya kaydedilen etkinlikleri özetler. Kayıt eksikliği çalışılmadığı anlamına gelmez.",
     "weekly_report_back": "Öğrenci raporuna dön"
   }

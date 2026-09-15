@@ -3,7 +3,6 @@
 import { ChevronLeft, Ellipsis } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
-import { COACH_POPOVER_CLASS } from "@/components/mentorship/coach-ui";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link } from "@/i18n/navigation";
 import { formatDate } from "../../../_components/mentorship-format";
@@ -43,7 +42,7 @@ export function ReportHeader({
     <header className="flex flex-col gap-2">
       <Link
         href="/students"
-        className="coach-body -ml-1.5 inline-flex min-h-11 items-center gap-0.5 self-start rounded-[var(--radius-card)] pr-2 font-medium text-[var(--coach-accent-text)] outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+        className="coach-body -ml-1.5 inline-flex min-h-11 items-center gap-0.5 self-start rounded-[var(--radius-card)] pr-2 font-medium text-[var(--color-accent)] outline-none transition-opacity hover:opacity-70 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       >
         <ChevronLeft aria-hidden size={20} strokeWidth={2} />
         {t("report_back")}
@@ -77,8 +76,7 @@ export function ReportHeader({
           )}
           <PopoverMenu
             align="right"
-            // The menu portals to <body>, outside the themed subtree; the class brings the tokens.
-            menuClassName={`${COACH_POPOVER_CLASS} w-56 py-1`}
+            menuClassName="w-56 py-1"
             trigger={({ open, setOpen, menuId }) => (
               <button
                 type="button"

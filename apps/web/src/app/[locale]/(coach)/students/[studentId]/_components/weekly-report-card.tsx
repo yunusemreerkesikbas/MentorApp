@@ -1,28 +1,26 @@
 "use client";
 
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { BarChart3, ChevronRight } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
-import { Button, Skeleton, SkeletonGroup, TextAreaField } from "@mentor/ui";
+import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { InsetSection, NOTE_CLASS } from "@/components/mentorship/coach-ui";
-import { Link } from "@/i18n/navigation";
 import { useWeeklyReportCard } from "./use-weekly-report-card";
-import { WeeklyReportArchive } from "./weekly-report-archive";
-import { WeeklyReportBrief } from "./weekly-report-brief";
-import { WeeklyReportMetrics } from "./weekly-report-metrics";
+import { WeeklyReportPanel } from "./weekly-report-panel";
 
 export function WeeklyReportCard({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
+  const [open, setOpen] = useState(false);
   const report = useWeeklyReportCard(studentId);
 
   if (report.state === "disabled") return null;
   if (report.state === "loading") {
     return (
-      <SkeletonGroup
-        label={t("weekly_report_loading")}
-        className="flex flex-col gap-3"
-      >
+      <SkeletonGroup label={t("weekly_report_loading")} className="flex flex-col gap-3">
         <Skeleton className="h-8 w-56 rounded-[var(--radius-card)]" />
-        <Skeleton className="h-64 w-full rounded-[var(--radius-card)]" />
+        <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
       </SkeletonGroup>
     );
   }
@@ -31,12 +29,7 @@ export function WeeklyReportCard({ studentId }: { studentId: string }) {
       <InsetSection title={t("weekly_report_title")}>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4">
           <p className={NOTE_CLASS}>{t("weekly_report_load_failed")}</p>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            onClick={() => void report.retry()}
-          >
+          <Button type="button" variant="secondary" size="sm" onClick={() => void report.retry()}>
             {t("weekly_report_retry")}
           </Button>
         </div>
@@ -45,97 +38,61 @@ export function WeeklyReportCard({ studentId }: { studentId: string }) {
   }
 
   const preview = report.preview;
-  const dateFormat = new Intl.DateTimeFormat(locale, {
-    day: "numeric",
-    month: "short",
-    year: "numeric",
+  const number = new Intl.NumberFormat(locale);
+  const dateFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
+  const formatDate = (value: string) => dateFormat.format(new Date(`${value}T12:00:00.000Z`));
+  const period = t("weekly_report_period", {
+    start: formatDate(preview.snapshot.period.startDate),
+    end: formatDate(preview.snapshot.period.endDate),
   });
-  const formatDate = (value: string) =>
-    dateFormat.format(new Date(`${value}T12:00:00.000Z`));
-  const previousReport = report.archive.find(
-    (item) => item.period.startDate === preview.snapshot.period.startDate,
-  );
+  const mockAverage = preview.snapshot.mocks.currentAverageNet;
 
   return (
-    <InsetSection title={t("weekly_report_title")}>
-      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
-        <p className={NOTE_CLASS}>
-          {t("weekly_report_period", {
-            start: formatDate(preview.snapshot.period.startDate),
-            end: formatDate(preview.snapshot.period.endDate),
-          })}
-        </p>
-        <div className="flex flex-wrap items-center gap-1">
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={report.busy}
-            onClick={() => void report.moveWeek(-1)}
-          >
-            {t("weekly_report_previous_week")}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            disabled={
-              report.busy ||
-              preview.snapshot.period.startDate === report.latestWeek
-            }
-            onClick={() => void report.moveWeek(1)}
-          >
-            {t("weekly_report_next_week")}
+    <>
+      <InsetSection title={t("weekly_report_title")}>
+        <div className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex min-w-0 items-start gap-3">
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-primary-container)] text-[var(--color-primary)]">
+                <BarChart3 aria-hidden size={20} />
+              </span>
+              <div className="min-w-0">
+                <p className="coach-body font-semibold text-[var(--color-main)]">{t("weekly_report_summary_title")}</p>
+                <p className={NOTE_CLASS}>{period}</p>
+              </div>
+            </div>
+            <span className="coach-footnote rounded-full bg-[var(--color-surface-container)] px-3 py-1 font-semibold text-[var(--color-secondary)]">
+              {report.archive.some((item) => item.period.startDate === preview.snapshot.period.startDate)
+                ? t("weekly_report_status_finalized")
+                : t("weekly_report_status_draft")}
+            </span>
+          </div>
+          <dl className="mt-4 grid grid-cols-3 gap-2 border-y border-[var(--color-border)] py-3">
+            <SummaryMetric label={t("weekly_report_focus")} value={`${number.format(preview.snapshot.current.focusMinutes)} ${locale === "tr" ? "dk" : "min"}`} />
+            <SummaryMetric label={t("weekly_report_plan_short")} value={`${preview.snapshot.current.completedTasks} / ${preview.snapshot.current.plannedTasks}`} />
+            <SummaryMetric label={t("weekly_report_mock_average")} value={mockAverage === null ? t("weekly_report_missing") : number.format(mockAverage)} />
+          </dl>
+          <Button type="button" variant="ghost" className="mt-2 w-full justify-between" onClick={() => setOpen(true)}>
+            {t("weekly_report_open")}
+            <ChevronRight aria-hidden size={18} />
           </Button>
         </div>
-      </div>
-      <WeeklyReportMetrics snapshot={preview.snapshot} />
-      <WeeklyReportBrief
-        preview={preview}
-        busy={report.busy}
-        onGenerate={() => void report.generateBrief()}
-      />
-      <div className="flex flex-col gap-3">
-        <TextAreaField
-          label={t("weekly_report_share_label")}
-          value={report.evaluation}
-          maxLength={1200}
-          hint={t("weekly_report_share_hint", {
-            count: report.evaluation.length,
-          })}
-          onChange={(event) => report.setEvaluation(event.target.value)}
-        />
-        {previousReport ? (
-          <p className={NOTE_CLASS}>
-            {t("weekly_report_correction", {
-              version: previousReport.version + 1,
-            })}
-          </p>
+      </InsetSection>
+
+      <AnimatePresence>
+        {open ? (
+          <WeeklyReportPanel studentId={studentId} report={report} period={period} formatDate={formatDate} onClose={() => setOpen(false)} />
         ) : null}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button
-            type="button"
-            busy={report.busy}
-            onClick={() => void report.finalize()}
-          >
-            {t("weekly_report_finalize")}
-          </Button>
-          {report.finalized ? (
-            <Link
-              locale={report.finalized.locale}
-              className="coach-footnote min-h-11 content-center font-semibold text-[var(--color-primary)]"
-              href={{
-                pathname:
-                  "/students/[studentId]/weekly-reports/[reportId]/print",
-                params: { studentId, reportId: report.finalized.id },
-              }}
-            >
-              {t("weekly_report_open_finalized")}
-            </Link>
-          ) : null}
-        </div>
-      </div>
-      <WeeklyReportArchive studentId={studentId} items={report.archive} />
-    </InsetSection>
+      </AnimatePresence>
+    </>
+  );
+}
+
+function SummaryMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="min-w-0 px-1">
+      <dt className="coach-footnote truncate text-[var(--color-secondary)]">{label}</dt>
+      <dd className="coach-body mt-1 font-semibold tabular-nums text-[var(--color-main)]">{value}</dd>
+    </div>
   );
 }

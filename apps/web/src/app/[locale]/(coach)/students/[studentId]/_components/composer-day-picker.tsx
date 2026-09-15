@@ -44,7 +44,7 @@ export function ComposerDayPicker({
             onClick={() => onSelect(day)}
             className={`flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] py-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
               active
-                ? "bg-[var(--color-accent)] text-[var(--color-btn-label)]"
+                ? "bg-[var(--color-btn)] text-[var(--color-btn-label)]"
                 : "bg-[var(--color-surface)] text-[var(--color-main)] hover:bg-[var(--color-surface-container)]"
             }`}
           >

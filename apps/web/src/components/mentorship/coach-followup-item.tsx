@@ -7,7 +7,7 @@ import { Button } from "@mentor/ui";
 import { DateField } from "@/components/date-field";
 import { updateFollowup } from "@/lib/mentorship-followups";
 import { istanbulDate } from "@/lib/mentorship-followup-state";
-import { COACH_POPOVER_CLASS, INSET_GROUP_CLASS } from "./coach-ui";
+import { INSET_GROUP_CLASS } from "./coach-ui";
 import { FollowupStatus } from "./followup-status";
 
 export function CoachFollowupItem({
@@ -79,7 +79,7 @@ export function CoachFollowupItem({
           ) : null}
           {item.sharedDecision ? (
             <div className="flex min-w-0 flex-col gap-1">
-              <p className="coach-caption font-semibold text-[var(--coach-accent-text)]">
+              <p className="coach-caption font-semibold text-[var(--color-accent)]">
                 {t("followup_shared_hint")}
               </p>
               <p className="coach-body whitespace-pre-wrap break-words text-[var(--color-body)]">
@@ -97,7 +97,7 @@ export function CoachFollowupItem({
       {item.status === "OPEN" ? (
         // Two rows: rescheduling changes the record, closing it ends it, and a panel is too narrow to
         // hold both groups on one line without the last button falling onto a row of its own.
-        <div className="flex flex-col gap-3 border-t border-[var(--color-border)] pt-3">
+        <div className="flex flex-col gap-3 border-t border-[var(--color-surface-container)] pt-3">
           <div className="flex flex-wrap items-end gap-2">
           <div className="min-w-0 flex-1 sm:max-w-52">
             <DateField
@@ -106,7 +106,6 @@ export function CoachFollowupItem({
               min={istanbulDate()}
               disabled={busy}
               clearLabel={t("followup_date_clear")}
-              menuClassName={COACH_POPOVER_CLASS}
               onChange={setDate}
             />
           </div>
@@ -145,7 +144,7 @@ export function CoachFollowupItem({
           </div>
         </div>
       ) : (
-        <div className="flex justify-end border-t border-[var(--color-border)] pt-3">
+        <div className="flex justify-end border-t border-[var(--color-surface-container)] pt-3">
           <Button type="button" variant="secondary" size="sm" className="min-h-11" onClick={onReplace}>
             {t("followup_replace")}
           </Button>

@@ -2,7 +2,6 @@
 
 import { useId } from "react";
 import { MenuSelect } from "@/components/menu-select";
-import { COACH_POPOVER_CLASS } from "@/components/mentorship/coach-ui";
 
 /**
  * A labelled `MenuSelect`, the same dropdown the coach calendar's forms use.
@@ -49,7 +48,6 @@ export function ComposerSelect({
         disabled={disabled}
         textSize="sm"
         aria-labelledby={labelId}
-        menuClassName={COACH_POPOVER_CLASS}
         onChange={onChange}
       />
     </div>

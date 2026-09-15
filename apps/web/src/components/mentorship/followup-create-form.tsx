@@ -13,7 +13,7 @@ import {
   operationForDraft,
   type PendingFollowupOperation,
 } from "@/lib/mentorship-followup-state";
-import { COACH_POPOVER_CLASS, INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
+import { INSET_GROUP_CLASS, NOTE_CLASS } from "./coach-ui";
 
 /**
  * A follow-up record, written in the report's side panel.
@@ -104,7 +104,7 @@ export function FollowupCreateForm({
           </div>
 
           <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
-            <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--coach-accent-text)]">
+            <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--color-accent)]">
               <UsersRound aria-hidden size={15} strokeWidth={2} />
               {t("followup_shared_hint")}
             </p>
@@ -126,7 +126,6 @@ export function FollowupCreateForm({
               min={istanbulDate()}
               disabled={busy}
               clearLabel={t("followup_date_clear")}
-              menuClassName={COACH_POPOVER_CLASS}
               onChange={setFollowUpDate}
             />
           </div>

@@ -95,21 +95,27 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   const section = page.getByRole("region", { name: "Haftalık değerlendirme" });
   await expect(section).toBeVisible();
   await expect(section.getByText("180 dk")).toBeVisible();
-  await expect(section.getByText("Yok").first()).toBeVisible();
+  await expect(section.getByRole("button", { name: "Değerlendirmeyi aç" })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(api.briefCalls).toBe(0);
 
-  await section.getByRole("button", { name: "Hazırlık notu oluştur" }).click();
+  await section.getByRole("button", { name: "Değerlendirmeyi aç" }).click();
+  const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText("Yok").first()).toBeVisible();
+
+  await panel.getByRole("button", { name: "Hazırlık notu oluştur" }).click();
   await expect(
-    section.getByText("Kayıtlı çalışma süresi arttı."),
+    panel.getByText("Kayıtlı çalışma süresi arttı."),
   ).toBeVisible();
   expect(api.briefCalls).toBe(1);
 
-  await section
+  await panel
     .getByLabel("Koç değerlendirmesi")
     .fill("Ritmi birlikte koruyalım.");
-  await section.getByRole("button", { name: "Raporu sonlandır" }).click();
+  await panel.getByRole("button", { name: "Raporu sonlandır" }).click();
   await expect(
-    section.getByRole("link", { name: "Sonlandırılan raporu aç" }),
+    panel.getByRole("link", { name: "Sonlandırılan raporu aç" }),
   ).toBeVisible();
   await expect.poll(() => api.finalizeBodies.length).toBe(1);
   expect(api.finalizeBodies[0]).toMatchObject({
@@ -137,6 +143,8 @@ test("yazdırma görünümü yalnız paylaşılabilir sözleşmeyi kullanır", a
   ).toBeVisible();
   await expect(page.getByText("Ritmi birlikte koruyalım.")).toBeVisible();
   await expect(page.getByText("Hazırlayan: Koç Deniz")).toBeVisible();
+  await expect(page.getByRole("button", { name: "PDF indir" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Yazdır" })).toBeVisible();
   await expect(page.getByText("ÖZEL AI NOTU")).toHaveCount(0);
   expect(
     api.requestedPaths.some((path) => path.endsWith(`/${REPORT_ID}/share`)),
@@ -144,6 +152,13 @@ test("yazdırma görünümü yalnız paylaşılabilir sözleşmeyi kullanır", a
   expect(
     api.requestedPaths.some((path) => path.endsWith(`/${REPORT_ID}`)),
   ).toBe(false);
+
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "PDF indir" }).click();
+  const download = await downloadPromise;
+  expect(download.suggestedFilename()).toBe(
+    "ayse-yilmaz-haftalik-degerlendirme-2026-08-31.pdf",
+  );
 
   await page.emulateMedia({ media: "print" });
   await expect(page.locator(".weekly-report-print-toolbar")).toHaveCSS(
@@ -162,15 +177,31 @@ test("detay raporu başarısız olduğunda isteği sonsuz tekrarlamaz", async ({
     page.getByRole("heading", { name: "Bu alan koçlar için" }),
   ).toBeVisible();
   await expect.poll(() => api.studentReportCalls).toBeGreaterThan(0);
+  await page.waitForTimeout(500);
   const settledCalls = api.studentReportCalls;
   expect(settledCalls).toBeLessThanOrEqual(2);
   await page.waitForTimeout(1_000);
   expect(api.studentReportCalls).toBe(settledCalls);
 });
 
+test("haftalık rapor başarısız olduğunda isteği sonsuz tekrarlamaz", async ({
+  page,
+}) => {
+  const api = await mockWeeklyReportApi(page, { failWeeklyPreview: true });
+
+  await page.goto(`/kocluk/${STUDENT_ID}`);
+  await expect(page.getByText("Ayşe Yılmaz").first()).toBeVisible();
+  await expect.poll(() => api.weeklyPreviewCalls).toBeGreaterThan(0);
+  await page.waitForTimeout(500);
+  const settledCalls = api.weeklyPreviewCalls;
+  expect(settledCalls).toBeLessThanOrEqual(2);
+  await page.waitForTimeout(1_000);
+  expect(api.weeklyPreviewCalls).toBe(settledCalls);
+});
+
 async function mockWeeklyReportApi(
   page: Page,
-  options: { failStudentReport?: boolean } = {},
+  options: { failStudentReport?: boolean; failWeeklyPreview?: boolean } = {},
 ) {
   const user: AuthUser = {
     id: COACH_ID,
@@ -194,6 +225,7 @@ async function mockWeeklyReportApi(
   const finalizeBodies: Record<string, unknown>[] = [];
   const requestedPaths: string[] = [];
   let studentReportCalls = 0;
+  let weeklyPreviewCalls = 0;
 
   const preview = (withBrief: boolean) => ({
     draftId: "44444444-4444-4444-8444-444444444444",
@@ -268,6 +300,14 @@ async function mockWeeklyReportApi(
       url.pathname ===
         `/v1/mentorship/students/${STUDENT_ID}/weekly-reports/preview`
     ) {
+      weeklyPreviewCalls += 1;
+      if (options.failWeeklyPreview) {
+        return json(
+          route,
+          { code: "INTERNAL_ERROR", message: "Bir şeyler ters gitti." },
+          500,
+        );
+      }
       return json(route, preview(briefCalls > 0));
     }
     if (
@@ -344,6 +384,9 @@ async function mockWeeklyReportApi(
     },
     get studentReportCalls() {
       return studentReportCalls;
+    },
+    get weeklyPreviewCalls() {
+      return weeklyPreviewCalls;
     },
     finalizeBodies,
     requestedPaths,

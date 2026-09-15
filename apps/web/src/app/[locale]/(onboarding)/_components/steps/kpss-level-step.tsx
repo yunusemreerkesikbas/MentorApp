@@ -4,14 +4,26 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser, ExamVariant } from "@mentor/types";
-import { FormError } from "@/components/form";
+import { PlayButton } from "@/components/onboarding-play/play-button";
+import { PlayOptionRow } from "@/components/onboarding-play/play-choice";
+import { PlayFooter } from "@/components/onboarding-play/play-footer";
+import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { useAuth } from "@/lib/auth-context";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
-import { OptionButton } from "./exam-step";
 
 const OPTIONS: ExamVariant[] = ["LISANS", "ONLISANS", "ORTAOGRETIM"];
 
-export function KpssLevelStep({ user, onSaved, onBack }: { user: AuthUser; onSaved: () => void; onBack: () => void }) {
+export function KpssLevelStep({
+  user,
+  progress,
+  onSaved,
+  onBack,
+}: {
+  user: AuthUser;
+  progress: { done: number; total: number } | null;
+  onSaved: () => void;
+  onBack: () => void;
+}) {
   const t = useTranslations("onboarding.kpss_level");
   const examCopy = useTranslations("profile.exam_settings");
   const { setUserFromServer } = useAuth();
@@ -21,19 +33,42 @@ export function KpssLevelStep({ user, onSaved, onBack }: { user: AuthUser; onSav
 
   async function save() {
     if (!selected || saving) return;
-    setSaving(true); setError(null);
+    setSaving(true);
+    setError(null);
     try {
       const updated = (await usersControllerUpdateMe({ examType: "KPSS", examVariant: selected })) as unknown as AuthUser;
-      setUserFromServer(updated); onSaved();
-    } catch (err) { setError(err instanceof ApiClientError ? err.body.message : t("save_error")); }
-    finally { setSaving(false); }
+      setUserFromServer(updated);
+      onSaved();
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.body.message : t("save_error"));
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
-    <OnboardingStepLayout step={3} title={t("title")} onBack={onBack} primaryLabel={t("continue")} onPrimary={() => void save()} primaryBusy={saving} primaryDisabled={!selected || saving}>
-      <FormError message={error} />
-      <div role="radiogroup" aria-label={t("title")} className="mx-auto grid w-full max-w-xl grid-cols-1 gap-3 sm:grid-cols-3">
-        {OPTIONS.map((value) => <OptionButton key={value} label={examCopy(`variant.${value}`)} active={selected === value} disabled={saving} onClick={() => setSelected(value)} />)}
+    <OnboardingStepLayout
+      progress={progress}
+      onBack={onBack}
+      heading={<PuhuBubble title={t("title")} />}
+      footer={
+        <PlayFooter error={error}>
+          <PlayButton onClick={() => void save()} busy={saving} disabled={!selected}>
+            {t("continue")}
+          </PlayButton>
+        </PlayFooter>
+      }
+    >
+      <div role="radiogroup" aria-label={t("title")} className="flex flex-col gap-3">
+        {OPTIONS.map((value) => (
+          <PlayOptionRow
+            key={value}
+            label={examCopy(`variant.${value}`)}
+            selected={selected === value}
+            disabled={saving}
+            onSelect={() => setSelected(value)}
+          />
+        ))}
       </div>
     </OnboardingStepLayout>
   );

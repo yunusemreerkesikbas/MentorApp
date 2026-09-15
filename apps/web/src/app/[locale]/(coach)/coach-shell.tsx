@@ -70,10 +70,8 @@ export function CoachShell({ children }: { children: ReactNode }) {
         style={{ backgroundColor: "var(--color-bg)" }}
       >
         <AppNav />
-        {/* The coach theme sits on the content, not on AppNav: the nav looks the same on coach and
-            student routes. The background is painted here so it reads the themed `--color-bg`. */}
         <div
-          className={`mentor-app-shell coach-theme min-h-screen bg-[var(--color-bg)] ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
+          className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
         >
           <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:py-10">
             {children}

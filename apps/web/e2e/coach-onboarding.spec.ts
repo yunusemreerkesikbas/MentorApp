@@ -92,11 +92,6 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
   await page.goto("/onboarding");
 
   await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByLabel("Kullanıcı adı").fill("kocmert");
-  await page.getByRole("button", { name: "Devam" }).click();
-
-  // Avatar is optional for a coach exactly as it is for a student.
-  await page.getByRole("button", { name: "Şimdilik geç" }).click();
 
   // The exam question SURVIVES on this branch, reworded. It is genuinely the coach's (which exam do
   // they coach), and `hasCompletedOnboarding` gates all of `(app)` on `username && examType` — a
@@ -107,9 +102,9 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
   await page.getByRole("radio", { name: "YKS" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
 
-  // And here is the swap: a student would be asked "Bu yolun sonunda ne var?" and would write a
-  // personal goal into a vision board. A coach is asked how to introduce them to a student.
-  await expect(page.getByText("Bu yolun sonunda ne var?")).toHaveCount(0);
+  // And here is the swap: a student would be asked why, which field and how long a day, answers
+  // that write a goal board and a study rhythm. A coach is asked how to introduce them to a student.
+  await expect(page.getByText("Bu sınav senin için ne demek?")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "Öğrenciye kendini nasıl anlatalım?" }),
   ).toBeVisible();
@@ -118,9 +113,6 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
 test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", async ({ page }) => {
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByLabel("Kullanıcı adı").fill("kocmert");
-  await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByRole("button", { name: "Şimdilik geç" }).click();
   await page.getByRole("radio", { name: "YKS" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
 
@@ -129,12 +121,17 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
 
   // The call that actually makes them a coach — the API writes the registry row and grants COACH
-  // off the back of it, which is why this step is not skippable the way the goal step is.
+  // off the back of it, which is why this step is not skippable the way the student questions are.
   await expect.poll(() => registered).not.toBeNull();
   expect((registered as { headline: string }).headline).toBe("YKS matematik koçu");
 
+  // The username comes last, for a coach too.
+  await page.getByLabel("Kullanıcı adı").fill("kocmert");
+  await page.getByRole("button", { name: "Devam" }).click();
+
   // The blocker they can still clear themselves, said before they find a locked panel.
   await expect(page.getByText("e-postanı doğrulaman yeterli", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Panele git" }).click();
 
   // `/kocluk`, not `/panel`: somebody who just wrote a coach profile does not want a study plan.
   //

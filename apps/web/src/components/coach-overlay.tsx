@@ -30,6 +30,7 @@ export function CoachOverlay({
   labelledBy,
   busy,
   grouped = false,
+  size = "default",
   onClose,
   children,
 }: {
@@ -39,6 +40,8 @@ export function CoachOverlay({
   busy?: boolean;
   /** Page-coloured panel, for content laid out as surface-coloured groups (the student report). */
   grouped?: boolean;
+  /** Drawer width on desktop. Mobile drawers always use the full viewport width. */
+  size?: "default" | "wide";
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -153,7 +156,9 @@ export function CoachOverlay({
           sheet
             ? `w-full rounded-t-[var(--radius-card)] ${drawer ? "max-h-[90dvh]" : "max-h-[60dvh]"}`
             : drawer
-              ? "h-full w-full max-w-xl rounded-none border-y-0 border-r-0"
+              ? `h-full w-full rounded-none border-y-0 border-r-0 ${
+                  size === "wide" ? "max-w-2xl" : "max-w-xl"
+                }`
               : "w-full max-w-md rounded-[var(--radius-card)]"
         }`}
         variants={{

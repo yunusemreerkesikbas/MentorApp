@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklySnapshotDto } from "@mentor/types";
 import {
+  INSET_DIVIDE_CLASS,
   INSET_GROUP_CLASS,
   INSET_ROW_CLASS,
   NOTE_CLASS,
@@ -64,7 +65,7 @@ export function WeeklyReportMetrics({
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--color-border)]">
+          <tbody className={INSET_DIVIDE_CLASS}>
             {rows.map((row) => (
               <tr key={row.label}>
                 <th
@@ -90,7 +91,7 @@ export function WeeklyReportMetrics({
         <p className={NOTE_CLASS}>{t("weekly_report_no_subjects")}</p>
       ) : (
         <div
-          className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}
+          className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}
         >
           {snapshot.subjects.map((subject) => (
             <div
@@ -126,7 +127,7 @@ export function WeeklyReportMetrics({
         </p>
       ) : null}
       <div
-        className={`${INSET_GROUP_CLASS} divide-y divide-[var(--color-border)]`}
+        className={`${INSET_GROUP_CLASS} ${INSET_DIVIDE_CLASS}`}
       >
         <div className={INSET_ROW_CLASS}>
           <span className="coach-body text-[var(--color-secondary)]">

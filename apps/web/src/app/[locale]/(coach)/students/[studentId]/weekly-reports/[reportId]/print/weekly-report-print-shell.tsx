@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download, Printer } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklyReportShareDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
@@ -24,6 +25,8 @@ export function WeeklyReportPrintShell({
     null,
   );
   const [error, setError] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState<string | null>(null);
+  const [downloading, setDownloading] = useState(false);
 
   useEffect(() => {
     trackMentorshipWeeklyReportEvent("mentorship_weekly_report_print_open", {
@@ -78,28 +81,69 @@ export function WeeklyReportPrintShell({
   const formatDate = (value: string) =>
     date.format(new Date(`${value}T12:00:00.000Z`));
 
+  async function handleDownload(
+    finalizedReport: MentorshipWeeklyReportShareDto,
+  ) {
+    setDownloading(true);
+    setDownloadError(null);
+    try {
+      const { downloadWeeklyReportPdf } = await import("./weekly-report-pdf");
+      await downloadWeeklyReportPdf(finalizedReport, locale, {
+        title: t("weekly_report_print_title"),
+        version: t("weekly_report_version", { version: finalizedReport.version }),
+        period: t("weekly_report_period", { start: formatDate(finalizedReport.period.startDate), end: formatDate(finalizedReport.period.endDate) }),
+        preparedBy: t("weekly_report_prepared_by", { coach: finalizedReport.coachDisplayName }),
+        preparedAt: t("weekly_report_prepared_at", { date: formatDate(finalizedReport.finalizedAt.slice(0, 10)) }),
+        current: t("weekly_report_current"),
+        previous: t("weekly_report_previous"),
+        focus: t("weekly_report_focus"),
+        sessions: t("weekly_report_sessions"),
+        activeDays: t("weekly_report_active_days"),
+        plan: t("weekly_report_plan"),
+        completion: t("weekly_report_completion"),
+        subjects: t("weekly_report_subjects"),
+        mocks: t("weekly_report_mocks"),
+        mockAttempts: t("weekly_report_mock_attempts"),
+        mockAverage: t("weekly_report_mock_average"),
+        shareTitle: t("weekly_report_share_title"),
+        note: t("weekly_report_print_note"),
+        missing: t("weekly_report_missing"),
+        unclassified: t("weekly_report_unclassified"),
+      });
+      trackMentorshipWeeklyReportEvent("mentorship_weekly_report_pdf_download", { surface: "print_preview" });
+    } catch {
+      setDownloadError(t("weekly_report_download_failed"));
+    } finally {
+      setDownloading(false);
+    }
+  }
+
   return (
     <div className="weekly-report-print-root flex flex-col gap-4">
-      <div className="weekly-report-print-toolbar flex flex-wrap items-center justify-between gap-3">
-        <Link
-          href={{
-            pathname: "/students/[studentId]",
-            params: { studentId },
-          }}
-          className="coach-body min-h-11 content-center font-semibold text-[var(--color-primary)]"
-        >
-          {t("weekly_report_back")}
-        </Link>
-        <Button type="button" onClick={() => window.print()}>
-          {t("weekly_report_print")}
-        </Button>
+      <div className="weekly-report-print-toolbar sticky top-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)]">
+        <div>
+          <Link href={{ pathname: "/students/[studentId]", params: { studentId } }} className="coach-body min-h-11 content-center font-semibold text-[var(--color-primary)]">
+            {t("weekly_report_back")}
+          </Link>
+          {downloadError ? <p role="alert" className="coach-footnote mt-1 text-[var(--color-error)]">{downloadError}</p> : null}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button type="button" variant="secondary" onClick={() => window.print()}>
+            <Printer aria-hidden size={18} />
+            {t("weekly_report_print")}
+          </Button>
+          <Button type="button" busy={downloading} onClick={() => void handleDownload(report)}>
+            <Download aria-hidden size={18} />
+            {downloading ? t("weekly_report_downloading") : t("weekly_report_download")}
+          </Button>
+        </div>
       </div>
-      <article className="weekly-report-print-sheet mx-auto w-full max-w-3xl rounded-[var(--radius-card)] bg-white p-8 text-[var(--color-body)] shadow-sm sm:p-12">
-        <header className="mb-8 border-b border-[var(--color-border)] pb-5">
+      <article className="weekly-report-print-sheet mx-auto w-full max-w-[210mm] rounded-[var(--radius-card)] bg-white p-6 text-[var(--color-body)] shadow-[var(--shadow-card)] sm:p-12">
+        <header className="mb-8 border-b-2 border-[var(--color-primary)] pb-6">
           <p className="mb-2 text-sm font-semibold text-[var(--color-primary)]">
             {t("weekly_report_version", { version: report.version })}
           </p>
-          <h1 className="text-2xl font-bold text-[var(--color-main)]">
+          <h1 className="text-3xl font-bold tracking-tight text-[var(--color-main)]">
             {t("weekly_report_print_title")}
           </h1>
           <p className="mt-2 text-lg font-semibold text-[var(--color-main)]">

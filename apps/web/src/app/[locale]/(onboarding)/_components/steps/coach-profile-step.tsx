@@ -4,7 +4,9 @@ import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import { TextAreaField, TextField } from "@mentor/ui";
-import { FormError } from "@/components/form";
+import { PlayButton } from "@/components/onboarding-play/play-button";
+import { PlayFooter } from "@/components/onboarding-play/play-footer";
+import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { registerCoach } from "@/lib/mentorship";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
@@ -24,9 +26,11 @@ const FORM_ID = "onboarding-coach-profile-form";
  * word wherever it is shown.
  */
 export function CoachProfileStep({
+  progress,
   onSaved,
   onBack,
 }: {
+  progress: { done: number; total: number } | null;
   onSaved: () => void;
   onBack: () => void;
 }) {
@@ -70,25 +74,25 @@ export function CoachProfileStep({
 
   return (
     <OnboardingStepLayout
-      step={4}
-      mascot="proud"
-      title={t("title")}
-      subtitle={t("subtitle")}
+      progress={progress}
       onBack={onBack}
-      primaryLabel={t("save")}
-      primaryFormId={FORM_ID}
-      primaryBusy={saving}
-      primaryDisabled={!canSave}
+      heading={<PuhuBubble title={t("title")} sub={t("subtitle")} />}
+      footer={
+        <PlayFooter error={error}>
+          <PlayButton type="submit" form={FORM_ID} busy={saving} disabled={!canSave}>
+            {t("save")}
+          </PlayButton>
+        </PlayFooter>
+      }
     >
       <form
         id={FORM_ID}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4"
+        className="flex w-full flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSave();
         }}
       >
-        <FormError message={error} />
 
         <TextField
           label={mentorship("application_headline_label")}

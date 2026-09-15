@@ -211,6 +211,42 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-15 — Coach surface shares Nuton; work-tool rhythm stays.** `/kocluk` dropped
+  `.coach-theme` (system font, cool oklch canvas, `#3567c0` buttons, 12px, no shadows). Content
+  inherits Plus Jakarta, black `--color-btn`, 10px radius and the locale `BackgroundBlobs` like
+  `/panel`. What remains local: `.coach-signals` hues, the `.coach-*` type scale, and inset groups
+  (`INSET_GROUP_CLASS` + `INSET_DIVIDE_CLASS` via `--color-surface-container`, because light
+  `--color-border` is white). Portaled menus no longer need `COACH_POPOVER_CLASS`. **Usage:** open
+  `/kocluk` as COACH; nav and body share one family; primary actions are black. **Gotchas:**
+  `(coach)` is still its own route group (not `(app)`); AppNav is unchanged. Historical 2026-09-13
+  theme notes below are superseded. **Related:** `(coach)/_components/coach-theme.css`,
+  `coach-shell.tsx`, `components/mentorship/coach-ui.tsx`, `DESIGN.md` §2.5.
+
+- **2026-09-15 — Weekly review drawer and direct PDF download.** The student detail now keeps the
+  weekly review as a compact summary with focus time, task progress and mock average. “Open review”
+  moves the comparison, evidence-bound brief, coach evaluation and archive into the shared coach
+  drawer: a wide right panel on desktop and a bottom sheet on mobile. Draft text remains mounted
+  when the panel closes. The finalized report preview now separates browser printing from a direct
+  PDF download; the PDF library and embedded Turkish-capable font load only after the coach clicks
+  download. The generated file uses the safe share DTO and therefore cannot include the private AI
+  brief or conversation questions. **Usage:** open a student, select “Değerlendirmeyi aç”, finalize
+  the report, then choose “PDF indir” or “Yazdır” in the preview. **Gotchas:** a download event means
+  the browser accepted the generated file; opening print preview is still tracked separately and is
+  not counted as a saved PDF. **Related:** `weekly-report-{card,panel}.tsx`,
+  `weekly-report-{print-shell,pdf}.ts(x)`, `coach-overlay.tsx`,
+  `e2e/mentorship-weekly-report.spec.ts`.
+
+- **2026-09-15 — Student detail 500 and request-loop fix.** PostgreSQL's raw result for the latest
+  mock returned `taken_at` as text even though the repository declared it as `Date`; the roster
+  called `toISOString()` and failed every detail request. `CohortEvidenceRepository` now normalizes
+  that boundary explicitly. The report shell and weekly-report hook now depend on the stable toast
+  error callbacks instead of the toast collection object, so an error toast cannot recreate the
+  loading effect and flood the API. Regression coverage verifies timestamp normalization and that
+  both failed detail reads settle after React development mode's bounded initial mounts. **Related:**
+  `cohort-evidence.repository.ts`, `cohort-evidence.repository.spec.ts`,
+  `student-report-shell.tsx`, `use-weekly-report-card.ts`,
+  `e2e/mentorship-weekly-report.spec.ts`.
+
 - **2026-09-15 — Weekly report development seed.** A production-blocked, idempotent seed prepares
   the two completed weeks needed to exercise the coach report from an active relationship: nine
   completed focus sessions, eleven planned tasks with different completion rates, one unclassified

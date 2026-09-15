@@ -16,12 +16,14 @@ export function CoachPanel({
   title,
   subtitle,
   busy,
+  wide = false,
   onClose,
   children,
 }: {
   title: string;
   subtitle?: string;
   busy?: boolean;
+  wide?: boolean;
   onClose: () => void;
   children: ReactNode;
 }) {
@@ -45,6 +47,7 @@ export function CoachPanel({
       variant="drawer"
       layer="form"
       grouped
+      size={wide ? "wide" : "default"}
       labelledBy={titleId}
       busy={busy}
       onClose={onClose}
