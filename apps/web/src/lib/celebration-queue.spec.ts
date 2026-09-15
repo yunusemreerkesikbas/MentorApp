@@ -6,7 +6,10 @@ import type {
 } from "@mentor/types";
 import { describe, expect, it } from "vitest";
 
-import { buildCelebrationQueue } from "./celebration-queue";
+import {
+  buildCelebrationQueue,
+  isCelebrationOverlayBlocking,
+} from "./celebration-queue";
 
 function achievement(
   id: AchievementId,
@@ -110,5 +113,19 @@ describe("buildCelebrationQueue", () => {
         item.type === "journey-level" ? item.celebration.id : item.type,
       ),
     ).toEqual(["level-5", "level-6"]);
+  });
+});
+
+describe("isCelebrationOverlayBlocking", () => {
+  it("holds dashboard one-shots until the unseen-celebration fetch settles", () => {
+    expect(isCelebrationOverlayBlocking(false, false)).toBe(true);
+  });
+
+  it("holds while a celebration is on screen", () => {
+    expect(isCelebrationOverlayBlocking(true, true)).toBe(true);
+  });
+
+  it("releases after the queue is known and empty", () => {
+    expect(isCelebrationOverlayBlocking(true, false)).toBe(false);
   });
 });

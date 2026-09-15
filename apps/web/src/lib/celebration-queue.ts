@@ -35,6 +35,18 @@ const GROUP = {
   introduction: 3,
 } as const;
 
+/**
+ * Dashboard one-shots (mood wheel, coach note) wait until unseen celebrations have been fetched
+ * and the current overlay has been dismissed. Opening them earlier races the async queue and
+ * stacks two full-screen dialogs.
+ */
+export function isCelebrationOverlayBlocking(
+  celebrationsReady: boolean,
+  celebrationActive: boolean,
+): boolean {
+  return !celebrationsReady || celebrationActive;
+}
+
 /** Produces the single application-level celebration queue. */
 export function buildCelebrationQueue(
   achievementCelebrations: AchievementCelebrationDto[],

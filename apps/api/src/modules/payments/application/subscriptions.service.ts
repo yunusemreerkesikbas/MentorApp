@@ -38,6 +38,7 @@ import {
   SubscriptionActivated,
   SubscriptionCanceled,
 } from "../domain/payments.events";
+import { resolvePurchaseChannel, type PurchaseChannel } from "../domain/purchase-channel";
 import {
   PaymentEventsRepository,
   PlansRepository,
@@ -168,16 +169,40 @@ export class SubscriptionsService {
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
-    const [rows, seatBilling] = await Promise.all([
+    const [rows, channelOf] = await Promise.all([
       this.plansRepo.findActive(),
-      this.registry.get("mentorship.seats.billing_enabled"),
+      this.purchaseChannels(),
     ]);
-    const purchaseEnabled = this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled";
-    // Seat plans stay out of the catalog until seat billing is switched on. Listing a plan nobody
-    // can complete a checkout for would put a price and a buy button on a promise.
-    return rows
-      .filter((row) => seatBilling || row.seatCount === 0)
-      .map((row) => toPlanDto(row, purchaseEnabled));
+    // A coach plan stays out of the catalog until one of its channels can sell it. Listing a plan
+    // nobody can buy anywhere would put a price and a buy button on a promise.
+    return rows.flatMap((row) => {
+      const channel = channelOf(row);
+      return channel.listed ? [toPlanDto(row, channel)] : [];
+    });
+  }
+
+  /**
+   * Reads every channel switch once and returns the per-plan resolver. The catalog, checkout and
+   * every promotion surface ask the same question here, so none of them can advertise a purchase
+   * another one refuses.
+   */
+  private async purchaseChannels(): Promise<(plan: Pick<PlanRow, "seatCount">) => PurchaseChannel> {
+    const [studentWeb, studentMobile, coachWeb, coachMobile, redirectToMobile] = await Promise.all([
+      this.registry.get("payments.web.enabled"),
+      this.registry.get("payments.mobile.enabled"),
+      this.registry.get("mentorship.seats.billing_enabled"),
+      this.registry.get("mentorship.seats.mobile_billing_enabled"),
+      this.registry.get("payments.web.redirect_to_mobile"),
+    ]);
+    const flags = {
+      providerEnabled: this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled",
+      studentWeb,
+      studentMobile,
+      coachWeb,
+      coachMobile,
+      redirectToMobile,
+    };
+    return (plan) => resolvePurchaseChannel(plan, flags);
   }
 
   async listAllPlans(): Promise<AdminPlanDto[]> {
@@ -234,12 +259,7 @@ export class SubscriptionsService {
     const txs = await this.eventsRepo.listForUserAdmin(userId, 50);
     return {
       subscription: view.subscription,
-      plan: plan
-        ? toPlanDto(
-            plan,
-            this.config.get("PAYMENTS_PROVIDER", { infer: true }) !== "disabled",
-          )
-        : null,
+      plan: plan ? toPlanDto(plan, (await this.purchaseChannels())(plan)) : null,
       entitlement: view.entitlement,
       transactions: txs.map(toTxDto),
     };
@@ -409,14 +429,22 @@ export class SubscriptionsService {
     code?: string,
     locale?: string,
   ): Promise<PromotionOffersView> {
-    const [planRows, hadAny, latest] = await Promise.all([
+    const [planRows, hadAny, latest, channelOf] = await Promise.all([
       this.plansRepo.findActive(),
       this.subsRepo.hasAnyForUser(user.id),
       this.subsRepo.findLatestForUser(user.id),
+      this.purchaseChannels(),
     ]);
+    // A promotion only discounts a web checkout; the stores bill their own price. Advertising a web
+    // discount on a plan the web cannot sell would be a promise nobody keeps.
+    const sellable = planRows.filter((row) => channelOf(row).purchaseEnabled);
+    if (sellable.length === 0) {
+      if (code) throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
+      return { offers: {}, available: [] };
+    }
     const resolved = await this.promotions.resolveOffers({
       context: await this.promotionContext(user, hadAny, latest),
-      plans: planRows.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
+      plans: sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
       activeDates: this.activeDatesSupplier(user.id),
       code,
       locale,
@@ -440,13 +468,17 @@ export class SubscriptionsService {
    * caller can stay silent rather than send a commercial message with nothing behind it.
    */
   async findWinBackOffer(userId: string): Promise<PromotionOfferView | null> {
-    const [planRows, latest] = await Promise.all([
+    const [planRows, latest, channelOf] = await Promise.all([
       this.plansRepo.findActive(),
       this.subsRepo.findLatestForUser(userId),
+      this.purchaseChannels(),
     ]);
     // hasLostAccess, not hasRunOut: by the time the win-back event fires the row is already
     // EXPIRED, which the sweeper's narrower predicate deliberately ignores.
     if (!latest || !hasLostAccess(latest, new Date())) return null;
+    // Same rule as resolveOffers: no push may advertise a discount the web cannot honour.
+    const sellable = planRows.filter((row) => channelOf(row).purchaseEnabled);
+    if (sellable.length === 0) return null;
 
     const resolved = await this.promotions.resolveOffers({
       context: {
@@ -458,7 +490,7 @@ export class SubscriptionsService {
         hadAnySubscription: true,
         lostPremiumAccess: true,
       },
-      plans: planRows.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
+      plans: sellable.map((row) => ({ id: row.id, name: row.name, priceMinor: row.priceMinor })),
       activeDates: this.activeDatesSupplier(userId),
     });
 
@@ -482,12 +514,12 @@ export class SubscriptionsService {
     const plan = await this.plansRepo.findById(planId);
     // `coach-seat` is active (a sponsored row's FK points at it) and priced 0, so without this it
     // is a self-serve free Premium subscription for anyone who guesses the id. `findActive` only
-    // hides it from the catalog; the seat-plan guard below does not cover it either, because a
-    // seat plan is `seatCount > 0` and this one grants none.
+    // hides it from the catalog; the channel guard below does not cover it either, because it
+    // grants no seats and so resolves as an ordinary student plan.
     if (!plan || !plan.isActive || plan.id === COACH_SEAT_PLAN_ID) throw new NotFoundError();
-    // The catalog already hides seat plans while billing is off; this closes the by-id path, so
-    // the flag is a real gate rather than a UI convention.
-    if (plan.seatCount > 0 && !(await this.registry.get("mentorship.seats.billing_enabled"))) {
+    // The catalog already disables what the web cannot sell; this closes the by-id path, so the
+    // channel flags are a real gate rather than a UI convention.
+    if (!(await this.purchaseChannels())(plan).purchaseEnabled) {
       throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
@@ -821,7 +853,7 @@ export function nextPeriodEnd(now: Date, currentPeriodEnd: Date | null, months: 
   return addMonths(base, months);
 }
 
-function toPlanDto(row: PlanRow, purchaseEnabled: boolean): PlanDto {
+function toPlanDto(row: PlanRow, channel: PurchaseChannel): PlanDto {
   return {
     id: row.id,
     name: row.name,
@@ -830,7 +862,8 @@ function toPlanDto(row: PlanRow, purchaseEnabled: boolean): PlanDto {
     currency: row.currency as "TRY",
     trialDays: row.trialDays,
     seatCount: row.seatCount,
-    purchaseEnabled,
+    purchaseEnabled: channel.purchaseEnabled,
+    redirectToMobile: channel.redirectToMobile,
   };
 }
 

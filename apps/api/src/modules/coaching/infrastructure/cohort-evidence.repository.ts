@@ -132,7 +132,7 @@ export class CohortEvidenceRepository {
       const rows = await tx.execute<{
         user_id: string;
         total_net: string;
-        taken_at: Date;
+        taken_at: Date | string;
         previous_net_avg: string | null;
       }>(sql`
         select distinct on (${mockExams.userId})
@@ -151,7 +151,10 @@ export class CohortEvidenceRepository {
       return rows.rows.map((row) => ({
         userId: row.user_id,
         totalNet: row.total_net,
-        takenAt: row.taken_at,
+        takenAt:
+          row.taken_at instanceof Date
+            ? row.taken_at
+            : new Date(row.taken_at),
         previousNetAvg: row.previous_net_avg,
       }));
     });

@@ -27,6 +27,8 @@ import { LegalLink } from "@/components/legal-link";
 import { trackProductEvent } from "@/lib/analytics";
 import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
 import { fetchAutoPromotionOffers, fetchPromotionOffers } from "@/lib/promotions";
+import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
+import { StoreButtons } from "./store-buttons";
 
 function apiMessage(err: unknown): string {
   return err instanceof ApiClientError || err instanceof Error ? err.message : String(err);
@@ -156,7 +158,8 @@ export function PremiumPaywallModal({
     ])
       .then(([planRows, subscriptionView, promotionOffers]) => {
         if (!active) return;
-        const nextPlans = planRows as unknown as PlanDto[];
+        // The paywall sells student Premium; seat plans are a coach's purchase on /abonelik.
+        const nextPlans = plansForAudience(planRows as unknown as PlanDto[], false);
         setPlans(nextPlans);
         setView(subscriptionView as unknown as SubscriptionView);
         setOffers(promotionOffers.resolved);
@@ -186,7 +189,8 @@ export function PremiumPaywallModal({
     // so this runs once per open — it is not a live subscription to the prop.
   }, [initialCode]);
 
-  const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
+  const mode = purchaseMode(plans, getStoreLinks());
+  const purchaseEnabled = mode === "checkout";
   const selected = plans.find((plan) => plan.id === selectedId) ?? plans[0];
   const selectedOffer = selected ? offers?.offers[selected.id] : undefined;
   const selectedDiscount =
@@ -381,7 +385,7 @@ export function PremiumPaywallModal({
         </label>
       ) : (
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {tSub("payments_coming_soon")}
+          {tSub(mode === "store" ? "store_handoff" : "payments_coming_soon")}
         </p>
       )}
 
@@ -397,6 +401,8 @@ export function PremiumPaywallModal({
         >
           {t("subscribe")}
         </Button>
+      ) : mode === "store" ? (
+        <StoreButtons links={getStoreLinks()} />
       ) : (
         <Button fullWidth className="min-h-[60px]" disabled>
           {tSub("coming_soon")}

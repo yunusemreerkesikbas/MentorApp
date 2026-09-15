@@ -8,6 +8,8 @@ import {
   ApiClientError,
   coachingControllerUpsertMood,
 } from "@mentor/api-client";
+import { useCelebrationOverlay } from "@/lib/celebration-overlay";
+import { isCelebrationOverlayBlocking } from "@/lib/celebration-queue";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
@@ -40,6 +42,12 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
   const dialog = useMentorDialog();
+  const { ready: celebrationsReady, active: celebrationActive } =
+    useCelebrationOverlay();
+  const celebrationBlocking = isCelebrationOverlayBlocking(
+    celebrationsReady,
+    celebrationActive,
+  );
   const [reflectionAvailable, setReflectionAvailable] = useState<boolean | null>(
     null,
   );
@@ -238,6 +246,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
 
   useEffect(() => {
     if (mood != null || autoPromptAttemptedRef.current) return;
+    /* Journey/achievement cinematics share the first paint; wait so the wheel does not stack. */
+    if (celebrationBlocking) return;
 
     const mayAutoPrompt =
       MOOD_PROMPT_MODE === "mandatory"
@@ -248,7 +258,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
 
     autoPromptAttemptedRef.current = true;
     openMoodDialog();
-  }, [mood, openMoodDialog]);
+  }, [celebrationBlocking, mood, openMoodDialog]);
 
   const expectAiReflection = reflectionAvailable === true;
   const speechLoading = expectAiReflection && reflecting;
@@ -266,7 +276,7 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
       reflectionAvailable === false && mood != null && reflection == null,
     openMoodDialog: () => openMoodDialog(),
     needsMoodToday: mood == null,
-    speechModalOpen,
+    speechModalOpen: speechModalOpen && !celebrationBlocking,
     openSpeechModal: () => setSpeechModalOpen(true),
     closeSpeechModal: () => setSpeechModalOpen(false),
   };

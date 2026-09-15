@@ -69,6 +69,36 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Ödeme kanalı flag'leri: web, mağaza ve web→mağaza yönlendirme (APP-096, 2026-09-15)** — Web
+  ödemesini deploy'suz ve kitle bazında kapatıp alıcıyı App Store / Google Play'e gönderebilmek için.
+  Mobil uygulama henüz yok; mobil flag'lerin bugünkü tek tüketicisi web yönlendirmesi.
+  **Kitle × kanal:** öğrenci `payments.web.enabled` (default **true**) / `payments.mobile.enabled`;
+  koç `mentorship.seats.billing_enabled` (artık "koç web checkout'u") /
+  `mentorship.seats.mobile_billing_enabled`; ikisine ortak `payments.web.redirect_to_mobile`. Ayrı
+  mobil anahtarlar bilerek: mağazalar büyük ihtimalle önce öğrenciye açılacak, ortak bir anahtar koçu
+  Koç Pro satmayan bir uygulamaya yollardı. Karar tek yerde, saf fonksiyonda:
+  `domain/purchase-channel.ts` plan başına `listed` / `purchaseEnabled` / `redirectToMobile` döner;
+  servis flag'leri `purchaseChannels()` ile bir kez okur. `PlanDto.redirectToMobile` eklendi,
+  `purchaseEnabled` artık "bu plan için web checkout'u mümkün" demek (provider canlı VE kitlenin web
+  kanalı açık). Web: `lib/purchase-mode.ts` üç mod (`checkout` / `store` / `unavailable`) +
+  `StoreButtons`; paywall yalnız öğrenci planlarını, `/abonelik` role göre planları gösterir.
+  Kullanım: admin config'ten `payments.web.enabled` kapat → web "Çok yakında"; buna ek olarak
+  `payments.mobile.enabled` + `payments.web.redirect_to_mobile` aç ve `NEXT_PUBLIC_APP_STORE_URL` /
+  `NEXT_PUBLIC_PLAY_STORE_URL` ver → mağaza butonları.
+  Gotcha: (1) Flag'ler yalnız **yeni** satın almayı gate'ler; açık abonelik, yenileme webhook'u,
+  iptal ve iade etkilenmez. (2) Promosyon yalnız web'den satılabilen planlarda çözülür: satılabilir
+  plan yoksa `resolveOffers` boş döner (kod yazıldıysa `PAYMENT_DISABLED`) ve `findWinBackOffer`
+  susar; dashboard'da indirim bannerı yerine statik kampanya kartı kalır, o da paywall'u açar.
+  Mağaza web indirimimizi uygulamaz. (3) Mağaza modunda web katalog fiyatını notsuz gösterir:
+  `plans.priceMinor` mağaza fiyatına elle eşit tutulmalı. (4) Mağaza URL'leri build-time; ikisi de
+  boşsa yönlendirme "Çok yakında"ya düşer, çıkmaz sokak yok. (5) Apple TR storefront'ta uygulama
+  içinden web ödemesine link verilemez: yönlendirme yalnız web→mobil, mobil uygulama web kanal
+  flag'lerini okumamalı.
+  İlgili: `domain/purchase-channel.ts`, `subscriptions.service.ts` (`listPlans`, `checkout`,
+  `resolveOffers`, `findWinBackOffer`, `getAdminView`), `common/config/config.catalog.ts`,
+  `packages/types/src/payments.ts`, `apps/web/src/lib/purchase-mode.ts`,
+  `apps/web/src/components/premium/{store-buttons,premium-paywall-modal}.tsx`, `subscription-shell.tsx`.
+
 - **Süre dolma süpürücüsü + yayındaki WIN_BACK hatası (2026-09-01)** — `EXPIRED` yazan tek yer
   `subscription_canceled` webhook'uydu ve payments'ta cron yoktu, yani **süresi doğal dolan abonelik
   tabloda sonsuza kadar `ACTIVE` kalıyordu**. İki sonucu vardı: kullanıcı bir daha satın alamıyordu
@@ -217,10 +247,11 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   student plan, holds the same one open subscription as everybody else, and gets `isPremium` from
   the ordinary ACTIVE path. Seat allowance is read off the row they already have. If a future tier
   ladder is ever really needed, note that this one did not require it.
-- **`mentorship.seats.billing_enabled` gates the catalog AND checkout-by-id.** Hiding seat plans
-  from `listPlans` alone would be a UI convention; `checkout` refuses them too
-  (`PAYMENT_DISABLED`), so the flag is a real gate for as long as the provider cannot complete the
-  purchase.
+- **`mentorship.seats.billing_enabled` gates coach web checkout, checkout-by-id included.** Hiding
+  seat plans from `listPlans` alone would be a UI convention; `checkout` refuses them too
+  (`PAYMENT_DISABLED`). Since APP-096 the catalog lists a seat plan while either coach channel is on
+  (`billing_enabled` or `mobile_billing_enabled`), but checkout is the web channel and follows
+  `billing_enabled` alone.
 - **The sponsored cohort shares the global AI budget — deliberately, for now.** Seats hand out real
   LLM spend, and `ai.budget.monthly_cap_usd_cents` is a single cap over everyone, so a large enough
   giveaway can exhaust it and start returning `AI_BUDGET_EXCEEDED` to **paying** users. No separate
@@ -230,8 +261,9 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   `mentorship.seats.sponsorship_enabled` (a real kill switch — flipping it off ends live seats).
   Revisit once cost-per-seat is known.
 - **`coach-seat` is an active plan that is not for sale.** `PlansRepository.findActive` excludes it
-  by name. `PlanDto.purchaseEnabled` is a global switch (provider ≠ disabled), not per-plan, so a
-  listed seat plan would appear on the pricing screen with a buy button next to a ₺0 price.
+  by name. `PlanDto.purchaseEnabled` is resolved per plan by its audience's channel (APP-096), and
+  `coach-seat` grants no seats, so a listed one would resolve as a sellable student plan: a buy
+  button next to a ₺0 price.
 
 - **`GET /v1/subscription` has no remaining quota** — payments must not read `ai_usage`. The
   client treats a surface as unlocked when `isPremium || features[id].freeEnabled`; exhausted free

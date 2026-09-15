@@ -230,7 +230,8 @@ export class MentorshipLinkService {
       this.config.get("mentorship.coach.free_seats"),
       this.config.get("mentorship.seats.sponsorship_enabled"),
       // What the coach's own plan adds on top of the free quota. 0 for everyone today: seat plans
-      // stay unpurchasable until `mentorship.seats.billing_enabled` and a verified provider.
+      // stay unpurchasable until a coach channel opens (`mentorship.seats.billing_enabled` with a
+      // verified provider, or `mentorship.seats.mobile_billing_enabled` once the app sells them).
       this.subscriptions.paidSeatsFor(coachId),
     ]);
 

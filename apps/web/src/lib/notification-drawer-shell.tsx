@@ -23,13 +23,14 @@ import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
 import { JourneySpotlightScene } from "@/components/journey-levels/spotlight/journey-spotlight-scene";
+import { CelebrationOverlayProvider } from "@/lib/celebration-overlay";
+import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import {
   getUnseenAchievements,
   getUnseenJourneyLevelCelebrations,
   markAchievementsCelebrated,
   markJourneyLevelCelebrated,
 } from "@/lib/community";
-import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import { useRouter } from "@/i18n/navigation";
 import {
   deleteNotification,
@@ -102,6 +103,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   const [journeyLevelCelebrations, setJourneyLevelCelebrations] = useState<JourneyLevelCelebrationView[]>([]);
   const [celebrationBusy, setCelebrationBusy] = useState(false);
   const [journeyCelebrationError, setJourneyCelebrationError] = useState<string | null>(null);
+  const [celebrationsReady, setCelebrationsReady] = useState(false);
 
  /*
   * `?.` and `?? []` are load-bearing. `Promise.allSettled` was chosen so a failing celebration
@@ -148,6 +150,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       if (journeyResult.status === "fulfilled") {
         setJourneyLevelCelebrations(journeyResult.value?.celebrations ?? []);
       }
+      setCelebrationsReady(true);
     });
   }, []);
 
@@ -302,57 +305,62 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   }
 
   return (
-    <NotificationDrawerProvider
-      items={data.items}
-      unreadCount={data.unreadCount}
-      onMarkRead={handleMarkRead}
-      onMarkUnread={handleMarkUnread}
-      onMarkAllRead={handleMarkAllRead}
-      onDelete={handleDelete}
-      onNotificationClick={handleNotificationClick}
-      renderIcon={(category: NotificationCategory) => <CategoryIcon category={category} />}
-      emptyState={emptyState}
-      labels={{
-        title: t("title"),
-        markAllRead: t("mark_all_read"),
-        markRead: t("mark_read"),
-        markUnread: t("mark_unread"),
-        deleteItem: t("delete_item"),
-        close: t("close"),
-        tabAll: t("tab_all"),
-        tabUnread: t("tab_unread"),
-        groupToday: t("group_today"),
-        groupThisWeek: t("group_this_week"),
-        groupEarlier: t("group_earlier"),
-        emptyTitle: t("empty_title"),
-        emptyBody: t("empty_body"),
-        timeJustNow: t("time_just_now"),
-        timeHoursAgo: (count) => t("time_hours_ago", { count }),
-        timeYesterday: t("time_yesterday"),
-        timeDaysAgo: (count) => t("time_days_ago", { count }),
-        unreadLabel: t("unread_label"),
-      }}
+    <CelebrationOverlayProvider
+      ready={celebrationsReady}
+      active={currentCelebration != null}
     >
-      {children}
-      <AnimatePresence initial={false} mode="wait">
-        {currentCelebration?.type === "achievement" ? (
-          <AchievementCelebration
-            key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
-            celebration={currentCelebration.celebration}
-            busy={celebrationBusy}
-            onClose={() => void handleCelebrationClose()}
-          />
-        ) : currentCelebration?.type === "journey-level" ? (
-          <JourneySpotlightScene
-            key={`journey-level:${currentCelebration.celebration.id}`}
-            mode="celebration"
-            celebration={currentCelebration.celebration}
-            busy={celebrationBusy}
-            error={journeyCelebrationError}
-            onClose={() => void handleCelebrationClose()}
-          />
-        ) : null}
-      </AnimatePresence>
-    </NotificationDrawerProvider>
+      <NotificationDrawerProvider
+        items={data.items}
+        unreadCount={data.unreadCount}
+        onMarkRead={handleMarkRead}
+        onMarkUnread={handleMarkUnread}
+        onMarkAllRead={handleMarkAllRead}
+        onDelete={handleDelete}
+        onNotificationClick={handleNotificationClick}
+        renderIcon={(category: NotificationCategory) => <CategoryIcon category={category} />}
+        emptyState={emptyState}
+        labels={{
+          title: t("title"),
+          markAllRead: t("mark_all_read"),
+          markRead: t("mark_read"),
+          markUnread: t("mark_unread"),
+          deleteItem: t("delete_item"),
+          close: t("close"),
+          tabAll: t("tab_all"),
+          tabUnread: t("tab_unread"),
+          groupToday: t("group_today"),
+          groupThisWeek: t("group_this_week"),
+          groupEarlier: t("group_earlier"),
+          emptyTitle: t("empty_title"),
+          emptyBody: t("empty_body"),
+          timeJustNow: t("time_just_now"),
+          timeHoursAgo: (count) => t("time_hours_ago", { count }),
+          timeYesterday: t("time_yesterday"),
+          timeDaysAgo: (count) => t("time_days_ago", { count }),
+          unreadLabel: t("unread_label"),
+        }}
+      >
+        {children}
+        <AnimatePresence initial={false} mode="wait">
+          {currentCelebration?.type === "achievement" ? (
+            <AchievementCelebration
+              key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
+              celebration={currentCelebration.celebration}
+              busy={celebrationBusy}
+              onClose={() => void handleCelebrationClose()}
+            />
+          ) : currentCelebration?.type === "journey-level" ? (
+            <JourneySpotlightScene
+              key={`journey-level:${currentCelebration.celebration.id}`}
+              mode="celebration"
+              celebration={currentCelebration.celebration}
+              busy={celebrationBusy}
+              error={journeyCelebrationError}
+              onClose={() => void handleCelebrationClose()}
+            />
+          ) : null}
+        </AnimatePresence>
+      </NotificationDrawerProvider>
+    </CelebrationOverlayProvider>
   );
 }

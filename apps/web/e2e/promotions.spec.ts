@@ -35,6 +35,7 @@ const plans: PlanDto[] = [
     // Purchase is live so the consent copy and the coupon field render.
     seatCount: 0,
   purchaseEnabled: true,
+  redirectToMobile: false,
   },
 ];
 

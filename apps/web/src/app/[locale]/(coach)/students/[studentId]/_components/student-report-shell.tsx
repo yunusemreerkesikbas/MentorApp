@@ -41,7 +41,7 @@ import { WeeklyReportCard } from "./weekly-report-card";
 export function StudentReportShell({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
-  const toast = useMentorToast();
+  const { error: showToastError } = useMentorToast();
   const dialog = useMentorDialog();
   const router = useRouter();
   const [report, setReport] = useState<MentorshipStudentReportDto | null>(null);
@@ -59,12 +59,12 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
 
   const showError = useCallback(
     (err: unknown) => {
-      toast.error({
+      showToastError({
         title: common("error_title"),
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
-    [toast, common],
+    [common, showToastError],
   );
 
   const load = useCallback(() => {
