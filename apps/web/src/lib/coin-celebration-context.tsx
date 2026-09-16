@@ -75,18 +75,6 @@ export function CoinCelebrationProvider({ children }: { children: ReactNode }) {
 
     window.addEventListener(COIN_CELEBRATE_EVENT, handleEvent);
 
-    // Dev/QA helper: check for ?mockCoinCelebration=5 in URL
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const mockAmount = params.get("mockCoinCelebration");
-      if (mockAmount) {
-        const parsed = parseInt(mockAmount, 10);
-        if (!Number.isNaN(parsed) && parsed > 0) {
-          triggerCoinCelebration(parsed);
-        }
-      }
-    }
-
     return () => {
       window.removeEventListener(COIN_CELEBRATE_EVENT, handleEvent);
       if (batchTimeoutRef.current) clearTimeout(batchTimeoutRef.current);

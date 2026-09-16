@@ -33,6 +33,7 @@ import {
 import { GRACE_PERIOD_DAYS, TxStatus, TxType } from "../domain/payments.constants";
 import {
   PaymentFailed,
+  PaymentSucceeded,
   PaymentRefunded,
   PaymentsEventTopic,
   SubscriptionActivated,
@@ -362,13 +363,13 @@ export class SubscriptionsService {
         tx,
       );
 
-      return { subscriptionId: lastCharge.subscriptionId, remainingAfter: remaining - amountMinor };
+      return { sourcePaymentId: lastCharge.providerEventId, subscriptionId: lastCharge.subscriptionId, remainingAfter: remaining - amountMinor };
     });
 
     // Post-commit (same discipline as webhook side-effects): a rolled-back refund emits nothing.
     this.events.emit(
       PaymentsEventTopic.PAYMENT_REFUNDED,
-      new PaymentRefunded(userId, result.subscriptionId, amountMinor),
+      new PaymentRefunded(userId, result.subscriptionId, amountMinor, result.sourcePaymentId),
     );
 
     return {
@@ -718,6 +719,7 @@ export class SubscriptionsService {
         // ledger (and every revenue stat derived from it) and the e-Arşiv invoice.
         const redemption = await this.promotions.findActiveForSubscription(sub.id, tx);
         const expectedMinor = redemption?.chargedPriceMinor ?? plan?.priceMinor ?? 0;
+        const firstPaidCharge = (event.amountMinor ?? expectedMinor) > 0 && !(await this.eventsRepo.hasSuccessfulCharge(sub.userId, tx));
         await this.eventsRepo.appendTransaction(
           {
             subscriptionId: sub.id,
@@ -736,6 +738,7 @@ export class SubscriptionsService {
         if (redemption) await this.promotions.consumePeriod(sub.id, tx);
         return {
           emits: [
+            ...(firstPaidCharge ? [{ topic: PaymentsEventTopic.PAYMENT_SUCCEEDED, payload: new PaymentSucceeded(sub.userId, sub.id, event.eventId, event.amountMinor ?? expectedMinor, now) }] : []),
             {
               topic: PaymentsEventTopic.SUBSCRIPTION_ACTIVATED,
               payload: new SubscriptionActivated(sub.userId, sub.id, sub.planId),

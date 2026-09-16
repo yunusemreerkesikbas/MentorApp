@@ -1,9 +1,17 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import type { Ref } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import type { CSSProperties, Ref } from "react";
 import { WELCOME_SCENES } from "@/lib/onboarding-assets";
 import { WelcomeScene } from "./welcome-scene";
+
+/*
+ * The art trails the track by `--welcome-parallax` of its own width, so a swipe has depth: the
+ * scene you are leaving drifts after you and the next one catches up. The zoom is what pays for
+ * it — without the extra 12% there would be a bare edge at the far end of the drift.
+ */
+const PARALLAX_TRANSFORM =
+  "translate3d(calc((var(--welcome-progress, 0) - var(--slide-index)) * var(--welcome-parallax, 10%)), 0, 0) scale(1.12)";
 
 /**
  * The artwork half of the welcome: a native scroll-snap track, so the scene follows the finger (or
@@ -26,8 +34,15 @@ export function WelcomeStage({
   /** Absent on the last slide. */
   onSkip?: () => void;
 }) {
+  const reduceMotion = useReducedMotion();
+
   return (
-    <div className="relative h-[clamp(15rem,calc(100dvh-23rem),32rem)] w-full shrink-0 overflow-hidden lg:h-[42.5rem] lg:w-[32.5rem] lg:rounded-[var(--play-sheet-radius)] lg:shadow-[var(--shadow-card-hover)]">
+    <motion.div
+      className="relative h-[clamp(15rem,calc(100dvh-23rem),32rem)] w-full shrink-0 overflow-hidden lg:h-[42.5rem] lg:w-[32.5rem] lg:rounded-[var(--play-sheet-radius)] lg:shadow-[var(--shadow-card-hover)]"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, scale: 1.03 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: reduceMotion ? 0.12 : 0.5, ease: [0.22, 1, 0.36, 1] }}
+    >
       <div
         ref={trackRef}
         onScroll={onScroll}
@@ -36,16 +51,21 @@ export function WelcomeStage({
         {WELCOME_SCENES.map((scene, index) => (
           <div
             key={scene.video}
-            className="relative size-full shrink-0 snap-start snap-always"
+            className="relative size-full shrink-0 snap-start snap-always overflow-hidden"
             style={{ backgroundColor: scene.ground }}
           >
-            <WelcomeScene
-              scene={scene}
-              active={index === step}
-              near={Math.abs(index - step) <= 1}
-              still={still}
-              priority={index === 0}
-            />
+            <div
+              className="absolute inset-0 will-change-transform"
+              style={{ "--slide-index": index, transform: PARALLAX_TRANSFORM } as CSSProperties}
+            >
+              <WelcomeScene
+                scene={scene}
+                active={index === step}
+                near={Math.abs(index - step) <= 1}
+                still={still}
+                priority={index === 0}
+              />
+            </div>
           </div>
         ))}
       </div>
@@ -65,6 +85,6 @@ export function WelcomeStage({
           </motion.button>
         ) : null}
       </AnimatePresence>
-    </div>
+    </motion.div>
   );
 }

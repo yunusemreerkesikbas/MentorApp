@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { TextsReveal } from "@mentor/ui";
 import { PlayProgress } from "@/components/onboarding-play/play-progress";
+import { useOnboardingDirection } from "./onboarding-direction";
 
 /**
  * One onboarding screen on the play surface (DESIGN.md §2.5): back · progress · skip, then the
@@ -34,6 +35,7 @@ export function OnboardingStepLayout({
 }) {
   const t = useTranslations("onboarding");
   const reduceMotion = useReducedMotion();
+  const direction = useOnboardingDirection();
 
   return (
     <main
@@ -45,7 +47,7 @@ export function OnboardingStepLayout({
     >
       <motion.div
         className={`mx-auto flex min-h-dvh w-full flex-col ${wide ? "max-w-xl lg:max-w-[65rem]" : "max-w-xl"}`}
-        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 16 }}
+        initial={reduceMotion ? { opacity: 0 } : { opacity: 0, x: 24 * direction }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: reduceMotion ? 0.12 : 0.25, ease: "easeOut" }}
       >

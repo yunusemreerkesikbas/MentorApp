@@ -9,7 +9,7 @@ import {
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
-import { coinGrantReservations, ledgerEntries, users } from "../../../database/schema";
+import { coinGrantReservations, economyRewardReceipts, ledgerEntries, users } from "../../../database/schema";
 import { CORRECTION_REASONS, EconomyLedger } from "../domain/economy.constants";
 
 export type LedgerRow = typeof ledgerEntries.$inferSelect;
@@ -72,6 +72,12 @@ export class LedgerRepository {
         .values(entry)
         .onConflictDoNothing()
         .returning({ id: ledgerEntries.id });
+      const row = inserted[0];
+      if (row && entry.amount > 0 && (entry.status ?? LedgerStatus.CONFIRMED) === LedgerStatus.CONFIRMED
+        && !entry.createdBy && !entry.reason.startsWith("seed.")
+        && !CORRECTION_REASONS.some((reason) => reason === entry.reason)) {
+        await tx.insert(economyRewardReceipts).values({ ledgerId: row.id, userId: entry.userId });
+      }
       return inserted.length > 0;
     });
   }

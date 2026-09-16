@@ -7,7 +7,9 @@
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
 html {
   --font-heading: var(--font-body);
-  --z-route-transition: 80;
+  /* Above the toast viewport (z-100): a route cover that a toast can peek over is not a cover.
+     Still under the celebration overlays (z-120), which only ever play on a revealed page. */
+  --z-route-transition: 110;
   /* Keep in sync with APP_SIDEBAR_*_PX in app-sidebar.ts */
   --app-sidebar-width: 240px;
   scrollbar-gutter: stable;

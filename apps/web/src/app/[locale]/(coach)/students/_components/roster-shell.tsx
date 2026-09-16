@@ -8,6 +8,7 @@ import { SkeletonGroup } from "@mentor/ui";
 import { CommunityCard } from "@/components/community-card";
 import { EmptyState } from "@/components/empty-state";
 import { SegmentPillControl } from "@/components/segment-pill-control";
+import { useCloudTransitionReady } from "@/lib/cloud-transition";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
   fetchCoachRegistrationState,
@@ -96,6 +97,9 @@ export function RosterShell() {
     () => (rows === null ? null : [...rows].sort(compareByAttention)),
     [rows],
   );
+
+  // A coach lands here from onboarding: the clouds part on a roster, not on its skeleton.
+  useCloudTransitionReady(ordered !== null);
 
   /**
    * Optimistic: the click is the coach's own act, and a spinner between deciding and seeing it is

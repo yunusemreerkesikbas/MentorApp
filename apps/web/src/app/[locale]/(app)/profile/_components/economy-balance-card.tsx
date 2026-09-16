@@ -7,6 +7,7 @@ import { Button, Card, DigitPopIn, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
+import { useEconomySnapshot } from "@/lib/economy-store";
 import { fetchEconomyLedger } from "@/lib/economy";
 import { coachReturnHref } from "@/lib/community-coach-bridge";
 
@@ -22,7 +23,9 @@ type LedgerState =
 /**
  * Earned XP + confirmed coin on the profile hub only (never in chat §4 #3).
  */
-export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
+export function EconomyBalanceCard({ balance: initialBalance }: EconomyBalanceCardProps) {
+  const snapshot = useEconomySnapshot();
+  const balance = snapshot.balance ?? initialBalance;
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale();
@@ -42,7 +45,7 @@ export function EconomyBalanceCard({ balance }: EconomyBalanceCardProps) {
     return () => {
       active = false;
     };
-  }, []);
+  }, [snapshot.revision]);
 
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }),

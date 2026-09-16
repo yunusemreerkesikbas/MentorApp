@@ -1,5 +1,6 @@
 {
   "ledger": {
+    "questXp": { "title": "Quest XP" },
     "questReward": {
       "title": "Quest right"
     },

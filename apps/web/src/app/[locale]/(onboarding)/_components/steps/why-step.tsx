@@ -51,9 +51,10 @@ export function WhyStep({
       }
     >
       <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-2 gap-3">
-        {MOTIVATIONS.map(({ key, icon: Icon, well }) => (
+        {MOTIVATIONS.map(({ key, icon: Icon, well }, index) => (
           <PlayGridCard
             key={key}
+            index={index}
             label={t(`options.${key}`)}
             art={
               <PlayIconWell well={well} className="size-12">

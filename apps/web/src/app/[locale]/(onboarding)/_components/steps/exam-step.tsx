@@ -76,9 +76,10 @@ export function ExamStep({
       }
     >
       <div role="radiogroup" aria-label={title} className="flex flex-col gap-3">
-        {OPTIONS.map(({ value, icon: Icon, well }) => (
+        {OPTIONS.map(({ value, icon: Icon, well }, index) => (
           <PlayOptionRow
             key={value}
+            index={index}
             label={value}
             sub={t(`options.${value}`)}
             lead={

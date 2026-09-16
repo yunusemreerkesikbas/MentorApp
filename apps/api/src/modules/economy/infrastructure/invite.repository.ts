@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { inviteRedemptions, invites } from "../../../database/schema";
 
@@ -12,6 +12,22 @@ export type RedemptionRow = typeof inviteRedemptions.$inferSelect;
 @Injectable()
 export class InviteRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  withServiceTx<T>(fn: (tx: DatabaseTx) => Promise<T>): Promise<T> {
+    return withServiceContext(this.db, fn);
+  }
+
+  async lockPending(invitedUserId: string, tx: DatabaseTx): Promise<RedemptionRow | undefined> {
+    const [row] = await tx.select().from(inviteRedemptions)
+      .where(and(eq(inviteRedemptions.invitedUserId, invitedUserId), eq(inviteRedemptions.status, "PENDING")))
+      .for("update");
+    return row;
+  }
+
+  async recordPayment(id: string, paymentId: string, outcome: string, tx: DatabaseTx): Promise<void> {
+    await tx.update(inviteRedemptions).set({ status: "CONVERTED", convertedAt: new Date(), sourcePaymentId: paymentId, rewardOutcome: outcome })
+      .where(eq(inviteRedemptions.id, id));
+  }
 
   findByInviter(inviterUserId: string): Promise<InviteRow | undefined> {
     return withServiceContext(this.db, async (tx) => {

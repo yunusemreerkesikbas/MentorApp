@@ -757,8 +757,7 @@ export class PlanService {
       this.events.emit(CoachingEventTopic.PLAN_COMPLETED, new DailyPlanCompleted(userId, planCompleted));
     }
     if (completed) {
-      this.events.emit(
-        CoachingEventTopic.PLAN_TASK_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.PLAN_TASK_COMPLETED,
         new PlanTaskCompleted(
           userId,
           completed.id,

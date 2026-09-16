@@ -23,7 +23,9 @@ white ground. Place them with `mix-blend-multiply` (dark theme: normal blend on 
 
 ## Clouds
 
-`cloud-left.png`, `cloud-right.png`, `cloud-bottom.png`: transparent 2048×1024 layers. Flip
-`ONBOARDING_ASSET_READINESS.clouds` once they exist; until then the CSS cloud shapes stay.
+`cloud-left.webp`, `cloud-right.webp`: the route cover that closes over the screen when onboarding
+hands you to the panel (`lib/cloud-transition.tsx`). Keyed out of the magenta-screen art in
+`public/img/cloud-*.png` — drop the green channel where it sits far below red and blue, pull it back
+up at the fringe, then crop to the alpha bounds and save at 1200px wide.
 
 Puhu motion frames live in `public/mascot/puhu/motion/` on one 1024×1024 canvas.

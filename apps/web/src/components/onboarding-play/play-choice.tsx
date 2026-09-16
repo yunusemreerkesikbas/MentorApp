@@ -1,6 +1,7 @@
 "use client";
 
 import { Check } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 export type PlayWell = "blue" | "peri" | "violet" | "coral" | "pink";
@@ -41,12 +42,29 @@ type ChoiceProps = {
   selected: boolean;
   disabled?: boolean;
   onSelect: () => void;
+  /** Position in its group — the answers arrive one after another, not as a block. */
+  index?: number;
 };
 
+/**
+ * Content-layer stagger (DESIGN.md §9), at a tenth of `staggerListVariants`' step: a field grid is
+ * eleven cards, and 150 ms each would still be dealing them out after the reader has chosen.
+ */
+function useChoiceEntrance(index = 0) {
+  const reduceMotion = useReducedMotion();
+  if (reduceMotion) return {};
+  return {
+    initial: { opacity: 0, y: 10 },
+    animate: { opacity: 1, y: 0 },
+    transition: { duration: 0.25, ease: "easeOut" as const, delay: Math.min(index, 11) * 0.04 },
+  };
+}
+
 /** Full-width radio row: optional icon well, label + sub, check mark. Lives in a `radiogroup`. */
-export function PlayOptionRow({ label, sub, lead, selected, disabled, onSelect }: ChoiceProps & { lead?: ReactNode }) {
+export function PlayOptionRow({ label, sub, lead, selected, disabled, onSelect, index }: ChoiceProps & { lead?: ReactNode }) {
   return (
-    <button
+    <motion.button
+      {...useChoiceEntrance(index)}
       type="button"
       role="radio"
       aria-checked={selected}
@@ -66,7 +84,7 @@ export function PlayOptionRow({ label, sub, lead, selected, disabled, onSelect }
       ) : (
         <span aria-hidden className="size-6 shrink-0 rounded-full border-2 border-[var(--play-line)]" />
       )}
-    </button>
+    </motion.button>
   );
 }
 
@@ -80,9 +98,11 @@ export function PlayGridCard({
   selected,
   disabled,
   onSelect,
+  index,
 }: ChoiceProps & { art: ReactNode; badge?: string; compact?: boolean }) {
   return (
-    <button
+    <motion.button
+      {...useChoiceEntrance(index)}
       type="button"
       role="radio"
       aria-checked={selected}
@@ -98,6 +118,6 @@ export function PlayGridCard({
       {art}
       <span className={`font-bold leading-tight ${compact ? "text-sm lg:text-base" : "text-base"} ${labelInk(selected)}`}>{label}</span>
       {sub ? <span className="text-sm font-medium leading-snug text-[var(--color-secondary)]">{sub}</span> : null}
-    </button>
+    </motion.button>
   );
 }

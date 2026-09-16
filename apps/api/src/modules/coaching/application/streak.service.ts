@@ -51,6 +51,17 @@ export class StreakService {
     });
   }
 
+  /** Dated reward retries must not use or overwrite today's cached streak. */
+  getStreakAt(userId: string, date: string): Promise<{ currentStreak: number }> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const since = addDays(date, -STREAK_LOOKBACK_DAYS);
+      const activeDates = await this.activity.listActiveDatesSince(tx, userId, since);
+      const freezes = await this.freezes.listDatesSince(tx, userId, since);
+      return deriveStreak(date, new Set(activeDates.filter((day) => day <= date)),
+        FREEZE_TOKENS_PER_MONTH, new Set(freezes.filter((day) => day <= date)));
+    });
+  }
+
   /** Monotonic high-water mark used for private achievement progress. */
   getLongestStreak(userId: string): Promise<number> {
     return withUserContext(this.db, { userId }, async (tx) => {

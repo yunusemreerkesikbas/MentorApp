@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { Backpack, Bell, CalendarDays, GraduationCap, Landmark, Target, Timer, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { AuthUser, CareerGroup } from "@mentor/types";
@@ -40,6 +41,7 @@ export function CompleteStep({
   const examCopy = useTranslations("profile.exam_settings");
   const career = useTranslations("vision.career");
   const router = useRouter();
+  const reduceMotion = useReducedMotion();
   const { startCloudTransition } = useCloudTransition();
   const leaving = useRef(false);
 
@@ -48,7 +50,7 @@ export function CompleteStep({
     leaving.current = true;
     onFinish();
     try {
-      sessionStorage.setItem("mentor_onboarding_coin_pending", "1");
+
     } catch {}
     const destination = onboardingDestination(consumePendingInvite(), audience);
     startCloudTransition(() => {
@@ -86,7 +88,13 @@ export function CompleteStep({
             className="flex w-full flex-col rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-4 py-1"
           >
             {rows.map(({ icon: Icon, well, title, sub }, index) => (
-              <li key={title} className={`flex min-h-14 items-center gap-3 py-2 ${index ? "border-t-2 border-[var(--play-line)]" : ""}`}>
+              <motion.li
+                key={title}
+                className={`flex min-h-14 items-center gap-3 py-2 ${index ? "border-t-2 border-[var(--play-line)]" : ""}`}
+                initial={reduceMotion ? false : { opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.28, ease: "easeOut", delay: 0.18 + index * 0.07 }}
+              >
                 <PlayIconWell well={well} className="size-9">
                   <Icon size={18} />
                 </PlayIconWell>
@@ -94,7 +102,7 @@ export function CompleteStep({
                   <span className="text-base font-bold leading-snug text-[var(--color-main)]">{title}</span>
                   {sub ? <span className="text-sm font-medium text-[var(--color-secondary)]">{sub}</span> : null}
                 </span>
-              </li>
+              </motion.li>
             ))}
           </ul>
         </section>

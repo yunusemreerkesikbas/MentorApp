@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
@@ -51,6 +53,7 @@ export class AuthService {
     private readonly configRegistry: ConfigRegistryService,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly events: EventEmitter2,
   ) {}
 
   async signup(input: SignupInput): Promise<AuthResult> {
@@ -157,6 +160,7 @@ export class AuthService {
       throw new DomainError(ErrorCode.AUTH_TOKEN_EXPIRED, HttpStatus.BAD_REQUEST);
     }
     await this.usersRepo.updateService(row.userId, { emailVerifiedAt: new Date() });
+    await this.events.emitAsync(IdentityEventTopic.EMAIL_VERIFIED, { userId: row.userId, date: new Date().toISOString().slice(0, 10) });
   }
 
   async resendVerificationEmail(userId: string): Promise<void> {

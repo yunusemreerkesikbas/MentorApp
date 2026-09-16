@@ -6,6 +6,7 @@ import type {
   QuestProgressView,
   RedeemInviteResult,
   StreakRescueView,
+  Paginated,
 } from "@mentor/types";
 import { ApiClientError, http } from "@mentor/api-client";
 
@@ -15,6 +16,14 @@ import { ApiClientError, http } from "@mentor/api-client";
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export async function fetchUnseenRewards(): Promise<Paginated<EconomyLedgerEntryView>> {
+  return await http<Paginated<EconomyLedgerEntryView>>("/v1/economy/rewards/unseen?page=1&pageSize=20");
+}
+
+export async function markRewardsSeen(ledgerIds: string[]): Promise<void> {
+  await http<void>("/v1/economy/rewards/seen", { method: "POST", body: JSON.stringify({ ledgerIds }) });
 }
 
 export async function fetchEconomyLedger({
@@ -101,4 +110,3 @@ export function notifyCoinCelebration(amount: number, label?: string): void {
     }),
   );
 }
-

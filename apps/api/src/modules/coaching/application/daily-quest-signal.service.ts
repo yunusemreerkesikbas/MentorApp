@@ -44,7 +44,10 @@ export class DailyQuestSignalService {
   ) {}
 
   async getToday(userId: string): Promise<DailyQuestSignals> {
-    const date = todayIso();
+    return this.getForDate(userId, todayIso());
+  }
+
+  async getForDate(userId: string, date: string): Promise<DailyQuestSignals> {
     const weekKey = isoWeekKey(date);
     const weekStart = isoWeekStart(date);
     const minFocusSeconds = await this.config.get("coaching.session.min_focus_seconds");
@@ -68,7 +71,7 @@ export class DailyQuestSignalService {
         this.sessions.countCompleted(tx, userId, minFocusSeconds),
         this.planTasks.countDoneAllTime(tx, userId),
         this.sessions.sumCompletedFocusSecondsOnDate(tx, userId, date),
-        this.sessions.countCompletedSince(tx, userId, weekStart, minFocusSeconds),
+        this.sessions.countCompletedSince(tx, userId, weekStart, minFocusSeconds, date),
         this.planTasks.countDoneBetween(tx, userId, weekStart, date),
         this.dailyActivity.listActiveDatesSince(tx, userId, weekStart),
       ]);
@@ -84,7 +87,7 @@ export class DailyQuestSignalService {
         weekKey,
         weeklyCompletedFocusSessions,
         weeklyCompletedPlanTasks,
-        weeklyActiveDays: weeklyActiveDates.length,
+        weeklyActiveDays: weeklyActiveDates.filter((day) => day <= date).length,
       };
     });
   }

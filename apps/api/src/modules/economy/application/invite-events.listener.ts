@@ -1,7 +1,7 @@
 import { Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
-import { PaymentsEventTopic, SubscriptionActivated } from "../../payments/domain/payments.events";
+import { PaymentsEventTopic, PaymentSucceeded } from "../../payments/domain/payments.events";
 import { InviteService } from "./invite.service";
 
 /**
@@ -16,9 +16,9 @@ export class InviteEventsListener {
     private readonly config: ConfigRegistryService,
   ) {}
 
-  @OnEvent(PaymentsEventTopic.SUBSCRIPTION_ACTIVATED)
-  async onSubscriptionActivated(event: SubscriptionActivated): Promise<void> {
+  @OnEvent(PaymentsEventTopic.PAYMENT_SUCCEEDED)
+  async onPaymentSucceeded(event: PaymentSucceeded): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
-    await this.invites.onInvitedConverted(event.userId);
+    await this.invites.onInvitedConverted(event);
   }
 }

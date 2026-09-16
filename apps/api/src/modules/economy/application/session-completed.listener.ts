@@ -4,7 +4,7 @@ import {
   CoachingEventTopic,
   StudySessionCompleted,
 } from "../../coaching/domain/coaching.events";
-import { QuestService } from "./quest.service";
+import { QuestTriggerService } from "./quest-trigger.service";
 
 /**
  * Bridges coaching → economy quests: when a study session is completed, re-evaluate the user's
@@ -15,10 +15,10 @@ import { QuestService } from "./quest.service";
  */
 @Injectable()
 export class SessionCompletedListener {
-  constructor(private readonly quests: QuestService) {}
+  constructor(private readonly quests: QuestTriggerService) {}
 
   @OnEvent(CoachingEventTopic.SESSION_COMPLETED)
   async onSessionCompleted(event: StudySessionCompleted): Promise<void> {
-    await this.quests.evaluateAndGrant(event.userId);
+    await this.quests.evaluate({ userId: event.userId, date: event.startedAt.toISOString().slice(0, 10) });
   }
 }

@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import type { AuthUser, AvatarUploadUrlDto, ForumPublicPerson } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
@@ -40,6 +42,7 @@ export class UsersService {
   constructor(
     private readonly usersRepo: UsersRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly events: EventEmitter2,
   ) {}
 
   /** Resolve @mention handles → `lowercase-username → userId` map (used by the forum mention notifier). */
@@ -272,6 +275,7 @@ export class UsersService {
     }
     if (!user) throw new NotFoundError();
     const oldKey = current?.avatarStorageKey;
+    await this.events.emitAsync(IdentityEventTopic.PROFILE_UPDATED, { userId, date: new Date().toISOString().slice(0, 10) });
     if (patch.avatarStorageKey !== undefined && oldKey && oldKey !== user.avatarStorageKey) {
       void this.storage
         .deleteObject(oldKey)

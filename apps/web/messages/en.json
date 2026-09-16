@@ -2471,10 +2471,10 @@
     }
   },
   "economy": {
-    "balance_subtitle": "Earned credit, not cash. Used for coach chat and upcoming features.",
+    "balance_subtitle": "Coin has no cash value. Use it for coach chat and weekly deep analysis.",
     "balance_title": "Your balance",
     "xp": "XP",
-    "confirmed": "Confirmed credit",
+    "confirmed": "Coin",
     "pending": "+{count} pending",
     "go_coach": "Go to coach",
     "ledger_title": "Recent activity",

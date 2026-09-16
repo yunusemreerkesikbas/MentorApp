@@ -2611,12 +2611,36 @@ export const inviteRedemptions = pgTable(
       .notNull()
       .defaultNow(),
     convertedAt: timestamp("converted_at", { withTimezone: true }),
+    sourcePaymentId: text("source_payment_id"),
+    rewardOutcome: text("reward_outcome"),
   },
   (t) => [
     uniqueIndex("invite_redemptions_invited_unique_idx").on(t.invitedUserId),
     index("invite_redemptions_inviter_idx").on(t.inviterUserId),
   ],
 );
+
+/** Economy owns mutable presentation receipts; historical ledger rows have no receipt. */
+export const economyRewardReceipts = pgTable("economy_reward_receipts", {
+  ledgerId: uuid("ledger_id").primaryKey().references(() => ledgerEntries.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  orgId: uuid("org_id").references(() => organizations.id),
+  seenAt: timestamp("seen_at", { withTimezone: true }),
+}, (t) => [
+  index("economy_reward_receipts_unseen_idx").on(t.userId).where(sql`${t.seenAt} is null`),
+  pgPolicy("economy_reward_receipts_service", {
+    for: "all",
+    using: sql`current_setting('app.role', true) = 'SERVICE'`,
+    withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+  }),
+  pgPolicy("economy_reward_receipts_owner_read", {
+    for: "select", using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+  }),
+  pgPolicy("economy_reward_receipts_owner_update", {
+    for: "update", using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+    withCheck: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+  }),
+]).enableRLS();
 
 /* --- Quests (§3 light economy): completed quest → XP/Coin (capped where needed, idempotent).
  * One row per (user, quest, period) recorded on completion; the reward is a ledger entry
