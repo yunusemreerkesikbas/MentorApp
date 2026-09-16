@@ -63,6 +63,13 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-17 — Geçici ekonomi yenileme hatası bakiyeyi silmez
+
+`refreshEconomySnapshot` artık yalnız `ECONOMY_DISABLED` olduğunda bakiyeyi temizler. Ağ veya 5xx
+hatasında son başarılı snapshot kalır, `error: true` yayınlanır; profil/sheet boş bakiyeye düşmez.
+Kullanım değişmedi: `useEconomySnapshot` / `getEconomySnapshot`. Gotcha: kullanıcı değişince
+`resetEconomySnapshot` hâlâ sıfırlar. İlgili: `lib/economy-store.ts`, `lib/economy-store.spec.ts`.
+
 ### 2026-09-14 — Panel mood vs journey spotlight sıraya alındı
 
 Panel boot'ta mood check-in (tekerlek + Puhu koç notu) ile journey spotlight aynı anda
@@ -889,6 +896,20 @@ eklendi.
   page being covered cannot open the sky on itself; a destination that never reports is released by
   a 6 s timeout. Gotcha: the cover's mount animation is what dispatches "covered" and navigates
   (APP-089) — never give the left cloud `initial={false}`.
+- Streaming rule: a sentence streams word by word (`StreamingText`, transitions.dev recipe) only
+  when Puhu says it. Welcome slide 1's greeting, every onboarding question, Puhu's reaction lines,
+  the push layer and "Yolun hazır"; a sub line waits for its title and is held invisible meanwhile so
+  the bubble does not resize. Welcome slides 2-4 are narration and keep the line reveal.
+- Auth sheet motion (measured on a 4x throttled phone before the change): the JS transition waited
+  650 ms for hydration on a direct load, the login ↔ signup swap jumped 160 px in one frame, and a
+  successful login left the sheet frozen half off screen for 1.2 s. Now: CSS keyframes that start on
+  the first paint and travel by the sheet's own height (no measuring), an ease-in exit that leaves
+  the screen, the destination prefetched while it leaves, a FLIP glide for the swap (phones), and
+  welcome prefetching `/signup` + `/login`.
+  Gotchas: `.auth-shell` must stay `overflow-clip` — with `overflow-hidden` the sheet's 50dvh
+  under-extension made it programmatically scrollable and a client navigation from the welcome
+  scrolled the form off the top. A `next build` next to a running `next dev` served a stale
+  `globals.css` from `.next/cache/turbopack`; delete that folder if CSS changes do not show up.
 - Assets: `public/visuals/onboarding/welcome-scene-*` (watermark row cropped, ~1.2 Mbps),
   `cloud-left/right.webp` (keyed off the magenta-screen art) and `public/mascot/career-3d/*`; see the
   folder README. Related: `components/onboarding-play/*`, `_components/welcome/*`,

@@ -413,6 +413,13 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-17 — İade clawback'i sourcePaymentId olmadan yürümez
+
+`payments.payment.refunded` worker'ı `sourcePaymentId` zorunlu parse eder. Davet dönüşüm ödülü yalnız
+aynı charge id'si ile geri alınır; alanı optional bırakmak reversal'ı sessiz atlatırdı. Kullanım
+değişmedi: admin `refundLastCharge`. Gotcha: kaynaksız payload job'da fail+retry. İlgili:
+[payments.md](./payments.md) 2026-09-17, `RefundEventsListener`, `invite.service.ts`.
+
 ### 2026-09-06 — CoinCelebration tam entegrasyon & görevler tamamlanma ekranı
 
 - **What:** `CoinCelebration` görseli (`CoinCelebrationVisual` + `CoinCelebrationCard`) modülerleştirilerek tüm coin kazanılan akışlara ve `economy-quests-card.tsx` tamamlanma ekranına bağlandı. Görevler kartında tüm ritüel bittiğinde sönük liste yerine 3D altın coin zafer kartı sunuluyor. Davet kodu kullanımında (`EconomyInviteCard`), e-posta doğrulamasında (`verify-email`), ilk abonelikte (`checkout-result-content`) ve onboarding sonrasında dashboard'a varışta (`panel-shell`) coin kutlaması tetikleniyor.

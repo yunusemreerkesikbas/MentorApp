@@ -109,6 +109,16 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Admin Topluluk sayfası Duralux lists/tables (2026-09-17)** — `/forum` artık analytics
+  `EmailOverview` şeridi + 8+4 (öne çıkan / etiket önerisi) + tam genişlik tablolar. Sayılar
+  mevcut zone/tag/suggestion/featured yanıtlarından; yeni API yok. Öne çıkan tartışma Trending
+  kartı (avatar-text + arama, native `datetime-local`); bekleyen öneriler Tickets kuyruğu
+  (dikey alan + Onayla | Reddet); etiketler ve odalar LatestLeads tablosu (`avatar-text`,
+  `badge`, native `form-select` / switch). `SelectDropdown`, DatePicker, sahte pagination ve
+  Duralux demo dosyalarına dokunulmadı. `/forum/new` aynı. Kullanım: admin `/forum`.
+  Gotcha: öneri kartı `col-xxl-4` olduğu için alanlar alt alta; hint FormSection alt yazısı.
+  İlgili: `apps/admin/src/app/(general)/forum/*`.
+
 - **Karma akışta Q/A görünürlüğü (2026-08-15)** — Q/A soruları normal akışta kalır; yeni
   `Tümü · Paylaşımlar · Sorular` segmenti backend'deki additive `contentType=posts|questions`
   filtresini kullanır. `posts`, CHAT+ANNOUNCEMENT; `questions`, yalnız QA thread'lerini getirir.

@@ -100,6 +100,12 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Ayar hint'leri Türkçe (2026-09-17)** — `/config` info ikonu hover'da kısa Türkçe açıklama
+  gösterir (`config-hints.ts`, katalogdaki 133 anahtar). Yeni anahtar çevirisi yoksa API
+  `description` (İngilizce) yedek. Depolama kategorisi etiket aldı. Kullanım: admin `/config`,
+  anahtarın yanındaki info ikonu. Gotcha: metin admin kopyasıdır, öğrenci voice.md'ye bağlı
+  değil. İlgili: `apps/admin/src/app/(general)/config/*`.
+
 - **Anasayfa Duralux widget kit (2026-09-16)** — Admin `/` KPI kartları `MetricCard` yerine paylaşılan
   Duralux-tarzı widget'lara geçti: `KpiStatRow` (CustomersStatistics), `ProgressStatRow`
   (SiteOverviewStatistics, üç nokta menü yok), `MetricStrip` (EmailOverview), `WindowSparkBars`
