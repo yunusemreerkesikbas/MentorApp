@@ -52,7 +52,7 @@ export class DailyQuestSignalService {
     const weekStart = isoWeekStart(date);
     const minFocusSeconds = await this.config.get("coaching.session.min_focus_seconds");
     // Identity read via its public service (workstreams §3), outside the coaching tx.
-    const profile = await this.users.getMe(userId).catch(() => null);
+    const profile = await this.users.getMe(userId);
     return withUserContext(this.db, { userId }, async (tx) => {
       const [
         doneTasks,

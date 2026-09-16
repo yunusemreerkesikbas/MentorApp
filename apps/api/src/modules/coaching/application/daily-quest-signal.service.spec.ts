@@ -68,6 +68,7 @@ describe("DailyQuestSignalService", () => {
       "user-1",
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       300,
+      result.date,
     );
     expect(planTasks.countDoneBetween).toHaveBeenCalled();
     expect(dailyActivity.listActiveDatesSince).toHaveBeenCalled();
@@ -89,11 +90,11 @@ describe("DailyQuestSignalService", () => {
     expect(moods.findByDate).toHaveBeenCalled();
   });
 
-  it("reports a null goal when the user has none (or the identity read fails)", async () => {
+  it("reports a null goal only when absent, and propagates identity failures for retry", async () => {
     const { service } = build();
     expect((await service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
 
     const failing = build({ getMeFails: true });
-    expect((await failing.service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
+    await expect(failing.service.getToday("user-1")).rejects.toThrow("gone");
   });
 });

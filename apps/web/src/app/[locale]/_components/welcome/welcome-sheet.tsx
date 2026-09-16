@@ -1,7 +1,7 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { TextsReveal } from "@mentor/ui";
+import { StreamingText, TextsReveal } from "@mentor/ui";
 import { PlayButton } from "@/components/onboarding-play/play-button";
 
 /*
@@ -82,7 +82,9 @@ export function WelcomeSheet({
               key="title"
               className="text-balance text-[2rem] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-main)] lg:text-[2.5rem]"
             >
-              {title}
+              {/* Only Puhu's own greeting streams; the other slides are narration and a half-written
+                  headline is what a fast swiper would otherwise see. */}
+              {step === 0 ? <StreamingText key={title} text={title} /> : title}
             </h1>,
             <p key="subtitle" className="text-pretty text-base font-medium leading-relaxed text-[var(--color-secondary)] lg:text-lg">
               {subtitle}

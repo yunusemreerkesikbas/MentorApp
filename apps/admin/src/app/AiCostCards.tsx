@@ -1,18 +1,19 @@
 'use client'
-import { useCallback, useEffect, useState } from "react";
-import { FiCpu, FiDollarSign, FiPieChart, FiZap } from "react-icons/fi";
-import { AsyncState } from "@/components/shared/admin/AsyncState";
-import { MetricCard } from "@/components/shared/admin/MetricCard";
-import apiClient from "@/lib/apiClient";
+import Link from "next/link";
+import { FiCpu, FiPieChart, FiZap } from "react-icons/fi";
+import { BucketDonut } from "@/components/shared/admin/dashboard/BucketDonut";
+import { DashboardError, DashboardSection, DashboardSkeleton } from "@/components/shared/admin/dashboard/DashboardSection";
+import { ProgressStatRow } from "@/components/shared/admin/dashboard/ProgressStatRow";
+import { WindowSparkBars } from "@/components/shared/admin/dashboard/WindowSparkBars";
+import { WINDOW_CATEGORIES, WINDOW_COLORS } from "@/components/shared/admin/dashboard/windows";
 import { useAuth } from "@/contentApi/authProvider";
+import { useAdminResource } from "@/lib/useAdminResource";
 import { canSee } from "@/lib/roles";
 import type { AdminAiCost, AiCostWindow } from "@/lib/types";
 
-// Micro-USD → "$0.0000". Per-call cost is tiny, so 4 decimals keep small windows readable.
 const fmtUsd = (micros: number) => `$${(micros / 1_000_000).toLocaleString("en-US", { minimumFractionDigits: 4, maximumFractionDigits: 4 })}`;
 const fmtInt = (n: number) => n.toLocaleString("tr-TR");
 
-// feature slug → Turkish label (unknown/legacy rows come back as "other").
 const FEATURE_LABEL: Record<string, string> = {
     chat: "Sohbet",
     vision: "Foto kategorize",
@@ -35,61 +36,68 @@ function windowLabel(w: AiCostWindow) {
     return `${fmtUsd(w.costMicros)} · ${fmtInt(w.calls)} çağrı`;
 }
 
-// AI/LLM cost visibility (§7) — read-only, ADMIN only. Aggregates the ai_usage meter: rolling
-// windows + per-model + top spenders. Money comes from the API in micro-USD; we only format here.
+// AI/LLM cost visibility (§7). Cost is micro-USD; FE only formats. 3-bar series is the rolling
+// d1/d7/d30 windows from the API, not a daily curve.
 export default function AiCostCards() {
     const { admin } = useAuth();
     const canView = canSee(["SUPPORT", "FINANCE"], admin?.roles);
-    const [c, setC] = useState<AdminAiCost | null>(null);
-    const [loading, setLoading] = useState(true);
-    const [hasError, setHasError] = useState(false);
-
-    const load = useCallback(async () => {
-        if (!canView) return;
-        setLoading(true);
-        setHasError(false);
-        try {
-            const { data } = await apiClient.get<AdminAiCost>("/admin/metrics/ai");
-            setC(data);
-        } catch {
-            setC(null);
-            setHasError(true);
-        } finally {
-            setLoading(false);
-        }
-    }, [canView]);
-
-    useEffect(() => { void load(); }, [load]);
+    const { data: c, loading, hasError, reload } = useAdminResource<AdminAiCost>("/admin/metrics/ai", canView);
 
     if (!canView) return null;
-    if (loading) return <div className="card mb-4"><AsyncState status="loading" size="compact" title="AI maliyeti yükleniyor" /></div>;
-    if (hasError) return <div className="card mb-4"><AsyncState status="error" size="compact" title="AI maliyeti yüklenemedi" description="Maliyet ve kullanım dağılımları alınamadı." onRetry={() => void load()} /></div>;
+    if (loading) return <DashboardSkeleton title="AI maliyeti yükleniyor" />;
+    if (hasError) return <DashboardError title="AI maliyeti" description="Maliyet ve kullanım dağılımları alınamadı." onRetry={() => void reload()} />;
     if (!c) return null;
 
     const budget = c.budget;
     const budgetPct = budget.capMicros > 0 ? Math.round((budget.spentMicros / budget.capMicros) * 100) : 0;
-    // Banner only when a cap is set: red at/over 100% (blocked), yellow ≥80% (warning), else green.
     const budgetTone = budget.exceeded ? "danger" : budgetPct >= 80 ? "warning" : "success";
+    const costSeries = [c.windows.d1.costMicros, c.windows.d7.costMicros, c.windows.d30.costMicros];
+    const categories = [...WINDOW_CATEGORIES];
 
     return (
-        <section className="admin-dashboard-section">
-            <h2 className="admin-dashboard-section-title">AI maliyeti</h2>
-
+        <DashboardSection title="AI maliyeti">
             {budget.capMicros > 0 ? (
-                <div className={`alert alert-${budgetTone} d-flex justify-content-between align-items-center mb-3`} role="status">
-                    <span>
-                        <strong>Aylık bütçe:</strong> {fmtUsd(budget.spentMicros)} / {fmtUsd(budget.capMicros)} ({budgetPct}%)
-                    </span>
-                    <span className="fw-bold">
-                        {budget.exceeded ? "AI bloklu — ay sonuna kadar duraklatıldı" : budgetPct >= 80 ? "Sınıra yaklaşılıyor" : "Bütçe içinde"}
-                    </span>
-                </div>
+                <>
+                    <div className={`alert alert-${budgetTone} d-flex justify-content-between align-items-center mb-3`} role="status">
+                        <span>
+                            <strong>Aylık bütçe:</strong> {fmtUsd(budget.spentMicros)} / {fmtUsd(budget.capMicros)} ({budgetPct}%)
+                        </span>
+                        <span className="fw-bold">
+                            {budget.exceeded ? "AI bloklu, ay sonuna kadar duraklatıldı" : budgetPct >= 80 ? "Sınıra yaklaşılıyor" : "Bütçe içinde"}
+                        </span>
+                    </div>
+                    <div className="mb-3">
+                        <ProgressStatRow
+                            colClass="col-xxl-6 col-md-12"
+                            items={[{
+                                id: "ai-budget",
+                                icon: "feather-activity",
+                                title: "Aylık bütçe",
+                                value: `${fmtUsd(budget.spentMicros)} / ${fmtUsd(budget.capMicros)}`,
+                                tone: budgetTone,
+                                progress: { label: `${budgetPct}%`, percent: budgetPct },
+                            }]}
+                        />
+                    </div>
+                </>
             ) : null}
 
+            <div className="mb-3">
+                <WindowSparkBars
+                    items={[
+                        { id: "ai-d1", title: "Son 24 saat", value: windowLabel(c.windows.d1), color: WINDOW_COLORS.d1, categories, data: costSeries },
+                        { id: "ai-d7", title: "Son 7 gün", value: windowLabel(c.windows.d7), color: WINDOW_COLORS.d7, categories, data: costSeries },
+                        { id: "ai-d30", title: "Son 30 gün", value: windowLabel(c.windows.d30), color: WINDOW_COLORS.d30, categories, data: costSeries },
+                    ]}
+                />
+            </div>
+
             <div className="row g-4 mb-3">
-                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d1)} label="Son 24 saat" /></div>
-                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d7)} label="Son 7 gün" /></div>
-                <div className="col-xxl-4 col-md-6"><MetricCard icon={<FiDollarSign size={20} />} value={windowLabel(c.windows.d30)} label="Son 30 gün" /></div>
+                <BucketDonut
+                    title="Özellik bazlı çağrı (30 gün)"
+                    colClass="col-12"
+                    items={c.byFeature.map((ft) => ({ id: ft.feature, label: featureLabel(ft.feature), value: ft.calls }))}
+                />
             </div>
 
             <div className="row g-4">
@@ -102,12 +110,12 @@ export default function AiCostCards() {
                                 <tbody>
                                     {c.byModel.length === 0 ? (
                                         <tr><td colSpan={4} className="text-muted text-center py-3">Kayıt yok</td></tr>
-                                    ) : c.byModel.map((m) => (
-                                        <tr key={m.model}>
-                                            <td>{m.model}</td>
-                                            <td className="text-end">{fmtUsd(m.costMicros)}</td>
-                                            <td className="text-end">{fmtInt(m.calls)}</td>
-                                            <td className="text-end">{fmtInt(m.promptTokens + m.completionTokens)}</td>
+                                    ) : c.byModel.map((row) => (
+                                        <tr key={row.model}>
+                                            <td>{row.model}</td>
+                                            <td className="text-end">{fmtUsd(row.costMicros)}</td>
+                                            <td className="text-end">{fmtInt(row.calls)}</td>
+                                            <td className="text-end">{fmtInt(row.promptTokens + row.completionTokens)}</td>
                                         </tr>
                                     ))}
                                 </tbody>
@@ -150,7 +158,7 @@ export default function AiCostCards() {
                                     ) : c.topSpenders.map((s) => (
                                         <tr key={s.userId}>
                                             <td>
-                                                <div className="fw-semibold text-dark">{s.displayName}</div>
+                                                <Link href={`/users/${s.userId}`} className="fw-semibold text-dark">{s.displayName}</Link>
                                                 <div className="fs-12 text-muted">{s.email}</div>
                                             </td>
                                             <td className="text-end">{fmtUsd(s.costMicros)}</td>
@@ -163,6 +171,6 @@ export default function AiCostCards() {
                     </div>
                 </div>
             </div>
-        </section>
+        </DashboardSection>
     );
 }

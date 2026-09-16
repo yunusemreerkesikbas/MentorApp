@@ -108,22 +108,85 @@ describe("economy onboarding quests (e2e)", () => {
     return res.body;
   };
 
-  it("GET /economy/quests evaluates + auto-grants completed onboarding quests", async () => {
+  it("profile completion grants before GET, while retired quests stay disabled", async () => {
+    expect((await balance()).coinConfirmed).toBe(10);
     const res = await request(app.getHttpServer()).get("/v1/economy/quests").set(asQuester());
     expect(res.status).toBe(200);
     const byId = Object.fromEntries(res.body.map((q: { id: string; completed: boolean }) => [q.id, q.completed]));
     expect(byId["onboarding.profile-setup"]).toBe(true);
-    expect(byId["onboarding.first-subscription"]).toBe(true);
+    expect(byId["onboarding.first-subscription"]).toBeUndefined();
     expect(byId["onboarding.email-verified"]).toBe(false);
-    expect(byId["onboarding.invite-redeemed"]).toBe(false);
+    expect(byId["onboarding.invite-redeemed"]).toBeUndefined();
 
-    // Two quests × default reward (10) = 20 coin (under the daily cap of 50).
-    expect((await balance()).coinConfirmed).toBe(20);
+    // Only profile setup grants Coin; subscription activation does not.
+    expect((await balance()).coinConfirmed).toBe(10);
   });
 
   it("is idempotent — a second call grants nothing more", async () => {
     await request(app.getHttpServer()).get("/v1/economy/quests").set(asQuester());
-    expect((await balance()).coinConfirmed).toBe(20);
+    expect((await balance()).coinConfirmed).toBe(10);
+  });
+
+  it("receipts are self-scoped and acknowledgment leaves the ledger intact", async () => {
+    const unseen = await request(app.getHttpServer()).get("/v1/economy/rewards/unseen").set(asQuester());
+    expect(unseen.status).toBe(200);
+    expect(unseen.body.total).toBe(1);
+    const id = unseen.body.items[0].id;
+    expect(unseen.body.items[0]).toMatchObject({ amount: 10, unit: "COIN", reason: "quest.onboarding.profile-setup" });
+    await request(app.getHttpServer()).post("/v1/economy/rewards/seen")
+      .set({ Authorization: `Bearer ${adminToken}` }).send({ ledgerIds: [id] }).expect(204);
+    const stillUnseen = await request(app.getHttpServer()).get("/v1/economy/rewards/unseen").set(asQuester());
+    expect(stillUnseen.body.total).toBe(1);
+    await Promise.all([1, 2].map(() => request(app.getHttpServer()).post("/v1/economy/rewards/seen")
+      .set(asQuester()).send({ ledgerIds: [id] }).expect(204)));
+    const seen = await request(app.getHttpServer()).get("/v1/economy/rewards/unseen").set(asQuester());
+    expect(seen.body.total).toBe(0);
+    expect((await balance()).coinConfirmed).toBe(10);
+    const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(asQuester());
+    expect(ledger.body.some((entry: { id: string }) => entry.id === id)).toBe(true);
+  });
+
+  it("rejects disabled streak rescue through the API", async () => {
+    await request(app.getHttpServer()).get("/v1/economy/streak-rescue").set(asQuester()).expect(404);
+    await request(app.getHttpServer()).post("/v1/economy/streak-rescue").set(asQuester()).expect(404);
+    expect((await balance()).coinConfirmed).toBe(10);
+  });
+
+  it("mood save grants XP without a quests read, once under concurrent repeats", async () => {
+    await Promise.all([1, 2].map(() => request(app.getHttpServer()).post("/v1/coaching/mood-checkins")
+      .set(asQuester()).send({ mood: 3 }).expect(200)));
+    const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(asQuester());
+    const mood = ledger.body.filter((row: { reason: string }) => row.reason === "quest.daily.mood-checkin");
+    expect(mood).toHaveLength(1);
+    expect(mood[0]).toMatchObject({ unit: "XP", amount: 5, title: "Görev XP’si" });
+  });
+
+  it("plan completion grants immediately and undo/re-complete cannot grant again", async () => {
+    const task = await request(app.getHttpServer()).post("/v1/plan-tasks")
+      .set(asQuester()).send({ title: "Economy action test" }).expect(201);
+    const update = (status: string) => request(app.getHttpServer()).patch(`/v1/plan-tasks/${task.body.id}`)
+      .set(asQuester()).send({ status }).expect(200);
+    await update("DONE");
+    await update("TODO");
+    await update("DONE");
+    const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(asQuester());
+    const grants = ledger.body.filter((row: { reason: string }) => row.reason === "quest.daily.plan-task-done");
+    expect(grants).toHaveLength(1);
+    expect(grants[0].amount).toBe(5);
+  });
+
+  it("session finalization grants XP without a quests read", async () => {
+    const session = await request(app.getHttpServer()).post("/v1/study-sessions")
+      .set(asQuester()).send({ preset: "25_5" }).expect(201);
+    // The API validates elapsed wall time; make the test session old enough, without sleeping.
+    await svc(async (c) => {
+      await c.query("update study_sessions set started_at=now()-interval '30 minutes' where id=$1", [session.body.id]);
+    });
+    await request(app.getHttpServer()).patch(`/v1/study-sessions/${session.body.id}`)
+      .set(asQuester()).send({ status: "COMPLETED", actualFocusSeconds: 1500 }).expect(200);
+    const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(asQuester());
+    expect(ledger.body.filter((row: { reason: string }) => row.reason === "quest.daily.focus-session-completed"))
+      .toHaveLength(1);
   });
 
   it("404 when the economy feature flag is off", async () => {

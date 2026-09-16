@@ -1,3 +1,4 @@
+import { PaymentRewardEventsService } from "./payment-reward-events.service";
 import { randomUUID } from "node:crypto";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
@@ -167,6 +168,7 @@ export class SubscriptionsService {
     private readonly registry: ConfigRegistryService,
     @Inject(PAYMENTS_PORT) private readonly provider: PaymentsPort,
     @Inject(INVOICE_PORT) private readonly invoices: InvoicePort,
+    private readonly rewardEvents: PaymentRewardEventsService,
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
@@ -358,19 +360,17 @@ export class SubscriptionsService {
           currency: lastCharge.currency,
           status: TxStatus.REFUNDED,
           providerEventId: idempotencyKey,
-          raw: { reason, actorId, refundRef },
+          raw: { reason, actorId, refundRef, sourcePaymentId: lastCharge.providerEventId },
         },
         tx,
       );
 
+      await this.rewardEvents.append(new PaymentRefunded(userId, lastCharge.subscriptionId, amountMinor, lastCharge.providerEventId), tx);
       return { sourcePaymentId: lastCharge.providerEventId, subscriptionId: lastCharge.subscriptionId, remainingAfter: remaining - amountMinor };
     });
 
     // Post-commit (same discipline as webhook side-effects): a rolled-back refund emits nothing.
-    this.events.emit(
-      PaymentsEventTopic.PAYMENT_REFUNDED,
-      new PaymentRefunded(userId, result.subscriptionId, amountMinor, result.sourcePaymentId),
-    );
+    // Reward reversal is delivered durably by the transactional job above.
 
     return {
       view: await this.getAdminView(userId),
@@ -733,12 +733,14 @@ export class SubscriptionsService {
           },
           tx,
         );
+        if (firstPaidCharge) {
+          await this.rewardEvents.append(new PaymentSucceeded(sub.userId, sub.id, event.eventId, event.amountMinor ?? expectedMinor, new Date(event.occurredAt)), tx);
+        }
         // Burn one covered charge; at zero the next renewal falls back to the list price.
         // Guarded inside the repository, so a replayed webhook cannot double-decrement.
         if (redemption) await this.promotions.consumePeriod(sub.id, tx);
         return {
           emits: [
-            ...(firstPaidCharge ? [{ topic: PaymentsEventTopic.PAYMENT_SUCCEEDED, payload: new PaymentSucceeded(sub.userId, sub.id, event.eventId, event.amountMinor ?? expectedMinor, now) }] : []),
             {
               topic: PaymentsEventTopic.SUBSCRIPTION_ACTIVATED,
               payload: new SubscriptionActivated(sub.userId, sub.id, sub.planId),

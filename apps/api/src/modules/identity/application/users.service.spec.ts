@@ -22,7 +22,7 @@ describe("UsersService.updateMe", () => {
         throw Object.assign(new Error("unique"), { code: "23505" });
       }),
     };
-    const service = new UsersService(usersRepo as never, {} as never);
+    const service = new UsersService(usersRepo as never, {} as never, { emitAsync: vi.fn() } as never);
 
     await expect(
       service.updateMe("user-1", { username: "taken" }),
@@ -53,7 +53,7 @@ describe("UsersService.updateMe", () => {
     };
     const usersRepo = { updateSelf: vi.fn(async () => updated) };
     const storage = { getPublicUrl: vi.fn() };
-    const service = new UsersService(usersRepo as never, storage as never);
+    const service = new UsersService(usersRepo as never, storage as never, { emitAsync: vi.fn() } as never);
 
     await service.updateMe("user-1", { bio: "merhaba", website: null });
     expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {

@@ -190,6 +190,20 @@
 	font-weight: $font-600;
 }
 
+.admin-dashboard-skeleton-card {
+	min-height: 108px;
+}
+
+.admin-dashboard-home-card {
+	cursor: pointer;
+	transition: border-color 0.2s ease, box-shadow 0.2s ease;
+
+	&:hover,
+	&:focus-visible {
+		border-color: $primary;
+	}
+}
+
 .admin-icon-action {
 	display: inline-flex;
 	width: 36px;
@@ -513,7 +527,8 @@
 
 @media (prefers-reduced-motion: reduce) {
 	.admin-info-hint,
-	.admin-icon-action {
+	.admin-icon-action,
+	.admin-dashboard-home-card {
 		transition: none !important;
 	}
 }

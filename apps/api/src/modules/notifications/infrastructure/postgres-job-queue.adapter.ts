@@ -18,7 +18,7 @@ export class PostgresJobQueueAdapter implements JobQueuePort {
       payload: payload as Record<string, unknown>,
       runAt: options?.runAt,
       maxAttempts: options?.maxAttempts,
-    });
+    }, options?.transaction);
     return { jobId: row.id };
   }
 }

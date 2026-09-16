@@ -33,9 +33,13 @@ export default function LoginPage() {
         password: String(data.get("password")),
       });
       trackProductEvent("login", { method: "email" });
+      const destination = postAuthDestination(user, readAuthNextParam());
+      // Fetched while the sheet leaves, so the handover has nothing left to wait for.
+      // @ts-expect-error -- a validated internal path, transported as a plain string.
+      router.prefetch(destination);
       exitThen(() => {
         // @ts-expect-error -- a validated internal path, transported as a plain string.
-        router.push(postAuthDestination(user, readAuthNextParam()));
+        router.push(destination);
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));

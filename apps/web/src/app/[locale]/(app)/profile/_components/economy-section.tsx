@@ -4,7 +4,6 @@ import { Coins, Gift, ListChecks } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type {
-  EconomyBalance,
   InviteCodeView,
   QuestProgressView,
 } from "@mentor/types";
@@ -13,7 +12,6 @@ import { Card } from "@mentor/ui";
 import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import {
-  fetchEconomyBalance,
   notifyEconomyChanged,
   fetchInviteCode,
   fetchQuests,
@@ -30,7 +28,6 @@ type EconomyState =
   | { status: "error"; message: string }
   | {
       status: "ready";
-      balance: EconomyBalance;
       quests: QuestProgressView[];
       invite: InviteCodeView;
     };
@@ -41,7 +38,6 @@ interface EconomySectionProps {
 }
 
 async function fetchEconomyHub(): Promise<{
-  balance: EconomyBalance;
   quests: QuestProgressView[];
   invite: InviteCodeView;
 }> {
@@ -49,9 +45,8 @@ async function fetchEconomyHub(): Promise<{
     fetchQuests(),
     fetchInviteCode(),
   ]);
-  const balance = await fetchEconomyBalance();
   notifyEconomyChanged();
-  return { balance, quests, invite };
+  return { quests, invite };
 }
 
 /**
@@ -135,7 +130,7 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
     sheet.show({
       title: t("balance_title"),
       layout: "filter",
-      children: <EconomyBalanceCard balance={state.balance} />,
+      children: <EconomyBalanceCard />,
     });
   }
 

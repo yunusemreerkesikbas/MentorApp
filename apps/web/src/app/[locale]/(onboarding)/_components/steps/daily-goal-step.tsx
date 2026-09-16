@@ -1,9 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
+import { StreamingText } from "@mentor/ui";
 import { PlayButton } from "@/components/onboarding-play/play-button";
 import { PlayGridCard } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
@@ -37,6 +39,7 @@ export function DailyGoalStep({
   const t = useTranslations("onboarding.daily_goal");
   const push = useTranslations("onboarding.push");
   const { setUserFromServer } = useAuth();
+  const reduceMotion = useReducedMotion();
   const permission = usePushPermissionAsk();
   const [selected, setSelected] = useState<number | null>(() =>
     GOALS.some((goal) => goal.minutes === user.dailyFocusGoalMinutes) ? user.dailyFocusGoalMinutes : null,
@@ -93,7 +96,30 @@ export function DailyGoalStep({
           />
         ))}
       </div>
-      <p className="mt-4 text-center text-sm font-medium text-[var(--color-secondary)]">{t("caption")}</p>
+      {/*
+        The cards carry the Puhus here, so the reaction is a bubble under them rather than a header.
+        The fixed height keeps the caption from jumping when the first answer lands.
+      */}
+      <div aria-live="polite" className="mt-5 min-h-14">
+        {selected ? (
+          <motion.p
+            key={selected}
+            className="relative rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-4 py-3 text-center text-base font-bold leading-snug text-[var(--color-main)]"
+            initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.22, ease: "easeOut" }}
+          >
+            <span
+              aria-hidden
+              className="absolute -top-[9px] left-1/2 size-3.5 -translate-x-1/2 rotate-45 border-l-2 border-t-2 border-[var(--play-line)] bg-[var(--color-surface)]"
+            />
+            <span className="relative">
+              <StreamingText key={selected} text={t(`reactions.${selected}`)} />
+            </span>
+          </motion.p>
+        ) : null}
+      </div>
+      <p className="mt-3 text-center text-sm font-medium text-[var(--color-secondary)]">{t("caption")}</p>
       <PushPermissionLayer
         open={permission.open}
         title={push("title", { minutes: selected ?? RECOMMENDED })}

@@ -285,8 +285,15 @@ export class EconomyService {
 
   /** Self balance + the XP tier derived from the shared curve (admin reads stay on raw sums). */
   async getSelfBalance(userId: string): Promise<EconomyBalance> {
-    const balance = await this.repo.balanceSelf(userId);
-    return { ...balance, level: deriveLevel(balance.xp) };
+    const [balance, chatCost, analysisCost] = await Promise.all([
+      this.repo.balanceSelf(userId), this.config.get("economy.coin.ai_chat_cost"),
+      this.config.get("economy.coin.deep_analysis_cost"),
+    ]);
+    return { ...balance, level: deriveLevel(balance.xp), usage: {
+      chatCost, analysisCost,
+      chatMessages: chatCost > 0 ? Math.floor(Math.max(0, balance.coinConfirmed) / chatCost) : 0,
+      weeklyAnalyses: analysisCost > 0 ? Math.floor(Math.max(0, balance.coinConfirmed) / analysisCost) : 0,
+    } };
   }
   getAdminBalance(userId: string): Promise<Balance> {
     return this.repo.balanceService(userId);

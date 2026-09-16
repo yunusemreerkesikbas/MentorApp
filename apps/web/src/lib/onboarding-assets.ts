@@ -52,11 +52,3 @@ export const CLOUD_ASSETS = {
   left: `${SCENE_ROOT}/cloud-left.webp`,
   right: `${SCENE_ROOT}/cloud-right.webp`,
 } as const;
-
-export const ONBOARDING_MOTION = {
-  phraseSeconds: 0.24,
-  stepSeconds: 0.3,
-  completionCenterSeconds: 0.4,
-  cloudCoverSeconds: 0.5,
-  authSplitMs: 260,
-} as const;

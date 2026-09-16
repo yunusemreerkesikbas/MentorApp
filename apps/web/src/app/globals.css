@@ -415,35 +415,65 @@ html.mentor-sheet-open {
   }
 }
 
-/* Auth sheet — slide by measured height; transition starts only after travel is set. */
+/*
+ * Auth sheet — CSS keyframes, so the entrance plays from the first paint of the server HTML and
+ * runs on the compositor while hydration is still busy (see `auth-shell.tsx`).
+ * Travel is a percentage of the sheet's own height: nothing to measure, and a form that grows
+ * after mount (Turnstile, the coach link) cannot leave a sliver showing before the slide.
+ * The exit accelerates away (ease-in) and leaves the screen entirely; the old ease-out exit slowed
+ * to a stop half off screen and sat there until the next route arrived.
+ */
+.auth-shell {
+  --auth-sheet-open-dur: 560ms;
+  --auth-sheet-close-dur: 340ms;
+  --auth-sheet-from-y: calc(100% + var(--auth-hang-overhang, 0px));
+  --auth-sheet-to-y: -100dvh;
+  --auth-sheet-from-opacity: 1;
+}
 .auth-shell[data-hang="true"] { padding-top: var(--auth-hang-overhang); }
 .auth-sheet {
-  --auth-sheet-travel: 100vh;
-  --auth-sheet-open-dur: 680ms;
-  --auth-sheet-close-dur: 420ms;
-  --auth-sheet-ease: cubic-bezier(0.25, 0.82, 0.32, 1);
   width: 100%;
-  transform: translate3d(0, var(--auth-sheet-travel), 0);
+  animation: auth-sheet-in var(--auth-sheet-open-dur) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.auth-sheet[data-animated="true"][data-phase="open"] {
-  transform: translate3d(0, 0, 0);
-  transition: transform var(--auth-sheet-open-dur) var(--auth-sheet-ease);
+/* The sheet's own surface continues below it, so a height swap never opens a gap at the bottom. */
+.auth-sheet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 50dvh;
+  background: var(--color-surface);
 }
-.auth-sheet[data-animated="true"][data-phase="exiting"] {
-  transform: translate3d(0, calc(var(--auth-sheet-travel) * -1), 0);
-  transition: transform var(--auth-sheet-close-dur) var(--auth-sheet-ease);
+.auth-sheet[data-phase="exiting"] {
+  animation: auth-sheet-out var(--auth-sheet-close-dur) cubic-bezier(0.55, 0, 1, 0.45) both;
+}
+.auth-narrative {
+  transition: opacity var(--auth-sheet-close-dur) ease-in;
+}
+.auth-shell[data-phase="exiting"] .auth-narrative { opacity: 0; }
+@keyframes auth-sheet-in {
+  from { transform: translate3d(0, var(--auth-sheet-from-y), 0); opacity: var(--auth-sheet-from-opacity); }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+@keyframes auth-sheet-out {
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(0, var(--auth-sheet-to-y), 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-sheet,
-  .auth-sheet[data-animated="true"][data-phase="open"],
-  .auth-sheet[data-animated="true"][data-phase="exiting"] {
-    transform: none !important;
-    transition: none !important;
+  .auth-sheet[data-phase="exiting"] {
+    animation: none !important;
   }
+  .auth-narrative { transition: none; }
 }
 @media (min-width: 64rem) {
+  .auth-shell {
+    --auth-sheet-from-y: 1.5rem;
+    --auth-sheet-to-y: -1rem;
+    --auth-sheet-from-opacity: 0;
+  }
   .auth-shell[data-hang="true"] { padding-top: 2rem; }
-  .auth-sheet { --auth-sheet-travel: 2rem; }
+  .auth-sheet::after { content: none; }
 }
 
 /* Plan date sheet — react-day-picker overrides (DESIGN.md tokens) */

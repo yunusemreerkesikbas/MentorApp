@@ -5,9 +5,8 @@ import { PaymentsEventTopic, PaymentSucceeded } from "../../payments/domain/paym
 import { InviteService } from "./invite.service";
 
 /**
- * Bridges payments → economy: when an invited user's subscription activates, reward the inviter
- * (forward-only, idempotent). Gated by `economy.enabled` (F5). Consumes the existing payments event
- * — no change to payments/identity.
+ * Bridges payments → economy: on the invited user's first positive successful payment, reward the inviter
+ * (forward-only, idempotent). Gated by `economy.enabled` (F5). Payment events are delivered through the transactional job queue.
  */
 @Injectable()
 export class InviteEventsListener {
@@ -16,7 +15,7 @@ export class InviteEventsListener {
     private readonly config: ConfigRegistryService,
   ) {}
 
-  @OnEvent(PaymentsEventTopic.PAYMENT_SUCCEEDED)
+  @OnEvent(PaymentsEventTopic.PAYMENT_SUCCEEDED, { suppressErrors: false })
   async onPaymentSucceeded(event: PaymentSucceeded): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
     await this.invites.onInvitedConverted(event);

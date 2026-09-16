@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { EconomyBalance, EconomyLedgerEntryView } from "@mentor/types";
+import type { EconomyLedgerEntryView } from "@mentor/types";
 import { Button, Card, DigitPopIn, SectionHeading } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { useSearchParams } from "next/navigation";
@@ -10,10 +10,6 @@ import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-c
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { fetchEconomyLedger } from "@/lib/economy";
 import { coachReturnHref } from "@/lib/community-coach-bridge";
-
-interface EconomyBalanceCardProps {
-  balance: EconomyBalance;
-}
 
 type LedgerState =
   | { status: "loading" }
@@ -23,15 +19,14 @@ type LedgerState =
 /**
  * Earned XP + confirmed coin on the profile hub only (never in chat §4 #3).
  */
-export function EconomyBalanceCard({ balance: initialBalance }: EconomyBalanceCardProps) {
+export function EconomyBalanceCard() {
   const snapshot = useEconomySnapshot();
-  const balance = snapshot.balance ?? initialBalance;
+  const balance = snapshot.balance;
   const router = useRouter();
   const searchParams = useSearchParams();
   const locale = useLocale();
   const translate = useTranslations("economy");
   const [ledger, setLedger] = useState<LedgerState>({ status: "loading" });
-  const { level } = balance;
 
   useEffect(() => {
     let active = true;
@@ -51,6 +46,9 @@ export function EconomyBalanceCard({ balance: initialBalance }: EconomyBalanceCa
     () => new Intl.DateTimeFormat(locale, { day: "2-digit", month: "short" }),
     [locale],
   );
+
+  if (snapshot.error) return <Card><p role="alert">{translate("balance_error")}</p></Card>;
+  if (!balance) return <Card><p role="status">{translate("balance_loading")}</p></Card>;
 
   return (
     <Card>
@@ -86,8 +84,11 @@ export function EconomyBalanceCard({ balance: initialBalance }: EconomyBalanceCa
           ) : null}
         </div>
       </dl>
+      {balance.usage ? <p className="mt-4 text-sm text-[var(--color-secondary)]">
+        {translate("balance_usage", balance.usage)}
+      </p> : null}
       <div className="mt-4">
-        <JourneyLevelCompact level={level} />
+        <JourneyLevelCompact level={balance.level} />
       </div>
       <div className="mt-4">
         <Button

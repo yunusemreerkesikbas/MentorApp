@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, type CSSProperties, type KeyboardEvent } f
 import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { ONBOARDING_MOTION } from "@/lib/onboarding-assets";
 import { markWelcomeSeen } from "@/lib/welcome-seen";
 import {
   WELCOME_SLIDES,
@@ -32,17 +31,19 @@ export function WelcomeCarousel() {
   const stepRef = useRef<WelcomeStep>(0);
   /** Where a tap sent us; while it is set, the copy stays down until the scroll arrives. */
   const targetRef = useRef<WelcomeStep | null>(null);
-  const authTimer = useRef(0);
   const [step, setStep] = useState<WelcomeStep>(0);
   const [authTarget, setAuthTarget] = useState<"/login" | "/signup" | null>(null);
 
-  useEffect(
-    () => () => {
-      window.cancelAnimationFrame(frameRef.current);
-      window.clearTimeout(authTimer.current);
-    },
-    [],
-  );
+  useEffect(() => () => window.cancelAnimationFrame(frameRef.current), []);
+
+  /*
+   * Both doors out of the welcome are known up front. Fetching them now is what makes the tap
+   * instant: measured on a throttled phone, "Başlayalım" used to sit for 1.6 s loading the auth route.
+   */
+  useEffect(() => {
+    router.prefetch("/signup");
+    router.prefetch("/login");
+  }, [router]);
 
   /*
    * One write per frame, straight to CSS variables: the scene parallax and the copy's fade follow
@@ -90,7 +91,7 @@ export function WelcomeCarousel() {
     if (authTarget) return;
     markWelcomeSeen();
     setAuthTarget(target);
-    authTimer.current = window.setTimeout(() => router.push(target), ONBOARDING_MOTION.authSplitMs);
+    router.push(target);
   }
 
   const slide = WELCOME_SLIDES[step];

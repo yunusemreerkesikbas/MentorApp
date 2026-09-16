@@ -1,3 +1,4 @@
+import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -10,7 +11,6 @@ import { signFakeWebhook } from "../src/modules/payments/infrastructure/adapters
 
 const SECRET = "test-payments-webhook-secret"; // matches vitest env
 const RUN = Date.now();
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * W6 economy slice 2a (e2e): invite → conversion → coin, against a real Postgres (RLS active).
@@ -148,15 +148,17 @@ describe("economy invite (e2e)", () => {
       return request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body));
     };
 
-    await fire("a");
-    await wait(600); // listener runs async after emit
+    const trialBalance = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
+    expect(trialBalance.body.coinConfirmed).toBe(0);
+    await Promise.all([fire("a"), fire("a")]);
+    await app.get(JobRunnerService).processBatch(100);
 
     const bal1 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
     expect(bal1.body.coinConfirmed).toBe(20);
 
     // A second activation must NOT double-reward (redemption already CONVERTED + grant idempotent).
     await fire("b");
-    await wait(600);
+    await app.get(JobRunnerService).processBatch(100);
     const bal2 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
     expect(bal2.body.coinConfirmed).toBe(20);
   }, 30_000);

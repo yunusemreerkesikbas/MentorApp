@@ -1,3 +1,4 @@
+import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
 import type { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
@@ -21,7 +22,7 @@ const genCode = (): string => `MENTOR-${randomBytes(6).toString("hex").toUpperCa
 
 /**
  * Invite → conversion → coin (§3 light economy slice 2a). Reward fires ONLY when an invited user's
- * subscription activates (forward-only, verified). Reward goes to the inviter; idempotent + capped.
+ * first positive payment succeeds (forward-only, verified). Reward goes to the inviter; idempotent + capped.
  */
 @Injectable()
 export class InviteService {
@@ -33,6 +34,7 @@ export class InviteService {
     private readonly economy: EconomyService,
     private readonly quests: QuestService,
     private readonly config: ConfigRegistryService,
+    private readonly paymentEvidence: PaymentEvidenceService,
   ) {}
 
   /** The user's stable invite code (created on first request). */
@@ -75,7 +77,7 @@ export class InviteService {
   }
 
   /**
-   * On the invited user's subscription activation: flip PENDING→CONVERTED (idempotent) and reward
+   * On the invited user's first positive successful payment: flip PENDING→CONVERTED (idempotent) and reward
    * the inviter. Called by the payments-event listener. Reward is capped via EconomyService.
    */
   async onInvitedConverted(event: PaymentSucceeded): Promise<void> {
@@ -84,6 +86,10 @@ export class InviteService {
     await this.repo.withServiceTx(async (tx) => {
       const redemption = await this.repo.lockPending(event.userId, tx);
       if (!redemption || redemption.redeemedAt > event.paidAt) return;
+      if (await this.paymentEvidence.isRefunded(event.userId, event.paymentId)) {
+        await this.repo.recordPayment(redemption.id, event.paymentId, "REFUNDED", tx);
+        return;
+      }
       let outcome = reward > 0 ? "GRANTED" : "DISABLED";
       if (reward > 0) {
         try {
@@ -106,7 +112,8 @@ export class InviteService {
    * Clamp-to-zero + idempotent (EconomyService.reverse). Called by the refund-event listener.
    */
   async onInvitedRefunded(invitedUserId: string, sourcePaymentId?: string): Promise<void> {
-    const redemption = await this.repo.findRedemptionByInvited(invitedUserId);
+    await this.repo.withServiceTx(async (tx) => {
+    const redemption = await this.repo.lockRedemption(invitedUserId, tx);
     if (!sourcePaymentId || !redemption || redemption.status !== "CONVERTED" || redemption.sourcePaymentId !== sourcePaymentId || redemption.rewardOutcome !== "GRANTED") return;
     try {
       const reversed = await this.economy.reverse(redemption.inviterUserId, {
@@ -123,12 +130,14 @@ export class InviteService {
         );
       }
     } catch (err) {
-      // Refund is already recorded in payments; a reversal failure must not break the flow.
+      // Propagate to the payment outbox job so a transient failure is retried.
       this.logger.error(
         { err, inviterUserId: redemption.inviterUserId, redemptionId: redemption.id },
         "invite reward reversal failed",
       );
+      throw err;
     }
+    });
   }
 
   async summary(inviterUserId: string): Promise<InviteSummary> {

@@ -15,7 +15,7 @@ export class RefundEventsListener {
     private readonly config: ConfigRegistryService,
   ) {}
 
-  @OnEvent(PaymentsEventTopic.PAYMENT_REFUNDED)
+  @OnEvent(PaymentsEventTopic.PAYMENT_REFUNDED, { suppressErrors: false })
   async onPaymentRefunded(event: PaymentRefunded): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
     await this.invites.onInvitedRefunded(event.userId, event.sourcePaymentId);

@@ -9,6 +9,8 @@ export interface EconomyBalance {
   coinPending: number;
   /** XP tier derived from the shared curve (@mentor/core) — gives the bare XP number meaning. */
   level: CommunityLevelView;
+  /** Alternative uses of the current balance; eligibility/budget checks still apply at purchase. */
+  usage?: { chatCost: number; analysisCost: number; chatMessages: number; weeklyAnalyses: number };
 }
 
 /** GET /v1/economy/ledger — append-only economy history, ready to render. */

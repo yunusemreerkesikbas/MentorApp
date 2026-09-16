@@ -41,7 +41,8 @@ export function WhyStep({
       onBack={onBack}
       skipLabel={t("skip")}
       onSkip={() => onContinue(null)}
-      heading={<PuhuBubble title={t("title")} />}
+      // Before an answer Puhu says why it asks; after one, it answers back (Duolingo's reaction beat).
+      heading={<PuhuBubble title={t("title")} sub={selected ? t(`reactions.${selected}`) : t("subtitle")} />}
       footer={
         <PlayFooter>
           <PlayButton disabled={!selected} onClick={() => onContinue(selected)}>

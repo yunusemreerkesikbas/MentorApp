@@ -191,6 +191,45 @@ export interface CreateNotebookDto { [key: string]: unknown }
 
 export interface UpdateNotebookDto { [key: string]: unknown }
 
+export type RewardLedgerEntryDtoUnit = typeof RewardLedgerEntryDtoUnit[keyof typeof RewardLedgerEntryDtoUnit];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RewardLedgerEntryDtoUnit = {
+  XP: 'XP',
+  COIN: 'COIN',
+} as const;
+
+export type RewardLedgerEntryDtoStatus = typeof RewardLedgerEntryDtoStatus[keyof typeof RewardLedgerEntryDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const RewardLedgerEntryDtoStatus = {
+  PENDING: 'PENDING',
+  CONFIRMED: 'CONFIRMED',
+  REVERSED: 'REVERSED',
+} as const;
+
+export interface RewardLedgerEntryDto {
+  id: string;
+  unit: RewardLedgerEntryDtoUnit;
+  amount: number;
+  reason: string;
+  status: RewardLedgerEntryDtoStatus;
+  /** @nullable */
+  note: string | null;
+  title: string;
+  description: string;
+  createdAt: string;
+}
+
+export interface UnseenRewardsDto {
+  items: RewardLedgerEntryDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface DeepAnalysisDto { [key: string]: unknown }
 
 export interface RedeemInviteDto { [key: string]: unknown }
@@ -1176,6 +1215,19 @@ export const MistakeNotebookControllerListEntriesStatus = {
 export type MistakeNotebookControllerReviewEntryBody = {
   solved: boolean;
   reviewId?: string;
+};
+
+export type EconomyControllerUnseenParams = {
+pageSize?: number;
+page?: number;
+};
+
+export type EconomyControllerSeenBody = {
+  /**
+   * @minItems 1
+   * @maxItems 100
+   */
+  ledgerIds: string[];
 };
 
 export type ForumPublicControllerQuestionsParams = {
@@ -6350,6 +6402,80 @@ export const economyControllerInvite = async ( options?: RequestInit): Promise<e
     method: 'GET'
     
     
+  }
+);}
+
+
+
+export type economyControllerUnseenResponse200 = {
+  data: UnseenRewardsDto
+  status: 200
+}
+    
+export type economyControllerUnseenResponseSuccess = (economyControllerUnseenResponse200) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerUnseenResponse = (economyControllerUnseenResponseSuccess)
+
+export const getEconomyControllerUnseenUrl = (params?: EconomyControllerUnseenParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/economy/rewards/unseen?${stringifiedParams}` : `/v1/economy/rewards/unseen`
+}
+
+export const economyControllerUnseen = async (params?: EconomyControllerUnseenParams, options?: RequestInit): Promise<economyControllerUnseenResponse> => {
+  
+  return http<economyControllerUnseenResponse>(getEconomyControllerUnseenUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type economyControllerSeenResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type economyControllerSeenResponseSuccess = (economyControllerSeenResponse204) & {
+  headers: Headers;
+};
+;
+
+export type economyControllerSeenResponse = (economyControllerSeenResponseSuccess)
+
+export const getEconomyControllerSeenUrl = () => {
+
+
+  
+
+  return `/v1/economy/rewards/seen`
+}
+
+export const economyControllerSeen = async (economyControllerSeenBody: EconomyControllerSeenBody, options?: RequestInit): Promise<economyControllerSeenResponse> => {
+  
+  return http<economyControllerSeenResponse>(getEconomyControllerSeenUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      economyControllerSeenBody,)
   }
 );}
 
