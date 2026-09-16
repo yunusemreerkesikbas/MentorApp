@@ -1,23 +1,19 @@
 import { Injectable } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
-import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { PaymentsEventTopic, PaymentRefunded } from "../../payments/domain/payments.events";
 import { InviteService } from "./invite.service";
 
 /**
  * Bridges payments → economy: a refund of the invited user's charge reverses the inviter's
- * conversion reward (refund-only + clamp-to-zero, §3). Gated by `economy.enabled`.
+ * conversion reward (refund-only + clamp-to-zero, §3). Not gated by `economy.enabled` — a
+ * compensating ledger write must still run if the grant already landed (kill-switch / dormant flag).
  */
 @Injectable()
 export class RefundEventsListener {
-  constructor(
-    private readonly invites: InviteService,
-    private readonly config: ConfigRegistryService,
-  ) {}
+  constructor(private readonly invites: InviteService) {}
 
   @OnEvent(PaymentsEventTopic.PAYMENT_REFUNDED, { suppressErrors: false })
-  async onPaymentRefunded(event: PaymentRefunded): Promise<void> {
-    if (!(await this.config.get("economy.enabled"))) return;
-    await this.invites.onInvitedRefunded(event.userId, event.sourcePaymentId);
+  onPaymentRefunded(event: PaymentRefunded): Promise<void> {
+    return this.invites.onInvitedRefunded(event.userId, event.sourcePaymentId);
   }
 }

@@ -413,12 +413,17 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 
 ## Geliştirmeler (timeline)
 
-### 2026-09-17 — İade clawback'i sourcePaymentId olmadan yürümez
+### 2026-09-17 — İade clawback'i flag ve kuyruk parse'ına bağlandı
 
 `payments.payment.refunded` worker'ı `sourcePaymentId` zorunlu parse eder. Davet dönüşüm ödülü yalnız
-aynı charge id'si ile geri alınır; alanı optional bırakmak reversal'ı sessiz atlatırdı. Kullanım
-değişmedi: admin `refundLastCharge`. Gotcha: kaynaksız payload job'da fail+retry. İlgili:
-[payments.md](./payments.md) 2026-09-17, `RefundEventsListener`, `invite.service.ts`.
+aynı charge id'si ile geri alınır; alanı optional bırakmak reversal'ı sessiz atlatırdı.
+
+`RefundEventsListener` artık `economy.enabled` bakmaz. Grant flag kapalıyken (kill-switch / dormant)
+zaten verilmiş davet coin'i iade sonrası inviter'da kalırdı; outbox işi başarı sayılıp tekrar
+denemezdi. Dönüşüm grant'ı hâlâ flag'e bağlı. Reversal, redemption kilidi ile aynı SERVICE tx içinde
+(`reverseInServiceTx`). Kullanım: admin `refundLastCharge`. Gotcha: kaynaksız payload job'da
+fail+retry. İlgili: [payments.md](./payments.md) 2026-09-17, `refund-events.listener.ts`,
+`invite.service.ts`, `economy.service.ts`.
 
 ### 2026-09-06 — CoinCelebration tam entegrasyon & görevler tamamlanma ekranı
 

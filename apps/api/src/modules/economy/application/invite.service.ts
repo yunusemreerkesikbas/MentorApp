@@ -116,13 +116,13 @@ export class InviteService {
     const redemption = await this.repo.lockRedemption(invitedUserId, tx);
     if (!sourcePaymentId || !redemption || redemption.status !== "CONVERTED" || redemption.sourcePaymentId !== sourcePaymentId || redemption.rewardOutcome !== "GRANTED") return;
     try {
-      const reversed = await this.economy.reverse(redemption.inviterUserId, {
+      const reversed = await this.economy.reverseInServiceTx(redemption.inviterUserId, {
         originalRefType: EconomyLedger.INVITE_REF_TYPE,
         originalRefId: redemption.id,
         reason: EconomyLedger.INVITE_REVERSAL_REASON,
         refType: EconomyLedger.INVITE_REVERSAL_REF_TYPE,
         refId: redemption.id,
-      });
+      }, tx);
       if (reversed > 0) {
         this.logger.log(
           { inviterUserId: redemption.inviterUserId, redemptionId: redemption.id, reversed },
