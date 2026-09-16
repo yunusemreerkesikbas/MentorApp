@@ -94,7 +94,7 @@ describe("InviteService", () => {
         grants.push({ userId, unit, amount, reason: opts.reason });
         return { xp: 0, coinConfirmed: amount, coinPending: 0 };
       },
-      reverse: async (userId: string, opts: Record<string, string>) => {
+      reverseInServiceTx: async (userId: string, opts: Record<string, string>) => {
         if (reverseError) throw reverseError;
         reversals.push({ userId, opts });
         return reverseResult;
