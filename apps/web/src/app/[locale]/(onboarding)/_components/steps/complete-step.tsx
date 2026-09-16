@@ -1,10 +1,11 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Backpack, Bell, CalendarDays, GraduationCap, Landmark, Target, Timer, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { AuthUser, CareerGroup } from "@mentor/types";
+import { StreamingText } from "@mentor/ui";
 import { PlayButton } from "@/components/onboarding-play/play-button";
 import { PlayIconWell, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
@@ -44,6 +45,10 @@ export function CompleteStep({
   const reduceMotion = useReducedMotion();
   const { startCloudTransition } = useCloudTransition();
   const leaving = useRef(false);
+  const [titleDone, setTitleDone] = useState(false);
+  const title = audience === "coach" ? t("title_coach") : t("title");
+  // A new coach's invite code stays shut until the email is verified; say so before they find a locked panel.
+  const body = audience === "coach" ? t("verify_email_coach") : t("subtitle");
 
   function finish() {
     if (leaving.current) return;
@@ -76,11 +81,10 @@ export function CompleteStep({
           <ReadyWindow career={summary.careerGroup} />
           <div className="mt-2 flex flex-col items-center gap-2 text-center">
             <h1 className="text-[2rem] font-extrabold leading-tight text-[var(--color-main)]">
-              {audience === "coach" ? t("title_coach") : t("title")}
+              <StreamingText text={title} onComplete={() => setTitleDone(true)} />
             </h1>
             <p className="max-w-[19rem] text-pretty text-base font-medium leading-relaxed text-[var(--color-body)]">
-              {/* A new coach's invite code stays shut until the email is verified; say so before they find a locked panel. */}
-              {audience === "coach" ? t("verify_email_coach") : t("subtitle")}
+              {titleDone ? <StreamingText text={body} /> : <span className="invisible">{body}</span>}
             </p>
           </div>
           <ul

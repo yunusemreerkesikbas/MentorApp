@@ -52,7 +52,7 @@ describe("toLedgerEntryView", () => {
 
   it("maps quest rewards to a user-facing task title from i18n", () => {
     expect(toLedgerEntryView(row("quest.daily.plan-task-done"), tTr)).toMatchObject({
-      title: "Görev hakkı",
+      title: "Görev XP’si",
       description: "Bugünün planından 1 görev tamamla",
     });
   });
@@ -64,7 +64,7 @@ describe("toLedgerEntryView", () => {
     expect(
       toLedgerEntryView(row("quest.weekly.effort-allowance", Currency.COIN), tTr),
     ).toMatchObject({
-      title: "Görev hakkı",
+      title: "Görev Coin’i",
       description: "Haftalık aktif gün hedefi",
     });
   });

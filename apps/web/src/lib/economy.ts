@@ -8,7 +8,7 @@ import type {
   StreakRescueView,
   Paginated,
 } from "@mentor/types";
-import { ApiClientError, http } from "@mentor/api-client";
+import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } from "@mentor/api-client";
 
 /**
  * Typed wrappers over user economy endpoints. Regen api-client when OpenAPI updates;
@@ -19,11 +19,11 @@ export async function fetchEconomyBalance(): Promise<EconomyBalance> {
 }
 
 export async function fetchUnseenRewards(): Promise<Paginated<EconomyLedgerEntryView>> {
-  return await http<Paginated<EconomyLedgerEntryView>>("/v1/economy/rewards/unseen?page=1&pageSize=20");
+  return await economyControllerUnseen({ page: 1, pageSize: 20 }) as unknown as Paginated<EconomyLedgerEntryView>;
 }
 
 export async function markRewardsSeen(ledgerIds: string[]): Promise<void> {
-  await http<void>("/v1/economy/rewards/seen", { method: "POST", body: JSON.stringify({ ledgerIds }) });
+  await economyControllerSeen({ ledgerIds });
 }
 
 export async function fetchEconomyLedger({

@@ -58,8 +58,8 @@
       "subtitle": "Say what's on your mind. We'll find the next step in your plan together."
     },
     "slide3": {
-      "title": "Today's small step.",
-      "subtitle": "Not everything at once. Just what you can do today."
+      "title": "From goal to today, all in one place.",
+      "subtitle": "Set up your goal board, build your plan, focus with Pomodoro. Your mistakes stay in your notebook, your progress shows in analysis."
     },
     "slide4": {
       "title": "You won't walk this road alone.",
@@ -153,7 +153,7 @@
     "greeting_day": "Good afternoon",
     "greeting_evening": "Good evening",
     "profile_link": "Go to your profile",
-    "earned_rights_label": "Earned rights",
+    "earned_rights_label": "Coin and XP",
     "sidebar_collapse": "Collapse menu",
     "sidebar_expand": "Expand menu",
     "students": "My students"
@@ -2535,7 +2535,10 @@
     "quests_completed_hide_tasks": "Hide completed tasks",
     "invite_code_reward_label": "Invite Code Bonus",
     "email_verified_reward_label": "Email Verified",
-    "subscription_reward_label": "First Subscription Bonus"
+    "subscription_reward_label": "First Subscription Bonus",
+    "balance_error": "Your balance could not be refreshed. Try again shortly.",
+    "balance_usage": "One chat message costs {chatCost} Coin; a weekly deep analysis costs {analysisCost} Coin. Your balance covers {chatMessages} messages or {weeklyAnalyses} analyses. Daily limits and eligibility still apply.",
+    "balance_loading": "Loading your balance…"
   },
   "legal": {
     "last_updated": "Last updated: {date}",
@@ -2593,7 +2596,7 @@
     "progress_aria": "Onboarding step {current} of {total}",
     "welcome": {
       "title": "Hi {name}! Let's get to know you a little.",
-      "subtitle": "A few short answers will help me prepare your dashboard for you.",
+      "subtitle": "A few short answers and we'll shape your dashboard around you. It takes a minute.",
       "continue": "Continue"
     },
     "exam": {
@@ -2614,6 +2617,15 @@
     },
     "why": {
       "title": "What does this exam mean to you?",
+      "subtitle": "On hard days, this answer stays on your goal board.",
+      "reactions": {
+        "dream_job": "Let's draw the road to that job together.",
+        "secure_future": "Solid ground. We'll build it step by step.",
+        "family": "Every step you take for them counts.",
+        "prove_myself": "We'll gather the proof a little each day.",
+        "fresh_start": "Fresh starts feel good. Let's walk from here.",
+        "other": "Whatever your reason, we're with you."
+      },
       "options": {
         "dream_job": "My dream job",
         "secure_future": "A secure future",
@@ -2627,7 +2639,7 @@
     },
     "field": {
       "title": "Which field do you want to grow in?",
-      "subtitle": "Puhu appears on your goal board in this field.",
+      "subtitle": "Puhu greets you on your goal board in this field.",
       "goal_title": "Growing in {field}",
       "goal_title_exam": "Moving forward on the {exam} road",
       "continue": "Continue",
@@ -2645,13 +2657,19 @@
         "60": "Committed",
         "90": "Intense"
       },
+      "reactions": {
+        "15": "Small, but every day. A good start.",
+        "30": "A steady pace. It fits into any day.",
+        "60": "A committed pace. Let's not forget the breaks.",
+        "90": "An intense pace. On tired days, scaling down is fine."
+      },
       "continue": "Continue",
       "skip": "Skip for now",
       "save_error": "It didn't save just now. Let's try again in a moment."
     },
     "push": {
-      "title": "Let me gently remind you of your {minutes}-minute goal.",
-      "body": "If you allow it, I'll leave you a short note each day.",
+      "title": "Shall we drop by each day for your {minutes}-minute goal?",
+      "body": "If you allow it, we'll leave you a short note each day.",
       "skip": "Skip for now"
     },
     "profile": {

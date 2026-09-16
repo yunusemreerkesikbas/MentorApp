@@ -19,6 +19,8 @@ function useFocusOnChange(key: string) {
 export function PuhuBubble({ title, sub }: { title: string; sub?: string }) {
   const reduceMotion = useReducedMotion();
   const titleRef = useFocusOnChange(title);
+  /** The title that has finished streaming. The sub line waits for it, so Puhu says one thing at a time. */
+  const [spokenTitle, setSpokenTitle] = useState<string | null>(null);
   const [speaking, setSpeaking] = useState(false);
   const [mouthClosed, setMouthClosed] = useState(false);
   const [blinking, setBlinking] = useState(false);
@@ -45,7 +47,8 @@ export function PuhuBubble({ title, sub }: { title: string; sub?: string }) {
       window.clearTimeout(speechTimer);
       window.clearTimeout(blinkTimer);
     };
-  }, [title, reduceMotion]);
+    // A new sub line is Puhu answering you, so the mouth moves again for it.
+  }, [title, sub, reduceMotion]);
 
   const src = blinking
     ? PUHU_MOTION_FRAMES.blink
@@ -75,10 +78,13 @@ export function PuhuBubble({ title, sub }: { title: string; sub?: string }) {
           tabIndex={-1}
           className="relative text-balance text-xl font-extrabold leading-snug text-[var(--color-main)] outline-none"
         >
-          <StreamingText key={title} text={title} />
+          <StreamingText key={title} text={title} onComplete={() => setSpokenTitle(title)} />
         </h1>
         {sub ? (
-          <p className="relative mt-1 text-pretty text-sm font-medium leading-relaxed text-[var(--color-secondary)]">{sub}</p>
+          <p className="relative mt-1 text-pretty text-sm font-medium leading-relaxed text-[var(--color-secondary)]">
+            {/* Held invisible until its turn, so the bubble is already its final size. */}
+            {spokenTitle === title ? <StreamingText key={sub} text={sub} /> : <span className="invisible">{sub}</span>}
+          </p>
         ) : null}
       </div>
     </div>

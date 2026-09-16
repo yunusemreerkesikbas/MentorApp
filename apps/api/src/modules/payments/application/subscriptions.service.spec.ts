@@ -118,6 +118,7 @@ describe("SubscriptionsService payment availability", () => {
       registryWith(flags) as never,
       paymentProvider as never,
       {} as never,
+      { append: vi.fn() } as never,
     );
     return { service, paymentProvider };
   }
@@ -225,6 +226,7 @@ describe("SubscriptionsService checkout with a promotion", () => {
       registryWith(flags) as never,
       paymentProvider as never,
       {} as never,
+      { append: vi.fn() } as never,
     );
     return { service, subsRepo, promotions, paymentProvider, db, tx };
   }
@@ -356,7 +358,7 @@ describe("SubscriptionsService webhook amounts", () => {
       update: vi.fn(),
     };
     const plansRepo = { findById: vi.fn().mockResolvedValue(plan) };
-    const eventsRepo = { appendTransaction: vi.fn() };
+    const eventsRepo = { appendTransaction: vi.fn(), hasSuccessfulCharge: vi.fn().mockResolvedValue(false) };
     const promotions = {
       findActiveForSubscription: vi.fn().mockResolvedValue(redemption),
       consumePeriod: vi.fn().mockResolvedValue(0),
@@ -375,6 +377,8 @@ describe("SubscriptionsService webhook amounts", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      { append: vi.fn() } as never,
     );
     return { service, eventsRepo, promotions };
   }
@@ -472,6 +476,8 @@ describe("SubscriptionsService plan catalog admin", () => {
       {} as never,
       {} as never,
       {} as never,
+      {} as never,
+      { append: vi.fn() } as never,
     );
 
     const updated = await service.updatePlan("premium-monthly", {

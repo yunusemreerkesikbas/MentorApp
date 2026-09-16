@@ -69,6 +69,14 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **`PaymentRefunded.sourcePaymentId` zorunlu (2026-09-17)** — İade ödül olayı job kuyruğundan
+  parse edilirken `sourcePaymentId` her zaman gerekir (davet clawback bu id'ye kilitli). Domain
+  sınıfı worker Zod şeması ile hizalandı; alanı optional yapmak kaynaksız iadede reversal'ı sessiz
+  no-op yapardı. Kullanım: `refundLastCharge` zaten charge'ın `providerEventId` değerini yazar.
+  Gotcha: kuyruk payload'ında alan yoksa işçi parse'da düşer ve job retry olur; clawback atlanmaz.
+  İlgili: `payments.events.ts`, `payment-reward-events.service.ts`,
+  `payment-reward-events.service.spec.ts`, [economy.md](./economy.md).
+
 - **Ödeme kanalı flag'leri: web, mağaza ve web→mağaza yönlendirme (APP-096, 2026-09-15)** — Web
   ödemesini deploy'suz ve kitle bazında kapatıp alıcıyı App Store / Google Play'e gönderebilmek için.
   Mobil uygulama henüz yok; mobil flag'lerin bugünkü tek tüketicisi web yönlendirmesi.

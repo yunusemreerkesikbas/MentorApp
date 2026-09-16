@@ -16,8 +16,9 @@ export class JobRepository {
 
   async insert(
     data: Pick<NewJob, "name" | "payload" | "runAt" | "maxAttempts">,
+    transaction?: DatabaseTx,
   ): Promise<JobRow> {
-    return withServiceContext(this.db, async (tx) => {
+    const insert = async (tx: DatabaseTx) => {
       const rows = await tx
         .insert(jobs)
         .values({
@@ -29,7 +30,8 @@ export class JobRepository {
         })
         .returning();
       return rows[0]!;
-    });
+    };
+    return transaction ? insert(transaction) : withServiceContext(this.db, insert);
   }
 
   /** Claim a batch of runnable jobs (SKIP LOCKED — safe for concurrent cron workers). */

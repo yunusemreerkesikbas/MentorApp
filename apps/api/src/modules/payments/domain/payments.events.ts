@@ -44,7 +44,7 @@ export class PaymentRefunded {
     readonly userId: string,
     readonly subscriptionId: string,
     readonly amountMinor: number,
-    readonly sourcePaymentId?: string,
+    readonly sourcePaymentId: string,
   ) {}
 }
 

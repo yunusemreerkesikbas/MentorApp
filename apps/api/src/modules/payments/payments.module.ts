@@ -1,3 +1,5 @@
+import { PaymentRewardEventsService } from "./application/payment-reward-events.service";
+import { PaymentEvidenceService } from "./application/payment-evidence.service";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
@@ -43,6 +45,8 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     PlansRepository,
     SubscriptionsRepository,
     PaymentEventsRepository,
+    PaymentRewardEventsService,
+    PaymentEvidenceService,
     SubscriptionsService,
     SubscriptionMaintenanceService,
     FeaturePolicyService,
@@ -72,6 +76,6 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
   ],
   // SponsoredSeatService is exported for the admin metrics surface, which is the one place
   // allowed to hold both "who has a seat" and "what AI cost" at the same time.
-  exports: [EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService],
+  exports: [PaymentEvidenceService, EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService],
 })
 export class PaymentsModule {}

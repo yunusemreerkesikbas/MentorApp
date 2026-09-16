@@ -24,6 +24,12 @@ export class InviteRepository {
     return row;
   }
 
+  async lockRedemption(invitedUserId: string, tx: DatabaseTx): Promise<RedemptionRow | undefined> {
+    const [row] = await tx.select().from(inviteRedemptions)
+      .where(eq(inviteRedemptions.invitedUserId, invitedUserId)).for("update");
+    return row;
+  }
+
   async recordPayment(id: string, paymentId: string, outcome: string, tx: DatabaseTx): Promise<void> {
     await tx.update(inviteRedemptions).set({ status: "CONVERTED", convertedAt: new Date(), sourcePaymentId: paymentId, rewardOutcome: outcome })
       .where(eq(inviteRedemptions.id, id));
@@ -74,18 +80,6 @@ export class InviteRepository {
         .insert(inviteRedemptions)
         .values({ inviterUserId, invitedUserId, code })
         .onConflictDoNothing()
-        .returning();
-      return rows[0];
-    });
-  }
-
-  /** PENDING → CONVERTED, only if currently PENDING (idempotent). Returns the row if it transitioned. */
-  markConverted(invitedUserId: string): Promise<RedemptionRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .update(inviteRedemptions)
-        .set({ status: "CONVERTED", convertedAt: new Date() })
-        .where(and(eq(inviteRedemptions.invitedUserId, invitedUserId), eq(inviteRedemptions.status, "PENDING")))
         .returning();
       return rows[0];
     });

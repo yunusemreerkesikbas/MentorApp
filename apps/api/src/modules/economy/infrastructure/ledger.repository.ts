@@ -215,6 +215,7 @@ export class LedgerRepository {
 
   async eraseCoinReservationsForUser(userId: string): Promise<void> {
     await withServiceContext(this.db, async (tx) => {
+      await tx.delete(economyRewardReceipts).where(eq(economyRewardReceipts.userId, userId));
       await tx.delete(coinGrantReservations).where(eq(coinGrantReservations.userId, userId));
     });
   }

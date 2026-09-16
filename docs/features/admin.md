@@ -91,12 +91,33 @@ targetId, before, after })` for rich diffs.
 | `GET/POST /admin/content/exams` · `POST …/:slug/events` · `DELETE …/:slug/events/:type` | Exam-calendar editor (ADMIN/EDITOR) |
 | `GET /admin/users/:id/subscription` · `POST …/refund` · `POST …/cancel` | Subscription view / refund / cancel (FINANCE) |
 | `GET /admin/metrics` | KPI snapshot (read-only, no audit) |
+| `GET /admin/metrics/ai` | LLM cost windows, model/feature split, top spenders, monthly budget (read-only) |
+| `GET /admin/metrics/sponsorship` | Coach-sponsored seats + cohort cost (read-only) |
 | `GET /admin/metrics/economy` | Coin/XP faucet + sink breakdown, float, faucet reach (read-only) |
+| `GET /admin/metrics/coach-feedback` | Coach reply 👍/👎 satisfaction + recent downrated replies (read-only) |
 | `GET /admin/config` · `PATCH /admin/config/:key` | Config/flag editor (SUPER_ADMIN) |
 | `GET/POST /admin/announcements` · `POST …/:id/send` · `DELETE …/:id` | Duyuru (broadcast) editörü (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
 
+- **Ayar hint'leri Türkçe (2026-09-17)** — `/config` info ikonu hover'da kısa Türkçe açıklama
+  gösterir (`config-hints.ts`, katalogdaki 133 anahtar). Yeni anahtar çevirisi yoksa API
+  `description` (İngilizce) yedek. Depolama kategorisi etiket aldı. Kullanım: admin `/config`,
+  anahtarın yanındaki info ikonu. Gotcha: metin admin kopyasıdır, öğrenci voice.md'ye bağlı
+  değil. İlgili: `apps/admin/src/app/(general)/config/*`.
+
+- **Anasayfa Duralux widget kit (2026-09-16)** — Admin `/` KPI kartları `MetricCard` yerine paylaşılan
+  Duralux-tarzı widget'lara geçti: `KpiStatRow` (CustomersStatistics), `ProgressStatRow`
+  (SiteOverviewStatistics, üç nokta menü yok), `MetricStrip` (EmailOverview), `WindowSparkBars`
+  (EstimateBarChart, yalnız d1/d7/d30), `BucketDonut` (LeadsOverviewChart, CardHeader aksiyonları
+  yok). Demo sayfalar (`widgets/statistics|charts`, `dashboards/analytics`) dokunulmadı.
+  **Kullanım:** bölümler DTO'yu `KpiItem` / `WindowSeries` / `BucketItem`'a map eder; fetch
+  `useAdminResource`. SUPPORT/FINANCE (ve umbrella) metrikleri görür, EDITOR yalnız HomeCards.
+  **Gotcha:** 3 çubuklu bar rolling window toplamıdır (24s / 7g / 30g iç içe pencereler), günlük
+  eğri değil. Tarih filtresi yok. Sahte MoM / 12 aylık sparkline yok. Top spender satırı
+  `/users/:id`'ye gider.
+  **İlgili:** `apps/admin/src/components/shared/admin/dashboard/*`,
+  `apps/admin/src/lib/useAdminResource.ts`, `apps/admin/src/app/{Metrics,AiCost,Economy,Sponsorship,CoachFeedback,Home}Cards.tsx`.
 - **Koç vetting kuyruğu (APP-082, 2026-09-06)** — **Güncel değil:** APP-089 (2026-09-08) ön onayı
   kaldırdı. Bugünkü uçlar `GET /v1/admin/coaches?status=`, `POST /v1/admin/coaches/:userId/status`,
   `POST /v1/admin/coaches/:userId/verified-claims`; ekran onay kuyruğu değil koç sicili. Aşağısı tarihçe.

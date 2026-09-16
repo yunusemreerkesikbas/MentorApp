@@ -1,6 +1,7 @@
 "use client";
 
 import Image from "next/image";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { StreamingText } from "@mentor/ui";
 import { PlayButton } from "@/components/onboarding-play/play-button";
@@ -12,6 +13,7 @@ export function IntroStep({ displayName, onContinue }: { displayName: string; on
   const t = useTranslations("onboarding.welcome");
   const firstName = displayName.trim().split(/\s+/)[0] || displayName;
   const title = t("title", { name: firstName });
+  const [titleDone, setTitleDone] = useState(false);
 
   return (
     <OnboardingStepLayout
@@ -28,9 +30,11 @@ export function IntroStep({ displayName, onContinue }: { displayName: string; on
           className="relative max-w-xs rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-5 py-4"
         >
           <h1 className="text-balance text-xl font-extrabold leading-snug text-[var(--color-main)]">
-            <StreamingText key={title} text={title} />
+            <StreamingText key={title} text={title} onComplete={() => setTitleDone(true)} />
           </h1>
-          <p className="mt-1.5 text-pretty text-sm font-medium leading-relaxed text-[var(--color-secondary)]">{t("subtitle")}</p>
+          <p className="mt-1.5 text-pretty text-sm font-medium leading-relaxed text-[var(--color-secondary)]">
+            {titleDone ? <StreamingText text={t("subtitle")} /> : <span className="invisible">{t("subtitle")}</span>}
+          </p>
           <span
             aria-hidden
             className="absolute -bottom-[9px] left-1/2 size-3.5 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-[var(--play-line)] bg-[var(--color-surface)]"

@@ -121,6 +121,61 @@ test("push anahtarı tarayıcıyı abone edip uç noktayı API'ye kaydeder", asy
   expect(preferencePatches).toEqual([{ pushEnabled: true }]);
 });
 
+test("economy refresh updates the open balance sheet and celebrates ledger rewards once", async ({ page }) => {
+  await mockProfileApi(page);
+  let xp = 603;
+  let coin = 10;
+  const rewardId = "44444444-4444-4444-8444-444444444444";
+  let rewardAvailable = false;
+  let acknowledged = false;
+  let acknowledgments = 0;
+  const reward = { id: rewardId, amount: 7, unit: "COIN", status: "CONFIRMED", note: null,
+    reason: "quest.weekly.effort-allowance", title: "Görev Coin’i", description: "Haftalık emek",
+    createdAt: "2026-09-16T12:00:00Z" };
+  const level = { tier: 3, xp: 603, nextAt: 1200, key: "compass", chapter: "awakening", currentAt: 600, nextKey: "cycle", progress: { current: 3, target: 600, remaining: 597, percent: 1 } };
+  await page.route("http://localhost:3001/v1/economy/**", async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    if (path.endsWith("/balance")) return json(route, { xp, coinConfirmed: coin, coinPending: 0, level });
+    if (path.endsWith("/quests")) return json(route, []);
+    if (path.endsWith("/invite")) return json(route, { code: "MENTOR-TEST" });
+    if (path.endsWith("/ledger")) return json(route, rewardAvailable ? [reward] : []);
+    if (path.endsWith("/rewards/unseen")) {
+      const items = rewardAvailable && !acknowledged ? [reward] : [];
+      return json(route, { items, total: items.length, page: 1, pageSize: 20 });
+    }
+    if (path.endsWith("/rewards/seen")) {
+      expect(route.request().postDataJSON()).toEqual({ ledgerIds: [rewardId] });
+      acknowledged = true;
+      acknowledgments += 1;
+      return json(route, null, 204);
+    }
+    return route.fallback();
+  });
+  await page.addInitScript(() => {
+    localStorage.setItem("mentor.analytics-consent.v1", "rejected");
+    (window as unknown as { coinRewards: number[] }).coinRewards = [];
+    window.addEventListener("mentor:coin-celebrate", (event) => {
+      (window as unknown as { coinRewards: number[] }).coinRewards.push((event as CustomEvent).detail.amount);
+    });
+  });
+  await page.goto("/profil");
+  await page.getByRole("button", { name: "Bakiyen", exact: true }).click();
+  const sheet = page.getByRole("dialog");
+  await expect(sheet.getByText("603", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { coinRewards: number[] }).coinRewards)).toEqual([]);
+  xp = 608;
+  coin = 17;
+  rewardAvailable = true;
+  await page.evaluate(() => window.dispatchEvent(new Event("mentor:economy-changed")));
+  await expect(sheet.getByText("608", { exact: true })).toBeVisible();
+  await expect(sheet.getByText("17", { exact: true })).toBeVisible();
+  await expect.poll(() => acknowledgments).toBe(1);
+  expect(await page.evaluate(() => (window as unknown as { coinRewards: number[] }).coinRewards)).toEqual([7]);
+  await page.evaluate(() => window.dispatchEvent(new Event("mentor:economy-changed")));
+  await expect.poll(() => acknowledged).toBe(true);
+  expect(await page.evaluate(() => (window as unknown as { coinRewards: number[] }).coinRewards)).toEqual([7]);
+});
+
 async function mockProfileApi(page: Page) {
   let deleteAccountCalls = 0;
 
@@ -176,7 +231,7 @@ async function mockProfileApi(page: Page) {
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 

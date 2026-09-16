@@ -58,8 +58,8 @@
       "subtitle": "Ne varsa anlat. Planına göre bir sonraki adımı birlikte bulalım."
     },
     "slide3": {
-      "title": "Bugünün küçük adımı.",
-      "subtitle": "Her şeyi bir anda değil, bugün yapabileceğin kadarını."
+      "title": "Hedeften bugüne, hepsi tek yerde.",
+      "subtitle": "Hedef panonu kur, planını çıkar, Pomodoro ile odaklan. Yanlışların defterde, gelişimin analizde."
     },
     "slide4": {
       "title": "Bu yolu tek başına yürümeyeceksin.",
@@ -153,7 +153,7 @@
     "greeting_day": "İyi günler",
     "greeting_evening": "İyi geceler",
     "profile_link": "Profiline git",
-    "earned_rights_label": "Kazanılmış haklar",
+    "earned_rights_label": "Coin ve XP",
     "sidebar_collapse": "Menüyü daralt",
     "sidebar_expand": "Menüyü genişlet",
     "students": "Öğrencilerim"
@@ -2535,7 +2535,10 @@
     "quests_completed_hide_tasks": "Tamamlanan görevleri gizle",
     "invite_code_reward_label": "Davet Kodu Bonusu",
     "email_verified_reward_label": "E-posta Doğrulandı",
-    "subscription_reward_label": "İlk Abonelik Bonusu"
+    "subscription_reward_label": "İlk Abonelik Bonusu",
+    "balance_error": "Bakiye güncellenemedi. Biraz sonra yeniden deneyebilirsin.",
+    "balance_usage": "Bir sohbet mesajı {chatCost} Coin, haftalık derin analiz {analysisCost} Coin. Mevcut bakiyenle {chatMessages} mesaj veya {weeklyAnalyses} analiz açabilirsin. Günlük kullanım ve uygunluk sınırları geçerlidir.",
+    "balance_loading": "Bakiye yükleniyor…"
   },
   "legal": {
     "last_updated": "Son güncelleme: {date}",
@@ -2593,7 +2596,7 @@
     "progress_aria": "Onboarding adımı {current} / {total}",
     "welcome": {
       "title": "Merhaba {name}! Şimdi seni biraz tanıyalım.",
-      "subtitle": "Birkaç kısa cevapla panelini sana göre hazırlayacağım.",
+      "subtitle": "Birkaç kısa cevapla panelini sana göre hazırlayalım. Bir dakika sürer.",
       "continue": "Devam"
     },
     "exam": {
@@ -2614,6 +2617,15 @@
     },
     "why": {
       "title": "Bu sınav senin için ne demek?",
+      "subtitle": "Zor günlerde bu cevap hedef panonda durur.",
+      "reactions": {
+        "dream_job": "O işe giden yolu birlikte çizelim.",
+        "secure_future": "Sağlam bir zemin. Adım adım kuralım.",
+        "family": "Onlar için attığın her adım sayılır.",
+        "prove_myself": "Kanıtı her gün biraz biriktireceğiz.",
+        "fresh_start": "Başlangıçlar iyi gelir. Buradan yürüyelim.",
+        "other": "Sebebin ne olursa olsun, yanındayız."
+      },
       "options": {
         "dream_job": "Hayalimdeki iş",
         "secure_future": "Güvenceli gelecek",
@@ -2627,7 +2639,7 @@
     },
     "field": {
       "title": "Hangi alanda ilerlemek istersin?",
-      "subtitle": "Puhu hedef panonda bu alanla görünür.",
+      "subtitle": "Hedef panonda Puhu seni bu alanla karşılar.",
       "goal_title": "{field} alanında ilerlemek",
       "goal_title_exam": "{exam} yolunda ilerlemek",
       "continue": "Devam",
@@ -2645,13 +2657,19 @@
         "60": "Kararlı",
         "90": "Yoğun"
       },
+      "reactions": {
+        "15": "Küçük ama her gün. İyi bir başlangıç.",
+        "30": "Dengeli bir tempo. Her güne sığar.",
+        "60": "Kararlı bir tempo. Arada mola vermeyi unutmayalım.",
+        "90": "Yoğun bir tempo. Yorulduğun gün küçültmek serbest."
+      },
       "continue": "Devam",
       "skip": "Şimdilik geç",
       "save_error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
     },
     "push": {
-      "title": "Günde {minutes} dk hedefini nazikçe hatırlatayım.",
-      "body": "İzin verirsen her gün kısa bir not bırakırım.",
+      "title": "Günde {minutes} dk hedefin için yanına uğrayalım mı?",
+      "body": "İzin verirsen her gün kısa bir not bırakırız.",
       "skip": "Şimdilik geç"
     },
     "profile": {

@@ -22,7 +22,7 @@ const AuthSheetExitContext = createContext<(navigate: () => void) => void>(
   (navigate) => navigate(),
 );
 
-/** Run `navigate` after the auth sheet close transition (or immediately if reduced-motion). */
+/** Run `navigate` after the auth sheet close animation (or immediately if reduced-motion). */
 export function useAuthSheetExit() {
   return useContext(AuthSheetExitContext);
 }
@@ -38,70 +38,73 @@ function readCloseMs(el: HTMLElement | null): number {
   return value;
 }
 
-function measureTravel(el: HTMLElement, extra = 0) {
-  el.style.setProperty(
-    "--auth-sheet-travel",
-    `${Math.ceil(el.getBoundingClientRect().height) + extra}px`,
-  );
-}
+/** How long the sheet takes to settle on its new height when login and signup swap. */
+const SWAP_MS = 320;
 
-/** Auth chrome — mobile bottom sheet, desktop centered card. */
+/**
+ * Auth chrome — mobile bottom sheet, desktop centered card.
+ *
+ * Entrance and exit are CSS keyframes (`globals.css`), not a JS-driven transition. Measured on a 4x
+ * throttled phone, the old version waited for hydration and a double rAF before it could start —
+ * 650 ms of an empty page on a direct load — and left the sheet frozen half off screen while the
+ * next route loaded. Keyframes start on the first paint of the server HTML and run on the
+ * compositor while the page is still booting.
+ */
 export function AuthShell({ children }: { children: ReactNode }) {
   const t = useTranslations("auth.shell");
   const pathname = usePathname();
   const showBack = authShellShowsBack(pathname);
   const showHang = authShellShowsHang(pathname);
   const hang = useAuthHang(showHang);
-  const hangTravel = showHang ? HANG_OVERHANG_PX : 0;
   const panelRef = useRef<HTMLDivElement>(null);
   const closingRef = useRef(false);
-  const [phase, setPhase] = useState<"entering" | "open" | "exiting">("entering");
-  const [animated, setAnimated] = useState(false);
+  const lastTopRef = useRef<number | null>(null);
+  const [phase, setPhase] = useState<"open" | "exiting">("open");
 
+  /*
+   * Login and signup share this sheet and their forms are not the same height, so the top edge and
+   * the Puhu hanging from it used to jump 160 px in a single frame. This glides it instead (FLIP).
+   * `offsetTop`, not the bounding box: the entrance keyframes may still be moving the sheet.
+   * Phones only — the desktop card is centred, and its height change reads as growth, not a jump.
+   */
   useLayoutEffect(() => {
     const el = panelRef.current;
     if (!el) return;
-    measureTravel(el, hangTravel);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    let inner = 0;
-    const outer = requestAnimationFrame(() => {
-      setAnimated(true);
-      if (reduce) {
-        setPhase("open");
-        return;
-      }
-      inner = requestAnimationFrame(() => setPhase("open"));
-    });
-    return () => {
-      cancelAnimationFrame(outer);
-      cancelAnimationFrame(inner);
-    };
-    // hangTravel is the mount-time overhang; re-running would replay the open slide.
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only open choreography
-  }, []);
+    const top = el.offsetTop;
+    const previous = lastTopRef.current;
+    lastTopRef.current = top;
+    if (previous === null || Math.abs(previous - top) < 1) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce), (min-width: 64rem)").matches) return;
+    el.animate(
+      [{ transform: `translate3d(0, ${previous - top}px, 0)` }, { transform: "translate3d(0, 0, 0)" }],
+      { duration: SWAP_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    );
+  }, [pathname]);
 
   const exitThen = useCallback((navigate: () => void) => {
     if (closingRef.current) return;
     closingRef.current = true;
-    const el = panelRef.current;
-    if (el) measureTravel(el, hangTravel);
     setPhase("exiting");
-    const ms = readCloseMs(el);
+    const ms = readCloseMs(panelRef.current);
     if (ms <= 0) {
       navigate();
       return;
     }
     window.setTimeout(navigate, ms);
-  }, [hangTravel]);
+  }, []);
 
   return (
     <AuthSheetExitContext.Provider value={exitThen}>
       <main
-        className="auth-shell flex min-h-dvh w-full flex-col justify-end overflow-hidden lg:grid lg:grid-cols-[minmax(0,1fr)_23.4375rem] lg:items-center lg:gap-12 lg:px-10 lg:py-8 xl:gap-20"
+        // `overflow-clip`, not hidden: a hidden box is still scrollable from code, and on a client
+        // navigation Next scrolled it by the sheet's under-extension (50dvh), cutting the form off
+        // at the top. A clipped box has no scroll position to move.
+        className="auth-shell flex min-h-dvh w-full flex-col justify-end overflow-clip lg:grid lg:grid-cols-[minmax(0,1fr)_23.4375rem] lg:items-center lg:gap-12 lg:px-10 lg:py-8 xl:gap-20"
         data-hang={showHang ? "true" : "false"}
+        data-phase={phase}
         style={showHang ? { "--auth-hang-overhang": `${HANG_OVERHANG_PX}px` } as CSSProperties : undefined}
       >
-        <section className="hidden min-w-0 flex-col items-center justify-center text-center lg:flex" aria-label={t("narrative_label")}>
+        <section className="auth-narrative hidden min-w-0 flex-col items-center justify-center text-center lg:flex" aria-label={t("narrative_label")}>
           <PuhuImage variant="encouraging" size={300} priority />
           <h1 className="mt-6 text-3xl font-semibold text-[var(--color-main)]" style={{ fontFamily: "var(--font-heading)" }}>{t("narrative_title")}</h1>
           <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--color-body)]">{t("narrative_body")}</p>
@@ -109,7 +112,6 @@ export function AuthShell({ children }: { children: ReactNode }) {
         <div
           ref={panelRef}
           className="auth-sheet relative isolate w-full max-h-[90dvh] overflow-visible lg:max-h-[82dvh] lg:max-w-[23.4375rem]"
-          data-animated={animated ? "true" : "false"}
           data-phase={phase}
           onFocusCapture={hang.onFocusCapture}
           onBlurCapture={hang.onBlurCapture}

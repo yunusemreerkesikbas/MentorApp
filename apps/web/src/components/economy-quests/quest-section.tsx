@@ -64,6 +64,7 @@ export function QuestSection({
           {isAllDone ? (
             <div className="flex flex-col gap-2.5">
               <CoinCelebrationCard
+                progressOnly
                 badgeLabel={
                   activeTab === "daily_ritual"
                     ? translate("quests_daily_state")

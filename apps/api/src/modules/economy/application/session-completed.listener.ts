@@ -17,7 +17,7 @@ import { QuestTriggerService } from "./quest-trigger.service";
 export class SessionCompletedListener {
   constructor(private readonly quests: QuestTriggerService) {}
 
-  @OnEvent(CoachingEventTopic.SESSION_COMPLETED)
+  @OnEvent(CoachingEventTopic.SESSION_FINALIZED)
   async onSessionCompleted(event: StudySessionCompleted): Promise<void> {
     await this.quests.evaluate({ userId: event.userId, date: event.startedAt.toISOString().slice(0, 10) });
   }

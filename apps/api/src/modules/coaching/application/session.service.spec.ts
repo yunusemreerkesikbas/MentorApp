@@ -37,7 +37,7 @@ function makeService(
       ...opts?.rooms,
     } as never,
     (opts?.activity ?? {}) as never,
-    (opts?.events ?? { emit: () => {} }) as never,
+    { emit: opts?.events?.emit ?? vi.fn(), emitAsync: opts?.events?.emit ?? vi.fn() } as never,
     (opts?.config ?? { get: vi.fn(async () => 300) }) as never,
   );
 }

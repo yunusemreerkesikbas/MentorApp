@@ -3,6 +3,7 @@
 export { STREAK_MILESTONES, type StreakMilestoneValue } from "@mentor/core";
 
 export const CoachingEventTopic = {
+  SESSION_FINALIZED: "coaching.session.finalized",
   MOOD_SAVED: "coaching.mood.saved",
   STREAK_BROKEN:     "coaching.streak-broken",
   STREAK_MILESTONE:  "coaching.streak-milestone",

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { Currency } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
@@ -11,6 +12,9 @@ interface Redemption {
   code: string;
   status: string;
   convertedAt: Date | null;
+  redeemedAt: Date;
+  sourcePaymentId?: string;
+  rewardOutcome?: string;
 }
 
 function makeRepoFake() {
@@ -19,6 +23,12 @@ function makeRepoFake() {
   const redemptions: Redemption[] = [];
   return {
     redemptions,
+    withServiceTx: async (fn: (tx: unknown) => Promise<void>) => fn({}),
+    lockRedemption: async (invited: string) => redemptions.find(r => r.invitedUserId === invited),
+    lockPending: async (invited: string) => redemptions.find(r => r.invitedUserId === invited && r.status === "PENDING"),
+    recordPayment: async (id: string, sourcePaymentId: string, rewardOutcome: string) => {
+      Object.assign(redemptions.find(r => r.id === id)!, { status: "CONVERTED", sourcePaymentId, rewardOutcome });
+    },
     findByInviter: async (id: string) => byInviter.get(id),
     findByCode: async (code: string) => {
       const inviter = byCode.get(code);
@@ -40,6 +50,7 @@ function makeRepoFake() {
         code,
         status: "PENDING",
         convertedAt: null,
+        redeemedAt: new Date("2026-09-01T00:00:00Z"),
       };
       redemptions.push(r);
       return r;
@@ -65,6 +76,8 @@ describe("InviteService", () => {
   let reverseResult: number;
   let reverseError: Error | null;
   let premium: boolean;
+  let refunded: boolean;
+  let grantError: Error | null;
 
   const service = () => {
     grants = [];
@@ -72,9 +85,12 @@ describe("InviteService", () => {
     reverseResult = 20;
     reverseError = null;
     premium = false;
+    refunded = false;
+    grantError = null;
     const entitlement = { getEntitlement: async () => ({ isPremium: premium }) };
     const economy = {
-      grant: async (userId: string, unit: string, amount: number, opts: { reason: string }) => {
+      grantInServiceTx: async (userId: string, unit: string, amount: number, opts: { reason: string }) => {
+        if (grantError) throw grantError;
         grants.push({ userId, unit, amount, reason: opts.reason });
         return { xp: 0, coinConfirmed: amount, coinPending: 0 };
       },
@@ -92,6 +108,7 @@ describe("InviteService", () => {
       economy as never,
       quests as never,
       config as never,
+      { isRefunded: async () => refunded } as never,
     );
   };
 
@@ -139,19 +156,19 @@ describe("InviteService", () => {
     const code = await svc.getOrCreateCode("ayse");
     await svc.redeem("burak", code);
 
-    await svc.onInvitedConverted("burak");
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub-1", "pay-1", 100, new Date()));
     expect(grants).toEqual([
       { userId: "ayse", unit: Currency.COIN, amount: 20, reason: "invite.converted" },
     ]);
 
     // second activation event → already CONVERTED → no double reward
-    await svc.onInvitedConverted("burak");
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub-1", "pay-1", 100, new Date()));
     expect(grants).toHaveLength(1);
   });
 
   it("conversion with no pending redemption is a no-op", async () => {
     const svc = service();
-    await svc.onInvitedConverted("nobody");
+    await svc.onInvitedConverted(new PaymentSucceeded("nobody", "sub-1", "pay-1", 100, new Date()));
     expect(grants).toHaveLength(0);
   });
 
@@ -159,9 +176,9 @@ describe("InviteService", () => {
     const svc = service();
     const code = await svc.getOrCreateCode("ayse");
     await svc.redeem("burak", code);
-    await svc.onInvitedConverted("burak");
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub-1", "pay-1", 100, new Date()));
 
-    await svc.onInvitedRefunded("burak");
+    await svc.onInvitedRefunded("burak", "pay-1");
     expect(reversals).toEqual([
       {
         userId: "ayse",
@@ -180,17 +197,60 @@ describe("InviteService", () => {
     const svc = service();
     const code = await svc.getOrCreateCode("ayse");
     await svc.redeem("burak", code); // still PENDING
-    await svc.onInvitedRefunded("burak");
+    await svc.onInvitedRefunded("burak", "pay-1");
     await svc.onInvitedRefunded("nobody");
     expect(reversals).toHaveLength(0);
   });
 
-  it("refund reversal failure is swallowed (refund already recorded in payments)", async () => {
+  it("refund reversal failure propagates so the durable event can retry", async () => {
     const svc = service();
     const code = await svc.getOrCreateCode("ayse");
     await svc.redeem("burak", code);
-    await svc.onInvitedConverted("burak");
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub-1", "pay-1", 100, new Date()));
     reverseError = new Error("db down");
-    await expect(svc.onInvitedRefunded("burak")).resolves.toBeUndefined();
+    await expect(svc.onInvitedRefunded("burak", "pay-1")).rejects.toThrow("db down");
   });
+  it("does not reward a zero charge, an old payment, or an already refunded payment", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "zero", 0, new Date()));
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "old", 100, new Date("2026-08-01")));
+    expect(repo.redemptions[0]!.status).toBe("PENDING");
+    refunded = true;
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "refunded", 100, new Date()));
+    expect(grants).toHaveLength(0);
+    expect(repo.redemptions[0]!.rewardOutcome).toBe("REFUNDED");
+  });
+
+  it("records cap denial without claiming a grant or reversing one later", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    grantError = new DomainError(ErrorCode.ECONOMY_LIMIT_EXCEEDED, 422);
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
+    expect(repo.redemptions[0]!.rewardOutcome).toBe("CAP_DENIED");
+    expect(grants).toHaveLength(0);
+    await svc.onInvitedRefunded("burak", "pay-1");
+    expect(reversals).toHaveLength(0);
+  });
+
+  it("does not reverse the first payment reward when a renewal is refunded", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "first", 100, new Date()));
+    await svc.onInvitedRefunded("burak", "renewal");
+    expect(reversals).toHaveLength(0);
+  });
+
+  it("leaves a failed grant pending for retry", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    grantError = new Error("temporary failure");
+    const event = new PaymentSucceeded("burak", "sub", "first", 100, new Date());
+    await expect(svc.onInvitedConverted(event)).rejects.toThrow("temporary failure");
+    expect(repo.redemptions[0]!.status).toBe("PENDING");
+    grantError = null;
+    await svc.onInvitedConverted(event);
+    expect(grants).toHaveLength(1);
+  });
+
 });

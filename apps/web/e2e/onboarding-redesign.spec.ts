@@ -76,7 +76,7 @@ test("welcome steps through the day with Devam et and the slide dots", async ({ 
   await expect(page.locator("video")).toHaveCount(4);
 
   await page.getByRole("button", { name: "3. slayta geç" }).click();
-  await expect(page.getByRole("heading", { name: "Bugünün küçük adımı." })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Hedeften bugüne, hepsi tek yerde." })).toBeVisible();
   await expect(page.getByRole("button", { name: "Zaten hesabım var" })).toHaveCount(0);
 });
 

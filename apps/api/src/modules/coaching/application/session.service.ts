@@ -396,7 +396,13 @@ export class SessionService {
         ),
       );
     }
-    // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).
+    // Every completed session may reach the accumulated daily goal; ritual eligibility is
+    // still computed by coaching signals using the existing min-focus threshold.
+    if (input.status === "COMPLETED") {
+      await this.events.emitAsync(CoachingEventTopic.SESSION_FINALIZED,
+        new StudySessionCompleted(userId, new Date(dto.startedAt)));
+    }
+    // Existing achievement events retain their min-focus eligibility (roadmap §261).
     if (
       input.status === "COMPLETED" &&
       qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)

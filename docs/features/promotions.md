@@ -131,6 +131,17 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **Admin kampanya formu Duralux proposal kartı (2026-09-16)** — Paylaşılan `FormSection`
+  artık `card-header` yerine kart gövdesinde `h5` + muted alt yazı (proposal/create).
+  `/promotions/[id]` ve `/promotions/new` 6+6 tanım/hedef + tam genişlik indirim/limit özeti.
+  Yayın switch sağ kartın altında; kullanım ve oluşturma tarihi özet tabloda.
+  **Kullanım:** FINANCE `/promotions` listesinden düzenle veya yeni kampanya. Alanlar ve PATCH/POST
+  aynı.
+  **Gotcha:** bölüm `hint` artık tooltip değil alt yazı. DatePicker / SelectDropdown yok, native
+  `datetime-local` ve `form-select`. Duralux `/proposal/create` dokunulmadı.
+  **İlgili:** `apps/admin/src/components/shared/admin/FormSection.tsx`,
+  `apps/admin/src/app/(general)/promotions/PromotionForm.tsx`,
+  `apps/admin/src/app/(general)/promotions/[id]/page.tsx`.
 - **e2e suite'i yarım kalan koşudan korunuyor (2026-09-02)** — `promotions.e2e-spec.ts` temizliği
   yalnız `afterAll`'daydı; koşu yarıda kesilince (Ctrl+C, çöken başka bir spec) ektiği promosyon
   paylaşılan `mentor_test` veritabanında `is_active = true` kalıyor, sonraki her koşuda "tek

@@ -4463,6 +4463,92 @@
         ]
       }
     },
+    "/v1/economy/rewards/unseen": {
+      "get": {
+        "operationId": "EconomyController_unseen",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnseenRewardsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/rewards/seen": {
+      "post": {
+        "operationId": "EconomyController_seen",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ledgerIds"
+                ],
+                "properties": {
+                  "ledgerIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
     "/v1/economy/quests": {
       "get": {
         "operationId": "EconomyController_questsList",
@@ -10515,6 +10601,87 @@
       "UpdateNotebookDto": {
         "type": "object",
         "properties": {}
+      },
+      "RewardLedgerEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "XP",
+              "COIN"
+            ]
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "REVERSED"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "unit",
+          "amount",
+          "reason",
+          "status",
+          "note",
+          "title",
+          "description",
+          "createdAt"
+        ]
+      },
+      "UnseenRewardsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardLedgerEntryDto"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
       },
       "DeepAnalysisDto": {
         "type": "object",
