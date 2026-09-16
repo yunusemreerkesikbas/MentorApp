@@ -1,4 +1,6 @@
-import { Body, Controller, Get, HttpStatus, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Post, Query } from "@nestjs/common";
+import { RewardReceiptService } from "../application/reward-receipt.service";
+import { EconomyRewardsSeenDto } from "./economy.dto";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import { I18nService } from "nestjs-i18n";
 import type {
@@ -36,6 +38,7 @@ export class EconomyController {
     private readonly deepAnalysis: DeepAnalysisService,
     private readonly config: ConfigRegistryService,
     private readonly i18n: I18nService,
+    private readonly receipts: RewardReceiptService,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -70,6 +73,21 @@ export class EconomyController {
   async invite(@CurrentUser() user: RequestUser): Promise<{ code: string }> {
     await this.assertEnabled();
     return { code: await this.invites.getOrCreateCode(user.id) };
+  }
+
+  @Get("rewards/unseen")
+  async unseen(@CurrentUser() user: RequestUser, @Query() query: EconomyLedgerQueryDto) {
+    await this.assertEnabled();
+    const result = await this.receipts.listUnseen(user.id, query.page, query.pageSize);
+    const t = this.ledgerCopy();
+    return { ...result, items: result.items.map((row) => toLedgerEntryView(row, t)) };
+  }
+
+  @Post("rewards/seen")
+  @HttpCode(204)
+  async seen(@CurrentUser() user: RequestUser, @Body() dto: EconomyRewardsSeenDto): Promise<void> {
+    await this.assertEnabled();
+    await this.receipts.markSeen(user.id, dto.ledgerIds);
   }
 
   /** Onboarding quests + progress (lazy-evaluates and grants newly-completed ones). */

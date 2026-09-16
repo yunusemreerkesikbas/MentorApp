@@ -79,9 +79,10 @@ export function DailyGoalStep({
       }
     >
       <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-2 gap-3 pt-3">
-        {GOALS.map(({ minutes, puhu }) => (
+        {GOALS.map(({ minutes, puhu }, index) => (
           <PlayGridCard
             key={minutes}
+            index={index}
             label={t(`levels.${minutes}`)}
             sub={t("minutes", { minutes })}
             badge={minutes === RECOMMENDED ? t("recommended") : undefined}

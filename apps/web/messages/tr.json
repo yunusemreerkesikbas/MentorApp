@@ -2471,10 +2471,10 @@
     }
   },
   "economy": {
-    "balance_subtitle": "Kazanılmış hak, nakit değildir. Koç sohbeti ve ilerideki özellikler için kullanılır.",
+    "balance_subtitle": "Coin nakit değildir. Koç sohbetinde ve haftalık derin analizde kullanılır.",
     "balance_title": "Bakiyen",
     "xp": "XP",
-    "confirmed": "Onaylı hak",
+    "confirmed": "Coin",
     "pending": "+{count} beklemede",
     "go_coach": "Koça git",
     "ledger_title": "Son hareketler",

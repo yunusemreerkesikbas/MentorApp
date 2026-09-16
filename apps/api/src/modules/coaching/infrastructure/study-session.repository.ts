@@ -471,6 +471,7 @@ export class StudySessionRepository {
     userId: string,
     sinceDate: string,
     minFocusSeconds: number,
+    untilDate?: string,
   ): Promise<number> {
     const rows = await tx
       .select({ count: sql<number>`count(*)::int` })
@@ -482,6 +483,7 @@ export class StudySessionRepository {
           isNotNull(studySessions.endedAt),
           gte(studySessions.actualFocusSeconds, minFocusSeconds),
           gte(studySessions.startedAt, new Date(`${sinceDate}T00:00:00Z`)),
+          untilDate ? lt(studySessions.startedAt, parseIsoDate(addDays(untilDate, 1))) : undefined,
         ),
       );
     return rows[0]?.count ?? 0;

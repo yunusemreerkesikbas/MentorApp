@@ -1,7 +1,18 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { TextsReveal } from "@mentor/ui";
 import { PlayButton } from "@/components/onboarding-play/play-button";
+
+/*
+ * The copy is tied to the scroll, not to a timer: `--welcome-slip` is 0 on a settled slide and 1 at
+ * the handover point, so the words give way as the scene slides and the swap lands while they are
+ * invisible. `TextsReveal` then walks the new title and line back in.
+ */
+const SLIP_STYLE = {
+  opacity: "calc(1 - var(--welcome-slip, 0))",
+  transform: "translateY(calc(var(--welcome-slip, 0) * 10px))",
+} as const;
 
 /**
  * The copy half of the welcome: slide dots, the title that crossfades as slides settle, and the
@@ -39,7 +50,12 @@ export function WelcomeSheet({
   const reduceMotion = useReducedMotion();
 
   return (
-    <section className="relative z-10 -mt-7 flex flex-1 flex-col rounded-t-[var(--play-sheet-radius)] bg-[var(--color-bg)] px-6 pt-6 lg:mt-0 lg:w-[25rem] lg:flex-none lg:rounded-none lg:bg-transparent lg:p-0">
+    <motion.section
+      className="relative z-10 -mt-7 flex flex-1 flex-col rounded-t-[var(--play-sheet-radius)] bg-[var(--color-bg)] px-6 pt-6 lg:mt-0 lg:w-[25rem] lg:flex-none lg:rounded-none lg:bg-transparent lg:p-0"
+      initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: reduceMotion ? 0.12 : 0.45, ease: [0.22, 1, 0.36, 1], delay: reduceMotion ? 0 : 0.08 }}
+    >
       <div role="group" aria-label={dotsLabel} className="-mx-[3px] flex items-center">
         {Array.from({ length: total }, (_, index) => (
           <button
@@ -57,22 +73,22 @@ export function WelcomeSheet({
         ))}
       </div>
 
-      <div aria-live="polite" className="mt-3 lg:mt-5">
-        <AnimatePresence mode="wait" initial={false}>
-          <motion.div
-            key={step}
-            className="flex flex-col gap-2 lg:gap-3"
-            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-          >
-            <h1 className="text-balance text-[2rem] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-main)] lg:text-[2.5rem]">
+      <div aria-live="polite" className="mt-3 lg:mt-5" style={SLIP_STYLE}>
+        <TextsReveal
+          key={step}
+          className="flex flex-col gap-2 lg:gap-3"
+          lines={[
+            <h1
+              key="title"
+              className="text-balance text-[2rem] font-extrabold leading-tight tracking-[-0.02em] text-[var(--color-main)] lg:text-[2.5rem]"
+            >
               {title}
-            </h1>
-            <p className="text-pretty text-base font-medium leading-relaxed text-[var(--color-secondary)] lg:text-lg">{subtitle}</p>
-          </motion.div>
-        </AnimatePresence>
+            </h1>,
+            <p key="subtitle" className="text-pretty text-base font-medium leading-relaxed text-[var(--color-secondary)] lg:text-lg">
+              {subtitle}
+            </p>,
+          ]}
+        />
       </div>
 
       <div className="-mx-6 mt-auto flex flex-col gap-4 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-4 lg:mx-0 lg:mt-8 lg:w-[22.5rem] lg:p-0">
@@ -97,6 +113,6 @@ export function WelcomeSheet({
           ) : null}
         </AnimatePresence>
       </div>
-    </section>
+    </motion.section>
   );
 }

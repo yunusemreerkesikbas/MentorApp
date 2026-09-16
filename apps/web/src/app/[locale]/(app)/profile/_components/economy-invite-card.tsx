@@ -10,7 +10,6 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import {
-  notifyCoinCelebration,
   notifyEconomyChanged,
   redeemInviteCode,
 } from "@/lib/economy";
@@ -138,10 +137,6 @@ export function EconomyInviteCard({
           : translate("redeem_saved"),
       );
       notifyEconomyChanged();
-      notifyCoinCelebration(
-        10,
-        translate("invite_code_reward_label", { defaultValue: "Davet Kodu Bonusu" }),
-      );
       onRedeemed();
     } catch (err) {
       setRedeemError(

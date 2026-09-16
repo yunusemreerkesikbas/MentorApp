@@ -49,15 +49,11 @@ import { Link } from "@/i18n/navigation";
 import {
   fetchQuests,
   fetchStreakRescue,
-  notifyCoinCelebration,
   notifyEconomyChanged,
   purchaseStreakRescue,
 } from "@/lib/economy";
-import {
-  findNewlyCompletedQuests,
-  formatRewardSummary,
-} from "@/lib/economy-quest-utils";
 import { FormError } from "@/components/form";
+import { useCloudTransitionReady } from "@/lib/cloud-transition";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
@@ -149,6 +145,8 @@ export function PanelShell({ initialData }: PanelShellProps) {
       ? mockRescueSuccessDays
       : rescueSuccessOverride;
   const [loading, setLoading] = useState(!initialData);
+  // Coming out of onboarding, the clouds hold until the panel behind them is real (not a skeleton).
+  useCloudTransitionReady(!loading);
   const [error, setError] = useState<string | null>(null);
   const [streakRescue, setStreakRescue] = useState<StreakRescueView | null>(
     null,
@@ -263,40 +261,8 @@ export function PanelShell({ initialData }: PanelShellProps) {
     }) => {
       try {
         const nextQuests = await fetchQuests();
-        const completedNow = options?.announceRewards
-          ? findNewlyCompletedQuests(questsRef.current, nextQuests)
-          : [];
         questsRef.current = nextQuests;
         setQuests(nextQuests);
-
-        if (completedNow.length > 0) {
-          const coinEarned = completedNow.reduce(
-            (sum, quest) =>
-              quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
-            0,
-          );
-          if (coinEarned > 0) {
-            const coinLabel =
-              completedNow.length === 1
-                ? (completedNow[0]?.title ?? t("quest_reward_single_title"))
-                : t("quest_reward_multi_title");
-            notifyCoinCelebration(coinEarned, coinLabel);
-          } else {
-            const rewardSummary = formatRewardSummary(completedNow, economyT);
-            if (rewardSummary) {
-              toast.success({
-                title:
-                  completedNow.length === 1
-                    ? t("quest_reward_single_title")
-                    : t("quest_reward_multi_title"),
-                message: t("quest_reward_message", {
-                  reward: rewardSummary,
-                }),
-                duration: 3000,
-              });
-            }
-          }
-        }
       } catch {
         questsRef.current = null;
         setQuests(null);
@@ -514,20 +480,7 @@ export function PanelShell({ initialData }: PanelShellProps) {
     });
   }, [t, toast]);
 
-  useEffect(() => {
-    try {
-      if (sessionStorage.getItem("mentor_onboarding_coin_pending") === "1") {
-        sessionStorage.removeItem("mentor_onboarding_coin_pending");
-        const timer = setTimeout(() => {
-          notifyCoinCelebration(
-            5,
-            economyT("quests_onboarding_section", { defaultValue: "Profil Kurulumu" }),
-          );
-        }, 800);
-        return () => clearTimeout(timer);
-      }
-    } catch {}
-  }, [economyT]);
+
 
   useEffect(() => {
     if (initialData) return;

@@ -314,6 +314,8 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the light-economy module (user-facing balance/earning).",
   ),
+  "economy.streak_rescue.enabled": flag(false, "Allow Coin purchases of streak freezes."),
+  "community.leaderboard.enabled": flag(false, "Expose XP rankings; personal XP remains available."),
   "forum.enabled": flag(
     false,
     "Gate for the forum/community module (zones, threads, moderation).",
@@ -516,7 +518,7 @@ export const CONFIG_CATALOG = {
     category: ConfigCategory.ECONOMY,
     type: ConfigValueType.STRING,
     schema: z.string().max(2000),
-    default: "",
+    default: "onboarding.first-subscription,onboarding.invite-redeemed",
     sensitive: false,
     description:
       "Comma-separated quest ids to disable (kill-switch): hidden from all views, never granted. Deploy-free rollback for a misbehaving quest.",

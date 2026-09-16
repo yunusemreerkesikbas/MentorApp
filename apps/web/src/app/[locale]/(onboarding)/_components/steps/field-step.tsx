@@ -91,9 +91,10 @@ export function FieldStep({
       }
     >
       <div role="radiogroup" aria-label={t("title")} className="grid grid-cols-3 gap-3 lg:grid-cols-6 lg:gap-4">
-        {CAREER_GROUPS.map((group) => (
+        {CAREER_GROUPS.map((group, index) => (
           <PlayGridCard
             key={group}
+            index={index}
             compact
             label={career(`group.${group}`)}
             art={
@@ -111,6 +112,7 @@ export function FieldStep({
           />
         ))}
         <PlayGridCard
+          index={CAREER_GROUPS.length}
           compact
           label={career("none")}
           art={

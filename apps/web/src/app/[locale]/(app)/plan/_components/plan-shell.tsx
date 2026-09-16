@@ -1,4 +1,5 @@
 "use client";
+import { notifyEconomyChanged } from "@/lib/economy";
 import { ArrowLeft } from "lucide-react";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -436,6 +437,7 @@ export function PlanShell() {
     try {
       const updated = await updatePlanTask(id, { status: nextStatus });
       patchTaskLists(updated);
+      notifyEconomyChanged();
       if (shouldShowCommunityCompletionPrompt(task.status, updated)) {
         setCompletionPrompt({ taskId: updated.id, origin: updated.origin });
         trackCoachEvent("coach_community_task_completed", {
@@ -516,6 +518,7 @@ export function PlanShell() {
             description,
           });
           patchTaskLists(updated);
+      notifyEconomyChanged();
           setError(null);
         },
       });

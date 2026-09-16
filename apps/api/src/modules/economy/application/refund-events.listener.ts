@@ -18,6 +18,6 @@ export class RefundEventsListener {
   @OnEvent(PaymentsEventTopic.PAYMENT_REFUNDED)
   async onPaymentRefunded(event: PaymentRefunded): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
-    await this.invites.onInvitedRefunded(event.userId);
+    await this.invites.onInvitedRefunded(event.userId, event.sourcePaymentId);
   }
 }

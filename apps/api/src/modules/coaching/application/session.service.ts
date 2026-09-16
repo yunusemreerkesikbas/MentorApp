@@ -386,8 +386,7 @@ export class SessionService {
     if (completedPlanTask) {
       // A session seated at a coach's assignment completes it automatically — real work, so the
       // event (and the coach's notification behind it) is the honest outcome, not a false positive.
-      this.events.emit(
-        CoachingEventTopic.PLAN_TASK_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.PLAN_TASK_COMPLETED,
         new PlanTaskCompleted(
           userId,
           completedPlanTask.id,
@@ -402,8 +401,7 @@ export class SessionService {
       input.status === "COMPLETED" &&
       qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)
     ) {
-      this.events.emit(
-        CoachingEventTopic.SESSION_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.SESSION_COMPLETED,
         new StudySessionCompleted(userId, new Date(dto.startedAt)),
       );
     }

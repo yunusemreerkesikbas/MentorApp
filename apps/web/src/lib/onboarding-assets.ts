@@ -1,10 +1,5 @@
 import type { CareerGroup } from "@mentor/types";
 
-export const ONBOARDING_ASSET_READINESS = {
-  puhuMotion: true,
-  clouds: false,
-} as const;
-
 const PUHU_MOTION_ROOT = "/mascot/puhu/motion";
 
 export const PUHU_MOTION_FRAMES = {
@@ -49,13 +44,14 @@ export function careerPuhu3d(group: CareerGroup): string {
   return `/mascot/career-3d/${group.toLowerCase()}.webp`;
 }
 
-export const CLOUD_ASSETS = ONBOARDING_ASSET_READINESS.clouds
-  ? {
-      left: "/visuals/onboarding/cloud-left.png",
-      right: "/visuals/onboarding/cloud-right.png",
-      bottom: "/visuals/onboarding/cloud-bottom.png",
-    }
-  : null;
+/**
+ * The two clouds that close over the screen when onboarding hands you to the panel. Keyed out of
+ * the magenta-screen art, so they carry their own soft silhouette and need no plate behind them.
+ */
+export const CLOUD_ASSETS = {
+  left: `${SCENE_ROOT}/cloud-left.webp`,
+  right: `${SCENE_ROOT}/cloud-right.webp`,
+} as const;
 
 export const ONBOARDING_MOTION = {
   phraseSeconds: 0.24,

@@ -47,11 +47,7 @@ import {
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
-import {
-  ECONOMY_CHANGED_EVENT,
-  fetchEconomyBalance,
-  isEconomyDisabled,
-} from "@/lib/economy";
+import { useEconomySnapshot } from "@/lib/economy-store";
 import { isNavActive } from "@/lib/nav-active";
 import { useAppSidebar } from "@/lib/use-app-sidebar";
 
@@ -178,24 +174,12 @@ export function AppNav() {
   const t = useTranslations("nav");
   const ui = useTranslations("common");
   const { user } = useAuth();
-  const [balance, setBalance] = useState<EconomyBalance | null>(null);
+  const { balance } = useEconomySnapshot();
   const [premium, setPremium] = useState(false);
 
   useEffect(() => {
     let active = true;
 
-    function loadBalance() {
-      fetchEconomyBalance()
-        .then((next) => {
-          if (active) setBalance(next);
-        })
-        .catch((err: unknown) => {
-          if (!active) return;
-          if (!isEconomyDisabled(err)) setBalance(null);
-        });
-    }
-
-    loadBalance();
     subscriptionsControllerGetMine()
       .then((raw) => {
         if (!active) return;
@@ -206,20 +190,7 @@ export function AppNav() {
         if (active) setPremium(false);
       });
 
-    function onEconomyChanged() {
-      loadBalance();
-    }
-    function onVisible() {
-      if (document.visibilityState === "visible") loadBalance();
-    }
-
-    window.addEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      active = false;
-      window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
+    return () => { active = false; };
   }, []);
 
   const hideMobileChrome = hidesMobileAppChrome(pathname);

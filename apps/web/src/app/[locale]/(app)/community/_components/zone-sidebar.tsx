@@ -9,6 +9,7 @@ import type { ZoneView } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { Link, usePathname } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { getCommunitySummary } from "@/lib/community";
 import { listZones } from "@/lib/forum";
 import { ZoneTypeIcon } from "./zone-type-icon";
 
@@ -31,9 +32,11 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { user } = useAuth();
   const params = useParams<{ slug?: string }>();
   const activeZoneSlug = params.slug;
+  const [rankingEnabled, setRankingEnabled] = useState(false);
   const [zones, setZones] = useState<ZoneView[] | null>(null);
 
   useEffect(() => {
+    getCommunitySummary().then((res) => setRankingEnabled(res.leaderboard != null)).catch(() => setRankingEnabled(false));
     listZones()
       .then((res) => setZones(res.items))
       .catch(() => setZones([]));
@@ -145,14 +148,14 @@ export function ZoneSidebar({ onNavigate }: { onNavigate?: () => void }) {
                 pathname.endsWith(`/topluluk/uye/${user.username}`)) &&
               ["bookmarks", "saved"].includes(searchParams.get("tab") ?? ""),
           }] : []),
-          {
+          ...(rankingEnabled ? [{
             href: "/community/leaderboard" as const,
             label: t("rank_page_title"),
             icon: Trophy,
             active:
               pathname.endsWith("/community/leaderboard") ||
               pathname.endsWith("/topluluk/siralama"),
-          },
+          }] : []),
           {
             href: "/community/trends" as const,
             label: t("trends_nav"),

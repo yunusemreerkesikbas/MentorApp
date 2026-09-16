@@ -1,4 +1,7 @@
 import { Module } from "@nestjs/common";
+import { RewardReceiptService } from "./application/reward-receipt.service";
+import { QuestTriggerService } from "./application/quest-trigger.service";
+import { RewardReceiptRepository } from "./infrastructure/reward-receipt.repository";
 import { CoachingModule } from "../coaching/coaching.module";
 import { IdentityModule } from "../identity/identity.module";
 import { PaymentsModule } from "../payments/payments.module";
@@ -28,6 +31,9 @@ import { EconomyController } from "./presentation/economy.controller";
   imports: [PaymentsModule, IdentityModule, CoachingModule],
   controllers: [EconomyController],
   providers: [
+    RewardReceiptService,
+    QuestTriggerService,
+    RewardReceiptRepository,
     EconomyService,
     EconomyStatsService,
     LedgerRepository,

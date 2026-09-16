@@ -878,7 +878,19 @@ eklendi.
 - Push permission is asked in the same tap as the daily goal "Devam" (Safari/Firefox need the
   gesture), behind a Puhu layer whose "Şimdilik geç" never waits on the browser prompt. No layer when
   permission is already decided, unsupported or VAPID is unconfigured.
-- Assets: `public/visuals/onboarding/welcome-scene-*` (watermark row cropped, ~1.2 Mbps) and
-  `public/mascot/career-3d/*`; see the folder README. Related: `components/onboarding-play/*`,
-  `_components/welcome/*`, `(onboarding)/_components/**`, `lib/onboarding-assets.ts`,
+- Motion: the welcome is scroll-linked, not timed. One rAF write per frame sets `--welcome-progress`
+  (the art trails the track by `--welcome-parallax`, zoomed 12% to pay for the drift) and
+  `--welcome-slip` (the copy gives way, and the title swap lands while it is invisible). Only `step`
+  crosses into React, once per slide. Onboarding answers arrive with a 40 ms stagger and each step
+  slides in from the direction of travel (`onboarding-direction.tsx`).
+- The cloud handover: "Panele git" closes `cloud-left`/`cloud-right` over the screen, navigates
+  underneath, and parts them only when the destination reports in — `useCloudTransitionReady(!loading)`
+  in `panel-shell.tsx` and `roster-shell.tsx`. A ready signal carries the path that sent it, so the
+  page being covered cannot open the sky on itself; a destination that never reports is released by
+  a 6 s timeout. Gotcha: the cover's mount animation is what dispatches "covered" and navigates
+  (APP-089) — never give the left cloud `initial={false}`.
+- Assets: `public/visuals/onboarding/welcome-scene-*` (watermark row cropped, ~1.2 Mbps),
+  `cloud-left/right.webp` (keyed off the magenta-screen art) and `public/mascot/career-3d/*`; see the
+  folder README. Related: `components/onboarding-play/*`, `_components/welcome/*`,
+  `(onboarding)/_components/**`, `lib/onboarding-assets.ts`, `lib/cloud-transition.tsx`,
   `e2e/onboarding-redesign.spec.ts`, `e2e/coach-onboarding.spec.ts`.

@@ -799,6 +799,13 @@
       "when": 1789389721991,
       "tag": "0113_right_thena",
       "breakpoints": true
+    },
+    {
+      "idx": 114,
+      "version": "7",
+      "when": 1789543808506,
+      "tag": "0114_economy_launch_rewards",
+      "breakpoints": true
     }
   ]
 }

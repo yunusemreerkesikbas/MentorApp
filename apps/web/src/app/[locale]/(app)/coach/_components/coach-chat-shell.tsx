@@ -1,4 +1,5 @@
 "use client";
+import { notifyEconomyChanged } from "@/lib/economy";
 import { ChevronDown, MessageSquare, PanelLeft, SquarePen } from "lucide-react";
 
 import { useEffect, useRef, useState } from "react";
@@ -345,6 +346,7 @@ export function CoachChatShell() {
               : String(err),
       );
     } finally {
+      notifyEconomyChanged();
       setBusy(false);
       setStreamingMessageId(null);
       composerRef.current?.focus();
@@ -421,6 +423,7 @@ export function CoachChatShell() {
               : String(err),
       );
     } finally {
+      notifyEconomyChanged();
       setBusy(false);
       setStreamingMessageId(null);
     }

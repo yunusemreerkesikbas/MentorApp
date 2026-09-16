@@ -23,7 +23,7 @@ export function toLedgerEntryView(row: LedgerRow, t: LedgerCopyFn): EconomyLedge
 function displayFor(row: LedgerRow, t: LedgerCopyFn): { title: string; description: string } {
   if (row.reason.startsWith("quest.")) {
     const description = resolveQuestLedgerDescription(t, row.reason.slice("quest.".length));
-    if (description) return { title: t("ledger.questReward.title"), description };
+    if (description) return { title: t(row.unit === Currency.XP ? "ledger.questXp.title" : "ledger.questReward.title"), description };
   }
 
   if (row.reason === EconomyLedger.AI_CHAT_SPEND_REASON) {

@@ -60,9 +60,10 @@ export function KpssLevelStep({
       }
     >
       <div role="radiogroup" aria-label={t("title")} className="flex flex-col gap-3">
-        {OPTIONS.map((value) => (
+        {OPTIONS.map((value, index) => (
           <PlayOptionRow
             key={value}
+            index={index}
             label={examCopy(`variant.${value}`)}
             selected={selected === value}
             disabled={saving}

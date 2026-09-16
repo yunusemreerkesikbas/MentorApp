@@ -10,7 +10,7 @@ import {
   SubscriptionStatus,
 } from "@mentor/types";
 import { GRACE_PERIOD_DAYS } from "../domain/payments.constants";
-import type { TxStatus, TxType } from "../domain/payments.constants";
+import { TxStatus, TxType } from "../domain/payments.constants";
 
 export type PlanRow = typeof plans.$inferSelect;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
@@ -427,6 +427,14 @@ export class PaymentEventsRepository {
         .returning({ id: paymentWebhookEvents.id });
       return rows.length > 0;
     });
+  }
+
+  async hasSuccessfulCharge(userId: string, tx: Exec): Promise<boolean> {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${"first-payment:" + userId}, 0))`);
+    const rows = await tx.select({ id: paymentTransactions.id }).from(paymentTransactions)
+      .where(and(eq(paymentTransactions.userId, userId), eq(paymentTransactions.status, TxStatus.SUCCEEDED),
+        eq(paymentTransactions.type, TxType.RENEWAL), gt(paymentTransactions.amountMinor, 0))).limit(1);
+    return rows.length > 0;
   }
 
   /** Append-only charge ledger (never updated, never deleted — §3). */

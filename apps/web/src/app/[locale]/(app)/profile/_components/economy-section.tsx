@@ -14,6 +14,7 @@ import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import {
   fetchEconomyBalance,
+  notifyEconomyChanged,
   fetchInviteCode,
   fetchQuests,
   isEconomyDisabled,
@@ -49,6 +50,7 @@ async function fetchEconomyHub(): Promise<{
     fetchInviteCode(),
   ]);
   const balance = await fetchEconomyBalance();
+  notifyEconomyChanged();
   return { balance, quests, invite };
 }
 

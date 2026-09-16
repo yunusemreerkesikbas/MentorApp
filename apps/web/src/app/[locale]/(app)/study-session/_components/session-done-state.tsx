@@ -16,11 +16,7 @@ import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-repl
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
-import { fetchQuests, isEconomyDisabled, notifyCoinCelebration } from "@/lib/economy";
-import {
-  findNewlyCompletedQuests,
-  formatRewardSummary,
-} from "@/lib/economy-quest-utils";
+import { fetchQuests, isEconomyDisabled, notifyEconomyChanged } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { scheduleSessionReturnReminder } from "@/lib/notification-api";
 import { getProfileLinks } from "@/lib/profile-links";
@@ -121,35 +117,7 @@ export function SessionDoneState({
           tryCelebrate(streakBaseline, streak);
         }
 
-        if (questsResult) {
-          const completedNow = findNewlyCompletedQuests(questBaseline ?? null, questsResult);
-          if (completedNow.length > 0) {
-            const coinEarned = completedNow.reduce(
-              (sum, quest) =>
-                quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
-              0,
-            );
-            if (coinEarned > 0) {
-              const coinLabel =
-                completedNow.length === 1
-                  ? (completedNow[0]?.title ?? panelT("quest_reward_single_title"))
-                  : panelT("quest_reward_multi_title");
-              notifyCoinCelebration(coinEarned, coinLabel);
-            } else {
-              const rewardSummary = formatRewardSummary(completedNow, economyT);
-              if (rewardSummary) {
-                toast.success({
-                  title:
-                    completedNow.length === 1
-                      ? panelT("quest_reward_single_title")
-                      : panelT("quest_reward_multi_title"),
-                  message: panelT("quest_reward_message", { reward: rewardSummary }),
-                  duration: 3000,
-                });
-              }
-            }
-          }
-        }
+        if (questsResult) notifyEconomyChanged();
       } catch {
         /* Economy disabled / network — stay silent (§4 tone). */
       }
