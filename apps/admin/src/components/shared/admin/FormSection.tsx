@@ -1,23 +1,25 @@
 import type { ReactNode } from "react";
-import { InfoHint } from "./InfoHint";
 
 interface FormSectionProps {
     title: string;
     hint?: string;
     children: ReactNode;
     footer?: ReactNode;
+    className?: string;
 }
 
-export function FormSection({ title, hint, children, footer }: FormSectionProps) {
+export function FormSection({ title, hint, children, footer, className }: FormSectionProps) {
+    const sectionClass = ["card stretch stretch-full admin-form-section", className].filter(Boolean).join(" ");
+
     return (
-        <section className="card stretch stretch-full admin-form-section">
-            <div className="card-header">
-                <div className="d-flex align-items-center gap-2">
-                    <h2 className="card-title">{title}</h2>
-                    {hint ? <InfoHint label={`${title} bölümü hakkında bilgi`} content={hint} /> : null}
+        <section className={sectionClass}>
+            <div className="card-body">
+                <div className="mb-4">
+                    <h5 className="fw-bold mb-0">{title}</h5>
+                    {hint ? <p className="fs-12 text-muted mb-0 mt-1">{hint}</p> : null}
                 </div>
+                {children}
             </div>
-            <div className="card-body">{children}</div>
             {footer ? <div className="card-footer">{footer}</div> : null}
         </section>
     );

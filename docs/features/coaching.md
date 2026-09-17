@@ -145,6 +145,17 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-18 — Notebook add no longer auto-fills ders from AI.** Uploading a mistake photo
+  no longer calls `POST /v1/coaching/notebook/entries/prelabel` or shows "AI öneriyor".
+  `TaxonomyCascadeSelect` stays a manual ders/konu pick. Usage: add a card, choose subject
+  yourself. Gotcha: the AI endpoint still exists; only the web client stopped calling it.
+  Related: `notebook-add-panel.tsx`, `lib/notebook.ts`.
+
+### 2026-09-17 — XP / Coin launch integration
+
+- Economy evaluates quests after plan completion, mood saving and completed-session finalization using the original UTC action date. SESSION_FINALIZED also covers short sessions contributing to an accumulated goal; SESSION_COMPLETED keeps its existing achievement threshold. Dated signals bound the original ISO week and propagate identity failures for retry. Usage: save an action; rewards no longer require opening quests. See quest-trigger.service.ts and daily-quest-signal.service.ts.
+
+
 - **2026-09-14 — Mood auto-prompt waits for journey/achievement overlay.** Dashboard mood
   wheel and Puhu coach note no longer open on top of the journey spotlight. They wait until
   unseen celebrations have been fetched and the current cinematic is dismissed. Usage
@@ -1282,6 +1293,7 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
   `session-history-row.tsx`, `session-history-page.tsx`, `seans/gecmis/page.tsx`, `session-history.tsx`,
   `study-sessions.ts`, `study-session.repository.ts`, `packages/validation`, `coaching.e2e-spec.ts`,
   `messages/{tr,en}.json`.
+- **Shared exam taxonomy pickers (2026-09-17)** — Plan, seans, defter, defterlerim, analiz and the coach composer resolve ders/konu from `GET /v1/content/exams/by-type/:type` (not the countdown calendar) plus `/subjects` and `/topics`. Shared `exam-taxonomy.ts` + `TaxonomyCascadeSelect` (slug mode for notebooks, name mode for coach assignments). Session pill UI is unchanged. Catch-all **Diğer** is a seeded subject/topic (`diger`), not free text. Usage: set exam type (and KPSS variant) in settings. Gotcha: YKS/LGS no longer fall back to free text solely because the calendar has no date; analysis deneme form omits Diğer. Related: `apps/web/src/lib/exam-taxonomy.ts`, `taxonomy-cascade-select.tsx`, `docs/features/content.md`.
 - **Seans geçmişi tarih filtresi (2026-07-12)** — `/seans/gecmis`: Tümü · Bugün · Son 7 gün · Son 30 gün
   chip'leri. `GET /v1/study-sessions?from=&to=` (yyyy-mm-dd, inclusive UTC günler, `started_at`);
   `from > to` → 400. Konu filtresiyle birlikte. Custom date picker / detay / export yok. Dosyalar:

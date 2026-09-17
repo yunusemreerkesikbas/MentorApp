@@ -806,6 +806,13 @@
       "when": 1789543808506,
       "tag": "0114_economy_launch_rewards",
       "breakpoints": true
+    },
+    {
+      "idx": 115,
+      "version": "7",
+      "when": 1789656751857,
+      "tag": "0115_acoustic_siren",
+      "breakpoints": true
     }
   ]
 }

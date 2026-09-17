@@ -38,6 +38,11 @@ export const examFamilyParamSchema = z.object({
 });
 export type ExamFamilyParam = z.infer<typeof examFamilyParamSchema>;
 
+export const examFamilyCurrentQuerySchema = z.object({
+  variant: z.enum(["LISANS", "ONLISANS", "ORTAOGRETIM"]).optional(),
+});
+export type ExamFamilyCurrentQuery = z.infer<typeof examFamilyCurrentQuerySchema>;
+
 export const examSlugParamSchema = z.object({
   slug: z.string().min(1).max(128),
 });

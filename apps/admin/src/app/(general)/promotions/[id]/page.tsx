@@ -6,7 +6,6 @@ import { useParams } from "next/navigation";
 import { FiArrowLeft } from "react-icons/fi";
 import { AdminPageHeader } from "@/components/shared/admin/AdminPageHeader";
 import { AsyncState } from "@/components/shared/admin/AsyncState";
-import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { AdminPromotion } from "@/lib/types";
 import PromotionForm from "../PromotionForm";
@@ -61,8 +60,28 @@ export default function EditPromotionPage() {
 
             {loading ? (
                 <div className="main-content">
-                    <div className="card stretch stretch-full">
-                        <AsyncState status="loading" title="Kampanya yükleniyor" />
+                    <div className="row g-4" aria-busy="true">
+                        <div className="col-xl-6">
+                            <div className="card stretch stretch-full">
+                                <div className="card-body">
+                                    <AsyncState status="loading" size="compact" title="Kampanya yükleniyor" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-xl-6">
+                            <div className="card stretch stretch-full">
+                                <div className="card-body">
+                                    <AsyncState status="loading" size="compact" title="Kampanya yükleniyor" />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="col-12">
+                            <div className="card stretch stretch-full">
+                                <div className="card-body">
+                                    <AsyncState status="loading" size="compact" title="Kampanya yükleniyor" />
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             ) : loadError ? (
@@ -72,25 +91,7 @@ export default function EditPromotionPage() {
                     </div>
                 </div>
             ) : promotion ? (
-                <>
-                    <div className="main-content pb-0">
-                        <div className="card stretch stretch-full mb-0">
-                            <div className="card-body py-3 d-flex flex-wrap align-items-center gap-3">
-                                <StatusBadge tone={promotion.isActive ? "success" : "neutral"}>
-                                    {promotion.isActive ? "Yayında" : "Durduruldu"}
-                                </StatusBadge>
-                                <span className="fs-12 text-muted">
-                                    Kullanım: <strong>{promotion.redeemedCount}</strong>
-                                    {promotion.maxRedemptions === null ? " / sınırsız" : ` / ${promotion.maxRedemptions}`}
-                                </span>
-                                <span className="fs-12 text-muted">
-                                    Oluşturma: {new Date(promotion.createdAt).toLocaleString("tr-TR")}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-                    <PromotionForm initial={promotion} />
-                </>
+                <PromotionForm initial={promotion} />
             ) : (
                 <div className="main-content">
                     <div className="card stretch stretch-full">

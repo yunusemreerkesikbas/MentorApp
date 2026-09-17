@@ -67,6 +67,11 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-17 — XP / Coin launch integration
+
+- community.leaderboard.enabled defaults to false at launch and blocks direct leaderboard API access. Personal XP and journey levels remain in community summaries; web hides the ranking link when the API returns no leaderboard. Usage: manage the flag through central config. See community.service.ts and economy.md.
+
+
 - **Panel açılışında spotlight ile mood üst üste binmiyor (2026-09-14)** — Unseen
   kutlama kuyruğu (`NotificationDrawerShell`) artık `CelebrationOverlayProvider` ile
   "fetch bitti mi / sahnede kutlama var mı" yayınlıyor. Dashboard mood auto-prompt ve

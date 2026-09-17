@@ -67,14 +67,20 @@ pnpm --filter @mentor/api-client generate
 | Endpoint                                       | Purpose                                    |
 | ---------------------------------------------- | ------------------------------------------ |
 | `GET /v1/content/exams`                        | List exams                                 |
+| `GET /v1/content/exams/by-type/:type`          | Current exam for a family (no date required; `?variant=` for KPSS) |
 | `GET /v1/content/exams/by-type/:type/calendar` | Calendar by exam family (countdown source) |
 | `GET /v1/content/exams/:slug/calendar`         | Calendar by slug                           |
-| `GET /v1/content/exams/:slug/subjects`         | Editorial taxonomy (deneme form)           |
+| `GET /v1/content/exams/:slug/subjects`         | Editorial subject taxonomy                 |
+| `GET /v1/content/exams/:slug/topics`           | Editorial topic taxonomy                   |
 | `GET /v1/content/info-articles?family=`        | Published articles (newest first)          |
 | `GET /v1/content/info-articles/:slug`          | Published article detail                   |
 | `POST /v1/admin/content/articles/images/upload-url` | EDITOR+ article image upload URL      |
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-17 — Catch-all Diğer on every exam.** Seed adds subject `diger` (null `questionCount`, last in sort) and a `diger` topic under every exam subject, so plan/defter/koç pickers can label a missing ders or konu without free-text. Usage: restart the API after pulling seed. Gotcha: analysis deneme form still skips null-count subjects, so Diğer is not a DYB row. Related: `subjects.seed.json`, `analysis-types.ts`.
+
+- **2026-09-17 — Shared exam ders/konu taxonomy (KPSS + YKS + LGS)** — Seed now covers coaching-grain topics for all three families: KPSS GY-GK stays on the existing slugs (enriched Tarih/Coğrafya/Vatandaşlık/Güncel), YKS uses `tyt-*` / `ayt-*` / `ydt-*` with official paper counts (AYT Tarih/Coğrafya merge the two booklet parts), LGS uses `lgs-*`. `GET /v1/content/exams/by-type/:type` returns the current exam **without** an EXAM_DATE, so YKS/LGS pickers resolve. Optional `?variant=` selects the KPSS guide. Countdown still uses `/calendar`. Usage: restart the API after pulling seed. Gotcha: no admin topic editor; analysis deneme form lists every YKS subject. Related: `subjects.seed.json`, `calendar.util.ts`, `content.controller.ts`.
 
 - **2026-08-30 — Bilgi merkezi öne çıkan (featured) kart redesign** — Öne çıkan makale bileşeni referans tasarıma uygun yatay (sol görsel, sağ başlık + metaDescription + yazar/tarih + share butonu) kart düzenine geçirildi. `metaDescription` özete eklendi; 3'lü grid ile uyumlu hale getirildi. İlgili: `featured-hero.tsx`, `content.mappers.ts`, `packages/types/src/content.ts`.
 

@@ -915,3 +915,13 @@ eklendi.
   folder README. Related: `components/onboarding-play/*`, `_components/welcome/*`,
   `(onboarding)/_components/**`, `lib/onboarding-assets.ts`, `lib/cloud-transition.tsx`,
   `e2e/onboarding-redesign.spec.ts`, `e2e/coach-onboarding.spec.ts`.
+
+- **Yasal belgeler ve ayarlar footer'ı (2026-09-17)** — Altı yasal belgenin TR bağlayıcı ve EN
+  bilgilendirici metinleri Mentor'un gerçek veri akışlarına göre tek registry'de tamamlandı. Public
+  `/yasal/[slug]` adresleri korunurken `/ayarlar/yasal/[slug]` aynı içeriği mevcut `AppNav` kabuğunda
+  gösterir. Ayarlar altındaki ince footer altı belgeyi ve AppNav'lı çerez tercih ekranını bağlar;
+  mobil alt bar boşluğuna taşmaz. Çerez ekranı zorunlu oturum/tema/sidebar çerezlerini, tarayıcı
+  depolamasını ve yalnız açık tercihle çalışan GA4'ü ayrı açıklar. Gotcha: Türkçe metin `FINAL`, EN
+  her zaman bilgilendirici ve `noindex`; içerik iki route için de yalnız `lib/legal.ts` üzerinden
+  güncellenir. İlgili: `lib/legal.ts`, `components/legal-document-view.tsx`,
+  `components/settings-legal-footer.tsx`, `(app)/settings/legal/[slug]/page.tsx`.

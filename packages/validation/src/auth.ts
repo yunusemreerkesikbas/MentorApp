@@ -30,6 +30,10 @@ export const signupSchema = z.object({
   username: usernameSchema.optional(),
   /** KVKK consent is mandatory at signup (roadmap §7/§9). */
   kvkkAccepted: z.literal(true),
+  /** Binding terms acceptance, kept separate from the KVKK notice. */
+  termsAccepted: z.literal(true),
+  /** Self-declared minimum age; no birth date is collected. */
+  ageEligibilityConfirmed: z.literal(true),
   /** Cloudflare Turnstile token (enforced when the secret is configured). */
   turnstileToken: z.string().optional(),
   /**
@@ -62,10 +66,20 @@ export const googleOAuthStartQuerySchema = z
       .regex(/^\/(?!\/)[a-z0-9/_-]*$/i)
       .default("/panel"),
     kvkkAccepted: z.enum(["true"]).optional(),
+    termsAccepted: z.enum(["true"]).optional(),
+    ageEligibilityConfirmed: z.enum(["true"]).optional(),
   })
-  .refine((v) => v.mode !== "signup" || v.kvkkAccepted === "true", {
-    path: ["kvkkAccepted"],
-    message: "required",
+  .superRefine((value, context) => {
+    if (value.mode !== "signup") return;
+    for (const field of [
+      "kvkkAccepted",
+      "termsAccepted",
+      "ageEligibilityConfirmed",
+    ] as const) {
+      if (value[field] !== "true") {
+        context.addIssue({ code: "custom", path: [field], message: "required" });
+      }
+    }
   });
 export type GoogleOAuthStartQuery = z.infer<typeof googleOAuthStartQuerySchema>;
 

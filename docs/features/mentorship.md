@@ -211,6 +211,8 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-17 — Composer ders/konu uses shared exam taxonomy.** Week composer pickers load the student's family via `GET /v1/content/exams/by-type/:type` and the shared `TaxonomyCascadeSelect` (display-name values for `plan_tasks`). Usage: assign from `/kocluk/students/:id`. Gotcha: still the student's exam, never the coach's. Related: `use-exam-topic-taxonomy.ts`, `exam-taxonomy.ts`, `docs/features/content.md`.
+
 - **2026-09-15 — Coach surface shares Nuton; work-tool rhythm stays.** `/kocluk` dropped
   `.coach-theme` (system font, cool oklch canvas, `#3567c0` buttons, 12px, no shadows). Content
   inherits Plus Jakarta, black `--color-btn`, 10px radius and the locale `BackgroundBlobs` like
