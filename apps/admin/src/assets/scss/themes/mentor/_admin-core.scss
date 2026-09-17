@@ -217,7 +217,7 @@
 .admin-form-section {
 	margin-bottom: 24px;
 
-	.card-title {
+	h5.fw-bold {
 		font-size: $font-15;
 	}
 }
@@ -291,6 +291,10 @@
 
 .forum-zones-table {
 	min-width: 900px;
+}
+
+.forum-tags-table {
+	min-width: 960px;
 }
 
 .admin-forum-intent-cell {

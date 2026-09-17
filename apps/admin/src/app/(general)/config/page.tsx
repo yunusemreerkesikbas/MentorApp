@@ -8,6 +8,7 @@ import { InfoHint } from "@/components/shared/admin/InfoHint";
 import { StatusBadge } from "@/components/shared/admin/StatusBadge";
 import apiClient from "@/lib/apiClient";
 import type { ConfigEntry } from "@/lib/types";
+import { configHint } from "./config-hints";
 
 const CATEGORY_LABELS: Record<string, string> = {
     "feature-flags": "Özellik bayrakları",
@@ -20,6 +21,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     ads: "Reklamlar",
     promotions: "Kampanyalar",
     mentorship: "Mentorluk",
+    storage: "Depolama",
 };
 
 const categoryLabel = (category: string) => CATEGORY_LABELS[category] ?? category.replaceAll("-", " ");
@@ -121,7 +123,11 @@ function ConfigRow({ entry, busy, onSave }: { entry: ConfigEntry; busy: boolean;
             <div className="admin-config-copy">
                 <div className="d-flex align-items-center flex-wrap gap-2">
                     <label className="fw-semibold mb-0" htmlFor={inputId}>{entry.key}</label>
-                    <InfoHint label={`${entry.key} ayarı hakkında bilgi`} content={entry.description} placement="right" />
+                    <InfoHint
+                        label={`${entry.key} ayarı hakkında bilgi`}
+                        content={configHint(entry.key, entry.description)}
+                        placement="right"
+                    />
                     {entry.sensitive ? <StatusBadge tone="warning">Hassas ayar</StatusBadge> : null}
                 </div>
             </div>

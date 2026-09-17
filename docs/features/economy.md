@@ -1,15 +1,34 @@
 # Economy
 
-> Light append-only ledger substrate: XP reputation + non-monetary Coin (→ earned AI right). Module:
+> Light append-only ledger substrate: XP personal progress + non-monetary Coin (→ earned AI right). Module:
 > `modules/economy`. Workstream: W6. Roadmap: MVP substrate + weekly quests + refund reversal +
 > deep-analysis sink shipped (APP-025, launch-ready); Phase 2 = forum coin, Redis leaderboard,
 > mahalle, real economy expansion.
 
 ## Overview
 
-The economy is an append-only ledger system for XP (reputation) and Coin (non-monetary, capped, earned
+The economy is an append-only ledger system for XP (personal journey progress) and Coin (non-monetary, capped, earned
 right → AI chat access). It powers onboarding quests, invite rewards, and AI chat spending. **Coin is
 non-monetary, capped. Never in chat UI (§4 #3). The ledger never stores a single number / never deletes.**
+
+## Launch rules (2026-09-17)
+
+These rules supersede earlier launch assumptions in the historical timeline.
+
+| Surface | Launch rule |
+| --- | --- |
+| XP | Personal journey/levels; never spent or converted to Coin |
+| Coin | The only spendable label; non-monetary and capped; absent from chat UI |
+| Profile / verified email | 10 Coin each, once |
+| First subscription / entering invite code | Disabled quest IDs retained; no Coin |
+| Weekly effort | 5 active UTC days in one ISO week gives 15 Coin |
+| Successful invite | Inviter receives 20 Coin on the invitee's first positive successful payment |
+| AI chat / weekly deep analysis | 5 / 25 Coin, configured centrally |
+| XP leaderboard / paid streak rescue / rewarded ads | Disabled, enforced by backend |
+
+Existing XP amounts, thresholds, Coin caps, daily AI limits, budget limits and free streak freezes
+remain unchanged. No historical balance reset or bulk backpay. Forum Coin approval and live
+multi-device synchronization remain outside this change.
 
 ## Architecture (key decisions)
 
@@ -24,10 +43,35 @@ non-monetary, capped. Never in chat UI (§4 #3). The ledger never stores a singl
 - **Idempotent grants:** unique `(ref_type, ref_id)` where `ref_id` not null.
 - **Spending:** `EconomyService.spend()` — atomic confirmed-coin debit, idempotent on ref.
   `INSUFFICIENT_COIN` (422). Free daily coin allowance for AI chat (separate from premium rate-limit).
-- **Cross-module decoupling:** economy consumes events from payments (`subscription.activated`) and
+- **Cross-module decoupling:** economy consumes events from payments (`payment.succeeded` for the first positive charge) and
   emits events consumed by itself (invite conversion). Forum XP is wired via `forum.answer.accepted`.
   **No runtime dependency on economy from forum** (type-only import).
 - **Gated by `economy.enabled`** (default off) — dormant until admin flips the flag.
+
+## Action-driven rewards and receipts
+
+- Profile, email verification, mood, completed plan tasks and finalized sessions trigger backend
+  evaluation. Original UTC dates determine daily/ISO-week periods and survive retry jobs.
+  GET quests retains reconciliation compatibility. Completion and grant share one transaction;
+  undoing a completed task does not subtract XP.
+- The first-positive-payment event commits to the existing jobs table with the charge. Delivery
+  retries safely. Invite conversion, source payment and grant are atomic. CAP_DENIED, DISABLED and
+  REFUNDED outcomes explain missing grants. Trials, sponsors, zero charges and renewals do not pay.
+  Only the source payment's refund reverses a grant, including while economy is disabled.
+  REVERSED settles even a zero debit, so a replay cannot consume later unrelated earnings.
+- Migration 0114 adds self-scoped mutable reward receipts outside the append-only ledger. Only
+  newly inserted positive confirmed organic grants create receipts; seeds, admin adjustments and
+  compensating refunds do not. There is no historical backfill. Account erasure removes receipts
+  alongside other mutable economy control data while preserving the ledger.
+- One web store supplies navigation and open balance sheets. Action completion and tab return
+  refresh it. One consumer displays actual ledger amounts and acknowledges after display,
+  deduplicating IDs during the session. Old fixed amounts and URL-driven celebrations are removed.
+  The API calculates balance usage from current costs. Completed quest cards show neutral progress.
+- Usage: configure launch keys through admin. Local-only maintenance can run
+  `scripts/apply-local-economy-launch.ts` (dry-run) or add `--apply`; restart the local API afterward
+  to clear its process-local configuration cache. Existing DB overrides beat code defaults.
+- Gotchas: existing job workers/cron must run. A browser crash between visible display and receipt
+  acknowledgment may re-offer an unread notification; it cannot duplicate the ledger grant.
 
 ## Tutorials / Guides
 
@@ -62,6 +106,8 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | ----------------------------------------- | -------------------------------------------------------- |
 | `GET /v1/economy/balance`                 | Self balance + XP `level` (tier/nextAt)                  |
 | `GET /v1/economy/ledger`                  | Self ledger history                                      |
+| `GET /v1/economy/rewards/unseen`          | Paginated unread positive reward receipts |
+| `POST /v1/economy/rewards/seen`           | Acknowledge own ledger IDs without changing ledger |
 | `GET /v1/economy/quests`                  | Quest catalog + progress (auto-grants)                   |
 | `GET /v1/economy/invite`                  | Get/generate invite code                                 |
 | `POST /v1/economy/invite/redeem`          | Redeem invite code                                       |
@@ -73,6 +119,11 @@ POST /admin/users/:id/economy/adjust { "unit": "COIN", "amount": 30, "reason": "
 | `GET /v1/admin/metrics/economy`           | Faucet/sink breakdown + float + faucet reach (calibration) |
 
 ## Geliştirmeler (timeline)
+
+### 2026-09-17 — XP / Coin launch integration
+
+- Action-driven quests, durable first-positive-payment rewards, self-scoped unread receipts and a shared web balance store implement the launch model above. Usage: complete an action; no quests-page visit is required. Historical ledger rows remain intact and do not generate new notifications. Related: quest-trigger.service.ts, payment-reward-events.service.ts, invite.service.ts, reward-receipt.repository.ts, economy-store.ts, economy-sync.tsx, migration 0114.
+
 
 - **Coin kazanımı tam ekran kutlama animasyonu (2026-08-30)** — Görev tamamlandığında, reklam
   izlendiğinde veya odak seansında coin kazanıldığında standart modal yerine ekranı bulanıklaştıran
@@ -440,4 +491,3 @@ fail+retry. İlgili: [payments.md](./payments.md) 2026-09-17, `refund-events.lis
   [payments.md](./payments.md) (subscription event), [admin.md](./admin.md) (config/economy UI)
 - Smoke: [core/setup.md](../core/setup.md) § Economy smoke test (pre-flip, 10 adım)
 - Status: [core/mvp-status.md](../core/mvp-status.md) (W6 breakdown)
-

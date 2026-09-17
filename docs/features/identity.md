@@ -91,6 +91,11 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-17 — XP / Coin launch integration
+
+- Committed profile updates and email verification publish dated domain events for immediate quest evaluation. No identity code accesses economy tables. Profile and email rewards remain separate and once-only. See users.service.ts, auth.service.ts and economy.md.
+
+
 - **2026-09-14 — Koç signup'ı durum bilinene kadar form göstermiyor.** `?rol=koc` ile
   `coachOpen === null` iken (status isteği sürüyor) skeleton render edilir; önceden kapalı intake'te
   form bir an görünüp doldurulabiliyordu. `fetchCoachSignupOpen` hata durumunda `false` döner.
@@ -499,6 +504,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 - **`AuthNavLink` children must be plain `string`** (avoids React 19 / Next `Link` ReactNode type clash).
 - **Landing funnel points to `/kayit` and `/giris`** — keep CTA paths aligned.
 - **e2e boot can exceed 10s on Windows** → vitest `hookTimeout: 30s`.
+
+- **Ayrık kayıt beyanları ve 13+ öz beyanı (2026-09-17)** — Kayıt ekranındaki eski birleşik
+  “KVKK + 18 yaş” kutusu ayrıldı: KVKK aydınlatmasının okunduğu ayrıca belirtilir; Kullanım
+  Koşulları kabulü en az 13 yaş öz beyanını taşır. Doğum tarihi/yılı ve ham IP toplanmaz. E-posta ve
+  Google kayıt API'leri `kvkkAccepted`, `termsAccepted` ve `ageEligibilityConfirmed` değerlerinin
+  üçünü de zorunlu doğrular. Yeni hesapta `terms_accepted_at`, `terms_version` ve
+  `age_eligibility_confirmed_at` kanıtı saklanır; mevcut hesaplar için kolonlar nullable bırakılmıştır.
+  Gotcha: bu yalnız öz beyandır, veli doğrulaması değildir ve çocuk verileri için hukukçu incelemesi
+  gerektirir. İlgili: `packages/validation/src/auth.ts`, `auth.service.ts`,
+  `google-auth.service.ts`, migration `0115_acoustic_siren.sql`, web `signup/page.tsx`.
 
 ## Related
 

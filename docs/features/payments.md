@@ -69,6 +69,11 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-17 — XP / Coin launch integration
+
+- First-positive-charge and source-payment refund events are persisted with payment transactions through the existing JobQueuePort transaction option. The retry handler restores the original payment timestamp. PaymentEvidenceService exposes refund evidence without sharing tables. Trials and later renewals do not create invite grants. Usage: process existing jobs normally. See payment-reward-events.service.ts and economy.md.
+
+
 - **`PaymentRefunded.sourcePaymentId` zorunlu (2026-09-17)** — İade ödül olayı job kuyruğundan
   parse edilirken `sourcePaymentId` her zaman gerekir (davet clawback bu id'ye kilitli). Domain
   sınıfı worker Zod şeması ile hizalandı; alanı optional yapmak kaynaksız iadede reversal'ı sessiz

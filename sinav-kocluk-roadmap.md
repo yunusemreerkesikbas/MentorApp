@@ -1,5 +1,18 @@
 # Sınav Koçluğu Platformu — Karar Kaydı & Roadmap
 
+> **2026-09-17 lansman kararı: XP ve Coin.** Önceki ekonomi seçeneklerinin lansman kapsamını bu karar belirler.
+> Harcanabilir birimin adı **Coin**; “onaylı hak” ayrı bir birim değildir. XP kişisel seviye/yolculuk
+> ilerlemesidir; harcanmaz ve Coin'e dönüşmez. XP sıralaması lansmanda kapalıdır.
+> Profil tamamlama ve e-posta doğrulama ayrı ayrı bir kez 10 Coin; ilk abonelik ve davet kodu girme
+> ödülleri kapalıdır. Aynı UTC/ISO haftasında 5 aktif gün 15 Coin getirir. Başarılı davet, davetlinin
+> ilk pozitif başarılı tahsilatında davet edene bir kez 20 Coin verir; deneme, ücretsiz/sponsor
+> erişimi ve yenileme ödül vermez. Yalnız kaynak ödemenin iadesi ilgili ödülü geri alır.
+> Sohbet mesajı 5 Coin, haftalık derin analiz 25 Coin; bedeller merkezi ayarlardan okunur.
+> Coin ile seri kurtarma ve reklamla Coin lansmanda kapalı; ücretsiz dondurma kuralları korunur.
+> XP miktarları, eşikler, kazanım tavanları ve AI bütçe/günlük sınırları korunur. Eski bakiyeler ve
+> ledger silinmez; geçmiş kaçırılmış ödüllere toplu ödeme yapılmaz. Forum Coin onayı ve çoklu
+> cihaz canlı eşitlemesi kapsam dışıdır. Ayrıntılar: [Economy](docs/features/economy.md).
+
 > Durum: Yaşayan karar kaydı + roadmap · Oluşturma: 2026-06-02
 > **Ürün sınav-agnostik:** AI koç, ritüel, sosyal, analiz mantığı tüm sınavlarda (YKS/LGS/KPSS…) **aynı**. Sınavlar yalnızca **içerik/config** ile ayrışır (konu taksonomisi, **net kuralı** [KPSS/YKS: D−Y/4, LGS: D−Y/3], takvim kaynağı [ÖSYM/MEB], SEO içeriği). Ayrı "dikey geliştirme" yok. **KPSS = fikrin çıkış noktası + ilk tohumlanacak içerik.** *(LGS açılırsa: reşit-olmayan veli onayı/KVKK boyutu.)*
 > Kapsam: konumlandırma · bilgi merkezi · forum/ekonomi · doğrulama · retention · iş modeli · stack/mimari · roller/paneller/marketplace · MVP · ödeme · yönetim paneli.
