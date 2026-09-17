@@ -14,6 +14,7 @@ import type { Env } from "../../../config/env.validation";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   AuthProvider,
+  CURRENT_TERMS_VERSION,
   GOOGLE_OAUTH_STATE_TTL_MS,
   UserStatus,
 } from "../domain/identity.constants";
@@ -54,6 +55,8 @@ export class GoogleAuthService {
     locale: "tr" | "en";
     returnTo: string;
     kvkkAccepted: boolean;
+    termsAccepted: boolean;
+    ageEligibilityConfirmed: boolean;
   }): Promise<{ state: GoogleOAuthState; cookieValue: string; url: string }> {
     await this.assertEnabled();
     const state: GoogleOAuthState = {
@@ -62,6 +65,8 @@ export class GoogleAuthService {
       locale: input.locale,
       returnTo: sanitizeReturnTo(input.returnTo),
       kvkkAccepted: input.kvkkAccepted,
+      termsAccepted: input.termsAccepted,
+      ageEligibilityConfirmed: input.ageEligibilityConfirmed,
       expiresAt: Date.now() + GOOGLE_OAUTH_STATE_TTL_MS,
     };
     return this.createLinkStartFor(state);
@@ -120,19 +125,28 @@ export class GoogleAuthService {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_LINK_REQUIRED, HttpStatus.CONFLICT);
     }
 
-    if (state.mode !== "signup" || !state.kvkkAccepted) {
+    if (
+      state.mode !== "signup" ||
+      !state.kvkkAccepted ||
+      !state.termsAccepted ||
+      !state.ageEligibilityConfirmed
+    ) {
       throw new DomainError(ErrorCode.AUTH_GOOGLE_ACCOUNT_NOT_FOUND, HttpStatus.UNAUTHORIZED);
     }
 
     const passwordHash = await argon2.hash(randomBytes(32).toString("base64url"));
     let user: UserRow;
     try {
+      const acceptedAt = new Date();
       user = await this.usersRepo.createService({
         email: profile.email,
         passwordHash,
         displayName: profile.displayName,
         emailVerifiedAt: new Date(),
-        kvkkAcceptedAt: new Date(),
+        kvkkAcceptedAt: acceptedAt,
+        termsAcceptedAt: acceptedAt,
+        termsVersion: CURRENT_TERMS_VERSION,
+        ageEligibilityConfirmedAt: acceptedAt,
       });
     } catch (err) {
       if (!isUniqueViolation(err)) throw err;

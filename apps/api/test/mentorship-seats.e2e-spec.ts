@@ -49,6 +49,8 @@ describe("mentorship seats (e2e)", () => {
       password: "Sifre1234",
       displayName: `W8S ${label}`,
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(res.status).toBe(201);
     token[label] = res.body.accessToken;

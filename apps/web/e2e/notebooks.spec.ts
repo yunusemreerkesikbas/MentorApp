@@ -121,6 +121,13 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
     }
     if (
       method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, calendar.exam);
+    }
+    if (
+      method === "GET" &&
       path === "/v1/content/exams/by-type/KPSS/calendar"
     ) {
       return json(route, calendar);
@@ -137,6 +144,12 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
           sortOrder: 1,
         },
       ]);
+    }
+    if (
+      method === "GET" &&
+      path === `/v1/content/exams/${calendar.exam.slug}/topics`
+    ) {
+      return json(route, []);
     }
     if (method === "GET" && path === "/v1/coaching/notebooks") {
       state.listCalls += 1;

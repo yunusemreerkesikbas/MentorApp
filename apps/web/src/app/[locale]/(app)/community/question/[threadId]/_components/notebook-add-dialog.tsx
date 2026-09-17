@@ -2,12 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { AuthUser, ExamCalendarDto, NotebookErrorType } from "@mentor/types";
+import type { NotebookErrorType } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES } from "@mentor/types";
-import {
-  contentControllerCalendarByFamily,
-  usersControllerMe,
-} from "@mentor/api-client";
+import { loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
 import { Button, SectionHeading, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { createNotebookEntry } from "@/lib/notebook";
@@ -46,12 +43,8 @@ export function NotebookAddDialog({
     let cancelled = false;
     void (async () => {
       try {
-        const me = (await usersControllerMe()) as unknown as AuthUser;
-        if (!me.examType) return;
-        const calendar = (await contentControllerCalendarByFamily(
-          me.examType,
-        )) as unknown as ExamCalendarDto | null;
-        if (!cancelled) setExamId(calendar?.exam?.id ?? null);
+        const bundle = await loadViewerExamTaxonomy();
+        if (!cancelled) setExamId(bundle.exam?.id ?? null);
       } catch {
         if (!cancelled) setError(t("notebook_add_error"));
       }

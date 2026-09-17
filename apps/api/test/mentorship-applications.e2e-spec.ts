@@ -60,6 +60,8 @@ describe("mentorship coach registry (e2e)", () => {
         password: "Sifre1234",
         displayName: `Kisi ${label}`,
         kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
         ...(intent ? { intent } : {}),
       });
     expect(res.status).toBe(201);

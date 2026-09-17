@@ -10,7 +10,13 @@ const commonState = {
 
 const stateSchema = z.discriminatedUnion("mode", [
   z.object({ ...commonState, mode: z.literal("login"), kvkkAccepted: z.boolean() }),
-  z.object({ ...commonState, mode: z.literal("signup"), kvkkAccepted: z.boolean() }),
+  z.object({
+    ...commonState,
+    mode: z.literal("signup"),
+    kvkkAccepted: z.boolean(),
+    termsAccepted: z.boolean(),
+    ageEligibilityConfirmed: z.boolean(),
+  }),
   z.object({
     ...commonState,
     mode: z.literal("link"),

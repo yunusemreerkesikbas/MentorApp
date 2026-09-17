@@ -23,6 +23,9 @@ function makeRepoFake() {
   const redemptions: Redemption[] = [];
   return {
     redemptions,
+    markRewardReversed: async (id: string) => {
+      redemptions.find(r => r.id === id)!.rewardOutcome = "REVERSED";
+    },
     withServiceTx: async (fn: (tx: unknown) => Promise<void>) => fn({}),
     lockRedemption: async (invited: string) => redemptions.find(r => r.invitedUserId === invited),
     lockPending: async (invited: string) => redemptions.find(r => r.invitedUserId === invited && r.status === "PENDING"),
@@ -191,6 +194,18 @@ describe("InviteService", () => {
         },
       },
     ]);
+  });
+
+  it("settles a spent-down reward so a replay cannot debit later earnings", async () => {
+    const svc = service();
+    await svc.redeem("burak", await svc.getOrCreateCode("ayse"));
+    await svc.onInvitedConverted(new PaymentSucceeded("burak", "sub", "pay-1", 100, new Date()));
+    reverseResult = 0;
+    await svc.onInvitedRefunded("burak", "pay-1");
+    reverseResult = 20;
+    await svc.onInvitedRefunded("burak", "pay-1");
+    expect(reversals).toHaveLength(1);
+    expect(repo.redemptions[0]!.rewardOutcome).toBe("REVERSED");
   });
 
   it("refund without a CONVERTED redemption is a no-op", async () => {

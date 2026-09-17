@@ -35,6 +35,11 @@ export class InviteRepository {
       .where(eq(inviteRedemptions.id, id));
   }
 
+  async markRewardReversed(id: string, tx: DatabaseTx): Promise<void> {
+    await tx.update(inviteRedemptions).set({ rewardOutcome: "REVERSED" })
+      .where(eq(inviteRedemptions.id, id));
+  }
+
   findByInviter(inviterUserId: string): Promise<InviteRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.select().from(invites).where(eq(invites.inviterUserId, inviterUserId)).limit(1);

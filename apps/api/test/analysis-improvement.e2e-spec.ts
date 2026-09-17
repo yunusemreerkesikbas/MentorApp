@@ -19,7 +19,7 @@ describe("analysis improvement loop (e2e)", () => {
     app.use(cookieParser());
     await app.init();
     for (const label of ["self", "other"]) {
-      const result = await request(app.getHttpServer()).post("/v1/auth/signup").send({ email: `analysis-${label}-${Date.now()}@test.local`, password: "Sifre1234", displayName: "Analysis test", kvkkAccepted: true });
+      const result = await request(app.getHttpServer()).post("/v1/auth/signup").send({ email: `analysis-${label}-${Date.now()}@test.local`, password: "Sifre1234", displayName: "Analysis test", kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
       expect(result.status).toBe(201);
       if (label === "self") token = result.body.accessToken;
       else otherToken = result.body.accessToken;

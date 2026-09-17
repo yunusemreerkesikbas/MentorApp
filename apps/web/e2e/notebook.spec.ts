@@ -268,6 +268,13 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     }
     if (
       method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, exam);
+    }
+    if (
+      method === "GET" &&
       path === "/v1/content/exams/by-type/KPSS/calendar"
     ) {
       return json(route, calendar);

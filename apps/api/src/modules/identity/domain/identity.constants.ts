@@ -27,6 +27,9 @@ export const GOOGLE_OAUTH_STATE_COOKIE = "mentor_google_oauth";
 export const GOOGLE_OAUTH_COOKIE_PATH = "/v1/auth/google";
 export const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
+/** Published terms revision recorded with every new account. */
+export const CURRENT_TERMS_VERSION = "2026-09-17";
+
 export const AuthProvider = {
   GOOGLE: "google",
 } as const;

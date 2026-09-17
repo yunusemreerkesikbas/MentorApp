@@ -349,7 +349,7 @@ for (const conflict of [false, true]) {
     await page.route("**/v1/content/**", (route) => {
       const path = new URL(route.request().url()).pathname;
       const exam = { id: examId, slug: "kpss-test", name: "KPSS", family: "KPSS" };
-      return json(route, path.endsWith("/subjects") ? [{ slug: "matematik", name: "Matematik", questionCount: 30 }] : path.endsWith("/topics") ? [{ slug: "problemler", subjectSlug: "matematik", name: "Problemler" }] : path.endsWith("/exams") ? { items: [exam], total: 1, page: 1, pageSize: 100 } : { exam, events: [] });
+      return json(route, path.endsWith("/subjects") ? [{ slug: "matematik", name: "Matematik", questionCount: 30 }] : path.endsWith("/topics") ? [{ slug: "problemler", subjectSlug: "matematik", name: "Problemler" }] : path.endsWith("/exams") ? { items: [exam], total: 1, page: 1, pageSize: 100 } : path.includes("/by-type/") && !path.endsWith("/calendar") ? exam : { exam, events: [] });
     });
     await page.route("**/v1/coaching/analysis/plan-task", (route) => {
       if (route.request().method() === "OPTIONS") return json(route, null, 204);
@@ -502,6 +502,28 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     }
     if (method === "GET" && path.startsWith("/v1/economy/")) {
       return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
+    }
+    if (
+      method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, {
+        id: "11111111-1111-4111-8111-111111111111",
+        slug: "kpss-lisans-2026",
+        name: "KPSS Lisans 2026",
+        family: "KPSS",
+        variant: "LISANS",
+        isCurrent: true,
+      });
+    }
+    if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/subjects") {
+      return json(route, [
+        { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 0 },
+      ]);
+    }
+    if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/topics") {
+      return json(route, []);
     }
 
     return json(

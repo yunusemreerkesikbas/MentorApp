@@ -123,6 +123,9 @@ export class InviteService {
         refType: EconomyLedger.INVITE_REVERSAL_REF_TYPE,
         refId: redemption.id,
       }, tx);
+      // Persist settlement even if nothing remained to debit. A replay must not claw back
+      // unrelated Coin earned later when the original reward had already been spent.
+      await this.repo.markRewardReversed(redemption.id, tx);
       if (reversed > 0) {
         this.logger.log(
           { inviterUserId: redemption.inviterUserId, redemptionId: redemption.id, reversed },

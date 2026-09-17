@@ -67,6 +67,8 @@ describe("mentorship followups HTTP and database", () => {
           password: "Sifre1234",
           displayName: `Followup ${who}`,
           kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
         });
       expect(result.status).toBe(201);
       ids[who] = result.body.user.id;

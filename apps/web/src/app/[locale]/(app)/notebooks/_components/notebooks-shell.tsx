@@ -4,17 +4,11 @@ import { useEffect, useState } from "react";
 import { LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
-  AuthUser,
-  ExamCalendarDto,
   ExamSubjectDto,
   NotebookDto,
   NotebookSummaryDto,
 } from "@mentor/types";
-import {
-  contentControllerCalendarByFamily,
-  contentControllerSubjectsBySlug,
-  usersControllerMe,
-} from "@mentor/api-client";
+import { loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
 import { Button } from "@mentor/ui";
 import { NotebookCover } from "@/components/notebook/notebook-surface";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -74,18 +68,10 @@ export function NotebooksShell() {
       .finally(() => {
         if (active) setLoading(false);
       });
-    usersControllerMe()
-      .then(async (raw) => {
-        const user = raw as unknown as AuthUser;
-        if (!user.examType) return null;
-        const calendar = (await contentControllerCalendarByFamily(
-          user.examType,
-        )) as unknown as ExamCalendarDto | null;
-        if (!calendar?.exam) return null;
-        const subjects = (await contentControllerSubjectsBySlug(
-          calendar.exam.slug,
-        )) as unknown as ExamSubjectDto[];
-        return { id: calendar.exam.id, subjects };
+    loadViewerExamTaxonomy()
+      .then((bundle) => {
+        if (!bundle.exam) return null;
+        return { id: bundle.exam.id, subjects: bundle.subjects };
       })
       .then((value) => {
         if (active) setExam(value);

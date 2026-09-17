@@ -65,7 +65,7 @@ describe("ai coach chat (e2e)", () => {
     const email = `ai-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `AI ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `AI ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 

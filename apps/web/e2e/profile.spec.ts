@@ -19,6 +19,26 @@ const user: AuthUser = {
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 
+test("ayarlar yasal footer bağlantısını AppNav içindeki belgeye açar", async ({ page }) => {
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+  await page.goto("/ayarlar");
+
+  const footer = page.getByRole("contentinfo", { name: "Yasal" });
+  await expect(footer.getByRole("link")).toHaveCount(7);
+  await footer.getByRole("link", { name: "Kullanım Koşulları" }).click();
+
+  await expect(page).toHaveURL(/\/ayarlar\/yasal\/kullanim-kosullari$/);
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    await expect(page.getByTestId("app-sidebar")).toBeVisible();
+  } else {
+    await expect(page.getByRole("navigation", { name: "Ana menü" })).toBeVisible();
+  }
+  await expect(page.getByRole("heading", { name: "Kullanım Koşulları", level: 1 })).toBeVisible();
+});
+
 test("hesap silme satırı açıklamayı paylaşılan onay dialogunda gösterir", async ({
   page,
 }) => {

@@ -45,6 +45,8 @@ describe("ads stabilization (e2e)", () => {
         password: "Sifre1234",
         displayName: `Ads ${label}`,
         kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
       });
     expect(response.status).toBe(201);
     return response.body as { accessToken: string; user: { id: string } };

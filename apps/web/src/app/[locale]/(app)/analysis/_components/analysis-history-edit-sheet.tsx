@@ -7,7 +7,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
 import { updateMockExam } from "@/lib/mock-exams";
 import { AnalysisMockExamForm } from "./analysis-mock-exam-form";
-import { scoresFromMockExam, type SubjectScores } from "./analysis-types";
+import { paperSubjects, scoresFromMockExam, type SubjectScores } from "./analysis-types";
 
 interface AnalysisHistoryEditSheetProps {
   detail: MockExamDto;
@@ -56,7 +56,7 @@ export function AnalysisHistoryEditSheet({
       const updated = await updateMockExam(detail.id, {
         takenAt: new Date(`${takenAtDate}T12:00:00`).toISOString(),
         publisherName: publisherName.trim() || null,
-        subjects: subjects.map((subject) => ({
+        subjects: paperSubjects(subjects).map((subject) => ({
           subjectRef: subject.slug,
           correct: Number(scores[subject.slug]?.correct || 0),
           wrong: Number(scores[subject.slug]?.wrong || 0),

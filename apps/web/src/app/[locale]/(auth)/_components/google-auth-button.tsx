@@ -74,7 +74,11 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
         href: "/dashboard",
       }),
     });
-    if (mode === "signup") params.set("kvkkAccepted", "true");
+    if (mode === "signup") {
+      params.set("kvkkAccepted", "true");
+      params.set("termsAccepted", "true");
+      params.set("ageEligibilityConfirmed", "true");
+    }
     const href = `${apiBaseUrl()}/v1/auth/google/start?${params.toString()}`;
     exitThen(() => {
       window.location.assign(href);

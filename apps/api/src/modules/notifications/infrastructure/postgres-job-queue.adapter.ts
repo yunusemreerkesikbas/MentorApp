@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import type { EnqueueOptions, JobQueuePort } from "../../../shared/ports/job-queue.port";
 import { JOB_QUEUE_PORT } from "../../../shared/ports/job-queue.port";
 import { JobRepository } from "./job.repository";

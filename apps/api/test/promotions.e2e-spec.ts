@@ -80,6 +80,8 @@ describe("promotions (e2e)", () => {
       password: "Sifre1234",
       displayName: `Promo ${tag}`,
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(res.status).toBe(201);
     return { token: res.body.accessToken, userId: res.body.user.id };
