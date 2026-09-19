@@ -48,11 +48,16 @@ export function buildAnalysisTabHref(
   return `${pathname}?${params.toString()}`;
 }
 
+/** Paper sections only — catch-all `diger` has no questionCount and is not a deneme row. */
+export function paperSubjects(subjects: ExamSubjectDto[]): ExamSubjectDto[] {
+  return subjects.filter((subject) => subject.questionCount != null);
+}
+
 export function emptyScores(
   subjects: ExamSubjectDto[],
 ): Record<string, SubjectScores> {
   return Object.fromEntries(
-    subjects.map((subject) => [
+    paperSubjects(subjects).map((subject) => [
       subject.slug,
       { correct: "", wrong: "", blank: "" },
     ]),
@@ -65,7 +70,7 @@ export function scoresFromMockExam(
 ): Record<string, SubjectScores> {
   const byRef = new Map(rows.map((row) => [row.subjectRef, row]));
   return Object.fromEntries(
-    subjects.map((subject) => {
+    paperSubjects(subjects).map((subject) => {
       const row = byRef.get(subject.slug);
       return [
         subject.slug,

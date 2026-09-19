@@ -19,8 +19,8 @@ import {
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks, type MentorshipAssignmentDraft } from "@/lib/mentorship";
 import { useExamTopicTaxonomy } from "@/lib/use-exam-topic-taxonomy";
+import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { ComposerDayPicker } from "./composer-day-picker";
-import { ComposerSelect, labelOptions } from "./composer-select";
 import { addDaysIso, todayLocalIso } from "./composer-dates";
 import { buildRepeatDrafts } from "./repeat-week";
 import {
@@ -89,7 +89,7 @@ export function AssignTaskForm({
 
   // The taxonomy follows the STUDENT's exam, never the coach's — a coach may hold students on
   // different tracks, and the wrong topic list is worse than none.
-  const { subjects, topicsBySubject, loaded } = useExamTopicTaxonomy(studentExamType);
+  const { subjectRows, topicRows, loaded } = useExamTopicTaxonomy(studentExamType);
 
   const [weekStart, setWeekStart] = useState(todayLocalIso());
   const [selectedDate, setSelectedDate] = useState(todayLocalIso());
@@ -119,7 +119,6 @@ export function AssignTaskForm({
     () => new Intl.DateTimeFormat(locale, { weekday: "short", day: "numeric" }),
     [locale],
   );
-  const topics = subject === "" ? [] : (topicsBySubject.get(subject) ?? []);
   const atCeiling = drafts.length >= MAX_TASKS;
   const today = todayLocalIso();
   // Asking for one draft is enough to know whether the button has anything to do.
@@ -296,28 +295,24 @@ export function AssignTaskForm({
               data-autofocus=""
               onChange={(event) => setTitle(event.target.value)}
             />
-            <div className="grid gap-3 sm:grid-cols-2">
-              <ComposerSelect
-                label={t("assign_subject")}
-                value={subject}
-                placeholder={t("assign_subject_none")}
-                options={labelOptions(subjects)}
-                disabled={!loaded || subjects.length === 0}
-                onChange={(next) => {
-                  setSubject(next);
-                  // The old topic belongs to the old subject; keeping it would send a mismatched pair.
-                  setTopic("");
-                }}
-              />
-              <ComposerSelect
-                label={t("assign_topic")}
-                value={topic}
-                placeholder={t("assign_topic_none")}
-                options={labelOptions(topics)}
-                disabled={subject === "" || topics.length === 0}
-                onChange={setTopic}
-              />
-            </div>
+            <TaxonomyCascadeSelect
+              subjects={subjectRows}
+              topics={topicRows}
+              subjectValue={subject}
+              topicValue={topic}
+              valueMode="name"
+              layout="grid"
+              textSize="sm"
+              hideTopicWhenEmpty={false}
+              disabled={!loaded || subjectRows.length === 0}
+              subjectLabel={t("assign_subject")}
+              emptySubjectLabel={t("assign_subject_none")}
+              topicLabel={t("assign_topic")}
+              emptyTopicLabel={t("assign_topic_none")}
+              labelClassName="text-xs font-semibold"
+              onSubjectChange={setSubject}
+              onTopicChange={setTopic}
+            />
             <TextAreaField
               dense
               label={t("assign_note")}

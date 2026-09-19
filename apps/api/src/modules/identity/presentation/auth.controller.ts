@@ -75,6 +75,8 @@ export class AuthController {
       locale: query.locale,
       returnTo: query.returnTo,
       kvkkAccepted: query.kvkkAccepted === "true",
+      termsAccepted: query.termsAccepted === "true",
+      ageEligibilityConfirmed: query.ageEligibilityConfirmed === "true",
     });
     const isProd = this.config.get("NODE_ENV", { infer: true }) === "production";
     res.cookie(GOOGLE_OAUTH_STATE_COOKIE, start.cookieValue, {

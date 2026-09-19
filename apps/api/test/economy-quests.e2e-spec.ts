@@ -5,6 +5,10 @@ import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
+import { randomBytes } from "node:crypto";
+import { EmailTokenRepository } from "../src/modules/identity/infrastructure/email-token.repository";
+import { EmailTokenType } from "../src/modules/identity/domain/identity.constants";
+import { hashToken } from "../src/modules/identity/application/token.service";
 
 const RUN = Date.now();
 const PLAN_ID = `e2e-qplan-${RUN}`;
@@ -25,7 +29,7 @@ describe("economy onboarding quests (e2e)", () => {
     const email = `eq-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `EQ ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `EQ ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 
@@ -167,7 +171,7 @@ describe("economy onboarding quests (e2e)", () => {
     const update = (status: string) => request(app.getHttpServer()).patch(`/v1/plan-tasks/${task.body.id}`)
       .set(asQuester()).send({ status }).expect(200);
     await update("DONE");
-    await update("TODO");
+    await update("PENDING");
     await update("DONE");
     const ledger = await request(app.getHttpServer()).get("/v1/economy/ledger").set(asQuester());
     const grants = ledger.body.filter((row: { reason: string }) => row.reason === "quest.daily.plan-task-done");
@@ -194,5 +198,23 @@ describe("economy onboarding quests (e2e)", () => {
     const res = await request(app.getHttpServer()).get("/v1/economy/quests").set(asQuester());
     expect(res.status).toBe(404);
     await setEconomyEnabled(true); // restore for any later runs
+  });
+
+  it("verified email grants its own ten Coin exactly once", async () => {
+    const token = randomBytes(32).toString("hex");
+    await app.get(EmailTokenRepository).create({ userId: questerId, type: EmailTokenType.VERIFY_EMAIL,
+      tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 60_000) });
+    await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(200);
+    expect((await balance()).coinConfirmed).toBe(20);
+    await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(400);
+    expect((await balance()).coinConfirmed).toBe(20);
+  });
+
+  it("disabled ranking still serves personal XP and level", async () => {
+    await request(app.getHttpServer()).get("/v1/community/leaderboard").set(asQuester()).expect(404);
+    const summary = await request(app.getHttpServer()).get("/v1/community/summary").set(asQuester()).expect(200);
+    expect(summary.body.leaderboard).toBeNull();
+    expect(summary.body.xp).toBeGreaterThan(0);
+    expect(summary.body.level.tier).toBeGreaterThan(0);
   });
 });

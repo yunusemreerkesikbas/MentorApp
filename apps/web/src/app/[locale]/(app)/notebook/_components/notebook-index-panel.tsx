@@ -12,6 +12,7 @@ import type {
 } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES } from "@mentor/types";
 import { MenuSelect } from "@/components/menu-select";
+import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { fetchNotebookEntries } from "@/lib/notebook";
@@ -78,8 +79,6 @@ export function NotebookIndexPanel({
 }: NotebookIndexPanelProps) {
   const t = useTranslations("notebook");
   const reactId = useId();
-  const subjectLabelId = `notebook-index-subject-${reactId}`;
-  const topicLabelId = `notebook-index-topic-${reactId}`;
   const errorLabelId = `notebook-index-error-${reactId}`;
   const statusLabelId = `notebook-index-status-${reactId}`;
 
@@ -235,49 +234,18 @@ export function NotebookIndexPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1">
-        <span
-          id={subjectLabelId}
-          className="text-sm font-semibold"
-          style={{ color: "var(--color-main)" }}
-        >
-          {t("index_filter_subject")}
-        </span>
-        <MenuSelect
-          value={subjectRef}
-          aria-labelledby={subjectLabelId}
-          options={[
-            { value: "", label: t("index_filter_all") },
-            ...subjects.map((subject) => ({
-              value: subject.slug,
-              label: subject.name,
-            })),
-          ]}
-          onChange={(next) => {
-            setSubjectRef(next);
-            setTopicRef("");
-          }}
-        />
-      </div>
-
-      {subjectRef ? (
-        <div className="flex flex-col gap-1">
-          <span id={topicLabelId} className="text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-            {t("index_filter_topic")}
-          </span>
-          <MenuSelect
-            value={topicRef}
-            aria-labelledby={topicLabelId}
-            options={[
-              { value: "", label: t("index_filter_all") },
-              ...topics
-                .filter((topic) => topic.subjectSlug === subjectRef)
-                .map((topic) => ({ value: topic.slug, label: topic.name })),
-            ]}
-            onChange={setTopicRef}
-          />
-        </div>
-      ) : null}
+      <TaxonomyCascadeSelect
+        subjects={subjects}
+        topics={topics}
+        subjectValue={subjectRef}
+        topicValue={topicRef}
+        subjectLabel={t("index_filter_subject")}
+        emptySubjectLabel={t("index_filter_all")}
+        topicLabel={t("index_filter_topic")}
+        emptyTopicLabel={t("index_filter_all")}
+        onSubjectChange={setSubjectRef}
+        onTopicChange={setTopicRef}
+      />
 
       <NotebookIndexFilterChips
         chips={chips}

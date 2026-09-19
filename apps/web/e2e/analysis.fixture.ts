@@ -412,6 +412,13 @@ export async function mockAnalysisApi(
     }
     if (
       method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, exam);
+    }
+    if (
+      method === "GET" &&
       path === "/v1/content/exams/by-type/KPSS/calendar"
     ) {
       const calendar: ExamCalendarDto = {
@@ -426,6 +433,8 @@ export async function mockAnalysisApi(
     }
     if (method === "GET" && path === `/v1/content/exams/${exam.slug}/subjects`)
       return json(route, subjects);
+    if (method === "GET" && path === `/v1/content/exams/${exam.slug}/topics`)
+      return json(route, []);
     if (method === "GET" && path.startsWith("/v1/coaching/notebook/review-summary")) return json(route, {
       workedCount: 3, revisitCount: 1, completedCount: 0, dueCount: 2, days: Number(url.searchParams.get("days") ?? 7), since: "2026-09-01T21:00:00Z",
       focuses: [{ examId: exam.id, subjectRef: "matematik", subjectName: "Matematik", topicRef: "problemler", topicName: "Problemler" }, { examId: exam.id, subjectRef: "tarih", subjectName: "Tarih", topicRef: null, topicName: null }],

@@ -6,20 +6,13 @@ import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
-  AuthUser,
   CoachingAnalysisDto,
-  ExamCalendarDto,
   ExamSubjectDto,
   ExamSummaryDto,
   MockExamDto,
 } from "@mentor/types";
-import {
-  ApiClientError,
-  contentControllerCalendarByFamily,
-  contentControllerSubjectsBySlug,
-  http,
-  usersControllerMe,
-} from "@mentor/api-client";
+import { ApiClientError, http } from "@mentor/api-client";
+import { loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
 import { Button, Card, SkeletonGroup } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { EmptyState } from "@/components/empty-state";
@@ -39,6 +32,7 @@ import { AnalysisTabMistakes } from "./analysis-tab-mistakes";
 import {
   buildAnalysisTabHref,
   emptyScores,
+  paperSubjects,
   parseAnalysisTab,
   scoresFromMockExam,
   shouldNavigateAnalysisTab,
@@ -163,29 +157,19 @@ export function AnalysisShell() {
 
     async function load() {
       try {
-        const me = (await usersControllerMe()) as unknown as AuthUser;
+        const bundle = await loadViewerExamTaxonomy();
         if (!active) return;
 
-        if (!me.examType) {
+        if (bundle.needsExamType) {
           setLoadState({ status: "needs_exam_type" });
           return;
         }
 
-        const calendarRes = await contentControllerCalendarByFamily(
-          me.examType,
-        );
-        if (!active) return;
-
-        const calendar = calendarRes as unknown as ExamCalendarDto | null;
-        const current = calendar?.exam ?? null;
-        const [analysis, subjectRows] = current
-          ? await Promise.all([
-              http<CoachingAnalysisDto>(getAnalysisUrl(current.id)),
-              contentControllerSubjectsBySlug(
-                current.slug,
-              ) as unknown as Promise<ExamSubjectDto[]>,
-            ])
-          : [null, []];
+        const current = bundle.exam;
+        const subjectRows = bundle.subjects;
+        const analysis = current
+          ? await http<CoachingAnalysisDto>(getAnalysisUrl(current.id))
+          : null;
         if (!active) return;
 
         setScores(emptyScores(subjectRows));
@@ -283,7 +267,7 @@ export function AnalysisShell() {
         ...(takenAtDate
           ? { takenAt: new Date(`${takenAtDate}T12:00:00`).toISOString() }
           : {}),
-        subjects: subjects.map((subject) => ({
+        subjects: paperSubjects(subjects).map((subject) => ({
           subjectRef: subject.slug,
           correct: Number(scores[subject.slug]?.correct || 0),
           wrong: Number(scores[subject.slug]?.wrong || 0),

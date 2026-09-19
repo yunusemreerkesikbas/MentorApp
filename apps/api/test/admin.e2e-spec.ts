@@ -24,7 +24,7 @@ describe("admin (e2e)", () => {
     const email = `w6-${label}-${Date.now()}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `W6 ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `W6 ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 

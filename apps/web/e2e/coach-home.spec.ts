@@ -150,7 +150,7 @@ async function mockApi(
     // No cohort brief has ever been written — the case the rule-based floor exists for.
     if (path === "/v1/mentorship/brief")
       return route.fulfill({ status: 204, headers });
-    if (path.startsWith("/v1/content/exams/by-type/")) {
+    if (path.startsWith("/v1/content/exams/by-type/") && path.endsWith("/calendar")) {
       return json({
         exam: { id: "e1", slug: "kpss-lisans-2026", name: "KPSS Lisans 2026" },
         events: [],
@@ -158,6 +158,16 @@ async function mockApi(
         daysRemaining: 113,
         nextEvent: null,
         daysUntilNextEvent: null,
+      });
+    }
+    if (path.startsWith("/v1/content/exams/by-type/")) {
+      return json({
+        id: "e1",
+        slug: "kpss-lisans-2026",
+        name: "KPSS Lisans 2026",
+        family: "KPSS",
+        variant: "LISANS",
+        isCurrent: true,
       });
     }
     if (path === "/v1/forum/zones")

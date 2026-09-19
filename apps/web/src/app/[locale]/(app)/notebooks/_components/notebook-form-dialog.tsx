@@ -11,7 +11,7 @@ import type {
 } from "@mentor/types";
 import { NOTEBOOK_COVER_COLORS, NOTEBOOK_COVER_MATERIALS } from "@mentor/types";
 import { Button, Modal, TextField } from "@mentor/ui";
-import { MenuSelect } from "@/components/menu-select";
+import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import {
   COVER_COLORS,
   COVER_MATERIALS,
@@ -40,7 +40,6 @@ export function NotebookFormDialog({
   const notebookT = useTranslations("notebook");
   const reactId = useId();
   const titleInputId = `notebook-title-${reactId}`;
-  const subjectLabelId = `notebook-subject-${reactId}`;
   const titleInputRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState(current?.title ?? "");
   const [subjectRef, setSubjectRef] = useState(current?.subjectRef ?? "");
@@ -134,31 +133,19 @@ export function NotebookFormDialog({
         onChange={(event) => setTitle(event.target.value)}
         label={t("title_label")}
       />
-      <div className="flex flex-col gap-1">
-        <span
-          id={subjectLabelId}
-          className="text-xs font-semibold"
-          style={{
-            color: "var(--color-secondary)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("subject_label")}
-        </span>
-        <MenuSelect
-          value={subjectRef}
-          disabled={saving}
-          aria-labelledby={subjectLabelId}
-          options={[
-            { value: "", label: t("subject_none") },
-            ...subjects.map((subject) => ({
-              value: subject.slug,
-              label: subject.name,
-            })),
-          ]}
-          onChange={setSubjectRef}
-        />
-      </div>
+      <TaxonomyCascadeSelect
+        subjects={subjects}
+        topics={[]}
+        subjectValue={subjectRef}
+        topicValue=""
+        showTopic={false}
+        disabled={saving}
+        subjectLabel={t("subject_label")}
+        emptySubjectLabel={t("subject_none")}
+        labelClassName="text-xs font-semibold"
+        onSubjectChange={setSubjectRef}
+        onTopicChange={() => undefined}
+      />
       <fieldset className="flex flex-col gap-2 overflow-visible">
         <legend
           className="text-xs font-semibold"

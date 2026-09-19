@@ -23,6 +23,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import { EmailTemplate, JobName } from "../../../shared/notifications/constants";
 import {
   EmailTokenType,
+  CURRENT_TERMS_VERSION,
   RESET_PASSWORD_TTL_MS,
   UserStatus,
 } from "../domain/identity.constants";
@@ -73,12 +74,16 @@ export class AuthService {
     const passwordHash = await argon2.hash(input.password);
     let user: UserRow;
     try {
+      const acceptedAt = new Date();
       user = await this.usersRepo.createService({
         email: input.email,
         passwordHash,
         displayName: input.displayName,
         username: input.username,
-        kvkkAcceptedAt: new Date(),
+        kvkkAcceptedAt: acceptedAt,
+        termsAcceptedAt: acceptedAt,
+        termsVersion: CURRENT_TERMS_VERSION,
+        ageEligibilityConfirmedAt: acceptedAt,
         // The ONE role a client may ask for at signup (APP-089), and it is safe because COACH on
         // its own opens nothing: every road to a student's data runs through an invite code, and
         // the code needs a verified email plus an ACTIVE registry row that only

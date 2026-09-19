@@ -2,6 +2,7 @@ import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { signupSchema } from "@mentor/validation";
 import { EmailTokenType } from "../domain/identity.constants";
 import { AuthService } from "./auth.service";
 
@@ -84,6 +85,8 @@ describe("AuthService coach signup gate", () => {
         password: "Sifre1234",
         displayName: "Koç",
         kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
         intent: "COACH",
       }),
     ).rejects.toMatchObject({
@@ -97,6 +100,33 @@ describe("AuthService coach signup gate", () => {
   it("reports the intake the way the signup screen reads it", async () => {
     await expect(makeSignupService(true).service.coachSignupStatus()).resolves.toEqual({ open: true });
     await expect(makeSignupService(false).service.coachSignupStatus()).resolves.toEqual({ open: false });
+  });
+});
+
+describe("signup legal acknowledgements", () => {
+  const base = {
+    email: "student@example.com",
+    password: "Sifre1234",
+    displayName: "Student",
+    kvkkAccepted: true as const,
+  };
+
+  it("rejects signup when terms acceptance is missing", () => {
+    expect(signupSchema.safeParse({ ...base, ageEligibilityConfirmed: true }).success).toBe(false);
+  });
+
+  it("rejects signup when the 13+ eligibility declaration is missing", () => {
+    expect(signupSchema.safeParse({ ...base, termsAccepted: true }).success).toBe(false);
+  });
+
+  it("accepts signup only when both legal declarations are affirmative", () => {
+    expect(
+      signupSchema.safeParse({
+        ...base,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+      }).success,
+    ).toBe(true);
   });
 });
 

@@ -10,7 +10,7 @@ import {
   AnalysisDatePickerSheet,
   type AnalysisDatePickerSheetHandle,
 } from "./analysis-date-picker-sheet";
-import { subjectTotal, validateSubjectCounts } from "./analysis-types";
+import { paperSubjects, subjectTotal, validateSubjectCounts } from "./analysis-types";
 import type { SubjectScores } from "./analysis-types";
 
 function formatTakenAtLabel(iso: string, locale: string): string {
@@ -56,9 +56,10 @@ export function AnalysisMockExamForm({
   const locale = useLocale();
   const bottomSheet = useMentorBottomSheet();
   const datePickerRef = useRef<AnalysisDatePickerSheetHandle>(null);
+  const scoredSubjects = useMemo(() => paperSubjects(subjects), [subjects]);
   const invalidSlug = useMemo(
-    () => validateSubjectCounts(subjects, scores),
-    [subjects, scores],
+    () => validateSubjectCounts(scoredSubjects, scores),
+    [scoredSubjects, scores],
   );
 
   async function openDateSheet() {
@@ -139,7 +140,7 @@ export function AnalysisMockExamForm({
       </div>
 
       <div className="flex flex-col gap-3">
-        {subjects.map((subject) => {
+        {scoredSubjects.map((subject) => {
           const total = subjectTotal(scores[subject.slug]!);
           const isOverCount =
             subject.questionCount != null && total > subject.questionCount;

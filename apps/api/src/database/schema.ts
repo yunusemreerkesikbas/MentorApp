@@ -130,6 +130,13 @@ export const users = pgTable(
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
       withTimezone: true,
     }).notNull(),
+    /** Evidence of the binding terms revision accepted at account creation. */
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+    termsVersion: text("terms_version"),
+    /** 13+ is a self-declaration; birth date is deliberately not collected. */
+    ageEligibilityConfirmedAt: timestamp("age_eligibility_confirmed_at", {
+      withTimezone: true,
+    }),
     /** ACTIVE | SUSPENDED | BANNED (graduated enforcement — §9). */
     status: text("status").notNull().default("ACTIVE"),
     createdAt: timestamp("created_at", { withTimezone: true })

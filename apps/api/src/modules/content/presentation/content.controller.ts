@@ -9,7 +9,7 @@ import type {
 } from "@mentor/types";
 import { Public } from "../../../common/auth/public.decorator";
 import { ContentService } from "../application/content.service";
-import { ListExamsQueryDto } from "./content.dto";
+import { ExamFamilyCurrentQueryDto, ListExamsQueryDto } from "./content.dto";
 
 /** Public editorial exam calendar — reference data (guardrail §4 #1 data cards). */
 @ApiTags("content")
@@ -21,6 +21,14 @@ export class ContentController {
   @Get()
   listExams(@Query() query: ListExamsQueryDto): Promise<Paginated<ExamSummaryDto>> {
     return this.content.listExams(query);
+  }
+
+  @Get("by-type/:type")
+  currentExamByFamily(
+    @Param("type") type: string,
+    @Query() query: ExamFamilyCurrentQueryDto,
+  ): Promise<ExamSummaryDto> {
+    return this.content.getCurrentExamByFamily(type, query.variant);
   }
 
   @Get("by-type/:type/calendar")

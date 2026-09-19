@@ -43,6 +43,15 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
 }
 
 describe("DailyQuestSignalService", () => {
+  it("bounds a delayed Sunday event to its original week and excludes later activity", async () => {
+    const { service, sessions, planTasks, dailyActivity } = build();
+    dailyActivity.listActiveDatesSince.mockResolvedValue(["2026-09-13", "2026-09-14"]);
+    const signals = await service.getForDate("user-1", "2026-09-13");
+    expect(signals).toMatchObject({ date: "2026-09-13", weekKey: "2026-W37", weeklyActiveDays: 1 });
+    expect(sessions.countCompletedSince).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", 300, "2026-09-13");
+    expect(planTasks.countDoneBetween).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", "2026-09-13");
+  });
+
   it("returns today's quest signals from coaching repositories", async () => {
     const { service, planTasks, sessions, moods, dailyActivity, config } = build({ goal: 120 });
 

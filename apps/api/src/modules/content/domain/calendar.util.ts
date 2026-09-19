@@ -65,6 +65,26 @@ export function selectExamForCountdown(
   );
 }
 
+/**
+ * Pick the exam whose taxonomy (subjects/topics) the product should offer.
+ *
+ * Unlike {@link selectExamForCountdown}, this does not require an upcoming EXAM_DATE — YKS/LGS
+ * rows are real exams with empty calendars, and a missing date must not blank the ders/konu list.
+ */
+export function selectExamForTaxonomy<
+  T extends { variant: string | null; isCurrent: boolean; slug: string },
+>(exams: T[], variant?: string | null): T | null {
+  if (exams.length === 0) return null;
+
+  const inVariant = variant
+    ? exams.filter((exam) => exam.variant === variant)
+    : exams;
+  const pool = inVariant.length > 0 ? inVariant : exams;
+  const current = pool.find((exam) => exam.isCurrent);
+  if (current) return current;
+  return [...pool].sort((left, right) => left.slug.localeCompare(right.slug))[0] ?? null;
+}
+
 /** Map DB rows to selection candidates. */
 export function toExamCandidates(
   rows: Array<{

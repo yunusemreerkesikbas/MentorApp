@@ -81,6 +81,14 @@ export const routing = defineRouting({
     },
     "/profile": { tr: "/profil", en: "/profile" },
     "/settings": { tr: "/ayarlar", en: "/settings" },
+    "/settings/legal/[slug]": {
+      tr: "/ayarlar/yasal/[slug]",
+      en: "/settings/legal/[slug]",
+    },
+    "/settings/cookie-preferences": {
+      tr: "/ayarlar/cerez-tercihleri",
+      en: "/settings/cookie-preferences",
+    },
     "/subscription": { tr: "/abonelik", en: "/subscription" },
     "/subscription/result": {
       tr: "/abonelik/sonuc",

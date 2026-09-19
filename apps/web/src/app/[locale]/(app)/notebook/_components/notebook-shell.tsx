@@ -19,7 +19,6 @@ import {
 import { useTranslations } from "next-intl";
 import { findExamReference } from "@/lib/exam-reference";
 import type {
-  ExamCalendarDto,
   ExamSubjectDto,
   ExamTopicDto,
   NotebookEntryDto,
@@ -29,13 +28,7 @@ import type {
   VisionBoardTextItem,
 } from "@mentor/types";
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
-import {
-  contentControllerCalendarByFamily,
-  contentControllerSubjectsBySlug,
-  usersControllerMe,
-} from "@mentor/api-client";
 import type {
-  AuthUser,
   NotebookCoverDoc,
   NotebookPageDoc,
 } from "@mentor/types";
@@ -92,7 +85,7 @@ import {
 } from "@/components/notebook/notebook-page-turn";
 import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-inline-editor";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
-import { fetchExamTopics } from "@/lib/content-topics";
+import { loadExamTaxonomyBySlug, loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
 import { fetchMockExamById } from "@/lib/mock-exams";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
 import { clearSpentQueryParam } from "@/lib/spent-query-param";
@@ -356,12 +349,8 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         fetchNotebookOverview(),
         fetchDueEntries(),
         (async () => {
-          const me = (await usersControllerMe()) as unknown as AuthUser;
-          if (!me.examType) return null;
-          const calendar = (await contentControllerCalendarByFamily(
-            me.examType,
-          )) as unknown as ExamCalendarDto | null;
-          const current = calendar?.exam ?? null;
+          const bundle = await loadViewerExamTaxonomy();
+          const current = bundle.exam;
           if (!current) return null;
           const requestedMock = indexQuery.filters.mockExamId
             ? await fetchMockExamById(indexQuery.filters.mockExamId)
@@ -369,24 +358,21 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           const requestedExamId =
             indexQuery.filters.examId ?? requestedMock?.examId ?? current.id;
           let selectedExam = current;
+          let selectedSubjects = bundle.subjects;
+          let selectedTopics = bundle.topics;
           if (requestedExamId !== current.id) {
               const requested = await findExamReference(requestedExamId);
               if (!requested) throw new Error("Unknown notebook filter exam");
               selectedExam = requested;
+              const selectedTaxonomy = await loadExamTaxonomyBySlug(requested.slug);
+              selectedSubjects = selectedTaxonomy.subjects;
+              selectedTopics = selectedTaxonomy.topics;
           }
-          // Both taxonomies in one round-trip pair: the topic list is small enough to hold whole,
-          // which spares the picker a fetch every time the subject changes.
-          const [subjects, topics] = await Promise.all([
-            contentControllerSubjectsBySlug(selectedExam.slug) as unknown as Promise<
-              ExamSubjectDto[]
-            >,
-            fetchExamTopics(selectedExam.slug),
-          ]);
           const selectedContext = {
             id: selectedExam.id,
             name: selectedExam.name,
-            subjects,
-            topics,
+            subjects: selectedSubjects,
+            topics: selectedTopics,
           };
           if (selectedExam.id === current.id) {
             return {
@@ -400,10 +386,8 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               },
             };
           }
-          const [currentSubjects, currentTopics] = await Promise.all([
-            contentControllerSubjectsBySlug(current.slug) as unknown as Promise<ExamSubjectDto[]>,
-            fetchExamTopics(current.slug),
-          ]);
+          const currentSubjects = bundle.subjects;
+          const currentTopics = bundle.topics;
           return {
             current: { id: current.id, name: current.name, subjects: currentSubjects, topics: currentTopics },
             selected: selectedContext,

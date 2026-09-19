@@ -7,7 +7,6 @@ import type {
   NotebookOverviewDto,
   NotebookPageDoc,
   NotebookPageDto,
-  NotebookPrelabelDto,
   NotebookSummaryDto,
   UpdateNotebookInput,
 } from "@mentor/types";
@@ -188,27 +187,6 @@ export async function reviewNotebookEntry(
 
 export async function deleteNotebookEntry(id: string): Promise<void> {
   await http(`/v1/coaching/notebook/entries/${id}`, { method: "DELETE" });
-}
-
-/**
- * Premium: ask vision for a subject/topic suggestion on an uploaded photo.
- *
- * Callers treat a rejection as "no suggestion", never as an error — a free user, an exhausted
- * quota and a model that could not tell all mean the same thing here: the student labels it
- * themselves, which is the path that always works.
- */
-export async function prelabelNotebookPhoto(
-  storageKey: string,
-  examId: string,
-): Promise<NotebookPrelabelDto | null> {
-  try {
-    return (await http<NotebookPrelabelDto>(
-      "/v1/coaching/notebook/entries/prelabel",
-      { method: "POST", body: JSON.stringify({ storageKey, examId }) },
-    )) as NotebookPrelabelDto;
-  } catch {
-    return null;
-  }
 }
 
 export interface UploadedNotebookImage {

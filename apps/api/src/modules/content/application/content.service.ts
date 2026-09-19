@@ -36,6 +36,7 @@ import { ErrorCode } from "../../../common/errors/error-code";
 import { formatZodIssues } from "../../../common/validation/zod-validation.pipe";
 import {
   selectExamForCountdown,
+  selectExamForTaxonomy,
   toExamCandidates,
 } from "../domain/calendar.util";
 import {
@@ -71,6 +72,7 @@ import {
 } from "../domain/content.events";
 import {
   toExamCalendarDto,
+  toExamSummary,
   toExamSubjectDto,
   toInfoArticleDto,
   toInfoArticleSummary,
@@ -263,6 +265,27 @@ export class ContentService {
       query.pageSize,
     );
     return toPaginatedExams(items, total, query.page, query.pageSize);
+  }
+
+  /**
+   * Current exam row for a family, without requiring an upcoming EXAM_DATE.
+   * Taxonomy pickers use this; countdown still goes through {@link getExamCalendarByFamily}.
+   */
+  async getCurrentExamByFamily(
+    family: string,
+    variant?: string | null,
+  ): Promise<ExamSummaryDto> {
+    this.assertValidFamily(family);
+    const rows = await this.exams.listByFamily(this.db, family);
+    const selected = selectExamForTaxonomy(rows, variant);
+    if (!selected) {
+      throw new DomainError(
+        ErrorCode.CONTENT_EXAM_NOT_FOUND,
+        HttpStatus.NOT_FOUND,
+        { family },
+      );
+    }
+    return toExamSummary(selected);
   }
 
   async getCalendarBySlug(slug: string): Promise<ExamCalendarDto> {

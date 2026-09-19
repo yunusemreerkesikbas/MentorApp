@@ -33,6 +33,8 @@ describe("ai coach RAG grounding (e2e)", () => {
         password: "Sifre1234",
         displayName: `RAG ${label}`,
         kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
       });
     return {
       email,

@@ -1,4 +1,5 @@
 import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
+import { SubscriptionsService } from "../src/modules/payments/application/subscriptions.service";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -23,12 +24,14 @@ describe("economy invite (e2e)", () => {
   let adminToken = "";
   let ayseToken = "";
   let burakToken = "";
+  let burakId = "";
+  let adminId = "";
 
   const signup = async (label: string) => {
     const email = `inv-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `Inv ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `Inv ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 
@@ -56,6 +59,8 @@ describe("economy invite (e2e)", () => {
     const burak = await signup("burak");
     ayseToken = ayse.accessToken;
     burakToken = burak.accessToken;
+    burakId = burak.user.id;
+    adminId = admin.user.id;
 
     // Promote admin → ADMIN (SERVICE-context SQL) then re-login for the role in the JWT.
     const c = await pool.connect();
@@ -162,4 +167,40 @@ describe("economy invite (e2e)", () => {
     const bal2 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
     expect(bal2.body.coinConfirmed).toBe(20);
   }, 30_000);
+
+  it("a renewal refund keeps the initial payment reward", async () => {
+    await app.get(SubscriptionsService).refundLastCharge(burakId, 100, "e2e renewal refund", adminId);
+    await app.get(JobRunnerService).processBatch(100);
+    const balance = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
+    expect(balance.body.coinConfirmed).toBe(20);
+  });
+
+  it("refund of the source payment reverses its reward even while economy is disabled", async () => {
+    const inviter = await signup("refund-inviter");
+    const invited = await signup("refund-invited");
+    const invite = await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(inviter.accessToken));
+    await request(app.getHttpServer()).post("/v1/economy/invite/redeem")
+      .set(auth(invited.accessToken)).send({ code: invite.body.code }).expect(201);
+    const checkout = await request(app.getHttpServer()).post("/v1/subscription/checkout")
+      .set(auth(invited.accessToken)).send({ planId: "premium-monthly" }).expect(200);
+    const providerRef = new URL(checkout.body.checkoutUrl).searchParams.get("ref")!;
+    const { body, headers } = signFakeWebhook(SECRET, {
+      eventId: `evt_refund_source_${RUN}`, type: "payment_succeeded", providerRef, amountMinor: 24900,
+    });
+    await request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body)).expect(200);
+    await app.get(JobRunnerService).processBatch(100);
+    const before = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
+    expect(before.body.coinConfirmed).toBe(20);
+    await request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled")
+      .set(auth(adminToken)).send({ value: false }).expect(200);
+    try {
+      await app.get(SubscriptionsService).refundLastCharge(invited.user.id, 100, "e2e source refund", adminId);
+      await app.get(JobRunnerService).processBatch(100);
+    } finally {
+      await request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled")
+        .set(auth(adminToken)).send({ value: true }).expect(200);
+    }
+    const after = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
+    expect(after.body.coinConfirmed).toBe(0);
+  });
 });

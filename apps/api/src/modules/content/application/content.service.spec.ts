@@ -48,6 +48,7 @@ function buildService(overrides?: {
   candidates?: Array<{ exam: ExamRow; event: ExamEventRow }>;
   eventsByExamId?: Record<string, ExamEventRow[]>;
   findBySlug?: ExamRow | undefined;
+  familyExams?: ExamRow[];
 }) {
   const lisans = makeExam();
   const onlisans = makeExam({
@@ -83,6 +84,9 @@ function buildService(overrides?: {
       return candidates.find((c) => c.exam.slug === slug)?.exam;
     }),
     listFamilyCandidates: vi.fn(async () => candidates),
+    listByFamily: vi.fn(
+      async () => overrides?.familyExams ?? candidates.map((c) => c.exam),
+    ),
     findNetRuleForFamily: vi.fn(async () => ({ kind: "PENALTY", divisor: 4 })),
     findById: vi.fn(
       async (_db: unknown, id: string) =>
@@ -646,6 +650,39 @@ describe("ContentService — info articles", () => {
 
     await expect(service.getArticleForEmbedding("article-1")).resolves.toMatchObject({
       body: "Required documents Bring your ID.",
+    });
+  });
+});
+
+describe("ContentService — current exam by family", () => {
+  it("returns a dateless exam so taxonomy does not wait on the countdown calendar", async () => {
+    const yks = makeExam({
+      id: "exam-yks",
+      slug: "yks-2026",
+      name: "YKS 2026",
+      family: "YKS",
+      variant: null,
+      isCurrent: true,
+    });
+    const { service } = buildService({ familyExams: [yks] });
+
+    await expect(service.getCurrentExamByFamily("YKS")).resolves.toMatchObject({
+      slug: "yks-2026",
+      family: "YKS",
+    });
+  });
+
+  it("picks the KPSS guide matching the stored variant", async () => {
+    const { service } = buildService();
+    await expect(
+      service.getCurrentExamByFamily("KPSS", "ONLISANS"),
+    ).resolves.toMatchObject({ slug: "kpss-onlisans-2026" });
+  });
+
+  it("404s when the family has no exam rows", async () => {
+    const { service } = buildService({ familyExams: [] });
+    await expect(service.getCurrentExamByFamily("LGS")).rejects.toMatchObject({
+      code: ErrorCode.CONTENT_EXAM_NOT_FOUND,
     });
   });
 });

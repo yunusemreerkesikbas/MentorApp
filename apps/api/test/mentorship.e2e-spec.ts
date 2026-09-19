@@ -63,7 +63,7 @@ describe("mentorship (e2e)", () => {
     const email = `w8-${label}-${stamp}@test.local`;
     const res = await http()
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `W8 ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `W8 ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     expect(res.status).toBe(201);
     token[label] = res.body.accessToken;
     userId[label] = res.body.user.id;

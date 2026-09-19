@@ -62,6 +62,8 @@ describe("payments (e2e)", () => {
       password: "Sifre1234",
       displayName: "W4 Test",
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     accessToken = signup.body.accessToken;
   }, 90_000); // cold module compile under load can exceed the global hookTimeout
@@ -205,6 +207,8 @@ describe("payments (e2e)", () => {
         password: "Sifre1234",
         displayName: "W4 Staff",
         kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
       });
       const pool = new Pool({ connectionString: process.env.DATABASE_URL });
       const client = await pool.connect();
@@ -257,6 +261,8 @@ describe("payments (e2e)", () => {
       password: "Sifre1234",
       displayName: "W4 Gate",
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     const gateAuth = { Authorization: `Bearer ${gateUser.body.accessToken}` };
     const gateUserId = gateUser.body.user.id as string;

@@ -32,6 +32,8 @@ describe("coaching (e2e)", () => {
       password: "Sifre1234",
       displayName: "Coaching A",
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(signupA.status).toBe(201);
     userAToken = signupA.body.accessToken;
@@ -41,6 +43,8 @@ describe("coaching (e2e)", () => {
       password: "Sifre1234",
       displayName: "Coaching B",
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(signupB.status).toBe(201);
     userBToken = signupB.body.accessToken;

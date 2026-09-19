@@ -1,24 +1,21 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES, type NotebookErrorType } from "@mentor/types";
 import { Card, SectionHeading, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { MenuSelect } from "@/components/menu-select";
+import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import {
   createNotebookEntry,
   isSupportedNotebookImage,
   isWithinNotebookImageLimit,
-  prelabelNotebookPhoto,
   uploadNotebookImage,
 } from "@/lib/notebook";
 import { measureImageAspect } from "@/lib/notebook-image-aspect";
-import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { isPremiumRequiredError } from "@/lib/premium-required";
 
 interface NotebookAddPanelProps {
   examId: string;
@@ -51,12 +48,8 @@ export function NotebookAddPanel({
   onCancel,
 }: NotebookAddPanelProps) {
   const t = useTranslations("notebook");
-  const { openPaywall } = usePremiumPaywall();
   const fileRef = useRef<HTMLInputElement>(null);
   const solutionFileRef = useRef<HTMLInputElement>(null);
-  const reactId = useId();
-  const subjectLabelId = `notebook-add-subject-${reactId}`;
-  const topicLabelId = `notebook-add-topic-${reactId}`;
 
   const [errorType, setErrorType] = useState<NotebookErrorType | null>(null);
   const [subjectRef, setSubjectRef] = useState<string>("");
@@ -68,14 +61,7 @@ export function NotebookAddPanel({
   const [solutionNote, setSolutionNote] = useState("");
   const [solutionPhoto, setSolutionPhoto] = useState<{ key: string; url: string } | null>(null);
   const [busy, setBusy] = useState(false);
-  const [prelabelling, setPrelabelling] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  // Filtered from the whole taxonomy rather than fetched per subject: the list is small, and a
-  // fetch on every subject change would put a spinner in the middle of a two-tap form.
-  const subjectTopics = subjectRef
-    ? topics.filter((topic) => topic.subjectSlug === subjectRef)
-    : [];
 
   async function handleFile(file: File | null) {
     if (!file) return;
@@ -88,31 +74,16 @@ export function NotebookAddPanel({
       const uploaded = await uploadNotebookImage(file);
       const aspect = await measureImageAspect(uploaded.url).catch(() => null);
       setPhoto({ ...uploaded, aspect });
-
-      setPrelabelling(true);
-      try {
-        const suggestion = await prelabelNotebookPhoto(uploaded.key, examId);
-        if (suggestion?.subjectRef) {
-          setSubjectRef(suggestion.subjectRef);
-          setTopicRef(suggestion.topicRef);
-        }
-      } catch (prelabelError) {
-        if (isPremiumRequiredError(prelabelError)) {
-          openPaywall({ sourceFeature: "photo.categorize" });
-        }
-      }
     } catch {
       setError(t("error_upload"));
     } finally {
-      setPrelabelling(false);
       setBusy(false);
     }
   }
 
   /**
-   * The answer photo. No pre-labelling pass on this one: vision reads a *question* to guess its
-   * subject, and running it over an answer key would be asking it what the solution says — which
-   * is the line the notebook does not cross (AGENTS.md §4, photo categorises, never solves).
+   * The answer photo. Upload only: running vision over an answer key would be asking it what the
+   * solution says, which is the line the notebook does not cross (AGENTS.md §4).
    */
   async function handleSolutionFile(file: File | null) {
     if (!file) return;
@@ -142,7 +113,6 @@ export function NotebookAddPanel({
         source: "OWN",
         storageKey: photo?.key ?? null,
         subjectRef: subjectRef || null,
-        // A topic only ever comes from a pre-label, and it is meaningless without its subject.
         topicRef: subjectRef ? topicRef : null,
         errorType,
         note: note.trim() || null,
@@ -231,55 +201,18 @@ export function NotebookAddPanel({
         </div>
       </fieldset>
 
-      <div className="flex flex-col gap-1">
-        <span
-          id={subjectLabelId}
-          className="text-sm font-semibold"
-          style={{ color: "var(--color-main)" }}
-        >
-          {t("add_subject_label")}
-          {prelabelling ? ` · ${t("add_prelabelling")}` : ""}
-        </span>
-        <MenuSelect
-          value={subjectRef}
-          aria-labelledby={subjectLabelId}
-          options={[
-            { value: "", label: t("add_subject_none") },
-            ...subjects.map((subject) => ({ value: subject.slug, label: subject.name })),
-          ]}
-          onChange={(next) => {
-            setSubjectRef(next);
-            // A hand-picked subject invalidates a topic that belonged to another one.
-            setTopicRef(null);
-          }}
-        />
-      </div>
-
-      {/*
-        The topic picker is free, and that matters: the topic-level weakness map is the headline of
-        the analysis screen, and until this list existed the only way to fill it was the premium
-        pre-label — a paywall by accident rather than by decision. Premium still saves the two taps.
-      */}
-      {subjectTopics.length > 0 ? (
-        <div className="flex flex-col gap-1">
-          <span
-            id={topicLabelId}
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {t("add_topic_label")}
-          </span>
-          <MenuSelect
-            value={topicRef ?? ""}
-            aria-labelledby={topicLabelId}
-            options={[
-              { value: "", label: t("add_subject_none") },
-              ...subjectTopics.map((topic) => ({ value: topic.slug, label: topic.name })),
-            ]}
-            onChange={(next) => setTopicRef(next || null)}
-          />
-        </div>
-      ) : null}
+      <TaxonomyCascadeSelect
+        subjects={subjects}
+        topics={topics}
+        subjectValue={subjectRef}
+        topicValue={topicRef ?? ""}
+        subjectLabel={t("add_subject_label")}
+        emptySubjectLabel={t("add_subject_none")}
+        topicLabel={t("add_topic_label")}
+        emptyTopicLabel={t("add_subject_none")}
+        onSubjectChange={setSubjectRef}
+        onTopicChange={(next) => setTopicRef(next || null)}
+      />
 
       <TextAreaField
         label={t("add_note_label")}

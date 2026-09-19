@@ -5,7 +5,6 @@ import {
   CreditCard,
   GraduationCap,
   LogOut,
-  Scale,
   Trash2,
   UserRound,
 } from "lucide-react";
@@ -144,7 +143,6 @@ export function AccountLinksCard({
   const t = useTranslations("profile");
   const tAccount = useTranslations("profile.account");
   const tExam = useTranslations("profile.exam_settings");
-  const tLegal = useTranslations("legal");
   const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
@@ -314,16 +312,6 @@ export function AccountLinksCard({
             {tMentorship("application_title")}
           </ListRow>
         )}
-        {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
-        <ListRow
-          href={{
-            pathname: "/legal/[slug]",
-            params: { slug: "kullanim-kosullari" },
-          }}
-          icon={<Scale size={18} aria-hidden />}
-        >
-          {tLegal("profile_section")}
-        </ListRow>
         <ListRow
           icon={<LogOut size={18} aria-hidden />}
           onClick={() => {

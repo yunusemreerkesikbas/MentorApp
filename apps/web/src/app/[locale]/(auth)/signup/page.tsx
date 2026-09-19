@@ -56,6 +56,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [kvkkChecked, setKvkkChecked] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const kvkkLabelId = useId();
@@ -72,9 +73,16 @@ export default function SignupPage() {
     };
   }, []);
 
-  function requireKvkk() {
-    if (!kvkkChecked) setError(translate("kvkk_error"));
-    return kvkkChecked;
+  function requireLegalAcknowledgements() {
+    if (!kvkkChecked) {
+      setError(translate("kvkk_error"));
+      return false;
+    }
+    if (!termsChecked) {
+      setError(translate("terms_error"));
+      return false;
+    }
+    return true;
   }
 
   function applyAnalyticsChoice() {
@@ -92,6 +100,11 @@ export default function SignupPage() {
       setBusy(false);
       return;
     }
+    if (!termsChecked || data.get("terms") !== "on") {
+      setError(translate("terms_error"));
+      setBusy(false);
+      return;
+    }
     applyAuthAnalyticsChoice(data.get(AUTH_ANALYTICS_FIELD) === "on", { accept, reject });
     try {
       const user = await signup({
@@ -99,6 +112,8 @@ export default function SignupPage() {
         email: String(data.get("email")),
         password: String(data.get("password")),
         kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
         ...(turnstileToken ? { turnstileToken } : {}),
         // Grants COACH, which shapes the onboarding and the home surface. It authorizes nothing on
         // its own: the invite code needs a verified email and a registry row this account does not
@@ -205,6 +220,17 @@ export default function SignupPage() {
           })}
         </span>
       </div>
+      <div
+        className="flex min-h-11 items-start gap-3 text-sm"
+        style={{ color: "var(--color-body)" }}
+      >
+        <CheckBox checked={termsChecked} onChange={setTermsChecked} name="terms" value="on" required className="mt-1" />
+        <span>
+          {translate.rich("terms", {
+            link: (chunks) => <LegalLink slug="kullanim-kosullari">{chunks}</LegalLink>,
+          })}
+        </span>
+      </div>
       <AuthCookieConsent />
       <SignupTurnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <FormError message={error} />
@@ -212,7 +238,7 @@ export default function SignupPage() {
       <GoogleAuthButton
         mode="signup"
         onBeforeStart={() => {
-          if (!requireKvkk()) return false;
+          if (!requireLegalAcknowledgements()) return false;
           applyAnalyticsChoice();
           return true;
         }}
