@@ -9,6 +9,8 @@ export * from "./components/button.js";
 export * from "./components/text-field.js";
 export * from "./components/text-area-field.js";
 export * from "./components/card.js";
+export * from "./components/completion-overlay.js";
+export * from "./components/completion-summary.js";
 export * from "./components/chip.js";
 export * from "./components/choice-chip.js";
 export * from "./components/modal.js";

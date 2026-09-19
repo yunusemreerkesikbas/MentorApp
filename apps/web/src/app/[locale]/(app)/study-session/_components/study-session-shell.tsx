@@ -12,7 +12,7 @@ import type {
   StudyRoomTheme,
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { CompletionOverlay } from "@mentor/ui";
 import {
   HistorySideDrawer,
   HistorySideRail,
@@ -45,6 +45,7 @@ import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
 import { RoomBackdropSlide } from "./room-backdrop-slide";
 import { SessionFocusGoalCard } from "./session-focus-goal-card";
+import { SessionFocusBackdrop } from "./session-focus-backdrop";
 import { SessionHistory } from "./session-history";
 import { SessionRoomList } from "./session-room-list";
 import { SessionTimerRing } from "./session-timer-ring";
@@ -382,13 +383,27 @@ export function StudySessionShell() {
 
   if (phase === "done") {
     return (
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-        <h1 className="sr-only">{t("title")}</h1>
-        <Card className="flex flex-col items-center gap-5 px-5 py-8 sm:px-8 sm:py-10">
+      <>
+        <div
+          className={`session-focus-theme fixed inset-0 z-30${
+            groundTheme ? " room-stage" : ""
+          }`}
+          data-room-theme={groundTheme ?? undefined}
+          aria-hidden
+        >
+          <SessionFocusBackdrop
+            roomTheme={groundTheme}
+            themeDirection={themeDirection}
+          />
+        </div>
+        <CompletionOverlay open label={t("done_title")}>
           <SessionDoneState
             focusElapsed={focusElapsed}
+            plannedMinutes={focusMinutes}
             sessionId={session?.id ?? null}
             subject={subject}
+            planTaskTitle={planTaskContext.taskTitle}
+            focusGoal={focusGoal}
             questBaseline={questBaseline}
             streakBaseline={streakBaseline}
             countsAsFocusSession={session?.countsAsFocusSession ?? true}
@@ -397,8 +412,8 @@ export function StudySessionShell() {
             onSubmitFeedback={recordFeedback}
             onReset={handleReset}
           />
-        </Card>
-      </main>
+        </CompletionOverlay>
+      </>
     );
   }
 

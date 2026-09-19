@@ -2,7 +2,10 @@ import type { MentorshipPlanningTaskDto } from "@mentor/types";
 import type { MentorshipAssignmentDraft } from "@/lib/mentorship";
 import { todayInIstanbul } from "@/lib/date-time";
 
-export const MAX_DRAFTS = 21;
+export {
+  MENTORSHIP_ASSIGNMENT_MAX_TASKS as MAX_DRAFTS,
+  MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD as MAX_DAYS_AHEAD,
+} from "@mentor/validation";
 export function shiftDate(date: string, days: number) {
   return new Date(Date.parse(`${date}T00:00:00Z`) + days * 86400000)
     .toISOString()
@@ -17,6 +20,16 @@ export function monday(date: string) {
 export interface AssignDraft extends MentorshipAssignmentDraft {
   key: string;
   taskDate: string;
+}
+
+export function assignmentInput({
+  title,
+  taskDate,
+  subject,
+  topic,
+  coachNote,
+}: AssignDraft): MentorshipAssignmentDraft {
+  return { title, taskDate, subject, topic, coachNote };
 }
 export interface PlanningState {
   week: string;

@@ -1,5 +1,6 @@
+import { planningTaskPage } from "./planning-task-page";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gte, lte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -38,41 +39,15 @@ export class CohortEvidenceRepository {
     page: number,
     pageSize: number,
   ) {
-    const where = and(
-      eq(planTasks.userId, studentId),
-      gte(planTasks.taskDate, from),
-      lte(planTasks.taskDate, to),
+    return planningTaskPage(
+      this.db,
+      studentId,
+      linkId,
+      from,
+      to,
+      page,
+      pageSize,
     );
-    const mine = sql<boolean>`${planTasks.originType} = 'MENTORSHIP' and ${planTasks.originRefId} = ${linkId}`;
-    return withServiceContext(this.db, async (tx) => {
-      const items = await tx
-        .select({
-          id: planTasks.id,
-          taskDate: planTasks.taskDate,
-          title: planTasks.title,
-          subject: planTasks.subject,
-          topic: planTasks.topic,
-          status: planTasks.status,
-          assignedByCoach: sql<boolean>`coalesce(${mine}, false)`,
-          coachNote: sql<
-            string | null
-          >`case when ${mine} then ${planTasks.coachNote} end`,
-        })
-        .from(planTasks)
-        .where(where)
-        .orderBy(
-          asc(planTasks.taskDate),
-          asc(planTasks.sortOrder),
-          asc(planTasks.id),
-        )
-        .limit(pageSize)
-        .offset((page - 1) * pageSize);
-      const [count] = await tx
-        .select({ total: sql<number>`count(*)::int` })
-        .from(planTasks)
-        .where(where);
-      return { items, total: count?.total ?? 0, page, pageSize };
-    });
   }
 
   /** Completed-session totals since `since`, per student. */
@@ -176,9 +151,7 @@ export class CohortEvidenceRepository {
    * "is this student's net falling?" costs no extra round trip. `previousNetAvg` is null on a first
    * attempt, which is the honest answer: there is nothing yet to fall from.
    */
-  latestMocks(
-    studentIds: string[],
-  ): Promise<
+  latestMocks(studentIds: string[]): Promise<
     {
       userId: string;
       totalNet: string;

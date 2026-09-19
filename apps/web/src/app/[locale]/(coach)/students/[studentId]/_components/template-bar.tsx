@@ -30,7 +30,9 @@ import { toTemplateTasks, type DatedDraft } from "./template-apply";
  * built against another exam's taxonomy.
  */
 export function useProgramTemplates() {
-  const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>([]);
+  const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>(
+    [],
+  );
   useEffect(() => {
     let active = true;
     fetchTemplates()
@@ -53,7 +55,8 @@ function useShowError() {
   return (err: unknown) =>
     toast.error({
       title: common("error_title"),
-      message: err instanceof ApiClientError ? err.message : common("error_unknown"),
+      message:
+        err instanceof ApiClientError ? err.message : common("error_unknown"),
     });
 }
 
@@ -71,10 +74,17 @@ export function TemplateLoadSelect({
     <ComposerSelect
       label={t("template_load")}
       value=""
-      placeholder={templates.length === 0 ? t("template_none") : t("template_load_placeholder")}
+      placeholder={
+        templates.length === 0
+          ? t("template_none")
+          : t("template_load_placeholder")
+      }
       options={templates.map((row) => ({
         value: row.id,
-        label: t("template_option", { name: row.name, count: row.tasks.length }),
+        label: t("template_option", {
+          name: row.name,
+          count: row.tasks.length,
+        }),
       }))}
       disabled={disabled || templates.length === 0}
       onChange={(id) => {
@@ -97,10 +107,12 @@ export function SuggestButton({
   studentId,
   disabled,
   onLoad,
+  onPendingChange,
 }: {
   studentId: string;
   disabled: boolean;
   onLoad: (template: MentorshipProgramTemplateDto) => void;
+  onPendingChange?: (pending: boolean) => void;
 }) {
   const t = useTranslations("mentorship");
   const toast = useMentorToast();
@@ -109,6 +121,7 @@ export function SuggestButton({
 
   async function suggest() {
     setSuggesting(true);
+    onPendingChange?.(true);
     try {
       const { tasks } = await suggestAssignments(studentId);
       if (tasks.length === 0) {
@@ -126,6 +139,7 @@ export function SuggestButton({
       showError(err);
     } finally {
       setSuggesting(false);
+      onPendingChange?.(false);
     }
   }
 
@@ -185,8 +199,15 @@ export function TemplateSaveRow({
     }
     setBusy(true);
     try {
-      const saved = await saveTemplate({ name: trimmed, examType, tasks: toTemplateTasks(drafts) });
-      setTemplates((prev) => [saved, ...prev.filter((row) => row.id !== saved.id)]);
+      const saved = await saveTemplate({
+        name: trimmed,
+        examType,
+        tasks: toTemplateTasks(drafts),
+      });
+      setTemplates((prev) => [
+        saved,
+        ...prev.filter((row) => row.id !== saved.id),
+      ]);
       setName("");
       toast.success({ title: t("template_saved", { name: saved.name }) });
     } catch (err) {

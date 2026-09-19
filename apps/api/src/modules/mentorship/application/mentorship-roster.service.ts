@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import type { ListMentorshipPlanningTasksInput } from "@mentor/validation";
 import type {
   MentorshipLinkStatus,
   MentorshipRiskFlagId,
@@ -39,7 +40,7 @@ export class MentorshipRosterService {
   async listPlanningTasks(
     coachId: string,
     studentId: string,
-    query: import("@mentor/validation").ListMentorshipPlanningTasksInput,
+    query: ListMentorshipPlanningTasksInput,
   ) {
     await this.linkService.assertEnabled();
     const link = await this.linkService.requireActiveLink(coachId, studentId);

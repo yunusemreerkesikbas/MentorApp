@@ -12,7 +12,7 @@ export default defineConfig({
       client: "fetch",
       override: {
         operations: {
-          mentorshipCoachControllerListPlanningTasks: {
+          MentorshipCoachController_listPlanningTasks: {
             fetch: { includeHttpResponseReturnType: false },
           },
         },

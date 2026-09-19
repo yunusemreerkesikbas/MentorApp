@@ -452,6 +452,11 @@ describe("mentorship (e2e)", () => {
       .get("/v1/mentorship/students")
       .set(auth("coach"));
     expect(roster.body.total).toBe(0);
+    const planningAfterEnd = await http()
+      .get(`/v1/mentorship/students/${userId.student}/planning-tasks`)
+      .query({ from: isoDaysFromNow(0), to: isoDaysFromNow(0) })
+      .set(auth("coach"));
+    expect(planningAfterEnd.status).toBe(404);
 
     const history = await http()
       .get("/v1/mentorship/students?status=ENDED")

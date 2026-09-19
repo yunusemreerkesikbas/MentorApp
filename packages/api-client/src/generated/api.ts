@@ -9324,18 +9324,6 @@ export const mentorshipApplicationControllerUpdateProfile = async (updateCoachPr
 
 
 
-export type mentorshipCoachControllerListPlanningTasksResponse200 = {
-  data: MentorshipPlanningPageResponseDto
-  status: 200
-}
-    
-export type mentorshipCoachControllerListPlanningTasksResponseSuccess = (mentorshipCoachControllerListPlanningTasksResponse200) & {
-  headers: Headers;
-};
-;
-
-export type mentorshipCoachControllerListPlanningTasksResponse = (mentorshipCoachControllerListPlanningTasksResponseSuccess)
-
 export const getMentorshipCoachControllerListPlanningTasksUrl = (studentId: string,
     params: MentorshipCoachControllerListPlanningTasksParams,) => {
   const normalizedParams = new URLSearchParams();
@@ -9353,9 +9341,9 @@ export const getMentorshipCoachControllerListPlanningTasksUrl = (studentId: stri
 }
 
 export const mentorshipCoachControllerListPlanningTasks = async (studentId: string,
-    params: MentorshipCoachControllerListPlanningTasksParams, options?: RequestInit): Promise<mentorshipCoachControllerListPlanningTasksResponse> => {
+    params: MentorshipCoachControllerListPlanningTasksParams, options?: RequestInit): Promise<MentorshipPlanningPageResponseDto> => {
   
-  return http<mentorshipCoachControllerListPlanningTasksResponse>(getMentorshipCoachControllerListPlanningTasksUrl(studentId,params),
+  return http<MentorshipPlanningPageResponseDto>(getMentorshipCoachControllerListPlanningTasksUrl(studentId,params),
   {      
     ...options,
     method: 'GET'

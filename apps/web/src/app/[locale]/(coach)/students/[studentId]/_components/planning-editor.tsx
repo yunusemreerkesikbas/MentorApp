@@ -6,7 +6,12 @@ import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { useExamTopicTaxonomy } from "@/lib/use-exam-topic-taxonomy";
 import { todayInIstanbul } from "@/lib/date-time";
 import { mentorshipAssignmentTaskSchema } from "@mentor/validation";
-import { shiftDate, type AssignDraft } from "./planning-state";
+import {
+  shiftDate,
+  assignmentInput,
+  MAX_DAYS_AHEAD,
+  type AssignDraft,
+} from "./planning-state";
 
 export function PlanningEditor({
   draft,
@@ -23,16 +28,17 @@ export function PlanningEditor({
 }) {
   const t = useTranslations("mentorship");
   const taxonomy = useExamTopicTaxonomy(examType);
-  const { key: _key, ...input } = draft;
+  const input = assignmentInput(draft);
   const today = todayInIstanbul();
   const valid =
     mentorshipAssignmentTaskSchema.safeParse(input).success &&
     draft.taskDate >= today &&
-    draft.taskDate <= shiftDate(today, 120);
+    draft.taskDate <= shiftDate(today, MAX_DAYS_AHEAD);
   return (
     <section className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-4">
       <h3 className="font-semibold">{t("planning_edit")}</h3>
       <TextField
+        autoFocus
         dense
         label={t("assign_task_title")}
         value={draft.title}
@@ -74,7 +80,8 @@ export function PlanningEditor({
           onChange({ ...draft, coachNote: e.target.value || null })
         }
       />
-      {(draft.taskDate < today || draft.taskDate > shiftDate(today, 120)) && (
+      {(draft.taskDate < today ||
+        draft.taskDate > shiftDate(today, MAX_DAYS_AHEAD)) && (
         <p role="alert">{t("planning_invalid_date")}</p>
       )}
       <div className="flex gap-2">

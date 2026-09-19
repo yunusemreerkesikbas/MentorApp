@@ -27,6 +27,7 @@ import {
   type MentorshipLinkStatus,
   type MentorshipRosterRowDto,
   type MentorshipStudentReportDto,
+  type MentorshipPlanningTaskDto,
   type Paginated,
   type PlanTaskDto,
 } from "@mentor/types";
@@ -72,7 +73,7 @@ export class MentorshipCoachController {
     @CurrentUser() user: RequestUser,
     @Param() params: MentorshipStudentParamDto,
     @Query() query: ListMentorshipPlanningTasksDto,
-  ): Promise<Paginated<import("@mentor/types").MentorshipPlanningTaskDto>> {
+  ): Promise<Paginated<MentorshipPlanningTaskDto>> {
     return this.roster.listPlanningTasks(user.id, params.studentId, query);
   }
 

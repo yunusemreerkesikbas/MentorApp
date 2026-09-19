@@ -17,7 +17,7 @@ export const MENTORSHIP_INVITE_CODE_BYTES = 6;
  * could land in year 9999 and sit in the student's calendar forever. A term is the honest ceiling
  * for "homework"; anything beyond that is a study plan, which is a different feature.
  */
-export const MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD = 120;
+export { MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD } from "@mentor/validation";
 
 /**
  * How far back the report reads dropped assignments. Deliberately the same 14 days coaching uses

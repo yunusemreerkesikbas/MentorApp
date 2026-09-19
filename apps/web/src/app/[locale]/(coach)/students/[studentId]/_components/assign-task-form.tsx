@@ -26,6 +26,8 @@ import { PlanningSource } from "./planning-source";
 import { usePlanningTasks } from "./use-planning-tasks";
 import {
   MAX_DRAFTS,
+  assignmentInput,
+  MAX_DAYS_AHEAD,
   monday,
   shiftDate,
   type AssignDraft,
@@ -65,7 +67,7 @@ export function AssignTaskForm({
   const [templates, setTemplates] = useProgramTemplates();
   const data = usePlanningTasks(studentId, state.week);
   const today = todayInIstanbul();
-  const limit = shiftDate(today, 120);
+  const limit = shiftDate(today, MAX_DAYS_AHEAD);
   const days = Array.from({ length: 7 }, (_, i) => shiftDate(state.week, i));
   const counts = new Map(
     days.map((day) => [day, drafts.filter((d) => d.taskDate === day).length]),
@@ -79,7 +81,7 @@ export function AssignTaskForm({
             data.rows!.filter((d) => d.taskDate === day).length,
           ]),
         );
-  const payload = drafts.map(({ key: _key, ...draft }) => draft);
+  const payload = drafts.map(assignmentInput);
   const valid =
     createMentorshipAssignmentsSchema.safeParse({ tasks: payload }).success &&
     drafts.every((d) => d.taskDate >= today && d.taskDate <= limit);
@@ -129,7 +131,7 @@ export function AssignTaskForm({
   }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid || state.editor || locked.current) return;
+    if (!valid || state.editor || locked.current || busy) return;
     locked.current = true;
     setBusy(true);
     try {
@@ -159,7 +161,17 @@ export function AssignTaskForm({
     <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
       <CoachOverlayBody>
         <fieldset disabled={busy} className="flex min-w-0 flex-col gap-5 pb-4">
-          <PlanningWeek state={state} setState={setState} today={today} limit={limit} days={days} counts={counts} existingCounts={existingCounts} data={data} showWeek={showWeek} />
+          <PlanningWeek
+            state={state}
+            setState={setState}
+            today={today}
+            limit={limit}
+            days={days}
+            counts={counts}
+            existingCounts={existingCounts}
+            data={data}
+            showWeek={showWeek}
+          />
           <Button
             type="button"
             variant="soft"
@@ -194,7 +206,14 @@ export function AssignTaskForm({
               onCancel={() => setState((s) => ({ ...s, editor: null }))}
             />
           )}
-          <PlanningDraftList drafts={drafts} setDrafts={setDrafts} state={state} setState={setState} today={today} limit={limit} />
+          <PlanningDraftList
+            drafts={drafts}
+            setDrafts={setDrafts}
+            state={state}
+            setState={setState}
+            today={today}
+            limit={limit}
+          />
           <fieldset
             disabled={!!state.editor}
             className="flex min-w-0 flex-col gap-4"
@@ -216,6 +235,7 @@ export function AssignTaskForm({
             />
             <SuggestButton
               studentId={studentId}
+              onPendingChange={setBusy}
               disabled={busy || drafts.length >= MAX_DRAFTS}
               onLoad={loadTemplate}
             />

@@ -573,6 +573,124 @@ test.describe("koç tarafı", () => {
     await expect(panel.getByRole("checkbox").first()).toBeDisabled();
   });
 
+  test("kapasiteyi aşan seçim kesilmeden gösterilir", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    await page.route("**/planning-tasks?**", async (route) => {
+      const from = new URL(route.request().url()).searchParams.get("from")!;
+      return json(route, {
+        items: Array.from({ length: 22 }, (_, i) => ({
+          id: `source-${i}`,
+          taskDate: from,
+          title: `Görev ${i}`,
+          subject: null,
+          topic: null,
+          coachNote: null,
+          assignedByCoach: true,
+          status: "PENDING",
+        })),
+        page: 1,
+        pageSize: 100,
+        total: 22,
+      });
+    });
+    await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
+    const panel = page.getByRole("dialog").first();
+    await panel
+      .getByRole("button", { name: "Sonraki hafta", exact: true })
+      .click();
+    await panel.getByRole("button", { name: "Görünenleri seç" }).click();
+    await expect(
+      panel.getByRole("button", { name: "Seçilenleri ekle (22)" }),
+    ).toBeDisabled();
+    await expect(
+      panel.getByText("Bir gönderimde en fazla 21 görev olabilir.", {
+        exact: false,
+      }),
+    ).toBeVisible();
+    await panel.getByRole("checkbox").first().uncheck();
+    await panel.getByRole("button", { name: "Seçilenleri ekle (21)" }).click();
+    await expect(
+      panel.getByRole("button", { name: "21 görevi planına ekle" }),
+    ).toBeEnabled();
+  });
+
+  test("iki taslağı düzenleyip tarih değiştirerek tek gönderimde atar", async ({
+    page,
+  }) => {
+    await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    const sent: {
+      tasks: { title: string; taskDate: string; coachNote: string | null }[];
+    }[] = [];
+    await page.route("**/planning-tasks?**", async (route) => {
+      const from = new URL(route.request().url()).searchParams.get("from")!;
+      return json(route, {
+        items: ["Birinci", "İkinci"].map((title, i) => ({
+          id: `source-${i}`,
+          taskDate: from,
+          title,
+          subject: null,
+          topic: null,
+          coachNote: null,
+          assignedByCoach: true,
+          status: i === 0 ? "DONE" : "PENDING",
+        })),
+        page: 1,
+        pageSize: 100,
+        total: 2,
+      });
+    });
+    await page.route(`**/students/${STUDENT_ID}/assignments`, async (route) => {
+      sent.push(route.request().postDataJSON());
+      return json(route, sent.at(-1)!.tasks, 201);
+    });
+    await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
+    const panel = page.getByRole("dialog").first();
+    await panel
+      .getByRole("button", { name: "Sonraki hafta", exact: true })
+      .click();
+    await panel.getByRole("button", { name: "Görünenleri seç" }).click();
+    await panel.getByRole("button", { name: "Seçilenleri ekle (2)" }).click();
+    await panel
+      .locator("article")
+      .filter({ hasText: "Birinci" })
+      .getByRole("button", { name: "Düzenle" })
+      .click();
+    await panel.getByLabel("Görev", { exact: true }).fill("Birinci uyarlama");
+    await panel.getByLabel("Notun (isteğe bağlı)").fill("Önce kısa tekrar");
+    await panel
+      .getByRole("button", { name: "Görev tarihi", exact: true })
+      .click();
+    await page.getByRole("button", { name: "Bugün", exact: true }).click();
+    await panel.getByRole("button", { name: "Taslağı kaydet" }).click();
+    await panel
+      .locator("article")
+      .filter({ hasText: "İkinci" })
+      .getByRole("button", { name: "Düzenle" })
+      .click();
+    await panel.getByLabel("Görev", { exact: true }).fill("İkinci uyarlama");
+    await panel.getByRole("button", { name: "Taslağı kaydet" }).click();
+    await panel
+      .getByRole("button", { name: "Sonraki hafta", exact: true })
+      .scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: test.info().outputPath("weekly-planner.png"),
+    });
+    await panel.getByRole("button", { name: "2 görevi planına ekle" }).click();
+    await expect.poll(() => sent.length).toBe(1);
+    expect(sent[0]!.tasks.map((task) => task.title)).toEqual([
+      "Birinci uyarlama",
+      "İkinci uyarlama",
+    ]);
+    expect(sent[0]!.tasks[0]!.coachNote).toBe("Önce kısa tekrar");
+    expect(sent[0]!.tasks[0]!.taskDate < sent[0]!.tasks[1]!.taskDate).toBe(
+      true,
+    );
+    expect(JSON.stringify(sent)).not.toContain("source-");
+    await expect(panel).not.toBeVisible();
+  });
+
   test("şablon kaydı programı gün ofsetine çevirir, tarihe değil", async ({
     page,
   }) => {

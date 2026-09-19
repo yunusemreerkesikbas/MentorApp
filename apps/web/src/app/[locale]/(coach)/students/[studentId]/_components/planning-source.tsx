@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { Button } from "@mentor/ui";
+import { Button, Skeleton } from "@mentor/ui";
 import type { AssignDraft } from "./planning-state";
 import {
   copyKey,
@@ -82,11 +82,16 @@ export function PlanningSource({
         ))}
       </div>
       {data.error ? (
-        <Button type="button" onClick={data.retry}>
-          {t("planning_retry")}
-        </Button>
+        <div role="alert">
+          <p>{data.error}</p>
+          <Button type="button" onClick={data.retry}>
+            {t("planning_retry")}
+          </Button>
+        </div>
       ) : data.rows === null ? (
-        <p role="status">{t("loading")}</p>
+        <div role="status" aria-label={t("loading")}>
+          <Skeleton className="h-24 w-full" />
+        </div>
       ) : (
         <>
           <Button

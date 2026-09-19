@@ -10,6 +10,9 @@ import {
 } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
 
+export const MENTORSHIP_ASSIGNMENT_MAX_TASKS = 21;
+export const MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD = 120;
+
 export const listMentorshipPlanningTasksSchema = paginationQuerySchema
   .extend({
     from: isoDateSchema,
@@ -126,7 +129,10 @@ export const mentorshipAssignmentTaskSchema = planTaskFieldsSchema
 
 /** Cap mirrors `bulkCreatePlanTasksSchema` (three weeks of days). */
 export const createMentorshipAssignmentsSchema = z.object({
-  tasks: mentorshipAssignmentTaskSchema.array().min(1).max(21),
+  tasks: mentorshipAssignmentTaskSchema
+    .array()
+    .min(1)
+    .max(MENTORSHIP_ASSIGNMENT_MAX_TASKS),
 });
 export type CreateMentorshipAssignmentsInput = z.infer<
   typeof createMentorshipAssignmentsSchema
