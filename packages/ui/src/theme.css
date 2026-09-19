@@ -99,6 +99,17 @@
 
 html {
   color-scheme: light;
+  /*
+   * Global CTA (DESIGN.md §6) — play ledge. Dark ink on #55acee is 6.6:1; white would be 2.4:1.
+   * `--color-btn` stays for nav pills, not for `@mentor/ui` Button.
+   */
+  --play-cta: #55acee;
+  --play-cta-ink: #0f2233;
+  --play-cta-edge: #3b8fd0;
+  --play-line: #e7e7e7;
+  --play-track: #f0edec;
+  --play-selected-ink: #1a5fa3;
+  --play-radius: 16px;
 }
 
 ::placeholder {
@@ -140,6 +151,9 @@ html.dark {
   --blob-pink-opacity: 0.14;
   --blob-blue-opacity: 0.2;
   --blob-cyan-opacity: 0.18;
+  --play-line: rgba(255, 255, 255, 0.1);
+  --play-track: #242833;
+  --play-selected-ink: #7eb6e8;
 }
 
 /*
@@ -178,23 +192,13 @@ html.dark {
 }
 
 /*
- * Welcome + onboarding play surface (DESIGN.md §2.5). A chunky blue CTA that sinks into its
- * ledge, 16px cards with a 4px bottom edge, 800-weight questions. Everything is scoped to
- * `--play-*`: the auth sheet and the app past onboarding keep the black DESIGN.md button.
- * Dark ink on the CTA, never white: white on #55acee is ~2.4:1, #0f2233 is 6.6:1.
+ * Welcome + onboarding play surface (DESIGN.md §2.5). Choice cards, 800-weight questions,
+ * artwork chrome. CTA tokens live on `html` — `@mentor/ui` Button uses them app-wide.
  */
 .onboarding-play-theme {
-  --play-cta: #55acee;
-  --play-cta-ink: #0f2233;
-  --play-cta-edge: #3b8fd0;
   /** Highlight stripe on the progress fill. */
   --play-cta-shine: rgba(255, 255, 255, 0.35);
-  --play-line: #e7e7e7;
-  --play-track: #f0edec;
   --play-selected: #e4eefe;
-  /** 5.6:1 on `--play-selected`; the accent #1d6fbf only reaches 4.4. */
-  --play-selected-ink: #1a5fa3;
-  --play-radius: 16px;
   --play-sheet-radius: 28px;
   --play-well-blue: #c3d9fd;
   --play-well-peri: #d6dbfd;
@@ -214,10 +218,7 @@ html.dark {
 }
 
 html.dark .onboarding-play-theme {
-  --play-line: rgba(255, 255, 255, 0.1);
-  --play-track: #242833;
   --play-selected: #2c3d56;
-  --play-selected-ink: #7eb6e8;
   --play-well-blue: #242833;
   --play-well-peri: #2a2f45;
   --play-well-violet: #332c47;
@@ -425,50 +426,46 @@ html.dark .onboarding-play-theme {
   --blob-pink-opacity: 0.4;
   --blob-blue-opacity: 0.6;
   --blob-cyan-opacity: 0.6;
-  --session-ripple-1: 17.5rem;
-  --session-ripple-2: 22.5rem;
-  --session-ripple-3: 28rem;
 }
 
 .session-focus-ripple {
   position: absolute;
   border-radius: 9999px;
+  width: calc(var(--session-ring-size, 280px) * var(--ripple-from));
+  height: calc(var(--session-ring-size, 280px) * var(--ripple-from));
   border: 2px solid color-mix(in srgb, var(--blob-cyan) 32%, transparent);
   pointer-events: none;
   animation: session-focus-ripple 8s ease-out infinite;
 }
 
 .session-focus-ripple-1 {
-  width: var(--session-ripple-1);
-  height: var(--session-ripple-1);
+  --ripple-from: 1;
   animation-delay: 0s;
 }
 
 .session-focus-ripple-2 {
-  width: var(--session-ripple-2);
-  height: var(--session-ripple-2);
+  --ripple-from: 1.14;
   animation-delay: -2.6s;
   border-color: color-mix(in srgb, var(--blob-blue) 28%, transparent);
 }
 
 .session-focus-ripple-3 {
-  width: var(--session-ripple-3);
-  height: var(--session-ripple-3);
+  --ripple-from: 1.28;
   animation-delay: -5.2s;
   border-color: color-mix(in srgb, var(--blob-pink) 22%, transparent);
 }
 
 @keyframes session-focus-ripple {
   0% {
-    transform: scale(0.92);
-    opacity: 0.4;
+    transform: scale(1);
+    opacity: 0.35;
   }
   70% {
-    transform: scale(1.08);
+    transform: scale(1.06);
     opacity: 0.1;
   }
   100% {
-    transform: scale(1.14);
+    transform: scale(1.1);
     opacity: 0;
   }
 }
@@ -555,7 +552,9 @@ html.dark .onboarding-play-theme {
  * midnight. Every value below is scoped to `--room-*`; nothing leaks into app tokens.
  *
  * `--room-ink` is the contract the floating chrome reads, which is what lets one set of
- * controls sit legibly on a bright parchment room and a dark café alike.
+ * controls sit legibly on a bright parchment room and a dark café alike. App `--color-*`
+ * ink tokens are remapped on this element only so liquid glass and timer copy follow the
+ * room without hardcoded #ffffff.
  */
 .room-stage {
   /* ponytail: LIBRARY's shipped artwork (`room-library-bg.webp`) is a dim, lamp-lit
@@ -589,6 +588,15 @@ html.dark .onboarding-play-theme {
    * The caller's `veilPercent` is now a multiplier on this alpha, not a mix ratio.
    */
   --room-veil: rgba(36, 27, 20, 0.95);
+  /* Chrome on the stage reads app ink tokens. Bind them to this room's ink so a
+     dark café and a light HOME stay legible without hardcoded #ffffff. */
+  color: var(--room-ink);
+  --color-main: var(--room-ink);
+  --color-body: var(--room-ink);
+  --color-secondary: var(--room-ink-soft);
+  --color-surface-translucent: color-mix(in srgb, var(--room-ink) 12%, transparent);
+  --color-border: color-mix(in srgb, var(--room-ink) 22%, transparent);
+  --color-progress-track: color-mix(in srgb, var(--room-ink) 22%, transparent);
 }
 
 .room-stage[data-room-theme="CAFE"] {
@@ -606,6 +614,7 @@ html.dark .onboarding-play-theme {
 }
 
 .room-stage[data-room-theme="HOME"] {
+  color-scheme: light;
   --room-ground-from: #f3eff9;
   --room-ground-to: #e3daf1;
   --room-table: #7c6f97;
@@ -645,109 +654,101 @@ html.dark .onboarding-play-theme {
 }
 
 /*
- * Liquid Glass surfaces for immersive / ambient stages (e.g. /study-session).
- * Zero opaque background wash; 100% scene refraction with specular rim glints,
- * high optical blur, and crisp luminous white typography.
+ * Session chrome: DESIGN surfaces, not ink mixed into the fill. Mixing `--color-main`
+ * (#111) onto light `--color-bg` painted cool gray wells. Fill is `--color-surface`;
+ * the rim borrows `--color-progress` so the edge stays Mentor-blue, not gray.
  */
 .session-liquid-card {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.2);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.15);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.12),
-    0 20px 40px 0 rgba(0, 0, 0, 0.3),
-    0 4px 12px 0 rgba(0, 0, 0, 0.15);
-  color: #ffffff;
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--color-progress) 22%, transparent);
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
 .session-liquid-pill {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  box-shadow:
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.5),
-    0 8px 24px 0 rgba(0, 0, 0, 0.2);
-  color: #ffffff;
+  background: var(--color-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--color-progress) 26%, transparent);
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
 .session-liquid-btn-obsidian {
-  background: #ffffff;
-  color: #0f172a;
+  background: var(--color-btn);
+  color: var(--color-btn-label);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.95);
+  border: 1px solid color-mix(in srgb, var(--color-btn) 90%, transparent);
   box-shadow:
-    0 4px 24px 0 rgba(255, 255, 255, 0.35),
-    0 2px 8px 0 rgba(0, 0, 0, 0.2);
+    inset 0 1px 1px 0 color-mix(in srgb, var(--color-btn-label) 22%, transparent),
+    var(--shadow-card);
 }
 
 .session-liquid-btn-obsidian:hover {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 6px 28px 0 rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--color-btn) 88%, var(--color-btn-label));
+  box-shadow: var(--shadow-card-hover);
 }
 
 .session-liquid-rail {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.18);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.16);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  ) !important;
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  border-right: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow:
-    inset -1px 0 1.5px 0 rgba(255, 255, 255, 0.35),
-    4px 0 24px 0 rgba(0, 0, 0, 0.25);
-  color: #ffffff;
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-right: 1px solid color-mix(in srgb, var(--color-progress) 18%, transparent) !important;
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
 .session-liquid-drawer {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.18);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.16);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right: 1px solid color-mix(in srgb, var(--color-progress) 22%, transparent) !important;
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
+}
 
+/*
+ * Scenic / focus stages (DESIGN.md §2.5): the photo is the surface. Opaque
+ * `--color-surface` cards sit on the room like stickers. Restore frost glass +
+ * room ink; plain light idle keeps the rules above.
+ */
+.room-stage .session-liquid-card,
+.session-focus-theme .session-liquid-card,
+.room-stage .session-liquid-pill,
+.session-focus-theme .session-liquid-pill,
+.room-stage .session-liquid-rail,
+.session-focus-theme .session-liquid-rail,
+.room-stage .session-liquid-drawer,
+.session-focus-theme .session-liquid-drawer {
+  --color-main: var(--room-ink, #f4f4f5);
+  --color-secondary: var(--room-ink-soft, rgba(255, 255, 255, 0.72));
+  --color-surface: color-mix(in srgb, #ffffff 18%, transparent);
+  --color-surface-translucent: color-mix(in srgb, #ffffff 14%, transparent);
+  color: var(--room-ink, #f4f4f5);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.07) 100%
+    color-mix(in srgb, #ffffff 22%, transparent) 0%,
+    color-mix(in srgb, #ffffff 8%, transparent) 100%
   ) !important;
-  backdrop-filter: blur(32px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(32px) saturate(190%) contrast(105%);
-  border-right: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-color: color-mix(in srgb, #ffffff 28%, transparent);
   box-shadow:
-    inset 1px 1px 1.5px 0 rgba(255, 255, 255, 0.45),
-    8px 0 36px 0 rgba(0, 0, 0, 0.35);
-  color: #ffffff;
+    inset 0 1.5px 1.5px 0 color-mix(in srgb, #ffffff 45%, transparent),
+    0 16px 36px 0 color-mix(in srgb, #000000 28%, transparent) !important;
+}
+
+.room-stage .session-liquid-rail,
+.session-focus-theme .session-liquid-rail,
+.room-stage .session-liquid-drawer,
+.session-focus-theme .session-liquid-drawer {
+  border-right-color: color-mix(in srgb, #ffffff 22%, transparent) !important;
+}
+
+.room-stage .session-liquid-btn-obsidian,
+.session-focus-theme .session-liquid-btn-obsidian {
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  color: var(--room-cta-ink, var(--play-cta-ink));
+  border-color: color-mix(in srgb, #ffffff 90%, transparent);
 }

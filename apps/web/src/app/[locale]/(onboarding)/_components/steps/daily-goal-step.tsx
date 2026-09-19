@@ -5,8 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
-import { StreamingText } from "@mentor/ui";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button, StreamingText } from "@mentor/ui";
 import { PlayGridCard } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PlayTitle } from "@/components/onboarding-play/play-heading";
@@ -75,9 +74,9 @@ export function DailyGoalStep({
       heading={<PlayTitle title={t("title")} />}
       footer={
         <PlayFooter error={error}>
-          <PlayButton onClick={() => void save()} busy={saving} disabled={!selected}>
+          <Button fullWidth onClick={() => void save()} busy={saving} disabled={!selected}>
             {t("continue")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

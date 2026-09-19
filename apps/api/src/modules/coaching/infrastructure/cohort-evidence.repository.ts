@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, lte, inArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -29,6 +29,51 @@ import {
 @Injectable()
 export class CohortEvidenceRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  planningTasks(
+    studentId: string,
+    linkId: string,
+    from: string,
+    to: string,
+    page: number,
+    pageSize: number,
+  ) {
+    const where = and(
+      eq(planTasks.userId, studentId),
+      gte(planTasks.taskDate, from),
+      lte(planTasks.taskDate, to),
+    );
+    const mine = sql<boolean>`${planTasks.originType} = 'MENTORSHIP' and ${planTasks.originRefId} = ${linkId}`;
+    return withServiceContext(this.db, async (tx) => {
+      const items = await tx
+        .select({
+          id: planTasks.id,
+          taskDate: planTasks.taskDate,
+          title: planTasks.title,
+          subject: planTasks.subject,
+          topic: planTasks.topic,
+          status: planTasks.status,
+          assignedByCoach: sql<boolean>`coalesce(${mine}, false)`,
+          coachNote: sql<
+            string | null
+          >`case when ${mine} then ${planTasks.coachNote} end`,
+        })
+        .from(planTasks)
+        .where(where)
+        .orderBy(
+          asc(planTasks.taskDate),
+          asc(planTasks.sortOrder),
+          asc(planTasks.id),
+        )
+        .limit(pageSize)
+        .offset((page - 1) * pageSize);
+      const [count] = await tx
+        .select({ total: sql<number>`count(*)::int` })
+        .from(planTasks)
+        .where(where);
+      return { items, total: count?.total ?? 0, page, pageSize };
+    });
+  }
 
   /** Completed-session totals since `since`, per student. */
   sessionTotalsSince(
@@ -62,7 +107,9 @@ export class CohortEvidenceRepository {
   activityWindow(
     studentIds: string[],
     sinceDate: string,
-  ): Promise<{ userId: string; lastActiveDate: string | null; activeDays: number }[]> {
+  ): Promise<
+    { userId: string; lastActiveDate: string | null; activeDays: number }[]
+  > {
     if (studentIds.length === 0) return Promise.resolve([]);
     const isActive = sql`(${dailyActivity.hasSession} = true or ${dailyActivity.tasksDone} > 0)`;
     return withServiceContext(this.db, (tx) =>
@@ -82,7 +129,9 @@ export class CohortEvidenceRepository {
 
   streaks(
     studentIds: string[],
-  ): Promise<{ userId: string; currentStreak: number; longestStreak: number }[]> {
+  ): Promise<
+    { userId: string; currentStreak: number; longestStreak: number }[]
+  > {
     if (studentIds.length === 0) return Promise.resolve([]);
     return withServiceContext(this.db, (tx) =>
       tx
@@ -111,7 +160,10 @@ export class CohortEvidenceRepository {
         })
         .from(planTasks)
         .where(
-          and(inArray(planTasks.userId, studentIds), gte(planTasks.taskDate, sinceDate)),
+          and(
+            inArray(planTasks.userId, studentIds),
+            gte(planTasks.taskDate, sinceDate),
+          ),
         )
         .groupBy(planTasks.userId),
     );
@@ -124,8 +176,15 @@ export class CohortEvidenceRepository {
    * "is this student's net falling?" costs no extra round trip. `previousNetAvg` is null on a first
    * attempt, which is the honest answer: there is nothing yet to fall from.
    */
-  latestMocks(studentIds: string[]): Promise<
-    { userId: string; totalNet: string; takenAt: Date; previousNetAvg: string | null }[]
+  latestMocks(
+    studentIds: string[],
+  ): Promise<
+    {
+      userId: string;
+      totalNet: string;
+      takenAt: Date;
+      previousNetAvg: string | null;
+    }[]
   > {
     if (studentIds.length === 0) return Promise.resolve([]);
     return withServiceContext(this.db, async (tx) => {
@@ -152,9 +211,7 @@ export class CohortEvidenceRepository {
         userId: row.user_id,
         totalNet: row.total_net,
         takenAt:
-          row.taken_at instanceof Date
-            ? row.taken_at
-            : new Date(row.taken_at),
+          row.taken_at instanceof Date ? row.taken_at : new Date(row.taken_at),
         previousNetAvg: row.previous_net_avg,
       }));
     });
@@ -188,7 +245,14 @@ export class CohortEvidenceRepository {
   mockTrend(
     studentId: string,
     limit: number,
-  ): Promise<{ id: string; takenAt: Date; totalNet: string; publisherName: string | null }[]> {
+  ): Promise<
+    {
+      id: string;
+      takenAt: Date;
+      totalNet: string;
+      publisherName: string | null;
+    }[]
+  > {
     return withServiceContext(this.db, (tx) =>
       tx
         .select({
@@ -265,10 +329,17 @@ export class CohortEvidenceRepository {
           topic: planTasks.topic,
           status: planTasks.status,
           assignedByCoach: mine,
-          coachNote: sql<string | null>`case when ${mine} then ${planTasks.coachNote} end`,
+          coachNote: sql<
+            string | null
+          >`case when ${mine} then ${planTasks.coachNote} end`,
         })
         .from(planTasks)
-        .where(and(eq(planTasks.userId, studentId), gte(planTasks.taskDate, sinceDate)))
+        .where(
+          and(
+            eq(planTasks.userId, studentId),
+            gte(planTasks.taskDate, sinceDate),
+          ),
+        )
         .orderBy(desc(planTasks.taskDate), planTasks.sortOrder)
         .limit(limit),
     );
@@ -283,7 +354,10 @@ export class CohortEvidenceRepository {
         .select({ date: moodCheckins.checkinDate, level: moodCheckins.mood })
         .from(moodCheckins)
         .where(
-          and(eq(moodCheckins.userId, studentId), gte(moodCheckins.checkinDate, sinceDate)),
+          and(
+            eq(moodCheckins.userId, studentId),
+            gte(moodCheckins.checkinDate, sinceDate),
+          ),
         )
         .orderBy(desc(moodCheckins.checkinDate)),
     );

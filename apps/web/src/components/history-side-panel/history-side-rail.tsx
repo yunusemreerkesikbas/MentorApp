@@ -61,16 +61,14 @@ export function HistorySideRail({
       className={[
         "relative z-[1] hidden h-full shrink-0 overflow-hidden lg:flex lg:flex-col",
         isLiquid
-          ? "session-liquid-rail border-r"
+            ? "session-liquid-rail border-r"
           : "border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md",
         className,
       ]
         .filter(Boolean)
         .join(" ")}
       style={{
-        borderColor: isLiquid
-          ? "rgba(255, 255, 255, 0.18)"
-          : "color-mix(in srgb, var(--color-main) 8%, transparent)",
+        borderColor: "color-mix(in srgb, var(--color-main) 18%, transparent)",
       }}
       initial={false}
       animate={{
@@ -99,7 +97,7 @@ export function HistorySideRail({
         >
           <PanelLeft
             className="size-5"
-            style={{ color: isLiquid ? "#ffffff" : "var(--color-main)" }}
+            style={{ color: "var(--color-main)" }}
             strokeWidth={2.25}
             aria-hidden
           />

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import {
   createContext,
   useCallback,
@@ -12,9 +13,9 @@ import {
 } from "react";
 import { useTranslations } from "next-intl";
 import { CircularBackLink } from "@/components/circular-back-link";
-import { PuhuImage } from "@/components/puhu-image";
 import { usePathname } from "@/i18n/navigation";
 import { authShellShowsBack, authShellShowsHang } from "@/lib/auth-paths";
+import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
 import { HANG_OVERHANG_PX } from "./auth-hang-choreography";
 import { useAuthHang } from "./auth-hang-puhu";
 
@@ -99,19 +100,42 @@ export function AuthShell({ children }: { children: ReactNode }) {
         // `overflow-clip`, not hidden: a hidden box is still scrollable from code, and on a client
         // navigation Next scrolled it by the sheet's under-extension (50dvh), cutting the form off
         // at the top. A clipped box has no scroll position to move.
-        className="auth-shell flex min-h-dvh w-full flex-col justify-end overflow-clip lg:grid lg:grid-cols-[minmax(0,1fr)_23.4375rem] lg:items-center lg:gap-12 lg:px-10 lg:py-8 xl:gap-20"
+        className="auth-shell flex min-h-dvh w-full flex-col justify-end max-lg:overflow-clip lg:mx-auto lg:grid lg:max-w-[72rem] lg:grid-cols-[minmax(0,1fr)_26rem] lg:items-center lg:gap-12 lg:overflow-visible lg:px-8 lg:py-10 xl:gap-16 xl:px-0"
         data-hang={showHang ? "true" : "false"}
         data-phase={phase}
         style={showHang ? { "--auth-hang-overhang": `${HANG_OVERHANG_PX}px` } as CSSProperties : undefined}
       >
-        <section className="auth-narrative hidden min-w-0 flex-col items-center justify-center text-center lg:flex" aria-label={t("narrative_label")}>
-          <PuhuImage variant="encouraging" size={300} priority />
-          <h1 className="mt-6 text-3xl font-semibold text-[var(--color-main)]" style={{ fontFamily: "var(--font-heading)" }}>{t("narrative_title")}</h1>
-          <p className="mt-3 max-w-md text-base leading-relaxed text-[var(--color-body)]">{t("narrative_body")}</p>
+        <section
+          className="auth-narrative hidden min-w-0 flex-col items-center justify-center text-center lg:flex"
+          aria-label={t("narrative_label")}
+        >
+          <div
+            className="relative max-w-md rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-6 py-5 shadow-[var(--shadow-card)]"
+            data-auth-narrative-bubble
+          >
+            <h1 className="text-balance text-3xl font-extrabold leading-tight text-[var(--color-main)]">
+              {t("narrative_title")}
+            </h1>
+            <p className="mt-2 text-pretty text-base font-medium leading-relaxed text-[var(--color-secondary)]">
+              {t("narrative_body")}
+            </p>
+            <span
+              aria-hidden
+              className="absolute -bottom-[9px] left-1/2 size-3.5 -translate-x-1/2 rotate-45 border-b-2 border-r-2 border-[var(--play-line)] bg-[var(--color-surface)]"
+            />
+          </div>
+          <Image
+            src={PUHU_MOTION_FRAMES.wave}
+            alt=""
+            width={240}
+            height={240}
+            priority
+            className="mt-5 size-60 object-contain"
+          />
         </section>
         <div
           ref={panelRef}
-          className="auth-sheet relative isolate w-full max-h-[90dvh] overflow-visible lg:max-h-[82dvh] lg:max-w-[23.4375rem]"
+          className="auth-sheet relative isolate max-h-[90dvh] w-full overflow-visible lg:max-h-none lg:max-w-[26rem]"
           data-phase={phase}
           onFocusCapture={hang.onFocusCapture}
           onBlurCapture={hang.onBlurCapture}
@@ -143,7 +167,7 @@ export function AuthShell({ children }: { children: ReactNode }) {
               </header>
             ) : null}
             <div
-              className={`mentor-scrollarea min-h-0 overflow-y-auto px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] ${showBack ? "pt-2" : "pt-5"}`}
+              className={`mentor-scrollarea min-h-0 overflow-y-auto px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] lg:overflow-visible lg:px-6 lg:pb-6 ${showBack ? "pt-2" : "pt-5"}`}
             >
               {children}
             </div>

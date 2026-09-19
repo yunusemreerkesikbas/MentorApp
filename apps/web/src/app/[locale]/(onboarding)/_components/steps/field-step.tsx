@@ -6,7 +6,7 @@ import { Compass } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import { CAREER_GROUPS, type CareerGroup, type ExamType } from "@mentor/types";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button } from "@mentor/ui";
 import { PlayGridCard, PlayIconWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PlayTitle } from "@/components/onboarding-play/play-heading";
@@ -84,9 +84,9 @@ export function FieldStep({
       heading={<PlayTitle title={t("title")} sub={t("subtitle")} center />}
       footer={
         <PlayFooter divider error={error}>
-          <PlayButton onClick={() => void leave(selected)} busy={saving} disabled={!selected} className="lg:ml-auto lg:w-[12.5rem]">
+          <Button fullWidth onClick={() => void leave(selected)} busy={saving} disabled={!selected} className="lg:ml-auto lg:w-[12.5rem]">
             {t("continue")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

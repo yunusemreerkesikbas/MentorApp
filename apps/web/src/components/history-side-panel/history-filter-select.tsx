@@ -42,7 +42,7 @@ export function HistoryFilterSelect({
         panelRole="listbox"
         menuClassName={
           isLiquid
-            ? "min-w-[8.5rem] max-h-60 overflow-y-auto mentor-scrollarea session-liquid-card !bg-[#1c1917]/90 !backdrop-blur-2xl !border-white/20 shadow-2xl p-1"
+            ? "min-w-[8.5rem] max-h-60 overflow-y-auto mentor-scrollarea session-liquid-card p-1"
             : "min-w-[8rem] max-h-60 overflow-y-auto mentor-scrollarea"
         }
         trigger={({ open, setOpen, menuId }) => (
@@ -56,14 +56,14 @@ export function HistoryFilterSelect({
             className={[
               "flex min-h-8 w-full cursor-pointer items-center justify-between gap-1.5 border px-2.5 py-1.5 text-left text-xs font-semibold transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]",
               isLiquid
-                ? "rounded-full session-liquid-pill hover:border-white/40"
+                ? "rounded-full session-liquid-pill hover:border-[color-mix(in_srgb,var(--color-main)_40%,transparent)]"
                 : "rounded-[var(--radius-card)] hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)]",
             ].join(" ")}
             style={
               isLiquid
                 ? {
                     fontFamily: "var(--font-body)",
-                    color: "#ffffff",
+                    color: "var(--color-main)",
                   }
                 : {
                     backgroundColor: "var(--color-surface)",
@@ -81,9 +81,7 @@ export function HistoryFilterSelect({
               className={`size-3.5 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${
                 open ? "rotate-180" : ""
               }`}
-              style={{
-                color: isLiquid ? "rgba(255, 255, 255, 0.8)" : "var(--color-secondary)",
-              }}
+              style={{ color: "var(--color-secondary)" }}
               strokeWidth={2.25}
               aria-hidden
             />
@@ -100,7 +98,7 @@ export function HistoryFilterSelect({
               onClick={() => onChange(option.value)}
               className={
                 isLiquid
-                  ? "rounded-lg text-xs font-medium text-white/85 hover:text-white"
+                  ? "rounded-lg text-xs font-medium text-[var(--color-main)] hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)]"
                   : ""
               }
             >

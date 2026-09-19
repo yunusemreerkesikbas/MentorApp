@@ -404,14 +404,15 @@ export function StudySessionShell() {
 
   return (
     <main
-      className="relative isolate flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden"
+      className={`relative flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden${
+        groundTheme ? " room-stage overflow-hidden" : ""
+      }`}
+      data-room-theme={groundTheme ?? undefined}
       aria-label={t("title")}
     >
       <h1 className="sr-only">{t("title")}</h1>
       {groundTheme ? (
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <RoomBackdropSlide theme={groundTheme} direction={themeDirection} veilPercent={58} />
-        </div>
+        <RoomBackdropSlide theme={groundTheme} direction={themeDirection} veilPercent={58} />
       ) : null}
       {curtain && !reduceMotion ? (
         <motion.div
@@ -436,13 +437,13 @@ export function StudySessionShell() {
           <button
             type="button"
             onClick={() => setRailOpen(true)}
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             aria-label={t("history_title")}
             data-testid="session-history-rail-list"
           >
             <History
               className="size-5"
-              style={{ color: "#ffffff" }}
+              style={{ color: "var(--color-main)" }}
               strokeWidth={2.25}
               aria-hidden
             />
@@ -452,7 +453,7 @@ export function StudySessionShell() {
         <SessionHistory variant="liquid" />
       </HistorySideRail>
 
-      <div className="flex min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
         {/* Scenery & Settings bar: max-w-2xl allows the 3 pills to sit side-by-side in one row */}
         <div className="mx-auto flex w-full max-w-2xl justify-center px-4 pt-5 lg:px-6 lg:pt-6">
           {renderTopBar(false)}
@@ -467,7 +468,7 @@ export function StudySessionShell() {
           >
             <PanelLeft
               className="size-5"
-              style={{ color: "#ffffff" }}
+              style={{ color: "var(--color-main)" }}
               strokeWidth={2.25}
               aria-hidden
             />
@@ -502,7 +503,7 @@ export function StudySessionShell() {
               {focusingNow !== null ? (
                 <p
                   className="flex items-center gap-1.5 text-center text-sm"
-                  style={{ color: "rgba(255, 255, 255, 0.72)" }}
+                  style={{ color: "var(--color-secondary)" }}
                 >
                   <span
                     aria-hidden
@@ -518,9 +519,9 @@ export function StudySessionShell() {
       </div>
 
       <aside
-        className="flex w-full shrink-0 flex-col gap-4 px-5 pb-8 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:p-4"
+        className="relative z-10 flex w-full shrink-0 flex-col gap-4 px-5 pb-8 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:p-4"
         style={{
-          borderColor: "rgba(255, 255, 255, 0.12)",
+          borderColor: "color-mix(in srgb, var(--color-main) 12%, transparent)",
         }}
       >
         <SessionFocusGoalCard

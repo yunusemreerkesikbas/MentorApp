@@ -32,7 +32,12 @@ export function SessionFocusView({
   phaseMotion,
 }: SessionFocusViewProps) {
   return (
-    <div className="session-focus-theme fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8">
+    <div
+      className={`session-focus-theme fixed inset-0 z-30 flex flex-col items-center justify-center px-5 py-8${
+        groundTheme ? " room-stage" : ""
+      }`}
+      data-room-theme={groundTheme ?? undefined}
+    >
       <SessionFocusBackdrop roomTheme={groundTheme} themeDirection={themeDirection} />
       {/* Top scenery bar anchored at the top edge */}
       <div className="absolute inset-x-0 top-0 z-10 mx-auto flex w-full max-w-2xl justify-center px-5 pt-5">

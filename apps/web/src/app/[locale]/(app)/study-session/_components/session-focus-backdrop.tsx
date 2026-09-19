@@ -8,12 +8,8 @@ import { RoomBackdropSlide } from "./room-backdrop-slide";
 export const SESSION_FOCUS_BG_SRC = "/visuals/session-focus-bg.webp";
 
 /**
- * Immersive focus/break ground: approved visual when present, DESIGN blobs otherwise,
- * plus concentric ripples behind the timer.
- *
- * When the session is seated at a study room, the room's themed ground replaces the solo
- * one — same screen, same timer, different table. The ripples stay either way, so focus mode
- * reads as one thing whether you are alone or at a table.
+ * Immersive focus/break ground: approved visual when present, DESIGN blobs otherwise.
+ * Concentric ripples live on the timer ring so they share its center and diameter.
  */
 export function SessionFocusBackdrop({
   roomTheme = null,
@@ -52,11 +48,6 @@ export function SessionFocusBackdrop({
           />
         </>
       )}
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="session-focus-ripple session-focus-ripple-1" />
-        <span className="session-focus-ripple session-focus-ripple-2" />
-        <span className="session-focus-ripple session-focus-ripple-3" />
-      </div>
     </div>
   );
 }

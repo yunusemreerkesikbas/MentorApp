@@ -3,8 +3,7 @@
 import Image from "next/image";
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { StreamingText } from "@mentor/ui";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button, StreamingText } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
@@ -20,7 +19,7 @@ export function IntroStep({ displayName, onContinue }: { displayName: string; on
       progress={null}
       footer={
         <PlayFooter>
-          <PlayButton onClick={onContinue}>{t("continue")}</PlayButton>
+          <Button fullWidth onClick={onContinue}>{t("continue")}</Button>
         </PlayFooter>
       }
     >

@@ -36,6 +36,23 @@ import { MentorshipLinkService } from "./mentorship-link.service";
  */
 @Injectable()
 export class MentorshipRosterService {
+  async listPlanningTasks(
+    coachId: string,
+    studentId: string,
+    query: import("@mentor/validation").ListMentorshipPlanningTasksInput,
+  ) {
+    await this.linkService.assertEnabled();
+    const link = await this.linkService.requireActiveLink(coachId, studentId);
+    return this.evidence.listPlanningTasks(
+      studentId,
+      link.id,
+      query.from,
+      query.to,
+      query.page,
+      query.pageSize,
+    );
+  }
+
   constructor(
     private readonly links: MentorshipLinkRepository,
     private readonly dropped: MentorshipDroppedAssignmentRepository,

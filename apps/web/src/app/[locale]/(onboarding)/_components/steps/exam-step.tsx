@@ -5,7 +5,7 @@ import { Backpack, GraduationCap, Landmark, type LucideIcon } from "lucide-react
 import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser, ExamType } from "@mentor/types";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button } from "@mentor/ui";
 import { PlayIconWell, PlayOptionRow, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
@@ -69,9 +69,9 @@ export function ExamStep({
       heading={<PuhuBubble title={title} />}
       footer={
         <PlayFooter error={error}>
-          <PlayButton onClick={() => void save()} busy={saving} disabled={!selected}>
+          <Button fullWidth onClick={() => void save()} busy={saving} disabled={!selected}>
             {t("continue")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

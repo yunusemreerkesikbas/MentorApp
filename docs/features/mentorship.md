@@ -211,6 +211,17 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-19 — Editable weekly planning drafts.** The coach's “Haftayı planla” panel now uses
+  Istanbul Monday–Sunday weeks, shows existing tasks alongside draft counts, and lets coaches
+  select their own assignments from this or last week before copying. Edit draft titles,
+  dates, subjects/topics and notes before sending through the existing atomic assignment API.
+  Panel dismissal preserves the week and unfinished editor; page reload does not. Copying never
+  changes the original task. Past dates must be corrected and selections exceeding 21 are refused
+  rather than truncated. The new paginated `planning-tasks` read accepts at most seven days and
+  projects only report-safe fields plus task IDs through the active-link gate. All pages must
+  load before counts are shown. Related: mentorship planning DTO/controller, cohort evidence
+  service/repository, web `planning-*` components and `mentorship-plan.ts`.
+
 - **2026-09-17 — Composer ders/konu uses shared exam taxonomy.** Week composer pickers load the student's family via `GET /v1/content/exams/by-type/:type` and the shared `TaxonomyCascadeSelect` (display-name values for `plan_tasks`). Usage: assign from `/kocluk/students/:id`. Gotcha: still the student's exam, never the coach's. Related: `use-exam-topic-taxonomy.ts`, `exam-taxonomy.ts`, `docs/features/content.md`.
 
 - **2026-09-15 — Coach surface shares Nuton; work-tool rhythm stays.** `/kocluk` dropped

@@ -1,11 +1,11 @@
 {
   "mood": {
-    "VERY_LOW": "Bugün ağır geliyor, biliyorum. Küçük bir mola da yolun parçası.",
+    "VERY_LOW": "Bugün başlamak bile yorucu gelebilir. Biraz soluklanıp kendine alan açabilirsin, çalışmaya ne zaman döneceğine sonra bakarız.",
     "SERIOUS_DISTRESS": "Bunu tek başına taşımak zorunda değilsin. Şimdi güvendiğin birine ulaş; kendine zarar verme riski varsa 112'yi ara veya en yakın acil servise git.",
-    "LOW": "Zor bir gün olabilir. Tek bir küçük adım yeter, gerisi yarına.",
-    "OKAY": "Sakin bir gün. Bir göreve dokun, bu yeterli.",
-    "GOOD": "Enerjin yerinde. Bunu bir küçük adımla gerçek yap.",
-    "GREAT": "Bugün tam kıvamındasın. Bir göreve başla, gerisi gelir."
+    "LOW": "Bugün her şeyi bir arada düşünmek yorucu olabilir. İstersen en tanıdık konudan birkaç soruyla başlayıp devamını nasıl hissettiğine göre seçelim.",
+    "OKAY": "Başlamak için çok istekli hissetmen gerekmiyor. Aklındaki tek bir konuyu seçip kısa bir tekrar yapabilirsin, sonrasında devam edip etmeyeceğine bakarsın.",
+    "GOOD": "İyi hissettiğin bu anda, aklında bekleyen bir konuya yer açabiliriz. Bir çalışma seansı boyunca ona odaklanıp sonunda nelerin netleştiğine bakalım.",
+    "GREAT": "Bugün çalışmaya hevesli olman güzel. Merak ettiğin ya da ertelediğin bir konuyla başlayabilir, mola için de kendine yer bırakabilirsin."
   },
   "motivation": {
     "START": "Bugün küçük bir adım at, yeterli. Yanındayım.",

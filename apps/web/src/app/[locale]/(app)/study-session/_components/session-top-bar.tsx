@@ -1,7 +1,6 @@
 "use client";
 
 import { Focus, Wallpaper } from "lucide-react";
-import type { CSSProperties } from "react";
 import { useTranslations } from "next-intl";
 import type { StudyRoomTheme } from "@mentor/types";
 import type { AmbientTrackId } from "@/lib/ambient-tracks";
@@ -65,15 +64,8 @@ export function SessionTopBar({
 
   return (
     <div
-      className="room-stage flex w-full flex-col items-center gap-2"
-      data-room-theme={activeTheme}
-      style={
-        {
-          "--room-ink-soft": "#ffffff",
-          "--room-accent": "var(--color-progress)",
-          "--room-scrim": "rgba(255, 255, 255, 0.15)",
-        } as CSSProperties
-      }
+      className={`flex w-full flex-col items-center gap-2${isPlain ? "" : " room-stage"}`}
+      data-room-theme={isPlain ? undefined : activeTheme}
     >
       {seatedRoom ? <PlanTaskContextChip title={seatedRoom.name} /> : null}
       <div className="flex max-w-full items-center justify-center gap-2 overflow-x-auto py-0.5 mentor-scrollarea flex-nowrap">

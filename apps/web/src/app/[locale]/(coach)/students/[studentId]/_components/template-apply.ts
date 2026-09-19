@@ -74,7 +74,7 @@ export function buildTemplateDrafts(
     .slice(0, capacity);
 
   let clearedTopics = 0;
-  // Keyless, like `buildRepeatDrafts`: the local row key belongs to the component that renders
+  // Keyless: the local row key belongs to the component that renders
   // the list, not to the data it renders.
   const drafts = taken.map((task): DatedDraft => {
     const dropTopic = examMismatch && task.topic !== null;

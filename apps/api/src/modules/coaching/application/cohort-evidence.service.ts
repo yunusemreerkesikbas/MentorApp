@@ -31,6 +31,17 @@ const REPORT_PLAN_TASK_LIMIT = 120;
 export class CohortEvidenceService {
   constructor(private readonly repo: CohortEvidenceRepository) {}
 
+  listPlanningTasks(
+    studentId: string,
+    linkId: string,
+    from: string,
+    to: string,
+    page: number,
+    pageSize: number,
+  ) {
+    return this.repo.planningTasks(studentId, linkId, from, to, page, pageSize);
+  }
+
   /**
    * Roster metrics for a set of students. Batch — six queries regardless of cohort size.
    * Students with no data at all still get a row (all-zero / null), because "this student has
@@ -47,14 +58,15 @@ export class CohortEvidenceService {
     const since = addDays(today, -(ROSTER_WINDOW_DAYS - 1));
     const sinceDate = new Date(`${since}T00:00:00.000Z`);
 
-    const [sessions, activity, streaks, plans, mocks, moods] = await Promise.all([
-      this.repo.sessionTotalsSince(studentIds, sinceDate),
-      this.repo.activityWindow(studentIds, since),
-      this.repo.streaks(studentIds),
-      this.repo.planTotalsSince(studentIds, since),
-      this.repo.latestMocks(studentIds),
-      this.repo.moodAverageSince(studentIds, since),
-    ]);
+    const [sessions, activity, streaks, plans, mocks, moods] =
+      await Promise.all([
+        this.repo.sessionTotalsSince(studentIds, sinceDate),
+        this.repo.activityWindow(studentIds, since),
+        this.repo.streaks(studentIds),
+        this.repo.planTotalsSince(studentIds, since),
+        this.repo.latestMocks(studentIds),
+        this.repo.moodAverageSince(studentIds, since),
+      ]);
 
     const sessionBy = index(sessions);
     const activityBy = index(activity);
@@ -74,7 +86,8 @@ export class CohortEvidenceService {
         sessions7d: sessionBy.get(studentId)?.sessions ?? 0,
         activeDays7d: activityBy.get(studentId)?.activeDays ?? 0,
         // No plan is not 0% completion — a student who planned nothing has not failed anything.
-        planCompletionRate7d: plan && plan.total > 0 ? plan.done / plan.total : null,
+        planCompletionRate7d:
+          plan && plan.total > 0 ? plan.done / plan.total : null,
         latestMockNet: mock ? Number(mock.totalNet) : null,
         latestMockAt: mock ? mock.takenAt.toISOString() : null,
         previousMockNetAvg:
@@ -122,7 +135,12 @@ export class CohortEvidenceService {
       this.repo.streaks(ids),
       this.repo.planTotalsSince(ids, since7),
       this.repo.mockTrend(studentId, REPORT_MOCK_LIMIT),
-      this.repo.planTaskRows(studentId, sincePlan, REPORT_PLAN_TASK_LIMIT, mentorshipLinkId),
+      this.repo.planTaskRows(
+        studentId,
+        sincePlan,
+        REPORT_PLAN_TASK_LIMIT,
+        mentorshipLinkId,
+      ),
       this.repo.moodTrend(studentId, sinceMood),
     ]);
 
@@ -144,7 +162,8 @@ export class CohortEvidenceService {
         focusMinutes28d: sessions28[0]?.focusMinutes ?? 0,
         activeDays28d: activity28[0]?.activeDays ?? 0,
       },
-      planCompletionRate7d: plan && plan.total > 0 ? plan.done / plan.total : null,
+      planCompletionRate7d:
+        plan && plan.total > 0 ? plan.done / plan.total : null,
       mockTrend: mockTrend.map((row) => ({
         takenAt: row.takenAt.toISOString(),
         totalNet: Number(row.totalNet),
