@@ -145,6 +145,23 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-19 · Session done overlay + shared CompletionSummary.** Finishing a focus session
+  keeps the frozen room/focus ground, blurs it, and centers a reusable completion card
+  (`CompletionOverlay` + `CompletionSummary` in `@mentor/ui`). Stars fill from
+  elapsed/planned in 0.5 steps (never 0; too-short sessions stay at 1). Stat rows show
+  time, streak, and daily goal (subject or auto-completed plan task if no goal). Mood
+  check-in stays on the card; one primary CTA (new session) plus text links for remind /
+  share / dashboard. Overlay is not dismissible (no X, no backdrop/Escape close) and sits
+  at z-50 so streak/toast/dialog can still stack above. Usage: other completed surfaces
+  can reuse the card without the overlay. Gotcha: star math lives in web
+  (`sessionStarFill`), not the UI package. Related: `completion-overlay.tsx`,
+  `completion-summary.tsx`, `completion-stars.tsx`, `session-done-state.tsx`,
+  `study-session-shell.tsx`, `lib/completion-stars.ts`.
+
+- **2026-09-18 · Coach note speaking choreography.** The cloud finishes its 250ms entrance before the shared `StreamingText` word reveal starts. Puhu alternates the existing rest/talk-closed frames every 150ms with the onboarding-style 2px movement only while text streams, then returns to idle. Loading uses the thinking frame; reduced motion shows the full text without speaking movement. Usage: unchanged `PuhuSpeechModal` props, including Free and Premium notes. Gotchas: preserve mounted image frames to avoid decode flicker; closing or loading again resets the speech lifecycle and cleans up mascot timers. Related: `puhu-speech-modal.tsx`, `puhu-speaking-mascot.tsx`.
+
+- **2026-09-18 · Responsive coach thought cloud and mood copy.** Replaced the rectangular speech balloon with a theme-aware SVG cloud and two CSS thought dots. Mobile places Puhu underneath; desktop keeps Puhu to the left. Text remains selectable, uses 16px body type, and scrolls inside the cloud for long reflections. Usage: existing `PuhuSpeechModal` callers need no changes. Free mood templates now offer two-sentence, mood-specific companionship in TR/EN; crisis copy and AI eligibility are unchanged. Related: `apps/web/src/components/puhu-thought-cloud.{tsx,css}`, `puhu-speech-modal.tsx`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
 - **2026-09-18 — Notebook add no longer auto-fills ders from AI.** Uploading a mistake photo
   no longer calls `POST /v1/coaching/notebook/entries/prelabel` or shows "AI öneriyor".
   `TaxonomyCascadeSelect` stays a manual ders/konu pick. Usage: add a card, choose subject
@@ -4425,3 +4442,18 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   are unchanged. On narrow screens the focus controls and period selector expand safely to one row.
   Related: `analysis-review-progress.tsx`, `analysis-review-progress.module.css`,
   `analysis-improvement-loop-card.tsx`.
+
+- **Seans light tema kontrastı (2026-09-19)** — Idle `/seans` Liquid Glass kromu `#ffffff`
+  mürekkep ve neredeyse şeffaf cam kullanıyordu; light temada `--color-bg` de beyaz olduğu için
+  sayfa "yok" gibi duruyordu. İlk geçiş `--color-main` (#111) karışımı kullandı ve light
+  zeminde soğuk gri kuyular üretti. Cam dolgusu `--color-surface`, kenar
+  `color-mix(..., var(--color-progress) ...)` (Mentor mavi), gölge `--shadow-card`.
+  Sahne / focus (`.room-stage`, `.session-focus-theme`) eski buzlu cam: yarı saydam
+  beyaz frost + `--room-ink`, fotoğraf kartların içinden görünür. **Kullanım:** Sade
+  görünüm beyaz surface; tema açıkken cam. **Gotcha:** Dolguda `--color-main` karıştırma;
+  sahne camını düz light idle'a taşıma. Odakta pause/play `session-liquid-pill` (opak
+  obsidyen değil). Dalga halkaları sayaç çapından (`--session-ring-size`) ölçeklenir,
+  viewport ortasına değil ring kutusuna oturur.
+  **İlgili:** `packages/ui/src/theme.css`, `study-session-shell.tsx`, `session-timer-ring.tsx`,
+  `session-top-bar.tsx`, `session-controls.tsx`, `session-setup-summary.tsx`,
+  `session-focus-view.tsx`, `session-history.tsx`, `history-side-panel.tsx`.

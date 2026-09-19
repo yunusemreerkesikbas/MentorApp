@@ -423,6 +423,27 @@ export interface RegisterCoachDto { [key: string]: unknown }
 
 export interface UpdateCoachProfileDto { [key: string]: unknown }
 
+export interface MentorshipPlanningTaskResponseDto {
+  id: string;
+  taskDate: string;
+  title: string;
+  /** @nullable */
+  subject: string | null;
+  /** @nullable */
+  topic: string | null;
+  status: string;
+  assignedByCoach: boolean;
+  /** @nullable */
+  coachNote: string | null;
+}
+
+export interface MentorshipPlanningPageResponseDto {
+  items: MentorshipPlanningTaskResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 export interface CreateMentorshipAssignmentsDto { [key: string]: unknown }
 
 export interface MentorshipCoachNoteDto { [key: string]: unknown }
@@ -1258,6 +1279,20 @@ export const MentorshipFollowupControllerListFollowupsView = {
 } as const;
 
 export type MentorshipFollowupControllerListSharedFollowupsParams = {
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type MentorshipCoachControllerListPlanningTasksParams = {
+from: string;
+to: string;
 /**
  * @minimum 1
  */
@@ -3213,6 +3248,39 @@ export const getContentControllerListExamsUrl = () => {
 export const contentControllerListExams = async ( options?: RequestInit): Promise<contentControllerListExamsResponse> => {
   
   return http<contentControllerListExamsResponse>(getContentControllerListExamsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type contentControllerCurrentExamByFamilyResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type contentControllerCurrentExamByFamilyResponseSuccess = (contentControllerCurrentExamByFamilyResponse200) & {
+  headers: Headers;
+};
+;
+
+export type contentControllerCurrentExamByFamilyResponse = (contentControllerCurrentExamByFamilyResponseSuccess)
+
+export const getContentControllerCurrentExamByFamilyUrl = (type: string,) => {
+
+
+  
+
+  return `/v1/content/exams/by-type/${type}`
+}
+
+export const contentControllerCurrentExamByFamily = async (type: string, options?: RequestInit): Promise<contentControllerCurrentExamByFamilyResponse> => {
+  
+  return http<contentControllerCurrentExamByFamilyResponse>(getContentControllerCurrentExamByFamilyUrl(type),
   {      
     ...options,
     method: 'GET'
@@ -9251,6 +9319,36 @@ export const mentorshipApplicationControllerUpdateProfile = async (updateCoachPr
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       updateCoachProfileDto,)
+  }
+);}
+
+
+
+export const getMentorshipCoachControllerListPlanningTasksUrl = (studentId: string,
+    params: MentorshipCoachControllerListPlanningTasksParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/mentorship/students/${studentId}/planning-tasks?${stringifiedParams}` : `/v1/mentorship/students/${studentId}/planning-tasks`
+}
+
+export const mentorshipCoachControllerListPlanningTasks = async (studentId: string,
+    params: MentorshipCoachControllerListPlanningTasksParams, options?: RequestInit): Promise<MentorshipPlanningPageResponseDto> => {
+  
+  return http<MentorshipPlanningPageResponseDto>(getMentorshipCoachControllerListPlanningTasksUrl(studentId,params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 

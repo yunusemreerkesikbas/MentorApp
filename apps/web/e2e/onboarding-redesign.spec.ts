@@ -57,6 +57,18 @@ test("welcome skip opens the final account choice and desktop auth split", async
   await expect(page).toHaveURL(/\/kayit$/);
   if (testInfo.project.name === "desktop-chromium") {
     await expect(page.getByRole("heading", { name: "Yolculuğun burada başlıyor." })).toBeVisible();
+    await expect(page.locator("[data-auth-narrative-bubble]")).toBeVisible();
+
+    const desktopLayout = await page.locator(".auth-sheet").evaluate((sheet) => {
+      const scrollArea = sheet.querySelector<HTMLElement>(".mentor-scrollarea");
+      const bounds = sheet.getBoundingClientRect();
+      return {
+        innerOverflowY: scrollArea ? getComputedStyle(scrollArea).overflowY : null,
+        rightInset: window.innerWidth - bounds.right,
+      };
+    });
+    expect(desktopLayout.innerOverflowY).not.toBe("auto");
+    expect(desktopLayout.rightInset).toBeGreaterThanOrEqual(64);
   }
   await expect(page.getByRole("heading", { name: "Hesap oluştur" })).toBeVisible();
 });
@@ -71,8 +83,12 @@ test("welcome remains immediately usable with reduced motion", async ({ page }) 
 test("welcome steps through the day with Devam et and the slide dots", async ({ page }) => {
   await page.goto("/");
 
+  const copyLayer = page.locator('[aria-live="polite"] .t-stagger');
+  await copyLayer.evaluate((element) => element.setAttribute("data-transition-probe", "stable"));
+
   await page.getByRole("button", { name: "Devam et" }).click();
   await expect(page.getByRole("heading", { name: "Zorlandığında AI koçun yanında." })).toBeVisible();
+  await expect(copyLayer).toHaveAttribute("data-transition-probe", "stable");
   await expect(page.locator("video")).toHaveCount(4);
 
   await page.getByRole("button", { name: "3. slayta geç" }).click();

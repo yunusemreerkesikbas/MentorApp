@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { BriefcaseBusiness, Ellipsis, Flag, House, ShieldCheck, Sprout, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button } from "@mentor/ui";
 import { PlayGridCard, PlayIconWell, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
@@ -45,9 +45,9 @@ export function WhyStep({
       heading={<PuhuBubble title={t("title")} sub={selected ? t(`reactions.${selected}`) : t("subtitle")} />}
       footer={
         <PlayFooter>
-          <PlayButton disabled={!selected} onClick={() => onContinue(selected)}>
+          <Button fullWidth disabled={!selected} onClick={() => onContinue(selected)}>
             {t("continue")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

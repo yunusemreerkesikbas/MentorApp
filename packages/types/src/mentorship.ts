@@ -238,6 +238,11 @@ export interface MentorshipReportPlanTaskDto {
   coachNote: string | null;
 }
 
+/** Safe task projection for the human coach's weekly composer. */
+export interface MentorshipPlanningTaskDto extends MentorshipReportPlanTaskDto {
+  id: string;
+}
+
 /**
  * A coach-assigned task the student removed. The report otherwise shows only the LIVING plan, so
  * without this a dropped assignment reads as one that was never given.

@@ -5,8 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Backpack, Bell, CalendarDays, GraduationCap, Landmark, Target, Timer, type LucideIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { AuthUser, CareerGroup } from "@mentor/types";
-import { StreamingText } from "@mentor/ui";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button, StreamingText } from "@mentor/ui";
 import { PlayIconWell, type PlayWell } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { useRouter } from "@/i18n/navigation";
@@ -111,7 +110,7 @@ export function CompleteStep({
           </ul>
         </section>
         <PlayFooter>
-          <PlayButton onClick={finish}>{t("go_panel")}</PlayButton>
+          <Button fullWidth onClick={finish}>{t("go_panel")}</Button>
         </PlayFooter>
       </div>
     </main>

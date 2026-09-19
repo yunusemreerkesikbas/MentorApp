@@ -63,7 +63,14 @@ describe("mentorship (e2e)", () => {
     const email = `w8-${label}-${stamp}@test.local`;
     const res = await http()
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `W8 ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
+      .send({
+        email,
+        password: "Sifre1234",
+        displayName: `W8 ${label}`,
+        kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+      });
     expect(res.status).toBe(201);
     token[label] = res.body.accessToken;
     userId[label] = res.body.user.id;
@@ -77,14 +84,21 @@ describe("mentorship (e2e)", () => {
    * and an ACTIVE registry row. Without those the invite code is refused, which is the gate doing
    * its job — but this suite is about the link lifecycle, not the gate, which has its own spec.
    */
-  const grantRoleAndRelogin = async (label: string, role: string, stamp: number): Promise<void> => {
+  const grantRoleAndRelogin = async (
+    label: string,
+    role: string,
+    stamp: number,
+  ): Promise<void> => {
     await svc(async (c) => {
-      await c.query("update users set roles = array_append(roles,$1) where id=$2", [
-        role,
-        userId[label],
-      ]);
+      await c.query(
+        "update users set roles = array_append(roles,$1) where id=$2",
+        [role, userId[label]],
+      );
       if (role === UserRole.COACH) {
-        await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
+        await c.query(
+          "update users set email_verified_at = now() where id = $1",
+          [userId[label]],
+        );
         await c.query(
           "insert into mentorship_coach_applications (user_id, status, headline, bio) values ($1, $2, $3, $4) on conflict (user_id) do nothing",
           [userId[label], "ACTIVE", "Test kocu", "Test koc profili."],
@@ -93,18 +107,24 @@ describe("mentorship (e2e)", () => {
     });
     const login = await http()
       .post("/v1/auth/login")
-      .send({ email: `w8-${label}-${stamp}@test.local`, password: "Sifre1234" });
+      .send({
+        email: `w8-${label}-${stamp}@test.local`,
+        password: "Sifre1234",
+      });
     expect(login.status).toBe(200);
     token[label] = login.body.accessToken;
   };
 
   beforeAll(async () => {
     process.env.DATABASE_URL =
-      process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+      process.env.TEST_DATABASE_URL ??
+      "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
 
     const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -119,13 +139,17 @@ describe("mentorship (e2e)", () => {
     await grantRoleAndRelogin("coach2", UserRole.COACH, stamp);
     await grantRoleAndRelogin("admin", UserRole.SUPER_ADMIN, stamp);
 
-    await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+    await app
+      .get(ConfigRegistryService)
+      .set(userId.admin!, "mentorship.enabled", true);
   }, 120_000);
 
   afterAll(async () => {
     if (pool) {
       await svc(async (c) => {
-        await c.query("delete from config_overrides where key like 'mentorship.%'");
+        await c.query(
+          "delete from config_overrides where key like 'mentorship.%'",
+        );
       });
     }
     await app?.close();
@@ -138,8 +162,12 @@ describe("mentorship (e2e)", () => {
   });
 
   it("keeps the coach surface behind the COACH role", async () => {
-    expect((await http().get("/v1/mentorship/overview").set(auth("student"))).status).toBe(403);
-    expect((await http().get("/v1/mentorship/students").set(auth("student"))).status).toBe(403);
+    expect(
+      (await http().get("/v1/mentorship/overview").set(auth("student"))).status,
+    ).toBe(403);
+    expect(
+      (await http().get("/v1/mentorship/students").set(auth("student"))).status,
+    ).toBe(403);
   });
 
   it("shows a fresh coach an empty seat count and the scope they are bound by", async () => {
@@ -164,7 +192,9 @@ describe("mentorship (e2e)", () => {
   });
 
   it("issues an invite code the student can preview before consenting", async () => {
-    const rotate = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
+    const rotate = await http()
+      .post("/v1/mentorship/invite-code")
+      .set(auth("coach"));
     expect(rotate.status).toBe(200);
     expect(rotate.body.code).toMatch(/^MENTOR-KOC-[0-9A-F]{12}$/);
     inviteCode = rotate.body.code;
@@ -221,25 +251,35 @@ describe("mentorship (e2e)", () => {
     expect(accept.body.status).toBe("ACTIVE");
     expect(accept.body.coachDisplayName).toBe("W8 coach");
 
-    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach"));
     expect(roster.status).toBe(200);
     expect(roster.body.total).toBe(1);
     expect(roster.body.items[0].studentId).toBe(userId.student);
 
-    const other = await http().get("/v1/mentorship/students").set(auth("coach2"));
+    const other = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach2"));
     expect(other.body.total).toBe(0);
 
     // The seat counter is what makes the quota visible to the coach, so it has to move with the
     // roster rather than being a number the header computes on its own.
-    const overview = await http().get("/v1/mentorship/overview").set(auth("coach"));
+    const overview = await http()
+      .get("/v1/mentorship/overview")
+      .set(auth("coach"));
     expect(overview.body.activeStudents).toBe(1);
     expect(overview.body.inviteCode.code).toBe(inviteCode);
-    expect((await http().get("/v1/mentorship/overview").set(auth("coach2"))).body.activeStudents)
-      .toBe(0);
+    expect(
+      (await http().get("/v1/mentorship/overview").set(auth("coach2"))).body
+        .activeStudents,
+    ).toBe(0);
   });
 
   it("carries the roster metrics a coach acts on", async () => {
-    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach"));
     const row = roster.body.items[0];
     expect(row.studentId).toBe(userId.student);
     expect(row.status).toBe("ACTIVE");
@@ -267,7 +307,10 @@ describe("mentorship (e2e)", () => {
       studentDisplayName: "W8 student",
       planCompletionRate7d: null,
     });
-    expect(report.body.activity).toMatchObject({ currentStreak: 0, longestStreak: 0 });
+    expect(report.body.activity).toMatchObject({
+      currentStreak: 0,
+      longestStreak: 0,
+    });
     expect(report.body.mockTrend).toEqual([]);
     expect(report.body.planTasks).toEqual([]);
     expect(report.body.moodTrend).toEqual([]);
@@ -286,12 +329,17 @@ describe("mentorship (e2e)", () => {
   });
 
   it("never leaks a student's PII or free text through the coach surface", async () => {
-    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach"));
     const report = await http()
       .get(`/v1/mentorship/students/${userId.student}`)
       .set(auth("coach"));
     // Sentinel: an accidental `...row` spread or a widened select would surface one of these.
-    for (const body of [JSON.stringify(roster.body), JSON.stringify(report.body)]) {
+    for (const body of [
+      JSON.stringify(roster.body),
+      JSON.stringify(report.body),
+    ]) {
       for (const forbidden of [
         "email",
         "passwordHash",
@@ -310,7 +358,9 @@ describe("mentorship (e2e)", () => {
   });
 
   it("refuses a second coach while one is active", async () => {
-    const rotate = await http().post("/v1/mentorship/invite-code").set(auth("coach2"));
+    const rotate = await http()
+      .post("/v1/mentorship/invite-code")
+      .set(auth("coach2"));
     const res = await http()
       .post("/v1/mentorship/invitations/accept")
       .set(auth("student"))
@@ -329,7 +379,9 @@ describe("mentorship (e2e)", () => {
   });
 
   it("rotating the code invalidates the previous one", async () => {
-    const rotate = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
+    const rotate = await http()
+      .post("/v1/mentorship/invite-code")
+      .set(auth("coach"));
     expect(rotate.body.code).not.toBe(inviteCode);
     const stale = await http()
       .post("/v1/mentorship/invitations/preview")
@@ -341,7 +393,9 @@ describe("mentorship (e2e)", () => {
 
   it("SUPER_ADMIN passes @Roles(COACH) but the link gate still refuses", async () => {
     // RolesGuard grants admins any @Roles(); the gate is what actually protects student data.
-    const roster = await http().get("/v1/mentorship/students").set(auth("admin"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("admin"));
     expect(roster.status).toBe(200);
     expect(roster.body.total).toBe(0);
 
@@ -352,14 +406,18 @@ describe("mentorship (e2e)", () => {
   });
 
   it("shows the student who their coach is and what that coach sees", async () => {
-    const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+    const mine = await http()
+      .get("/v1/mentorship/my-coach")
+      .set(auth("student"));
     expect(mine.status).toBe(200);
     expect(mine.body.coachDisplayName).toBe("W8 coach");
     // Length, not contents: the two literal lists above already pin what the scope IS. What this
     // one guards is that the student's own screen and the consent screen never drift apart.
     expect(mine.body.dataScope).toHaveLength(6);
 
-    const none = await http().get("/v1/mentorship/my-coach").set(auth("outsider"));
+    const none = await http()
+      .get("/v1/mentorship/my-coach")
+      .set(auth("outsider"));
     expect(none.status).toBe(200);
     expect(none.body).toEqual({});
   });
@@ -385,10 +443,20 @@ describe("mentorship (e2e)", () => {
       ).status,
     ).toBe(204);
 
-    expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(204);
+    expect(
+      (await http().delete("/v1/mentorship/my-coach").set(auth("student")))
+        .status,
+    ).toBe(204);
 
-    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach"));
     expect(roster.body.total).toBe(0);
+    const planningAfterEnd = await http()
+      .get(`/v1/mentorship/students/${userId.student}/planning-tasks`)
+      .query({ from: isoDaysFromNow(0), to: isoDaysFromNow(0) })
+      .set(auth("coach"));
+    expect(planningAfterEnd.status).toBe(404);
 
     const history = await http()
       .get("/v1/mentorship/students?status=ENDED")
@@ -415,11 +483,18 @@ describe("mentorship (e2e)", () => {
 
     // The report stays shut too.
     expect(
-      (await http().get(`/v1/mentorship/students/${userId.student}`).set(auth("coach"))).status,
+      (
+        await http()
+          .get(`/v1/mentorship/students/${userId.student}`)
+          .set(auth("coach"))
+      ).status,
     ).toBe(404);
 
     // Ending is idempotent from the student's side: there is nothing left to end.
-    expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(404);
+    expect(
+      (await http().delete("/v1/mentorship/my-coach").set(auth("student")))
+        .status,
+    ).toBe(404);
   });
 
   it("lets a re-invited student return (the ENDED row is revived, not duplicated)", async () => {
@@ -429,16 +504,24 @@ describe("mentorship (e2e)", () => {
       .send({ code: inviteCode });
     expect(accept.status).toBe(200);
 
-    const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+    const roster = await http()
+      .get("/v1/mentorship/students")
+      .set(auth("coach"));
     expect(roster.body.total).toBe(1);
-    const history = await http().get("/v1/mentorship/students?status=ENDED").set(auth("coach"));
+    const history = await http()
+      .get("/v1/mentorship/students?status=ENDED")
+      .set(auth("coach"));
     expect(history.body.total).toBe(0);
 
     // Revival reuses the very row that was ended, so `end()` has to blank the note or a sentence
     // from a relationship both sides walked away from would reappear months later.
-    const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+    const mine = await http()
+      .get("/v1/mentorship/my-coach")
+      .set(auth("student"));
     expect(mine.body.coachNote).toBeNull();
-    expect(JSON.stringify(mine.body)).not.toContain("Bağlantı bitmeden önceki not");
+    expect(JSON.stringify(mine.body)).not.toContain(
+      "Bağlantı bitmeden önceki not",
+    );
 
     // The mark goes with it, for the same reason: a revived row carrying an old "handled" would
     // open the new relationship looking calm.
@@ -461,7 +544,10 @@ describe("mentorship (e2e)", () => {
       // The student sees it in the plan screen they already open — no second to-do list.
       const plan = await http().get("/v1/plan-tasks").set(auth("student"));
       const mine = plan.body.items.find((t: { id: string }) => t.id === taskId);
-      expect(mine).toMatchObject({ title: "Paragraf 20 soru", status: "PENDING" });
+      expect(mine).toMatchObject({
+        title: "Paragraf 20 soru",
+        status: "PENDING",
+      });
       expect(mine.origin.type).toBe("MENTORSHIP");
     });
 
@@ -472,6 +558,69 @@ describe("mentorship (e2e)", () => {
         .send({ tasks: [{ title: "Sızıntı" }] });
       expect(res.status).toBe(404);
       expect(res.body.code).toBe("MENTORSHIP_LINK_NOT_FOUND");
+    });
+
+    it("reads a bounded planning week with pagination and no private fields", async () => {
+      const from = isoDaysFromNow(0);
+      const url = `/v1/mentorship/students/${userId.student}/planning-tasks`;
+      const own = await http()
+        .post("/v1/plan-tasks")
+        .set(auth("student"))
+        .send({
+          title: "Personal planning task",
+          description: "PRIVATE planning note",
+          taskDate: from,
+        });
+      expect(own.status).toBe(201);
+      const first = await http()
+        .get(url)
+        .query({ from, to: from, pageSize: 1 })
+        .set(auth("coach"));
+      expect(first.status).toBe(200);
+      expect(first.body.total).toBeGreaterThanOrEqual(2);
+      expect(first.body.items).toHaveLength(1);
+      const second = await http()
+        .get(url)
+        .query({ from, to: from, page: 2, pageSize: 1 })
+        .set(auth("coach"));
+      expect(second.body.items[0].id).not.toBe(first.body.items[0].id);
+      const all = await http()
+        .get(url)
+        .query({ from, to: from, pageSize: 100 })
+        .set(auth("coach"));
+      expect(all.body.items).toContainEqual(
+        expect.objectContaining({
+          id: own.body.id,
+          assignedByCoach: false,
+          coachNote: null,
+        }),
+      );
+      expect(JSON.stringify(all.body)).not.toContain("PRIVATE planning note");
+      for (const row of all.body.items)
+        expect(row).not.toHaveProperty("description");
+      expect(
+        (await http().get(url).query({ from, to: from }).set(auth("coach2")))
+          .status,
+      ).toBe(404);
+      expect(
+        (await http().get(url).query({ from, to: from }).set(auth("admin")))
+          .status,
+      ).toBe(404);
+      expect(
+        (
+          await http()
+            .get(url)
+            .query({ from, to: isoDaysFromNow(7) })
+            .set(auth("coach"))
+        ).status,
+      ).toBe(400);
+      expect(
+        (
+          await http()
+            .delete(`/v1/plan-tasks/${own.body.id}`)
+            .set(auth("student"))
+        ).status,
+      ).toBe(204);
     });
 
     it("lets the student complete it", async () => {
@@ -510,7 +659,8 @@ describe("mentorship (e2e)", () => {
 
     it("still lets the student delete it — the plan stays theirs", async () => {
       expect(
-        (await http().delete(`/v1/plan-tasks/${taskId}`).set(auth("student"))).status,
+        (await http().delete(`/v1/plan-tasks/${taskId}`).set(auth("student")))
+          .status,
       ).toBe(204);
     });
 
@@ -522,9 +672,8 @@ describe("mentorship (e2e)", () => {
       // best-effort"), so the listener chain — link lookup, identity lookup, the notification
       // write — lands after the DELETE response, not inside it. Poll instead of asserting once,
       // same pattern as the process-jobs cron test below.
-      const dropped = await pollForNotification(
-        "coach",
-        (n) => n.body.includes("Paragraf 20 soru"),
+      const dropped = await pollForNotification("coach", (n) =>
+        n.body.includes("Paragraf 20 soru"),
       );
       expect(dropped).toBeDefined();
       expect(dropped!.linkUrl).toBe(`/students/${userId.student}`);
@@ -533,8 +682,11 @@ describe("mentorship (e2e)", () => {
     it("told the coach once when the student first completed one", async () => {
       // The earlier "lets the student complete it" case already produced this evening's single
       // progress notification; assert it landed before the next case leans on that fact.
-      const progressed = await pollForNotification("coach", (n) =>
-        n.linkUrl === `/students/${userId.student}` && n.body.includes("verdiğin bir görevi"),
+      const progressed = await pollForNotification(
+        "coach",
+        (n) =>
+          n.linkUrl === `/students/${userId.student}` &&
+          n.body.includes("verdiğin bir görevi"),
       );
       expect(progressed).toBeDefined();
     });
@@ -556,7 +708,8 @@ describe("mentorship (e2e)", () => {
         });
       expect(assign.status).toBe(201);
 
-      const before = (await http().get("/v1/notifications").set(auth("coach"))).body.items.length;
+      const before = (await http().get("/v1/notifications").set(auth("coach")))
+        .body.items.length;
       for (const created of assign.body) {
         const done = await http()
           .patch(`/v1/plan-tasks/${created.id}`)
@@ -567,12 +720,15 @@ describe("mentorship (e2e)", () => {
 
       // Give the fire-and-forget listener chain room to land anything it was going to land.
       await new Promise((resolve) => setTimeout(resolve, 400));
-      const after = (await http().get("/v1/notifications").set(auth("coach"))).body.items.length;
+      const after = (await http().get("/v1/notifications").set(auth("coach")))
+        .body.items.length;
       expect(after).toBe(before);
     });
 
     it("refuses an assignment beyond the horizon", async () => {
-      const farOff = new Date(Date.now() + 200 * 86_400_000).toISOString().slice(0, 10);
+      const farOff = new Date(Date.now() + 200 * 86_400_000)
+        .toISOString()
+        .slice(0, 10);
       const res = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
@@ -585,7 +741,9 @@ describe("mentorship (e2e)", () => {
       const res = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
-        .send({ tasks: [{ title: "Not denemesi", description: "koçtan not" }] });
+        .send({
+          tasks: [{ title: "Not denemesi", description: "koçtan not" }],
+        });
       expect(res.status).toBe(400);
       expect(res.body.code).toBe("VALIDATION_ERROR");
     });
@@ -614,7 +772,9 @@ describe("mentorship (e2e)", () => {
     });
 
     it("refuses a 22nd task rather than silently truncating the week", async () => {
-      const tasks = Array.from({ length: 22 }, (_, i) => ({ title: `Fazla ${i}` }));
+      const tasks = Array.from({ length: 22 }, (_, i) => ({
+        title: `Fazla ${i}`,
+      }));
       const res = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
@@ -638,18 +798,24 @@ describe("mentorship (e2e)", () => {
       const assign = await http()
         .post(`/v1/mentorship/students/${userId.student}/assignments`)
         .set(auth("coach"))
-        .send({ tasks: [{ title: "Taşınacak görev", taskDate: isoDaysFromNow(1) }] });
+        .send({
+          tasks: [{ title: "Taşınacak görev", taskDate: isoDaysFromNow(1) }],
+        });
       expect(assign.status).toBe(201);
 
       const moved = await http()
-        .patch(`/v1/mentorship/students/${userId.student}/assignments/${assign.body[0].id}`)
+        .patch(
+          `/v1/mentorship/students/${userId.student}/assignments/${assign.body[0].id}`,
+        )
         .set(auth("coach"))
         .send({ taskDate: isoDaysFromNow(2) });
       expect(moved.status).toBe(200);
 
       const changed = await pollForNotification(
         "student",
-        (n) => n.linkUrl === `/plan?date=${isoDaysFromNow(2)}` && n.body.includes("değişiklik"),
+        (n) =>
+          n.linkUrl === `/plan?date=${isoDaysFromNow(2)}` &&
+          n.body.includes("değişiklik"),
       );
       expect(changed).toBeDefined();
     });
@@ -675,7 +841,9 @@ describe("mentorship (e2e)", () => {
         notedTaskId = assign.body[0].id;
 
         const plan = await http().get("/v1/plan-tasks").set(auth("student"));
-        const mine = plan.body.items.find((t: { id: string }) => t.id === notedTaskId);
+        const mine = plan.body.items.find(
+          (t: { id: string }) => t.id === notedTaskId,
+        );
         expect(mine).toMatchObject({
           topic: "Problemler",
           coachNote: "Netin düştü, bu hafta problemlere ağırlık ver.",
@@ -701,7 +869,9 @@ describe("mentorship (e2e)", () => {
           .send({ status: "DONE", coachNote: "Koç böyle demedi" });
         expect(alongside.status).toBe(200);
         expect(alongside.body.status).toBe("DONE");
-        expect(alongside.body.coachNote).toBe("Netin düştü, bu hafta problemlere ağırlık ver.");
+        expect(alongside.body.coachNote).toBe(
+          "Netin düştü, bu hafta problemlere ağırlık ver.",
+        );
       });
 
       it("is read back to the coach who wrote it", async () => {
@@ -724,28 +894,44 @@ describe("mentorship (e2e)", () => {
         const assign = await http()
           .post(`/v1/mentorship/students/${userId.student}/assignments`)
           .set(auth("coach"))
-          .send({ tasks: [{ title: "Silinecek deneme", taskDate: isoDaysFromNow(1) }] });
+          .send({
+            tasks: [{ title: "Silinecek deneme", taskDate: isoDaysFromNow(1) }],
+          });
         expect(assign.status).toBe(201);
 
         expect(
-          (await http().delete(`/v1/plan-tasks/${assign.body[0].id}`).set(auth("student"))).status,
+          (
+            await http()
+              .delete(`/v1/plan-tasks/${assign.body[0].id}`)
+              .set(auth("student"))
+          ).status,
         ).toBe(204);
 
         // The listener writes off a fire-and-forget emit, so the row lands a beat after the 204.
-        let report: { body: { droppedAssignments: { title: string }[]; planTasks: unknown[] } };
+        let report: {
+          body: {
+            droppedAssignments: { title: string }[];
+            planTasks: unknown[];
+          };
+        };
         for (let attempt = 0; ; attempt++) {
           report = await http()
             .get(`/v1/mentorship/students/${userId.student}`)
             .set(auth("coach"));
           if (
-            report.body.droppedAssignments.some((row) => row.title === "Silinecek deneme") ||
+            report.body.droppedAssignments.some(
+              (row) => row.title === "Silinecek deneme",
+            ) ||
             attempt === 19
           )
             break;
           await new Promise((resolve) => setTimeout(resolve, 50));
         }
         expect(report.body.droppedAssignments).toContainEqual(
-          expect.objectContaining({ title: "Silinecek deneme", taskDate: isoDaysFromNow(1) }),
+          expect.objectContaining({
+            title: "Silinecek deneme",
+            taskDate: isoDaysFromNow(1),
+          }),
         );
         // And the plan itself really did lose it: the log records a deletion, it does not undo one.
         expect(
@@ -759,11 +945,15 @@ describe("mentorship (e2e)", () => {
         // End the link, hand the student to coach2, and look again. The task survives (it is the
         // student's work); the previous coach's instruction is not the successor's to read.
         expect(
-          (await http().delete(`/v1/mentorship/students/${userId.student}`).set(auth("coach")))
-            .status,
+          (
+            await http()
+              .delete(`/v1/mentorship/students/${userId.student}`)
+              .set(auth("coach"))
+          ).status,
         ).toBe(204);
-        const code2 = (await http().post("/v1/mentorship/invite-code").set(auth("coach2"))).body
-          .code;
+        const code2 = (
+          await http().post("/v1/mentorship/invite-code").set(auth("coach2"))
+        ).body.code;
         expect(
           (
             await http()
@@ -802,13 +992,19 @@ describe("mentorship (e2e)", () => {
         ).status,
       ).toBe(204);
 
-      const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
-      expect(mine.body.coachNote).toMatchObject({ body: "Bu hafta paragrafa ağırlık ver." });
+      const mine = await http()
+        .get("/v1/mentorship/my-coach")
+        .set(auth("student"));
+      expect(mine.body.coachNote).toMatchObject({
+        body: "Bu hafta paragrafa ağırlık ver.",
+      });
 
       const report = await http()
         .get(`/v1/mentorship/students/${userId.student}`)
         .set(auth("coach2"));
-      expect(report.body.coachNote).toMatchObject({ body: "Bu hafta paragrafa ağırlık ver." });
+      expect(report.body.coachNote).toMatchObject({
+        body: "Bu hafta paragrafa ağırlık ver.",
+      });
     });
 
     it("refuses a coach with no active link — 404, not 403", async () => {
@@ -830,13 +1026,14 @@ describe("mentorship (e2e)", () => {
             .send({ body: null })
         ).status,
       ).toBe(204);
-      const mine = await http().get("/v1/mentorship/my-coach").set(auth("student"));
+      const mine = await http()
+        .get("/v1/mentorship/my-coach")
+        .set(auth("student"));
       expect(mine.body.coachNote).toBeNull();
     });
-
   });
 
-  describe("the coach's \"I dealt with this\" mark", () => {
+  describe('the coach\'s "I dealt with this" mark', () => {
     const attention = (as: string, attended: boolean) =>
       http()
         .put(`/v1/mentorship/students/${userId.student}/attention`)
@@ -862,7 +1059,9 @@ describe("mentorship (e2e)", () => {
     it("lands on the roster row and is taken back by { attended: false }", async () => {
       expect((await attention("coach2", true)).status).toBe(204);
 
-      const marked = await http().get("/v1/mentorship/students").set(auth("coach2"));
+      const marked = await http()
+        .get("/v1/mentorship/students")
+        .set(auth("coach2"));
       const row = marked.body.items.find(
         (r: { studentId: string }) => r.studentId === userId.student,
       );
@@ -877,7 +1076,9 @@ describe("mentorship (e2e)", () => {
       expect(report.body.attendedAt).not.toBeNull();
 
       expect((await attention("coach2", false)).status).toBe(204);
-      const cleared = await http().get("/v1/mentorship/students").set(auth("coach2"));
+      const cleared = await http()
+        .get("/v1/mentorship/students")
+        .set(auth("coach2"));
       const back = cleared.body.items.find(
         (r: { studentId: string }) => r.studentId === userId.student,
       );
@@ -893,7 +1094,11 @@ describe("mentorship (e2e)", () => {
     const assign = await http()
       .post(`/v1/mentorship/students/${userId.student}/assignments`)
       .set(auth("coach2"))
-      .send({ tasks: [{ title: "Silinecek koç ödevi", coachNote: "Bu not de gitmeli" }] });
+      .send({
+        tasks: [
+          { title: "Silinecek koç ödevi", coachNote: "Bu not de gitmeli" },
+        ],
+      });
     expect(assign.status).toBe(201);
     const orphanId: string = assign.body[0].id;
 
@@ -930,14 +1135,27 @@ describe("mentorship (e2e)", () => {
       name,
       examType: "KPSS",
       tasks: [
-        { dayIndex: 0, title: "Paragraf 20 soru", subject: "Türkçe", topic: "Paragraf" },
-        { dayIndex: 3, title: "Problemler tekrar", subject: "Matematik", coachNote: "Süre tut" },
+        {
+          dayIndex: 0,
+          title: "Paragraf 20 soru",
+          subject: "Türkçe",
+          topic: "Paragraf",
+        },
+        {
+          dayIndex: 3,
+          title: "Problemler tekrar",
+          subject: "Matematik",
+          coachNote: "Süre tut",
+        },
       ],
     });
 
     it("is a coach surface, and one coach never sees another's", async () => {
       expect((await http().get("/v1/mentorship/templates")).status).toBe(401);
-      expect((await http().get("/v1/mentorship/templates").set(auth("student"))).status).toBe(403);
+      expect(
+        (await http().get("/v1/mentorship/templates").set(auth("student")))
+          .status,
+      ).toBe(403);
 
       const saved = await http()
         .post("/v1/mentorship/templates")
@@ -957,21 +1175,34 @@ describe("mentorship (e2e)", () => {
         coachNote: "Süre tut",
       });
 
-      expect((await http().get("/v1/mentorship/templates").set(auth("coach2"))).body).toEqual([]);
+      expect(
+        (await http().get("/v1/mentorship/templates").set(auth("coach2"))).body,
+      ).toEqual([]);
     });
 
     it("overwrites on the same name instead of piling up, because that is the edit path", async () => {
       const again = await http()
         .post("/v1/mentorship/templates")
         .set(auth("coach"))
-        .send({ ...week("Hafta 1"), tasks: [{ dayIndex: 6, title: "Tek görev" }] });
+        .send({
+          ...week("Hafta 1"),
+          tasks: [{ dayIndex: 6, title: "Tek görev" }],
+        });
       expect(again.status).toBe(200);
       expect(again.body.id).toBe(templateId);
       expect(again.body.tasks).toEqual([
-        { dayIndex: 6, title: "Tek görev", subject: null, topic: null, coachNote: null },
+        {
+          dayIndex: 6,
+          title: "Tek görev",
+          subject: null,
+          topic: null,
+          coachNote: null,
+        },
       ]);
 
-      const list = await http().get("/v1/mentorship/templates").set(auth("coach"));
+      const list = await http()
+        .get("/v1/mentorship/templates")
+        .set(auth("coach"));
       expect(list.body).toHaveLength(1);
     });
 
@@ -988,7 +1219,10 @@ describe("mentorship (e2e)", () => {
       const orphanTopic = await http()
         .post("/v1/mentorship/templates")
         .set(auth("coach"))
-        .send({ name: "Kötü", tasks: [{ dayIndex: 0, title: "Görev", topic: "Paragraf" }] });
+        .send({
+          name: "Kötü",
+          tasks: [{ dayIndex: 0, title: "Görev", topic: "Paragraf" }],
+        });
       expect(orphanTopic.status).toBe(400);
     });
 
@@ -997,7 +1231,10 @@ describe("mentorship (e2e)", () => {
       const res = await http()
         .post("/v1/mentorship/templates")
         .set(auth("coach"))
-        .send({ name: "Kötü", tasks: [{ dayIndex: 0, title: "Görev", taskDate: "2026-09-10" }] });
+        .send({
+          name: "Kötü",
+          tasks: [{ dayIndex: 0, title: "Görev", taskDate: "2026-09-10" }],
+        });
       expect(res.status).toBe(400);
     });
 
@@ -1008,17 +1245,29 @@ describe("mentorship (e2e)", () => {
       expect(res.status).toBe(404);
       expect(res.body.code).toBe("MENTORSHIP_TEMPLATE_NOT_FOUND");
       // And it is still there for its owner.
-      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).body).toHaveLength(1);
+      expect(
+        (await http().get("/v1/mentorship/templates").set(auth("coach"))).body,
+      ).toHaveLength(1);
     });
 
     it("deletes the coach's own, idempotently enough to 404 the second time", async () => {
       expect(
-        (await http().delete(`/v1/mentorship/templates/${templateId}`).set(auth("coach"))).status,
+        (
+          await http()
+            .delete(`/v1/mentorship/templates/${templateId}`)
+            .set(auth("coach"))
+        ).status,
       ).toBe(204);
       expect(
-        (await http().delete(`/v1/mentorship/templates/${templateId}`).set(auth("coach"))).status,
+        (
+          await http()
+            .delete(`/v1/mentorship/templates/${templateId}`)
+            .set(auth("coach"))
+        ).status,
       ).toBe(404);
-      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).body).toEqual([]);
+      expect(
+        (await http().get("/v1/mentorship/templates").set(auth("coach"))).body,
+      ).toEqual([]);
     });
   });
 
@@ -1041,8 +1290,12 @@ describe("mentorship (e2e)", () => {
     });
 
     it("is the coach's alone", async () => {
-      expect((await http().get("/v1/mentorship/brief").set(auth("student"))).status).toBe(403);
-      expect((await http().post("/v1/mentorship/brief").set(auth("student"))).status).toBe(403);
+      expect(
+        (await http().get("/v1/mentorship/brief").set(auth("student"))).status,
+      ).toBe(403);
+      expect(
+        (await http().post("/v1/mentorship/brief").set(auth("student"))).status,
+      ).toBe(403);
     });
 
     it("reads empty before anything is written, and spends nothing doing it", async () => {
@@ -1060,14 +1313,24 @@ describe("mentorship (e2e)", () => {
 
       await app
         .get(ConfigRegistryService)
-        .set(userId.admin!, "ai.features.mentorship.cohort_brief.free_enabled", true);
+        .set(
+          userId.admin!,
+          "ai.features.mentorship.cohort_brief.free_enabled",
+          true,
+        );
       await app
         .get(ConfigRegistryService)
-        .set(userId.admin!, "ai.features.mentorship.cohort_brief.free_limit", 50);
+        .set(
+          userId.admin!,
+          "ai.features.mentorship.cohort_brief.free_limit",
+          50,
+        );
     });
 
     it("writes a brief the coach can then read for free", async () => {
-      const written = await http().post("/v1/mentorship/brief").set(auth("coach2"));
+      const written = await http()
+        .post("/v1/mentorship/brief")
+        .set(auth("coach2"));
       expect(written.status).toBe(200);
       expect(typeof written.body.overall).toBe("string");
       // The linked student has never studied, so INACTIVE fires and they are waiting.
@@ -1086,7 +1349,9 @@ describe("mentorship (e2e)", () => {
     });
 
     it("does not pay twice for an unchanged cohort", async () => {
-      const again = await http().post("/v1/mentorship/brief").set(auth("coach2"));
+      const again = await http()
+        .post("/v1/mentorship/brief")
+        .set(auth("coach2"));
       expect(again.status).toBe(200);
       expect(again.body.model).toBe("cache");
     });
@@ -1100,12 +1365,21 @@ describe("mentorship (e2e)", () => {
     });
 
     it("closes with the flag", async () => {
-      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "mentorship.enabled", false);
       try {
-        expect((await http().get("/v1/mentorship/brief").set(auth("coach2"))).status).toBe(403);
-        expect((await http().post("/v1/mentorship/brief").set(auth("coach2"))).status).toBe(403);
+        expect(
+          (await http().get("/v1/mentorship/brief").set(auth("coach2"))).status,
+        ).toBe(403);
+        expect(
+          (await http().post("/v1/mentorship/brief").set(auth("coach2")))
+            .status,
+        ).toBe(403);
       } finally {
-        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+        await app
+          .get(ConfigRegistryService)
+          .set(userId.admin!, "mentorship.enabled", true);
       }
     });
 
@@ -1139,10 +1413,18 @@ describe("mentorship (e2e)", () => {
 
       await app
         .get(ConfigRegistryService)
-        .set(userId.admin!, "ai.features.mentorship.suggestions.free_enabled", true);
+        .set(
+          userId.admin!,
+          "ai.features.mentorship.suggestions.free_enabled",
+          true,
+        );
       await app
         .get(ConfigRegistryService)
-        .set(userId.admin!, "ai.features.mentorship.suggestions.free_limit", 50);
+        .set(
+          userId.admin!,
+          "ai.features.mentorship.suggestions.free_limit",
+          50,
+        );
     });
 
     it("drafts a week without writing anything", async () => {
@@ -1169,11 +1451,15 @@ describe("mentorship (e2e)", () => {
     });
 
     it("closes with the flag", async () => {
-      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "mentorship.enabled", false);
       try {
         expect((await suggest("coach2", userId.student!)).status).toBe(403);
       } finally {
-        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+        await app
+          .get(ConfigRegistryService)
+          .set(userId.admin!, "mentorship.enabled", true);
       }
     });
 
@@ -1187,7 +1473,8 @@ describe("mentorship (e2e)", () => {
   });
 
   describe("the student's mirror", () => {
-    const mirror = (who: string) => http().get("/v1/mentorship/my-coach/data").set(auth(who));
+    const mirror = (who: string) =>
+      http().get("/v1/mentorship/my-coach/data").set(auth(who));
 
     it("mirrors exactly the numbers the coach is reading", async () => {
       // The whole claim of this surface. Both sides come from `getStudentReport`, so the only way
@@ -1210,9 +1497,13 @@ describe("mentorship (e2e)", () => {
       expect(student.body.planTasks?.planCompletionRate7d ?? null).toBe(
         coach.body.planCompletionRate7d,
       );
-      expect(student.body.planTasks?.titleCount ?? 0).toBe(coach.body.planTasks.length);
+      expect(student.body.planTasks?.titleCount ?? 0).toBe(
+        coach.body.planTasks.length,
+      );
       expect(student.body.mood?.count ?? 0).toBe(coach.body.moodTrend.length);
-      expect(student.body.mockExams?.count ?? 0).toBe(coach.body.mockTrend.length);
+      expect(student.body.mockExams?.count ?? 0).toBe(
+        coach.body.mockTrend.length,
+      );
       expect(student.body.examType).toBe(coach.body.studentExamType);
     });
 
@@ -1234,9 +1525,10 @@ describe("mentorship (e2e)", () => {
 
     it("stops the moment the student revokes consent", async () => {
       expect((await mirror("student")).body.activity).toBeDefined();
-      expect((await http().delete("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(
-        204,
-      );
+      expect(
+        (await http().delete("/v1/mentorship/my-coach").set(auth("student")))
+          .status,
+      ).toBe(204);
       // Nothing is being shared any more, so there is nothing to mirror.
       const after = await mirror("student");
       expect(after.status).toBe(200);
@@ -1244,27 +1536,48 @@ describe("mentorship (e2e)", () => {
     });
 
     it("closes with the flag", async () => {
-      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "mentorship.enabled", false);
       try {
         expect((await mirror("student")).status).toBe(403);
       } finally {
-        await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+        await app
+          .get(ConfigRegistryService)
+          .set(userId.admin!, "mentorship.enabled", true);
       }
     });
   });
 
   it("closes every door when the flag is off", async () => {
-    await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", false);
+    await app
+      .get(ConfigRegistryService)
+      .set(userId.admin!, "mentorship.enabled", false);
     try {
-      const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
+      const roster = await http()
+        .get("/v1/mentorship/students")
+        .set(auth("coach"));
       expect(roster.status).toBe(403);
       expect(roster.body.code).toBe("MENTORSHIP_DISABLED");
-      expect((await http().get("/v1/mentorship/my-coach").set(auth("student"))).status).toBe(403);
-      expect((await http().post("/v1/mentorship/invite-code").set(auth("coach"))).status).toBe(403);
-      expect((await http().get("/v1/mentorship/overview").set(auth("coach"))).status).toBe(403);
-      expect((await http().get("/v1/mentorship/templates").set(auth("coach"))).status).toBe(403);
+      expect(
+        (await http().get("/v1/mentorship/my-coach").set(auth("student")))
+          .status,
+      ).toBe(403);
+      expect(
+        (await http().post("/v1/mentorship/invite-code").set(auth("coach")))
+          .status,
+      ).toBe(403);
+      expect(
+        (await http().get("/v1/mentorship/overview").set(auth("coach"))).status,
+      ).toBe(403);
+      expect(
+        (await http().get("/v1/mentorship/templates").set(auth("coach")))
+          .status,
+      ).toBe(403);
     } finally {
-      await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+      await app
+        .get(ConfigRegistryService)
+        .set(userId.admin!, "mentorship.enabled", true);
     }
   });
 });

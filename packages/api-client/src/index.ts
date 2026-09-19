@@ -7,6 +7,7 @@
  */
 export * from "./http.js";
 export * from "./generated/api.js";
-export * from "./content-exams.js";
+// Preserve the typed adapter when code generation also discovers this operation.
+export { contentControllerCurrentExamByFamily } from "./content-exams.js";
 
 export const API_BASE_PATH = "/v1" as const;

@@ -11,6 +11,11 @@ export default defineConfig({
       target: "./src/generated/api.ts",
       client: "fetch",
       override: {
+        operations: {
+          MentorshipCoachController_listPlanningTasks: {
+            fetch: { includeHttpResponseReturnType: false },
+          },
+        },
         mutator: { path: "./src/http.ts", name: "http" },
         // Our mutator returns the parsed body. Scope this to the new contract so
         // existing generated callers keep their current public types.

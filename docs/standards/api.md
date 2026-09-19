@@ -1,5 +1,14 @@
 # API Design & Versioning Standards + Service Catalog
 
+### Mentorship weekly planning read (2026-09-19)
+
+`GET /v1/mentorship/students/:studentId/planning-tasks?from=YYYY-MM-DD&to=YYYY-MM-DD&page=1&pageSize=20`
+requires COACH and an active student link. Inclusive date ranges are limited to seven days;
+pagination follows the standard envelope (page size maximum 100). Items contain `id`, `taskDate`,
+`title`, `subject`, `topic`, `status`, `assignedByCoach`, and the current coach's `coachNote` only.
+No student description is exposed. Consumers must collect every page before showing complete
+weekly counts. Existing assignments remain unchanged; new drafts use the existing assignment POST.
+
 > Canonical context: [`../../AGENTS.md`](../../AGENTS.md) · Backend: [backend.md](./backend.md).
 > A single API (NestJS) serves web + (Phase 2) mobile + panel → **versioned & backward-compatible** (§8).
 

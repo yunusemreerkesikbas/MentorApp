@@ -1,5 +1,6 @@
 import type {
   CoachPlanEventDto,
+  MentorshipPlanningTaskDto,
   CoachPlanItemDto,
   MentorshipRosterRowDto,
   Paginated,
@@ -14,11 +15,32 @@ import type {
   UpdateMentorshipAssignmentInput,
   UpdatePlanEventInput,
 } from "@mentor/validation";
-import { http } from "@mentor/api-client";
+import {
+  http,
+  mentorshipCoachControllerListPlanningTasks,
+} from "@mentor/api-client";
 
 const PAGE_SIZE = 100;
 /** Seat cap is dozens; ten pages is already far past that. A runaway total must not hammer the API. */
 const MAX_PAGES = 10;
+
+export function fetchPlanningTasks(
+  studentId: string,
+  from: string,
+  to: string,
+  signal?: AbortSignal,
+): Promise<MentorshipPlanningTaskDto[]> {
+  return collectAllPages(
+    "Planning tasks",
+    (page) =>
+      mentorshipCoachControllerListPlanningTasks(
+        studentId,
+        { from, to, page, pageSize: PAGE_SIZE },
+        { signal },
+      ),
+    signal,
+  );
+}
 
 async function collectAllPages<T>(
   label: string,
@@ -49,7 +71,9 @@ async function collectAllPages<T>(
 }
 
 /** Complete active roster for calendar filters; a coach must never lose students after page one. */
-export async function fetchActiveRoster(signal?: AbortSignal): Promise<MentorshipRosterRowDto[]> {
+export async function fetchActiveRoster(
+  signal?: AbortSignal,
+): Promise<MentorshipRosterRowDto[]> {
   return collectAllPages(
     "Active roster",
     (page) =>
@@ -75,10 +99,9 @@ export async function fetchCoachPlan(input: {
       if (input.studentId) query.set("studentId", input.studentId);
       query.set("page", String(page));
       query.set("pageSize", String(PAGE_SIZE));
-      return http<Paginated<CoachPlanItemDto>>(
-        `/v1/mentorship/plan?${query}`,
-        { signal: input.signal },
-      ) as Promise<Paginated<CoachPlanItemDto>>;
+      return http<Paginated<CoachPlanItemDto>>(`/v1/mentorship/plan?${query}`, {
+        signal: input.signal,
+      }) as Promise<Paginated<CoachPlanItemDto>>;
     },
     input.signal,
   );

@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import { useTranslations } from "next-intl";
-import type { QuestProgressView, StudySessionStatus, TodayPanelResponse } from "@mentor/types";
+import { useEffect, useMemo, useState } from "react";
+import { useReducedMotion } from "framer-motion";
+import { useLocale, useTranslations } from "next-intl";
+import type {
+  FocusGoalDto,
+  QuestProgressView,
+  StudySessionStatus,
+  TodayPanelResponse,
+} from "@mentor/types";
 import { coachingControllerGetToday } from "@mentor/api-client";
-import { Button, SuccessCheck } from "@mentor/ui";
+import { Button, CompletionSummary } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
-import { PuhuCoachBubble } from "@/components/puhu-coach-bubble";
-import { SuggestedTaskCard } from "@/components/suggested-task-card";
 import { useStreakCelebration } from "@/components/streak-celebration";
-import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { requestSessionReflection } from "@/lib/coach";
 import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-reply-markers";
+import { sessionStarFill } from "@/lib/completion-stars";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchSubscriptionView } from "@/lib/subscription-view";
@@ -21,6 +24,11 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { scheduleSessionReturnReminder } from "@/lib/notification-api";
 import { getProfileLinks } from "@/lib/profile-links";
 import { resolveSessionShare } from "@/lib/session-share";
+import {
+  SessionDoneMoodCheckin,
+  SessionDoneSavedCheckin,
+} from "./session-done-checkin";
+import { buildSessionDoneStats } from "./session-done-stats";
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
@@ -38,38 +46,33 @@ function resolveStreakFeedback(
   return null;
 }
 
+const LINK_CLASS =
+  "flex min-h-11 w-full cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none";
+
 export interface SessionDoneStateProps {
   focusElapsed: number;
-  /** Finalized session id — required for premium AI reflection after check-in. */
+  /** Planned focus length in minutes (timer preset). */
+  plannedMinutes: number;
   sessionId: string | null;
-  /** Subject carried from the session, used to personalise the note placeholder. */
   subject?: string | null;
-  /** Quest snapshot captured at session start — drives reward toast diff. */
+  planTaskTitle?: string | null;
+  focusGoal?: FocusGoalDto | null;
   questBaseline?: QuestProgressView[] | null;
-  /** Streak count captured at session start — drives streak pill. */
   streakBaseline?: number | null;
-  /** Whether this session met the min-focus threshold (streak/XP/quests). */
   countsAsFocusSession?: boolean;
-  /** Final session status — used to avoid hint on abandoned sessions. */
   sessionStatus?: StudySessionStatus | null;
-  /** Linked plan task was auto-marked DONE on finalize. */
   planTaskAutoCompleted?: boolean;
-  /** Persists the post-session micro check-in; rejects on API error (toast shown upstream). */
   onSubmitFeedback: (mood: number, struggleNote?: string) => Promise<void>;
   onReset: () => void;
 }
 
-/** Effort/mood options (roadmap §258: 😩😐🙂), stored as 1-3. */
-const MOODS = [
-  { value: 1, emoji: "😩", labelKey: "mood_1" },
-  { value: 2, emoji: "😐", labelKey: "mood_2" },
-  { value: 3, emoji: "🙂", labelKey: "mood_3" },
-] as const;
-
 export function SessionDoneState({
   focusElapsed,
+  plannedMinutes,
   sessionId,
   subject,
+  planTaskTitle = null,
+  focusGoal = null,
   questBaseline = null,
   streakBaseline = null,
   countsAsFocusSession = true,
@@ -79,9 +82,8 @@ export function SessionDoneState({
   onReset,
 }: SessionDoneStateProps) {
   const reduceMotion = useReducedMotion();
+  const locale = useLocale();
   const t = useTranslations("session");
-  const panelT = useTranslations("panel");
-  const economyT = useTranslations("economy");
   const toast = useMentorToast();
   const { tryCelebrate, celebration } = useStreakCelebration();
   const [mood, setMood] = useState<number | null>(null);
@@ -98,6 +100,7 @@ export function SessionDoneState({
   const [remindStatus, setRemindStatus] = useState<"idle" | "saving" | "done">("idle");
   const [streakFeedback, setStreakFeedback] = useState<StreakFeedback>(null);
   const [currentStreak, setCurrentStreak] = useState<number | null>(null);
+  const [streakReady, setStreakReady] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -120,6 +123,8 @@ export function SessionDoneState({
         if (questsResult) notifyEconomyChanged();
       } catch {
         /* Economy disabled / network — stay silent (§4 tone). */
+      } finally {
+        if (!cancelled) setStreakReady(true);
       }
     })();
     return () => {
@@ -127,19 +132,43 @@ export function SessionDoneState({
     };
     // Mount-only closure feedback; baselines are fixed when the done screen opens.
     // eslint-disable-next-line react-hooks/exhaustive-deps -- toast is stable enough for one-shot announce
-  }, [countsAsFocusSession, economyT, panelT, questBaseline, streakBaseline, tryCelebrate]);
+  }, [countsAsFocusSession, questBaseline, streakBaseline, tryCelebrate]);
 
-  const phaseMotion = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 10 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.25, ease: "easeOut" as const },
-        },
-        exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
-      };
+  const tooShort = !countsAsFocusSession && sessionStatus !== "ABANDONED";
+  const filled = sessionStarFill({
+    elapsedSec: focusElapsed,
+    plannedSec: plannedMinutes * 60,
+    countsAsFocusSession,
+    abandoned: sessionStatus === "ABANDONED",
+  });
+  const filledLabel = filled.toLocaleString(locale, {
+    minimumFractionDigits: filled % 1 === 0 ? 0 : 1,
+    maximumFractionDigits: 1,
+  });
+
+  const stats = useMemo(
+    () =>
+      buildSessionDoneStats({
+        t,
+        focusElapsed,
+        streakReady,
+        currentStreak,
+        focusGoal,
+        subject: subject?.trim() ? subject.trim() : null,
+        planTaskAutoCompleted,
+        planTaskTitle,
+      }),
+    [
+      t,
+      focusElapsed,
+      streakReady,
+      currentStreak,
+      focusGoal,
+      subject,
+      planTaskAutoCompleted,
+      planTaskTitle,
+    ],
+  );
 
   const maybeReflect = async () => {
     if (!sessionId) return;
@@ -228,247 +257,103 @@ export function SessionDoneState({
     }
   };
 
+  const statusLine = tooShort
+    ? t("too_short_hint")
+    : streakFeedback != null && currentStreak != null
+      ? streakFeedback === "started"
+        ? t("streak_started")
+        : t("streak_kept", { days: currentStreak })
+      : null;
+
   return (
     <>
       {celebration}
-    <motion.div
-      className="flex w-full flex-col items-center gap-6 text-center"
-      {...phaseMotion}
-    >
-      <span
-        className="rounded-[var(--radius-card)] px-4 py-2 text-sm font-bold"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-chip) 30%, transparent)",
-          color: "var(--color-chip-text)",
-          fontFamily: "var(--font-body)",
-        }}
-      >
-        {t("done_chip")}
-      </span>
-      <div className="flex flex-col items-center gap-2">
-        <SuccessCheck state="in" size={40} stroke="var(--color-success)" />
-        <p
-          className="text-xl font-bold"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("done_title")}
-        </p>
-      </div>
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("done_elapsed", { minutes: Math.floor(focusElapsed / 60) })}
-      </p>
-      {!countsAsFocusSession && sessionStatus !== "ABANDONED" && (
-        <span
-          className="rounded-full px-3 py-1 text-xs font-semibold"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
-            color: "var(--color-secondary)",
-            fontFamily: "var(--font-body)",
-          }}
-          role="status"
-        >
-          {t("too_short_hint")}
-        </span>
-      )}
-      {planTaskAutoCompleted && (
-        <span
-          className="rounded-full px-3 py-1 text-xs font-semibold"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-progress-track) 35%, transparent)",
-            color: "var(--color-secondary)",
-            fontFamily: "var(--font-body)",
-          }}
-          role="status"
-        >
-          {t("plan_task_completed")}
-        </span>
-      )}
-      {streakFeedback != null && currentStreak != null && (
-        <span
-          className="rounded-full px-3 py-1 text-xs font-semibold"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-chip) 22%, transparent)",
-            color: "var(--color-chip-text)",
-            fontFamily: "var(--font-body)",
-          }}
-          role="status"
-        >
-          {streakFeedback === "started"
-            ? t("streak_started")
-            : t("streak_kept", { days: currentStreak })}
-        </span>
-      )}
-
-      {status === "saved" ? (
-        <div className="flex w-full flex-col items-center gap-4">
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-main)" }}
-            role="status"
-          >
-            {t("checkin_saved")}
-          </p>
-          {mood === 1 && sessionId ? (
-            <Link
-              href={{
-                pathname: "/plan",
-                query: {
-                  coach: "adapt",
-                  source: "session",
-                  sessionId,
-                },
-              }}
-              className="flex min-h-11 w-full items-center justify-center rounded-[var(--radius-card)] border px-4 py-2.5 text-sm font-semibold focus-visible:outline-none focus-visible:ring-2"
-              style={{
-                borderColor: "var(--color-progress-track)",
-                color: "var(--color-main)",
-              }}
-            >
-              {t("coach_adaptation_cta")}
-            </Link>
-          ) : null}
-          {reflecting && (
+      <CompletionSummary
+        title={t("done_title")}
+        titleAs="h1"
+        filled={filled}
+        starsLabel={t("stars_label", { filled: filledLabel, total: 3 })}
+        stats={stats}
+        status={
+          statusLine ? (
             <p
-              className="text-sm"
+              className="text-center text-sm"
               style={{ color: "var(--color-secondary)" }}
               role="status"
             >
-              {t("reflection_loading")}
+              {statusLine}
             </p>
+          ) : null
+        }
+      >
+        <div className="flex w-full flex-col items-center gap-5">
+          {status === "saved" ? (
+            <SessionDoneSavedCheckin
+              t={t}
+              mood={mood}
+              sessionId={sessionId}
+              reflecting={reflecting}
+              reflectionLocked={reflectionLocked}
+              reflection={reflection}
+              suggestedTask={suggestedTask}
+              onOpenPaywall={() => openPaywall({ sourceFeature: "session.reflection" })}
+            />
+          ) : (
+            <SessionDoneMoodCheckin
+              t={t}
+              reduceMotion={Boolean(reduceMotion)}
+              mood={mood}
+              note={note}
+              subject={subject}
+              saving={status === "saving"}
+              onMood={setMood}
+              onNote={setNote}
+              onSave={() => void handleSave()}
+            />
           )}
-          {reflectionLocked && !reflecting && !reflection ? (
-            <PremiumLockNudge
-              label={t("premium_nudge")}
-              onClick={() => openPaywall({ sourceFeature: "session.reflection" })}
-            />
-          ) : null}
-          {reflection && (
-            <PuhuCoachBubble
-              message={reflection}
-              variant="encouraging"
-              dismissible
-              className="flex w-full flex-col items-center"
-              dismissLabel={t("reflection_dismiss")}
-            />
-          )}
-          {suggestedTask ? (
-            <SuggestedTaskCard
-              task={suggestedTask}
-              className="flex w-full justify-center"
-            />
-          ) : null}
-        </div>
-      ) : (
-        <div className="flex w-full flex-col items-center gap-4">
-          <p
-            className="text-sm font-semibold"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-heading)",
-            }}
-          >
-            {t("checkin_title")}
-          </p>
-          <div className="flex justify-center gap-3">
-            {MOODS.map((m) => (
+
+          <div className="flex w-full flex-col gap-1">
+            <Button onClick={onReset} variant="primary" fullWidth>
+              {t("new_session")}
+            </Button>
+            <button
+              type="button"
+              onClick={() => void handleRemindTomorrow()}
+              disabled={remindStatus !== "idle"}
+              className={LINK_CLASS}
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
+            >
+              {remindStatus === "done" ? t("return_remind_done") : t("return_remind_cta")}
+            </button>
+            {shareParts ? (
               <button
-                key={m.value}
                 type="button"
-                onClick={() => setMood(m.value)}
-                aria-pressed={mood === m.value}
-                aria-label={t(m.labelKey)}
-                title={t(m.labelKey)}
-                className="flex h-14 w-14 cursor-pointer items-center justify-center rounded-full border text-2xl transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+                onClick={() => void handleShare()}
+                className={LINK_CLASS}
                 style={{
-                  backgroundColor: "var(--color-surface)",
-                  borderColor:
-                    mood === m.value
-                      ? "var(--color-main)"
-                      : "var(--color-progress-track)",
-                  boxShadow:
-                    mood === m.value ? "var(--shadow-card)" : undefined,
+                  color: "var(--color-main)",
+                  fontFamily: "var(--font-heading)",
                 }}
               >
-                <span aria-hidden>{m.emoji}</span>
+                {t("share_cta")}
               </button>
-            ))}
-          </div>
-
-          {mood != null && (
-            <motion.div
-              className="flex w-full flex-col gap-3"
-              {...(reduceMotion
-                ? {}
-                : {
-                    initial: { opacity: 0, height: 0 },
-                    animate: { opacity: 1, height: "auto" },
-                  })}
+            ) : null}
+            <Link
+              href="/dashboard"
+              className={LINK_CLASS}
+              style={{
+                color: "var(--color-main)",
+                fontFamily: "var(--font-heading)",
+              }}
             >
-              <input
-                type="text"
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                maxLength={280}
-                placeholder={
-                  subject
-                    ? t("checkin_note_subject", { subject })
-                    : t("checkin_note_placeholder")
-                }
-                className="w-full rounded-[var(--radius-card)] border bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2"
-                style={{
-                  borderColor: "var(--color-progress-track)",
-                  color: "var(--color-main)",
-                }}
-              />
-              <Button onClick={() => void handleSave()} busy={status === "saving"} fullWidth>
-                {t("checkin_save")}
-              </Button>
-            </motion.div>
-          )}
+              {t("back_panel")}
+            </Link>
+          </div>
         </div>
-      )}
-
-      <div className="flex w-full flex-col gap-3">
-        <Button
-          onClick={onReset}
-          variant={status === "saved" ? "primary" : "secondary"}
-          fullWidth
-        >
-          {t("new_session")}
-        </Button>
-        <Button
-          onClick={() => void handleRemindTomorrow()}
-          variant="secondary"
-          fullWidth
-          busy={remindStatus === "saving"}
-          disabled={remindStatus === "done"}
-        >
-          {remindStatus === "done" ? t("return_remind_done") : t("return_remind_cta")}
-        </Button>
-        {shareParts && (
-          <Button onClick={() => void handleShare()} variant="secondary" fullWidth>
-            {t("share_cta")}
-          </Button>
-        )}
-        <Link
-          href="/dashboard"
-          className="flex min-h-[44px] w-full items-center justify-center rounded-[var(--radius-card)] text-sm font-semibold transition-colors hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)] focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("back_panel")}
-        </Link>
-      </div>
-    </motion.div>
+      </CompletionSummary>
     </>
   );
 }
