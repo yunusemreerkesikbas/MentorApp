@@ -63,6 +63,16 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-18 — `@mentor/ui` Button is the play ledge
+
+Welcome/onboarding `PlayButton` (filled blue ledge + outline ledge) is now the shared `Button`.
+`primary`/`accent` = `--play-cta` fill and 4px `--play-cta-edge`; `secondary`/`soft`/`ghost` = outline
+on `--play-line`. CTA tokens live on `html`, not `.onboarding-play-theme`. Call sites: `Button` from
+`@mentor/ui`; full-width CTAs pass `fullWidth`. Gotcha: `--color-btn` still paints nav pills, plan
+FAB, notebook compact, and a few Link-as-CTA copies — those are not this primitive. Rebuild
+`@mentor/ui` (`dist`) or web keeps serving the old black Nuton button. İlgili:
+`packages/ui/src/components/button.tsx`, `packages/ui/src/theme.css`, `DESIGN.md` §6.
+
 ### 2026-09-17 — Geçici ekonomi yenileme hatası bakiyeyi silmez
 
 `refreshEconomySnapshot` artık yalnız `ECONOMY_DISABLED` olduğunda bakiyeyi temizler. Ağ veya 5xx
@@ -869,8 +879,8 @@ eklendi.
 
 ### 2026-09-16 — Welcome and onboarding on the play surface
 
-- Welcome and onboarding use the scoped `.onboarding-play-theme` (DESIGN.md §2.5): blue ledge CTA,
-  16px choice cards, 12px progress pill. The auth sheet and `(app)` are untouched.
+- Welcome and onboarding use `.onboarding-play-theme` (DESIGN.md §2.5): 16px choice cards,
+  12px progress pill. The play-ledge CTA is now the global `@mentor/ui` `Button` (2026-09-18).
 - `/` is "Puhu'nun bir günü": four swipeable scenes on a native scroll-snap track. "Devam et" on
   slides 1-3, "Atla" jumps to the last slide, which shows "Başlayalım" (signup) and "Zaten hesabım
   var" (login). Each clip plays from the top when its slide settles and holds the last frame;

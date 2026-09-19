@@ -1,13 +1,13 @@
 "use client";
 
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { StreamingText, TextsReveal } from "@mentor/ui";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button, StreamingText, TextsReveal } from "@mentor/ui";
 
 /*
  * The copy is tied to the scroll, not to a timer: `--welcome-slip` is 0 on a settled slide and 1 at
  * the handover point, so the words give way as the scene slides and the swap lands while they are
- * invisible. `TextsReveal` then walks the new title and line back in.
+ * invisible. `TextsReveal` stays mounted across slides so its blur/transform entrance does not
+ * restart while the scroll-linked transform is still moving the copy.
  */
 const SLIP_STYLE = {
   opacity: "calc(1 - var(--welcome-slip, 0))",
@@ -75,7 +75,6 @@ export function WelcomeSheet({
 
       <div aria-live="polite" className="mt-3 lg:mt-5" style={SLIP_STYLE}>
         <TextsReveal
-          key={step}
           className="flex flex-col gap-2 lg:gap-3"
           lines={[
             <h1
@@ -95,9 +94,9 @@ export function WelcomeSheet({
 
       <div className="-mx-6 mt-auto flex flex-col gap-4 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-4 lg:mx-0 lg:mt-8 lg:w-[22.5rem] lg:p-0">
         <motion.div layout={!reduceMotion} transition={{ duration: 0.24, ease: "easeOut" }}>
-          <PlayButton onClick={onPrimary} disabled={leaving}>
+          <Button fullWidth onClick={onPrimary} disabled={leaving}>
             {primaryLabel}
-          </PlayButton>
+          </Button>
         </motion.div>
         <AnimatePresence initial={false}>
           {secondaryLabel && onSecondary ? (
@@ -108,9 +107,9 @@ export function WelcomeSheet({
               exit={{ opacity: 0 }}
               transition={{ duration: 0.24, ease: "easeOut" }}
             >
-              <PlayButton variant="secondary" onClick={onSecondary} disabled={leaving}>
+              <Button fullWidth variant="secondary" onClick={onSecondary} disabled={leaving}>
                 {secondaryLabel}
-              </PlayButton>
+              </Button>
             </motion.div>
           ) : null}
         </AnimatePresence>

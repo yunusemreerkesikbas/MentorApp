@@ -6,7 +6,7 @@ import { useTranslations } from "next-intl";
 import { ApiClientError, usersControllerUpdateMe } from "@mentor/api-client";
 import type { AuthUser } from "@mentor/types";
 import { updateMeSchema, usernameSchema } from "@mentor/validation";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { createAvatarUploadUrl, putAvatarToSignedUrl, resolveAvatarUrl } from "@/lib/avatar";
@@ -98,9 +98,9 @@ export function ProfileStep({
       heading={<PuhuBubble title={t("title")} />}
       footer={
         <PlayFooter error={error}>
-          <PlayButton type="submit" form={FORM_ID} busy={saving} disabled={!parsed.success}>
+          <Button type="submit" form={FORM_ID} fullWidth busy={saving} disabled={!parsed.success}>
             {t("continue")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

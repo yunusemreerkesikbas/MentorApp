@@ -7,26 +7,27 @@ export interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElemen
   children: React.ReactNode;
   /** Shows an inline spinner and disables the button (label stays — keep it localized at the call site). */
   busy?: boolean;
-  /** Stretch to the container width (Nuton primary button is full-width 335px on mobile). */
+  /** Stretch to the container width. */
   fullWidth?: boolean;
   /**
    * Sizing:
-   * - `md` (default): Nuton standard CTA, 50px tall, `px-6 py-3 text-base font-bold`.
-   * - `sm`: compact / dialog CTA, 42px tall, `px-4 py-2.5 text-sm font-semibold`.
+   * - `md` (default): play CTA, 56px, ExtraBold.
+   * - `sm`: same ledge, 44px, for dialog rows.
    */
   size?: "sm" | "md";
   /**
-   * `primary` = black fill (default Nuton).
-   * `secondary` = transparent + subtle border.
-   * `accent` = progress/accent fill (soft primary CTAs).
-   * `soft` = accent-soft well + main text (secondary companion actions).
-   * `ghost` = no fill/border; light surface on hover.
+   * `primary` / `accent` = filled play ledge.
+   * `secondary` / `soft` / `ghost` = outline play ledge.
    */
   variant?: "primary" | "secondary" | "accent" | "soft" | "ghost";
 }
 
-/** Inline loading spinner (thin-line, DESIGN.md §7); respects reduced motion via CSS. */
-function Spinner({ size = 18 }: { size?: number }) {
+const FILLED =
+  "bg-[var(--play-cta)] text-[var(--play-cta-ink)] shadow-[0_4px_0_var(--play-cta-edge)]";
+const OUTLINE =
+  "border-2 border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--play-selected-ink)] shadow-[0_4px_0_var(--play-line)]";
+
+function Spinner({ size = 20 }: { size?: number }) {
   return (
     <LoaderCircle
       size={size}
@@ -37,73 +38,9 @@ function Spinner({ size = 18 }: { size?: number }) {
   );
 }
 
-function variantStyles(variant: NonNullable<ButtonProps["variant"]>): {
-  className: string;
-  style: React.CSSProperties;
-} {
-  switch (variant) {
-    case "secondary":
-      return {
-        className:
-          "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]",
-        style: {
-          backgroundColor: "transparent",
-          color: "var(--color-main)",
-          borderColor: "color-mix(in srgb, var(--color-main) 15%, transparent)",
-          boxShadow: "none",
-        },
-      };
-    case "accent":
-      return {
-        className:
-          "text-white shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
-        style: {
-          backgroundColor: "var(--color-accent)",
-          color: "#fff",
-          borderColor: "var(--color-accent)",
-        },
-      };
-    case "soft":
-      return {
-        className: "hover:opacity-90",
-        style: {
-          backgroundColor:
-            "color-mix(in srgb, var(--color-accent-soft) 70%, var(--color-surface))",
-          color: "var(--color-main)",
-          borderColor:
-            "color-mix(in srgb, var(--color-accent) 22%, transparent)",
-          boxShadow: "none",
-        },
-      };
-    case "ghost":
-      return {
-        className:
-          "border-transparent bg-transparent hover:bg-[var(--color-surface-container)]",
-        style: {
-          color: "var(--color-main)",
-          borderColor: "transparent",
-          boxShadow: "none",
-        },
-      };
-    default:
-      return {
-        className:
-          "shadow-[var(--shadow-card)] hover:opacity-90 hover:shadow-[var(--shadow-card-hover)]",
-        style: {
-          backgroundColor: "var(--color-btn)",
-          color: "var(--color-btn-label)",
-          borderColor: "var(--color-btn)",
-        },
-      };
-  }
-}
-
 /**
- * Primary button (DESIGN.md §6, node 2:770): `--color-btn` fill, radius 10,
- * Plus Jakarta Sans Bold, `--color-btn-label`. Filled variants (`primary`/`accent`) rest at `shadow-card`
- * and lift to `shadow-card-hover` on hover; all variants press to 98% scale on `:active` (DESIGN.md
- * §9 Micro layer). Loading = spinner + same (localized) label, disabled, `aria-busy`. Tokenized
- * keyboard focus ring (DESIGN.md §2.4).
+ * Play-ledge CTA (DESIGN.md §6). Press sinks into a 4px edge. Loading = spinner + same
+ * (localized) label, disabled, `aria-busy`. Keyboard focus ring: DESIGN.md §2.4.
  */
 export function Button({
   children,
@@ -115,23 +52,17 @@ export function Button({
   className,
   ...rest
 }: ButtonProps) {
-  const look = variantStyles(variant);
+  const filled = variant === "primary" || variant === "accent";
   const sizeStyles =
-    size === "sm"
-      ? "px-4 py-2.5 text-sm font-semibold"
-      : "px-6 py-3 text-base font-bold";
+    size === "sm" ? "h-11 px-4 text-sm font-extrabold" : "h-14 px-6 text-lg font-extrabold";
   return (
     <button
       {...rest}
       disabled={disabled || busy}
       aria-busy={busy || undefined}
-      className={`inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[var(--radius-card)] border ${sizeStyles} outline-none transition-[opacity,background-color,box-shadow,transform] duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 motion-reduce:transition-none motion-reduce:active:scale-100 ${look.className} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
-      style={{
-        ...look.style,
-        fontFamily: "var(--font-body)",
-      }}
+      className={`inline-flex cursor-pointer items-center justify-center gap-2 whitespace-nowrap rounded-[var(--play-radius)] outline-none transition-[transform,box-shadow] duration-[120ms] ease-out focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:translate-y-1 active:shadow-none disabled:cursor-not-allowed disabled:border-transparent disabled:bg-[var(--play-track)] disabled:text-[var(--color-secondary)] disabled:shadow-none disabled:active:translate-y-0 motion-reduce:transition-none ${sizeStyles} ${filled ? FILLED : OUTLINE} ${fullWidth ? "w-full" : "w-fit"} ${className ?? ""}`}
     >
-      {busy ? <Spinner size={size === "sm" ? 16 : 18} /> : null}
+      {busy ? <Spinner size={size === "sm" ? 16 : 20} /> : null}
       {children}
     </button>
   );

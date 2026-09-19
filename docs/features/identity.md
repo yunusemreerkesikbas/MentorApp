@@ -487,6 +487,24 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 - Related: `apps/web/src/app/[locale]/(app)/profile/_components/google-account-card.tsx`,
   `packages/ui/src/components/button.tsx`, `messages/{tr,en}.json`.
 
+### 2026-09-18 — Stable welcome copy transitions
+
+- Welcome slide changes keep the shared `TextsReveal` layer mounted instead of replaying its blur
+  and vertical entrance while the scroll-linked copy transform is still moving. The copy still fades
+  out at the handover point and updates while hidden, but no longer combines two text transforms.
+- Usage is unchanged. The welcome E2E flow now guards the persistent copy layer across navigation.
+  Related: `_components/welcome/welcome-sheet.tsx`, `e2e/onboarding-redesign.spec.ts`.
+
+### 2026-09-19 — Onboarding-aligned desktop auth shell
+
+- Desktop auth now uses a centered two-column stage: the localized welcome copy sits in the same
+  bordered speech-bubble language as onboarding above the waving Puhu, and the wider form card is
+  inset from the viewport edge. Mobile keeps its existing hanging-Puhu bottom sheet.
+- Signup no longer scrolls inside the desktop card. Tall forms grow with the document so short
+  desktop viewports use one natural page scrollbar. E2E coverage protects the narrative bubble,
+  desktop inset, and lack of nested form scrolling. Related: `(auth)/_components/auth-shell.tsx`,
+  `e2e/onboarding-redesign.spec.ts`, `docs/plans/2026-09-19-auth-desktop-shell-design.md`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

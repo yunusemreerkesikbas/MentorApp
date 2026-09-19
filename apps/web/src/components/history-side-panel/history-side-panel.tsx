@@ -49,7 +49,7 @@ export function HistorySidePanel({
         className="flex shrink-0 items-center gap-2 border-b px-4 py-4"
         style={{
           borderColor: isLiquid
-            ? "rgba(255, 255, 255, 0.15)"
+            ? "color-mix(in srgb, var(--color-main) 15%, transparent)"
             : "color-mix(in srgb, var(--color-main) 8%, transparent)",
         }}
       >
@@ -58,7 +58,7 @@ export function HistorySidePanel({
           className="min-w-0 flex-1 text-base font-bold leading-tight"
           style={{
             fontFamily: "var(--font-heading)",
-            color: isLiquid ? "#ffffff" : "var(--color-main)",
+            color: "var(--color-main)",
           }}
         >
           {title}
@@ -69,11 +69,11 @@ export function HistorySidePanel({
             onClick={onCollapse}
             aria-label={collapseLabel}
             data-testid="history-side-panel-collapse"
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-white/10 hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-all hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
           >
             <PanelLeft
               className="size-5"
-              style={{ color: isLiquid ? "#ffffff" : "var(--color-main)" }}
+              style={{ color: "var(--color-main)" }}
               strokeWidth={2.25}
               aria-hidden
             />
@@ -93,9 +93,7 @@ export function HistorySidePanel({
         <div
           className="shrink-0 border-t px-4 py-3"
           style={{
-            borderColor: isLiquid
-              ? "rgba(255, 255, 255, 0.15)"
-              : "color-mix(in srgb, var(--color-main) 8%, transparent)",
+            borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
           }}
         >
           {footer}

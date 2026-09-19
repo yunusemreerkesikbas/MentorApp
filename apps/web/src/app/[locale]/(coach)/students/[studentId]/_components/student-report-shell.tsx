@@ -15,12 +15,21 @@ import { EmptyState } from "@/components/empty-state";
 import { Link, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
-import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorship";
+import {
+  endStudentLink,
+  fetchStudentReport,
+  setAttention,
+} from "@/lib/mentorship";
 import { AssignTaskForm, type AssignDraft } from "./assign-task-form";
+import { initialPlanningState } from "./planning-state";
 import { BriefCard } from "./brief-card";
 import { CoachNoteCard } from "./coach-note-card";
 import { CoachPanel } from "./coach-panel";
-import { ReportActionBar, ReportActionRail, type ReportPanel } from "./report-action-rail";
+import {
+  ReportActionBar,
+  ReportActionRail,
+  type ReportPanel,
+} from "./report-action-rail";
 import { ReportActivity } from "./report-activity";
 import { ReportHeader } from "./report-header";
 import { ReportMocks } from "./report-mocks";
@@ -52,6 +61,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
   const [compose, setCompose] = useState<FollowupCompose | null>(null);
   // Held here, not in the composer: the panel unmounts on close, and a half-built week must not.
   const [drafts, setDrafts] = useState<AssignDraft[]>([]);
+  const [planning, setPlanning] = useState(initialPlanningState);
   // Also held here: the panel must not close (and remount an idle form over the same drafts) mid-send.
   const [assigning, setAssigning] = useState(false);
   // Started beside the report request, not after it: the two reads do not depend on each other.
@@ -61,7 +71,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
     (err: unknown) => {
       showToastError({
         title: common("error_title"),
-        message: err instanceof ApiClientError ? err.message : common("error_unknown"),
+        message:
+          err instanceof ApiClientError ? err.message : common("error_unknown"),
       });
     },
     [common, showToastError],
@@ -118,7 +129,9 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
     if (!report) return;
     const confirmed = await dialog.confirm({
       title: t("report_end_confirm_title"),
-      message: t("report_end_confirm_body", { name: report.studentDisplayName }),
+      message: t("report_end_confirm_body", {
+        name: report.studentDisplayName,
+      }),
       confirmLabel: t("report_end_confirm_action"),
       cancelLabel: t("confirm_cancel"),
     });
@@ -168,7 +181,10 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
             {/* Keyed: moving between students must remount this, or a brief about one could be
                 read under another's name while a stale request is still in flight. */}
             <BriefCard key={studentId} studentId={studentId} />
-            <WeeklyReportCard key={`weekly-${studentId}`} studentId={studentId} />
+            <WeeklyReportCard
+              key={`weekly-${studentId}`}
+              studentId={studentId}
+            />
             <ReportWeekStrip tasks={report.planTasks} />
             <ReportActivity report={report} />
             <ReportPlan report={report} />
@@ -186,7 +202,9 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         </div>
         <ReportActionBar
           followupsEnabled={followupsEnabled}
-          onOpen={(next) => (next === "followups" ? openFollowups(null) : setPanel(next))}
+          onOpen={(next) =>
+            next === "followups" ? openFollowups(null) : setPanel(next)
+          }
         />
       </div>
 
@@ -203,7 +221,8 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
               studentId={studentId}
               studentName={report.studentDisplayName}
               studentExamType={report.studentExamType}
-              previousTasks={report.planTasks}
+              state={planning}
+              onStateChange={setPlanning}
               drafts={drafts}
               onDraftsChange={setDrafts}
               busy={assigning}

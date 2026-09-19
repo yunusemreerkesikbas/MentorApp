@@ -3,8 +3,7 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import { TextAreaField, TextField } from "@mentor/ui";
-import { PlayButton } from "@/components/onboarding-play/play-button";
+import { Button, TextAreaField, TextField } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { registerCoach } from "@/lib/mentorship";
@@ -79,9 +78,9 @@ export function CoachProfileStep({
       heading={<PuhuBubble title={t("title")} sub={t("subtitle")} />}
       footer={
         <PlayFooter error={error}>
-          <PlayButton type="submit" form={FORM_ID} busy={saving} disabled={!canSave}>
+          <Button type="submit" form={FORM_ID} fullWidth busy={saving} disabled={!canSave}>
             {t("save")}
-          </PlayButton>
+          </Button>
         </PlayFooter>
       }
     >

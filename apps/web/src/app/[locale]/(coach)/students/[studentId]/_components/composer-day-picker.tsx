@@ -11,11 +11,13 @@ export function ComposerDayPicker({
   days,
   selectedDate,
   counts,
+  existingCounts,
   onSelect,
 }: {
   days: readonly string[];
   selectedDate: string;
   counts: ReadonlyMap<string, number>;
+  existingCounts?: ReadonlyMap<string, number>;
   onSelect: (day: string) => void;
 }) {
   const t = useTranslations("mentorship");
@@ -25,12 +27,21 @@ export function ComposerDayPicker({
     [locale],
   );
   const longFormat = useMemo(
-    () => new Intl.DateTimeFormat(locale, { weekday: "long", day: "numeric", month: "long" }),
+    () =>
+      new Intl.DateTimeFormat(locale, {
+        weekday: "long",
+        day: "numeric",
+        month: "long",
+      }),
     [locale],
   );
 
   return (
-    <div role="group" aria-label={t("assign_week_pick")} className="grid grid-cols-7 gap-1.5">
+    <div
+      role="group"
+      aria-label={t("assign_week_pick")}
+      className="grid grid-cols-7 gap-1.5"
+    >
       {days.map((day) => {
         const date = new Date(`${day}T00:00:00`);
         const count = counts.get(day) ?? 0;
@@ -40,7 +51,7 @@ export function ComposerDayPicker({
             key={day}
             type="button"
             aria-pressed={active}
-            aria-label={count > 0 ? `${longFormat.format(date)} · ${count}` : longFormat.format(date)}
+            aria-label={`${longFormat.format(date)} · ${t("planning_day_counts", { existing: existingCounts?.get(day) ?? "…", drafts: count })}`}
             onClick={() => onSelect(day)}
             className={`flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] py-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
               active
@@ -48,14 +59,20 @@ export function ComposerDayPicker({
                 : "bg-[var(--color-surface)] text-[var(--color-main)] hover:bg-[var(--color-surface-container)]"
             }`}
           >
-            <span className={`coach-caption ${active ? "" : "text-[var(--color-secondary)]"}`}>
+            <span
+              className={`coach-caption ${active ? "" : "text-[var(--color-secondary)]"}`}
+            >
               {weekdayFormat.format(date)}
             </span>
-            <span className="coach-body font-semibold tabular-nums">{date.getDate()}</span>
+            <span className="coach-body font-semibold tabular-nums">
+              {date.getDate()}
+            </span>
             <span
               className={`coach-caption h-4 tabular-nums ${active ? "" : "text-[var(--color-secondary)]"}`}
             >
-              {count > 0 ? count : ""}
+              {existingCounts
+                ? `${existingCounts.get(day) ?? 0} + ${count}`
+                : `… + ${count}`}
             </span>
           </button>
         );

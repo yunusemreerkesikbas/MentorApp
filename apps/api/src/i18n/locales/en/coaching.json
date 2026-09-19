@@ -1,11 +1,11 @@
 {
   "mood": {
-    "VERY_LOW": "Today feels heavy, I know. A small pause still counts.",
+    "VERY_LOW": "Even getting started may feel tiring today. Give yourself some room to rest, and we can think about studying again later.",
     "SERIOUS_DISTRESS": "You do not have to carry this alone. Contact someone you trust now; if you may hurt yourself, call your local emergency number or go to the nearest emergency department.",
-    "LOW": "Hard days happen. One small step today is enough.",
-    "OKAY": "A quiet day is still a day. One task is enough.",
-    "GOOD": "Your energy is here. Put it into one small step.",
-    "GREAT": "You're on a roll today. Start one task, the rest can follow."
+    "LOW": "Thinking about everything at once may feel tiring today. If you like, start with a few questions on a familiar topic and see how you feel before continuing.",
+    "OKAY": "You can begin without feeling especially motivated. Pick one topic for a short review, then decide whether you want to keep going.",
+    "GOOD": "While you feel good, we can make room for a topic you have been meaning to study. Give it one focused session, then see what feels clearer.",
+    "GREAT": "It is good to feel eager to study today. You could start with something that interests you or a topic you have been putting off, leaving room for a break too."
   },
   "motivation": {
     "START": "Take one small step today, that's enough. I'm here.",

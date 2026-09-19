@@ -1,5 +1,6 @@
 "use client";
 import { ChevronDown } from "lucide-react";
+export type { MenuSelectTextSize } from "@/components/menu-select-typography";
 
 import { useId } from "react";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";

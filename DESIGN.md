@@ -1,6 +1,6 @@
 # DESIGN.md — Exam Coaching Platform · Design System
 
-> Status: Living design record · Updated: 2026-08-15  
+> Status: Living design record · Updated: 2026-09-18  
 > Product decisions: [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) · Product register: [`PRODUCT.md`](./PRODUCT.md)  
 > **Visual foundation:** **Nuton — Online Learning Mobile App** Figma UI template, **evolved** into Mentor’s own system (companionship platform).  
 > Source of truth for base values: Figma file `8lc7t0P5kibfQ7GMzLSl3l` (Dev Mode MCP). Evolve layers (surfaces, visual language, motion) are Mentor-owned and documented here.
@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Nuton’s language remains the base: **monochrome-forward** — near-black text and **black primary buttons** on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners everywhere**. Accents are soft pastels (violet chips, blue progress), not a single saturated brand color. Mentor uses **Plus Jakarta Sans** for headings and body (Turkish-complete, warm at small sizes).
+Nuton’s language remains the base: **monochrome-forward** — near-black text on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners** on cards/fields. **CTAs are the play ledge** (`@mentor/ui` `Button`): fill `#55ACEE`, ink `#0F2233`, 4px `#3B8FD0` edge the press sinks into, 16px radius. Mentor uses **Plus Jakarta Sans** for headings and body (Turkish-complete, warm at small sizes).
 
 **Evolve (2026-07-12):** We keep Nuton hex/type/radius. We add surface hierarchy, hover elevation, a documented visual language (Puhu + `visuals/`), rich motion with reduced-motion guardrails, and empty/loading rules. Premium feel comes from craft and companionship — not EdTech purple, cream paper backgrounds, or hero-metric grids.
 
@@ -33,7 +33,7 @@ Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutte
 | `main` | `#111111` | Headings, titles, primary text, active nav |
 | `body-text` | `#333333` | Body copy, input values |
 | `secondary-text` | `#666666` | Captions, meta, labels, inactive nav |
-| `btn` | `#000000` | Primary button fill |
+| `btn` | `#000000` | Nav pill / compact chrome fill (not `@mentor/ui` Button) |
 | `btn-label` | `#FFFFFF` | Label on `btn` (inverts in dark — §2.5) |
 | `label-dark-secondary` | `#EBEBF5` | Secondary label on dark |
 
@@ -73,7 +73,7 @@ Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT an
 | `like-inactive` | `#666666` | Heart outline, default |
 | `like-active` (pink) | `#FF2DAB` family | Wishlist when liked |
 
-> **No single saturated primary brand color.** Emphasis = black/`#111` (buttons, active) + soft pastel accents.
+> Emphasis = play-ledge CTA (`#55ACEE`) + black/`#111` for text and nav chrome + soft pastel accents.
 
 ### 2.4 Semantic state tokens
 
@@ -104,7 +104,7 @@ Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
 | `main` | `#F4F4F5` | Headings, active nav |
 | `body-text` | `#D4D4D8` | Body — ≥4.5:1 on `bg` |
 | `secondary-text` | `#A1A1AA` | Meta / inactive |
-| `btn` | `#F4F4F5` | Primary fill (inverted) |
+| `btn` | `#F4F4F5` | Nav pill / compact chrome fill (inverted) |
 | `btn-label` | `#12141A` | Label on `btn` |
 | `chip-text` | `#C4B8E0` | Chip label on dark |
 | `progress-track` / `accent-soft` | `#2C3D56` | Soft accent wells |
@@ -127,9 +127,11 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.premium-campaign-banner` (committed cyan→slate campaign wash + quiet grain; pins light-canvas ink so `html.dark` does not invert the banner), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
 
-**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** the Duolingo flow pattern in Mentor's own voice, on `/` and `/onboarding` only. Scoped `--play-*` tokens in `theme.css`: CTA `#55ACEE` with `#0F2233` ink (6.6:1; white would be 2.4:1) and a 4px `#3B8FD0` ledge the press sinks into; choice cards with a 2px line and a 4px bottom edge; selected `#E4EEFE` + `#1A5FA3` (dark `#2C3D56` + `#7EB6E8`); 16px radius (welcome sheet 28px) as a parity exception to §5; 800-weight questions. Surfaces still follow `html.dark`; chrome that sits on artwork (frosted skip, permission scrim, the lamp-lit "Yolun hazır" window) keeps one look. The auth sheet and `(app)` keep the black button.
+**Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
-**Coach workspace (`(coach)` / `/kocluk`):** same Nuton tokens as `/panel` (Plus Jakarta Sans, `--color-btn` black, 10px radius, blob canvas). Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
+**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (wells, frost, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
+
+**Coach workspace (`(coach)` / `/kocluk`):** same tokens as `/panel` (Plus Jakarta Sans, play-ledge `Button`, blob canvas). Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
 
 ---
 
@@ -150,7 +152,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 | Small label | Plus Jakarta Sans | 12 | 400 Regular | 1.7 |
 | Tab label (mobile bottom bar only) | Plus Jakarta Sans | 8 | 600 SemiBold | normal · **UPPERCASE** |
 | Desktop sidebar nav | Plus Jakarta Sans | 14 | 600 SemiBold | 1.4 · **sentence case** |
-| Button | Plus Jakarta Sans | 18 | 700 Bold | 1.7 · capitalize |
+| Button | Plus Jakarta Sans | 18 | 800 ExtraBold | 1.7 |
 
 Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
@@ -178,7 +180,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 5. Radius & Elevation
 
-- **Radius: `10px`** uniform (buttons, fields, cards, chips, thumbs).
+- **Radius: `10px`** uniform (fields, cards, chips, thumbs). **Exception:** `@mentor/ui` `Button` uses `--play-radius` (16px).
 - **Shadow family** (same tint `#254996` @ 10% — not multi-layer soft-UI stacks):
 
 | Token | Value | Usage |
@@ -190,7 +192,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 6. Components (Nuton specs + Mentor primitives)
 
-**Primary button** (`btn` 2:770): fill `btn`, label `btn-label`, radius 10, Plus Jakarta Sans Bold 18 capitalize. Light = black/`#FFF`; dark inverts (§2.5).
+**Primary button** (`@mentor/ui` `Button`): play ledge. Fill `--play-cta`, ink `--play-cta-ink`, 4px `--play-cta-edge`, radius 16, ExtraBold 18. Press `translateY(4px)` into the ledge. Secondary = outline on `--play-line`. Disabled = `--play-track`. `--color-btn` is nav/compact chrome only.
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 

@@ -6,12 +6,16 @@ import { Card } from "@mentor/ui";
 function SetupStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-1 flex-col items-center gap-0.5">
-      <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">
+      <span
+        className="text-[11px] font-bold uppercase tracking-wider"
+        style={{ color: "var(--color-secondary)" }}
+      >
         {label}
       </span>
       <span
-        className="text-sm font-bold tabular-nums text-white"
+        className="text-sm font-bold tabular-nums"
         style={{
+          color: "var(--color-main)",
           fontFamily: "var(--font-heading)",
         }}
       >
@@ -48,12 +52,12 @@ export function SessionSetupSummary({
         label={t("summary_focus")}
         value={t("minutes_value", { minutes: focusMinutes })}
       />
-      <span aria-hidden className="h-7 w-px shrink-0 bg-white/20" />
+      <span aria-hidden className="h-7 w-px shrink-0 bg-[color-mix(in_srgb,var(--color-main)_20%,transparent)]" />
       <SetupStat
         label={t("summary_break")}
         value={t("minutes_value", { minutes: breakMinutes })}
       />
-      <span aria-hidden className="h-7 w-px shrink-0 bg-white/20" />
+      <span aria-hidden className="h-7 w-px shrink-0 bg-[color-mix(in_srgb,var(--color-main)_20%,transparent)]" />
       <SetupStat label={t("summary_finish")} value={estimatedFinish} />
     </Card>
   );

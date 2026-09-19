@@ -11,7 +11,11 @@ import {
   Query,
 } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from "@nestjs/swagger";
+import {
+  ListMentorshipPlanningTasksDto,
+  MentorshipPlanningPageResponseDto,
+} from "./mentorship-planning.dto";
 import {
   UserRole,
   type MentorshipBriefDto,
@@ -26,7 +30,10 @@ import {
   type Paginated,
   type PlanTaskDto,
 } from "@mentor/types";
-import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
+import {
+  CurrentUser,
+  type RequestUser,
+} from "../../../common/auth/current-user";
 import { Roles } from "../../../common/auth/roles.decorator";
 import { MentorshipApplicationService } from "../application/mentorship-application.service";
 import { MentorshipAssignmentService } from "../application/mentorship-assignment.service";
@@ -59,6 +66,16 @@ import {
 @Roles(UserRole.COACH)
 @Controller("mentorship")
 export class MentorshipCoachController {
+  @Get("students/:studentId/planning-tasks")
+  @ApiOkResponse({ type: MentorshipPlanningPageResponseDto })
+  listPlanningTasks(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MentorshipStudentParamDto,
+    @Query() query: ListMentorshipPlanningTasksDto,
+  ): Promise<Paginated<import("@mentor/types").MentorshipPlanningTaskDto>> {
+    return this.roster.listPlanningTasks(user.id, params.studentId, query);
+  }
+
   constructor(
     private readonly links: MentorshipLinkService,
     private readonly invites: MentorshipInviteService,
@@ -79,7 +96,9 @@ export class MentorshipCoachController {
    * that student is refused.
    */
   @Get("overview")
-  async getOverview(@CurrentUser() user: RequestUser): Promise<MentorshipCoachOverviewDto> {
+  async getOverview(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipCoachOverviewDto> {
     await this.links.assertEnabled();
     return this.links.getCoachOverview(user.id);
   }
@@ -94,7 +113,9 @@ export class MentorshipCoachController {
    */
   @Post("invite-code")
   @HttpCode(HttpStatus.OK)
-  async rotateInviteCode(@CurrentUser() user: RequestUser): Promise<MentorshipInviteCodeDto> {
+  async rotateInviteCode(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipInviteCodeDto> {
     await this.links.assertEnabled();
     await this.applications.assertCanInvite(user.id);
     return this.invites.rotate(user.id);
@@ -175,7 +196,9 @@ export class MentorshipCoachController {
    * that keeps a template built for one exam off a student sitting another.
    */
   @Get("templates")
-  listTemplates(@CurrentUser() user: RequestUser): Promise<MentorshipProgramTemplateDto[]> {
+  listTemplates(
+    @CurrentUser() user: RequestUser,
+  ): Promise<MentorshipProgramTemplateDto[]> {
     return this.templates.list(user.id);
   }
 
@@ -214,7 +237,10 @@ export class MentorshipCoachController {
     @CurrentUser() user: RequestUser,
     @Param() params: MentorshipStudentParamDto,
   ): Promise<MentorshipBriefDto> {
-    return this.brief.generate({ id: user.id, roles: user.roles }, params.studentId);
+    return this.brief.generate(
+      { id: user.id, roles: user.roles },
+      params.studentId,
+    );
   }
 
   /**
@@ -261,7 +287,10 @@ export class MentorshipCoachController {
     @CurrentUser() user: RequestUser,
     @Param() params: MentorshipStudentParamDto,
   ): Promise<MentorshipAssignmentSuggestionsDto> {
-    return this.suggestions.suggest({ id: user.id, roles: user.roles }, params.studentId);
+    return this.suggestions.suggest(
+      { id: user.id, roles: user.roles },
+      params.studentId,
+    );
   }
 
   @Delete("students/:studentId")

@@ -10,6 +10,22 @@ import {
 } from "./coaching.js";
 import { paginationQuerySchema } from "./pagination.js";
 
+export const listMentorshipPlanningTasksSchema = paginationQuerySchema
+  .extend({
+    from: isoDateSchema,
+    to: isoDateSchema,
+  })
+  .refine(
+    ({ from, to }) => {
+      const days = (Date.parse(to) - Date.parse(from)) / 86_400_000;
+      return days >= 0 && days <= 6;
+    },
+    { path: ["to"], message: "invalid_date_range" },
+  );
+export type ListMentorshipPlanningTasksInput = z.infer<
+  typeof listMentorshipPlanningTasksSchema
+>;
+
 /**
  * Mentorship (human coach ↔ student) input schemas — W8.
  * Leaf import only (`./pagination.js`, never `./index.js`) — see coaching.ts for the ESM cycle note.
@@ -147,7 +163,12 @@ const mentorshipAssignmentUpdateFieldsSchema = planTaskFieldsSchema
   .omit({ description: true, sortOrder: true })
   .partial()
   .extend({
-    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullish(),
+    coachNote: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MENTORSHIP_COACH_NOTE_MAX)
+      .nullish(),
   });
 
 export const mentorshipAssignmentVisibleSignatureSchema = z
@@ -158,7 +179,12 @@ export const mentorshipAssignmentVisibleSignatureSchema = z
     topic: planTaskFieldsSchema.shape.topic.unwrap(),
     startTime: planTaskFieldsSchema.shape.startTime.unwrap(),
     endTime: planTaskFieldsSchema.shape.endTime.unwrap(),
-    coachNote: z.string().trim().min(1).max(MENTORSHIP_COACH_NOTE_MAX).nullable(),
+    coachNote: z
+      .string()
+      .trim()
+      .min(1)
+      .max(MENTORSHIP_COACH_NOTE_MAX)
+      .nullable(),
   })
   .strict();
 export type MentorshipAssignmentVisibleSignature = z.infer<
@@ -206,9 +232,10 @@ export type RemoveMentorshipAssignmentGroupInput = z.infer<
   typeof removeMentorshipAssignmentGroupSchema
 >;
 
-export const mentorshipAssignmentParamSchema = mentorshipStudentParamSchema.extend({
-  assignmentId: z.string().uuid(),
-});
+export const mentorshipAssignmentParamSchema =
+  mentorshipStudentParamSchema.extend({
+    assignmentId: z.string().uuid(),
+  });
 export const mentorshipAssignmentGroupParamSchema = z.object({
   assignmentGroupId: z.string().uuid(),
 });
@@ -244,7 +271,11 @@ export const listMentorshipPlanQuerySchema = paginationQuerySchema
             86_400_000,
         ) + 1;
       if (days > 62) {
-        ctx.addIssue({ code: "custom", message: "range_too_large", path: ["to"] });
+        ctx.addIssue({
+          code: "custom",
+          message: "range_too_large",
+          path: ["to"],
+        });
       }
     }
   });
