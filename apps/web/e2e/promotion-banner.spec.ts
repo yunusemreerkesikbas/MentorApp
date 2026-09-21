@@ -5,6 +5,7 @@ import type {
   PromotionOffersView,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 /**
  * Dashboard promotion strip. Separate from `promotions.spec.ts` because the dashboard needs a
@@ -125,7 +126,7 @@ const today: TodayPanelResponse = {
   greetingName: "Banner Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [],
   nextAction: {
     kind: "ADD_TASK",

@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AuthUser, TodayPanelResponse } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const sessionIds = [
   "33333333-3333-4333-8333-333333333333",
@@ -198,7 +199,7 @@ const today: TodayPanelResponse = {
   greetingName: "Reklam Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [],
   nextAction: {
     kind: "ADD_TASK",

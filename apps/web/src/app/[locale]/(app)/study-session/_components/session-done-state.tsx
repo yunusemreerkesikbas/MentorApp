@@ -18,7 +18,7 @@ import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-repl
 import { sessionStarFill } from "@/lib/completion-stars";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { fetchSubscriptionView } from "@/lib/subscription-view";
+import { useSubscription } from "@/lib/subscription-context";
 import { fetchQuests, isEconomyDisabled, notifyEconomyChanged } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { scheduleSessionReturnReminder } from "@/lib/notification-api";
@@ -97,6 +97,11 @@ export function SessionDoneState({
   const [reflecting, setReflecting] = useState(false);
   const [reflectionLocked, setReflectionLocked] = useState(false);
   const { openPaywall } = usePremiumPaywall();
+  const {
+    view: subscriptionView,
+    loading: subscriptionLoading,
+    refresh: refreshSubscription,
+  } = useSubscription();
   const [remindStatus, setRemindStatus] = useState<"idle" | "saving" | "done">("idle");
   const [streakFeedback, setStreakFeedback] = useState<StreakFeedback>(null);
   const [currentStreak, setCurrentStreak] = useState<number | null>(null);
@@ -174,7 +179,8 @@ export function SessionDoneState({
     if (!sessionId) return;
     setReflecting(true);
     try {
-      const view = await fetchSubscriptionView();
+      // Shared read; only joins a request when the session ended before it settled.
+      const view = subscriptionLoading ? await refreshSubscription() : subscriptionView;
       if (!isPremiumFeatureAvailable(view, "session.reflection")) {
         setReflectionLocked(true);
         return;

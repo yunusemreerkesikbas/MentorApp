@@ -12,6 +12,7 @@ import type {
   CoachMessageDto,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const taskId = "33333333-3333-4333-8333-333333333333";
 const conversationId = "44444444-4444-4444-8444-444444444444";
@@ -60,7 +61,7 @@ const pendingToday: TodayPanelResponse = {
   greetingName: "Koç Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [
     {
       id: taskId,
@@ -102,7 +103,10 @@ test("landing next-action chip pending görevi seansa taşır", async ({
   });
 
   await page.goto("/koc");
-  await expect(page).toHaveURL(/\/koc\/sohbet/);
+  // `/koc` redirects on the client once the RSC payload lands. Under CI's parallel load that
+  // measured ~5.5s after `goto` (the 5s default expect timeout), so the navigation gets its own
+  // budget. The assertion is that the redirect happens, not how fast.
+  await expect(page).toHaveURL(/\/koc\/sohbet/, { timeout: 15_000 });
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
 
   const chip = page.getByTestId("coach-next-action-chip");
@@ -117,7 +121,12 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   page,
   context,
 }) => {
-  const dashboardApi = await mockCoachApi(page, { today: pendingToday });
+  // Premium on purpose: the greeting is only requested for a user entitled to it, so a free
+  // dashboard makes zero calls and the "exactly once" guard below would prove nothing.
+  const dashboardApi = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
   await page.goto("/panel");
 
   const dashboardCard = page.getByTestId("coach-next-action");
@@ -747,6 +756,22 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
         );
       }
       return json(route, options.access ?? accessNone);
+    }
+    // The subscription and `/coach/access` answer the same question from two ends, so the mock
+    // derives one from the other: a PREMIUM access mode means an entitled subscription.
+    if (method === "GET" && path === "/v1/subscription") {
+      const premium = (options.access ?? accessNone).mode === "PREMIUM";
+      return json(route, {
+        subscription: null,
+        entitlement: {
+          tier: premium ? "PREMIUM" : "FREE",
+          isPremium: premium,
+          validUntil: null,
+          reason: premium ? "ACTIVE" : "NONE",
+        },
+        features: {},
+        discount: null,
+      });
     }
     if (method === "GET" && path === "/v1/coaching/today") {
       todayCalls += 1;

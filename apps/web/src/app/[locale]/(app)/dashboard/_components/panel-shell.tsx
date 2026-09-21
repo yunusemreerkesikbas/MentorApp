@@ -17,7 +17,7 @@ import type {
   AdRewardOfferView,
   PlanTaskDto,
   PlanTaskStatus,
-  PromotionSummary,
+  PromotionOffersView,
   QuestProgressView,
   SessionPresetDto,
   StreakRescueView,
@@ -68,7 +68,7 @@ import {
   formatPromotionMagnitude,
   pickBannerPromotion,
 } from "@/lib/promotions";
-import { fetchSubscriptionView } from "@/lib/subscription-view";
+import { useSubscription } from "@/lib/subscription-context";
 import { useDailyGreeting } from "@/lib/use-daily-greeting";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { StreakRescueSuccess } from "@/components/streak-rescue-success";
@@ -153,9 +153,19 @@ export function PanelShell({ initialData }: PanelShellProps) {
   );
   const [quests, setQuests] = useState<QuestProgressView[] | null>(null);
   /** `undefined` = offers still resolving · `null` = nothing to advertise · summary = a real discount. */
-  const [bannerPromotion, setBannerPromotion] = useState<PromotionSummary | null | undefined>(
-    undefined,
-  );
+  const [promotionOffers, setPromotionOffers] = useState<
+    PromotionOffersView | null | undefined
+  >(undefined);
+  const { view: subscriptionView, loading: subscriptionLoading } = useSubscription();
+  // Derived, not stored: the entitlement now arrives from the shared read, which can settle
+  // before or after the offers call.
+  const bannerPromotion =
+    promotionOffers === undefined || subscriptionLoading
+      ? undefined
+      : pickBannerPromotion(
+          promotionOffers,
+          subscriptionView?.entitlement.isPremium !== false,
+        );
   const [rewardOffer, setRewardOffer] = useState<AdRewardOfferView | null>(null);
   const [rewardUnavailable, setRewardUnavailable] = useState(false);
   const [openedWeeklyRecap, setOpenedWeeklyRecap] = useState<string | null>(
@@ -394,15 +404,11 @@ export function PanelShell({ initialData }: PanelShellProps) {
       .catch(() => {
         if (active) setRewardOffer(null);
       });
-    // Both requests are deduped module-side, so the welcome dialog and the paywall share them.
-    void Promise.all([fetchSubscriptionView(), fetchAutoPromotionOffers()]).then(
-      ([view, offers]) => {
-        if (!active) return;
-        setBannerPromotion(
-          pickBannerPromotion(offers, view?.entitlement.isPremium !== false),
-        );
-      },
-    );
+    // The offers call is deduped module-side; the entitlement rides the shared read below.
+    void fetchAutoPromotionOffers().then((offers) => {
+      if (!active) return;
+      setPromotionOffers(offers);
+    });
 
     return () => {
       active = false;
@@ -594,7 +600,16 @@ export function PanelShell({ initialData }: PanelShellProps) {
             },
           ]
         : [];
-  const topBannerItems: TopBannerItem[] = [...promotionBannerItems, ...questBannerItems];
+  /*
+   * Nothing shows until the promotion question is answered (`undefined` = offers or entitlement
+   * still in flight). The two feeds resolve independently now, and the quest offer is the faster
+   * one: without this gate the strip opens on the quest, then reshuffles under the reader when the
+   * campaign lands and takes the lead. A beat of silence beats a strip that rewrites itself.
+   */
+  const topBannerItems: TopBannerItem[] =
+    bannerPromotion === undefined
+      ? []
+      : [...promotionBannerItems, ...questBannerItems];
 
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8">

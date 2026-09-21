@@ -234,11 +234,27 @@ export interface StudySessionDto {
   planTaskAutoCompleted: boolean;
 }
 
+/**
+ * One day of the current week, for the panel's streak band.
+ *
+ * `active` is a real activity day; `frozen` is a day a freeze bridged (free monthly allowance or a
+ * purchased rescue), which the UI shows as kept rather than missed. Neither is derived on the
+ * client: the streak walk decides both, so the band can never contradict `currentStreak`.
+ */
+export interface StreakWeekDayDto {
+  /** yyyy-mm-dd, same calendar basis as the streak derivation. */
+  date: string;
+  active: boolean;
+  frozen: boolean;
+}
+
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */
 export interface StreakSummaryDto {
   currentStreak: number;
   longestStreak: number;
   freezeTokens: number;
+  /** Monday→Sunday of the week `today` falls in; days after today are simply inactive. */
+  week: StreakWeekDayDto[];
 }
 
 /**

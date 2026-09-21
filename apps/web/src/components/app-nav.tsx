@@ -14,18 +14,12 @@ import {
   UsersRound,
 } from "lucide-react";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import {
-  UserRole,
-  type AuthUser,
-  type EconomyBalance,
-  type SubscriptionView,
-} from "@mentor/types";
+import { UserRole, type AuthUser, type EconomyBalance } from "@mentor/types";
 import { NotificationBell } from "@mentor/ui";
-import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
@@ -49,6 +43,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { isNavActive } from "@/lib/nav-active";
+import { useIsPremium } from "@/lib/subscription-context";
 import { useAppSidebar } from "@/lib/use-app-sidebar";
 
 /** Chrome micro-motion — DESIGN.md §9 (~150–250ms, ease-out). */
@@ -175,23 +170,9 @@ export function AppNav() {
   const ui = useTranslations("common");
   const { user } = useAuth();
   const { balance } = useEconomySnapshot();
-  const [premium, setPremium] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    subscriptionsControllerGetMine()
-      .then((raw) => {
-        if (!active) return;
-        const view = raw as unknown as SubscriptionView;
-        setPremium(Boolean(view.entitlement?.isPremium));
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
-
-    return () => { active = false; };
-  }, []);
+  // Shared read (see `subscription-context`): the nav used to fetch `/v1/subscription` on its own,
+  // which was one of the three calls the same page made for the same answer.
+  const premium = useIsPremium();
 
   const hideMobileChrome = hidesMobileAppChrome(pathname);
 
@@ -643,8 +624,13 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
         <Coins className="size-3.5 text-[var(--color-progress)]" aria-hidden />
         {formatCompact(balance.coinConfirmed)}
       </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
-        <Gem className="size-3.5 text-[#B7791F]" aria-hidden />
+      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-star)_30%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
+        {/* Raw star is ~1.5:1 on its own well; mixed toward ink it measures ~3.2:1 and follows the
+            theme, which the two hardcoded ambers it replaces did not. */}
+        <Gem
+          className="size-3.5 text-[color-mix(in_srgb,var(--color-star)_60%,var(--color-main))]"
+          aria-hidden
+        />
         {formatCompact(balance.xp)}
       </span>
     </div>

@@ -6,6 +6,7 @@ import type {
   SubscriptionView,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const user: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222",
@@ -374,7 +375,7 @@ const today: TodayPanelResponse = {
   greetingName: "Bilgi Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [],
   nextAction: {
     kind: "ADD_TASK",

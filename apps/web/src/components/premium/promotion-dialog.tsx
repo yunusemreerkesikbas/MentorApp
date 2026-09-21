@@ -5,7 +5,7 @@ import type { PromotionSummary } from "@mentor/types";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchAutoPromotionOffers, pickPromotionForDialog } from "@/lib/promotions";
 import { readIdSet, writeIdSet } from "@/lib/seen-ids";
-import { fetchSubscriptionView } from "@/lib/subscription-view";
+import { useSubscription } from "@/lib/subscription-context";
 import { PromotionCard } from "./promotion-card";
 
 /**
@@ -31,6 +31,7 @@ const SEEN_KEY = "mentor.promotion-dialog.seen.v1";
 
 export function PromotionDialog() {
   const { openPaywall } = usePremiumPaywall();
+  const { view, loading } = useSubscription();
   const [promotion, setPromotion] = useState<PromotionSummary | null>(null);
 
   // Fire-once-per-visit, guarded by a ref rather than a cancellation flag. Under StrictMode the
@@ -40,16 +41,14 @@ export function PromotionDialog() {
   const startedRef = useRef(false);
 
   useEffect(() => {
-    if (startedRef.current) return;
+    // Waits for the shared entitlement rather than fetching its own copy of it.
+    if (loading || startedRef.current) return;
     startedRef.current = true;
 
     void (async () => {
       // A failure here must never surface: this is a bonus, not a feature the user asked for.
-      // Both fetches are deduped module-side, so this rides the requests the dashboard already makes.
-      const [view, offers] = await Promise.all([
-        fetchSubscriptionView(),
-        fetchAutoPromotionOffers(),
-      ]);
+      // The offers call is deduped module-side, so this rides the request the dashboard makes.
+      const offers = await fetchAutoPromotionOffers();
       if (!offers) return;
       if (view?.entitlement.isPremium !== false) return; // Premium (or unknown) — no commercial nudge.
 
@@ -75,7 +74,7 @@ export function PromotionDialog() {
       writeIdSet("local", SEEN_KEY, new Set(seen).add(next.id));
       setPromotion(next);
     })();
-  }, []);
+  }, [loading, view]);
 
   if (!promotion) return null;
 

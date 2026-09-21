@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useTranslations } from "next-intl";
 
-import { fetchSubscriptionView } from "@/lib/subscription-view";
+import { useSubscription } from "@/lib/subscription-context";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 
 /**
@@ -13,18 +12,10 @@ import { usePremiumPaywall } from "@/lib/premium-paywall";
 export function PremiumCampaignBanner({ className }: { className?: string }) {
   const t = useTranslations("campaign");
   const { openPaywall } = usePremiumPaywall();
-  const [visible, setVisible] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-    fetchSubscriptionView().then((view) => {
-      if (!active) return;
-      setVisible(view != null && !view.entitlement.isPremium);
-    });
-    return () => {
-      active = false;
-    };
-  }, []);
+  const { view, loading } = useSubscription();
+  // Stays hidden while the read is in flight and when it failed — an upsell that flashes at a
+  // premium member is worse than one that arrives a moment late.
+  const visible = !loading && view != null && !view.entitlement.isPremium;
 
   if (!visible) return null;
 

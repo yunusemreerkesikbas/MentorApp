@@ -145,6 +145,21 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-20 · `StreakSummaryDto.week` + `/coaching/today` iki dalgaya indi.** Panelin hafta şeridi
+  bugüne kadar bugünü ve **sonraki** altı günü çiziyordu (web tarafında UTC `todayIso`), yalnız bugünün
+  hücresi yanabiliyordu. Artık sunucu veriyor: `week`, `today`ın içinde bulunduğu haftanın Pazartesi→Pazar
+  yedi günü, her biri `{ date, active, frozen }`. Saf `buildStreakWeek(today, activeDates, bridgedDates)`
+  (`domain/streak.ts`) `deriveStreak`'in zaten döndürdüğü `bridgedDates`'ten besleniyor, ek sorgu yok;
+  `frozen` = ücretsiz aylık dondurma ya da satın alınmış kurtarma. Gün temeli bilerek streak ile aynı
+  (`date.util.ts` `todayIso()`, UTC): bant ile `currentStreak` asla çelişmemeli. **Gotcha:** streak günü
+  UTC olduğu için İstanbul'da 00.00–03.00 arası "bugün" bir gün geride görünür; bu bandın değil mevcut
+  streak sisteminin davranışı (`todayInIstanbul()` var ama gün temelini değiştirmek streak matematiğini
+  etkiler — ayrı karar). Ayrıca `TodayService.getToday` artık iki dalga: profil ile streak/plan/mood/odak
+  sorguları birlikte gidiyor, yalnız takvim okumaları (examType'a bağlı) ikinci dalgada bekliyor.
+  Kullanım: web hafta bandını `streak.week`'ten okur, kendi tarih hesabını yapmaz. İlgili:
+  `domain/streak.ts`, `application/streak.service.ts`, `application/today.service.ts`,
+  `packages/types/src/coaching.ts`, `apps/web/e2e/streak.fixture.ts`.
+
 - **2026-09-19 · Session done overlay + shared CompletionSummary.** Finishing a focus session
   keeps the frozen room/focus ground, blurs it, and centers a reusable completion card
   (`CompletionOverlay` + `CompletionSummary` in `@mentor/ui`). Stars fill from

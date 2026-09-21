@@ -13,7 +13,7 @@ import { isCelebrationOverlayBlocking } from "@/lib/celebration-queue";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
-import { fetchSubscriptionView } from "@/lib/subscription-view";
+import { useSubscription } from "@/lib/subscription-context";
 import { MOOD_WHEEL_OPTIONS } from "./mood-assets";
 import {
   deferMoodPromptForToday,
@@ -48,9 +48,6 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     celebrationsReady,
     celebrationActive,
   );
-  const [reflectionAvailable, setReflectionAvailable] = useState<boolean | null>(
-    null,
-  );
   const [mood, setMood] = useState<number | null>(initial?.mood ?? null);
   const [message, setMessage] = useState<string | null>(initial?.message ?? null);
   const [note, setNote] = useState<string>(initial?.struggleNote ?? "");
@@ -61,13 +58,8 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
   const [speechModalOpen, setSpeechModalOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const autoPromptAttemptedRef = useRef(false);
-  const reflectionAvailableRef = useRef(reflectionAvailable);
   const reflectRequestIdRef = useRef(0);
   const pageHydratedReflectRef = useRef(false);
-
-  useEffect(() => {
-    reflectionAvailableRef.current = reflectionAvailable;
-  }, [reflectionAvailable]);
 
   const generateReflection = useCallback(async () => {
     const requestId = ++reflectRequestIdRef.current;
@@ -104,38 +96,38 @@ export function useMoodCheckin({ initial, onSaved }: UseMoodCheckinOptions) {
     /* eslint-enable react-hooks/set-state-in-effect */
   }, [initial]);
 
+  const { view, loading: subscriptionLoading, refresh } = useSubscription();
+  // Derived, not stored: `null` while the shared entitlement read is still settling, which is what
+  // the lock and the "expect an AI note" branch below both key off.
+  const reflectionAvailable: boolean | null = subscriptionLoading
+    ? null
+    : isPremiumFeatureAvailable(view, "mood.reflection");
+
   useEffect(() => {
-    let active = true;
-    fetchSubscriptionView().then((view) => {
-      if (!active) return;
-      const available = isPremiumFeatureAvailable(view, "mood.reflection");
-      setReflectionAvailable(available);
-      // One page-load hydrate when today's mood exists but AI note was never fetched.
-      if (
-        available &&
-        !pageHydratedReflectRef.current &&
-        initial?.mood != null &&
-        initial.aiReflection == null
-      ) {
-        pageHydratedReflectRef.current = true;
-        void generateReflection();
-      }
-    });
-    return () => {
-      active = false;
-    };
-  }, [generateReflection, initial?.aiReflection, initial?.mood]);
+    // One page-load hydrate when today's mood exists but the AI note was never fetched.
+    if (
+      reflectionAvailable !== true ||
+      pageHydratedReflectRef.current ||
+      initial?.mood == null ||
+      initial.aiReflection != null
+    ) {
+      return;
+    }
+    pageHydratedReflectRef.current = true;
+    void generateReflection();
+  }, [
+    generateReflection,
+    initial?.aiReflection,
+    initial?.mood,
+    reflectionAvailable,
+  ]);
 
   const resolveReflectionAvailable = useCallback(async () => {
-    if (reflectionAvailableRef.current != null) {
-      return reflectionAvailableRef.current;
-    }
-    const view = await fetchSubscriptionView();
-    const available = isPremiumFeatureAvailable(view, "mood.reflection");
-    setReflectionAvailable(available);
-    reflectionAvailableRef.current = available;
-    return available;
-  }, []);
+    if (reflectionAvailable != null) return reflectionAvailable;
+    // Saving before the shared read settled: join the request already in flight rather than
+    // deciding "no reflection" on a value nobody has yet.
+    return isPremiumFeatureAvailable(await refresh(), "mood.reflection");
+  }, [reflectionAvailable, refresh]);
 
   const saveMood = useCallback(
     async (value: number, struggleNote: string) => {
