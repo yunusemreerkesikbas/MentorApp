@@ -1,6 +1,6 @@
 # DESIGN.md — Exam Coaching Platform · Design System
 
-> Status: Living design record · Updated: 2026-09-18  
+> Status: Living design record · Updated: 2026-09-20  
 > Product decisions: [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) · Product register: [`PRODUCT.md`](./PRODUCT.md)  
 > **Visual foundation:** **Nuton — Online Learning Mobile App** Figma UI template, **evolved** into Mentor’s own system (companionship platform).  
 > Source of truth for base values: Figma file `8lc7t0P5kibfQ7GMzLSl3l` (Dev Mode MCP). Evolve layers (surfaces, visual language, motion) are Mentor-owned and documented here.
@@ -9,7 +9,7 @@
 
 ## 1. Overview
 
-Nuton’s language remains the base: **monochrome-forward** — near-black text on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners** on cards/fields. **CTAs are the play ledge** (`@mentor/ui` `Button`): fill `#55ACEE`, ink `#0F2233`, 4px `#3B8FD0` edge the press sinks into, 16px radius. Mentor uses **Plus Jakarta Sans** for headings and body (Turkish-complete, warm at small sizes).
+Nuton’s language remains the base: **monochrome-forward** — near-black text on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners** on cards/fields. **CTAs are the play ledge** (`@mentor/ui` `Button`): fill `#55ACEE`, ink `#0F2233`, 4px `#3B8FD0` edge the press sinks into, 16px radius. Mentor uses **Nunito** (variable, 200–1000) for headings and body (Turkish-complete, rounded and warm at small sizes).
 
 **Evolve (2026-07-12):** We keep Nuton hex/type/radius. We add surface hierarchy, hover elevation, a documented visual language (Puhu + `visuals/`), rich motion with reduced-motion guardrails, and empty/loading rules. Premium feel comes from craft and companionship — not EdTech purple, cream paper backgrounds, or hero-metric grids.
 
@@ -17,7 +17,7 @@ Nuton’s language remains the base: **monochrome-forward** — near-black text 
 intentional celebration exception with feature-scoped tokens: coral `#FF5B49`, deep purple
 `#400073`, lavender `#AFB1FF`, mint `#16D0A6`, and ink `#000000`. These saturated colors and the
 committed Figma exports under `public/visuals/weekly-recap-2023/` must not leak into ordinary app
-surfaces. Static typography remains Plus Jakarta Sans; decorative shapes are exported assets, not
+surfaces. Static typography remains the product face (Nunito); decorative shapes are exported assets, not
 recreated CSS/React artwork.
 
 Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutters. Desktop: gutters **20–32 px**; page max-widths below.
@@ -129,30 +129,41 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
-**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (wells, frost, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
+**Play wells + selected fill (global, 2026-09-20):** `--play-selected` and `--play-well-{blue,peri,violet,coral,pink}` moved from `.onboarding-play-theme` to `html` (dark values on `html.dark`). The panel's quest rows and path nodes speak the same language as the onboarding choice cards, and a token that two surfaces share does not belong to one of them.
 
-**Coach workspace (`(coach)` / `/kocluk`):** same tokens as `/panel` (Plus Jakarta Sans, play-ledge `Button`, blob canvas). Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
+**Premium identity (global, 2026-09-20):** `--premium-ring-from` `#2F55D4` → `--premium-ring-to` `#F2B544` (the cape-blue → clasp-gold avatar ring), `--premium-badge-bg` `#1E2A5A` with `--premium-badge-ink` `#FFD76A` (gold on night blue, ~9:1, so the 11px label holds). Dark lifts the ring's blue end to `#7E9BFF`. See §7 for how they are used.
+
+**Coach accent (`.coach-workspace`, 2026-09-20):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` in `(coach)/_components/coach-theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue marks the workspace — role badge, avatar, row actions, program progress — while the primary CTA stays the play ledge, so "the blue button starts work" holds in both roles.
+
+**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (shine, frost, scrim, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
+
+**Coach workspace (`(coach)` / `/kocluk`):** same tokens as `/panel` (Nunito, play-ledge `Button`, blob canvas). Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
 
 ---
 
 ## 3. Typography
 
-- **Headings / Body / UI:** **Plus Jakarta Sans** with `latin-ext` (ç ğ ı İ ş ö ü).
+- **Headings / Body / UI:** **Nunito** with `latin-ext` (ç ğ ı İ ş ö ü) — the **variable** face (200–1000),
+  loaded without a weight list. Plus Jakarta Sans shipped as four static weights (400–700), so every
+  800/900 in the codebase silently rendered at 700; the play ledge and the panel's numbers need those
+  weights to be real. Rounded terminals also carry the companion tone at small sizes (2026-09-20).
+- **Numerals are uniform width by default** in Nunito (measured: "111" and "000" match at 400/800/900),
+  so counters and countdowns do not jitter; `tabular-nums` stays on numeric data as intent, not as a fix.
 - Product register: fixed rem scale (not fluid clamp display). One family is correct.
 
 | Style | Font | Size | Weight | Line-height |
 |---|---|---|---|---|
-| H1 | Plus Jakarta Sans | 32 | 700 Bold | 1.2 |
-| H2 | Plus Jakarta Sans | 20 | 600 SemiBold | 1.4 |
-| H3 | Plus Jakarta Sans | 16 | 500 Medium | 1.7 |
-| H4 | Plus Jakarta Sans | 18 | 700 Bold | 1.5 |
-| H5 | Plus Jakarta Sans | 16 | 700 Bold | 1.5 |
-| Body | Plus Jakarta Sans | 16 | 400 Regular | 1.7 |
-| Caption/meta | Plus Jakarta Sans | 14 | 400 Regular | 1.7 |
-| Small label | Plus Jakarta Sans | 12 | 400 Regular | 1.7 |
-| Tab label (mobile bottom bar only) | Plus Jakarta Sans | 8 | 600 SemiBold | normal · **UPPERCASE** |
-| Desktop sidebar nav | Plus Jakarta Sans | 14 | 600 SemiBold | 1.4 · **sentence case** |
-| Button | Plus Jakarta Sans | 18 | 800 ExtraBold | 1.7 |
+| H1 | Nunito | 32 | 700 Bold | 1.2 |
+| H2 | Nunito | 20 | 600 SemiBold | 1.4 |
+| H3 | Nunito | 16 | 500 Medium | 1.7 |
+| H4 | Nunito | 18 | 700 Bold | 1.5 |
+| H5 | Nunito | 16 | 700 Bold | 1.5 |
+| Body | Nunito | 16 | 400 Regular | 1.7 |
+| Caption/meta | Nunito | 14 | 400 Regular | 1.7 |
+| Small label | Nunito | 12 | 400 Regular | 1.7 |
+| Tab label (mobile bottom bar only) | Nunito | 8 | 600 SemiBold | normal · **UPPERCASE** |
+| Desktop sidebar nav | Nunito | 14 | 600 SemiBold | 1.4 · **sentence case** |
+| Button | Nunito | 18 | 800 ExtraBold | 1.7 |
 
 Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
@@ -359,7 +370,7 @@ deliberate presence cue, disabled under reduced motion.
 - Global feed referansı kart yoğunluğu, sekmeler ve bağlamsal rail için kullanılır; oda içi CHAT
   mevcut düz kanal ritmini korur. Slack/Discord referansından yalnız grup başlıkları, breadcrumb ve
   katkı verenler deseni alınır; presence/typing/realtime kanal davranışı alınmaz.
-- Kartlar açık yüzey, `main/body-text/secondary-text`, `chip`, `btn`, 10px radius ve Plus Jakarta Sans
+- Kartlar açık yüzey, `main/body-text/secondary-text`, `chip`, `btn`, 10px radius ve Nunito
   tokenlarını kullanır. Referans görsellerin font/renk sistemi kopyalanmaz; negatif oy yoktur.
 - Mobilde sol oda drawer'ı ve native modal focus trap; desktopta global feed/oda/detay için
   bağlamsal rail. Etkileşim hedefleri en az 44px, focus ring görünür, motion yalnız ölçülü
@@ -369,7 +380,7 @@ deliberate presence cue, disabled under reduced motion.
 
 ## 13. Open Items / asset backlog
 
-- [x] Turkish glyph coverage — Plus Jakarta Sans `latin-ext`.
+- [x] Turkish glyph coverage — Nunito `latin-ext` (Plus Jakarta Sans until 2026-09-20).
 - [x] Desktop breakpoints — `lg` sidebar switch.
 - [x] Surface hierarchy + hover shadow + visual/motion language (2026-07-12 evolve).
 - [x] Motion personality — celebration vs measured surfaces (§9.1, 2026-07-26).

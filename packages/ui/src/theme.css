@@ -74,9 +74,11 @@
   --notebook-label: #fdfbf6;
   --notebook-page-shadow: 0px 8px 24px rgba(37, 73, 150, 0.14);
 
-  /* Typography */
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Plus Jakarta Sans", sans-serif;
+  /* Typography — one family (DESIGN.md §3). `--font-sans` keeps Tailwind's own `font-sans`
+     utility on the product face instead of the browser default. */
+  --font-heading: "Nunito", system-ui, sans-serif;
+  --font-body: "Nunito", system-ui, sans-serif;
+  --font-sans: var(--font-body);
 
   /* Radius — uniform */
   --radius-card: 10px;
@@ -110,6 +112,34 @@ html {
   --play-track: #f0edec;
   --play-selected-ink: #1a5fa3;
   --play-radius: 16px;
+  /*
+   * Selected fill + icon wells. These started scoped to `.onboarding-play-theme`; the panel's
+   * quest rows and path nodes speak the same language, so they live on `html` now. The rest of
+   * the play set (frost, scrim, window, sheet radius) stays scoped — it only makes sense on art.
+   */
+  --play-selected: #e4eefe;
+  --play-well-blue: #c3d9fd;
+  --play-well-peri: #d6dbfd;
+  --play-well-violet: #ece3ff;
+  --play-well-coral: #ffe8e2;
+  --play-well-pink: #f3ddf6;
+  /*
+   * Premium identity (DESIGN.md §7): the ring reads cape-blue → clasp-gold, the badge is the
+   * clasp itself. Gold on night blue is ~9:1, so the badge label stays legible at 11px.
+   */
+  --premium-ring-from: #2f55d4;
+  --premium-ring-to: #f2b544;
+  --premium-badge-bg: #1e2a5a;
+  --premium-badge-ink: #ffd76a;
+  /*
+   * Coach identity (DESIGN.md §2.5): ink blue marks what a human coach did. The coach's workspace
+   * chrome uses it, and so does the student side for the tasks and notes that came from their
+   * coach, which is why it lives here instead of scoped to the coach shell: both sides should say
+   * "your coach" in the same colour.
+   */
+  --coach-accent: #26377f;
+  --coach-accent-soft: #e6e9f7;
+  --coach-accent-ink: #1f2c66;
 }
 
 ::placeholder {
@@ -154,6 +184,19 @@ html.dark {
   --play-line: rgba(255, 255, 255, 0.1);
   --play-track: #242833;
   --play-selected-ink: #7eb6e8;
+  --play-selected: #2c3d56;
+  --play-well-blue: #242833;
+  --play-well-peri: #2a2f45;
+  --play-well-violet: #332c47;
+  --play-well-coral: #3a2a28;
+  --play-well-pink: #3a2a3f;
+  /* The badge keeps its night/gold pairing in dark; only the ring's blue end lifts to stay visible
+     against the charcoal surface. */
+  --premium-ring-from: #7e9bff;
+  /* Ink blue goes unreadable on charcoal, so the accent lifts and the well drops. */
+  --coach-accent: #8fa2ee;
+  --coach-accent-soft: #252b40;
+  --coach-accent-ink: #c3ccf5;
 }
 
 /*
@@ -198,13 +241,7 @@ html.dark {
 .onboarding-play-theme {
   /** Highlight stripe on the progress fill. */
   --play-cta-shine: rgba(255, 255, 255, 0.35);
-  --play-selected: #e4eefe;
   --play-sheet-radius: 28px;
-  --play-well-blue: #c3d9fd;
-  --play-well-peri: #d6dbfd;
-  --play-well-violet: #ece3ff;
-  --play-well-coral: #ffe8e2;
-  --play-well-pink: #f3ddf6;
   /* Chrome that sits on artwork, so it keeps one look in both themes. */
   --play-frost: rgba(255, 255, 255, 0.72);
   --play-frost-ink: #111111;
@@ -215,15 +252,6 @@ html.dark {
   --play-window-light: #fff3d1;
   --play-window-lamp: #ffd15c;
   --play-window-glow: rgba(255, 209, 92, 0.45);
-}
-
-html.dark .onboarding-play-theme {
-  --play-selected: #2c3d56;
-  --play-well-blue: #242833;
-  --play-well-peri: #2a2f45;
-  --play-well-violet: #332c47;
-  --play-well-coral: #3a2a28;
-  --play-well-pink: #3a2a3f;
 }
 
 /*

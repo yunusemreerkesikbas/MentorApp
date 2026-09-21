@@ -12,6 +12,7 @@ import { COACH_HOME, isCoach, isStudentOnlyPath } from "@/lib/coach-surface";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { PremiumPaywallProvider } from "@/lib/premium-paywall";
+import { SubscriptionProvider } from "@/lib/subscription-context";
 
 /** Auth guard and responsive app chrome; the server layout owns metadata and messages. */
 export function AppShell({ children }: { children: ReactNode }) {
@@ -39,11 +40,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     if (status === "authenticated" && bouncedToCoachHome) router.replace(COACH_HOME);
   }, [status, user, router, bouncedToCoachHome]);
 
-  // `/plan` owns a role-aware loading skeleton. Let that route render while the silent refresh
-  // resolves; every other app route keeps the shared guard fallback below.
-  if (status === "loading" && pathname === "/plan") {
+  // `/plan` and `/dashboard` own their loading skeletons. Let them render while the silent refresh
+  // resolves, inside the same chrome offsets the real page gets, so the swap moves nothing; every
+  // other app route keeps the shared guard fallback below.
+  if (status === "loading" && (pathname === "/plan" || pathname === "/dashboard")) {
     return (
-      <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
+      <div
+        className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
+        style={{ backgroundColor: "var(--color-bg)" }}
+      >
         {children}
       </div>
     );
@@ -63,26 +68,30 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  // Above the paywall and the nav: both ask whether this user is premium, and so does every
+  // screen under them. Mounted after the auth gate, so the read starts with a token in memory.
   return (
-    <NotificationDrawerShell>
-      <PremiumPaywallProvider>
-        <div
-          className="min-h-screen"
-          style={{ backgroundColor: "var(--color-bg)" }}
-        >
-          <AppNav />
-          <EconomySync />
+    <SubscriptionProvider>
+      <NotificationDrawerShell>
+        <PremiumPaywallProvider>
           <div
-            className={
-              hideMobileTabOffset
-                ? "mentor-app-shell min-h-screen"
-                : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
-            }
+            className="min-h-screen"
+            style={{ backgroundColor: "var(--color-bg)" }}
           >
-            {children}
+            <AppNav />
+            <EconomySync />
+            <div
+              className={
+                hideMobileTabOffset
+                  ? "mentor-app-shell min-h-screen"
+                  : `mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`
+              }
+            >
+              {children}
+            </div>
           </div>
-        </div>
-      </PremiumPaywallProvider>
-    </NotificationDrawerShell>
+        </PremiumPaywallProvider>
+      </NotificationDrawerShell>
+    </SubscriptionProvider>
   );
 }

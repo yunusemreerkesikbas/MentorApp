@@ -28,7 +28,7 @@
 - [ ] **Theme:** `html.dark` + CSS vars (DESIGN.md §2.5). Default light. New colors go through tokens —
   never `bg-white` / `#fff` / `dark:bg-black`. Tailwind `dark:` only when a value cannot be a token.
 - [ ] Uniform radius (10px token), single shadow token, 4px grid spacing — DESIGN.md §4-5.
-- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Plus Jakarta Sans latin-ext fallback).
+- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Nunito latin-ext).
 - [ ] **Tone & copy (§0 & [`docs/copy/voice.md`](../copy/voice.md)):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking. Dual register (Puhu chrome / Companion coach & errors), sen address, no em dash (`—`), no AI slop, no "lütfen / kontrol et", non-monetary hak.
 - [ ] Every screen: loading / empty / error states.
 

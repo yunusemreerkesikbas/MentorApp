@@ -6,9 +6,10 @@ import {
   useState,
   useSyncExternalStore,
   type ComponentProps,
+  type ReactNode,
 } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { X } from "lucide-react";
+import { useTranslations } from "next-intl";
+import { ChevronRight, X } from "lucide-react";
 
 import { Link } from "@/i18n/navigation";
 import { readIdSet, writeIdSet } from "@/lib/seen-ids";
@@ -38,6 +39,10 @@ export interface TopBannerItem {
   id: string;
   message: string;
   action: TopBannerAction;
+  /** Card headline above the message. */
+  title?: string;
+  /** Illustration in the slide's band: beside the text on phones, above it in the rail. */
+  visual?: ReactNode;
 }
 
 interface TopBannerProps {
@@ -46,14 +51,26 @@ interface TopBannerProps {
   rotationIntervalMs?: number;
 }
 
+const ACTION_CLASS =
+  "mt-1 inline-flex h-11 w-fit cursor-pointer items-center gap-1 rounded-[var(--play-radius)] bg-[var(--play-cta)] px-4 text-sm font-extrabold text-[var(--play-cta-ink)] shadow-[0_4px_0_var(--play-cta-edge)] outline-none transition-[transform,box-shadow] duration-[120ms] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:translate-y-1 active:shadow-none motion-reduce:transition-none";
+
+/**
+ * The panel's announcement card (it used to be a one-line strip across the top, hence the name
+ * and the testid, both kept so nothing that watches it has to move). Several announcements take
+ * turns in one card: they rotate every 5s, stop while hovered or focused, and each one is closed on
+ * its own for the rest of the tab session.
+ *
+ * Every slide stays mounted in one grid cell and only the current one is visible, so the card is
+ * as tall as its tallest slide: a rotation never moves the cards below it.
+ */
 export function TopBanner({
   closeLabel,
   items,
   rotationIntervalMs = DEFAULT_ROTATION_INTERVAL_MS,
 }: TopBannerProps) {
-  const reduceMotion = useReducedMotion();
+  const t = useTranslations("ads.top_banner");
   // Rendered empty on the server and on the hydrating pass, so a dismissal stored in this tab
-  // never flashes the banner before React catches up.
+  // never flashes the card before React catches up.
   const hydrated = useSyncExternalStore(
     subscribeHydrated,
     getHydratedSnapshot,
@@ -89,13 +106,10 @@ export function TopBanner({
 
   if (!hydrated || !currentItem) return null;
 
-  const actionClassName =
-    "scroll-mt-20 cursor-pointer shrink-0 rounded-[var(--radius-card)] px-2 py-1 font-bold text-[var(--color-main)] underline decoration-[var(--color-accent)] decoration-2 underline-offset-4 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
-
   return (
     <section
-      aria-label={closeLabel}
-      className="mt-12 flex min-h-11 w-full items-center gap-2 overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 shadow-[var(--shadow-card)] lg:mt-0"
+      aria-label={t("label")}
+      className="relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]"
       data-testid="dashboard-top-banner"
       onBlurCapture={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false);
@@ -104,58 +118,80 @@ export function TopBanner({
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      {/*
-        Items turn like the faces of a cube: the outgoing line tips away over the top edge while
-        the next one rides in from underneath. Both faces are on screen at once, so the presence
-        mode stays "sync" and each face is absolutely positioned inside a fixed-height, clipped
-        stage. `perspective` lives on the stage - on the face itself it would flatten the rotation.
-      */}
-      <div
-        className="relative h-11 min-w-0 flex-1 overflow-hidden"
-        style={{ perspective: "700px" }}
-        aria-live="off"
-      >
-        <AnimatePresence initial={false}>
-          <motion.div
-            key={currentItem.id}
-            className="absolute inset-0 flex min-w-0 items-center justify-center gap-2 text-sm"
-            style={{ transformStyle: "preserve-3d", backfaceVisibility: "hidden" }}
-            initial={
-              reduceMotion ? { opacity: 0 } : { rotateX: -90, y: "100%", opacity: 0 }
-            }
-            animate={{ rotateX: 0, y: "0%", opacity: 1 }}
-            exit={reduceMotion ? { opacity: 0 } : { rotateX: 90, y: "-100%", opacity: 0 }}
-            transition={
-              reduceMotion ? { duration: 0 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }
-            }
-          >
-            <span className="truncate font-semibold text-[var(--color-body)]">
-              {currentItem.message}
-            </span>
-            {currentItem.action.kind === "link" ? (
-              <Link className={actionClassName} href={currentItem.action.href}>
-                {currentItem.action.label} →
-              </Link>
-            ) : (
-              <button
-                className={actionClassName}
-                onClick={currentItem.action.onSelect}
-                type="button"
-              >
-                {currentItem.action.label} →
-              </button>
-            )}
-          </motion.div>
-        </AnimatePresence>
-      </div>
       <button
         aria-label={closeLabel}
-        className="scroll-mt-20 grid size-11 shrink-0 place-items-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none hover:text-[var(--color-main)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className="absolute right-2 top-2 z-[2] grid size-9 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-surface)_75%,transparent)] text-[var(--color-secondary)] outline-none hover:text-[var(--color-main)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         onClick={() => dismissItem(currentItem.id)}
         type="button"
       >
-        <X aria-hidden size={18} />
+        <X aria-hidden size={16} />
       </button>
+
+      <div className="grid" aria-live="off">
+        {visibleItems.map((item, index) => {
+          const active = index === safeIndex;
+          return (
+            <div
+              key={item.id}
+              aria-hidden={!active}
+              inert={!active}
+              className={`flex gap-4 p-4 pr-12 transition-[opacity,transform,visibility] duration-300 ease-out [grid-area:1/1] motion-reduce:transition-none xl:flex-col xl:gap-0 xl:p-0 ${active ? "visible translate-x-0 opacity-100" : "invisible translate-x-3 opacity-0"}`}
+            >
+              {item.visual ? (
+                <div className="grid size-20 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,color-mix(in_srgb,var(--blob-cyan)_55%,var(--color-surface)),color-mix(in_srgb,var(--play-well-violet)_85%,var(--color-surface)))] xl:h-28 xl:w-full xl:rounded-none">
+                  {item.visual}
+                </div>
+              ) : null}
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5 xl:px-5 xl:pb-4 xl:pt-4">
+                {item.title ? (
+                  <p className="text-base font-extrabold leading-snug text-[var(--color-main)]">
+                    {item.title}
+                  </p>
+                ) : null}
+                <p
+                  className={
+                    item.title
+                      ? "text-sm leading-6 text-[var(--color-body)]"
+                      : "pr-6 text-base font-extrabold leading-snug text-[var(--color-main)] xl:pr-0"
+                  }
+                >
+                  {item.message}
+                </p>
+                {item.action.kind === "link" ? (
+                  <Link className={ACTION_CLASS} href={item.action.href}>
+                    {item.action.label}
+                    <ChevronRight className="size-4" strokeWidth={2.5} aria-hidden />
+                  </Link>
+                ) : (
+                  <button className={ACTION_CLASS} onClick={item.action.onSelect} type="button">
+                    {item.action.label}
+                    <ChevronRight className="size-4" strokeWidth={2.5} aria-hidden />
+                  </button>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {visibleItems.length > 1 ? (
+        <div className="flex justify-center gap-1.5 pb-3.5">
+          {visibleItems.map((item, index) => (
+            <button
+              key={item.id}
+              type="button"
+              aria-label={t("slide", { index: index + 1, total: visibleItems.length })}
+              aria-current={index === safeIndex ? "true" : undefined}
+              onClick={() => setCurrentIndex(index)}
+              className="grid h-6 cursor-pointer place-items-center outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            >
+              <span
+                className={`block h-1.5 rounded-full transition-[width,background-color] duration-200 motion-reduce:transition-none ${index === safeIndex ? "w-5 bg-[var(--play-cta)]" : "w-1.5 bg-[var(--play-line)]"}`}
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
     </section>
   );
 }

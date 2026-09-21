@@ -5,10 +5,12 @@ import type {
   PromotionOffersView,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 /**
- * Dashboard promotion strip. Separate from `promotions.spec.ts` because the dashboard needs a
- * much wider mock surface than the paywall does.
+ * Dashboard announcement card (the old top strip, moved into the rail in APP-103 Faz 2; it keeps
+ * the `dashboard-top-banner` testid). Separate from `promotions.spec.ts` because the dashboard
+ * needs a much wider mock surface than the paywall does.
  */
 
 const user: AuthUser = {
@@ -125,7 +127,7 @@ const today: TodayPanelResponse = {
   greetingName: "Banner Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [],
   nextAction: {
     kind: "ADD_TASK",
@@ -159,16 +161,8 @@ interface Options {
 async function mockDashboard(page: Page, options: Options = {}) {
   await page.addInitScript((seen: string) => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
-    window.localStorage.setItem(
-      "mentor_mood_prompt_deferred_date",
-      new Date().toISOString().slice(0, 10),
-    );
-    // Suppresses the promotion dialog so it does not open a modal over the strip.
+    // Suppresses the promotion dialog so it does not open a modal over the card.
     window.localStorage.setItem("mentor.promotion-dialog.seen.v1", seen);
-    window.sessionStorage.setItem(
-      "mentor_panel_welcome_date",
-      new Date().toISOString().slice(0, 10),
-    );
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
   }, JSON.stringify(options.seenCampaigns ?? [PROMO_ID, RIVAL_ID]));
 
@@ -254,8 +248,9 @@ async function mockDashboard(page: Page, options: Options = {}) {
 
 const PROMO_TEXT = "%20 indirim seni bekliyor: Hoş geldin hediyesi";
 const QUEST_TEXT = "Günlük görevlerinde 10 Coin seni bekliyor.";
+const TRIAL_TEXT = "7 gün ücretsiz deneme";
 
-test("indirimli ücretsiz kullanıcı panelde promosyon şeridini görür", async ({ page }) => {
+test("indirimli ücretsiz kullanıcı panelde promosyon kartını görür", async ({ page }) => {
   await mockDashboard(page, { offers: DISCOUNTED_OFFERS });
   await page.goto("/panel");
 
@@ -266,35 +261,45 @@ test("indirimli ücretsiz kullanıcı panelde promosyon şeridini görür", asyn
   await expect(page.getByTestId("premium-paywall")).toBeVisible();
 });
 
-test("premium kullanıcıya promosyon şeridi gösterilmez", async ({ page }) => {
+test("premium kullanıcı teklif yerine avantajlarını görür", async ({ page }) => {
   await mockDashboard(page, { offers: DISCOUNTED_OFFERS, premium: true });
   await page.goto("/panel");
 
-  // A Premium user gets no commercial nudge; with no rewarded item either the strip stays empty.
+  // A Premium user gets no commercial nudge: the membership slot shows what they already have.
+  await expect(page.getByTestId("premium-perks-card")).toBeVisible();
   await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
 });
 
-test("indirim yokken promosyon şeridi çıkmaz", async ({ page }) => {
+test("indirim yokken kart deneme teklifiyle açılır", async ({ page }) => {
   await mockDashboard(page);
   await page.goto("/panel");
 
-  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  // No discount to announce: the one commercial ask is the plain trial, in the same card.
+  const card = page.getByTestId("dashboard-top-banner");
+  await expect(card).toContainText(TRIAL_TEXT);
+  await expect(card).not.toContainText(PROMO_TEXT);
+  await card.getByRole("button", { name: "Ücretsiz dene" }).click();
+  await expect(page.getByTestId("premium-paywall")).toBeVisible();
 });
 
-test("iki item varken şerit döner ve imleç üzerindeyken durur", async ({ page }) => {
+test("iki duyuru varken kart döner ve imleç üzerindeyken durur", async ({ page }) => {
   await mockDashboard(page, { offers: DISCOUNTED_OFFERS, rewardedItem: true });
   await page.goto("/panel");
 
   const banner = page.getByTestId("dashboard-top-banner");
+  // Every slide stays mounted (the card keeps its tallest slide's height), so these assert on what
+  // is VISIBLE, not on what is in the DOM.
   // The promotion leads: a campaign ends, quests are there every day.
-  await expect(banner).toContainText(PROMO_TEXT);
-  // Rotation (5s) runs for the first time now that two items can coexist.
-  await expect(banner).toContainText(QUEST_TEXT, { timeout: 10_000 });
+  await expect(banner.getByText(PROMO_TEXT)).toBeVisible();
+  await expect(banner.getByText(QUEST_TEXT)).toBeHidden();
+  // Rotation (5s) brings the quest item forward.
+  await expect(banner.getByText(QUEST_TEXT)).toBeVisible({ timeout: 10_000 });
 
-  // Hover pauses it — the quest item is still there a full cycle later.
+  // Hover pauses it — the quest item is still the one showing a full cycle later.
   await banner.hover();
   await page.waitForTimeout(6_000);
-  await expect(banner).toContainText(QUEST_TEXT);
+  await expect(banner.getByText(QUEST_TEXT)).toBeVisible();
+  await expect(banner.getByText(PROMO_TEXT)).toBeHidden();
 });
 
 test("bir duyuru kapatılınca diğeri ayakta kalır", async ({ page }) => {
@@ -321,7 +326,7 @@ test("bir duyuru kapatılınca diğeri ayakta kalır", async ({ page }) => {
   await expect(reloaded).not.toContainText(shown);
 });
 
-test("son duyuru da kapatılınca şerit gider ve yenilemede geri gelmez", async ({ page }) => {
+test("son duyuru da kapatılınca kart gider ve yenilemede geri gelmez", async ({ page }) => {
   await mockDashboard(page, { offers: DISCOUNTED_OFFERS, rewardedItem: true });
   await page.goto("/panel");
 
@@ -338,21 +343,16 @@ test("son duyuru da kapatılınca şerit gider ve yenilemede geri gelmez", async
   await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
 });
 
-test("promosyon şeridi varken rail kampanya kartı çekilir", async ({ page }) => {
-  await mockDashboard(page, { offers: DISCOUNTED_OFFERS });
+test("indirim varken deneme teklifi kartta yer almaz", async ({ page }) => {
+  await mockDashboard(page, { offers: DISCOUNTED_OFFERS, rewardedItem: true });
   await page.goto("/panel");
 
-  // One commercial ask at a time: the specific discount wins over the generic trial card.
-  await expect(page.getByTestId("dashboard-top-banner")).toContainText(PROMO_TEXT);
-  await expect(page.getByTestId("premium-campaign-banner")).toHaveCount(0);
-});
-
-test("promosyon yokken rail kampanya kartı yerinde durur", async ({ page }) => {
-  await mockDashboard(page);
-  await page.goto("/panel");
-
-  await expect(page.getByTestId("premium-campaign-banner")).toBeVisible();
-  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  // One commercial ask at a time: the specific discount replaces the generic trial, it does not
+  // rotate beside it. The rewarded coin is the only other item, so the card holds exactly two.
+  const card = page.getByTestId("dashboard-top-banner");
+  await expect(card).toContainText(PROMO_TEXT);
+  await expect(card.getByRole("button", { name: /Duyuru \d \/ 2/ })).toHaveCount(2);
+  await expect(card).not.toContainText(TRIAL_TEXT);
 });
 
 function json(route: Route, body: unknown, status = 200) {
@@ -479,7 +479,7 @@ test("süresiz kampanyada damga çıkmaz", async ({ page }) => {
   await expect(page.getByTestId("promotion-validity")).toHaveCount(0);
 });
 
-test("modal kapanınca kampanya şeride devrediliyor", async ({ page }) => {
+test("modal kapanınca kampanya duyuru kartına devrediliyor", async ({ page }) => {
   const codes: (string | undefined)[] = [];
   await mockDashboard(page, { offers: CODED_CAMPAIGN, seenCampaigns: [], captureCodes: codes });
   await page.goto("/panel");
@@ -489,12 +489,12 @@ test("modal kapanınca kampanya şeride devrediliyor", async ({ page }) => {
   await card.getByRole("button", { name: "Sonra bakarım" }).click();
   await expect(card).toHaveCount(0);
 
-  // The campaign must not disappear with the modal: the strip is where it lives afterwards.
-  const strip = page.getByTestId("dashboard-top-banner");
-  await expect(strip).toContainText("Hoş geldin hediyen");
+  // The campaign must not disappear with the modal: the card is where it lives afterwards.
+  const announcement = page.getByTestId("dashboard-top-banner");
+  await expect(announcement).toContainText("Hoş geldin hediyen");
 
-  // And the strip hands the code over too, exactly like the modal does.
-  await strip.getByRole("button", { name: "Şimdi yükselt" }).click();
+  // And the card hands the code over too, exactly like the modal does.
+  await announcement.getByRole("button", { name: "Şimdi yükselt" }).click();
   await expect(page.getByTestId("premium-paywall")).toContainText("Kupon uygulandı: HOSGELDIN");
   expect(codes).toContain("HOSGELDIN");
 });

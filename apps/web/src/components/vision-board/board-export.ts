@@ -204,7 +204,7 @@ function drawImageItem(
 }
 
 export const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
-  body: '"Plus Jakarta Sans", sans-serif',
+  body: '"Nunito", sans-serif',
   heading: '"Poppins", sans-serif',
   script: '"Caveat", cursive',
   serif: '"Playfair Display", Georgia, serif',

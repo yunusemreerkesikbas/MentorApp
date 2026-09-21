@@ -3,24 +3,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Sparkles, X } from "lucide-react";
-import type { CoachAccessDto, VisionDto, VisionNoteDto } from "@mentor/types";
-import {
-  aiChatControllerGetAccess,
-  aiVisionControllerNote,
-  coachingControllerGetVision,
-} from "@mentor/api-client";
-import { Card, Chip, SectionHeading } from "@mentor/ui";
+import { Sparkles, Target, X } from "lucide-react";
+import type { VisionDto, VisionNoteDto } from "@mentor/types";
+import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api-client";
+import { Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { BoardFrame } from "@/components/vision-board/board-frame";
 import { BoardStage } from "@/components/vision-board/board-stage";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
+import { useSubscription } from "@/lib/subscription-context";
+import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "./panel-styles";
 
 /**
- * Vision/goal board ("hayal/vision-board panosu") panel card. Self-fetches the goal; free tier sees the
- * goal + a premium nudge, premium users additionally get a cached AI motivation note. Editing lives
- * on the dedicated `/vision-board` page (no nav tab).
+ * "Hedefin" — the vision/goal board ("hayal/vision-board panosu") panel card. Self-fetches the goal;
+ * free tier sees the goal + a premium nudge, premium users additionally get a cached AI motivation
+ * note. Editing lives on the dedicated `/vision-board` page (no nav tab). Entitlement comes from the
+ * shared subscription read (it used to cost its own `coach/access` call).
  */
 export function VisionBoardCard() {
   const reduceMotion = useReducedMotion();
@@ -28,8 +28,12 @@ export function VisionBoardCard() {
   const { openPaywall } = usePremiumPaywall();
   const [vision, setVision] = useState<VisionDto | null>(null);
   const [loaded, setLoaded] = useState(false);
-  const [premium, setPremium] = useState<boolean | null>(null);
   const [note, setNote] = useState<string | null>(null);
+  const { view, loading: subscriptionLoading } = useSubscription();
+  // `null` while the shared read settles, so neither the note nor the nudge flashes in first.
+  const premium: boolean | null = subscriptionLoading
+    ? null
+    : isPremiumFeatureAvailable(view, "vision.note");
   const [generating, setGenerating] = useState(false);
   const previewRef = useRef<HTMLDialogElement>(null);
 
@@ -83,35 +87,31 @@ export function VisionBoardCard() {
     };
   }, []);
 
-  // Resolve premium + generate the note when a goal exists but has no cached note yet.
+  // Generate the note once when a goal exists, the user is entitled, and nothing is cached yet.
+  const requestedNoteRef = useRef(false);
   useEffect(() => {
-    if (!vision) return;
-    let active = true;
-    aiChatControllerGetAccess()
-      .then((res) => {
-        if (!active) return;
-        const access =
-          (res as unknown as { data?: CoachAccessDto }).data ??
-          (res as unknown as CoachAccessDto);
-        const isPremium = access?.mode === "PREMIUM";
-        setPremium(isPremium);
-        if (isPremium && vision.aiNote == null) void generate();
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [vision, generate]);
+    if (!vision || premium !== true || vision.aiNote != null || requestedNoteRef.current) return;
+    requestedNoteRef.current = true;
+    void generate();
+  }, [vision, premium, generate]);
 
   // Avoid a layout flash before we know whether a goal exists.
   if (!loaded) return null;
 
   return (
     <>
-      <Card>
-        <SectionHeading>{translate("card_title")}</SectionHeading>
+      <section className={PANEL_CARD} aria-labelledby="vision-card-title">
+        <div className="flex items-center gap-2.5">
+          <span
+            className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--play-well-violet)] text-[var(--color-chip-text)]"
+            aria-hidden
+          >
+            <Target className="size-5" strokeWidth={2.2} />
+          </span>
+          <h2 id="vision-card-title" className={PANEL_CARD_TITLE}>
+            {translate("card_title")}
+          </h2>
+        </div>
 
         {vision ? (
           <div className="mt-4 flex flex-col gap-3">
@@ -135,7 +135,11 @@ export function VisionBoardCard() {
                   <BoardStage doc={vision.board} />
                 </BoardFrame>
               </button>
-            ) : null}
+            ) : (
+              <p className="text-[15px] font-bold leading-snug text-[var(--color-main)]">
+                {vision.goalTitle}
+              </p>
+            )}
 
             {generating ? (
               <p
@@ -209,7 +213,7 @@ export function VisionBoardCard() {
             </Link>
           </div>
         )}
-      </Card>
+      </section>
 
       {/*
         Native `<dialog>`, not the imperative DialogProvider/BottomSheet primitives — those render

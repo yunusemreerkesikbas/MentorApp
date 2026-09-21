@@ -63,6 +63,44 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-20 — Uygulama fontu Nunito, 800/900 artık gerçek
+
+`layout.tsx` Plus Jakarta Sans'ı dört statik ağırlıkla (400–700) yüklüyordu; koddaki 102 adet
+`font-extrabold` / `font-black` kullanımı sessizce 700'e düşüyordu. Nunito **değişken** yüz olarak
+(`weight` listesi vermeden, `subsets: ["latin","latin-ext"]`) yükleniyor, `--font-body` değişkeni aynı.
+`@theme`'e `--font-sans: var(--font-body)` eklendi — Tailwind'in kendi `font-sans` utility'si bugüne
+kadar sistem fontunda kalıyordu. Kullanım: her yer `var(--font-heading|body)` üzerinden geçtiği için
+322 çağrı yeri değişmedi. Ölçüldü (tarayıcı, `document.fonts`): 700/800/900 yüzleri yükleniyor,
+32px'te genişlikler 319.6 / 325.4 / 331.4 px — yani ağırlık ekseni canlı, kırpılmıyor. Nunito'nun
+rakamları zaten eşit genişlikte (400/800/900'de "111" = "000" = 72px), bu yüzden sayaç ve geri sayım
+için ek bir çözüm gerekmedi. Gotcha: font adını **string** yazan üç yer ayrıca güncellendi —
+`weekly-recap-share-card.ts` (canvas `ctx.font`, 11 satır), vision board `board-export.ts` ve
+`board-item-view.tsx` (font seçicideki `body` etiketi). `apps/admin` kapsam dışı (Google Fonts'u
+zaten engelli). **Maliyet (ölçüldü):** önyüklenen font 49 KB → 75 KB (+25.6 KB; iki dosya, latin +
+latin-ext) — tam ağırlık ekseninin bedeli; mobil 4G'de ~0.1 sn. Gerekirse performans fazında
+ağırlık aralığı daraltılarak (ör. 400–900) geri kazanılabilir. İlgili: `apps/web/src/app/[locale]/layout.tsx`,
+`packages/ui/src/theme.css`, `packages/ui/src/tokens.ts`, `DESIGN.md` §3.
+
+### 2026-09-20 — Abonelik tek yerden okunuyor (`SubscriptionProvider`)
+
+`GET /v1/subscription` tek bir panel yüklemesinde ~3 kez gidiyordu: `AppNav` kendi başına çağırıyordu,
+`fetchSubscriptionView` yalnız uçuştayken tekilleştiriyor (sonucu unutuyor), vision kartı da aynı
+soruyu `/coach/access`'e soruyordu. Yeni `lib/subscription-context.tsx` bir kez okuyor;
+`useSubscription()`, `useIsPremium()`, `usePremiumFeature(id)` ile paylaşıyor. `(app)/app-shell.tsx`
+**ve** `(coach)/coach-shell.tsx` mount ediyor (koçun Koç Pro rozeti de aynı okumadan besleniyor).
+Geçen çağrı yerleri: `app-nav`, `panel-shell`, `premium-campaign-banner`, `promotion-dialog`,
+`use-daily-greeting`, `mood-checkin`, `session-done-state`, `analysis-ghost-teaser`,
+`plan-coach-adaptation-action`. Yan fayda: free kullanıcıya artık sunucunun `featureGate` ile
+reddettiği daily-greeting POST'u gönderilmiyor — istek entitlement'ı bekliyor. Kullanım: yeni premium
+kontrolü için `usePremiumFeature("<feature.id>")`; satın alma dönüşünde `refresh()`. Gotcha: sağlayıcı
+dışında hook `null` görünüme düşer (uyarı loglar, çökmez) — paywall modalı, `/abonelik` ve profil
+kendi detay çağrılarını korur. **Gotcha (panel şeridi):** promosyon artık teklifler + paylaşılan
+entitlement'tan türetiliyor ve ödüllü görev teklifi ondan önce geliyor; kapı olmadan şerit göreve
+açılıp promosyon gelince yer değiştiriyordu (e2e `promotion-banner.spec.ts` "iki item" testi bunu
+yakaladı). `panel-shell.tsx` şeridi promosyon kararı netleşene (`bannerPromotion !== undefined`)
+kadar boş tutuyor. İlgili: `lib/subscription-context.tsx`, `lib/subscription-view.ts`,
+`lib/premium-feature.ts`.
+
 ### 2026-09-18 — `@mentor/ui` Button is the play ledge
 
 Welcome/onboarding `PlayButton` (filled blue ledge + outline ledge) is now the shared `Button`.
@@ -457,7 +495,7 @@ eklendi.
   names; users still see localized Turkish paths such as `/giris`, `/panel`, and `/profil`.
   Google OAuth and notification destinations follow the same contract. Related: `i18n/routing.ts`,
   `post-auth-destination.ts`, `google-auth-button.tsx`, `notification-drawer-shell.tsx`.
-- **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Nunito Sans
+- **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Plus Jakarta Sans
   latin-ext family for heading/body tokens. Usage: all screens continue using `--font-heading` and
   `--font-body`; no component API changes. Gotcha: visual QA should check dense pages like
   `/topluluk` because text metrics changed slightly. Related: `DESIGN.md`, `[locale]/layout.tsx`,

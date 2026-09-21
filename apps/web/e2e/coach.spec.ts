@@ -12,6 +12,7 @@ import type {
   CoachMessageDto,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const taskId = "33333333-3333-4333-8333-333333333333";
 const conversationId = "44444444-4444-4444-8444-444444444444";
@@ -60,7 +61,7 @@ const pendingToday: TodayPanelResponse = {
   greetingName: "Koç Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [
     {
       id: taskId,
@@ -102,7 +103,10 @@ test("landing next-action chip pending görevi seansa taşır", async ({
   });
 
   await page.goto("/koc");
-  await expect(page).toHaveURL(/\/koc\/sohbet/);
+  // `/koc` redirects on the client once the RSC payload lands. Under CI's parallel load that
+  // measured ~5.5s after `goto` (the 5s default expect timeout), so the navigation gets its own
+  // budget. The assertion is that the redirect happens, not how fast.
+  await expect(page).toHaveURL(/\/koc\/sohbet/, { timeout: 15_000 });
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
 
   const chip = page.getByTestId("coach-next-action-chip");
@@ -117,18 +121,23 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   page,
   context,
 }) => {
-  const dashboardApi = await mockCoachApi(page, { today: pendingToday });
+  // Premium on purpose: the greeting is only requested for a user entitled to it, so a free
+  // dashboard makes zero calls and the "exactly once" guard below would prove nothing.
+  const dashboardApi = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
   await page.goto("/panel");
 
-  const dashboardCard = page.getByTestId("coach-next-action");
-  await expect(
-    dashboardCard.getByText(pendingToday.nextAction.message),
-  ).toBeVisible();
-  await expect(
-    dashboardCard.getByRole("link", { name: "Odak seansına başla" }),
-  ).toHaveAttribute("href", /source=dashboard/);
+  // The panel's next action is the hero's one play ledge now (APP-103 Faz 2): the same pending task
+  // the landing chip starts, named with its own title and the session length it will open with.
+  const cta = page.getByTestId("today-path-cta");
+  await expect(cta).toHaveAccessibleName("Türkçe: 20 paragraf sorusu · 25 dk başla");
+  await expect(cta).toHaveAttribute("href", /source=dashboard/);
+  await expect(cta).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
   expect(dashboardApi.todayCalls).toBe(1);
-  expect(dashboardApi.dailyGreetingCalls).toBe(1);
+  // The greeting waits for the shared entitlement read, which may land after the hero paints.
+  await expect.poll(() => dashboardApi.dailyGreetingCalls).toBe(1);
 
   const coachPage = await context.newPage();
   const coachApi = await mockCoachApi(coachPage, {
@@ -147,12 +156,6 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
 test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      "mentor_mood_prompt_deferred_date",
-      new Date().toISOString().slice(0, 10),
-    );
-  });
   const period = {
     examId: "exam-recap-1",
     startDate: "2026-07-13",
@@ -166,8 +169,8 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
   await page.goto("/panel");
 
   /*
-   * The teaser no longer disappears once opened — `panel-shell.tsx`'s `showWeeklyRecap` is
-   * `weeklyRecapState !== "hidden"`, and "hidden" only ever happens for an EMPTY week. A READY
+   * The teaser no longer disappears once opened — `weekly-recap-slot.tsx` renders it unless the
+   * state is "hidden", and "hidden" only ever happens for an EMPTY week. A READY
    * week's card stays mounted for the rest of the season, switching from its "new" copy to a
    * "tekrar izle" (replay) copy once opened — a revisit affordance, not a one-time reveal.
    */
@@ -747,6 +750,22 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
         );
       }
       return json(route, options.access ?? accessNone);
+    }
+    // The subscription and `/coach/access` answer the same question from two ends, so the mock
+    // derives one from the other: a PREMIUM access mode means an entitled subscription.
+    if (method === "GET" && path === "/v1/subscription") {
+      const premium = (options.access ?? accessNone).mode === "PREMIUM";
+      return json(route, {
+        subscription: null,
+        entitlement: {
+          tier: premium ? "PREMIUM" : "FREE",
+          isPremium: premium,
+          validUntil: null,
+          reason: premium ? "ACTIVE" : "NONE",
+        },
+        features: {},
+        discount: null,
+      });
     }
     if (method === "GET" && path === "/v1/coaching/today") {
       todayCalls += 1;

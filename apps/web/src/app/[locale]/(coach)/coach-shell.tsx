@@ -10,6 +10,7 @@ import { Link, useRouter } from "@/i18n/navigation";
 import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
+import { SubscriptionProvider } from "@/lib/subscription-context";
 
 /**
  * Auth + COACH role guard for the human-coach route group. Navigation reuses the role-aware
@@ -63,21 +64,25 @@ export function CoachShell({ children }: { children: ReactNode }) {
     );
   }
 
+  // The coach shell reads the subscription too: `AppNav` marks a Koç Pro coach the same way it
+  // marks a premium student. Same provider, so this surface also asks the API once.
   return (
-    <NotificationDrawerShell>
-      <div
-        className="coach-signals min-h-screen"
-        style={{ backgroundColor: "var(--color-bg)" }}
-      >
-        <AppNav />
+    <SubscriptionProvider>
+      <NotificationDrawerShell>
         <div
-          className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
+          className="coach-signals min-h-screen"
+          style={{ backgroundColor: "var(--color-bg)" }}
         >
-          <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:py-10">
-            {children}
+          <AppNav />
+          <div
+            className={`mentor-app-shell min-h-screen ${MOBILE_TAB_BAR_PADDING_CLASS} lg:pb-0`}
+          >
+            <div className="mx-auto w-full max-w-6xl px-5 py-6 sm:px-8 lg:py-10">
+              {children}
+            </div>
           </div>
         </div>
-      </div>
-    </NotificationDrawerShell>
+      </NotificationDrawerShell>
+    </SubscriptionProvider>
   );
 }

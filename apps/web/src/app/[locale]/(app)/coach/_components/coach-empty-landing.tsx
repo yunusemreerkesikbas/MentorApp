@@ -5,22 +5,8 @@ import { useTranslations } from "next-intl";
 import { motion, useReducedMotion } from "framer-motion";
 import { PuhuImage } from "@/components/puhu-image";
 import { useAuth } from "@/lib/auth-context";
+import { firstName, greetingKeyForHour } from "@/lib/greeting";
 import { CoachCalibrationCard } from "./coach-calibration-card";
-
-function greetingKeyForHour():
-  | "greeting_morning"
-  | "greeting_day"
-  | "greeting_evening" {
-  const hour = new Date().getHours();
-  if (hour < 12) return "greeting_morning";
-  if (hour < 18) return "greeting_day";
-  return "greeting_evening";
-}
-
-function firstName(displayName: string): string {
-  const part = displayName.trim().split(/\s+/)[0];
-  return part || displayName;
-}
 
 const lineClass =
   "w-full truncate text-[22px] leading-[1.2] tracking-tight sm:text-[24px]";

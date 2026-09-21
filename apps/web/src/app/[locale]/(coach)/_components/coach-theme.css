@@ -16,6 +16,12 @@
  * (5.8:1, 5.9:1, 7.7:1, 7.0:1 respectively). A dark override would be a second value to keep
  * correct for no gain.
  */
+/*
+ * Workspace accent (`--coach-accent*`) lives in `@mentor/ui` theme.css, not here: the student
+ * panel marks coach-assigned tasks with the same ink blue, and a token scoped to this shell could
+ * not reach it. The student surface is sky blue (`--play-cta`); the coach's chrome is ink blue.
+ */
+
 .coach-signals {
   /* No completed session or done task inside the idle window. `--color-streak`. */
   --sig-inactive: #f3705a;

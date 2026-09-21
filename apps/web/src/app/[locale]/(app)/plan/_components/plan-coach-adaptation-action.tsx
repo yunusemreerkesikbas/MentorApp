@@ -12,16 +12,12 @@ import { useLocale, useTranslations } from "next-intl";
 import type {
   ApplyPlanAdaptationResultDto,
   CoachPlanAdaptationDto,
-  SubscriptionView,
 } from "@mentor/types";
 import {
   coachPlanAdaptationSchema,
   type CoachPlanAdaptationInput,
 } from "@mentor/validation";
-import {
-  ApiClientError,
-  subscriptionsControllerGetMine,
-} from "@mentor/api-client";
+import { ApiClientError } from "@mentor/api-client";
 import { Button, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { trackCoachEvent } from "@/lib/analytics";
@@ -32,6 +28,7 @@ import { applyCoachPlanAdaptation } from "@/lib/plan-tasks";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { isPremiumRequiredError } from "@/lib/premium-required";
+import { useSubscription } from "@/lib/subscription-context";
 import {
   flattenPlanAdaptationChanges,
   selectedPlanAdaptationChanges,
@@ -276,6 +273,11 @@ export const PlanCoachAdaptationAction = forwardRef<
   const previewRef = useRef<PreviewHandle>(null);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
+  const {
+    view: subscriptionView,
+    loading: subscriptionLoading,
+    refresh: refreshSubscription,
+  } = useSubscription();
 
   async function openPreview(
     preview: CoachPlanAdaptationDto,
@@ -373,8 +375,8 @@ export const PlanCoachAdaptationAction = forwardRef<
     busyRef.current = true;
     setBusy(true);
     try {
-      const subscription = await subscriptionsControllerGetMine();
-      const view = subscription as unknown as SubscriptionView;
+      // Shared read; only joins a request when the user hit this before it settled.
+      const view = subscriptionLoading ? await refreshSubscription() : subscriptionView;
       if (!isPremiumFeatureAvailable(view, "plan.ai")) {
         busyRef.current = false;
         setBusy(false);

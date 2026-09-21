@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { Nunito } from "next/font/google";
 import { notFound } from "next/navigation";
 import { hasLocale, NextIntlClientProvider } from "next-intl";
 import { getMessages, setRequestLocale } from "next-intl/server";
@@ -18,11 +18,12 @@ import { WebVitalsReporter } from "@/components/web-vitals-reporter";
 import { CloudTransitionProvider } from "@/lib/cloud-transition";
 import "../globals.css";
 
-/* DESIGN.md §3 — one smooth UI family for headings + body. latin-ext covers Turkish glyphs
-   (ç ğ ı İ ş ö ü). globals.css aliases --font-heading to this body variable. */
-const sans = Plus_Jakarta_Sans({
+/* DESIGN.md §3 — one rounded UI family for headings + body. latin-ext covers Turkish glyphs
+   (ç ğ ı İ ş ö ü). globals.css aliases --font-heading to this body variable.
+   No `weight` list on purpose: that ships the VARIABLE face (200–1000), so the 800/900 the play
+   surfaces ask for finally render instead of silently clamping to the heaviest static file. */
+const sans = Nunito({
   subsets: ["latin", "latin-ext"],
-  weight: ["400", "500", "600", "700"],
   variable: "--font-body",
 });
 

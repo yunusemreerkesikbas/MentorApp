@@ -193,7 +193,7 @@ test.describe("koçun kendi dünyası", () => {
     await page.goto("/panel");
     await expect(page).toHaveURL(/\/kocluk$/, { timeout: 10_000 });
     // And the screen this ticket exists to stop them seeing never renders, not even for a frame.
-    await expect(page.getByText("Bugünkü ritüel")).toHaveCount(0);
+    await expect(page.getByTestId("today-path-card")).toHaveCount(0);
     await expect(page.getByText("Hedefini belirle")).toHaveCount(0);
   });
 
@@ -235,8 +235,8 @@ test.describe("koçun kendi dünyası", () => {
     ).toBeVisible();
 
     // And none of the student ritual came along.
-    await expect(page.getByText("Bugünkü ritim")).toHaveCount(0);
-    await expect(page.getByText("Ruh hali")).toHaveCount(0);
+    await expect(page.getByTestId("today-path-card")).toHaveCount(0);
+    await expect(page.getByText("Bugün nasılsın?")).toHaveCount(0);
   });
 
   test("koç kabuğu panelle aynı masaüstü sidebarını kullanır", async ({
