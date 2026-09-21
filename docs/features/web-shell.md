@@ -973,3 +973,17 @@ eklendi.
   her zaman bilgilendirici ve `noindex`; içerik iki route için de yalnız `lib/legal.ts` üzerinden
   güncellenir. İlgili: `lib/legal.ts`, `components/legal-document-view.tsx`,
   `components/settings-legal-footer.tsx`, `(app)/settings/legal/[slug]/page.tsx`.
+
+- **2026-09-21 — PopoverMenu: anchor derived, not synced.** `components/popover-menu.tsx` artık kapalıyken
+  `setAnchor(null)` çağırmıyor (`react-hooks/set-state-in-effect`); ölçülen rect state'te kalır, kullanılan
+  `anchor = open ? measuredAnchor : null` render sırasında türetilir. Gotcha: yeniden açılışta layout effect
+  ilk paint'ten önce rect'i tazeler, eski rect ekrana çıkmaz.
+
+- **2026-09-21 — PR #113 review düzeltmeleri.** (1) `use-streak-rescue.ts`: prompt effect'inin per-run
+  `cancelled` bayrağı `rescue` kimliği değişince (streak yenilenince) açık modalın onayını sessizce
+  düşürüyordu; yalnız unmount'ta düşen `mountedRef` ile değişti. (2) `plan-coach-adaptation-action.tsx` ve
+  `session-done-state.tsx`: `subscriptionView` null (istek hatası) iken premium kullanıcı paywall/kilit
+  görüyordu; artık `subscriptionView ?? await refreshSubscription()`. (3) Nunito: `next/font` değişkeni
+  `--font-nunito`; `theme.css` `--font-heading/--font-body` bunu bağlar. Canvas export'lar (haftalık özet
+  kartı, vision board) hash'li aile adı yüzünden `"Nunito"` literalini bulamıyordu; `lib/app-font.ts`
+  `appFontFamily()` çözülmüş değeri okur. Gotcha: canvas'ta font string'ini literal yazma.

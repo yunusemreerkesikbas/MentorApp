@@ -99,7 +99,6 @@ export function SessionDoneState({
   const { openPaywall } = usePremiumPaywall();
   const {
     view: subscriptionView,
-    loading: subscriptionLoading,
     refresh: refreshSubscription,
   } = useSubscription();
   const [remindStatus, setRemindStatus] = useState<"idle" | "saving" | "done">("idle");
@@ -180,7 +179,8 @@ export function SessionDoneState({
     setReflecting(true);
     try {
       // Shared read; only joins a request when the session ended before it settled.
-      const view = subscriptionLoading ? await refreshSubscription() : subscriptionView;
+      // A failed read leaves `view` null (not loading) — retry instead of treating it as free.
+      const view = subscriptionView ?? (await refreshSubscription());
       if (!isPremiumFeatureAvailable(view, "session.reflection")) {
         setReflectionLocked(true);
         return;

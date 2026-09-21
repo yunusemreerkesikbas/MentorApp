@@ -178,7 +178,7 @@ function PathItem({
       <div className="relative z-[1] flex h-16 items-center sm:h-[72px]">
         {node}
       </div>
-      <span className="line-clamp-2 w-full text-[13px] font-extrabold leading-tight text-[var(--color-main)]">
+      <span className="line-clamp-2 w-full text-caption font-extrabold leading-tight text-[var(--color-main)]">
         {title}
       </span>
       {meta ? (
@@ -258,7 +258,7 @@ function TaskNode({
           data-testid="today-path-node"
         >
           {state === "current" ? (
-            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[10px] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-black tracking-[0.02em] text-[var(--play-selected-ink)]">
+            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-card)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-black tracking-[0.02em] text-[var(--play-selected-ink)]">
               {t("node_next")}
             </span>
           ) : null}

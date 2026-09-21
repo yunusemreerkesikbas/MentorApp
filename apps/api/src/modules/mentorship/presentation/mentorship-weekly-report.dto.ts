@@ -1,3 +1,4 @@
+import { MentorshipMeetingPreparationResponseDto } from "./mentorship-preparation.dto";
 import {
   finalizeMentorshipWeeklyReportSchema,
   listMentorshipWeeklyReportsSchema,
@@ -17,6 +18,8 @@ export class MentorshipWeeklyPreviewQueryDto extends createZodDto(
 export class MentorshipWeeklyBriefDto extends createZodDto(
   mentorshipWeeklyBriefSchema,
 ) {
+  @ApiPropertyOptional({ type: String, maxLength: 500 })
+  declare coachContext?: string;
   @ApiProperty({ type: String, format: "date" }) declare weekStart: string;
   @ApiProperty({ type: String, minLength: 64, maxLength: 64 })
   declare sourceFingerprint: string;
@@ -112,6 +115,9 @@ export class MentorshipWeeklyMockResponseDto {
 }
 
 export class MentorshipWeeklyEvidenceResponseDto {
+  @ApiPropertyOptional() subjectRef?: string;
+  @ApiPropertyOptional() currentAttemptCount?: number;
+  @ApiPropertyOptional() previousAttemptCount?: number;
   @ApiProperty() id!: string;
   @ApiProperty({
     enum: [
@@ -138,6 +144,11 @@ export class MentorshipWeeklyBriefFindingResponseDto {
 }
 
 export class MentorshipWeeklyBriefResponseDto {
+  @ApiPropertyOptional({ type: MentorshipMeetingPreparationResponseDto })
+  preparation?: MentorshipMeetingPreparationResponseDto;
+  @ApiPropertyOptional({ type: String, nullable: true }) coachContext?:
+    | string
+    | null;
   @ApiProperty({ type: [MentorshipWeeklyBriefFindingResponseDto] })
   findings!: MentorshipWeeklyBriefFindingResponseDto[];
   @ApiProperty() model!: string;
@@ -169,6 +180,8 @@ export class MentorshipWeeklySnapshotResponseDto {
       "NO_CURRENT_MOCK",
       "NO_PREVIOUS_MOCK",
       "MIXED_MOCK_SCOPE",
+      "MOCK_PUBLISHERS_DIFFER",
+      "LIMITED_MOCK_ATTEMPTS",
       "UNCLASSIFIED_SESSIONS",
     ],
   })
@@ -196,6 +209,8 @@ export class MentorshipWeeklyShareSnapshotResponseDto {
       "NO_CURRENT_MOCK",
       "NO_PREVIOUS_MOCK",
       "MIXED_MOCK_SCOPE",
+      "MOCK_PUBLISHERS_DIFFER",
+      "LIMITED_MOCK_ATTEMPTS",
       "UNCLASSIFIED_SESSIONS",
     ],
   })
@@ -203,6 +218,14 @@ export class MentorshipWeeklyShareSnapshotResponseDto {
 }
 
 export class MentorshipWeeklyPreviewResponseDto {
+  @ApiPropertyOptional({ type: String, nullable: true }) coachContext?:
+    | string
+    | null;
+  @ApiPropertyOptional({ type: String, nullable: true }) briefFingerprint?:
+    | string
+    | null;
+  @ApiPropertyOptional({ type: String, nullable: true, format: "uuid" })
+  briefGenerationId?: string | null;
   @ApiProperty({ type: String, nullable: true, format: "uuid" }) draftId!:
     | string
     | null;

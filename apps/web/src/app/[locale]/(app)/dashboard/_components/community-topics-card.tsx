@@ -67,16 +67,16 @@ export function CommunityTopicsCard() {
               className="flex items-center gap-3 py-2.5 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             >
               <span
-                className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--play-selected)] text-[var(--play-selected-ink)]"
+                className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-selected)] text-[var(--play-selected-ink)]"
                 aria-hidden
               >
                 <MessageCircle className="size-5" strokeWidth={2.2} />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="line-clamp-2 text-[15px] font-extrabold leading-snug text-[var(--color-main)]">
+                <span className="line-clamp-2 text-body-sm font-extrabold leading-snug text-[var(--color-main)]">
                   {item.title?.trim() || item.body}
                 </span>
-                <span className="block truncate text-[13px] text-[var(--color-secondary)]">
+                <span className="block truncate text-caption text-[var(--color-secondary)]">
                   {t("community_meta", {
                     room: item.zone.title,
                     count: item.commentCount,

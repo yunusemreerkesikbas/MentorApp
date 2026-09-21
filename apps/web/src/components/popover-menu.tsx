@@ -81,8 +81,9 @@ export function PopoverMenu({
   const reduceMotion = useReducedMotion();
   const anchorRef = useRef<HTMLDivElement>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const [anchor, setAnchor] = useState<DOMRect | null>(null);
+  const [measuredAnchor, setAnchor] = useState<DOMRect | null>(null);
   const open = openProp ?? uncontrolledOpen;
+  const anchor = open ? measuredAnchor : null;
 
   function setOpen(next: boolean) {
     if (openProp === undefined) setUncontrolledOpen(next);
@@ -100,10 +101,7 @@ export function PopoverMenu({
   }, []);
 
   useLayoutEffect(() => {
-    if (!open) {
-      setAnchor(null);
-      return;
-    }
+    if (!open) return;
     syncAnchor();
     window.addEventListener("resize", syncAnchor);
     window.addEventListener("scroll", syncAnchor, true);

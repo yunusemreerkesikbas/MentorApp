@@ -103,7 +103,7 @@ export function VisionBoardCard() {
       <section className={PANEL_CARD} aria-labelledby="vision-card-title">
         <div className="flex items-center gap-2.5">
           <span
-            className="grid size-10 shrink-0 place-items-center rounded-xl bg-[var(--play-well-violet)] text-[var(--color-chip-text)]"
+            className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-text)]"
             aria-hidden
           >
             <Target className="size-5" strokeWidth={2.2} />
@@ -136,7 +136,7 @@ export function VisionBoardCard() {
                 </BoardFrame>
               </button>
             ) : (
-              <p className="text-[15px] font-bold leading-snug text-[var(--color-main)]">
+              <p className="text-body-sm font-bold leading-snug text-[var(--color-main)]">
                 {vision.goalTitle}
               </p>
             )}

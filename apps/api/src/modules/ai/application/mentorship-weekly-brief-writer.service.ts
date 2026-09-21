@@ -30,6 +30,7 @@ export class MentorshipWeeklyBriefWriterService {
     /** `roles` undefined = the entitlement reads current roles from the DB (queued callers). */
     coach: { id: string; roles: string[] | undefined },
     locale: PromptLocale,
+    coachContext: string | null = null,
   ) {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError("AI_DISABLED", HttpStatus.NOT_FOUND);
@@ -41,7 +42,7 @@ export class MentorshipWeeklyBriefWriterService {
     );
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete(
-      buildMentorshipWeeklyBriefPrompt(snapshot, locale),
+      buildMentorshipWeeklyBriefPrompt(snapshot, locale, coachContext),
     );
     // Recorded before parsing: a malformed answer still spent the tokens.
     await this.usage.append({
@@ -63,6 +64,10 @@ export class MentorshipWeeklyBriefWriterService {
     if (parsed.kind === "MALFORMED") {
       throw new DomainError("AI_MALFORMED_RESPONSE", HttpStatus.BAD_GATEWAY);
     }
-    return { findings: parsed.findings, model: result.model };
+    return {
+      findings: parsed.findings,
+      preparation: parsed.preparation,
+      model: result.model,
+    };
   }
 }

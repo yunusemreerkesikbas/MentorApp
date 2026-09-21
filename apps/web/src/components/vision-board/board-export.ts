@@ -5,6 +5,7 @@ import {
   type VisionBoardItem,
   type VisionBoardTextItem,
 } from "@mentor/types";
+import { appFontFamily } from "@/lib/app-font";
 import {
   alignAnchorX,
   boardImageSrc,
@@ -221,7 +222,8 @@ function drawTextItem(ctx: CanvasRenderingContext2D, item: VisionBoardTextItem):
   const { width, height } = item;
   const weight = item.bold ? 700 : 400;
   const style = item.italic ? "italic" : "normal";
-  ctx.font = `${style} ${weight} ${item.size}px ${FONT_FAMILIES[item.font]}`;
+  const family = item.font === "body" ? appFontFamily() : FONT_FAMILIES[item.font];
+  ctx.font = `${style} ${weight} ${item.size}px ${family}`;
   ctx.textAlign = canvasTextAlign(item.align);
   ctx.textBaseline = "middle";
   if ("letterSpacing" in ctx) {

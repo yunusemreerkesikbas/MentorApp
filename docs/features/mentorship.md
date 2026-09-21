@@ -211,6 +211,30 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-21 — Coach meeting preparation.** The weekly AI panel now accepts an optional
+  500-character meeting direction and returns one evidence-linked focus, optional progress,
+  an uncertainty/question and an optional conditional next step. Subject focus and same-scope
+  mock evidence include attempt counts; different publishers and sparse attempts are explicit
+  limitations. Coach input is unverified direction, never evidence or a system instruction;
+  private notes and student AI conversations are not read. **Usage:** open a student's weekly
+  review, optionally enter a direction, then choose “Görüşmeye hazırlan” / “Hazırlık oluştur”.
+  Draft input survives panel close; changing weeks clears unsent input, and saved preparation
+  restores its own context. Editing direction marks the displayed result as belonging to the
+  previous input until generation is requested. **Reliability:** evidence/context/locale/prompt
+  fingerprint deduplicates requests; an atomic generation claim and provider-dispatch claim
+  reject stale results and duplicate jobs. Different pending input returns 409; failures require
+  explicit retry. No provider auto-retry (the existing one-attempt queue policy remains).
+  **Privacy/compatibility:** context stays in the private draft and finalized coach brief, never
+  the queue payload, analytics or printable/student projection. The provider privacy adapter
+  still minimizes outbound identifiers; the input hint asks coaches to omit personal details.
+  Existing `findings` remain available and historical v1 briefs remain readable. **Rollout:**
+  apply generated migration `0116_supreme_spacker_dave.sql` before API deployment; existing
+  `mentorship.weekly_reports.enabled` and AI entitlement/budget gates control access. Old queued
+  prompt versions are skipped and can be regenerated. **Related:** weekly brief prompt/writer,
+  mentorship weekly brief service/repository, subject evidence builder, `weekly-report-brief.tsx`,
+  `weekly-preparation.tsx`, shared weekly-report contracts and generated API client.
+
+
 - **2026-09-19 — Editable weekly planning drafts.** The coach's “Haftayı planla” panel now uses
   Istanbul Monday–Sunday weeks, shows existing tasks alongside draft counts, and lets coaches
   select their own assignments from this or last week before copying. Edit draft titles,

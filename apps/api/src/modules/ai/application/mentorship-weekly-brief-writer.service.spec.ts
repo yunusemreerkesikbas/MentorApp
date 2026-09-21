@@ -8,14 +8,17 @@ describe("MentorshipWeeklyBriefWriterService", () => {
   it("returns validated structured findings from the privacy-safe evidence", async () => {
     const complete = vi.fn(async () => ({
       text: JSON.stringify({
-        findings: [
-          {
-            observation: "Çalışma süresi arttı.",
+        preparation: {
+          version: 1,
+          focus: {
+            text: "Çalışma süresi arttı.",
             evidenceIds: ["focus_minutes"],
-            uncertainty: "Süre tek başına öğrenmeyi göstermez.",
-            conversationQuestion: "Bu düzen sana nasıl geldi?",
           },
-        ],
+          progress: null,
+          uncertainty: "Süre tek başına öğrenmeyi göstermez.",
+          question: "Bu düzen sana nasıl geldi?",
+          nextStep: null,
+        },
       }),
       model: "fake",
       promptTokens: 10,
@@ -49,7 +52,7 @@ describe("MentorshipWeeklyBriefWriterService", () => {
       "tr",
     );
 
-    expect(result).toEqual({
+    expect(result).toMatchObject({
       findings: [
         {
           observation: "Çalışma süresi arttı.",

@@ -1,6 +1,6 @@
 # DESIGN.md — Exam Coaching Platform · Design System
 
-> Status: Living design record · Updated: 2026-09-20  
+> Status: Living design record · Updated: 2026-09-21  
 > Product decisions: [`sinav-kocluk-roadmap.md`](./sinav-kocluk-roadmap.md) · Product register: [`PRODUCT.md`](./PRODUCT.md)  
 > **Visual foundation:** **Nuton — Online Learning Mobile App** Figma UI template, **evolved** into Mentor’s own system (companionship platform).  
 > Source of truth for base values: Figma file `8lc7t0P5kibfQ7GMzLSl3l` (Dev Mode MCP). Evolve layers (surfaces, visual language, motion) are Mentor-owned and documented here.
@@ -10,6 +10,29 @@
 ## 1. Overview
 
 Nuton’s language remains the base: **monochrome-forward** — near-black text on a **white background**, softened by **blurred pastel gradient blobs**, **translucent white cards**, a **blue-tinted soft shadow family**, and **10 px rounded corners** on cards/fields. **CTAs are the play ledge** (`@mentor/ui` `Button`): fill `#55ACEE`, ink `#0F2233`, 4px `#3B8FD0` edge the press sinks into, 16px radius. Mentor uses **Nunito** (variable, 200–1000) for headings and body (Turkish-complete, rounded and warm at small sizes).
+
+**The panel is the reference screen (2026-09-21).** `/panel` ("Bugün") is where this system is
+fully expressed, and **every screen converges to it** as it is touched: white blob canvas, solid
+cards, one play-ledge action, progress drawn rather than tabulated, Puhu speaking in a bubble,
+identity chrome for premium and coach. When an older screen and the panel disagree, the panel is
+right and the older screen is the one to change. Reference code:
+`apps/web/src/app/[locale]/(app)/dashboard/_components/` (shared classes in `panel-styles.ts`);
+component specs in §6.1.
+
+Seven rules the panel is built on, and every screen follows:
+
+1. **One primary action per screen** — the play ledge. Everything else is a text link, a card
+   action or a menu item. Two filled ledges on one screen is a design bug.
+2. **Each number appears once.** The old panel showed today's plan as four different counts;
+   a count lives in the one place that owns it.
+3. **Progress is drawn, not tabulated** — a path, a bar, a week band. No rows of metric tiles.
+4. **Puhu speaks in a bubble**, in the first person, one short line. An AI-written line carries
+   its provenance label ("Koçundan bugün" + Sparkles); a rule-based line does not pretend to be AI.
+5. **One commercial ask at a time.** A member sees what they already have, never an upsell.
+6. **Identity is chrome, not decoration:** premium is the clasp (PREMIUM badge, §7), anything a
+   human coach did is ink blue (`--coach-accent*`).
+7. **Sections load on their own.** The layout paints at once and each section shows its own
+   skeleton; nothing waits behind a page-level gate (§10).
 
 **Evolve (2026-07-12):** We keep Nuton hex/type/radius. We add surface hierarchy, hover elevation, a documented visual language (Puhu + `visuals/`), rich motion with reduced-motion guardrails, and empty/loading rules. Premium feel comes from craft and companionship — not EdTech purple, cream paper backgrounds, or hero-metric grids.
 
@@ -62,7 +85,7 @@ Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT an
 | `chip` (violet) | `#BEA1FE` @ 30% bg | Tag/chip fill (`tag` 141:1736) |
 | `chip-text` | `#7C6F97` | Tag/chip label |
 | `progress` (blue) | `#55ACEE` | Progress fill (15:1164) |
-| `accent` | `#55ACEE` | Alias of progress — links, secondary CTAs |
+| `accent` | `#55ACEE` | Alias of progress — fills, icons, focus of attention. **Not for text:** ~2.4:1 on white; text links use `--play-selected-ink` `#1A5FA3` (§6.1) |
 | `progress-track` / `accent-soft` | `#C3D9FD` | Progress track; soft accent wells |
 | `thumb-violet` | `#DDACE5` | Thumbnail placeholder (15:1162) |
 | `thumb-periwinkle` | `#D6DBFD` | Thumbnail placeholder (10:890) |
@@ -125,7 +148,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.premium-campaign-banner` (committed cyan→slate campaign wash + quiet grain; pins light-canvas ink so `html.dark` does not invert the banner), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
 
 **Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
@@ -133,11 +156,11 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Premium identity (global, 2026-09-20):** `--premium-ring-from` `#2F55D4` → `--premium-ring-to` `#F2B544` (the cape-blue → clasp-gold avatar ring), `--premium-badge-bg` `#1E2A5A` with `--premium-badge-ink` `#FFD76A` (gold on night blue, ~9:1, so the 11px label holds). Dark lifts the ring's blue end to `#7E9BFF`. See §7 for how they are used.
 
-**Coach accent (`.coach-workspace`, 2026-09-20):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` in `(coach)/_components/coach-theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue marks the workspace — role badge, avatar, row actions, program progress — while the primary CTA stays the play ledge, so "the blue button starts work" holds in both roles.
+**Coach accent (global, 2026-09-21):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` on `html` in `@mentor/ui` `theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue means "a human coach did this", on both sides: the coach's workspace chrome (role badge, avatar, row actions, program progress) and, on the student panel, the coach mark on assigned path nodes, the coach's avatar and the coach's note (§6.1). It started scoped to `.coach-workspace` (2026-09-20) and moved to `html` because a student surface could not reach it. On ink blue, labels use `--color-bg` (white in light, charcoal in dark — the lifted dark accent needs the dark label). The primary CTA stays the play ledge, so "the blue button starts work" holds in both roles.
 
 **Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (shine, frost, scrim, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
 
-**Coach workspace (`(coach)` / `/kocluk`):** same tokens as `/panel` (Nunito, play-ledge `Button`, blob canvas). Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
+**Coach workspace (`(coach)` / `/kocluk`):** same tokens and the same panel language as `/panel` (Nunito, play-ledge `Button`, blob canvas, §6.1 cards and rows), plus the coach accent above. Density only: `.coach-signals` hues, `.coach-large-title`…`.coach-caption` type scale, inset groups in `coach-ui.tsx`. Not a second brand.
 
 ---
 
@@ -149,21 +172,33 @@ toggle slot keeps the plain Sun/Moon icon button.
   weights to be real. Rounded terminals also carry the companion tone at small sizes (2026-09-20).
 - **Numerals are uniform width by default** in Nunito (measured: "111" and "000" match at 400/800/900),
   so counters and countdowns do not jitter; `tabular-nums` stays on numeric data as intent, not as a fix.
-- Product register: fixed rem scale (not fluid clamp display). One family is correct.
+- Product register: fixed px/rem scale (not fluid clamp display). One family is correct.
 
-| Style | Font | Size | Weight | Line-height |
+**The panel scale (2026-09-21, app-wide).** It replaces the Nuton H1–H5 table (32/700, 20/600,
+16/500 …), which rendered a thinner, looser product than the one the panel established. Steps that
+Tailwind does not ship are `@theme` tokens in `@mentor/ui` `theme.css`, so they are utilities
+(`text-caption`), never arbitrary values (`text-[13px]`).
+
+| Role | Class | Size | Weight | Where (panel reference) |
 |---|---|---|---|---|
-| H1 | Nunito | 32 | 700 Bold | 1.2 |
-| H2 | Nunito | 20 | 600 SemiBold | 1.4 |
-| H3 | Nunito | 16 | 500 Medium | 1.7 |
-| H4 | Nunito | 18 | 700 Bold | 1.5 |
-| H5 | Nunito | 16 | 700 Bold | 1.5 |
-| Body | Nunito | 16 | 400 Regular | 1.7 |
-| Caption/meta | Nunito | 14 | 400 Regular | 1.7 |
-| Small label | Nunito | 12 | 400 Regular | 1.7 |
-| Tab label (mobile bottom bar only) | Nunito | 8 | 600 SemiBold | normal · **UPPERCASE** |
-| Desktop sidebar nav | Nunito | 14 | 600 SemiBold | 1.4 · **sentence case** |
-| Button | Nunito | 18 | 800 ExtraBold | 1.7 |
+| Display | `text-display` | 28 | 800, `tracking-[-0.01em]` | Page title — "Günaydın, Selin" |
+| Title | `text-xl sm:text-title` | 20 → 22 | 800 | Hero heading — "Bugün 4 adım var. Sıradaki 25 dakika." |
+| Card title | `text-base` | 16 | 800 | Card headers — "Günlük görevler", "Yolculuğun" |
+| Button | `text-base sm:text-lg` | 16 → 18 | 800 | Play ledge (16 on phones so a task title fits) |
+| Body | `text-body-sm` | 15 | 600 (800 for list titles and text links) | Companion bubble, community rows, "Planı düzenle" |
+| Row title | `text-sm` | 14 | 800 | Quest / perk rows, mood prompt |
+| Caption | `text-caption` | 13 | 600–800 | Meta lines, path node labels (800), card-side counts |
+| Small | `text-xs` | 12 | 600–800 | Node meta, reward labels (+5 XP) |
+| Micro | `text-micro` | 11 | 800 · 900 | Weekday labels · PREMIUM badge (`tracking-[0.06em]`) |
+
+Token line-heights: display 1.2 · title 1.3 · body-sm 1.55 · caption 1.45 · micro 1.2; titles may
+tighten further with `leading-snug`/`leading-tight`.
+
+- **Weights:** 600 reading text, 700 emphasis in meta, 800 titles/labels/buttons, 900 numbers that
+  carry a moment (streak count, countdown) and badges. Nothing below 400; Nunito thins out fast.
+- **Upper case is written, never styled.** CSS `uppercase` under `lang="tr"` turns I into İ, so
+  "PREMIUM" is upper case in the messages file. (The mobile tab bar is icons only; it has no labels.)
+- **Desktop sidebar nav** 16 / 400 → 700 active, sentence case.
 
 Text colors: headings `#111`, body/value `#333`, meta/secondary `#666`.
 
@@ -187,11 +222,31 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 | Hub / panel / plan / analiz | `max-w-5xl`–`max-w-6xl` |
 | Form / profile / chat column | `max-w-2xl`–`max-w-3xl` |
 
+**Page frame (the panel's, app-wide — `PANEL_MAIN_CLASS` / `PANEL_GRID_CLASS`):**
+
+- `max-w-6xl`, gutters **20 / 32 / 40 px** (`px-5 sm:px-8 lg:px-10`), top/bottom 16 px (32 at `lg`).
+- Sections stack with **20 px** gaps (`gap-5`); card padding **20 px** (`p-5`), hero 20 / 28 px.
+- **≥1280 px: main column + 340 px right rail.** Main holds the page's story (greeting, hero,
+  what happened, people); the rail holds status and upkeep (level, membership, quests, countdown,
+  goal).
+- **<1280 px: one column in reading order** — the order a phone user needs, which is not "main,
+  then rail". The panel's is: mood → hero → daily quests → membership → countdown → last week →
+  coach → community → goal → journey.
+- The switch is made in JS (`matchMedia("(min-width: 1280px)")`) rather than CSS `order`, so every
+  card mounts once and **DOM order always equals visual order** (keyboard and screen-reader order
+  follow what is on screen).
+
 ---
 
 ## 5. Radius & Elevation
 
-- **Radius: `10px`** uniform (fields, cards, chips, thumbs). **Exception:** `@mentor/ui` `Button` uses `--play-radius` (16px).
+- **Radius: three values, nothing else.**
+  - `--radius-card` **10 px** — cards, fields, chips, thumbs, icon wells, inline rows (chest row,
+    coach note), menus, close buttons.
+  - `--play-radius` **16 px** — play ledges (filled and outline), the companion bubble, the mood row.
+  - **Full round** — path nodes, avatars, dots, badges, progress bars.
+- **Cards are solid:** `--color-surface` + `--color-border` hairline + `shadow-card` (`PANEL_CARD`).
+  `surface-translucent` is for fields and chrome that sits over art, not for content cards.
 - **Shadow family** (same tint `#254996` @ 10% — not multi-layer soft-UI stacks):
 
 | Token | Value | Usage |
@@ -203,7 +258,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 6. Components (Nuton specs + Mentor primitives)
 
-**Primary button** (`@mentor/ui` `Button`): play ledge. Fill `--play-cta`, ink `--play-cta-ink`, 4px `--play-cta-edge`, radius 16, ExtraBold 18. Press `translateY(4px)` into the ledge. Secondary = outline on `--play-line`. Disabled = `--play-track`. `--color-btn` is nav/compact chrome only.
+**Primary button** (`@mentor/ui` `Button`): play ledge. Fill `--play-cta`, ink `--play-cta-ink`, 4px `--play-cta-edge`, radius 16, ExtraBold 18 (16 on phones when it carries a title). Press `translateY(4px)` into the ledge. Secondary = outline on `--play-line`. Disabled = `--play-track`. `--color-btn` is nav/compact chrome only. A ledge that navigates is a `Link` with the same classes (panel `LEDGE` in `today-path-card.tsx`), never a button wrapped in a link.
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
@@ -211,13 +266,39 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 **Tag / chip** (`tag` 141:1736): violet @30%, chip-text `#7C6F97`.
 
-**Card discipline:** Cards group interaction or meaningful clusters. **Nested cards are forbidden.** Inline panel tiles and `@mentor/ui` `Card` share the same radius/shadow tokens.
+**Card discipline:** Cards group interaction or meaningful clusters. **Nested cards are forbidden** (a tinted row inside a card — chest row, coach note — is a row, not a card: no shadow, no border). Content cards are solid (§5); `@mentor/ui` `Card` with `solid` is the same surface as `PANEL_CARD` (it pads 24 px, the panel 20 px — use 20 on new work).
 
 **EmptyState** (web): optional `/visuals/...` image + optional Puhu + title + one CTA. Missing asset → pastel blob placeholder (layout stable).
 
 **PuhuImage** (web): size tokens `sm` / `md` / `lg` → 40 / 72 / 120 px (numeric override allowed for special layouts).
 
 Other Nuton library symbols (course cards, list items, FAQ, etc.) remain reference for density and padding — map to product content per §9.
+
+### 6.1 Panel patterns (reference components, 2026-09-21)
+
+The building blocks every screen reuses. Specs are the panel's; code lives in
+`apps/web/src/app/[locale]/(app)/dashboard/_components/` until they move into `@mentor/ui` (§13).
+
+| Pattern | Spec | Panel code |
+|---|---|---|
+| **Card + header** | `PANEL_CARD` (§5). Header row: title 16/800 left; count (caption, `tabular-nums`) or text link right. | `panel-styles.ts` |
+| **Text link** | 14–15/800, `--play-selected-ink`, underline on hover only, trailing 16 px chevron. The only secondary action style next to a ledge. | `PANEL_TEXT_LINK` |
+| **Icon well** | 40 px square, `--radius-card`, 20 px icon. Fill by what the row is about: plan → `--play-well-peri`, focus → `--play-well-blue`, mood → `--play-well-coral`, other → `--play-well-violet`; done → `--color-success` at 16 % on surface with success ink. | `daily-quests-card.tsx` |
+| **Progress bar** | 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar. | `daily-quests-card.tsx` |
+| **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest** (streak-core tints; glows when opened). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts` |
+| **Coach mark** | 24 px `--coach-accent` disc with a graduation cap, top-right of a node or avatar, 2 px surface ring. Means "your human coach assigned this". | `today-path.tsx` |
+| **Week band** | Monday → Sunday from `streak.week` (server-derived, never computed on the client). Dot 24/30 px: active = flame on `--color-streak-soft`, frozen = snowflake on `--color-progress` 18 %, missed = `--play-track`, not-yet = dashed `--play-line`; today = 2 px `--color-streak` ring. Right: "N gün seri" 16/900 + today's focus vs goal 12/700; wraps under the days on phones. Sits as the hero's bottom band on a `--play-track` 35 % tint. | `week-band.tsx` |
+| **Companion bubble** | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines. A free user's nudge sits inside the bubble (lock nudge below). | `today-path-card.tsx` |
+| **Hero** | Bubble → title (20→22/800) → path → one ledge + one text link → an ambient line (13/700 with a `--play-cta` dot: "Şu an 128 kişi seninle çalışıyor") → week band. The screen's single primary action lives here. | `today-path-card.tsx` |
+| **Mood row** | "Bugün nasılsın?" + five faces (40/44 px buttons, `aria-pressed`). One tap saves; the selected face gets `--play-selected` + a 2 px inset `--play-cta` ring, the others dim to 60 %. Never an auto-opening modal. On desktop it shares the row with the page title; on phones it is a bordered strip under the top bar. | `greeting-row.tsx` |
+| **Announcement card** | Several announcements in one card, **stacked in one grid cell** so the card is as tall as its tallest slide and rotation never moves the cards below. Slide: art (an 80 px tile beside the text below 1280 px, a 112 px band above it in the rail; art is static — no looping SVGs in a card) + optional title (16/800) + message + small ledge. Rotates every 5 s, pauses on hover/focus, dots are buttons, each slide closes on its own for the tab session. Order: a campaign (it ends) → the daily coin offer (it resets) → the trial (always there). The free user's only commercial slot. | `components/top-banner.tsx`, `membership-card.tsx` |
+| **Perks card** | What a member has, as rows (well + title + caption + chevron) under a title with the PREMIUM badge; "Aboneliğini yönet" as the text link. Replaces the announcement card for members. | `membership-card.tsx` |
+| **Coach card** | `--coach-accent` initials avatar, "Koçun" caption over the name, "Programı gör" link; the coach's standing note in a `--coach-accent-soft` block with `--coach-accent-ink` text. | `my-coach-card.tsx` |
+| **List rows** | Well + title (15/800, two lines) + meta (13, `--color-secondary`: room · replies · time), hairline between rows, the whole row is the link. | `community-topics-card.tsx` |
+| **Level card** | "Yolculuğun": `JourneyLevelCompact` (level, XP to next, bar) + the freeze allowance line in `--play-selected-ink` with a snowflake. | `journey-card.tsx` |
+| **PREMIUM badge** | 22 px pill, `--premium-badge-bg` / `--premium-badge-ink`, 11/900, 0.06 em tracking, upper case written in the copy. | `components/premium/premium-badge.tsx` |
+| **Lock nudge** | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the badge wraps to its own line rather than breaking the label. Never a padlock, blur or fake preview. | `components/premium/premium-lock-nudge.tsx` |
+| **Skeletons** | A page skeleton only while auth settles (`dashboard-content-skeleton.tsx`); after that each section shows its own placeholder in place. | `dashboard-content-skeleton.tsx` |
 
 ---
 
@@ -226,7 +307,17 @@ Other Nuton library symbols (course cards, list items, FAQ, etc.) remain referen
 - Thin line icons (Lucide / Feather-style): ~24–28 px nav box.
 - Active `#111`, inactive `#666`. Like/heart pink when active; star amber.
 - **No emoji as UI icons.** Soft-3D visuals are not substitutes for icons in chrome.
-- **Premium identity:** Lucide `Crown` in `--color-star` next to the display name. Do not overlay the avatar, do not put the word “Premium” in chrome, do not use a blue verification tick (that's email verified), and do not use prize-ribbon / saturated-gradient medals. Feed and comment avatars stay unmarked — membership is identity chrome, not a ranking stamp.
+- **Premium identity (revised 2026-09-21):** the **PREMIUM badge** (§6.1) is the mark — the cape's
+  clasp, gold on night blue. It replaces the crown on every "unlock" affordance (lock nudges) and
+  heads the member's perks card; Faz 3 adds it beside "Mentor" in the sidebar with the
+  cape-blue → clasp-gold avatar ring (`--premium-ring-*`). Until then Lucide `Crown` in
+  `--color-star` stays next to the display name. Do not overlay the avatar with icons, do not use a
+  blue verification tick (that is email verified), no prize ribbons or saturated-gradient medals.
+  Feed and comment avatars stay unmarked — membership is identity chrome, not a ranking stamp.
+- **Coach mark:** Lucide `GraduationCap` in a 24 px `--coach-accent` disc (§6.1). Only for work a
+  human coach assigned; AI suggestions are never marked as coach work.
+- **Custom glyphs** only where Lucide has no fit, drawn at the same 2 px stroke (e.g. the weekly
+  chest, `ChestIcon` — a gift box reads as a present, not a reward you earned).
 
 ---
 
@@ -262,11 +353,16 @@ Same light: pastel matte, rounded forms, soft shadow, light ground. Final art is
 
 | Type | When | Content |
 |---|---|---|
-| `QuestBanner` | Panel active quest | Text + progress; Puhu optional (`sm`) |
+| `CompanionBubble` | A screen's hero line | Puhu + one first-person line (§6.1); AI lines carry their label |
+| `AnnouncementCard` | Free user's commercial + offer slot | Rotating stacked slides (§6.1): campaign **or** trial, plus the daily coin offer. One per screen, never beside another commercial ask |
+| `WeeklyRecapBanner` | Last week's story is ready | The coral recap banner with its exported shapes (feature palette, §1) — kept as is |
 | `CompanionEmpty` | Empty list/chart | `visuals/` and/or Puhu + copy + CTA |
 | `MomentHero` | Koç hub / milestone | Full-bleed Puhu poster |
-| `PromoSoft` | Earned premium taste | Pastel surface + short copy — no guilt |
-| `CampaignPromo` | Free-user premium nudge | Compact rail card (not a page hero): token gradient + gift art + trial copy — no fake discount, no shame |
+| `PromoSoft` | *Legacy* — coach home community card only | Pastel surface + short copy; migrate to a plain §6.1 card when that screen is touched |
+
+**Retired 2026-09-21:** `QuestBanner` (the panel's quests are a card, "Günlük görevler"),
+`CampaignPromo` (its trial copy is now a slide of the `AnnouncementCard`; the cyan→slate
+`.premium-campaign-banner` wash is deleted) and the one-line top strip (moved into the card).
 
 ### 8.5 `visuals/` naming
 
@@ -280,6 +376,11 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - Alarm / shame banners  
 - Tiny uppercase eyebrows on every section  
 - Gradient text, glassmorphism-as-default, side-stripe accent borders  
+- Rows of metric tiles restating numbers the screen already shows (§1 rule 2)  
+- Modals that open themselves on every visit (the auto mood wheel was removed for this); one-shot
+  moments — a new campaign's single announcement, a level-up — open once each, never stacked  
+- A second filled ledge, or a second commercial ask, on the same screen  
+- Looping animated art inside a card (static art; motion belongs to moments, §9.1)  
 
 ---
 
@@ -300,6 +401,11 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - **`prefers-reduced-motion: reduce`:** crossfade or instant; never gate content visibility on entrance animation.
 - No orchestrated full-page load “shows.”
 - **Checkout success** shares the achievement confetti lottie (`/lottie/confetti.lottie`, play once) plus `/animation/success.svg`. Reduced-motion skips both and uses a static `--color-success` check.
+- **Press:** ledges sink 4 px into their edge, path nodes 2 px (120 ms, shadow collapses with it).
+- **Rotation** (announcement card): 5 s per slide, 300 ms crossfade with a 12 px slide, paused
+  while hovered or focused; reduced motion swaps instantly. Only content that is truly several
+  things may rotate — never to fit more into a slot.
+- **Menus** open in 160 ms (fade + slight vertical scale) from their trigger.
 
 Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives in web `globals.css`.
 Shared transitions.dev recipes + tokens: `packages/ui/src/transitions/` (imported via `theme.css`); React primitives from `@mentor/ui` — see [`docs/features/motion.md`](./docs/features/motion.md).
@@ -334,8 +440,10 @@ deliberate presence cue, disabled under reduced motion.
 
 ## 10. Empty & loading
 
-- **Loading:** page-specific `*-content-skeleton.tsx` using `@mentor/ui` `Skeleton` / `SkeletonGroup` + global shimmer classes.
-- **Empty:** teach the next action (`EmptyState`) — not “nothing here.”
+- **Loading:** page-specific `*-content-skeleton.tsx` using `@mentor/ui` `Skeleton` / `SkeletonGroup` + global shimmer classes — **only while auth settles**. After that the layout paints at once and each section fills in on its own (its own placeholder, or nothing until it has something true to say); no `if (!data) return` gate over a whole page. Data a screen needs goes out in one parallel wave (panel: `use-panel-data.ts`).
+- **Empty:** teach the next action (`EmptyState`) — not “nothing here.” The panel's empty day is
+  the pattern: one dashed "İlk adım" node, one ledge ("Planına görev ekle"), Puhu saying the first
+  step can be small.
 - **Error:** calm copy; `danger` for form validity only; soft companion tone for recoverable failures.
 
 ---
@@ -348,7 +456,10 @@ deliberate presence cue, disabled under reduced motion.
   Hover/focus on a rail icon reveals the link name. Preference persists via the
   `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` and
   community keep this collapsed rail visible (do not hide AppNav).
-- Single-column → multi-column (main + right rail) where product needs it.
+- Single-column → multi-column (main + right rail) at **1280 px** (§4 page frame); between 1024 and
+  1279 the sidebar is there and content stays one column.
+- **Greeting lives once:** on desktop it is the page title ("Günaydın, {ad}" + date); on phones the
+  top bar greets and the page keeps the heading for screen readers only. The sidebar never greets.
 - Hover: `shadow-card-hover` on interactive elevated cards; focus: `focus-ring`.
 
 ---
@@ -384,6 +495,15 @@ deliberate presence cue, disabled under reduced motion.
 - [x] Desktop breakpoints — `lg` sidebar switch.
 - [x] Surface hierarchy + hover shadow + visual/motion language (2026-07-12 evolve).
 - [x] Motion personality — celebration vs measured surfaces (§9.1, 2026-07-26).
+- [x] Panel as the reference screen — "Bugün" hub, §6.1 patterns, type-step tokens (2026-09-21).
+- [ ] **Converge every screen to the panel** as it is touched: plan, analiz, bilgi, topluluk,
+      seans, defterlerim, profil/ayarlar, and the coach workspace (Faz 5). Checklist per screen:
+      §1 rules, §3 scale (no arbitrary `text-[Npx]`), §5 radius set, §6.1 patterns.
+- [ ] Promote the §6.1 primitives into `@mentor/ui` once a second screen needs them (card + header,
+      text link, ledge link, icon well, progress bar, PREMIUM badge).
+- [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring, caped Puhu (`puhu-premium` transparent
+      export pending).
+- [ ] Weekly chest art (soft-3D, closed/open) to replace the line glyph.
 - [ ] Map remaining Nuton library screens ↔ Mentor screens (Figma pass).
 - [ ] Puhu P0: `thinking` (AI loading), `gentle-error` (soft error toast).
 - [ ] P0 visuals (designer upload): `plan-empty.webp`, `analiz-empty.webp`.
@@ -397,5 +517,10 @@ Tokens + shared React primitives: **`@mentor/ui`** — `theme.css` · `tokens.ts
 Web-specific visuals: `PuhuImage`, `EmptyState`, `apps/web/public/mascot/puhu/`, `apps/web/public/visuals/`.
 
 App shell: `apps/web/src/components/app-nav.tsx`.
+
+Reference screen: `apps/web/src/app/[locale]/(app)/dashboard/_components/` — `panel-styles.ts`
+(page frame, grid, card, text link), `today-path*.tsx` (hero, path, model), `week-band.tsx`,
+`greeting-row.tsx`, `daily-quests-card.tsx`, `membership-card.tsx` + `components/top-banner.tsx`
+(announcement card), `components/premium/premium-badge.tsx`, `premium-lock-nudge.tsx`.
 
 **Rule:** screens compose tokens/primitives — no magic numbers ([`docs/standards/frontend.md`](./docs/standards/frontend.md)).

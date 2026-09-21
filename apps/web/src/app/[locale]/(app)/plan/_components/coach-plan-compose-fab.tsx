@@ -29,9 +29,8 @@ export function CoachPlanComposeFab({
   const openMs = reduceMotion ? 0 : 0.25;
   const closeMs = reduceMotion ? 0 : 0.15;
 
-  useEffect(() => {
-    if (hidden) setOpen(false);
-  }, [hidden]);
+  // Reset while hidden by adjusting state during render (no effect round-trip).
+  if (hidden && open) setOpen(false);
 
   useEffect(() => {
     if (!open) return;

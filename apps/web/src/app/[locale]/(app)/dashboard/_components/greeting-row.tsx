@@ -39,7 +39,7 @@ export function GreetingRow({
     <div className="flex flex-col gap-3">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
         <div className="min-w-0">
-          <h1 className="sr-only text-[28px] font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)] lg:not-sr-only lg:truncate">
+          <h1 className="sr-only text-display font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)] lg:not-sr-only lg:truncate">
             {t(greetingKeyForHour(), { name })}
           </h1>
           <p className="mt-1 hidden text-sm font-bold text-[var(--color-secondary)] lg:block">
@@ -68,7 +68,7 @@ export function GreetingRow({
                   onClick={() => onPick(option.value)}
                   data-testid={`mood-option-${option.value}`}
                   className={[
-                    "grid size-10 cursor-pointer place-items-center rounded-xl transition-[transform,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-wait motion-reduce:transition-none sm:size-11",
+                    "grid size-10 cursor-pointer place-items-center rounded-[var(--radius-card)] transition-[transform,background-color] duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-wait motion-reduce:transition-none sm:size-11",
                     selected
                       ? "bg-[var(--play-selected)] shadow-[inset_0_0_0_2px_var(--play-cta)]"
                       : "hover:-translate-y-0.5 hover:bg-[var(--play-track)]",

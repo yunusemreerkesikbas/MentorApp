@@ -138,7 +138,7 @@ export function TopBanner({
               className={`flex gap-4 p-4 pr-12 transition-[opacity,transform,visibility] duration-300 ease-out [grid-area:1/1] motion-reduce:transition-none xl:flex-col xl:gap-0 xl:p-0 ${active ? "visible translate-x-0 opacity-100" : "invisible translate-x-3 opacity-0"}`}
             >
               {item.visual ? (
-                <div className="grid size-20 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,color-mix(in_srgb,var(--blob-cyan)_55%,var(--color-surface)),color-mix(in_srgb,var(--play-well-violet)_85%,var(--color-surface)))] xl:h-28 xl:w-full xl:rounded-none">
+                <div className="grid size-20 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[linear-gradient(135deg,color-mix(in_srgb,var(--blob-cyan)_55%,var(--color-surface)),color-mix(in_srgb,var(--play-well-violet)_85%,var(--color-surface)))] xl:h-28 xl:w-full xl:rounded-none">
                   {item.visual}
                 </div>
               ) : null}

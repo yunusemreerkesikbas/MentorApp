@@ -115,6 +115,9 @@ export class MentorshipWeeklyReportService {
       draft.briefPromptVersion === MENTORSHIP_WEEKLY_BRIEF_PROMPT_VERSION;
     return {
       draftId: draft.id,
+      coachContext: briefMatches ? draft.briefCoachContext : null,
+      briefFingerprint: briefMatches ? draft.briefFingerprint : null,
+      briefGenerationId: briefMatches ? draft.briefGenerationId : null,
       studentId,
       studentDisplayName: prepared.studentDisplayName,
       sourceFingerprint: prepared.sourceFingerprint,

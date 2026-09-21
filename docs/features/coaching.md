@@ -4472,3 +4472,7 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   **İlgili:** `packages/ui/src/theme.css`, `study-session-shell.tsx`, `session-timer-ring.tsx`,
   `session-top-bar.tsx`, `session-controls.tsx`, `session-setup-summary.tsx`,
   `session-focus-view.tsx`, `session-history.tsx`, `history-side-panel.tsx`.
+
+- **2026-09-21 — Compose FAB: hidden reset render'da.** `coach-plan-compose-fab.tsx` `hidden` olunca menüyü
+  effect ile değil, render sırasında `if (hidden && open) setOpen(false)` ile kapatır
+  (`react-hooks/set-state-in-effect`). Davranış aynı: gizliyken açık kalmaz, tekrar görününce kapalı gelir.
