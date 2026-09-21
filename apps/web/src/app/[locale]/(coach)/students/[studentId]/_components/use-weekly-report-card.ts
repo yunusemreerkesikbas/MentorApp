@@ -192,8 +192,13 @@ export function useWeeklyReportCard(studentId: string) {
   async function handleConflict() {
     try {
       await reloadSelected();
-      showToastWarning({ title: common("error_title"), message: t("weekly_report_preview_changed") });
-    } catch (error) { showError(error); }
+      showToastWarning({
+        title: common("error_title"),
+        message: t("weekly_report_preview_changed"),
+      });
+    } catch (error) {
+      showError(error);
+    }
   }
 
   async function moveWeek(offset: number) {

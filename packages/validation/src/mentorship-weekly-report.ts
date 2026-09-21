@@ -14,7 +14,11 @@ const mentorshipWeeklySourceSchema = z.object({
 
 export const MENTORSHIP_COACH_CONTEXT_MAX_LENGTH = 500;
 export const mentorshipWeeklyBriefSchema = mentorshipWeeklySourceSchema.extend({
-  coachContext: z.string().trim().max(MENTORSHIP_COACH_CONTEXT_MAX_LENGTH).optional(),
+  coachContext: z
+    .string()
+    .trim()
+    .max(MENTORSHIP_COACH_CONTEXT_MAX_LENGTH)
+    .optional(),
 });
 
 export const finalizeMentorshipWeeklyReportSchema =

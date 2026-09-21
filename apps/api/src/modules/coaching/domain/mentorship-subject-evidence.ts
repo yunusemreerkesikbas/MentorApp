@@ -41,7 +41,10 @@ export function buildMentorshipSubjectEvidence(
 }
 
 export function buildMentorshipWeeklyEvidence(
-  snapshot: Pick<MentorshipWeeklySnapshotDto, "current" | "previous" | "deltas" | "subjects" | "mocks">,
+  snapshot: Pick<
+    MentorshipWeeklySnapshotDto,
+    "current" | "previous" | "deltas" | "subjects" | "mocks"
+  >,
 ): MentorshipWeeklyEvidenceDto[] {
   const metrics = [
     ["focus_minutes", "FOCUS_MINUTES", "focusMinutes"],
@@ -52,11 +55,25 @@ export function buildMentorshipWeeklyEvidence(
     ["completion_rate", "COMPLETION_RATE", "completionRate"],
   ] as const;
   return [
-    ...metrics.map(([id, kind, key]) => ({ id, kind, current: snapshot.current[key], previous: snapshot.previous[key], delta: snapshot.deltas[key] })),
-    { id: "mock_average", kind: "MOCK_AVERAGE", current: snapshot.mocks.currentAverageNet,
+    ...metrics.map(([id, kind, key]) => ({
+      id,
+      kind,
+      current: snapshot.current[key],
+      previous: snapshot.previous[key],
+      delta: snapshot.deltas[key],
+    })),
+    {
+      id: "mock_average",
+      kind: "MOCK_AVERAGE",
+      current: snapshot.mocks.currentAverageNet,
       previous: snapshot.mocks.previousAverageNet,
-      delta: snapshot.mocks.currentAverageNet === null || snapshot.mocks.previousAverageNet === null
-        ? null : snapshot.mocks.currentAverageNet - snapshot.mocks.previousAverageNet },
+      delta:
+        snapshot.mocks.currentAverageNet === null ||
+        snapshot.mocks.previousAverageNet === null
+          ? null
+          : snapshot.mocks.currentAverageNet -
+            snapshot.mocks.previousAverageNet,
+    },
     ...buildMentorshipSubjectEvidence(snapshot.subjects, snapshot.mocks),
   ];
 }
