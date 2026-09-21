@@ -129,15 +129,15 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   });
   await page.goto("/panel");
 
-  const dashboardCard = page.getByTestId("coach-next-action");
-  await expect(
-    dashboardCard.getByText(pendingToday.nextAction.message),
-  ).toBeVisible();
-  await expect(
-    dashboardCard.getByRole("link", { name: "Odak seansına başla" }),
-  ).toHaveAttribute("href", /source=dashboard/);
+  // The panel's next action is the hero's one play ledge now (APP-103 Faz 2): the same pending task
+  // the landing chip starts, named with its own title and the session length it will open with.
+  const cta = page.getByTestId("today-path-cta");
+  await expect(cta).toHaveAccessibleName("Türkçe: 20 paragraf sorusu · 25 dk başla");
+  await expect(cta).toHaveAttribute("href", /source=dashboard/);
+  await expect(cta).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
   expect(dashboardApi.todayCalls).toBe(1);
-  expect(dashboardApi.dailyGreetingCalls).toBe(1);
+  // The greeting waits for the shared entitlement read, which may land after the hero paints.
+  await expect.poll(() => dashboardApi.dailyGreetingCalls).toBe(1);
 
   const coachPage = await context.newPage();
   const coachApi = await mockCoachApi(coachPage, {
@@ -156,12 +156,6 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
 test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      "mentor_mood_prompt_deferred_date",
-      new Date().toISOString().slice(0, 10),
-    );
-  });
   const period = {
     examId: "exam-recap-1",
     startDate: "2026-07-13",
@@ -175,8 +169,8 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
   await page.goto("/panel");
 
   /*
-   * The teaser no longer disappears once opened — `panel-shell.tsx`'s `showWeeklyRecap` is
-   * `weeklyRecapState !== "hidden"`, and "hidden" only ever happens for an EMPTY week. A READY
+   * The teaser no longer disappears once opened — `weekly-recap-slot.tsx` renders it unless the
+   * state is "hidden", and "hidden" only ever happens for an EMPTY week. A READY
    * week's card stays mounted for the rest of the season, switching from its "new" copy to a
    * "tekrar izle" (replay) copy once opened — a revisit affordance, not a one-time reveal.
    */

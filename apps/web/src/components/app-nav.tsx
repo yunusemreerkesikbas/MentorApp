@@ -42,6 +42,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { useEconomySnapshot } from "@/lib/economy-store";
+import { greetingKeyForHour } from "@/lib/greeting";
 import { isNavActive } from "@/lib/nav-active";
 import { useIsPremium } from "@/lib/subscription-context";
 import { useAppSidebar } from "@/lib/use-app-sidebar";
@@ -523,11 +524,11 @@ function SidebarIdentity({
   premium: boolean;
   user: AuthUser;
 }) {
-  const t = useTranslations("nav");
   const ui = useTranslations("common");
-  const greeting = t(greetingKeyForHour());
 
-  // ponytail: no card chrome — identity sits flush in the sidebar rail
+  // ponytail: no card chrome — identity sits flush in the sidebar rail.
+  // No greeting here (2026-09-21): "Günaydın" belongs to the panel page, and the sidebar is on
+  // every screen — both at once read as the same line twice.
   return (
     <div className="mb-5">
       <div className="flex items-start justify-between gap-3">
@@ -538,17 +539,7 @@ function SidebarIdentity({
         />
       </div>
       <div className="mt-3 min-w-0">
-        <p
-          className="text-lg font-bold leading-snug text-[var(--color-main)]"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          {greeting}
-        </p>
-        <IdentityName
-          className="mt-1"
-          name={user.displayName}
-          premium={premium}
-        />
+        <IdentityName name={user.displayName} premium={premium} primary />
       </div>
       {balance ? (
         <div className="mt-3">
@@ -563,14 +554,23 @@ function IdentityName({
   className = "",
   name,
   premium,
+  primary = false,
 }: {
   className?: string;
   name: string;
   premium: boolean;
+  /** The sidebar has no greeting line above the name, so the name is the heading there. */
+  primary?: boolean;
 }) {
   return (
     <p className={`flex min-w-0 items-center gap-1.5 ${className}`.trim()}>
-      <span className="min-w-0 truncate text-sm leading-snug text-[var(--color-secondary)]">
+      <span
+        className={
+          primary
+            ? "min-w-0 truncate text-lg font-extrabold leading-snug text-[var(--color-main)]"
+            : "min-w-0 truncate text-sm leading-snug text-[var(--color-secondary)]"
+        }
+      >
         {name}
       </span>
       {premium ? <PremiumIdentityMark /> : null}
@@ -720,14 +720,4 @@ function formatCompact(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
-}
-
-function greetingKeyForHour():
-  | "greeting_morning"
-  | "greeting_day"
-  | "greeting_evening" {
-  const hour = new Date().getHours();
-  if (hour < 12) return "greeting_morning";
-  if (hour < 18) return "greeting_day";
-  return "greeting_evening";
 }

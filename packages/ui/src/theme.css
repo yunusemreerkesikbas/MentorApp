@@ -131,6 +131,15 @@ html {
   --premium-ring-to: #f2b544;
   --premium-badge-bg: #1e2a5a;
   --premium-badge-ink: #ffd76a;
+  /*
+   * Coach identity (DESIGN.md §2.5): ink blue marks what a human coach did. The coach's workspace
+   * chrome uses it, and so does the student side for the tasks and notes that came from their
+   * coach, which is why it lives here instead of scoped to the coach shell: both sides should say
+   * "your coach" in the same colour.
+   */
+  --coach-accent: #26377f;
+  --coach-accent-soft: #e6e9f7;
+  --coach-accent-ink: #1f2c66;
 }
 
 ::placeholder {
@@ -184,6 +193,10 @@ html.dark {
   /* The badge keeps its night/gold pairing in dark; only the ring's blue end lifts to stay visible
      against the charcoal surface. */
   --premium-ring-from: #7e9bff;
+  /* Ink blue goes unreadable on charcoal, so the accent lifts and the well drops. */
+  --coach-accent: #8fa2ee;
+  --coach-accent-soft: #252b40;
+  --coach-accent-ink: #c3ccf5;
 }
 
 /*

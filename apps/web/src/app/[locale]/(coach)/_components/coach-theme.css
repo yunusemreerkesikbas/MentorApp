@@ -17,23 +17,10 @@
  * correct for no gain.
  */
 /*
- * Workspace accent. The student surface is sky blue (`--play-cta`); the coach's chrome — role
- * badge, avatar, row actions, program progress — is ink blue, so a glance at the sidebar says
- * which surface you are on. Same font, radius and Button: an accent, not a second brand. The
- * primary CTA stays the play ledge, so "the blue button starts work" holds in both roles.
+ * Workspace accent (`--coach-accent*`) lives in `@mentor/ui` theme.css, not here: the student
+ * panel marks coach-assigned tasks with the same ink blue, and a token scoped to this shell could
+ * not reach it. The student surface is sky blue (`--play-cta`); the coach's chrome is ink blue.
  */
-.coach-workspace {
-  --coach-accent: #26377f;
-  --coach-accent-soft: #e6e9f7;
-  --coach-accent-ink: #1f2c66;
-}
-
-html.dark .coach-workspace {
-  /* Ink blue goes unreadable on charcoal, so the accent lifts and the well drops. */
-  --coach-accent: #8fa2ee;
-  --coach-accent-soft: #252b40;
-  --coach-accent-ink: #c3ccf5;
-}
 
 .coach-signals {
   /* No completed session or done task inside the idle window. `--color-streak`. */
