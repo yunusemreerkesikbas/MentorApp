@@ -275,7 +275,6 @@ export const PlanCoachAdaptationAction = forwardRef<
   const [busy, setBusy] = useState(false);
   const {
     view: subscriptionView,
-    loading: subscriptionLoading,
     refresh: refreshSubscription,
   } = useSubscription();
 
@@ -376,7 +375,8 @@ export const PlanCoachAdaptationAction = forwardRef<
     setBusy(true);
     try {
       // Shared read; only joins a request when the user hit this before it settled.
-      const view = subscriptionLoading ? await refreshSubscription() : subscriptionView;
+      // A failed read leaves `view` null (not loading) — retry instead of treating it as free.
+      const view = subscriptionView ?? (await refreshSubscription());
       if (!isPremiumFeatureAvailable(view, "plan.ai")) {
         busyRef.current = false;
         setBusy(false);

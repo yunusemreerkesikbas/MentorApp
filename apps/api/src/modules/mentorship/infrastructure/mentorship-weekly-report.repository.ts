@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, count, desc, eq, sql } from "drizzle-orm";
 import type {
   MentorshipWeeklyBriefDto,
   MentorshipWeeklySnapshotDto,
@@ -78,69 +78,15 @@ export class MentorshipWeeklyReportRepository {
             brief: null,
             briefLocale: null,
             briefPromptVersion: null,
+            briefCoachContext: null,
+            briefFingerprint: null,
+            briefGenerationId: null,
+            briefStartedAt: null,
             updatedAt: new Date(),
           },
         })
         .returning();
       return rows[0]!;
-    });
-  }
-
-  markBriefPending(
-    id: string,
-    sourceFingerprint: string,
-    locale: "tr" | "en",
-    promptVersion: string,
-  ): Promise<boolean> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .update(mentorshipWeeklyReports)
-        .set({
-          status: "BRIEF_PENDING",
-          brief: null,
-          briefLocale: locale,
-          briefPromptVersion: promptVersion,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(mentorshipWeeklyReports.id, id),
-            eq(mentorshipWeeklyReports.version, 0),
-            eq(mentorshipWeeklyReports.sourceFingerprint, sourceFingerprint),
-            inArray(mentorshipWeeklyReports.status, ["DRAFT", "BRIEF_FAILED"]),
-          ),
-        )
-        .returning({ id: mentorshipWeeklyReports.id });
-      return rows.length === 1;
-    });
-  }
-
-  setBriefResult(
-    id: string,
-    sourceFingerprint: string,
-    locale: "tr" | "en",
-    promptVersion: string,
-    brief: MentorshipWeeklyBriefDto | null,
-  ): Promise<boolean> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .update(mentorshipWeeklyReports)
-        .set({
-          status: brief ? "BRIEF_READY" : "BRIEF_FAILED",
-          brief,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(mentorshipWeeklyReports.id, id),
-            eq(mentorshipWeeklyReports.version, 0),
-            eq(mentorshipWeeklyReports.sourceFingerprint, sourceFingerprint),
-            eq(mentorshipWeeklyReports.briefLocale, locale),
-            eq(mentorshipWeeklyReports.briefPromptVersion, promptVersion),
-          ),
-        )
-        .returning({ id: mentorshipWeeklyReports.id });
-      return rows.length === 1;
     });
   }
 
@@ -189,6 +135,7 @@ export class MentorshipWeeklyReportRepository {
         .values({
           ...input,
           replacesId: latest?.id ?? null,
+          briefCoachContext: input.brief?.coachContext ?? null,
           briefLocale: input.brief?.locale ?? null,
           briefPromptVersion: input.brief?.promptVersion ?? null,
           version,

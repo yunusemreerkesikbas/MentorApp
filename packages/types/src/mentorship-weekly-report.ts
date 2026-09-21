@@ -71,6 +71,9 @@ export type MentorshipWeeklyEvidenceKind =
 
 export interface MentorshipWeeklyEvidenceDto {
   id: string;
+  subjectRef?: string;
+  currentAttemptCount?: number;
+  previousAttemptCount?: number;
   kind: MentorshipWeeklyEvidenceKind;
   current: number | null;
   previous: number | null;
@@ -83,7 +86,23 @@ export type MentorshipWeeklyLimitation =
   | "NO_CURRENT_MOCK"
   | "NO_PREVIOUS_MOCK"
   | "MIXED_MOCK_SCOPE"
+  | "MOCK_PUBLISHERS_DIFFER"
+  | "LIMITED_MOCK_ATTEMPTS"
   | "UNCLASSIFIED_SESSIONS";
+
+export interface MentorshipPreparationObservationDto {
+  text: string;
+  evidenceIds: string[];
+}
+
+export interface MentorshipMeetingPreparationDto {
+  version: 1;
+  focus: MentorshipPreparationObservationDto;
+  progress: MentorshipPreparationObservationDto | null;
+  uncertainty: string;
+  question: string;
+  nextStep: string | null;
+}
 
 export interface MentorshipWeeklyBriefFindingDto {
   observation: string;
@@ -93,6 +112,8 @@ export interface MentorshipWeeklyBriefFindingDto {
 }
 
 export interface MentorshipWeeklyBriefDto {
+  preparation?: MentorshipMeetingPreparationDto;
+  coachContext?: string | null;
   findings: MentorshipWeeklyBriefFindingDto[];
   model: string;
   generatedAt: string;
@@ -112,6 +133,10 @@ export interface MentorshipWeeklySnapshotDto {
 }
 
 export interface MentorshipWeeklyReportPreviewDto {
+  /** Context of the current preparation request; never part of the share DTO. */
+  coachContext?: string | null;
+  briefFingerprint?: string | null;
+  briefGenerationId?: string | null;
   draftId: string | null;
   studentId: string;
   studentDisplayName: string;

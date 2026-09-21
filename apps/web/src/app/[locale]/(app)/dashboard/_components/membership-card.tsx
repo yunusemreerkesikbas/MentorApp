@@ -170,14 +170,14 @@ function PerkLink({
         href={href}
         className="flex min-h-14 items-center gap-3 rounded-[var(--radius-card)] py-2 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
-        <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-[color-mix(in_srgb,var(--premium-ring-from)_12%,var(--color-surface))] text-[var(--premium-ring-from)]">
+        <span className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--premium-ring-from)_12%,var(--color-surface))] text-[var(--premium-ring-from)]">
           <Icon className="size-5" strokeWidth={2.2} aria-hidden />
         </span>
         <span className="min-w-0 flex-1">
           <span className="block text-sm font-extrabold text-[var(--color-main)]">
             {title}
           </span>
-          <span className="block text-[13px] text-[var(--color-secondary)]">
+          <span className="block text-caption text-[var(--color-secondary)]">
             {caption}
           </span>
         </span>

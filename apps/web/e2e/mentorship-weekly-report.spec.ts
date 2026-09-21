@@ -95,7 +95,9 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   const section = page.getByRole("region", { name: "Haftalık değerlendirme" });
   await expect(section).toBeVisible();
   await expect(section.getByText("180 dk")).toBeVisible();
-  await expect(section.getByRole("button", { name: "Değerlendirmeyi aç" })).toBeVisible();
+  await expect(
+    section.getByRole("button", { name: "Değerlendirmeyi aç" }),
+  ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(api.briefCalls).toBe(0);
 
@@ -104,10 +106,8 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   await expect(panel).toBeVisible();
   await expect(panel.getByText("Yok").first()).toBeVisible();
 
-  await panel.getByRole("button", { name: "Hazırlık notu oluştur" }).click();
-  await expect(
-    panel.getByText("Kayıtlı çalışma süresi arttı."),
-  ).toBeVisible();
+  await panel.getByRole("button", { name: "Hazırlık oluştur" }).click();
+  await expect(panel.getByText("Kayıtlı çalışma süresi arttı.")).toBeVisible();
   expect(api.briefCalls).toBe(1);
 
   await panel
@@ -123,6 +123,56 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
     sourceFingerprint: SOURCE_FINGERPRINT,
     coachEvaluation: "Ritmi birlikte koruyalım.",
   });
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= window.innerWidth,
+    ),
+  ).toBe(true);
+});
+
+test("görüşme hazırlığı yönlendirmeyi korur, değişikliği belirtir ve haftalar arasında taşımaz", async ({
+  page,
+}) => {
+  const api = await mockWeeklyReportApi(page, { preparation: true });
+  await page.goto(`/kocluk/${STUDENT_ID}`);
+  const open = page.getByRole("button", { name: "Değerlendirmeyi aç" });
+  await open.click();
+  const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
+  const context = panel.getByLabel("Bu görüşmede odaklanmak istediğin konu");
+  await expect(context).toHaveAttribute("maxlength", "500");
+  await context.fill("Program yoğunluğunu konuşacağız.");
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await open.click();
+  await expect(context).toHaveValue("Program yoğunluğunu konuşacağız.");
+  await panel.getByRole("button", { name: "Hazırlık oluştur" }).click();
+  await expect(
+    panel.getByRole("heading", { name: "Görüşmenin odağı" }),
+  ).toBeVisible();
+  await expect(
+    panel.getByRole("heading", { name: "Olası sonraki adım" }),
+  ).toBeVisible();
+  expect(api.briefBodies[0]).toMatchObject({
+    coachContext: "Program yoğunluğunu konuşacağız.",
+  });
+  await context.fill("Yeni yönlendirme");
+  await expect(panel.getByRole("status")).toContainText(
+    "önceki yönlendirmeye ait",
+  );
+  await panel.getByRole("button", { name: "Hazırlığı güncelle" }).click();
+  await expect(
+    panel.getByText("Bu hazırlıkta kullandığın yönlendirme: Yeni yönlendirme"),
+  ).toBeVisible();
+  await page.reload();
+  await open.click();
+  await expect(context).toHaveValue("Yeni yönlendirme");
+  await panel
+    .getByRole("button", { name: "Önceki hafta", exact: true })
+    .click();
+  await expect(context).toHaveValue("");
+  await expect(
+    panel.getByRole("heading", { name: "Görüşmenin odağı" }),
+  ).toHaveCount(0);
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -201,7 +251,11 @@ test("haftalık rapor başarısız olduğunda isteği sonsuz tekrarlamaz", async
 
 async function mockWeeklyReportApi(
   page: Page,
-  options: { failStudentReport?: boolean; failWeeklyPreview?: boolean } = {},
+  options: {
+    failStudentReport?: boolean;
+    failWeeklyPreview?: boolean;
+    preparation?: boolean;
+  } = {},
 ) {
   const user: AuthUser = {
     id: COACH_ID,
@@ -221,20 +275,50 @@ async function mockWeeklyReportApi(
     createdAt: "2026-01-01T00:00:00.000Z",
   };
   let briefCalls = 0;
+  let usedContext: string | null = null;
+  const briefBodies: Record<string, unknown>[] = [];
   let finalized = false;
   const finalizeBodies: Record<string, unknown>[] = [];
   const requestedPaths: string[] = [];
   let studentReportCalls = 0;
   let weeklyPreviewCalls = 0;
 
-  const preview = (withBrief: boolean) => ({
+  const preview = (
+    withBrief: boolean,
+    weekStart = snapshot.period.startDate,
+  ) => ({
     draftId: "44444444-4444-4444-8444-444444444444",
     studentId: STUDENT_ID,
     studentDisplayName: "Ayşe Yılmaz",
     sourceFingerprint: SOURCE_FINGERPRINT,
     status: withBrief ? "BRIEF_READY" : "DRAFT",
-    snapshot,
-    brief: withBrief ? brief : null,
+    snapshot: {
+      ...snapshot,
+      period: { ...snapshot.period, startDate: weekStart },
+    },
+    coachContext: withBrief ? usedContext : null,
+    brief: withBrief
+      ? {
+          ...brief,
+          coachContext: usedContext,
+          ...(options.preparation
+            ? {
+                preparation: {
+                  version: 1,
+                  focus: {
+                    text: "Programın uygulanabilirliğini birlikte değerlendir.",
+                    evidenceIds: ["focus_minutes"],
+                  },
+                  progress: null,
+                  uncertainty: "Kayıtlı süre öğrenmenin niteliğini göstermez.",
+                  question: "Bu haftaki program sana nasıl geldi?",
+                  nextStep:
+                    "Yoğunluk zorladıysa öncelikleri birlikte daraltmayı değerlendir.",
+                },
+              }
+            : {}),
+        }
+      : null,
   });
   const finalizedReport = {
     id: REPORT_ID,
@@ -308,13 +392,25 @@ async function mockWeeklyReportApi(
           500,
         );
       }
-      return json(route, preview(briefCalls > 0));
+      return json(
+        route,
+        preview(
+          briefCalls > 0 &&
+            (!url.searchParams.get("weekStart") ||
+              url.searchParams.get("weekStart") === snapshot.period.startDate),
+          url.searchParams.get("weekStart") ?? snapshot.period.startDate,
+        ),
+      );
     }
     if (
       method === "POST" &&
       url.pathname ===
         `/v1/mentorship/students/${STUDENT_ID}/weekly-reports/brief`
     ) {
+      briefBodies.push(request.postDataJSON() as Record<string, unknown>);
+      usedContext =
+        (briefBodies.at(-1)?.coachContext as string | undefined)?.trim() ||
+        null;
       briefCalls += 1;
       return json(route, preview(true), 202);
     }
@@ -388,6 +484,7 @@ async function mockWeeklyReportApi(
     get weeklyPreviewCalls() {
       return weeklyPreviewCalls;
     },
+    briefBodies,
     finalizeBodies,
     requestedPaths,
   };

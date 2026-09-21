@@ -56,7 +56,7 @@ export function DailyQuestsCard({
           {t("quests_title")}
         </h2>
         {daily.length > 0 ? (
-          <span className="text-[13px] font-bold tabular-nums text-[var(--color-secondary)]">
+          <span className="text-caption font-bold tabular-nums text-[var(--color-secondary)]">
             {t("quests_progress", { done, total: daily.length })}
           </span>
         ) : null}
@@ -71,7 +71,7 @@ export function DailyQuestsCard({
       ) : null}
 
       {chest?.progressTarget ? (
-        <p className="flex items-center gap-2.5 rounded-xl bg-[color-mix(in_srgb,var(--color-streak-core)_24%,var(--color-surface))] px-3 py-2.5 text-[13px] font-extrabold text-[var(--color-main)]">
+        <p className="flex items-center gap-2.5 rounded-[var(--radius-card)] bg-[color-mix(in_srgb,var(--color-streak-core)_24%,var(--color-surface))] px-3 py-2.5 text-caption font-extrabold text-[var(--color-main)]">
           <ChestIcon className="size-5 shrink-0 text-[color-mix(in_srgb,var(--color-star)_40%,var(--color-main))]" />
           <span className="min-w-0 flex-1">
             {chest.completed
@@ -114,7 +114,7 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
   return (
     <li className="flex items-center gap-3">
       <span
-        className={`grid size-10 shrink-0 place-items-center rounded-xl ${quest.completed ? DONE_WELL : well}`}
+        className={`grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] ${quest.completed ? DONE_WELL : well}`}
         aria-hidden
       >
         <Icon className="size-5" strokeWidth={2.2} />

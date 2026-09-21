@@ -13,7 +13,7 @@ export function PremiumBadge({ className = "" }: { className?: string }) {
 
   return (
     <span
-      className={`inline-flex h-[22px] shrink-0 items-center rounded-full bg-[var(--premium-badge-bg)] px-2 text-[11px] font-black tracking-[0.06em] text-[var(--premium-badge-ink)] ${className}`.trim()}
+      className={`inline-flex h-[22px] shrink-0 items-center rounded-full bg-[var(--premium-badge-bg)] px-2 text-micro font-black tracking-[0.06em] text-[var(--premium-badge-ink)] ${className}`.trim()}
     >
       {t("premium_badge")}
     </span>

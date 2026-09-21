@@ -276,3 +276,16 @@ the generated `@mentor/api-client` operations use the `mentorship-weekly-reports
 - GET /v1/economy/rewards/unseen?page=1&pageSize=20: authenticated self-scoped Paginated<EconomyLedgerEntryView>.
 - POST /v1/economy/rewards/seen: { ledgerIds: UUID[] }, 1–100 IDs, idempotent 204; IDs belonging to other users remain untouched.
 - Balance retains existing fields and adds optional usage (configured costs and alternative message/analysis counts). Ledger history remains immutable.
+
+
+### Weekly mentorship preparation (2026-09-21)
+
+`POST /v1/mentorship/students/:studentId/weekly-reports/brief` accepts optional
+`coachContext` (trimmed, at most 500 characters). The private brief adds optional
+`preparation` (version 1: focus/progress with evidence IDs, uncertainty, question,
+conditional nextStep) and `coachContext`, retaining `findings` for older clients.
+Preview exposes the bound context and generation identity. Identical evidence,
+context, language and prompt reuse ready/pending work; different pending input is
+409. Finalization does not accept context changes. Share/PDF responses exclude
+both preparation and context. Authorization and explicit quota-bound generation
+remain unchanged.

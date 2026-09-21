@@ -26,7 +26,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
       </h2>
       <JourneyLevelCompact level={balance.level} />
       {freezeTokens != null && freezeTokens > 0 ? (
-        <p className="flex items-start gap-2 text-[13px] font-bold leading-snug text-[var(--play-selected-ink)]">
+        <p className="flex items-start gap-2 text-caption font-bold leading-snug text-[var(--play-selected-ink)]">
           <Snowflake className="mt-0.5 size-4 shrink-0" aria-hidden />
           {t("journey_freezes", { count: freezeTokens })}
         </p>

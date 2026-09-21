@@ -77,7 +77,7 @@ export function WeekBand({
                 ) : null}
               </span>
               <span
-                className={`text-[11px] font-extrabold ${isToday ? "text-[var(--color-streak)]" : "text-[var(--color-secondary)]"}`}
+                className={`text-micro font-extrabold ${isToday ? "text-[var(--color-streak)]" : "text-[var(--color-secondary)]"}`}
                 aria-hidden
               >
                 {weekday}

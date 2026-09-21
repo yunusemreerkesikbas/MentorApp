@@ -8,6 +8,7 @@ import {
   type MentorshipWeekPeriod,
   type MentorshipWeeklyTotals,
 } from "./mentorship-weekly-report";
+import { buildMentorshipWeeklyEvidence } from "./mentorship-subject-evidence";
 import { buildWeeklyActivitySummary, istanbulDate } from "./weekly-review";
 
 export interface MentorshipWeeklyRawEvidence {
@@ -235,65 +236,23 @@ export function buildMentorshipWeeklySnapshot(
   if (subjects.some((row) => row.subjectRef === null))
     limitations.push("UNCLASSIFIED_SESSIONS");
 
+  if (
+    JSON.stringify(mocks.currentPublishers) !==
+    JSON.stringify(mocks.previousPublishers)
+  )
+    limitations.push("MOCK_PUBLISHERS_DIFFER");
+  if (
+    mocks.currentAttemptCount + mocks.previousAttemptCount > 0 &&
+    (mocks.currentAttemptCount < 2 || mocks.previousAttemptCount < 2)
+  )
+    limitations.push("LIMITED_MOCK_ATTEMPTS");
+
   return {
     period,
     ...comparison,
     subjects,
     mocks,
-    evidence: [
-      {
-        id: "focus_minutes",
-        kind: "FOCUS_MINUTES",
-        current: comparison.current.focusMinutes,
-        previous: comparison.previous.focusMinutes,
-        delta: comparison.deltas.focusMinutes,
-      },
-      {
-        id: "sessions",
-        kind: "SESSIONS",
-        current: comparison.current.sessions,
-        previous: comparison.previous.sessions,
-        delta: comparison.deltas.sessions,
-      },
-      {
-        id: "active_days",
-        kind: "ACTIVE_DAYS",
-        current: comparison.current.activeDays,
-        previous: comparison.previous.activeDays,
-        delta: comparison.deltas.activeDays,
-      },
-      {
-        id: "planned_tasks",
-        kind: "PLANNED_TASKS",
-        current: comparison.current.plannedTasks,
-        previous: comparison.previous.plannedTasks,
-        delta: comparison.deltas.plannedTasks,
-      },
-      {
-        id: "completed_tasks",
-        kind: "COMPLETED_TASKS",
-        current: comparison.current.completedTasks,
-        previous: comparison.previous.completedTasks,
-        delta: comparison.deltas.completedTasks,
-      },
-      {
-        id: "completion_rate",
-        kind: "COMPLETION_RATE",
-        current: comparison.current.completionRate,
-        previous: comparison.previous.completionRate,
-        delta: comparison.deltas.completionRate,
-      },
-      {
-        id: "mock_average",
-        kind: "MOCK_AVERAGE",
-        current: mocks.currentAverageNet,
-        previous: mocks.previousAverageNet,
-        delta:
-          mocks.currentAverageNet === null || mocks.previousAverageNet === null
-            ? null
-            : mocks.currentAverageNet - mocks.previousAverageNet,
-      },
-    ],
+    evidence: buildMentorshipWeeklyEvidence({ ...comparison, subjects, mocks }),
     limitations,
   };
 }

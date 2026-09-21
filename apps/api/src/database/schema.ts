@@ -4268,6 +4268,10 @@ export const mentorshipWeeklyReports = pgTable(
     brief: jsonb("brief").$type<MentorshipWeeklyBriefDto>(),
     briefLocale: varchar("brief_locale", { length: 5 }),
     briefPromptVersion: text("brief_prompt_version"),
+    briefCoachContext: text("brief_coach_context"),
+    briefFingerprint: text("brief_fingerprint"),
+    briefGenerationId: uuid("brief_generation_id"),
+    briefStartedAt: timestamp("brief_started_at", { withTimezone: true }),
     coachEvaluation: text("coach_evaluation"),
     replacesId: uuid("replaces_id").references(
       (): AnyPgColumn => mentorshipWeeklyReports.id,

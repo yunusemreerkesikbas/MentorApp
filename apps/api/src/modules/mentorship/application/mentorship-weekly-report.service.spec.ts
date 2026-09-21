@@ -138,8 +138,11 @@ describe("MentorshipWeeklyReportService", () => {
       sourceFingerprint: first.sourceFingerprint,
       status: "BRIEF_READY",
       briefLocale: "en",
-      briefPromptVersion: "v1",
+      briefPromptVersion: "v2",
+      briefCoachContext: "PRIVATE DIRECTION",
       brief: {
+        coachContext: "PRIVATE DIRECTION",
+        preparation: { focus: { text: "PRIVATE PREPARATION" } },
         findings: [],
         model: "fake",
         generatedAt: "2026-09-07T10:00:00.000Z",
@@ -278,7 +281,10 @@ describe("MentorshipWeeklyReportService", () => {
       sourceFingerprint: "f".repeat(64),
       snapshot,
       coachEvaluation: "Ritmi birlikte koruyalım.",
+      briefCoachContext: "PRIVATE DIRECTION",
       brief: {
+        coachContext: "PRIVATE DIRECTION",
+        preparation: { focus: { text: "PRIVATE PREPARATION" } },
         findings: [],
         model: "fake",
         generatedAt: "2026-09-07T10:00:00.000Z",
@@ -291,7 +297,7 @@ describe("MentorshipWeeklyReportService", () => {
 
     const result = await service.share("coach-1", "student-1", "report-1");
     expect(JSON.stringify(result)).not.toMatch(
-      /evidence|brief|conversationQuestion/,
+      /evidence|brief|conversationQuestion|coachContext|preparation|PRIVATE/,
     );
     expect(result.coachEvaluation).toBe("Ritmi birlikte koruyalım.");
   });

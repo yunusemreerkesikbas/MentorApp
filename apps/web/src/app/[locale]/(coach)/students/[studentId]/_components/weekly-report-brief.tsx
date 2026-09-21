@@ -1,8 +1,10 @@
 "use client";
 
+import { MENTORSHIP_COACH_CONTEXT_MAX_LENGTH } from "@mentor/validation";
+import { WeeklyPreparation } from "./weekly-preparation";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklyReportPreviewDto } from "@mentor/types";
-import { Button } from "@mentor/ui";
+import { Button, TextAreaField } from "@mentor/ui";
 import {
   INSET_GROUP_CLASS,
   NOTE_CLASS,
@@ -11,10 +13,14 @@ import { formatWeeklyMetric } from "@/lib/mentorship-weekly-report";
 
 export function WeeklyReportBrief({
   preview,
+  coachContext,
+  onContextChange,
   busy,
   onGenerate,
 }: {
   preview: MentorshipWeeklyReportPreviewDto;
+  coachContext: string;
+  onContextChange: (value: string) => void;
   busy: boolean;
   onGenerate: () => void;
 }) {
@@ -50,6 +56,29 @@ export function WeeklyReportBrief({
         </Button>
       </div>
 
+      <TextAreaField
+        label={t("preparation_context_label")}
+        value={coachContext}
+        onChange={(event) => onContextChange(event.target.value)}
+        maxLength={MENTORSHIP_COACH_CONTEXT_MAX_LENGTH}
+        disabled={busy || preview.status === "BRIEF_PENDING"}
+        hint={t("preparation_context_hint", { count: coachContext.length })}
+        placeholder={t("preparation_context_placeholder")}
+        rows={3}
+      />
+      {preview.brief &&
+        coachContext.trim() !== (preview.brief.coachContext ?? "") && (
+          <p className={NOTE_CLASS} role="status">
+            {t("preparation_context_changed")}
+          </p>
+        )}
+      {preview.brief?.coachContext && (
+        <p className={`${NOTE_CLASS} whitespace-pre-wrap break-words`}>
+          {t("preparation_used_context", {
+            context: preview.brief.coachContext,
+          })}
+        </p>
+      )}
       {preview.status === "BRIEF_PENDING" ? (
         <p className={NOTE_CLASS} role="status">
           {t("weekly_report_ai_pending")}
@@ -58,6 +87,11 @@ export function WeeklyReportBrief({
         <p className={NOTE_CLASS} role="status">
           {t("weekly_report_ai_failed")}
         </p>
+      ) : preview.brief?.preparation ? (
+        <WeeklyPreparation
+          preparation={preview.brief.preparation}
+          evidence={preview.snapshot.evidence}
+        />
       ) : preview.brief ? (
         <ol className="flex flex-col gap-3">
           {preview.brief.findings.map((finding, index) => (

@@ -54,10 +54,12 @@ export async function requestWeeklyReportBrief(
   studentId: string,
   weekStart: string,
   sourceFingerprint: string,
+  coachContext?: string,
 ): Promise<MentorshipWeeklyReportPreviewDto> {
   return (await mentorshipWeeklyReportControllerGenerateBrief(studentId, {
     weekStart,
     sourceFingerprint,
+    coachContext,
   })) as MentorshipWeeklyReportPreviewDto;
 }
 

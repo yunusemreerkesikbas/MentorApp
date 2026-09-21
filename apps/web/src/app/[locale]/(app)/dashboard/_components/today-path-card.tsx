@@ -28,7 +28,7 @@ const LEDGE_FILLED =
 const LEDGE_OUTLINE =
   "border-2 border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--play-selected-ink)] shadow-[0_4px_0_var(--play-line)]";
 const TEXT_LINK =
-  "inline-flex min-h-11 items-center text-[15px] font-extrabold text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
+  "inline-flex min-h-11 items-center text-body-sm font-extrabold text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
 
 /**
  * "Bugünün yolu": the panel's one primary action. Puhu's line, the day as a path, the single
@@ -122,7 +122,7 @@ export function TodayPathCard({
 
         <h2
           id="today-path-title"
-          className="text-xl font-extrabold leading-snug text-[var(--color-main)] sm:text-[22px]"
+          className="text-xl font-extrabold leading-snug text-[var(--color-main)] sm:text-title"
         >
           {title}
         </h2>
@@ -178,7 +178,7 @@ export function TodayPathCard({
         </div>
 
         {ambient ? (
-          <p className="-mt-1 flex items-center gap-2 text-[13px] font-bold text-[var(--color-secondary)]">
+          <p className="-mt-1 flex items-center gap-2 text-caption font-bold text-[var(--color-secondary)]">
             <span
               className="size-2 shrink-0 rounded-full bg-[var(--play-cta)]"
               aria-hidden
@@ -237,7 +237,7 @@ function ExpandableNote({ text }: { text: string }) {
       >
         <p
           ref={textRef}
-          className="text-[15px] font-semibold leading-6 text-[var(--color-body)]"
+          className="text-body-sm font-semibold leading-6 text-[var(--color-body)]"
         >
           {text}
         </p>

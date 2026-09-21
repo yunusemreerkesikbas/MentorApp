@@ -19,12 +19,12 @@ import { CloudTransitionProvider } from "@/lib/cloud-transition";
 import "../globals.css";
 
 /* DESIGN.md §3 — one rounded UI family for headings + body. latin-ext covers Turkish glyphs
-   (ç ğ ı İ ş ö ü). globals.css aliases --font-heading to this body variable.
+   (ç ğ ı İ ş ö ü). theme.css binds --font-heading/--font-body/--font-sans to `--font-nunito`.
    No `weight` list on purpose: that ships the VARIABLE face (200–1000), so the 800/900 the play
    surfaces ask for finally render instead of silently clamping to the heaviest static file. */
 const sans = Nunito({
   subsets: ["latin", "latin-ext"],
-  variable: "--font-body",
+  variable: "--font-nunito",
 });
 
 export function generateStaticParams() {

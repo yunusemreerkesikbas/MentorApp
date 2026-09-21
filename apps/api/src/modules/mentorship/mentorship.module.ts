@@ -1,3 +1,4 @@
+import { MentorshipWeeklyBriefRepository } from "./infrastructure/mentorship-weekly-brief.repository";
 import { Module } from "@nestjs/common";
 import { MentorshipFollowupService } from "./application/mentorship-followup.service";
 import { MentorshipWeeklyBriefService } from "./application/mentorship-weekly-brief.service";
@@ -64,6 +65,7 @@ import { MentorshipWeeklyReportController } from "./presentation/mentorship-week
     MentorshipWeeklyReportController,
   ],
   providers: [
+    MentorshipWeeklyBriefRepository,
     MentorshipFollowupService,
     MentorshipFollowupRepository,
     MentorshipWeeklyBriefService,

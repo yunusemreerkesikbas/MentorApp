@@ -35,6 +35,15 @@ export function useStreakRescue(
   const currentStreak = data?.streak.currentStreak;
   const [override, setOverride] = useState<number | null>();
   const promptedForRef = useRef<string | null>(null);
+  // Unmount guard only: a per-run `cancelled` flag flips when `rescue` changes identity (e.g. the
+  // streak refreshes) and would silently drop the confirm of a prompt that is still open.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
   // Read inside the prompt without re-running it every time the quest list refreshes.
   const questsRef = useRef(quests);
   useEffect(() => {
@@ -70,7 +79,6 @@ export function useStreakRescue(
     if (sessionStorage.getItem(storageKey)) return;
     sessionStorage.setItem(storageKey, "1");
 
-    let cancelled = false;
     const offer = streakRescue;
     void (async () => {
       if (!offer.canAfford) {
@@ -82,7 +90,7 @@ export function useStreakRescue(
           puhuVariant: "encouraging",
         });
         const list = questsRef.current;
-        if (!cancelled && result === "primary" && list?.length) openQuests(list);
+        if (mountedRef.current && result === "primary" && list?.length) openQuests(list);
         return;
       }
       const result = await promo({
@@ -92,12 +100,8 @@ export function useStreakRescue(
         linkLabel: t("streak_rescue_later"),
         puhuVariant: "encouraging",
       });
-      if (!cancelled && result === "primary") await rescue();
+      if (mountedRef.current && result === "primary") await rescue();
     })();
-
-    return () => {
-      cancelled = true;
-    };
   }, [openQuests, promo, rescue, streakRescue, t]);
 
   return { successDays, closeSuccess: () => setOverride(null) };

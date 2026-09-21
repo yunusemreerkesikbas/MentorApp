@@ -48,13 +48,13 @@ export function MyCoachCard() {
     >
       <div className="flex items-center gap-3">
         <span
-          className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--coach-accent)] text-[15px] font-black text-[var(--color-bg)]"
+          className="grid size-11 shrink-0 place-items-center rounded-full bg-[var(--coach-accent)] text-body-sm font-black text-[var(--color-bg)]"
           aria-hidden
         >
           {initials(coach.coachDisplayName)}
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[13px] font-bold text-[var(--color-secondary)]">
+          <p className="text-caption font-bold text-[var(--color-secondary)]">
             {t("my_coach_eyebrow")}
           </p>
           <h2
@@ -70,7 +70,7 @@ export function MyCoachCard() {
         </Link>
       </div>
       {coach.coachNote ? (
-        <blockquote className="rounded-xl bg-[var(--coach-accent-soft)] px-3.5 py-2.5 text-sm leading-6 text-[var(--coach-accent-ink)]">
+        <blockquote className="rounded-[var(--radius-card)] bg-[var(--coach-accent-soft)] px-3.5 py-2.5 text-sm leading-6 text-[var(--coach-accent-ink)]">
           {coach.coachNote.body}
         </blockquote>
       ) : null}

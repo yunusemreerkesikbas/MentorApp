@@ -553,6 +553,9 @@ export const MentorshipWeeklyEvidenceResponseDtoKind = {
 } as const;
 
 export interface MentorshipWeeklyEvidenceResponseDto {
+  subjectRef?: string;
+  currentAttemptCount?: number;
+  previousAttemptCount?: number;
   id: string;
   kind: MentorshipWeeklyEvidenceResponseDtoKind;
   /** @nullable */
@@ -573,6 +576,8 @@ export const MentorshipWeeklySnapshotResponseDtoLimitationsItem = {
   NO_CURRENT_MOCK: 'NO_CURRENT_MOCK',
   NO_PREVIOUS_MOCK: 'NO_PREVIOUS_MOCK',
   MIXED_MOCK_SCOPE: 'MIXED_MOCK_SCOPE',
+  MOCK_PUBLISHERS_DIFFER: 'MOCK_PUBLISHERS_DIFFER',
+  LIMITED_MOCK_ATTEMPTS: 'LIMITED_MOCK_ATTEMPTS',
   UNCLASSIFIED_SESSIONS: 'UNCLASSIFIED_SESSIONS',
 } as const;
 
@@ -585,6 +590,35 @@ export interface MentorshipWeeklySnapshotResponseDto {
   mocks: MentorshipWeeklyMockResponseDto;
   evidence: MentorshipWeeklyEvidenceResponseDto[];
   limitations: MentorshipWeeklySnapshotResponseDtoLimitationsItem[];
+}
+
+export interface MentorshipPreparationObservationResponseDto {
+  text: string;
+  evidenceIds: string[];
+}
+
+export type MentorshipMeetingPreparationResponseDtoVersion = typeof MentorshipMeetingPreparationResponseDtoVersion[keyof typeof MentorshipMeetingPreparationResponseDtoVersion];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MentorshipMeetingPreparationResponseDtoVersion = {
+  NUMBER_1: 1,
+} as const;
+
+/**
+ * @nullable
+ */
+export type MentorshipMeetingPreparationResponseDtoProgress = MentorshipPreparationObservationResponseDto | null;
+
+export interface MentorshipMeetingPreparationResponseDto {
+  version: MentorshipMeetingPreparationResponseDtoVersion;
+  focus: MentorshipPreparationObservationResponseDto;
+  /** @nullable */
+  progress: MentorshipMeetingPreparationResponseDtoProgress;
+  uncertainty: string;
+  question: string;
+  /** @nullable */
+  nextStep: string | null;
 }
 
 export interface MentorshipWeeklyBriefFindingResponseDto {
@@ -604,6 +638,9 @@ export const MentorshipWeeklyBriefResponseDtoLocale = {
 } as const;
 
 export interface MentorshipWeeklyBriefResponseDto {
+  preparation?: MentorshipMeetingPreparationResponseDto;
+  /** @nullable */
+  coachContext?: string | null;
   findings: MentorshipWeeklyBriefFindingResponseDto[];
   model: string;
   generatedAt: string;
@@ -630,6 +667,12 @@ export type MentorshipWeeklyPreviewResponseDtoBrief = MentorshipWeeklyBriefRespo
 
 export interface MentorshipWeeklyPreviewResponseDto {
   /** @nullable */
+  coachContext?: string | null;
+  /** @nullable */
+  briefFingerprint?: string | null;
+  /** @nullable */
+  briefGenerationId?: string | null;
+  /** @nullable */
   draftId: string | null;
   studentId: string;
   studentDisplayName: string;
@@ -645,6 +688,8 @@ export interface MentorshipWeeklyPreviewResponseDto {
 }
 
 export interface MentorshipWeeklyBriefDto {
+  /** @maxLength 500 */
+  coachContext?: string;
   weekStart: string;
   /**
    * @minLength 64
@@ -742,6 +787,8 @@ export const MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem = {
   NO_CURRENT_MOCK: 'NO_CURRENT_MOCK',
   NO_PREVIOUS_MOCK: 'NO_PREVIOUS_MOCK',
   MIXED_MOCK_SCOPE: 'MIXED_MOCK_SCOPE',
+  MOCK_PUBLISHERS_DIFFER: 'MOCK_PUBLISHERS_DIFFER',
+  LIMITED_MOCK_ATTEMPTS: 'LIMITED_MOCK_ATTEMPTS',
   UNCLASSIFIED_SESSIONS: 'UNCLASSIFIED_SESSIONS',
 } as const;
 

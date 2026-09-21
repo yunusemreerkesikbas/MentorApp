@@ -92,6 +92,29 @@ describe("buildMentorshipWeeklySnapshot", () => {
       previousAverageNet: 60,
     });
     expect(snapshot.limitations).toContain("UNCLASSIFIED_SESSIONS");
+    expect(snapshot.limitations).toContain("MOCK_PUBLISHERS_DIFFER");
+    expect(snapshot.limitations).toContain("LIMITED_MOCK_ATTEMPTS");
+    expect(snapshot.evidence).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: "subject_focus:math",
+          subjectRef: "math",
+          current: 30,
+          previous: 20,
+          delta: 10,
+        }),
+        expect.objectContaining({
+          id: "subject_mock:math",
+          current: 20,
+          previous: 15,
+          currentAttemptCount: 1,
+          previousAttemptCount: 1,
+        }),
+      ]),
+    );
+    expect(
+      snapshot.evidence.some((item) => item.id === "subject_focus:null"),
+    ).toBe(false);
     expect(
       snapshot.evidence.find((item) => item.id === "mock_average"),
     ).toEqual({

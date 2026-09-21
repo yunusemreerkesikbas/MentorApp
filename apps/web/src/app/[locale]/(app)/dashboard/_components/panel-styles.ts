@@ -1,6 +1,6 @@
 /** Page frame shared by the panel and its skeleton, so the swap moves nothing. */
 export const PANEL_MAIN_CLASS =
-  "mx-auto flex w-full max-w-6xl flex-col gap-5 px-4 py-4 sm:px-8 lg:px-10 lg:py-8";
+  "mx-auto flex w-full max-w-6xl flex-col gap-5 px-5 py-4 sm:px-8 lg:px-10 lg:py-8";
 
 export const PANEL_GRID_CLASS =
   "grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_340px] xl:items-start";

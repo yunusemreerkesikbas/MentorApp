@@ -53,6 +53,17 @@ export function useWeeklyReportCard(studentId: string) {
   );
   const [latestWeek, setLatestWeek] = useState<string | null>(null);
   const [evaluation, setEvaluation] = useState("");
+  const [contextDraft, setContextDraft] = useState<{
+    key: string;
+    value: string;
+  } | null>(null);
+  const contextKey = `${studentId}:${preview?.snapshot.period.startDate ?? ""}`;
+  const coachContext =
+    contextDraft?.key === contextKey
+      ? contextDraft.value
+      : (preview?.coachContext ?? "");
+  const setCoachContext = (value: string) =>
+    setContextDraft({ key: contextKey, value });
   const [state, setState] = useState<WeeklyReportLoadState>("loading");
   const [busy, setBusy] = useState(false);
   const [finalized, setFinalized] = useState<MentorshipWeeklyReportDto | null>(
@@ -178,11 +189,24 @@ export function useWeeklyReportCard(studentId: string) {
     );
   }, [acceptPreview, preview, studentId]);
 
+  async function handleConflict() {
+    try {
+      await reloadSelected();
+      showToastWarning({
+        title: common("error_title"),
+        message: t("weekly_report_preview_changed"),
+      });
+    } catch (error) {
+      showError(error);
+    }
+  }
+
   async function moveWeek(offset: number) {
     if (!preview) return;
     setBusy(true);
     setFinalized(null);
     setEvaluation("");
+    setContextDraft(null);
     try {
       acceptPreview(
         await fetchWeeklyReportPreview(
@@ -206,6 +230,7 @@ export function useWeeklyReportCard(studentId: string) {
           studentId,
           preview.snapshot.period.startDate,
           preview.sourceFingerprint,
+          coachContext,
         ),
       );
       trackMentorshipWeeklyReportEvent("mentorship_weekly_brief_request", {
@@ -213,15 +238,7 @@ export function useWeeklyReportCard(studentId: string) {
       });
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 409) {
-        try {
-          await reloadSelected();
-          showToastWarning({
-            title: common("error_title"),
-            message: t("weekly_report_preview_changed"),
-          });
-        } catch (reloadError) {
-          showError(reloadError);
-        }
+        await handleConflict();
         return;
       }
       showError(error);
@@ -266,15 +283,7 @@ export function useWeeklyReportCard(studentId: string) {
       showToastSuccess({ title: t("weekly_report_finalized") });
     } catch (error) {
       if (error instanceof ApiClientError && error.status === 409) {
-        try {
-          await reloadSelected();
-          showToastWarning({
-            title: common("error_title"),
-            message: t("weekly_report_preview_changed"),
-          });
-        } catch (reloadError) {
-          showError(reloadError);
-        }
+        await handleConflict();
       } else {
         showError(error);
       }
@@ -287,6 +296,8 @@ export function useWeeklyReportCard(studentId: string) {
     archive,
     busy,
     evaluation,
+    coachContext,
+    setCoachContext,
     finalized,
     latestWeek,
     preview,
