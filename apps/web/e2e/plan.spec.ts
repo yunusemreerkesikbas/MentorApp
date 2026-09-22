@@ -45,6 +45,7 @@ const task: PlanTaskDto = {
 const readyPreview: CoachPlanAdaptationDto = {
   status: "READY",
   message: "Planına dokunmadan güvenli bir önizleme hazırladım.",
+  groundingLine: "Bekleyen işlerin arasında Matematik var.",
   window: { from: "2026-07-21", to: "2026-07-27" },
   planRevision: revision,
   model: "fake",
@@ -75,6 +76,9 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   await page.getByRole("button", { name: "Koçla planla" }).click();
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
 
+  await expect(
+    page.getByText("Bekleyen işlerin arasında Matematik var."),
+  ).toBeVisible();
   await expect(page.getByText("Taşı", { exact: true })).toBeVisible();
   await expect(page.getByText("Ekle", { exact: true })).toBeVisible();
   await expect(page.getByText(/21 Temmuz.*23 Temmuz/)).toBeVisible();
@@ -143,6 +147,7 @@ test("mood query akışını StrictMode altında bir kez tüketir", async ({
     ...readyPreview,
     status: "NO_CHANGE",
     message: "Şu an planını değiştirmen gerekmiyor.",
+    groundingLine: null,
     changes: [],
     model: "rules",
   };

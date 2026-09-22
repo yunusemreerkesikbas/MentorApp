@@ -6,7 +6,7 @@ import { ChevronRight } from "lucide-react";
 import type { MyCoachDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { fetchMyCoach } from "@/lib/mentorship";
-import { PANEL_CARD, PANEL_TEXT_LINK } from "./panel-styles";
+import { PANEL_CARD, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 
 function initials(name: string): string {
   return name

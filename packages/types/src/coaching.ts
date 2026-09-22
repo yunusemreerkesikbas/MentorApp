@@ -182,6 +182,8 @@ export interface CoachPlanAdaptationDto {
   status: CoachPlanAdaptationStatus;
   /** Backend-localized calm summary. */
   message: string;
+  /** One verified fact for the preview bubble. Null when no safe subject or plan count exists. */
+  groundingLine: string | null;
   window: { from: string; to: string };
   /** Opaque snapshot hash used to reject stale confirmations. */
   planRevision: string;

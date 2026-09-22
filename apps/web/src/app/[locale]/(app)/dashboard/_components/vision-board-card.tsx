@@ -14,7 +14,7 @@ import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { PremiumLockNudge } from "@/components/premium/premium-lock-nudge";
 import { useSubscription } from "@/lib/subscription-context";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
-import { PANEL_CARD, PANEL_CARD_TITLE } from "./panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 
 /**
  * "Hedefin" — the vision/goal board ("hayal/vision-board panosu") panel card. Self-fetches the goal;

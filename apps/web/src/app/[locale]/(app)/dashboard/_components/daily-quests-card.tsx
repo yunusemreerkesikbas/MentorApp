@@ -12,7 +12,8 @@ import {
 import type { QuestAction, QuestProgressView } from "@mentor/types";
 import { ChestIcon } from "./today-path";
 import { CHEST_QUEST_ID } from "./today-path-model";
-import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "./panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
+import { ProgressLine } from "@/components/panel/progress-line";
 
 const WELL_BY_ACTION: Partial<Record<NonNullable<QuestAction>, [LucideIcon, string]>> = {
   plan: [CalendarCheck, "bg-[var(--play-well-peri)] text-[var(--play-selected-ink)]"],
@@ -130,19 +131,13 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
             </span>
           ) : null}
         </div>
-        <div
-          role="progressbar"
-          aria-label={quest.title}
-          aria-valuemin={0}
-          aria-valuemax={target}
-          aria-valuenow={current}
-          className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--play-track)]"
-        >
-          <span
-            className={`block h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${quest.completed ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}`}
-            style={{ width: `${Math.round((current / target) * 100)}%` }}
-          />
-        </div>
+        <ProgressLine
+          label={quest.title}
+          value={current}
+          max={target}
+          complete={quest.completed}
+          className="mt-1.5"
+        />
       </div>
       {reward ? (
         <span

@@ -55,6 +55,7 @@ import {
   type MemoryCandidate,
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
+import { groundingFact } from "../domain/grounding-fact";
 import {
   applyCoachPersonalizationMarker,
   createPersonalizationMarkerFilter,
@@ -790,7 +791,54 @@ export class ChatService {
       personalization,
       locale,
       mentorV2: mentorV2 ?? null,
+      focusLine: analysisContext?.focus
+        ? groundingFact({
+            signal: "EVALUATE",
+            locale,
+            focus: analysisContext.focus,
+          })
+        : null,
     };
+  }
+
+  /** One visible reply. A mock focus replaces the session counter instead of sitting beside it. */
+  private visibleCoachReply(
+    raw: string,
+    personalization: CoachPersonalizationDto,
+    locale: PromptLocale,
+    mentorV2: boolean,
+    focusLine: string | null,
+  ) {
+    const markers = extractReplyMarkers(raw);
+    const marked = !mentorV2
+      ? applyCoachPersonalizationMarker(
+          markers.text,
+          personalization,
+          locale,
+          focusLine,
+        )
+      : focusLine
+        ? applyCoachPersonalizationMarker(
+            markers.text.trim(),
+            personalization,
+            locale,
+            focusLine,
+          )
+        : { text: markers.text.trim(), personalization };
+    let text = marked.text;
+    if (!mentorV2) {
+      if (focusLine && text.startsWith(focusLine)) {
+        const body = enforceNeedsInputReply(
+          text.slice(focusLine.length).trimStart(),
+          marked.personalization.mode,
+          locale,
+        );
+        text = body ? `${focusLine} ${body}` : focusLine;
+      } else {
+        text = enforceNeedsInputReply(text, marked.personalization.mode, locale);
+      }
+    }
+    return { text, personalization: marked.personalization, markers };
   }
 
   /** Record actual provider usage, then require the complete exchange to persist. */
@@ -872,28 +920,27 @@ export class ChatService {
     mentorV2?: MentorV2Context | null,
     requestContext?: CoachRequestContext,
   ): Promise<CoachReplyResult> {
-    const { llmInput, sources, personalization, locale } = await this.prepareChat(
-      userId,
-      target.kind === "existing" ? target.conversationId : undefined,
-      message,
-      mockExam,
-      { contextArticleSlug },
-      community,
-      mentorV2,
-    );
+    const { llmInput, sources, personalization, locale, focusLine } =
+      await this.prepareChat(
+        userId,
+        target.kind === "existing" ? target.conversationId : undefined,
+        message,
+        mockExam,
+        { contextArticleSlug },
+        community,
+        mentorV2,
+      );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
-    const markers = extractReplyMarkers(result.text);
-    const personalized = mentorV2
-      ? { text: markers.text.trim(), personalization }
-      : applyCoachPersonalizationMarker(markers.text, personalization, locale);
-    const reply = mentorV2
-      ? personalized.text
-      : enforceNeedsInputReply(
-          personalized.text,
-          personalized.personalization.mode,
-          locale,
-        );
+    const personalized = this.visibleCoachReply(
+      result.text,
+      personalization,
+      locale,
+      Boolean(mentorV2),
+      focusLine,
+    );
+    const reply = personalized.text;
+    const markers = personalized.markers;
     const { followUps, memoryCandidate } = markers;
     const task = mockExam ? undefined : markers.task;
     const action = await this.buildAction(mentorV2 ?? null, task ?? undefined);
@@ -1026,32 +1073,32 @@ export class ChatService {
         conversationId,
         community,
       );
-      const { llmInput, sources, personalization, locale } = await this.prepareChat(
-        user.id,
-        target.kind === "existing" ? target.conversationId : undefined,
-        message,
-        mockExam,
-        { contextArticleSlug },
-        community,
-        mentorV2,
-      );
+      const { llmInput, sources, personalization, locale, focusLine } =
+        await this.prepareChat(
+          user.id,
+          target.kind === "existing" ? target.conversationId : undefined,
+          message,
+          mockExam,
+          { contextArticleSlug },
+          community,
+          mentorV2,
+        );
       const final = yield* this.streamLlm(
         llmInput,
         personalization,
         locale,
         Boolean(mentorV2),
+        focusLine,
       );
-      const markers = extractReplyMarkers(final.text);
-      const personalized = mentorV2
-        ? { text: markers.text.trim(), personalization }
-        : applyCoachPersonalizationMarker(markers.text, personalization, locale);
-      const reply = mentorV2
-        ? personalized.text
-        : enforceNeedsInputReply(
-            personalized.text,
-            personalized.personalization.mode,
-            locale,
-          );
+      const personalized = this.visibleCoachReply(
+        final.text,
+        personalization,
+        locale,
+        Boolean(mentorV2),
+        focusLine,
+      );
+      const reply = personalized.text;
+      const markers = personalized.markers;
       const { followUps, memoryCandidate } = markers;
       const task = mockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
@@ -1268,37 +1315,37 @@ export class ChatService {
       await this.authorizeChatSpend(user, spendRefId);
 
     try {
-      const { llmInput, sources, personalization, locale } = await this.prepareChat(
-        user.id,
-        conversationId,
-        userMsg.content,
-        regeneratedMockExam,
-        {
-          excludeTailExchange: true,
-          ...(requestContext?.articleSlug
-            ? { contextArticleSlug: requestContext.articleSlug }
-            : {}),
-        },
-        community,
-        mentorV2,
-      );
+      const { llmInput, sources, personalization, locale, focusLine } =
+        await this.prepareChat(
+          user.id,
+          conversationId,
+          userMsg.content,
+          regeneratedMockExam,
+          {
+            excludeTailExchange: true,
+            ...(requestContext?.articleSlug
+              ? { contextArticleSlug: requestContext.articleSlug }
+              : {}),
+          },
+          community,
+          mentorV2,
+        );
       const final = yield* this.streamLlm(
         llmInput,
         personalization,
         locale,
         Boolean(mentorV2),
+        focusLine,
       );
-      const markers = extractReplyMarkers(final.text);
-      const personalized = mentorV2
-        ? { text: markers.text.trim(), personalization }
-        : applyCoachPersonalizationMarker(markers.text, personalization, locale);
-      const reply = mentorV2
-        ? personalized.text
-        : enforceNeedsInputReply(
-            personalized.text,
-            personalized.personalization.mode,
-            locale,
-          );
+      const personalized = this.visibleCoachReply(
+        final.text,
+        personalization,
+        locale,
+        Boolean(mentorV2),
+        focusLine,
+      );
+      const reply = personalized.text;
+      const markers = personalized.markers;
       const { followUps } = markers;
       const task = regeneratedMockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
@@ -1369,14 +1416,15 @@ export class ChatService {
     system: string;
     user: string;
     history: LlmHistoryMessage[];
-  }, personalization: CoachPersonalizationDto, locale: PromptLocale, mentorV2 = false): AsyncGenerator<
+  }, personalization: CoachPersonalizationDto, locale: PromptLocale, mentorV2 = false, focusLine: string | null = null): AsyncGenerator<
     CoachChatStreamEvent,
     LlmResult
   > {
     // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
     const personalizationFilter = mentorV2
       ? null
-      : createPersonalizationMarkerFilter(personalization, locale);
+      : createPersonalizationMarkerFilter(personalization, locale, focusLine);
+    if (mentorV2 && focusLine) yield { delta: `${focusLine} ` };
     const bufferUntilValidated =
       !mentorV2 && personalization.mode === "NEEDS_INPUT";
     const markerFilter = createTaskMarkerFilter();

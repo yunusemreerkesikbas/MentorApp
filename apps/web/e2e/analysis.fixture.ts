@@ -4,11 +4,12 @@ import type {
   DeepAnalysisView,
   ExamCalendarDto,
   ExamSubjectDto,
+  NotebookReviewHistoryItem,
   PhotoAccessDto,
   WeeklyReviewDto,
   WeeklyReviewNarrationDto,
 } from "@mentor/types";
-import type { Page, Route } from "@playwright/test";
+import { expect, type Page, type Route } from "@playwright/test";
 
 export const exam = {
   id: "11111111-1111-4111-8111-111111111111",
@@ -160,6 +161,22 @@ export const multipleAnalysis: CoachingAnalysisDto = {
     subjects: [],
     aiNarration: null,
   },
+};
+
+/** A notebook with entries: what Yanlışlarım draws. */
+export const mistakesAnalysis: CoachingAnalysisDto = {
+  ...multipleAnalysis,
+  photoSubjectSignals: [
+    { subjectRef: "matematik", subjectName: "Matematik", count: 5, sharePercent: 63 },
+    { subjectRef: "tarih", subjectName: "Tarih", count: 3, sharePercent: 37 },
+  ],
+  notebookErrorSignals: [
+    { errorType: "CARELESS", count: 4, sharePercent: 36 },
+    { errorType: "UNKNOWN_TOPIC", count: 3, sharePercent: 27 },
+    { errorType: "TIME", count: 2, sharePercent: 18 },
+  ],
+  notebookErrorMessage: "Kaçanların çoğu dikkatten geliyor. Soruyu sonuna kadar okumak işini görecek.",
+  notebookStats: { windowDays: 60, savedCount: 11, reviewedCount: 9, dueCount: 5, healedCount: 0 },
 };
 
 export const insufficientWeekly: WeeklyReviewDto = {
@@ -336,9 +353,14 @@ export const readyWeekly: WeeklyReviewDto = {
   },
 };
 
+export const ghostNarrationText = "Bu denemede kendi çizgini yukarı taşıdın, Problemler hâlâ odağında.";
+
 interface MockApiOptions {
   authUser?: AuthUser;
   analysis?: CoachingAnalysisDto;
+  /** `/v1/subscription`'s entitlement: free unless set. */
+  premium?: boolean;
+  reviewHistory?: NotebookReviewHistoryItem[];
   weekly?: Array<WeeklyReviewDto | "error">;
   photoAccess?: PhotoAccessDto;
   deepAnalysis?: DeepAnalysisView;
@@ -351,6 +373,8 @@ export interface MockApiLog {
   unexpected: string[];
   weeklyCalls: number;
   photoAccessCalls: number;
+  /** One LLM call per latest exam at most; free students must never send it. */
+  ghostNarrationCalls: number;
   /** Mock exams saved through the form — what the notebook handoff hangs off. */
   createdMockExams: Record<string, unknown>[];
 }
@@ -367,8 +391,10 @@ export async function mockAnalysisApi(
     unexpected: [],
     weeklyCalls: 0,
     photoAccessCalls: 0,
+    ghostNarrationCalls: 0,
     createdMockExams: [],
   };
+  const reviewHistory = options.reviewHistory ?? [];
 
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
@@ -439,7 +465,27 @@ export async function mockAnalysisApi(
       workedCount: 3, revisitCount: 1, completedCount: 0, dueCount: 2, days: Number(url.searchParams.get("days") ?? 7), since: "2026-09-01T21:00:00Z",
       focuses: [{ examId: exam.id, subjectRef: "matematik", subjectName: "Matematik", topicRef: "problemler", topicName: "Problemler" }, { examId: exam.id, subjectRef: "tarih", subjectName: "Tarih", topicRef: null, topicName: null }],
     });
-    if (method === "GET" && path.startsWith("/v1/coaching/notebook/review-history")) return json(route, { items: [], total: 0, page: 1, pageSize: 10 });
+    if (method === "GET" && path.startsWith("/v1/coaching/notebook/review-history")) {
+      const pageSize = Number(url.searchParams.get("pageSize") ?? 10);
+      return json(route, { items: reviewHistory.slice(0, pageSize), total: reviewHistory.length, page: 1, pageSize });
+    }
+    if (method === "GET" && path === "/v1/subscription") {
+      return json(route, {
+        subscription: null,
+        entitlement: {
+          tier: options.premium ? "PREMIUM" : "FREE",
+          isPremium: Boolean(options.premium),
+          validUntil: null,
+          reason: options.premium ? "ACTIVE" : "NONE",
+        },
+        features: {},
+        discount: null,
+      });
+    }
+    if (method === "POST" && path === "/v1/coach/ghost-narration") {
+      log.ghostNarrationCalls += 1;
+      return json(route, { narration: ghostNarrationText, model: "test" });
+    }
     if (method === "GET" && path.startsWith("/v1/coaching/analysis?"))
       return json(route, analysis);
     if (method === "GET" && path.startsWith("/v1/mock-exams?")) {
@@ -512,6 +558,16 @@ export async function mockAnalysisApi(
   });
 
   return log;
+}
+
+/**
+ * Opens an analysis URL and waits for the view itself. The view sits behind a four-request chain
+ * (me → exam → subjects → analysis) that a parallel local run can stretch past the default 5 s;
+ * waiting once, here, keeps every later expectation on the normal timeout.
+ */
+export async function gotoAnalysis(page: Page, url: string): Promise<void> {
+  await page.goto(url);
+  await expect(page.locator('[id^="analysis-panel-"]')).toBeVisible({ timeout: 15_000 });
 }
 
 const corsHeaders = {

@@ -154,6 +154,13 @@ html {
   --coach-accent: #26377f;
   --coach-accent-soft: #e6e9f7;
   --coach-accent-ink: #1f2c66;
+  /*
+   * Correct / wrong in a mock exam's part-to-whole bars (DESIGN.md §2.3). Checked with the dataviz
+   * palette validator in both themes; neither clears 3:1 on white, so the counts always sit beside
+   * the bar. Blank is not a category: it is the remainder, drawn on `--play-track`.
+   */
+  --chart-correct: #55acee;
+  --chart-wrong: #f3705a;
 }
 
 ::placeholder {
@@ -211,6 +218,9 @@ html.dark {
   --coach-accent: #8fa2ee;
   --coach-accent-soft: #252b40;
   --coach-accent-ink: #c3ccf5;
+  /* The light pair sits above the dark theme's lightness band; these are its own validated steps. */
+  --chart-correct: #3f95d8;
+  --chart-wrong: #e0634d;
 }
 
 /*

@@ -57,6 +57,7 @@ describe("ChatService coin refund", () => {
   let resolveForCoach: ReturnType<typeof vi.fn>;
   let tryGetBridge: ReturnType<typeof vi.fn>;
   let getRequestContext: ReturnType<typeof vi.fn>;
+  let getCoachContext: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     llmComplete = vi.fn();
@@ -73,6 +74,7 @@ describe("ChatService coin refund", () => {
     isOwned = vi.fn(async () => true);
     getOrigin = vi.fn(async () => null);
     getMockExam = vi.fn(async () => MOCK_EXAM);
+    getCoachContext = vi.fn(async () => null);
     contextBuild = vi.fn(async () => ({
       examType: null,
     }));
@@ -157,6 +159,11 @@ describe("ChatService coin refund", () => {
       { getById: getMockExam } as never,
       { translate: vi.fn((key: string) => key) } as never,
       { resolveForCoach, tryGetBridge } as never,
+      undefined,
+      undefined,
+      undefined,
+      undefined,
+      { getCoachContext } as never,
     );
   });
 
@@ -856,7 +863,7 @@ describe("ChatService coin refund", () => {
       usedSignals: ["RECENT_SESSIONS"],
     });
     expect(result.reply).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. İçinde Türkçe var. Bugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
     );
     expect(persistExchange).toHaveBeenCalledWith(
       USER.id,
@@ -900,7 +907,7 @@ describe("ChatService coin refund", () => {
       .map((event) => event.delta)
       .join("");
     expect(streamed).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek blok dene.",
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. İçinde Türkçe var. Bugün tek blok dene.",
     );
     expect(events.at(-1)).toMatchObject({
       done: {
@@ -987,6 +994,57 @@ describe("ChatService coin refund", () => {
     expect(llmInput.system).toContain("toplam net: 72.50");
     expect(llmInput.system).toContain("Matematik: D 30, Y 8, Boş 2, net 28.00");
     expect(llmInput.system).not.toContain("SECRET PUBLISHER");
+  });
+
+  it("opens an evaluation reply with the mock focus and skips the session counter", async () => {
+    contextBuild.mockResolvedValue({
+      examType: "KPSS",
+      moodLevel: null,
+      recentSessions: {
+        count7d: 4,
+        focusMinutes7d: 95,
+        subjects: ["Tarih"],
+      },
+      todayPlan: null,
+    });
+    getCoachContext.mockResolvedValue({
+      focus: {
+        subjectName: "Tarih",
+        topicName: "Osmanlı",
+        source: "LOWEST_AVERAGE",
+        evidenceCount: 3,
+      },
+      dominantError: null,
+      notebookStats: {
+        savedCount: 0,
+        reviewedCount: 0,
+        dueCount: 0,
+        healedCount: 0,
+      },
+    });
+    llmComplete.mockResolvedValue({
+      text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nTekrar için bir blok ayır.",
+      promptTokens: 1,
+      completionTokens: 1,
+      model: "fake",
+    });
+
+    const result = await service.reply(
+      USER,
+      "Bu denemeyi yorumla",
+      MSG_ID,
+      undefined,
+      MOCK_EXAM_ID,
+    );
+
+    expect(result.reply).toBe(
+      "Son denemende odak Tarih, Osmanlı. Tekrar için bir blok ayır.",
+    );
+    expect(result.reply).not.toContain("Son 7 günde");
+    expect(result.personalization.usedSignals).toEqual([]);
+    expect(result.personalization.usedEvidence?.[0]?.summary).toBe(
+      "Son denemende odak Tarih, Osmanlı.",
+    );
   });
 
   it("does not create a conversation or call the LLM when mock-exam ownership validation fails", async () => {

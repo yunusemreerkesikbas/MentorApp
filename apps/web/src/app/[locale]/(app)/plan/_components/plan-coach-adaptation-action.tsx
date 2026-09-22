@@ -20,6 +20,7 @@ import {
 import { ApiClientError } from "@mentor/api-client";
 import { Button, TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { CompanionBubble } from "@/components/panel/companion-bubble";
 import { trackCoachEvent } from "@/lib/analytics";
 import { requestCoachPlanAdaptation } from "@/lib/coach";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -166,6 +167,9 @@ const PlanCoachAdaptationPreview = forwardRef<PreviewHandle, PreviewProps>(
 
     return (
       <div className="flex flex-col gap-4">
+        {preview.groundingLine ? (
+          <CompanionBubble puhu="encouraging" text={preview.groundingLine} />
+        ) : null}
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
           {preview.message}
         </p>

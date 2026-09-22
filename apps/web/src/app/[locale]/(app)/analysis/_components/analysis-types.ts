@@ -2,6 +2,9 @@ import type { ExamSubjectDto, MockExamTrendPointDto } from "@mentor/types";
 
 export type AnalysisTab = "entry" | "progress" | "mistakes";
 
+/** The two views the tabs switch between; `entry` is the form, opened from "Deneme ekle". */
+export type AnalysisViewTab = Exclude<AnalysisTab, "entry">;
+
 export type TrendWindow = "4" | "8" | "12";
 
 export interface SubjectScores {
@@ -90,6 +93,11 @@ export function formatTrendDate(iso: string, locale: string): string {
     month: "short",
     year: "numeric",
   });
+}
+
+/** Axis and node label: "10 Ağu". */
+export function formatShortDate(iso: string, locale: string): string {
+  return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short" });
 }
 
 export function sliceTrend(

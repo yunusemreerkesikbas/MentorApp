@@ -3,6 +3,7 @@ import type {
   CoachPlanAdaptationSource,
 } from "@mentor/types";
 import type { PlanAdaptationSnapshotTask } from "../../coaching/domain/plan-adaptation";
+import { moodLabel } from "./grounding-fact";
 import {
   promptLanguageInstruction,
   type PromptLocale,
@@ -205,6 +206,7 @@ export function buildPlanAdaptationPrompt(input: {
   tasks: readonly PromptPlanTask[];
   note?: string;
   locale?: PromptLocale;
+  moodLevel?: number | null;
 }): { system: string; user: string } {
   const policy =
     input.source === "PLAN"
@@ -240,8 +242,13 @@ export function buildPlanAdaptationPrompt(input: {
     input.source === "PLAN" && input.note
       ? `\nKullanıcının açık notu: ${input.note}`
       : "";
+  const locale = input.locale ?? "tr";
+  const label = moodLabel(input.moodLevel, locale);
+  const mood = label
+    ? `\n${locale === "en" ? "Mood" : "Ruh hali"}: ${label}`
+    : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}${mood}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
   };
 }

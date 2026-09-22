@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ArrowRight, BookOpen } from "lucide-react";
@@ -27,7 +27,8 @@ import { JourneyCard } from "./journey-card";
 import { MembershipCard } from "./membership-card";
 import { useMoodCheckin } from "./mood-checkin";
 import { MyCoachCard } from "./my-coach-card";
-import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "./panel-styles";
+import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { useWideLayout } from "@/components/panel/use-wide-layout";
 import { TodayPathCard } from "./today-path-card";
 import { usePanelData } from "./use-panel-data";
 import { parseMockDays, useStreakRescue } from "./use-streak-rescue";
@@ -40,25 +41,6 @@ const REWARDED_QUEST_VISIBLE_REASONS = new Set([
   "DAILY_LIMIT_REACHED",
   "ACTIVE_SESSION_EXISTS",
 ]);
-
-const WIDE_QUERY = "(min-width: 1280px)";
-const subscribeWide = (onChange: () => void) => {
-  const query = window.matchMedia(WIDE_QUERY);
-  query.addEventListener("change", onChange);
-  return () => query.removeEventListener("change", onChange);
-};
-
-/**
- * Two columns from 1280px, one below. Chosen in JS rather than CSS `order` so every card mounts
- * once and the reading/focus order always matches what is on screen.
- */
-function useWideLayout(): boolean {
-  return useSyncExternalStore(
-    subscribeWide,
-    () => window.matchMedia(WIDE_QUERY).matches,
-    () => false,
-  );
-}
 
 /** Panel (Anasayfa): "Bugün" hub. Orchestrates; the sections render themselves. */
 export function PanelShell() {
