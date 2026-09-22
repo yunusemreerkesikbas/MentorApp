@@ -72,12 +72,26 @@ export const planDraftSchema = z.object({
 });
 export type PlanDraftInput = z.infer<typeof planDraftSchema>;
 
+const planAdaptationMinutesSchema = z.union([
+  z.literal(15),
+  z.literal(30),
+  z.literal(60),
+  z.literal(90),
+  z.literal(120),
+]);
+
 /** POST /v1/coach/plan-adaptation — explicit, user-triggered preview source. */
 export const coachPlanAdaptationSchema = z
   .object({
     source: z.enum(["PLAN", "MOOD", "SESSION"]),
     note: z.string().trim().max(500).optional(),
     sessionId: z.string().uuid().optional(),
+    /** Study days inside the 7-day window. PLAN only. */
+    days: z.number().int().min(1).max(7).optional(),
+    /** Target size of each added block, in minutes. PLAN only. */
+    minutesPerDay: planAdaptationMinutesSchema.optional(),
+    /** Subjects the added tasks must use. PLAN only, at most 3. */
+    focusSubjects: z.array(z.string().trim().min(1).max(80)).max(3).optional(),
   })
   .superRefine((value, ctx) => {
     if (value.source === "SESSION" && !value.sessionId) {
@@ -101,9 +115,27 @@ export const coachPlanAdaptationSchema = z
         message: "note is only allowed for PLAN source",
       });
     }
+    if (
+      value.source !== "PLAN" &&
+      (value.days !== undefined ||
+        value.minutesPerDay !== undefined ||
+        value.focusSubjects !== undefined)
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["days"],
+        message: "days, minutesPerDay and focusSubjects are only allowed for PLAN source",
+      });
+    }
   });
 export type CoachPlanAdaptationInput =
-  | { source: "PLAN"; note?: string }
+  | {
+      source: "PLAN";
+      note?: string;
+      days?: number;
+      minutesPerDay?: 15 | 30 | 60 | 90 | 120;
+      focusSubjects?: string[];
+    }
   | { source: "MOOD" }
   | { source: "SESSION"; sessionId: string };
 

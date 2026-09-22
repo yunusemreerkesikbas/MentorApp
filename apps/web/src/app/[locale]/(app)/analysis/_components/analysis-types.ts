@@ -5,12 +5,31 @@ export type AnalysisTab = "entry" | "progress" | "mistakes";
 /** The two views the tabs switch between; `entry` is the form, opened from "Deneme ekle". */
 export type AnalysisViewTab = Exclude<AnalysisTab, "entry">;
 
-export type TrendWindow = "4" | "8" | "12";
-
 export interface SubjectScores {
   correct: string;
   wrong: string;
   blank: string;
+  /** Typed by the student (or loaded from a saved exam); otherwise blank follows the other two. */
+  blankManual: boolean;
+}
+
+/**
+ * One field of a subject row changes. Blank fills itself in as questions − correct − wrong until the
+ * student types into it; emptying it hands it back. It stays empty while either of the other two is
+ * empty or they already exceed the questions, where the row's own error speaks.
+ */
+export function withScore(
+  row: SubjectScores,
+  field: "correct" | "wrong" | "blank",
+  value: string,
+  questionCount: number | null,
+): SubjectScores {
+  if (field === "blank") return { ...row, blank: value, blankManual: value !== "" };
+  const next = { ...row, [field]: value };
+  if (next.blankManual || questionCount == null) return next;
+  const rest = questionCount - Number(next.correct) - Number(next.wrong);
+  const known = next.correct !== "" && next.wrong !== "";
+  return { ...next, blank: known && rest >= 0 ? String(rest) : "" };
 }
 
 const TAB_VALUES: AnalysisTab[] = ["entry", "progress", "mistakes"];
@@ -27,10 +46,6 @@ export function shouldNavigateAnalysisTab(
   next: AnalysisTab,
 ): boolean {
   return current !== next;
-}
-
-export function shouldRevealFirstInsight(attemptCount: number): boolean {
-  return attemptCount === 0;
 }
 
 export function buildAnalysisCoachHref(seed: string, contextMockExamId?: string) {
@@ -62,7 +77,7 @@ export function emptyScores(
   return Object.fromEntries(
     paperSubjects(subjects).map((subject) => [
       subject.slug,
-      { correct: "", wrong: "", blank: "" },
+      { correct: "", wrong: "", blank: "", blankManual: false },
     ]),
   );
 }
@@ -81,6 +96,8 @@ export function scoresFromMockExam(
           correct: row ? String(row.correct) : "",
           wrong: row ? String(row.wrong) : "",
           blank: row ? String(row.blank) : "",
+          // A stored blank is what the student entered; it is not recomputed under them.
+          blankManual: Boolean(row),
         },
       ];
     }),
@@ -98,13 +115,6 @@ export function formatTrendDate(iso: string, locale: string): string {
 /** Axis and node label: "10 Ağu". */
 export function formatShortDate(iso: string, locale: string): string {
   return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short" });
-}
-
-export function sliceTrend(
-  trend: MockExamTrendPointDto[],
-  window: TrendWindow,
-): MockExamTrendPointDto[] {
-  return trend.slice(0, Number(window));
 }
 
 /** Sparkline reads oldest → newest (left to right). */

@@ -102,6 +102,20 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-22 · Plan uyarlaması gün sayısını kesmez.** `POST /v1/coach/plan-adaptation` PLAN gövdesi `days`, `minutesPerDay` ve `focusSubjects` alır. Prompt bu ritmi bağlar. Ayrıştırıcı PLAN için en fazla 3 ekleme kuralını bırakır: seçilen gün sayısı kadar farklı güne bir ekleme, seçim yoksa 7 gün. Seçilen ders boş subject'i doldurur. Ruh hali ve seans tavanı durur. **Kullanım:** plan sihirbazı bu alanları gönderir. **Gotcha:** eksik gün üretilmez. İlgili: `plan-adaptation.ts`, `plan-adaptation.service.ts`, `packages/validation/src/ai.ts`.
+
+- **2026-09-22 · Tek sohbet yolu.** Koç sohbeti her hesapta Mentor V2. `ai.coach_personalization_v2.rollout_percent` ve `isMentorV2Enabled` kalktı; veritabanında 0 kayıtlı olsa bile sohbet onu okumaz. Kanıt, profil ve tur planlayıcı zorunlu enjeksiyon: eksik bağ eski sohbete düşmez, boot'ta patlar. Konuştaki sunucu sayaç cümlesi ("İçinde Tarih var") bu yolla gider. Değerlendirmenin ilk satırı ve plan balonu durur. `ContextBuilder` ile `buildSystemPrompt` durur; ruh hali, selam, seans, vizyon, plan taslağı ve plan uyarlaması onları kullanmaya devam eder. Kullanım: sohbet her zaman kanıt özeti, izinli hafıza ve tur planı görür. Gotcha: yeni profilin ilk GENERAL/CHECK_IN turu kalibrasyon sorusudur, modeli çağırmaz. İlgili: `chat.service.ts`, `mentor-v2-prompt.ts`, `config.catalog.ts`.
+
+- **2026-09-22 · Ghost narration has a web consumer again (/analiz redesign).** Premium students see
+  the coach's reading of their latest exam in Puhu's bubble, labelled "Koçundan": on the Gelişim hero
+  and in the saved moment right after a save. `use-ghost-narration.ts` is mounted once per page, waits
+  for the subscription (a free student never sends it), and sends at most one
+  `POST /v1/coach/ghost-narration` per latest exam; a cached `ghost.aiNarration` means no call, and an
+  exam saved with an older date never triggers one. Free keeps the rule-based `ghost.headline` with the
+  PREMIUM lock nudge. API unchanged. Reverses the 2026-07-16 removal and the "no new web consumer"
+  note of 2026-09-06 below. Related: `use-ghost-narration.ts`, `focus-path-card.tsx`,
+  `entry-saved-card.tsx`, `lib/coach.ts` (`fetchGhostNarration`), `e2e/analysis.spec.ts`.
+
 - **2026-09-18 — Notebook prelabel is unused on web.** Adding a mistake no longer asks
   vision to fill ders/konu. The student picks from the taxonomy cascade. Usage: photo
   upload is storage only. Gotcha: `POST /v1/coaching/notebook/entries/prelabel` remains
@@ -358,7 +372,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
   TR/EN prompt-locale rule. Mood/session/vision/ghost caches persist their locale, while daily
   greetings are keyed by `(user, UTC day, locale)`; legacy null-locale rows miss once and regenerate.
   Migration `0058` was generated from Drizzle schema. `plan-draft` and `ghost-narration` remain
-  backward-compatible legacy endpoints and have no new web consumer. Related:
+  backward-compatible legacy endpoints and have no new web consumer (`ghost-narration` got one again
+  on 2026-09-22: `/analiz`). Related:
   `context-builder.service.ts`, `prompt-locale.ts`, AI prompt services, coaching cache services,
   `schema.ts`, `0058_curvy_stature.sql`.
 

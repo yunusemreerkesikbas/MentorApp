@@ -82,15 +82,11 @@ describe("ai coach chat (e2e)", () => {
   };
 
   /**
-   * Premium through a real subscription row, NOT through `UserRole.STAFF`.
+   * Premium through a real subscription row, not `UserRole.STAFF`.
    *
-   * STAFF does grant premium (`entitlement.service.ts`: "PREMIUM <= STAFF role"), which is why
-   * these suites used it as a one-line shortcut. But STAFF also short-circuits
-   * `isMentorV2Enabled` — internal dogfooding — so a STAFF user is ALWAYS on Personalized Mentor
-   * V2 no matter what `ai.coach_personalization_v2.rollout_percent` says. V2 answers the first
-   * turn with a calibration question instead of calling the LLM, so these tests were quietly
-   * asserting the legacy chat path against a user who could never take it. A subscribed
-   * non-staff user is what "premium user" in these test names actually means.
+   * Every account uses Mentor V2. A fresh profile's first GENERAL or CHECK_IN turn answers with
+   * a calibration question and does not call the LLM. These suites mark calibration COMPLETED so
+   * the premium user still reaches the model.
    */
   const seedSubscription = async (userId: string) => {
     const c = await pool.connect();
@@ -106,6 +102,12 @@ describe("ai coach chat (e2e)", () => {
         `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
          values ($1,$2,'ACTIVE','FAKE',$3, now(), now() + interval '30 days')`,
         [userId, PREMIUM_PLAN_ID, `fake_ai_${userId}`],
+      );
+      await c.query(
+        `insert into coach_profiles (user_id, calibration_status, memory_consent)
+         values ($1, 'COMPLETED', 'DECLINED')
+         on conflict (user_id) do update set calibration_status = 'COMPLETED'`,
+        [userId],
       );
       await c.query("commit");
     } finally {

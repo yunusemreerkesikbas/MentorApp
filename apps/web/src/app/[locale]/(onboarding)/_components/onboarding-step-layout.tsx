@@ -22,6 +22,7 @@ export function OnboardingStepLayout({
   children,
   footer,
   wide = false,
+  root: Root = "main",
 }: {
   progress: { done: number; total: number } | null;
   onBack?: () => void;
@@ -32,13 +33,15 @@ export function OnboardingStepLayout({
   footer?: ReactNode;
   /** The field grid opens to six columns on desktop. */
   wide?: boolean;
+  /** Plan's coach brief reuses this screen over an existing page, so it is not a second main. */
+  root?: "main" | "div";
 }) {
   const t = useTranslations("onboarding");
   const reduceMotion = useReducedMotion();
   const direction = useOnboardingDirection();
 
   return (
-    <main
+    <Root
       className="onboarding-play-theme min-h-dvh w-full"
       style={{
         background:
@@ -92,6 +95,6 @@ export function OnboardingStepLayout({
         </section>
         {footer}
       </motion.div>
-    </main>
+    </Root>
   );
 }

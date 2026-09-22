@@ -353,11 +353,16 @@ export const readyWeekly: WeeklyReviewDto = {
   },
 };
 
-export const ghostNarrationText = "Bu denemede kendi çizgini yukarı taşıdın, Problemler hâlâ odağında.";
+/** The id `POST /v1/mock-exams` answers with. */
+export const savedMockExamId = "12121212-1212-4121-8121-121212121212";
+
+export const ghostNarrationText ="Bu denemede kendi çizgini yukarı taşıdın, Problemler hâlâ odağında.";
 
 interface MockApiOptions {
   authUser?: AuthUser;
   analysis?: CoachingAnalysisDto;
+  /** What `/coaching/analysis` answers once a mock exam was saved through the form. */
+  analysisAfterSave?: CoachingAnalysisDto;
   /** `/v1/subscription`'s entitlement: free unless set. */
   premium?: boolean;
   reviewHistory?: NotebookReviewHistoryItem[];
@@ -486,8 +491,10 @@ export async function mockAnalysisApi(
       log.ghostNarrationCalls += 1;
       return json(route, { narration: ghostNarrationText, model: "test" });
     }
-    if (method === "GET" && path.startsWith("/v1/coaching/analysis?"))
-      return json(route, analysis);
+    if (method === "GET" && path.startsWith("/v1/coaching/analysis?")) {
+      const saved = log.createdMockExams.length > 0 && options.analysisAfterSave;
+      return json(route, saved || analysis);
+    }
     if (method === "GET" && path.startsWith("/v1/mock-exams?")) {
       return json(route, { items: [], total: 0, page: 1, pageSize: 5 });
     }
@@ -545,10 +552,7 @@ export async function mockAnalysisApi(
     // able to accept one.
     if (method === "POST" && path === "/v1/mock-exams") {
       log.createdMockExams.push(request.postDataJSON() as Record<string, unknown>);
-      return json(route, {
-        id: "12121212-1212-4121-8121-121212121212",
-        totalNet: 42,
-      });
+      return json(route, { id: savedMockExamId, totalNet: "42.00" });
     }
 
     if (/^\/v1\/(coaching|mock-exams|coach|plan-tasks)/.test(path)) {

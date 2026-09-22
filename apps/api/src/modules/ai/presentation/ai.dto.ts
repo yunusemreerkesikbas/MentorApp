@@ -57,6 +57,15 @@ export class PlanAdaptationBodyDto extends createZodDto(
 
   @ApiPropertyOptional({ format: "uuid" })
   override sessionId?: string;
+
+  @ApiPropertyOptional({ minimum: 1, maximum: 7 })
+  override days?: number;
+
+  @ApiPropertyOptional({ enum: [15, 30, 60, 90, 120] })
+  override minutesPerDay?: 15 | 30 | 60 | 90 | 120;
+
+  @ApiPropertyOptional({ type: [String], maxItems: 3 })
+  override focusSubjects?: string[];
 }
 /** Query for GET /v1/coach/messages (plain pagination — study-sessions pattern). */
 export class ListCoachMessagesQueryDto extends createZodDto(

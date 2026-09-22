@@ -196,8 +196,8 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - **Kilit rozetleri (2026-08-22)** — Mood yansıması, ghost anlatımı, günlük selam ve seans
   yansıması artık kilitliyken görünür kalır; tıklanınca paywall açılır. Politika
   `isPremium || features[id].freeEnabled`. İlgili: `premium-lock-nudge.tsx`,
-  `use-daily-greeting.ts`, `mood-checkin.tsx`, `analysis-ghost-teaser.tsx`,
-  `session-done-state.tsx`.
+  `use-daily-greeting.ts`, `mood-checkin.tsx`, `analysis-ghost-teaser.tsx` (2026-09-22'den beri
+  analizde `focus-path-card.tsx` balonu), `session-done-state.tsx`.
 - **Premium paywall + özellik politikası (2026-08-22)** — `GET /v1/subscription` artık on özellik
   için `features` politikasını döner (`freeEnabled` / `limit` / `window`). Kota `ai_usage`'a
   payments dokunmadan action'da uygulanır: free tavan → `PAYMENT_PREMIUM_REQUIRED`, premium tavan →

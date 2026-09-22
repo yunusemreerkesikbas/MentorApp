@@ -158,7 +158,8 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 > returns nullable `suggestedTask { title, subject }`; `GET /v1/admin/metrics` additively returns
 > `coaching { activeUsers7d, repeatUsers7d, repeatRate7d }`. No endpoint was added. Legacy
 > `POST /v1/coach/plan-draft` and `POST /v1/coach/ghost-narration` remain for backward compatibility;
-> current web surfaces do not add new consumers.
+> current web surfaces do not add new consumers. (2026-09-22: `/analiz` consumes `ghost-narration`
+> again, one request per latest exam for premium students; contract unchanged.)
 
 > Weekly recap catalog addition (2026-07-26): no endpoint was added. `GET /v1/coaching/today`
 > additively returns backend-computed nullable `weeklyRecapPeriod` including `status`, so clients

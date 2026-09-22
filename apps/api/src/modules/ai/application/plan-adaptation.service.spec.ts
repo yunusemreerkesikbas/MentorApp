@@ -209,6 +209,20 @@ describe("PlanAdaptationService", () => {
     );
   });
 
+  it("puts the selected study rhythm into the model prompt", async () => {
+    await service.preview(USER, {
+      source: "PLAN",
+      days: 5,
+      minutesPerDay: 90,
+      focusSubjects: ["Tarih"],
+    });
+
+    const prompt = complete.mock.calls.at(-1)?.[0];
+    expect(prompt.system).toContain("Tam 5 farklı güne");
+    expect(prompt.user).toContain("90 dakika");
+    expect(prompt.user).toContain("Tarih");
+  });
+
   it("rejects a SESSION that is not owned or no longer exists", async () => {
     getSession.mockResolvedValue(null);
     await expect(

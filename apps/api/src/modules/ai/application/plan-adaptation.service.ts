@@ -120,6 +120,9 @@ export class PlanAdaptationService {
         : null,
       tasks: promptTasks,
       note: input.source === "PLAN" ? input.note : undefined,
+      days: input.source === "PLAN" ? input.days : undefined,
+      minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
+      focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
       locale,
       moodLevel: context.moodLevel,
     });
@@ -154,6 +157,13 @@ export class PlanAdaptationService {
       input.source,
       promptTasks,
       pendingTasks,
+      input.source === "PLAN"
+        ? {
+            days: input.days,
+            minutesPerDay: input.minutesPerDay,
+            focusSubjects: input.focusSubjects,
+          }
+        : undefined,
     );
     if (parsed.kind === "MALFORMED") {
       throw new DomainError(

@@ -55,10 +55,9 @@ describe("ai coach RAG grounding (e2e)", () => {
   };
 
   /**
-   * Premium through a real subscription, not `UserRole.STAFF`. STAFF does grant premium
-   * (`entitlement.service.ts`), but it also short-circuits `isMentorV2Enabled`, so a STAFF user is
-   * always on Personalized Mentor V2 and its first turn answers with a calibration question
-   * instead of calling the LLM. See ai-coach.e2e-spec.ts for the full note.
+   * Premium through a real subscription, not `UserRole.STAFF`. Every account uses Mentor V2.
+   * A fresh profile's first GENERAL or CHECK_IN turn calibrates instead of calling the LLM.
+   * Calibration is marked COMPLETED so this suite still reaches the model.
    */
   const seedSubscription = async (userId: string) => {
     const c = await pool.connect();
@@ -74,6 +73,12 @@ describe("ai coach RAG grounding (e2e)", () => {
         `insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
          values ($1,$2,'ACTIVE','FAKE',$3, now(), now() + interval '30 days')`,
         [userId, PREMIUM_PLAN_ID, `fake_ai_${userId}`],
+      );
+      await c.query(
+        `insert into coach_profiles (user_id, calibration_status, memory_consent)
+         values ($1, 'COMPLETED', 'DECLINED')
+         on conflict (user_id) do update set calibration_status = 'COMPLETED'`,
+        [userId],
       );
       await c.query("commit");
     } finally {

@@ -70,7 +70,6 @@ function makeService(
     {
       get: vi.fn(async (key: string) => {
         if (key === "ai.enabled") return true;
-        if (key === "ai.coach_personalization_v2.rollout_percent") return 100;
         if (key === "ai.coach.history_max_messages") return 10;
         if (key === "ai.coach.history_max_characters") return 6_000;
         if (key === "ai.chat.daily_limit") return 100;
@@ -97,7 +96,6 @@ function makeService(
           })[key] ?? key,
       ),
     } as never,
-    undefined,
     evidence as never,
     profiles as never,
     new CoachTurnPlanner(),

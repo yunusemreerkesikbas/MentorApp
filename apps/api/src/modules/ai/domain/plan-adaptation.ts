@@ -39,12 +39,22 @@ function isWindowDate(date: string, start: string, end: string): boolean {
 }
 
 /** Parse and clamp provider JSON. Invalid individual changes are dropped; invalid JSON is distinct. */
+const PLAN_WINDOW_DAYS = 7;
+const PLAN_MAX_MOVES = 3;
+
+export interface PlanAdaptationRhythm {
+  days?: number;
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
+}
+
 export function parsePlanAdaptation(
   text: string,
   todayIso: string,
   source: CoachPlanAdaptationSource,
   tasks: readonly PromptPlanTask[],
   capacityTasks: readonly PlanAdaptationSnapshotTask[] = tasks,
+  rhythm?: PlanAdaptationRhythm,
 ): PlanAdaptationParseResult {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -65,9 +75,27 @@ export function parsePlanAdaptation(
       .filter((task) => task.status === "PENDING")
       .map((task) => [task.ref, task]),
   );
-  const maxMoves = source === "PLAN" ? 3 : 2;
-  const maxAdds = source === "PLAN" ? 3 : source === "SESSION" ? 1 : 0;
-  const maxTotal = source === "PLAN" ? 5 : source === "SESSION" ? 3 : 2;
+  const requestedDays =
+    source === "PLAN" &&
+    rhythm?.days != null &&
+    Number.isInteger(rhythm.days) &&
+    rhythm.days >= 1 &&
+    rhythm.days <= PLAN_WINDOW_DAYS
+      ? rhythm.days
+      : undefined;
+  const focusSubjects = (rhythm?.focusSubjects ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+    .slice(0, 3);
+  const maxMoves = source === "PLAN" ? PLAN_MAX_MOVES : 2;
+  const maxAdds =
+    source === "PLAN"
+      ? (requestedDays ?? PLAN_WINDOW_DAYS)
+      : source === "SESSION"
+        ? 1
+        : 0;
+  const maxTotal =
+    source === "PLAN" ? maxMoves + maxAdds : source === "SESSION" ? 3 : 2;
 
   const seenMoveIds = new Set<string>();
   const moveCandidates: Array<
@@ -178,17 +206,120 @@ export function parsePlanAdaptation(
     }
     const key = `${taskDate}:${normalizedTitle(title)}`;
     if ((titleCounts.get(key) ?? 0) > 0) continue;
+    if (
+      requestedDays != null &&
+      additions.some((item) => item.taskDate === taskDate)
+    ) {
+      continue;
+    }
     const rawSubject = (raw as { subject?: unknown }).subject;
-    const subject =
+    const written =
       typeof rawSubject === "string" && rawSubject.trim()
         ? rawSubject.trim().slice(0, SUBJECT_MAX)
         : null;
+    const matched = focusSubjects.find(
+      (name) =>
+        name.toLocaleLowerCase("tr-TR") ===
+        (written ?? "").toLocaleLowerCase("tr-TR"),
+    );
+    const picked =
+      focusSubjects.length > 0
+        ? (matched ?? focusSubjects[additions.length % focusSubjects.length]!)
+        : written;
+    const subject = picked ? picked.slice(0, SUBJECT_MAX) : null;
     adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
     additions.push({ kind: "ADD", title, subject, taskDate });
   }
 
-  return { kind: "VALID", changes: [...moves, ...additions] };
+  const filled =
+    requestedDays == null
+      ? additions
+      : fillStudyDays(
+          additions,
+          requestedDays,
+          todayIso,
+          pendingByDate,
+          titleCounts,
+          focusSubjects,
+          rhythm?.minutesPerDay,
+        );
+
+  return { kind: "VALID", changes: [...moves, ...filled] };
+}
+
+/** The model often stops at three tasks. The chosen day count is filled here. */
+function fillStudyDays(
+  additions: Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>>,
+  requestedDays: number,
+  todayIso: string,
+  pendingByDate: Map<string, number>,
+  titleCounts: Map<string, number>,
+  focusSubjects: readonly string[],
+  minutesPerDay: number | undefined,
+): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
+  const window = Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) =>
+    addDays(todayIso, index),
+  );
+  const inWindow = new Set(window);
+  const chosen: string[] = [];
+  const seen = new Set<string>();
+  const take = (date: string) => {
+    if (chosen.length >= requestedDays || seen.has(date) || !inWindow.has(date)) {
+      return;
+    }
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY && !seen.has(date)) {
+      const alreadyAdded = additions.some((item) => item.taskDate === date);
+      if (!alreadyAdded) return;
+    }
+    chosen.push(date);
+    seen.add(date);
+  };
+  for (const item of additions) take(item.taskDate);
+  const rest = window
+    .filter((date) => !seen.has(date))
+    .sort(
+      (a, b) =>
+        (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) ||
+        a.localeCompare(b),
+    );
+  for (const date of rest) {
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
+    take(date);
+  }
+
+  const byDate = new Map(additions.map((item) => [item.taskDate, item]));
+  const filled: typeof additions = [];
+  let synthetic = 0;
+  for (const date of [...chosen].sort((a, b) => a.localeCompare(b))) {
+    const existing = byDate.get(date);
+    if (existing) {
+      filled.push(existing);
+      continue;
+    }
+    const subject = focusSubjects.length
+      ? focusSubjects[synthetic % focusSubjects.length]!
+      : null;
+    synthetic += 1;
+    const title = studyBlockTitle(subject, minutesPerDay);
+    const key = `${date}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
+    titleCounts.set(key, 1);
+    pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1);
+    filled.push({ kind: "ADD", title, subject, taskDate: date });
+  }
+  return filled;
+}
+
+function studyBlockTitle(
+  subject: string | null,
+  minutesPerDay: number | undefined,
+): string {
+  if (subject && minutesPerDay) return `${subject} · ${minutesPerDay} dk`;
+  if (subject) return `${subject} çalışması`;
+  if (minutesPerDay) return `${minutesPerDay} dk çalışma`;
+  return "Çalışma bloğu";
 }
 
 export const PLAN_ADAPTATION_JSON_SENTINEL =
@@ -205,12 +336,17 @@ export function buildPlanAdaptationPrompt(input: {
   } | null;
   tasks: readonly PromptPlanTask[];
   note?: string;
+  days?: number;
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
   locale?: PromptLocale;
   moodLevel?: number | null;
 }): { system: string; user: string } {
   const policy =
     input.source === "PLAN"
-      ? "En fazla 3 MOVE, 3 ADD ve toplam 5 değişiklik öner."
+      ? input.days
+        ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
+        : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
       : input.source === "MOOD"
         ? "Yalnız bugünkü görevlerden en fazla 2 MOVE öner; ADD önerme."
         : "En fazla 2 MOVE ve sonraki günlere 1 küçük tekrar ADD öner.";
@@ -238,6 +374,21 @@ export function buildPlanAdaptationPrompt(input: {
     title: task.title,
     subject: task.subject,
   }));
+  const rhythm =
+    input.source === "PLAN"
+      ? [
+          input.days ? `${input.days} farklı gün` : null,
+          input.minutesPerDay
+            ? `her görev yaklaşık ${input.minutesPerDay} dakika sürsün`
+            : null,
+          input.focusSubjects?.length
+            ? `ADD subject yalnız şunlardan biri olsun: ${input.focusSubjects.join(", ")}`
+            : null,
+        ].filter((part): part is string => part != null)
+      : [];
+  const rhythmLine = rhythm.length
+    ? `\nBağlayıcı ritim: ${rhythm.join(". ")}.`
+    : "";
   const note =
     input.source === "PLAN" && input.note
       ? `\nKullanıcının açık notu: ${input.note}`
@@ -249,6 +400,6 @@ export function buildPlanAdaptationPrompt(input: {
     : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}${mood}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}${mood}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
   };
 }

@@ -183,9 +183,15 @@ export const planAdaptationChangeSchema = z.discriminatedUnion("kind", [
   planAdaptationAddSchema,
 ]);
 
+/** 3 MOVE plus one ADD on each day of the 7-day window. */
+export const APPLY_PLAN_ADAPTATION_MAX_CHANGES = 10;
+
 export const applyPlanAdaptationSchema = z.object({
   planRevision: z.string().regex(/^[a-f0-9]{64}$/),
-  changes: planAdaptationChangeSchema.array().min(1).max(5),
+  changes: planAdaptationChangeSchema
+    .array()
+    .min(1)
+    .max(APPLY_PLAN_ADAPTATION_MAX_CHANGES),
 });
 export type ApplyPlanAdaptationInput = z.infer<
   typeof applyPlanAdaptationSchema

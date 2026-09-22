@@ -27,7 +27,6 @@ import { ContentService } from "../../content/application/content.service";
 import { ExamEventType } from "../../content/domain/content.constants";
 import { MockExamService } from "../../coaching/application/mock-exam.service";
 import { AnalysisService } from "../../coaching/application/analysis.service";
-import { analysisCoachPrompt } from "../domain/analysis-coach-prompt";
 import { CoachEvidenceService } from "../../coaching/application/coach-evidence.service";
 import type { CoachEvidenceSnapshot } from "../../coaching/domain/coach-evidence";
 import { EconomyService } from "../../economy/application/economy.service";
@@ -43,8 +42,6 @@ import {
 import {
   AiUsageFeature,
   buildConversationTitle,
-  buildCoachPersonalization,
-  buildSystemPrompt,
   estimateCostMicros,
   RAG_MAX_DISTANCE,
   RAG_TOP_K,
@@ -56,17 +53,12 @@ import {
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
 import { groundingFact } from "../domain/grounding-fact";
-import {
-  applyCoachPersonalizationMarker,
-  createPersonalizationMarkerFilter,
-  enforceNeedsInputReply,
-} from "../domain/personalization-marker";
+import { applyCoachPersonalizationMarker } from "../domain/personalization-marker";
 import { promptLocale, type PromptLocale } from "../domain/prompt-locale";
 import { hasSeriousDistressSignal } from "../domain/serious-distress";
 import {
   boundChatHistory,
   buildMentorV2Prompt,
-  isMentorV2Enabled,
 } from "../domain/mentor-v2-prompt";
 import {
   CoachTurnPlanner,
@@ -123,10 +115,10 @@ export class ChatService {
     private readonly budget: AiBudgetGuard,
     private readonly mockExams: MockExamService,
     private readonly i18n: I18nService,
+    private readonly evidence: CoachEvidenceService,
+    private readonly profiles: CoachProfileService,
+    private readonly turnPlanner: CoachTurnPlanner,
     @Optional() private readonly forumCoachBridge?: ForumCoachBridgeService,
-    @Optional() private readonly evidence?: CoachEvidenceService,
-    @Optional() private readonly profiles?: CoachProfileService,
-    @Optional() private readonly turnPlanner?: CoachTurnPlanner,
     @Optional() private readonly featureGate?: PremiumFeatureGateService,
     @Optional() private readonly analysis?: AnalysisService,
   ) {}
@@ -146,14 +138,7 @@ export class ChatService {
   private async mentorV2Context(
     user: RequestUser,
     message: string,
-  ): Promise<MentorV2Context | null> {
-    if (!this.evidence || !this.profiles || !this.turnPlanner) return null;
-    const configured = await this.config.get(
-      "ai.coach_personalization_v2.rollout_percent",
-    );
-    const rolloutPercent = typeof configured === "number" ? configured : 0;
-    if (!isMentorV2Enabled(user.id, user.roles, rolloutPercent)) return null;
-
+  ): Promise<MentorV2Context> {
     const [snapshot, profile] = await Promise.all([
       this.evidence.build(user.id),
       this.profiles.getProfile(user.id),
@@ -365,10 +350,9 @@ export class ChatService {
   }
 
   private async buildAction(
-    context: MentorV2Context | null,
+    context: MentorV2Context,
     task?: { title: string; subject: string | null },
   ): Promise<CoachActionDto | undefined> {
-    if (!context) return undefined;
     if (
       context.turn.allowedAction === CoachActionType.OPEN_PLAN_ADAPTATION
     ) {
@@ -515,7 +499,7 @@ export class ChatService {
     const mentorV2 = await this.mentorV2Context(user, message);
     if (
       hasSeriousDistressSignal(message) ||
-      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+      mentorV2.turn.mode === CoachTurnMode.SAFETY
     ) {
       const target = await this.resolveConversationTarget(
         user.id,
@@ -531,10 +515,10 @@ export class ChatService {
           lang: I18nContext.current()?.lang,
         }) as unknown as string,
         "verified-safety",
-        mentorV2 ? this.v2Personalization(mentorV2) : undefined,
+        this.v2Personalization(mentorV2),
       );
     }
-    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+    if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
       const target = await this.resolveConversationTarget(
         user.id,
         message,
@@ -572,10 +556,10 @@ export class ChatService {
         user.id,
         target,
         message,
+        mentorV2,
         mockExam,
         contextArticleSlug,
         community,
-        mentorV2,
         {
           ...(contextMockExamId ? { mockExamId: contextMockExamId } : {}),
           ...(contextArticleSlug ? { articleSlug: contextArticleSlug } : {}),
@@ -693,16 +677,13 @@ export class ChatService {
     userId: string,
     conversationId: string | undefined,
     message: string,
+    mentorV2: MentorV2Context,
     mockExam?: MockExamDto,
     opts?: { excludeTailExchange?: boolean; contextArticleSlug?: string },
     community?: ForumCoachContext,
-    mentorV2?: MentorV2Context | null,
   ) {
-    const legacyContext = mentorV2 ? null : await this.context.build(userId);
-    const personalization = mentorV2
-      ? this.v2Personalization(mentorV2)
-      : buildCoachPersonalization(legacyContext!);
-    const examType = mentorV2?.snapshot.examType ?? legacyContext?.examType ?? null;
+    const personalization = this.v2Personalization(mentorV2);
+    const examType = mentorV2.snapshot.examType;
     const [historyMax, historyMaxCharacters] = await Promise.all([
       this.config.get("ai.coach.history_max_messages"),
       this.config.get("ai.coach.history_max_characters"),
@@ -760,26 +741,16 @@ export class ChatService {
     const analysisContext = mockExam && this.analysis
       ? await this.analysis.getCoachContext(userId, mockExam.examId)
       : undefined;
-    let system = mentorV2
-      ? buildMentorV2Prompt({
-          locale,
-          turn: mentorV2.turn,
-          memories: mentorV2.memories,
-          memoryEnabled: mentorV2.profile.memoryConsent === "GRANTED",
-          sources: retrieved,
-          mockExam,
-          analysisContext,
-          community,
-        })
-      : buildSystemPrompt(
-          legacyContext!,
-          retrieved,
-          mockExam,
-          locale,
-          community,
-        );
-
-    if (!mentorV2 && analysisContext) system += "\n" + analysisCoachPrompt(analysisContext);
+    const system = buildMentorV2Prompt({
+      locale,
+      turn: mentorV2.turn,
+      memories: mentorV2.memories,
+      memoryEnabled: mentorV2.profile.memoryConsent === "GRANTED",
+      sources: retrieved,
+      mockExam,
+      analysisContext,
+      community,
+    });
 
     return {
       llmInput: { system, user: message, history },
@@ -790,7 +761,6 @@ export class ChatService {
       })),
       personalization,
       locale,
-      mentorV2: mentorV2 ?? null,
       focusLine: analysisContext?.focus
         ? groundingFact({
             signal: "EVALUATE",
@@ -806,39 +776,18 @@ export class ChatService {
     raw: string,
     personalization: CoachPersonalizationDto,
     locale: PromptLocale,
-    mentorV2: boolean,
     focusLine: string | null,
   ) {
     const markers = extractReplyMarkers(raw);
-    const marked = !mentorV2
+    const marked = focusLine
       ? applyCoachPersonalizationMarker(
-          markers.text,
+          markers.text.trim(),
           personalization,
           locale,
           focusLine,
         )
-      : focusLine
-        ? applyCoachPersonalizationMarker(
-            markers.text.trim(),
-            personalization,
-            locale,
-            focusLine,
-          )
-        : { text: markers.text.trim(), personalization };
-    let text = marked.text;
-    if (!mentorV2) {
-      if (focusLine && text.startsWith(focusLine)) {
-        const body = enforceNeedsInputReply(
-          text.slice(focusLine.length).trimStart(),
-          marked.personalization.mode,
-          locale,
-        );
-        text = body ? `${focusLine} ${body}` : focusLine;
-      } else {
-        text = enforceNeedsInputReply(text, marked.personalization.mode, locale);
-      }
-    }
-    return { text, personalization: marked.personalization, markers };
+      : { text: markers.text.trim(), personalization };
+    return { text: marked.text, personalization: marked.personalization, markers };
   }
 
   /** Record actual provider usage, then require the complete exchange to persist. */
@@ -893,7 +842,7 @@ export class ChatService {
         )
       : await this.messages.persistExchange(userId, target, message, coach);
     const persisted = this.persistedIds(persistedRaw);
-    if (options?.learnMemory && this.profiles && persisted.userMessageId) {
+    if (options?.learnMemory && persisted.userMessageId) {
       try {
         await this.profiles.learnFromChat(
           userId,
@@ -914,10 +863,10 @@ export class ChatService {
     userId: string,
     target: CoachConversationTarget,
     message: string,
+    mentorV2: MentorV2Context,
     mockExam?: MockExamDto,
     contextArticleSlug?: string,
     community?: ForumCoachContext,
-    mentorV2?: MentorV2Context | null,
     requestContext?: CoachRequestContext,
   ): Promise<CoachReplyResult> {
     const { llmInput, sources, personalization, locale, focusLine } =
@@ -925,10 +874,10 @@ export class ChatService {
         userId,
         target.kind === "existing" ? target.conversationId : undefined,
         message,
+        mentorV2,
         mockExam,
         { contextArticleSlug },
         community,
-        mentorV2,
       );
     const result = await this.llm.complete(llmInput);
     // Order-agnostic: models sometimes reverse the FOLLOWUP/TASK order — never leak a marker.
@@ -936,14 +885,13 @@ export class ChatService {
       result.text,
       personalization,
       locale,
-      Boolean(mentorV2),
       focusLine,
     );
     const reply = personalized.text;
     const markers = personalized.markers;
     const { followUps, memoryCandidate } = markers;
     const task = mockExam ? undefined : markers.task;
-    const action = await this.buildAction(mentorV2 ?? null, task ?? undefined);
+    const action = await this.buildAction(mentorV2, task ?? undefined);
     const persisted = await this.recordSuccess(
       userId,
       target,
@@ -958,7 +906,7 @@ export class ChatService {
           ? { requestContext }
           : {}),
         ...(memoryCandidate ? { memoryCandidate } : {}),
-        learnMemory: Boolean(mentorV2),
+        learnMemory: true,
       },
     );
     return {
@@ -1014,7 +962,7 @@ export class ChatService {
     const mentorV2 = await this.mentorV2Context(user, message);
     if (
       hasSeriousDistressSignal(message) ||
-      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+      mentorV2.turn.mode === CoachTurnMode.SAFETY
     ) {
       const target = await this.resolveConversationTarget(
         user.id,
@@ -1031,12 +979,12 @@ export class ChatService {
             lang: I18nContext.current()?.lang,
           }) as unknown as string,
           "verified-safety",
-          mentorV2 ? this.v2Personalization(mentorV2) : undefined,
+          this.v2Personalization(mentorV2),
         ),
       };
       return;
     }
-    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+    if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
       const target = await this.resolveConversationTarget(
         user.id,
         message,
@@ -1078,23 +1026,16 @@ export class ChatService {
           user.id,
           target.kind === "existing" ? target.conversationId : undefined,
           message,
+          mentorV2,
           mockExam,
           { contextArticleSlug },
           community,
-          mentorV2,
         );
-      const final = yield* this.streamLlm(
-        llmInput,
-        personalization,
-        locale,
-        Boolean(mentorV2),
-        focusLine,
-      );
+      const final = yield* this.streamLlm(llmInput, focusLine);
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
         locale,
-        Boolean(mentorV2),
         focusLine,
       );
       const reply = personalized.text;
@@ -1102,9 +1043,6 @@ export class ChatService {
       const { followUps, memoryCandidate } = markers;
       const task = mockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
-      if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
-        yield { delta: reply };
-      }
       const persisted = await this.recordSuccess(
         user.id,
         target,
@@ -1120,7 +1058,7 @@ export class ChatService {
             ...(contextArticleSlug ? { articleSlug: contextArticleSlug } : {}),
           },
           ...(memoryCandidate ? { memoryCandidate } : {}),
-          learnMemory: Boolean(mentorV2),
+          learnMemory: true,
         },
       );
       yield {
@@ -1257,19 +1195,17 @@ export class ChatService {
     const mentorV2 = await this.mentorV2Context(user, userMsg.content);
     if (
       hasSeriousDistressSignal(userMsg.content) ||
-      mentorV2?.turn.mode === CoachTurnMode.SAFETY
+      mentorV2.turn.mode === CoachTurnMode.SAFETY
     ) {
       const reply = this.i18n.translate("coaching.mood.SERIOUS_DISTRESS", {
         lang: I18nContext.current()?.lang,
       }) as unknown as string;
-      const personalization = mentorV2
-        ? this.v2Personalization(mentorV2)
-        : undefined;
+      const personalization = this.v2Personalization(mentorV2);
       const updated = await this.messages.updateCoachReply(user.id, coachMsg.id, {
         content: reply,
         model: "verified-safety",
         sources: [],
-        ...(personalization ? { personalization } : {}),
+        personalization,
       });
       if (!updated) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
       yield {
@@ -1279,12 +1215,12 @@ export class ChatService {
           conversationId,
           coachMessageId: coachMsg.id,
           sources: [],
-          ...(personalization ? { personalization } : {}),
+          personalization,
         },
       };
       return;
     }
-    if (mentorV2?.turn.mode === CoachTurnMode.CALIBRATE) {
+    if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
       const reply = this.i18n.translate("coaching.mentorV2.calibration", {
         lang: I18nContext.current()?.lang,
       }) as unknown as string;
@@ -1320,6 +1256,7 @@ export class ChatService {
           user.id,
           conversationId,
           userMsg.content,
+          mentorV2,
           regeneratedMockExam,
           {
             excludeTailExchange: true,
@@ -1328,20 +1265,12 @@ export class ChatService {
               : {}),
           },
           community,
-          mentorV2,
         );
-      const final = yield* this.streamLlm(
-        llmInput,
-        personalization,
-        locale,
-        Boolean(mentorV2),
-        focusLine,
-      );
+      const final = yield* this.streamLlm(llmInput, focusLine);
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
         locale,
-        Boolean(mentorV2),
         focusLine,
       );
       const reply = personalized.text;
@@ -1349,9 +1278,6 @@ export class ChatService {
       const { followUps } = markers;
       const task = regeneratedMockExam ? undefined : markers.task;
       const action = await this.buildAction(mentorV2, task ?? undefined);
-      if (!mentorV2 && personalization.mode === "NEEDS_INPUT") {
-        yield { delta: reply };
-      }
 
       await this.usage.append({
         ...(final.budgetReservationId ? { budgetReservationId: final.budgetReservationId } : {}),
@@ -1412,30 +1338,21 @@ export class ChatService {
   }
 
   /** Marker-safe LLM streaming: yields clean deltas, returns the raw final result. */
-  private async *streamLlm(llmInput: {
-    system: string;
-    user: string;
-    history: LlmHistoryMessage[];
-  }, personalization: CoachPersonalizationDto, locale: PromptLocale, mentorV2 = false, focusLine: string | null = null): AsyncGenerator<
-    CoachChatStreamEvent,
-    LlmResult
-  > {
-    // The task/follow-up markers must never leak into deltas — the filter holds anything marker-like.
-    const personalizationFilter = mentorV2
-      ? null
-      : createPersonalizationMarkerFilter(personalization, locale, focusLine);
-    if (mentorV2 && focusLine) yield { delta: `${focusLine} ` };
-    const bufferUntilValidated =
-      !mentorV2 && personalization.mode === "NEEDS_INPUT";
+  private async *streamLlm(
+    llmInput: {
+      system: string;
+      user: string;
+      history: LlmHistoryMessage[];
+    },
+    focusLine: string | null,
+  ): AsyncGenerator<CoachChatStreamEvent, LlmResult> {
+    if (focusLine) yield { delta: `${focusLine} ` };
     const markerFilter = createTaskMarkerFilter();
     let final: LlmResult | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
-        const personalized = personalizationFilter
-          ? personalizationFilter.push(ev.delta)
-          : ev.delta;
-        const safe = personalized ? markerFilter.push(personalized) : "";
-        if (safe && !bufferUntilValidated) yield { delta: safe };
+        const safe = markerFilter.push(ev.delta);
+        if (safe) yield { delta: safe };
       }
       if (ev.final) final = ev.final;
     }
@@ -1445,13 +1362,8 @@ export class ChatService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
-    const personalizationHeld = personalizationFilter?.flush() ?? "";
-    if (personalizationHeld) {
-      const safe = markerFilter.push(personalizationHeld);
-      if (safe && !bufferUntilValidated) yield { delta: safe };
-    }
     const held = markerFilter.flush();
-    if (held && !bufferUntilValidated) yield { delta: held };
+    if (held) yield { delta: held };
     return final;
   }
 

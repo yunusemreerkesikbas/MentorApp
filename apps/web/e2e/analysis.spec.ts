@@ -9,6 +9,7 @@ import {
   mockAnalysisApi,
   multipleAnalysis,
   readyWeekly,
+  savedMockExamId,
   user,
 } from "./analysis.fixture";
 
@@ -108,6 +109,8 @@ test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", asy
 test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   page,
 }) => {
+  // Three full page loads (empty, first exam, no focus): a busy machine outruns 30 s.
+  test.slow();
   await page.addInitScript((startDate) => {
     window.localStorage.setItem(
       `mentor.weekly-recap.opened.v2:${startDate}`,
@@ -393,7 +396,7 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(sizes.scrollWidth).toBeLessThanOrEqual(sizes.clientWidth);
 }
 
-test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
+test("deneme formu boşu kendisi doldurur, aşımı durdurur ve kayıt anında deftere kapı açar", async ({
   page,
 }) => {
   const api = await mockAnalysisApi(page, {});
@@ -401,20 +404,109 @@ test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
   await gotoAnalysis(page, "/analiz");
   await page.getByRole("button", { name: "Deneme ekle" }).click();
 
-  // One subject with wrong answers is enough — the handoff counts them, it does not import them.
   // `exact` matters: the app sidebar has a "Yanlış defteri" link, and label matching is a
   // substring match by default.
-  const wrongFields = page.getByLabel("Yanlış", { exact: true });
-  await wrongFields.first().fill("12");
+  const history = page.getByRole("group", { name: /Tarih/ });
+  await history.getByLabel("Doğru", { exact: true }).fill("20");
+  await history.getByLabel("Yanlış", { exact: true }).fill("9");
+  await expect(page.getByRole("alert").filter({ hasText: "(29/27)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  await expect(page.getByText("Tarih satırı düzelince kaydedebilirsin.")).toBeVisible();
+  await history.getByLabel("Yanlış", { exact: true }).fill("5");
+  // Blank follows correct and wrong until the student types it: 27 − 20 − 5.
+  await expect(history.getByLabel("Boş", { exact: true })).toHaveValue("2");
+
+  const math = page.getByRole("group", { name: /Matematik/ });
+  await math.getByLabel("Yanlış", { exact: true }).fill("12");
   await page.getByRole("button", { name: "Kaydet" }).click();
 
   await expect.poll(() => api.createdMockExams.length).toBe(1);
+  expect(api.createdMockExams[0]!.subjects).toContainEqual({
+    subjectRef: "tarih",
+    correct: 20,
+    wrong: 5,
+    blank: 2,
+  });
 
-  // A count and a door, never twelve auto-created cards: the student picks which mistakes are
-  // worth filing, which is the whole reason the review deck can be trusted.
-  await expect(page.getByText(/12 yanlış var/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Deftere geç" })).toHaveAttribute(
-    "href",
-    "/yanlis-defteri?mockExam=12121212-1212-4121-8121-121212121212",
-  );
+  // The toast and banner are gone: the saved moment takes the form's place and the focus.
+  const saved = page.getByTestId("analysis-saved");
+  await expect(saved).toBeFocused();
+  await expect(saved.getByTestId("analysis-saved-net")).toHaveText("42.00");
+  // A count and a door, never seventeen auto-created cards: the student picks what to file.
+  await expect(saved.getByText(/17 yanlış var/)).toBeVisible();
+  await expect(
+    saved.getByRole("link", { name: "Yanlışları deftere taşı" }),
+  ).toHaveAttribute("href", `/yanlis-defteri?mockExam=${savedMockExamId}`);
+
+  await saved.getByRole("button", { name: "Yeni deneme gir" }).click();
+  await expect(page.getByRole("heading", { name: "Deneme sonucu gir" })).toBeVisible();
+  await expect(math.getByLabel("Yanlış", { exact: true })).toHaveValue("");
+  await expectNoHorizontalOverflow(page);
 });
+
+// Premium hears from the coach right after a save, once, and only about the latest exam; an older
+// exam joins the history quietly.
+for (const latest of [true, false]) {
+  test(`kayıt anı koç yorumunu yalnız en son deneme için yazar (${latest ? "en son" : "geçmişe tarihli"})`, async ({
+    page,
+  }) => {
+    const previous = multipleAnalysis.trend[0]!;
+    const savedPoint = { ...previous, id: savedMockExamId, totalNet: "42.00" };
+    const api = await mockAnalysisApi(page, {
+      premium: true,
+      // Cached for the exam already there, so the page itself asks for nothing.
+      analysis: {
+        ...multipleAnalysis,
+        ghost: { ...multipleAnalysis.ghost!, aiNarration: "Önceki denemenin notu." },
+      },
+      analysisAfterSave: latest
+        ? {
+            ...multipleAnalysis,
+            trend: [savedPoint, ...multipleAnalysis.trend],
+            ghost: {
+              ...multipleAnalysis.ghost!,
+              latest: savedPoint,
+              previousDelta: "-6.00",
+              beatPrevious: false,
+              isNewRecord: false,
+              subjects: [
+                {
+                  subjectRef: "matematik",
+                  subjectName: "Matematik",
+                  latestNet: "14.00",
+                  previousNet: "12.00",
+                  delta: "+2.00",
+                },
+              ],
+              aiNarration: null,
+            },
+          }
+        : {
+            ...multipleAnalysis,
+            trend: [...multipleAnalysis.trend, savedPoint],
+            ghost: { ...multipleAnalysis.ghost!, aiNarration: "Önceki denemenin notu." },
+          },
+    });
+    await gotoAnalysis(page, "/analiz?tab=entry");
+    await page.getByRole("button", { name: "Kaydet" }).click();
+
+    const saved = page.getByTestId("analysis-saved");
+    if (latest) {
+      await expect(saved.getByText(ghostNarrationText)).toBeVisible();
+      await expect(saved.getByText("Koçundan", { exact: true })).toBeVisible();
+      await expect(saved.getByText("-6.00")).toBeVisible();
+      await expect(saved.getByRole("heading", { name: "Derslere göre fark" })).toBeVisible();
+      // The hero on Gelişim reads the same narration instead of asking again.
+      await saved.getByRole("button", { name: "Gelişimini gör" }).click();
+      await expect(
+        page.getByTestId("analysis-improvement-cycle").getByText(ghostNarrationText),
+      ).toBeVisible();
+    } else {
+      await expect(saved.getByText("Kaydettim, geçmişine ekledim.", { exact: false })).toBeVisible();
+      await expect(saved.getByText("Koçundan", { exact: true })).toHaveCount(0);
+      await expect(saved.getByText("geçen denemeye göre")).toHaveCount(0);
+    }
+    expect(api.ghostNarrationCalls).toBe(latest ? 1 : 0);
+    expect(api.unexpected).toEqual([]);
+  });
+}

@@ -16,9 +16,9 @@ import {
 } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { AnalysisHistorySkeleton, AnalysisTabSkeleton } from "./analysis-content-skeleton";
+import { AnalysisEntryCard } from "./analysis-entry-card";
 import { AnalysisHeader } from "./analysis-header";
 import { AnalysisHistoryCard } from "./analysis-history-card";
-import { AnalysisTabEntry } from "./analysis-tab-entry";
 import {
   buildAnalysisTabHref,
   parseAnalysisTab,
@@ -26,6 +26,7 @@ import {
   type AnalysisTab,
   type AnalysisViewTab,
 } from "./analysis-types";
+import { EntrySavedCard } from "./entry-saved-card";
 import { FocusPathCard } from "./focus-path-card";
 import { MistakesWhereCard } from "./mistakes-where-card";
 import { MistakesWhyCard } from "./mistakes-why-card";
@@ -64,10 +65,24 @@ export function AnalysisShell() {
   const returnTab = useRef<AnalysisViewTab>(tab === "mistakes" ? "mistakes" : "progress");
   const entryScrollRequested = useRef(false);
 
+  const entry = useMockExamEntry({
+    exam: data.exam,
+    subjects: data.subjects,
+    onSaved: async () => {
+      await refresh();
+      setHistoryRefreshKey((key) => key + 1);
+    },
+  });
+  const { clearSaved } = entry;
+
   const setTab = useCallback(
     (next: AnalysisTab) => {
       if (!shouldNavigateAnalysisTab(tab, next)) return;
-      if (next === "entry" && tab !== "entry") returnTab.current = tab;
+      if (next === "entry" && tab !== "entry") {
+        returnTab.current = tab;
+        // Coming back to the form means a new exam, not the last one's saved moment.
+        clearSaved();
+      }
       setActiveTab(next);
       window.history.replaceState(
         window.history.state,
@@ -75,7 +90,7 @@ export function AnalysisShell() {
         buildAnalysisTabHref(window.location.pathname, window.location.search, next),
       );
     },
-    [tab],
+    [clearSaved, tab],
   );
 
   const activateEntryForm = useCallback(() => {
@@ -105,22 +120,6 @@ export function AnalysisShell() {
     setHistoryRefreshKey((key) => key + 1);
     void refresh();
   }, [refresh]);
-
-  const entry = useMockExamEntry({
-    exam: data.exam,
-    subjects: data.subjects,
-    analysis: data.analysis,
-    onSaved: async () => {
-      await refresh();
-      setHistoryRefreshKey((key) => key + 1);
-    },
-    onFirstInsight: () => {
-      setTab("progress");
-      requestAnimationFrame(() => {
-        document.getElementById("analysis-tab-progress")?.focus();
-      });
-    },
-  });
 
   if (data.state.status === "needs_exam_type") {
     return (
@@ -168,27 +167,25 @@ export function AnalysisShell() {
         transition={reduceMotion ? { duration: 0 } : tabTransition}
       >
         {tab === "entry" ? (
-          <>
-            <FormError message={entry.error} />
-            <AnalysisTabEntry
+          entry.saved ? (
+            <EntrySavedCard
+              saved={entry.saved}
+              analysis={data.analysis}
+              narration={narration}
+              onProgress={() => setTab("progress")}
+              onNewExam={() => {
+                clearSaved();
+                requestAnimationFrame(activateEntryForm);
+              }}
+            />
+          ) : (
+            <AnalysisEntryCard
               exam={data.exam}
               subjects={data.subjects}
-              scores={entry.scores}
-              submitting={entry.submitting}
-              publisherName={entry.publisherName}
-              takenAtDate={entry.takenAtDate}
-              onPublisherChange={entry.setPublisherName}
-              onTakenAtChange={entry.setTakenAtDate}
-              onScoreChange={entry.updateScore}
-              onSubmit={(event) => void entry.submit(event)}
-              onCopyLast={(mock) => {
-                entry.copyFrom(mock);
-                openEntryForm();
-              }}
-              notebookHandoff={entry.notebookHandoff}
-              onDismissNotebookHandoff={entry.dismissHandoff}
+              entry={entry}
+              onCopied={openEntryForm}
             />
-          </>
+          )
         ) : null}
         {tab === "progress" && data.analysis && examId ? (
           <>
