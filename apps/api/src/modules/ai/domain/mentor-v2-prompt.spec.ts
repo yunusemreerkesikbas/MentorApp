@@ -4,14 +4,9 @@ import {
   CoachTurnMode,
   CoachActionType,
   CoachEvidenceType,
-  UserRole,
   type CoachMemoryFactDto,
 } from "@mentor/types";
-import {
-  boundChatHistory,
-  buildMentorV2Prompt,
-  isMentorV2Enabled,
-} from "./mentor-v2-prompt";
+import { boundChatHistory, buildMentorV2Prompt } from "./mentor-v2-prompt";
 
 const turn = {
   strategyVersion: "mentor-v2.1" as const,
@@ -72,15 +67,6 @@ describe("Mentor V2 prompt", () => {
     expect(prompt).not.toContain("mentor-yol arkadaşı");
     expect(prompt).not.toContain("Sen Mentor");
     expect(prompt).not.toContain("<<MEMORY");
-  });
-
-  it("uses stable rollout buckets and always includes staff", () => {
-    expect(isMentorV2Enabled("same-user", [], 0)).toBe(false);
-    expect(isMentorV2Enabled("same-user", [UserRole.STAFF], 0)).toBe(true);
-    expect(isMentorV2Enabled("same-user", [], 100)).toBe(true);
-    expect(isMentorV2Enabled("same-user", [], 37)).toBe(
-      isMentorV2Enabled("same-user", [], 37),
-    );
   });
 
   it("bounds history by message count and character budget, preserving newest turns", () => {

@@ -46,6 +46,7 @@ import {
   PlanCoachAdaptationAction,
   type PlanCoachAdaptationActionHandle,
 } from "./plan-coach-adaptation-action";
+import { summarizePendingWeek } from "./plan-coach-adaptation-brief-note";
 import { PlanCalendarView } from "./plan-calendar-view";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
@@ -158,6 +159,7 @@ export function PlanShell() {
     [searchParams],
   );
   const coachAdaptationRef = useRef<PlanCoachAdaptationActionHandle>(null);
+  const knownWeek = useMemo(() => summarizePendingWeek(weekTasks), [weekTasks]);
   const adaptationConsumed = useRef(false);
   const adaptationRequest = useMemo(
     () =>
@@ -785,6 +787,7 @@ export function PlanShell() {
           ) : null}
           <PlanCoachAdaptationAction
             ref={coachAdaptationRef}
+            knownWeek={knownWeek}
             onApplied={refreshAdaptedPlan}
             onPlanChanged={refreshAdaptedPlan}
           />

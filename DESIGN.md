@@ -16,8 +16,8 @@ fully expressed, and **every screen converges to it** as it is touched: white bl
 cards, one play-ledge action, progress drawn rather than tabulated, Puhu speaking in a bubble,
 identity chrome for premium and coach. When an older screen and the panel disagree, the panel is
 right and the older screen is the one to change. Reference code:
-`apps/web/src/app/[locale]/(app)/dashboard/_components/` (shared classes in `panel-styles.ts`);
-component specs in §6.1.
+`apps/web/src/app/[locale]/(app)/dashboard/_components/`, with the parts other screens reuse in
+`apps/web/src/components/panel/`; component specs in §6.1.
 
 Seven rules the panel is built on, and every screen follows:
 
@@ -276,19 +276,21 @@ Other Nuton library symbols (course cards, list items, FAQ, etc.) remain referen
 
 ### 6.1 Panel patterns (reference components, 2026-09-21)
 
-The building blocks every screen reuses. Specs are the panel's; code lives in
-`apps/web/src/app/[locale]/(app)/dashboard/_components/` until they move into `@mentor/ui` (§13).
+The building blocks every screen reuses. Specs are the panel's. Shared code lives in
+`apps/web/src/components/panel/` (classes, `CompanionBubble`, `ProgressLine`, `useWideLayout`); the rest
+stays in `apps/web/src/app/[locale]/(app)/dashboard/_components/`. `/analiz` is the second screen built
+from them (2026-09-22).
 
 | Pattern | Spec | Panel code |
 |---|---|---|
-| **Card + header** | `PANEL_CARD` (§5). Header row: title 16/800 left; count (caption, `tabular-nums`) or text link right. | `panel-styles.ts` |
+| **Card + header** | `PANEL_CARD` (§5). Header row: title 16/800 left; count (caption, `tabular-nums`) or text link right. | `components/panel/panel-styles.ts` |
 | **Text link** | 14–15/800, `--play-selected-ink`, underline on hover only, trailing 16 px chevron. The only secondary action style next to a ledge. | `PANEL_TEXT_LINK` |
 | **Icon well** | 40 px square, `--radius-card`, 20 px icon. Fill by what the row is about: plan → `--play-well-peri`, focus → `--play-well-blue`, mood → `--play-well-coral`, other → `--play-well-violet`; done → `--color-success` at 16 % on surface with success ink. | `daily-quests-card.tsx` |
-| **Progress bar** | 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar. | `daily-quests-card.tsx` |
+| **Progress bar** | 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar. | `components/panel/progress-line.tsx` |
 | **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest** (streak-core tints; glows when opened). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts` |
 | **Coach mark** | 24 px `--coach-accent` disc with a graduation cap, top-right of a node or avatar, 2 px surface ring. Means "your human coach assigned this". | `today-path.tsx` |
 | **Week band** | Monday → Sunday from `streak.week` (server-derived, never computed on the client). Dot 24/30 px: active = flame on `--color-streak-soft`, frozen = snowflake on `--color-progress` 18 %, missed = `--play-track`, not-yet = dashed `--play-line`; today = 2 px `--color-streak` ring. Right: "N gün seri" 16/900 + today's focus vs goal 12/700; wraps under the days on phones. Sits as the hero's bottom band on a `--play-track` 35 % tint. | `week-band.tsx` |
-| **Companion bubble** | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines. A free user's nudge sits inside the bubble (lock nudge below). | `today-path-card.tsx` |
+| **Companion bubble** | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines, only when at least two would hide (the toggle is taller than one line). A free user's nudge sits inside the bubble (lock nudge below). | `components/panel/companion-bubble.tsx` |
 | **Hero** | Bubble → title (20→22/800) → path → one ledge + one text link → an ambient line (13/700 with a `--play-cta` dot: "Şu an 128 kişi seninle çalışıyor") → week band. The screen's single primary action lives here. | `today-path-card.tsx` |
 | **Mood row** | "Bugün nasılsın?" + five faces (40/44 px buttons, `aria-pressed`). One tap saves; the selected face gets `--play-selected` + a 2 px inset `--play-cta` ring, the others dim to 60 %. Never an auto-opening modal. On desktop it shares the row with the page title; on phones it is a bordered strip under the top bar. | `greeting-row.tsx` |
 | **Announcement card** | Several announcements in one card, **stacked in one grid cell** so the card is as tall as its tallest slide and rotation never moves the cards below. Slide: art (an 80 px tile beside the text below 1280 px, a 112 px band above it in the rail; art is static — no looping SVGs in a card) + optional title (16/800) + message + small ledge. Rotates every 5 s, pauses on hover/focus, dots are buttons, each slide closes on its own for the tab session. Order: a campaign (it ends) → the daily coin offer (it resets) → the trial (always there). The free user's only commercial slot. | `components/top-banner.tsx`, `membership-card.tsx` |
@@ -297,7 +299,7 @@ The building blocks every screen reuses. Specs are the panel's; code lives in
 | **List rows** | Well + title (15/800, two lines) + meta (13, `--color-secondary`: room · replies · time), hairline between rows, the whole row is the link. | `community-topics-card.tsx` |
 | **Level card** | "Yolculuğun": `JourneyLevelCompact` (level, XP to next, bar) + the freeze allowance line in `--play-selected-ink` with a snowflake. | `journey-card.tsx` |
 | **PREMIUM badge** | 22 px pill, `--premium-badge-bg` / `--premium-badge-ink`, 11/900, 0.06 em tracking, upper case written in the copy. | `components/premium/premium-badge.tsx` |
-| **Lock nudge** | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the badge wraps to its own line rather than breaking the label. Never a padlock, blur or fake preview. | `components/premium/premium-lock-nudge.tsx` |
+| **Lock nudge** | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the chevron stays with the label's last word and the badge wraps to its own line. Never a padlock, blur or fake preview. | `components/premium/premium-lock-nudge.tsx` |
 | **Skeletons** | A page skeleton only while auth settles (`dashboard-content-skeleton.tsx`); after that each section shows its own placeholder in place. | `dashboard-content-skeleton.tsx` |
 
 ---
@@ -452,7 +454,7 @@ deliberate presence cue, disabled under reduced motion.
 
 - Bottom Tab Bar → **left sidebar** at `lg` (1024px); active `#111`.
   Desktop rail is 240px with sentence-case labels. A top-right `PanelLeft` control
-  collapses it to a 52px icon strip (same width as the analysis history rail).
+  collapses it to a 52px icon strip (same width as the history rail on seans and vizyon panosu).
   Hover/focus on a rail icon reveals the link name. Preference persists via the
   `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` and
   community keep this collapsed rail visible (do not hide AppNav).
@@ -496,11 +498,16 @@ deliberate presence cue, disabled under reduced motion.
 - [x] Surface hierarchy + hover shadow + visual/motion language (2026-07-12 evolve).
 - [x] Motion personality — celebration vs measured surfaces (§9.1, 2026-07-26).
 - [x] Panel as the reference screen — "Bugün" hub, §6.1 patterns, type-step tokens (2026-09-21).
-- [ ] **Converge every screen to the panel** as it is touched: plan, analiz, bilgi, topluluk,
+- [x] Analiz converged (2026-09-22): panel frame with past exams in the right column, two views
+      (Gelişim · Yanlışlarım) + "Deneme ekle" as a form mode, the improvement loop drawn as a path with
+      one ledge, the coach's narration in the bubble for premium, the saved moment in place of toasts.
+- [ ] **Converge every screen to the panel** as it is touched: plan, bilgi, topluluk,
       seans, defterlerim, profil/ayarlar, and the coach workspace (Faz 5). Checklist per screen:
       §1 rules, §3 scale (no arbitrary `text-[Npx]`), §5 radius set, §6.1 patterns.
-- [ ] Promote the §6.1 primitives into `@mentor/ui` once a second screen needs them (card + header,
-      text link, ledge link, icon well, progress bar, PREMIUM badge).
+- [x] §6.1 primitives shared once a second screen needed them: `apps/web/src/components/panel/`, not
+      `@mentor/ui`, because the bubble needs `PuhuImage` / `next/image` (2026-09-22).
+- [ ] Move the web-independent parts (classes, `ProgressLine`) into `@mentor/ui` when a screen outside
+      `apps/web` needs them.
 - [ ] Faz 3 identity: sidebar PREMIUM badge, avatar ring, caped Puhu (`puhu-premium` transparent
       export pending).
 - [ ] Weekly chest art (soft-3D, closed/open) to replace the line glyph.
@@ -518,9 +525,11 @@ Web-specific visuals: `PuhuImage`, `EmptyState`, `apps/web/public/mascot/puhu/`,
 
 App shell: `apps/web/src/components/app-nav.tsx`.
 
-Reference screen: `apps/web/src/app/[locale]/(app)/dashboard/_components/` — `panel-styles.ts`
-(page frame, grid, card, text link), `today-path*.tsx` (hero, path, model), `week-band.tsx`,
-`greeting-row.tsx`, `daily-quests-card.tsx`, `membership-card.tsx` + `components/top-banner.tsx`
-(announcement card), `components/premium/premium-badge.tsx`, `premium-lock-nudge.tsx`.
+Reference screen: `apps/web/src/app/[locale]/(app)/dashboard/_components/` — `today-path*.tsx`
+(hero, path, model), `week-band.tsx`, `greeting-row.tsx`, `daily-quests-card.tsx`, `membership-card.tsx`
++ `components/top-banner.tsx` (announcement card), `components/premium/premium-badge.tsx`,
+`premium-lock-nudge.tsx`. Shared panel parts: `apps/web/src/components/panel/` — `panel-styles.ts`
+(page frame, grid, card, hero, text link, ledge), `companion-bubble.tsx`, `progress-line.tsx`,
+`use-wide-layout.ts`. Second screen on them: `apps/web/src/app/[locale]/(app)/analysis/_components/`.
 
 **Rule:** screens compose tokens/primitives — no magic numbers ([`docs/standards/frontend.md`](./docs/standards/frontend.md)).

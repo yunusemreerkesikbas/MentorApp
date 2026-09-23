@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { Snowflake } from "lucide-react";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
 import { useEconomySnapshot } from "@/lib/economy-store";
-import { PANEL_CARD, PANEL_CARD_TITLE } from "./panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 
 /**
  * "Yolculuğun": the level and the XP to the next one, plus the freezes that keep a missed day

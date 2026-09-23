@@ -15,6 +15,8 @@ export function PremiumLockNudge({
   label: string;
   onClick: () => void;
 }) {
+  // The chevron rides with the last word, so a label that wraps never strands it on its own line.
+  const cut = label.lastIndexOf(" ") + 1;
   return (
     <button
       type="button"
@@ -22,14 +24,19 @@ export function PremiumLockNudge({
       className="group inline-flex min-h-11 max-w-full flex-wrap items-center gap-x-1.5 gap-y-1 text-left text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{ color: "var(--play-selected-ink)" }}
     >
-      {/* In a narrow bubble the badge drops to its own line; the label never breaks word by word. */}
-      <span className="min-w-0">{label}</span>
-      <ChevronRight
-        size={16}
-        strokeWidth={2.25}
-        className="shrink-0 transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
-        aria-hidden
-      />
+      {/* In a narrow bubble the badge drops to its own line. */}
+      <span className="min-w-0">
+        {label.slice(0, cut)}
+        <span className="whitespace-nowrap">
+          {label.slice(cut)}
+          <ChevronRight
+            size={16}
+            strokeWidth={2.25}
+            className="ml-1.5 inline-block align-[-3px] transition-transform duration-150 group-hover:translate-x-0.5 motion-reduce:transition-none motion-reduce:group-hover:translate-x-0"
+            aria-hidden
+          />
+        </span>
+      </span>
       <PremiumBadge />
     </button>
   );

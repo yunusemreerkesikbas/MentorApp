@@ -86,7 +86,6 @@ export const CONFIG_HINTS: Record<string, string> = {
     "ai.chat.daily_limit": "Premium kullanıcının günde gönderebileceği koç sohbeti sayısı.",
     "ai.plan_draft.daily_limit": "Premium kullanıcının günde üretebileceği AI plan taslağı.",
     "ai.chat.free_coin_daily_limit": "Ücretsiz kullanıcının Coin ile günde gönderebileceği koç sohbeti. Premium tavanı ayrı.",
-    "ai.coach_personalization_v2.rollout_percent": "Kişisel Mentor V2'nin sabit kullanıcı hash'iyle açılma yüzdesi. 0 eski sohbeti getirir.",
     "ai.coach.history_max_messages": "Aktif koç dizisinden prompta alınan en fazla kayıtlı mesaj.",
     "ai.coach.history_max_characters": "Aktif dizi geçmişinden prompta alınan en fazla karakter.",
     "ai.coach.memory.transient_ttl_days": "Geçici zorluk ve öncelikli konu belleklerinin gün cinsinden ömrü.",

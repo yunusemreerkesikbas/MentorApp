@@ -25,6 +25,7 @@ import {
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { ContextBuilder } from "./context-builder.service";
+import { groundingFact } from "../domain/grounding-fact";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
@@ -74,7 +75,7 @@ export class PlanAdaptationService {
       input.source === "MOOD" &&
       !pendingTasks.some((task) => task.taskDate === snapshot.window.from)
     ) {
-      return this.response("NO_CHANGE", snapshot, [], "rules");
+      return this.response("NO_CHANGE", snapshot, [], "rules", null);
     }
 
     const [dailyLimit, usedToday, context] = await Promise.all([
@@ -105,6 +106,7 @@ export class PlanAdaptationService {
             (task) => task.taskDate === snapshot.window.from,
           )
         : referencedTasks;
+    const locale = promptLocale(I18nContext.current()?.lang);
     const { system, user: userMessage } = buildPlanAdaptationPrompt({
       source: input.source,
       todayIso: snapshot.window.from,
@@ -118,7 +120,19 @@ export class PlanAdaptationService {
         : null,
       tasks: promptTasks,
       note: input.source === "PLAN" ? input.note : undefined,
-      locale: promptLocale(I18nContext.current()?.lang),
+      days: input.source === "PLAN" ? input.days : undefined,
+      minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
+      focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
+      locale,
+      moodLevel: context.moodLevel,
+    });
+    const groundingLine = groundingFact({
+      signal: "PLAN",
+      locale,
+      pendingSubjects: promptTasks.flatMap((task) =>
+        task.subject ? [task.subject] : [],
+      ),
+      todayPlan: context.todayPlan,
     });
 
     await this.budget.assertWithinBudget();
@@ -143,6 +157,14 @@ export class PlanAdaptationService {
       input.source,
       promptTasks,
       pendingTasks,
+      input.source === "PLAN"
+        ? {
+            days: input.days,
+            minutesPerDay: input.minutesPerDay,
+            focusSubjects: input.focusSubjects,
+            locale,
+          }
+        : undefined,
     );
     if (parsed.kind === "MALFORMED") {
       throw new DomainError(
@@ -155,6 +177,7 @@ export class PlanAdaptationService {
       snapshot,
       parsed.changes,
       result.model,
+      groundingLine,
     );
   }
 
@@ -194,12 +217,14 @@ export class PlanAdaptationService {
     snapshot: Awaited<ReturnType<PlanService["getAdaptationSnapshot"]>>,
     changes: CoachPlanAdaptationDto["changes"],
     model: string,
+    groundingLine: string | null,
   ): CoachPlanAdaptationDto {
     return {
       status,
       message: this.i18n.translate(`coaching.planAdaptation.${status}`, {
         lang: I18nContext.current()?.lang,
       }) as unknown as string,
+      groundingLine,
       window: snapshot.window,
       planRevision: snapshot.planRevision,
       changes,

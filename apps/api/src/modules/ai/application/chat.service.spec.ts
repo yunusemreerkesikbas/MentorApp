@@ -25,6 +25,28 @@ const MOCK_EXAM = {
     },
   ],
 };
+const EMPTY_SNAPSHOT = {
+  examType: null as string | null,
+  dailyFocusGoalMinutes: null,
+  moodLevel: null,
+  moodTrend: "STABLE" as const,
+  planCompletionRate: null,
+  pendingAiCoachPlanTaskId: null,
+  evidence: [],
+};
+const V2_TURN = {
+  strategyVersion: "mentor-v2.1" as const,
+  intent: "GENERAL" as const,
+  tone: "WARM" as const,
+  mode: "ANSWER" as const,
+  usedEvidence: [],
+  allowedAction: null,
+  policy: {
+    maxSentences: 4,
+    humor: "NONE" as const,
+    directness: "MEDIUM" as const,
+  },
+};
 const EMPTY_PERSONALIZATION = {
   mode: "NEEDS_INPUT",
   examType: null,
@@ -32,6 +54,10 @@ const EMPTY_PERSONALIZATION = {
   recentSessions: null,
   todayPlan: null,
   usedSignals: [],
+  strategyVersion: "mentor-v2.1",
+  intent: "GENERAL",
+  tone: "WARM",
+  usedEvidence: [],
 };
 
 describe("ChatService coin refund", () => {
@@ -57,6 +83,8 @@ describe("ChatService coin refund", () => {
   let resolveForCoach: ReturnType<typeof vi.fn>;
   let tryGetBridge: ReturnType<typeof vi.fn>;
   let getRequestContext: ReturnType<typeof vi.fn>;
+  let getCoachContext: ReturnType<typeof vi.fn>;
+  let evidenceBuild: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
     llmComplete = vi.fn();
@@ -73,6 +101,8 @@ describe("ChatService coin refund", () => {
     isOwned = vi.fn(async () => true);
     getOrigin = vi.fn(async () => null);
     getMockExam = vi.fn(async () => MOCK_EXAM);
+    getCoachContext = vi.fn(async () => null);
+    evidenceBuild = vi.fn(async () => EMPTY_SNAPSHOT);
     contextBuild = vi.fn(async () => ({
       examType: null,
     }));
@@ -156,7 +186,22 @@ describe("ChatService coin refund", () => {
       { assertWithinBudget: budgetAssert } as never,
       { getById: getMockExam } as never,
       { translate: vi.fn((key: string) => key) } as never,
+      { build: evidenceBuild } as never,
+      {
+        getProfile: vi.fn(async () => ({
+          calibrationStatus: "COMPLETED",
+          memoryConsent: "DECLINED",
+          supportPreference: null,
+          directnessPreference: null,
+          updatedAt: "2026-09-22T00:00:00.000Z",
+        })),
+        getPromptMemories: vi.fn(async () => []),
+        learnFromChat: vi.fn(),
+      } as never,
+      { plan: vi.fn(() => V2_TURN) } as never,
       { resolveForCoach, tryGetBridge } as never,
+      undefined,
+      { getCoachContext } as never,
     );
   });
 
@@ -185,7 +230,7 @@ describe("ChatService coin refund", () => {
     );
     expect(llmComplete).toHaveBeenCalledWith(
       expect.objectContaining({
-        system: expect.stringContaining("Tartışma içeriği sana verilmedi"),
+        system: expect.stringContaining("No community post text"),
       }),
     );
     expect(persistExchange).toHaveBeenCalledWith(
@@ -318,7 +363,7 @@ describe("ChatService coin refund", () => {
   });
 
   it("grounds an article CTA directly without requiring an embedding", async () => {
-    contextBuild.mockResolvedValue({ examType: "KPSS" });
+    evidenceBuild.mockResolvedValue({ ...EMPTY_SNAPSHOT, examType: "KPSS" });
     getInfoArticleSource.mockResolvedValue({
       title: "KPSS Başvuru Süreci",
       slug: "kpss-basvuru-sureci",
@@ -628,7 +673,8 @@ describe("ChatService coin refund", () => {
       events.push(ev);
 
     expect(events).toEqual([
-      { delta: "Merhaba!" },
+      { delta: "Merha" },
+      { delta: "ba!" },
       {
         done: {
           reply: "Merhaba!",
@@ -654,7 +700,7 @@ describe("ChatService coin refund", () => {
         events.push(ev);
     }).rejects.toThrow("stream down");
 
-    expect(events).toEqual([]);
+    expect(events).toEqual([{ delta: "Merha" }]);
     expect(grant).toHaveBeenCalledWith(
       USER.id,
       Currency.COIN,
@@ -823,99 +869,6 @@ describe("ChatService coin refund", () => {
     ).rejects.toMatchObject({ code: "NOT_FOUND" });
   });
 
-  it("returns and persists the personal context snapshot used for the reply", async () => {
-    contextBuild.mockResolvedValue({
-      examType: "KPSS",
-      moodLevel: 3,
-      recentSessions: {
-        count7d: 3,
-        focusMinutes7d: 140,
-        subjects: ["Türkçe"],
-      },
-      todayPlan: { total: 4, done: 1 },
-    });
-    llmComplete.mockResolvedValue({
-      text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
-      promptTokens: 5,
-      completionTokens: 8,
-      model: "fake",
-    });
-
-    const result = await service.reply(USER, "Bugün nasıl çalışmalıyım?", MSG_ID);
-
-    expect(result.personalization).toEqual({
-      mode: "GROUNDED",
-      examType: "KPSS",
-      moodLevel: 3,
-      recentSessions: {
-        count7d: 3,
-        focusMinutes7d: 140,
-        subjects: ["Türkçe"],
-      },
-      todayPlan: { total: 4, done: 1 },
-      usedSignals: ["RECENT_SESSIONS"],
-    });
-    expect(result.reply).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek bir Türkçe bloğu seç; kısa ritminle daha kolay sürdürebilirsin.",
-    );
-    expect(persistExchange).toHaveBeenCalledWith(
-      USER.id,
-      expect.any(Object),
-      "Bugün nasıl çalışmalıyım?",
-      expect.objectContaining({ personalization: result.personalization }),
-    );
-  });
-
-  it("keeps a split personalization marker out of the stream and persists visible evidence", async () => {
-    contextBuild.mockResolvedValue({
-      examType: "KPSS",
-      moodLevel: null,
-      recentSessions: {
-        count7d: 3,
-        focusMinutes7d: 140,
-        subjects: ["Türkçe"],
-      },
-      todayPlan: null,
-    });
-    llmCompleteStream.mockImplementation(async function* () {
-      yield { delta: "<<PERSONAL" };
-      yield { delta: "IZATION:RECENT_SESSIONS>>\nBugün tek blok dene." };
-      yield {
-        final: {
-          text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek blok dene.",
-          promptTokens: 1,
-          completionTokens: 1,
-          model: "fake",
-        },
-      };
-    });
-
-    const events: unknown[] = [];
-    for await (const event of service.replyStream(USER, "Nasıl çalışmalıyım?", MSG_ID)) {
-      events.push(event);
-    }
-
-    const streamed = events
-      .filter((event): event is { delta: string } => "delta" in (event as object))
-      .map((event) => event.delta)
-      .join("");
-    expect(streamed).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek blok dene.",
-    );
-    expect(events.at(-1)).toMatchObject({
-      done: {
-        reply: streamed,
-        personalization: { usedSignals: ["RECENT_SESSIONS"] },
-      },
-    });
-    expect(persistExchange).toHaveBeenCalledWith(
-      USER.id,
-      expect.any(Object),
-      "Nasıl çalışmalıyım?",
-      expect.objectContaining({ content: streamed }),
-    );
-  });
-
   it("returns structural origin and an accessible community source with conversation messages", async () => {
     const origin = {
       type: "COMMUNITY_THREAD" as const,
@@ -984,9 +937,60 @@ describe("ChatService coin refund", () => {
     expect(getMockExam).toHaveBeenCalledWith(USER.id, MOCK_EXAM_ID);
     const llmInput = llmComplete.mock.calls[0]?.[0] as { system: string };
     expect(llmInput.system).toContain("KPSS Genel Yetenek");
-    expect(llmInput.system).toContain("toplam net: 72.50");
-    expect(llmInput.system).toContain("Matematik: D 30, Y 8, Boş 2, net 28.00");
+    expect(llmInput.system).toContain("total net=72.50");
+    expect(llmInput.system).toContain("Matematik:28.00");
     expect(llmInput.system).not.toContain("SECRET PUBLISHER");
+  });
+
+  it("opens an evaluation reply with the mock focus and skips the session counter", async () => {
+    contextBuild.mockResolvedValue({
+      examType: "KPSS",
+      moodLevel: null,
+      recentSessions: {
+        count7d: 4,
+        focusMinutes7d: 95,
+        subjects: ["Tarih"],
+      },
+      todayPlan: null,
+    });
+    getCoachContext.mockResolvedValue({
+      focus: {
+        subjectName: "Tarih",
+        topicName: "Osmanlı",
+        source: "LOWEST_AVERAGE",
+        evidenceCount: 3,
+      },
+      dominantError: null,
+      notebookStats: {
+        savedCount: 0,
+        reviewedCount: 0,
+        dueCount: 0,
+        healedCount: 0,
+      },
+    });
+    llmComplete.mockResolvedValue({
+      text: "<<PERSONALIZATION:RECENT_SESSIONS>>\nTekrar için bir blok ayır.",
+      promptTokens: 1,
+      completionTokens: 1,
+      model: "fake",
+    });
+
+    const result = await service.reply(
+      USER,
+      "Bu denemeyi yorumla",
+      MSG_ID,
+      undefined,
+      MOCK_EXAM_ID,
+    );
+
+    expect(result.reply).toBe(
+      "Son denemende odak Tarih, Osmanlı. Tekrar için bir blok ayır.",
+    );
+    expect(result.reply).not.toContain("Son 7 günde");
+    expect(result.personalization.usedSignals).toEqual([]);
+    expect(result.personalization.usedEvidence?.[0]?.summary).toBe(
+      "Son denemende odak Tarih, Osmanlı.",
+    );
   });
 
   it("does not create a conversation or call the LLM when mock-exam ownership validation fails", async () => {
@@ -1041,7 +1045,7 @@ describe("ChatService coin refund", () => {
     expect(getMockExam).toHaveBeenCalledWith(USER.id, MOCK_EXAM_ID);
     expect(llmCompleteStream).toHaveBeenCalledWith(
       expect.objectContaining({
-        system: expect.stringContaining("toplam net: 72.50"),
+        system: expect.stringContaining("total net=72.50"),
       }),
     );
   });
@@ -1161,7 +1165,7 @@ describe("ChatService coin refund", () => {
     );
     expect(llmCompleteStream).toHaveBeenCalledWith(
       expect.objectContaining({
-        system: expect.stringContaining("Niyet: PLAN"),
+        system: expect.stringContaining("intent=PLAN"),
       }),
     );
   });

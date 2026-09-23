@@ -3,6 +3,7 @@ import { Sparkles } from "lucide-react";
 
 import {
   forwardRef,
+  useCallback,
   useImperativeHandle,
   useMemo,
   useRef,
@@ -13,13 +14,12 @@ import type {
   ApplyPlanAdaptationResultDto,
   CoachPlanAdaptationDto,
 } from "@mentor/types";
-import {
-  coachPlanAdaptationSchema,
-  type CoachPlanAdaptationInput,
-} from "@mentor/validation";
+import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, TextAreaField } from "@mentor/ui";
+import { Button } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { CompanionBubble } from "@/components/panel/companion-bubble";
+import { useAuth } from "@/lib/auth-context";
 import { trackCoachEvent } from "@/lib/analytics";
 import { requestCoachPlanAdaptation } from "@/lib/coach";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -34,19 +34,19 @@ import {
   selectedPlanAdaptationChanges,
   type PlanAdaptationRow,
 } from "@/lib/plan-coach-adaptation-utils";
+import {
+  PlanCoachAdaptationBrief,
+} from "./plan-coach-adaptation-brief";
+import type { PlanAdaptationKnownWeek } from "./plan-coach-adaptation-brief-note";
 
 interface PlanCoachAdaptationActionProps {
+  knownWeek: PlanAdaptationKnownWeek;
   onApplied: (result: ApplyPlanAdaptationResultDto) => Promise<void>;
   onPlanChanged: () => Promise<void>;
 }
 
 export interface PlanCoachAdaptationActionHandle {
   open: (input: CoachPlanAdaptationInput) => void;
-}
-
-interface NoteFormHandle {
-  getInput: () => CoachPlanAdaptationInput | null;
-  setError: (message: string) => void;
 }
 
 interface PreviewHandle {
@@ -61,51 +61,6 @@ function readError(error: unknown, fallback: string): string {
       ? error.message
       : fallback;
 }
-
-const PlanCoachAdaptationNoteForm = forwardRef<NoteFormHandle>(
-  function PlanCoachAdaptationNoteForm(_props, ref) {
-    const t = useTranslations("plan");
-    const [note, setNote] = useState("");
-    const [error, setError] = useState<string | null>(null);
-
-    useImperativeHandle(ref, () => ({
-      getInput: () => {
-        const trimmed = note.trim();
-        const parsed = coachPlanAdaptationSchema.safeParse({
-          source: "PLAN",
-          ...(trimmed ? { note: trimmed } : {}),
-        });
-        if (!parsed.success) {
-          setError(t("coach_adaptation_note_invalid"));
-          return null;
-        }
-        setError(null);
-        return {
-          source: "PLAN",
-          ...(trimmed ? { note: trimmed } : {}),
-        };
-      },
-      setError,
-    }));
-
-    return (
-      <TextAreaField
-        autoFocus
-        label={t("coach_adaptation_note_label")}
-        value={note}
-        onChange={(event) => {
-          setNote(event.target.value);
-          if (error) setError(null);
-        }}
-        placeholder={t("coach_adaptation_note_placeholder")}
-        hint={t("coach_adaptation_note_hint", { count: note.length })}
-        error={error}
-        maxLength={500}
-        rows={4}
-      />
-    );
-  },
-);
 
 interface PreviewProps {
   preview: CoachPlanAdaptationDto;
@@ -166,6 +121,9 @@ const PlanCoachAdaptationPreview = forwardRef<PreviewHandle, PreviewProps>(
 
     return (
       <div className="flex flex-col gap-4">
+        {preview.groundingLine ? (
+          <CompanionBubble puhu="encouraging" text={preview.groundingLine} />
+        ) : null}
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
           {preview.message}
         </p>
@@ -263,14 +221,16 @@ const PlanCoachAdaptationPreview = forwardRef<PreviewHandle, PreviewProps>(
 export const PlanCoachAdaptationAction = forwardRef<
   PlanCoachAdaptationActionHandle,
   PlanCoachAdaptationActionProps
->(function PlanCoachAdaptationAction({ onApplied, onPlanChanged }, ref) {
+>(function PlanCoachAdaptationAction({ knownWeek, onApplied, onPlanChanged }, ref) {
   const t = useTranslations("plan");
   const tCommon = useTranslations("common");
+  const { user } = useAuth();
   const { openPaywall } = usePremiumPaywall();
   const { filterSheet, dismissNow } = useMentorBottomSheet();
   const toast = useMentorToast();
-  const noteRef = useRef<NoteFormHandle>(null);
   const previewRef = useRef<PreviewHandle>(null);
+  const wizardLock = useRef(false);
+  const [wizardOpen, setWizardOpen] = useState(false);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const {
@@ -370,7 +330,7 @@ export const PlanCoachAdaptationAction = forwardRef<
   }
 
   async function open(input: CoachPlanAdaptationInput) {
-    if (busyRef.current) return;
+    if (busyRef.current || wizardLock.current) return;
     busyRef.current = true;
     setBusy(true);
     try {
@@ -389,22 +349,8 @@ export const PlanCoachAdaptationAction = forwardRef<
         return;
       }
 
-      const generated: { input: CoachPlanAdaptationInput | null } = {
-        input: null,
-      };
-      const result = await filterSheet({
-        title: t("coach_adaptation_note_title"),
-        applyLabel: t("coach_adaptation_generate"),
-        children: <PlanCoachAdaptationNoteForm ref={noteRef} />,
-        onApply: () => {
-          const parsed = noteRef.current?.getInput() ?? null;
-          if (!parsed) throw new Error("validation");
-          generated.input = parsed;
-        },
-      });
-      if (result === "apply" && generated.input) {
-        await generatePreview(generated.input);
-      }
+      wizardLock.current = true;
+      setWizardOpen(true);
     } catch (error) {
       toast.error({
         title: tCommon("error_title"),
@@ -421,16 +367,39 @@ export const PlanCoachAdaptationAction = forwardRef<
     open: (input) => void open(input),
   }));
 
+  const closeWizard = useCallback(() => {
+    wizardLock.current = false;
+    setWizardOpen(false);
+  }, []);
+
   return (
-    <Button
-      type="button"
-      variant="ghost"
-      busy={busy}
-      onClick={() => void open({ source: "PLAN" })}
-      className="min-h-10 px-3 py-2 text-sm"
-    >
-      <Sparkles size={16} strokeWidth={2.25} aria-hidden />
-      {t("coach_adaptation_cta")}
-    </Button>
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        busy={busy}
+        onClick={() => void open({ source: "PLAN" })}
+        className="min-h-10 px-3 py-2 text-sm"
+      >
+        <Sparkles size={16} strokeWidth={2.25} aria-hidden />
+        {t("coach_adaptation_cta")}
+      </Button>
+      {wizardOpen ? (
+        <PlanCoachAdaptationBrief
+          knownWeek={knownWeek}
+          profile={{
+            examType: user?.examType ?? null,
+            examVariant: user?.examVariant ?? null,
+            dailyFocusGoalMinutes: user?.dailyFocusGoalMinutes ?? null,
+          }}
+          onClose={closeWizard}
+          onComplete={(input) => {
+            wizardLock.current = false;
+            setWizardOpen(false);
+            void generatePreview(input);
+          }}
+        />
+      ) : null}
+    </>
   );
 });

@@ -2,7 +2,7 @@
 
 import { useTranslations } from "next-intl";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
-import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "./panel-styles";
+import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 
 /**
  * While auth settles the app shell renders `/dashboard` early (like `/plan`), and only this may

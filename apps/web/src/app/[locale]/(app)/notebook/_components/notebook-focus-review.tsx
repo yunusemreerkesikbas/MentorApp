@@ -73,17 +73,11 @@ export function NotebookFocusReview() {
       active = false;
     };
   }, [search, early, loadKey, page]);
+  // Back to the analysis view the review was opened from: the Gelişim hero marks its links
+  // `from=progress`; everything else starts on Yanlışlarım.
   const back = {
     pathname: "/analysis" as const,
-    query: {
-      tab: "progress",
-      focus:
-        params.get("focus") ??
-        [params.get("subjectRef") ?? "", params.get("topicRef") ?? ""].join(
-          "|",
-        ),
-      days: params.get("days") === "30" ? "30" : "7",
-    },
+    query: { tab: params.get("from") === "progress" ? "progress" : "mistakes" },
   };
   return (
     <div className="p-4">

@@ -10,7 +10,7 @@ import { Link } from "@/i18n/navigation";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { formatPromotionMagnitude, pickBannerPromotion } from "@/lib/promotions";
 import { useSubscription } from "@/lib/subscription-context";
-import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "./panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 
 /**
  * Membership, in the rail. A member sees what membership gives them; a free user sees one

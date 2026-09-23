@@ -628,11 +628,6 @@ export const CONFIG_CATALOG = {
     100000,
     "Max AI coach chat messages a free user may send per day via coin (abuse shield; premium limit is separate).",
   ),
-  "ai.coach_personalization_v2.rollout_percent": aiCount(
-    0,
-    100,
-    "Stable user-hash rollout percentage for Personalized Mentor V2; 0 instantly restores the legacy chat strategy.",
-  ),
   "ai.coach.history_max_messages": aiPositiveCount(
     10,
     40,

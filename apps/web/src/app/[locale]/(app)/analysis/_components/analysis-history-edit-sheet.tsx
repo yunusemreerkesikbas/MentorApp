@@ -36,15 +36,8 @@ export function AnalysisHistoryEditSheet({
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  function updateScore(
-    slug: string,
-    field: keyof SubjectScores,
-    value: string,
-  ) {
-    setScores((current) => ({
-      ...current,
-      [slug]: { ...current[slug]!, [field]: value },
-    }));
+  function updateScore(slug: string, row: SubjectScores) {
+    setScores((current) => ({ ...current, [slug]: row }));
   }
 
   async function handleUpdate(event: React.FormEvent) {

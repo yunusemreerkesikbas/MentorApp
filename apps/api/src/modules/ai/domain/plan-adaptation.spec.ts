@@ -1,5 +1,9 @@
+import { coachPlanAdaptationSchema } from "@mentor/validation";
 import { describe, expect, it } from "vitest";
-import { parsePlanAdaptation } from "./plan-adaptation";
+import {
+  buildPlanAdaptationPrompt,
+  parsePlanAdaptation,
+} from "./plan-adaptation";
 
 const TODAY = "2026-07-21";
 const TASKS = [
@@ -300,5 +304,167 @@ describe("parsePlanAdaptation", () => {
         },
       ]);
     }
+  });
+
+  it("keeps one ADD on each requested day and fills a missing subject", () => {
+    const changes = [22, 23, 24, 25, 26, 27].map((day, index) => ({
+      kind: "ADD",
+      title: `Blok ${index + 1}`,
+      subject: null,
+      taskDate: `2026-07-${day}`,
+    }));
+    const result = parsePlanAdaptation(
+      JSON.stringify({ changes }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 5, focusSubjects: ["Türkçe", "Matematik"] },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    const adds = result.changes.filter((change) => change.kind === "ADD");
+    expect(adds.map((change) => change.taskDate)).toEqual([
+      "2026-07-22",
+      "2026-07-23",
+      "2026-07-24",
+      "2026-07-25",
+      "2026-07-26",
+    ]);
+    expect(adds[0]).toMatchObject({ subject: "Türkçe" });
+    expect(adds[1]).toMatchObject({ subject: "Matematik" });
+  });
+
+  it("fills the days the model left out", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Türkçe konu tekrar", taskDate: "2026-07-24" },
+          { kind: "ADD", title: "Matematik soru çözümü", taskDate: "2026-07-25" },
+          { kind: "ADD", title: "Tarih notları", taskDate: "2026-07-26" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 5, minutesPerDay: 60, focusSubjects: ["Türkçe", "Matematik"] },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    const adds = result.changes.filter((change) => change.kind === "ADD");
+    expect(adds.map((change) => change.taskDate)).toEqual([
+      "2026-07-23",
+      "2026-07-24",
+      "2026-07-25",
+      "2026-07-26",
+      "2026-07-27",
+    ]);
+    expect(adds[0]).toMatchObject({
+      title: "Türkçe · 60 dk",
+      subject: "Türkçe",
+    });
+    expect(adds.every((change) => change.subject != null)).toBe(true);
+  });
+
+  it("rewrites a model title whose subject was not selected", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          {
+            kind: "ADD",
+            title: "Matematik çalışması",
+            subject: "Matematik",
+            taskDate: "2026-07-24",
+          },
+          { kind: "ADD", title: "Osmanlı kronolojisi", subject: "Tarih", taskDate: "2026-07-25" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 2, minutesPerDay: 30, focusSubjects: ["Tarih"] },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toEqual([
+      { kind: "ADD", title: "Tarih · 30 dk", subject: "Tarih", taskDate: "2026-07-24" },
+      { kind: "ADD", title: "Osmanlı kronolojisi", subject: "Tarih", taskDate: "2026-07-25" },
+    ]);
+  });
+
+  it("moves a colliding filler to the next free day and writes it in the request language", () => {
+    // Least-loaded days (23, 24) already hold the filler title; every other day holds two tasks.
+    const task = (taskDate: string, title: string, index: number) => ({
+      ref: `X${index}`,
+      id: `x-${index}`,
+      taskDate,
+      title,
+      subject: "History",
+      status: "PENDING",
+      sortOrder: 0,
+    });
+    const taken = [
+      task("2026-07-23", "History · 30 min", 0),
+      task("2026-07-24", "History · 30 min", 1),
+      task(TODAY, "Extra", 2),
+      task("2026-07-22", "Extra", 3),
+      ...["2026-07-25", "2026-07-26", "2026-07-27"].flatMap((date, index) => [
+        task(date, "Extra A", 10 + index * 2),
+        task(date, "Extra B", 11 + index * 2),
+      ]),
+    ];
+    const tasks = [...TASKS, ...taken];
+    const result = parsePlanAdaptation(
+      '{"changes":[]}',
+      TODAY,
+      "PLAN",
+      tasks,
+      tasks,
+      { days: 2, minutesPerDay: 30, focusSubjects: ["History"], locale: "en" },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toHaveLength(2);
+    expect(result.changes.every((change) => change.kind === "ADD" && change.title === "History · 30 min")).toBe(true);
+    expect(result.changes.map((change) => change.kind === "ADD" && change.taskDate)).not.toContain("2026-07-23");
+  });
+
+  it("tells the model to cover the selected day count", () => {
+    const prompt = buildPlanAdaptationPrompt({
+      source: "PLAN",
+      todayIso: TODAY,
+      examType: "KPSS",
+      recentSummary: null,
+      tasks: [],
+      days: 5,
+      minutesPerDay: 60,
+      focusSubjects: ["Tarih"],
+    });
+
+    expect(prompt.system).toContain("Tam 5 farklı güne");
+    expect(prompt.system).not.toContain("3 ADD");
+    expect(prompt.user).toContain("Bağlayıcı ritim: 5 farklı gün");
+    expect(prompt.user).toContain("60 dakika");
+    expect(prompt.user).toContain("Tarih");
+  });
+
+  it("rejects a study rhythm on MOOD", () => {
+    expect(
+      coachPlanAdaptationSchema.safeParse({ source: "MOOD", days: 5 }).success,
+    ).toBe(false);
+    expect(
+      coachPlanAdaptationSchema.safeParse({
+        source: "PLAN",
+        days: 5,
+        minutesPerDay: 60,
+        focusSubjects: ["Tarih"],
+      }).success,
+    ).toBe(true);
   });
 });

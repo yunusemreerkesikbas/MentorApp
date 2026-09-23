@@ -1,106 +1,72 @@
 "use client";
 
-import { Card, Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui";
 import { useTranslations } from "next-intl";
+import { Skeleton, SkeletonGroup, skeletonStaggerStyle } from "@mentor/ui";
+import { PANEL_CARD } from "@/components/panel/panel-styles";
+import type { AnalysisTab } from "./analysis-types";
 
-const FORM_ROWS = 4;
-const HISTORY_ROWS = 5;
-
-const SHELL_MIN_H =
-  "flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] lg:min-h-[calc(100dvh-4rem)]";
-
-/** Inner blocks shared by full-page skeleton and in-place SkeletonReveal. */
-export function AnalysisSkeletonBlocks() {
-  return (
-    <div className={SHELL_MIN_H}>
-      <aside
-        className="relative z-[1] hidden h-auto w-72 shrink-0 border-r bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-md lg:flex lg:flex-col"
-        style={{
-          borderColor: "color-mix(in srgb, var(--color-main) 8%, transparent)",
-        }}
-        aria-hidden
-      >
-        <div className="border-b px-4 py-4">
-          <Skeleton className="h-5 w-36 rounded-[var(--radius-card)]" />
-        </div>
-        <div className="flex flex-col gap-0.5 p-3">
-          {Array.from({ length: HISTORY_ROWS }, (_, index) => (
-            <div
-              key={index}
-              className="grid min-h-10 grid-cols-[minmax(0,1fr)_4rem] items-center gap-2 rounded-[10px] px-2.5 py-2"
-              style={skeletonStaggerStyle(index)}
-            >
-              <div className="flex flex-col gap-2">
-                <Skeleton className="h-4 w-28 rounded-[var(--radius-card)]" />
-                <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
-              </div>
-              <Skeleton className="h-4 w-14 rounded-[var(--radius-card)]" />
-            </div>
-          ))}
-        </div>
-      </aside>
-
-      <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-5 py-4 lg:px-8 lg:py-8">
-        <Card>
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-2">
-              <Skeleton className="h-3 w-16 rounded-[var(--radius-card)]" />
-              <Skeleton className="h-10 w-28 rounded-[var(--radius-card)]" />
-              <Skeleton className="h-6 w-40 rounded-full" />
-            </div>
-            <Skeleton className="h-14 w-full max-w-[220px] rounded-[var(--radius-card)] sm:h-14" />
-            <Skeleton className="h-11 w-36 rounded-[var(--radius-card)]" />
-          </div>
-        </Card>
-
-        <div className="flex gap-1 rounded-full border border-[var(--color-border)] p-1">
-          {[0, 1, 2].map((i) => (
-            <Skeleton
-              key={i}
-              className="h-10 flex-1 rounded-full"
-              style={skeletonStaggerStyle(i)}
-            />
-          ))}
-        </div>
-
-        <Card>
-          <Skeleton className="mb-4 h-6 w-40 rounded-[var(--radius-card)]" />
-          <div className="hidden sm:grid sm:grid-cols-[1fr_repeat(3,4rem)] sm:gap-2 sm:pb-2">
-            <Skeleton className="h-4 w-20 rounded-[var(--radius-card)]" />
-            {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-4 rounded-[var(--radius-card)]" />
-            ))}
-          </div>
-          <div className="flex flex-col gap-3">
-            {Array.from({ length: FORM_ROWS }, (_, index) => (
-              <div
-                key={index}
-                className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_repeat(3,4rem)] sm:items-center"
-                style={skeletonStaggerStyle(index + 3)}
-              >
-                <Skeleton className="h-5 w-28 rounded-[var(--radius-card)]" />
-                {[0, 1, 2].map((c) => (
-                  <Skeleton key={c} className="h-12 rounded-[var(--radius-card)]" />
-                ))}
-              </div>
-            ))}
-          </div>
-          <Skeleton className="mt-4 h-14 w-full rounded-[var(--radius-card)]" />
-        </Card>
-      </div>
-    </div>
-  );
-}
-
-/** Standalone full-page skeleton when there is no shared client tree. */
-export function AnalysisContentSkeleton() {
+/**
+ * The view's own placeholder while the analysis loads (DESIGN.md §10). The header paints at once and
+ * the history card has its own, so nothing waits behind a page-level gate.
+ */
+export function AnalysisTabSkeleton({ tab }: { tab: AnalysisTab }) {
   const t = useTranslations("analysis");
 
   return (
-    <main className="w-full">
-      <SkeletonGroup label={t("loading")}>
-        <AnalysisSkeletonBlocks />
-      </SkeletonGroup>
-    </main>
+    <SkeletonGroup label={t("loading")} className="flex flex-col gap-5">
+      {tab === "entry" ? (
+        <div className={`${PANEL_CARD} flex flex-col gap-4 sm:px-7 sm:py-6`}>
+          <Skeleton className="h-7 w-48 rounded-[var(--radius-card)]" />
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Skeleton className="h-12 rounded-[var(--radius-card)]" />
+            <Skeleton className="h-12 rounded-[var(--radius-card)]" />
+          </div>
+          {[0, 1, 2, 3].map((index) => (
+            <Skeleton
+              key={index}
+              className="h-12 rounded-[var(--radius-card)]"
+              style={skeletonStaggerStyle(index)}
+            />
+          ))}
+          <Skeleton className="h-14 w-full self-end rounded-[var(--play-radius)] sm:w-48" />
+        </div>
+      ) : (
+        <>
+          <div className={`${PANEL_CARD} flex flex-col gap-5 sm:px-7 sm:py-6`}>
+            <div className="flex items-start gap-4">
+              <Skeleton className="size-16 shrink-0 rounded-full sm:size-20" />
+              <Skeleton className="h-16 flex-1 rounded-[var(--play-radius)]" />
+            </div>
+            <Skeleton className="h-6 w-3/4 rounded-[var(--radius-card)]" />
+            <div className="flex justify-between gap-3 py-4">
+              {[0, 1, 2, 3].map((index) => (
+                <Skeleton key={index} className="size-12 rounded-full sm:size-14" />
+              ))}
+            </div>
+            <Skeleton className="h-14 w-full rounded-[var(--play-radius)] sm:w-72" />
+          </div>
+          <div className={`${PANEL_CARD} flex flex-col gap-4`}>
+            <Skeleton className="h-5 w-32 rounded-[var(--radius-card)]" />
+            <Skeleton className="h-40 rounded-[var(--radius-card)]" />
+          </div>
+        </>
+      )}
+    </SkeletonGroup>
+  );
+}
+
+/** Stand-in for the history card until the exam it belongs to is known. */
+export function AnalysisHistorySkeleton() {
+  return (
+    <div className={`${PANEL_CARD} flex flex-col gap-3`} aria-hidden>
+      <Skeleton className="h-5 w-40 rounded-[var(--radius-card)]" />
+      {[0, 1, 2].map((index) => (
+        <Skeleton
+          key={index}
+          className="h-12 rounded-[var(--radius-card)]"
+          style={skeletonStaggerStyle(index)}
+        />
+      ))}
+    </div>
   );
 }

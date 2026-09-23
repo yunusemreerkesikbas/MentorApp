@@ -7,6 +7,7 @@ import type {
   CoachMemoryDto,
   CoachPlanAdaptationDto,
   DailyGreetingDto,
+  GhostNarrationDto,
   Paginated,
   PlanTaskDto,
   SessionReflectionDto,
@@ -322,6 +323,17 @@ export async function fetchDailyGreeting(): Promise<DailyGreetingDto> {
   return (await http<DailyGreetingDto>("/v1/coach/daily-greeting", {
     method: "POST",
   })) as DailyGreetingDto;
+}
+
+/**
+ * Premium "geçmiş-ben" narration of the latest mock exam against the student's own past. The server
+ * caches it per attempt, so a repeat call returns the same text without another model call.
+ */
+export async function fetchGhostNarration(examId: string): Promise<GhostNarrationDto> {
+  return (await http<GhostNarrationDto>("/v1/coach/ghost-narration", {
+    method: "POST",
+    body: JSON.stringify({ examId }),
+  })) as GhostNarrationDto;
 }
 
 /** Premium session reflection after micro check-in; 403 for free — caller should stay silent. */

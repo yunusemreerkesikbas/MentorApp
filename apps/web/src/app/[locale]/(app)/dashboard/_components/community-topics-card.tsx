@@ -7,7 +7,7 @@ import { ForumFeedScope, ForumFeedSort, type ForumFeedItem } from "@mentor/types
 import { Link } from "@/i18n/navigation";
 import { getForumFeed } from "@/lib/forum";
 import { relativeTime } from "@/lib/relative-time";
-import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "./panel-styles";
+import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 
 /**
  * "Topluluktan": two live threads from the rooms that matter to this student. One small feed call

@@ -170,6 +170,13 @@ export class AiChatController {
           properties: {
             source: { type: "string", enum: ["PLAN"] },
             note: { type: "string", maxLength: 500 },
+            days: { type: "integer", minimum: 1, maximum: 7 },
+            minutesPerDay: { type: "integer", enum: [15, 30, 60, 90, 120] },
+            focusSubjects: {
+              type: "array",
+              maxItems: 3,
+              items: { type: "string", maxLength: 80 },
+            },
           },
         },
         {
@@ -207,6 +214,9 @@ export class AiChatController {
     return this.planAdaptation.preview(user, {
       source: "PLAN",
       ...(dto.note ? { note: dto.note } : {}),
+      ...(dto.days != null ? { days: dto.days } : {}),
+      ...(dto.minutesPerDay != null ? { minutesPerDay: dto.minutesPerDay } : {}),
+      ...(dto.focusSubjects?.length ? { focusSubjects: dto.focusSubjects } : {}),
     });
   }
 

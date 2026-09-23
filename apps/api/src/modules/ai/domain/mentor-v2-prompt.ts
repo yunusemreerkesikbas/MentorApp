@@ -1,6 +1,5 @@
 import {
   CoachTurnMode,
-  UserRole,
   type CoachMemoryFactDto,
   type MockExamDto,
 } from "@mentor/types";
@@ -49,23 +48,6 @@ export interface MentorV2PromptInput {
   mockExam?: MockExamDto;
   analysisContext?: AnalysisCoachContext;
   community?: CommunityCoachPromptContext;
-}
-
-/** Stable hash rollout; changing percentage keeps already-included users in the cohort. */
-export function isMentorV2Enabled(
-  userId: string,
-  roles: readonly string[],
-  rolloutPercent: number,
-): boolean {
-  if (roles.includes(UserRole.STAFF)) return true;
-  if (rolloutPercent <= 0) return false;
-  if (rolloutPercent >= 100) return true;
-  let hash = 2166136261;
-  for (let index = 0; index < userId.length; index += 1) {
-    hash ^= userId.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0) % 100 < rolloutPercent;
 }
 
 /** Keep the newest complete messages under both count and character budgets. */

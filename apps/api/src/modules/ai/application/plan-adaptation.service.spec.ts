@@ -154,6 +154,7 @@ describe("PlanAdaptationService", () => {
       status: "NO_CHANGE",
       changes: [],
       model: "rules",
+      groundingLine: null,
     });
     expect(complete).not.toHaveBeenCalled();
     expect(append).not.toHaveBeenCalled();
@@ -197,9 +198,29 @@ describe("PlanAdaptationService", () => {
     expect(prompt.user).not.toContain("private mood note");
     expect(prompt.user).not.toContain("private session note");
     expect(prompt.user).toContain("Cuma günü hafif olsun");
+    expect(prompt.user).toContain("Ruh hali: çok düşük");
+    expect(result.message).toBe("coaching.planAdaptation.READY");
+    expect(result.groundingLine).toBe(
+      "Bekleyen işlerin arasında Matematik var.",
+    );
+    expect(result.groundingLine).not.toContain("çöz");
     expect(append.mock.calls[0][0].feature).toBe(
       AiUsageFeature.PLAN_ADAPTATION,
     );
+  });
+
+  it("puts the selected study rhythm into the model prompt", async () => {
+    await service.preview(USER, {
+      source: "PLAN",
+      days: 5,
+      minutesPerDay: 90,
+      focusSubjects: ["Tarih"],
+    });
+
+    const prompt = complete.mock.calls.at(-1)?.[0];
+    expect(prompt.system).toContain("Tam 5 farklı güne");
+    expect(prompt.user).toContain("90 dakika");
+    expect(prompt.user).toContain("Tarih");
   });
 
   it("rejects a SESSION that is not owned or no longer exists", async () => {

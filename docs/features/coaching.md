@@ -145,6 +145,90 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-22 · Plan ritmi API'ye bağlı.** Gün, dakika ve dersler `POST /v1/coach/plan-adaptation` gövdesinde `days`, `minutesPerDay`, `focusSubjects`. Serbest not ayrı kalır. PLAN kaynağında 3 ekleme ve toplam 5 değişiklik tavanı kalktı: seçilen gün sayısı kadar farklı güne bir ekleme, seçim yoksa 7 günlük pencere. Boş `subject` seçilen derslerle dolar. Uygulama gövdesi en fazla 10 değişiklik kabul eder. Ruh hali ve seans tavanı aynı. **Kullanım:** Plan, Koçla planla, gün sayısı, önizleme. **Gotcha:** (2026-09-23'te değişti, bir sonraki kayıt) eksik günler artık sunucuda doldurulur. Günlük hedef profile yazılmaz. İlgili: `packages/validation/src/ai.ts`, `plan-adaptation.ts`, `plan-coach-adaptation-brief.tsx`.
+
+- **2026-09-23 · Plan ritmi review düzeltmeleri (PR #116).** Seçilen dersle eşleşmeyen ya da derssiz model ADD'sinin başlığı seçilen derse göre yeniden yazılır ("Tarih · 30 dk"); günü korunur. Eksik gün doldurma, başlığı çakışan günü atlayıp sıradaki uygun güne geçer. Sentetik başlıklar istek dilinde ("History · 30 min"). `/analiz` deneme formunun varsayılan tarihi UTC değil yerel gün (gece 03:00 öncesi dünü göstermez). **Gotcha:** model doğru dersi yazdıysa kendi başlığı kalır. İlgili: `plan-adaptation.ts`, `plan-adaptation.service.ts`.
+
+- **2026-09-23 · Plan ritmi bağlayıcı.** Gün, süre ve dersler `POST /v1/coach/plan-adaptation` gövdesinde durur. Seçilen gün sayısı modelin 3 görevde durmasına bırakılmaz: eksik günler pencerede kapasitesi yeten günlere, seçilen ders ve dakika ile yazılır. **Kullanım:** Koçla planla, gün sayısı seç, önizlemeyi hazırla. **Gotcha:** çalışan API süreci eski kodu tutuyorsa hâlâ 3 ekleme döner; süreci yeniden başlat. İlgili: `apps/api/src/modules/ai/domain/plan-adaptation.ts`, `plan-adaptation.service.ts`.
+
+- **2026-09-22 · Koçla planla brief.** "Koçla planla" onboarding adım düzeninde açılır: geri, ilerleme, atla, tek soru, alttaki düğme. Sırayla gün, dakika, en fazla 3 ders ve kısa not. Bildiğimiz sınav ve günlük hedef ilk sorunun altında durur. Ruh hali ve seans kısayolları soru sormadan önizlemeye gider. Taksonomi gelmezse ders adımı yoktur. **Kullanım:** Plan → Koçla planla. **Gotcha:** son 7 günün seans özeti ekranda yok, model promptunda durur. Günlük hedef yalnız süre kartını işaretler, kaydedilmez. İlgili: `plan-coach-adaptation-brief-note.ts`, `plan-coach-adaptation-brief.tsx`, `onboarding-step-layout.tsx`, `plan-coach-adaptation-action.tsx`.
+
+- **2026-09-22 · Tek çalışma olgusu.** Konuş, değerlendir ve planla aynı doğrulanmış cümleyi görür. Cümleyi model yazmaz: son 7 günün sayacına ilk ders adı eklenir, dakika tek derse yazılmaz; değerlendirin ilk mesajında deneme odağı sayacın yerine geçer; plan önizlemesi bekleyen dersi (başlığı değil) `CompanionBubble` ile gösterir, AI rozeti yoktur. Ruh hali etiketi plan promptuna girer. **Kullanım:** değişiklik yok, mevcut "Koçla konuş", "AI koçla değerlendir" ve "Koçla planla". **Gotcha:** görev başlığı ve içindeki telefon numarası cümleye girmez; sinyal yoksa cümle ve balon yoktur. İlgili: `apps/api/src/modules/ai/domain/grounding-fact.ts`, `personalization-marker.ts`, `plan-adaptation.service.ts`, `plan-coach-adaptation-action.tsx`.
+
+- **2026-09-22 · /analiz deneme formu ve kayıt anı (redesign, Durak C, tamam).** "Deneme sonucu gir"
+  panel kartında (`analysis-entry-card.tsx`): sınav, ders ve soru sayısı, "Son denemeyi kopyala" metin
+  bağlantısı, masaüstünde tek "Ders · Doğru · Yanlış · Boş" başlık satırı, her satırın sonunda "27/30"
+  sayacı (tam = yeşil tik, aşım = kırmızı + satır hatası). **Boş kendiliğinden dolar:** saf `withScore`
+  (`analysis-types.ts` + spec), doğru ve yanlış girilince boş = soru − doğru − yanlış; öğrenci boşa
+  yazınca durur, boşu silince yeniden hesaplanır; aşımda boş boş kalır. Olay işleyicisinde, effect yok.
+  Otomatik boş açık mavi tonda görünür. Kayıtlı denemeden gelen boş (kopyala, düzenleme sheet'i) elle
+  girilmiş sayılır, üzerine yazılmaz. Aşımda Kaydet kapalı ve "{ders} satırı düzelince
+  kaydedebilirsin" notu çıkar. **Kayıt anı** (`entry-saved-card.tsx`) toast'ın, deftere geç bandının ve
+  ilk kayıttaki otomatik sekme değişiminin yerini aldı. Puhu cümlesi, "Yayın · tarih kaydedildi", net,
+  fark ve rekor, "Derslere göre fark" (`ghost.subjects`), "{n} yanlış var" cümlesi, tek ledge
+  (yanlış varsa "Yanlışları deftere taşı" → `/notebook?mockExam=`, yoksa "Gelişimini gör") ve "Yeni
+  deneme gir". Kaydedilen deneme en yenisiyse premium'da koç yorumu hemen yazılır (sayfanın tek
+  `use-ghost-narration`'ı, Gelişim hero'su aynı metni gösterir); geçmişe tarihli denemede fark ve AI
+  yok, "geçmişine ekledim" denir. Analiz yenilenemezse kayıt geri alınmaz, kart yalnız bildiğini
+  söyler (eskiden başarılı kayıttan sonra hata gösteriyordu). Forma her giriş kayıt anını temizler.
+  i18n: 124 kullanılmayan `analysis.*` / `ghost.*` anahtarı iki dilden silindi ("🏆" dahil); ad alanına
+  duyarlı tarama + next-intl tip denetimi ile doğrulandı. **Ölçüm:** analiz rotası JS 1057.8 → 791.2 KiB
+  (grafik artık `next/dynamic`); panel +1.8 KiB. Web bütçe betiğinin dört aşımı (makale toplamı, panel
+  rota/toplam, kök mesaj `analyticsConsent` 1783 B) redesign öncesi `1cc30ab0`'da da birebir aynı.
+  **Gotcha:** `:3000`'de açık bir `next dev` e2e'yi belirgin yavaşlatır; üç sayfa açan test `test.slow()`.
+  İlgili: `analysis-entry-card.tsx`, `analysis-mock-exam-form.tsx`, `entry-saved-card.tsx`,
+  `use-mock-exam-entry.ts`, `analysis-types.ts`, `analysis-history-edit-sheet.tsx`, `e2e/analysis*.ts`,
+  DESIGN.md §6.1 / §11 / §13 / §14.
+
+- **2026-09-22 · /analiz Gelişim ve Yanlışlarım yeni kartlarda (redesign, Durak B).** Gelişim'in ilk
+  kartı "Sıradaki adımın" (`focus-path-card.tsx`): Puhu balonu, dört düğümlü iyileşme yolu ve tek ledge.
+  Ledge'i saf `buildFocusPath` (`focus-path-model.ts` + spec) seçer: sinyal → "Planıma ekle"; plana bağlı →
+  "Tekrara başla · N soru" (sayı `review-summary?examId&subjectRef&topicRef&days=7`, yani açılan setle aynı
+  kapsam; 0 ise "Odaktaki yanlışları aç"); tekrarlandı → "Yeni deneme gir" (form yerinde açılır);
+  kapandı ya da başlangıç denemesi silindi → "Yeni odağı planıma ekle" + öneri. Sonra "Net seyrin" (son net,
+  fark aşağıdaysa gri, rekor rozeti; `StatLineChart` `next/dynamic` ile tembel, düz grid, token'lı tooltip,
+  rekor çizgisi, `sr-only` tablo) ve "Derslerin" (8px çubuk + son 4 denemenin eğilimi). **Premium AI yorumu
+  geri geldi:** `use-ghost-narration.ts` sayfada bir kez bağlanır, abonelik bilinmeden istek atmaz, en son
+  deneme başına tek `POST /v1/coach/ghost-narration` gönderir, `aiNarration` önbellekteyse hiç göndermez;
+  balon "Koçundan" etiketli. Free'de kural tabanlı `ghost.headline` + "İlerlemeni koçun yorumlasın · PREMIUM".
+  Yanlışlarım: "Neden kaçırıyorsun?" (hata türü satırı kendi sorularına gider, tek ledge
+  `review-summary?examId` sayısıyla), "Nerede kaçırıyorsun?" (ders ve konu tek kartta; tek ders ya da konuda
+  "%100" yerine kayıt sayısı), "Son N gün" hunisi (kaydettin → tekrar ettin → iyileşti; tekrarı gelen sayı
+  yalnız ledge'de) ve Gelişim'den taşınan "Son tekrarların". "Başka konu seç" ve 7/30 gün seçimi kalktı;
+  defterin "Analize dön"ü `from=progress` ile Gelişim'e, yoksa Yanlışlarım'a döner. Ortak parçalarda iki
+  düzeltme panele de yansır: `CompanionBubble` notu yalnız en az iki satır gizleyecekse katlar (düğme,
+  gizlediği tek satırdan fazla yer kaplıyordu); `PremiumLockNudge` oku son kelimeyle birlikte kırılır.
+  **Gotcha:** e2e'de analiz görünümü dört istekli zincirin arkasında (me → sınav → dersler → analiz); paralel
+  yerel koşuda 5 sn'yi aşabiliyor, bu yüzden testler `gotoAnalysis` ile görünümü bir kez 15 sn bekler.
+  Fixture'da `premium`, `reviewHistory` ve sayaçlı `ghostNarrationCalls` var. **Gotcha:**
+  `SubjectStrengthDto.netDelta` işaretsiz gelir (`toFixed(2)`), "+"yı bileşen ekler; test verisine "+1.25"
+  yazmak "++1.25" çizer. Silinenler: `analysis-summary-band`, `analysis-tab-progress`, `analysis-tab-mistakes`,
+  `analysis-review-progress` (+ `.module.css`), `analysis-review-history`, `analysis-improvement-loop-card`,
+  `analysis-ghost-teaser`, `analysis-sparkline`. İlgili: `focus-path-*`, `net-trend-card.tsx`,
+  `subjects-card.tsx`, `mistakes-why-card.tsx`, `mistakes-where-card.tsx`, `notebook-funnel-card.tsx`,
+  `review-history-card.tsx`, `use-review-due.ts`, `use-ghost-narration.ts`, `lib/coach.ts`,
+  `components/stat-line-chart.tsx`, `notebook-focus-review.tsx`, `e2e/analysis*.ts`.
+
+- **2026-09-21 · /analiz panel çerçevesine geçti (redesign, Durak A).** Sayfa panelin çerçevesini
+  kullanıyor: `PANEL_MAIN_CLASS`, 1280 ve üstünde ana kolon + 340px sağ kolon, altında tek kolon
+  (başlık → görünüm → geçmiş). Panelin JS düzen anahtarı (`useWideLayout`) burada yok: dar ekrandaki sıra
+  DOM sırasıyla aynı, salt CSS grid yetiyor; JS anahtarı 1280'i geçen pencere ya da tablet döndürmede
+  ana kolonu yeniden kurup yarım yazılmış formu siliyordu. Başlık kart değil: "Analiz" + sınav adı + "Deneme ekle" outline
+  ledge; sekmeler yalnız iki görünüm (Gelişim · Yanlışlarım). Form `?tab=entry` ile açılır, sekmelerin
+  yerinde "Analize dön" durur ve açıldığı görünüme döner. İkinci sol rail (`HistorySideRail/Drawer`)
+  analizden kalktı (seans ve vizyon panosunda duruyor); "Geçmiş denemeler" sağ kolon kartı: satır yerinde
+  açılır, ders başına doğru/yanlış/boş yığın çubuk (`--chart-correct` / `--chart-wrong`, iki temada
+  dataviz doğrulamalı; renk tek ipucu değil, sayılar yanında), Düzenle/Sil "…" menüsünde. Veri yükleme
+  `use-analysis-data.ts`'e, form durumu `use-mock-exam-entry.ts`'e çıktı; sayfa düzeyindeki iskelet
+  kapısı kalktı: başlık hemen boyanır, görünüm ve geçmiş kendi iskeletleriyle gelir. Panelin ortak
+  parçaları artık `apps/web/src/components/panel/` (sınıflar, `CompanionBubble`, `ProgressLine`,
+  `useWideLayout`); panelin görünümü değişmedi. **Gotcha:** `SlidingTabs` kökündeki `max-w-full` bir
+  utility ile ezilmiyor; sekme genişliğini dıştaki kapsayıcı sınırlıyor. Eski Gelişim / Yanlışlarım / form
+  içerikleri Durak B ve C'ye kadar yeni çerçevede duruyor. İlgili: `analysis-shell.tsx`,
+  `analysis-header.tsx`, `analysis-history-card.tsx`, `analysis-history-detail.tsx`,
+  `use-analysis-data.ts`, `use-mock-exam-entry.ts`, `components/panel/*`, `packages/ui/src/theme.css`,
+  `e2e/analysis.spec.ts`.
+
 - **2026-09-20 · `StreakSummaryDto.week` + `/coaching/today` iki dalgaya indi.** Panelin hafta şeridi
   bugüne kadar bugünü ve **sonraki** altı günü çiziyordu (web tarafında UTC `todayIso`), yalnız bugünün
   hücresi yanabiliyordu. Artık sunucu veriyor: `week`, `today`ın içinde bulunduğu haftanın Pazartesi→Pazar

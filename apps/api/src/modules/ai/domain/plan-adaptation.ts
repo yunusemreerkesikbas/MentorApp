@@ -3,6 +3,7 @@ import type {
   CoachPlanAdaptationSource,
 } from "@mentor/types";
 import type { PlanAdaptationSnapshotTask } from "../../coaching/domain/plan-adaptation";
+import { moodLabel } from "./grounding-fact";
 import {
   promptLanguageInstruction,
   type PromptLocale,
@@ -38,12 +39,23 @@ function isWindowDate(date: string, start: string, end: string): boolean {
 }
 
 /** Parse and clamp provider JSON. Invalid individual changes are dropped; invalid JSON is distinct. */
+const PLAN_WINDOW_DAYS = 7;
+const PLAN_MAX_MOVES = 3;
+
+export interface PlanAdaptationRhythm {
+  days?: number;
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
+  locale?: PromptLocale;
+}
+
 export function parsePlanAdaptation(
   text: string,
   todayIso: string,
   source: CoachPlanAdaptationSource,
   tasks: readonly PromptPlanTask[],
   capacityTasks: readonly PlanAdaptationSnapshotTask[] = tasks,
+  rhythm?: PlanAdaptationRhythm,
 ): PlanAdaptationParseResult {
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
@@ -64,9 +76,27 @@ export function parsePlanAdaptation(
       .filter((task) => task.status === "PENDING")
       .map((task) => [task.ref, task]),
   );
-  const maxMoves = source === "PLAN" ? 3 : 2;
-  const maxAdds = source === "PLAN" ? 3 : source === "SESSION" ? 1 : 0;
-  const maxTotal = source === "PLAN" ? 5 : source === "SESSION" ? 3 : 2;
+  const requestedDays =
+    source === "PLAN" &&
+    rhythm?.days != null &&
+    Number.isInteger(rhythm.days) &&
+    rhythm.days >= 1 &&
+    rhythm.days <= PLAN_WINDOW_DAYS
+      ? rhythm.days
+      : undefined;
+  const focusSubjects = (rhythm?.focusSubjects ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0)
+    .slice(0, 3);
+  const maxMoves = source === "PLAN" ? PLAN_MAX_MOVES : 2;
+  const maxAdds =
+    source === "PLAN"
+      ? (requestedDays ?? PLAN_WINDOW_DAYS)
+      : source === "SESSION"
+        ? 1
+        : 0;
+  const maxTotal =
+    source === "PLAN" ? maxMoves + maxAdds : source === "SESSION" ? 3 : 2;
 
   const seenMoveIds = new Set<string>();
   const moveCandidates: Array<
@@ -166,28 +196,124 @@ export function parsePlanAdaptation(
     const rawTitle = (raw as { title?: unknown }).title;
     const taskDate = (raw as { taskDate?: unknown }).taskDate;
     if (typeof rawTitle !== "string" || typeof taskDate !== "string") continue;
-    const title = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
+    const modelTitle = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
     if (
-      !title ||
+      !modelTitle ||
       !isWindowDate(taskDate, todayIso, windowEnd) ||
       (source === "SESSION" && taskDate <= todayIso) ||
       (pendingByDate.get(taskDate) ?? 0) >= MAX_PENDING_PER_DAY
     ) {
       continue;
     }
-    const key = `${taskDate}:${normalizedTitle(title)}`;
-    if ((titleCounts.get(key) ?? 0) > 0) continue;
+    if (
+      requestedDays != null &&
+      additions.some((item) => item.taskDate === taskDate)
+    ) {
+      continue;
+    }
     const rawSubject = (raw as { subject?: unknown }).subject;
-    const subject =
+    const written =
       typeof rawSubject === "string" && rawSubject.trim()
         ? rawSubject.trim().slice(0, SUBJECT_MAX)
         : null;
+    const matched = focusSubjects.find(
+      (name) =>
+        name.toLocaleLowerCase("tr-TR") ===
+        (written ?? "").toLocaleLowerCase("tr-TR"),
+    );
+    const picked =
+      focusSubjects.length > 0
+        ? (matched ?? focusSubjects[additions.length % focusSubjects.length]!)
+        : written;
+    const subject = picked ? picked.slice(0, SUBJECT_MAX) : null;
+    // A reassigned subject would contradict the model's title ("Matematik" filed under Tarih).
+    const title =
+      focusSubjects.length > 0 && !matched
+        ? studyBlockTitle(subject, rhythm?.minutesPerDay, rhythm?.locale)
+        : modelTitle;
+    const key = `${taskDate}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
     adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
     additions.push({ kind: "ADD", title, subject, taskDate });
   }
 
-  return { kind: "VALID", changes: [...moves, ...additions] };
+  const filled =
+    requestedDays == null
+      ? additions
+      : fillStudyDays(
+          additions,
+          requestedDays,
+          todayIso,
+          pendingByDate,
+          titleCounts,
+          focusSubjects,
+          rhythm?.minutesPerDay,
+          rhythm?.locale,
+        );
+
+  return { kind: "VALID", changes: [...moves, ...filled] };
+}
+
+/** The model often stops at three tasks. The chosen day count is filled here. */
+function fillStudyDays(
+  additions: Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>>,
+  requestedDays: number,
+  todayIso: string,
+  pendingByDate: Map<string, number>,
+  titleCounts: Map<string, number>,
+  focusSubjects: readonly string[],
+  minutesPerDay: number | undefined,
+  locale: PromptLocale | undefined,
+): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
+  const window = Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) =>
+    addDays(todayIso, index),
+  );
+  const filled: typeof additions = [];
+  const used = new Set<string>();
+  for (const item of additions) {
+    if (filled.length >= requestedDays) break;
+    if (used.has(item.taskDate)) continue;
+    filled.push(item);
+    used.add(item.taskDate);
+  }
+  // Least-loaded days first; a title collision moves on to the next candidate day.
+  const rest = window
+    .filter((date) => !used.has(date))
+    .sort(
+      (a, b) =>
+        (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) ||
+        a.localeCompare(b),
+    );
+  let synthetic = 0;
+  for (const date of rest) {
+    if (filled.length >= requestedDays) break;
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
+    const subject = focusSubjects.length
+      ? focusSubjects[synthetic % focusSubjects.length]!
+      : null;
+    const title = studyBlockTitle(subject, minutesPerDay, locale);
+    const key = `${date}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
+    synthetic += 1;
+    titleCounts.set(key, 1);
+    pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1);
+    filled.push({ kind: "ADD", title, subject, taskDate: date });
+  }
+  return filled.sort((a, b) => a.taskDate.localeCompare(b.taskDate));
+}
+
+function studyBlockTitle(
+  subject: string | null,
+  minutesPerDay: number | undefined,
+  locale: PromptLocale = "tr",
+): string {
+  const en = locale === "en";
+  const unit = en ? "min" : "dk";
+  if (subject && minutesPerDay) return `${subject} · ${minutesPerDay} ${unit}`;
+  if (subject) return en ? `${subject} study` : `${subject} çalışması`;
+  if (minutesPerDay) return en ? `${minutesPerDay} min study` : `${minutesPerDay} dk çalışma`;
+  return en ? "Study block" : "Çalışma bloğu";
 }
 
 export const PLAN_ADAPTATION_JSON_SENTINEL =
@@ -204,11 +330,17 @@ export function buildPlanAdaptationPrompt(input: {
   } | null;
   tasks: readonly PromptPlanTask[];
   note?: string;
+  days?: number;
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
   locale?: PromptLocale;
+  moodLevel?: number | null;
 }): { system: string; user: string } {
   const policy =
     input.source === "PLAN"
-      ? "En fazla 3 MOVE, 3 ADD ve toplam 5 değişiklik öner."
+      ? input.days
+        ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
+        : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
       : input.source === "MOOD"
         ? "Yalnız bugünkü görevlerden en fazla 2 MOVE öner; ADD önerme."
         : "En fazla 2 MOVE ve sonraki günlere 1 küçük tekrar ADD öner.";
@@ -236,12 +368,32 @@ export function buildPlanAdaptationPrompt(input: {
     title: task.title,
     subject: task.subject,
   }));
+  const rhythm =
+    input.source === "PLAN"
+      ? [
+          input.days ? `${input.days} farklı gün` : null,
+          input.minutesPerDay
+            ? `her görev yaklaşık ${input.minutesPerDay} dakika sürsün`
+            : null,
+          input.focusSubjects?.length
+            ? `ADD subject yalnız şunlardan biri olsun: ${input.focusSubjects.join(", ")}`
+            : null,
+        ].filter((part): part is string => part != null)
+      : [];
+  const rhythmLine = rhythm.length
+    ? `\nBağlayıcı ritim: ${rhythm.join(". ")}.`
+    : "";
   const note =
     input.source === "PLAN" && input.note
       ? `\nKullanıcının açık notu: ${input.note}`
       : "";
+  const locale = input.locale ?? "tr";
+  const label = moodLabel(input.moodLevel, locale);
+  const mood = label
+    ? `\n${locale === "en" ? "Mood" : "Ruh hali"}: ${label}`
+    : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}${mood}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
   };
 }

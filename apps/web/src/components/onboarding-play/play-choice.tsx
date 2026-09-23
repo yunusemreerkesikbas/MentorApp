@@ -61,12 +61,21 @@ function useChoiceEntrance(index = 0) {
 }
 
 /** Full-width radio row: optional icon well, label + sub, check mark. Lives in a `radiogroup`. */
-export function PlayOptionRow({ label, sub, lead, selected, disabled, onSelect, index }: ChoiceProps & { lead?: ReactNode }) {
+export function PlayOptionRow({
+  label,
+  sub,
+  lead,
+  selected,
+  disabled,
+  onSelect,
+  index,
+  multiple = false,
+}: ChoiceProps & { lead?: ReactNode; multiple?: boolean }) {
   return (
     <motion.button
       {...useChoiceEntrance(index)}
       type="button"
-      role="radio"
+      role={multiple ? "checkbox" : "radio"}
       aria-checked={selected}
       disabled={disabled}
       onClick={onSelect}

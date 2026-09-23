@@ -3,10 +3,13 @@ import type { AnalysisImprovementCycleDto } from "@mentor/types";
 import {
   emptyAnalysis,
   firstAnalysis,
+  ghostNarrationText,
+  gotoAnalysis,
   insufficientWeekly,
   mockAnalysisApi,
   multipleAnalysis,
   readyWeekly,
+  savedMockExamId,
   user,
 } from "./analysis.fixture";
 
@@ -65,11 +68,16 @@ for (const deleted of [false, true]) {
       analysis: { ...multipleAnalysis, improvementCycle: cycle },
     });
     await page.emulateMedia({ reducedMotion: "reduce" });
-    await page.goto("/analiz?tab=progress");
-    await page.getByText("Plan ve deneme takibi", { exact: true }).click();
+    await gotoAnalysis(page, "/analiz?tab=progress");
     const card = page.getByTestId("analysis-improvement-cycle");
     await expect(card.getByText(cycle.message)).toBeVisible();
-    await expect(card.getByText("Tarih", { exact: true })).toBeVisible();
+    // The finished loop keeps its own subject named: in the title once closed, above it once broken.
+    await expect(
+      card.getByRole("heading", {
+        name: deleted ? "Yeni bir odak hazır" : "Tarih döngüsü tamam",
+      }),
+    ).toBeVisible();
+    if (deleted) await expect(card.getByText("Tarih", { exact: true })).toBeVisible();
     const proposal = card.getByTestId("analysis-next-proposal");
     await expect(proposal.getByText("Matematik · Problemler")).toBeVisible();
     await expect(
@@ -101,6 +109,8 @@ test("sınav türü olmayan kullanıcıyı onboarding akışına gönderir", asy
 test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   page,
 }) => {
+  // Three full page loads (empty, first exam, no focus): a busy machine outruns 30 s.
+  test.slow();
   await page.addInitScript((startDate) => {
     window.localStorage.setItem(
       `mentor.weekly-recap.opened.v2:${startDate}`,
@@ -111,36 +121,43 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
     analysis: emptyAnalysis,
     weekly: [insufficientWeekly],
   });
-  await page.goto("/analiz");
-  await page.getByRole("tab", { name: "Deneme ekle" }).click();
-  await expect(page.getByRole("tab", { name: "Deneme ekle" })).toHaveAttribute(
-    "aria-selected",
-    "true",
-  );
+  await gotoAnalysis(page, "/analiz");
+  // "Deneme ekle" is an action, not a third view: it opens the form in place and swaps the tabs
+  // for a way back.
+  await page.getByRole("button", { name: "Deneme ekle" }).click();
+  await expect(page).toHaveURL(/tab=entry/);
   await expect(
     page.getByRole("heading", { name: "Deneme sonucu gir" }),
   ).toBeVisible();
+  await page.getByRole("button", { name: "Analize dön" }).click();
 
   // Gelişim's own empty-trend state — unrelated to the weekly recap teaser, which used to live
   // on this page but has since moved wholesale to the dashboard (`panel-shell.tsx`); `/analiz`
   // no longer calls the weekly-review endpoint at all, so there is nothing left here to assert
   // about it.
-  await page.getByRole("tab", { name: "Gelişim" }).click();
+  await expect(page.getByRole("tab", { name: "Gelişim" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  const hero = page.getByTestId("analysis-improvement-cycle");
   await expect(
-    page.getByRole("heading", { name: "Deneme henüz yok" }),
+    hero.getByRole("heading", { name: "Yolun ilk denemenle başlıyor" }),
   ).toBeVisible();
   await expect(
-    page.getByText("İlk netini girince trend burada uyanır."),
+    hero.getByText("İlk denemeni girince yolunu birlikte çizeriz."),
   ).toBeVisible();
   expect(api.weeklyCalls).toBe(0);
   expect(api.photoAccessCalls).toBe(0);
   expect(api.unexpected).toEqual([]);
+  // The empty hero's ledge is the same door as "Deneme ekle".
+  await hero.getByRole("button", { name: "İlk denemeni gir" }).click();
+  await expect(page).toHaveURL(/tab=entry/);
 
   const firstPage = await page.context().newPage();
   const firstApi = await mockAnalysisApi(firstPage, {
     analysis: firstAnalysis,
   });
-  await firstPage.goto("/analiz?tab=progress");
+  await gotoAnalysis(firstPage, "/analiz?tab=progress");
   await expect(firstPage.getByTestId("analysis-latest-net")).toHaveAttribute(
     "aria-label",
     "Son net: 42.00",
@@ -148,15 +165,16 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   await expect(firstPage.getByTestId("analysis-latest-net")).toHaveText(
     "42.00",
   );
-  await expect(firstPage.getByText(/Geçen denemeye göre/)).toHaveCount(0);
-  await firstPage.getByText("Plan ve deneme takibi", { exact: true }).click();
+  await expect(firstPage.getByTestId("analysis-net-delta")).toHaveCount(0);
   await expect(
-    firstPage
-      .getByTestId("analysis-improvement-cycle")
-      .getByText("Matematik", { exact: true }),
+    firstPage.getByText("Bir deneme daha girince çizgin başlar."),
+  ).toBeVisible();
+  const firstHero = firstPage.getByTestId("analysis-improvement-cycle");
+  await expect(
+    firstHero.getByText("Bir deneme daha girince kendinle kıyaslarız."),
   ).toBeVisible();
   await expect(
-    firstPage.getByRole("heading", { name: "İyileşme döngüsü" }),
+    firstHero.getByRole("heading", { name: "Odağın: Matematik" }),
   ).toBeVisible();
   expect(firstApi.unexpected).toEqual([]);
 
@@ -164,29 +182,38 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   const noFocusApi = await mockAnalysisApi(noFocusPage, {
     analysis: { ...firstAnalysis, nextFocus: null },
   });
-  await noFocusPage.goto("/analiz?tab=progress");
+  await gotoAnalysis(noFocusPage, "/analiz?tab=progress");
+  await expect(noFocusPage.getByTestId("analysis-latest-net")).toBeVisible();
   await expect(
-    noFocusPage.getByRole("heading", { name: "İyileşme döngüsü" }),
+    noFocusPage.getByTestId("analysis-improvement-cycle"),
   ).toHaveCount(0);
   expect(noFocusApi.unexpected).toEqual([]);
 });
 
-test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
+test("konu odağını tek ledge'e taşır, net seyrini ve dersleri açık gösterir", async ({
   page,
 }) => {
   const api = await mockAnalysisApi(page, {
     analysis: multipleAnalysis,
     weekly: [readyWeekly],
   });
-  await page.goto("/analiz?tab=progress");
+  await gotoAnalysis(page, "/analiz?tab=progress");
 
   await expect(page.getByTestId("analysis-latest-net")).toHaveText("48.00");
   await expect(page.getByTestId("analysis-net-delta")).toContainText("+6.00");
-  await page.getByText("Plan ve deneme takibi", { exact: true }).click();
-  await expect(page.getByText("Problemler", { exact: true })).toBeVisible();
-  const planLinks = page.getByRole("link", { name: "Planıma ekle" });
-  const plan = planLinks.first();
-  const coach = page.getByRole("link", { name: "AI koçla değerlendir" });
+  await expect(page.getByText("Yeni rekor", { exact: true })).toBeVisible();
+  const hero = page.getByTestId("analysis-improvement-cycle");
+  await expect(
+    hero.getByRole("heading", {
+      name: "Problemler yanlış defterinde öne çıktı",
+    }),
+  ).toBeVisible();
+  await expect(hero.getByText("Problemler", { exact: true })).toBeVisible();
+  // Nothing hides behind a closed `<details>` any more: the trend and the subjects are cards.
+  await expect(page.getByRole("heading", { name: "Net seyrin" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Derslerin" })).toBeVisible();
+  const plan = hero.getByRole("link", { name: "Planıma ekle" });
+  const coach = hero.getByRole("link", { name: "AI koçla değerlendir" });
   await expect(plan).toHaveAttribute(
     "href",
     /\/plan\?add=1&source=analysis&examId=/,
@@ -211,19 +238,9 @@ test("konu odağını eyleme taşır ve kanıtları klavyeyle açar", async ({
     ),
   ).toEqual([]);
 
-  // The evidence trend used to sit behind a keyboard-openable `<details>`; the focus card is now
-  // a flat, always-expanded card (same redesign that dropped the "Haftanın Hikâyesi hazır" teaser
-  // above), so its recent-trend block is already on screen with nothing left to open.
-  const evidence = page
-    .locator("summary")
-    .filter({ hasText: "Kanıtlar ve geçmiş" });
-  await evidence.focus();
-  await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Net trendi" })).toBeVisible();
-
   await expectNoHorizontalOverflow(page);
   for (const target of [
-    page.getByRole("tab", { name: "Deneme ekle" }),
+    page.getByRole("button", { name: "Deneme ekle" }),
     page.getByRole("tab", { name: "Gelişim" }),
     page.getByRole("tab", { name: "Yanlışlarım" }),
     plan,
@@ -242,9 +259,11 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
     analysis: multipleAnalysis,
     weekly: [readyWeekly],
   });
-  await page.goto("/analiz?tab=progress");
+  await gotoAnalysis(page, "/analiz?tab=progress");
   await expect(
-    page.getByRole("heading", { name: "Bugünkü odağın" }),
+    page.getByRole("heading", {
+      name: "Problemler yanlış defterinde öne çıktı",
+    }),
   ).toBeVisible();
 
   await waitForRscRequestsToSettle(page);
@@ -280,7 +299,7 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   // navigation is simply that this tab's own panel is now the one attached.
   await expect(page.locator("#analysis-panel-mistakes")).toBeVisible();
   await page.keyboard.press("Home");
-  await expect(page.getByRole("tab", { name: "Deneme ekle" })).toBeFocused();
+  await expect(developmentTab).toBeFocused();
 
   // The weekly-recap teaser lived here once but has since moved to the dashboard — `/analiz`
   // never calls the weekly-review endpoint at all now.
@@ -298,19 +317,56 @@ test("sekme geçişlerini RSC navigasyonu olmadan lazy yükler", async ({
   ).toBe(false);
 });
 
+// Premium reads the latest exam through the coach (one LLM call per exam, cached on the server);
+// free keeps the rule-based line and sees the lock, never a call the server would refuse.
+for (const scenario of [
+  { name: "free", premium: false, cached: null, calls: 0 },
+  { name: "premium", premium: true, cached: null, calls: 1 },
+  { name: "premium, önbellekte", premium: true, cached: "Önceden yazılmış koç notu.", calls: 0 },
+] as const) {
+  test(`Gelişim balonu koç yorumunu doğru gösterir (${scenario.name})`, async ({ page }) => {
+    const api = await mockAnalysisApi(page, {
+      premium: scenario.premium,
+      analysis: {
+        ...multipleAnalysis,
+        ghost: { ...multipleAnalysis.ghost!, aiNarration: scenario.cached },
+      },
+    });
+    await gotoAnalysis(page, "/analiz?tab=progress");
+    const hero = page.getByTestId("analysis-improvement-cycle");
+    const expectBubble = async () => {
+      if (scenario.premium) {
+        await expect(hero.getByText(scenario.cached ?? ghostNarrationText)).toBeVisible();
+        await expect(hero.getByText("Koçundan", { exact: true })).toBeVisible();
+      } else {
+        await expect(hero.getByText(multipleAnalysis.ghost!.headline)).toBeVisible();
+        await expect(
+          hero.getByRole("button", { name: /İlerlemeni koçun yorumlasın/ }),
+        ).toBeVisible();
+        await expect(hero.getByText("Koçundan", { exact: true })).toHaveCount(0);
+      }
+    };
+    await expectBubble();
+    // The request lives with the page, not the view: switching views does not ask again.
+    await page.getByRole("tab", { name: "Yanlışlarım" }).click();
+    await page.getByRole("tab", { name: "Gelişim" }).click();
+    await expectBubble();
+    expect(api.ghostNarrationCalls).toBe(scenario.calls);
+    expect(api.unexpected).toEqual([]);
+  });
+}
+
 test("İngilizce statik analiz metinlerini gösterir", async ({ page }) => {
   const api = await mockAnalysisApi(page, { analysis: emptyAnalysis });
 
-  await page.goto("/en/analysis");
+  await gotoAnalysis(page, "/en/analysis");
 
   await expect(
     page.getByRole("main", { name: "Mock Exam Analysis" }),
   ).toBeVisible();
   await expect(page.getByRole("tab", { name: "Progress" })).toBeVisible();
-  // Same shell-default as the Turkish empty-state test: it lands on Enter, not a redirect
-  // message on Progress.
   await expect(
-    page.getByRole("heading", { name: "Your focus today" }),
+    page.getByRole("heading", { name: "Your path starts with your first exam" }),
   ).toBeVisible();
   await expectNoHorizontalOverflow(page);
   expect(api.unexpected).toEqual([]);
@@ -340,28 +396,117 @@ async function expectNoHorizontalOverflow(page: Page): Promise<void> {
   expect(sizes.scrollWidth).toBeLessThanOrEqual(sizes.clientWidth);
 }
 
-test("deneme kaydedilince yanlışları deftere taşımayı önerir", async ({
+test("deneme formu boşu kendisi doldurur, aşımı durdurur ve kayıt anında deftere kapı açar", async ({
   page,
 }) => {
   const api = await mockAnalysisApi(page, {});
 
-  await page.goto("/analiz");
-  await page.getByRole("tab", { name: "Deneme ekle" }).click();
+  await gotoAnalysis(page, "/analiz");
+  await page.getByRole("button", { name: "Deneme ekle" }).click();
 
-  // One subject with wrong answers is enough — the handoff counts them, it does not import them.
   // `exact` matters: the app sidebar has a "Yanlış defteri" link, and label matching is a
   // substring match by default.
-  const wrongFields = page.getByLabel("Yanlış", { exact: true });
-  await wrongFields.first().fill("12");
+  const history = page.getByRole("group", { name: /Tarih/ });
+  await history.getByLabel("Doğru", { exact: true }).fill("20");
+  await history.getByLabel("Yanlış", { exact: true }).fill("9");
+  await expect(page.getByRole("alert").filter({ hasText: "(29/27)" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kaydet" })).toBeDisabled();
+  await expect(page.getByText("Tarih satırı düzelince kaydedebilirsin.")).toBeVisible();
+  await history.getByLabel("Yanlış", { exact: true }).fill("5");
+  // Blank follows correct and wrong until the student types it: 27 − 20 − 5.
+  await expect(history.getByLabel("Boş", { exact: true })).toHaveValue("2");
+
+  const math = page.getByRole("group", { name: /Matematik/ });
+  await math.getByLabel("Yanlış", { exact: true }).fill("12");
   await page.getByRole("button", { name: "Kaydet" }).click();
 
   await expect.poll(() => api.createdMockExams.length).toBe(1);
+  expect(api.createdMockExams[0]!.subjects).toContainEqual({
+    subjectRef: "tarih",
+    correct: 20,
+    wrong: 5,
+    blank: 2,
+  });
 
-  // A count and a door, never twelve auto-created cards: the student picks which mistakes are
-  // worth filing, which is the whole reason the review deck can be trusted.
-  await expect(page.getByText(/12 yanlış var/)).toBeVisible();
-  await expect(page.getByRole("link", { name: "Deftere geç" })).toHaveAttribute(
-    "href",
-    "/yanlis-defteri?mockExam=12121212-1212-4121-8121-121212121212",
-  );
+  // The toast and banner are gone: the saved moment takes the form's place and the focus.
+  const saved = page.getByTestId("analysis-saved");
+  await expect(saved).toBeFocused();
+  await expect(saved.getByTestId("analysis-saved-net")).toHaveText("42.00");
+  // A count and a door, never seventeen auto-created cards: the student picks what to file.
+  await expect(saved.getByText(/17 yanlış var/)).toBeVisible();
+  await expect(
+    saved.getByRole("link", { name: "Yanlışları deftere taşı" }),
+  ).toHaveAttribute("href", `/yanlis-defteri?mockExam=${savedMockExamId}`);
+
+  await saved.getByRole("button", { name: "Yeni deneme gir" }).click();
+  await expect(page.getByRole("heading", { name: "Deneme sonucu gir" })).toBeVisible();
+  await expect(math.getByLabel("Yanlış", { exact: true })).toHaveValue("");
+  await expectNoHorizontalOverflow(page);
 });
+
+// Premium hears from the coach right after a save, once, and only about the latest exam; an older
+// exam joins the history quietly.
+for (const latest of [true, false]) {
+  test(`kayıt anı koç yorumunu yalnız en son deneme için yazar (${latest ? "en son" : "geçmişe tarihli"})`, async ({
+    page,
+  }) => {
+    const previous = multipleAnalysis.trend[0]!;
+    const savedPoint = { ...previous, id: savedMockExamId, totalNet: "42.00" };
+    const api = await mockAnalysisApi(page, {
+      premium: true,
+      // Cached for the exam already there, so the page itself asks for nothing.
+      analysis: {
+        ...multipleAnalysis,
+        ghost: { ...multipleAnalysis.ghost!, aiNarration: "Önceki denemenin notu." },
+      },
+      analysisAfterSave: latest
+        ? {
+            ...multipleAnalysis,
+            trend: [savedPoint, ...multipleAnalysis.trend],
+            ghost: {
+              ...multipleAnalysis.ghost!,
+              latest: savedPoint,
+              previousDelta: "-6.00",
+              beatPrevious: false,
+              isNewRecord: false,
+              subjects: [
+                {
+                  subjectRef: "matematik",
+                  subjectName: "Matematik",
+                  latestNet: "14.00",
+                  previousNet: "12.00",
+                  delta: "+2.00",
+                },
+              ],
+              aiNarration: null,
+            },
+          }
+        : {
+            ...multipleAnalysis,
+            trend: [...multipleAnalysis.trend, savedPoint],
+            ghost: { ...multipleAnalysis.ghost!, aiNarration: "Önceki denemenin notu." },
+          },
+    });
+    await gotoAnalysis(page, "/analiz?tab=entry");
+    await page.getByRole("button", { name: "Kaydet" }).click();
+
+    const saved = page.getByTestId("analysis-saved");
+    if (latest) {
+      await expect(saved.getByText(ghostNarrationText)).toBeVisible();
+      await expect(saved.getByText("Koçundan", { exact: true })).toBeVisible();
+      await expect(saved.getByText("-6.00")).toBeVisible();
+      await expect(saved.getByRole("heading", { name: "Derslere göre fark" })).toBeVisible();
+      // The hero on Gelişim reads the same narration instead of asking again.
+      await saved.getByRole("button", { name: "Gelişimini gör" }).click();
+      await expect(
+        page.getByTestId("analysis-improvement-cycle").getByText(ghostNarrationText),
+      ).toBeVisible();
+    } else {
+      await expect(saved.getByText("Kaydettim, geçmişine ekledim.", { exact: false })).toBeVisible();
+      await expect(saved.getByText("Koçundan", { exact: true })).toHaveCount(0);
+      await expect(saved.getByText("geçen denemeye göre")).toHaveCount(0);
+    }
+    expect(api.ghostNarrationCalls).toBe(latest ? 1 : 0);
+    expect(api.unexpected).toEqual([]);
+  });
+}
