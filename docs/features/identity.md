@@ -62,13 +62,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | ----------- | ----------------------------------------- | --------------------------------------------------------------------------- |
 | POST        | `/v1/auth/signup`                         | KVKK consent required; Turnstile when secret set                            |
 | POST        | `/v1/auth/login`                          | Enumeration-safe (same 401 + dummy-hash timing)                             |
+| POST        | `/v1/auth/admin/login`                    | Panel-role-gated login; separate admin refresh cookie                       |
 | GET         | `/v1/auth/google/status`                  | Public Google button availability (`enabled`, plus flag/config diagnostics) |
 | GET         | `/v1/auth/google/start`                   | Starts Google OAuth (`mode=login \| signup`; signup requires KVKK flag) |
 | GET         | `/v1/auth/google/callback`                | Google callback; sets Mentor refresh cookie then redirects to web           |
 | GET         | `/v1/users/me/auth-accounts/google`       | Current user's Google-link status                                           |
 | POST        | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start                      |
 | POST        | `/v1/auth/refresh`                        | Cookie-scoped `/v1/auth`; rotation + reuse detection                        |
+| POST        | `/v1/auth/admin/refresh`                  | Rotates only the admin cookie; requires a current panel role               |
 | POST        | `/v1/auth/logout`                         | Revokes refresh family                                                      |
+| POST        | `/v1/auth/admin/logout`                   | Revokes and clears only the admin session                                   |
 | POST        | `/v1/auth/verify-email`                   | Consumes `email_tokens`                                                     |
 | POST        | `/v1/auth/forgot-password`                | Always 200 (hides existence)                                                |
 | POST        | `/v1/auth/reset-password`                 | Revokes all sessions                                                        |
@@ -90,6 +93,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `DELETE /v1/account`                                                                      | Self-service KVKK erasure ("hesabımı sil") — irreversible                        |
 
 ## Geliştirmeler (timeline)
+
+### 2026-09-23 — Independent web and admin sessions
+
+Web auth now uses `mentor_web_refresh` at `/v1/auth`; the admin panel uses
+`mentor_admin_refresh` at `/v1/auth/admin`. Admin login, refresh, and logout use
+`/v1/auth/admin/{login,refresh,logout}` and require a current panel role. Logging in or out of one
+surface no longer changes the other's refresh session. The former `mentor_refresh` cookie is ignored
+and cleared on the next successful login, so users sign in once again after rollout. Existing session
+rows expire normally; no schema migration is required. Related: `identity.constants.ts`,
+`auth.controller.ts`, `auth.service.ts`, `apps/admin/src/lib/apiClient.ts`.
 
 ### 2026-09-17 — XP / Coin launch integration
 

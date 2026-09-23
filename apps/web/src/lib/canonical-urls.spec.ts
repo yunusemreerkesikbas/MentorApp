@@ -32,7 +32,7 @@ describe("canonical public URLs", () => {
 
   it("builds a knowledge article URL on the Turkish path", () => {
     expect(infoArticleUrl("kpss-basvuru")).toBe(
-      "http://localhost:3000/bilgi/kpss-basvuru",
+      "http://localhost:3000/blog/kpss-basvuru",
     );
   });
 

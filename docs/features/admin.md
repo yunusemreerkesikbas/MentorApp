@@ -100,6 +100,13 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **Independent admin session (2026-09-23)** — Admin login, refresh, and logout now call
+  `/v1/auth/admin/{login,refresh,logout}`. Its `mentor_admin_refresh` cookie is separate from web's;
+  a second tab restores the admin session from that cookie, while logging out of admin leaves web
+  signed in. After rollout, sign in once to replace the retired shared cookie. A removed panel role
+  rejects refresh and sends the user to `/login`. Related: `apps/admin/src/{lib/apiClient.ts,
+  contentApi/authProvider.tsx,app/login/page.tsx}` and the identity auth controller.
+
 - **Ayar hint'leri Türkçe (2026-09-17)** — `/config` info ikonu hover'da kısa Türkçe açıklama
   gösterir (`config-hints.ts`, katalogdaki 133 anahtar). Yeni anahtar çevirisi yoksa API
   `description` (İngilizce) yedek. Depolama kategorisi etiket aldı. Kullanım: admin `/config`,

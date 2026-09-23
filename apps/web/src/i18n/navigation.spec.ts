@@ -18,7 +18,7 @@ describe("localized pathname contract", () => {
           params: { slug: "kpss-basvuru" },
         },
       }),
-    ).toBe("/bilgi/kpss-basvuru");
+    ).toBe("/blog/kpss-basvuru");
     expect(
       getPathname({
         locale: "en",

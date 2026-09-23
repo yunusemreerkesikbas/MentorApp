@@ -78,6 +78,27 @@ pnpm --filter @mentor/api-client generate
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-23 — Bilgi → Blog redesign (public SSR hub + post in the panel language)** — Bölüm artık **Blog**:
+  `/blog`, `/blog/[slug]`, EN `/en/blog/...`; `/bilgi*` ve `/en/knowledge*` `next.config.ts` redirect'leriyle 308
+  (query korunur). Hub `(app)` dışına çıktı ve **herkese açık, sunucuda render** ediliyor
+  (`app/[locale]/knowledge/page.tsx` + `_components/`); hub ile yazı aynı `PublicChrome` (Mentor · Blog · Panele
+  dön/Giriş yap) ve geniş `PublicFooter`'ı kullanır, üyeler de sol menüsüz görür. Filtreler adreste:
+  `?family=&category=&page=` (`lib/blog-url.ts`; parametresiz = KPSS, bilinmeyen değer varsayılana düşer), menüdeki
+  Blog bağlantısı üyenin `examType`'ını ekler. Liste = öne çıkan kart + tek kart içinde satırlar; kapaksız yazıda
+  kategori kuyusu + ikon; sağ kolonda sınav günü kartı (hub ve yazıda aynı `ExamDayCard`). Başlık/filtreler anında
+  boyanır, liste ve kart kendi `Suspense` iskeletleriyle akar (hub fetch'leri `revalidate: 300`, takvim 3600).
+  Yazı: breadcrumb → başlık → özet → "yazar · tarih · N dk okuma" (`lib/reading-time.ts`) → **güven satırı üstte**
+  (kaynak · son doğrulama · güncelleme) → kartsız gövde → reklam → Puhu balonu + tek ledge "Koçla konuş". Okuma
+  tipografisi `ArticleMarkdown` ile `.mentor-article-body`'de ortak (yasal sayfalar da alır). Breadcrumb JSON-LD 3
+  halka (Mentor › Blog › yazı), sitemap'e `/blog`, çerez banner'ı hub'da da. Kullanım: admin'den yazı yayımla, hub en
+  geç 5 dk'da gösterir. Gotcha'lar: (1) API öne çıkanı listeden hep dışlar; öne çıkan yalnız 1. sayfada ve konu
+  eşleşiyorsa görünür (`showsFeatured`). (2) Hub SSR olduğu için e2e'de `page.route` hub verisini taklit edemez,
+  `knowledge.spec.ts` yerel API + seed ister. (3) Canlı `<title>` DB'deki `metaTitle`'ı gösterir; seed artık
+  `| Mentor Blog`, mevcut kayıtlar admin'den güncellenir. (4) AI prompt'larında hâlâ "Bilgi Merkezi (/bilgi)" geçiyor
+  (AI hattı); 308 sayesinde çalışır. (5) Rota silince `.next/types/validator.ts` bayatlar → `next typegen`.
+  İlgili: `knowledge/**`, `public-chrome.tsx`, `public-footer.tsx`, `app-nav.tsx`, `blog-url.ts`, `routing.ts`,
+  `next.config.ts`, `e2e/knowledge.spec.ts`.
+
 - **2026-09-17 — Catch-all Diğer on every exam.** Seed adds subject `diger` (null `questionCount`, last in sort) and a `diger` topic under every exam subject, so plan/defter/koç pickers can label a missing ders or konu without free-text. Usage: restart the API after pulling seed. Gotcha: analysis deneme form still skips null-count subjects, so Diğer is not a DYB row. Related: `subjects.seed.json`, `analysis-types.ts`.
 
 - **2026-09-17 — Shared exam ders/konu taxonomy (KPSS + YKS + LGS)** — Seed now covers coaching-grain topics for all three families: KPSS GY-GK stays on the existing slugs (enriched Tarih/Coğrafya/Vatandaşlık/Güncel), YKS uses `tyt-*` / `ayt-*` / `ydt-*` with official paper counts (AYT Tarih/Coğrafya merge the two booklet parts), LGS uses `lgs-*`. `GET /v1/content/exams/by-type/:type` returns the current exam **without** an EXAM_DATE, so YKS/LGS pickers resolve. Optional `?variant=` selects the KPSS guide. Countdown still uses `/calendar`. Usage: restart the API after pulling seed. Gotcha: no admin topic editor; analysis deneme form lists every YKS subject. Related: `subjects.seed.json`, `calendar.util.ts`, `content.controller.ts`.
@@ -231,8 +252,9 @@ pnpm --filter @mentor/api-client generate
 - **Migration 0006 journal gap** — `_journal.json` was once missing the `0006_info_articles` entry
   (fixed in devnote 0048: re-added as `idx: 6` with a real timestamp). A DB that already skipped 0006
   won't auto-apply it (drizzle applies `when > last`) — apply `0006_info_articles.sql` once by hand.
-- **Hub `(app)/bilgi` requires auth + `examType`; public `/bilgi/[slug]` is the SEO wedge (no auth).**
-  Landing fetches `family=KPSS` (first seed); section hidden if API down or empty (no fake links).
+- **The blog is public: hub `/blog` and posts `/blog/[slug]` both render on the server, no auth** (until
+  2026-09-23 the hub was `(app)/bilgi`, members only). The hub's family comes from `?family=` (default KPSS),
+  never from the session. Landing fetches `family=KPSS` (first seed); section hidden if API down or empty.
 - **Invalid `family` query → 400** (`VALIDATION_ERROR`); missing `family` → 400. Invalid/oversize slug
   → 400; unpublished draft → 404 (`CONTENT_ARTICLE_NOT_FOUND`). Invalid `category` on upsert → 400.
 - **No vector index yet** — seq scan is exact + fast at MVP article counts; HNSW/ivfflat = backlog

@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import apiClient from "@/lib/apiClient";
 import { setToken } from "@/lib/auth";
 
-// Admin login (W6). Reuses the single API: POST /v1/auth/login. Admin = a users row holding
+// Admin login (W6). Reuses the single API: POST /v1/auth/admin/login. Admin = a users row holding
 // the ADMIN role; the access token remains in memory and the refresh secret is an httpOnly cookie.
 export default function AdminLoginPage() {
     const router = useRouter();
@@ -18,7 +18,7 @@ export default function AdminLoginPage() {
         setError("");
         setLoading(true);
         try {
-            const { data } = await apiClient.post<{ accessToken: string }>("/auth/login", { email, password });
+            const { data } = await apiClient.post<{ accessToken: string }>("/auth/admin/login", { email, password });
             setToken(data.accessToken);
             router.push("/");
         } catch (err) {

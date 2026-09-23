@@ -1,51 +1,51 @@
+import { ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import type { ExamCalendarDto, InfoArticleDto, InfoArticleSummaryDto } from "@mentor/types";
-import { Card } from "@mentor/ui";
+import { Suspense } from "react";
+import type { ExamType, InfoArticleDto, InfoArticleSummaryDto } from "@mentor/types";
 import { ContextualAdSlot } from "@/components/ads/contextual-ad-slot";
+import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { Link } from "@/i18n/navigation";
 import type { ArticleAnalyticsParams } from "@/lib/analytics";
-import {
-  KNOWLEDGE_ARTICLE_BODY_CLASS,
-  KNOWLEDGE_ARTICLE_SIDEBAR_CLASS,
-  KNOWLEDGE_ARTICLE_SPLIT_CLASS,
-  KNOWLEDGE_PAGE_CLASS,
-} from "../../../(app)/knowledge/_components/knowledge-layout";
+import { blogHref } from "@/lib/blog-url";
+import { infoArticleUrl, type ArticleCategory } from "@/lib/content-api";
+import { ExamDaySkeleton } from "../../_components/blog-skeletons";
+import { ExamDayCard } from "../../_components/exam-day-card";
+import { ArticleViewTracker } from "./article-client-islands";
+import { ArticleCoachCard } from "./article-coach-card";
 import { ArticleGallerySlider } from "./article-gallery-slider";
-import {
-  ArticleCoachCta,
-  ArticleSourceLink,
-  ArticleViewTracker,
-} from "./article-client-islands";
 import { ArticleMarkdown } from "./article-markdown";
-import { PublicArticleSidebar } from "./public-article-sidebar";
-import { ArticleTrustFooter } from "./article-trust-footer";
+import { ArticleTrustRow } from "./article-trust-row";
+import { RelatedPosts } from "./related-posts";
+import { ShareRow } from "./share-row";
 
+const CRUMB =
+  "inline-flex min-h-11 items-center text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
+
+/**
+ * A blog post in the panel frame: reading column on the left (breadcrumb → title → provenance →
+ * body → Puhu's one action), the exam card, related posts and share on the right at ≥1280.
+ */
 export async function ArticleContent({
   article,
   related,
-  calendar,
   locale,
   verifiedLabel,
   publishedLabel,
   updatedLabel,
+  readingMinutes,
 }: {
   article: InfoArticleDto;
   related: InfoArticleSummaryDto[];
-  calendar: ExamCalendarDto | null;
   locale: string;
   verifiedLabel: string;
   publishedLabel: string | null;
   updatedLabel: string;
+  readingMinutes: number;
 }) {
-  const [translate, knowledge] = await Promise.all([
-    getTranslations("article"),
-    getTranslations("knowledge"),
-  ]);
-  const coachSeed = translate("coach_seed", { title: article.title });
-  const authorName = article.author?.name ?? knowledge("editor_fallback");
-  const slides = [
-    ...(article.coverImage ? [article.coverImage] : []),
-    ...article.galleryImages,
-  ];
+  const [t, k] = await Promise.all([getTranslations("article"), getTranslations("knowledge")]);
+  const family = article.family as ExamType;
+  const category = article.category as ArticleCategory;
+  const slides = [...(article.coverImage ? [article.coverImage] : []), ...article.galleryImages];
   const analyticsParams: ArticleAnalyticsParams = {
     slug: article.slug,
     exam_family: article.family,
@@ -54,127 +54,75 @@ export async function ArticleContent({
   };
 
   return (
-    <article className={KNOWLEDGE_PAGE_CLASS}>
-      <div className={KNOWLEDGE_ARTICLE_SPLIT_CLASS}>
-        <div className={KNOWLEDGE_ARTICLE_BODY_CLASS}>
-          <header className="mb-6">
-            <h1
-              className="text-balance text-2xl font-bold lg:text-3xl"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-            >
+    <main className={PANEL_MAIN_CLASS}>
+      <div className={PANEL_GRID_CLASS}>
+        <article className="flex min-w-0 max-w-2xl flex-col">
+          <nav
+            aria-label={t("breadcrumb_label")}
+            className="flex items-center gap-1 text-caption font-extrabold text-[var(--color-secondary)]"
+          >
+            <Link href={blogHref({ family })} className={CRUMB}>
+              {t("blog")}
+            </Link>
+            <ChevronRight className="size-3.5" aria-hidden />
+            <Link href={blogHref({ family, category })} className={CRUMB}>
+              {k(`categories.${category.toLowerCase()}`)}
+            </Link>
+          </nav>
+          <header className="flex flex-col gap-3">
+            <h1 className="text-balance text-display font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)]">
               {article.title}
             </h1>
-            <div
-              className="mt-4 flex flex-wrap items-center gap-3 text-sm"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              <AuthorAvatar name={authorName} />
-              <span className="font-semibold" style={{ color: "var(--color-main)" }}>
-                {authorName}
-              </span>
-              <span>·</span>
-              <span>{knowledge(`categories.${article.category.toLowerCase()}`)}</span>
-              {publishedLabel ? (
-                <>
-                  <span>·</span>
-                  <span>{publishedLabel}</span>
-                </>
-              ) : null}
-            </div>
             {article.metaDescription ? (
-              <p
-                className="mt-3 text-lg leading-relaxed"
-                style={{ color: "var(--color-secondary)" }}
-              >
+              <p className="text-pretty text-base font-semibold leading-relaxed text-[var(--color-body)] sm:text-lg">
                 {article.metaDescription}
               </p>
             ) : null}
-            <div
-              className="mt-3 flex flex-wrap items-center gap-2 text-xs"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              {translate("source_label")} {" "}
-              <ArticleSourceLink
-                source={article.source}
-                sourceUrl={article.sourceUrl}
-                analyticsParams={analyticsParams}
-              />
-              <span>{translate("last_verified", { date: verifiedLabel })}</span>
-              <span>{translate("updated_at", { date: updatedLabel })}</span>
-            </div>
+            <p className="flex flex-wrap items-center gap-x-1.5 text-caption font-bold text-[var(--color-secondary)]">
+              <span>{article.author?.name ?? k("editor_fallback")}</span>
+              {publishedLabel ? (
+                <>
+                  <span aria-hidden>·</span>
+                  <time dateTime={article.publishedAt ?? undefined}>{publishedLabel}</time>
+                </>
+              ) : null}
+              <span aria-hidden>·</span>
+              <span>{t("reading_time", { minutes: readingMinutes })}</span>
+            </p>
           </header>
-
+          <ArticleTrustRow
+            article={article}
+            analyticsParams={analyticsParams}
+            verifiedLabel={verifiedLabel}
+            updatedLabel={updatedLabel}
+          />
           {slides.length > 0 ? (
-            <div className="mb-6">
+            <div className="mt-6">
               <ArticleGallerySlider images={slides} />
             </div>
           ) : null}
-
-          <Card solid>
+          <div className="mt-8">
             <ArticleMarkdown body={article.body} format={article.bodyFormat} />
-          </Card>
-          <ArticleTrustFooter />
+          </div>
           <ArticleViewTracker articleSlug={article.slug} analyticsParams={analyticsParams} />
-          <ContextualAdSlot
-            contentSlug={article.slug}
-            examType={article.family as import("@mentor/types").ExamType}
+          <ContextualAdSlot contentSlug={article.slug} examType={family} />
+          <ArticleCoachCard
+            articleSlug={article.slug}
+            title={article.title}
+            analyticsParams={analyticsParams}
           />
-          <Card className="mt-4">
-            <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <h2
-                  className="text-lg font-bold"
-                  style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-                >
-                  {translate("coach_title")}
-                </h2>
-                <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-                  {translate("coach_body")}
-                </p>
-              </div>
-              <ArticleCoachCta
-                articleSlug={article.slug}
-                coachSeed={coachSeed}
-                authenticatedLabel={translate("coach_cta")}
-                anonymousLabel={translate("coach_sign_in_cta")}
-                analyticsParams={analyticsParams}
-              />
-            </div>
-          </Card>
-        </div>
-
-        <div className={KNOWLEDGE_ARTICLE_SIDEBAR_CLASS}>
-          <PublicArticleSidebar
-            calendar={calendar}
-            related={related}
-            locale={locale}
-            share={{ title: article.title, slug: article.slug }}
-          />
-        </div>
+        </article>
+        <aside
+          aria-label={t("aside_label")}
+          className="flex min-w-0 flex-col gap-5 xl:sticky xl:top-6"
+        >
+          <Suspense fallback={<ExamDaySkeleton />}>
+            <ExamDayCard family={family} locale={locale} />
+          </Suspense>
+          {related.length > 0 ? <RelatedPosts related={related} locale={locale} /> : null}
+          <ShareRow title={article.title} url={infoArticleUrl(article.slug)} />
+        </aside>
       </div>
-    </article>
-  );
-}
-
-function AuthorAvatar({ name }: { name: string }) {
-  const initials = name
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0])
-    .join("")
-    .toUpperCase();
-
-  return (
-    <span
-      aria-hidden="true"
-      className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-xs font-bold"
-      style={{
-        backgroundColor: "var(--color-surface-container)",
-        color: "var(--color-main)",
-        fontFamily: "var(--font-heading)",
-      }}
-    >
-      {initials || "M"}
-    </span>
+    </main>
   );
 }

@@ -413,7 +413,7 @@ test.describe("koçluk paneli redesign", () => {
     const tabs = page.getByRole("navigation", { name: "Ana menü" });
     for (const name of [
       "Plan",
-      "Bilgi",
+      "Blog",
       "Topluluk",
       "Öğrencilerim",
       "Ayarlar",

@@ -18,7 +18,12 @@ import { useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { UserRole, type AuthUser, type EconomyBalance } from "@mentor/types";
+import {
+  UserRole,
+  type AuthUser,
+  type EconomyBalance,
+  type ExamType,
+} from "@mentor/types";
 import { NotificationBell } from "@mentor/ui";
 
 import { LanguageToggle } from "@/components/language-toggle";
@@ -40,6 +45,7 @@ import {
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
+import { blogHref } from "@/lib/blog-href";
 import { isCoach } from "@/lib/coach-surface";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { greetingKeyForHour } from "@/lib/greeting";
@@ -115,6 +121,11 @@ const NAV_ITEMS = [
 ] as const;
 
 type NavItem = (typeof NAV_ITEMS)[number];
+
+/** Blog is public and filtered by `?family=`; a member lands on their own exam's list. */
+function navHref(href: NavItem["href"], examType: ExamType | null | undefined) {
+  return href === "/knowledge" && examType ? blogHref({ family: examType }) : href;
+}
 
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
@@ -307,6 +318,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              examType={user?.examType}
             />
           ))}
         </div>
@@ -360,6 +372,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              examType={user?.examType}
             />
           ))}
         </div>
@@ -400,6 +413,7 @@ function MobileTabBar({
           item={item}
           label={t(item.labelKey)}
           active={isNavActive(pathname, item.href)}
+          examType={user?.examType}
           reduceMotion={Boolean(reduceMotion)}
           transition={tabTransition}
         />
@@ -412,12 +426,14 @@ function MobileTabLink({
   item,
   label,
   active,
+  examType,
   reduceMotion,
   transition,
 }: {
   item: NavItem;
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
   reduceMotion: boolean;
   transition:
     | { duration: number }
@@ -455,7 +471,7 @@ function MobileTabLink({
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className="relative flex h-full min-w-0 flex-1 items-center justify-center px-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
@@ -641,16 +657,18 @@ function NavLink({
   item,
   label,
   active,
+  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
         active
@@ -673,16 +691,18 @@ function CollapsedNavLink({
   item,
   label,
   active,
+  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className={`group relative flex size-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${

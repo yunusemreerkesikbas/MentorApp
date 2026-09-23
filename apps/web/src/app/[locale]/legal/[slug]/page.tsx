@@ -48,7 +48,11 @@ export default async function LegalPage({ params }: PageProps) {
   const chrome = await getTranslations("article");
 
   return (
-    <PublicChrome loginLabel={chrome("login")} panelLabel={chrome("panel")}>
+    <PublicChrome
+      loginLabel={chrome("login")}
+      panelLabel={chrome("panel")}
+      blogLabel={chrome("blog")}
+    >
       <LegalDocumentView doc={doc} locale={locale} />
       <PublicFooter />
     </PublicChrome>

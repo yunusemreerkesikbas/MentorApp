@@ -4,7 +4,7 @@ import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
-import { UserRole, type AuthUser } from "@mentor/types";
+import { ADMIN_PANEL_ROLES, UserRole, type AuthUser } from "@mentor/types";
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -123,6 +123,14 @@ export class AuthService {
   }
 
   async login(input: LoginInput): Promise<AuthResult> {
+    return this.loginWithRoleGate(input, false);
+  }
+
+  async loginAdmin(input: LoginInput): Promise<AuthResult> {
+    return this.loginWithRoleGate(input, true);
+  }
+
+  private async loginWithRoleGate(input: LoginInput, requireAdmin: boolean): Promise<AuthResult> {
     const user = await this.usersRepo.findByEmailService(input.email);
     // Same generic 401 for unknown email AND wrong password (no user enumeration).
     if (!user) {
@@ -136,6 +144,9 @@ export class AuthService {
     }
     if (user.status !== UserStatus.ACTIVE) {
       throw new DomainError(ErrorCode.AUTH_ACCOUNT_SUSPENDED, HttpStatus.FORBIDDEN);
+    }
+    if (requireAdmin && !hasAdminPanelRole(user.roles)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
 
     const tokens = await this.tokenService.issue({
@@ -151,6 +162,15 @@ export class AuthService {
     const user = await this.usersRepo.findByIdService(userId);
     if (!user) throw new UnauthorizedError();
     return { user: toAuthUser(user, this.storage), tokens };
+  }
+
+  async refreshAdmin(rawRefreshToken: string): Promise<AuthResult> {
+    const result = await this.refresh(rawRefreshToken);
+    if (!hasAdminPanelRole(result.user.roles)) {
+      await this.tokenService.revokeByRawToken(result.tokens.refreshToken);
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    return result;
   }
 
   async logout(rawRefreshToken: string | undefined): Promise<void> {
@@ -246,6 +266,10 @@ export class AuthService {
 /** Pre-computed argon2 hash of an unguessable value — used to equalize login timing. */
 const DUMMY_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG";
+
+function hasAdminPanelRole(roles: readonly string[]): boolean {
+  return roles.some((role) => ADMIN_PANEL_ROLES.some((allowed) => allowed === role));
+}
 
 function uniqueConstraint(err: unknown): string | undefined {
   return (

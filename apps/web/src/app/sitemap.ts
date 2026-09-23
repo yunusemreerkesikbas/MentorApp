@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getPathname } from "@/i18n/navigation";
 import { fetchPublicQuestionRefs, questionUrl, siteUrl } from "@/lib/forum-public";
+import { blogUrl } from "@/lib/blog-url";
 import { fetchInfoArticlesByFamily, infoArticleUrl } from "@/lib/content-api";
 import { publishedLegalDocs } from "@/lib/legal";
 
@@ -14,6 +15,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "yearly" as const,
       priority: 0.3,
     })),
+    // The public blog hub (TR); topic and page views canonicalise to it.
+    { url: blogUrl(), changeFrequency: "weekly" as const, priority: 0.6 },
   ];
   try {
     const [questions, ...articlePages] = await Promise.allSettled([

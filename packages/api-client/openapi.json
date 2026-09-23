@@ -250,6 +250,30 @@
         ]
       }
     },
+    "/v1/auth/admin/login": {
+      "post": {
+        "operationId": "AuthController_adminLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/google/start": {
       "get": {
         "operationId": "AuthController_googleStart",
@@ -320,9 +344,37 @@
         ]
       }
     },
+    "/v1/auth/admin/refresh": {
+      "post": {
+        "operationId": "AuthController_adminRefresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/admin/logout": {
+      "post": {
+        "operationId": "AuthController_adminLogout",
         "parameters": [],
         "responses": {
           "204": {
