@@ -102,11 +102,13 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-23 · Koç sohbeti dosya adları.** Tek yol kaldığı için `v2` sonekli dosyalar sürümsüz ada geçti: `mentor-prompt.ts`, `chat.mentor.service.spec.ts`, `coach-contracts.spec.ts`. **Gotcha:** kayıtlı strateji sürümü `mentor-v2.1` ve `buildMentorV2Prompt` durur; dosya adı değişikliği geriye dönük veriyi bozmaz. İlgili: `mentor-prompt.ts`, `chat.service.ts`.
+
 - **2026-09-23 · Kanıt cümlesi yoksa sinyal yok (PR #116).** `applyCoachPersonalizationMarker` `usedSignals`'a yalnız görünür kanıt cümlesi üretebilen sinyali yazar; sıfır seanslı özet ya da etiketsiz ruh hali boş liste döner. **Gotcha:** `isAvailable` hâlâ bu sinyali geçerli sayar, karar cümleye bağlı. İlgili: `personalization-marker.ts`.
 
 - **2026-09-22 · Plan uyarlaması gün sayısını kesmez.** `POST /v1/coach/plan-adaptation` PLAN gövdesi `days`, `minutesPerDay` ve `focusSubjects` alır. Prompt bu ritmi bağlar. Ayrıştırıcı PLAN için en fazla 3 ekleme kuralını bırakır: seçilen gün sayısı kadar farklı güne bir ekleme, seçim yoksa 7 gün. Seçilen ders boş subject'i doldurur. Ruh hali ve seans tavanı durur. **Kullanım:** plan sihirbazı bu alanları gönderir. **Gotcha:** (2026-09-23'te değişti) model eksik gün dönerse `fillStudyDays` kapasitesi yeten günlere seçilen ders ve dakika ile ADD ekler. İlgili: `plan-adaptation.ts`, `plan-adaptation.service.ts`, `packages/validation/src/ai.ts`.
 
-- **2026-09-22 · Tek sohbet yolu.** Koç sohbeti her hesapta Mentor V2. `ai.coach_personalization_v2.rollout_percent` ve `isMentorV2Enabled` kalktı; veritabanında 0 kayıtlı olsa bile sohbet onu okumaz. Kanıt, profil ve tur planlayıcı zorunlu enjeksiyon: eksik bağ eski sohbete düşmez, boot'ta patlar. Konuştaki sunucu sayaç cümlesi ("İçinde Tarih var") bu yolla gider. Değerlendirmenin ilk satırı ve plan balonu durur. `ContextBuilder` ile `buildSystemPrompt` durur; ruh hali, selam, seans, vizyon, plan taslağı ve plan uyarlaması onları kullanmaya devam eder. Kullanım: sohbet her zaman kanıt özeti, izinli hafıza ve tur planı görür. Gotcha: yeni profilin ilk GENERAL/CHECK_IN turu kalibrasyon sorusudur, modeli çağırmaz. İlgili: `chat.service.ts`, `mentor-v2-prompt.ts`, `config.catalog.ts`.
+- **2026-09-22 · Tek sohbet yolu.** Koç sohbeti her hesapta Mentor V2. `ai.coach_personalization_v2.rollout_percent` ve `isMentorV2Enabled` kalktı; veritabanında 0 kayıtlı olsa bile sohbet onu okumaz. Kanıt, profil ve tur planlayıcı zorunlu enjeksiyon: eksik bağ eski sohbete düşmez, boot'ta patlar. Konuştaki sunucu sayaç cümlesi ("İçinde Tarih var") bu yolla gider. Değerlendirmenin ilk satırı ve plan balonu durur. `ContextBuilder` ile `buildSystemPrompt` durur; ruh hali, selam, seans, vizyon, plan taslağı ve plan uyarlaması onları kullanmaya devam eder. Kullanım: sohbet her zaman kanıt özeti, izinli hafıza ve tur planı görür. Gotcha: yeni profilin ilk GENERAL/CHECK_IN turu kalibrasyon sorusudur, modeli çağırmaz. İlgili: `chat.service.ts`, `mentor-prompt.ts`, `config.catalog.ts`.
 
 - **2026-09-22 · Ghost narration has a web consumer again (/analiz redesign).** Premium students see
   the coach's reading of their latest exam in Puhu's bubble, labelled "Koçundan": on the Gelişim hero
@@ -126,7 +128,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 - **2026-09-08 · Analysis V1.1 task isolation.** Selected-mock-exam review replies now discard suggested task markers server-side in blocking, streaming and regenerated replies, in addition to the aggregate-only prompt instruction. The analysis loop remains an explicit user-approved action on Analysis. Existing access, budget and sponsored-seat flags are unchanged. Related: `chat.service.ts`, its selected-exam regression test, and `analysis-coach-prompt.spec.ts`.
 
-- **2026-09-07 · Selected-exam analysis context.** Existing chat preparation now adds an explicit aggregate-only projection of the current analysis focus, dominant error distribution and notebook status counts alongside selected-exam nets. Usage: “Review with AI coach” opens a draft with `contextMockExamId`; sending remains a user action. No notebook notes, photo keys or raw confessions enter this context. Existing access, quota and budget gates remain in place; no new AI endpoint was added. The prompt requests one short next step and does not authorize creating or completing an analysis loop. Related: `analysis-coach-prompt.ts`, `mentor-v2-prompt.ts`, `chat.service.ts`, coaching `AnalysisService`.
+- **2026-09-07 · Selected-exam analysis context.** Existing chat preparation now adds an explicit aggregate-only projection of the current analysis focus, dominant error distribution and notebook status counts alongside selected-exam nets. Usage: “Review with AI coach” opens a draft with `contextMockExamId`; sending remains a user action. No notebook notes, photo keys or raw confessions enter this context. Existing access, quota and budget gates remain in place; no new AI endpoint was added. The prompt requests one short next step and does not authorize creating or completing an analysis loop. Related: `analysis-coach-prompt.ts`, `mentor-prompt.ts`, `chat.service.ts`, coaching `AnalysisService`.
 
 - **AI ödev taslağı — katalogdaki üçüncü "aktör özne değil" özelliği (APP-086, 2026-09-07)** —
   `AssignmentSuggestionService` bir öğrenci için bir haftalık görev taslağı yazıyor; yetki gene
@@ -188,11 +190,11 @@ pnpm --filter @mentor/api test -- --grep "ai"
   `privacy-preserving-llm.adapter.ts`, `budgeted-vision.adapter.ts`,
   `ai-budget-reservation.repository.ts`, migration `0104_cultured_morgan_stark`, `coach-composer.tsx`.
 
-- **Yoldaşlık sesi Dalga 16 — LLM prompt noktalama (2026-08-29)** — Modele giden V1/V2 ve haftalık recap prompt metinlerinde em dash kalktı; nokta/virgül/iki nokta kuralı eklendi. Persona cümleleri durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod yorumları durdu; recap cache `v7`. İlgili: `ai.constants.ts`, `mentor-v2-prompt.ts`, `weekly-review-prompt.ts`.
+- **Yoldaşlık sesi Dalga 16 — LLM prompt noktalama (2026-08-29)** — Modele giden V1/V2 ve haftalık recap prompt metinlerinde em dash kalktı; nokta/virgül/iki nokta kuralı eklendi. Persona cümleleri durdu. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: kod yorumları durdu; recap cache `v7`. İlgili: `ai.constants.ts`, `mentor-prompt.ts`, `weekly-review-prompt.ts`.
 
 - **Yoldaşlık sesi Dalga 13 — koç kapısı / derin analiz hak (2026-08-29)** — Koç erişim kapısı ve derin analiz yetersiz-coin companion hak; “hak kazan” FOMO kalktı. Kullanım: [`docs/copy/voice.md`](../copy/voice.md). Gotcha: `kazanılmış hak` isim ve `go_earn` CTA durdu. İlgili: `apps/web/messages/{tr,en}.json`, `coach-access-gate.tsx`.
 
-- **Yoldaşlık sesi Dalga 2 — koç sohbeti (2026-08-28)** — Koç sohbeti (LLM + kural fallback) companion kaydına bağlandı; Puhu yalnız chrome'da (boş sohbet, FAB, onboarding, paywall, haftalık recap host). V2 persona TR/EN: sen, kısa cümle, suçluluk yok, Puhu imzası yok, en fazla bir emoji yalnız hafif anda. V1 `coachSystemBase(locale)` EN kullanıcıya artık TR gövde göndermiyor; mood/selam/seans/ghost/vizyon/plan-draft aynı ağız. `coaching.mood.SERIOUS_DISTRESS` ve resmî bilgi kuralları dokunulmadı. Kullanım: `docs/copy/voice.md`. Gotcha: haftalık recap Puhu host'u sohbete sızmaz; V1 bağlam etiketleri (BAĞLAM) hâlâ TR. İlgili: `mentor-v2-prompt.ts`, `ai.constants.ts`, `coaching.json`.
+- **Yoldaşlık sesi Dalga 2 — koç sohbeti (2026-08-28)** — Koç sohbeti (LLM + kural fallback) companion kaydına bağlandı; Puhu yalnız chrome'da (boş sohbet, FAB, onboarding, paywall, haftalık recap host). V2 persona TR/EN: sen, kısa cümle, suçluluk yok, Puhu imzası yok, en fazla bir emoji yalnız hafif anda. V1 `coachSystemBase(locale)` EN kullanıcıya artık TR gövde göndermiyor; mood/selam/seans/ghost/vizyon/plan-draft aynı ağız. `coaching.mood.SERIOUS_DISTRESS` ve resmî bilgi kuralları dokunulmadı. Kullanım: `docs/copy/voice.md`. Gotcha: haftalık recap Puhu host'u sohbete sızmaz; V1 bağlam etiketleri (BAĞLAM) hâlâ TR. İlgili: `mentor-prompt.ts`, `ai.constants.ts`, `coaching.json`.
 
 - **Kilit rozetleri (2026-08-22)** — Mood / ghost / günlük selam / seans yansıması web'de kilit
   CTA ile paywall'a bağlandı. API politikası değişmedi; `free_enabled` varsayılan kapalı.
@@ -210,7 +212,7 @@ pnpm --filter @mentor/api test -- --grep "ai"
   sınırlanır; TASK/FOLLOWUP/MEMORY marker'ları sıra bağımsız çıkarılır ve stream'e sızmaz. Üretim
   snapshot'ı `strategyVersion/intent/tone/usedEvidence` olarak mesajda kalır; web “Neye göre?” ile
   gösterir. `ai.coach_personalization_v2.rollout_percent=0` eski akışa anında döner; STAFF daima V2.
-  İlgili: `coach-turn-planner.ts`, `mentor-v2-prompt.ts`, `chat.service.ts`, `0068`–`0070`.
+  İlgili: `coach-turn-planner.ts`, `mentor-prompt.ts`, `chat.service.ts`, `0068`–`0070`.
 
 - **Şeffaf hafıza, tanışma ve kullanıcı kontrollü aksiyonlar (2026-08-02)** — `coach_profiles` ve
   `coach_memory_facts` yalnız kullanıcı RLS'iyle eklendi. İlk tanışma LLM/kota tüketmez; hafıza ayrı

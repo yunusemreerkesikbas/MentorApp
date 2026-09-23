@@ -103,7 +103,7 @@ function makeService(
   return { service, complete, persistExchange, learnFromChat, budget };
 }
 
-describe("ChatService Mentor V2", () => {
+describe("ChatService mentor", () => {
   it("persists traceable evidence, one backend action, and a validated memory candidate", async () => {
     const { service, complete, learnFromChat } = makeService();
     const result = await service.reply(

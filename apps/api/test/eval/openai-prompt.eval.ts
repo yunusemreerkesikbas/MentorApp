@@ -35,7 +35,7 @@ import {
   COACH_STRATEGY_VERSION,
   type CoachTurnPlan,
 } from "../../src/modules/ai/domain/coach-turn-planner";
-import { buildMentorV2Prompt } from "../../src/modules/ai/domain/mentor-v2-prompt";
+import { buildMentorV2Prompt } from "../../src/modules/ai/domain/mentor-prompt";
 import { buildVisionNotePrompt } from "../../src/modules/ai/domain/ai.constants";
 import { buildWeeklyReviewPrompt } from "../../src/modules/ai/domain/weekly-review-prompt";
 import { OpenAiLlmAdapter } from "../../src/modules/ai/infrastructure/adapters/openai-llm.adapter";

@@ -4,7 +4,7 @@ import {
   coachProfilePatchSchema,
 } from "@mentor/validation";
 
-describe("personalized mentor v2 request contracts", () => {
+describe("coach request contracts", () => {
   it("accepts explicit memory consent and bounded communication preferences", () => {
     expect(
       coachProfilePatchSchema.parse({
