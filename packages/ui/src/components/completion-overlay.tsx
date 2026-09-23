@@ -13,6 +13,8 @@ export interface CompletionOverlayProps {
 
 /**
  * Full-viewport blur stage for a completion ritual.
+ * Below `lg` the panel is the screen and scrolls itself. At `lg` a grid cell
+ * centers the card; the card scrolls, the page does not.
  * Does not dismiss on backdrop or Escape. z-[54] sits above app chrome / FAB (z-30)
  * and below bottom sheet (55), dialog (60), streak (80), and toast (100).
  */
@@ -45,10 +47,7 @@ export function CompletionOverlay({
   if (!mounted || !open) return null;
 
   return createPortal(
-    <div
-      className="fixed inset-0 z-[54] flex items-center justify-center p-5"
-      role="presentation"
-    >
+    <div className="fixed inset-0 z-[54] overflow-hidden" role="presentation">
       <div
         aria-hidden
         className="absolute inset-0 backdrop-blur-md"
@@ -63,9 +62,9 @@ export function CompletionOverlay({
         aria-modal="true"
         aria-label={label}
         tabIndex={-1}
-        className={`relative z-[1] max-h-[min(90dvh,44rem)] w-full overflow-y-auto outline-none ${className ?? ""}`}
+        className={`relative z-[1] h-full min-h-0 w-full overflow-y-auto overscroll-contain outline-none lg:grid lg:place-items-center lg:overflow-hidden lg:p-5 ${className ?? ""}`}
       >
-        <div className="flex justify-center py-2">{children}</div>
+        {children}
       </div>
     </div>,
     document.body,

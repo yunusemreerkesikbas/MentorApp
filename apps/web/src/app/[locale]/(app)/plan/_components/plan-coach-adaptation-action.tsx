@@ -5,23 +5,21 @@ import {
   forwardRef,
   useCallback,
   useImperativeHandle,
-  useMemo,
   useRef,
   useState,
 } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useTranslations } from "next-intl";
 import type {
   ApplyPlanAdaptationResultDto,
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
 } from "@mentor/types";
 import type { CoachPlanAdaptationInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { Button } from "@mentor/ui";
-import { FormError } from "@/components/form";
-import { CompanionBubble } from "@/components/panel/companion-bubble";
 import { useAuth } from "@/lib/auth-context";
 import { trackCoachEvent } from "@/lib/analytics";
-import { requestCoachPlanAdaptation } from "@/lib/coach";
+import { fetchPlanAdaptationBrief, requestCoachPlanAdaptation } from "@/lib/coach";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { applyCoachPlanAdaptation } from "@/lib/plan-tasks";
@@ -30,14 +28,13 @@ import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { isPremiumRequiredError } from "@/lib/premium-required";
 import { useSubscription } from "@/lib/subscription-context";
 import {
-  flattenPlanAdaptationChanges,
-  selectedPlanAdaptationChanges,
-  type PlanAdaptationRow,
-} from "@/lib/plan-coach-adaptation-utils";
-import {
   PlanCoachAdaptationBrief,
 } from "./plan-coach-adaptation-brief";
 import type { PlanAdaptationKnownWeek } from "./plan-coach-adaptation-brief-note";
+import {
+  PlanCoachAdaptationPreview,
+  type PlanCoachAdaptationPreviewHandle,
+} from "./plan-coach-adaptation-preview";
 
 interface PlanCoachAdaptationActionProps {
   knownWeek: PlanAdaptationKnownWeek;
@@ -49,11 +46,6 @@ export interface PlanCoachAdaptationActionHandle {
   open: (input: CoachPlanAdaptationInput) => void;
 }
 
-interface PreviewHandle {
-  getSelectedChanges: () => CoachPlanAdaptationDto["changes"];
-  setError: (message: string, stale?: boolean) => void;
-}
-
 function readError(error: unknown, fallback: string): string {
   return error instanceof ApiClientError
     ? error.message
@@ -61,162 +53,6 @@ function readError(error: unknown, fallback: string): string {
       ? error.message
       : fallback;
 }
-
-interface PreviewProps {
-  preview: CoachPlanAdaptationDto;
-  onRegenerate: () => void;
-}
-
-const PlanCoachAdaptationPreview = forwardRef<PreviewHandle, PreviewProps>(
-  function PlanCoachAdaptationPreview({ preview, onRegenerate }, ref) {
-    const t = useTranslations("plan");
-    const locale = useLocale();
-    const rows = useMemo(
-      () => flattenPlanAdaptationChanges(preview.changes),
-      [preview.changes],
-    );
-    const [selected, setSelected] = useState<Set<string>>(
-      () => new Set(rows.map((row) => row.key)),
-    );
-    const [error, setError] = useState<string | null>(null);
-    const [stale, setStale] = useState(false);
-    const rowsByDate = useMemo(() => {
-      const grouped = new Map<string, PlanAdaptationRow[]>();
-      for (const row of rows) {
-        const day = grouped.get(row.date) ?? [];
-        day.push(row);
-        grouped.set(row.date, day);
-      }
-      return [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b));
-    }, [rows]);
-    const dateFormatter = useMemo(
-      () =>
-        new Intl.DateTimeFormat(locale, {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        }),
-      [locale],
-    );
-    const formatDate = (date: string) =>
-      dateFormatter.format(new Date(`${date}T12:00:00`));
-
-    useImperativeHandle(ref, () => ({
-      getSelectedChanges: () => selectedPlanAdaptationChanges(rows, selected),
-      setError: (message, isStale = false) => {
-        setError(message);
-        setStale(isStale);
-      },
-    }));
-
-    function toggle(key: string) {
-      setSelected((current) => {
-        const next = new Set(current);
-        if (next.has(key)) next.delete(key);
-        else next.add(key);
-        return next;
-      });
-      if (error && !stale) setError(null);
-    }
-
-    return (
-      <div className="flex flex-col gap-4">
-        {preview.groundingLine ? (
-          <CompanionBubble puhu="encouraging" text={preview.groundingLine} />
-        ) : null}
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {preview.message}
-        </p>
-        <FormError message={error} />
-        {stale ? (
-          <Button
-            type="button"
-            variant="secondary"
-            onClick={onRegenerate}
-            fullWidth
-          >
-            <Sparkles size={17} aria-hidden />
-            {t("coach_adaptation_regenerate")}
-          </Button>
-        ) : null}
-        {rowsByDate.map(([date, dayRows]) => (
-          <section key={date} aria-labelledby={`coach-adaptation-${date}`}>
-            <h3
-              id={`coach-adaptation-${date}`}
-              className="mb-2 text-sm font-bold capitalize"
-              style={{
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              {formatDate(date)}
-            </h3>
-            <div className="flex flex-col gap-2">
-              {dayRows.map((row) => (
-                <label
-                  key={row.key}
-                  className="flex min-h-11 cursor-pointer items-start gap-3 rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-3 py-2.5"
-                  style={{ borderColor: "var(--color-progress-track)" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected.has(row.key)}
-                    onChange={() => toggle(row.key)}
-                    className="mt-0.5 size-5 shrink-0 accent-[var(--color-btn)]"
-                  />
-                  <span className="min-w-0">
-                    <span
-                      className="block text-xs font-bold uppercase"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {row.change.kind === "MOVE"
-                        ? t("coach_adaptation_move")
-                        : t("coach_adaptation_add")}
-                    </span>
-                    <span
-                      className="block text-sm font-semibold"
-                      style={{ color: "var(--color-body)" }}
-                    >
-                      {row.change.title}
-                    </span>
-                    {row.change.kind === "MOVE" ? (
-                      <span
-                        className="mt-0.5 block text-xs"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {t("coach_adaptation_move_dates", {
-                          from: formatDate(row.change.fromDate),
-                          to: formatDate(row.change.toDate),
-                        })}
-                      </span>
-                    ) : null}
-                    {row.change.subject ? (
-                      <span
-                        className="mt-0.5 block text-xs"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {row.change.subject}
-                      </span>
-                    ) : null}
-                  </span>
-                </label>
-              ))}
-            </div>
-          </section>
-        ))}
-        {rows.length > 0 ? (
-          <p
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-secondary)" }}
-            aria-live="polite"
-          >
-            {t("coach_adaptation_selected_count", { count: selected.size })}
-          </p>
-        ) : null}
-      </div>
-    );
-  },
-);
 
 export const PlanCoachAdaptationAction = forwardRef<
   PlanCoachAdaptationActionHandle,
@@ -228,9 +64,10 @@ export const PlanCoachAdaptationAction = forwardRef<
   const { openPaywall } = usePremiumPaywall();
   const { filterSheet, dismissNow } = useMentorBottomSheet();
   const toast = useMentorToast();
-  const previewRef = useRef<PreviewHandle>(null);
+  const previewRef = useRef<PlanCoachAdaptationPreviewHandle>(null);
   const wizardLock = useRef(false);
   const [wizardOpen, setWizardOpen] = useState(false);
+  const [brief, setBrief] = useState<CoachPlanAdaptationBriefDto | null>(null);
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const {
@@ -350,6 +187,10 @@ export const PlanCoachAdaptationAction = forwardRef<
       }
 
       wizardLock.current = true;
+      // The wizard opens at once; the coach's reading lands in it when ready, and a failed read
+      // leaves today's defaults.
+      setBrief(null);
+      void fetchPlanAdaptationBrief().then(setBrief, () => undefined);
       setWizardOpen(true);
     } catch (error) {
       toast.error({
@@ -387,6 +228,7 @@ export const PlanCoachAdaptationAction = forwardRef<
       {wizardOpen ? (
         <PlanCoachAdaptationBrief
           knownWeek={knownWeek}
+          brief={brief}
           profile={{
             examType: user?.examType ?? null,
             examVariant: user?.examVariant ?? null,

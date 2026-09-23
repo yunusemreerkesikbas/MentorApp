@@ -1,6 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AuthUser,
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   PlanTaskDto,
   SubscriptionView,
@@ -67,6 +68,51 @@ const readyPreview: CoachPlanAdaptationDto = {
   ],
 };
 
+const coverageLine = "4 denemene, 9 yanlış kartına ve son 28 gündeki 12 seansına baktık.";
+const weakLine =
+  "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6).";
+const rhythmLine = "Son 28 günde 20 gün, 24 seansta 1030 dakika çalıştın. Seansların ortalama 43 dakika.";
+
+const brief: CoachPlanAdaptationBriefDto = {
+  groundingLine: coverageLine,
+  evidence: [
+    { type: "WEAK_SUBJECTS", summary: weakLine, observedAt: "2026-07-20T09:00:00.000Z" },
+    { type: "LONG_TERM_RHYTHM", summary: rhythmLine, observedAt: "2026-07-20T09:00:00.000Z" },
+  ],
+  suggestion: { days: 5, minutesPerDay: 60, focusSubjects: ["Matematik"] },
+};
+
+const groundedPreview: CoachPlanAdaptationDto = {
+  ...readyPreview,
+  groundingLine: coverageLine,
+  usedEvidence: brief.evidence,
+  changes: [
+    { ...readyPreview.changes[0]!, reason: rhythmLine },
+    {
+      kind: "ADD",
+      title: "Matematik · 60 dk",
+      subject: "Matematik",
+      taskDate: "2026-07-22",
+      reason: weakLine,
+    },
+  ],
+};
+
+/** Walks the four wizard steps on their defaults and asks for the preview. */
+async function generateFromWizard(page: Page) {
+  const wizard = page.getByRole("dialog", { name: "Bu hafta kaç gün çalışacaksın?" });
+  await expect(wizard).toBeVisible();
+  for (const next of [
+    "Günde yaklaşık kaç dakika?",
+    "Ağırlık vermek istediğin dersler",
+    "Bu hafta için notun (isteğe bağlı)",
+  ]) {
+    await page.getByRole("button", { name: "Devam" }).click();
+    await expect(page.getByRole("dialog", { name: next })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+}
+
 test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", async ({
   page,
 }) => {
@@ -74,7 +120,7 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   await page.goto("/plan");
 
   await page.getByRole("button", { name: "Koçla planla" }).click();
-  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await generateFromWizard(page);
 
   await expect(
     page.getByText("Bekleyen işlerin arasında Matematik var."),
@@ -172,7 +218,7 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
   });
   await page.goto("/plan");
   await page.getByRole("button", { name: "Koçla planla" }).click();
-  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await generateFromWizard(page);
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
 
   await expect(page.getByText("Planın bu sırada değişti.")).toBeVisible();
@@ -183,6 +229,62 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
 
   await page.getByRole("button", { name: "Yeniden hazırla" }).click();
   await expect.poll(() => api.previewCalls).toBe(2);
+});
+
+test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf dersi önerir", async ({
+  page,
+}) => {
+  const api = await mockPlanApi(page, { preview: groundedPreview, brief });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+
+  const days = page.getByRole("dialog", { name: "Bu hafta kaç gün çalışacaksın?" });
+  await expect(days.getByText(coverageLine)).toBeVisible();
+  await expect(days.getByRole("radio", { checked: true })).toContainText("5");
+  await expect(days.getByText("Ritmin")).toBeVisible();
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  const minutes = page.getByRole("dialog", { name: "Günde yaklaşık kaç dakika?" });
+  await expect(minutes.getByRole("radio", { checked: true })).toContainText("60");
+  await expect(minutes.getByText("Ritmin")).toBeVisible();
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  const subjects = page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" });
+  const math = subjects.getByRole("checkbox", { name: /Matematik/ });
+  await expect(math).toHaveAttribute("aria-checked", "true");
+  await expect(math).toContainText("Koçun önerisi");
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await expect(page.getByText(coverageLine)).toBeVisible();
+  expect(api.briefCalls).toBe(1);
+  expect(api.previewBodies).toEqual([
+    { source: "PLAN", days: 5, minutesPerDay: 60, focusSubjects: ["Matematik"] },
+  ]);
+});
+
+test("önizleme koçun baktıklarını ve her görevin nedenini gösterir", async ({
+  page,
+}) => {
+  const api = await mockPlanApi(page, { preview: groundedPreview, brief });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+
+  await expect(page.getByText(coverageLine)).toBeVisible();
+  await expect(page.getByText("PREMIUM", { exact: true })).toBeVisible();
+  await expect(page.getByText(`Neden: ${weakLine}`)).toBeVisible();
+  await expect(page.getByText(`Neden: ${rhythmLine}`)).toBeVisible();
+
+  // The full list sits behind one tap; the rows already carry the line that matters for them.
+  await page.getByText("Koçun baktıkları").click();
+  await expect(page.getByRole("listitem").filter({ hasText: weakLine })).toBeVisible();
+
+  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await expect(page.getByText("Planın güncellendi")).toBeVisible();
+  expect(api.applyBodies).toHaveLength(1);
 });
 
 /** Today in the browser's local calendar — the calendar view's "past is read-only" rule uses it. */
@@ -336,6 +438,8 @@ test.describe("Takvim", () => {
 
 interface MockPlanOptions {
   preview: CoachPlanAdaptationDto;
+  /** Wizard seed. Left out, the route answers 501 and the wizard must work without it. */
+  brief?: CoachPlanAdaptationBriefDto;
   premium?: boolean;
   staleApplyOnce?: boolean;
   /** Overrides the default single-task list. */
@@ -391,6 +495,7 @@ for (const conflict of [false, true]) {
 
 async function mockPlanApi(page: Page, options: MockPlanOptions) {
   let previewCalls = 0;
+  let briefCalls = 0;
   let staleApply = options.staleApplyOnce ?? false;
   const previewBodies: unknown[] = [];
   const applyBodies: unknown[] = [];
@@ -478,6 +583,10 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       previewBodies.push(request.postDataJSON());
       return json(route, options.preview);
     }
+    if (method === "GET" && path === "/v1/coach/plan-adaptation/brief" && options.brief) {
+      briefCalls += 1;
+      return json(route, options.brief);
+    }
     if (method === "POST" && path === "/v1/plan-tasks/adapt") {
       applyBodies.push(request.postDataJSON());
       if (staleApply) {
@@ -544,6 +653,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
   return {
     get previewCalls() {
       return previewCalls;
+    },
+    get briefCalls() {
+      return briefCalls;
     },
     previewBodies,
     applyBodies,

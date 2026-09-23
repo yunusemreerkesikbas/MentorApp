@@ -661,6 +661,46 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
     transcript.getByText("Yarım yanıt", { exact: true }),
   ).toHaveCount(0);
 });
+const reviewSeed =
+  "Matematik dersindeki Problemler konusu yanlış defterimde tekrar ediyor. Kanıtlara bakıp tek bir sonraki adım önerebilir misin?";
+const reviewExamId = "70000000-0000-4000-8000-000000000001";
+const reviewUrl = `/koc/sohbet?seed=${encodeURIComponent(reviewSeed)}&contextMockExamId=${reviewExamId}`;
+const reviewReply = "Problemlerde bugün 10 soruyla başla.";
+
+test("AI koçla değerlendir premium öğrencide kendiliğinden başlar", async ({
+  page,
+}) => {
+  const api = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+    streamReply: reviewReply,
+  });
+
+  await page.goto(reviewUrl);
+
+  await expect(page.getByText(reviewReply)).toBeVisible({ timeout: 15_000 });
+  expect(api.streamBodies).toEqual([
+    expect.objectContaining({ message: reviewSeed, contextMockExamId: reviewExamId }),
+  ]);
+});
+
+test("AI koçla değerlendir coin öğrencide yalnız mesajı doldurur", async ({
+  page,
+}) => {
+  const api = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "COIN", chatCost: 5, freeCoinMessagesRemainingToday: 3 },
+    streamReply: reviewReply,
+  });
+
+  await page.goto(reviewUrl);
+
+  await expect(page.getByLabel("Koçuna mesaj yaz")).toHaveValue(reviewSeed, {
+    timeout: 15_000,
+  });
+  expect(api.streamBodies).toEqual([]);
+});
+
 function makeRecentMessages(): CoachMessageDto[] {
   return Array.from(
     { length: 30 },
@@ -696,6 +736,8 @@ interface MockCoachOptions {
   messagesByConversation?: Record<string, CoachMessageDto[]>;
   messageDelaysMs?: Record<string, number>;
   streamError?: boolean;
+  /** Answers the stream with this reply and records every request body. */
+  streamReply?: string;
 }
 
 async function mockCoachApi(page: Page, options: MockCoachOptions) {
@@ -705,6 +747,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
   let conversationsBlocked = (options.conversationFailures ?? 0) > 0;
   let messageFailures = options.messageFailures ?? 0;
   let olderMessageFailures = options.olderMessageFailures ?? 0;
+  const streamBodies: unknown[] = [];
 
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
@@ -881,6 +924,27 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
           'data: {"error":{"code":"AI_PROVIDER_ERROR"}}\n\n',
       });
     }
+    if (
+      method === "POST" &&
+      path === "/v1/coach/chat/stream" &&
+      options.streamReply
+    ) {
+      streamBodies.push(request.postDataJSON());
+      const done = {
+        reply: options.streamReply,
+        model: "fake",
+        conversationId: "30000000-0000-4000-8000-000000000001",
+        sources: [],
+      };
+      return route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        headers: corsHeaders,
+        body:
+          `data: ${JSON.stringify({ delta: options.streamReply })}\n\n` +
+          `data: ${JSON.stringify({ done })}\n\n`,
+      });
+    }
 
     return json(
       route,
@@ -899,6 +963,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
     get dailyGreetingCalls() {
       return dailyGreetingCalls;
     },
+    streamBodies,
     allowConversations() {
       conversationsBlocked = false;
     },

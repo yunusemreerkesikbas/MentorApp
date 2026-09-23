@@ -51,61 +51,62 @@ Base canvas: **375 px** wide. Content column **335 px** → **20 px** side gutte
 
 ### 2.1 Text & core (Figma variables — exact)
 
-| Token | Hex | Usage |
-|---|---|---|
-| `main` | `#111111` | Headings, titles, primary text, active nav |
-| `body-text` | `#333333` | Body copy, input values |
-| `secondary-text` | `#666666` | Captions, meta, labels, inactive nav |
-| `btn` | `#000000` | Nav pill / compact chrome fill (not `@mentor/ui` Button) |
-| `btn-label` | `#FFFFFF` | Label on `btn` (inverts in dark — §2.5) |
-| `label-dark-secondary` | `#EBEBF5` | Secondary label on dark |
+| Token                  | Hex       | Usage                                                    |
+| ---------------------- | --------- | -------------------------------------------------------- |
+| `main`                 | `#111111` | Headings, titles, primary text, active nav               |
+| `body-text`            | `#333333` | Body copy, input values                                  |
+| `secondary-text`       | `#666666` | Captions, meta, labels, inactive nav                     |
+| `btn`                  | `#000000` | Nav pill / compact chrome fill (not `@mentor/ui` Button) |
+| `btn-label`            | `#FFFFFF` | Label on `btn` (inverts in dark — §2.5)                  |
+| `label-dark-secondary` | `#EBEBF5` | Secondary label on dark                                  |
 
 Body text must stay ≥4.5:1 on backgrounds. Do not use colors lighter than `secondary` for readable copy.
 
 ### 2.2 Surface hierarchy
 
-| Token | Value | Usage |
-|---|---|---|
-| `bg` | `#FFFFFF` | Screen base fill (blobs sit behind) |
-| `surface` | `#FFFFFF` | Solid cards |
-| `surface-elevated` | `#FFFFFF` + `shadow-card` / hover → `shadow-card-hover` | Floating / interactive cards |
-| `surface-container` | `#F0EDEC` | Sidebar rail wells, tab tracks, skeleton shimmer base |
-| `surface-translucent` | `rgba(255,255,255,0.5)` + `1px solid #FFFFFF` | Fields / soft cards (Nuton `field` 2:722) |
-| `overlay-dark` | `#111111` @ 10% | Image overlays (15:1233) |
+| Token                 | Value                                                   | Usage                                                 |
+| --------------------- | ------------------------------------------------------- | ----------------------------------------------------- |
+| `bg`                  | `#FFFFFF`                                               | Screen base fill (blobs sit behind)                   |
+| `surface`             | `#FFFFFF`                                               | Solid cards                                           |
+| `surface-elevated`    | `#FFFFFF` + `shadow-card` / hover → `shadow-card-hover` | Floating / interactive cards                          |
+| `surface-container`   | `#F0EDEC`                                               | Sidebar rail wells, tab tracks, skeleton shimmer base |
+| `surface-translucent` | `rgba(255,255,255,0.5)` + `1px solid #FFFFFF`           | Fields / soft cards (Nuton `field` 2:722)             |
+| `overlay-dark`        | `#111111` @ 10%                                         | Image overlays (15:1233)                              |
 
 **Decorative background blobs** (large, `blur ~150`, low opacity — node 17:3036):
-- `#FF2DAB` (pink) @ 0.4 · `#9BC1FB` (blue) @ 0.6 · `#BDEBFF` (cyan) @ 0.6  
+
+- `#FF2DAB` (pink) @ 0.4 · `#9BC1FB` (blue) @ 0.6 · `#BDEBFF` (cyan) @ 0.6
 
 Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT anti-reference).
 
 ### 2.3 Accents & semantic (exact, per-node)
 
-| Token | Hex | Usage / source |
-|---|---|---|
-| `chip` (violet) | `#BEA1FE` @ 30% bg | Tag/chip fill (`tag` 141:1736) |
-| `chip-text` | `#7C6F97` | Tag/chip label |
-| `progress` (blue) | `#55ACEE` | Progress fill (15:1164) |
-| `accent` | `#55ACEE` | Alias of progress — fills, icons, focus of attention. **Not for text:** ~2.4:1 on white; text links use `--play-selected-ink` `#1A5FA3` (§6.1) |
-| `progress-track` / `accent-soft` | `#C3D9FD` | Progress track; soft accent wells |
-| `thumb-violet` | `#DDACE5` | Thumbnail placeholder (15:1162) |
-| `thumb-periwinkle` | `#D6DBFD` | Thumbnail placeholder (10:890) |
-| `star` (amber) | `#FFC700` | Rating star |
-| `streak` (flame coral) | `#F3705A` | Streak ring/label — matches `flame.png` outer tip; **not** `danger` |
-| `streak-core` (flame yellow) | `#FFD15C` | Soft highlight from `flame.png` core |
-| `streak-soft` | `#FFE8E2` | Soft wells behind streak day slots |
-| `like-inactive` | `#666666` | Heart outline, default |
-| `like-active` (pink) | `#FF2DAB` family | Wishlist when liked |
+| Token                            | Hex                | Usage / source                                                                                                                                 |
+| -------------------------------- | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `chip` (violet)                  | `#BEA1FE` @ 30% bg | Tag/chip fill (`tag` 141:1736)                                                                                                                 |
+| `chip-text`                      | `#7C6F97`          | Tag/chip label                                                                                                                                 |
+| `progress` (blue)                | `#55ACEE`          | Progress fill (15:1164)                                                                                                                        |
+| `accent`                         | `#55ACEE`          | Alias of progress — fills, icons, focus of attention. **Not for text:** ~2.4:1 on white; text links use `--play-selected-ink` `#1A5FA3` (§6.1) |
+| `progress-track` / `accent-soft` | `#C3D9FD`          | Progress track; soft accent wells                                                                                                              |
+| `thumb-violet`                   | `#DDACE5`          | Thumbnail placeholder (15:1162)                                                                                                                |
+| `thumb-periwinkle`               | `#D6DBFD`          | Thumbnail placeholder (10:890)                                                                                                                 |
+| `star` (amber)                   | `#FFC700`          | Rating star                                                                                                                                    |
+| `streak` (flame coral)           | `#F3705A`          | Streak ring/label — matches `flame.png` outer tip; **not** `danger`                                                                            |
+| `streak-core` (flame yellow)     | `#FFD15C`          | Soft highlight from `flame.png` core                                                                                                           |
+| `streak-soft`                    | `#FFE8E2`          | Soft wells behind streak day slots                                                                                                             |
+| `like-inactive`                  | `#666666`          | Heart outline, default                                                                                                                         |
+| `like-active` (pink)             | `#FF2DAB` family   | Wishlist when liked                                                                                                                            |
 
 > Emphasis = play-ledge CTA (`#55ACEE`) + black/`#111` for text and nav chrome + soft pastel accents.
 
 ### 2.4 Semantic state tokens
 
-| Token | Hex | Usage |
-|---|---|---|
-| `danger` | `#b42318` | Error/destructive — ≥4.5:1 on white |
-| `success` | `#2e7d54` | Positive/upward — ≥4.5:1 on white. Downward analytics use `secondary`, **never** red |
-| `focus-ring` | `#1d6fbf` | Keyboard focus — ≥3:1 for UI indicators |
-| `error-container` | `#ffdad6` | Error icon circle background |
+| Token             | Hex       | Usage                                                                                |
+| ----------------- | --------- | ------------------------------------------------------------------------------------ |
+| `danger`          | `#b42318` | Error/destructive — ≥4.5:1 on white                                                  |
+| `success`         | `#2e7d54` | Positive/upward — ≥4.5:1 on white. Downward analytics use `secondary`, **never** red |
+| `focus-ring`      | `#1d6fbf` | Keyboard focus — ≥3:1 for UI indicators                                              |
+| `error-container` | `#ffdad6` | Error icon circle background                                                         |
 
 Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
 
@@ -113,29 +114,29 @@ Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
 
 **Default is light.** Cookie `mentor-theme=light|dark` (no cookie → light). Do not follow `prefers-color-scheme` unless a later product decision adds a `system` value.
 
-**Light canvas:** `#FFFFFF` + the decorative blobs in §2.2. That *is* the login-page atmosphere (`BackgroundBlobs` in the locale layout). Do not add a page-level backdrop-filter / glass wash.
+**Light canvas:** `#FFFFFF` + the decorative blobs in §2.2. That _is_ the login-page atmosphere (`BackgroundBlobs` in the locale layout). Do not add a page-level backdrop-filter / glass wash.
 
 **Dark canvas:** soft charcoal, not terminal black (`#000`).
 
-| Token | Dark | Usage |
-|---|---|---|
-| `bg` | `#12141A` | Screen base (blobs sit behind, dimmed) |
-| `surface` | `#1A1D24` | Cards / sidebar mix |
-| `surface-container` | `#242833` | Wells, rails, skeleton base |
-| `surface-translucent` | `rgba(26,29,36,0.62)` | Soft fields |
-| `border` | `rgba(255,255,255,0.10)` | Chrome hairline |
-| `main` | `#F4F4F5` | Headings, active nav |
-| `body-text` | `#D4D4D8` | Body — ≥4.5:1 on `bg` |
-| `secondary-text` | `#A1A1AA` | Meta / inactive |
-| `btn` | `#F4F4F5` | Nav pill / compact chrome fill (inverted) |
-| `btn-label` | `#12141A` | Label on `btn` |
-| `chip-text` | `#C4B8E0` | Chip label on dark |
-| `progress-track` / `accent-soft` | `#2C3D56` | Soft accent wells |
-| `streak-soft` | `#3A2A28` | Streak day wells |
-| `danger` | `#F28B82` | Error — ≥4.5:1 on `bg` |
-| `success` | `#6BC49A` | Positive — ≥4.5:1 on `bg` |
-| `focus-ring` | `#7EB6E8` | Keyboard focus |
-| `error-container` | `#3D2422` | Error icon well |
+| Token                            | Dark                     | Usage                                     |
+| -------------------------------- | ------------------------ | ----------------------------------------- |
+| `bg`                             | `#12141A`                | Screen base (blobs sit behind, dimmed)    |
+| `surface`                        | `#1A1D24`                | Cards / sidebar mix                       |
+| `surface-container`              | `#242833`                | Wells, rails, skeleton base               |
+| `surface-translucent`            | `rgba(26,29,36,0.62)`    | Soft fields                               |
+| `border`                         | `rgba(255,255,255,0.10)` | Chrome hairline                           |
+| `main`                           | `#F4F4F5`                | Headings, active nav                      |
+| `body-text`                      | `#D4D4D8`                | Body — ≥4.5:1 on `bg`                     |
+| `secondary-text`                 | `#A1A1AA`                | Meta / inactive                           |
+| `btn`                            | `#F4F4F5`                | Nav pill / compact chrome fill (inverted) |
+| `btn-label`                      | `#12141A`                | Label on `btn`                            |
+| `chip-text`                      | `#C4B8E0`                | Chip label on dark                        |
+| `progress-track` / `accent-soft` | `#2C3D56`                | Soft accent wells                         |
+| `streak-soft`                    | `#3A2A28`                | Streak day wells                          |
+| `danger`                         | `#F28B82`                | Error — ≥4.5:1 on `bg`                    |
+| `success`                        | `#6BC49A`                | Positive — ≥4.5:1 on `bg`                 |
+| `focus-ring`                     | `#7EB6E8`                | Keyboard focus                            |
+| `error-container`                | `#3D2422`                | Error icon well                           |
 
 Blob hues stay (`#FF2DAB` / `#9BC1FB` / `#BDEBFF`). Dark opacities: pink 0.14 · blue 0.20 · cyan 0.18.
 
@@ -150,7 +151,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
 
-**Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
+**Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#ffffff` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
 **Play wells + selected fill (global, 2026-09-20):** `--play-selected` and `--play-well-{blue,peri,violet,coral,pink}` moved from `.onboarding-play-theme` to `html` (dark values on `html.dark`). The panel's quest rows and path nodes speak the same language as the onboarding choice cards, and a token that two surfaces share does not belong to one of them.
 
@@ -179,17 +180,17 @@ toggle slot keeps the plain Sun/Moon icon button.
 Tailwind does not ship are `@theme` tokens in `@mentor/ui` `theme.css`, so they are utilities
 (`text-caption`), never arbitrary values (`text-[13px]`).
 
-| Role | Class | Size | Weight | Where (panel reference) |
-|---|---|---|---|---|
-| Display | `text-display` | 28 | 800, `tracking-[-0.01em]` | Page title — "Günaydın, Selin" |
-| Title | `text-xl sm:text-title` | 20 → 22 | 800 | Hero heading — "Bugün 4 adım var. Sıradaki 25 dakika." |
-| Card title | `text-base` | 16 | 800 | Card headers — "Günlük görevler", "Yolculuğun" |
-| Button | `text-base sm:text-lg` | 16 → 18 | 800 | Play ledge (16 on phones so a task title fits) |
-| Body | `text-body-sm` | 15 | 600 (800 for list titles and text links) | Companion bubble, community rows, "Planı düzenle" |
-| Row title | `text-sm` | 14 | 800 | Quest / perk rows, mood prompt |
-| Caption | `text-caption` | 13 | 600–800 | Meta lines, path node labels (800), card-side counts |
-| Small | `text-xs` | 12 | 600–800 | Node meta, reward labels (+5 XP) |
-| Micro | `text-micro` | 11 | 800 · 900 | Weekday labels · PREMIUM badge (`tracking-[0.06em]`) |
+| Role       | Class                   | Size    | Weight                                   | Where (panel reference)                                |
+| ---------- | ----------------------- | ------- | ---------------------------------------- | ------------------------------------------------------ |
+| Display    | `text-display`          | 28      | 800, `tracking-[-0.01em]`                | Page title — "Günaydın, Selin"                         |
+| Title      | `text-xl sm:text-title` | 20 → 22 | 800                                      | Hero heading — "Bugün 4 adım var. Sıradaki 25 dakika." |
+| Card title | `text-base`             | 16      | 800                                      | Card headers — "Günlük görevler", "Yolculuğun"         |
+| Button     | `text-base sm:text-lg`  | 16 → 18 | 800                                      | Play ledge (16 on phones so a task title fits)         |
+| Body       | `text-body-sm`          | 15      | 600 (800 for list titles and text links) | Companion bubble, community rows, "Planı düzenle"      |
+| Row title  | `text-sm`               | 14      | 800                                      | Quest / perk rows, mood prompt                         |
+| Caption    | `text-caption`          | 13      | 600–800                                  | Meta lines, path node labels (800), card-side counts   |
+| Small      | `text-xs`               | 12      | 600–800                                  | Node meta, reward labels (+5 XP)                       |
+| Micro      | `text-micro`            | 11      | 800 · 900                                | Weekday labels · PREMIUM badge (`tracking-[0.06em]`)   |
 
 Token line-heights: display 1.2 · title 1.3 · body-sm 1.55 · caption 1.45 · micro 1.2; titles may
 tighten further with `leading-snug`/`leading-tight`.
@@ -217,9 +218,9 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 **Page max-width contract (desktop):**
 
-| Surface | Max width |
-|---|---|
-| Hub / panel / plan / analiz | `max-w-5xl`–`max-w-6xl` |
+| Surface                      | Max width               |
+| ---------------------------- | ----------------------- |
+| Hub / panel / plan / analiz  | `max-w-5xl`–`max-w-6xl` |
 | Form / profile / chat column | `max-w-2xl`–`max-w-3xl` |
 
 **Page frame (the panel's, app-wide — `PANEL_MAIN_CLASS` / `PANEL_GRID_CLASS`):**
@@ -249,10 +250,10 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
   `surface-translucent` is for fields and chrome that sits over art, not for content cards.
 - **Shadow family** (same tint `#254996` @ 10% — not multi-layer soft-UI stacks):
 
-| Token | Value | Usage |
-|---|---|---|
-| `shadow-card` | `0px 4px 10px rgba(37, 73, 150, 0.10)` | Default cards, fields, floating chrome |
-| `shadow-card-hover` | `0px 6px 14px rgba(37, 73, 150, 0.10)` | Hover / elevated interactive cards |
+| Token               | Value                                  | Usage                                  |
+| ------------------- | -------------------------------------- | -------------------------------------- |
+| `shadow-card`       | `0px 4px 10px rgba(37, 73, 150, 0.10)` | Default cards, fields, floating chrome |
+| `shadow-card-hover` | `0px 6px 14px rgba(37, 73, 150, 0.10)` | Hover / elevated interactive cards     |
 
 ---
 
@@ -281,29 +282,29 @@ The building blocks every screen reuses. Specs are the panel's. Shared code live
 stays in `apps/web/src/app/[locale]/(app)/dashboard/_components/`. `/analiz` is the second screen built
 from them (2026-09-22).
 
-| Pattern | Spec | Panel code |
-|---|---|---|
-| **Card + header** | `PANEL_CARD` (§5). Header row: title 16/800 left; count (caption, `tabular-nums`) or text link right. | `components/panel/panel-styles.ts` |
-| **Text link** | 14–15/800, `--play-selected-ink`, underline on hover only, trailing 16 px chevron. The only secondary action style next to a ledge. | `PANEL_TEXT_LINK` |
-| **Icon well** | 40 px square, `--radius-card`, 20 px icon. Fill by what the row is about: plan → `--play-well-peri`, focus → `--play-well-blue`, mood → `--play-well-coral`, other → `--play-well-violet`; done → `--color-success` at 16 % on surface with success ink. | `daily-quests-card.tsx` |
-| **Progress bar** | 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar. | `components/panel/progress-line.tsx` |
-| **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest** (streak-core tints; glows when opened). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts` |
-| **Coach mark** | 24 px `--coach-accent` disc with a graduation cap, top-right of a node or avatar, 2 px surface ring. Means "your human coach assigned this". | `today-path.tsx` |
-| **Week band** | Monday → Sunday from `streak.week` (server-derived, never computed on the client). Dot 24/30 px: active = flame on `--color-streak-soft`, frozen = snowflake on `--color-progress` 18 %, missed = `--play-track`, not-yet = dashed `--play-line`; today = 2 px `--color-streak` ring. Right: "N gün seri" 16/900 + today's focus vs goal 12/700; wraps under the days on phones. Sits as the hero's bottom band on a `--play-track` 35 % tint. | `week-band.tsx` |
-| **Companion bubble** | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines, only when at least two would hide (the toggle is taller than one line). A free user's nudge sits inside the bubble (lock nudge below). | `components/panel/companion-bubble.tsx` |
-| **Hero** | Bubble → title (20→22/800) → path → one ledge + one text link → an ambient line (13/700 with a `--play-cta` dot: "Şu an 128 kişi seninle çalışıyor") → week band. The screen's single primary action lives here. | `today-path-card.tsx` |
-| **Mood row** | "Bugün nasılsın?" + five faces (40/44 px buttons, `aria-pressed`). One tap saves; the selected face gets `--play-selected` + a 2 px inset `--play-cta` ring, the others dim to 60 %. Never an auto-opening modal. On desktop it shares the row with the page title; on phones it is a bordered strip under the top bar. | `greeting-row.tsx` |
-| **Announcement card** | Several announcements in one card, **stacked in one grid cell** so the card is as tall as its tallest slide and rotation never moves the cards below. Slide: art (an 80 px tile beside the text below 1280 px, a 112 px band above it in the rail; art is static — no looping SVGs in a card) + optional title (16/800) + message + small ledge. Rotates every 5 s, pauses on hover/focus, dots are buttons, each slide closes on its own for the tab session. Order: a campaign (it ends) → the daily coin offer (it resets) → the trial (always there). The free user's only commercial slot. | `components/top-banner.tsx`, `membership-card.tsx` |
-| **Perks card** | What a member has, as rows (well + title + caption + chevron) under a title with the PREMIUM badge; "Aboneliğini yönet" as the text link. Replaces the announcement card for members. | `membership-card.tsx` |
-| **Coach card** | `--coach-accent` initials avatar, "Koçun" caption over the name, "Programı gör" link; the coach's standing note in a `--coach-accent-soft` block with `--coach-accent-ink` text. | `my-coach-card.tsx` |
-| **List rows** | Well + title (15/800, two lines) + meta (13, `--color-secondary`: room · replies · time), hairline between rows, the whole row is the link. | `community-topics-card.tsx` |
-| **Level card** | "Yolculuğun": `JourneyLevelCompact` (level, XP to next, bar) + the freeze allowance line in `--play-selected-ink` with a snowflake. | `journey-card.tsx` |
-| **PREMIUM badge** | 22 px pill, `--premium-badge-bg` / `--premium-badge-ink`, 11/900, 0.06 em tracking, upper case written in the copy. | `components/premium/premium-badge.tsx` |
-| **Lock nudge** | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the chevron stays with the label's last word and the badge wraps to its own line. Never a padlock, blur or fake preview. | `components/premium/premium-lock-nudge.tsx` |
-| **Skeletons** | A page skeleton only while auth settles (`dashboard-content-skeleton.tsx`); after that each section shows its own placeholder in place. | `dashboard-content-skeleton.tsx` |
-| **Reading column** | Long-form text (blog posts, legal documents): `max-w-2xl`, no card around the body. Body 16 → 18 / 600 in `--color-body` (leading 1.75), h2 20 → 22 / 800, h3 18 / 800, links `--play-selected-ink` 800 underlined, quotes a `--play-selected` block (never a side stripe), list markers `--color-secondary`. Markdown and sanitized HTML share it. | `components/article-markdown.tsx`, `.mentor-article-body` |
-| **Trust row** | Provenance under a post's title (guardrail §4 #1): ShieldCheck on `--color-success` 16 % over surface, "Doğrulanmış içerik", then source ↗ · last verified · updated (13/700) and one line on how updates happen. | `knowledge/[slug]/_components/article-trust-row.tsx` |
-| **Category well** | A post without a cover shows its category's well + a Lucide icon instead of an empty box: Başvuru `--play-well-blue` + ClipboardList, Sınav süreci `--play-well-peri` + CalendarClock, Genel `--play-well-violet` + BookOpen. | `knowledge/_components/article-cover.tsx` |
+| Pattern                 | Spec                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                | Panel code                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
+| **Card + header**       | `PANEL_CARD` (§5). Header row: title 16/800 left; count (caption, `tabular-nums`) or text link right.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `components/panel/panel-styles.ts`                        |
+| **Text link**           | 14–15/800, `--play-selected-ink`, underline on hover only, trailing 16 px chevron. The only secondary action style next to a ledge.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `PANEL_TEXT_LINK`                                         |
+| **Icon well**           | 40 px square, `--radius-card`, 20 px icon. Fill by what the row is about: plan → `--play-well-peri`, focus → `--play-well-blue`, mood → `--play-well-coral`, other → `--play-well-violet`; done → `--color-success` at 16 % on surface with success ink.                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `daily-quests-card.tsx`                                   |
+| **Progress bar**        | 8 px, full round, track `--play-track`, fill `--play-cta`, complete `--color-success`. Always `role="progressbar"` with a label. Count ("20/25") sits on the title line, not on the bar.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `components/panel/progress-line.tsx`                      |
+| **Path (Bugünün yolu)** | The day as nodes on a 4 px connector (`--play-cta` up to the current node, `--play-track` after). Done 48/56 px (phone/desktop) filled ledge + check; **current** 64/72 px with an 8 px `--play-selected` halo, a filled play icon and a "Sıradaki" tip above; upcoming 48/56 on `--play-track`. Labels under nodes: title 13/800 (two lines max), meta 12/600 (duration, subject, "koçundan"). Up to 5 task nodes; earlier done tasks fold into one "✓ N" node, the rest into "+N" (→ plan). Ends with the weekly **chest** (streak-core tints; glows when opened). Empty day: one dashed "İlk adım" node. **A node opens a menu** (start a session / mark done / undo); it never acts on the tap. Phones scroll the row sideways. | `today-path.tsx`, `today-path-model.ts`                   |
+| **Coach mark**          | 24 px `--coach-accent` disc with a graduation cap, top-right of a node or avatar, 2 px surface ring. Means "your human coach assigned this".                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | `today-path.tsx`                                          |
+| **Week band**           | Monday → Sunday from `streak.week` (server-derived, never computed on the client). Dot 24/30 px: active = flame on `--color-streak-soft`, frozen = snowflake on `--color-progress` 18 %, missed = `--play-track`, not-yet = dashed `--play-line`; today = 2 px `--color-streak` ring. Right: "N gün seri" 16/900 + today's focus vs goal 12/700; wraps under the days on phones. Sits as the hero's bottom band on a `--play-track` 35 % tint.                                                                                                                                                                                                                                                                                      | `week-band.tsx`                                           |
+| **Companion bubble**    | Puhu 72 px + bubble (`--play-selected`, `--play-radius`, 16/12 padding), one line at 15/600. AI variant: `--premium-ring-from` 10 % fill and a "Koçundan bugün" label with Sparkles; long notes fold to three lines, only when at least two would hide (the toggle is taller than one line). A free user's nudge sits inside the bubble (lock nudge below).                                                                                                                                                                                                                                                                                                                                                                         | `components/panel/companion-bubble.tsx`                   |
+| **Hero**                | Bubble → title (20→22/800) → path → one ledge + one text link → an ambient line (13/700 with a `--play-cta` dot: "Şu an 128 kişi seninle çalışıyor") → week band. The screen's single primary action lives here.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `today-path-card.tsx`                                     |
+| **Mood row**            | "Bugün nasılsın?" + five faces (40/44 px buttons, `aria-pressed`). One tap saves; the selected face gets `--play-selected` + a 2 px inset `--play-cta` ring, the others dim to 60 %. Never an auto-opening modal. On desktop it shares the row with the page title; on phones it is a bordered strip under the top bar.                                                                                                                                                                                                                                                                                                                                                                                                             | `greeting-row.tsx`                                        |
+| **Announcement card**   | Several announcements in one card, **stacked in one grid cell** so the card is as tall as its tallest slide and rotation never moves the cards below. Slide: art (an 80 px tile beside the text below 1280 px, a 112 px band above it in the rail; art is static — no looping SVGs in a card) + optional title (16/800) + message + small ledge. Rotates every 5 s, pauses on hover/focus, dots are buttons, each slide closes on its own for the tab session. Order: a campaign (it ends) → the daily coin offer (it resets) → the trial (always there). The free user's only commercial slot.                                                                                                                                     | `components/top-banner.tsx`, `membership-card.tsx`        |
+| **Perks card**          | What a member has, as rows (well + title + caption + chevron) under a title with the PREMIUM badge; "Aboneliğini yönet" as the text link. Replaces the announcement card for members.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               | `membership-card.tsx`                                     |
+| **Coach card**          | `--coach-accent` initials avatar, "Koçun" caption over the name, "Programı gör" link; the coach's standing note in a `--coach-accent-soft` block with `--coach-accent-ink` text.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    | `my-coach-card.tsx`                                       |
+| **List rows**           | Well + title (15/800, two lines) + meta (13, `--color-secondary`: room · replies · time), hairline between rows, the whole row is the link.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `community-topics-card.tsx`                               |
+| **Level card**          | "Yolculuğun": `JourneyLevelCompact` (level, XP to next, bar) + the freeze allowance line in `--play-selected-ink` with a snowflake.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `journey-card.tsx`                                        |
+| **PREMIUM badge**       | 22 px pill, `--premium-badge-bg` / `--premium-badge-ink`, 11/900, 0.06 em tracking, upper case written in the copy.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `components/premium/premium-badge.tsx`                    |
+| **Lock nudge**          | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the chevron stays with the label's last word and the badge wraps to its own line. Never a padlock, blur or fake preview.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         | `components/premium/premium-lock-nudge.tsx`               |
+| **Skeletons**           | A page skeleton only while auth settles (`dashboard-content-skeleton.tsx`); after that each section shows its own placeholder in place.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             | `dashboard-content-skeleton.tsx`                          |
+| **Reading column**      | Long-form text (blog posts, legal documents): `max-w-2xl`, no card around the body. Body 16 → 18 / 600 in `--color-body` (leading 1.75), h2 20 → 22 / 800, h3 18 / 800, links `--play-selected-ink` 800 underlined, quotes a `--play-selected` block (never a side stripe), list markers `--color-secondary`. Markdown and sanitized HTML share it.                                                                                                                                                                                                                                                                                                                                                                                 | `components/article-markdown.tsx`, `.mentor-article-body` |
+| **Trust row**           | Provenance under a post's title (guardrail §4 #1): ShieldCheck on `--color-success` 16 % over surface, "Doğrulanmış içerik", then source ↗ · last verified · updated (13/700) and one line on how updates happen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | `knowledge/[slug]/_components/article-trust-row.tsx`      |
+| **Category well**       | A post without a cover shows its category's well + a Lucide icon instead of an empty box: Başvuru `--play-well-blue` + ClipboardList, Sınav süreci `--play-well-peri` + CalendarClock, Genel `--play-well-violet` + BookOpen.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       | `knowledge/_components/article-cover.tsx`                 |
 
 ---
 
@@ -330,40 +331,40 @@ from them (2026-09-22).
 
 ### 8.1 Two asset families, one camera
 
-| Family | Role | Path |
-|---|---|---|
-| **Puhu** | Companion / emotion | `apps/web/public/mascot/puhu/` |
+| Family              | Role                           | Path                                                          |
+| ------------------- | ------------------------------ | ------------------------------------------------------------- |
+| **Puhu**            | Companion / emotion            | `apps/web/public/mascot/puhu/`                                |
 | **Subject soft-3D** | Task / empty / category scenes | `apps/web/public/visuals/` (flat files, no domain subfolders) |
 
 Same light: pastel matte, rounded forms, soft shadow, light ground. Final art is **supplied by design** (not generated in-repo by agents). Agents wire paths and placeholders only.
 
 ### 8.2 Puhu size scale
 
-| Token | px | Typical use |
-|---|---|---|
-| `sm` | 40 | Inline companion, greetings, quest row |
-| `md` | 72 | Coach bubble, dialogs, toasts |
-| `lg` | 120 | Empty / nudge hero |
+| Token | px  | Typical use                            |
+| ----- | --- | -------------------------------------- |
+| `sm`  | 40  | Inline companion, greetings, quest row |
+| `md`  | 72  | Coach bubble, dialogs, toasts          |
+| `lg`  | 120 | Empty / nudge hero                     |
 
 ### 8.3 Usage patterns (max density)
 
-1. **Inline companion** — small Puhu in chrome.  
-2. **Empty / nudge** — `visuals/*` and/or Puhu + one sentence + one CTA.  
-3. **Moment hero** — rare (Koç hub, milestones); full-bleed poster OK.  
+1. **Inline companion** — small Puhu in chrome.
+2. **Empty / nudge** — `visuals/*` and/or Puhu + one sentence + one CTA.
+3. **Moment hero** — rare (Koç hub, milestones); full-bleed poster OK.
 4. **Subject thumb** — optional small scene beside chips/knowledge cards.
 
 **At most one banner-class visual per page viewport.** Do not put art on every card.
 
 ### 8.4 Banner types
 
-| Type | When | Content |
-|---|---|---|
-| `CompanionBubble` | A screen's hero line | Puhu + one first-person line (§6.1); AI lines carry their label |
-| `AnnouncementCard` | Free user's commercial + offer slot | Rotating stacked slides (§6.1): campaign **or** trial, plus the daily coin offer. One per screen, never beside another commercial ask |
-| `WeeklyRecapBanner` | Last week's story is ready | The coral recap banner with its exported shapes (feature palette, §1) — kept as is |
-| `CompanionEmpty` | Empty list/chart | `visuals/` and/or Puhu + copy + CTA |
-| `MomentHero` | Koç hub / milestone | Full-bleed Puhu poster |
-| `PromoSoft` | *Legacy* — coach home community card only | Pastel surface + short copy; migrate to a plain §6.1 card when that screen is touched |
+| Type                | When                                      | Content                                                                                                                               |
+| ------------------- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `CompanionBubble`   | A screen's hero line                      | Puhu + one first-person line (§6.1); AI lines carry their label                                                                       |
+| `AnnouncementCard`  | Free user's commercial + offer slot       | Rotating stacked slides (§6.1): campaign **or** trial, plus the daily coin offer. One per screen, never beside another commercial ask |
+| `WeeklyRecapBanner` | Last week's story is ready                | The coral recap banner with its exported shapes (feature palette, §1) — kept as is                                                    |
+| `CompanionEmpty`    | Empty list/chart                          | `visuals/` and/or Puhu + copy + CTA                                                                                                   |
+| `MomentHero`        | Koç hub / milestone                       | Full-bleed Puhu poster                                                                                                                |
+| `PromoSoft`         | _Legacy_ — coach home community card only | Pastel surface + short copy; migrate to a plain §6.1 card when that screen is touched                                                 |
 
 **Retired 2026-09-21:** `QuestBanner` (the panel's quests are a card, "Günlük görevler"),
 `CampaignPromo` (its trial copy is now a slide of the `AnnouncementCard`; the cyan→slate
@@ -375,31 +376,32 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 
 ### 8.6 Bans
 
-- Stock photography  
-- Illustration on every card  
-- Coin / economy in the AI chat zone  
-- Alarm / shame banners  
-- Tiny uppercase eyebrows on every section  
-- Gradient text, glassmorphism-as-default, side-stripe accent borders  
-- Rows of metric tiles restating numbers the screen already shows (§1 rule 2)  
+- Stock photography
+- Illustration on every card
+- Coin / economy in the AI chat zone
+- Alarm / shame banners
+- Tiny uppercase eyebrows on every section
+- Gradient text, glassmorphism-as-default, side-stripe accent borders
+- Rows of metric tiles restating numbers the screen already shows (§1 rule 2)
 - Modals that open themselves on every visit (the auto mood wheel was removed for this); one-shot
-  moments — a new campaign's single announcement, a level-up — open once each, never stacked  
-- A second filled ledge, or a second commercial ask, on the same screen  
-- Looping animated art inside a card (static art; motion belongs to moments, §9.1)  
+  moments — a new campaign's single announcement, a level-up — open once each, never stacked
+- A second filled ledge, or a second commercial ask, on the same screen
+- Looping animated art inside a card (static art; motion belongs to moments, §9.1)
 
 ---
 
 ## 9. Motion scale (rich, guarded)
 
-| Layer | Examples | Duration |
-|---|---|---|
-| **Micro** | Hover → `shadow-card-hover`, press ~0.98 scale, focus ring, toggle, progress fill | 150–250 ms |
-| **Chrome** | Tab/segment, drawer, sheet, toast | 150–250 ms |
-| **Content** | List/card stagger, chart draw-in | Stagger short; no long page choreography |
-| **Ambient** | Optional slow blob drift (`transform` / `opacity` only) | Very slow; off under reduced-motion |
-| **Moment** | Session done, streak milestone, Puhu bounce | ≤600 ms |
+| Layer       | Examples                                                                          | Duration                                 |
+| ----------- | --------------------------------------------------------------------------------- | ---------------------------------------- |
+| **Micro**   | Hover → `shadow-card-hover`, press ~0.98 scale, focus ring, toggle, progress fill | 150–250 ms                               |
+| **Chrome**  | Tab/segment, drawer, sheet, toast                                                 | 150–250 ms                               |
+| **Content** | List/card stagger, chart draw-in                                                  | Stagger short; no long page choreography |
+| **Ambient** | Optional slow blob drift (`transform` / `opacity` only)                           | Very slow; off under reduced-motion      |
+| **Moment**  | Session done, streak milestone, Puhu bounce                                       | ≤600 ms                                  |
 
 **Rules:**
+
 - Convey state or feedback — not decoration for its own sake.
 - Prefer `transform` / `opacity`. Do not animate layout width/height.
 - Ease-out (quart/quint/expo). No elastic/bounce easing.
@@ -421,16 +423,17 @@ Mentor is a **learning app**, not a productivity tool. Effort deserves to be fel
 uniformly restrained — it is loud where progress happens and quiet where work happens.
 
 > **"Calm" in this document is never a motion rule.** It appears only in the anxiety guardrails
-> (§2.4 countdown not alarm-red, §11 error copy) and describes *tone toward an exam student*, not
+> (§2.4 countdown not alarm-red, §11 error copy) and describes _tone toward an exam student_, not
 > animation budget. Do not cite it to argue against an animation.
 
-| Layer | Surfaces | Expression |
-|---|---|---|
+| Layer           | Surfaces                                                                                                                                                                     | Expression                                                                                                                              |
+| --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
 | **Celebration** | Streak milestone (`streak-celebration.tsx`), quest / XP reward (`economy-quests-card.tsx`), session done (`session-done-state.tsx`), coin earn, weekly recap, Puhu reactions | Expressive and playful: scale pops, travel, staggered reveals, confetti-class one-shots, mascot motion. Owns the `Moment` row (≤600 ms) |
-| **Progress** | Progress bars, streak ring, level/XP fills, quest check-off | Animate the fill; a completed fill may pop once |
-| **Measured** | Forms, lists, calendar shell, settings, tables, navigation | Micro/Chrome only — these are work surfaces; motion states change, it does not perform |
+| **Progress**    | Progress bars, streak ring, level/XP fills, quest check-off                                                                                                                  | Animate the fill; a completed fill may pop once                                                                                         |
+| **Measured**    | Forms, lists, calendar shell, settings, tables, navigation                                                                                                                   | Micro/Chrome only — these are work surfaces; motion states change, it does not perform                                                  |
 
 **Rules (in addition to §9):**
+
 - Celebration is **event-driven and one-shot**. Never loop it, never gate content behind it.
 - One celebration at a time — do not stack a streak toast onto a quest reward.
 - Expressiveness comes from scale, travel, stagger and colour. The **no elastic/bounce easing** rule
@@ -471,9 +474,9 @@ deliberate presence cue, disabled under reduced motion.
 
 ## 12. Mapping to Our Product
 
-- Course/product cards → plan items, deneme entries, knowledge articles.  
-- Ongoing + progress → today’s session / streak / plan progress.  
-- Comment → AI coach / community (Phase 2).  
+- Course/product cards → plan items, deneme entries, knowledge articles.
+- Ongoing + progress → today’s session / streak / plan progress.
+- Comment → AI coach / community (Phase 2).
 - Nav → Anasayfa · Plan · Koç · Analiz · Blog · Topluluk · Profil. (Blog was "Bilgi" until 2026-09-23;
   it is a public section — `/blog`, no app shell — reached from the app nav.)
   (Desktop: Koç via floating Puhu FAB, not sidebar; mobile: elevated center tab.)
@@ -534,9 +537,10 @@ App shell: `apps/web/src/components/app-nav.tsx`.
 
 Reference screen: `apps/web/src/app/[locale]/(app)/dashboard/_components/` — `today-path*.tsx`
 (hero, path, model), `week-band.tsx`, `greeting-row.tsx`, `daily-quests-card.tsx`, `membership-card.tsx`
-+ `components/top-banner.tsx` (announcement card), `components/premium/premium-badge.tsx`,
-`premium-lock-nudge.tsx`. Shared panel parts: `apps/web/src/components/panel/` — `panel-styles.ts`
-(page frame, grid, card, hero, text link, ledge), `companion-bubble.tsx`, `progress-line.tsx`,
-`use-wide-layout.ts`. Second screen on them: `apps/web/src/app/[locale]/(app)/analysis/_components/`.
+
+- `components/top-banner.tsx` (announcement card), `components/premium/premium-badge.tsx`,
+  `premium-lock-nudge.tsx`. Shared panel parts: `apps/web/src/components/panel/` — `panel-styles.ts`
+  (page frame, grid, card, hero, text link, ledge), `companion-bubble.tsx`, `progress-line.tsx`,
+  `use-wide-layout.ts`. Second screen on them: `apps/web/src/app/[locale]/(app)/analysis/_components/`.
 
 **Rule:** screens compose tokens/primitives — no magic numbers ([`docs/standards/frontend.md`](./docs/standards/frontend.md)).

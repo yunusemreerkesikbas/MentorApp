@@ -5,6 +5,7 @@ import type {
   CoachConversationDto,
   CoachConversationMessagesDto,
   CoachMemoryDto,
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   DailyGreetingDto,
   GhostNarrationDto,
@@ -64,6 +65,13 @@ export function removeCoachContextFromUrl(href: string): string {
 
 export async function fetchCoachAccess(): Promise<CoachAccessDto> {
   return (await http<CoachAccessDto>("/v1/coach/access")) as CoachAccessDto;
+}
+
+/** "Koçla planla" wizard seed: what the coach reads and ready defaults. No model call. */
+export async function fetchPlanAdaptationBrief(): Promise<CoachPlanAdaptationBriefDto> {
+  return (await http<CoachPlanAdaptationBriefDto>(
+    "/v1/coach/plan-adaptation/brief",
+  )) as CoachPlanAdaptationBriefDto;
 }
 
 /** Premium adaptive-plan preview. This endpoint never mutates plan tasks. */

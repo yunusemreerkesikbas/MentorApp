@@ -114,6 +114,16 @@ export const CoachEvidenceType = {
   MOCK_PERFORMANCE: "MOCK_PERFORMANCE",
   GOAL: "GOAL",
   ACTION_OUTCOME: "ACTION_OUTCOME",
+  /** Lowest normalized mock averages (the analysis focus ranking). */
+  WEAK_SUBJECTS: "WEAK_SUBJECTS",
+  /** Mistake-notebook topics that keep repeating, plus cards due for review. */
+  NOTEBOOK_TOPICS: "NOTEBOOK_TOPICS",
+  /** Last completed week's study minutes by subject. */
+  SUBJECT_BALANCE: "SUBJECT_BALANCE",
+  /** Last completed week's planned vs completed tasks. */
+  PLAN_FOLLOW_THROUGH: "PLAN_FOLLOW_THROUGH",
+  /** Coarse exam proximity from the verified calendar; never a date or day count (§4 #1). */
+  EXAM_PHASE: "EXAM_PHASE",
 } as const;
 export type CoachEvidenceType =
   (typeof CoachEvidenceType)[keyof typeof CoachEvidenceType];

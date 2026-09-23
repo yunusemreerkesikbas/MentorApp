@@ -240,6 +240,7 @@ export class AnalysisService {
     const analysis = await this.getAnalysis(userId, examId);
     const focus = analysis.nextFocus;
     const error = analysis.notebookErrorSignals[0];
+    const steps = analysis.improvementCycle?.steps;
     return {
       focus: focus ? {
         subjectName: focus.subjectName,
@@ -247,6 +248,16 @@ export class AnalysisService {
         source: focus.source,
         evidenceCount: focus.evidenceCount,
       } : null,
+      focusTrend: focus
+        ? { direction: focus.trendDirection, recentDelta: focus.recentDelta }
+        : null,
+      topics: [...analysis.photoTopicSignals]
+        .sort((a, b) => b.count - a.count || a.topicName.localeCompare(b.topicName, "tr"))
+        .slice(0, 3)
+        .map(({ subjectName, topicName, count }) => ({ subjectName, topicName, count })),
+      cycle: steps
+        ? { practiced: steps.practiced, measured: steps.measured, closed: steps.closed }
+        : null,
       dominantError: error ? {
         errorType: error.errorType, count: error.count, sharePercent: error.sharePercent,
       } : null,

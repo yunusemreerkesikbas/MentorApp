@@ -208,6 +208,26 @@ test("ruh hali selam satırında tek dokunuşla kaydedilir, çark açılmaz", as
   await expect(page.getByTestId("mood-option-4")).toHaveAttribute("aria-pressed", "true");
 });
 
+for (const [status, visible] of [
+  ["PENDING", true],
+  ["DONE", false],
+] as const) {
+  test(`düşük modda hafifletme kartı yalnız hafifletilecek görev varken çıkar (${status})`, async ({
+    page,
+  }) => {
+    // The mood adaptation lightens today's pending tasks; with none left it has nothing to offer.
+    await mockPanel(page, [task(FIRST_TASK, "Paragraf: 20 soru", status)]);
+    await page.goto("/panel");
+    await expect(page.getByTestId("today-path-card")).toBeVisible();
+
+    await page.getByTestId("mood-option-2").click();
+    await expect(page.getByTestId("mood-option-2")).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("link", { name: /Bugünü biraz hafifletmek/ })).toHaveCount(
+      visible ? 1 : 0,
+    );
+  });
+}
+
 test("yoldaki düğüm menü açar; görev oradan bitti olarak işaretlenir", async ({ page }) => {
   const api = await mockPanel(page, [
     task(FIRST_TASK, "Paragraf: 20 soru", "PENDING"),

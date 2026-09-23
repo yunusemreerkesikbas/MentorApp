@@ -960,6 +960,9 @@ describe("ChatService coin refund", () => {
         source: "LOWEST_AVERAGE",
         evidenceCount: 3,
       },
+      focusTrend: null,
+      topics: [],
+      cycle: null,
       dominantError: null,
       notebookStats: {
         savedCount: 0,

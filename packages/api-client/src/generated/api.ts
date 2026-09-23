@@ -942,38 +942,58 @@ export const AiChatControllerPlanAdaptationPreviewBodyOneOfSource = {
   PLAN: 'PLAN',
 } as const;
 
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay = {
+  NUMBER_15: 15,
+  NUMBER_30: 30,
+  NUMBER_60: 60,
+  NUMBER_90: 90,
+  NUMBER_120: 120,
+} as const;
+
 export type AiChatControllerPlanAdaptationPreviewBodyOneOf = {
   source: AiChatControllerPlanAdaptationPreviewBodyOneOfSource;
   /** @maxLength 500 */
   note?: string;
+  /**
+   * @minimum 1
+   * @maximum 7
+   */
+  days?: number;
+  minutesPerDay?: AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay;
+  /** @maxItems 3 */
+  focusSubjects?: string[];
 };
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource];
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource = {
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource = {
   MOOD: 'MOOD',
 } as const;
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfThree = {
-  source: AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource;
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFour = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource;
 };
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource];
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource = {
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource = {
   SESSION: 'SESSION',
 } as const;
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfFive = {
-  source: AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource;
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfSix = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource;
   sessionId: string;
 };
 
-export type AiChatControllerPlanAdaptationPreviewBody = AiChatControllerPlanAdaptationPreviewBodyOneOf | AiChatControllerPlanAdaptationPreviewBodyOneOfThree | AiChatControllerPlanAdaptationPreviewBodyOneOfFive;
+export type AiChatControllerPlanAdaptationPreviewBody = AiChatControllerPlanAdaptationPreviewBodyOneOf | AiChatControllerPlanAdaptationPreviewBodyOneOfFour | AiChatControllerPlanAdaptationPreviewBodyOneOfSix;
 
 export type AiGhostControllerNarrateBody = {
   examId?: string;
@@ -1567,7 +1587,7 @@ export type authControllerAdminLoginResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type authControllerAdminLoginResponseSuccess = (authControllerAdminLoginResponse200) & {
   headers: Headers;
 };
@@ -1578,15 +1598,15 @@ export type authControllerAdminLoginResponse = (authControllerAdminLoginResponse
 export const getAuthControllerAdminLoginUrl = () => {
 
 
-
+  
 
   return `/v1/auth/admin/login`
 }
 
 export const authControllerAdminLogin = async (loginDto: LoginDto, options?: RequestInit): Promise<authControllerAdminLoginResponse> => {
-
+  
   return http<authControllerAdminLoginResponse>(getAuthControllerAdminLoginUrl(),
-  {
+  {      
     ...options,
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...options?.headers },
@@ -1766,7 +1786,7 @@ export type authControllerAdminRefreshResponse200 = {
   data: void
   status: 200
 }
-
+    
 export type authControllerAdminRefreshResponseSuccess = (authControllerAdminRefreshResponse200) & {
   headers: Headers;
 };
@@ -1777,19 +1797,19 @@ export type authControllerAdminRefreshResponse = (authControllerAdminRefreshResp
 export const getAuthControllerAdminRefreshUrl = () => {
 
 
-
+  
 
   return `/v1/auth/admin/refresh`
 }
 
 export const authControllerAdminRefresh = async ( options?: RequestInit): Promise<authControllerAdminRefreshResponse> => {
-
+  
   return http<authControllerAdminRefreshResponse>(getAuthControllerAdminRefreshUrl(),
-  {
+  {      
     ...options,
     method: 'POST'
-
-
+    
+    
   }
 );}
 
@@ -1832,7 +1852,7 @@ export type authControllerAdminLogoutResponse204 = {
   data: void
   status: 204
 }
-
+    
 export type authControllerAdminLogoutResponseSuccess = (authControllerAdminLogoutResponse204) & {
   headers: Headers;
 };
@@ -1843,19 +1863,19 @@ export type authControllerAdminLogoutResponse = (authControllerAdminLogoutRespon
 export const getAuthControllerAdminLogoutUrl = () => {
 
 
-
+  
 
   return `/v1/auth/admin/logout`
 }
 
 export const authControllerAdminLogout = async ( options?: RequestInit): Promise<authControllerAdminLogoutResponse> => {
-
+  
   return http<authControllerAdminLogoutResponse>(getAuthControllerAdminLogoutUrl(),
-  {
+  {      
     ...options,
     method: 'POST'
-
-
+    
+    
   }
 );}
 
@@ -2461,6 +2481,39 @@ export const aiChatControllerPlanDraftPreview = async (planDraftBodyDto: PlanDra
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       planDraftBodyDto,)
+  }
+);}
+
+
+
+export type aiChatControllerPlanAdaptationBriefResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type aiChatControllerPlanAdaptationBriefResponseSuccess = (aiChatControllerPlanAdaptationBriefResponse200) & {
+  headers: Headers;
+};
+;
+
+export type aiChatControllerPlanAdaptationBriefResponse = (aiChatControllerPlanAdaptationBriefResponseSuccess)
+
+export const getAiChatControllerPlanAdaptationBriefUrl = () => {
+
+
+  
+
+  return `/v1/coach/plan-adaptation/brief`
+}
+
+export const aiChatControllerPlanAdaptationBrief = async ( options?: RequestInit): Promise<aiChatControllerPlanAdaptationBriefResponse> => {
+  
+  return http<aiChatControllerPlanAdaptationBriefResponse>(getAiChatControllerPlanAdaptationBriefUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
   }
 );}
 

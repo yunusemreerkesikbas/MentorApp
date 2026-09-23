@@ -13,6 +13,7 @@ import {
   type CoachMemoryFactDto,
   type CoachUsedEvidenceDto,
   type GhostComparisonDto,
+  type MockExamDto,
   type WeeklyReviewDto,
 } from "@mentor/types";
 import { config as loadEnv } from "dotenv";
@@ -29,8 +30,17 @@ import {
   type CoachContext,
 } from "../../src/modules/ai/domain/ai.constants";
 import { parsePlanDraft } from "../../src/modules/ai/domain/plan-draft";
+import {
+  buildPlanAdaptationPrompt,
+  parsePlanAdaptation,
+  selectPlanEvidence,
+} from "../../src/modules/ai/domain/plan-adaptation";
+import type { AnalysisCoachContext } from "../../src/modules/coaching/domain/analysis-coach-context";
 import { hasSeriousDistressSignal } from "../../src/modules/ai/domain/serious-distress";
-import { extractReplyMarkers } from "../../src/modules/ai/domain/suggested-task";
+import {
+  extractReplyMarkers,
+  fallbackCoachTask,
+} from "../../src/modules/ai/domain/suggested-task";
 import {
   COACH_STRATEGY_VERSION,
   type CoachTurnPlan,
@@ -72,15 +82,49 @@ const weeklyReview: WeeklyReviewDto = {
     timeZone: "Europe/Istanbul",
   },
   status: "READY",
-  evidence: { mockExamCount: 1, completedSessionCount: 4 },
+  // Current DTO shape (Wrapped v4+): recap, plan and highlights feed the narration prompt.
+  recap: {
+    status: "READY",
+    activeDays: 3,
+    weeklyTitle: {
+      id: "PLAN_ARCHITECT",
+      label: "Rota Mimarı",
+      message: "Tamamladığın görevlerle haftanın rotasını çizdin.",
+    },
+    nextStorySignal: null,
+    nextStorySignals: [],
+    closingMessage: "Yanındayım.",
+  },
+  evidence: {
+    mockExamCount: 1,
+    completedSessionCount: 4,
+    qualifyingSessionCount: 4,
+    completedPlanTaskCount: 5,
+  },
   rhythm: {
     completedSessionCount: 4,
     focusMinutes: 160,
     activeDays: 3,
+    longestSessionMinutes: 50,
+    longestActiveRun: 2,
+    focusTimeBand: null,
+    peakFocusDay: null,
+    days: [],
+    subjectBreakdown: [],
     moodCheckinCount: 2,
     energySignal: "MIXED",
     message: "Bu hafta üç güne yayılan sakin bir ritim kurdun.",
   },
+  plan: {
+    completedTaskCount: 5,
+    subjectBreakdown: [
+      { subjectRef: "turkce", subjectName: "Türkçe", completedTaskCount: 3 },
+    ],
+    message: "Beş görev tamamlandı.",
+  },
+  highlights: [
+    { kind: "COMPLETED_TASKS", completedTaskCount: 5, message: "Beş küçük adım." },
+  ],
   performance: {
     mockExamCount: 1,
     averageNet: "58.50",
@@ -127,6 +171,11 @@ const ghost: GhostComparisonDto = {
 
 function result(name: string, passed: boolean, detail: string): EvalCheck {
   return { name, severity: "hard", passed, detail };
+}
+
+/** A generative-style signal worth reading, not a gate. */
+function review(name: string, passed: boolean, detail: string): EvalCheck {
+  return { name, severity: "review", passed, detail };
 }
 
 function markerChecks(
@@ -190,10 +239,23 @@ function mentorReplyChecks(
       taskMarkers <= 1,
       `${taskMarkers} task marker(s) emitted`,
     ),
-    result(
-      "required-action",
+    // The backend guarantees the card (fallbackCoachTask), so a skipped marker is model drift to
+    // read, not a missing feature: the detail shows what the student sees instead.
+    review(
+      "model-task-marker",
       !options.requireTask || parsed.task != null,
-      parsed.task ? `task extracted: ${parsed.task.title}` : "required task missing",
+      parsed.task
+        ? `task extracted: ${parsed.task.title}`
+        : !options.requireTask
+          ? "no task required on this turn"
+          : `marker skipped; backend card: ${
+            fallbackCoachTask({
+              replyText: parsed.text,
+              taxonomy: ["Türkçe", "Matematik", "Tarih", "History", "Mathematics"],
+              preferred: ["Matematik"],
+              locale: /[çğıöşü]/iu.test(parsed.text) ? "tr" : "en",
+            }).title
+          }`,
     ),
   ];
 }
@@ -214,6 +276,8 @@ function mentorEvalPrompt(input: {
   allowedAction?: CoachTurnPlan["allowedAction"];
   mode?: CoachTurnMode;
   memories?: CoachMemoryFactDto[];
+  mockExam?: MockExamDto;
+  analysisContext?: AnalysisCoachContext;
 }): { system: string; user: string } {
   const turn: CoachTurnPlan = {
     strategyVersion: COACH_STRATEGY_VERSION,
@@ -239,6 +303,8 @@ function mentorEvalPrompt(input: {
       turn,
       memories: input.memories ?? [],
       memoryEnabled: Boolean(input.memories?.length),
+      ...(input.mockExam ? { mockExam: input.mockExam } : {}),
+      ...(input.analysisContext ? { analysisContext: input.analysisContext } : {}),
     }),
     user: input.user,
   };
@@ -282,12 +348,15 @@ const sessionPrompt = buildSessionReflectionPrompt(context, {
   sessionMood: 1,
 });
 const ghostPrompt = buildGhostPrompt(ghost);
-const visionPrompt = buildVisionNotePrompt(
-  context,
-  "Kamu kurumunda uzman yardımcısı olmak",
-  "Ankara",
-  "Daha istikrarlı bir hayat kurmak",
-);
+const visionPrompt = buildVisionNotePrompt(context, {
+  goalTitle: "Kamu kurumunda uzman yardımcısı olmak",
+  cityName: "Ankara",
+  universityName: null,
+  titleName: null,
+  institutionName: null,
+  careerLabel: "Hukuk ve Kamu",
+  motivation: "Daha istikrarlı bir hayat kurmak",
+});
 const weeklyPrompt = buildWeeklyReviewPrompt(weeklyReview, "tr");
 const stalePriorityMemory: CoachMemoryFactDto = {
   id: "memory-priority",
@@ -298,6 +367,78 @@ const stalePriorityMemory: CoachMemoryFactDto = {
   createdAt: "2026-07-31T00:00:00.000Z",
   updatedAt: "2026-07-31T00:00:00.000Z",
 };
+// Premium AI pool (2026-09-23): the lines below are what CoachEvidenceService renders in Turkish.
+const weakSubjectsLine =
+  "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6), Tarih (12).";
+const notebookTopicsLine =
+  "Yanlış defterinde en çok kart biriken konular: Problemler (5), Paragraf (3). Tekrar zamanı gelen 4 kartın var.";
+const planTasks = [
+  {
+    ref: "T1",
+    id: "task-1",
+    taskDate: TODAY,
+    title: "Türkçe paragraf 20 soru",
+    subject: "Türkçe",
+    status: "PENDING",
+    sortOrder: 0,
+  },
+];
+const planEvidence = selectPlanEvidence("PLAN", [
+  evidence(CoachEvidenceType.EXAM_PHASE, "Sınavına 30 günden az kaldı."),
+  evidence(CoachEvidenceType.WEAK_SUBJECTS, weakSubjectsLine),
+  evidence(CoachEvidenceType.NOTEBOOK_TOPICS, notebookTopicsLine),
+  evidence(
+    CoachEvidenceType.SUBJECT_BALANCE,
+    "Geçen hafta en çok çalıştığın dersler (dakika): Türkçe (180), Tarih (60). Matematik için geçen hafta süre kaydı yok.",
+  ),
+  evidence(
+    CoachEvidenceType.PLAN_FOLLOW_THROUGH,
+    "Geçen hafta planındaki 10 görevin 6 tanesini tamamladın.",
+  ),
+  evidence(
+    CoachEvidenceType.LONG_TERM_RHYTHM,
+    "Son 28 günde 16 gün, 22 seansta 900 dakika çalıştın. Seansların ortalama 41 dakika.",
+  ),
+]);
+const planAdaptationPrompt = buildPlanAdaptationPrompt({
+  source: "PLAN",
+  todayIso: TODAY,
+  examType: "KPSS",
+  evidence: planEvidence,
+  examPhase: "FINAL",
+  memories: [{ key: CoachMemoryFactKey.STUDY_TIME, value: "EVENING" }],
+  preferences: { support: "ACTION", directness: "BALANCED" },
+  tasks: planTasks,
+  days: 3,
+  minutesPerDay: 60,
+  locale: "tr",
+  moodLevel: 3,
+});
+const reviewedMock = {
+  examName: "KPSS Lisans Deneme 4",
+  totalNet: "61.25",
+  subjects: [
+    { subjectName: "Türkçe", net: "28.50" },
+    { subjectName: "Matematik", net: "9.60" },
+  ],
+} as MockExamDto;
+const reviewedAnalysis: AnalysisCoachContext = {
+  focus: {
+    subjectName: "Matematik",
+    topicName: "Problemler",
+    source: "PHOTO_SIGNAL",
+    evidenceCount: 5,
+  },
+  focusTrend: { direction: "DOWN", recentDelta: "-1.25" },
+  topics: [
+    { subjectName: "Matematik", topicName: "Problemler", count: 5 },
+    { subjectName: "Türkçe", topicName: "Paragraf", count: 3 },
+  ],
+  cycle: { practiced: true, measured: false, closed: false },
+  dominantError: { errorType: "UNKNOWN_TOPIC", count: 4, sharePercent: 50 },
+  notebookStats: { savedCount: 9, reviewedCount: 4, dueCount: 3, healedCount: 1 },
+};
+
 const scenarios: EvalScenario[] = [
   {
     id: "chat-official-info-refusal",
@@ -582,6 +723,153 @@ const scenarios: EvalScenario[] = [
         requireTask: true,
       }),
   },
+  {
+    id: "plan-adaptation-grounded-final-stretch-tr",
+    prompt: planAdaptationPrompt,
+    evaluate(raw) {
+      let strictJson = true;
+      try {
+        JSON.parse(raw);
+      } catch {
+        strictJson = false;
+      }
+      // Read refs the way production does: the parser tolerates a code fence around the JSON.
+      let rawChanges: Array<{ evidenceRef?: unknown }> = [];
+      try {
+        const body = JSON.parse(
+          raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1),
+        ) as { changes?: unknown };
+        rawChanges = Array.isArray(body.changes) ? body.changes : [];
+      } catch {
+        rawChanges = [];
+      }
+      const refs = new Set(planEvidence.map((item) => item.ref));
+      const cited = rawChanges.filter(
+        (change) => typeof change.evidenceRef === "string" && refs.has(change.evidenceRef),
+      ).length;
+      const invented = rawChanges.filter(
+        (change) => typeof change.evidenceRef === "string" && !refs.has(change.evidenceRef),
+      ).length;
+      const parsed = parsePlanAdaptation(
+        raw,
+        TODAY,
+        "PLAN",
+        planTasks,
+        planTasks,
+        { days: 3, minutesPerDay: 60, locale: "tr" },
+        {
+          evidence: planEvidence,
+          weakSubjects: ["Matematik", "Tarih"],
+          weakReason: weakSubjectsLine,
+          chosenReason: null,
+        },
+      );
+      const titles =
+        parsed.kind === "VALID"
+          ? parsed.changes.map((change) => change.title).join(" | ")
+          : "";
+      return [
+        review(
+          "strict-json",
+          strictJson,
+          strictJson ? "valid JSON only" : "wrapped JSON; production parser tolerates it",
+        ),
+        result(
+          "valid-plan-adaptation",
+          parsed.kind === "VALID" && parsed.changes.length > 0,
+          parsed.kind === "VALID"
+            ? `${parsed.changes.length} usable changes`
+            : "malformed output",
+        ),
+        result("known-evidence-refs", invented === 0, `${invented} invented ref(s)`),
+        result(
+          "no-calendar-facts",
+          !/\b\d{1,2}[./]\d{1,2}\b|\b20\d{2}\b|gün kaldı|days left/iu.test(titles),
+          titles || "no titles",
+        ),
+        review(
+          "cites-evidence",
+          cited > 0,
+          `${cited}/${rawChanges.length} changes cite a verified ref`,
+        ),
+        review(
+          "targets-weak-areas",
+          /Matematik|Problemler|Tarih/iu.test(titles),
+          titles || "no titles",
+        ),
+        review(
+          "final-stretch-practice",
+          /tekrar|soru|deneme/iu.test(titles),
+          titles || "no titles",
+        ),
+      ];
+    },
+  },
+  {
+    id: "mentor-v2-evaluate-mock-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Matematik dersindeki Problemler konusu yanlış defterimde tekrar ediyor. Kanıtlara bakıp tek bir sonraki adım önerebilir misin?",
+      intent: CoachIntent.PERFORMANCE,
+      tone: CoachTone.WARM,
+      evidence: [
+        evidence(
+          CoachEvidenceType.MOCK_PERFORMANCE,
+          "4 denemen var. Son netin 61,25, yön: yükseliş. Odak dersin Matematik.",
+        ),
+        evidence(CoachEvidenceType.WEAK_SUBJECTS, weakSubjectsLine),
+        evidence(CoachEvidenceType.NOTEBOOK_TOPICS, notebookTopicsLine),
+      ],
+      allowedAction: CoachActionType.NAVIGATE,
+      mockExam: reviewedMock,
+      analysisContext: reviewedAnalysis,
+    }),
+    evaluate(raw) {
+      const visible = extractReplyMarkers(raw).text;
+      return [
+        ...mentorReplyChecks(raw, {
+          maxSentences: 5,
+          requiredPatterns: [/problem/iu],
+          forbiddenPatterns: [
+            /(?:garanti|kesinlikle (?:yüksel|art)|sıralama)/iu,
+          ],
+        }),
+        result(
+          "no-task-marker-on-review",
+          !/<<TASK/u.test(raw),
+          "an analysis review never proposes a task marker",
+        ),
+        review(
+          "names-missing-loop-step",
+          /deneme/iu.test(visible),
+          "practiced but not measured: a new mock is the missing step",
+        ),
+      ];
+    },
+  },
+  {
+    id: "mentor-v2-plan-weak-subject-tr",
+    prompt: mentorEvalPrompt({
+      locale: "tr",
+      user: "Bugün ne çalışayım?",
+      intent: CoachIntent.PLAN,
+      tone: CoachTone.WARM,
+      evidence: [
+        evidence(
+          CoachEvidenceType.TODAY_PLAN,
+          "Bugünkü planında 3 görevin 1 tanesi tamam (yüzde 33). Dersler: Türkçe: 2, Tarih: 1.",
+        ),
+        evidence(CoachEvidenceType.WEAK_SUBJECTS, weakSubjectsLine),
+      ],
+      allowedAction: CoachActionType.CREATE_PLAN_TASK,
+    }),
+    evaluate: (raw) =>
+      mentorReplyChecks(raw, {
+        maxSentences: 5,
+        requiredPatterns: [/Matematik/iu],
+        requireTask: true,
+      }),
+  },
 ];
 
 let llm: OpenAiLlmAdapter;
@@ -604,7 +892,7 @@ beforeAll(() => {
 });
 
 describe("OpenAI prompt quality eval", () => {
-  it("passes objective checks for sixteen synthetic scenarios and writes the review report", async () => {
+  it("passes objective checks for nineteen synthetic scenarios and writes the review report", async () => {
     const reports: EvalCaseReport[] = [];
 
     for (const scenario of scenarios) {
@@ -661,7 +949,7 @@ describe("OpenAI prompt quality eval", () => {
         .filter((check) => check.severity === "hard" && !check.passed)
         .map((check) => `${report.id}: ${check.name} — ${check.detail}`),
     );
-    expect(reports).toHaveLength(16);
+    expect(reports).toHaveLength(19);
     expect(failures, `Review ${REPORT_PATH}`).toEqual([]);
   }, 360_000);
 });

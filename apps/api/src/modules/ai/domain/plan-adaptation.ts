@@ -1,7 +1,15 @@
-import type {
-  CoachPlanAdaptationChangeDto,
-  CoachPlanAdaptationSource,
+import {
+  CoachEvidenceType,
+  type CoachPlanAdaptationBriefDto,
+  type CoachPlanAdaptationChangeDto,
+  type CoachPlanAdaptationSource,
+  type CoachUsedEvidenceDto,
 } from "@mentor/types";
+import { PLAN_ADAPTATION_MINUTES } from "@mentor/validation";
+import type {
+  CoachEvidenceSnapshot,
+  CoachExamPhase,
+} from "../../coaching/domain/coach-evidence";
 import type { PlanAdaptationSnapshotTask } from "../../coaching/domain/plan-adaptation";
 import { moodLabel } from "./grounding-fact";
 import {
@@ -11,6 +19,93 @@ import {
 
 export interface PromptPlanTask extends PlanAdaptationSnapshotTask {
   ref: string;
+}
+
+/** A pool evidence item with the opaque ref the model cites. The ref never leaves the backend. */
+export type PromptEvidence = CoachUsedEvidenceDto & { ref: string };
+
+/** Verified material for the "Neden" lines. The model only picks refs; the text is ours. */
+export interface PlanAdaptationGrounding {
+  evidence: readonly Pick<PromptEvidence, "ref" | "summary">[];
+  /** Taxonomy names, weakest first; fill blocks when the student picked no subject. */
+  weakSubjects?: readonly string[];
+  weakReason?: string | null;
+  chosenReason?: string | null;
+}
+
+// A plan reads the whole pool; mood and session adaptations stay as narrow as they always were.
+const PLAN_EVIDENCE: Record<
+  CoachPlanAdaptationSource,
+  readonly CoachEvidenceType[]
+> = {
+  PLAN: [
+    CoachEvidenceType.EXAM_PHASE,
+    CoachEvidenceType.WEAK_SUBJECTS,
+    CoachEvidenceType.NOTEBOOK_TOPICS,
+    CoachEvidenceType.SUBJECT_BALANCE,
+    CoachEvidenceType.PLAN_FOLLOW_THROUGH,
+    CoachEvidenceType.LONG_TERM_RHYTHM,
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.MOOD,
+    CoachEvidenceType.GOAL,
+    CoachEvidenceType.STREAK,
+  ],
+  MOOD: [
+    CoachEvidenceType.MOOD,
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.TODAY_PLAN,
+  ],
+  SESSION: [
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.SUBJECT_BALANCE,
+    CoachEvidenceType.MOOD,
+  ],
+};
+const PLAN_EVIDENCE_MAX = 6;
+
+export function selectPlanEvidence(
+  source: CoachPlanAdaptationSource,
+  available: readonly CoachUsedEvidenceDto[],
+): PromptEvidence[] {
+  const byType = new Map(available.map((item) => [item.type, item]));
+  return PLAN_EVIDENCE[source]
+    .flatMap((type) => byType.get(type) ?? [])
+    .slice(0, PLAN_EVIDENCE_MAX)
+    .map((item, index) => ({ ...item, ref: `E${index + 1}` }));
+}
+
+/** Wizard defaults from the student's own rhythm; each one stays editable on the web. */
+export function suggestPlanBrief(
+  input: Pick<
+    CoachEvidenceSnapshot,
+    | "activeDays28d"
+    | "averageSessionMinutes28d"
+    | "dailyFocusGoalMinutes"
+    | "weakSubjects"
+    | "focusSubject"
+  >,
+): CoachPlanAdaptationBriefDto["suggestion"] {
+  // Fewer than four active days in four weeks is not yet a rhythm worth mirroring.
+  const days =
+    input.activeDays28d != null && input.activeDays28d >= 4
+      ? Math.min(7, Math.max(3, Math.round(input.activeDays28d / 4)))
+      : null;
+  const target =
+    input.dailyFocusGoalMinutes ?? (input.averageSessionMinutes28d || null);
+  // Ties go to the smaller block: a gentler plan is the safer guess.
+  const minutesPerDay = target
+    ? PLAN_ADAPTATION_MINUTES.reduce((best, option) =>
+        Math.abs(option - target) < Math.abs(best - target) ? option : best,
+      )
+    : null;
+  const focusSubjects = [
+    ...new Set(
+      [input.focusSubject, ...input.weakSubjects].filter(
+        (subject): subject is string => Boolean(subject),
+      ),
+    ),
+  ].slice(0, 3);
+  return { days, minutesPerDay, focusSubjects };
 }
 
 export type PlanAdaptationParseResult =
@@ -56,7 +151,16 @@ export function parsePlanAdaptation(
   tasks: readonly PromptPlanTask[],
   capacityTasks: readonly PlanAdaptationSnapshotTask[] = tasks,
   rhythm?: PlanAdaptationRhythm,
+  grounding?: PlanAdaptationGrounding,
 ): PlanAdaptationParseResult {
+  const reasonByRef = new Map(
+    (grounding?.evidence ?? []).map((item) => [item.ref, item.summary]),
+  );
+  // Unknown or missing refs give no reason: an honest blank beats an invented "why".
+  const modelReason = (raw: unknown): string | undefined => {
+    const ref = (raw as { evidenceRef?: unknown }).evidenceRef;
+    return typeof ref === "string" ? reasonByRef.get(ref) : undefined;
+  };
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
   if (start === -1 || end <= start) return { kind: "MALFORMED" };
@@ -119,6 +223,7 @@ export function parsePlanAdaptation(
       continue;
     }
     seenMoveIds.add(task.id);
+    const reason = modelReason(raw);
     moveCandidates.push({
       kind: "MOVE",
       taskId: task.id,
@@ -126,6 +231,7 @@ export function parsePlanAdaptation(
       subject: task.subject,
       fromDate: task.taskDate,
       toDate,
+      ...(reason ? { reason } : {}),
     });
   }
 
@@ -235,7 +341,20 @@ export function parsePlanAdaptation(
     if ((titleCounts.get(key) ?? 0) > 0) continue;
     adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
-    additions.push({ kind: "ADD", title, subject, taskDate });
+    // A block moved onto the student's chosen subject is explained by that choice, not the model.
+    const reason =
+      focusSubjects.length === 0
+        ? modelReason(raw)
+        : matched
+          ? (modelReason(raw) ?? grounding?.chosenReason ?? undefined)
+          : (grounding?.chosenReason ?? undefined);
+    additions.push({
+      kind: "ADD",
+      title,
+      subject,
+      taskDate,
+      ...(reason ? { reason } : {}),
+    });
   }
 
   const filled =
@@ -250,6 +369,7 @@ export function parsePlanAdaptation(
           focusSubjects,
           rhythm?.minutesPerDay,
           rhythm?.locale,
+          grounding,
         );
 
   return { kind: "VALID", changes: [...moves, ...filled] };
@@ -265,7 +385,13 @@ function fillStudyDays(
   focusSubjects: readonly string[],
   minutesPerDay: number | undefined,
   locale: PromptLocale | undefined,
+  grounding?: PlanAdaptationGrounding,
 ): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
+  // No chosen subject: the weakest ones fill the gap, so a filler still means something.
+  const fillSubjects =
+    focusSubjects.length > 0 ? focusSubjects : (grounding?.weakSubjects ?? []);
+  const fillReason =
+    focusSubjects.length > 0 ? grounding?.chosenReason : grounding?.weakReason;
   const window = Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) =>
     addDays(todayIso, index),
   );
@@ -289,8 +415,8 @@ function fillStudyDays(
   for (const date of rest) {
     if (filled.length >= requestedDays) break;
     if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
-    const subject = focusSubjects.length
-      ? focusSubjects[synthetic % focusSubjects.length]!
+    const subject = fillSubjects.length
+      ? fillSubjects[synthetic % fillSubjects.length]!
       : null;
     const title = studyBlockTitle(subject, minutesPerDay, locale);
     const key = `${date}:${normalizedTitle(title)}`;
@@ -298,7 +424,13 @@ function fillStudyDays(
     synthetic += 1;
     titleCounts.set(key, 1);
     pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1);
-    filled.push({ kind: "ADD", title, subject, taskDate: date });
+    filled.push({
+      kind: "ADD",
+      title,
+      subject,
+      taskDate: date,
+      ...(subject && fillReason ? { reason: fillReason } : {}),
+    });
   }
   return filled.sort((a, b) => a.taskDate.localeCompare(b.taskDate));
 }
@@ -323,11 +455,12 @@ export function buildPlanAdaptationPrompt(input: {
   source: CoachPlanAdaptationSource;
   todayIso: string;
   examType: string | null;
-  recentSummary: {
-    count7d: number;
-    focusMinutes7d: number;
-    subjects: string[];
-  } | null;
+  /** Verified pool lines the model may cite by ref. Nothing else about the student enters. */
+  evidence: readonly Pick<PromptEvidence, "ref" | "type" | "summary">[];
+  examPhase?: CoachExamPhase | null;
+  /** Consented structured memory only; the service leaves it empty otherwise. */
+  memories?: readonly { key: string; value: string }[];
+  preferences?: { support: string | null; directness: string | null };
   tasks: readonly PromptPlanTask[];
   note?: string;
   days?: number;
@@ -357,11 +490,40 @@ export function buildPlanAdaptationPrompt(input: {
     policy,
     "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma. Bir günde en fazla 3 görev olsun.",
     "ADD görevleri küçük, somut ve kısa olsun; mevcut görevin aynı adlı kopyasını ekleme.",
-    `${PLAN_ADAPTATION_JSON_SENTINEL}: {"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD"}]}`,
+    "Her değişikliğe onu en iyi açıklayan tek bir E referansını evidenceRef olarak yaz; uygun kanıt yoksa null yaz. Kanıtta olmayan bir bilgi uydurma.",
+    "Tarih veya gün sayısı yazma: sınav tarihi, kalan gün ve takvim bilgisi hiçbir başlığa girmez.",
+    ...(input.source === "PLAN" && !input.focusSubjects?.length
+      ? [
+          "Kullanıcı ders seçmediyse ADD görevlerini WEAK_SUBJECTS ve NOTEBOOK_TOPICS kanıtındaki ders ve konulara yönelt.",
+        ]
+      : []),
+    ...(input.examPhase === "FINAL"
+      ? [
+          "Sınav son düzlükte: ADD görevleri yeni konu yerine tekrar, soru çözümü ve deneme ritmi olsun.",
+        ]
+      : []),
+    `${PLAN_ADAPTATION_JSON_SENTINEL}: {"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}]}`,
   ].join("\n");
-  const recent = input.recentSummary
-    ? `${input.recentSummary.count7d} seans, ${input.recentSummary.focusMinutes7d} dk; konular: ${input.recentSummary.subjects.join(", ") || "yok"}`
-    : "yakın dönem çalışma özeti yok";
+  const evidence = input.evidence.length
+    ? input.evidence
+        .map((item) => `${item.ref} | ${item.type} | ${item.summary}`)
+        .join("\n")
+    : "yok";
+  const memories = input.memories?.length
+    ? `\nİzinli hafıza: ${input.memories
+        .slice(0, 8)
+        .map((memory) => `${memory.key}=${memory.value}`)
+        .join("; ")}`
+    : "";
+  const preferenceParts = [
+    input.preferences?.support ? `destek=${input.preferences.support}` : null,
+    input.preferences?.directness
+      ? `direktlik=${input.preferences.directness}`
+      : null,
+  ].filter((part): part is string => part != null);
+  const preferences = preferenceParts.length
+    ? `\nKoçluk tercihi: ${preferenceParts.join(", ")}`
+    : "";
   const tasks = input.tasks.map((task) => ({
     ref: task.ref,
     date: task.taskDate,
@@ -394,6 +556,6 @@ export function buildPlanAdaptationPrompt(input: {
     : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}${mood}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nKanıtlar:\n${evidence}\nSinyal: ${contextSignal}${mood}${memories}${preferences}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
   };
 }

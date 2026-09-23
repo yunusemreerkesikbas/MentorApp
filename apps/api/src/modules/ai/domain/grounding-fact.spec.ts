@@ -76,6 +76,62 @@ describe("groundingFact", () => {
     ).toBe("Bugünkü planındaki 3 görevin 1 tanesini tamamlamışsın.");
   });
 
+  it.each([
+    [
+      { mockCount: 4, notebookCount: 9, sessions28d: 12 },
+      "4 denemene, 9 yanlış kartına ve son 28 gündeki 12 seansına baktık.",
+    ],
+    [
+      { mockCount: 4, notebookCount: 0, sessions28d: 12 },
+      "4 denemene ve son 28 gündeki 12 seansına baktık.",
+    ],
+    [
+      { mockCount: 0, notebookCount: 0, sessions28d: 12 },
+      "Son 28 gündeki 12 seansına baktık.",
+    ],
+    [
+      { mockCount: 0, notebookCount: 0, sessions28d: 0 },
+      "Veri biriktikçe plan daha çok sana göre şekillenir. Bunu seçimlerinle kuruyoruz.",
+    ],
+  ])("says what the plan was built from in Turkish (%o)", (coverage, sentence) => {
+    expect(groundingFact({ signal: "COVERAGE", locale: "tr", coverage })).toBe(
+      sentence,
+    );
+  });
+
+  it("says what the plan was built from in English with singular forms", () => {
+    expect(
+      groundingFact({
+        signal: "COVERAGE",
+        locale: "en",
+        coverage: { mockCount: 4, notebookCount: 9, sessions28d: 12 },
+      }),
+    ).toBe(
+      "We looked at your 4 mock exams, 9 mistake cards and 12 sessions from the last 28 days.",
+    );
+    expect(
+      groundingFact({
+        signal: "COVERAGE",
+        locale: "en",
+        coverage: { mockCount: 1, notebookCount: 1, sessions28d: 1 },
+      }),
+    ).toBe(
+      "We looked at your 1 mock exam, 1 mistake card and 1 session from the last 28 days.",
+    );
+  });
+
+  it("tells a low-mood student with nothing left to lighten that rest counts", () => {
+    expect(
+      groundingFact({ signal: "REST", locale: "tr", todayPlan: { total: 1, done: 1 } }),
+    ).toBe("Bugünkü 1 görevini tamamlamışsın. Bugün dinlenmek de planın parçası.");
+    expect(groundingFact({ signal: "REST", locale: "tr", todayPlan: null })).toBe(
+      "Bugün seni bekleyen bir görev yok. Dinlenmek de planın parçası.",
+    );
+    expect(
+      groundingFact({ signal: "REST", locale: "en", todayPlan: { total: 2, done: 2 } }),
+    ).toBe("You finished today's 2 tasks. Resting today is part of the plan too.");
+  });
+
   it("returns null when the snapshot has no safe fact", () => {
     expect(
       groundingFact({

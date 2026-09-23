@@ -65,7 +65,7 @@ describe("AI prompt locale", () => {
         source: "PLAN",
         todayIso: "2026-07-22",
         examType: "KPSS",
-        recentSummary: null,
+        evidence: [],
         tasks: [],
         locale: "en",
       }),
