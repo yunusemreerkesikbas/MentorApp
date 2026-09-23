@@ -1563,6 +1563,40 @@ export const authControllerLogin = async (loginDto: LoginDto, options?: RequestI
 
 
 
+export type authControllerAdminLoginResponse200 = {
+  data: void
+  status: 200
+}
+
+export type authControllerAdminLoginResponseSuccess = (authControllerAdminLoginResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerAdminLoginResponse = (authControllerAdminLoginResponseSuccess)
+
+export const getAuthControllerAdminLoginUrl = () => {
+
+
+
+
+  return `/v1/auth/admin/login`
+}
+
+export const authControllerAdminLogin = async (loginDto: LoginDto, options?: RequestInit): Promise<authControllerAdminLoginResponse> => {
+
+  return http<authControllerAdminLoginResponse>(getAuthControllerAdminLoginUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      loginDto,)
+  }
+);}
+
+
+
 export type authControllerGoogleStartResponse200 = {
   data: void
   status: 200
@@ -1728,6 +1762,39 @@ export const authControllerRefresh = async ( options?: RequestInit): Promise<aut
 
 
 
+export type authControllerAdminRefreshResponse200 = {
+  data: void
+  status: 200
+}
+
+export type authControllerAdminRefreshResponseSuccess = (authControllerAdminRefreshResponse200) & {
+  headers: Headers;
+};
+;
+
+export type authControllerAdminRefreshResponse = (authControllerAdminRefreshResponseSuccess)
+
+export const getAuthControllerAdminRefreshUrl = () => {
+
+
+
+
+  return `/v1/auth/admin/refresh`
+}
+
+export const authControllerAdminRefresh = async ( options?: RequestInit): Promise<authControllerAdminRefreshResponse> => {
+
+  return http<authControllerAdminRefreshResponse>(getAuthControllerAdminRefreshUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
 export type authControllerLogoutResponse204 = {
   data: void
   status: 204
@@ -1756,6 +1823,39 @@ export const authControllerLogout = async ( options?: RequestInit): Promise<auth
     method: 'POST'
     
     
+  }
+);}
+
+
+
+export type authControllerAdminLogoutResponse204 = {
+  data: void
+  status: 204
+}
+
+export type authControllerAdminLogoutResponseSuccess = (authControllerAdminLogoutResponse204) & {
+  headers: Headers;
+};
+;
+
+export type authControllerAdminLogoutResponse = (authControllerAdminLogoutResponseSuccess)
+
+export const getAuthControllerAdminLogoutUrl = () => {
+
+
+
+
+  return `/v1/auth/admin/logout`
+}
+
+export const authControllerAdminLogout = async ( options?: RequestInit): Promise<authControllerAdminLogoutResponse> => {
+
+  return http<authControllerAdminLogoutResponse>(getAuthControllerAdminLogoutUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
   }
 );}
 

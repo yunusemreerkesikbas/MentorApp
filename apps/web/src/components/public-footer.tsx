@@ -10,16 +10,17 @@ import { LEGAL_SLUGS, LEGAL_DOCUMENTS } from "@/lib/legal";
  * Link labels come from the legal registry, not from i18n: the document titles already exist there
  * per locale, and duplicating them would let the two drift.
  */
-export async function PublicFooter() {
+export async function PublicFooter({ wide = false }: { wide?: boolean } = {}) {
   const translate = await getTranslations("legal");
   const locale = await getLocale();
 
   return (
     <footer
-      className="border-t px-5 py-8 lg:px-8"
+      className={`border-t py-8 ${wide ? "" : "px-5 lg:px-8"}`}
       style={{ borderColor: "color-mix(in srgb, var(--color-secondary) 20%, transparent)" }}
     >
-      <div className="mx-auto max-w-3xl">
+      {/* `wide` lines the links up with the blog's max-w-6xl page frame instead of the legal column. */}
+      <div className={wide ? "mx-auto max-w-6xl px-5 sm:px-8 lg:px-10" : "mx-auto max-w-3xl"}>
         <h2 className="text-sm font-bold" style={{ color: "var(--color-main)" }}>
           {translate("footer_heading")}
         </h2>

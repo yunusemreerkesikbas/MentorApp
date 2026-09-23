@@ -301,6 +301,9 @@ from them (2026-09-22).
 | **PREMIUM badge** | 22 px pill, `--premium-badge-bg` / `--premium-badge-ink`, 11/900, 0.06 em tracking, upper case written in the copy. | `components/premium/premium-badge.tsx` |
 | **Lock nudge** | The feature's own words (14/800, `--play-selected-ink`) › chevron › PREMIUM badge; the chevron stays with the label's last word and the badge wraps to its own line. Never a padlock, blur or fake preview. | `components/premium/premium-lock-nudge.tsx` |
 | **Skeletons** | A page skeleton only while auth settles (`dashboard-content-skeleton.tsx`); after that each section shows its own placeholder in place. | `dashboard-content-skeleton.tsx` |
+| **Reading column** | Long-form text (blog posts, legal documents): `max-w-2xl`, no card around the body. Body 16 → 18 / 600 in `--color-body` (leading 1.75), h2 20 → 22 / 800, h3 18 / 800, links `--play-selected-ink` 800 underlined, quotes a `--play-selected` block (never a side stripe), list markers `--color-secondary`. Markdown and sanitized HTML share it. | `components/article-markdown.tsx`, `.mentor-article-body` |
+| **Trust row** | Provenance under a post's title (guardrail §4 #1): ShieldCheck on `--color-success` 16 % over surface, "Doğrulanmış içerik", then source ↗ · last verified · updated (13/700) and one line on how updates happen. | `knowledge/[slug]/_components/article-trust-row.tsx` |
+| **Category well** | A post without a cover shows its category's well + a Lucide icon instead of an empty box: Başvuru `--play-well-blue` + ClipboardList, Sınav süreci `--play-well-peri` + CalendarClock, Genel `--play-well-violet` + BookOpen. | `knowledge/_components/article-cover.tsx` |
 
 ---
 
@@ -471,7 +474,8 @@ deliberate presence cue, disabled under reduced motion.
 - Course/product cards → plan items, deneme entries, knowledge articles.  
 - Ongoing + progress → today’s session / streak / plan progress.  
 - Comment → AI coach / community (Phase 2).  
-- Nav → Anasayfa · Plan · Koç · Analiz · Bilgi · Topluluk · Profil.
+- Nav → Anasayfa · Plan · Koç · Analiz · Blog · Topluluk · Profil. (Blog was "Bilgi" until 2026-09-23;
+  it is a public section — `/blog`, no app shell — reached from the app nav.)
   (Desktop: Koç via floating Puhu FAB, not sidebar; mobile: elevated center tab.)
 - Guardrails: calm countdown, no result-ranking shame, encouraging Turkish tone (PRODUCT.md).
 
@@ -501,7 +505,10 @@ deliberate presence cue, disabled under reduced motion.
 - [x] Analiz converged (2026-09-22): panel frame with past exams in the right column, two views
       (Gelişim · Yanlışlarım) + "Deneme ekle" as a form mode, the improvement loop drawn as a path with
       one ledge, the coach's narration in the bubble for premium, the saved moment in place of toasts.
-- [ ] **Converge every screen to the panel** as it is touched: plan, bilgi, topluluk,
+- [x] Blog converged (2026-09-23): "Bilgi" became the public **Blog** (`/blog`, `/blog/[slug]`, 308 from
+      `/bilgi`), one `PublicChrome` for everyone, panel frame, list rows with category wells, the exam card in
+      the rail, provenance on top of a post, one ledge said by Puhu, shared reading type (§6.1).
+- [ ] **Converge every screen to the panel** as it is touched: plan, topluluk,
       seans, defterlerim, profil/ayarlar, and the coach workspace (Faz 5). Checklist per screen:
       §1 rules, §3 scale (no arbitrary `text-[Npx]`), §5 radius set, §6.1 patterns.
 - [x] §6.1 primitives shared once a second screen needed them: `apps/web/src/components/panel/`, not

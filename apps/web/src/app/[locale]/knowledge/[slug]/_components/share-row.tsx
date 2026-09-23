@@ -3,6 +3,10 @@
 import { useState, type ReactNode, type SVGProps } from "react";
 import { useTranslations } from "next-intl";
 import { Check, Link2 } from "lucide-react";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
+
+const ROUND =
+  "inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] transition-colors duration-200 hover:border-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
 export function ShareRow({ title, url }: { title: string; url: string }) {
   const t = useTranslations("knowledge");
@@ -21,18 +25,12 @@ export function ShareRow({ title, url }: { title: string; url: string }) {
   }
 
   return (
-    <section>
-      <h2
-        className="text-sm font-bold"
-        style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-      >
+    <section aria-labelledby="share-title" className={`${PANEL_CARD} flex flex-col gap-3`}>
+      <h2 id="share-title" className={PANEL_CARD_TITLE}>
         {t("share_title")}
       </h2>
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <ShareLink
-          href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`}
-          label={t("share_whatsapp")}
-        >
+      <div className="flex flex-wrap items-center gap-2">
+        <ShareLink href={`https://wa.me/?text=${encodedText}%20${encodedUrl}`} label={t("share_whatsapp")}>
           <WhatsAppIcon />
         </ShareLink>
         <ShareLink
@@ -51,42 +49,18 @@ export function ShareRow({ title, url }: { title: string; url: string }) {
           type="button"
           onClick={handleCopy}
           aria-label={copied ? t("share_copied") : t("share_copy")}
-          className="inline-flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border focus-visible:outline-none focus-visible:ring-2"
-          style={{
-            borderColor: "color-mix(in srgb, var(--color-main) 16%, transparent)",
-            color: "var(--color-main)",
-            backgroundColor: "var(--color-surface)",
-          }}
+          className={ROUND}
         >
-          {copied ? <Check className="h-5 w-5" /> : <Link2 className="h-5 w-5" />}
+          {copied ? <Check className="size-5" aria-hidden /> : <Link2 className="size-5" aria-hidden />}
         </button>
       </div>
     </section>
   );
 }
 
-function ShareLink({
-  href,
-  label,
-  children,
-}: {
-  href: string;
-  label: string;
-  children: ReactNode;
-}) {
+function ShareLink({ href, label, children }: { href: string; label: string; children: ReactNode }) {
   return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      aria-label={label}
-      className="inline-flex h-11 w-11 items-center justify-center rounded-full border focus-visible:outline-none focus-visible:ring-2"
-      style={{
-        borderColor: "color-mix(in srgb, var(--color-main) 16%, transparent)",
-        color: "var(--color-main)",
-        backgroundColor: "var(--color-surface)",
-      }}
-    >
+    <a href={href} target="_blank" rel="noopener noreferrer" aria-label={label} className={ROUND}>
       {children}
     </a>
   );

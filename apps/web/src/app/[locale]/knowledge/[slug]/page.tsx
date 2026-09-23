@@ -3,14 +3,16 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
+import type { ExamType } from "@mentor/types";
 import {
-  fetchExamCalendarByFamily,
   fetchInfoArticleBySlug,
   fetchInfoArticlesByFamily,
   infoArticleUrl,
 } from "@/lib/content-api";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
+import { blogUrl } from "@/lib/blog-url";
 import { siteUrl } from "@/lib/forum-public";
+import { readingMinutes } from "@/lib/reading-time";
 import { jsonLdHtml } from "@/lib/json-ld";
 import {
   buildArticleStructuredData,
@@ -34,7 +36,7 @@ export async function generateMetadata({
     const translate = await getTranslations("article");
     return { title: translate("not_found_title") };
   }
-  const title = article.metaTitle ?? `${article.title} | Mentor Bilgi Merkezi`;
+  const title = article.metaTitle ?? `${article.title} | Mentor Blog`;
   const description = article.metaDescription ?? undefined;
   const canonical = infoArticleUrl(article.slug);
   const origin = siteUrl();
@@ -98,14 +100,14 @@ export default async function PublicArticlePage({ params }: PageProps) {
     month: "long",
     year: "numeric",
   });
-  const [translate, messages, relatedPage, calendar] = await Promise.all([
+  // The exam card fetches its own calendar inside a Suspense boundary, so the post never waits on it.
+  const [translate, messages, relatedPage] = await Promise.all([
     getTranslations("article"),
     getMessages(),
     fetchInfoArticlesByFamily(article.family, 1, 4, {
       excludeSlug: article.slug,
       revalidate: 3600,
     }),
-    fetchExamCalendarByFamily(article.family, { revalidate: 3600 }),
   ]);
   const sameCategory = relatedPage.items.filter(
     (item) => item.category === article.category,
@@ -126,6 +128,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
   const breadcrumbJsonLd = buildBreadcrumbStructuredData({
     homeName: "Mentor",
     homeUrl: origin,
+    trail: [{ name: translate("blog"), url: blogUrl(article.family as ExamType) }],
     pageName: article.title,
     pageUrl: canonical,
   });
@@ -137,6 +140,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
       <PublicChrome
         loginLabel={translate("login")}
         panelLabel={translate("panel")}
+        blogLabel={translate("blog")}
       >
         <script
           type="application/ld+json"
@@ -149,13 +153,13 @@ export default async function PublicArticlePage({ params }: PageProps) {
         <ArticleContent
           article={article}
           related={related}
-          calendar={calendar}
           locale={locale}
           verifiedLabel={verifiedLabel}
           publishedLabel={publishedLabel}
           updatedLabel={updatedLabel}
+          readingMinutes={readingMinutes(article.body, article.bodyFormat)}
         />
-        <PublicFooter />
+        <PublicFooter wide />
       </PublicChrome>
     </NextIntlClientProvider>
   );

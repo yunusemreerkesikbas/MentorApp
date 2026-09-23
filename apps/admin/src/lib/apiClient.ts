@@ -18,13 +18,13 @@ function withRefreshLock<T>(operation: () => Promise<T>): Promise<T> {
 
 function isAuthBootstrapRequest(config: InternalAxiosRequestConfig | undefined): boolean {
     const url = config?.url ?? "";
-    return url.includes("/auth/login") || url.includes("/auth/refresh");
+    return url.includes("/auth/admin/login") || url.includes("/auth/admin/refresh");
 }
 
 export async function refreshAdminSession(): Promise<AuthSession> {
     if (refreshInFlight) return refreshInFlight;
     refreshInFlight = withRefreshLock(() =>
-        apiClient.post<AuthSession>("/auth/refresh").then(({ data }) => {
+        apiClient.post<AuthSession>("/auth/admin/refresh").then(({ data }) => {
             setToken(data.accessToken);
             return data;
         }),

@@ -10,9 +10,12 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { Env } from "../../../config/env.validation";
 import {
+  ADMIN_REFRESH_COOKIE,
+  ADMIN_REFRESH_COOKIE_PATH,
   GOOGLE_OAUTH_COOKIE_PATH,
   GOOGLE_OAUTH_STATE_COOKIE,
   GOOGLE_OAUTH_STATE_TTL_MS,
+  LEGACY_REFRESH_COOKIE,
   REFRESH_COOKIE,
   REFRESH_COOKIE_PATH,
 } from "../domain/identity.constants";
@@ -62,6 +65,16 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ): Promise<AuthSession> {
     return this.finish(await this.auth.login(dto), res);
+  }
+
+  @Post("admin/login")
+  @HttpCode(200)
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  async adminLogin(
+    @Body() dto: LoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthSession> {
+    return this.finish(await this.auth.loginAdmin(dto), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
   }
 
   @Get("google/start")
@@ -149,6 +162,17 @@ export class AuthController {
     return this.finish(await this.auth.refresh(raw ?? ""), res);
   }
 
+  @Post("admin/refresh")
+  @HttpCode(200)
+  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  async adminRefresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<AuthSession> {
+    const raw = (req.cookies as Record<string, string> | undefined)?.[ADMIN_REFRESH_COOKIE];
+    return this.finish(await this.auth.refreshAdmin(raw ?? ""), res, ADMIN_REFRESH_COOKIE, ADMIN_REFRESH_COOKIE_PATH);
+  }
+
   @Post("logout")
   @HttpCode(204)
   async logout(
@@ -158,6 +182,17 @@ export class AuthController {
     const raw = (req.cookies as Record<string, string> | undefined)?.[REFRESH_COOKIE];
     await this.auth.logout(raw);
     res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
+  }
+
+  @Post("admin/logout")
+  @HttpCode(204)
+  async adminLogout(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<void> {
+    const raw = (req.cookies as Record<string, string> | undefined)?.[ADMIN_REFRESH_COOKIE];
+    await this.auth.logout(raw);
+    res.clearCookie(ADMIN_REFRESH_COOKIE, { path: ADMIN_REFRESH_COOKIE_PATH });
   }
 
   @Post("verify-email")
@@ -183,15 +218,21 @@ export class AuthController {
   }
 
   /** Sets the refresh cookie and shapes the public AuthSession payload. */
-  private finish(result: AuthResult, res: Response): AuthSession {
+  private finish(
+    result: AuthResult,
+    res: Response,
+    cookieName = REFRESH_COOKIE,
+    cookiePath = REFRESH_COOKIE_PATH,
+  ): AuthSession {
     const isProd = this.config.get("NODE_ENV", { infer: true }) === "production";
-    res.cookie(REFRESH_COOKIE, result.tokens.refreshToken, {
+    res.cookie(cookieName, result.tokens.refreshToken, {
       httpOnly: true,
       secure: isProd,
       sameSite: "lax",
-      path: REFRESH_COOKIE_PATH,
+      path: cookiePath,
       expires: result.tokens.refreshExpiresAt,
     });
+    res.clearCookie(LEGACY_REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
     return {
       accessToken: result.tokens.accessToken,
       expiresIn: result.tokens.expiresIn,

@@ -77,8 +77,8 @@ describe("isStudentOnlyPath", () => {
       "/topluluk",
       "/community/kpss/threads/1",
       "/knowledge",
-      "/bilgi",
-      "/bilgi/kpss-basvuru",
+      "/blog",
+      "/blog/kpss-basvuru",
     ]) {
       expect(isStudentOnlyPath(path), path).toBe(false);
     }

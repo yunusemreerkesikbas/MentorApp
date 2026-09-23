@@ -74,11 +74,9 @@ export const routing = defineRouting({
       tr: "/analiz/haftanin-hikayesi",
       en: "/analysis/weekly-story",
     },
-    "/knowledge": { tr: "/bilgi", en: "/knowledge" },
-    "/knowledge/[slug]": {
-      tr: "/bilgi/[slug]",
-      en: "/knowledge/[slug]",
-    },
+    /** Shown as "Blog" since 2026-09-23; `/bilgi` and `/en/knowledge` redirect here (next.config.ts). */
+    "/knowledge": "/blog",
+    "/knowledge/[slug]": "/blog/[slug]",
     "/profile": { tr: "/profil", en: "/profile" },
     "/settings": { tr: "/ayarlar", en: "/settings" },
     "/settings/legal/[slug]": {

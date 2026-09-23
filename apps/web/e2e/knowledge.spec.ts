@@ -50,7 +50,7 @@ const article: InfoArticleDto = {
   featuredUntil: null,
   family: "KPSS",
   category: "APPLICATION",
-  metaTitle: "KPSS Başvuru Süreci | Mentor Bilgi Merkezi",
+  metaTitle: "KPSS Başvuru Süreci | Mentor Blog",
   metaDescription: "KPSS başvuru rehberi.",
   publishedAt: "2026-01-01T12:00:00.000Z",
   source: "ÖSYM",
@@ -83,78 +83,73 @@ const calendar: ExamCalendarDto = {
   daysUntilNextEvent: 14,
 };
 
-test("hub aile filtresi, öne çıkan ve sidebar countdown gösterir", async ({
-  page,
-}) => {
-  const api = await mockKnowledgeApi(page);
-  await page.goto("/bilgi");
+// The hub renders on the server now, so `page.route` cannot stand in for its data: these tests
+// read the seeded KPSS posts from the local API (the article tests always did). `mockKnowledgeApi`
+// still answers the browser's own calls (auth refresh, views, coach, ads).
+test("blog hub herkese açık ve KPSS ile açılır", async ({ page }) => {
+  const api = await mockKnowledgeApi(page, { authenticated: false });
+  await page.goto("/blog");
 
-  await expect(page.getByRole("tab", { name: "KPSS" })).toHaveAttribute(
-    "aria-selected",
-    "true",
+  await expect(page.getByRole("heading", { level: 1, name: "Blog" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "KPSS", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
-  await expect(page.getByRole("heading", { name: article.title }).first()).toBeVisible();
-  await expect(page.getByText("Mentor Editör").first()).toBeVisible();
-  await expect(page.getByRole("button", { name: "Başvuru" })).toBeVisible();
-  await expect(page.getByText("12 Temmuz 2026", { exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Bilgi Merkezi" })).toHaveCount(0);
-  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveCount(0);
-
-  const calendarLink = page.getByRole("link", { name: "Takvime ekle" });
-  await expect(calendarLink).toHaveAttribute(
-    "download",
-    "kpss-lisans-2026-takvim.ics",
-  );
-  const calendarHref = await calendarLink.getAttribute("href");
-  const calendarContent = decodeURIComponent(calendarHref?.split(",")[1] ?? "");
-  expect(calendarContent).toContain(
-    "UID:11111111-1111-4111-8111-111111111111-RESULT_DATE@mentor",
-  );
-  expect(calendarContent).not.toContain("EXAM_DATE@mentor");
-  expect(api.usersMeCalls).toBe(0);
+  await expect(page.getByRole("heading", { name: article.title })).toBeVisible();
+  // `exact`: "KPSS Sınav Günü Kuralları" is a post heading on the same page.
+  await expect(page.getByRole("heading", { name: "Sınav günü", exact: true })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Giriş yap" })).toBeVisible();
+  await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
 });
 
-test("konu filtresi ve sayfalama URL query kullanır", async ({ page }) => {
-  const api = await mockKnowledgeApi(page, { articleTotal: 20 });
-  await page.goto("/bilgi");
+test("konu bağlantısı adresi ve listeyi değiştirir", async ({ page }) => {
+  await mockKnowledgeApi(page, { authenticated: false });
+  await page.goto("/blog");
 
-  await page.getByRole("button", { name: "Başvuru" }).click();
-  await expect(page).toHaveURL(/category=APPLICATION/);
-  await expect
-    .poll(() =>
-      api.requests.some(
-        ({ method, path }) =>
-          method === "GET" &&
-          path.includes("/v1/content/info-articles?") &&
-          path.includes("category=APPLICATION"),
-      ),
-    )
-    .toBe(true);
-
-  await page.getByRole("button", { name: "Sonraki" }).click();
-  await expect(page).toHaveURL(/page=2/);
-  await expect(page).toHaveURL(/category=APPLICATION/);
-  expect(api.unexpected).toEqual([]);
-});
-
-test("yalnız sınav günü varken timeline tekrarını göstermez", async ({
-  page,
-}) => {
-  const api = await mockKnowledgeApi(page, {
-    calendar: {
-      ...calendar,
-      events: [event("EXAM_DATE", "2026-07-12T07:00:00.000Z")],
-      nextEvent: event("EXAM_DATE", "2026-07-12T07:00:00.000Z"),
-      daysUntilNextEvent: 0,
-    },
-  });
-  await page.goto("/bilgi");
-
-  await expect(page.getByText("12 Temmuz 2026", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Sınav süreci", exact: true }).click();
+  await expect(page).toHaveURL(/category=EXAM_PROCESS/);
   await expect(
-    page.getByRole("heading", { name: "Sınav süreci", exact: true }),
-  ).toHaveCount(0);
+    page.getByRole("heading", { name: "KPSS Sınav Günü Kuralları" }),
+  ).toBeVisible();
+  await expect(page.getByRole("heading", { name: article.title })).toHaveCount(0);
+});
+
+test("yazısı olmayan sınav ve son sayfanın ötesi sakin mesaj verir", async ({
+  page,
+}) => {
+  await mockKnowledgeApi(page, { authenticated: false });
+  await page.goto("/blog?family=YKS");
+  await expect(page.getByText("Bu sınav için henüz doğrulanmış yazı yok.")).toBeVisible();
+
+  await page.goto("/blog?page=9");
+  await expect(page.getByText("Bu sayfada yazı yok.")).toBeVisible();
+  await expect(page.getByRole("link", { name: "İlk sayfaya dön" })).toHaveAttribute(
+    "href",
+    "/blog",
+  );
+});
+
+test("eski /bilgi adresleri /blog'a kalıcı yönlenir", async ({ page }) => {
+  const response = await page.request.get("/bilgi/kpss-basvuru-sureci", {
+    maxRedirects: 0,
+  });
+  expect(response.status()).toBe(308);
+  expect(response.headers().location).toBe("/blog/kpss-basvuru-sureci");
+
+  await mockKnowledgeApi(page, { authenticated: false });
+  await page.goto("/bilgi?category=GENERAL");
+  await expect(page).toHaveURL(/\/blog\?category=GENERAL$/);
+});
+
+test("oturumlu ziyaretçi hub'da panel bağlantısı alır", async ({ page }) => {
+  const api = await mockKnowledgeApi(page);
+  await page.goto("/blog");
+
+  await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
+    "href",
+    "/panel",
+  );
   expect(api.unexpected).toEqual([]);
 });
 
@@ -165,12 +160,13 @@ test("makaleyi Koç composerına taşır ama otomatik göndermez", async ({
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
   );
   const api = await mockKnowledgeApi(page);
-  await page.goto(`/bilgi/${article.slug}`);
+  await page.goto(`/blog/${article.slug}`);
   const jsonLd = await page
     .locator('script[type="application/ld+json"]')
     .allTextContents();
   expect(jsonLd.join(" ")).toContain("Article");
   expect(jsonLd.join(" ")).toContain("BreadcrumbList");
+  expect(jsonLd.join(" ")).toContain('"name":"Blog"');
   expect(jsonLd.join(" ")).toContain("https://www.osym.gov.tr");
   await expect(
     page.getByRole("link", { name: "WhatsApp ile paylaş" }),
@@ -203,7 +199,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   page,
 }) => {
   const api = await mockKnowledgeApi(page, { authenticated: false });
-  await page.goto(`/en/knowledge/${article.slug}`);
+  await page.goto(`/en/blog/${article.slug}`);
 
   await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
   await expect(
@@ -215,7 +211,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   );
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
     "href",
-    new RegExp(`/bilgi/${article.slug}$`),
+    new RegExp(`/blog/${article.slug}$`),
   );
   await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
     "content",
@@ -237,10 +233,10 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
 
   const hub = await page.context().newPage();
   const hubApi = await mockKnowledgeApi(hub);
-  await hub.goto("/en/knowledge");
-  await expect(hub.getByRole("tab", { name: "KPSS" })).toHaveAttribute(
-    "aria-selected",
-    "true",
+  await hub.goto("/en/blog");
+  await expect(hub.getByRole("link", { name: "KPSS", exact: true })).toHaveAttribute(
+    "aria-current",
+    "page",
   );
   await expect(hub.getByRole("heading", { name: article.title }).first()).toBeVisible();
   await expect(
@@ -254,7 +250,7 @@ test("oturumlu ziyaretçi de public chrome görür ve panel bağlantısı alır"
 }) => {
   const api = await mockKnowledgeApi(page);
 
-  await page.goto(`/bilgi/${article.slug}`);
+  await page.goto(`/blog/${article.slug}`);
 
   await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
@@ -271,7 +267,7 @@ test("refresh oturumu yoksa public header giriş bağlantısını korur", async 
 }) => {
   const api = await mockKnowledgeApi(page, { authenticated: false });
 
-  await page.goto(`/en/knowledge/${article.slug}`);
+  await page.goto(`/en/blog/${article.slug}`);
 
   await expect(page.getByRole("link", { name: "Log in" })).toHaveAttribute(
     "href",
@@ -296,7 +292,7 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
     },
   );
 
-  await page.goto(`/bilgi/${article.slug}`);
+  await page.goto(`/blog/${article.slug}`);
 
   await page.waitForTimeout(150);
   expect(requestedSlug).toBeNull();
@@ -323,7 +319,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
     "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
     (route) => json(route, enabledContextualPlacement),
   );
-  await page.goto(`/bilgi/${article.slug}`);
+  await page.goto(`/blog/${article.slug}`);
   const adSlot = page.locator('aside[aria-label="Reklam"]');
   await expect
     .poll(() =>
@@ -342,7 +338,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
     if (request.url().includes("/tag/js/gpt.js")) gptRequests += 1;
   });
   await mockKnowledgeApi(premiumPage);
-  await premiumPage.goto(`/bilgi/${article.slug}`);
+  await premiumPage.goto(`/blog/${article.slug}`);
   await premiumPage.waitForTimeout(200);
   expect(gptRequests).toBe(0);
 });
@@ -514,7 +510,7 @@ async function mockKnowledgeApi(
       });
     }
     // The app shell nav reads the coin pill + premium state on every authenticated route,
-    // including /bilgi — not "unexpected", just not this suite's subject.
+    // including /blog — not "unexpected", just not this suite's subject.
     if (method === "GET" && path.startsWith("/v1/economy/")) {
       return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
     }

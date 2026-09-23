@@ -26,7 +26,9 @@ describe("metadata routes", () => {
     });
   });
 
-  it("does not advertise the noindex welcome page in the sitemap", async () => {
-    expect(await sitemap()).toEqual([]);
+  it("lists the public blog hub, and not the noindex welcome page", async () => {
+    expect(await sitemap()).toEqual([
+      { url: "https://mentor.example/blog", changeFrequency: "weekly", priority: 0.6 },
+    ]);
   });
 });

@@ -79,7 +79,7 @@ describe("identity (e2e)", () => {
     expect(consent.rows[0]?.terms_accepted_at).toBeInstanceOf(Date);
     expect(consent.rows[0]?.age_eligibility_confirmed_at).toBeInstanceOf(Date);
     const setCookie = res.headers["set-cookie"]?.[0] ?? "";
-    expect(setCookie).toContain("mentor_refresh=");
+    expect(setCookie).toContain("mentor_web_refresh=");
     expect(setCookie.toLowerCase()).toContain("httponly");
     accessToken = res.body.accessToken;
     refreshCookie = setCookie.split(";")[0]!;

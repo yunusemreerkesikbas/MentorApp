@@ -7,7 +7,7 @@ vi.mock("next-intl/middleware", () => ({
 }));
 
 describe("proxy matcher", () => {
-  it.each(["/", "/en/login", "/bilgi/kpss-basvuru"])(
+  it.each(["/", "/en/login", "/blog/kpss-basvuru"])(
     "matches localized HTML route %s",
     (url) => {
       expect(
