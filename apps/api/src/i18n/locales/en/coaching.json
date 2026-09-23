@@ -12,19 +12,31 @@
     "GOING": "Your rhythm is holding. One small step today is enough. I'm here."
   },
   "coachEvidence": {
-    "todayPlan": "You completed {done}/{total} tasks in today's plan ({completionRate} percent). Subject distribution: {subjects}.",
-    "todayPlanNoSubjects": "You completed {done}/{total} tasks in today's plan ({completionRate} percent); there is no taxonomy-verified subject distribution yet.",
-    "todayFocus": "You focused for {minutes} minutes today; your daily goal is {goal} minutes.",
-    "todayFocusNoGoal": "You focused for {minutes} minutes today; you have not set a daily focus goal yet.",
-    "recentRhythm": "Over 7 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes, strongest time band {timeBand}.",
-    "recentRhythmNoTimeBand": "Over 7 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes, with no dominant time band yet.",
-    "longTermRhythm": "Over 28 days: {sessions} sessions, {minutes} minutes and {activeDays} active days; average session {averageMinutes} minutes.",
-    "streak": "Your current streak is {current} days; your latest active day was {lastActiveDate}.",
-    "mood": "Today's coarse energy signal is {level}/5; short-term direction {trend}.",
-    "mockPerformance": "Across {count} mock exams, your latest net is {latestNet}; direction {trend}, backend focus {focusSubject}.",
-    "mockPerformanceNoFocus": "Across {count} mock exams, your latest net is {latestNet}; direction {trend}, with no verified focus subject yet.",
-    "goal": "Your normalized goal field is {careerGroup}.",
-    "actionOutcome": "You accepted {accepted} coach tasks and completed {completed}; latest status {lastStatus}.",
+    "todayPlan": "You have finished {done} of the {total} tasks in today's plan ({completionRate} percent). Subjects: {subjects}.",
+    "todayPlanNoSubjects": "You have finished {done} of the {total} tasks in today's plan ({completionRate} percent).",
+    "todayFocus": "You focused for {minutes} minutes today. Your daily goal is {goal} minutes.",
+    "todayFocusNoGoal": "You focused for {minutes} minutes today. You have not set a daily goal yet.",
+    "recentRhythm": "Over the last 7 days you studied on {activeDays} days, {minutes} minutes across {sessions} sessions. Your sessions average {averageMinutes} minutes, mostly in the {timeBand}.",
+    "recentRhythmNoTimeBand": "Over the last 7 days you studied on {activeDays} days, {minutes} minutes across {sessions} sessions. Your sessions average {averageMinutes} minutes.",
+    "longTermRhythm": "Over the last 28 days you studied on {activeDays} days, {minutes} minutes across {sessions} sessions. Your sessions average {averageMinutes} minutes.",
+    "streak": "Your streak is {current} days. You last studied on {lastActiveDate}.",
+    "mood": "Today's energy is {level} out of 5. Recent direction: {trend}.",
+    "mockPerformance": "You have {count} mock exams. Your latest net is {latestNet}, direction: {trend}. Your focus subject is {focusSubject}.",
+    "mockPerformanceNoFocus": "You have {count} mock exams. Your latest net is {latestNet}, direction: {trend}.",
+    "weakSubjects": "Subjects that need the most support in your mock exams (average net): {subjects}.",
+    "weakSubject": "The subject that needs the most support in your mock exams (average net): {subjects}.",
+    "notebookTopics": "Topics with the most cards in your mistake notebook: {topics}.",
+    "notebookTopicsDue": "Topics with the most cards in your mistake notebook: {topics}. {due} cards are due for review.",
+    "subjectBalance": "Where your time went last week (minutes): {subjects}.",
+    "subjectBalanceGap": "Where your time went last week (minutes): {subjects}. No time was logged for {gap} last week.",
+    "planFollowThrough": "Last week you finished {completed} of the {planned} tasks in your plan.",
+    "examPhase": {
+      "FAR": "More than 90 days until your exam.",
+      "MID": "Between 30 and 90 days until your exam.",
+      "FINAL": "Less than 30 days until your exam."
+    },
+    "goal": "Your goal field: {careerGroup}.",
+    "actionOutcome": "You added {accepted} coach suggestions to your plan and finished {completed}. Latest status: {lastStatus}.",
     "values": {
       "trend": {
         "UP": "upward",
@@ -83,7 +95,9 @@
   },
   "planAdaptation": {
     "READY": "I prepared a safe preview without changing your plan. Select only the changes you want.",
-    "NO_CHANGE": "Your plan does not need a change right now. You can continue with the current small steps."
+    "NO_CHANGE": "Your plan does not need a change right now. You can continue with the current small steps.",
+    "reasonChosenSubject": "A subject you chose to focus on this week.",
+    "REST": "There is nothing left to lighten today. We'll pick it up together tomorrow."
   },
   "official": {
     "EXAM_DATE": "You can see the official exam date in the verified card.",

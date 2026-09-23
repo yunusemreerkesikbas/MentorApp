@@ -12,19 +12,31 @@
     "GOING": "Ritmin duruyor. Bugün de küçük bir adım yeter. Yanındayım."
   },
   "coachEvidence": {
-    "todayPlan": "Bugünkü planında {done}/{total} görev tamamlandı (yüzde {completionRate}). Ders dağılımı: {subjects}.",
-    "todayPlanNoSubjects": "Bugünkü planında {done}/{total} görev tamamlandı (yüzde {completionRate}); taksonomide doğrulanmış ders dağılımı bulunmuyor.",
-    "todayFocus": "Bugün {minutes} dakika odaklandın; günlük hedefin {goal} dakika.",
-    "todayFocusNoGoal": "Bugün {minutes} dakika odaklandın; henüz günlük odak hedefi belirlemedin.",
-    "recentRhythm": "Son 7 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika, baskın zaman bandı {timeBand}.",
-    "recentRhythmNoTimeBand": "Son 7 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika, henüz baskın bir zaman bandı yok.",
-    "longTermRhythm": "Son 28 günde {sessions} seans, {minutes} dakika ve {activeDays} aktif gün var; ortalama seans {averageMinutes} dakika.",
-    "streak": "Güncel serin {current} gün; son aktif günün {lastActiveDate}.",
-    "mood": "Bugünkü kaba enerji sinyalin {level}/5; kısa dönem yönü {trend}.",
-    "mockPerformance": "{count} deneme kaydında son netin {latestNet}; yön {trend}, backend odağı {focusSubject}.",
-    "mockPerformanceNoFocus": "{count} deneme kaydında son netin {latestNet}; yön {trend}, henüz doğrulanmış bir odak dersi yok.",
-    "goal": "Normalize hedef alanın {careerGroup}.",
-    "actionOutcome": "Koç önerilerinden {accepted} görevi kabul ettin, {completed} tanesini tamamladın; son durum {lastStatus}.",
+    "todayPlan": "Bugünkü planında {total} görevin {done} tanesi tamam (yüzde {completionRate}). Dersler: {subjects}.",
+    "todayPlanNoSubjects": "Bugünkü planında {total} görevin {done} tanesi tamam (yüzde {completionRate}).",
+    "todayFocus": "Bugün {minutes} dakika odaklandın. Günlük hedefin {goal} dakika.",
+    "todayFocusNoGoal": "Bugün {minutes} dakika odaklandın. Henüz günlük hedef koymadın.",
+    "recentRhythm": "Son 7 günde {activeDays} gün, {sessions} seansta {minutes} dakika çalıştın. Seansların ortalama {averageMinutes} dakika, en çok {timeBand} çalışıyorsun.",
+    "recentRhythmNoTimeBand": "Son 7 günde {activeDays} gün, {sessions} seansta {minutes} dakika çalıştın. Seansların ortalama {averageMinutes} dakika.",
+    "longTermRhythm": "Son 28 günde {activeDays} gün, {sessions} seansta {minutes} dakika çalıştın. Seansların ortalama {averageMinutes} dakika.",
+    "streak": "Serin {current} gün. Son çalıştığın gün {lastActiveDate}.",
+    "mood": "Bugünkü enerjin 5 üzerinden {level}. Son günlerde yönü: {trend}.",
+    "mockPerformance": "{count} denemen var. Son netin {latestNet}, yön: {trend}. Odak dersin {focusSubject}.",
+    "mockPerformanceNoFocus": "{count} denemen var. Son netin {latestNet}, yön: {trend}.",
+    "weakSubjects": "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): {subjects}.",
+    "weakSubject": "Denemelerinde en çok desteğe ihtiyaç duyan ders (ortalama net): {subjects}.",
+    "notebookTopics": "Yanlış defterinde en çok kart biriken konular: {topics}.",
+    "notebookTopicsDue": "Yanlış defterinde en çok kart biriken konular: {topics}. Tekrar zamanı gelen {due} kartın var.",
+    "subjectBalance": "Geçen hafta en çok çalıştığın dersler (dakika): {subjects}.",
+    "subjectBalanceGap": "Geçen hafta en çok çalıştığın dersler (dakika): {subjects}. {gap} için geçen hafta süre kaydı yok.",
+    "planFollowThrough": "Geçen hafta planındaki {planned} görevin {completed} tanesini tamamladın.",
+    "examPhase": {
+      "FAR": "Sınavına 90 günden fazla var.",
+      "MID": "Sınavına 30 ile 90 gün arası var.",
+      "FINAL": "Sınavına 30 günden az kaldı."
+    },
+    "goal": "Hedef alanın: {careerGroup}.",
+    "actionOutcome": "Koç önerilerinden {accepted} görevi planına aldın, {completed} tanesini tamamladın. Son durum: {lastStatus}.",
     "values": {
       "trend": {
         "UP": "yükseliş",
@@ -83,7 +95,9 @@
   },
   "planAdaptation": {
     "READY": "Planına dokunmadan güvenli bir önizleme hazırladım. İstediğin değişiklikleri seçebilirsin.",
-    "NO_CHANGE": "Şu an planını değiştirmen gerekmiyor. Mevcut küçük adımlarla devam edebilirsin."
+    "NO_CHANGE": "Şu an planını değiştirmen gerekmiyor. Mevcut küçük adımlarla devam edebilirsin.",
+    "reasonChosenSubject": "Bu hafta ağırlık vermek istediğin ders.",
+    "REST": "Bugün hafifletilecek bir görev kalmadı. Yarın kaldığın yerden birlikte devam ederiz."
   },
   "official": {
     "EXAM_DATE": "Resmî sınav tarihini doğrulanmış kartta görebilirsin.",

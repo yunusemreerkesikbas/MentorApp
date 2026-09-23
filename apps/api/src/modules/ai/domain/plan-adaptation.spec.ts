@@ -1,8 +1,11 @@
+import { CoachEvidenceType } from "@mentor/types";
 import { coachPlanAdaptationSchema } from "@mentor/validation";
 import { describe, expect, it } from "vitest";
 import {
   buildPlanAdaptationPrompt,
   parsePlanAdaptation,
+  selectPlanEvidence,
+  suggestPlanBrief,
 } from "./plan-adaptation";
 
 const TODAY = "2026-07-21";
@@ -440,7 +443,7 @@ describe("parsePlanAdaptation", () => {
       source: "PLAN",
       todayIso: TODAY,
       examType: "KPSS",
-      recentSummary: null,
+      evidence: [],
       tasks: [],
       days: 5,
       minutesPerDay: 60,
@@ -466,5 +469,234 @@ describe("parsePlanAdaptation", () => {
         focusSubjects: ["Tarih"],
       }).success,
     ).toBe(true);
+  });
+});
+
+const WEAK = "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6), Fen Bilimleri (8,2).";
+const TOPICS = "Yanlış defterinde en çok kart biriken konular: Problemler (5).";
+const CHOSEN = "Bu hafta ağırlık vermek istediğin ders.";
+const EVIDENCE = [
+  { ref: "E1", type: CoachEvidenceType.WEAK_SUBJECTS, summary: WEAK },
+  { ref: "E2", type: CoachEvidenceType.NOTEBOOK_TOPICS, summary: TOPICS },
+];
+const grounding = {
+  evidence: EVIDENCE,
+  weakSubjects: ["Matematik", "Fen Bilimleri"],
+  weakReason: WEAK,
+  chosenReason: CHOSEN,
+};
+
+describe("plan adaptation reasons", () => {
+  it("turns the evidence ref the model picked into the verified reason", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "MOVE", taskRef: "T1", toDate: "2026-07-23", evidenceRef: "E1" },
+          { kind: "ADD", title: "Problemler 10 soru", subject: "Matematik", taskDate: "2026-07-24", evidenceRef: "E2" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      undefined,
+      grounding,
+    );
+
+    expect(result).toEqual({
+      kind: "VALID",
+      changes: [
+        expect.objectContaining({ kind: "MOVE", taskId: "task-1", reason: WEAK }),
+        expect.objectContaining({ kind: "ADD", title: "Problemler 10 soru", reason: TOPICS }),
+      ],
+    });
+  });
+
+  it("leaves the reason out when the model names an unknown ref or none", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Paragraf 20 soru", subject: "Türkçe", taskDate: "2026-07-24", evidenceRef: "E9" },
+          { kind: "ADD", title: "Kısa tekrar", subject: null, taskDate: "2026-07-25" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      undefined,
+      grounding,
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    for (const change of result.changes) expect(change).not.toHaveProperty("reason");
+  });
+
+  it("fills missing study days with weak subjects when the student picked none", () => {
+    const result = parsePlanAdaptation(
+      '{"changes":[]}',
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 2, minutesPerDay: 30 },
+      grounding,
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toEqual([
+      expect.objectContaining({ title: "Matematik · 30 dk", subject: "Matematik", reason: WEAK }),
+      expect.objectContaining({ title: "Fen Bilimleri · 30 dk", subject: "Fen Bilimleri", reason: WEAK }),
+    ]);
+  });
+
+  it("explains blocks that come from the student's own subject choice", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Matematik çalışması", subject: "Matematik", taskDate: "2026-07-24", evidenceRef: "E1" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 2, minutesPerDay: 30, focusSubjects: ["Tarih"] },
+      grounding,
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toHaveLength(2);
+    for (const change of result.changes) {
+      expect(change).toMatchObject({ subject: "Tarih", reason: CHOSEN });
+    }
+  });
+});
+
+describe("selectPlanEvidence", () => {
+  const all = Object.values(CoachEvidenceType).map((type) => ({
+    type,
+    summary: `${type} özeti`,
+    observedAt: "2026-07-21T09:00:00.000Z",
+  }));
+
+  it("gives a plan request up to six items in its own priority order with refs", () => {
+    const selected = selectPlanEvidence("PLAN", all);
+    expect(selected.map((item) => item.type)).toEqual([
+      CoachEvidenceType.EXAM_PHASE,
+      CoachEvidenceType.WEAK_SUBJECTS,
+      CoachEvidenceType.NOTEBOOK_TOPICS,
+      CoachEvidenceType.SUBJECT_BALANCE,
+      CoachEvidenceType.PLAN_FOLLOW_THROUGH,
+      CoachEvidenceType.LONG_TERM_RHYTHM,
+    ]);
+    expect(selected.map((item) => item.ref)).toEqual(["E1", "E2", "E3", "E4", "E5", "E6"]);
+  });
+
+  it("keeps mood and session adaptations on a narrow context", () => {
+    expect(selectPlanEvidence("MOOD", all).map((item) => item.type)).toEqual([
+      CoachEvidenceType.MOOD,
+      CoachEvidenceType.RECENT_RHYTHM,
+      CoachEvidenceType.TODAY_PLAN,
+    ]);
+    expect(selectPlanEvidence("SESSION", all).map((item) => item.type)).toEqual([
+      CoachEvidenceType.RECENT_RHYTHM,
+      CoachEvidenceType.SUBJECT_BALANCE,
+      CoachEvidenceType.MOOD,
+    ]);
+  });
+});
+
+describe("plan adaptation prompt grounding", () => {
+  const base = {
+    source: "PLAN" as const,
+    todayIso: TODAY,
+    examType: "KPSS",
+    evidence: EVIDENCE,
+    tasks: [],
+  };
+
+  it("lists verified evidence with refs and asks for one ref per change", () => {
+    const prompt = buildPlanAdaptationPrompt(base);
+
+    expect(prompt.user).toContain(`E1 | WEAK_SUBJECTS | ${WEAK}`);
+    expect(prompt.user).toContain(`E2 | NOTEBOOK_TOPICS | ${TOPICS}`);
+    expect(prompt.system).toContain('"evidenceRef":"E1"');
+    expect(prompt.system).toContain("Tarih veya gün sayısı yazma");
+  });
+
+  it("turns the final stretch into review and practice without saying how many days are left", () => {
+    const final = buildPlanAdaptationPrompt({ ...base, examPhase: "FINAL" });
+    const far = buildPlanAdaptationPrompt({ ...base, examPhase: "FAR" });
+
+    expect(final.system).toContain("Sınav son düzlükte");
+    expect(far.system).not.toContain("Sınav son düzlükte");
+  });
+
+  it("adds consented memory and coaching preferences only when given", () => {
+    const withMemory = buildPlanAdaptationPrompt({
+      ...base,
+      memories: [{ key: "STUDY_TIME", value: "EVENING" }],
+      preferences: { support: "ACTION", directness: "DIRECT" },
+    });
+    const without = buildPlanAdaptationPrompt(base);
+
+    expect(withMemory.user).toContain("STUDY_TIME=EVENING");
+    expect(withMemory.user).toContain("destek=ACTION");
+    expect(withMemory.user).toContain("direktlik=DIRECT");
+    expect(without.user).not.toContain("STUDY_TIME");
+    expect(without.user).not.toContain("destek=");
+  });
+});
+
+describe("suggestPlanBrief", () => {
+  const base = {
+    activeDays28d: 10,
+    averageSessionMinutes28d: 43,
+    dailyFocusGoalMinutes: null,
+    weakSubjects: ["Matematik", "Tarih"],
+    focusSubject: "Matematik",
+  };
+
+  it.each([
+    [null, null],
+    [3, null],
+    [4, 3],
+    [10, 3],
+    [20, 5],
+    [28, 7],
+  ] as const)("suggests days from %s active days in 28 as %s", (activeDays28d, days) => {
+    expect(suggestPlanBrief({ ...base, activeDays28d }).days).toBe(days);
+  });
+
+  it.each([
+    [60, null, 60],
+    [45, null, 30],
+    [200, null, 120],
+    [null, 43, 30],
+    [null, 100, 90],
+    [null, 0, null],
+    [null, null, null],
+  ] as const)(
+    "snaps minutes (goal %s, average session %s) to %s",
+    (dailyFocusGoalMinutes, averageSessionMinutes28d, minutes) => {
+      expect(
+        suggestPlanBrief({ ...base, dailyFocusGoalMinutes, averageSessionMinutes28d })
+          .minutesPerDay,
+      ).toBe(minutes);
+    },
+  );
+
+  it("puts the analysis focus first and keeps at most three distinct subjects", () => {
+    expect(
+      suggestPlanBrief({ ...base, focusSubject: "Türkçe" }).focusSubjects,
+    ).toEqual(["Türkçe", "Matematik", "Tarih"]);
+    expect(suggestPlanBrief(base).focusSubjects).toEqual(["Matematik", "Tarih"]);
+    expect(
+      suggestPlanBrief({ ...base, focusSubject: null, weakSubjects: [] }).focusSubjects,
+    ).toEqual([]);
   });
 });

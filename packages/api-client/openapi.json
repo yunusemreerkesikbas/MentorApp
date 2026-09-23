@@ -854,6 +854,25 @@
         ]
       }
     },
+    "/v1/coach/plan-adaptation/brief": {
+      "get": {
+        "operationId": "AiChatController_planAdaptationBrief",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/plan-adaptation": {
       "post": {
         "operationId": "AiChatController_planAdaptationPreview",
@@ -880,6 +899,29 @@
                       "note": {
                         "type": "string",
                         "maxLength": 500
+                      },
+                      "days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7
+                      },
+                      "minutesPerDay": {
+                        "type": "integer",
+                        "enum": [
+                          15,
+                          30,
+                          60,
+                          90,
+                          120
+                        ]
+                      },
+                      "focusSubjects": {
+                        "type": "array",
+                        "maxItems": 3,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 80
+                        }
                       }
                     }
                   },

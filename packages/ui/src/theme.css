@@ -120,7 +120,7 @@ html {
    * `--color-btn` stays for nav pills, not for `@mentor/ui` Button.
    */
   --play-cta: #55acee;
-  --play-cta-ink: #0f2233;
+  --play-cta-ink: #ffffff;
   --play-cta-edge: #3b8fd0;
   --play-line: #e7e7e7;
   --play-track: #f0edec;

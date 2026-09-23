@@ -48,27 +48,38 @@ export function SessionDoneMoodCheckin({
       >
         {t("checkin_title")}
       </p>
-      <div className="flex justify-center gap-2">
+      <div className="flex justify-center gap-2 pb-6">
         {MOODS.map((m) => (
-          <button
-            key={m.value}
-            type="button"
-            onClick={() => onMood(m.value)}
-            aria-pressed={mood === m.value}
-            aria-label={t(m.labelKey)}
-            title={t(m.labelKey)}
-            className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border text-xl transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-            style={{
-              backgroundColor: "var(--color-surface)",
-              borderColor:
-                mood === m.value
-                  ? "var(--color-main)"
-                  : "var(--color-progress-track)",
-              boxShadow: mood === m.value ? "var(--shadow-card)" : undefined,
-            }}
-          >
-            <span aria-hidden>{m.emoji}</span>
-          </button>
+          <div key={m.value} className="group relative">
+            <button
+              type="button"
+              onClick={() => onMood(m.value)}
+              aria-pressed={mood === m.value}
+              aria-label={t(m.labelKey)}
+              className="flex h-11 w-11 cursor-pointer items-center justify-center rounded-full border text-xl transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
+              style={{
+                backgroundColor: "var(--color-surface)",
+                borderColor:
+                  mood === m.value
+                    ? "var(--color-main)"
+                    : "var(--color-progress-track)",
+                boxShadow: mood === m.value ? "var(--shadow-card)" : undefined,
+              }}
+            >
+              <span aria-hidden>{m.emoji}</span>
+            </button>
+            <span
+              aria-hidden
+              className="pointer-events-none absolute top-[calc(100%+0.25rem)] left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-card)] px-2 py-0.5 text-xs font-medium opacity-0 transition-opacity duration-150 [@media(hover:hover)]:group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
+              style={{
+                backgroundColor: "var(--color-main)",
+                color: "var(--color-surface)",
+                fontFamily: "var(--font-body)",
+              }}
+            >
+              {t(m.labelKey)}
+            </span>
+          </div>
         ))}
       </div>
       {mood != null ? (

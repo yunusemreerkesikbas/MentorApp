@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiBody, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import type {
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   CoachAccessDto,
   CoachChatStreamEvent,
@@ -157,6 +158,17 @@ export class AiChatController {
     @Body() dto: PlanDraftBodyDto,
   ): Promise<CoachPlanDraftDto> {
     return this.planDraft.draft(user, dto.note);
+  }
+
+  /**
+   * Seeds the "Koçla planla" wizard: what the coach will read and defaults from the student's own
+   * rhythm. Premium-gated like the preview, but no model call and no quota.
+   */
+  @Get("plan-adaptation/brief")
+  planAdaptationBrief(
+    @CurrentUser() user: RequestUser,
+  ): Promise<CoachPlanAdaptationBriefDto> {
+    return this.planAdaptation.brief(user);
   }
 
   /** Premium adaptation preview. AI proposes; coaching mutates only after explicit confirmation. */

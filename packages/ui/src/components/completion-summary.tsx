@@ -46,8 +46,7 @@ export function CompletionSummary({
 
   return (
     <div
-      className={`flex w-full max-w-[24rem] flex-col items-center gap-5 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 py-8 sm:px-8 sm:py-10 ${className ?? ""}`}
-      style={{ boxShadow: "var(--shadow-card)" }}
+      className={`flex min-h-full w-full max-w-none flex-col items-center justify-center gap-5 rounded-none border-0 bg-[var(--color-surface)] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] lg:max-h-full lg:min-h-0 lg:w-full lg:max-w-[24rem] lg:justify-start lg:overflow-y-auto lg:overscroll-contain lg:rounded-[var(--radius-card)] lg:border lg:border-[var(--color-border)] lg:px-8 lg:py-10 lg:[box-shadow:var(--shadow-card)] ${className ?? ""}`}
     >
       <CompletionStars filled={filled} total={total} label={starsLabel} />
       <TitleTag
@@ -84,12 +83,8 @@ function CompletionStatRow({ stat }: { stat: CompletionStat }) {
     >
       <span
         aria-hidden
-        className="flex size-8 shrink-0 items-center justify-center rounded-full"
-        style={{
-          backgroundColor:
-            "color-mix(in srgb, var(--color-progress) 16%, transparent)",
-          color: "var(--color-progress)",
-        }}
+        className="flex shrink-0 items-center justify-center"
+        style={{ color: "var(--color-progress)" }}
       >
         {stat.icon}
       </span>

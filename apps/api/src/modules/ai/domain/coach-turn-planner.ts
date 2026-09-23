@@ -16,6 +16,11 @@ export const COACH_STRATEGY_VERSION = "mentor-v2.1";
 
 export interface CoachTurnPlanInput {
   message: string;
+  /**
+   * Set when backend-verified context already says what the turn is about (a selected mock exam
+   * is a performance review). It replaces keyword classification and the cold-start calibration.
+   */
+  intent?: CoachIntent;
   profile: CoachProfileDto;
   moodLevel: number | null;
   availableEvidence: CoachUsedEvidenceDto[];
@@ -36,6 +41,8 @@ export interface CoachTurnPlan {
   };
 }
 
+// EXAM_PHASE is deliberately absent from every chat list (§4 #1): only plan adaptation reads it,
+// where the backend, not the model, writes the sentence the student sees.
 const INTENT_EVIDENCE: Record<CoachIntent, readonly CoachEvidenceType[]> = {
   [CoachIntent.CHECK_IN]: [
     CoachEvidenceType.MOOD,
@@ -44,8 +51,10 @@ const INTENT_EVIDENCE: Record<CoachIntent, readonly CoachEvidenceType[]> = {
   ],
   [CoachIntent.PLAN]: [
     CoachEvidenceType.TODAY_PLAN,
+    CoachEvidenceType.WEAK_SUBJECTS,
     CoachEvidenceType.TODAY_FOCUS,
     CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.SUBJECT_BALANCE,
     CoachEvidenceType.LONG_TERM_RHYTHM,
     CoachEvidenceType.ACTION_OUTCOME,
   ],
@@ -67,6 +76,8 @@ const INTENT_EVIDENCE: Record<CoachIntent, readonly CoachEvidenceType[]> = {
   ],
   [CoachIntent.PERFORMANCE]: [
     CoachEvidenceType.MOCK_PERFORMANCE,
+    CoachEvidenceType.WEAK_SUBJECTS,
+    CoachEvidenceType.NOTEBOOK_TOPICS,
     CoachEvidenceType.LONG_TERM_RHYTHM,
     CoachEvidenceType.RECENT_RHYTHM,
   ],
@@ -204,7 +215,7 @@ export function classifyCoachIntent(message: string): CoachIntent {
 /** Pure deterministic decision layer. It never mutates data and never calls a model. */
 export class CoachTurnPlanner {
   plan(input: CoachTurnPlanInput): CoachTurnPlan {
-    const intent = classifyCoachIntent(input.message);
+    const intent = input.intent ?? classifyCoachIntent(input.message);
     if (hasSeriousDistressSignal(input.message)) {
       return this.result(
         intent,
@@ -221,6 +232,7 @@ export class CoachTurnPlanner {
     }
 
     const shouldCalibrate =
+      input.intent === undefined &&
       input.profile.calibrationStatus === "NOT_STARTED" &&
       (intent === CoachIntent.CHECK_IN || intent === CoachIntent.GENERAL);
     if (shouldCalibrate) {

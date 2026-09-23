@@ -10,6 +10,31 @@ export interface SuggestedTask {
   subject: string | null;
 }
 
+/**
+ * The task a turn that allows one gets when the model skipped its marker. The subject comes only
+ * from what the reply itself named, so the card never contradicts the words above it; among those,
+ * a verified focus/weak subject wins. Memory and guesses never pick it.
+ */
+export function fallbackCoachTask(input: {
+  replyText: string;
+  taxonomy: readonly string[];
+  preferred: readonly string[];
+  locale: "tr" | "en";
+}): SuggestedTask {
+  const reply = input.replyText.toLocaleLowerCase("tr-TR");
+  const key = (name: string) => name.toLocaleLowerCase("tr-TR");
+  const named = input.taxonomy
+    .filter((name) => reply.includes(key(name)))
+    .sort((a, b) => reply.indexOf(key(a)) - reply.indexOf(key(b)));
+  const preferred = new Set(input.preferred.map(key));
+  const subject = named.find((name) => preferred.has(key(name))) ?? named[0] ?? null;
+  const en = input.locale === "en";
+  // ponytail: fixed 25-minute block (the default session preset); tune from rhythm if it matters.
+  return subject
+    ? { title: `${subject} · 25 ${en ? "min study" : "dk çalışma"}`, subject }
+    : { title: en ? "25 min first step" : "25 dk kısa başlangıç", subject: null };
+}
+
 const MARKER_START = "<<TASK";
 /** Marker at the END of the reply (the prompt demands it there). */
 const MARKER_END_RE = /\s*<<TASK(\{(?:(?!>>)[\s\S])*?\})>>\s*$/;

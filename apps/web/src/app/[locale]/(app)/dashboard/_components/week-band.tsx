@@ -74,7 +74,25 @@ export function WeekBand({
                   />
                 ) : state === "frozen" ? (
                   <Snowflake className="size-3.5" strokeWidth={2.4} />
-                ) : null}
+                ) : state === "idle" ? (
+                  <Image
+                    src="/img/flame.png"
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="size-3.5 sm:size-4 opacity-30 grayscale contrast-75"
+                    draggable={false}
+                  />
+                ) : (
+                  <Image
+                    src="/img/flame.png"
+                    alt=""
+                    width={16}
+                    height={16}
+                    className="size-3.5 sm:size-4 opacity-20 grayscale"
+                    draggable={false}
+                  />
+                )}
               </span>
               <span
                 className={`text-micro font-extrabold ${isToday ? "text-[var(--color-streak)]" : "text-[var(--color-secondary)]"}`}

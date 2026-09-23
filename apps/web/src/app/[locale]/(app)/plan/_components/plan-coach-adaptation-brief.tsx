@@ -2,25 +2,31 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { ExamType, ExamVariant } from "@mentor/types";
+import type {
+  CoachPlanAdaptationBriefDto,
+  ExamType,
+  ExamVariant,
+} from "@mentor/types";
 import { coachPlanAdaptationSchema, type CoachPlanAdaptationInput } from "@mentor/validation";
 import { Button } from "@mentor/ui";
-import { PlayGridCard, PlayOptionRow } from "@/components/onboarding-play/play-choice";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
 import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { OnboardingDirectionProvider } from "@/app/[locale]/(onboarding)/_components/onboarding-direction";
 import { OnboardingStepLayout } from "@/app/[locale]/(onboarding)/_components/onboarding-step-layout";
 import {
-  PLAN_ADAPTATION_DAY_CHOICES,
-  PLAN_ADAPTATION_MINUTE_CHOICES,
-  PLAN_ADAPTATION_NOTE_MAX,
   PLAN_ADAPTATION_SUBJECT_CAP,
   formatKnownBrief,
   isMinuteChoice,
   seedBriefSubjects,
   type PlanAdaptationKnownWeek,
 } from "./plan-coach-adaptation-brief-note";
+import {
+  BriefDaysStep,
+  BriefMinutesStep,
+  BriefNoteStep,
+  BriefSubjectsStep,
+} from "./plan-coach-adaptation-brief-steps";
 
 export interface PlanAdaptationBriefProfile {
   examType: ExamType | null;
@@ -32,11 +38,14 @@ const BRIEF_STEPS = ["days", "minutes", "subjects", "note"] as const;
 
 export function PlanCoachAdaptationBrief({
   knownWeek,
+  brief,
   profile,
   onComplete,
   onClose,
 }: {
   knownWeek: PlanAdaptationKnownWeek;
+  /** The coach's reading of the student's data; null while loading or when it failed. */
+  brief: CoachPlanAdaptationBriefDto | null;
   profile: PlanAdaptationBriefProfile;
   onComplete: (input: CoachPlanAdaptationInput) => void;
   onClose: () => void;
@@ -46,21 +55,33 @@ export function PlanCoachAdaptationBrief({
   const taxonomy = useExamSubjectTaxonomy();
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
-  const [days, setDays] = useState<number | null>(null);
-  const profileMinutes = isMinuteChoice(profile.dailyFocusGoalMinutes)
+  const suggestion = brief?.suggestion ?? null;
+
+  // The student's answer always wins; until there is one, the coach's reading fills the blank.
+  const [daysOverride, setDaysOverride] = useState<number | null | undefined>(undefined);
+  const days = daysOverride !== undefined ? daysOverride : (suggestion?.days ?? null);
+  const goalMinutes = isMinuteChoice(profile.dailyFocusGoalMinutes)
     ? profile.dailyFocusGoalMinutes
     : null;
+  const suggestedMinutes = suggestion?.minutesPerDay ?? null;
+  const rhythmMinutes =
+    goalMinutes === null && isMinuteChoice(suggestedMinutes) ? suggestedMinutes : null;
   const [minutesOverride, setMinutesOverride] = useState<number | null | undefined>(undefined);
-  const minutes = minutesOverride !== undefined ? minutesOverride : profileMinutes;
+  const minutes = minutesOverride !== undefined ? minutesOverride : (goalMinutes ?? rhythmMinutes);
+  const coachSubjects = suggestion?.focusSubjects;
+  const suggested = useMemo(
+    () => new Set((coachSubjects ?? []).map((name) => name.toLocaleLowerCase("tr-TR"))),
+    [coachSubjects],
+  );
   const seededSubjects = useMemo(
     () =>
       taxonomy.loaded
         ? seedBriefSubjects(
             taxonomy.subjects.map((subject) => subject.name),
-            knownWeek.subjects,
+            coachSubjects?.length ? coachSubjects : knownWeek.subjects,
           )
         : [],
-    [taxonomy.loaded, taxonomy.subjects, knownWeek.subjects],
+    [taxonomy.loaded, taxonomy.subjects, coachSubjects, knownWeek.subjects],
   );
   const [subjectOverride, setSubjectOverride] = useState<string[] | null>(null);
   const subjects = subjectOverride ?? seededSubjects;
@@ -150,7 +171,7 @@ export function PlanCoachAdaptationBrief({
   }
 
   function skipStep() {
-    if (step === "days") setDays(null);
+    if (step === "days") setDaysOverride(null);
     if (step === "minutes") setMinutesOverride(null);
     if (step === "subjects") setSubjectOverride([]);
     if (safeIndex >= steps.length - 1) {
@@ -177,9 +198,10 @@ export function PlanCoachAdaptationBrief({
         : step === "subjects"
           ? t("coach_adaptation_subjects_label")
           : t("coach_adaptation_note_label");
+  // The first thing Puhu says is what the plan will be built from, once the coach has read it.
   const sub =
     step === "days"
-      ? (known ?? undefined)
+      ? (brief?.groundingLine ?? known ?? undefined)
       : step === "subjects"
         ? t("coach_adaptation_subjects_hint")
         : undefined;
@@ -208,86 +230,35 @@ export function PlanCoachAdaptationBrief({
           }
         >
           {step === "days" ? (
-            <div role="radiogroup" aria-label={title} className="grid grid-cols-2 gap-3">
-              {PLAN_ADAPTATION_DAY_CHOICES.map((choice, choiceIndex) => (
-                <PlayGridCard
-                  key={choice}
-                  index={choiceIndex}
-                  label={t("coach_adaptation_days_unit")}
-                  art={<ChoiceFigure value={String(choice)} selected={days === choice} />}
-                  selected={days === choice}
-                  onSelect={() => setDays(choice)}
-                />
-              ))}
-            </div>
+            <BriefDaysStep
+              title={title}
+              days={days}
+              rhythmDays={suggestion?.days ?? null}
+              onSelect={setDaysOverride}
+            />
           ) : null}
           {step === "minutes" ? (
-            <div role="radiogroup" aria-label={title} className="grid grid-cols-2 gap-3 pt-3">
-              {PLAN_ADAPTATION_MINUTE_CHOICES.map((choice, choiceIndex) => (
-                <PlayGridCard
-                  key={choice}
-                  index={choiceIndex}
-                  label={t("coach_adaptation_minutes_unit")}
-                  badge={choice === profileMinutes ? t("coach_adaptation_minutes_badge") : undefined}
-                  art={<ChoiceFigure value={String(choice)} selected={minutes === choice} />}
-                  selected={minutes === choice}
-                  onSelect={() => setMinutesOverride(choice)}
-                />
-              ))}
-            </div>
+            <BriefMinutesStep
+              title={title}
+              minutes={minutes}
+              goalMinutes={goalMinutes}
+              rhythmMinutes={rhythmMinutes}
+              onSelect={setMinutesOverride}
+            />
           ) : null}
           {step === "subjects" ? (
-            taxonomy.loaded ? (
-              <div role="group" aria-label={title} className="flex flex-col gap-3">
-                {taxonomy.subjects.map((subject, subjectIndex) => (
-                  <PlayOptionRow
-                    key={subject.slug}
-                    multiple
-                    index={subjectIndex}
-                    label={subject.name}
-                    selected={subjects.includes(subject.name)}
-                    disabled={
-                      !subjects.includes(subject.name) &&
-                      subjects.length >= PLAN_ADAPTATION_SUBJECT_CAP
-                    }
-                    onSelect={() => toggleSubject(subject.name)}
-                  />
-                ))}
-              </div>
-            ) : (
-              <p className="text-base font-medium text-[var(--color-secondary)]">{t("loading")}</p>
-            )
+            <BriefSubjectsStep
+              title={title}
+              loaded={taxonomy.loaded}
+              options={taxonomy.subjects}
+              selected={subjects}
+              suggested={suggested}
+              onToggle={toggleSubject}
+            />
           ) : null}
-          {step === "note" ? (
-            <label className="flex flex-col gap-2">
-              <span className="sr-only">{t("coach_adaptation_note_label")}</span>
-              <textarea
-                value={note}
-                onChange={(event) =>
-                  setNote(event.target.value.slice(0, PLAN_ADAPTATION_NOTE_MAX))
-                }
-                placeholder={t("coach_adaptation_note_placeholder")}
-                maxLength={PLAN_ADAPTATION_NOTE_MAX}
-                rows={4}
-                className="min-h-32 w-full resize-y rounded-[var(--play-radius)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-4 py-3 text-base text-[var(--color-main)] outline-none focus:border-[var(--play-cta)]"
-              />
-              <span className="text-sm font-medium text-[var(--color-secondary)]">
-                {t("coach_adaptation_note_hint", { count: note.length })}
-              </span>
-            </label>
-          ) : null}
+          {step === "note" ? <BriefNoteStep note={note} onChange={setNote} /> : null}
         </OnboardingStepLayout>
       </div>
     </OnboardingDirectionProvider>
-  );
-}
-
-function ChoiceFigure({ value, selected }: { value: string; selected: boolean }) {
-  return (
-    <span
-      className={`text-3xl font-extrabold tabular-nums ${selected ? "text-[var(--play-selected-ink)]" : "text-[var(--color-main)]"}`}
-    >
-      {value}
-    </span>
   );
 }

@@ -123,6 +123,82 @@ describe("CoachTurnPlanner", () => {
     );
   });
 
+  it("reviews explicit analysis context as performance and skips cold-start calibration", () => {
+    const result = planner.plan({
+      message:
+        "Matematik dersindeki Problemler konusu yanlış defterimde tekrar ediyor. Kanıtlara bakıp tek bir sonraki adım önerebilir misin?",
+      intent: CoachIntent.PERFORMANCE,
+      profile: { ...profile, calibrationStatus: "NOT_STARTED" },
+      moodLevel: 3,
+      availableEvidence: [
+        evidence(CoachEvidenceType.MOOD, "Bugünkü enerjin 5 üzerinden 3."),
+        evidence(CoachEvidenceType.NOTEBOOK_TOPICS, "Problemler (5)."),
+        evidence(CoachEvidenceType.WEAK_SUBJECTS, "Matematik (9,6)."),
+        evidence(CoachEvidenceType.MOCK_PERFORMANCE, "4 denemen var."),
+      ],
+    });
+
+    expect(result).toMatchObject({
+      mode: CoachTurnMode.ANSWER,
+      intent: CoachIntent.PERFORMANCE,
+    });
+    expect(result.usedEvidence.map((item) => item.type)).toEqual([
+      CoachEvidenceType.MOCK_PERFORMANCE,
+      CoachEvidenceType.WEAK_SUBJECTS,
+      CoachEvidenceType.NOTEBOOK_TOPICS,
+    ]);
+  });
+
+  it("keeps the safety route ahead of a forced intent", () => {
+    const result = planner.plan({
+      message: "Artık yaşamak istemiyorum",
+      intent: CoachIntent.PERFORMANCE,
+      profile,
+      moodLevel: 3,
+      availableEvidence: [],
+    });
+
+    expect(result.mode).toBe(CoachTurnMode.SAFETY);
+  });
+
+  it("brings weak subjects into a what-should-I-study question", () => {
+    const result = planner.plan({
+      message: "Bugün ne çalışayım?",
+      profile,
+      moodLevel: 3,
+      availableEvidence: [
+        evidence(CoachEvidenceType.RECENT_RHYTHM, "Son 7 günde 4 gün."),
+        evidence(CoachEvidenceType.TODAY_FOCUS, "Bugün 20 dakika."),
+        evidence(CoachEvidenceType.WEAK_SUBJECTS, "Matematik (9,6)."),
+        evidence(CoachEvidenceType.TODAY_PLAN, "Bugün 1/3."),
+      ],
+    });
+
+    expect(result.usedEvidence.map((item) => item.type)).toEqual([
+      CoachEvidenceType.TODAY_PLAN,
+      CoachEvidenceType.WEAK_SUBJECTS,
+      CoachEvidenceType.TODAY_FOCUS,
+    ]);
+  });
+
+  it.each([
+    "Bugün ne çalışayım?",
+    "Denemem kötü geçti",
+    "Hedefime ulaşmak istiyorum",
+    "Merhaba",
+  ])("never puts the exam phase into a chat turn: %s", (message) => {
+    const result = planner.plan({
+      message,
+      profile,
+      moodLevel: 3,
+      availableEvidence: [
+        evidence(CoachEvidenceType.EXAM_PHASE, "Sınavına 30 günden az kaldı."),
+      ],
+    });
+
+    expect(result.usedEvidence).toEqual([]);
+  });
+
   it("asks one calibration question without an LLM turn when setup is incomplete", () => {
     const result = planner.plan({
       message: "Merhaba",

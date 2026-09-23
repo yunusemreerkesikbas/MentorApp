@@ -108,15 +108,18 @@ export class FakeLlmAdapter implements LlmPort {
         .toISOString()
         .slice(0, 10);
       const hasTask = input.user.includes('"ref":"T1"');
+      // Cites the first verified evidence line when there is one, so dev and e2e show a "Neden".
+      const evidenceRef = input.user.includes("E1 | ") ? "E1" : null;
       const text = JSON.stringify({
         changes: hasTask
           ? [
-              { kind: "MOVE", taskRef: "T1", toDate: tomorrow },
+              { kind: "MOVE", taskRef: "T1", toDate: tomorrow, evidenceRef },
               {
                 kind: "ADD",
                 title: "Kısa tekrar",
                 subject: null,
                 taskDate: later,
+                evidenceRef,
               },
             ]
           : [
@@ -125,6 +128,7 @@ export class FakeLlmAdapter implements LlmPort {
                 title: "Matematik: 20 soru çöz",
                 subject: "Matematik",
                 taskDate: tomorrow,
+                evidenceRef,
               },
             ],
       });

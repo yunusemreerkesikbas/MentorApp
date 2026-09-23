@@ -93,7 +93,7 @@ export function CoachPlanComposeFab({
             <motion.div
               key={action.id}
               className="absolute right-0 bottom-0 size-14 rounded-full"
-              style={{ backgroundColor: "var(--color-btn)" }}
+              style={{ backgroundColor: "var(--play-cta)" }}
               initial={false}
               animate={open ? { y: action.y, opacity: 1 } : { y: 0, opacity: 0 }}
               transition={{ duration: open ? openMs : closeMs, ease: EASE }}
@@ -101,7 +101,7 @@ export function CoachPlanComposeFab({
           ))}
           <div
             className="absolute right-0 bottom-0 size-14 rounded-full"
-            style={{ backgroundColor: "var(--color-btn)" }}
+            style={{ backgroundColor: "var(--play-cta)" }}
           />
         </div>
 
@@ -131,7 +131,7 @@ export function CoachPlanComposeFab({
               tabIndex={open ? 0 : -1}
               aria-hidden={!open}
               className={`flex size-14 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${open ? "" : "pointer-events-none"}`}
-              style={{ color: "var(--color-btn-label)" }}
+              style={{ color: "var(--play-cta-ink)" }}
             >
               <action.Icon aria-hidden size={22} strokeWidth={2.2} />
               <span className="sr-only">{t(action.labelKey)}</span>
@@ -147,7 +147,7 @@ export function CoachPlanComposeFab({
           aria-label={open ? t("compose_close") : t("compose_open")}
           onClick={() => setOpen((value) => !value)}
           className="absolute right-0 bottom-0 z-10 flex size-14 cursor-pointer items-center justify-center rounded-full shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
+          style={{ backgroundColor: "var(--play-cta)", color: "var(--play-cta-ink)" }}
         >
           <motion.span
             className="flex"

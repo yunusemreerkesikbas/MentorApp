@@ -1,6 +1,9 @@
+import { PLAN_ADAPTATION_MINUTES } from "@mentor/validation";
+
 export const PLAN_ADAPTATION_NOTE_MAX = 500;
 export const PLAN_ADAPTATION_DAY_CHOICES = [3, 4, 5, 6, 7] as const;
-export const PLAN_ADAPTATION_MINUTE_CHOICES = [15, 30, 60, 90, 120] as const;
+/** The API's own list, so the brief's suggestion always lands on a card. */
+export const PLAN_ADAPTATION_MINUTE_CHOICES = PLAN_ADAPTATION_MINUTES;
 export const PLAN_ADAPTATION_SUBJECT_CAP = 3;
 
 export interface PlanAdaptationBriefAnswers {

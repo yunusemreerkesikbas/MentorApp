@@ -39,25 +39,35 @@ export function MoodPicker({
       {MOOD_OPTIONS.map((option) => {
         const selected = value === option.value;
         return (
-          <button
-            key={option.value}
-            type="button"
-            role="radio"
-            aria-checked={selected}
-            aria-label={option.label}
-            title={option.label}
-            onClick={() => onChange?.(option.value)}
-            className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-card)] text-2xl transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none motion-reduce:hover:scale-100"
-            style={{
-              backgroundColor: selected
-                ? "color-mix(in srgb, var(--color-chip) 30%, transparent)"
-                : "transparent",
-              transform: selected ? "scale(1.1)" : undefined,
-              boxShadow: selected ? "var(--shadow-card)" : undefined,
-            }}
-          >
-            <span aria-hidden>{option.emoji}</span>
-          </button>
+          <div key={option.value} className="group relative flex items-center justify-center">
+            <button
+              type="button"
+              role="radio"
+              aria-checked={selected}
+              aria-label={option.label}
+              onClick={() => onChange?.(option.value)}
+              className="flex h-11 w-11 items-center justify-center rounded-[var(--radius-card)] text-2xl transition-transform hover:scale-110 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none motion-reduce:hover:scale-100"
+              style={{
+                backgroundColor: selected
+                  ? "color-mix(in srgb, var(--color-chip) 30%, transparent)"
+                  : "transparent",
+                transform: selected ? "scale(1.1)" : undefined,
+                boxShadow: selected ? "var(--shadow-card)" : undefined,
+              }}
+            >
+              <span aria-hidden>{option.emoji}</span>
+            </button>
+            <span
+              role="tooltip"
+              className="pointer-events-none absolute bottom-full mb-1.5 left-1/2 z-30 -translate-x-1/2 translate-y-1 scale-95 whitespace-nowrap rounded-[var(--radius-card)] bg-[var(--color-main)] px-2 py-0.5 text-xs font-bold text-[var(--color-bg)] opacity-0 shadow-[var(--shadow-card)] transition-all duration-150 ease-out group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:scale-100 group-focus-within:opacity-100 motion-reduce:transition-none motion-reduce:transform-none"
+            >
+              {option.label}
+              <span
+                className="absolute -bottom-1 left-1/2 -translate-x-1/2 border-x-4 border-t-4 border-x-transparent border-t-[var(--color-main)]"
+                aria-hidden
+              />
+            </span>
+          </div>
         );
       })}
     </div>

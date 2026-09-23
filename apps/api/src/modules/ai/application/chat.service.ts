@@ -49,7 +49,9 @@ import {
 import {
   createTaskMarkerFilter,
   extractReplyMarkers,
+  fallbackCoachTask,
   type MemoryCandidate,
+  type SuggestedTask,
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
 import { groundingFact } from "../domain/grounding-fact";
@@ -135,9 +137,15 @@ export class ChatService {
     return value;
   }
 
+  /**
+   * `intent` is derived here from request context (a selected mock exam is a performance review);
+   * the client never sends an intent. A foreign exam id still fails the ownership check before
+   * any model call, and the existing refund path returns a coin spend.
+   */
   private async mentorV2Context(
     user: RequestUser,
     message: string,
+    intent?: CoachIntent,
   ): Promise<MentorV2Context> {
     const [snapshot, profile] = await Promise.all([
       this.evidence.build(user.id),
@@ -153,6 +161,7 @@ export class ChatService {
       memories,
       turn: this.turnPlanner.plan({
         message,
+        ...(intent ? { intent } : {}),
         profile,
         moodLevel: snapshot.moodLevel,
         availableEvidence: snapshot.evidence,
@@ -349,6 +358,50 @@ export class ChatService {
     };
   }
 
+  /**
+   * The model's own task first. A turn that allows a task never ends without one: the model skips
+   * the marker often enough (prompt eval, gpt-4o-mini) that the guarantee lives here instead.
+   */
+  private async proposedTask(
+    context: MentorV2Context,
+    marker: SuggestedTask | null | undefined,
+    replyText: string,
+  ): Promise<SuggestedTask | undefined> {
+    if (marker) return marker;
+    if (context.turn.allowedAction !== CoachActionType.CREATE_PLAN_TASK) {
+      return undefined;
+    }
+    const taxonomy = await this.examSubjects(context.snapshot.examType);
+    return fallbackCoachTask({
+      replyText,
+      taxonomy: taxonomy.map((subject) => subject.name),
+      preferred: [
+        ...(context.snapshot.focusSubject ? [context.snapshot.focusSubject] : []),
+        ...context.snapshot.weakSubjects,
+      ],
+      locale: promptLocale(I18nContext.current()?.lang),
+    });
+  }
+
+  /** The exam's subject taxonomy; empty (and logged) when content is unavailable. */
+  private async examSubjects(
+    examType: string | null,
+  ): Promise<Array<{ slug: string; name: string }>> {
+    if (!examType) return [];
+    try {
+      const calendar = await this.content.getExamCalendarByFamily(examType);
+      return calendar
+        ? await this.content.listExamSubjectsByExamId(calendar.exam.id)
+        : [];
+    } catch (error) {
+      this.logger.warn({
+        event: "coach_action_taxonomy_unavailable",
+        error: error instanceof Error ? error.name : "unknown",
+      });
+      return [];
+    }
+  }
+
   private async buildAction(
     context: MentorV2Context,
     task?: { title: string; subject: string | null },
@@ -383,27 +436,14 @@ export class ChatService {
       task
     ) {
       let subject: string | null = null;
-      if (task.subject && context.snapshot.examType) {
-        try {
-          const calendar = await this.content.getExamCalendarByFamily(
-            context.snapshot.examType,
-          );
-          const taxonomy = calendar
-            ? await this.content.listExamSubjectsByExamId(calendar.exam.id)
-            : [];
-          const normalized = task.subject.trim().toLocaleLowerCase("tr-TR");
-          subject =
-            taxonomy.find(
-              (item) =>
-                item.slug.toLocaleLowerCase("tr-TR") === normalized ||
-                item.name.toLocaleLowerCase("tr-TR") === normalized,
-            )?.name ?? null;
-        } catch (error) {
-          this.logger.warn({
-            event: "coach_action_taxonomy_unavailable",
-            error: error instanceof Error ? error.name : "unknown",
-          });
-        }
+      if (task.subject) {
+        const normalized = task.subject.trim().toLocaleLowerCase("tr-TR");
+        subject =
+          (await this.examSubjects(context.snapshot.examType)).find(
+            (item) =>
+              item.slug.toLocaleLowerCase("tr-TR") === normalized ||
+              item.name.toLocaleLowerCase("tr-TR") === normalized,
+          )?.name ?? null;
       }
       return {
         type: CoachActionType.CREATE_PLAN_TASK,
@@ -496,7 +536,11 @@ export class ChatService {
       community,
     );
     if (official) return official;
-    const mentorV2 = await this.mentorV2Context(user, message);
+    const mentorV2 = await this.mentorV2Context(
+      user,
+      message,
+      contextMockExamId ? CoachIntent.PERFORMANCE : undefined,
+    );
     if (
       hasSeriousDistressSignal(message) ||
       mentorV2.turn.mode === CoachTurnMode.SAFETY
@@ -890,7 +934,9 @@ export class ChatService {
     const reply = personalized.text;
     const markers = personalized.markers;
     const { followUps, memoryCandidate } = markers;
-    const task = mockExam ? undefined : markers.task;
+    const task = mockExam
+      ? undefined
+      : await this.proposedTask(mentorV2, markers.task, reply);
     const action = await this.buildAction(mentorV2, task ?? undefined);
     const persisted = await this.recordSuccess(
       userId,
@@ -959,7 +1005,11 @@ export class ChatService {
       return;
     }
 
-    const mentorV2 = await this.mentorV2Context(user, message);
+    const mentorV2 = await this.mentorV2Context(
+      user,
+      message,
+      contextMockExamId ? CoachIntent.PERFORMANCE : undefined,
+    );
     if (
       hasSeriousDistressSignal(message) ||
       mentorV2.turn.mode === CoachTurnMode.SAFETY
@@ -1041,7 +1091,9 @@ export class ChatService {
       const reply = personalized.text;
       const markers = personalized.markers;
       const { followUps, memoryCandidate } = markers;
-      const task = mockExam ? undefined : markers.task;
+      const task = mockExam
+      ? undefined
+      : await this.proposedTask(mentorV2, markers.task, reply);
       const action = await this.buildAction(mentorV2, task ?? undefined);
       const persisted = await this.recordSuccess(
         user.id,
@@ -1192,7 +1244,11 @@ export class ChatService {
       return;
     }
 
-    const mentorV2 = await this.mentorV2Context(user, userMsg.content);
+    const mentorV2 = await this.mentorV2Context(
+      user,
+      userMsg.content,
+      regeneratedMockExam ? CoachIntent.PERFORMANCE : undefined,
+    );
     if (
       hasSeriousDistressSignal(userMsg.content) ||
       mentorV2.turn.mode === CoachTurnMode.SAFETY
@@ -1276,7 +1332,9 @@ export class ChatService {
       const reply = personalized.text;
       const markers = personalized.markers;
       const { followUps } = markers;
-      const task = regeneratedMockExam ? undefined : markers.task;
+      const task = regeneratedMockExam
+        ? undefined
+        : await this.proposedTask(mentorV2, markers.task, reply);
       const action = await this.buildAction(mentorV2, task ?? undefined);
 
       await this.usage.append({

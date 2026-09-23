@@ -169,12 +169,16 @@ export type CoachPlanAdaptationChangeDto =
       subject: string | null;
       fromDate: string;
       toDate: string;
+      /** Backend-written "Neden" line: the verified evidence the coach tied to this change. */
+      reason?: string;
     }
   | {
       kind: "ADD";
       title: string;
       subject: string | null;
       taskDate: string;
+      /** Backend-written "Neden" line: the verified evidence the coach tied to this change. */
+      reason?: string;
     };
 
 /** Premium coach preview; no plan row is written until the user confirms selected changes. */
@@ -189,6 +193,21 @@ export interface CoachPlanAdaptationDto {
   planRevision: string;
   changes: CoachPlanAdaptationChangeDto[];
   model: string;
+  /** What the coach looked at for this preview ("Koçun baktıkları"). */
+  usedEvidence?: import("./ai.js").CoachUsedEvidenceDto[];
+}
+
+/** GET /v1/coach/plan-adaptation/brief: seeds the planning wizard. No model call. */
+export interface CoachPlanAdaptationBriefDto {
+  /** One verified sentence naming what the plan is built from. */
+  groundingLine: string | null;
+  evidence: import("./ai.js").CoachUsedEvidenceDto[];
+  /** Server-computed defaults; the student can change every one of them. */
+  suggestion: {
+    days: number | null;
+    minutesPerDay: 15 | 30 | 60 | 90 | 120 | null;
+    focusSubjects: string[];
+  };
 }
 
 /** Result of atomically applying a user-selected adaptation preview. */

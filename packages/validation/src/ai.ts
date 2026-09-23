@@ -80,6 +80,11 @@ const planAdaptationMinutesSchema = z.union([
   z.literal(120),
 ]);
 
+/** Block sizes the plan wizard offers; the brief's suggestion snaps to one of these. */
+export const PLAN_ADAPTATION_MINUTES = planAdaptationMinutesSchema.options.map(
+  (option) => option.value,
+);
+
 /** POST /v1/coach/plan-adaptation — explicit, user-triggered preview source. */
 export const coachPlanAdaptationSchema = z
   .object({
