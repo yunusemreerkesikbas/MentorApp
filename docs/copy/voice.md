@@ -85,7 +85,7 @@ Distress / crisis copy (`coaching.mood.SERIOUS_DISTRESS`, 112) is **untouchable*
 - Achievement inbox lines: `apps/api/src/i18n/locales/{tr,en}/achievements.json` (`notification.*`)
 - Email subjects/bodies: `notifications.json` → `email.*` (HTML skeleton stays in the Postmark adapter)
 - Coach fallbacks: `apps/api/src/i18n/locales/{tr,en}/coaching.json` (`mood.*` except `SERIOUS_DISTRESS`, `motivation.*`, `nextAction.*`, `mentorV2.calibration`)
-- AI chat persona: `mentor-v2-prompt.ts` (V2) and `coachSystemBase` in `ai.constants.ts` (V1). Prompts that produce student text follow the same em-dash ban as chrome.
+- AI chat persona: `mentor-prompt.ts`. `coachSystemBase` in `ai.constants.ts` still feeds the other coach prompts. Prompts that produce student text follow the same em-dash ban as chrome.
 - Web chrome: `apps/web/messages/{tr,en}.json` (coach, plan/community/analysis/notebook, session, study room, economy ledger empty + invite overlay + quest sheet intro / quest-complete toast, streak-rescue offer + success, optional rewarded-ad offer, weekly effort board empty + rank banners, knowledge, vision, achievements empties + collection chrome, coach access gate, deep-analysis insufficient)
 - API errors: `apps/api/src/i18n/locales/{tr,en}/errors.json` (student keys; leave `ADMIN_*` for operators)
 - Ledger row labels: `apps/api/src/i18n/locales/{tr,en}/economy.json` (`ledger.*`; companion, hak not ödül)

@@ -59,7 +59,7 @@ import { hasSeriousDistressSignal } from "../domain/serious-distress";
 import {
   boundChatHistory,
   buildMentorV2Prompt,
-} from "../domain/mentor-v2-prompt";
+} from "../domain/mentor-prompt";
 import {
   CoachTurnPlanner,
   type CoachTurnPlan,

@@ -494,7 +494,7 @@ html.mentor-sheet-open {
   );
   border: none;
   border-radius: 9999px;
-  color: var(--color-progress);
+  color: var(--play-selected-ink);
   cursor: pointer;
   font-family: var(--font-body);
   font-size: 0.75rem;
@@ -523,7 +523,7 @@ html.mentor-sheet-open {
   );
   --rdp-day_button-border-radius: 9999px;
   --rdp-day_button-border: 2px solid transparent;
-  --rdp-selected-border: 2px solid var(--color-btn);
+  --rdp-selected-border: 2px solid var(--play-cta);
   --rdp-today-color: var(--color-progress);
   --rdp-day-height: 44px;
   --rdp-day-width: 44px;
@@ -618,9 +618,9 @@ html.mentor-sheet-open {
 
 .mentor-plan-day-picker .rdp-day.rdp-selected .rdp-day_button,
 .mentor-plan-day-picker .rdp-day_button[aria-selected="true"] {
-  background-color: var(--color-btn);
-  border-color: var(--color-btn);
-  color: var(--color-btn-label);
+  background-color: var(--play-cta);
+  border-color: var(--play-cta);
+  color: var(--play-cta-ink);
   font-weight: 700;
 }
 
@@ -628,7 +628,7 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker
   .rdp-day.rdp-selected.mentor-plan-day-today
   .rdp-day_button {
-  color: var(--color-btn-label);
+  color: var(--play-cta-ink);
 }
 
 .mentor-plan-day-picker .rdp-day.mentor-plan-day .rdp-day_button::after {
@@ -647,7 +647,7 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker
   .rdp-day.rdp-selected.mentor-plan-day
   .rdp-day_button::after {
-  background-color: var(--color-btn-label);
+  background-color: var(--play-cta-ink);
 }
 
 .mentor-plan-day-picker .rdp-day_button:focus-visible,

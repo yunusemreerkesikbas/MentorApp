@@ -6,7 +6,7 @@ import {
   CoachEvidenceType,
   type CoachMemoryFactDto,
 } from "@mentor/types";
-import { boundChatHistory, buildMentorV2Prompt } from "./mentor-v2-prompt";
+import { boundChatHistory, buildMentorV2Prompt } from "./mentor-prompt";
 
 const turn = {
   strategyVersion: "mentor-v2.1" as const,
