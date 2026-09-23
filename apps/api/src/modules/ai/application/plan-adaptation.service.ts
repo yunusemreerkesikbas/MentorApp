@@ -162,6 +162,7 @@ export class PlanAdaptationService {
             days: input.days,
             minutesPerDay: input.minutesPerDay,
             focusSubjects: input.focusSubjects,
+            locale,
           }
         : undefined,
     );

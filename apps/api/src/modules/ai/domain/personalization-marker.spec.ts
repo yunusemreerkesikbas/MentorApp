@@ -19,6 +19,17 @@ const grounded: CoachPersonalizationDto = {
 };
 
 describe("coach personalization marker", () => {
+  it("does not record a signal whose evidence sentence is empty", () => {
+    const result = applyCoachPersonalizationMarker(
+      "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir blok dene.",
+      { ...grounded, recentSessions: { count7d: 0, focusMinutes7d: 0, subjects: [] } },
+      "tr",
+    );
+
+    expect(result.text).toBe("Bugün tek bir blok dene.");
+    expect(result.personalization.usedSignals).toEqual([]);
+  });
+
   it("turns a verified signal marker into visible evidence inside the answer", () => {
     const result = applyCoachPersonalizationMarker(
       "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir paragraf bloğu dene.",

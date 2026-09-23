@@ -46,6 +46,7 @@ export interface PlanAdaptationRhythm {
   days?: number;
   minutesPerDay?: number;
   focusSubjects?: readonly string[];
+  locale?: PromptLocale;
 }
 
 export function parsePlanAdaptation(
@@ -195,17 +196,15 @@ export function parsePlanAdaptation(
     const rawTitle = (raw as { title?: unknown }).title;
     const taskDate = (raw as { taskDate?: unknown }).taskDate;
     if (typeof rawTitle !== "string" || typeof taskDate !== "string") continue;
-    const title = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
+    const modelTitle = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
     if (
-      !title ||
+      !modelTitle ||
       !isWindowDate(taskDate, todayIso, windowEnd) ||
       (source === "SESSION" && taskDate <= todayIso) ||
       (pendingByDate.get(taskDate) ?? 0) >= MAX_PENDING_PER_DAY
     ) {
       continue;
     }
-    const key = `${taskDate}:${normalizedTitle(title)}`;
-    if ((titleCounts.get(key) ?? 0) > 0) continue;
     if (
       requestedDays != null &&
       additions.some((item) => item.taskDate === taskDate)
@@ -227,6 +226,13 @@ export function parsePlanAdaptation(
         ? (matched ?? focusSubjects[additions.length % focusSubjects.length]!)
         : written;
     const subject = picked ? picked.slice(0, SUBJECT_MAX) : null;
+    // A reassigned subject would contradict the model's title ("Matematik" filed under Tarih).
+    const title =
+      focusSubjects.length > 0 && !matched
+        ? studyBlockTitle(subject, rhythm?.minutesPerDay, rhythm?.locale)
+        : modelTitle;
+    const key = `${taskDate}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
     adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
     additions.push({ kind: "ADD", title, subject, taskDate });
@@ -243,6 +249,7 @@ export function parsePlanAdaptation(
           titleCounts,
           focusSubjects,
           rhythm?.minutesPerDay,
+          rhythm?.locale,
         );
 
   return { kind: "VALID", changes: [...moves, ...filled] };
@@ -257,69 +264,56 @@ function fillStudyDays(
   titleCounts: Map<string, number>,
   focusSubjects: readonly string[],
   minutesPerDay: number | undefined,
+  locale: PromptLocale | undefined,
 ): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
   const window = Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) =>
     addDays(todayIso, index),
   );
-  const inWindow = new Set(window);
-  const chosen: string[] = [];
-  const seen = new Set<string>();
-  const take = (date: string) => {
-    if (chosen.length >= requestedDays || seen.has(date) || !inWindow.has(date)) {
-      return;
-    }
-    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY && !seen.has(date)) {
-      const alreadyAdded = additions.some((item) => item.taskDate === date);
-      if (!alreadyAdded) return;
-    }
-    chosen.push(date);
-    seen.add(date);
-  };
-  for (const item of additions) take(item.taskDate);
+  const filled: typeof additions = [];
+  const used = new Set<string>();
+  for (const item of additions) {
+    if (filled.length >= requestedDays) break;
+    if (used.has(item.taskDate)) continue;
+    filled.push(item);
+    used.add(item.taskDate);
+  }
+  // Least-loaded days first; a title collision moves on to the next candidate day.
   const rest = window
-    .filter((date) => !seen.has(date))
+    .filter((date) => !used.has(date))
     .sort(
       (a, b) =>
         (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) ||
         a.localeCompare(b),
     );
-  for (const date of rest) {
-    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
-    take(date);
-  }
-
-  const byDate = new Map(additions.map((item) => [item.taskDate, item]));
-  const filled: typeof additions = [];
   let synthetic = 0;
-  for (const date of [...chosen].sort((a, b) => a.localeCompare(b))) {
-    const existing = byDate.get(date);
-    if (existing) {
-      filled.push(existing);
-      continue;
-    }
+  for (const date of rest) {
+    if (filled.length >= requestedDays) break;
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
     const subject = focusSubjects.length
       ? focusSubjects[synthetic % focusSubjects.length]!
       : null;
-    synthetic += 1;
-    const title = studyBlockTitle(subject, minutesPerDay);
+    const title = studyBlockTitle(subject, minutesPerDay, locale);
     const key = `${date}:${normalizedTitle(title)}`;
     if ((titleCounts.get(key) ?? 0) > 0) continue;
-    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
+    synthetic += 1;
     titleCounts.set(key, 1);
     pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1);
     filled.push({ kind: "ADD", title, subject, taskDate: date });
   }
-  return filled;
+  return filled.sort((a, b) => a.taskDate.localeCompare(b.taskDate));
 }
 
 function studyBlockTitle(
   subject: string | null,
   minutesPerDay: number | undefined,
+  locale: PromptLocale = "tr",
 ): string {
-  if (subject && minutesPerDay) return `${subject} · ${minutesPerDay} dk`;
-  if (subject) return `${subject} çalışması`;
-  if (minutesPerDay) return `${minutesPerDay} dk çalışma`;
-  return "Çalışma bloğu";
+  const en = locale === "en";
+  const unit = en ? "min" : "dk";
+  if (subject && minutesPerDay) return `${subject} · ${minutesPerDay} ${unit}`;
+  if (subject) return en ? `${subject} study` : `${subject} çalışması`;
+  if (minutesPerDay) return en ? `${minutesPerDay} min study` : `${minutesPerDay} dk çalışma`;
+  return en ? "Study block" : "Çalışma bloğu";
 }
 
 export const PLAN_ADAPTATION_JSON_SENTINEL =

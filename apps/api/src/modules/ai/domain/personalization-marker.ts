@@ -113,7 +113,7 @@ export function applyCoachPersonalizationMarker(
     text: visible,
     personalization: {
       ...personalization,
-      usedSignals: signal ? [signal] : [],
+      usedSignals: signal && sentence ? [signal] : [],
     },
   };
 }

@@ -11,7 +11,13 @@ import {
 } from "./analysis-types";
 import { errorMessage } from "./use-analysis-data";
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+// Local calendar day: toISOString() is UTC and shows yesterday before 03:00 in Istanbul.
+const todayIso = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${now.getFullYear()}-${month}-${day}`;
+};
 
 /** The exam as it was sent, with the server's net: what the saved moment speaks about. */
 export interface SavedMockExam {
