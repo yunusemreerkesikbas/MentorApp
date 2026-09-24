@@ -63,6 +63,46 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-25 — Subscription read timeout and panel probe sequencing
+
+A hung `GET /v1/subscription` left `subscriptionLoading` true, so the panel hero stayed on
+`TodayPathSkeleton`. `fetchSubscriptionView` now aborts after 10 seconds and settles through the
+existing null fallback. The skeleton stays up only while that read is still in flight.
+The panel resilience check holds the subscription response until `/coaching/today` has succeeded,
+then asserts the hero is still hidden. The CLS probe waits for `today-path-card` before its
+observation window and records both the mobile flex column and the desktop grid cards.
+Gotcha: a timed-out read follows the failed-fetch path, so the hero shows without premium until
+`refresh()` runs again. The 24 September CLS JSON files are that run's record and were not
+regenerated. Related: `subscription-view.ts`, `e2e/qa-panel-resilience.spec.ts`,
+`scripts/qa-panel-layout-shifts.mjs`.
+
+### 2026-09-24 — Panel layout stability after the security/performance smoke
+
+The dashboard hero skeleton now reserves space for its path rows, CTA and week band. The real
+hero waits for the shared subscription entitlement so the Free nudge does not appear in a second
+layout step; onboarding clouds wait for that same ready state. On the isolated production web/API,
+three Free-student mobile loads measured CLS 0.069–0.096 and three desktop loads 0.049–0.050,
+all below 0.1. Premium layout remains a separate Stage 2 check.
+Use `scripts/qa-panel-layout-shifts.mjs` with the disposable QA servers to repeat the measurement;
+`e2e/qa-panel-resilience.spec.ts` delays the entitlement to catch a premature hero render.
+Gotcha: the probe uses a 375×812 mobile viewport and is a local regression check, not a field
+performance sample. Related: `dashboard-content-skeleton.tsx`, `panel-shell.tsx`,
+`docs/qa/2026-09-24-security-performance.md`.
+
+### 2026-09-24 — Isolated real-API browser smoke and performance baseline
+
+The QA suite now exercises web login and refresh in two tabs, logout, private notebook media,
+TR/EN public pages, admin CSP and session refresh, and panel loading/error/retry in installed
+Chrome at desktop and mobile viewports.
+Run `qa-critical-real-api.spec.ts` and `qa-panel-resilience.spec.ts` only with the disposable
+`mentor_test` API at `localhost:3101`. The latter injects one contract-shaped 503 response to
+check the user-facing recovery path. `scripts/qa-performance-baseline.mjs` records five cold and
+warm loads for welcome, article, panel, and analysis in both viewports. It fails if a sample
+redirects or hits 429. Use `docs/qa/2026-09-24-security-performance.md` for measured results and
+limits. Gotcha: the browser baseline pauses between batches to stay below the refresh rate limit;
+the local timings are a baseline, not staging performance acceptance. Related:
+`e2e/qa-*.spec.ts`, `scripts/qa-performance-baseline.mjs`, `docs/qa/evidence/`.
+
 ### 2026-09-20 — Uygulama fontu Nunito, 800/900 artık gerçek
 
 `layout.tsx` Plus Jakarta Sans'ı dört statik ağırlıkla (400–700) yüklüyordu; koddaki 102 adet

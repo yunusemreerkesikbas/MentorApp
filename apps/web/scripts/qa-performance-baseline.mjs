@@ -85,6 +85,7 @@ async function measure(page, cdp, route, cacheDisabled, counters) {
 
 const browser = await chromium.launch();
 const samples = [];
+let navigations = 0;
 try {
   for (const viewport of viewports) {
     const publicContext = await browser.newContext({ viewport, serviceWorkers: "block" });
@@ -119,7 +120,13 @@ try {
           const cold = await measure(page, cdp, route, true, counters);
           const warm = await measure(page, cdp, route, false, counters);
           samples.push({ viewport: viewport.name, route: route.name, iteration, cold, warm });
+          navigations += 2;
           console.log(`${viewport.name} ${route.name} ${iteration}/5 cold=${Math.round(cold.wallMs)}ms warm=${Math.round(warm.wallMs)}ms`);
+          // /auth/refresh allows 30 requests/minute per IP. Keep repeated local loads below it.
+          if (navigations % 20 === 0 && navigations < 80) {
+            console.log("Waiting 65s for the QA refresh-rate window before the next batch.");
+            await new Promise((resolve) => setTimeout(resolve, 65_000));
+          }
         }
         await page.close();
       }

@@ -44,12 +44,24 @@ export function TodayPathSkeleton() {
         <Skeleton className="h-16 flex-1 rounded-[var(--radius-card)]" />
       </div>
       <Skeleton className="h-6 w-3/4 rounded-[var(--radius-card)]" />
-      <div className="flex justify-between gap-3 py-4">
-        {[0, 1, 2, 3, 4].map((index) => (
-          <Skeleton key={index} className="size-12 rounded-full sm:size-14" />
-        ))}
+      <div className="flex flex-col gap-3 py-4">
+        <Skeleton className="h-5 w-2/3 rounded-[var(--radius-card)]" />
+        <div className="flex justify-between gap-3 py-2">
+          {[0, 1, 2, 3, 4].map((index) => (
+            <Skeleton key={index} className="size-12 rounded-full sm:size-14" />
+          ))}
+        </div>
+        <Skeleton className="h-5 w-1/2 rounded-[var(--radius-card)]" />
       </div>
       <Skeleton className="h-14 w-full rounded-[var(--play-radius)] sm:w-72" />
+      <Skeleton className="ml-auto h-5 w-24 rounded-[var(--radius-card)]" />
+      <div className="-mx-5 -mb-5 border-t border-[var(--color-border)] px-5 py-5 sm:-mx-7 sm:-mb-7 sm:px-7">
+        <div className="flex gap-3">
+          {[0, 1, 2].map((index) => (
+            <Skeleton key={index} className="h-10 flex-1 rounded-[var(--radius-card)]" />
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import { useAuth } from "@/lib/auth-context";
 import { useCloudTransitionReady } from "@/lib/cloud-transition";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { useSubscription } from "@/lib/subscription-context";
 import { CommunityTopicsCard } from "./community-topics-card";
 import { CountdownPlaceholder } from "./countdown-placeholder";
 import { DailyQuestsCard } from "./daily-quests-card";
@@ -70,10 +71,11 @@ function PanelContent() {
   const wide = useWideLayout();
   const { tryCelebrate, previewCelebrate, celebration } = useStreakCelebration();
   const panel = usePanelData();
+  const { loading: subscriptionLoading } = useSubscription();
   const { data, quests, rewardOffer, setRewardOffer, setRewardUnavailable } = panel;
   const [busyTaskId, setBusyTaskId] = useState<string | null>(null);
   // Coming out of onboarding, the clouds hold until the panel behind them is real.
-  useCloudTransitionReady(!panel.loading);
+  useCloudTransitionReady(!panel.loading && !subscriptionLoading);
 
   const showRewardedQuest = Boolean(
     rewardOffer && REWARDED_QUEST_VISIBLE_REASONS.has(rewardOffer.reason),
@@ -158,7 +160,7 @@ function PanelContent() {
       onPick={(value) => void moodCheckin.pickMood(value)}
     />
   );
-  const hero = data ? (
+  const hero = data && !subscriptionLoading ? (
     <TodayPathCard
       data={data}
       quests={quests}
@@ -244,7 +246,7 @@ function PanelContent() {
         </div>
       )}
 
-      <PromotionDialog />
+      <PromotionDialog offers={panel.promotionOffers} />
       {celebration}
       {rescue.successDays != null ? (
         <StreakRescueSuccess days={rescue.successDays} onClose={rescue.closeSuccess} />

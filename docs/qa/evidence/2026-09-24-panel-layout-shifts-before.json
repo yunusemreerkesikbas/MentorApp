@@ -1,0 +1,335 @@
+{
+  "generatedAt": "2026-09-24T09:05:29.523Z",
+  "results": [
+    {
+      "iteration": 1,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.06590793273314083,
+          "startTime": 459.60000002384186,
+          "sources": [
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 495,
+                "width": 350,
+                "height": 120,
+                "top": 495,
+                "right": 355,
+                "bottom": 615,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 5,
+                "y": 689,
+                "width": 350,
+                "height": 120,
+                "top": 689,
+                "right": 355,
+                "bottom": 809,
+                "left": 5
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.261772231187362,
+          "startTime": 538.3999999761581,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 5,
+                "y": 495,
+                "width": 350,
+                "height": 204,
+                "top": 495,
+                "right": 355,
+                "bottom": 699,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 689,
+                "width": 350,
+                "height": 120,
+                "top": 689,
+                "right": 355,
+                "bottom": 809,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.00011640661020650828,
+          "startTime": 609.6999999284744,
+          "sources": [
+            {
+              "node": "<img alt=\"\" aria-hidden=\"true\" loading=\"lazy\" width=\"72\" height=\"72\" decoding=\"async\" data-nimg=\"1\" srcset=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75 2x\" src=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75\" style=\"color: trans",
+              "previousRect": {
+                "x": 41,
+                "y": 183,
+                "width": 72,
+                "height": 72,
+                "top": 183,
+                "right": 113,
+                "bottom": 255,
+                "left": 41
+              },
+              "currentRect": {
+                "x": 41,
+                "y": 178.125,
+                "width": 72,
+                "height": 81.75,
+                "top": 178.125,
+                "right": 113,
+                "bottom": 259.875,
+                "left": 41
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.261772231187362,
+          "startTime": 246.19999992847443,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 5,
+                "y": 495,
+                "width": 350,
+                "height": 204,
+                "top": 495,
+                "right": 355,
+                "bottom": 699,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 689,
+                "width": 350,
+                "height": 120,
+                "top": 689,
+                "right": 355,
+                "bottom": 809,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.08967852896211992,
+          "startTime": 233.5,
+          "sources": [
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 495,
+                "width": 350,
+                "height": 120,
+                "top": 495,
+                "right": 355,
+                "bottom": 615,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.17403661821446773,
+          "startTime": 329.10000002384186,
+          "sources": [
+            {
+              "node": "<ol class=\"-mx-5 flex overflow-x-auto px-5 pb-1 pt-9 [scrollbar-width:none] sm:mx-0 sm:overflow-visible sm:px-0\" aria-label=\"Bugünün adımları\"><li class=\"relative flex w-[76px] shrink-0 flex-col items-center gap-2 px-1 text-center sm:w-auto sm:min-w-0 sm:flex-1\"><div class=\"relative z-[1] flex h-16 items-center sm:h-[72px]\"><a class=\"relative grid ",
+              "previousRect": {
+                "x": 21,
+                "y": 314.5,
+                "width": 318,
+                "height": 148.25,
+                "top": 314.5,
+                "right": 339,
+                "bottom": 462.75,
+                "left": 21
+              },
+              "currentRect": {
+                "x": 21,
+                "y": 363.5,
+                "width": 318,
+                "height": 148.25,
+                "top": 363.5,
+                "right": 339,
+                "bottom": 511.75,
+                "left": 21
+              }
+            },
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 5,
+                "y": 666.9375,
+                "width": 350,
+                "height": 145.0625,
+                "top": 666.9375,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            },
+            {
+              "node": "<div class=\"flex flex-wrap items-center justify-between gap-x-3 gap-y-2 border-t border-[var(--play-line)] bg-[color-mix(in_srgb,var(--play-track)_35%,var(--color-surface))] px-4 py-3.5 sm:px-7\"><ol class=\"flex gap-1 sm:gap-1.5\" aria-label=\"Bu hafta\"><li class=\"flex w-7 flex-col items-center gap-1 sm:w-10\"><span class=\"grid size-6 place-items-cente",
+              "previousRect": {
+                "x": 21,
+                "y": 554.75,
+                "width": 318,
+                "height": 102.1875,
+                "top": 554.75,
+                "right": 339,
+                "bottom": 656.9375,
+                "left": 21
+              },
+              "currentRect": {
+                "x": 21,
+                "y": 603.75,
+                "width": 318,
+                "height": 102.1875,
+                "top": 603.75,
+                "right": 339,
+                "bottom": 705.9375,
+                "left": 21
+              }
+            },
+            {
+              "node": "<div class=\"flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4\"><a class=\"inline-flex min-h-14 min-w-0 items-center justify-center gap-2 rounded-[var(--play-radius)] px-5 text-base font-extrabold sm:px-6 sm:text-lg outline-none transition-[transform,box-shadow] duration-[120ms] ease-out focus-visible:ring-2 focus-visible:ring-[var(--color-foc",
+              "previousRect": {
+                "x": 41,
+                "y": 478.75,
+                "width": 278,
+                "height": 60,
+                "top": 478.75,
+                "right": 319,
+                "bottom": 538.75,
+                "left": 41
+              },
+              "currentRect": {
+                "x": 41,
+                "y": 527.75,
+                "width": 278,
+                "height": 60,
+                "top": 527.75,
+                "right": 319,
+                "bottom": 587.75,
+                "left": 41
+              }
+            },
+            {
+              "node": "<h2 id=\"today-path-title\" class=\"text-xl font-extrabold leading-snug text-[var(--color-main)] sm:text-title\">Bugün için ilk adımı seç</h2>",
+              "previousRect": {
+                "x": 41,
+                "y": 271,
+                "width": 278,
+                "height": 27.5,
+                "top": 271,
+                "right": 319,
+                "bottom": 298.5,
+                "left": 41
+              },
+              "currentRect": {
+                "x": 41,
+                "y": 320,
+                "width": 278,
+                "height": 27.5,
+                "top": 320,
+                "right": 319,
+                "bottom": 347.5,
+                "left": 41
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

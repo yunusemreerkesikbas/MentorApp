@@ -2,9 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import type { PromotionSummary } from "@mentor/types";
+import type { PromotionOffersView, PromotionSummary } from "@mentor/types";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
-import { fetchAutoPromotionOffers, pickPromotionForDialog } from "@/lib/promotions";
+import { pickPromotionForDialog } from "@/lib/promotions";
 import { readIdSet, writeIdSet } from "@/lib/seen-ids";
 import { useSubscription } from "@/lib/subscription-context";
 
@@ -33,51 +33,33 @@ const PromotionCard = dynamic(() =>
  */
 const SEEN_KEY = "mentor.promotion-dialog.seen.v1";
 
-export function PromotionDialog() {
+export function PromotionDialog({ offers }: { offers: PromotionOffersView | null | undefined }) {
   const { openPaywall } = usePremiumPaywall();
   const { view, loading } = useSubscription();
   const [promotion, setPromotion] = useState<PromotionSummary | null>(null);
 
-  // Fire-once-per-visit, guarded by a ref rather than a cancellation flag. Under StrictMode the
-  // effect runs, is cleaned up, then runs again; a per-run `cancelled` flag would be set by the
-  // FIRST cleanup while that run's card is still on screen, so the user's click would resolve
-  // into a closure that had already given up — the CTA would silently do nothing.
+  // Fire once per visit, after the panel has finished resolving the shared offer and entitlement.
   const startedRef = useRef(false);
 
   useEffect(() => {
-    // Waits for the shared entitlement rather than fetching its own copy of it.
-    if (loading || startedRef.current) return;
-    startedRef.current = true;
-
-    void (async () => {
-      // A failure here must never surface: this is a bonus, not a feature the user asked for.
-      // The offers call is deduped module-side, so this rides the request the dashboard makes.
-      const offers = await fetchAutoPromotionOffers();
-      if (!offers) return;
-      if (view?.entitlement.isPremium !== false) return; // Premium (or unknown) — no commercial nudge.
+    if (loading || offers === undefined || startedRef.current) return;
+    const frame = requestAnimationFrame(() => {
+      if (startedRef.current) return;
+      startedRef.current = true;
+      if (!offers || view?.entitlement.isPremium !== false) return;
 
       const seen = readIdSet("local", SEEN_KEY);
       const next = pickPromotionForDialog(offers, seen);
-      // Nothing new to announce — leave the record untouched and check again next visit.
       if (!next) return;
 
-      // The dashboard fires several one-shot surfaces on mount — the mood check-in, a journey
-      // level celebration — and none of them know about each other. This one is the only
-      // COMMERCIAL nudge among them, so it is the one that stands down: an earned moment must not
-      // be buried under an ad. Checked here, after the fetches, because that is the moment we
-      // would actually take the screen.
-      //
-      // Standing down deliberately does NOT record the campaign as seen: it gets its single
-      // appearance on the next visit instead of being silently spent.
-      //
-      // ponytail: reads the DOM instead of a modal registry. Every modal in the app already
-      // carries `role="dialog" aria-modal="true"`, so there is nothing to keep in sync. Build the
-      // registry if two surfaces ever need to negotiate priority rather than just yield.
+      // Yield to an earned moment, such as a journey celebration, without marking the offer seen.
+      // Every modal carries this accessible role, so a separate registry is unnecessary.
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
 
       setPromotion(next);
-    })();
-  }, [loading, view]);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [loading, offers, view]);
 
   if (!promotion) return null;
 

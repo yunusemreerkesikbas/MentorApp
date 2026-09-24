@@ -1,0 +1,305 @@
+{
+  "capturedAt": "2026-09-24T08:59:04.9963910Z",
+  "baseCommit": "220cd24ef16b431d310d5199b36129659fb10be9",
+  "sourceBranchAtReport": "feature/APP-109",
+  "sourceHeadAtReport": "307de33cb988c4126ebc08b2a9ef958ebc425efe",
+  "description": "Isolated QA worktree created from APP-108 and overlaid with the then-current uncommitted source. Hashes cover modified/new worktree files, including final browser and storage tests.",
+  "files": [
+    {
+      "path": "apps/api/src/shared/adapters/storage/fake-storage.adapter.spec.ts",
+      "sha256": "24caa83ddd13a34dbb069e47ba87b2fe79da2531d3a006cca517bb3089de6baf"
+    },
+    {
+      "path": "apps/api/test/auth-rate-limit.e2e-spec.ts",
+      "sha256": "ec33cf00a34e07ca3568872162453b2cbdaf2f5ebbb0f1b570b8084a4712850d"
+    },
+    {
+      "path": "apps/web/e2e/qa-critical-real-api.spec.ts",
+      "sha256": "37a4691ae70ab040bee40f1aa10eb5708fdfd254df3072cbf70d09d49cc687bd"
+    },
+    {
+      "path": "apps/web/e2e/qa-panel-resilience.spec.ts",
+      "sha256": "c05c019dc0da6c532b3a733f88e1f7c458420d2d8f6196efc72ab962bf7ff095"
+    },
+    {
+      "path": "apps/web/scripts/qa-performance-baseline.mjs",
+      "sha256": "ce220b115168668367a69e2e6151946a141f9c34ab2e99fe0bc0140e1762b1da"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/knowledge/[slug]/_components/share-copy-button.tsx",
+      "sha256": "ae3ad62c3cc510dd65b837d666c9063b06d3d6cf9f521d1e9c7bd02abe82e619"
+    },
+    {
+      "path": "apps/web/src/components/ads/deferred-contextual-ad-slot.tsx",
+      "sha256": "37ad3ede9ad532bcfe6c56673ddc843dafa50fa2f3eb26c8639d2b21805f159d"
+    },
+    {
+      "path": "apps/web/src/lib/cloud-transition-overlay.tsx",
+      "sha256": "d888b4cd999b3048dd5054f7b60b66419a0315d9c70be8744dcb3604f45ffb64"
+    },
+    {
+      "path": "apps/api/src/common/errors/error-code.ts",
+      "sha256": "81743c265c5e874efd0cb56878ce51b25c9f13390b51b66b05e9e25784932b6c"
+    },
+    {
+      "path": "apps/api/src/common/errors/postgres-error.ts",
+      "sha256": "ee7370e2cee7eea2a69b2bdbcb8cc2fc0bc0c46335bae4e5626ad244d689cf26"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/en/errors.json",
+      "sha256": "0282633194b4a97603aa513bebee538b6c1035a8913cf64f232a08933197681f"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/tr/errors.json",
+      "sha256": "5c363d6dd8d63afebf1061540612796c260533c14a80e7f2bf7f5f8ec933dbaa"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/chat.service.ts",
+      "sha256": "bc5f0e6062cbed8c7c6f53fcdf5daa08a991de08fcf0625cd3c801edbfe289a3"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/plan-adaptation.service.spec.ts",
+      "sha256": "c147589cea52c039cddfcb445e91af39246a1c945414190470b762a27e64b16d"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/plan-adaptation.service.ts",
+      "sha256": "59ab950041c6bd9834f8d3799f0ff52c76ce855af8c67175610578deeed1c1fa"
+    },
+    {
+      "path": "apps/api/src/modules/ai/domain/plan-adaptation.spec.ts",
+      "sha256": "b849b1514d2abe4a4bc87c06d885f02a63337ebc57cf55921315a8f2bdce33b5"
+    },
+    {
+      "path": "apps/api/src/modules/ai/domain/plan-adaptation.ts",
+      "sha256": "78bc79549a4410a98de3ab919f7b985a3084160f58da777e927abdd4d50d4c2a"
+    },
+    {
+      "path": "apps/api/src/modules/ai/presentation/ai-chat.controller.ts",
+      "sha256": "d6a02b8c105b225acf7d24fb4160db4c92a1855e3b026d1f9af4f2f2f06d7134"
+    },
+    {
+      "path": "apps/api/src/modules/ai/presentation/ai.dto.ts",
+      "sha256": "413fbcb1ebe4f12f58c971772ef7e8fda489db5c4d2710b9b1e8ee888d8b2c34"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/analysis.service.ts",
+      "sha256": "eb2aa4fcfb0e6354dce31e667be7fc5170183025b7c4afc60abbc15fb5f6c9c3"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/coach-evidence.service.ts",
+      "sha256": "bc5f6375ba37374e71d105d11dfab54b9bc6b8d04bfa4dcc7563dbbb2eb20ea1"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/coaching-achievement-evidence.service.ts",
+      "sha256": "984046b2c24eb5d9bc30d6b176c4a2f8443c4f982721b3f39e305813d098540b"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/session.service.ts",
+      "sha256": "b1d4f6f3bb704d740d4b5e2a74537e908f32f2973d1882f6359f6508a410a71a"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/domain/coach-evidence.ts",
+      "sha256": "fdcca1291396be78b15737fa28a87aa8330d1c56875f9ee59c8a5be1038a10f8"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/infrastructure/mistake-notebook.repository.ts",
+      "sha256": "5b513ebfbcf3024ea35948d7ab7cf5f1c85bbcf66a0a67b75e13a2448d0757b5"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/infrastructure/mock-exam-photo.repository.ts",
+      "sha256": "6f725edf29900309bf41b5605018967799eaa09f357afa40bbeee68201caaf16"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/infrastructure/study-session.repository.ts",
+      "sha256": "d5c27fd2048dc03204a36cd03c1e50623ac16c000d4fa81d4dac96a7c346aaf1"
+    },
+    {
+      "path": "apps/api/src/modules/forum/application/forum-achievement-evidence.service.ts",
+      "sha256": "db3219f2a23fa1859ac5775f582c6b65411f0b38054b3b7b720c1e160a092f7c"
+    },
+    {
+      "path": "apps/api/src/modules/forum/infrastructure/forum-discovery.repository.ts",
+      "sha256": "a3abddaf119076fea0bb04017fc65d9cb13f4f3bda0064be3af9513f5743bb7c"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/auth.service.ts",
+      "sha256": "f6c194b65cd94ae7d97dfaeb54cc7302dba7a412ec04a88dda3805e942acafc4"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/users.service.spec.ts",
+      "sha256": "3f0da69b834b6b6e2b0065ca26747c9b9c210fef1cbbd3b646494b09c20ee5cd"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/users.service.ts",
+      "sha256": "2de83d3f985f7102b0b88107b7136f33ad0d2f1036e0dbfd69127132977820bc"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.spec.ts",
+      "sha256": "badcc162ad7a31d3827241a211194dbffcd6af44e0e104bfa32fe0ce28c2295e"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.ts",
+      "sha256": "87fadc55e72d5b6f26e15e28b4af314bf48b46a6c77fc5a13189188e385ceaa8"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/domain/mentorship.constants.ts",
+      "sha256": "41e119d40c89176083875d6e5695a417b52550c1885814f89803981f6c1ebc39"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/infrastructure/mentorship-link.repository.ts",
+      "sha256": "d814fc7c848fcabbb28d59156e1d115c318b1d7973b5e53c9f8f125eaa0ca02b"
+    },
+    {
+      "path": "apps/api/test/ai-coach.e2e-spec.ts",
+      "sha256": "fde4008cffc276235e9939ad7463c94d365f9437b49ed3c5461abb4597e36269"
+    },
+    {
+      "path": "apps/api/test/analysis-improvement.e2e-spec.ts",
+      "sha256": "ca37881e321d6e9c5284fd896c985923ba5c0ce1a22095c5539c091b10d3a862"
+    },
+    {
+      "path": "apps/api/test/auth.e2e-spec.ts",
+      "sha256": "7555d7be7257ac71b07b2a46c6e9347097277243ab79c12a60972b4a32442292"
+    },
+    {
+      "path": "apps/api/test/coach-evidence.e2e-spec.ts",
+      "sha256": "4b169657b243a4587d309bc76eb5b3575fc81b987bd592c483772d76f470a688"
+    },
+    {
+      "path": "apps/api/test/eval/openai-prompt.eval.ts",
+      "sha256": "25135745ab128911155389388798a74c871b203c78b5b5c844d29eb0f27ac0f5"
+    },
+    {
+      "path": "apps/api/test/mentorship-applications.e2e-spec.ts",
+      "sha256": "ca053f273a5a5828930185ce7fa38d2229010fc08642a90c55e14a5256b321c9"
+    },
+    {
+      "path": "apps/api/test/mentorship-followups.e2e-spec.ts",
+      "sha256": "55a12f5631152811afafe5709735e5a3b5b4b92b4d93ae8aef87095fd3498cb5"
+    },
+    {
+      "path": "apps/api/test/mentorship-seats.e2e-spec.ts",
+      "sha256": "28e4cd270fbbf30cc6a767d92333d73496fd7718d58be2d18b1741295958bb66"
+    },
+    {
+      "path": "apps/api/test/mentorship.e2e-spec.ts",
+      "sha256": "86c17aba232d534ab6f3d36b11ec387d46e0f2c570313ba59ca279563d52781b"
+    },
+    {
+      "path": "apps/web/e2e/plan.spec.ts",
+      "sha256": "7d0a0d1872e87f2ab94d27c422be69d7bb131bf440a0754762dad2bf93bd30d4"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "6d4eda980a67f4beb376b96d026434cf97f2b3c7048ca1d4e876dedcb60085e6"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "08b269518d0c32eace6e9f830eae0695979fadce688fe00340c8bb933ac09df0"
+    },
+    {
+      "path": "apps/web/playwright.config.ts",
+      "sha256": "a9d317da0ad963db228894bd2dde5be274b1821f70f677ff85b9105b76c6f1a6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/panel-shell.tsx",
+      "sha256": "131ac6d74ab9c1d0207cd5526e9536aec4dad05c187ad2f10400ee4b86376e03"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/plan/_components/plan-coach-adaptation-brief-note.spec.ts",
+      "sha256": "fdedacca7190ab3b629f9cfac1cd60e3baa40371213e9a15027c6d5ad85e1889"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/plan/_components/plan-coach-adaptation-brief-note.ts",
+      "sha256": "5f21ca56e6769e8114b3e7f26f6749ae115ae2bcee9daab47c7e21e3cbd2a903"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/plan/_components/plan-coach-adaptation-brief-steps.tsx",
+      "sha256": "e59be0e442a4fc64f4cb43400f3cbcb468f2a028641e23a4c9756a0ea011967e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/plan/_components/plan-coach-adaptation-brief.tsx",
+      "sha256": "17c958493a17a8ec82866ed79f1adb0bbe1f87c02715a36e51672599cc913dea"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/profile/_components/profile-header.tsx",
+      "sha256": "537387b3a4213c5bb594baba5d3177ab7c3c3d72811e50465ded162de8e5cae6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-capacity-card.tsx",
+      "sha256": "e515ac73b03422b10e51e00bf78ba6176035a57df8ca125c7bb4345ec9c23031"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/cookie-preferences/page.tsx",
+      "sha256": "e91d04cbfe2cb47f9a3c48d4612b95734cf35ff4c8edf961bff3b717d3cc7267"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/knowledge/[slug]/_components/article-content.tsx",
+      "sha256": "f351246da2b200664693150f048d9b1f14b448578c5af0faee2c3d223034e323"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/knowledge/[slug]/_components/share-row.tsx",
+      "sha256": "73104008cc7917579709eafd3caf1b331ea30bdc76e82ee684700b79d52f6201"
+    },
+    {
+      "path": "apps/web/src/components/premium/promotion-dialog.tsx",
+      "sha256": "f678c415216a7cc8b1aeca26d3bf4090237e2918f2dddf719b7f90283003209e"
+    },
+    {
+      "path": "apps/web/src/i18n/route-message-scopes.json",
+      "sha256": "c0c98cfa72e7bfcb8b286f68dcf7da2ed103b513c1c28331619b2ae7dda21490"
+    },
+    {
+      "path": "apps/web/src/lib/analytics-consent.tsx",
+      "sha256": "8a63012938f371805d7023df8b6d416bbfb841efe41abfe3df54e075a53f7228"
+    },
+    {
+      "path": "apps/web/src/lib/cloud-transition.tsx",
+      "sha256": "5f476c11b06dde3cd0503bb37764efea689dbed13ea151afff03b4b348ef794c"
+    },
+    {
+      "path": "docs/features/ai.md",
+      "sha256": "0c9637120635245ecaa1330a473f36efbeba35a7c4bb35eeedb7be8bf440323c"
+    },
+    {
+      "path": "docs/features/coaching.md",
+      "sha256": "00daa241033136e898128852bcfe7f90383565eaf11e0a95c15034629c8761a5"
+    },
+    {
+      "path": "docs/features/forum.md",
+      "sha256": "224c9debacedb8a7e8521732acba74d3c6983b2ce340da3941b10c2c31b5cda8"
+    },
+    {
+      "path": "docs/features/identity.md",
+      "sha256": "1e53ded253fa08b238bfae0a8f21edc843781f096881a4061bfdb8c29164bf4d"
+    },
+    {
+      "path": "docs/features/mentorship.md",
+      "sha256": "e6c0ba6f8576857fd90f9aec9e892f6abf809f4659fa3fb7604b3972ff56432a"
+    },
+    {
+      "path": "docs/standards/api.md",
+      "sha256": "1b78a29f13ff85e4d5b3106fcc73192f0271a01109416d56f04e9780f662d70c"
+    },
+    {
+      "path": "packages/api-client/openapi.json",
+      "sha256": "cad8eca58cd39c2f4616b2c0c6cf27898de73ff31e423ecfe8f3067c449f262c"
+    },
+    {
+      "path": "packages/api-client/src/generated/api.ts",
+      "sha256": "689db364cf2c3a21b732f6558d6c476f39d2c3b6ed83b28a30efac343e9e6a14"
+    },
+    {
+      "path": "packages/types/src/coaching.ts",
+      "sha256": "2e556116f652f0ea2657b91d2ef13ab36937534ca4b14f81e99295d13bae9011"
+    },
+    {
+      "path": "packages/validation/src/ai.ts",
+      "sha256": "2c11135708834051593be762dd48386b5412dbdc855b6aa257fa7ae2514eeed2"
+    },
+    {
+      "path": "packages/validation/src/auth.ts",
+      "sha256": "f70bc9743fa7aaa98bdf5c2f4145509e1b9a6f868b6e9428866bb34f116a69bd"
+    }
+  ]
+}
