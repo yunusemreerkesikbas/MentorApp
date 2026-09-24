@@ -102,10 +102,11 @@ test("real API: admin browser session stays separate from web and refreshes on r
   expect(signup.status()).toBe(201);
   const userId = (await signup.json()).user.id as string;
   expect(userId).toMatch(/^[a-f0-9-]{36}$/);
-  execFileSync("docker", [
+  const promoteOutput = execFileSync("docker", [
     "exec", "mentor-postgres", "psql", "-U", "mentor", "-d", "mentor_test", "-c",
     `begin; select set_config('app.role','SERVICE',true); update users set roles = array_append(roles, 'ADMIN') where id = '${userId}'; commit;`,
-  ]);
+  ], { encoding: "utf8" });
+  expect(promoteOutput).toContain("UPDATE 1");
   await context.clearCookies();
 
   await page.goto("http://localhost:3102/login");

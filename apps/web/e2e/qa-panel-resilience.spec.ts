@@ -76,13 +76,21 @@ test("panel requests automatic subscription offers once per load", async ({ page
 });
 
 test("panel keeps the hero skeleton until entitlement resolves", async ({ page }) => {
+  let releaseSubscription = () => {};
+  const subscriptionHeld = new Promise<void>((resolve) => {
+    releaseSubscription = resolve;
+  });
   await page.route(`${qaApi}/subscription`, async (route) => {
-    await new Promise((resolve) => setTimeout(resolve, 1_500));
+    await subscriptionHeld;
     await route.continue();
   });
+  const todayReady = page.waitForResponse(
+    (response) => response.url() === `${qaApi}/coaching/today` && response.ok(),
+  );
   await page.goto("/panel");
+  await todayReady;
   await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-  await page.waitForTimeout(400);
   await expect(page.getByTestId("today-path-card")).toHaveCount(0);
+  releaseSubscription();
   await expect(page.getByTestId("today-path-card")).toBeVisible();
 });

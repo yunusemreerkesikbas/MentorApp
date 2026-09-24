@@ -63,6 +63,19 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-25 — Subscription read timeout and panel probe sequencing
+
+A hung `GET /v1/subscription` left `subscriptionLoading` true, so the panel hero stayed on
+`TodayPathSkeleton`. `fetchSubscriptionView` now aborts after 10 seconds and settles through the
+existing null fallback. The skeleton stays up only while that read is still in flight.
+The panel resilience check holds the subscription response until `/coaching/today` has succeeded,
+then asserts the hero is still hidden. The CLS probe waits for `today-path-card` before its
+observation window and records both the mobile flex column and the desktop grid cards.
+Gotcha: a timed-out read follows the failed-fetch path, so the hero shows without premium until
+`refresh()` runs again. The 24 September CLS JSON files are that run's record and were not
+regenerated. Related: `subscription-view.ts`, `e2e/qa-panel-resilience.spec.ts`,
+`scripts/qa-panel-layout-shifts.mjs`.
+
 ### 2026-09-24 — Panel layout stability after the security/performance smoke
 
 The dashboard hero skeleton now reserves space for its path rows, CTA and week band. The real

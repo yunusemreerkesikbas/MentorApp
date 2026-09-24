@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type * as React from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 export interface CompletionOverlayProps {
   open: boolean;
   /** Accessible name for the dialog (localized at the call site). */
   label: string;
-  children: ReactNode;
+  children: React.ReactNode;
   className?: string;
 }
 

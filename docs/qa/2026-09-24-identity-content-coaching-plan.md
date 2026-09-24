@@ -7,9 +7,11 @@ its data before any result is called a pass.
 
 ## Environment and reusable data
 
-- Use the same isolated `mentor_test` database, fake AI/payment/email/storage providers, API on
-  `localhost:3101` and a production Next web build on `localhost:3100`. Hash the current source
-  overlay again before execution; Stage 1 hashes do not cover later work.
+- Use the same isolated `mentor_test` database and fake AI/payment/email/storage providers.
+  Stage 1 keeps the API on `localhost:3101` and the production Next web build on `localhost:3100`.
+  The executed Stage 2 wave uses a second pair, API `localhost:3201/v1` and web `localhost:3200`,
+  so it does not share that Stage 1 process. Hash the current source overlay again before
+  execution; Stage 1 hashes do not cover later work.
 - Create **two student accounts once per browser project** (TR and EN), then log in per scenario.
   Add a Free account, a test-only Premium entitlement through the fake subscription path, and
   an account without `examType` for onboarding. Reuse accounts to stay within signup's 5/min

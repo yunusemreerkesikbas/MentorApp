@@ -13,6 +13,8 @@ if (webUrl !== "http://localhost:3100" || apiUrl !== "http://localhost:3101/v1" 
 const viewport = process.env.QA_VIEWPORT === "desktop"
   ? { width: 1280, height: 800 }
   : { width: 375, height: 812 };
+const HERO_READY_TIMEOUT_MS = 10_000;
+const OBSERVE_AFTER_READY_MS = 500;
 const browser = await chromium.launch();
 const context = await browser.newContext({ viewport, serviceWorkers: "block" });
 try {
@@ -42,7 +44,10 @@ try {
     window.__qaShifts = [];
     window.__qaTimeline = [];
     const capture = () => {
-      const children = [...document.querySelectorAll("main > div.flex > *")];
+      const children = [
+        ...document.querySelectorAll("main > div.flex > *"),
+        ...document.querySelectorAll("main > div.grid > .flex > *"),
+      ];
       window.__qaTimeline.push({
         at: performance.now(),
         children: children.map((node) => ({
@@ -52,8 +57,7 @@ try {
         })),
       });
     };
-    const timer = setInterval(capture, 50);
-    setTimeout(() => clearInterval(timer), 1_500);
+    window.__qaShiftTimer = setInterval(capture, 50);
     new PerformanceObserver((list) => {
       for (const entry of list.getEntries()) {
         if (entry.hadRecentInput) continue;
@@ -72,11 +76,18 @@ try {
   const results = [];
   for (let iteration = 1; iteration <= 3; iteration++) {
     await page.goto(`${webUrl}/panel`, { waitUntil: "load" });
-    await page.waitForTimeout(2_000);
+    await page.getByTestId("today-path-card").waitFor({
+      state: "visible",
+      timeout: HERO_READY_TIMEOUT_MS,
+    });
+    await page.waitForTimeout(OBSERVE_AFTER_READY_MS);
     results.push({
       iteration,
       finalPath: new URL(page.url()).pathname,
-      shifts: await page.evaluate(() => window.__qaShifts),
+      shifts: await page.evaluate(() => {
+        window.clearInterval(window.__qaShiftTimer);
+        return window.__qaShifts;
+      }),
       timeline: await page.evaluate(() => window.__qaTimeline),
     });
   }
