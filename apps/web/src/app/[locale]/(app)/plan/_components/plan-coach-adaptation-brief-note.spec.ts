@@ -1,88 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
-  PLAN_ADAPTATION_NOTE_MAX,
-  composePlanAdaptationNote,
   formatKnownBrief,
-  isMinuteChoice,
+  isMinuteEntry,
+  planWindowDays,
   seedBriefSubjects,
   summarizePendingWeek,
-  type PlanAdaptationBriefLabels,
 } from "./plan-coach-adaptation-brief-note";
-
-const labels: PlanAdaptationBriefLabels = {
-  days: (count) => `Bu hafta ${count} gün.`,
-  minutes: (count) => `Günde yaklaşık ${count} dk.`,
-  subjects: (names) => `Ağırlık: ${names}.`,
-};
-
-describe("composePlanAdaptationNote", () => {
-  it("omits empty answers", () => {
-    expect(
-      composePlanAdaptationNote(
-        { days: null, minutes: null, subjects: [], note: "  " },
-        labels,
-      ),
-    ).toBe("");
-  });
-
-  it("joins only the answers that were given", () => {
-    expect(
-      composePlanAdaptationNote(
-        {
-          days: 5,
-          minutes: 60,
-          subjects: ["Tarih", "Coğrafya"],
-          note: "Cuma hafif.",
-        },
-        labels,
-      ),
-    ).toBe(
-      "Bu hafta 5 gün. Günde yaklaşık 60 dk. Ağırlık: Tarih, Coğrafya. Cuma hafif.",
-    );
-  });
-
-  it("keeps the first three distinct subjects", () => {
-    expect(
-      composePlanAdaptationNote(
-        {
-          days: null,
-          minutes: null,
-          subjects: ["Tarih", " tarih ", "Coğrafya", "Vatandaşlık", "Matematik"],
-          note: "",
-        },
-        labels,
-      ),
-    ).toBe("Ağırlık: Tarih, Coğrafya, Vatandaşlık.");
-  });
-
-  it("clips the free note before the structured lines", () => {
-    const structured = composePlanAdaptationNote(
-      { days: 5, minutes: null, subjects: [], note: "" },
-      labels,
-    );
-    const note = "x".repeat(PLAN_ADAPTATION_NOTE_MAX);
-    const composed = composePlanAdaptationNote(
-      { days: 5, minutes: null, subjects: [], note },
-      labels,
-    );
-    expect(composed.startsWith(`${structured} `)).toBe(true);
-    expect(composed.length).toBeLessThanOrEqual(PLAN_ADAPTATION_NOTE_MAX);
-    expect(composed.length).toBeGreaterThan(structured.length);
-  });
-
-  it("drops the free note when the structured lines already fill the cap", () => {
-    const longLabels: PlanAdaptationBriefLabels = {
-      ...labels,
-      days: () => "g".repeat(PLAN_ADAPTATION_NOTE_MAX + 20),
-    };
-    expect(
-      composePlanAdaptationNote(
-        { days: 5, minutes: null, subjects: [], note: "Cuma hafif" },
-        longLabels,
-      ),
-    ).toBe("g".repeat(PLAN_ADAPTATION_NOTE_MAX));
-  });
-});
 
 describe("pending week", () => {
   it("counts pending tasks and keeps the first spelling of each subject", () => {
@@ -98,13 +21,13 @@ describe("pending week", () => {
     ).toEqual({ pendingCount: 3, subjects: ["Tarih"] });
   });
 
-  it("seeds chips from taxonomy order, capped at three", () => {
+  it("seeds chips from taxonomy order, every known subject", () => {
     expect(
       seedBriefSubjects(
         ["Tarih", "Coğrafya", "Vatandaşlık", "Matematik"],
         ["matematik", "Tarih", "Coğrafya", "Fizik", "Vatandaşlık"],
       ),
-    ).toEqual(["Tarih", "Coğrafya", "Vatandaşlık"]);
+    ).toEqual(["Tarih", "Coğrafya", "Vatandaşlık", "Matematik"]);
   });
 });
 
@@ -118,7 +41,19 @@ describe("known brief", () => {
       }),
     ).toBe("KPSS · Lisans · günde 60 dk hedef · bu hafta 8 bekleyen görev");
     expect(formatKnownBrief({ exam: null, goal: null, pending: null })).toBeNull();
-    expect(isMinuteChoice(60)).toBe(true);
-    expect(isMinuteChoice(45)).toBe(false);
+  });
+});
+
+describe("plan wizard inputs", () => {
+  it("takes any whole minute count between 10 and 600", () => {
+    expect([10, 45, 600].every(isMinuteEntry)).toBe(true);
+    expect([null, 5, 601, 45.5, Number.NaN].some(isMinuteEntry)).toBe(false);
+  });
+
+  it("lists the next seven days as ISO weekdays, starting today", () => {
+    // 21 July 2026 is a Tuesday.
+    expect(planWindowDays(new Date(2026, 6, 21, 23, 30)).map((day) => day.weekday)).toEqual([
+      2, 3, 4, 5, 6, 7, 1,
+    ]);
   });
 });

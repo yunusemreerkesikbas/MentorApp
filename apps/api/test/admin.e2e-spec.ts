@@ -250,6 +250,9 @@ describe("admin (e2e)", () => {
     expect(res.status).toBe(200);
     const ai = res.body.find((e: { key: string }) => e.key === "ai.enabled");
     expect(ai).toMatchObject({ category: "feature-flags", type: "boolean" });
+    // Test env is dev tooling (no APP_ENV, NODE_ENV=test), so the dev switch is listed and on.
+    const devConsole = res.body.find((e: { key: string }) => e.key === "dev.email.console_enabled");
+    expect(devConsole).toMatchObject({ category: "dev", type: "boolean", value: true });
   });
 
   it("rejects config from non-admins (403)", async () => {

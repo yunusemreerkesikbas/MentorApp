@@ -1,28 +1,15 @@
-"use client";
-
-import { useState, type ReactNode, type SVGProps } from "react";
-import { useTranslations } from "next-intl";
-import { Check, Link2 } from "lucide-react";
+import type { ReactNode, SVGProps } from "react";
+import { getTranslations } from "next-intl/server";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
+import { ShareCopyButton } from "./share-copy-button";
 
 const ROUND =
   "inline-flex size-11 cursor-pointer items-center justify-center rounded-full border border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] transition-colors duration-200 hover:border-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none";
 
-export function ShareRow({ title, url }: { title: string; url: string }) {
-  const t = useTranslations("knowledge");
-  const [copied, setCopied] = useState(false);
+export async function ShareRow({ title, url }: { title: string; url: string }) {
+  const t = await getTranslations("knowledge");
   const encodedUrl = encodeURIComponent(url);
   const encodedText = encodeURIComponent(title);
-
-  async function handleCopy() {
-    try {
-      await navigator.clipboard.writeText(url);
-      setCopied(true);
-      window.setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // Clipboard can be blocked in some browsers; the control stays available.
-    }
-  }
 
   return (
     <section aria-labelledby="share-title" className={`${PANEL_CARD} flex flex-col gap-3`}>
@@ -45,14 +32,7 @@ export function ShareRow({ title, url }: { title: string; url: string }) {
         >
           <FacebookIcon />
         </ShareLink>
-        <button
-          type="button"
-          onClick={handleCopy}
-          aria-label={copied ? t("share_copied") : t("share_copy")}
-          className={ROUND}
-        >
-          {copied ? <Check className="size-5" aria-hidden /> : <Link2 className="size-5" aria-hidden />}
-        </button>
+        <ShareCopyButton url={url} label={t("share_copy")} copiedLabel={t("share_copied")} className={ROUND} />
       </div>
     </section>
   );

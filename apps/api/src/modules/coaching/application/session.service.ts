@@ -203,6 +203,10 @@ export class SessionService {
       averageSessionMinutes28d: Math.round(rhythm.averageFocusSeconds28d / 60),
       dominantTimeBand: rhythm.dominantTimeBand,
       lastActiveAt: rhythm.lastActiveAt?.toISOString() ?? null,
+      weekdayActivity28d: rhythm.weekdayActivity28d.map(({ focusSeconds, ...day }) => ({
+        ...day,
+        focusMinutes: Math.round(focusSeconds / 60),
+      })),
     };
   }
 

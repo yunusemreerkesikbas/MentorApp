@@ -61,10 +61,13 @@ export class PlanAdaptationBodyDto extends createZodDto(
   @ApiPropertyOptional({ minimum: 1, maximum: 7 })
   override days?: number;
 
-  @ApiPropertyOptional({ enum: [15, 30, 60, 90, 120] })
-  override minutesPerDay?: 15 | 30 | 60 | 90 | 120;
+  @ApiPropertyOptional({ type: [Number], minItems: 1, maxItems: 7, description: "ISO weekdays, 1 = Monday" })
+  override studyWeekdays?: number[];
 
-  @ApiPropertyOptional({ type: [String], maxItems: 3 })
+  @ApiPropertyOptional({ minimum: 10, maximum: 600 })
+  override minutesPerDay?: number;
+
+  @ApiPropertyOptional({ type: [String], maxItems: 30 })
   override focusSubjects?: string[];
 }
 /** Query for GET /v1/coach/messages (plain pagination — study-sessions pattern). */

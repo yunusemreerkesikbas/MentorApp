@@ -1,5 +1,6 @@
 /** Operator-facing hints for `/config`. Fallback is the catalog `description` if a key is new. */
 export const CONFIG_HINTS: Record<string, string> = {
+    "dev.email.console_enabled": "Açıkken e-posta gönderilmez; alıcı, şablon ve link API konsoluna basılır. Kapatınca prod gibi Postmark'la gider. Yalnız stage/dev'de görünür.",
     "storage.upload.active_per_user": "Kullanıcı başına aynı anda kaç yükleme bileti veya akışı açık kalabilir.",
     "storage.upload.daily_bytes": "Kullanıcının gün içinde (UTC) yükleyebileceği bayt tavanı. Başarısız yükleme de rezervi yer.",
     "storage.upload.ticket_seconds": "Tek kullanımlık yükleme biletinin saniye cinsinden ömrü.",

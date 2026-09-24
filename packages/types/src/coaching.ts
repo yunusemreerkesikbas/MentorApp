@@ -205,6 +205,8 @@ export interface CoachPlanAdaptationBriefDto {
   /** Server-computed defaults; the student can change every one of them. */
   suggestion: {
     days: number | null;
+    /** ISO weekdays (1 = Monday) the student studied on most in the last 28 days; `days` of them. */
+    weekdays: number[] | null;
     minutesPerDay: 15 | 30 | 60 | 90 | 120 | null;
     focusSubjects: string[];
   };

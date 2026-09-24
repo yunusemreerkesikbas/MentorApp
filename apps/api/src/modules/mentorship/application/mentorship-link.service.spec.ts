@@ -61,9 +61,14 @@ function setup(
       return { rows: matched, total: matched.length };
     }),
     // Mirrors the repository contract: quota + upsert inside one transaction.
-    acceptInvite: vi.fn(async (coachId: string, studentId: string, maxActive: number) => {
+    listActiveByCoach: vi.fn(async (coachId: string) =>
+      rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE"),
+    ),
+    acceptInvite: vi.fn(
+      async (coachId: string, studentId: string, maxActive: number, seatAllowance: number) => {
       const active = rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE").length;
       if (active >= maxActive) return "QUOTA_FULL";
+      if (active >= seatAllowance) return "SEATS_FULL";
       const existing = rows.find((r) => r.coachId === coachId && r.studentId === studentId);
       if (existing && existing.status !== "ENDED") return "ALREADY_ACTIVE";
       if (existing) {
@@ -76,7 +81,8 @@ function setup(
       const row = link({ id: `link-${rows.length}`, coachId, studentId });
       rows.push(row);
       return { link: row, activeBefore: active };
-    }),
+    },
+    ),
     end: vi.fn(async (linkId: string, endedBy: string) => {
       const row = rows.find((r) => r.id === linkId);
       if (!row || row.status !== "ACTIVE") return undefined;
@@ -130,6 +136,7 @@ function setup(
   };
 
   const invites = {
+    getCurrent: vi.fn(async () => null),
     resolveCoachId: vi.fn(async (code: string) => {
       if (code !== CODE) {
         throw new DomainError(ErrorCode.MENTORSHIP_INVITE_INVALID, 404);
@@ -172,7 +179,11 @@ function setup(
 
   // Paid seats come from the coach's own plan; 0 unless a test says otherwise, which is what
   // every coach looks like until seat billing is switched on.
-  const subscriptions = { paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0) };
+  const subscriptions = {
+    paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0),
+    countSponsoredForLinks: vi.fn(async () => 0),
+  };
+  const seats = { grant: vi.fn(async () => true) };
 
   // The profile the consent screen and /kocum now carry. Null is the common case: every coach
   // granted COACH by hand has no vetted application behind them.
@@ -190,6 +201,7 @@ function setup(
     users as never,
     configRegistry as never,
     subscriptions as never,
+    seats as never,
     events as never,
     planEvents as never,
     db as never,
@@ -202,6 +214,7 @@ function setup(
     users,
     configRegistry,
     subscriptions,
+    seats,
     events,
     planEvents,
     db,
@@ -223,6 +236,8 @@ describe("MentorshipLinkService", () => {
   beforeEach(() => {
     config["mentorship.enabled"] = true;
     config["mentorship.coach.max_active_students"] = 2;
+    config["mentorship.coach.free_seats"] = 1;
+    config["mentorship.seats.sponsorship_enabled"] = true;
   });
 
   describe("the authorization gate", () => {
@@ -357,7 +372,7 @@ describe("MentorshipLinkService", () => {
      * number in this flow that costs real money to get wrong. It is read from the count taken
      * under the accept lock, which is why the boundary is worth pinning here.
      */
-    it("seats the first student free and merely follows the next one", async () => {
+    it("seats the first student free and refuses the next one", async () => {
       const { service, emitted } = setup();
       await service.acceptInvitation(STUDENT, CODE);
       expect(emitted.at(-1)).toMatchObject({
@@ -365,17 +380,16 @@ describe("MentorshipLinkService", () => {
         payload: { seatKind: "FREE" },
       });
 
-      await service.acceptInvitation(OTHER_STUDENT, CODE);
-      // free_seats is 1: the second student is followed, not sponsored.
-      expect(emitted.at(-1)).toMatchObject({
-        topic: MentorshipEventTopic.LINK_ACCEPTED,
-        payload: { seatKind: "NONE" },
-      });
+      // free_seats is 1 and paid seats are 0: the second student does not get a link at all.
+      expect(await codeOf(() => service.acceptInvitation(OTHER_STUDENT, CODE))).toBe(
+        ErrorCode.MENTORSHIP_SEATS_FULL,
+      );
+      expect(emitted).toHaveLength(1);
     });
 
     /**
-     * The paid half. `free_seats` is 1 here, so the second student can only be sponsored if the
-     * coach's own plan pays for them — and running out of seats must still not block the link.
+     * The paid half. `free_seats` is 1 here, so the second student is sponsored only because the
+     * coach's own plan pays for them.
      */
     it("sponsors past the free quota when the coach's plan pays for it", async () => {
       const { service, emitted } = setup({ paidSeats: 1 });
@@ -383,22 +397,24 @@ describe("MentorshipLinkService", () => {
       expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "FREE" } });
 
       await service.acceptInvitation(OTHER_STUDENT, CODE);
-      // Inside free + paid: sponsored, and the event says which kind paid for it.
       expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "PAID" } });
     });
 
-    it("hands out no seat at all while sponsorship is switched off", async () => {
+    it("refuses the link while sponsorship is switched off", async () => {
       config["mentorship.seats.sponsorship_enabled"] = false;
       try {
         const { service, emitted } = setup();
-        await service.acceptInvitation(STUDENT, CODE);
-        expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "NONE" } });
+        expect(await codeOf(() => service.acceptInvitation(STUDENT, CODE))).toBe(
+          ErrorCode.MENTORSHIP_SEATS_FULL,
+        );
+        expect(emitted).toHaveLength(0);
       } finally {
         config["mentorship.seats.sponsorship_enabled"] = true;
       }
     });
 
     it("counts only ACTIVE links against the quota", async () => {
+      config["mentorship.coach.free_seats"] = 5;
       const { service } = setup({
         rows: [
           link({ id: "l1", studentId: "s1" }),
@@ -408,6 +424,26 @@ describe("MentorshipLinkService", () => {
       await expect(service.acceptInvitation(STUDENT, CODE)).resolves.toMatchObject({
         status: "ACTIVE",
       });
+    });
+  });
+
+  describe("the coach overview", () => {
+    it("grants the oldest in-quota link that never received a seat", async () => {
+      const older = link({
+        id: "older",
+        studentId: "s-old",
+        acceptedAt: new Date("2026-09-01T00:00:00Z"),
+      });
+      const newer = link({
+        id: "newer",
+        studentId: "s-new",
+        acceptedAt: new Date("2026-09-10T00:00:00Z"),
+      });
+      const { service, seats } = setup({ rows: [newer, older] });
+      const overview = await service.getCoachOverview(COACH);
+      expect(overview.activeStudents).toBe(2);
+      expect(seats.grant).toHaveBeenCalledTimes(1);
+      expect(seats.grant).toHaveBeenCalledWith("s-old", "older");
     });
   });
 

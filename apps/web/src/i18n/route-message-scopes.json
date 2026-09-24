@@ -1,5 +1,5 @@
 {
-  "root": ["analyticsConsent"],
+  "root": ["consentBanner"],
   "welcome": ["welcome"],
   "article": ["article", "knowledge", "ads"],
   "auth": ["auth", "common", "economy"],

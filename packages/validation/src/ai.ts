@@ -72,18 +72,13 @@ export const planDraftSchema = z.object({
 });
 export type PlanDraftInput = z.infer<typeof planDraftSchema>;
 
-const planAdaptationMinutesSchema = z.union([
-  z.literal(15),
-  z.literal(30),
-  z.literal(60),
-  z.literal(90),
-  z.literal(120),
-]);
-
-/** Block sizes the plan wizard offers; the brief's suggestion snaps to one of these. */
-export const PLAN_ADAPTATION_MINUTES = planAdaptationMinutesSchema.options.map(
-  (option) => option.value,
-);
+/** Preset block sizes the plan wizard offers as cards; the brief's suggestion snaps to one of these. */
+export const PLAN_ADAPTATION_MINUTES = [15, 30, 60, 90, 120] as const;
+/** Bounds of a minute count the student types in themselves. */
+export const PLAN_ADAPTATION_MINUTES_MIN = 10;
+export const PLAN_ADAPTATION_MINUTES_MAX = 600;
+/** No product cap on subjects; this only bounds the prompt at the trust boundary. */
+const PLAN_ADAPTATION_SUBJECTS_MAX = 30;
 
 /** POST /v1/coach/plan-adaptation — explicit, user-triggered preview source. */
 export const coachPlanAdaptationSchema = z
@@ -93,10 +88,25 @@ export const coachPlanAdaptationSchema = z
     sessionId: z.string().uuid().optional(),
     /** Study days inside the 7-day window. PLAN only. */
     days: z.number().int().min(1).max(7).optional(),
+    /** ISO weekdays (1 = Monday) to study on; each maps to one date of the window. PLAN only. */
+    studyWeekdays: z
+      .array(z.number().int().min(1).max(7))
+      .min(1)
+      .max(7)
+      .refine((days) => new Set(days).size === days.length, "studyWeekdays must be unique")
+      .optional(),
     /** Target size of each added block, in minutes. PLAN only. */
-    minutesPerDay: planAdaptationMinutesSchema.optional(),
-    /** Subjects the added tasks must use. PLAN only, at most 3. */
-    focusSubjects: z.array(z.string().trim().min(1).max(80)).max(3).optional(),
+    minutesPerDay: z
+      .number()
+      .int()
+      .min(PLAN_ADAPTATION_MINUTES_MIN)
+      .max(PLAN_ADAPTATION_MINUTES_MAX)
+      .optional(),
+    /** Subjects the added tasks must use. PLAN only. */
+    focusSubjects: z
+      .array(z.string().trim().min(1).max(80))
+      .max(PLAN_ADAPTATION_SUBJECTS_MAX)
+      .optional(),
   })
   .superRefine((value, ctx) => {
     if (value.source === "SESSION" && !value.sessionId) {
@@ -123,13 +133,22 @@ export const coachPlanAdaptationSchema = z
     if (
       value.source !== "PLAN" &&
       (value.days !== undefined ||
+        value.studyWeekdays !== undefined ||
         value.minutesPerDay !== undefined ||
         value.focusSubjects !== undefined)
     ) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
         path: ["days"],
-        message: "days, minutesPerDay and focusSubjects are only allowed for PLAN source",
+        message:
+          "days, studyWeekdays, minutesPerDay and focusSubjects are only allowed for PLAN source",
+      });
+    }
+    if (value.days !== undefined && value.studyWeekdays !== undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["studyWeekdays"],
+        message: "send either days or studyWeekdays, not both",
       });
     }
   });
@@ -138,7 +157,8 @@ export type CoachPlanAdaptationInput =
       source: "PLAN";
       note?: string;
       days?: number;
-      minutesPerDay?: 15 | 30 | 60 | 90 | 120;
+      studyWeekdays?: number[];
+      minutesPerDay?: number;
       focusSubjects?: string[];
     }
   | { source: "MOOD" }

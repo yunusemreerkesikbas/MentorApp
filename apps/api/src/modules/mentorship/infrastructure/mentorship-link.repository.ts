@@ -128,17 +128,6 @@ export class MentorshipLinkRepository {
     );
   }
 
-  /** Every live link this coach holds, by id — what payments needs to price or count their seats. */
-  async listActiveLinkIds(coachId: string): Promise<string[]> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .select({ id: coachStudents.id })
-        .from(coachStudents)
-        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
-      return rows.map((row) => row.id);
-    });
-  }
-
   /** Internal W8 plan scope. Bounded by the configured active-student quota. */
   listActiveByCoach(coachId: string): Promise<MentorshipLinkRow[]> {
     return withServiceContext(this.db, (tx) =>
@@ -189,20 +178,26 @@ export class MentorshipLinkRepository {
    * counter of its own, the quota is the only bound it has, so it has to be a real one.
    *
    * The `coach_students_pair_idx` unique makes a plain insert fail on a re-link, so this upserts.
-   * Returns `"QUOTA_FULL"` when the cap is reached and `"ALREADY_ACTIVE"` when `setWhere` skipped
-   * the update (a row exists that is not ENDED).
+   * Returns `"QUOTA_FULL"` when the roster cap is reached, `"SEATS_FULL"` when no sponsored seat
+   * is left, and `"ALREADY_ACTIVE"` when `setWhere` skipped the update (a row exists that is not
+   * ENDED).
    *
-   * `activeBefore` rides back out because the SEAT decision has to be made under this same lock.
-   * Deciding "is this student inside the coach's free-seat quota?" in the service afterwards would
-   * be check-then-act again, and the thing being handed out this time is sponsored Premium — real
-   * LLM spend, not just a roster row.
+   * `seatAllowance` is checked under the same lock as the roster cap. A link without a seat is
+   * not a row we write and then delete: the insert happens only after both checks pass.
+   * `0` means no seat can be granted (sponsorship off, or both quotas are zero).
+   *
+   * `activeBefore` rides back out because FREE vs PAID is still decided from that count.
    */
   acceptInvite(
     coachId: string,
     studentId: string,
     maxActiveStudents: number,
+    seatAllowance: number,
   ): Promise<
-    { link: MentorshipLinkRow; activeBefore: number } | "QUOTA_FULL" | "ALREADY_ACTIVE"
+    | { link: MentorshipLinkRow; activeBefore: number }
+    | "QUOTA_FULL"
+    | "SEATS_FULL"
+    | "ALREADY_ACTIVE"
   > {
     const now = new Date();
     return withServiceContext(this.db, async (tx) => {
@@ -212,6 +207,7 @@ export class MentorshipLinkRepository {
       );
       const activeBefore = await countActive(tx, coachId);
       if (activeBefore >= maxActiveStudents) return "QUOTA_FULL";
+      if (activeBefore >= seatAllowance) return "SEATS_FULL";
 
       const rows = await tx
         .insert(coachStudents)

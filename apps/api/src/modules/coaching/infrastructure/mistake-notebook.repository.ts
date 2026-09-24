@@ -720,7 +720,7 @@ export class MistakeNotebookRepository {
         subjectRef: mistakeNotebookEntries.subjectRef,
         topicRef: mistakeNotebookEntries.topicRef,
         count: sql<number>`count(*)::int`,
-        latestAt: sql<Date>`max(${mistakeNotebookEntries.createdAt})`,
+        latestAt: sql<Date>`max(${mistakeNotebookEntries.createdAt})`.mapWith(mistakeNotebookEntries.createdAt),
       })
       .from(mistakeNotebookEntries)
       .where(

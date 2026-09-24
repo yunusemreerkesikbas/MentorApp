@@ -942,18 +942,6 @@ export const AiChatControllerPlanAdaptationPreviewBodyOneOfSource = {
   PLAN: 'PLAN',
 } as const;
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay = {
-  NUMBER_15: 15,
-  NUMBER_30: 30,
-  NUMBER_60: 60,
-  NUMBER_90: 90,
-  NUMBER_120: 120,
-} as const;
-
 export type AiChatControllerPlanAdaptationPreviewBodyOneOf = {
   source: AiChatControllerPlanAdaptationPreviewBodyOneOfSource;
   /** @maxLength 500 */
@@ -963,37 +951,46 @@ export type AiChatControllerPlanAdaptationPreviewBodyOneOf = {
    * @maximum 7
    */
   days?: number;
-  minutesPerDay?: AiChatControllerPlanAdaptationPreviewBodyOneOfMinutesPerDay;
-  /** @maxItems 3 */
+  /**
+   * @minItems 1
+   * @maxItems 7
+   */
+  studyWeekdays?: number[];
+  /**
+   * @minimum 10
+   * @maximum 600
+   */
+  minutesPerDay?: number;
+  /** @maxItems 30 */
   focusSubjects?: string[];
 };
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource];
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource = {
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource = {
   MOOD: 'MOOD',
 } as const;
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfFour = {
-  source: AiChatControllerPlanAdaptationPreviewBodyOneOfFourSource;
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfThree = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfThreeSource;
 };
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource];
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource = typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource[keyof typeof AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource];
 
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource = {
+export const AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource = {
   SESSION: 'SESSION',
 } as const;
 
-export type AiChatControllerPlanAdaptationPreviewBodyOneOfSix = {
-  source: AiChatControllerPlanAdaptationPreviewBodyOneOfSixSource;
+export type AiChatControllerPlanAdaptationPreviewBodyOneOfFive = {
+  source: AiChatControllerPlanAdaptationPreviewBodyOneOfFiveSource;
   sessionId: string;
 };
 
-export type AiChatControllerPlanAdaptationPreviewBody = AiChatControllerPlanAdaptationPreviewBodyOneOf | AiChatControllerPlanAdaptationPreviewBodyOneOfFour | AiChatControllerPlanAdaptationPreviewBodyOneOfSix;
+export type AiChatControllerPlanAdaptationPreviewBody = AiChatControllerPlanAdaptationPreviewBodyOneOf | AiChatControllerPlanAdaptationPreviewBodyOneOfThree | AiChatControllerPlanAdaptationPreviewBodyOneOfFive;
 
 export type AiGhostControllerNarrateBody = {
   examId?: string;

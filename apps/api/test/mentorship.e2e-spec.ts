@@ -142,6 +142,10 @@ describe("mentorship (e2e)", () => {
     await app
       .get(ConfigRegistryService)
       .set(userId.admin!, "mentorship.enabled", true);
+    // A link now requires a seat. The default free quota covers this suite's single student.
+    await app
+      .get(ConfigRegistryService)
+      .set(userId.admin!, "mentorship.seats.sponsorship_enabled", true);
   }, 120_000);
 
   afterAll(async () => {

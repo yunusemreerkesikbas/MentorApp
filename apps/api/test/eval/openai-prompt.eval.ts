@@ -34,6 +34,7 @@ import {
   buildPlanAdaptationPrompt,
   parsePlanAdaptation,
   selectPlanEvidence,
+  studyDatesFor,
 } from "../../src/modules/ai/domain/plan-adaptation";
 import type { AnalysisCoachContext } from "../../src/modules/coaching/domain/analysis-coach-context";
 import { hasSeriousDistressSignal } from "../../src/modules/ai/domain/serious-distress";
@@ -413,6 +414,24 @@ const planAdaptationPrompt = buildPlanAdaptationPrompt({
   minutesPerDay: 60,
   locale: "tr",
   moodLevel: 3,
+});
+// The request a student really sent: "leave Wednesday and Friday empty".
+const freeDaysRhythm = {
+  days: 4,
+  minutesPerDay: 120,
+  focusSubjects: ["Matematik", "Vatandaşlık", "Güncel Bilgiler"],
+  locale: "tr" as const,
+};
+const freeDays = studyDatesFor(TODAY, [3, 5]);
+const freeDaysPrompt = buildPlanAdaptationPrompt({
+  source: "PLAN",
+  todayIso: TODAY,
+  examType: "KPSS",
+  evidence: planEvidence,
+  examPhase: "FAR",
+  tasks: planTasks,
+  note: "çarşamba ve cuma gününü boş bırak",
+  ...freeDaysRhythm,
 });
 const reviewedMock = {
   examName: "KPSS Lisans Deneme 4",
@@ -806,6 +825,42 @@ const scenarios: EvalScenario[] = [
     },
   },
   {
+    id: "plan-adaptation-note-free-days-tr",
+    prompt: freeDaysPrompt,
+    evaluate(raw) {
+      let offDates: unknown = null;
+      try {
+        offDates = (
+          JSON.parse(raw.slice(raw.indexOf("{"), raw.lastIndexOf("}") + 1)) as {
+            offDates?: unknown;
+          }
+        ).offDates;
+      } catch {
+        offDates = null;
+      }
+      const named = Array.isArray(offDates) ? offDates : [];
+      const parsed = parsePlanAdaptation(raw, TODAY, "PLAN", planTasks, planTasks, freeDaysRhythm);
+      const landed =
+        parsed.kind === "VALID"
+          ? parsed.changes.map((change) => (change.kind === "ADD" ? change.taskDate : change.toDate))
+          : [];
+      const adds = parsed.kind === "VALID" ? parsed.changes.filter((c) => c.kind === "ADD").length : 0;
+      return [
+        result(
+          "model-names-free-days",
+          freeDays.every((date) => named.includes(date)),
+          `offDates=${JSON.stringify(offDates)} expected ${freeDays.join(", ")}`,
+        ),
+        result(
+          "free-days-stay-empty",
+          parsed.kind === "VALID" && !landed.some((date) => freeDays.includes(date)),
+          landed.join(", ") || "no changes",
+        ),
+        result("keeps-day-count", adds === 4, `${adds} ADD`),
+      ];
+    },
+  },
+  {
     id: "mentor-v2-evaluate-mock-tr",
     prompt: mentorEvalPrompt({
       locale: "tr",
@@ -892,7 +947,7 @@ beforeAll(() => {
 });
 
 describe("OpenAI prompt quality eval", () => {
-  it("passes objective checks for nineteen synthetic scenarios and writes the review report", async () => {
+  it("passes objective checks for twenty synthetic scenarios and writes the review report", async () => {
     const reports: EvalCaseReport[] = [];
 
     for (const scenario of scenarios) {
@@ -949,7 +1004,7 @@ describe("OpenAI prompt quality eval", () => {
         .filter((check) => check.severity === "hard" && !check.passed)
         .map((check) => `${report.id}: ${check.name} — ${check.detail}`),
     );
-    expect(reports).toHaveLength(19);
+    expect(reports).toHaveLength(20);
     expect(failures, `Review ${REPORT_PATH}`).toEqual([]);
   }, 360_000);
 });

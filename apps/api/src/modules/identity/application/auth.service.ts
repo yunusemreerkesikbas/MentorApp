@@ -14,7 +14,7 @@ import type {
 } from "@mentor/validation";
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { Env } from "../../../config/env.validation";
@@ -188,6 +188,11 @@ export class AuthService {
     await this.events.emitAsync(IdentityEventTopic.EMAIL_VERIFIED, { userId: row.userId, date: new Date().toISOString().slice(0, 10) });
   }
 
+  /** Spend leftover verify links so one mailed to a previous address cannot confirm the current one. */
+  async invalidateOutstandingVerification(userId: string): Promise<void> {
+    await this.emailTokenRepo.invalidateUnused(userId, EmailTokenType.VERIFY_EMAIL);
+  }
+
   async resendVerificationEmail(userId: string): Promise<void> {
     const user = await this.usersRepo.findByIdService(userId);
     if (!user) throw new UnauthorizedError();
@@ -211,6 +216,11 @@ export class AuthService {
     }
 
     await this.emailTokenRepo.createVerificationResendAttempt(user.id);
+    await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
+  }
+
+  /** Direct dispatch without the resend quota. Signup only; an address change uses {@link resendVerificationEmail}. */
+  async sendVerificationEmail(user: UserRow): Promise<void> {
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 
@@ -271,7 +281,8 @@ function hasAdminPanelRole(roles: readonly string[]): boolean {
   return roles.some((role) => ADMIN_PANEL_ROLES.some((allowed) => allowed === role));
 }
 
-function uniqueConstraint(err: unknown): string | undefined {
+/* uniqueConstraint imported from postgres-error */
+const _unused_constraint = (err: unknown) => {
   return (
     (err as { constraint?: string })?.constraint ??
     (err as { cause?: { constraint?: string } })?.cause?.constraint

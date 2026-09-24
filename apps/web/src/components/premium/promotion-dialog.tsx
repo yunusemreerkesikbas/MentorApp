@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import type { PromotionSummary } from "@mentor/types";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchAutoPromotionOffers, pickPromotionForDialog } from "@/lib/promotions";
 import { readIdSet, writeIdSet } from "@/lib/seen-ids";
 import { useSubscription } from "@/lib/subscription-context";
-import { PromotionCard } from "./promotion-card";
+
+const PromotionCard = dynamic(() =>
+  import("./promotion-card").then((module) => module.PromotionCard),
+);
 
 /**
  * Announces a campaign once, the first time a qualifying free user lands on the dashboard.
@@ -71,7 +75,6 @@ export function PromotionDialog() {
       // registry if two surfaces ever need to negotiate priority rather than just yield.
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
 
-      writeIdSet("local", SEEN_KEY, new Set(seen).add(next.id));
       setPromotion(next);
     })();
   }, [loading, view]);
@@ -81,6 +84,10 @@ export function PromotionDialog() {
   return (
     <PromotionCard
       promotion={promotion}
+      onShown={() => {
+        const seen = readIdSet("local", SEEN_KEY);
+        writeIdSet("local", SEEN_KEY, new Set(seen).add(promotion.id));
+      }}
       onClose={() => setPromotion(null)}
       onContinue={(code) => {
         setPromotion(null);

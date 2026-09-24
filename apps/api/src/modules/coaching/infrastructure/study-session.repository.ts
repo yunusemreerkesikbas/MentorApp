@@ -64,6 +64,7 @@ export interface CoachRhythmRow {
   averageFocusSeconds28d: number;
   dominantTimeBand: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | null;
   lastActiveAt: Date | null;
+  weekdayActivity28d: { weekday: number; activeDays: number; focusSeconds: number }[];
 }
 
 /** Data access for `study_sessions` (RLS-scoped `tx` from the service). */
@@ -260,7 +261,8 @@ export class StudySessionRepository {
       when extract(hour from ${studySessions.startedAt} at time zone 'Europe/Istanbul') between 17 and 21 then 'EVENING'
       else 'NIGHT'
     end`;
-    const [aggregateRows, bandRows] = await Promise.all([
+    const weekday = sql<number>`extract(isodow from ${studySessions.startedAt} at time zone 'Europe/Istanbul')::int`;
+    const [aggregateRows, bandRows, weekdayRows] = await Promise.all([
       tx
         .select({
           sessions7d: sql<number>`count(*) filter (where ${studySessions.startedAt} >= ${since7d})::int`,
@@ -271,7 +273,9 @@ export class StudySessionRepository {
           focusSeconds28d: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
           activeDays28d: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date)::int`,
           averageFocusSeconds28d: sql<number>`coalesce(round(avg(${studySessions.actualFocusSeconds})), 0)::int`,
-          lastActiveAt: sql<Date | null>`max(${studySessions.startedAt})`,
+          // Raw SQL skips the column decoder: without mapWith this is a string and the caller's
+          // toISOString() threw, so the whole rhythm silently fell out of the coach's pool.
+          lastActiveAt: sql<Date | null>`max(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
         })
         .from(studySessions)
         .where(completed),
@@ -285,6 +289,15 @@ export class StudySessionRepository {
         .groupBy(band)
         .orderBy(desc(sql`sum(${studySessions.actualFocusSeconds})`))
         .limit(1),
+      tx
+        .select({
+          weekday,
+          activeDays: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date)::int`,
+          focusSeconds: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
+        })
+        .from(studySessions)
+        .where(completed)
+        .groupBy(weekday),
     ]);
     const row = aggregateRows[0];
     return {
@@ -298,6 +311,7 @@ export class StudySessionRepository {
       averageFocusSeconds28d: row?.averageFocusSeconds28d ?? 0,
       dominantTimeBand: bandRows[0]?.band ?? null,
       lastActiveAt: row?.lastActiveAt ?? null,
+      weekdayActivity28d: weekdayRows,
     };
   }
 

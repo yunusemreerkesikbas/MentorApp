@@ -133,6 +133,11 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > Premium gate with a coverage line, the verified evidence the coach will read and suggested
 > days/minutes/subjects. It makes no model call and spends no quota. The preview additively returns
 > `usedEvidence` and a backend-written `reason` per change; the apply schema ignores `reason`.
+> Change (2026-09-24): the PLAN body adds `studyWeekdays` (ISO weekdays, 1 = Monday, unique,
+> exclusive with `days`); `minutesPerDay` takes any integer 10-600 instead of the 15/30/60/90/120
+> enum; `focusSubjects` is capped at 30 names instead of 3. Additive for existing clients.
+> The brief's `suggestion` additively carries `weekdays` (ISO weekdays the student studied on most
+> in the last 28 days, `days` of them, or null).
 
 > Community → coach bridge catalog addition (2026-07-31):
 > `GET /v1/forum/threads/:id/coach-bridge` returns only public-safe structural eligibility;

@@ -24,6 +24,7 @@ import {
   parsePlanAdaptation,
   PLAN_ADAPTATION_MAX_PROMPT_TASKS,
   selectPlanEvidence,
+  studyDatesFor,
   suggestPlanBrief,
   type PromptEvidence,
   type PromptPlanTask,
@@ -140,6 +141,10 @@ export class PlanAdaptationService {
         : referencedTasks;
     const locale = promptLocale(I18nContext.current()?.lang);
     const selected = selectPlanEvidence(input.source, pool.evidence);
+    const studyDates =
+      input.source === "PLAN" && input.studyWeekdays?.length
+        ? studyDatesFor(snapshot.window.from, input.studyWeekdays)
+        : undefined;
     // Preferences and memory shape a whole week; a low-mood or hard-session fix stays narrow.
     const personal =
       input.source === "PLAN" ? await this.personalContext(user.id) : {};
@@ -153,6 +158,7 @@ export class PlanAdaptationService {
       tasks: promptTasks,
       note: input.source === "PLAN" ? input.note : undefined,
       days: input.source === "PLAN" ? input.days : undefined,
+      studyDates,
       minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
       focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
       locale,
@@ -195,6 +201,7 @@ export class PlanAdaptationService {
       input.source === "PLAN"
         ? {
             days: input.days,
+            studyDates,
             minutesPerDay: input.minutesPerDay,
             focusSubjects: input.focusSubjects,
             locale,

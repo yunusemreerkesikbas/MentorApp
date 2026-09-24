@@ -15,17 +15,18 @@ import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { OnboardingDirectionProvider } from "@/app/[locale]/(onboarding)/_components/onboarding-direction";
 import { OnboardingStepLayout } from "@/app/[locale]/(onboarding)/_components/onboarding-step-layout";
 import {
-  PLAN_ADAPTATION_SUBJECT_CAP,
+  PLAN_ADAPTATION_MINUTE_CHOICES,
   formatKnownBrief,
-  isMinuteChoice,
+  isMinuteEntry,
+  planWindowDays,
   seedBriefSubjects,
   type PlanAdaptationKnownWeek,
 } from "./plan-coach-adaptation-brief-note";
 import {
-  BriefDaysStep,
   BriefMinutesStep,
   BriefNoteStep,
   BriefSubjectsStep,
+  BriefWeekdaysStep,
 } from "./plan-coach-adaptation-brief-steps";
 
 export interface PlanAdaptationBriefProfile {
@@ -57,15 +58,22 @@ export function PlanCoachAdaptationBrief({
   const [direction, setDirection] = useState<1 | -1>(1);
   const suggestion = brief?.suggestion ?? null;
 
+  // Opened on a click, so "today" is the student's own day; the API maps weekdays onto its window.
+  const [planDays] = useState(() => planWindowDays(new Date()));
+  // The days the student really studies on come pre-picked once the brief arrives.
+  const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(null);
+  const rhythmWeekdays = suggestion?.weekdays ?? null;
+  const weekdays = weekdaysOverride ?? rhythmWeekdays ?? [];
   // The student's answer always wins; until there is one, the coach's reading fills the blank.
-  const [daysOverride, setDaysOverride] = useState<number | null | undefined>(undefined);
-  const days = daysOverride !== undefined ? daysOverride : (suggestion?.days ?? null);
-  const goalMinutes = isMinuteChoice(profile.dailyFocusGoalMinutes)
+  const goalMinutes = isMinuteEntry(profile.dailyFocusGoalMinutes)
     ? profile.dailyFocusGoalMinutes
     : null;
   const suggestedMinutes = suggestion?.minutesPerDay ?? null;
   const rhythmMinutes =
-    goalMinutes === null && isMinuteChoice(suggestedMinutes) ? suggestedMinutes : null;
+    goalMinutes === null &&
+    (PLAN_ADAPTATION_MINUTE_CHOICES as readonly (number | null)[]).includes(suggestedMinutes)
+      ? suggestedMinutes
+      : null;
   const [minutesOverride, setMinutesOverride] = useState<number | null | undefined>(undefined);
   const minutes = minutesOverride !== undefined ? minutesOverride : (goalMinutes ?? rhythmMinutes);
   const coachSubjects = suggestion?.focusSubjects;
@@ -136,13 +144,18 @@ export function PlanCoachAdaptationBrief({
 
   function submit(freeNote: string) {
     const trimmed = freeNote.trim();
-    const focusSubjects = subjects.slice(0, PLAN_ADAPTATION_SUBJECT_CAP);
     const payload = {
       source: "PLAN" as const,
       ...(trimmed ? { note: trimmed } : {}),
-      ...(days != null ? { days } : {}),
+      ...(weekdays.length > 0
+        ? {
+            studyWeekdays: planDays
+              .map((day) => day.weekday)
+              .filter((weekday) => weekdays.includes(weekday)),
+          }
+        : {}),
       ...(minutes != null ? { minutesPerDay: minutes } : {}),
-      ...(focusSubjects.length > 0 ? { focusSubjects } : {}),
+      ...(subjects.length > 0 ? { focusSubjects: subjects } : {}),
     };
     const parsed = coachPlanAdaptationSchema.safeParse(payload);
     if (!parsed.success || parsed.data.source !== "PLAN") {
@@ -152,7 +165,9 @@ export function PlanCoachAdaptationBrief({
     onComplete({
       source: "PLAN",
       ...(parsed.data.note ? { note: parsed.data.note } : {}),
-      ...(parsed.data.days != null ? { days: parsed.data.days } : {}),
+      ...(parsed.data.studyWeekdays?.length
+        ? { studyWeekdays: parsed.data.studyWeekdays }
+        : {}),
       ...(parsed.data.minutesPerDay != null
         ? { minutesPerDay: parsed.data.minutesPerDay }
         : {}),
@@ -163,6 +178,10 @@ export function PlanCoachAdaptationBrief({
   }
 
   function continueStep() {
+    if (step === "minutes" && minutes != null && !isMinuteEntry(minutes)) {
+      setError(t("coach_adaptation_minutes_invalid"));
+      return;
+    }
     if (safeIndex >= steps.length - 1) {
       submit(note);
       return;
@@ -171,7 +190,7 @@ export function PlanCoachAdaptationBrief({
   }
 
   function skipStep() {
-    if (step === "days") setDaysOverride(null);
+    if (step === "days") setWeekdaysOverride([]);
     if (step === "minutes") setMinutesOverride(null);
     if (step === "subjects") setSubjectOverride([]);
     if (safeIndex >= steps.length - 1) {
@@ -184,9 +203,16 @@ export function PlanCoachAdaptationBrief({
   function toggleSubject(name: string) {
     setSubjectOverride((current) => {
       const base = current ?? seededSubjects;
-      if (base.includes(name)) return base.filter((item) => item !== name);
-      if (base.length >= PLAN_ADAPTATION_SUBJECT_CAP) return base;
-      return [...base, name];
+      return base.includes(name) ? base.filter((item) => item !== name) : [...base, name];
+    });
+  }
+
+  function toggleWeekday(weekday: number) {
+    setWeekdaysOverride((current) => {
+      const base = current ?? rhythmWeekdays ?? [];
+      return base.includes(weekday)
+        ? base.filter((item) => item !== weekday)
+        : [...base, weekday];
     });
   }
 
@@ -230,11 +256,12 @@ export function PlanCoachAdaptationBrief({
           }
         >
           {step === "days" ? (
-            <BriefDaysStep
+            <BriefWeekdaysStep
               title={title}
-              days={days}
-              rhythmDays={suggestion?.days ?? null}
-              onSelect={setDaysOverride}
+              window={planDays}
+              selected={weekdays}
+              rhythmWeekdays={rhythmWeekdays ?? []}
+              onToggle={toggleWeekday}
             />
           ) : null}
           {step === "minutes" ? (
@@ -243,7 +270,10 @@ export function PlanCoachAdaptationBrief({
               minutes={minutes}
               goalMinutes={goalMinutes}
               rhythmMinutes={rhythmMinutes}
-              onSelect={setMinutesOverride}
+              onSelect={(value) => {
+                setMinutesOverride(value);
+                setError(null);
+              }}
             />
           ) : null}
           {step === "subjects" ? (

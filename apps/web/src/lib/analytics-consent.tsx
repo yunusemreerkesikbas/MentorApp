@@ -46,7 +46,7 @@ function clearGaCookies(): void {
 }
 
 export function AnalyticsConsentProvider({ children }: { children: ReactNode }) {
-  const translate = useTranslations("analyticsConsent");
+  const translate = useTranslations("consentBanner");
   const pathname = usePathname();
   const hideBanner = !isPublicConsentBannerPath(pathname);
   const [consent, setConsent] = useState<Consent>(null);

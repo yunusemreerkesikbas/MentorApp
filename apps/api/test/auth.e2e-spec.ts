@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { ThrottlerStorage } from "@nestjs/throttler";
 import cookieParser from "cookie-parser";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -40,7 +41,13 @@ describe("identity (e2e)", () => {
       "http://localhost:3001/v1/auth/google/callback";
 
     const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    // Signup lifecycle tests share one in-memory IP. Rate limiting has its own focused e2e.
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
+      })
+      .compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

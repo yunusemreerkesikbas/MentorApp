@@ -83,6 +83,7 @@ export function suggestPlanBrief(
     | "dailyFocusGoalMinutes"
     | "weakSubjects"
     | "focusSubject"
+    | "weekdayActivity28d"
   >,
 ): CoachPlanAdaptationBriefDto["suggestion"] {
   // Fewer than four active days in four weeks is not yet a rhythm worth mirroring.
@@ -105,7 +106,23 @@ export function suggestPlanBrief(
       ),
     ),
   ].slice(0, 3);
-  return { days, minutesPerDay, focusSubjects };
+  // The days the student really studies on; ties go to the day with more focus minutes.
+  const ranked = input.weekdayActivity28d
+    .filter((day) => day.activeDays > 0)
+    .toSorted(
+      (a, b) =>
+        b.activeDays - a.activeDays ||
+        b.focusMinutes - a.focusMinutes ||
+        a.weekday - b.weekday,
+    );
+  const weekdays =
+    days && ranked.length
+      ? ranked
+          .slice(0, days)
+          .map((day) => day.weekday)
+          .toSorted((a, b) => a - b)
+      : null;
+  return { days, weekdays, minutesPerDay, focusSubjects };
 }
 
 export type PlanAdaptationParseResult =
@@ -121,6 +138,29 @@ function addDays(date: string, days: number): string {
   const value = new Date(`${date}T00:00:00.000Z`);
   value.setUTCDate(value.getUTCDate() + days);
   return value.toISOString().slice(0, 10);
+}
+
+/** ISO weekday, 1 = Monday. */
+function isoWeekday(date: string): number {
+  return ((new Date(`${date}T00:00:00.000Z`).getUTCDay() + 6) % 7) + 1;
+}
+
+function planWindow(todayIso: string): string[] {
+  return Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) => addDays(todayIso, index));
+}
+
+/** The window dates falling on the weekdays the student picked, in window order. */
+export function studyDatesFor(todayIso: string, weekdays: readonly number[]): string[] {
+  return planWindow(todayIso).filter((date) => weekdays.includes(isoWeekday(date)));
+}
+
+/** "2026-07-22 Çarşamba": the model cannot be trusted to know which weekday a date is. */
+function namedDate(date: string, locale: PromptLocale = "tr"): string {
+  const name = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "tr-TR", {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00.000Z`));
+  return `${date} ${name}`;
 }
 
 function normalizedTitle(title: string): string {
@@ -139,6 +179,8 @@ const PLAN_MAX_MOVES = 3;
 
 export interface PlanAdaptationRhythm {
   days?: number;
+  /** Window dates the student picked; the only days an ADD or MOVE may land on. */
+  studyDates?: readonly string[];
   minutesPerDay?: number;
   focusSubjects?: readonly string[];
   locale?: PromptLocale;
@@ -175,13 +217,28 @@ export function parsePlanAdaptation(
   if (!Array.isArray(rawChanges)) return { kind: "MALFORMED" };
 
   const windowEnd = addDays(todayIso, 6);
+  // The model reads the note and names the days it keeps free; the backend is what keeps them free.
+  const rawOffDates = (parsed as { offDates?: unknown }).offDates;
+  const offDates = new Set(
+    source === "PLAN" && Array.isArray(rawOffDates)
+      ? rawOffDates.filter(
+          (date): date is string =>
+            typeof date === "string" && isWindowDate(date, todayIso, windowEnd),
+        )
+      : [],
+  );
+  const studyDates =
+    source === "PLAN" && rhythm?.studyDates?.length ? new Set(rhythm.studyDates) : null;
+  const isOpenDay = (date: string) =>
+    !offDates.has(date) && (studyDates === null || studyDates.has(date));
   const byRef = new Map(
     tasks
       .filter((task) => task.status === "PENDING")
       .map((task) => [task.ref, task]),
   );
-  const requestedDays =
-    source === "PLAN" &&
+  const requestedDays = studyDates
+    ? studyDates.size
+    : source === "PLAN" &&
     rhythm?.days != null &&
     Number.isInteger(rhythm.days) &&
     rhythm.days >= 1 &&
@@ -190,8 +247,7 @@ export function parsePlanAdaptation(
       : undefined;
   const focusSubjects = (rhythm?.focusSubjects ?? [])
     .map((name) => name.trim())
-    .filter((name) => name.length > 0)
-    .slice(0, 3);
+    .filter((name) => name.length > 0);
   const maxMoves = source === "PLAN" ? PLAN_MAX_MOVES : 2;
   const maxAdds =
     source === "PLAN"
@@ -218,6 +274,7 @@ export function parsePlanAdaptation(
       seenMoveIds.has(task.id) ||
       !isWindowDate(toDate, todayIso, windowEnd) ||
       toDate === task.taskDate ||
+      !isOpenDay(toDate) ||
       (source === "MOOD" && (task.taskDate !== todayIso || toDate <= todayIso))
     ) {
       continue;
@@ -306,6 +363,7 @@ export function parsePlanAdaptation(
     if (
       !modelTitle ||
       !isWindowDate(taskDate, todayIso, windowEnd) ||
+      !isOpenDay(taskDate) ||
       (source === "SESSION" && taskDate <= todayIso) ||
       (pendingByDate.get(taskDate) ?? 0) >= MAX_PENDING_PER_DAY
     ) {
@@ -369,6 +427,7 @@ export function parsePlanAdaptation(
           focusSubjects,
           rhythm?.minutesPerDay,
           rhythm?.locale,
+          isOpenDay,
           grounding,
         );
 
@@ -385,6 +444,7 @@ function fillStudyDays(
   focusSubjects: readonly string[],
   minutesPerDay: number | undefined,
   locale: PromptLocale | undefined,
+  isOpenDay: (date: string) => boolean,
   grounding?: PlanAdaptationGrounding,
 ): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
   // No chosen subject: the weakest ones fill the gap, so a filler still means something.
@@ -392,9 +452,7 @@ function fillStudyDays(
     focusSubjects.length > 0 ? focusSubjects : (grounding?.weakSubjects ?? []);
   const fillReason =
     focusSubjects.length > 0 ? grounding?.chosenReason : grounding?.weakReason;
-  const window = Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) =>
-    addDays(todayIso, index),
-  );
+  const window = planWindow(todayIso).filter(isOpenDay);
   const filled: typeof additions = [];
   const used = new Set<string>();
   for (const item of additions) {
@@ -464,14 +522,19 @@ export function buildPlanAdaptationPrompt(input: {
   tasks: readonly PromptPlanTask[];
   note?: string;
   days?: number;
+  studyDates?: readonly string[];
   minutesPerDay?: number;
   focusSubjects?: readonly string[];
   locale?: PromptLocale;
   moodLevel?: number | null;
 }): { system: string; user: string } {
+  const named = (dates: readonly string[]) =>
+    dates.map((date) => namedDate(date, input.locale)).join(", ");
   const policy =
     input.source === "PLAN"
-      ? input.days
+      ? input.studyDates?.length
+        ? `En fazla 3 MOVE öner. Yalnız şu günlere birer ADD yaz: ${named(input.studyDates)}. Başka bir güne ADD ya da MOVE yazma.`
+        : input.days
         ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
         : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
       : input.source === "MOOD"
@@ -487,6 +550,12 @@ export function buildPlanAdaptationPrompt(input: {
     promptLanguageInstruction(input.locale ?? "tr"),
     "Sen sınav çalışma planını sadeleştiren bir koçsun. Yalnız önizleme üret; hiçbir görevi silme veya tamamlama.",
     `Bugün ${input.todayIso}; hedef tarihler bugün dahil 7 günlük pencere içinde olmalı.`,
+    ...(input.source === "PLAN"
+      ? [
+          `Pencere günleri: ${named(planWindow(input.todayIso))}.`,
+          "Kullanıcının notunda boş kalsın, çalışmayacağım ya da müsait değilim dediği günler varsa o tarihleri offDates listesine yaz ve o günlere ADD ya da MOVE yazma. Böyle bir istek yoksa offDates boş liste olsun.",
+        ]
+      : []),
     policy,
     "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma. Bir günde en fazla 3 görev olsun.",
     "ADD görevleri küçük, somut ve kısa olsun; mevcut görevin aynı adlı kopyasını ekleme.",
@@ -502,7 +571,7 @@ export function buildPlanAdaptationPrompt(input: {
           "Sınav son düzlükte: ADD görevleri yeni konu yerine tekrar, soru çözümü ve deneme ritmi olsun.",
         ]
       : []),
-    `${PLAN_ADAPTATION_JSON_SENTINEL}: {"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}]}`,
+    `${PLAN_ADAPTATION_JSON_SENTINEL}: {${input.source === "PLAN" ? '"offDates":[],' : ""}"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}]}`,
   ].join("\n");
   const evidence = input.evidence.length
     ? input.evidence
@@ -533,7 +602,11 @@ export function buildPlanAdaptationPrompt(input: {
   const rhythm =
     input.source === "PLAN"
       ? [
-          input.days ? `${input.days} farklı gün` : null,
+          input.studyDates?.length
+            ? `yalnız şu günler: ${named(input.studyDates)}`
+            : input.days
+              ? `${input.days} farklı gün`
+              : null,
           input.minutesPerDay
             ? `her görev yaklaşık ${input.minutesPerDay} dakika sürsün`
             : null,

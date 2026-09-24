@@ -55,7 +55,10 @@ import {
 } from "../domain/suggested-task";
 import { classifyOfficialIntent } from "../domain/official-intent";
 import { groundingFact } from "../domain/grounding-fact";
-import { applyCoachPersonalizationMarker } from "../domain/personalization-marker";
+import {
+  applyCoachPersonalizationMarker,
+  createPersonalizationMarkerFilter,
+} from "../domain/personalization-marker";
 import { promptLocale, type PromptLocale } from "../domain/prompt-locale";
 import { hasSeriousDistressSignal } from "../domain/serious-distress";
 import {
@@ -823,14 +826,12 @@ export class ChatService {
     focusLine: string | null,
   ) {
     const markers = extractReplyMarkers(raw);
-    const marked = focusLine
-      ? applyCoachPersonalizationMarker(
-          markers.text.trim(),
-          personalization,
-          locale,
-          focusLine,
-        )
-      : { text: markers.text.trim(), personalization };
+    const marked = applyCoachPersonalizationMarker(
+      markers.text.trim(),
+      personalization,
+      locale,
+      focusLine,
+    );
     return { text: marked.text, personalization: marked.personalization, markers };
   }
 
@@ -1081,7 +1082,7 @@ export class ChatService {
           { contextArticleSlug },
           community,
         );
-      const final = yield* this.streamLlm(llmInput, focusLine);
+      const final = yield* this.streamLlm(llmInput, personalization, locale, focusLine);
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
@@ -1322,7 +1323,7 @@ export class ChatService {
           },
           community,
         );
-      const final = yield* this.streamLlm(llmInput, focusLine);
+      const final = yield* this.streamLlm(llmInput, personalization, locale, focusLine);
       const personalized = this.visibleCoachReply(
         final.text,
         personalization,
@@ -1402,14 +1403,20 @@ export class ChatService {
       user: string;
       history: LlmHistoryMessage[];
     },
+    personalization: CoachPersonalizationDto,
+    locale: PromptLocale,
     focusLine: string | null,
   ): AsyncGenerator<CoachChatStreamEvent, LlmResult> {
-    if (focusLine) yield { delta: `${focusLine} ` };
     const markerFilter = createTaskMarkerFilter();
+    const personalizationFilter = createPersonalizationMarkerFilter(
+      personalization,
+      locale,
+      focusLine,
+    );
     let final: LlmResult | null = null;
     for await (const ev of this.llm.completeStream(llmInput)) {
       if (ev.delta) {
-        const safe = markerFilter.push(ev.delta);
+        const safe = markerFilter.push(personalizationFilter.push(ev.delta));
         if (safe) yield { delta: safe };
       }
       if (ev.final) final = ev.final;
@@ -1419,6 +1426,11 @@ export class ChatService {
         ErrorCode.AI_PROVIDER_ERROR,
         HttpStatus.SERVICE_UNAVAILABLE,
       );
+    }
+    const personalizedTail = personalizationFilter.flush();
+    if (personalizedTail) {
+      const safe = markerFilter.push(personalizedTail);
+      if (safe) yield { delta: safe };
     }
     const held = markerFilter.flush();
     if (held) yield { delta: held };

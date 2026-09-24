@@ -37,9 +37,9 @@ export class CoachingAchievementEvidenceService {
           .from(studySessions)
           .where(and(inArray(studySessions.userId, userIds), eq(studySessions.status, "COMPLETED"), isNotNull(studySessions.endedAt), gte(studySessions.actualFocusSeconds, minFocus)))
           .orderBy(asc(studySessions.userId), asc(studySessions.startedAt)),
-        tx.select({ userId: planTasks.userId, earnedAt: sql<Date>`min(${planTasks.createdAt})` })
+        tx.select({ userId: planTasks.userId, earnedAt: sql<Date>`min(${planTasks.createdAt})`.mapWith(planTasks.createdAt) })
           .from(planTasks).where(inArray(planTasks.userId, userIds)).groupBy(planTasks.userId),
-        tx.select({ userId: visionBoards.userId, earnedAt: sql<Date>`min(${visionBoards.createdAt})` })
+        tx.select({ userId: visionBoards.userId, earnedAt: sql<Date>`min(${visionBoards.createdAt})`.mapWith(visionBoards.createdAt) })
           .from(visionBoards)
           .where(and(
             inArray(visionBoards.userId, userIds),
@@ -52,9 +52,9 @@ export class CoachingAchievementEvidenceService {
           .from(dailyActivity)
           .where(and(inArray(dailyActivity.userId, userIds), eq(dailyActivity.hasSession, true)))
           .orderBy(asc(dailyActivity.userId), asc(dailyActivity.activityDate)),
-        tx.select({ userId: mockExams.userId, earnedAt: sql<Date>`min(${mockExams.createdAt})` })
+        tx.select({ userId: mockExams.userId, earnedAt: sql<Date>`min(${mockExams.createdAt})`.mapWith(mockExams.createdAt) })
           .from(mockExams).where(inArray(mockExams.userId, userIds)).groupBy(mockExams.userId),
-        tx.select({ userId: mistakeNotebookEntries.userId, earnedAt: sql<Date>`min(${mistakeNotebookEntries.lastReviewedAt})` })
+        tx.select({ userId: mistakeNotebookEntries.userId, earnedAt: sql<Date>`min(${mistakeNotebookEntries.lastReviewedAt})`.mapWith(mistakeNotebookEntries.lastReviewedAt) })
           .from(mistakeNotebookEntries)
           .where(and(inArray(mistakeNotebookEntries.userId, userIds), isNotNull(mistakeNotebookEntries.lastReviewedAt)))
           .groupBy(mistakeNotebookEntries.userId),
@@ -62,7 +62,7 @@ export class CoachingAchievementEvidenceService {
 
       const evidence: AchievementEvidence[] = [];
       for (const [rows, id] of [[plans, "route_drawn"], [boards, "dream_space_created"], [exams, "starting_point_set"], [reviews, "mistake_revisited"]] as const) {
-        for (const row of rows) if (row.earnedAt) evidence.push({ userId: row.userId, achievementId: id, earnedAt: new Date(row.earnedAt) });
+        for (const row of rows) if (row.earnedAt) evidence.push({ userId: row.userId, achievementId: id, earnedAt: row.earnedAt });
       }
 
       const sessionsByUser = groupByUser(sessions);

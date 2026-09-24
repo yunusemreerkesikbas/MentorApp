@@ -15,6 +15,11 @@ describe("cloud transition", () => {
     expect(cloudTransitionReducer("covered", "timeout")).toBe("revealing");
   });
 
+  it("closes the cover when the overlay never reports done", () => {
+    expect(cloudTransitionReducer("covering", "coverTimeout")).toBe("covered");
+    expect(cloudTransitionReducer("covered", "coverTimeout")).toBe("covered");
+  });
+
   it("ignores a ready signal that arrives before the cover is closed", () => {
     expect(cloudTransitionReducer("covering", "ready")).toBe("covering");
   });

@@ -25,6 +25,22 @@ export class EmailTokenRepository {
     });
   }
 
+  /** Close every unused token of this type. A later verify link must not redeem an older address. */
+  async invalidateUnused(userId: string, type: EmailTokenType): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx
+        .update(emailTokens)
+        .set({ usedAt: sql`now()` })
+        .where(
+          and(
+            eq(emailTokens.userId, userId),
+            eq(emailTokens.type, type),
+            isNull(emailTokens.usedAt),
+          ),
+        );
+    });
+  }
+
   /** Atomically consume an unused token of the given type (single use). */
   async consume(tokenHash: string, type: EmailTokenType): Promise<EmailTokenRow | undefined> {
     return withServiceContext(this.db, async (tx) => {

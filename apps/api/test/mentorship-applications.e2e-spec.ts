@@ -136,6 +136,10 @@ describe("mentorship coach registry (e2e)", () => {
     // The coach surface itself, so the panel assertions mean something. The two flags stay
     // independent by design — this suite is the one place both are on at once.
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+    // Accepting a code writes a link only when a seat can be granted.
+    await app
+      .get(ConfigRegistryService)
+      .set(userId.admin!, "mentorship.seats.sponsorship_enabled", true);
   }, 120_000);
 
   afterAll(async () => {

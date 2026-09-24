@@ -50,9 +50,12 @@ export const MentorshipEventTopic = {
 export const MentorshipSeatKind = {
   /** Inside `mentorship.coach.free_seats` — the coach sponsors this student's Premium at no cost. */
   FREE: "FREE",
-  /** Beyond the free quota, covered by a paid seat plan. Reserved; nothing writes it yet. */
+  /** Beyond the free quota, covered by a paid seat plan (`plans.seat_count`). */
   PAID: "PAID",
-  /** Followed, but not sponsored: the student keeps whatever tier they had. */
+  /**
+   * No seat. A successful accept no longer emits this: a full allowance refuses the link.
+   * The listener still ignores it, so an in-flight event from before the change stays harmless.
+   */
   NONE: "NONE",
 } as const;
 export type MentorshipSeatKind =
