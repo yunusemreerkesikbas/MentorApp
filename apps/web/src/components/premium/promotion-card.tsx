@@ -15,6 +15,8 @@ interface PromotionCardProps {
   onClose: () => void;
   /** Hands the code to the paywall so the user never retypes what this card just showed them. */
   onContinue: (code: string | null) => void;
+  /** Fires once the card is mounted, so a campaign is not spent while its chunk is still loading. */
+  onShown?: () => void;
 }
 
 type CopyStatus = "idle" | "copied" | "failed";
@@ -65,7 +67,7 @@ function serratedMask(offsetY: number) {
  * scope line and the CTA stay derived on purpose: hand-written versions could promise what
  * checkout will not honour.
  */
-export function PromotionCard({ promotion, onClose, onContinue }: PromotionCardProps) {
+export function PromotionCard({ promotion, onClose, onContinue, onShown }: PromotionCardProps) {
   const t = useTranslations("paywall");
   const locale = useLocale();
   const reduceMotion = useReducedMotion();
@@ -90,6 +92,10 @@ export function PromotionCard({ promotion, onClose, onContinue }: PromotionCardP
     settleRef.current = () => onContinue(code);
     setOpen(false);
   }, [onContinue, promotion.code]);
+
+  useEffect(() => {
+    onShown?.();
+  }, [onShown]);
 
   useEffect(() => {
     return () => {

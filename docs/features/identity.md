@@ -522,9 +522,16 @@ rows expire normally; no schema migration is required. Related: `identity.consta
 
 - Users can now update their email address directly from the Profile Details modal (`ProfileEditForm`).
 - Validation (`@mentor/validation` `updateMeSchema`) now validates optional `email` via `emailSchema`.
-- Backend (`UsersService.updateMe`) validates email uniqueness (`AUTH_EMAIL_IN_USE` 409 error), resets `emailVerifiedAt` to `null` upon email change, updates the user row, and automatically triggers a new verification email to the new address via `AuthService.sendVerificationEmail`.
+- Backend (`UsersService.updateMe`) validates email uniqueness (`AUTH_EMAIL_IN_USE` 409 error), resets `emailVerifiedAt` to `null` upon email change, updates the user row, and sends the new verification link through the resend quota. See the entry below.
 - Frontend (`profile-header.tsx`) replaces the disabled `LockedEmailField` with an editable `TextField`, shows a specialized success toast when email changes, and realigns "Fotoğraf seç" / "Kaldır" buttons to `DESIGN.md` secondary card action standards (10px `--radius-card`, surface background with border and card shadow, removing the out-of-place pitch-black `--color-btn` pill).
 - Related: `packages/validation/src/auth.ts`, `apps/api/src/modules/identity/application/users.service.ts`, `apps/api/src/modules/identity/application/auth.service.ts`, `apps/api/src/modules/identity/application/users.service.spec.ts`, `apps/web/src/app/[locale]/(app)/profile/_components/profile-header.tsx`, `messages/{tr,en}.json`.
+
+### 2026-09-24 — Email change uses the resend quota
+
+- An address change calls `invalidateOutstandingVerification` and then `resendVerificationEmail`. The per-user resend window applies. Signup still uses `sendVerificationEmail` and does not spend that window.
+- Unused `VERIFY_EMAIL` tokens are marked used before the new link is created. A link mailed to the previous address cannot set `emailVerifiedAt` on the new one. If the resend is rate-limited, the new address stays and no mail goes out; the student asks again from `POST /v1/users/me/verification-email`.
+- The profile form shows `profile.edit.email_error` when the address itself fails validation.
+- Related: `email-token.repository.ts`, `auth.service.ts`, `users.service.ts`, `profile-header.tsx`, `messages/{tr,en}.json`.
 
 ## Gotchas / Known issues
 

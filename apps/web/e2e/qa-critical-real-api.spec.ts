@@ -31,7 +31,7 @@ test("real API: two tabs refresh, scoped cookie, logout", async ({ page, context
 
   await page.goto("/giris");
   await page.getByRole("textbox", { name: "E-posta" }).fill(email);
-  await page.getByRole("textbox", { name: /Şifre/ }).fill(password);
+  await page.locator('input[type="password"]').fill(password);
   await page.getByRole("button", { name: "Giriş yap" }).click();
   await expect(page).toHaveURL(/\/(baslangic|panel)$/);
 

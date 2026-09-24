@@ -75,7 +75,6 @@ export function PromotionDialog() {
       // registry if two surfaces ever need to negotiate priority rather than just yield.
       if (document.querySelector('[role="dialog"][aria-modal="true"]')) return;
 
-      writeIdSet("local", SEEN_KEY, new Set(seen).add(next.id));
       setPromotion(next);
     })();
   }, [loading, view]);
@@ -85,6 +84,10 @@ export function PromotionDialog() {
   return (
     <PromotionCard
       promotion={promotion}
+      onShown={() => {
+        const seen = readIdSet("local", SEEN_KEY);
+        writeIdSet("local", SEEN_KEY, new Set(seen).add(promotion.id));
+      }}
       onClose={() => setPromotion(null)}
       onContinue={(code) => {
         setPromotion(null);

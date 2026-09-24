@@ -16,6 +16,7 @@ export default defineConfig({
       AI_PROVIDER: "fake",
       VISION_PROVIDER: "fake",
       STORAGE_PROVIDER: "fake",
+      APP_ENV: "development",
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
       PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",
     },

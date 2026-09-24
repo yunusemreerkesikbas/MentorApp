@@ -188,6 +188,11 @@ export class AuthService {
     await this.events.emitAsync(IdentityEventTopic.EMAIL_VERIFIED, { userId: row.userId, date: new Date().toISOString().slice(0, 10) });
   }
 
+  /** Spend leftover verify links so one mailed to a previous address cannot confirm the current one. */
+  async invalidateOutstandingVerification(userId: string): Promise<void> {
+    await this.emailTokenRepo.invalidateUnused(userId, EmailTokenType.VERIFY_EMAIL);
+  }
+
   async resendVerificationEmail(userId: string): Promise<void> {
     const user = await this.usersRepo.findByIdService(userId);
     if (!user) throw new UnauthorizedError();
@@ -214,7 +219,7 @@ export class AuthService {
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 
-  /** Direct dispatch of verification email without resend rate limits (e.g. email updated or signup). */
+  /** Direct dispatch without the resend quota. Signup only; an address change uses {@link resendVerificationEmail}. */
   async sendVerificationEmail(user: UserRow): Promise<void> {
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }

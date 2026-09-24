@@ -58,29 +58,28 @@ describe("notifications queue (e2e)", () => {
 
   it("enqueue + cron completes send-email job and prints it, link included, to stdout", async () => {
     const queue = app.get<JobQueuePort>(JOB_QUEUE_PORT);
-    const { jobId } = await queue.enqueue(JobName.SEND_EMAIL, {
-      to: "queue-test@local.dev",
-      template: "identity.verify-email",
-      variables: { displayName: "Test", link: "http://localhost/verify?token=e2e-console" },
-    });
-    // Test env is dev tooling, so the console sink prints instead of sending. The app logger
-    // drops freeform text, so stdout is the only place the link can surface.
+    // The poller can print before this test reaches the cron call. Watch stdout first.
     const written: string[] = [];
     const stdout = vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array) => {
       written.push(String(chunk));
       return true;
     });
-
-    const { JobRepository } = await import(
-      "../src/modules/notifications/infrastructure/job.repository"
-    );
-    const repo = app.get(JobRepository);
-
-    // Production runs the cron periodically: a job enqueued at run_at=now() is picked up on a
-    // following tick. Mirror that here (poll a few times) instead of assuming a single immediate
-    // call wins the sub-millisecond enqueue→claim boundary.
-    let row: Awaited<ReturnType<typeof repo.findById>>;
     try {
+      const { jobId } = await queue.enqueue(JobName.SEND_EMAIL, {
+        to: "queue-test@local.dev",
+        template: "identity.verify-email",
+        variables: { displayName: "Test", link: "http://localhost/verify?token=e2e-console" },
+      });
+
+      const { JobRepository } = await import(
+        "../src/modules/notifications/infrastructure/job.repository"
+      );
+      const repo = app.get(JobRepository);
+
+      // Production runs the cron periodically: a job enqueued at run_at=now() is picked up on a
+      // following tick. Mirror that here (poll a few times) instead of assuming a single immediate
+      // call wins the sub-millisecond enqueue→claim boundary.
+      let row: Awaited<ReturnType<typeof repo.findById>>;
       for (let attempt = 0; attempt < 10; attempt++) {
         const res = await request(app.getHttpServer())
           .post("/v1/internal/cron/process-jobs")
@@ -92,13 +91,13 @@ describe("notifications queue (e2e)", () => {
         if (row?.status === JobStatus.COMPLETED) break;
         await new Promise((resolve) => setTimeout(resolve, 100));
       }
+
+      expect(row?.status).toBe(JobStatus.COMPLETED);
+      const output = written.join("");
+      expect(output).toContain("[email:console] queue-test@local.dev identity.verify-email");
+      expect(output).toContain("http://localhost/verify?token=e2e-console");
     } finally {
       stdout.mockRestore();
     }
-
-    expect(row?.status).toBe(JobStatus.COMPLETED);
-    const output = written.join("");
-    expect(output).toContain("[email:console] queue-test@local.dev identity.verify-email");
-    expect(output).toContain("http://localhost/verify?token=e2e-console");
   });
 });

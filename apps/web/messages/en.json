@@ -863,6 +863,7 @@
       "avatar_upload_error": "Could not upload profile photo.",
       "name_error": "Full name must be 2-64 characters.",
       "form_error": "Full name or username doesn't match.",
+      "email_error": "That email address doesn't match.",
       "save_error": "Could not save profile.",
       "saved_title": "Profile updated",
       "saved_message": "Your profile details were updated in the app.",

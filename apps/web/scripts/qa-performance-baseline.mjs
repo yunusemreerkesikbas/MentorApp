@@ -145,6 +145,13 @@ const summary = viewports.flatMap((viewport) => routes.map((route) => {
       .filter((call) => call.status >= 400),
   };
 }));
+const invalid = samples.filter((sample) =>
+  [sample.cold, sample.warm].some((load) =>
+    load.finalPath !== routes.find((route) => route.name === sample.route).path ||
+    load.apiCalls.some((call) => call.status === 429),
+  ),
+);
+if (invalid.length) throw new Error(`${invalid.length} sample pairs redirected or hit 429; baseline is invalid.`);
 await mkdir(dirname(outputPath), { recursive: true });
 await writeFile(outputPath, `${JSON.stringify({ generatedAt: new Date().toISOString(), samples, summary }, null, 2)}\n`);
 console.log(`Saved ${samples.length * 2} loads to ${outputPath}`);

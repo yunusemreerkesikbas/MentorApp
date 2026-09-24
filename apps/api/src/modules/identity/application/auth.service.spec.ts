@@ -21,6 +21,8 @@ function makeService(count: number) {
     countVerificationResendAttemptsSince: vi.fn(async () => count),
     createVerificationResendAttempt: vi.fn(async () => undefined),
     create: vi.fn(async (input) => ({ id: "token-1", ...input })),
+    invalidateUnused: vi.fn(async () => undefined),
+    consume: vi.fn(async () => undefined),
   };
   const config = {
     get: vi.fn(() => "http://localhost:3000"),
@@ -130,6 +132,31 @@ describe("signup legal acknowledgements", () => {
   });
 });
 
+describe("AuthService.verifyEmail", () => {
+  it("does not mark the address verified when the token is already closed", async () => {
+    const usersRepo = { updateService: vi.fn() };
+    const events = { emitAsync: vi.fn() };
+    const service = new AuthService(
+      usersRepo as never,
+      { consume: vi.fn(async () => undefined) } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      events as never,
+    );
+
+    await expect(service.verifyEmail({ token: "stale" })).rejects.toMatchObject({
+      code: ErrorCode.AUTH_TOKEN_INVALID,
+      httpStatus: HttpStatus.BAD_REQUEST,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.updateService).not.toHaveBeenCalled();
+    expect(events.emitAsync).not.toHaveBeenCalled();
+  });
+});
+
 describe("AuthService.resendVerificationEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -142,6 +169,17 @@ describe("AuthService.resendVerificationEmail", () => {
     } satisfies Partial<DomainError>);
     expect(emailTokenRepo.createVerificationResendAttempt).not.toHaveBeenCalled();
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("closes unused verify tokens for that user", async () => {
+    const { emailTokenRepo, service } = makeService(0);
+
+    await service.invalidateOutstandingVerification(USER.id);
+
+    expect(emailTokenRepo.invalidateUnused).toHaveBeenCalledWith(
+      USER.id,
+      EmailTokenType.VERIFY_EMAIL,
+    );
   });
 
   it("records an attempt and sends a verification link when under limit", async () => {

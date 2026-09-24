@@ -863,6 +863,7 @@
       "avatar_upload_error": "Profil fotoğrafı yüklenemedi.",
       "name_error": "Ad soyad 2-64 karakter olmalı.",
       "form_error": "Ad soyad ya da kullanıcı adı uymadı.",
+      "email_error": "E-posta adresi uymadı.",
       "save_error": "Profil kaydedilemedi.",
       "saved_title": "Profil güncellendi",
       "saved_message": "Profil bilgilerin uygulama içinde güncellendi.",

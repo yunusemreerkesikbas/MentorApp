@@ -296,8 +296,11 @@ export class UsersService {
     }
     if (!user) throw new NotFoundError();
     if (emailChanged && this.authService) {
-      void this.authService
-        .sendVerificationEmail(user)
+      const auth = this.authService;
+      // Quota applies, and the old link dies even when the new send is refused.
+      void auth
+        .invalidateOutstandingVerification(userId)
+        .then(() => auth.resendVerificationEmail(userId))
         .catch((err) => this.logger.warn(`verification email failed for ${user.id}: ${String(err)}`));
     }
     const oldKey = current?.avatarStorageKey;

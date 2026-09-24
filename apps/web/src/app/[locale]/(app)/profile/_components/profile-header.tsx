@@ -274,7 +274,8 @@ function ProfileEditForm({
     };
     const parsed = updateMeSchema.safeParse(patch);
     if (!parsed.success) {
-      setError(t("form_error"));
+      const emailInvalid = parsed.error.issues.some((issue) => issue.path[0] === "email");
+      setError(emailInvalid ? t("email_error") : t("form_error"));
       return;
     }
 

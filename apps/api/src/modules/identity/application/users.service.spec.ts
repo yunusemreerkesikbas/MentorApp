@@ -85,7 +85,15 @@ describe("UsersService.updateMe", () => {
       updateSelf: vi.fn(async () => updated),
     };
     const storage = { getPublicUrl: vi.fn() };
-    const authService = { sendVerificationEmail: vi.fn(async () => {}) };
+    const calls: string[] = [];
+    const authService = {
+      invalidateOutstandingVerification: vi.fn(async () => {
+        calls.push("invalidate");
+      }),
+      resendVerificationEmail: vi.fn(async () => {
+        calls.push("resend");
+      }),
+    };
     const service = new UsersService(
       usersRepo as never,
       storage as never,
@@ -100,7 +108,7 @@ describe("UsersService.updateMe", () => {
       email: "new@example.com",
       emailVerifiedAt: null,
     });
-    expect(authService.sendVerificationEmail).toHaveBeenCalledWith(updated);
+    expect(calls).toEqual(["invalidate", "resend"]);
   });
 
   it("rejects duplicate email with AUTH_EMAIL_IN_USE (409)", async () => {
@@ -149,7 +157,10 @@ describe("UsersService.updateMe", () => {
       findByEmailService: vi.fn(),
       updateSelf: vi.fn(async () => updated),
     };
-    const authService = { sendVerificationEmail: vi.fn() };
+    const authService = {
+      invalidateOutstandingVerification: vi.fn(),
+      resendVerificationEmail: vi.fn(),
+    };
     const service = new UsersService(
       usersRepo as never,
       { getPublicUrl: vi.fn() } as never,
@@ -162,7 +173,8 @@ describe("UsersService.updateMe", () => {
       displayName: "Updated Name",
     });
     expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
-    expect(authService.sendVerificationEmail).not.toHaveBeenCalled();
+    expect(authService.invalidateOutstandingVerification).not.toHaveBeenCalled();
+    expect(authService.resendVerificationEmail).not.toHaveBeenCalled();
   });
 });
 

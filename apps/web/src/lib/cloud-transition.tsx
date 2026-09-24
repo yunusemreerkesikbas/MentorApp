@@ -24,14 +24,16 @@ export type CloudTransitionPhase =
   | "covered"
   | "revealing";
 
-type CloudTransitionEvent = "start" | "covered" | "ready" | "timeout" | "revealed";
+type CloudTransitionEvent = "start" | "covered" | "coverTimeout" | "ready" | "timeout" | "revealed";
 
 export function cloudTransitionReducer(
   phase: CloudTransitionPhase,
   event: CloudTransitionEvent,
 ): CloudTransitionPhase {
   if (event === "start") return phase === "idle" ? "covering" : phase;
-  if (event === "covered") return phase === "covering" ? "covered" : phase;
+  if (event === "covered" || event === "coverTimeout") {
+    return phase === "covering" ? "covered" : phase;
+  }
   if (event === "ready" || event === "timeout") {
     return phase === "covered" ? "revealing" : phase;
   }
@@ -86,6 +88,18 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
     return () => cancelAnimationFrame(frame);
   }, [pathname, phase, readyPath]);
 
+  // The overlay chunk is what calls onDone. If it never arrives, navigate anyway.
+  useEffect(() => {
+    if (phase !== "covering") return;
+    const timeout = window.setTimeout(() => {
+      dispatch("coverTimeout");
+      const navigate = navigateRef.current;
+      navigateRef.current = null;
+      navigate?.();
+    }, DESTINATION_TIMEOUT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [phase]);
+
   useEffect(() => {
     if (phase !== "covered") return;
     const timeout = window.setTimeout(() => dispatch("timeout"), DESTINATION_TIMEOUT_MS);
@@ -93,9 +107,9 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
   }, [phase]);
 
   /*
-   * The machine runs on a REAL animation (APP-089). `onAnimationComplete` is the only thing that
-   * dispatches "covered" and calls `navigate()`, so the left cloud always has a distance to travel
-   * — with `initial={false}` the phase stuck on "covering" and navigation never happened.
+   * The machine runs on a REAL animation (APP-089). `onAnimationComplete` dispatches "covered"
+   * and calls `navigate()`, so the left cloud always has a distance to travel. The covering
+   * timeout above is the fallback when that callback never arrives.
    */
   function handleCoverAnimationComplete() {
     if (phase === "covering") {
