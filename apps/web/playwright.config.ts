@@ -12,6 +12,7 @@ export default defineConfig({
   use: {
     baseURL: externalBaseUrl ?? "http://localhost:3100",
     browserName: "chromium",
+    ...(process.env.QA_BROWSER_CHANNEL === "chrome" ? { channel: "chrome" as const } : {}),
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },

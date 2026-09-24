@@ -1,0 +1,95 @@
+{
+  "createdAt": "2026-09-24T11:34:18.8276600Z",
+  "baseCommit": "307de33cb988c4126ebc08b2a9ef958ebc425efe",
+  "branch": "feature/APP-109",
+  "dirtyFiles": [
+    {
+      "path": "apps/api/src/modules/identity/application/auth.service.spec.ts",
+      "sha256": "e774d0e33ec51736f83296e34fc415a2bd6c21ac91c7350e8e815f70a21135a4"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/auth.service.ts",
+      "sha256": "420eae0be3aa50ed460f9ab7f1255b2c5964073e75129f2ae7676d12374738e0"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/users.service.spec.ts",
+      "sha256": "298ffc9f3ff0b800520a84dd13e1776b25c21ef003678a2469a07a9c82f3cacf"
+    },
+    {
+      "path": "apps/api/src/modules/identity/application/users.service.ts",
+      "sha256": "01f92b9716c285f0113d8eaab13c4945ef82c1ea8bdbf9419a2d989b344fb5c9"
+    },
+    {
+      "path": "apps/api/src/modules/identity/infrastructure/email-token.repository.ts",
+      "sha256": "59f0e932d1ba9b9513d870ecb7d58f4917bd52990ad49c8c638f631e824cffb3"
+    },
+    {
+      "path": "apps/api/test/notifications.e2e-spec.ts",
+      "sha256": "096558f245eda3c94803945d5e0e60dce8afe8ec784974ee3378cfe381052edd"
+    },
+    {
+      "path": "apps/api/vitest.config.ts",
+      "sha256": "c20d47f817bdf9b9c0e43fe5acea89c59f7122a6da6a7f0032fa0f07bef0fed4"
+    },
+    {
+      "path": "apps/web/e2e/qa-critical-real-api.spec.ts",
+      "sha256": "2169c803ae3a6a70597c721a4f4716f402bc42b173074e0713c0b7dde6601955"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "c25e7db23bf365de9ba13d6c856268061686c1c8a7fac81b1e59d4f9ddc2391b"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "0cd4cb11eac11044f4a9bacc8a2b205e65a519cc1ef950062f7c42bec725ed6a"
+    },
+    {
+      "path": "apps/web/playwright.config.ts",
+      "sha256": "a9d317da0ad963db228894bd2dde5be274b1821f70f677ff85b9105b76c6f1a6"
+    },
+    {
+      "path": "apps/web/scripts/qa-performance-baseline.mjs",
+      "sha256": "f9e0a933498d82e68d51e978b78edc812149dee7fcab150778d0f8567f6e14dd"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/dashboard-content-skeleton.tsx",
+      "sha256": "51853360c77e9e08293f4cb2258b32c31e08e88d394090250cac88932c301156"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/panel-shell.tsx",
+      "sha256": "a8ffc09c9295b33febc723093faa1052f2c21c26761f78804506d6c88223c461"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/profile/_components/profile-header.tsx",
+      "sha256": "69c4ebcfa091f77dcae3fe8aab59e56e9013cd3667a92c5b416ba6c2f68ab0b7"
+    },
+    {
+      "path": "apps/web/src/components/premium/promotion-card.tsx",
+      "sha256": "d1040d63018709c2ae01cb6b475d82ac621eb50994c761aff26df6fd74bde8f6"
+    },
+    {
+      "path": "apps/web/src/components/premium/promotion-dialog.tsx",
+      "sha256": "fa311580ff58258a14110935d5cb1f37b1b5b5e2344adb39f530bc47b5dfdd75"
+    },
+    {
+      "path": "apps/web/src/lib/cloud-transition.spec.ts",
+      "sha256": "ad2705654c4cb6003706b1b12b4520b672ac68701557549ace8348173f743a33"
+    },
+    {
+      "path": "apps/web/src/lib/cloud-transition.tsx",
+      "sha256": "d6cb7451b94f4259f05a82dff26be281e013efe3acb8b576c7906ba4ccd436a4"
+    },
+    {
+      "path": "apps/api/src/shared/adapters/storage/fake-storage.adapter.spec.ts",
+      "sha256": "24caa83ddd13a34dbb069e47ba87b2fe79da2531d3a006cca517bb3089de6baf"
+    },
+    {
+      "path": "apps/web/e2e/qa-panel-resilience.spec.ts",
+      "sha256": "77379ee5b4c48a96bd950e3656d6905b50e1369fcfd0d2b8b8ed50fc4c64ac47"
+    },
+    {
+      "path": "apps/web/scripts/qa-panel-layout-shifts.mjs",
+      "sha256": "b7b596144ff61ce9bf8e541974cefdb5f2ce62c5b1ff75ae1d37f7aa18f95b82"
+    }
+  ]
+}

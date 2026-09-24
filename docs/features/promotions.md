@@ -131,6 +131,14 @@ Rollerin ayrı olması bilinçli: promosyon fiyat işidir (FINANCE), toplu duyur
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 — One automatic offer request per panel load.** The panel passes its existing
+  `PromotionOffersView` to `PromotionDialog` instead of fetching a second copy. The dialog still
+  checks the shared entitlement and whether another modal is open before showing a campaign.
+  Use the panel as before; coupon and checkout price requests remain independent and fresh.
+  Gotcha: the seen flag is still local to the browser and campaign ID. Installed Chrome with the
+  real QA API observed one `POST /subscription/offers` per panel load on mobile and desktop.
+  Related: `panel-shell.tsx`, `promotion-dialog.tsx`, `e2e/qa-panel-resilience.spec.ts`.
+
 - **Admin kampanya formu Duralux proposal kartı (2026-09-16)** — Paylaşılan `FormSection`
   artık `card-header` yerine kart gövdesinde `h5` + muted alt yazı (proposal/create).
   `/promotions/[id]` ve `/promotions/new` 6+6 tanım/hedef + tam genişlik indirim/limit özeti.

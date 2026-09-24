@@ -1,0 +1,28 @@
+{
+  "createdAt": "2026-09-24T09:29:23.9250003Z",
+  "baseCommit": "307de33cb988c4126ebc08b2a9ef958ebc425efe",
+  "branch": "feature/APP-109",
+  "dirty": true,
+  "files": [
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/dashboard-content-skeleton.tsx",
+      "sha256": "51853360c77e9e08293f4cb2258b32c31e08e88d394090250cac88932c301156"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/panel-shell.tsx",
+      "sha256": "a8ffc09c9295b33febc723093faa1052f2c21c26761f78804506d6c88223c461"
+    },
+    {
+      "path": "apps/web/src/components/premium/promotion-dialog.tsx",
+      "sha256": "585885976667f4d19cc6b65fdd784b7af14d9d01e70336cf6193c2016fc32663"
+    },
+    {
+      "path": "apps/web/e2e/qa-panel-resilience.spec.ts",
+      "sha256": "77379ee5b4c48a96bd950e3656d6905b50e1369fcfd0d2b8b8ed50fc4c64ac47"
+    },
+    {
+      "path": "apps/web/scripts/qa-panel-layout-shifts.mjs",
+      "sha256": "b7b596144ff61ce9bf8e541974cefdb5f2ce62c5b1ff75ae1d37f7aa18f95b82"
+    }
+  ]
+}
