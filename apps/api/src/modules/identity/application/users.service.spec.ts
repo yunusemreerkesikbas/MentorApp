@@ -61,6 +61,109 @@ describe("UsersService.updateMe", () => {
       website: null,
     });
   });
+
+  it("updates email and resets emailVerifiedAt to null when email changes", async () => {
+    const current = {
+      id: "user-1",
+      email: "old@example.com",
+      displayName: "Old",
+      username: "olduser",
+      avatarStorageKey: null,
+      bio: null,
+      website: null,
+      roles: ["STUDENT"],
+      organizationId: null,
+      examType: null,
+      examDate: null,
+      emailVerifiedAt: new Date(),
+      createdAt: new Date(),
+    };
+    const updated = { ...current, email: "new@example.com", emailVerifiedAt: null };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(async () => undefined),
+      updateSelf: vi.fn(async () => updated),
+    };
+    const storage = { getPublicUrl: vi.fn() };
+    const authService = { sendVerificationEmail: vi.fn(async () => {}) };
+    const service = new UsersService(
+      usersRepo as never,
+      storage as never,
+      { emitAsync: vi.fn() } as never,
+      authService as never,
+    );
+
+    const res = await service.updateMe("user-1", { email: "new@example.com" });
+    expect(res.email).toBe("new@example.com");
+    expect(res.emailVerified).toBe(false);
+    expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
+      email: "new@example.com",
+      emailVerifiedAt: null,
+    });
+    expect(authService.sendVerificationEmail).toHaveBeenCalledWith(updated);
+  });
+
+  it("rejects duplicate email with AUTH_EMAIL_IN_USE (409)", async () => {
+    const current = {
+      id: "user-1",
+      email: "old@example.com",
+      displayName: "Old",
+      username: "olduser",
+      roles: ["STUDENT"],
+    };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(async () => ({ id: "user-2", email: "taken@example.com" })),
+      updateSelf: vi.fn(),
+    };
+    const service = new UsersService(usersRepo as never, {} as never, { emitAsync: vi.fn() } as never);
+
+    await expect(
+      service.updateMe("user-1", { email: "taken@example.com" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.AUTH_EMAIL_IN_USE,
+      httpStatus: HttpStatus.CONFLICT,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.updateSelf).not.toHaveBeenCalled();
+  });
+
+  it("does not reset emailVerifiedAt or send verification when email is unchanged", async () => {
+    const current = {
+      id: "user-1",
+      email: "same@example.com",
+      displayName: "Same",
+      username: "sameuser",
+      avatarStorageKey: null,
+      bio: null,
+      website: null,
+      roles: ["STUDENT"],
+      organizationId: null,
+      examType: null,
+      examDate: null,
+      emailVerifiedAt: new Date(),
+      createdAt: new Date(),
+    };
+    const updated = { ...current, displayName: "Updated Name" };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(),
+      updateSelf: vi.fn(async () => updated),
+    };
+    const authService = { sendVerificationEmail: vi.fn() };
+    const service = new UsersService(
+      usersRepo as never,
+      { getPublicUrl: vi.fn() } as never,
+      { emitAsync: vi.fn() } as never,
+      authService as never,
+    );
+
+    await service.updateMe("user-1", { displayName: "Updated Name", email: "same@example.com" });
+    expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
+      displayName: "Updated Name",
+    });
+    expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
+    expect(authService.sendVerificationEmail).not.toHaveBeenCalled();
+  });
 });
 
 describe("resolveExamVariantPatch", () => {

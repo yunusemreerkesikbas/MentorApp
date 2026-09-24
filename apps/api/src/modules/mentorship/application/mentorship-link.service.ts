@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   MENTORSHIP_DATA_SCOPE,
@@ -19,6 +19,7 @@ import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { UsersService } from "../../identity/application/users.service";
+import { SponsoredSeatService } from "../../payments/application/sponsored-seat.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { PlanEventService } from "../../coaching/application/plan-event.service";
 import { toCoachNoteDto } from "../domain/coach-note";
@@ -50,6 +51,8 @@ type DisplayPerson = { displayName: string; username: string | null };
  */
 @Injectable()
 export class MentorshipLinkService {
+  private readonly logger = new Logger(MentorshipLinkService.name);
+
   constructor(
     private readonly links: MentorshipLinkRepository,
     private readonly invites: MentorshipInviteService,
@@ -57,6 +60,7 @@ export class MentorshipLinkService {
     private readonly users: UsersService,
     private readonly config: ConfigRegistryService,
     private readonly subscriptions: SubscriptionsService,
+    private readonly seats: SponsoredSeatService,
     private readonly events: EventEmitter2,
     private readonly planEvents: PlanEventService,
     @Inject(DRIZZLE) private readonly db: Database,
@@ -159,19 +163,24 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, linkIds, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats, canInvite] =
+    const [inviteCode, activeLinks, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats, canInvite] =
       await Promise.all([
         this.invites.getCurrent(coachId),
-        this.links.listActiveLinkIds(coachId),
+        this.links.listActiveByCoach(coachId),
         this.config.get("mentorship.coach.max_active_students"),
         this.config.get("mentorship.coach.free_seats"),
         this.config.get("mentorship.seats.sponsorship_enabled"),
         this.subscriptions.paidSeatsFor(coachId),
         this.applications.canInvite(coachId),
       ]);
-    // Counted, not inferred from the roster. A live link does not imply a seat: a student who
-    // already pays for themselves is never sponsored, and lowering `free_seats` leaves existing
-    // sponsorships standing — so roster size and seat usage drift apart in both directions.
+    const allowance = freeSeats + paidSeats;
+    // Links accepted while sponsorship was off, or whose grant was swallowed, sit inside the
+    // allowance with no subscription row. The panel is what shows the count, so the missing seat
+    // is written here. `grant` leaves a student who already pays for themselves alone.
+    if (sponsorshipEnabled && allowance > 0) {
+      await this.fillMissingSeats(activeLinks, allowance);
+    }
+    const linkIds = activeLinks.map((link) => link.id);
     const usedSeats = await this.subscriptions.countSponsoredForLinks(linkIds);
     return {
       // Withheld, not absent (APP-089). A coach who has not verified their email, or whom an admin
@@ -180,7 +189,7 @@ export class MentorshipLinkService {
       // out. `GET /mentorship/coach-registration/mine` carries the reason, so the screen can say
       // which of the two it is instead of rendering an unexplained blank.
       inviteCode: canInvite ? inviteCode : null,
-      activeStudents: linkIds.length,
+      activeStudents: activeLinks.length,
       maxActiveStudents,
       freeSeats,
       paidSeats,
@@ -235,10 +244,19 @@ export class MentorshipLinkService {
       this.subscriptions.paidSeatsFor(coachId),
     ]);
 
+    // Sponsorship off grants nothing, so the allowance is zero and the lock refuses the insert.
+    // A coach pays for every student they follow: the free quota first, then seats on their plan.
+    const seatAllowance = sponsorshipEnabled ? freeSeats + paidSeats : 0;
+
     let outcome: Awaited<ReturnType<MentorshipLinkRepository["acceptInvite"]>>;
     try {
       // Quota + insert in one transaction — see the repository comment on why it cannot be split.
-      outcome = await this.links.acceptInvite(coachId, studentId, maxActiveStudents);
+      outcome = await this.links.acceptInvite(
+        coachId,
+        studentId,
+        maxActiveStudents,
+        seatAllowance,
+      );
     } catch (err) {
       // A concurrent accept won the partial unique index (one ACTIVE coach per student).
       if (isUniqueViolation(err)) {
@@ -249,25 +267,19 @@ export class MentorshipLinkService {
     if (outcome === "QUOTA_FULL") {
       throw new DomainError(ErrorCode.MENTORSHIP_STUDENT_QUOTA_EXCEEDED, HttpStatus.CONFLICT);
     }
+    if (outcome === "SEATS_FULL") {
+      throw new DomainError(ErrorCode.MENTORSHIP_SEATS_FULL, HttpStatus.CONFLICT);
+    }
     if (outcome === "ALREADY_ACTIVE") {
       throw new DomainError(ErrorCode.MENTORSHIP_ALREADY_LINKED, HttpStatus.CONFLICT);
     }
     const { link, activeBefore } = outcome;
 
-    // The seat, decided from the count taken under the accept lock.
-    //
-    // Beyond the whole allowance the student is simply FOLLOWED, not sponsored — running out of
-    // seats never blocks a link. Who a coach may follow is `max_active_students`; who gets Premium
-    // is this. Turning the second into a wall would make the free tooling roadmap §5 promises into
-    // a paywall on coaching itself.
-    const allowance = freeSeats + paidSeats;
-    const seatKind: MentorshipSeatKind = !sponsorshipEnabled
-      ? MentorshipSeatKind.NONE
-      : activeBefore < freeSeats
-        ? MentorshipSeatKind.FREE
-        : activeBefore < allowance
-          ? MentorshipSeatKind.PAID
-          : MentorshipSeatKind.NONE;
+    // The lock already refused a student who does not fit. What remains is which kind of seat
+    // pays for them. A student who already holds their own subscription still links; `grant`
+    // writes nothing on top of that row.
+    const seatKind: MentorshipSeatKind =
+      activeBefore < freeSeats ? MentorshipSeatKind.FREE : MentorshipSeatKind.PAID;
 
     const people = await this.users.listDisplayIdentities([coachId, studentId]);
     this.events.emit(
@@ -289,6 +301,28 @@ export class MentorshipLinkService {
       await this.applications.findPublicProfile(coachId),
       MentorshipApplicationStatus.ACTIVE,
     );
+  }
+
+  /**
+   * Write the sponsor row for links that already fit in the allowance but never received one.
+   *
+   * Oldest first, so a coach who linked three students while the flag was off still sponsors
+   * those three, not whichever page of the roster happened to load. `grant` is idempotent and
+   * skips a student who already has an open subscription.
+   */
+  private async fillMissingSeats(
+    links: readonly MentorshipLinkRow[],
+    allowance: number,
+  ): Promise<void> {
+    const ordered = [...links].sort(
+      (left, right) =>
+        (left.acceptedAt?.getTime() ?? 0) - (right.acceptedAt?.getTime() ?? 0),
+    );
+    for (const link of ordered.slice(0, allowance)) {
+      await this.seats.grant(link.studentId, link.id).catch((err: unknown) => {
+        this.logger.error(`Sponsored seat grant failed for link ${link.id}`, err);
+      });
+    }
   }
 
   /**

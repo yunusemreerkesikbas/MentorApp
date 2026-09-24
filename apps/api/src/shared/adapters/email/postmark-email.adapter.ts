@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { I18nService } from "nestjs-i18n";
 import type { Env } from "../../../config/env.validation";
@@ -17,14 +17,12 @@ function emailLang(vars: Record<string, unknown>): string {
 }
 
 /**
- * Postmark transactional email adapter (§8).
- * Falls back to logging when POSTMARK_TOKEN is unset (local dev).
+ * Postmark transactional email adapter (§8). Only reached with POSTMARK_TOKEN set:
+ * `RoutingEmailAdapter` sends everything else to the console sink.
  * Student-facing sentences live in `notifications.email.*` i18n — HTML is only a skeleton.
  */
 @Injectable()
 export class PostmarkEmailAdapter implements EmailPort {
-  private readonly logger = new Logger(PostmarkEmailAdapter.name);
-
   constructor(
     private readonly config: ConfigService<Env, true>,
     private readonly i18n: I18nService,
@@ -35,12 +33,7 @@ export class PostmarkEmailAdapter implements EmailPort {
     template: string;
     variables?: Record<string, unknown>;
   }): Promise<void> {
-    const token = this.config.get("POSTMARK_TOKEN", { infer: true });
-    if (!token) {
-      this.logger.log(`→ ${input.to} [${input.template}] ${JSON.stringify(input.variables ?? {})}`);
-      return;
-    }
-
+    const token = this.config.get("POSTMARK_TOKEN", { infer: true }) ?? "";
     const from =
       this.config.get("POSTMARK_FROM", { infer: true }) ?? "noreply@mentor.app";
     const vars = input.variables ?? {};

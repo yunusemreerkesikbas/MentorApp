@@ -518,6 +518,14 @@ rows expire normally; no schema migration is required. Related: `identity.consta
   desktop inset, and lack of nested form scrolling. Related: `(auth)/_components/auth-shell.tsx`,
   `e2e/onboarding-redesign.spec.ts`, `docs/plans/2026-09-19-auth-desktop-shell-design.md`.
 
+### 2026-09-24 — Self-service email update & avatar button DESIGN.md alignment
+
+- Users can now update their email address directly from the Profile Details modal (`ProfileEditForm`).
+- Validation (`@mentor/validation` `updateMeSchema`) now validates optional `email` via `emailSchema`.
+- Backend (`UsersService.updateMe`) validates email uniqueness (`AUTH_EMAIL_IN_USE` 409 error), resets `emailVerifiedAt` to `null` upon email change, updates the user row, and automatically triggers a new verification email to the new address via `AuthService.sendVerificationEmail`.
+- Frontend (`profile-header.tsx`) replaces the disabled `LockedEmailField` with an editable `TextField`, shows a specialized success toast when email changes, and realigns "Fotoğraf seç" / "Kaldır" buttons to `DESIGN.md` secondary card action standards (10px `--radius-card`, surface background with border and card shadow, removing the out-of-place pitch-black `--color-btn` pill).
+- Related: `packages/validation/src/auth.ts`, `apps/api/src/modules/identity/application/users.service.ts`, `apps/api/src/modules/identity/application/auth.service.ts`, `apps/api/src/modules/identity/application/users.service.spec.ts`, `apps/web/src/app/[locale]/(app)/profile/_components/profile-header.tsx`, `messages/{tr,en}.json`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

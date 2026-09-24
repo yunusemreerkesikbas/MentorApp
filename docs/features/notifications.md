@@ -7,7 +7,8 @@
 
 Notifications is the async backbone. It owns the `JobQueuePort` adapter (Postgres `jobs` table,
 `FOR UPDATE SKIP LOCKED`), an auto-polling `JobRunnerService` (handler registry + retry/dead-letter),
-the email pipeline (`EMAIL_PORT` — Postmark when `POSTMARK_TOKEN` set, logger fallback in dev), and
+the email pipeline (`EMAIL_PORT` = `RoutingEmailAdapter`: Postmark, or the stdout console sink in dev
+tooling when `dev.email.console_enabled` is on or `POSTMARK_TOKEN` is unset), and
 web push (`push_subscriptions`, `notification_preferences`, `notification_deliveries` dedupe). It also
 hosts the **Config Registry** — the runtime, admin-editable business-config mechanism distinct from
 `@nestjs/config` (env/secrets). Domain triggers: payments events → dunning/welcome emails; coaching
@@ -25,6 +26,9 @@ daily reminder (no session + no mood today).
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
   `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
+  `RoutingEmailAdapter` picks the sink per message; `LoggerEmailAdapter` writes one
+  `[email:console]` line to stdout (the pino boundary drops freeform text) and refuses outside dev
+  tooling (`isDevToolingAllowed`, driven by `APP_ENV`).
 - **Web Push:** VAPID keypair. The browser subscribes through `apps/web/src/lib/web-push.ts`, driven
   by the push toggle in profile/settings (on subscribes, off unsubscribes); `sw.js` shows and routes
   the notification. Event-driven senders opt in per call with
@@ -40,7 +44,9 @@ daily reminder (no session + no mood today).
   (`CONFIG_CATALOG` key → { category, type, Zod schema, default, sensitive, description }); DB stores
   **overrides only** (`config_overrides`, key PK, value jsonb). Admins can't invent keys; values
   validated against the key's schema (bounds in the schema). In-memory cache (lazy load,
-  invalidate-on-write; process-scoped — fine for MVP single Render instance).
+  invalidate-on-write; process-scoped — fine for MVP single Render instance). `devOnly` entries
+  (boolean dev switches, category `dev`) do not exist outside dev tooling: unlisted, 404 on write,
+  read as `false` even with a stored override.
 - **Feature flags ARE config-registry entries** (one mechanism, not two): `ai.enabled` (true, §4/§8 AI
   kill-switch), `economy.enabled` (false), `signup.enabled` (true). `FeatureFlag` key consts exported.
 - **Secrets never in the registry** — values are plaintext in DB + audit trail; secrets stay in env only.
@@ -52,6 +58,7 @@ daily reminder (no session + no mood today).
 CRON_SECRET=...min-32-chars...
 POSTMARK_TOKEN=          # optional dev; required in production
 POSTMARK_FROM=noreply@example.com
+# APP_ENV=staging        # staging only (runs NODE_ENV=production); unlocks dev.email.console_enabled
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # web profil push subscribe
@@ -108,6 +115,36 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 — Stage/dev konsol e-postası, admin anahtarı `dev.email.console_enabled`.** Stage/dev'de
+  e-posta onay akışları gerçek inbox olmadan çalışıyor. **Bulgu:** e-posta OTP akışı yok; bütün onaylar
+  link (kayıt, yeniden gönder, e-posta değişikliği → `/eposta-dogrula?token=`; şifre sıfırlama →
+  `/sifre-sifirla?token=`). Eski "link api logunda" davranışı fiilen ölüydü: 2026-09-05 sertleştirmesinin
+  pino `logMethod` hook'u her serbest mesajı `"application log"` yapıyor, `LoggerEmailAdapter`'ın satırı
+  hiçbir yere düşmüyordu. **Ne yapıldı:** `EMAIL_PORT` artık `RoutingEmailAdapter`: her mesajda
+  `dev.email.console_enabled` açıksa ya da `POSTMARK_TOKEN` yoksa `LoggerEmailAdapter`, değilse
+  Postmark. `LoggerEmailAdapter` stdout'a tek satır yazar: `[email:console] <alıcı> <şablon>
+  <değişkenler JSON>` (link dahil). Ortam sinyali yeni `APP_ENV` (`development|staging|production`;
+  boşsa NODE_ENV'den türer, `production` → `production`). `isDevToolingAllowed` false iken (prod) iki
+  kilit: registry `devOnly` anahtarı listelemez, yazmaz (404), DB'de override kalsa bile `false` okur;
+  `LoggerEmailAdapter` da yazmayı reddeder, job düşer. **Kullanım:** stage servisine `APP_ENV=staging`
+  (stage NODE_ENV=production koşar, prod env kilitleri geçerli kalır) → admin → Ayarlar → "Test ortamı
+  (stage/dev)" → anahtar varsayılan Açık; kapatınca prod gibi Postmark. Local'de `APP_ENV` gerekmez.
+  Linki bulmak için API çıktısında `[email:console]` ya da `eposta-dogrula` ara. **Gotchas:** (1) Satır
+  istek anında değil job çalışınca basılır (`notifications.jobs.poll_interval_seconds`, varsayılan 10 sn).
+  (2) Stage logunda alıcı adresi ve tek kullanımlık token bilerek bulunur; security-release-checklist'teki
+  log denetimi prod içindir. (3) Konsol modu bütün e-postaları kapsar (dunning, risk özeti, takip dahil).
+  (4) Anahtar kapalı ama token yoksa yine konsol: gönderecek sağlayıcı yok. Anahtar `sensitive`:
+  kapatırken (gerçek gönderime geçerken) admin onay ister. `PostmarkEmailAdapter`'ın token yokken
+  loglama yolu silindi, oraya artık yalnız token varken gelinir. Testte `test/quiet-console-email.ts`
+  (vitest `setupFiles`) arka plan job yoklayıcısının bastığı `[email:console]` satırlarını düşürür;
+  bu satırları doğrulayan spec stdout'u kendisi spy'lar. (5) Bypass kodu (`123456`)
+  bilerek yok, tüketen OTP akışı yok. SMS OTP gelince `devOnly` düzenine eklenir; boolean olmayan dev
+  anahtarı registry'de ayrı bir prod değeri ister (`get()` içindeki `ponytail:` notu). (6) `render.yaml`
+  prod'a `APP_ENV=production` açıkça yazıldı; stage kopyası bunu bilerek değiştirir. **İlgili:**
+  `shared/adapters/email/{routing,logger}-email.adapter.ts`,
+  `common/config/{config.catalog,config-registry.service}.ts`, `config/env.validation.ts`,
+  `notifications.module.ts`, `apps/admin/src/app/(general)/config/{page.tsx,config-hints.ts}`,
+  `.env.example`, `render.yaml`, `docs/core/security-release-checklist.md`.
 - **2026-09-14 — Web push yeniden bağlandı, koç→öğrenci olaylarına push (APP-094).** Denetimde
   push'un uçtan uca ölü olduğu çıktı: APP-017 (`10c85d16`, 2026-06-30) bildirim ayarları bileşenini
   yeniden yazarken `serviceWorker.register` + `pushManager.subscribe` + abonelik POST'unu silmişti.

@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import dynamic from "next/dynamic";
 import type { PromotionSummary } from "@mentor/types";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { fetchAutoPromotionOffers, pickPromotionForDialog } from "@/lib/promotions";
 import { readIdSet, writeIdSet } from "@/lib/seen-ids";
 import { useSubscription } from "@/lib/subscription-context";
-import { PromotionCard } from "./promotion-card";
+
+const PromotionCard = dynamic(() =>
+  import("./promotion-card").then((module) => module.PromotionCard),
+);
 
 /**
  * Announces a campaign once, the first time a qualifying free user lands on the dashboard.

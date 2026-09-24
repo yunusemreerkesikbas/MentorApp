@@ -1,5 +1,5 @@
 "use client";
-import { BadgeCheck, ImagePlus, LoaderCircle, LockKeyhole, MailWarning, Pencil, Trash2 } from "lucide-react";
+import { BadgeCheck, ImagePlus, LoaderCircle, MailWarning, Pencil, Trash2 } from "lucide-react";
 
 import {
   useCallback,
@@ -218,6 +218,7 @@ function ProfileEditForm({
   const t = useTranslations("profile.edit");
   const toast = useMentorToast();
   const [displayName, setDisplayName] = useState(user.displayName);
+  const [email, setEmail] = useState(user.email);
   const [username, setUsername] = useState(user.username ?? "");
   const [bio, setBio] = useState(user.bio ?? "");
   const [website, setWebsite] = useState(user.website ?? "");
@@ -261,9 +262,12 @@ function ProfileEditForm({
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const trimmedUsername = username.trim();
+    const trimmedEmail = email.trim().toLowerCase();
+    const emailChanged = trimmedEmail !== user.email.toLowerCase();
     const patch = {
       displayName: displayName.trim(),
       ...((trimmedUsername || user.username) && { username: trimmedUsername }),
+      ...(emailChanged && { email: trimmedEmail }),
       ...(removeAvatar && { avatarStorageKey: null }),
       bio: bio.trim(),
       website: website.trim(),
@@ -303,8 +307,8 @@ function ProfileEditForm({
       onSaved(updated);
       toast.success({
         title: t("saved_title"),
-        message: t("saved_message"),
-        duration: 3000,
+        message: emailChanged ? t("saved_email_changed_message") : t("saved_message"),
+        duration: emailChanged ? 5000 : 3000,
       });
     } catch (err) {
       setError(
@@ -343,8 +347,8 @@ function ProfileEditForm({
             {t("avatar_label")}
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <label className="inline-flex min-h-11 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-3 py-2 text-sm font-semibold text-[var(--color-btn-label)] transition hover:brightness-105 focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
-              <ImagePlus size={17} aria-hidden />
+            <label className="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_4%,transparent)] focus-within:outline-none focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]">
+              <ImagePlus size={16} aria-hidden />
               {t("avatar_change")}
               <input
                 className="sr-only"
@@ -357,7 +361,7 @@ function ProfileEditForm({
             {user.avatarUrl || avatarPreviewUrl ? (
               <button
                 type="button"
-                className="inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-semibold text-[var(--color-main)] transition hover:bg-[color-mix(in_srgb,var(--color-main)_3%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="inline-flex min-h-10 items-center gap-2 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-3 py-2 text-sm font-bold text-[var(--color-secondary)] shadow-[var(--shadow-card)] transition-colors hover:border-[color-mix(in_srgb,var(--color-danger)_40%,var(--color-border))] hover:bg-[color-mix(in_srgb,var(--color-danger)_5%,transparent)] hover:text-[var(--color-danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
                 disabled={saving}
                 onClick={handleRemoveAvatar}
               >
@@ -406,7 +410,16 @@ function ProfileEditForm({
         inputMode="url"
         placeholder={t("website_placeholder")}
       />
-      <LockedEmailField label={t("email_label")} value={user.email} />
+      <TextField
+        label={t("email_label")}
+        value={email}
+        onChange={(event) => setEmail(event.target.value)}
+        disabled={saving}
+        type="email"
+        inputMode="email"
+        maxLength={254}
+        autoComplete="email"
+      />
       <div className="grid grid-cols-2 gap-3 pt-2">
         <Button
           type="button"
@@ -425,34 +438,3 @@ function ProfileEditForm({
   );
 }
 
-function LockedEmailField({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
-  return (
-    <div className="flex flex-col gap-1">
-      <span
-        className="text-xs font-semibold"
-        style={{
-          color: "var(--color-secondary)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {label}
-      </span>
-      <div className="flex min-h-11 min-w-0 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] px-4 py-3 shadow-[var(--shadow-card)]">
-        <LockKeyhole
-          className="shrink-0 text-[var(--color-secondary)]"
-          size={18}
-          aria-hidden
-        />
-        <span className="min-w-0 flex-1 truncate text-base text-[var(--color-body)]">
-          {value}
-        </span>
-      </div>
-    </div>
-  );
-}

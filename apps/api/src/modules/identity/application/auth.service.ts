@@ -14,7 +14,7 @@ import type {
 } from "@mentor/validation";
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { Env } from "../../../config/env.validation";
@@ -214,6 +214,11 @@ export class AuthService {
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 
+  /** Direct dispatch of verification email without resend rate limits (e.g. email updated or signup). */
+  async sendVerificationEmail(user: UserRow): Promise<void> {
+    await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
+  }
+
   /** Always resolves 200 — whether the email exists is never revealed. */
   async forgotPassword(input: ForgotPasswordInput): Promise<void> {
     const user = await this.usersRepo.findByEmailService(input.email);
@@ -271,7 +276,8 @@ function hasAdminPanelRole(roles: readonly string[]): boolean {
   return roles.some((role) => ADMIN_PANEL_ROLES.some((allowed) => allowed === role));
 }
 
-function uniqueConstraint(err: unknown): string | undefined {
+/* uniqueConstraint imported from postgres-error */
+const _unused_constraint = (err: unknown) => {
   return (
     (err as { constraint?: string })?.constraint ??
     (err as { cause?: { constraint?: string } })?.cause?.constraint

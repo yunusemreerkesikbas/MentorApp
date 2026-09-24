@@ -22,6 +22,7 @@ const CATEGORY_LABELS: Record<string, string> = {
     promotions: "Kampanyalar",
     mentorship: "Mentorluk",
     storage: "Depolama",
+    dev: "Test ortamı (stage/dev)",
 };
 
 const categoryLabel = (category: string) => CATEGORY_LABELS[category] ?? category.replaceAll("-", " ");

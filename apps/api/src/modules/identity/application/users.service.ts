@@ -1,12 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
-import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import type { AuthUser, AvatarUploadUrlDto, ForumPublicPerson } from "@mentor/types";
 import type { AvatarUploadUrlInput, UpdateMeInput } from "@mentor/validation";
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
 import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.port";
 import {
   AVATAR_ALLOWED_MIME,
@@ -15,7 +15,7 @@ import {
   isValidAvatarStorageKey,
 } from "../domain/avatar";
 import { UsersRepository } from "../infrastructure/users.repository";
-import { toAuthUser } from "./auth.service";
+import { AuthService, toAuthUser } from "./auth.service";
 
 /** Public display identity for cross-module people lists. Never contains an object-storage key. */
 export interface DisplayIdentity {
@@ -43,6 +43,7 @@ export class UsersService {
     private readonly usersRepo: UsersRepository,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly events: EventEmitter2,
+    @Optional() private readonly authService?: AuthService,
   ) {}
 
   /** Resolve @mention handles → `lowercase-username → userId` map (used by the forum mention notifier). */
@@ -239,10 +240,23 @@ export class UsersService {
     // The variant only makes sense next to a family, so a lone variant change needs the stored
     // one to decide. Everything else keeps the single-write path it had.
     const needsCurrent =
+      patch.email !== undefined ||
       patch.avatarStorageKey !== undefined ||
       (patch.examVariant !== undefined && patch.examType === undefined);
     const current = needsCurrent ? await this.usersRepo.findSelf(userId) : undefined;
     if (needsCurrent && !current) throw new NotFoundError();
+
+    const emailChanged =
+      patch.email !== undefined &&
+      current !== undefined &&
+      patch.email.trim().toLowerCase() !== current.email.toLowerCase();
+
+    if (emailChanged) {
+      const existing = await this.usersRepo.findByEmailService(patch.email!.trim());
+      if (existing && existing.id !== userId) {
+        throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
+      }
+    }
 
     if (typeof patch.avatarStorageKey === "string") {
       await this.assertValidAvatar(userId, patch.avatarStorageKey);
@@ -260,6 +274,7 @@ export class UsersService {
         }),
         ...(patch.bio !== undefined && { bio: patch.bio }),
         ...(patch.website !== undefined && { website: patch.website }),
+        ...(emailChanged && { email: patch.email!.trim().toLowerCase(), emailVerifiedAt: null }),
         ...(patch.examType !== undefined && { examType: patch.examType }),
         ...examVariantPatch,
         ...(patch.examDate !== undefined && { examDate: patch.examDate }),
@@ -269,11 +284,22 @@ export class UsersService {
       });
     } catch (err) {
       if (isUniqueViolation(err)) {
-        throw new DomainError(ErrorCode.AUTH_USERNAME_IN_USE, HttpStatus.CONFLICT);
+        const constraint = uniqueConstraint(err);
+        if (constraint?.includes("email")) {
+          throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
+        } else if (constraint?.includes("username") || !emailChanged) {
+          throw new DomainError(ErrorCode.AUTH_USERNAME_IN_USE, HttpStatus.CONFLICT);
+        }
+        throw new DomainError(ErrorCode.AUTH_EMAIL_IN_USE, HttpStatus.CONFLICT);
       }
       throw err;
     }
     if (!user) throw new NotFoundError();
+    if (emailChanged && this.authService) {
+      void this.authService
+        .sendVerificationEmail(user)
+        .catch((err) => this.logger.warn(`verification email failed for ${user.id}: ${String(err)}`));
+    }
     const oldKey = current?.avatarStorageKey;
     await this.events.emitAsync(IdentityEventTopic.PROFILE_UPDATED, { userId, date: new Date().toISOString().slice(0, 10) });
     if (patch.avatarStorageKey !== undefined && oldKey && oldKey !== user.avatarStorageKey) {

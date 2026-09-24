@@ -190,6 +190,49 @@ describe("coach evidence pool (e2e)", () => {
     );
   });
 
+  // Runs after the premium test above, for the same (now premium) student.
+  it("suggests the weekdays the student studies on most, on the Istanbul calendar", async () => {
+    const DAY = 24 * 60 * 60 * 1000;
+    const at = (offset: number, time: string) =>
+      new Date(`${new Date(Date.now() - offset * DAY).toISOString().slice(0, 10)}T${time}Z`);
+    const offsets = Array.from({ length: 26 }, (_, index) => index + 1);
+    const utcDay = (offset: number) => at(offset, "09:00:00").getUTCDay();
+    // Mondays and Thursdays every week, a short Saturday once, and a long Sunday 22:30 UTC session
+    // that is Monday 01:30 in Istanbul: a UTC grouping would rank Sunday over Saturday.
+    const sessions = [
+      ...offsets
+        .filter((offset) => [1, 4].includes(utcDay(offset)))
+        .map((offset) => ({ startedAt: at(offset, "09:00:00"), seconds: 1500 })),
+      { startedAt: at(offsets.find((offset) => utcDay(offset) === 6)!, "09:00:00"), seconds: 600 },
+      { startedAt: at(offsets.find((offset) => utcDay(offset) === 0)!, "22:30:00"), seconds: 3000 },
+    ];
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      for (const session of sessions) {
+        await client.query(
+          `insert into study_sessions (user_id, started_at, ended_at, preset, actual_focus_seconds, status)
+           values ($1, $2, $2::timestamptz + make_interval(secs => $3), '25_5', $3, 'COMPLETED')`,
+          [userId, session.startedAt.toISOString(), session.seconds],
+        );
+      }
+      await client.query("commit");
+    } finally {
+      client.release();
+    }
+
+    const brief = await request(app.getHttpServer())
+      .get("/v1/coach/plan-adaptation/brief")
+      .set(auth());
+    expect(brief.status).toBe(200);
+    expect(brief.body.evidence.map((item: { type: string }) => item.type)).toContain(
+      CoachEvidenceType.LONG_TERM_RHYTHM,
+    );
+    expect(brief.body.suggestion.days).toBe(3);
+    expect(brief.body.suggestion.weekdays).toEqual([1, 4, 6]);
+  });
+
   it("keeps the wizard brief behind the premium gate", async () => {
     const free = await signupStudent("free");
     expect(free.status).toBe(201);

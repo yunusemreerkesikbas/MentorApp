@@ -115,6 +115,26 @@ describe("ai coach chat (e2e)", () => {
     }
   };
 
+  const completeCalibration = async (userId: string) => {
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into coach_profiles (user_id, calibration_status, memory_consent)
+         values ($1, 'COMPLETED', 'DECLINED')
+         on conflict (user_id) do update set calibration_status = 'COMPLETED'`,
+        [userId],
+      );
+      await c.query("commit");
+    } catch (error) {
+      await c.query("rollback");
+      throw error;
+    } finally {
+      c.release();
+    }
+  };
+
   const grantCoin = async (userId: string, amount: number) => {
     const c = await pool.connect();
     try {
@@ -183,6 +203,7 @@ describe("ai coach chat (e2e)", () => {
     const free = await signup("free");
     freeToken = free.accessToken;
     freeId = free.user.id;
+    await completeCalibration(freeId);
 
     const premium = await signup("premium");
     premiumId = premium.user.id;
@@ -196,6 +217,7 @@ describe("ai coach chat (e2e)", () => {
     const broke = await signup("broke");
     brokeToken = broke.accessToken;
     brokeId = broke.user.id;
+    await completeCalibration(brokeId);
     await grantCoin(brokeId, 2);
 
     const rl = await signup("rl");

@@ -2,7 +2,7 @@ import { ChevronRight } from "lucide-react";
 import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import type { ExamType, InfoArticleDto, InfoArticleSummaryDto } from "@mentor/types";
-import { ContextualAdSlot } from "@/components/ads/contextual-ad-slot";
+import { DeferredContextualAdSlot } from "@/components/ads/deferred-contextual-ad-slot";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import type { ArticleAnalyticsParams } from "@/lib/analytics";
@@ -105,7 +105,7 @@ export async function ArticleContent({
             <ArticleMarkdown body={article.body} format={article.bodyFormat} />
           </div>
           <ArticleViewTracker articleSlug={article.slug} analyticsParams={analyticsParams} />
-          <ContextualAdSlot contentSlug={article.slug} examType={family} />
+          <DeferredContextualAdSlot contentSlug={article.slug} examType={family} />
           <ArticleCoachCard
             articleSlug={article.slug}
             title={article.title}

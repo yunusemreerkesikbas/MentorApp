@@ -193,8 +193,8 @@ export function CoachCapacityCard({
         {loaded && sponsorshipEnabled && freeSeats + paidSeats > 0 && (
           <p className="text-sm" style={{ color: "var(--color-body)" }}>
             {t("seats_body", { used: usedSeats, total: freeSeats + paidSeats })}
-            {/* Running out of seats never blocks a link — it only stops the sponsorship, and a
-                coach reading "3/3" deserves to know the next student still joins. */}
+            {/* A full allowance blocks the next link. The coach needs a paid seat before another
+                student can join. */}
             {usedSeats >= freeSeats + paidSeats ? ` ${t("seats_full")}` : ""}
           </p>
         )}

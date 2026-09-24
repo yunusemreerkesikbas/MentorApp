@@ -1,23 +1,12 @@
-import { PLAN_ADAPTATION_MINUTES } from "@mentor/validation";
+import {
+  PLAN_ADAPTATION_MINUTES,
+  PLAN_ADAPTATION_MINUTES_MAX,
+  PLAN_ADAPTATION_MINUTES_MIN,
+} from "@mentor/validation";
 
 export const PLAN_ADAPTATION_NOTE_MAX = 500;
-export const PLAN_ADAPTATION_DAY_CHOICES = [3, 4, 5, 6, 7] as const;
-/** The API's own list, so the brief's suggestion always lands on a card. */
+/** The API's own presets, so the brief's suggestion always lands on a card. */
 export const PLAN_ADAPTATION_MINUTE_CHOICES = PLAN_ADAPTATION_MINUTES;
-export const PLAN_ADAPTATION_SUBJECT_CAP = 3;
-
-export interface PlanAdaptationBriefAnswers {
-  days: number | null;
-  minutes: number | null;
-  subjects: readonly string[];
-  note: string;
-}
-
-export interface PlanAdaptationBriefLabels {
-  days: (count: number) => string;
-  minutes: (count: number) => string;
-  subjects: (names: string) => string;
-}
 
 export interface PlanAdaptationKnownWeek {
   pendingCount: number;
@@ -29,44 +18,8 @@ interface PendingWeekTask {
   subject: string | null;
 }
 
-function clean(value: string): string {
-  return value.trim().replace(/\s+/g, " ");
-}
-
 function subjectKey(value: string): string {
   return value.trim().toLocaleLowerCase("tr-TR");
-}
-
-/** Structured lines stay. Free text is clipped so the note fits the 500-character API cap. */
-export function composePlanAdaptationNote(
-  answers: PlanAdaptationBriefAnswers,
-  labels: PlanAdaptationBriefLabels,
-): string {
-  const parts: string[] = [];
-  if (answers.days != null) parts.push(clean(labels.days(answers.days)));
-  if (answers.minutes != null) parts.push(clean(labels.minutes(answers.minutes)));
-  const subjects: string[] = [];
-  const seen = new Set<string>();
-  for (const raw of answers.subjects) {
-    const name = clean(raw);
-    const key = subjectKey(name);
-    if (!name || seen.has(key)) continue;
-    seen.add(key);
-    subjects.push(name);
-    if (subjects.length >= PLAN_ADAPTATION_SUBJECT_CAP) break;
-  }
-  if (subjects.length > 0) {
-    parts.push(clean(labels.subjects(subjects.join(", "))));
-  }
-  const structured = parts.filter(Boolean).join(" ");
-  const free = clean(answers.note);
-  if (!structured && !free) return "";
-  if (!free) return structured.slice(0, PLAN_ADAPTATION_NOTE_MAX);
-  if (!structured) return free.slice(0, PLAN_ADAPTATION_NOTE_MAX);
-  const room = PLAN_ADAPTATION_NOTE_MAX - structured.length - 1;
-  if (room <= 0) return structured.slice(0, PLAN_ADAPTATION_NOTE_MAX);
-  const clipped = free.length <= room ? free : free.slice(0, room).trimEnd();
-  return clipped ? `${structured} ${clipped}` : structured;
 }
 
 export function summarizePendingWeek(
@@ -98,17 +51,30 @@ export function seedBriefSubjects(
   const knownKeys = new Set(known.map(subjectKey));
   return options
     .map((name) => name.trim())
-    .filter((name) => name && knownKeys.has(subjectKey(name)))
-    .slice(0, PLAN_ADAPTATION_SUBJECT_CAP);
+    .filter((name) => name && knownKeys.has(subjectKey(name)));
 }
 
-export function isMinuteChoice(
-  value: number | null,
-): value is (typeof PLAN_ADAPTATION_MINUTE_CHOICES)[number] {
+/** A minute count the API takes, typed or picked. */
+export function isMinuteEntry(value: number | null): value is number {
   return (
     value != null &&
-    (PLAN_ADAPTATION_MINUTE_CHOICES as readonly number[]).includes(value)
+    Number.isInteger(value) &&
+    value >= PLAN_ADAPTATION_MINUTES_MIN &&
+    value <= PLAN_ADAPTATION_MINUTES_MAX
   );
+}
+
+/** The plan window as the student sees it: today and the next six days, ISO weekday 1 = Monday. */
+export interface PlanWindowDay {
+  weekday: number;
+  date: Date;
+}
+
+export function planWindowDays(today: Date): PlanWindowDay[] {
+  return Array.from({ length: 7 }, (_, index) => {
+    const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + index);
+    return { weekday: ((date.getDay() + 6) % 7) + 1, date };
+  });
 }
 
 export function formatKnownBrief(parts: {

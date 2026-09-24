@@ -2,7 +2,7 @@ import { beforeEach, describe, expect, it } from "vitest";
 import { ErrorCode } from "../errors/error-code";
 import { DomainError } from "../errors/domain-error";
 import { ConfigRegistryService } from "./config-registry.service";
-import { FeatureFlag } from "./config.catalog";
+import { CONFIG_CATALOG, FeatureFlag, type ConfigEntryDef } from "./config.catalog";
 
 /** In-memory fake of ConfigRepository. */
 function makeRepoFake(initial: Record<string, unknown> = {}) {
@@ -16,6 +16,11 @@ function makeRepoFake(initial: Record<string, unknown> = {}) {
   };
 }
 
+/** Env reader fake: the registry only asks for NODE_ENV / APP_ENV. */
+function makeEnvFake(env: Record<string, string | undefined>) {
+  return { get: (key: string) => env[key] };
+}
+
 describe("ConfigRegistryService", () => {
   let service: ConfigRegistryService;
 
@@ -23,12 +28,16 @@ describe("ConfigRegistryService", () => {
 
   beforeEach(() => {
     emitted = [];
-    service = new ConfigRegistryService(makeRepoFake() as never, {
-      emit: (topic: string, payload: unknown) => {
-        emitted.push({ topic, payload });
-        return true;
-      },
-    } as never);
+    service = new ConfigRegistryService(
+      makeRepoFake() as never,
+      {
+        emit: (topic: string, payload: unknown) => {
+          emitted.push({ topic, payload });
+          return true;
+        },
+      } as never,
+      makeEnvFake({ NODE_ENV: "test" }) as never,
+    );
   });
 
   it("returns the catalog default when no override exists", async () => {
@@ -82,5 +91,53 @@ describe("ConfigRegistryService", () => {
         payload: expect.objectContaining({ key: FeatureFlag.AI_ENABLED, after: false }),
       },
     ]);
+  });
+});
+
+/**
+ * Dev-only keys switch on things production must never do (console email prints reset links).
+ * An admin toggle is not enough of a lock, so outside dev tooling the key must not exist at all,
+ * even when a DB copied from staging still carries an override for it.
+ */
+describe("ConfigRegistryService dev-only keys", () => {
+  const DEV_KEY = "dev.email.console_enabled";
+  const make = (env: Record<string, string | undefined>, overrides: Record<string, unknown> = {}) =>
+    new ConfigRegistryService(
+      makeRepoFake(overrides) as never,
+      { emit: () => true } as never,
+      makeEnvFake(env) as never,
+    );
+
+  it("exposes them in dev tooling environments, on by default", async () => {
+    const service = make({ NODE_ENV: "development" });
+    expect(await service.get(DEV_KEY)).toBe(true);
+    expect((await service.list()).find((e) => e.key === DEV_KEY)).toMatchObject({
+      category: "dev",
+      type: "boolean",
+      value: true,
+    });
+  });
+
+  it("hides them in production: unlisted, unwritable, read as off despite a stored override", async () => {
+    const service = make({ NODE_ENV: "production" }, { [DEV_KEY]: true });
+    expect(await service.get(DEV_KEY)).toBe(false);
+    expect((await service.list()).some((e) => e.key === DEV_KEY)).toBe(false);
+    await expect(service.set("admin", DEV_KEY, true)).rejects.toMatchObject({
+      constructor: DomainError,
+      code: ErrorCode.ADMIN_CONFIG_KEY_NOT_FOUND,
+    });
+  });
+
+  it("unlocks them on staging, which runs NODE_ENV=production", async () => {
+    const service = make({ NODE_ENV: "production", APP_ENV: "staging" });
+    expect(await service.get(DEV_KEY)).toBe(true);
+    await service.set("admin", DEV_KEY, false);
+    expect(await service.get(DEV_KEY)).toBe(false);
+  });
+
+  it("keeps every dev-only key a boolean switch, so 'off' has one meaning", () => {
+    const devOnly = Object.values(CONFIG_CATALOG).filter((def) => (def as ConfigEntryDef).devOnly);
+    expect(devOnly.length).toBeGreaterThan(0);
+    for (const def of devOnly) expect(def.type).toBe("boolean");
   });
 });

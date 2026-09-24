@@ -378,6 +378,7 @@ export class CoachEvidenceService {
       examPhase,
       activeDays28d: rhythm?.activeDays28d ?? null,
       averageSessionMinutes28d: rhythm?.averageSessionMinutes28d ?? null,
+      weekdayActivity28d: rhythm?.weekdayActivity28d ?? [],
       coverage: {
         mockCount: performance?.mockCount ?? 0,
         notebookCount: analysis?.notebookStats.savedCount ?? 0,

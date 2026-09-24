@@ -109,6 +109,14 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Ham tarih aggregate'leri (2026-09-24)** — `ForumAchievementEvidenceService`'in beş
+  `min(createdAt)`'i `.mapWith(<kaynak kolon>)` ile gerçek `Date` döner; `new Date(row.earnedAt)`
+  sarmaları kalktı. `forum-discovery.repository.ts`'te `trendingTags`, `weeklySupporters` ve
+  `zoneContributors` seçip hemen attıkları `max(...)` alanlarını artık seçmiyor; sıralama
+  `orderBy`'daki aynı aggregate ile sürüyor. Canlıda bozuk yol yoktu. **Gotcha:** ham
+  `sql<Date>` aggregate'i string gelir; tarih lazımsa `.mapWith(tablo.kolon)` (bkz. coaching.md,
+  2026-09-24).
+
 - **Admin Topluluk sayfası Duralux lists/tables (2026-09-17)** — `/forum` artık analytics
   `EmailOverview` şeridi + 8+4 (öne çıkan / etiket önerisi) + tam genişlik tablolar. Sayılar
   mevcut zone/tag/suggestion/featured yanıtlarından; yeni API yok. Öne çıkan tartışma Trending

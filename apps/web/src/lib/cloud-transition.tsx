@@ -10,11 +10,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import { usePathname } from "@/i18n/navigation";
-import { CLOUD_ASSETS } from "@/lib/onboarding-assets";
+
+const CloudTransitionOverlay = dynamic(() =>
+  import("./cloud-transition-overlay").then((module) => module.CloudTransitionOverlay),
+);
 
 export type CloudTransitionPhase =
   | "idle"
@@ -54,7 +56,6 @@ const DESTINATION_TIMEOUT_MS = 6_000;
 
 export function CloudTransitionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion() ?? false;
   const [phase, dispatch] = useReducer(cloudTransitionReducer, "idle");
   /** The path that last reported itself ready — a signal is only worth acting on for its own page. */
   const [readyPath, setReadyPath] = useState<string | null>(null);
@@ -109,76 +110,12 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
 
   const visible = phase !== "idle";
   const covering = phase === "covering" || phase === "covered";
-  const duration = reduceMotion ? 0.12 : 0.62;
 
   return (
     <CloudTransitionContext.Provider value={{ startCloudTransition, reportDestinationReady }}>
       {children}
-      {visible ? (
-        <div
-          className="pointer-events-auto fixed inset-0 overflow-hidden"
-          style={{ zIndex: "var(--z-route-transition)" }}
-          aria-hidden
-        >
-          {/*
-            Sky behind the clouds, so the corners they cannot reach are not a torn hole. It arrives
-            late and leaves early: the clouds have to be seen sweeping over the page, not landing on
-            a white screen that was already there.
-          */}
-          <motion.div
-            className="absolute inset-0 bg-[var(--color-bg)]"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: covering ? 1 : 0 }}
-            transition={{ duration: duration * 0.45, ease: "easeOut", delay: covering ? duration * 0.45 : 0 }}
-          />
-          <CloudLayer side="left" covering={covering} duration={duration} onDone={handleCoverAnimationComplete} />
-          <CloudLayer side="right" covering={covering} duration={duration} />
-        </div>
-      ) : null}
+      {visible ? <CloudTransitionOverlay covering={covering} onDone={handleCoverAnimationComplete} /> : null}
     </CloudTransitionContext.Provider>
-  );
-}
-
-function CloudLayer({
-  side,
-  covering,
-  duration,
-  onDone,
-}: {
-  side: "left" | "right";
-  covering: boolean;
-  duration: number;
-  /** Only the left cloud drives the machine; two callbacks would fire the same transition twice. */
-  onDone?: () => void;
-}) {
-  const parked = side === "left" ? "-104%" : "104%";
-  // The outer half runs off screen; the puffy inner edge is the one that has to stay.
-  const anchor = side === "left" ? "object-right-bottom" : "object-left-bottom";
-
-  return (
-    <motion.div
-      className={`absolute inset-y-0 flex w-[92%] flex-col ${side === "left" ? "left-0" : "right-0"}`}
-      initial={{ x: parked }}
-      animate={{ x: covering ? "0%" : parked }}
-      transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-      onAnimationComplete={onDone}
-    >
-      {/*
-        The art is one landscape cluster, so a single copy leaves half a portrait screen as sky.
-        Mirroring it across the middle builds a full-height wall whose inner edge stays puffy.
-      */}
-      <div className="relative flex-1">
-        <Image src={CLOUD_ASSETS[side]} alt="" fill priority sizes="92vw" className={`object-cover ${anchor}`} />
-      </div>
-      {/*
-        Overlapped and a size larger, so the lower bank swallows the hollow the upper one leaves at
-        the mirror line rather than repeating it. Nudging it sideways instead would bare a strip at
-        the outer edge, which reads as a rectangle; a bigger cloud only ever overlaps more cloud.
-      */}
-      <div className="relative -mt-[15%] flex-1 scale-x-110 -scale-y-110">
-        <Image src={CLOUD_ASSETS[side]} alt="" fill sizes="92vw" className={`object-cover ${anchor}`} />
-      </div>
-    </motion.div>
   );
 }
 

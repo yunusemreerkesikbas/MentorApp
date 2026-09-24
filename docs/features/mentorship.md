@@ -211,6 +211,16 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 — A link requires a seat.** The first `mentorship.coach.free_seats` students get
+  sponsored Premium. Further students link only when the coach's plan adds `paidSeats`. A full
+  allowance refuses the accept with `MENTORSHIP_SEATS_FULL` (409) and writes no row. Sponsorship
+  switched off is the same refusal. `GET /v1/mentorship/overview` grants a missing sponsor row for
+  existing in-quota links, oldest `acceptedAt` first; a student who already pays for themselves is
+  left alone. The coach card no longer says a new student can still join without Premium.
+  **Usage:** open the coach home to fill a seat that was never written. **Gotcha:** paid seat
+  checkout stays behind `mentorship.seats.billing_enabled`. **Related:** `mentorship-link.service.ts`,
+  `mentorship-link.repository.ts`, `coach-capacity-card.tsx`, `messages/{tr,en}.json`.
+
 - **2026-09-21 — Coach meeting preparation.** The weekly AI panel now accepts an optional
   500-character meeting direction and returns one evidence-linked focus, optional progress,
   an uncertainty/question and an optional conditional next step. Subject focus and same-scope

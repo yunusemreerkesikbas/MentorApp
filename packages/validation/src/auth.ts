@@ -107,6 +107,7 @@ const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? 
 
 export const updateMeSchema = z
   .object({
+    email: emailSchema.optional(),
     displayName: z.string().trim().min(2).max(64).optional(),
     username: usernameSchema.optional(),
     avatarStorageKey: z.string().trim().min(1).max(512).nullable().optional(),

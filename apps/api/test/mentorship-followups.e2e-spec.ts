@@ -286,7 +286,7 @@ describe("mentorship followups HTTP and database", () => {
     expect(await service.getDueCount(ids.coach!, new Date())).toBe(0);
     const renewed = await app
       .get(MentorshipLinkRepository)
-      .acceptInvite(ids.coach!, ids.student!, 20);
+      .acceptInvite(ids.coach!, ids.student!, 20, 20);
     expect(typeof renewed).toBe("object");
     expect((await http().get(shared).set(auth("student"))).body.total).toBe(0);
     expect(

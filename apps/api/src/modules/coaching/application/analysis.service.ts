@@ -164,7 +164,7 @@ export class AnalysisService {
               topicName: topic.name,
               count: row.count,
               sharePercent: toSharePercent(row.count, topicTotals.get(row.subjectRef) ?? 0),
-              latestAt: new Date(row.latestAt).toISOString(),
+              latestAt: row.latestAt.toISOString(),
             }]
           : [];
       });

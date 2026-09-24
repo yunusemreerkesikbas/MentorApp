@@ -5,6 +5,7 @@ import {
   buildPlanAdaptationPrompt,
   parsePlanAdaptation,
   selectPlanEvidence,
+  studyDatesFor,
   suggestPlanBrief,
 } from "./plan-adaptation";
 
@@ -470,6 +471,118 @@ describe("parsePlanAdaptation", () => {
       }).success,
     ).toBe(true);
   });
+
+  // TODAY is a Tuesday: 22 = Wednesday, 24 = Friday.
+  it("leaves the days the note keeps free empty, for the model and the filler alike", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        offDates: ["2026-07-22", "2026-07-24", "2026-08-30"],
+        changes: [
+          { kind: "MOVE", taskRef: "T1", toDate: "2026-07-22" },
+          { kind: "ADD", title: "Tarih tekrar", subject: "Tarih", taskDate: "2026-07-24" },
+          { kind: "ADD", title: "Tarih soru", subject: "Tarih", taskDate: "2026-07-25" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      { days: 4, minutesPerDay: 60, focusSubjects: ["Tarih"] },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes.some((change) => change.kind === "MOVE")).toBe(false);
+    expect(
+      result.changes.map((change) => change.kind === "ADD" && change.taskDate),
+    ).toEqual(["2026-07-23", "2026-07-25", "2026-07-26", "2026-07-27"]);
+  });
+
+  it("puts every block on the weekdays the student picked", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Tarih tekrar", subject: "Tarih", taskDate: TODAY },
+          { kind: "ADD", title: "Tarih soru", subject: "Tarih", taskDate: "2026-07-22" },
+        ],
+      }),
+      TODAY,
+      "PLAN",
+      TASKS,
+      TASKS,
+      {
+        studyDates: studyDatesFor(TODAY, [3, 5, 1]),
+        minutesPerDay: 45,
+        focusSubjects: ["Tarih"],
+      },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toEqual([
+      expect.objectContaining({ title: "Tarih soru", taskDate: "2026-07-22" }),
+      expect.objectContaining({ title: "Tarih · 45 dk", taskDate: "2026-07-24" }),
+      expect.objectContaining({ title: "Tarih · 45 dk", taskDate: "2026-07-27" }),
+    ]);
+  });
+
+  it("maps ISO weekdays onto the rolling window", () => {
+    expect(studyDatesFor(TODAY, [3, 5])).toEqual(["2026-07-22", "2026-07-24"]);
+    expect(studyDatesFor(TODAY, [2])).toEqual([TODAY]);
+  });
+
+  it("uses every subject the student picked, not just the first three", () => {
+    const result = parsePlanAdaptation(
+      '{"changes":[]}',
+      TODAY,
+      "PLAN",
+      [],
+      [],
+      { days: 4, focusSubjects: ["Türkçe", "Matematik", "Tarih", "Coğrafya"] },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes.map((change) => change.subject)).toContain("Coğrafya");
+  });
+
+  it("names each window day and asks the model to hand back the days the note keeps free", () => {
+    const plan = buildPlanAdaptationPrompt({
+      source: "PLAN",
+      todayIso: TODAY,
+      examType: "KPSS",
+      evidence: [],
+      tasks: [],
+      note: "çarşamba ve cuma boş kalsın",
+    });
+    expect(plan.system).toContain("2026-07-22 Çarşamba");
+    expect(plan.system).toContain("offDates");
+
+    const picked = buildPlanAdaptationPrompt({
+      source: "PLAN",
+      todayIso: TODAY,
+      examType: "KPSS",
+      evidence: [],
+      tasks: [],
+      studyDates: ["2026-07-22", "2026-07-24"],
+      locale: "en",
+    });
+    expect(picked.system).toContain("2026-07-22 Wednesday, 2026-07-24 Friday");
+    expect(picked.system).not.toContain("Tam ");
+  });
+
+  it("takes picked weekdays, any subject count and a typed minute count", () => {
+    const ok = (body: object) => coachPlanAdaptationSchema.safeParse({ source: "PLAN", ...body }).success;
+    expect(ok({ studyWeekdays: [3, 5], minutesPerDay: 45, focusSubjects: ["A", "B", "C", "D", "E"] })).toBe(true);
+    expect(ok({ studyWeekdays: [3, 3] })).toBe(false);
+    expect(ok({ studyWeekdays: [8] })).toBe(false);
+    expect(ok({ studyWeekdays: [3], days: 1 })).toBe(false);
+    expect(ok({ minutesPerDay: 5 })).toBe(false);
+    expect(ok({ minutesPerDay: 700 })).toBe(false);
+    expect(
+      coachPlanAdaptationSchema.safeParse({ source: "MOOD", studyWeekdays: [3] }).success,
+    ).toBe(false);
+  });
 });
 
 const WEAK = "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6), Fen Bilimleri (8,2).";
@@ -659,7 +772,32 @@ describe("suggestPlanBrief", () => {
     dailyFocusGoalMinutes: null,
     weakSubjects: ["Matematik", "Tarih"],
     focusSubject: "Matematik",
+    weekdayActivity28d: [],
   };
+
+  it("picks the weekdays studied on most, as many as the rhythm's day count", () => {
+    const weekdayActivity28d = [
+      { weekday: 1, activeDays: 4, focusMinutes: 200 },
+      { weekday: 3, activeDays: 3, focusMinutes: 90 },
+      { weekday: 5, activeDays: 3, focusMinutes: 60 },
+      { weekday: 6, activeDays: 3, focusMinutes: 150 },
+    ];
+    // 13 active days is three a week: Monday, then minutes break the Wednesday/Friday/Saturday tie.
+    expect(
+      suggestPlanBrief({ ...base, activeDays28d: 13, weekdayActivity28d }).weekdays,
+    ).toEqual([1, 3, 6]);
+    // Too little history for a rhythm, and never a weekday the student did not study on.
+    expect(
+      suggestPlanBrief({ ...base, activeDays28d: 3, weekdayActivity28d }).weekdays,
+    ).toBeNull();
+    expect(
+      suggestPlanBrief({
+        ...base,
+        activeDays28d: 4,
+        weekdayActivity28d: [{ weekday: 2, activeDays: 4, focusMinutes: 100 }],
+      }).weekdays,
+    ).toEqual([2]);
+  });
 
   it.each([
     [null, null],

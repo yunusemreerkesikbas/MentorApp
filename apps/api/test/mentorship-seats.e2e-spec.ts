@@ -175,21 +175,20 @@ describe("mentorship seats (e2e)", () => {
     expect(ids).not.toContain("coach-pro-10");
   });
 
-  it("follows the next student without sponsoring them", async () => {
+  it("refuses the next student once the free seat is taken", async () => {
     const accept = await http()
       .post("/v1/mentorship/invitations/accept")
       .set(auth("spare"))
       .send({ code });
-    expect(accept.status).toBe(200);
+    expect(accept.status).toBe(409);
+    expect(accept.body.code).toBe("MENTORSHIP_SEATS_FULL");
 
-    // free_seats is 1 and it is taken: this one is coached, not paid for.
     const view = await subscriptionOf("spare");
     expect(view.entitlement.isPremium).toBe(false);
     expect(view.subscription).toBeNull();
 
-    // Still on the roster, though — the seat decides Premium, not who may be followed.
     const roster = await http().get("/v1/mentorship/students").set(auth("coach"));
-    expect(roster.body.total).toBe(2);
+    expect(roster.body.total).toBe(1);
   });
 
   it("does not count a giveaway as a conversion", async () => {

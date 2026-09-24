@@ -29,6 +29,7 @@ export const ConfigCategory = {
   ADS: "ads",
   PROMOTIONS: "promotions",
   MENTORSHIP: "mentorship",
+  DEV: "dev",
 } as const;
 
 export const ConfigValueType = {
@@ -48,6 +49,12 @@ export interface ConfigEntryDef {
   /** Sensitive (money/coin/commission) → bounds + extra confirmation in the UI. */
   sensitive: boolean;
   description: string;
+  /**
+   * Dev tooling switch, boolean only. Outside dev tooling (`isDevToolingAllowed`, i.e. production)
+   * the registry leaves it out of the admin list, refuses writes and reads it as false, whatever
+   * `config_overrides` holds.
+   */
+  devOnly?: true;
 }
 
 const flag = (def: boolean, description: string): ConfigEntryDef => ({
@@ -256,6 +263,18 @@ const promotionsCount = (
 });
 
 export const CONFIG_CATALOG = {
+  // First, so staging/dev admins meet it at the top of /config. Production never lists it.
+  "dev.email.console_enabled": {
+    category: ConfigCategory.DEV,
+    type: ConfigValueType.BOOLEAN,
+    schema: z.boolean(),
+    default: true,
+    // Off means real mail to whatever addresses stage holds: the admin UI confirms first.
+    sensitive: true,
+    devOnly: true,
+    description:
+      "Staging/dev only: print every email (verification and reset links included) to the API stdout instead of sending it. Off = deliver through Postmark like production. Hidden and always off in production.",
+  },
   "storage.upload.active_per_user": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(4), default: 1, sensitive: false, description: "Maximum simultaneous upload tickets/streams per user." },
   "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
   "storage.upload.ticket_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Single-use upload ticket lifetime in seconds." },

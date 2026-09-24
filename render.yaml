@@ -12,6 +12,10 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # Keeps dev tooling (admin "Test ortamı" switches, console email) locked. A staging copy of
+      # this service sets APP_ENV=staging on purpose.
+      - key: APP_ENV
+        value: production
       - key: DATABASE_URL
         sync: false
       - key: DATABASE_MIGRATION_URL

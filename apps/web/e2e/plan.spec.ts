@@ -73,13 +73,25 @@ const weakLine =
   "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6).";
 const rhythmLine = "Son 28 günde 20 gün, 24 seansta 1030 dakika çalıştın. Seansların ortalama 43 dakika.";
 
+/** ISO weekday (1 = Monday) `offset` days from the browser's today, as the wizard lists them. */
+function weekdayIn(offset: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return ((date.getDay() + 6) % 7) + 1;
+}
+
 const brief: CoachPlanAdaptationBriefDto = {
   groundingLine: coverageLine,
   evidence: [
     { type: "WEAK_SUBJECTS", summary: weakLine, observedAt: "2026-07-20T09:00:00.000Z" },
     { type: "LONG_TERM_RHYTHM", summary: rhythmLine, observedAt: "2026-07-20T09:00:00.000Z" },
   ],
-  suggestion: { days: 5, minutesPerDay: 60, focusSubjects: ["Matematik"] },
+  suggestion: {
+    days: 2,
+    weekdays: [weekdayIn(2), weekdayIn(4)],
+    minutesPerDay: 60,
+    focusSubjects: ["Matematik"],
+  },
 };
 
 const groundedPreview: CoachPlanAdaptationDto = {
@@ -100,7 +112,7 @@ const groundedPreview: CoachPlanAdaptationDto = {
 
 /** Walks the four wizard steps on their defaults and asks for the preview. */
 async function generateFromWizard(page: Page) {
-  const wizard = page.getByRole("dialog", { name: "Bu hafta kaç gün çalışacaksın?" });
+  const wizard = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
   await expect(wizard).toBeVisible();
   for (const next of [
     "Günde yaklaşık kaç dakika?",
@@ -239,28 +251,56 @@ test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf
   await page.goto("/plan");
   await page.getByRole("button", { name: "Koçla planla" }).click();
 
-  const days = page.getByRole("dialog", { name: "Bu hafta kaç gün çalışacaksın?" });
+  const days = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
   await expect(days.getByText(coverageLine)).toBeVisible();
-  await expect(days.getByRole("radio", { checked: true })).toContainText("5");
-  await expect(days.getByText("Ritmin")).toBeVisible();
+  await expect(days.getByText("Son 4 haftada en çok bu günlerde çalıştın.")).toBeVisible();
+  // Seven rows starting today, the student's most-studied weekdays already picked and badged.
+  const dayRows = days.getByRole("checkbox");
+  await expect(dayRows).toHaveCount(7);
+  await expect(dayRows.first()).toContainText("Bugün");
+  await expect(days.getByRole("checkbox", { checked: true })).toHaveCount(2);
+  await expect(dayRows.nth(2)).toHaveAttribute("aria-checked", "true");
+  await expect(dayRows.nth(2)).toContainText("Ritmin");
+  await expect(dayRows.nth(4)).toHaveAttribute("aria-checked", "true");
+  // The pre-pick is only a start: drop one, add another.
+  await dayRows.nth(4).click();
+  await dayRows.nth(5).click();
 
   await page.getByRole("button", { name: "Devam" }).click();
   const minutes = page.getByRole("dialog", { name: "Günde yaklaşık kaç dakika?" });
   await expect(minutes.getByRole("radio", { checked: true })).toContainText("60");
   await expect(minutes.getByText("Ritmin")).toBeVisible();
+  // A typed minute count replaces the card; one out of range stops the step.
+  const custom = minutes.getByRole("spinbutton", { name: "Ya da kendin yaz" });
+  await custom.fill("700");
+  await page.getByRole("button", { name: "Devam" }).click();
+  const tooLong = page.getByText("10 ile 600 dakika arasında bir süre yaz.");
+  await expect(tooLong).toBeVisible();
+  await custom.fill("45");
+  await expect(tooLong).toHaveCount(0);
+  await expect(minutes.getByRole("radio", { checked: true })).toHaveCount(0);
 
   await page.getByRole("button", { name: "Devam" }).click();
   const subjects = page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" });
   const math = subjects.getByRole("checkbox", { name: /Matematik/ });
   await expect(math).toHaveAttribute("aria-checked", "true");
   await expect(math).toContainText("Koçun önerisi");
+  // No cap: every subject stays open.
+  for (const name of ["Türkçe", "Tarih", "Coğrafya"]) {
+    await subjects.getByRole("checkbox", { name: new RegExp(name) }).click();
+  }
 
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
   await expect(page.getByText(coverageLine)).toBeVisible();
   expect(api.briefCalls).toBe(1);
   expect(api.previewBodies).toEqual([
-    { source: "PLAN", days: 5, minutesPerDay: 60, focusSubjects: ["Matematik"] },
+    {
+      source: "PLAN",
+      studyWeekdays: [weekdayIn(2), weekdayIn(5)],
+      minutesPerDay: 45,
+      focusSubjects: ["Matematik", "Türkçe", "Tarih", "Coğrafya"],
+    },
   ]);
 });
 
@@ -634,6 +674,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/subjects") {
       return json(route, [
         { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 0 },
+        { slug: "turkce", name: "Türkçe", questionCount: 30, sortOrder: 1 },
+        { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 2 },
+        { slug: "cografya", name: "Coğrafya", questionCount: 18, sortOrder: 3 },
       ]);
     }
     if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/topics") {

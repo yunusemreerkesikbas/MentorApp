@@ -33,6 +33,12 @@ function evidenceSnapshot() {
     examPhase: "FINAL",
     activeDays28d: 20,
     averageSessionMinutes28d: 43,
+    // Sunday is the rarest day, so a five-day rhythm leaves it out.
+    weekdayActivity28d: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+      weekday,
+      activeDays: weekday === 7 ? 1 : 3,
+      focusMinutes: weekday === 4 ? 40 : 120,
+    })),
     coverage: { mockCount: 4, notebookCount: 9, sessions28d: 12 },
     // Never part of the snapshot contract; proves nothing outside `evidence` reaches the prompt.
     struggleNote: "private mood note",
@@ -373,6 +379,31 @@ describe("PlanAdaptationService", () => {
     expect(prompt.user).toContain("Tarih");
   });
 
+  it("keeps the plan on the weekdays the student picked", async () => {
+    const tomorrowWeekday = ((new Date(`${TOMORROW}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    complete.mockResolvedValue({
+      text: JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Bugün blok", taskDate: TODAY },
+          { kind: "ADD", title: "Yarın blok", taskDate: TOMORROW },
+        ],
+      }),
+      promptTokens: 4,
+      completionTokens: 3,
+      model: "fake",
+    });
+
+    const result = await service.preview(USER, {
+      source: "PLAN",
+      studyWeekdays: [tomorrowWeekday],
+    });
+
+    expect(complete.mock.calls.at(-1)?.[0].system).toContain(`Yalnız şu günlere birer ADD yaz: ${TOMORROW}`);
+    expect(result.changes).toEqual([
+      expect.objectContaining({ kind: "ADD", title: "Yarın blok", taskDate: TOMORROW }),
+    ]);
+  });
+
   it("rejects a SESSION that is not owned or no longer exists", async () => {
     getSession.mockResolvedValue(null);
     await expect(
@@ -500,6 +531,7 @@ describe("PlanAdaptationService", () => {
         ].map((type) => byType.get(type)),
         suggestion: {
           days: 5,
+          weekdays: [1, 2, 3, 5, 6],
           minutesPerDay: 60,
           focusSubjects: ["Matematik", "Tarih"],
         },

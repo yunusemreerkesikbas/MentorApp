@@ -9,6 +9,13 @@ export type CoachMoodTrend = "UP" | "DOWN" | "STABLE" | "UNKNOWN";
 /** Coarse exam proximity. The day count itself never leaves this module (§4 #1). */
 export type CoachExamPhase = "FAR" | "MID" | "FINAL";
 
+/** One ISO weekday (1 = Monday) of the last 28 days, Istanbul calendar. */
+export interface CoachWeekdayActivity {
+  weekday: number;
+  activeDays: number;
+  focusMinutes: number;
+}
+
 export interface CoachRhythmEvidence {
   todayFocusMinutes: number;
   sessions7d: number;
@@ -21,6 +28,8 @@ export interface CoachRhythmEvidence {
   averageSessionMinutes28d: number;
   dominantTimeBand: WeeklyFocusTimeBandId | null;
   lastActiveAt: string | null;
+  /** Only weekdays with at least one completed session. */
+  weekdayActivity28d: CoachWeekdayActivity[];
 }
 
 export interface CoachEvidenceSnapshot {
@@ -38,6 +47,7 @@ export interface CoachEvidenceSnapshot {
   examPhase: CoachExamPhase | null;
   activeDays28d: number | null;
   averageSessionMinutes28d: number | null;
+  weekdayActivity28d: CoachWeekdayActivity[];
   /** How much of the student's own record was read; counts only. */
   coverage: { mockCount: number; notebookCount: number; sessions28d: number };
   evidence: CoachUsedEvidenceDto[];

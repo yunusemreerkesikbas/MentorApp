@@ -35,6 +35,10 @@
 - Cloudflare Access yönetici API yollarını kapsıyor; Render origin doğrudan erişime kapalı ve Access
   politikasında MFA zorunlu. Nonce tabanlı CSP cevapta mevcut; admin tokenı local/session storage'a
   yazılmıyor ve eski anahtar açılışta temizleniyor.
+- Prod API'de `APP_ENV` boş ya da `production`: `GET /v1/admin/config` cevabında
+  `dev.email.console_enabled` yok, Ayarlar'da "Test ortamı (stage/dev)" bölümü görünmüyor. Stage
+  `APP_ENV=staging` ile bu anahtarı açık getirir ve stage platform logları bilerek e-posta alıcısı ile
+  doğrulama/sıfırlama linki içerir; madde 4'teki token araması prod loglarına uygulanır.
 - Rewarded Coin üretimde `SERVER_VERIFICATION_UNAVAILABLE` ile kapalı. İmzalı sunucu doğrulaması
   sağlayan bir reklam formatı seçilmeden etkinleştirme.
 - AI aylık bütçe rezervasyonları eşzamanlı çağrılarda tavanı koruyor; süresi dolmuş rezervasyonlar

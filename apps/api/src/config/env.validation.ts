@@ -10,6 +10,11 @@ import { validateProductionSecurity } from "./env-production-locks";
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /**
+   * Which deployment this is. Staging runs NODE_ENV=production like prod, so this is the only
+   * thing that tells them apart. Unset, it follows NODE_ENV (see isDevToolingAllowed).
+   */
+  APP_ENV: z.enum(["development", "staging", "production"]).optional(),
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
@@ -93,6 +98,16 @@ const envSchema = z.object({
 });
 
 export type Env = z.infer<typeof envSchema>;
+
+/**
+ * Whether this deployment may run dev tooling: the admin "dev" switches and console email, which
+ * print verification/reset links to stdout. Unset APP_ENV follows NODE_ENV, so a production build
+ * that forgets it stays locked (fail-safe); staging opts in with APP_ENV=staging.
+ */
+export function isDevToolingAllowed(env: Pick<Env, "NODE_ENV" | "APP_ENV">): boolean {
+  const appEnv = env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "development");
+  return appEnv !== "production";
+}
 
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {

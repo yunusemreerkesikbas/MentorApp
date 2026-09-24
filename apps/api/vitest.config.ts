@@ -24,6 +24,8 @@ export default defineConfig({
     fileParallelism: false,
     // Migrate the test DB once before the suite (e2e needs real tables + RLS).
     globalSetup: ["./test/global-setup.ts"],
+    // Drops console-sink email lines the background job poller prints during e2e runs.
+    setupFiles: ["./test/quiet-console-email.ts"],
     // Nest app boot in e2e beforeAll (argon2 native + module compile) can exceed the 10s default.
     hookTimeout: 30_000,
     testTimeout: 15_000,

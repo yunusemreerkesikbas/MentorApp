@@ -3,16 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
+import dynamic from "next/dynamic";
 import { ArrowRight, BookOpen } from "lucide-react";
 import type { PlanTaskDto, PlanTaskStatus, QuestProgressView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { CountdownCard } from "@mentor/ui";
-import { EconomyQuestsCard } from "@/components/economy-quests-card";
 import { FormError } from "@/components/form";
 import { PromotionDialog } from "@/components/premium/promotion-dialog";
-import { PuhuSpeechModal } from "@/components/puhu-speech-modal";
 import { useStreakCelebration } from "@/components/streak-celebration";
-import { StreakRescueSuccess } from "@/components/streak-rescue-success";
 import { Link } from "@/i18n/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { useCloudTransitionReady } from "@/lib/cloud-transition";
@@ -34,6 +32,16 @@ import { usePanelData } from "./use-panel-data";
 import { parseMockDays, useStreakRescue } from "./use-streak-rescue";
 import { VisionBoardCard } from "./vision-board-card";
 import { WeeklyRecapSlot } from "./weekly-recap-slot";
+
+const EconomyQuestsCard = dynamic(() =>
+  import("@/components/economy-quests-card").then((module) => module.EconomyQuestsCard),
+);
+const PuhuSpeechModal = dynamic(() =>
+  import("@/components/puhu-speech-modal").then((module) => module.PuhuSpeechModal),
+);
+const StreakRescueSuccess = dynamic(() =>
+  import("@/components/streak-rescue-success").then((module) => module.StreakRescueSuccess),
+);
 
 const REWARDED_QUEST_VISIBLE_REASONS = new Set([
   "ELIGIBLE",
@@ -241,15 +249,17 @@ function PanelContent() {
       {rescue.successDays != null ? (
         <StreakRescueSuccess days={rescue.successDays} onClose={rescue.closeSuccess} />
       ) : null}
-      <PuhuSpeechModal
-        isOpen={moodCheckin.speechModalOpen}
-        onClose={moodCheckin.closeSpeechModal}
-        isLoading={moodCheckin.speechLoading}
-        loadingText={moodT("coach_thinking")}
-        text={moodCheckin.speechText}
-        actionLabel={moodT("coach_speech_cta")}
-        closeAriaLabel={moodT("coach_close_aria")}
-      />
+      {moodCheckin.speechModalOpen ? (
+        <PuhuSpeechModal
+          isOpen
+          onClose={moodCheckin.closeSpeechModal}
+          isLoading={moodCheckin.speechLoading}
+          loadingText={moodT("coach_thinking")}
+          text={moodCheckin.speechText}
+          actionLabel={moodT("coach_speech_cta")}
+          closeAriaLabel={moodT("coach_close_aria")}
+        />
+      ) : null}
     </main>
   );
 }
