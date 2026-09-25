@@ -42,7 +42,7 @@ skeleton layout** that mirrors the loaded UI — not a centered spinner, not pla
 | Layer | Owner | Rule |
 |---|---|---|
 | **Animation** | Global `@mentor/ui/theme.css` | **Same classes everywhere:** `.mentor-skeleton-shimmer` (shimmer blocks), `.mentor-skeleton-enter` (region fade-in). No `animate-pulse`, no per-screen gradient/keyframe copies. |
-| **Layout / shape** | Each screen | `*-content-skeleton.tsx` next to the feature (e.g. `plan-content-skeleton.tsx`, `koc-content-skeleton.tsx`). Match real cards, rows, headers; size/radius via `className` + DESIGN tokens. |
+| **Layout / shape** | Each screen | Skeletons live next to the feature and match real cards, rows, headers; size/radius via `className` + DESIGN tokens. A page-level `*-content-skeleton.tsx` or one skeleton per section (screens that draw at once, DESIGN.md §1 rule 7) are both fine. |
 | **A11y** | `@mentor/ui` | Wrap regions in `<SkeletonGroup label={t("loading")}>` (`role="status"`, `aria-busy`). Blocks: `<Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />`. |
 
 **Client fetch pattern:** derive `loading` from fetch state (e.g. `loadedDate !== date`); when `loading`,
