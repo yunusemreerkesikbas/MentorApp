@@ -114,11 +114,11 @@ describe("cohort evidence (e2e)", () => {
                 ($1, $6, 'Gelecek 3', 'PENDING')`,
         [
           studentId,
-          addDays(today, -1),
-          addDays(today, -2),
-          addDays(today, 3),
-          addDays(today, 4),
-          addDays(today, 5),
+          addDays(localToday, -1),
+          addDays(localToday, -2),
+          addDays(localToday, 3),
+          addDays(localToday, 4),
+          addDays(localToday, 5),
         ],
       ),
     );
@@ -137,7 +137,7 @@ describe("cohort evidence (e2e)", () => {
       client.query(
         `insert into plan_tasks (user_id, task_date, title, status)
          values ($1, $2, 'Bugün bekleyen', 'PENDING')`,
-        [studentId, today],
+        [studentId, localToday],
       ),
     );
 
@@ -149,7 +149,7 @@ describe("cohort evidence (e2e)", () => {
       client.query(
         `insert into plan_tasks (user_id, task_date, title, status)
          values ($1, $2, 'Bugün biten', 'DONE')`,
-        [studentId, today],
+        [studentId, localToday],
       ),
     );
     const next = (await service.listCohortSnapshots([studentId], now)).get(studentId)!;

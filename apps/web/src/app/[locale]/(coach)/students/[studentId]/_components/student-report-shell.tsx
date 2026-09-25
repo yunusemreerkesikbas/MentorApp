@@ -16,6 +16,7 @@ import { useCloudTransitionReady } from "@/lib/cloud-transition";
 import { todayInIstanbul } from "@/lib/date-time";
 import { firstName } from "@/lib/greeting";
 import { useSubscription } from "@/lib/subscription-context";
+import { genitiveOf } from "@/lib/turkish-case";
 import { AssignTaskForm, type AssignDraft } from "./assign-task-form";
 import { CoachPanel } from "./coach-panel";
 import { FollowupCard } from "./followup-card";
@@ -180,7 +181,13 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
 
       <AnimatePresence>
         {panel === "plan" && report ? (
-          <CoachPanel key="plan" title={t("report_plan_week")} subtitle={t("assign_body")} busy={assigning} onClose={closePanel}>
+          <CoachPanel
+            key="plan"
+            title={t("report_plan_week")}
+            subtitle={t("planning_subtitle", { name, genitive: genitiveOf(name) })}
+            busy={assigning}
+            onClose={closePanel}
+          >
             <AssignTaskForm
               studentId={studentId}
               studentName={report.studentDisplayName}
@@ -203,7 +210,15 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         {panel === "followups" && followups.enabled === true ? (
           <CoachPanel
             key="followups"
-            title={compose ? t("followup_create") : t("followup_history_title")}
+            title={compose ? t("followup_create") : t("followup_recent_title")}
+            subtitle={
+              compose || !report || !followups.data
+                ? undefined
+                : t("followup_panel_subtitle", {
+                    name: report.studentDisplayName,
+                    count: followups.data.total,
+                  })
+            }
             onClose={closePanel}
           >
             <CoachFollowupsPanel resource={followups} studentId={studentId} compose={compose} onCompose={setCompose} />

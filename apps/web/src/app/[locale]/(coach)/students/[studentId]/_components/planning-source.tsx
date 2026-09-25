@@ -11,7 +11,6 @@ import {
   shiftDate,
 } from "./planning-state";
 import { todayInIstanbul } from "@/lib/date-time";
-import { PLANNER_SUBHEAD } from "./planning-week";
 import { useReportDates } from "./use-report-dates";
 import { usePlanningTasks } from "./use-planning-tasks";
 
@@ -49,9 +48,9 @@ export function PlanningSource({
       selected.includes(row.id) && !copied.includes(copyKey(row.id, target)),
   );
   const overflow = count + chosen.length > MAX_DRAFTS;
+  // Opened from its own "Önceki görevlerden seç" link, which names it: no heading of its own.
   return (
-    <section className="flex flex-col gap-3">
-      <h3 className={PLANNER_SUBHEAD}>{t("planning_source")}</h3>
+    <section className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-4">
       <div className="flex flex-wrap items-center gap-2">
         {[shiftDate(current, -7), current].map((value, i) => (
           <Button

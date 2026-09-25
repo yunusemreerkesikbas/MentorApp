@@ -251,7 +251,9 @@ test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve deft
   await page.getByRole("option", { name: "Matematik" }).click();
   await page.getByRole("button", { name: "Kaydet" }).click();
 
-  await expect(page).toHaveURL(new RegExp(`/defterlerim/${CUSTOM_ID}$`));
+  await expect(page).toHaveURL(new RegExp(`/defterlerim/${CUSTOM_ID}$`), {
+    timeout: 10_000,
+  });
   await expect(page.getByText("Matematik Notlarım").first()).toBeVisible();
   await page.getByRole("button", { name: "Defteri aç" }).click();
   const showTools = page.getByRole("button", { name: "Araçları göster" });

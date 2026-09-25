@@ -1,6 +1,64 @@
 import { describe, expect, it } from "vitest";
-import { copyKey, copyTask, monday, shiftDate } from "./planning-state";
+import {
+  composerMode,
+  copyKey,
+  copyTask,
+  dayCount,
+  followDay,
+  hasUnsavedInput,
+  monday,
+  shiftDate,
+  type AssignDraft,
+} from "./planning-state";
 import { todayInIstanbul } from "@/lib/date-time";
+
+const draft = (over: Partial<AssignDraft> = {}): AssignDraft => ({
+  key: "k1",
+  taskDate: "2026-09-24",
+  title: "Paragraf: 25 soru",
+  subject: null,
+  topic: null,
+  coachNote: null,
+  ...over,
+});
+
+describe("the day chip's count", () => {
+  it("says tasks, drafts, both, or nothing", () => {
+    expect(dayCount(2, 0)).toEqual({ kind: "existing", existing: 2 });
+    expect(dayCount(2, 1)).toEqual({ kind: "both", existing: 2, drafts: 1 });
+    expect(dayCount(0, 1)).toEqual({ kind: "drafts", drafts: 1 });
+    expect(dayCount(0, 0)).toEqual({ kind: "none" });
+  });
+
+  it("waits for the week's tasks, but never hides a draft it already knows", () => {
+    expect(dayCount(undefined, 0)).toEqual({ kind: "loading" });
+    expect(dayCount(undefined, 1)).toEqual({ kind: "drafts", drafts: 1 });
+  });
+});
+
+describe("the always-open composer", () => {
+  const saved = [draft({ key: "saved" })];
+
+  it("is adding a new task unless it holds a draft from the program", () => {
+    expect(composerMode(null, saved)).toBe("new");
+    expect(composerMode(draft({ key: "typed" }), saved)).toBe("new");
+    expect(composerMode(draft({ key: "saved" }), saved)).toBe("edit");
+  });
+
+  it("moves a new task to the chosen day, but never an edited one", () => {
+    expect(followDay(null, "2026-09-25", saved)).toBeNull();
+    expect(followDay(draft({ key: "typed" }), "2026-09-25", saved)?.taskDate).toBe("2026-09-25");
+    expect(followDay(draft({ key: "saved" }), "2026-09-25", saved)?.taskDate).toBe("2026-09-24");
+  });
+
+  it("holds unsaved input while editing, or while a new task has anything typed in it", () => {
+    expect(hasUnsavedInput(null, saved)).toBe(false);
+    expect(hasUnsavedInput(draft({ key: "typed", title: "  " }), saved)).toBe(false);
+    expect(hasUnsavedInput(draft({ key: "typed", title: "", coachNote: "Süre tut" }), saved)).toBe(true);
+    expect(hasUnsavedInput(draft({ key: "typed" }), saved)).toBe(true);
+    expect(hasUnsavedInput(draft({ key: "saved", title: "" }), saved)).toBe(true);
+  });
+});
 
 describe("weekly planning dates", () => {
   it("uses Monday through Sunday across the year boundary", () => {

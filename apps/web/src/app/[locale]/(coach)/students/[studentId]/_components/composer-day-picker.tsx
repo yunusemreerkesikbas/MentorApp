@@ -2,6 +2,23 @@
 
 import { useMemo } from "react";
 import { useLocale, useTranslations } from "next-intl";
+import { dayCount, type DayCount } from "./planning-state";
+
+/** A phone-width chip: "2", "+1", "2+1". */
+function countDigits(count: DayCount): string {
+  switch (count.kind) {
+    case "loading":
+      return "…";
+    case "none":
+      return "";
+    case "existing":
+      return String(count.existing);
+    case "drafts":
+      return `+${count.drafts}`;
+    case "both":
+      return `${count.existing}+${count.drafts}`;
+  }
+}
 
 /**
  * The seven day chips of the week composer. The group keeps its "Gün seç" label and holds only the
@@ -22,6 +39,20 @@ export function ComposerDayPicker({
 }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
+  const countText = (count: DayCount) => {
+    switch (count.kind) {
+      case "loading":
+        return "…";
+      case "none":
+        return "";
+      case "existing":
+        return t("planning_count_tasks", { count: count.existing });
+      case "drafts":
+        return t("planning_count_drafts", { count: count.drafts });
+      case "both":
+        return t("planning_count_both", { existing: count.existing, drafts: count.drafts });
+    }
+  };
   const weekdayFormat = useMemo(
     () => new Intl.DateTimeFormat(locale, { weekday: "short" }),
     [locale],
@@ -69,12 +100,18 @@ export function ComposerDayPicker({
             <span className="text-base font-extrabold tabular-nums">
               {date.getDate()}
             </span>
+            {/* The sentence is in the button's name; the chip shows it in words, or in numbers on a phone. */}
             <span
-              className={`h-4 text-micro font-extrabold tabular-nums ${active ? "" : "text-[var(--color-secondary)]"}`}
+              aria-hidden
+              className={`hidden h-4 max-w-full truncate px-0.5 text-micro font-extrabold tabular-nums sm:block ${active ? "" : "text-[var(--color-secondary)]"}`}
             >
-              {existingCounts
-                ? `${existingCounts.get(day) ?? 0} + ${count}`
-                : `… + ${count}`}
+              {countText(dayCount(existingCounts?.get(day), count))}
+            </span>
+            <span
+              aria-hidden
+              className={`h-4 text-micro font-extrabold tabular-nums sm:hidden ${active ? "" : "text-[var(--color-secondary)]"}`}
+            >
+              {countDigits(dayCount(existingCounts?.get(day), count))}
             </span>
           </button>
         );

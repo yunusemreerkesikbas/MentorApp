@@ -34,8 +34,59 @@ export function assignmentInput({
 export interface PlanningState {
   week: string;
   day: string;
+  /**
+   * What the always-open composer holds: `null` is a blank new task; a draft whose key is in the
+   * program is an edit in progress; any other draft is a new task being typed.
+   */
   editor: AssignDraft | null;
   copied: string[];
+}
+
+export type DayCount =
+  | { kind: "loading" }
+  | { kind: "none" }
+  | { kind: "existing"; existing: number }
+  | { kind: "drafts"; drafts: number }
+  | { kind: "both"; existing: number; drafts: number };
+
+/**
+ * A day chip's third line: "2 görev", "2 + 1 taslak", "1 taslak" or nothing. `existing` is
+ * undefined while the week's tasks load; a draft the composer already knows is shown meanwhile.
+ */
+export function dayCount(existing: number | undefined, drafts: number): DayCount {
+  if (existing === undefined) return drafts > 0 ? { kind: "drafts", drafts } : { kind: "loading" };
+  if (existing > 0 && drafts > 0) return { kind: "both", existing, drafts };
+  if (existing > 0) return { kind: "existing", existing };
+  return drafts > 0 ? { kind: "drafts", drafts } : { kind: "none" };
+}
+
+export function composerMode(
+  editor: AssignDraft | null,
+  drafts: readonly AssignDraft[],
+): "new" | "edit" {
+  return editor !== null && drafts.some((d) => d.key === editor.key) ? "edit" : "new";
+}
+
+/** A day chip was chosen: a new task goes with it, an edited draft keeps the date it had. */
+export function followDay(
+  editor: AssignDraft | null,
+  day: string,
+  drafts: readonly AssignDraft[],
+): AssignDraft | null {
+  if (editor === null || composerMode(editor, drafts) === "edit") return editor;
+  return { ...editor, taskDate: day };
+}
+
+/** Whether sending now would leave something behind in the composer. */
+export function hasUnsavedInput(
+  editor: AssignDraft | null,
+  drafts: readonly AssignDraft[],
+): boolean {
+  if (editor === null) return false;
+  if (composerMode(editor, drafts) === "edit") return true;
+  return [editor.title, editor.subject, editor.topic, editor.coachNote].some(
+    (value) => (value ?? "").trim() !== "",
+  );
 }
 export function initialPlanningState(): PlanningState {
   const day = todayInIstanbul();

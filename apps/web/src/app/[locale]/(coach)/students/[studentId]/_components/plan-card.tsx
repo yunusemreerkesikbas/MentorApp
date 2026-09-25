@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
-import { BookOpen, Check, GraduationCap } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { MentorshipReportPlanTaskDto, MentorshipStudentReportDto } from "@mentor/types";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
+import { TaskMark, TaskStatus } from "./task-mark";
 import { groupPlanTasks } from "./week-filmstrip-model";
 
 const SUBHEAD = "text-caption font-extrabold text-[var(--color-secondary)]";
@@ -104,31 +104,13 @@ export function PlanCard({
 }
 
 function PlanRow({ task, day }: { task: MentorshipReportPlanTaskDto; day: string }) {
-  const t = useTranslations("mentorship");
-  const done = task.status === "DONE";
   const meta = [task.subject ? [task.subject, task.topic].filter(Boolean).join(" › ") : null, day]
     .filter(Boolean)
     .join(" · ");
 
   return (
     <li className="flex items-start gap-3 border-t border-[var(--play-line)] py-3 first:border-t-0">
-      {task.assignedByCoach ? (
-        <span
-          role="img"
-          aria-label={t("plan_mark_coach")}
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--coach-accent)] text-[var(--color-bg)]"
-        >
-          <GraduationCap className="size-4" aria-hidden />
-        </span>
-      ) : (
-        <span
-          role="img"
-          aria-label={t("plan_mark_own")}
-          className="grid size-7 shrink-0 place-items-center rounded-full bg-[var(--color-surface-container)] text-[var(--color-secondary)]"
-        >
-          <BookOpen className="size-4" aria-hidden />
-        </span>
-      )}
+      <TaskMark byCoach={task.assignedByCoach} />
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="text-body-sm font-extrabold leading-snug text-[var(--color-main)]">{task.title}</span>
         <span className="text-caption font-semibold text-[var(--color-secondary)]">{meta}</span>
@@ -138,14 +120,7 @@ function PlanRow({ task, day }: { task: MentorshipReportPlanTaskDto; day: string
           </p>
         ) : null}
       </div>
-      {done ? (
-        <span className="inline-flex shrink-0 items-center gap-1 text-caption font-extrabold text-[var(--color-success)]">
-          <Check className="size-4" strokeWidth={3} aria-hidden />
-          {t("task_status_DONE")}
-        </span>
-      ) : (
-        <span className="shrink-0 text-caption font-bold text-[var(--color-secondary)]">{t("task_status_PENDING")}</span>
-      )}
+      <TaskStatus done={task.status === "DONE"} />
     </li>
   );
 }

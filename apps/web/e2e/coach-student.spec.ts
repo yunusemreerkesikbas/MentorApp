@@ -197,9 +197,44 @@ test("takip kartı açık kayıtları gösterir ve panele götürür", async ({ 
   const card = page.getByRole("region", { name: "Takip" });
   await expect(card.getByText("Yanıt bekliyor")).toBeVisible();
   await expect(card.getByText("Kontrol bugün")).toBeVisible();
-  await expect(card.getByText("Kabul edildi")).toBeVisible();
+  // The coach's side of the student's answer.
+  await expect(card.getByText("Kabul etti")).toBeVisible();
   await card.getByRole("button", { name: "Tüm kayıtlar (2)" }).click();
-  await expect(page.getByRole("dialog", { name: "Takip geçmişi" })).toBeVisible();
+  const panel = page.getByRole("dialog", { name: "Takip" });
+  await expect(panel).toBeVisible();
+  await expect(panel.getByText("Ali Demir · 2 kayıt")).toBeVisible();
+});
+
+test("takip panelinde ilk açık kayıt açık gelir, diğerleri satırdır ve dokununca açılır", async ({ page }) => {
+  await mockStudentApi(page, {
+    followups: [
+      followup({
+        id: "f-0",
+        title: "Eski karar",
+        status: "COMPLETED",
+        sharedDecision: null,
+        closedAt: "2026-09-10T08:00:00Z",
+      }),
+      followup(),
+      followup({ id: "f-2", title: "Tarih çalışma düzeni", followUpDate: shiftDay(TODAY, 5) }),
+    ],
+  });
+  await page.goto(`/kocluk/${ALI_ID}`);
+  await page.getByRole("region", { name: "Takip" }).getByRole("button", { name: /Tüm kayıtlar/ }).click();
+  const panel = page.getByRole("dialog", { name: "Takip" });
+  const closed = panel.getByRole("button", { name: /Eski karar/ });
+  const first = panel.getByRole("button", { name: /Denemeden sonra kısa görüşme/ });
+  const second = panel.getByRole("button", { name: /Tarih çalışma düzeni/ });
+  // Not the newest row: the first record that still needs the coach.
+  await expect(first).toHaveAttribute("aria-expanded", "true");
+  await expect(closed).toHaveAttribute("aria-expanded", "false");
+  await expect(second).toHaveAttribute("aria-expanded", "false");
+  await expect(panel.getByRole("button", { name: "Takibi tamamla" })).toHaveCount(1);
+
+  await second.click();
+  await expect(second).toHaveAttribute("aria-expanded", "true");
+  await expect(first).toHaveAttribute("aria-expanded", "false");
+  await expect(panel.getByRole("button", { name: "Takibi tamamla" })).toHaveCount(1);
 });
 
 test("planlayıcı seçili günle açılır ve haftayı yerel tarihle yazar", async ({ page }) => {

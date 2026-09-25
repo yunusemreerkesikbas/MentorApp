@@ -60,8 +60,8 @@ export interface PopoverMenuProps {
 /**
  * Shared floating action/select menu — PlanTaskMenu visual (radius token, soft card shadow,
  * click-away backdrop, reduced-motion aware enter). Use with `PopoverMenuItem`.
- * The panel portals to `document.body` and anchors to the trigger so overflow parents
- * (drawers, sheets) cannot clip it or send it behind a modal layer.
+ * The panel portals to the nearest open dialog or `document.body` and anchors to the trigger
+ * so overflow parents (drawers, sheets) cannot clip it or send it behind a modal layer.
  */
 export function PopoverMenu({
   trigger,
@@ -82,6 +82,7 @@ export function PopoverMenu({
   const anchorRef = useRef<HTMLDivElement>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
   const [measuredAnchor, setAnchor] = useState<DOMRect | null>(null);
+  const [containingDialog, setContainingDialog] = useState<HTMLDialogElement | null>(null);
   const open = openProp ?? uncontrolledOpen;
   const anchor = open ? measuredAnchor : null;
 
@@ -98,6 +99,7 @@ export function PopoverMenu({
     const node = anchorRef.current;
     if (!node) return;
     setAnchor(node.getBoundingClientRect());
+    setContainingDialog(node.closest<HTMLDialogElement>("dialog[open]"));
   }, []);
 
   useLayoutEffect(() => {
@@ -124,7 +126,6 @@ export function PopoverMenu({
   }, [open]);
 
   const closedOffset = side === "top" ? 4 : -4;
-  const containingDialog = anchorRef.current?.closest<HTMLDialogElement>("dialog[open]") ?? null;
   const panelStyle = panelPosition(anchor, {
     align,
     side,

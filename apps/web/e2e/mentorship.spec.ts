@@ -543,25 +543,55 @@ test.describe("koç tarafı", () => {
     await panel
       .getByRole("button", { name: "Sonraki hafta", exact: true })
       .click();
+    await panel.getByRole("button", { name: "Önceki görevlerden seç" }).click();
     await panel.getByRole("checkbox").first().check();
     await panel
       .getByRole("button", { name: "Seçilenleri ekle (1)", exact: true })
       .click();
-    await panel.getByRole("button", { name: "Düzenle", exact: true }).click();
+    await panel.getByRole("button", { name: /: düzenle$/ }).click();
+    await expect(panel.getByRole("heading", { name: "Görevi düzenle" })).toBeVisible();
     await panel.getByLabel("Görev", { exact: true }).fill("Uyarlanmış görev");
     await page.keyboard.press("Escape");
     await openWeekPlanner(page);
     await expect(panel.getByLabel("Görev", { exact: true })).toHaveValue(
       "Uyarlanmış görev",
     );
-    await panel.getByRole("button", { name: "Taslağı kaydet" }).click();
+    // An edit still in the form holds the send back, so it is never sent half-way.
     await expect(
-      panel.getByText("Uyarlanmış görev", { exact: true }),
-    ).toBeVisible();
+      panel.getByRole("button", { name: "1 görevi planına ekle" }),
+    ).toBeDisabled();
+    await panel.getByRole("button", { name: "Değişikliği kaydet" }).click();
+    await expect(panel.getByText("Uyarlanmış görev")).toBeVisible();
     await expect(
       panel.getByRole("button", { name: "1 görevi planına ekle" }),
     ).toBeEnabled();
+    await panel.getByRole("button", { name: "Önceki görevlerden seç" }).click();
     await expect(panel.getByRole("checkbox").first()).toBeDisabled();
+  });
+
+  test("görev formu hep açık, yazılan görev taslağa eklenmeden gönderilmez", async ({
+    page,
+  }) => {
+    await mockApi(page, { roles: ["STUDENT", "COACH"], myCoach: null });
+    await page.goto(`/kocluk/${STUDENT_ID}`);
+    await openWeekPlanner(page);
+    const panel = page.getByRole("dialog").first();
+    await expect(panel.getByRole("heading", { name: "Yeni görev" })).toBeVisible();
+    await panel.getByLabel("Görev", { exact: true }).fill("Paragraf: 25 soru");
+    await expect(
+      panel.getByText("Formdaki görevi önce taslağa ekle ya da temizle."),
+    ).toBeVisible();
+    await panel.getByRole("button", { name: "Taslağa ekle" }).click();
+    await expect(panel.getByText("Bu programda · 1/21")).toBeVisible();
+    await expect(panel.getByLabel("Görev", { exact: true })).toHaveValue("");
+    await expect(
+      panel.getByRole("button", { name: "1 görevi planına ekle" }),
+    ).toBeEnabled();
+    // The sources are links; earlier tasks open in place.
+    const source = panel.getByRole("button", { name: "Önceki görevlerden seç" });
+    await expect(source).toHaveAttribute("aria-expanded", "false");
+    await source.click();
+    await expect(source).toHaveAttribute("aria-expanded", "true");
   });
 
   test("kapasiteyi aşan seçim kesilmeden gösterilir", async ({ page }) => {
@@ -590,6 +620,7 @@ test.describe("koç tarafı", () => {
     await panel
       .getByRole("button", { name: "Sonraki hafta", exact: true })
       .click();
+    await panel.getByRole("button", { name: "Önceki görevlerden seç" }).click();
     await panel.getByRole("button", { name: "Görünenleri seç" }).click();
     await expect(
       panel.getByRole("button", { name: "Seçilenleri ekle (22)" }),
@@ -641,27 +672,18 @@ test.describe("koç tarafı", () => {
     await panel
       .getByRole("button", { name: "Sonraki hafta", exact: true })
       .click();
+    await panel.getByRole("button", { name: "Önceki görevlerden seç" }).click();
     await panel.getByRole("button", { name: "Görünenleri seç" }).click();
     await panel.getByRole("button", { name: "Seçilenleri ekle (2)" }).click();
-    await panel
-      .locator("article")
-      .filter({ hasText: "Birinci" })
-      .getByRole("button", { name: "Düzenle" })
-      .click();
+    await panel.getByRole("button", { name: "Birinci: düzenle" }).click();
     await panel.getByLabel("Görev", { exact: true }).fill("Birinci uyarlama");
     await panel.getByLabel("Notun (isteğe bağlı)").fill("Önce kısa tekrar");
-    await panel
-      .getByRole("button", { name: "Görev tarihi", exact: true })
-      .click();
+    await panel.getByRole("button", { name: "Tarih", exact: true }).click();
     await page.getByRole("button", { name: "Bugün", exact: true }).click();
-    await panel.getByRole("button", { name: "Taslağı kaydet" }).click();
-    await panel
-      .locator("article")
-      .filter({ hasText: "İkinci" })
-      .getByRole("button", { name: "Düzenle" })
-      .click();
+    await panel.getByRole("button", { name: "Değişikliği kaydet" }).click();
+    await panel.getByRole("button", { name: "İkinci: düzenle" }).click();
     await panel.getByLabel("Görev", { exact: true }).fill("İkinci uyarlama");
-    await panel.getByRole("button", { name: "Taslağı kaydet" }).click();
+    await panel.getByRole("button", { name: "Değişikliği kaydet" }).click();
     await panel
       .getByRole("button", { name: "Sonraki hafta", exact: true })
       .scrollIntoViewIfNeeded();
@@ -696,23 +718,24 @@ test.describe("koç tarafı", () => {
     await page
       .getByRole("button", { name: "Sonraki hafta", exact: true })
       .click();
-    await page.getByRole("button", { name: "Seçili güne ekle" }).click();
+    // The form is always open and writes to the chosen day.
     await page.getByLabel("Görev", { exact: true }).fill("İlk görev");
-    await page.getByRole("button", { name: "Taslağı kaydet" }).click();
+    await page.getByRole("button", { name: "Taslağa ekle" }).click();
     // The day chips, by their group label — matching on the rendered date would tie the test to
-    // the browser's own calendar, and matching on the "· N" count only works after a draft exists.
+    // the browser's own calendar, and matching on the count only works after a draft exists.
     await page
       .getByRole("group", { name: "Gün seç" })
       .getByRole("button")
       .nth(2)
       .click();
-    await page.getByRole("button", { name: "Seçili güne ekle" }).click();
     await page.getByLabel("Görev", { exact: true }).fill("İkinci görev");
-    await page.getByRole("button", { name: "Taslağı kaydet" }).click();
-    await expect(page.getByText("Bu programda (2/21)")).toBeVisible();
+    await page.getByRole("button", { name: "Taslağa ekle" }).click();
+    await expect(page.getByText("Bu programda · 2/21")).toBeVisible();
 
-    await page.getByLabel("Şablon adı").fill("Hafta 1");
+    // Saving sits under the program, one link that opens the name field.
     await page.getByRole("button", { name: "Şablon olarak kaydet" }).click();
+    await page.getByLabel("Şablon adı").fill("Hafta 1");
+    await page.getByRole("button", { name: "Şablonu kaydet" }).click();
 
     await expect.poll(() => api.savedTemplates.length).toBe(1);
     const saved = api.savedTemplates[0]!;
@@ -754,15 +777,15 @@ test.describe("koç tarafı", () => {
     await page.goto(`/kocluk/${STUDENT_ID}`);
     await openWeekPlanner(page);
 
-    // The shared MenuSelect: the trigger is named by its label, the rows are options.
+    // "Şablondan yükle" is a link that opens the saved programs as a menu.
     await page
       .getByRole("button", { name: "Şablondan yükle", exact: true })
       .click();
     await page
-      .getByRole("option", { name: "YKS haftası · 1 görev", exact: true })
+      .getByRole("menuitem", { name: "YKS haftası · 1 görev", exact: true })
       .click();
 
-    await expect(page.getByText("Bu programda (1/21)")).toBeVisible();
+    await expect(page.getByText("Bu programda · 1/21")).toBeVisible();
     // Said out loud, not silently thinned: `topic` is a soft ref into the content taxonomy and the
     // API never checks it against THIS student's exam.
     await expect(

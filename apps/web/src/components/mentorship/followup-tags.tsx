@@ -27,14 +27,23 @@ export function FollowupStatusTag({ status }: { status: MentorshipFollowupStatus
   );
 }
 
-/** Where the student stands on the shared decision; drawn only when there is one. */
+/**
+ * Where the student stands on the shared decision, said from the coach's side ("Kabul etti");
+ * drawn only when there is one. The student's own screen keeps its "Kabul edildi" keys.
+ */
 export function FollowupResponseTag({ response }: { response: MentorshipFollowupResponse }) {
   const t = useTranslations("mentorship");
   const Icon = response === "ACCEPTED" ? Check : response === "CHANGE_REQUESTED" ? MessageSquare : Clock;
+  const label =
+    response === "ACCEPTED"
+      ? t("followup_coach_accepted")
+      : response === "CHANGE_REQUESTED"
+        ? t("followup_changes_requested")
+        : t("followup_response_PENDING");
   return (
     <span className={`${TAG} ${response === "ACCEPTED" ? DONE : ASKED}`}>
       <Icon className="size-3.5" strokeWidth={response === "ACCEPTED" ? 3 : 2} aria-hidden />
-      {t(`followup_response_${response}`)}
+      {label}
     </span>
   );
 }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useId, useState } from "react";
+import { Sparkles } from "lucide-react";
 import { MENTORSHIP_COACH_CONTEXT_MAX_LENGTH } from "@mentor/validation";
 import { WeeklyPreparation } from "./weekly-preparation";
 import { useLocale, useTranslations } from "next-intl";
@@ -8,6 +10,7 @@ import { Button, TextAreaField } from "@mentor/ui";
 import {
   INSET_GROUP_CLASS,
   NOTE_CLASS,
+  PANEL_QUIET_BUTTON,
 } from "@/components/mentorship/coach-ui";
 import { formatWeeklyMetric } from "@/lib/mentorship-weekly-report";
 
@@ -26,46 +29,67 @@ export function WeeklyReportBrief({
 }) {
   const t = useTranslations("mentorship");
   const locale = useLocale();
+  const contextId = useId();
+  // Opens by itself when there is already a focus to read; otherwise it waits to be asked for.
+  const [showContext, setShowContext] = useState(
+    () => coachContext.trim() !== "" || Boolean(preview.brief?.coachContext),
+  );
   const evidence = new Map(
     preview.snapshot.evidence.map((item) => [item.id, item]),
   );
 
   return (
     <section className="flex flex-col gap-3" aria-labelledby="weekly-ai-title">
-      <div className="flex flex-wrap items-start justify-between gap-3 px-1">
-        <div>
+      <div className="flex flex-wrap items-center gap-x-4 gap-y-3 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-4 py-3">
+        {/* A floor on the words: on a phone the button wraps below instead of squeezing the title. */}
+        <div className="flex min-w-48 flex-1 flex-col gap-0.5">
           <h3
             id="weekly-ai-title"
-            className="text-base font-extrabold text-[var(--color-main)]"
+            className="text-body-sm font-extrabold text-[var(--color-main)]"
           >
             {t("weekly_report_ai_title")}
           </h3>
-          <p className={NOTE_CLASS}>{t("weekly_report_ai_body")}</p>
+          <p className="text-caption font-semibold text-[var(--color-secondary)]">{t("weekly_report_ai_body")}</p>
         </div>
         <Button
           type="button"
           variant="secondary"
           size="sm"
+          className="shrink-0"
           busy={busy || preview.status === "BRIEF_PENDING"}
           disabled={preview.status === "BRIEF_PENDING"}
           onClick={onGenerate}
         >
+          <Sparkles className="size-4" aria-hidden />
           {preview.brief
             ? t("weekly_report_ai_refresh")
             : t("weekly_report_ai_generate")}
         </Button>
       </div>
 
-      <TextAreaField
-        label={t("preparation_context_label")}
-        value={coachContext}
-        onChange={(event) => onContextChange(event.target.value)}
-        maxLength={MENTORSHIP_COACH_CONTEXT_MAX_LENGTH}
-        disabled={busy || preview.status === "BRIEF_PENDING"}
-        hint={t("preparation_context_hint", { count: coachContext.length })}
-        placeholder={t("preparation_context_placeholder")}
-        rows={3}
-      />
+      <button
+        type="button"
+        className={`${PANEL_QUIET_BUTTON} self-start`}
+        aria-expanded={showContext}
+        aria-controls={showContext ? contextId : undefined}
+        onClick={() => setShowContext((value) => !value)}
+      >
+        {t("weekly_panel_add_context")}
+      </button>
+      {showContext ? (
+        <div id={contextId}>
+          <TextAreaField
+            label={t("preparation_context_label")}
+            value={coachContext}
+            onChange={(event) => onContextChange(event.target.value)}
+            maxLength={MENTORSHIP_COACH_CONTEXT_MAX_LENGTH}
+            disabled={busy || preview.status === "BRIEF_PENDING"}
+            hint={t("preparation_context_hint", { count: coachContext.length })}
+            placeholder={t("preparation_context_placeholder")}
+            rows={3}
+          />
+        </div>
+      ) : null}
       {preview.brief &&
         coachContext.trim() !== (preview.brief.coachContext ?? "") && (
           <p className={NOTE_CLASS} role="status">

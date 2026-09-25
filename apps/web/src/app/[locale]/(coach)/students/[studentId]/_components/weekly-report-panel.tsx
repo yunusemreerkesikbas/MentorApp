@@ -1,12 +1,17 @@
 "use client";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button, TextAreaField } from "@mentor/ui";
 import {
   CoachOverlayBody,
   CoachOverlayFooter,
 } from "@/components/coach-overlay";
-import { NOTE_CLASS } from "@/components/mentorship/coach-ui";
+import {
+  NOTE_CLASS,
+  PANEL_LINK_BUTTON,
+  PANEL_QUIET_BUTTON,
+} from "@/components/mentorship/coach-ui";
 import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { firstName } from "@/lib/greeting";
@@ -56,24 +61,23 @@ export function WeeklyReportPanel({
       onClose={onClose}
     >
       <CoachOverlayBody>
-        <div className="flex flex-col gap-6 pb-6">
+        <div className="flex flex-col gap-5 pb-6">
           <div className="flex items-center justify-between gap-2">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className={PANEL_LINK_BUTTON}
               disabled={report.busy}
               onClick={() => void report.moveWeek(-1)}
             >
+              <ChevronLeft className="size-4" aria-hidden />
               {t("weekly_report_previous_week")}
-            </Button>
+            </button>
             <span className="inline-flex h-6 items-center rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
               {previousReport ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
             </span>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className={PANEL_LINK_BUTTON}
               disabled={
                 report.busy ||
                 preview.snapshot.period.startDate === report.latestWeek
@@ -81,7 +85,8 @@ export function WeeklyReportPanel({
               onClick={() => void report.moveWeek(1)}
             >
               {t("weekly_report_next_week")}
-            </Button>
+              <ChevronRight className="size-4" aria-hidden />
+            </button>
           </div>
           <WeeklyReportMetrics snapshot={preview.snapshot} subjectNames={preview.subjectNames} />
           <WeeklyReportBrief
@@ -91,12 +96,9 @@ export function WeeklyReportPanel({
             busy={report.busy}
             onGenerate={() => void report.generateBrief()}
           />
-          <section className="flex flex-col gap-3">
-            <h3 className="text-base font-extrabold text-[var(--color-main)]">
-              {t("weekly_report_share_title")}
-            </h3>
+          <section className="flex flex-col gap-2">
             <TextAreaField
-              label={t("weekly_report_share_label")}
+              label={t("weekly_report_share_title")}
               value={report.evaluation}
               maxLength={1200}
               hint={t("weekly_report_share_hint", {
@@ -144,6 +146,9 @@ export function WeeklyReportPanel({
             {t("weekly_report_open_finalized")}
           </Link>
         ) : null}
+        <button type="button" className={`${PANEL_QUIET_BUTTON} px-2`} disabled={report.busy} onClick={onClose}>
+          {t("confirm_cancel")}
+        </button>
         <Button
           type="button"
           busy={report.busy}
