@@ -648,16 +648,19 @@ test.describe("davet ve koltuklar", () => {
     await expect(page.getByText("Öğrencinde neyi görürsün")).toHaveCount(0);
   });
 
-  test("koç mobil tab barında önce Öğrencilerim, Ayarlar ve Topluluk da var", async ({ page }, testInfo) => {
+  test("koç mobil tab barında Öğrencilerim ortada yükseltilmiş, Ayarlar ve Topluluk da var", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "mobile-chromium");
     await mockApi(page, COACH);
     await page.goto("/kocluk");
 
     const tabs = page.getByRole("navigation", { name: "Ana menü" });
-    await expect(tabs.getByRole("link").first()).toHaveAccessibleName("Öğrencilerim");
-    for (const name of ["Plan", "Blog", "Topluluk", "Öğrencilerim", "Ayarlar"]) {
-      await expect(tabs.getByRole("link", { name }), name).toBeVisible();
+    // The student's silhouette: the role's home sits raised in the centre, where a student has Koç.
+    const links = tabs.getByRole("link");
+    await expect(links).toHaveCount(5);
+    for (const [index, name] of ["Plan", "Blog", "Öğrencilerim", "Topluluk", "Ayarlar"].entries()) {
+      await expect(links.nth(index), name).toHaveAccessibleName(name);
     }
+    await expect(links.nth(2)).toHaveAttribute("data-elevated", "true");
     // And none of the student ritual came with them.
     await expect(tabs.getByRole("link", { name: "Anasayfa" })).toHaveCount(0);
     await expect(tabs.getByRole("link", { name: "Analiz" })).toHaveCount(0);

@@ -205,7 +205,8 @@ test("panelde başka haftaya bakmak kartın haftasını değiştirmez", async ({
   await section.getByRole("button", { name: "Değerlendirmeyi aç" }).click();
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
   await panel.getByRole("button", { name: "Önceki hafta", exact: true }).click();
-  await expect(panel).toContainText("24");
+  await expect(panel.getByText(/^Ayşe Yılmaz · 24 Ağustos/)).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Vazgeç" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   await expect(section).toContainText("6 Eylül");

@@ -69,7 +69,8 @@ export function CoachPlanComposeFab({
         ) : null}
       </AnimatePresence>
 
-      <div className="fixed right-5 bottom-[calc(72px+env(safe-area-inset-bottom))] z-[45] h-14 w-14 lg:bottom-8">
+      {/* The student's plan button (`PlanCalendarFab`): the same black and height above the tab bar. */}
+      <div className="fixed right-5 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[45] h-14 w-14 lg:bottom-8">
         <svg aria-hidden className="absolute h-0 w-0">
           <defs>
             <filter id={filterId}>
@@ -93,7 +94,7 @@ export function CoachPlanComposeFab({
             <motion.div
               key={action.id}
               className="absolute right-0 bottom-0 size-14 rounded-full"
-              style={{ backgroundColor: "var(--play-cta)" }}
+              style={{ backgroundColor: "var(--color-btn)" }}
               initial={false}
               animate={open ? { y: action.y, opacity: 1 } : { y: 0, opacity: 0 }}
               transition={{ duration: open ? openMs : closeMs, ease: EASE }}
@@ -101,7 +102,7 @@ export function CoachPlanComposeFab({
           ))}
           <div
             className="absolute right-0 bottom-0 size-14 rounded-full"
-            style={{ backgroundColor: "var(--play-cta)" }}
+            style={{ backgroundColor: "var(--color-btn)" }}
           />
         </div>
 
@@ -131,7 +132,7 @@ export function CoachPlanComposeFab({
               tabIndex={open ? 0 : -1}
               aria-hidden={!open}
               className={`flex size-14 cursor-pointer items-center justify-center rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${open ? "" : "pointer-events-none"}`}
-              style={{ color: "var(--play-cta-ink)" }}
+              style={{ color: "var(--color-btn-label)" }}
             >
               <action.Icon aria-hidden size={22} strokeWidth={2.2} />
               <span className="sr-only">{t(action.labelKey)}</span>
@@ -147,7 +148,7 @@ export function CoachPlanComposeFab({
           aria-label={open ? t("compose_close") : t("compose_open")}
           onClick={() => setOpen((value) => !value)}
           className="absolute right-0 bottom-0 z-10 flex size-14 cursor-pointer items-center justify-center rounded-full shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ backgroundColor: "var(--play-cta)", color: "var(--play-cta-ink)" }}
+          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
         >
           <motion.span
             className="flex"

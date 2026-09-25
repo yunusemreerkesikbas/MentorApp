@@ -1,0 +1,26 @@
+{
+  "capturedAt": "2026-09-25T22:42:19.9145455Z",
+  "head": "166bc5f277756f8b1ba46293d206bd9e2ad63598",
+  "files": [
+    {
+      "path": "apps/web/e2e/coach-home.spec.ts",
+      "sha256": "e2758cdd18878b17cd0fbb662004952b96755c662e5b180b1b8b6d7382313ff3"
+    },
+    {
+      "path": "apps/web/e2e/mentorship-weekly-report.spec.ts",
+      "sha256": "a8fac39cf43ea56534b08b9707f9c902c038d0340734d950e56e2edbf6b1b537"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/plan/_components/coach-plan-compose-fab.tsx",
+      "sha256": "e0e4a8f770a0a2ac273dec157bca2b765f91ddc6a0949d7aa156d201a4835ebc"
+    },
+    {
+      "path": "apps/web/src/components/app-nav.tsx",
+      "sha256": "b80d587751a7996df5ac89fc9d5fb693e9c1884956d733b4c11d87fb149a908c"
+    },
+    {
+      "path": "DESIGN.md",
+      "sha256": "6a63984dc82be43c619c55bd54c5677fc571fab2f2f6f835fcf9ac4bee8ec965"
+    }
+  ]
+}

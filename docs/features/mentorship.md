@@ -211,6 +211,16 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-26 — The coach's navigation looks like the student's.** The mobile tab pill has one
+  silhouette for both roles: the role's home sits raised in the centre (Koç for a student, Öğrencilerim
+  for a coach: Plan · Blog · Öğrencilerim · Topluluk · Ayarlar), and the active tab is the same black circle.
+  The desktop sidebar's active item no longer wears the coach's ink; the "Koç" badge under the name says whose
+  tool it is. The coach's plan "+" button is the student's black at the student's height above the pill.
+  **Gotchas:** `tabItemsFor` moves `/students` to the middle for a coach; `ELEVATED_HREFS` (`/coach`,
+  `/students`) marks the raised item, and each role sees exactly one of them (`data-elevated` in e2e).
+  **Related:** `components/app-nav.tsx`, `(app)/plan/_components/coach-plan-compose-fab.tsx`, DESIGN.md §2.5
+  and §6 Tab bar, `e2e/coach-home.spec.ts`.
+
 - **2026-09-26 — Coach redesign, stop E: the three side panels drawn as the canvas draws them.**
   **Haftayı planla:** the subtitle names the student ("Ali'nin planına tek seferde düşer.", `genitiveOf`);
   the week sits between two arrows; each day chip says "2 görev", "2 + 1 taslak" or "1 taslak" ("2+1" on a
