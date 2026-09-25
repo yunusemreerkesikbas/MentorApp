@@ -94,6 +94,10 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-24 — Login 429 says how long to wait
+
+Throttled `429` responses (`TOO_MANY_REQUESTS`) now include the `Retry-After` seconds already set by the throttler: "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim." One second uses the singular English line. If the header is missing, the static sentence stays. Login stays at 10 requests per minute per IP. Related: `all-exceptions.filter.ts`, `i18n/locales/{tr,en}/errors.json`.
+
 ### 2026-09-23 — Independent web and admin sessions
 
 Web auth now uses `mentor_web_refresh` at `/v1/auth`; the admin panel uses
@@ -532,6 +536,11 @@ rows expire normally; no schema migration is required. Related: `identity.consta
 - Unused `VERIFY_EMAIL` tokens are marked used before the new link is created. A link mailed to the previous address cannot set `emailVerifiedAt` on the new one. If the resend is rate-limited, the new address stays and no mail goes out; the student asks again from `POST /v1/users/me/verification-email`.
 - The profile form shows `profile.edit.email_error` when the address itself fails validation.
 - Related: `email-token.repository.ts`, `auth.service.ts`, `users.service.ts`, `profile-header.tsx`, `messages/{tr,en}.json`.
+
+### 2026-09-24 — Return to a protected page after signing in
+
+- The web app guard now passes the requested internal path and query to `/login?next=...` when an anonymous visitor opens a protected page. The existing `postAuthDestination` validation decides whether that path is safe and whether onboarding or a coach role changes the destination. This restores `/plan` after login without storing a token in browser storage.
+- Usage: open a protected plan link while signed out, sign in, and continue on that plan. The Stage 2 real-API Chrome smoke covers the redirect, logout, English route, and two-tab refresh. Related: `apps/web/src/app/[locale]/(app)/app-shell.tsx`, `apps/web/e2e/qa-stage2-real-api.spec.ts`, `docs/qa/2026-09-24-identity-content-coaching-results.md`.
 
 ## Gotchas / Known issues
 

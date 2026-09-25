@@ -11869,6 +11869,13 @@
           "snapshot": {
             "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
           },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
           "brief": {
             "nullable": true,
             "type": "object",
@@ -11886,6 +11893,7 @@
           "sourceFingerprint",
           "status",
           "snapshot",
+          "subjectNames",
           "brief"
         ]
       },
@@ -11988,6 +11996,13 @@
           "snapshot": {
             "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
           },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
           "coachEvaluation": {
             "type": "string",
             "nullable": true
@@ -12013,6 +12028,7 @@
           "studentDisplayName",
           "sourceFingerprint",
           "snapshot",
+          "subjectNames",
           "coachEvaluation",
           "brief"
         ]
@@ -12166,6 +12182,13 @@
           "snapshot": {
             "$ref": "#/components/schemas/MentorshipWeeklyShareSnapshotResponseDto"
           },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
           "coachEvaluation": {
             "type": "string",
             "nullable": true
@@ -12180,6 +12203,7 @@
           "version",
           "finalizedAt",
           "snapshot",
+          "subjectNames",
           "coachEvaluation"
         ]
       },

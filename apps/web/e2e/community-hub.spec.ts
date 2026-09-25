@@ -73,7 +73,7 @@ test("topluluk hub redesign sözleşmesini masaüstü ve mobilde korur", async (
   await expect(page.getByText(featured.title, { exact: true })).toBeVisible();
   // The effort board ("Emek Panosu") moved off the hub entirely — it's part of the feed route's
   // right rail (`community-right-rail.tsx`) now, not this landing page.
-  await expect(page.getByText("Etiketler konuşmalar büyüdükçe burada belirecek.")).toBeVisible();
+  await expect(page.getByText("Konuşmalar büyüdükçe etiketler burada uyanır.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Katıl" })).toHaveCount(2);
   await expect(page.getByText(/\bXP\b/)).toHaveCount(0);
 
@@ -132,7 +132,7 @@ async function mockCommunityApi(page: Page) {
       return route.fulfill({
         status: 200,
         contentType: "text/event-stream",
-        headers: corsHeaders,
+        headers: corsHeaders(route),
         body: "",
       });
     }
@@ -215,16 +215,16 @@ function thread(
   };
 }
 
-const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+const corsHeaders = (route: Route) => ({
+  "access-control-allow-origin": route.request().headers().origin ?? "http://localhost:3100",
   "access-control-allow-credentials": "true",
-};
+});
 
 async function json(route: Route, body: unknown, status = 200): Promise<void> {
   await route.fulfill({
     status,
     contentType: "application/json",
-    headers: corsHeaders,
+    headers: corsHeaders(route),
     body: body == null ? "" : JSON.stringify(body),
   });
 }

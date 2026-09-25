@@ -2,300 +2,282 @@
 
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import type { MentorshipCoachOverviewDto, MentorshipRosterRowDto } from "@mentor/types";
+import type {
+  MentorshipCoachOverviewDto,
+  MentorshipInviteCodeDto,
+  MentorshipRosterRowDto,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { SkeletonGroup } from "@mentor/ui";
-import { CommunityCard } from "@/components/community-card";
-import { EmptyState } from "@/components/empty-state";
-import { SegmentPillControl } from "@/components/segment-pill-control";
-import { useCloudTransitionReady } from "@/lib/cloud-transition";
-import { useMentorToast } from "@/lib/mentor-toast";
-import {
-  fetchCoachRegistrationState,
-  fetchOverview,
-  fetchRoster,
-  rotateInviteCode,
-  setAttention,
-} from "@/lib/mentorship";
-import { inviteLockOf, type InviteLock } from "./invite-lock";
+import { Button } from "@mentor/ui";
+import { PANEL_GRID_CLASS, PANEL_HERO, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { useWideLayout } from "@/components/panel/use-wide-layout";
 import { useAuth } from "@/lib/auth-context";
-import { CoachCapacityCard } from "./coach-capacity-card";
+import { useCloudTransitionReady } from "@/lib/cloud-transition";
+import { todayInIstanbul } from "@/lib/date-time";
+import { firstName, greetingKeyForHour } from "@/lib/greeting";
+import { useMentorToast } from "@/lib/mentor-toast";
+import { fetchCoachRegistrationState, fetchOverview, fetchRoster, setAttention } from "@/lib/mentorship";
+import { useSubscription } from "@/lib/subscription-context";
+import { withAttention } from "../../_components/attention";
+import { saveRoundOrder } from "../../_components/round-order";
+import { CoachCommunityCard } from "./coach-community-card";
 import { CoachCountdownCard } from "./coach-countdown-card";
-import { CohortBriefCard } from "./cohort-brief-card";
-import { compareByAttention, summarizeCohort } from "./cohort-summary";
-import { CohortSummaryBand } from "./cohort-summary-band";
+import { CoachRoundCard, CoachRoundSkeleton } from "./coach-round-card";
+import { buildCoachRound } from "./coach-round-model";
 import { FollowupInboxCard } from "./followup-inbox-card";
-import { RosterContentSkeleton } from "./roster-content-skeleton";
-import { StudentCard } from "./student-card";
+import { inviteLockOf, type InviteLock } from "./invite-lock";
+import { InviteSeatsCard } from "./invite-seats";
+import { StudentsCard, type RosterTab } from "./students-card";
+import { useCohortBrief } from "./use-cohort-brief";
 
-type Tab = "ACTIVE" | "ENDED";
+type Rows = MentorshipRosterRowDto[];
 
 /**
- * The coach's landing screen. It orchestrates two fetches and hands the rendering to the cards
- * below it; the summary band and the seat counter are both read off data this screen already has,
- * so "who needs me / how is the group / can I take another student" is one page load rather than
- * three.
+ * The coach's home (DESIGN.md §6.1): the round leads, the whole list follows, the standing facts
+ * sit in the rail. The layout draws at once and each section shows its own skeleton; nothing waits
+ * on a page gate. Two columns from 1280px, chosen in JS so DOM order is reading order: on a phone
+ * the round, the follow-ups and the list come before seats, the exam and the forum.
  */
 export function RosterShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
-  const locale = useLocale();
+  const wide = useWideLayout();
   const { error: toastError } = useMentorToast();
+  const { loading: subscriptionLoading } = useSubscription();
   const { user } = useAuth();
-  const [tab, setTab] = useState<Tab>("ACTIVE");
-  // The loaded tab travels with its rows, so switching tabs shows the skeleton without a
-  // synchronous setState in the effect (which would cascade a render).
-  const [loaded, setLoaded] = useState<{
-    tab: Tab;
-    items: MentorshipRosterRowDto[];
-  } | null>(null);
-  const [overview, setOverview] = useState<MentorshipCoachOverviewDto | null>(null);
-  /**
-   * Why the invite code is withheld, if it is (APP-089). The overview nulls the code but cannot
-   * say why, so without this the card would offer a Create button that 403s.
-   */
-  const [inviteLock, setInviteLock] = useState<InviteLock>(null);
-  const [busy, setBusy] = useState(false);
-  /** The student whose mark is in flight, so one card disables without freezing the roster. */
+  const today = todayInIstanbul();
+  const [tab, setTab] = useState<RosterTab>("ACTIVE");
+  const [active, setActive] = useState<Rows | null>(null);
+  const [activeFailed, setActiveFailed] = useState(false);
+  const [reload, setReload] = useState(0);
+  const [ended, setEnded] = useState<Rows | null>(null);
+  /** The coach's marks, applied at once and kept apart from the rows as loaded (see `StudentsCard`). */
+  const [marks, setMarks] = useState<Record<string, MentorshipRosterRowDto>>({});
   const [marking, setMarking] = useState<string | null>(null);
+  const [overview, setOverview] = useState<MentorshipCoachOverviewDto | null>(null);
+  const [overviewFailed, setOverviewFailed] = useState(false);
+  const [overviewRevision, setOverviewRevision] = useState(0);
+  const [inviteLock, setInviteLock] = useState<InviteLock>(null);
 
   const showError = useCallback(
-    (err: unknown) => {
+    (err: unknown) =>
       toastError({
         title: common("error_title"),
-        // The API already localizes its messages; the client does not re-translate them.
         message: err instanceof ApiClientError ? err.message : common("error_unknown"),
-      });
-    },
+      }),
     [toastError, common],
   );
 
   useEffect(() => {
-    let active = true;
-    fetchRoster(tab)
+    let alive = true;
+    fetchRoster("ACTIVE")
       .then((page) => {
-        if (active) setLoaded({ tab, items: page.items });
+        if (!alive) return;
+        setActive(page.items);
+        setActiveFailed(false);
       })
+      .catch(() => {
+        if (alive) setActiveFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [reload]);
+
+  useEffect(() => {
+    if (tab !== "ENDED" || ended !== null) return;
+    let alive = true;
+    fetchRoster("ENDED")
+      .then((page) => alive && setEnded(page.items))
       .catch((err: unknown) => {
-        if (!active) return;
-        setLoaded({ tab, items: [] });
-        // Depend on toastError, not the whole toast object: a new toast identity
-        // would refetch, 429, toast, forever.
+        if (!alive) return;
+        setEnded([]);
         showError(err);
       });
     return () => {
-      active = false;
+      alive = false;
     };
-  }, [tab, showError]);
+  }, [tab, ended, showError]);
 
-  const rows = loaded?.tab === tab ? loaded.items : null;
+  useEffect(() => {
+    let alive = true;
+    // Two reads: the overview is the panel's own, the registration state belongs to the registry.
+    fetchCoachRegistrationState()
+      .then((state) => alive && setInviteLock(inviteLockOf(state)))
+      .catch(() => {
+        /* Unknown reason: the card keeps the plain "no code yet" copy rather than guess a lock. */
+      });
+    fetchOverview()
+      .then((next) => {
+        if (!alive) return;
+        setOverview(next);
+        setOverviewFailed(false);
+      })
+      .catch(() => {
+        // The round is the screen; a missing seat card must not blank it, nor spin forever.
+        if (alive) setOverviewFailed(true);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [overviewRevision]);
 
-  // Handled rows sink below the ones still waiting, inside the severity order the API already
-  // applied. Safe on the client because the page holds the whole cohort (pageSize=100 against a
-  // seat cap in the dozens), so this re-orders every row the server ranked, not just a slice.
-  const ordered = useMemo(
-    () => (rows === null ? null : [...rows].sort(compareByAttention)),
-    [rows],
+  const retryOverview = useCallback(() => {
+    setOverviewFailed(false);
+    setOverviewRevision((value) => value + 1);
+  }, []);
+
+  const live = useCallback((row: MentorshipRosterRowDto) => marks[row.studentId] ?? row, [marks]);
+  const round = useMemo(
+    () => (active === null ? null : buildCoachRound(active.map(live), today)),
+    [active, live, today],
   );
+  const cohortBrief = useCohortBrief(round?.kind === "waiting");
 
-  // A coach lands here from onboarding: the clouds part on a roster, not on its skeleton.
-  useCloudTransitionReady(ordered !== null);
+  useCloudTransitionReady(active !== null || activeFailed);
 
-  /**
-   * Optimistic: the click is the coach's own act, and a spinner between deciding and seeing it is
-   * the friction the whole slice exists to remove. On failure the row snaps back and says why.
-   */
-  const toggleAttention = useCallback(
+  // The report's "Sıradaki" walks this order; a report opened any other way has none.
+  useEffect(() => {
+    if (!round || !active) return;
+    const names = new Map(active.map((row) => [row.studentId, firstName(row.studentDisplayName)]));
+    saveRoundOrder(round.order.map((studentId) => ({ studentId, name: names.get(studentId) ?? "" })));
+  }, [round, active]);
+
+  const mark = useCallback(
     async (studentId: string, attended: boolean) => {
+      const base = active?.find((row) => row.studentId === studentId);
+      if (!base) return;
+      const previous = marks[studentId];
       setMarking(studentId);
-      const patch = (next: boolean) =>
-        setLoaded((prev) =>
-          prev === null
-            ? prev
-            : {
-                ...prev,
-                items: prev.items.map((row) =>
-                  row.studentId === studentId
-                    ? {
-                        ...row,
-                        attendedAt: next ? new Date().toISOString() : null,
-                        // The server re-derives this from flags the coach cannot see change
-                        // mid-click; marking always clears the wait, unmarking always restores it.
-                        needsAttention: !next && row.riskFlags.length > 0,
-                      }
-                    : row,
-                ),
-              },
-        );
-      patch(attended);
+      setMarks((prev) => ({ ...prev, [studentId]: withAttention(prev[studentId] ?? base, attended) }));
       try {
         await setAttention(studentId, attended);
       } catch (err) {
-        patch(!attended);
+        setMarks((prev) => {
+          const next = { ...prev };
+          if (previous) next[studentId] = previous;
+          else delete next[studentId];
+          return next;
+        });
         showError(err);
       } finally {
         setMarking(null);
       }
     },
-    [showError],
+    [active, marks, showError],
   );
 
-  useEffect(() => {
-    let active = true;
-    // Two calls rather than one fatter DTO: the overview is the coach panel's own data, the
-    // registration state belongs to the registry and is read by the profile screen too.
-    fetchCoachRegistrationState()
-      .then((state) => {
-        if (active) setInviteLock(inviteLockOf(state));
-      })
-      .catch(() => {
-        // Unknown reason: the card falls back to the plain "no code yet" copy rather than
-        // guessing at a blocker that may not exist.
-      });
-    fetchOverview()
-      .then((next) => {
-        if (active) setOverview(next);
-      })
-      .catch(() => {
-        /* The roster is the screen; a missing header must not blank it. */
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  // Only the ACTIVE tab describes a live cohort. Summing the history tab would report on students
-  // whose window is closed, and their `metrics` are null by design.
-  const summary = useMemo(
-    () => summarizeCohort(tab === "ACTIVE" && rows ? rows : []),
-    [tab, rows],
+  const onCode = useCallback(
+    (inviteCode: MentorshipInviteCodeDto) =>
+      setOverview((prev) => (prev ? { ...prev, inviteCode } : prev)),
+    [],
   );
 
-  async function rotate() {
-    setBusy(true);
-    try {
-      const inviteCode = await rotateInviteCode();
-      setOverview((prev) => (prev ? { ...prev, inviteCode } : prev));
-    } catch (err) {
-      showError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
+  const hero = activeFailed ? (
+    <RosterError onRetry={() => setReload((value) => value + 1)} />
+  ) : round && !subscriptionLoading ? (
+    <CoachRoundCard
+      round={round}
+      today={today}
+      brief={cohortBrief.brief}
+      briefBusy={cohortBrief.busy}
+      busyId={marking}
+      onMark={(id, attended) => void mark(id, attended)}
+      overview={overview}
+      overviewFailed={overviewFailed}
+      onRetryOverview={retryOverview}
+      inviteLock={inviteLock}
+      onCode={onCode}
+    />
+  ) : (
+    <CoachRoundSkeleton />
+  );
+  const students = activeFailed ? null : (
+    <StudentsCard
+      tab={tab}
+      onTab={setTab}
+      rows={tab === "ACTIVE" ? active : ended}
+      live={live}
+      today={today}
+      brief={cohortBrief.brief}
+      busyId={marking}
+      onMark={(id, attended) => void mark(id, attended)}
+    />
+  );
+  const followups = <FollowupInboxCard />;
+  // Before the first student the round IS the invitation; a second copy in the rail would repeat it.
+  const seats =
+    round?.kind === "empty" ? null : (
+      <InviteSeatsCard
+        overview={overview}
+        inviteLock={inviteLock}
+        onCode={onCode}
+        failed={overviewFailed}
+        onRetry={retryOverview}
+      />
+    );
+  const countdown = <CoachCountdownCard examType={user?.examType ?? null} />;
+  const community = <CoachCommunityCard />;
 
-  /*
-   * Two columns since APP-090, because this stopped being a page a coach visits and became the
-   * page they land on. The split is by how often a thing changes: the left column is today's work
-   * (who is waiting, and why), the right is the standing facts a coach glances at (how long until
-   * the exam, how many seats are left, where the community is).
-   *
-   * One column below `xl`, in this order, so a phone still opens on the work (APP-090).
-   *
-   * The design's mobile artboard leads with the countdown instead. Not taken: one instance cannot
-   * be in two places, so honouring it means either a second `CoachCountdownCard` (two calendar
-   * fetches for one date) or a row-spanning grid, which stretches the rail's first row and leaves
-   * a hole under the countdown on the desktop. A card four words tall is not worth either.
-   */
   return (
-    <div className="grid min-w-0 max-w-[1120px] gap-6 xl:grid-cols-[minmax(0,1.75fr)_minmax(320px,0.85fr)] xl:items-start">
-      <section className="flex min-w-0 flex-col gap-4">
-        {/*
-         * No heading. "Öğrencilerim" restated the nav item the coach had just clicked, and the
-         * subtitle described the sort order the list below already demonstrates — two lines of
-         * chrome above the only thing on the page.
-         *
-         * Above the counts on purpose: the summary says how many are waiting, the brief says who
-         * and why. Both are ACTIVE-only — the history tab describes closed windows.
-         */}
-        {tab === "ACTIVE" && <CohortBriefCard />}
+    <main className={PANEL_MAIN_CLASS}>
+      <RosterGreeting name={firstName(user?.displayName ?? "")} />
+      {wide ? (
+        <div className={PANEL_GRID_CLASS}>
+          <div className="flex min-w-0 flex-col gap-5">
+            {hero}
+            {students}
+          </div>
+          <aside className="flex min-w-0 flex-col gap-5" aria-label={t("roster_rail_label")}>
+            {followups}
+            {seats}
+            {countdown}
+            {community}
+          </aside>
+        </div>
+      ) : (
+        <div className="flex min-w-0 flex-col gap-5">
+          {hero}
+          {followups}
+          {students}
+          {seats}
+          {countdown}
+          {community}
+        </div>
+      )}
+    </main>
+  );
+}
 
-        {tab === "ACTIVE" && <CohortSummaryBand summary={summary} />}
+/** The page speaking, not a card. Phones already greet in the top bar, so there it is for readers only. */
+function RosterGreeting({ name }: { name: string }) {
+  const t = useTranslations("mentorship");
+  const locale = useLocale();
+  const date = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  }).format(new Date());
 
-        {tab === "ACTIVE" && <FollowupInboxCard />}
-
-        <SegmentPillControl
-          items={[
-            { id: "ACTIVE", label: t("tab_active") },
-            { id: "ENDED", label: t("tab_ended") },
-          ]}
-          value={tab}
-          onChange={(id) => setTab(id as Tab)}
-          ariaLabel={t("roster_tabs_label")}
-          layoutId="mentorship-roster-tabs"
-        />
-
-        <SkeletonGroup
-          label={t("loading")}
-          loading={ordered === null}
-          revealed={
-            ordered === null ? (
-              <div className="flex flex-col gap-3" aria-hidden>
-                <div className="h-36" />
-                <div className="h-36" />
-                <div className="h-36" />
-              </div>
-            ) : ordered.length === 0 ? (
-              <EmptyState
-                title={tab === "ACTIVE" ? t("roster_empty_title") : t("roster_ended_empty_title")}
-                description={
-                  tab === "ACTIVE" ? t("roster_empty_body") : t("roster_ended_empty_body")
-                }
-                puhuVariant="encouraging"
-              />
-            ) : (
-              <ul className="flex flex-col gap-3">
-                {ordered.map((row) => (
-                  <li key={row.linkId}>
-                    <StudentCard
-                      row={row}
-                      locale={locale}
-                      clickable={tab === "ACTIVE"}
-                      busy={marking === row.studentId}
-                      onAttention={
-                        tab === "ACTIVE"
-                          ? (attended) => void toggleAttention(row.studentId, attended)
-                          : undefined
-                      }
-                    />
-                  </li>
-                ))}
-              </ul>
-            )
-          }
-          className="flex flex-col gap-3"
-        >
-          <RosterContentSkeleton />
-        </SkeletonGroup>
-      </section>
-
-      <aside className="flex min-w-0 flex-col gap-4">
-        {/* The exam the coach coaches, not one they are sitting (APP-089 reframed `examType`).
-            Its own endpoint rather than `/v1/coaching/today`, which would hand a coach a student's
-            plan payload to read one date off. */}
-        <CoachCountdownCard examType={user?.examType ?? null} />
-
-        <CoachCapacityCard
-          loaded={overview !== null}
-          inviteCode={overview?.inviteCode ?? null}
-          inviteLock={inviteLock}
-          activeStudents={overview?.activeStudents ?? 0}
-          maxActiveStudents={overview?.maxActiveStudents ?? 0}
-          freeSeats={overview?.freeSeats ?? 0}
-          paidSeats={overview?.paidSeats ?? 0}
-          usedSeats={overview?.usedSeats ?? 0}
-          sponsorshipEnabled={overview?.sponsorshipEnabled ?? false}
-          busy={busy}
-          onRotate={rotate}
-        />
-
-        {/* The data-scope contract used to live here as a permanent accordion. It is a consent
-            document — read once when the coach starts, re-read when they wonder — so it moved to
-            /ayarlar, where a row that opens on demand is what that shape actually is. */}
-
-        {/* Roadmap §5 makes the forum the coach's showcase and the raw material of their trust
-            score, so this is not the student's promo strip wearing a coach hat. */}
-        <CommunityCard />
-      </aside>
+  return (
+    <div className="min-w-0">
+      <h1 className="sr-only text-display font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)] lg:not-sr-only lg:truncate">
+        {t(`roster_${greetingKeyForHour()}`, { name })}
+      </h1>
+      <p className="mt-1 hidden text-sm font-bold text-[var(--color-secondary)] lg:block">{date}</p>
     </div>
+  );
+}
+
+/** The roster failed to load: said calmly in the hero's place, with the one thing to do about it. */
+function RosterError({ onRetry }: { onRetry: () => void }) {
+  const t = useTranslations("mentorship");
+  return (
+    <section className={PANEL_HERO} role="alert">
+      <p className="text-body-sm font-semibold text-[var(--color-body)]">{t("roster_load_failed")}</p>
+      <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onRetry}>
+        {t("roster_retry")}
+      </Button>
+    </section>
   );
 }

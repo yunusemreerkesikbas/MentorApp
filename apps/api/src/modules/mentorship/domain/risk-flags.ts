@@ -1,5 +1,5 @@
 import { MentorshipRiskFlag, type MentorshipRiskFlagId } from "@mentor/types";
-import type { CohortStudentSnapshot } from "../../coaching/domain/cohort-evidence";
+import type { CohortTriageSnapshot } from "../../coaching/domain/cohort-evidence";
 
 /**
  * Rule-based triage — deliberately not AI (roadmap §9 calls the AI brief a later layer, and a
@@ -9,7 +9,7 @@ import type { CohortStudentSnapshot } from "../../coaching/domain/cohort-evidenc
  * config so they can be calibrated from live data without a deploy; the rules themselves are here,
  * pure and testable.
  *
- * Only the domain type crosses from coaching — `CohortStudentSnapshot` is an aggregate contract,
+ * Only the domain type crosses from coaching — `CohortTriageSnapshot` is an aggregate contract,
  * not a table read, so this stays inside the workstream boundary.
  */
 export interface RiskThresholds {
@@ -27,7 +27,7 @@ const SEVERITY: MentorshipRiskFlagId[] = [
 ];
 
 export function evaluateRiskFlags(
-  snapshot: CohortStudentSnapshot,
+  snapshot: CohortTriageSnapshot,
   thresholds: RiskThresholds,
   today: string,
 ): MentorshipRiskFlagId[] {
@@ -57,7 +57,9 @@ export function evaluateRiskFlags(
     flags.push(MentorshipRiskFlag.LOW_MOOD);
   }
 
-  // Strictly below the baseline — an identical net is holding steady, not slipping.
+  // Strictly below the baseline — an identical net is holding steady, not slipping. The baseline
+  // holds only attempts of the latest attempt's exam (`CohortEvidenceRepository.latestMocks`): a
+  // first attempt on a new exam has no baseline and cannot drop.
   if (
     snapshot.latestMockNet !== null &&
     snapshot.previousMockNetAvg !== null &&
@@ -99,7 +101,10 @@ interface RiskSortable {
   metrics: { lastActiveDate: string | null } | null;
 }
 
-/** Whole days between two `yyyy-mm-dd` strings. UTC, matching the rest of coaching's day math. */
+/**
+ * Whole days between two `yyyy-mm-dd` strings: calendar arithmetic, no clock. Callers pass
+ * Europe/Istanbul days on both sides (`lastActiveDate` and `todayInIstanbul`).
+ */
 function daysBetweenIso(from: string, to: string): number {
   const ms = Date.parse(`${to}T00:00:00.000Z`) - Date.parse(`${from}T00:00:00.000Z`);
   return Math.round(ms / 86_400_000);

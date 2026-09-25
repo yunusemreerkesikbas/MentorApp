@@ -1,98 +1,103 @@
 "use client";
 
-import { useState } from "react";
-import { AnimatePresence } from "framer-motion";
-import { BarChart3, ChevronRight } from "lucide-react";
-import { useLocale, useTranslations } from "next-intl";
-import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
-import { InsetSection, NOTE_CLASS } from "@/components/mentorship/coach-ui";
-import { useWeeklyReportCard } from "./use-weekly-report-card";
-import { WeeklyReportPanel } from "./weekly-report-panel";
+import { FileText } from "lucide-react";
+import { useTranslations } from "next-intl";
+import {
+  PANEL_CARD,
+  PANEL_CARD_TITLE,
+  PANEL_QUIET_LINK,
+  PANEL_TEXT_LINK,
+} from "@/components/panel/panel-styles";
+import { firstName } from "@/lib/greeting";
+import { dativeOf } from "@/lib/turkish-case";
+import { useReportDates } from "./use-report-dates";
+import type { useWeeklyReportCard } from "./use-weekly-report-card";
+import { shiftIso } from "./week-filmstrip-model";
 
-export function WeeklyReportCard({ studentId }: { studentId: string }) {
+type WeeklyReport = ReturnType<typeof useWeeklyReportCard>;
+
+/**
+ * "Haftalık değerlendirme" in the rail: which week is ready, whether the coach has finished it, and
+ * the honest part: the PDF is the coach's to send, nothing reaches the student from here. The numbers
+ * live in the panel; the card carries no metric tiles.
+ */
+export function WeeklyReportCard({
+  weekly,
+  joinedOn,
+  onOpen,
+}: {
+  weekly: WeeklyReport;
+  /**
+   * Europe/Istanbul `yyyy-mm-dd` the link started; null when the report has none, undefined while
+   * the report is still loading.
+   */
+  joinedOn: string | null | undefined;
+  onOpen: (archive: boolean) => void;
+}) {
   const t = useTranslations("mentorship");
-  const locale = useLocale();
-  const [open, setOpen] = useState(false);
-  const report = useWeeklyReportCard(studentId);
+  const { range } = useReportDates();
+  // Drawn only once there is something true to say, like the follow-up card: a coach without the
+  // feature never sees a card flash in and go, and the sentence never lacks its name or its week.
+  if (weekly.state === "disabled" || weekly.state === "loading") return null;
+  if (weekly.state === "ready" && joinedOn === undefined) return null;
+  const name = firstName(weekly.preview?.studentDisplayName ?? "");
 
-  if (report.state === "disabled") return null;
-  if (report.state === "loading") {
-    return (
-      <SkeletonGroup label={t("weekly_report_loading")} className="flex flex-col gap-3">
-        <Skeleton className="h-8 w-56 rounded-[var(--radius-card)]" />
-        <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
-      </SkeletonGroup>
-    );
-  }
-  if (report.state === "failed" || !report.preview) {
-    return (
-      <InsetSection title={t("weekly_report_title")}>
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4">
-          <p className={NOTE_CLASS}>{t("weekly_report_load_failed")}</p>
-          <Button type="button" variant="secondary" size="sm" onClick={() => void report.retry()}>
-            {t("weekly_report_retry")}
-          </Button>
-        </div>
-      </InsetSection>
-    );
-  }
-
-  const preview = report.preview;
-  const number = new Intl.NumberFormat(locale);
-  const dateFormat = new Intl.DateTimeFormat(locale, { day: "numeric", month: "short", year: "numeric" });
-  const formatDate = (value: string) => dateFormat.format(new Date(`${value}T12:00:00.000Z`));
-  const period = t("weekly_report_period", {
-    start: formatDate(preview.snapshot.period.startDate),
-    end: formatDate(preview.snapshot.period.endDate),
-  });
-  const mockAverage = preview.snapshot.mocks.currentAverageNet;
+  // The latest finished week, whatever week the panel is showing: moving through older weeks there
+  // must not move the card (weeks run Monday to Sunday).
+  const period =
+    weekly.state === "ready" && weekly.latestWeek !== null
+      ? { startDate: weekly.latestWeek, endDate: shiftIso(weekly.latestWeek, 6) }
+      : null;
+  const finalized =
+    period !== null && weekly.archive.some((item) => item.period.startDate === period.startDate);
+  const beforeLink = period !== null && joinedOn != null && joinedOn > period.endDate;
 
   return (
-    <>
-      <InsetSection title={t("weekly_report_title")}>
-        <div className="rounded-[var(--radius-card)] bg-[var(--color-surface)] p-4">
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex min-w-0 items-start gap-3">
-              <span className="flex size-10 shrink-0 items-center justify-center rounded-[var(--radius-card)] bg-[var(--color-primary-container)] text-[var(--color-primary)]">
-                <BarChart3 aria-hidden size={20} />
-              </span>
-              <div className="min-w-0">
-                <p className="coach-body font-semibold text-[var(--color-main)]">{t("weekly_report_summary_title")}</p>
-                <p className={NOTE_CLASS}>{period}</p>
-              </div>
-            </div>
-            <span className="coach-footnote rounded-full bg-[var(--color-surface-container)] px-3 py-1 font-semibold text-[var(--color-secondary)]">
-              {report.archive.some((item) => item.period.startDate === preview.snapshot.period.startDate)
-                ? t("weekly_report_status_finalized")
-                : t("weekly_report_status_draft")}
-            </span>
-          </div>
-          <dl className="mt-4 grid grid-cols-3 gap-2 border-y border-[var(--color-border)] py-3">
-            <SummaryMetric label={t("weekly_report_focus")} value={`${number.format(preview.snapshot.current.focusMinutes)} ${locale === "tr" ? "dk" : "min"}`} />
-            <SummaryMetric label={t("weekly_report_plan_short")} value={`${preview.snapshot.current.completedTasks} / ${preview.snapshot.current.plannedTasks}`} />
-            <SummaryMetric label={t("weekly_report_mock_average")} value={mockAverage === null ? t("weekly_report_missing") : number.format(mockAverage)} />
-          </dl>
-          <Button type="button" variant="ghost" className="mt-2 w-full justify-between" onClick={() => setOpen(true)}>
-            {t("weekly_report_open")}
-            <ChevronRight aria-hidden size={18} />
-          </Button>
-        </div>
-      </InsetSection>
-
-      <AnimatePresence>
-        {open ? (
-          <WeeklyReportPanel studentId={studentId} report={report} period={period} formatDate={formatDate} onClose={() => setOpen(false)} />
+    <section className={`${PANEL_CARD} flex flex-col gap-2`} aria-labelledby="weekly-title">
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="weekly-title" className={PANEL_CARD_TITLE}>
+          {t("weekly_report_title")}
+        </h2>
+        {period && !beforeLink ? (
+          <span className="inline-flex h-6 items-center rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
+            {finalized ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+          </span>
         ) : null}
-      </AnimatePresence>
-    </>
-  );
-}
+      </div>
 
-function SummaryMetric({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="min-w-0 px-1">
-      <dt className="coach-footnote truncate text-[var(--color-secondary)]">{label}</dt>
-      <dd className="coach-body mt-1 font-semibold tabular-nums text-[var(--color-main)]">{value}</dd>
-    </div>
+      {period === null ? (
+        <div role="alert" className="flex flex-col items-start gap-1">
+          <p className="text-body-sm font-semibold text-[var(--color-body)]">{t("weekly_report_load_failed")}</p>
+          <button type="button" className={PANEL_QUIET_LINK} onClick={() => void weekly.retry()}>
+            {t("weekly_report_retry")}
+          </button>
+        </div>
+      ) : (
+        <>
+          <p className="text-body-sm font-semibold text-[var(--color-body)]">
+            {beforeLink
+              ? t("weekly_card_new")
+              : t(finalized ? "weekly_card_finalized" : "weekly_card_ready", {
+                  period: range(period.startDate, period.endDate),
+                  name,
+                  dative: dativeOf(name),
+                })}
+          </p>
+          <div className="flex flex-wrap items-center gap-x-4">
+            {beforeLink ? null : (
+              <button type="button" className={`${PANEL_TEXT_LINK} cursor-pointer gap-1.5`} onClick={() => onOpen(false)}>
+                <FileText className="size-4" aria-hidden />
+                {t("weekly_report_open")}
+              </button>
+            )}
+            {weekly.archive.length > 0 ? (
+              <button type="button" className={PANEL_QUIET_LINK} onClick={() => onOpen(true)}>
+                {t("weekly_card_archive", { count: weekly.archive.length })}
+              </button>
+            ) : null}
+          </div>
+        </>
+      )}
+    </section>
   );
 }

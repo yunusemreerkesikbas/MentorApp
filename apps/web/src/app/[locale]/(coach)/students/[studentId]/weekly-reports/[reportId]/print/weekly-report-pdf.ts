@@ -61,6 +61,8 @@ function buildWeeklyReportDocument(
   const net = (value: number | null) => (value === null ? missing : number.format(value));
   const rate = (value: number | null) => (value === null ? missing : percent.format(value));
   const minutes = (value: number) => `${number.format(value)} ${locale === "tr" ? "dk" : "min"}`;
+  // Names sit beside the snapshot; a subject content no longer knows keeps its slug.
+  const nameOf = (ref: string) => report.subjectNames[ref] ?? ref;
   const comparisonRows: TableCell[][] = [
     [copy.focus, minutes(report.snapshot.current.focusMinutes), minutes(report.snapshot.previous.focusMinutes)],
     [copy.sessions, number.format(report.snapshot.current.sessions), number.format(report.snapshot.previous.sessions)],
@@ -69,14 +71,14 @@ function buildWeeklyReportDocument(
     [copy.completion, rate(report.snapshot.current.completionRate), rate(report.snapshot.previous.completionRate)],
   ];
   const subjectRows: TableCell[][] = report.snapshot.subjects.map((subject) => [
-    subject.subjectRef ?? copy.unclassified,
+    subject.subjectRef ? nameOf(subject.subjectRef) : copy.unclassified,
     `${minutes(subject.currentFocusMinutes)}, ${number.format(subject.currentSessions)} ${copy.sessions.toLocaleLowerCase(locale)}`,
     `${minutes(subject.previousFocusMinutes)}, ${number.format(subject.previousSessions)} ${copy.sessions.toLocaleLowerCase(locale)}`,
   ]);
   const mockRows: TableCell[][] = [
     [copy.mockAttempts, number.format(report.snapshot.mocks.currentAttemptCount), number.format(report.snapshot.mocks.previousAttemptCount)],
     [copy.mockAverage, net(report.snapshot.mocks.currentAverageNet), net(report.snapshot.mocks.previousAverageNet)],
-    ...report.snapshot.mocks.subjects.map((subject) => [subject.subjectRef, net(subject.currentAverageNet), net(subject.previousAverageNet)]),
+    ...report.snapshot.mocks.subjects.map((subject) => [nameOf(subject.subjectRef), net(subject.currentAverageNet), net(subject.previousAverageNet)]),
   ];
   const content: Content[] = [
     { text: copy.version, color: "#3568c5", bold: true, fontSize: 9, marginBottom: 8 },

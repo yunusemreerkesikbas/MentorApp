@@ -51,6 +51,16 @@ export class MentorshipWeeklyReportParamDto extends createZodDto(
   @ApiProperty({ type: String, format: "uuid" }) declare reportId: string;
 }
 
+/**
+ * Subject slug → name, beside the snapshot and never inside it: the fingerprint hashes the snapshot,
+ * and a renamed subject must not invalidate a week's drafts.
+ */
+const SUBJECT_NAMES_PROPERTY = {
+  type: "object",
+  additionalProperties: { type: "string" },
+  description: "Subject slug → display name for the week's subjects; a slug content no longer knows is absent.",
+} as const;
+
 export class MentorshipWeeklyPeriodResponseDto {
   @ApiProperty({ type: String, format: "date" }) startDate!: string;
   @ApiProperty({ type: String, format: "date" }) endDate!: string;
@@ -244,6 +254,8 @@ export class MentorshipWeeklyPreviewResponseDto {
   status!: string;
   @ApiProperty({ type: MentorshipWeeklySnapshotResponseDto })
   snapshot!: MentorshipWeeklySnapshotResponseDto;
+  @ApiProperty(SUBJECT_NAMES_PROPERTY)
+  subjectNames!: Record<string, string>;
   @ApiProperty({ type: MentorshipWeeklyBriefResponseDto, nullable: true })
   brief!: MentorshipWeeklyBriefResponseDto | null;
 }
@@ -266,6 +278,8 @@ export class MentorshipWeeklyReportResponseDto extends MentorshipWeeklyReportLis
   @ApiProperty({ minLength: 64, maxLength: 64 }) sourceFingerprint!: string;
   @ApiProperty({ type: MentorshipWeeklySnapshotResponseDto })
   snapshot!: MentorshipWeeklySnapshotResponseDto;
+  @ApiProperty(SUBJECT_NAMES_PROPERTY)
+  subjectNames!: Record<string, string>;
   @ApiProperty({ type: String, nullable: true }) coachEvaluation!:
     | string
     | null;
@@ -292,6 +306,8 @@ export class MentorshipWeeklyReportShareResponseDto {
   @ApiProperty({ type: String, format: "date-time" }) finalizedAt!: string;
   @ApiProperty({ type: MentorshipWeeklyShareSnapshotResponseDto })
   snapshot!: MentorshipWeeklyShareSnapshotResponseDto;
+  @ApiProperty(SUBJECT_NAMES_PROPERTY)
+  subjectNames!: Record<string, string>;
   @ApiProperty({ type: String, nullable: true }) coachEvaluation!:
     | string
     | null;

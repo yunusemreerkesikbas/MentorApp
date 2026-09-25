@@ -12,6 +12,7 @@ const ARTICLE_SLUG = `lgs-reklam-guvenligi-${RUN}`;
 const IDEMPOTENCY_KEY = "11111111-1111-4111-8111-111111111111";
 const CRON_SECRET = `ads-cron-secret-for-e2e-${RUN}-only`;
 const AD_CONFIG_OVERRIDES = {
+  "economy.enabled": true,
   "ads.enabled": true,
   "ads.display.enabled": true,
   "ads.rewarded.enabled": true,

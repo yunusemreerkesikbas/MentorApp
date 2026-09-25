@@ -1,6 +1,6 @@
 import { planningTaskPage } from "./planning-task-page";
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
+import { and, desc, eq, gte, inArray, lte, or, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -10,6 +10,7 @@ import {
   mockExams,
   moodCheckins,
   planTasks,
+  streakFreezes,
   streakState,
   studySessions,
 } from "../../../database/schema";
@@ -50,10 +51,13 @@ export class CohortEvidenceRepository {
     );
   }
 
-  /** Completed-session totals since `since`, per student. */
+  /**
+   * Completed-session totals from the start of `sinceDate`, an Europe/Istanbul day, per student:
+   * the same cut the activity strip draws, so a 7-day total is the sum of the strip's last 7 days.
+   */
   sessionTotalsSince(
     studentIds: string[],
-    since: Date,
+    sinceDate: string,
   ): Promise<{ userId: string; sessions: number; focusMinutes: number }[]> {
     if (studentIds.length === 0) return Promise.resolve([]);
     return withServiceContext(this.db, (tx) =>
@@ -68,7 +72,7 @@ export class CohortEvidenceRepository {
           and(
             inArray(studySessions.userId, studentIds),
             eq(studySessions.status, "COMPLETED"),
-            gte(studySessions.startedAt, since),
+            sql`${studySessions.startedAt} >= (${sinceDate}::date::timestamp at time zone 'Europe/Istanbul')`,
           ),
         )
         .groupBy(studySessions.userId),
@@ -76,30 +80,132 @@ export class CohortEvidenceRepository {
   }
 
   /**
-   * All-time last active day plus the active-day count since `sinceDate`, per student.
-   * "Active" mirrors the streak definition: a completed session OR at least one done task.
+   * Completed-session minutes per student per Europe/Istanbul day, from `sinceDate` (an Istanbul
+   * day) on, each on the Istanbul day it started. The day is cut in Istanbul, not UTC: a session
+   * started at 00:30 belongs to the day the student lived it, which is the day the coach's strip
+   * draws it on. Text, not `date`, so the
+   * driver cannot turn the day into a UTC midnight.
+   */
+  dailyFocusMinutes(
+    studentIds: string[],
+    sinceDate: string,
+  ): Promise<{ userId: string; day: string; focusMinutes: number }[]> {
+    if (studentIds.length === 0) return Promise.resolve([]);
+    const day = sql<string>`to_char(${studySessions.startedAt} at time zone 'Europe/Istanbul', 'YYYY-MM-DD')`;
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({
+          userId: studySessions.userId,
+          day,
+          focusMinutes: sql<number>`(coalesce(sum(${studySessions.actualFocusSeconds}), 0) / 60)::int`,
+        })
+        .from(studySessions)
+        .where(
+          and(
+            inArray(studySessions.userId, studentIds),
+            eq(studySessions.status, "COMPLETED"),
+            sql`${studySessions.startedAt} >= (${sinceDate}::date::timestamp at time zone 'Europe/Istanbul')`,
+          ),
+        )
+        .groupBy(studySessions.userId, day),
+    );
+  }
+
+  /**
+   * Active days (≥1 session OR ≥1 done task) on/after `sinceDate`, per student — the batch form of
+   * `DailyActivityRepository.listActiveDatesSince`, for deriving the live streak.
+   */
+  activeDatesSince(
+    studentIds: string[],
+    sinceDate: string,
+  ): Promise<{ userId: string; date: string }[]> {
+    if (studentIds.length === 0) return Promise.resolve([]);
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({ userId: dailyActivity.userId, date: dailyActivity.activityDate })
+        .from(dailyActivity)
+        .where(
+          and(
+            inArray(dailyActivity.userId, studentIds),
+            gte(dailyActivity.activityDate, sinceDate),
+            or(
+              eq(dailyActivity.hasSession, true),
+              sql`${dailyActivity.tasksDone} > 0`,
+            ),
+          ),
+        ),
+    );
+  }
+
+  /** Coin-purchased freeze days on/after `sinceDate`, per student (batch `StreakFreezeRepository`). */
+  purchasedFreezeDatesSince(
+    studentIds: string[],
+    sinceDate: string,
+  ): Promise<{ userId: string; date: string }[]> {
+    if (studentIds.length === 0) return Promise.resolve([]);
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select({ userId: streakFreezes.userId, date: streakFreezes.date })
+        .from(streakFreezes)
+        .where(
+          and(
+            inArray(streakFreezes.userId, studentIds),
+            gte(streakFreezes.date, sinceDate),
+          ),
+        ),
+    );
+  }
+
+  /**
+   * All-time last active day plus the active-day count since `sinceDate`, per student, both on
+   * Europe/Istanbul days. "Active" mirrors the streak definition: a qualifying completed session
+   * (focus ≥ `minFocusSeconds`) OR at least one done task.
+   *
+   * Session days come from `study_sessions`, not `daily_activity.has_session`: the ledger stamps a
+   * session on its UTC day, which puts a 00:30 Istanbul session on yesterday. Task days stay on the
+   * ledger — they are the plan's own calendar date, with no clock to convert. Text, not `date`, so
+   * the driver cannot turn the day into a UTC midnight.
    */
   activityWindow(
     studentIds: string[],
     sinceDate: string,
+    minFocusSeconds: number,
   ): Promise<
     { userId: string; lastActiveDate: string | null; activeDays: number }[]
   > {
     if (studentIds.length === 0) return Promise.resolve([]);
-    const isActive = sql`(${dailyActivity.hasSession} = true or ${dailyActivity.tasksDone} > 0)`;
-    return withServiceContext(this.db, (tx) =>
-      tx
-        .select({
-          userId: dailyActivity.userId,
-          lastActiveDate: sql<
-            string | null
-          >`max(${dailyActivity.activityDate}) filter (where ${isActive})`,
-          activeDays: sql<number>`count(*) filter (where ${isActive} and ${dailyActivity.activityDate} >= ${sinceDate})::int`,
-        })
-        .from(dailyActivity)
-        .where(inArray(dailyActivity.userId, studentIds))
-        .groupBy(dailyActivity.userId),
-    );
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.execute<{
+        user_id: string;
+        last_active_date: string;
+        active_days: number;
+      }>(sql`
+        with days as (
+          select ${studySessions.userId} as user_id,
+                 (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date as day
+          from ${studySessions}
+          where ${inArray(studySessions.userId, studentIds)}
+            and ${studySessions.status} = 'COMPLETED'
+            and ${studySessions.endedAt} is not null
+            and ${studySessions.actualFocusSeconds} >= ${minFocusSeconds}
+          union
+          select ${dailyActivity.userId}, ${dailyActivity.activityDate}
+          from ${dailyActivity}
+          where ${inArray(dailyActivity.userId, studentIds)}
+            and ${dailyActivity.tasksDone} > 0
+        )
+        select user_id,
+               to_char(max(day), 'YYYY-MM-DD') as last_active_date,
+               count(*) filter (where day >= ${sinceDate}::date)::int as active_days
+        from days
+        group by user_id
+      `);
+      return rows.rows.map((row) => ({
+        userId: row.user_id,
+        lastActiveDate: row.last_active_date,
+        activeDays: Number(row.active_days),
+      }));
+    });
   }
 
   streaks(
@@ -120,17 +226,24 @@ export class CohortEvidenceRepository {
     );
   }
 
-  /** Planned vs done since `sinceDate`. Counts only — titles come from {@link planTaskRows}. */
+  /**
+   * Planned vs done from `sinceDate` through `untilDate` (today). Counts only — titles come from
+   * {@link planTaskRows}. The upper bound matters: a week the coach assigned ahead is planned but
+   * not yet due, and counting it would read as a student falling behind on days still to come.
+   * For the same reason a task dated today counts only once it is done: the day is not over, and a
+   * coach planning the week on its first day must not flag the student with it.
+   */
   planTotalsSince(
     studentIds: string[],
     sinceDate: string,
+    untilDate: string,
   ): Promise<{ userId: string; total: number; done: number }[]> {
     if (studentIds.length === 0) return Promise.resolve([]);
     return withServiceContext(this.db, (tx) =>
       tx
         .select({
           userId: planTasks.userId,
-          total: sql<number>`count(*)::int`,
+          total: sql<number>`count(*) filter (where ${planTasks.taskDate} < ${untilDate} or ${planTasks.status} = 'DONE')::int`,
           done: sql<number>`count(*) filter (where ${planTasks.status} = 'DONE')::int`,
         })
         .from(planTasks)
@@ -138,6 +251,7 @@ export class CohortEvidenceRepository {
           and(
             inArray(planTasks.userId, studentIds),
             gte(planTasks.taskDate, sinceDate),
+            lte(planTasks.taskDate, untilDate),
           ),
         )
         .groupBy(planTasks.userId),
@@ -145,11 +259,14 @@ export class CohortEvidenceRepository {
   }
 
   /**
-   * Per student: the most recent attempt, plus the mean of the three attempts before it.
+   * Per student: the most recent attempt, plus the mean of up to three earlier attempts OF THE SAME
+   * EXAM (`exam_id`, which also pins the family: an exam belongs to exactly one).
    *
    * One pass — the window function computes the baseline while `distinct on` picks the latest, so
-   * "is this student's net falling?" costs no extra round trip. `previousNetAvg` is null on a first
-   * attempt, which is the honest answer: there is nothing yet to fall from.
+   * "is this student's net falling?" costs no extra round trip. The window is partitioned by exam
+   * because nets on different exams share no scale: a first ALES attempt after two KPSS mocks is
+   * not a drop. `previousNetAvg` is null on a first attempt of that exam, which is the honest
+   * answer: there is nothing yet to fall from.
    */
   latestMocks(studentIds: string[]): Promise<
     {
@@ -172,13 +289,13 @@ export class CohortEvidenceRepository {
           ${mockExams.totalNet} as total_net,
           ${mockExams.takenAt} as taken_at,
           avg(${mockExams.totalNet}) over (
-            partition by ${mockExams.userId}
-            order by ${mockExams.takenAt} desc
+            partition by ${mockExams.userId}, ${mockExams.examId}
+            order by ${mockExams.takenAt} desc, ${mockExams.id} desc
             rows between 1 following and 3 following
           ) as previous_net_avg
         from ${mockExams}
         where ${inArray(mockExams.userId, studentIds)}
-        order by ${mockExams.userId}, ${mockExams.takenAt} desc
+        order by ${mockExams.userId}, ${mockExams.takenAt} desc, ${mockExams.id} desc
       `);
       return rows.rows.map((row) => ({
         userId: row.user_id,
@@ -221,6 +338,7 @@ export class CohortEvidenceRepository {
   ): Promise<
     {
       id: string;
+      examId: string;
       takenAt: Date;
       totalNet: string;
       publisherName: string | null;
@@ -230,6 +348,7 @@ export class CohortEvidenceRepository {
       tx
         .select({
           id: mockExams.id,
+          examId: mockExams.examId,
           takenAt: mockExams.takenAt,
           totalNet: mockExams.totalNet,
           publisherName: mockExams.publisherName,

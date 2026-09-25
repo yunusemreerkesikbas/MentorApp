@@ -163,7 +163,7 @@ export class MentorshipLinkService {
    * act on it: the coach hands out a code, the student eats the 409, and the coach never learns.
    */
   async getCoachOverview(coachId: string): Promise<MentorshipCoachOverviewDto> {
-    const [inviteCode, activeLinks, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats, canInvite] =
+    const [inviteCode, activeLinks, maxActiveStudents, freeSeats, sponsorshipEnabled, paidSeats, canInvite, plans] =
       await Promise.all([
         this.invites.getCurrent(coachId),
         this.links.listActiveByCoach(coachId),
@@ -172,6 +172,8 @@ export class MentorshipLinkService {
         this.config.get("mentorship.seats.sponsorship_enabled"),
         this.subscriptions.paidSeatsFor(coachId),
         this.applications.canInvite(coachId),
+        // The catalog `/subscription` renders, so the card can only point at a plan that is there.
+        this.subscriptions.listPlans(),
       ]);
     const allowance = freeSeats + paidSeats;
     // Links accepted while sponsorship was off, or whose grant was swallowed, sit inside the
@@ -195,6 +197,11 @@ export class MentorshipLinkService {
       paidSeats,
       usedSeats,
       sponsorshipEnabled,
+      seatAllowance: Math.min(
+        seatAllowanceOf(sponsorshipEnabled, freeSeats, paidSeats),
+        maxActiveStudents,
+      ),
+      seatPlansOnSale: plans.some((plan) => plan.seatCount > 0),
       dataScope: [...MENTORSHIP_DATA_SCOPE],
     };
   }
@@ -244,9 +251,7 @@ export class MentorshipLinkService {
       this.subscriptions.paidSeatsFor(coachId),
     ]);
 
-    // Sponsorship off grants nothing, so the allowance is zero and the lock refuses the insert.
-    // A coach pays for every student they follow: the free quota first, then seats on their plan.
-    const seatAllowance = sponsorshipEnabled ? freeSeats + paidSeats : 0;
+    const seatAllowance = seatAllowanceOf(sponsorshipEnabled, freeSeats, paidSeats);
 
     let outcome: Awaited<ReturnType<MentorshipLinkRepository["acceptInvite"]>>;
     try {
@@ -434,4 +439,18 @@ export class MentorshipLinkService {
       coachStatus,
     };
   }
+}
+
+/**
+ * How many students this coach's seats cover. Sponsorship off grants nothing, so the allowance is
+ * zero and the accept lock refuses the insert. A coach pays for every student they follow: the
+ * free quota first, then seats on their plan. The overview reads the same number, so the card
+ * calls itself full exactly when the lock would refuse the next student.
+ */
+function seatAllowanceOf(
+  sponsorshipEnabled: boolean,
+  freeSeats: number,
+  paidSeats: number,
+): number {
+  return sponsorshipEnabled ? freeSeats + paidSeats : 0;
 }

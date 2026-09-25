@@ -82,6 +82,7 @@ import { CoachMemoryRepository } from "../infrastructure/coach-memory.repository
 import { CoachConversationRepository } from "../infrastructure/coach-conversation.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
 import { CoachProfileService } from "./coach-profile.service";
+import { CoachAccessService } from "./coach-access.service";
 import {
   ForumCoachBridgeService,
   type ForumCoachContext,
@@ -123,6 +124,7 @@ export class ChatService {
     private readonly evidence: CoachEvidenceService,
     private readonly profiles: CoachProfileService,
     private readonly turnPlanner: CoachTurnPlanner,
+    private readonly access: CoachAccessService,
     @Optional() private readonly forumCoachBridge?: ForumCoachBridgeService,
     @Optional() private readonly featureGate?: PremiumFeatureGateService,
     @Optional() private readonly analysis?: AnalysisService,
@@ -515,6 +517,19 @@ export class ChatService {
     };
   }
 
+  private async assertCalibrationAccess(user: RequestUser): Promise<void> {
+    const access = await this.access.getAccess(user.id, user.roles);
+    if (access.canChat) return;
+    const reason = access.reason ?? ErrorCode.PAYMENT_PREMIUM_REQUIRED;
+    const status =
+      reason === ErrorCode.AI_BUDGET_EXCEEDED ? HttpStatus.SERVICE_UNAVAILABLE :
+      reason === ErrorCode.AI_RATE_LIMITED ? HttpStatus.TOO_MANY_REQUESTS :
+      reason === ErrorCode.INSUFFICIENT_COIN ? HttpStatus.UNPROCESSABLE_ENTITY :
+      reason === ErrorCode.AI_DISABLED ? HttpStatus.NOT_FOUND :
+      HttpStatus.FORBIDDEN;
+    throw new DomainError(reason, status);
+  }
+
   async reply(
     user: RequestUser,
     message: string,
@@ -566,6 +581,7 @@ export class ChatService {
       );
     }
     if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
+      await this.assertCalibrationAccess(user);
       const target = await this.resolveConversationTarget(
         user.id,
         message,
@@ -1036,6 +1052,7 @@ export class ChatService {
       return;
     }
     if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
+      await this.assertCalibrationAccess(user);
       const target = await this.resolveConversationTarget(
         user.id,
         message,
@@ -1278,6 +1295,7 @@ export class ChatService {
       return;
     }
     if (mentorV2.turn.mode === CoachTurnMode.CALIBRATE) {
+      await this.assertCalibrationAccess(user);
       const reply = this.i18n.translate("coaching.mentorV2.calibration", {
         lang: I18nContext.current()?.lang,
       }) as unknown as string;

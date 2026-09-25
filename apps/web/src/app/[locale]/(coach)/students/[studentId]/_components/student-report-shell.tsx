@@ -1,222 +1,186 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { MentorshipStudentReportDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button } from "@mentor/ui";
+import { Button, Skeleton } from "@mentor/ui";
 import {
   CoachFollowupsPanel,
   useCoachFollowups,
   type FollowupCompose,
 } from "@/components/mentorship/coach-followups-card";
-import { EmptyState } from "@/components/empty-state";
-import { Link, useRouter } from "@/i18n/navigation";
-import { useMentorDialog } from "@/lib/mentor-dialog";
-import { useMentorToast } from "@/lib/mentor-toast";
-import {
-  endStudentLink,
-  fetchStudentReport,
-  setAttention,
-} from "@/lib/mentorship";
+import { PANEL_GRID_CLASS, PANEL_HERO, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { useWideLayout } from "@/components/panel/use-wide-layout";
+import { useCloudTransitionReady } from "@/lib/cloud-transition";
+import { todayInIstanbul } from "@/lib/date-time";
+import { firstName } from "@/lib/greeting";
+import { useSubscription } from "@/lib/subscription-context";
 import { AssignTaskForm, type AssignDraft } from "./assign-task-form";
-import { initialPlanningState } from "./planning-state";
-import { BriefCard } from "./brief-card";
-import { CoachNoteCard } from "./coach-note-card";
 import { CoachPanel } from "./coach-panel";
-import {
-  ReportActionBar,
-  ReportActionRail,
-  type ReportPanel,
-} from "./report-action-rail";
-import { ReportActivity } from "./report-activity";
+import { FollowupCard } from "./followup-card";
+import { MocksCard } from "./mocks-card";
+import { MoodCard } from "./mood-card";
+import { NoteCard } from "./note-card";
+import { PlanCard } from "./plan-card";
+import { initialPlanningState } from "./planning-state";
+import { hasTrace } from "./report-format";
 import { ReportHeader } from "./report-header";
-import { ReportMocks } from "./report-mocks";
-import { ReportMood } from "./report-mood";
-import { ReportPlan } from "./report-plan";
-import { ReportWeekStrip } from "./report-week-strip";
-import { StudentReportContentSkeleton } from "./student-report-content-skeleton";
+import { RhythmCard } from "./rhythm-card";
+import { useStudentBrief } from "./use-student-brief";
+import { useStudentReport } from "./use-student-report";
+import { useWeeklyReportCard } from "./use-weekly-report-card";
+import { WeekHeroCard, WeekHeroSkeleton } from "./week-hero-card";
+import { useReportDates } from "./use-report-dates";
 import { WeeklyReportCard } from "./weekly-report-card";
+import { WeeklyReportPanel } from "./weekly-report-panel";
+
+type Panel = "plan" | "followups" | "weekly" | "archive";
+
+const CARD_SKELETON = "h-48 rounded-[var(--radius-card)]";
 
 /**
- * The coach's workspace for one student (design canvas approved 2026-09-13): the status on the
- * left, what the coach can do on the right, and the long jobs in a side panel.
- *
- * The old page stacked ten equal cards and put three forms above the numbers a coach needs before
- * writing anything. Now the numbers lead and the forms wait beside them. This file only
- * orchestrates: fetching, the optimistic attention mark, ending the link, and which panel is open.
+ * The coach's workspace for one student (DESIGN.md §6.1): the week leads, the standing facts sit in
+ * the rail, the long jobs open in a side panel. The layout draws at once and each part shows its own
+ * skeleton; the weekly report and the follow-ups load beside the report, not after it. Two columns
+ * from 1280px, chosen in JS so DOM order is reading order: on a phone the note, the follow-ups and
+ * the weekly card come right after the week.
  */
 export function StudentReportShell({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
-  const common = useTranslations("common");
-  const { error: showToastError } = useMentorToast();
-  const dialog = useMentorDialog();
-  const router = useRouter();
-  const [report, setReport] = useState<MentorshipStudentReportDto | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [marking, setMarking] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const [panel, setPanel] = useState<ReportPanel | null>(null);
+  const wide = useWideLayout();
+  const today = todayInIstanbul();
+  const { loading: subscriptionLoading } = useSubscription();
+  const student = useStudentReport(studentId);
+  const { report } = student;
+  const followups = useCoachFollowups(studentId);
+  const weekly = useWeeklyReportCard(studentId);
+  const weeklyDates = useReportDates();
+  const brief = useStudentBrief(studentId, report !== null && hasTrace(report));
+  const [panel, setPanel] = useState<Panel | null>(null);
   const [compose, setCompose] = useState<FollowupCompose | null>(null);
-  // Held here, not in the composer: the panel unmounts on close, and a half-built week must not.
+  // Held here, not in the panels: a panel unmounts on close, and a half-built week or note must not.
   const [drafts, setDrafts] = useState<AssignDraft[]>([]);
   const [planning, setPlanning] = useState(initialPlanningState);
-  // Also held here: the panel must not close (and remount an idle form over the same drafts) mid-send.
   const [assigning, setAssigning] = useState(false);
-  // Started beside the report request, not after it: the two reads do not depend on each other.
-  const followups = useCoachFollowups(studentId);
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
 
-  const showError = useCallback(
-    (err: unknown) => {
-      showToastError({
-        title: common("error_title"),
-        message:
-          err instanceof ApiClientError ? err.message : common("error_unknown"),
-      });
-    },
-    [common, showToastError],
-  );
+  useCloudTransitionReady(report !== null || student.error !== null);
 
-  const load = useCallback(() => {
-    fetchStudentReport(studentId)
-      .then(setReport)
-      .catch((err: unknown) => {
-        setFailed(true);
-        showError(err);
-      });
-  }, [studentId, showError]);
-
-  useEffect(load, [load]);
-
-  const closePanel = useCallback(() => setPanel(null), []);
-  const openFollowups = useCallback((next: FollowupCompose | null) => {
+  const closePanel = () => setPanel(null);
+  const openFollowups = (next: FollowupCompose | null) => {
     setCompose(next);
     setPanel("followups");
-  }, []);
+  };
+  const name = report ? firstName(report.studentDisplayName) : "";
+  const preview = weekly.preview;
 
-  /**
-   * Optimistic like the roster's: this is the coach's own act, and a round trip between deciding
-   * and seeing it is the friction the mark exists to remove. On failure the row snaps back.
-   */
-  const toggleAttention = useCallback(
-    async (attended: boolean) => {
-      setMarking(true);
-      const patch = (next: boolean) =>
-        setReport((prev) =>
-          prev === null
-            ? prev
-            : {
-                ...prev,
-                attendedAt: next ? new Date().toISOString() : null,
-                needsAttention: !next && prev.riskFlags.length > 0,
-              },
-        );
-      patch(attended);
-      try {
-        await setAttention(studentId, attended);
-      } catch (err) {
-        patch(!attended);
-        showError(err);
-      } finally {
-        setMarking(false);
-      }
-    },
-    [studentId, showError],
-  );
-
-  async function endLink() {
-    if (!report) return;
-    const confirmed = await dialog.confirm({
-      title: t("report_end_confirm_title"),
-      message: t("report_end_confirm_body", {
-        name: report.studentDisplayName,
-      }),
-      confirmLabel: t("report_end_confirm_action"),
-      cancelLabel: t("confirm_cancel"),
-    });
-    if (!confirmed) return;
-    setBusy(true);
-    try {
-      await endStudentLink(studentId);
-      router.replace("/students");
-    } catch (err) {
-      showError(err);
-      setBusy(false);
-    }
-  }
-
-  if (failed) {
-    return (
-      <EmptyState
-        title={t("guard_title")}
-        description={t("guard_body")}
-        puhuVariant="encouraging"
-        action={
-          <Link href="/students">
-            <Button variant="secondary">{t("report_back")}</Button>
-          </Link>
-        }
+  const hero =
+    report && !subscriptionLoading ? (
+      <WeekHeroCard
+        report={report}
+        today={today}
+        brief={brief.brief}
+        briefBusy={brief.busy}
+        onPlan={() => setPanel("plan")}
+        onNote={() => setNoteDraft((draft) => draft ?? report.coachNote?.body ?? "")}
       />
+    ) : (
+      <WeekHeroSkeleton />
     );
-  }
-
-  if (!report) return <StudentReportContentSkeleton />;
-
-  const followupsEnabled = followups.enabled !== false;
+  const note = report ? (
+    <NoteCard
+      studentId={studentId}
+      name={name}
+      note={report.coachNote}
+      draft={noteDraft}
+      onDraft={setNoteDraft}
+      onSaved={(coachNote) => {
+        student.setReport((prev) => (prev ? { ...prev, coachNote } : prev));
+        setNoteDraft(null);
+      }}
+    />
+  ) : (
+    <Skeleton className="h-36 rounded-[var(--radius-card)]" />
+  );
+  const followupCard = (
+    <FollowupCard
+      resource={followups}
+      onCreate={() => openFollowups({ replacesId: null })}
+      onOpenHistory={() => openFollowups(null)}
+    />
+  );
+  const weeklyCard = (
+    <WeeklyReportCard
+      weekly={weekly}
+      joinedOn={
+        report === null
+          ? undefined
+          : report.acceptedAt
+            ? todayInIstanbul(new Date(report.acceptedAt))
+            : null
+      }
+      onOpen={(archive) => setPanel(archive ? "archive" : "weekly")}
+    />
+  );
+  const details = report ? (
+    <>
+      <RhythmCard report={report} today={today} />
+      <MocksCard report={report} />
+      <PlanCard report={report} today={today} />
+      <MoodCard report={report} today={today} />
+    </>
+  ) : (
+    <>
+      <Skeleton className={CARD_SKELETON} />
+      <Skeleton className={CARD_SKELETON} />
+    </>
+  );
 
   return (
     <>
       {/* Inert while a panel is open: the panel is modal to the report, not to the whole app. */}
-      <div inert={panel !== null} className="flex flex-col gap-6 pb-24 xl:pb-0">
+      <main inert={panel !== null} className={PANEL_MAIN_CLASS}>
         <ReportHeader
+          studentId={studentId}
           report={report}
-          marking={marking}
-          ending={busy}
-          onToggleAttention={(attended) => void toggleAttention(attended)}
-          onEndLink={() => void endLink()}
+          failed={student.error !== null}
+          today={today}
+          marking={student.marking}
+          ending={student.ending}
+          showArchive={weekly.archive.length > 0}
+          onToggleAttention={(attended) => void student.toggleAttention(attended)}
+          onOpenArchive={() => setPanel("archive")}
+          onEndLink={() => void student.endLink()}
         />
-        <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_340px]">
-          <div className="flex min-w-0 flex-col gap-7">
-            {/* Keyed: moving between students must remount this, or a brief about one could be
-                read under another's name while a stale request is still in flight. */}
-            <BriefCard key={studentId} studentId={studentId} />
-            <WeeklyReportCard
-              key={`weekly-${studentId}`}
-              studentId={studentId}
-            />
-            <ReportWeekStrip tasks={report.planTasks} />
-            <ReportActivity report={report} />
-            <ReportPlan report={report} />
-            <ReportMocks report={report} />
-            <ReportMood report={report} />
+        {student.error !== null ? (
+          <ReportError error={student.error} onRetry={student.retry} />
+        ) : wide ? (
+          <div className={PANEL_GRID_CLASS}>
+            <div className="flex min-w-0 flex-col gap-5">
+              {hero}
+              {details}
+            </div>
+            <aside className="flex min-w-0 flex-col gap-5" aria-label={t("report_actions_label")}>
+              {note}
+              {followupCard}
+              {weeklyCard}
+            </aside>
           </div>
-          <ReportActionRail
-            report={report}
-            followups={followups}
-            onNoteSaved={load}
-            onCreateFollowup={() => openFollowups({ replacesId: null })}
-            onOpenHistory={() => openFollowups(null)}
-            onPlanWeek={() => setPanel("plan")}
-          />
-        </div>
-        <ReportActionBar
-          followupsEnabled={followupsEnabled}
-          onOpen={(next) =>
-            next === "followups" ? openFollowups(null) : setPanel(next)
-          }
-        />
-      </div>
+        ) : (
+          <div className="flex min-w-0 flex-col gap-5">
+            {hero}
+            {note}
+            {followupCard}
+            {weeklyCard}
+            {details}
+          </div>
+        )}
+      </main>
 
       <AnimatePresence>
-        {panel === "plan" ? (
-          <CoachPanel
-            key="plan"
-            title={t("report_plan_week")}
-            subtitle={t("assign_body")}
-            busy={assigning}
-            onClose={closePanel}
-          >
+        {panel === "plan" && report ? (
+          <CoachPanel key="plan" title={t("report_plan_week")} subtitle={t("assign_body")} busy={assigning} onClose={closePanel}>
             <AssignTaskForm
               studentId={studentId}
               studentName={report.studentDisplayName}
@@ -229,42 +193,55 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
               onBusyChange={setAssigning}
               onAssigned={() => {
                 closePanel();
-                load();
+                student.reload();
               }}
               onCancel={closePanel}
             />
           </CoachPanel>
         ) : null}
 
-        {panel === "note" ? (
-          <CoachPanel key="note" title={t("note_title")} onClose={closePanel}>
-            <CoachNoteCard
-              inPanel
-              studentId={studentId}
-              note={report.coachNote}
-              onSaved={() => {
-                closePanel();
-                load();
-              }}
-            />
-          </CoachPanel>
-        ) : null}
-
-        {panel === "followups" && followupsEnabled ? (
+        {panel === "followups" && followups.enabled === true ? (
           <CoachPanel
             key="followups"
             title={compose ? t("followup_create") : t("followup_history_title")}
             onClose={closePanel}
           >
-            <CoachFollowupsPanel
-              resource={followups}
-              studentId={studentId}
-              compose={compose}
-              onCompose={setCompose}
-            />
+            <CoachFollowupsPanel resource={followups} studentId={studentId} compose={compose} onCompose={setCompose} />
           </CoachPanel>
+        ) : null}
+
+        {(panel === "weekly" || panel === "archive") && preview ? (
+          <WeeklyReportPanel
+            key="weekly"
+            studentId={studentId}
+            report={weekly}
+            period={weeklyDates.range(preview.snapshot.period.startDate, preview.snapshot.period.endDate)}
+            archiveOpen={panel === "archive"}
+            onClose={closePanel}
+          />
         ) : null}
       </AnimatePresence>
     </>
+  );
+}
+
+/**
+ * The report did not load: said in the hero's place. A refusal (the link ended, the student is not
+ * this coach's) carries the server's own words and no retry; anything else can be asked again.
+ */
+function ReportError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const t = useTranslations("mentorship");
+  const refused = error instanceof ApiClientError && (error.status === 403 || error.status === 404);
+  return (
+    <section className={PANEL_HERO} role="alert">
+      <p className="text-body-sm font-semibold text-[var(--color-body)]">
+        {refused ? error.message : t("report_load_failed")}
+      </p>
+      {refused ? null : (
+        <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onRetry}>
+          {t("roster_retry")}
+        </Button>
+      )}
+    </section>
   );
 }

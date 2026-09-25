@@ -404,7 +404,7 @@ export async function mockAnalysisApi(
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
   });
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3001/v1"}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname + url.search;

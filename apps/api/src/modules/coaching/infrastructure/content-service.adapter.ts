@@ -7,6 +7,8 @@ import type {
   ExamTopicRef,
   NetRule,
 } from "../domain/content.port";
+import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { ContentService } from "../../content/application/content.service";
 
 /**
@@ -33,6 +35,23 @@ export class ContentServiceAdapter implements ContentPort {
 
   async getExamById(examId: string): Promise<ExamRef | null> {
     return this.content.getExamById(examId);
+  }
+
+  async getTaxonomyExamId(
+    examType: string | null | undefined,
+  ): Promise<string | null> {
+    if (!examType) return null;
+    try {
+      return (await this.content.getCurrentExamByFamily(examType)).id;
+    } catch (error) {
+      if (
+        error instanceof DomainError &&
+        error.code === ErrorCode.CONTENT_EXAM_NOT_FOUND
+      ) {
+        return null;
+      }
+      throw error;
+    }
   }
 
   async listExamSubjects(examId: string): Promise<ExamSubjectRef[]> {

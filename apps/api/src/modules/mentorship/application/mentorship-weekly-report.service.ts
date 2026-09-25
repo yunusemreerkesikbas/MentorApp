@@ -79,6 +79,8 @@ export class MentorshipWeeklyReportService {
     return {
       link,
       snapshot,
+      examType: profile.examType,
+      // The snapshot alone: subject names travel beside it (`subjectNames`), never inside it.
       sourceFingerprint: fingerprint(snapshot),
       studentDisplayName: identities.get(studentId)?.displayName ?? "",
     };
@@ -123,6 +125,10 @@ export class MentorshipWeeklyReportService {
       sourceFingerprint: prepared.sourceFingerprint,
       status: briefMatches ? draft.status : "DRAFT",
       snapshot: prepared.snapshot,
+      subjectNames: await this.evidence.subjectNames(
+        prepared.examType,
+        prepared.snapshot,
+      ),
       brief: briefMatches ? draft.brief : null,
     };
   }
@@ -142,7 +148,12 @@ export class MentorshipWeeklyReportService {
     const weekStart = prepared.snapshot.period.startDate;
     if (replay) {
       this.assertSameRequest(replay, input, weekStart);
-      return this.toDto(replay, studentId, prepared.studentDisplayName);
+      return this.toDto(
+        replay,
+        studentId,
+        prepared.studentDisplayName,
+        await this.evidence.subjectNames(prepared.examType, replay.snapshot),
+      );
     }
     if (prepared.sourceFingerprint !== input.sourceFingerprint) {
       throw new DomainError(
@@ -186,7 +197,12 @@ export class MentorshipWeeklyReportService {
     }
     // The repository replays under its lock too (a concurrent retry won the race); same rule there.
     this.assertSameRequest(row, input, weekStart);
-    return this.toDto(row, studentId, prepared.studentDisplayName);
+    return this.toDto(
+      row,
+      studentId,
+      prepared.studentDisplayName,
+      await this.evidence.subjectNames(prepared.examType, row.snapshot),
+    );
   }
 
   async list(
@@ -212,12 +228,12 @@ export class MentorshipWeeklyReportService {
   }
 
   async get(coachId: string, studentId: string, reportId: string) {
-    const { row, studentDisplayName } = await this.find(
+    const { row, studentDisplayName, subjectNames } = await this.find(
       coachId,
       studentId,
       reportId,
     );
-    return this.toDto(row, studentId, studentDisplayName);
+    return this.toDto(row, studentId, studentDisplayName, subjectNames);
   }
 
   async share(
@@ -225,7 +241,7 @@ export class MentorshipWeeklyReportService {
     studentId: string,
     reportId: string,
   ): Promise<MentorshipWeeklyReportShareDto> {
-    const { row, studentDisplayName } = await this.find(
+    const { row, studentDisplayName, subjectNames } = await this.find(
       coachId,
       studentId,
       reportId,
@@ -241,6 +257,7 @@ export class MentorshipWeeklyReportService {
       version: row.version,
       finalizedAt: row.finalizedAt!.toISOString(),
       snapshot: safeSnapshot,
+      subjectNames,
       coachEvaluation: row.coachEvaluation,
     };
   }
@@ -248,9 +265,10 @@ export class MentorshipWeeklyReportService {
   private async find(coachId: string, studentId: string, reportId: string) {
     await this.assertEnabled();
     const link = await this.links.requireActiveLink(coachId, studentId);
-    const [row, identities] = await Promise.all([
+    const [row, identities, profile] = await Promise.all([
       this.reports.findFinalized(reportId, link.id, link.periodId),
       this.users.listDisplayIdentities([studentId]),
+      this.users.getDiscoveryProfile(studentId),
     ]);
     if (!row) {
       throw new DomainError(
@@ -261,6 +279,10 @@ export class MentorshipWeeklyReportService {
     return {
       row,
       studentDisplayName: identities.get(studentId)?.displayName ?? "",
+      subjectNames: await this.evidence.subjectNames(
+        profile.examType,
+        row.snapshot,
+      ),
     };
   }
 
@@ -304,6 +326,7 @@ export class MentorshipWeeklyReportService {
     row: MentorshipWeeklyReportRow,
     studentId: string,
     studentDisplayName: string,
+    subjectNames: Record<string, string>,
   ): MentorshipWeeklyReportDto {
     return {
       ...this.toListItem(row),
@@ -311,6 +334,7 @@ export class MentorshipWeeklyReportService {
       studentDisplayName,
       sourceFingerprint: row.sourceFingerprint,
       snapshot: row.snapshot,
+      subjectNames,
       coachEvaluation: row.coachEvaluation,
       brief: row.brief,
     };

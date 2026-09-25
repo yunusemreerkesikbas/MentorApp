@@ -1,4 +1,5 @@
 import { setRequestLocale } from "@/i18n/locale";
+import { COACH_PAGE_FRAME } from "../../../../../_components/coach-page-frame";
 import { WeeklyReportPrintShell } from "./weekly-report-print-shell";
 
 export default async function WeeklyReportPrintPage({
@@ -8,5 +9,9 @@ export default async function WeeklyReportPrintPage({
 }) {
   const { locale, studentId, reportId } = await params;
   setRequestLocale(locale);
-  return <WeeklyReportPrintShell studentId={studentId} reportId={reportId} />;
+  return (
+    <div className={COACH_PAGE_FRAME}>
+      <WeeklyReportPrintShell studentId={studentId} reportId={reportId} />
+    </div>
+  );
 }

@@ -29,6 +29,10 @@ export const PANEL_CARD_TITLE =
 export const PANEL_TEXT_LINK =
   "inline-flex min-h-11 items-center gap-1 text-sm font-extrabold text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
 
+/** A card link one step quieter, beside a card link or a small button ("Vazgeç", "Arşiv"). */
+export const PANEL_QUIET_LINK =
+  "inline-flex min-h-11 cursor-pointer items-center gap-1 text-sm font-extrabold text-[var(--color-secondary)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-wait";
+
 /** The one text action that sits beside a ledge ("Planı düzenle"): one step larger than a card link. */
 export const LEDGE_TEXT_LINK =
   "inline-flex min-h-11 items-center text-body-sm font-extrabold text-[var(--play-selected-ink)] underline-offset-4 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";

@@ -202,7 +202,7 @@ data without a deploy.
 | --------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------- |
 | `INACTIVE`      | No completed session or done task for longer than the idle window (a student who never started counts) | `mentorship.risk.inactive_days`         |
 | `LOW_MOOD`      | Weekly mean check-in at or below the ceiling                                                           | `mentorship.risk.low_mood_ceiling`      |
-| `NET_DROP`      | Latest mock net strictly below the mean of the three before it                                         | —                                       |
+| `NET_DROP`      | Latest mock net strictly below the mean of up to three earlier attempts of the same exam               | —                                       |
 | `PLAN_SLIPPING` | Weekly plan completion below the floor                                                                 | `mentorship.risk.plan_completion_floor` |
 
 Two silences are deliberately NOT flagged: a student who planned nothing (`planCompletionRate7d`
@@ -210,6 +210,132 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-25 — Coach redesign, fixes from the independent review.** PLAN_SLIPPING no longer fires
+  on the day a plan starts: `planTotalsSince` counts a task dated today only once it is done, so
+  "Haftayı planla" on a Monday cannot put the student straight back in the round. The morning
+  digest, the coach's mark and the report's flags read `CohortEvidenceService.listTriageSnapshots`
+  (five batch queries, `CohortTriageSnapshot`); only the roster reads `listCohortSnapshots`, which adds
+  the 14-day strip and the live streak (a 400-day read). Weekly subject names come from the taxonomy
+  the coach's planner lists (`ContentPort.getTaxonomyExamId` → content's `getCurrentExamByFamily`), not
+  from the countdown calendar: YKS/LGS exams carry no dates and a KPSS date passes, and either turned
+  every name back into a slug in the panel and the PDF. The weekly response DTOs declare
+  `subjectNames` for OpenAPI. On the web: the round's finish moment plays when the round completes on
+  the roster itself; the weekly card waits for the report and for the feature state (no "PDF'i 'e",
+  no skeleton flash for a coach without the feature); the mark keeps one name ("Ada: ilgilendim") and
+  carries its state in `aria-pressed`; section skeletons announce loading (`SkeletonGroup`); the
+  last stop says "Turun sonu"; a failed overview says so in the seat card with "Yeniden dene".
+  **Gotchas:** (1) `packages/api-client/openapi.json` and the generated client were regenerated with
+  this work (`openapi:export` + `api-client generate`); the diff is exactly the three `subjectNames`. (2) For
+  coaches with AI, each student's and each cohort's brief is re-written once: their fingerprints
+  include the live streak and the plan rate this work changed. (3) e2e finds the mark by its fixed
+  name plus `aria-pressed`, never by a state label. **Related:**
+  `coaching/application/{cohort-evidence,mentorship-weekly-evidence}.service.ts`,
+  `coaching/infrastructure/content-service.adapter.ts`, `mentorship/infrastructure/mentorship-query.adapter.ts`,
+  `(coach)/students/_components/{coach-round-*,student-row,invite-seats,roster-shell}`,
+  `e2e/{coach-home,coach-student,mentorship-weekly-report}.spec.ts`.
+
+- **2026-09-25 — Coach redesign, stop D: the side panels and the retired coach type scale.** The
+  planner, the weekly report and the follow-up panels now speak the panel's language with one filled
+  button each (the planner's send, "Raporu sonlandır", "Takip kaydı oluştur" at the foot); every
+  other action is outlined. The planner writes weeks and days in words ("21–27 Eylül", "Cum 25")
+  instead of `2026-09-21`, the selected day wears `--play-selected` with an inset `--play-cta` ring
+  instead of black, and the task note carries its "öğrencin görür" hint. The weekly panel's subtitle
+  is "Ali Demir · 14–20 Eylül" with the status between the week arrows; its evaluation hint says the
+  PDF is the coach's to send. Follow-up records show status and response as tags and keep what only
+  the coach sees apart from what the student sees (grey block vs. `--play-selected` block). The web
+  now reads the weekly DTO's `subjectNames` (panel, preparation, print and PDF), which stop A added
+  on the API but nothing displayed. `.coach-large-title`…`.coach-caption` are gone; the side panels'
+  inset groups in `coach-ui.tsx` use the panel scale. **Gotchas:** (1) `CoachPanel` focuses
+  `[data-autofocus]` or its close button, never "the first input": in the planner that was a checkbox
+  at the far end, and opening scrolled the week away (the selected day chip carries the attribute).
+  (2) The rail's weekly card reads `latestWeek`, not the panel's current preview, so browsing older
+  weeks in the panel no longer moves the card. (3) `use-weekly-brief-polling.ts` holds the brief
+  polling that used to live in the 300-line hook. (4) The print sheet follows the theme on screen; the
+  PDF keeps its fixed colours. **Related:** `(coach)/students/[studentId]/_components/{coach-panel,planning-*,composer-day-picker,weekly-report-*,weekly-preparation,use-report-dates,use-weekly-brief-polling}`,
+  `components/mentorship/{coach-followup-item,coach-followups-card,followup-create-form,followup-tags,coach-ui}`,
+  `e2e/{coach-student,mentorship-weekly-report}.spec.ts`.
+
+- **2026-09-25 — Coach redesign, stop C: the student workspace on `/kocluk/[studentId]`.** The
+  page draws at once (no page gate): the header, the week hero, the rail and each card show their own
+  skeleton, and the weekly report and the follow-ups load beside the report instead of after it. The
+  hero is the student's week: the assistant's line (POST `…/brief` on mount for a coach whose plan
+  includes `mentorship.brief`, served from the fingerprint cache when nothing moved; a student with no
+  trace yet gets no paid call), a title with this week's minutes, a Monday-first filmstrip (a minute
+  bar per day, the coach's tasks as ink marks, the student's own as dots, days to come as frames) and
+  the page's one filled ledge, "Haftayı planla"; "Not bırak" opens the note in place. Below it:
+  "Çalışma ritmi" (four calendar weeks on the roster's ramp, totals over the drawn days, streak),
+  "Denemeler" (latest net, move against the attempt before, the `/analiz` line with each exam named,
+  the latest attempt's subjects as correct/wrong/blank bars by `subjectName`), "Plan" (this week,
+  coming up, last week, earlier; coach cap vs own mark; topic progress; what the student took out),
+  "Ruh hali". The rail: "Notun" (read as the student sees it, edited in place), "Takip" (two open
+  records, "Yeni kayıt", "Tüm kayıtlar"), "Haftalık değerlendirme" (honest copy: the PDF is the coach's
+  to send; no metric tiles). The header carries the way back, "Sıradaki" from the roster's round,
+  the mark (follows `needsAttention`) and a ⋯ menu (archive, end the link). **Usage:** `useStudentReport`
+  owns the report, the optimistic mark and ending the link; the shell owns the panels and the note
+  draft. **Gotchas:** (1) Panels render outside the `inert` main because `CoachOverlay` is not a
+  portal; the weekly panel moved up to the shell for that reason. (2) On a phone the header's hanging
+  theme lamp covers the top-right corner, so "Sıradaki" sits beside the mark below `lg`. (3) A failed
+  report is said in place with a retry (a 403/404 carries the server's words and no retry); no toast,
+  and a failed weekly load is said in its card, also without a toast. (4) `StatLineChart` gained
+  `describeX` (tooltip + screen-reader table) and wraps its table in `sr-only`: a `<table>` ignores
+  `sr-only`'s 1px width and its long labels widened the page on a phone. (5) Dev mode runs effects
+  twice, so e2e asserts "a brief was requested", not "exactly once". **Related:**
+  `(coach)/students/[studentId]/_components/{student-report-shell,use-student-report,report-header,week-hero-card,week-filmstrip(-model),rhythm-card,mocks-card,plan-card,mood-card,note-card,followup-card,weekly-report-card,use-student-brief,report-format}`,
+  `(coach)/_components/{attention,followup-due,round-order}.ts`, `e2e/coach-student.{spec,fixture}.ts`.
+
+- **2026-09-24 — Coach redesign, stop B: "Koçun turu" on `/kocluk`.** The coach home is now the
+  panel's language: a greeting, the round as the hero, one card of student rows, and a rail of
+  follow-ups, invite and seats, the exam and the forum. The round draws today's seen students (ink ✓)
+  and then the waiting ones in the server's order (the next one big, "Sıradaki"), folds past five
+  into "+N" and ends on "Tur tamam"; its one filled ledge opens the next student ("Zeynep'e bak").
+  A node opens a menu (open, İlgilendim, undo) rather than acting on the tap. The assistant writes
+  the bubble on arrival for a coach whose plan includes `mentorship.cohort_brief` (POST, served from
+  the cohort-fingerprint cache when nothing moved); otherwise, or on failure, the rule line stays
+  with no label, nudge or toast. Rows group into "Seni bekleyenler", "Bugün baktıkların" and
+  "Yolunda" (no counts: the count lives in the round's title), each with the 14-day strip,
+  worst-first pills and a 44px mark whose state follows `needsAttention`, so a stale mark offers
+  "İlgilendim" again. The seat card reads only the server's `seatAllowance`/`seatPlansOnSale`; full
+  hides the code and, while a coach plan is on sale, shows the page's one commercial link.
+  **Usage:** the round writes its waiting order to `sessionStorage` (`round-order.ts`) for the
+  report's "Sıradaki" (stop C). **Gotchas:** (1) group membership comes from the rows as loaded and
+  marks are kept apart, so a marked row stays in place while the round moves at once. (2) An
+  unverified email looks like a missing code on purpose: "Kod oluştur" opens the verification
+  dialog (APP-089); a code the overview hands over wins over a STANDING registry lock. (3) The coach
+  shell no longer pads pages; pages own their frame (`PANEL_MAIN_CLASS` or `COACH_PAGE_FRAME`).
+  (4) `dativeOf` (`lib/turkish-case.ts`) builds "Ali'ye / Zeynep'e"; a short palatal-l list covers
+  "Kemal'e". **Related:** `(coach)/students/_components/{roster-shell,coach-round-*,students-card,student-row,invite-*,seat-state,use-cohort-brief,followup-inbox-card,coach-community-card}`,
+  `(coach)/_components/{flag-order,round-order,student-avatar,coach-page-frame}.ts(x)`,
+  `e2e/coach-home.spec.ts`, `e2e/mentorship.spec.ts`.
+
+- **2026-09-24 — Coach redesign, stop A: the numbers the new coach screens draw.** Roster metrics
+  gain `dailyFocusMinutes14d` and the report gains `dailyFocusMinutes28d`: focus minutes per
+  Europe/Istanbul day, oldest first, the last entry today. The report's series sits beside
+  `activity`, not in it, because the AI brief is fed `activity` whole. The coach's streak is now
+  derived like the student's own (`deriveStreak` over `daily_activity` + purchased freezes, batch
+  for the cohort) instead of read from `streak_state`, a cache only the student's reads refresh;
+  `longestStreak` is `max(state, current)`. The 7-day plan rate stops at today, so a week assigned
+  ahead no longer drags it down or raises `PLAN_SLIPPING`. `mockTrend[].examName` (null when content
+  no longer knows the exam) and `latestMockSubjects[].subjectName` (slug fallback) replace raw
+  slugs. Weekly preview/report/share carry `subjectNames` beside the snapshot; `sourceFingerprint`
+  is still a hash of the snapshot alone, so no stored draft is invalidated. The overview adds
+  `seatAllowance` (the number the accept lock refuses at: `free + paid` while sponsorship is on, 0
+  while off, capped by `max_active_students`) and `seatPlansOnSale` (a coach seat plan is in the
+  `/subscription` catalog). Web: shared `PathItem` (`components/panel/path-item.tsx`), activity
+  tone/strip, `(coach)/_components/attention.ts` (a stale mark reads as not handled), the
+  `--chart-activity-1..3` ramp, `common.show_more/show_less` (the bubble toggle on coach routes),
+  `PremiumBadge` `label`; coach nav puts Öğrencilerim first (`UserRoundCheck`), shows "Koç" and,
+  with a plan, "KOÇ PRO" under the name, and tints the active item in coach ink; the coach shell
+  shows a page skeleton while the session resolves. **Gotchas:** (1) the day is cut with
+  `to_char(started_at at time zone 'Europe/Istanbul', 'YYYY-MM-DD')` and the lower bound converts
+  the Istanbul midnight; text, not `date`, so the driver cannot shift it. (2) The streak stays on
+  UTC days like the student's; the Istanbul cut for everything else is the separate "Tutarlılık"
+  task. (3) Weekly subject names come from the exam active that week (`getExamCalendar(examType,
+  period.endDate)`); an exam with no verified date yields slugs. **Related:**
+  `cohort-evidence.{repository,service}.ts`, `domain/cohort-evidence.ts`,
+  `mentorship-weekly-evidence.service.ts`, `mentorship-weekly-report.service.ts`,
+  `mentorship-link.service.ts`, `packages/types/src/mentorship{,-weekly-report}.ts`,
+  `test/cohort-evidence.e2e-spec.ts`, `components/app-nav.tsx`, `(coach)/coach-shell.tsx`.
 
 - **2026-09-24 — A link requires a seat.** The first `mentorship.coach.free_seats` students get
   sponsored Premium. Further students link only when the coach's plan adds `paidSeats`. A full
@@ -1851,6 +1977,36 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   **İlgili:** `apps/web/src/app/[locale]/(coach)/**`, `apps/web/src/app/[locale]/(app)/{my-coach,coach-invitation}/**`,
   `apps/web/src/lib/mentorship.ts`, `modules/mentorship/{domain/risk-flags.ts,application/mentorship-roster.service.ts}`,
   [`coaching.md`](./coaching.md) (`CohortEvidenceService`).
+
+- **Koç kanıtı tutarlılığı: sınav bazlı NET_DROP + İstanbul günü (2026-09-25)** — İki hata
+  kapandı. (1) `NET_DROP` farklı sınavların denemelerini kıyaslıyordu: `latestMocks()` penceresi
+  yalnız kullanıcıya bölünmüştü, KPSS ve ALES çözen öğrenci yanlış "Net düştü" alıyordu. Pencere
+  artık `(user_id, exam_id)` ile bölünür; son deneme yalnız AYNI sınavın önceki en çok 3
+  denemesiyle kıyaslanır. `exam_id` aileyi de sabitler (her sınav tek aileye ait). Yeni sınavdaki
+  ilk deneme için taban `null` → flag yok. (2) Roster ve rapor pencereleri UTC günüyle kesiliyordu;
+  haftalık rapor, takipler ve koç planı İstanbul günündeydi. Artık `CohortEvidenceService`'in tüm
+  pencereleri (son aktif gün, 7/28 günlük toplamlar, plan ve mod pencereleri) `todayInIstanbul`
+  ile kesilir; oturum toplamları İstanbul gece yarısından başlar, bu yüzden 7 günlük toplam şeridin
+  son 7 gününün toplamına eşittir. Son aktif gün / aktif gün sayısı: oturum günleri
+  `study_sessions`'tan (İstanbul günü, `coaching.session.min_focus_seconds` üstü odak), görev
+  günleri `daily_activity.tasks_done > 0`'dan.
+  **Flag anlamı (sabah özeti + `needsAttention`):** `evaluateRiskFlags`'a giden `today` roster,
+  rapor, dikkat işareti, sabah risk özeti (`MentorshipQueryAdapter`) ve kohort brief'inde İstanbul
+  günü oldu. `INACTIVE` gece 00:00–03:00 (TR) arasında artık bir gün erken ya da geç tetiklenmez.
+  Sınav değiştiren öğrenci artık `NET_DROP` almaz; bu yüzden sabah özetinde o öğrenci "yeni haber"
+  sayılmaz ve `needsAttention` onu tek başına bu flag için geri açmaz. Özetin `dedupeKey`'i
+  (`todayIso`) değişmedi: sabah cron'unda UTC ve İstanbul tarihi aynı.
+  **Gotchas:** (1) Seri (`currentStreak`) bilerek öğrencinin kendi ekranındaki UTC gününde kalır:
+  koç ile öğrenci aynı sayıyı görmeli. (2) `daily_activity.has_session` ve `mood_checkins.checkin_date`
+  öğrenci tarafında hâlâ UTC günüyle yazılıyor. Koç pencereleri İstanbul'da kesilse de 00:00–03:00
+  arası girilen bir mod kaydı önceki güne düşer; yazma tarafı bu işin kapsamı dışında. (3) Ham
+  `tx.execute` sorgularında gün `to_char(...)` ile metin döner, `sql<Date>` değil (sürücü `date`'i
+  UTC gece yarısına çevirir). (4) Gerçek havuz okumalarının tek kanıtı
+  `test/coach-evidence.e2e-spec.ts` (Postgres :5433).
+  **İlgili:** `coaching/infrastructure/cohort-evidence.repository.ts` (`latestMocks`,
+  `activityWindow`, `sessionTotalsSince`), `coaching/application/cohort-evidence.service.ts`,
+  `mentorship/domain/risk-flags.ts`, `mentorship-{roster,cohort-brief}.service.ts`,
+  `mentorship-query.adapter.ts`.
 
 ## Gotchas / Known issues
 

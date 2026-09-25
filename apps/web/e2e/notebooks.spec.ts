@@ -254,6 +254,8 @@ test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve deft
   await expect(page).toHaveURL(new RegExp(`/defterlerim/${CUSTOM_ID}$`));
   await expect(page.getByText("Matematik Notlarım").first()).toBeVisible();
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  const showTools = page.getByRole("button", { name: "Araçları göster" });
+  if (await showTools.isVisible()) await showTools.click();
   await expect(page.getByRole("button", { name: "Sticker" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Not" })).toBeVisible();
   await expect(

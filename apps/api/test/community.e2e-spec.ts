@@ -46,6 +46,12 @@ describe("community summary (e2e)", () => {
       .set({ Authorization: `Bearer ${adminToken}` })
       .send({ value: enabled });
 
+  const setLeaderboardEnabled = (enabled: boolean) =>
+    request(app.getHttpServer())
+      .patch("/v1/admin/config/community.leaderboard.enabled")
+      .set({ Authorization: `Bearer ${adminToken}` })
+      .send({ value: enabled });
+
   const summary = () =>
     request(app.getHttpServer()).get("/v1/community/summary").set({ Authorization: `Bearer ${userToken}` });
 
@@ -79,6 +85,10 @@ describe("community summary (e2e)", () => {
   }, 90_000);
 
   afterAll(async () => {
+    if (app && adminToken) {
+      await setLeaderboardEnabled(false);
+      await setEconomyEnabled(false);
+    }
     await app?.close();
     await pool?.end();
   });
@@ -94,8 +104,23 @@ describe("community summary (e2e)", () => {
     expect(res.body.badges).toContain(CommunityBadgeId.NEWCOMER);
   });
 
+  it("keeps personal XP visible but hides the launch-gated leaderboard", async () => {
+    await setEconomyEnabled(true);
+    await setLeaderboardEnabled(false);
+    const res = await summary();
+    expect(res.status).toBe(200);
+    expect(res.body.economyEnabled).toBe(true);
+    expect(res.body.xp).toBeGreaterThanOrEqual(0);
+    expect(res.body.leaderboard).toBeNull();
+    const direct = await request(app.getHttpServer())
+      .get("/v1/community/leaderboard?window=weekly")
+      .set({ Authorization: `Bearer ${userToken}` });
+    expect(direct.status).toBe(404);
+  });
+
   it("ranks the user by weekly XP once the economy is enabled", async () => {
     await setEconomyEnabled(true);
+    await setLeaderboardEnabled(true);
     await svc(async (c) => {
       await c.query(
         "insert into ledger_entries (user_id, unit, amount, reason, status) values ($1,'XP',$2,'test.seed','CONFIRMED')",
@@ -120,6 +145,7 @@ describe("community summary (e2e)", () => {
   });
 
   it("serves the windowed leaderboard endpoint (Phase 3 tabs)", async () => {
+    await setLeaderboardEnabled(true);
     const res = await request(app.getHttpServer())
       .get("/v1/community/leaderboard?window=all_time")
       .set({ Authorization: `Bearer ${userToken}` });

@@ -120,6 +120,14 @@ export interface MentorshipCoachOverviewDto {
   usedSeats: number;
   /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
   sponsorshipEnabled: boolean;
+  /**
+   * How many students the next accept can reach: `freeSeats + paidSeats` while sponsorship is on,
+   * 0 while it is off, never past `maxActiveStudents`. The same number the accept lock refuses at,
+   * so "full" is `activeStudents >= seatAllowance` and the client computes nothing else.
+   */
+  seatAllowance: number;
+  /** A coach seat plan is in the `/subscription` catalog right now (some channel sells it). */
+  seatPlansOnSale: boolean;
   dataScope: MentorshipDataScopeKey[];
 }
 
@@ -182,6 +190,8 @@ export interface MentorshipRosterMetricsDto {
   lastActiveDate: string | null;
   currentStreak: number;
   focusMinutes7d: number;
+  /** Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 14 entries. */
+  dailyFocusMinutes14d: number[];
   sessions7d: number;
   activeDays7d: number;
   /** 0..1; null when the student planned nothing (silence, not failure). */
@@ -324,14 +334,23 @@ export interface MentorshipStudentReportDto {
     focusMinutes28d: number;
     activeDays28d: number;
   };
+  /**
+   * Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 28 entries.
+   * Outside `activity` on purpose: the AI brief is fed `activity` whole.
+   */
+  dailyFocusMinutes28d: number[];
   planCompletionRate7d: number | null;
   mockTrend: {
     takenAt: string;
     totalNet: number;
     publisherName: string | null;
+    /** Null when content no longer knows the exam. */
+    examName: string | null;
   }[];
   latestMockSubjects: {
     subjectRef: string;
+    /** Taxonomy name; the slug itself when the taxonomy no longer has it. */
+    subjectName: string;
     correct: number;
     wrong: number;
     blank: number;

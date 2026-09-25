@@ -6,6 +6,8 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { CoachEvidenceType } from "@mentor/types";
 import { CoachEvidenceService } from "../src/modules/coaching/application/coach-evidence.service";
+import { CohortEvidenceService } from "../src/modules/coaching/application/cohort-evidence.service";
+import { addDays, todayInIstanbul } from "../src/modules/coaching/domain/date.util";
 import { completedMentorshipWeek } from "../src/modules/coaching/domain/mentorship-weekly-report";
 
 const PREMIUM_PLAN_ID = "9f1c0a10-0000-4000-8000-0000000e0001";
@@ -231,6 +233,93 @@ describe("coach evidence pool (e2e)", () => {
     );
     expect(brief.body.suggestion.days).toBe(3);
     expect(brief.body.suggestion.weekdays).toEqual([1, 4, 6]);
+  });
+
+  /**
+   * The human coach's read (`CohortEvidenceService`) on a student of its own: NET_DROP compares an
+   * attempt only with attempts of the same exam, and every window is cut on the Istanbul day.
+   */
+  it("compares mocks within one exam and cuts coach windows on Istanbul days", async () => {
+    const signup = await signupStudent("cohort");
+    expect(signup.status).toBe(201);
+    const studentId: string = signup.body.user.id;
+    const now = new Date();
+    const localToday = todayInIstanbul(now);
+    const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 3_600_000).toISOString();
+    const otherExamId = "7a1c0a10-0000-4000-8000-00000000e0b2";
+
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      const mock = (exam: string, takenAt: string, net: number) =>
+        client.query(
+          `insert into mock_exams (user_id, exam_id, taken_at, total_net) values ($1, $2, $3, $4)`,
+          [studentId, exam, takenAt, net],
+        );
+      // Two strong attempts on one exam, then a first attempt on another: nothing to fall from.
+      await mock(examId, hoursAgo(72), 70);
+      await mock(examId, hoursAgo(48), 72);
+      await mock(otherExamId, hoursAgo(24), 40);
+      // 21:30 UTC is 00:30 the next Istanbul day: the first session opens the 7-day window's first
+      // Istanbul day, the second is the student's today.
+      for (const startedAt of [
+        `${addDays(localToday, -7)}T21:30:00Z`,
+        `${addDays(localToday, -1)}T21:30:00Z`,
+      ]) {
+        await client.query(
+          `insert into study_sessions (user_id, started_at, ended_at, preset, actual_focus_seconds, status)
+           values ($1, $2, $2::timestamptz + interval '25 minutes', '25_5', 1500, 'COMPLETED')`,
+          [studentId, startedAt],
+        );
+      }
+      // A done task, as `PlanService` records it: the task and the ledger row for its date.
+      await client.query(
+        `insert into plan_tasks (user_id, task_date, title, status) values ($1, $2, 'Paragraf', 'DONE')`,
+        [studentId, addDays(localToday, -2)],
+      );
+      await client.query(
+        `insert into daily_activity (user_id, activity_date, tasks_done) values ($1, $2, 1)`,
+        [studentId, addDays(localToday, -2)],
+      );
+      await client.query("commit");
+    } finally {
+      client.release();
+    }
+
+    const evidence = app.get(CohortEvidenceService);
+    const snapshot = (await evidence.listCohortSnapshots([studentId], now)).get(studentId)!;
+    expect(snapshot).toMatchObject({
+      latestMockNet: 40,
+      previousMockNetAvg: null,
+      lastActiveDate: localToday,
+      sessions7d: 2,
+      focusMinutes7d: 50,
+      activeDays7d: 3,
+    });
+    const report = await evidence.getStudentReport(studentId, now);
+    expect(report.activity).toMatchObject({
+      lastActiveDate: localToday,
+      sessions7d: 2,
+      focusMinutes7d: 50,
+      activeDays7d: 3,
+    });
+
+    // A second attempt on the new exam, older than the first: the baseline is that attempt alone.
+    const again = await pool.connect();
+    try {
+      await again.query("begin");
+      await again.query("select set_config('app.role','SERVICE',true)");
+      await again.query(
+        `insert into mock_exams (user_id, exam_id, taken_at, total_net) values ($1, $2, $3, 45)`,
+        [studentId, otherExamId, hoursAgo(36)],
+      );
+      await again.query("commit");
+    } finally {
+      again.release();
+    }
+    const later = (await evidence.listCohortSnapshots([studentId], now)).get(studentId)!;
+    expect(later).toMatchObject({ latestMockNet: 40, previousMockNetAvg: 45 });
   });
 
   it("keeps the wizard brief behind the premium gate", async () => {

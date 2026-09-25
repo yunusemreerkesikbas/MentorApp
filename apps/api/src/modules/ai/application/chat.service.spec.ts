@@ -199,6 +199,7 @@ describe("ChatService coin refund", () => {
         learnFromChat: vi.fn(),
       } as never,
       { plan: vi.fn(() => V2_TURN) } as never,
+      { getAccess: vi.fn(async () => ({ canChat: true })) } as never,
       { resolveForCoach, tryGetBridge } as never,
       undefined,
       { getCoachContext } as never,

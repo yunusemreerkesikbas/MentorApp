@@ -1,9 +1,9 @@
 # Mentor QA — Stage 2 identity, content and coaching scenario matrix
 
-**Status on 24 September 2026: planned, not executed as a Stage 2 wave.** Stage 1 identity
-security assertions and the panel follow-up are reported in
-[the Stage 1 report](2026-09-24-security-performance.md). This matrix defines the next run and
-its data before any result is called a pass.
+**Status on 24 September 2026: executed locally.** The scenario results, fixture adjustments,
+browser evidence and remaining release gates are in [the Stage 2 report](2026-09-24-identity-content-coaching-results.md).
+Stage 1 identity security assertions and the panel follow-up remain in
+[the Stage 1 report](2026-09-24-security-performance.md). This matrix preserves the agreed scope.
 
 ## Environment and reusable data
 

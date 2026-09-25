@@ -272,6 +272,7 @@ function rosterRow(studentId: string, studentDisplayName: string): MentorshipRos
       lastActiveDate: null,
       currentStreak: 0,
       focusMinutes7d: 0,
+      dailyFocusMinutes14d: Array<number>(14).fill(0),
       sessions7d: 0,
       activeDays7d: 0,
       planCompletionRate7d: null,

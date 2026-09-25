@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { ExamCalendarDto } from "@mentor/types";
-import { Card, CountdownCard } from "@mentor/ui";
+import { CountdownCard } from "@mentor/ui";
+import { PANEL_CARD } from "@/components/panel/panel-styles";
 import { fetchExamCalendarByFamily } from "@/lib/content-api";
 
 /**
@@ -62,10 +63,8 @@ export function CoachCountdownCard({ examType }: { examType: string | null }) {
 
 function CountdownNote({ text }: { text: string }) {
   return (
-    <Card>
-      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-        {text}
-      </p>
-    </Card>
+    <div className={PANEL_CARD}>
+      <p className="text-body-sm text-[var(--color-secondary)]">{text}</p>
+    </div>
   );
 }

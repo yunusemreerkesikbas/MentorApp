@@ -161,6 +161,7 @@ export function CoachPlanMenuField({
         options={options}
         disabled={disabled}
         textSize="sm"
+        menuSide="top"
         aria-labelledby={labelId}
         onChange={onChange}
       />

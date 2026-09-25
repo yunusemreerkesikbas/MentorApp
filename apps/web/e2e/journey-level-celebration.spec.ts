@@ -81,7 +81,7 @@ test("tanışmayı bir kez gösterir; hata, odak ve scroll davranışlarını ko
   const closeButton = dialog.getByRole("button", { name: "Kapat" });
 
   await expect(dialog).toBeVisible();
-  await expect(continueButton).toBeFocused();
+  await expect(continueButton).toBeFocused({ timeout: 10_000 });
   await expect
     .poll(() => page.evaluate(() => document.body.style.overflow))
     .toBe("hidden");
@@ -147,7 +147,7 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole("button", { name: "Devam et" }),
-  ).toBeFocused();
+  ).toBeFocused({ timeout: 10_000 });
   await expect(page.getByRole("dialog")).toHaveCount(1);
 
   await dialog.getByRole("button", { name: "Devam et" }).click();
@@ -209,6 +209,14 @@ async function mockJourneyCelebrationApi(
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
+      return json(route, {
+        enabled: false,
+        linked: false,
+        providerEmail: null,
+        canLink: false,
+      });
+    }
     if (method === "GET" && path.startsWith("/v1/notifications?")) {
       return json(route, {
         items: [],

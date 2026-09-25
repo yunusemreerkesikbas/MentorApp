@@ -5,7 +5,7 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { CoachShell } from "./coach-shell";
-// Signal hues and the denser type scale, scoped to `.coach-signals` / `.coach-*` on the shell.
+// Signal hues, scoped to `.coach-signals` on the shell.
 import "./_components/coach-theme.css";
 
 /**

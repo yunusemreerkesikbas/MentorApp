@@ -9,7 +9,7 @@ import type {
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
-import { addDays, todayIso } from "../../coaching/domain/date.util";
+import { addDays, todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
 import {
   MENTORSHIP_DROPPED_LIMIT,
@@ -101,7 +101,7 @@ export class MentorshipRosterService {
         this.config.get("mentorship.attention.ttl_days"),
       ],
     );
-    const today = todayIso(now);
+    const today = todayInIstanbul(now);
 
     const items = rows.map((link): MentorshipRosterRowDto => {
       const person = people.get(link.studentId);
@@ -123,6 +123,7 @@ export class MentorshipRosterService {
               lastActiveDate: snapshot.lastActiveDate,
               currentStreak: snapshot.currentStreak,
               focusMinutes7d: snapshot.focusMinutes7d,
+              dailyFocusMinutes14d: snapshot.dailyFocusMinutes14d,
               sessions7d: snapshot.sessions7d,
               activeDays7d: snapshot.activeDays7d,
               planCompletionRate7d: snapshot.planCompletionRate7d,
@@ -173,14 +174,14 @@ export class MentorshipRosterService {
       return;
     }
     const [snapshots, thresholds] = await Promise.all([
-      this.evidence.listCohortSnapshots([studentId], now),
+      this.evidence.listTriageSnapshots([studentId], now),
       this.thresholds(),
     ]);
     const snapshot = snapshots.get(studentId);
     // No snapshot means no evidence to triage. An empty mark is still worth writing: it records
     // that the coach looked, and `needsAttention` reads it as covering nothing if flags appear.
     const flags = snapshot
-      ? evaluateRiskFlags(snapshot, thresholds, todayIso(now))
+      ? evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now))
       : [];
     await this.links.setAttention(link.id, flags);
   }
@@ -197,7 +198,7 @@ export class MentorshipRosterService {
     // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
     // previous coach on a task that outlived their link must not be readable by the current one.
     const droppedSince = addDays(
-      todayIso(now),
+      todayInIstanbul(now),
       -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1),
     );
     const [
@@ -212,13 +213,13 @@ export class MentorshipRosterService {
       this.users.listDisplayIdentities([studentId]),
       this.users.getDiscoveryProfile(studentId),
       this.evidence.getStudentReport(studentId, now, link.id),
-      this.evidence.listCohortSnapshots([studentId], now),
+      this.evidence.listTriageSnapshots([studentId], now),
       this.thresholds(),
       this.config.get("mentorship.attention.ttl_days"),
       this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
     ]);
     const snapshot = snapshots.get(studentId)!;
-    const flags = evaluateRiskFlags(snapshot, thresholds, todayIso(now));
+    const flags = evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now));
 
     return {
       studentId,

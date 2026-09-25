@@ -174,7 +174,8 @@ export function AssignTaskForm({
           />
           <Button
             type="button"
-            variant="soft"
+            variant="secondary"
+            className="self-start"
             disabled={
               drafts.length >= MAX_DRAFTS ||
               !!state.editor ||

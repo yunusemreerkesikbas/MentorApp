@@ -1,0 +1,138 @@
+{
+  "capturedAt": "2026-09-24T20:27:32.4877576Z",
+  "branch": "feature/APP-110",
+  "head": "0915d92cb7e04fe721fe8e26eba2f531519f1b72",
+  "database": "mentor_test",
+  "browser": "installed Chrome",
+  "apiE2e": "42/42 W7, 115/115 W8, 55/55 W6",
+  "realApiChrome": "6/6",
+  "mockedChrome": "100 passed, 4 skipped",
+  "files": [
+    {
+      "path": "apps/api/test/forum.e2e-spec.ts",
+      "sha256": "ad992724a313efdbedb75832ff416e3d314de656d8293af57ce98e25932f744e"
+    },
+    {
+      "path": "apps/api/test/community.e2e-spec.ts",
+      "sha256": "ab2bb158230255229083a8d7a01725d02886295551642f7d123827ee9f70ad98"
+    },
+    {
+      "path": "apps/api/test/mentorship.e2e-spec.ts",
+      "sha256": "86c17aba232d534ab6f3d36b11ec387d46e0f2c570313ba59ca279563d52781b"
+    },
+    {
+      "path": "apps/api/test/mentorship-seats.e2e-spec.ts",
+      "sha256": "28e4cd270fbbf30cc6a767d92333d73496fd7718d58be2d18b1741295958bb66"
+    },
+    {
+      "path": "apps/api/test/mentorship-applications.e2e-spec.ts",
+      "sha256": "ca053f273a5a5828930185ce7fa38d2229010fc08642a90c55e14a5256b321c9"
+    },
+    {
+      "path": "apps/api/test/mentorship-followups.e2e-spec.ts",
+      "sha256": "55a12f5631152811afafe5709735e5a3b5b4b92b4d93ae8aef87095fd3498cb5"
+    },
+    {
+      "path": "apps/api/test/mentorship-weekly-brief.e2e-spec.ts",
+      "sha256": "eb635c40369330cd33bc3a61c6c2f50e5def401692e68bab3a01e802e1a7499c"
+    },
+    {
+      "path": "apps/api/test/cohort-evidence.e2e-spec.ts",
+      "sha256": "de972b8125107b0c81ce617601f2fb683b23ee1fb059a5aa5516b1f8b51e40dd"
+    },
+    {
+      "path": "apps/api/test/admin.e2e-spec.ts",
+      "sha256": "b27ed900fb54f49666eb7cd76618d7b11e5a15958558940d86e41e5086506e6c"
+    },
+    {
+      "path": "apps/api/test/admin-rbac.e2e-spec.ts",
+      "sha256": "afb1b72aee89a4390cb74cb0c689f212d91778fac49f331c60e86fe448b9bb98"
+    },
+    {
+      "path": "apps/api/test/admin-subscription.e2e-spec.ts",
+      "sha256": "fcd92fb7d6589a870c035e94670d61e61ee52cb33cccf017e652fe0285f54caa"
+    },
+    {
+      "path": "apps/api/test/admin-metrics.e2e-spec.ts",
+      "sha256": "bf4a166f40384364f295d877c865938cbe896beb344439cb30f4e8ff38ada4ca"
+    },
+    {
+      "path": "apps/api/test/admin-economy-metrics.e2e-spec.ts",
+      "sha256": "5913827c9cb9218afcc7d93e35c537f21c2786fbbee80d99c5dbfa9c8d1622a9"
+    },
+    {
+      "path": "apps/api/test/admin-content.e2e-spec.ts",
+      "sha256": "f79d1f156a7e68a0959a2979496fd8cc9aa43969bac62dfe2444a9b982656ce6"
+    },
+    {
+      "path": "apps/api/test/admin-exam-calendar.e2e-spec.ts",
+      "sha256": "3fa15a3c09fbc3640622a6996aa6f07ffbce479a5d0e5582f33591528bd0e1bb"
+    },
+    {
+      "path": "apps/web/e2e/qa-stage4-real-api.spec.ts",
+      "sha256": "6a58cbb4ff33849bde56d662084d482bfe0ab1b2c61db5daf0768e65c2f335c6"
+    },
+    {
+      "path": "apps/web/e2e/community-hub.spec.ts",
+      "sha256": "061ac4202fdc5754e145d018ea705273eba13fc08aa972d8dc7de76d8cea7039"
+    },
+    {
+      "path": "apps/admin/src/app/login/page.tsx",
+      "sha256": "fec9ee3e8ec73acb37f1f1d4bcb77968d0079c7cc03b13f46f9999cdbe0f07f5"
+    },
+    {
+      "path": "docs/features/community.md",
+      "sha256": "86064b7bc1d5b5e0f5d45bb38e2fba9516cb7a17600cd375d6b13f9907e97b2c"
+    },
+    {
+      "path": "docs/features/admin.md",
+      "sha256": "345d64dfda2f5ef048fc4e0373600010c7c4f38b6b332665458949c1edbd90ae"
+    },
+    {
+      "path": "docs/qa/2026-09-24-community-mentorship-admin-results.md",
+      "sha256": "14c81e7e53f50f288b3a6ae10bf74e43c116477fedcf9d53e27aef24fe2a92ad"
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-admin-desktop-chromium.png",
+      "bytes": 41045,
+      "sha256": "dcc8b806592de35c00f9eb9837858d69dd6553ca603019a3b188c0c6a4ab59a0"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-admin-mobile-chromium.png",
+      "bytes": 27433,
+      "sha256": "e03c2b6c2701bc1565e22ab057ca73b66d8049186c9f51fadf967706eb6bcbd7"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-community-desktop-chromium.png",
+      "bytes": 185181,
+      "sha256": "e1725549aa0141a22520111dca71f22e8a99a5804ee400592d4d6e692644337d"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-community-mobile-chromium.png",
+      "bytes": 101323,
+      "sha256": "9bac2aea2ac38c9183bc92888f4a0eaf120bc106498ce4dbd25cfb5da2d8f96f"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-consent-desktop-chromium.png",
+      "bytes": 100762,
+      "sha256": "fac775ef0345c969d4db73e42746d9fd64880b42289677d16d661f9adc62ce84"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-consent-mobile-chromium.png",
+      "bytes": 61703,
+      "sha256": "7ef8e938088d3cb6819eca437acd5bceddd45377ede683dce2a7cd356ecf6e39"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-roster-desktop-chromium.png",
+      "bytes": 144506,
+      "sha256": "f4286c5664cdf97572a7a7e400c1a820e919bf7184d7de1e0b89a7989b0dc19f"
+    },
+    {
+      "path": "docs/qa/evidence/2026-09-24-stage4-roster-mobile-chromium.png",
+      "bytes": 66967,
+      "sha256": "c4bc16d4f3ec2e9f15c665f30d1372fc20a8e84f06b703745d0f4a1e2c089d83"
+    }
+  ]
+}

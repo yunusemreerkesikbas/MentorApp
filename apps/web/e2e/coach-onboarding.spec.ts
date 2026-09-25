@@ -142,13 +142,18 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await expect(page).toHaveURL(/\/kocluk$/, { timeout: 10_000 });
 });
 
-test("doğrulanmamış e-posta davet kodu yerine sebebini gösteriyor", async ({ page }) => {
+test("doğrulanmamış e-posta davet kodundan önce doğrulama istiyor", async ({ page }) => {
   registered = { id: "reg-1", status: "ACTIVE", headline: "YKS koçu", bio: "…", verifiedClaims: [] };
   user = { ...COACH, username: "kocmert", examType: "YKS" };
 
+  const registrationState = page.waitForResponse((response) =>
+    response.url().includes("/v1/mentorship/coach-registration/mine") && response.status() === 200,
+  );
   await page.goto("/kocluk");
+  await registrationState;
 
-  // No "create a code" button, because pressing it would 403. The reason is shown instead.
-  await expect(page.getByRole("button", { name: "Kod oluştur" })).toHaveCount(0);
-  await expect(page.getByText("e-postanı doğrulayınca", { exact: false })).toBeVisible();
+  // The button explains the email lock and offers verification before any code request.
+  await page.getByRole("button", { name: "Kod oluştur" }).click();
+  await expect(page.getByRole("dialog", { name: "Önce e-postanı doğrula" })).toBeVisible();
+  await expect(page.getByText("Davet kodu e-postan doğrulanınca açılır.", { exact: false })).toBeVisible();
 });

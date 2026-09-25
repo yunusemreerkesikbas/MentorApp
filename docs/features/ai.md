@@ -103,6 +103,19 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 · Free calibration follows chat access.** Stage 3 QA found that a new Free account
+  could call the chat API directly and persist the deterministic first-turn calibration reply even
+  while `GET /coach/access` denied chat. Blocking, streaming, and regenerate calibration now use
+  the same access decision before persisting. Verified official information and the local safety
+  reply still bypass model spend as documented. Usage: enter coach chat with Premium or an earned
+  right; a denied Free request receives the access error before a conversation is created.
+  Gotcha: these local official/safety responses remain available to an authenticated Free caller
+  without model usage. An earned right also permits the deterministic calibration prompt to repeat
+  without a Coin debit or AI usage; model-backed turns still spend the right. If the earned path is
+  disabled, regeneration of that calibration reply is denied without changing the stored message.
+  Related: `chat.service.ts`, `test/ai-coach.e2e-spec.ts`,
+  `apps/web/e2e/qa-stage3-real-api.spec.ts`.
+
 - **2026-09-24 · Coach marker stays internal.** The stage-one QA run found that the streaming
   path could expose `<<PERSONALIZATION:NONE>>` in a visible coach reply. The blocking and
   streaming paths now remove the marker before delivery. Use the existing coach endpoint as

@@ -52,23 +52,25 @@ export function ComposerDayPicker({
             type="button"
             aria-pressed={active}
             aria-label={`${longFormat.format(date)} · ${t("planning_day_counts", { existing: existingCounts?.get(day) ?? "…", drafts: count })}`}
+            // The panel opens on the week: focus starts on the day being planned.
+            data-autofocus={active ? "" : undefined}
             onClick={() => onSelect(day)}
-            className={`flex min-h-14 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] py-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
+            className={`flex min-h-16 cursor-pointer flex-col items-center justify-center gap-0.5 rounded-[var(--radius-card)] border py-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
               active
-                ? "bg-[var(--color-btn)] text-[var(--color-btn-label)]"
-                : "bg-[var(--color-surface)] text-[var(--color-main)] hover:bg-[var(--color-surface-container)]"
+                ? "border-[var(--play-selected)] bg-[var(--play-selected)] text-[var(--play-selected-ink)] shadow-[inset_0_0_0_2px_var(--play-cta)]"
+                : "border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] hover:bg-[var(--color-surface-container)]"
             }`}
           >
             <span
-              className={`coach-caption ${active ? "" : "text-[var(--color-secondary)]"}`}
+              className={`text-xs font-extrabold ${active ? "" : "text-[var(--color-secondary)]"}`}
             >
               {weekdayFormat.format(date)}
             </span>
-            <span className="coach-body font-semibold tabular-nums">
+            <span className="text-base font-extrabold tabular-nums">
               {date.getDate()}
             </span>
             <span
-              className={`coach-caption h-4 tabular-nums ${active ? "" : "text-[var(--color-secondary)]"}`}
+              className={`h-4 text-micro font-extrabold tabular-nums ${active ? "" : "text-[var(--color-secondary)]"}`}
             >
               {existingCounts
                 ? `${existingCounts.get(day) ?? 0} + ${count}`

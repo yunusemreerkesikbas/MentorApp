@@ -46,8 +46,9 @@ export default function AdminLoginPage() {
                                     {error && <div className="alert alert-danger py-2 fs-12">{error}</div>}
                                     <form onSubmit={onSubmit}>
                                         <div className="mb-3">
-                                            <label className="form-label">E-posta</label>
+                                            <label className="form-label" htmlFor="admin-email">E-posta</label>
                                             <input
+                                                id="admin-email"
                                                 type="email"
                                                 className="form-control"
                                                 value={email}
@@ -57,8 +58,9 @@ export default function AdminLoginPage() {
                                             />
                                         </div>
                                         <div className="mb-3">
-                                            <label className="form-label">Şifre</label>
+                                            <label className="form-label" htmlFor="admin-password">Şifre</label>
                                             <input
+                                                id="admin-password"
                                                 type="password"
                                                 className="form-control"
                                                 value={password}

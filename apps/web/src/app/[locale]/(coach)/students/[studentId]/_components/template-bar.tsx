@@ -5,7 +5,8 @@ import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, TextField } from "@mentor/ui";
-import { NOTE_CLASS, SUBHEAD_CLASS } from "@/components/mentorship/coach-ui";
+import { NOTE_CLASS } from "@/components/mentorship/coach-ui";
+import { PLANNER_SUBHEAD } from "./planning-week";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -146,10 +147,10 @@ export function SuggestButton({
   return (
     <Button
       type="button"
-      variant="soft"
+      variant="secondary"
       size="sm"
       // Full width stacks cleanly on a phone; in the quick-start grid's auto column it is still
-      // only as wide as its label.
+      // only as wide as its label. Outlined: the panel's one filled button is the send.
       fullWidth
       className="min-h-11"
       busy={suggesting}
@@ -240,7 +241,7 @@ export function TemplateSaveRow({
 
   return (
     <section className="flex flex-col gap-2">
-      <h3 className={SUBHEAD_CLASS}>{t("template_save_title")}</h3>
+      <h3 className={PLANNER_SUBHEAD}>{t("template_save_title")}</h3>
       <div className="flex flex-wrap items-end gap-2">
         <TextField
           dense

@@ -42,7 +42,12 @@ function link(overrides: Partial<MentorshipLinkRow> = {}): MentorshipLinkRow {
 }
 
 function setup(
-  options: { rows?: MentorshipLinkRow[]; codeOwner?: string; paidSeats?: number } = {},
+  options: {
+    rows?: MentorshipLinkRow[];
+    codeOwner?: string;
+    paidSeats?: number;
+    plans?: { seatCount: number }[];
+  } = {},
 ) {
   const rows = options.rows ?? [];
   const emitted: { topic: string; payload: unknown }[] = [];
@@ -182,6 +187,8 @@ function setup(
   const subscriptions = {
     paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0),
     countSponsoredForLinks: vi.fn(async () => 0),
+    // The catalog as `/subscription` shows it: only plans some channel can sell right now.
+    listPlans: vi.fn(async () => options.plans ?? [{ seatCount: 0 }]),
   };
   const seats = { grant: vi.fn(async () => true) };
 
@@ -444,6 +451,35 @@ describe("MentorshipLinkService", () => {
       expect(overview.activeStudents).toBe(2);
       expect(seats.grant).toHaveBeenCalledTimes(1);
       expect(seats.grant).toHaveBeenCalledWith("s-old", "older");
+    });
+
+    /**
+     * The card decides "full" from this number alone, so it has to be the number the accept lock
+     * refuses at: free + paid while sponsorship is on, never past the follow cap.
+     */
+    it("reports the seat allowance the accept lock enforces", async () => {
+      const { service } = setup();
+      // free_seats 1, paid 0, cap 2.
+      expect((await service.getCoachOverview(COACH)).seatAllowance).toBe(1);
+    });
+
+    it("caps the seat allowance at the number of students a coach may follow", async () => {
+      const { service } = setup({ paidSeats: 5 });
+      expect((await service.getCoachOverview(COACH)).seatAllowance).toBe(2);
+    });
+
+    it("reports no seats while sponsorship is switched off", async () => {
+      config["mentorship.seats.sponsorship_enabled"] = false;
+      const { service } = setup({ paidSeats: 5 });
+      expect((await service.getCoachOverview(COACH)).seatAllowance).toBe(0);
+    });
+
+    it("says whether a coach seat plan can be bought right now", async () => {
+      const closed = setup({ plans: [{ seatCount: 0 }] });
+      expect((await closed.service.getCoachOverview(COACH)).seatPlansOnSale).toBe(false);
+
+      const open = setup({ plans: [{ seatCount: 0 }, { seatCount: 10 }] });
+      expect((await open.service.getCoachOverview(COACH)).seatPlansOnSale).toBe(true);
     });
   });
 

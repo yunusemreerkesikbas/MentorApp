@@ -88,6 +88,7 @@ async function mockApi(page: Page, coach: boolean, enabled = true) {
           focusMinutes28d: 0,
           activeDays28d: 0,
         },
+        dailyFocusMinutes28d: Array<number>(28).fill(0),
         planCompletionRate7d: null,
         mockTrend: [],
         latestMockSubjects: [],
@@ -199,15 +200,10 @@ test("coach creates, reschedules, closes and replaces a shared decision", async 
 }) => {
   const api = await mockApi(page, true);
   await page.goto(`/kocluk/${STUDENT}`);
-  // Below xl the rail is an action bar: open the history panel, then compose from inside it.
-  if (test.info().project.name === "mobile-chromium") {
-    await page.getByRole("button", { name: "Takip geçmişi" }).click();
-  }
-  await page
-    .getByRole("button", { name: "Takip kaydı oluştur", exact: true })
-    .click();
-  // Only the open side panel counts; on a wide screen the rail repeats the latest records. `first()`
-  // because the date field's calendar is a second dialog while open, portaled after the panel.
+  // The rail card sits beside the week on a wide screen and under it on a phone; one link composes.
+  await page.getByRole("button", { name: "Yeni kayıt", exact: true }).click();
+  // Only the open side panel counts; the rail card repeats the latest records. `first()` because
+  // the date field's calendar is a second dialog while open, portaled after the panel.
   const panel = page.getByRole("dialog").first();
   await panel.getByLabel(/Aksiyon başlığı/).fill("Haftalık görüşme");
   await panel.getByLabel(/Koça özel not/).fill("Görüşme öncesi notum");

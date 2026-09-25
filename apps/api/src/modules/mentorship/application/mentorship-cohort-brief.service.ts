@@ -14,7 +14,7 @@ import {
   selectCohortBriefRows,
 } from "../../ai/domain/cohort-brief-prompt";
 import type { PromptLocale } from "../../ai/domain/prompt-locale";
-import { todayIso } from "../../coaching/domain/date.util";
+import { todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
 import { isNewForStudent, toRiskPairs } from "../domain/risk-pairs";
 import { MentorshipCohortBriefRepository } from "../infrastructure/mentorship-cohort-brief.repository";
@@ -92,7 +92,7 @@ export class MentorshipCohortBriefService {
       now,
     );
     const locale = (I18nContext.current()?.lang ?? "tr") as PromptLocale;
-    const evidence = buildCohortBriefEvidence(page.items, todayIso(now));
+    const evidence = buildCohortBriefEvidence(page.items, todayInIstanbul(now));
     const fingerprint = cohortBriefFingerprint(evidence, locale);
 
     const stored = await this.repo.find(coach.id);

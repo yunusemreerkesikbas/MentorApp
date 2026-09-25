@@ -103,8 +103,9 @@ export function FollowupCreateForm({
             />
           </div>
 
-          <div className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}>
-            <p className="coach-footnote inline-flex items-center gap-1.5 font-semibold text-[var(--color-accent)]">
+          {/* The shared group wears the selection tint, the same block the record shows it in. */}
+          <div className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-[var(--play-selected)] p-4">
+            <p className="inline-flex items-center gap-1.5 text-caption font-extrabold text-[var(--play-selected-ink)]">
               <UsersRound aria-hidden size={15} strokeWidth={2} />
               {t("followup_shared_hint")}
             </p>

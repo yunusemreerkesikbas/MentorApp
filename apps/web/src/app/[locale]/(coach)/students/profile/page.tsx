@@ -1,4 +1,5 @@
 import { setRequestLocale } from "@/i18n/locale";
+import { COACH_PAGE_FRAME } from "../../_components/coach-page-frame";
 import { CoachProfileShell } from "./_components/coach-profile-shell";
 
 /**
@@ -16,5 +17,9 @@ export default async function CoachProfilePage({
 }) {
   const { locale } = await params;
   setRequestLocale(locale);
-  return <CoachProfileShell />;
+  return (
+    <div className={COACH_PAGE_FRAME}>
+      <CoachProfileShell />
+    </div>
+  );
 }

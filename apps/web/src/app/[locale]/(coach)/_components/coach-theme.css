@@ -1,7 +1,7 @@
 /*
  * Coach-only extras, scoped so they never leak into the student surface. Product tokens
- * (font, radius, color, shadow) come from `@mentor/ui`. This file is density: signal hues
- * and a tighter type scale. Work-tool rhythm, not a second brand.
+ * (font, radius, color, shadow, type scale) come from `@mentor/ui`; the coach screens use the
+ * panel's scale since the 2026-09 redesign. What is left here is the signal hues.
  */
 
 /*
@@ -31,50 +31,4 @@
   --sig-net: #e0a300;
   /* Weekly plan completion below the floor. `--color-progress`. */
   --sig-plan: #55acee;
-}
-
-/*
- * The workspace type scale: fixed rem steps (product register), one family. Weight lives in the
- * step for titles only, so a label can still take `font-semibold` next to body copy.
- */
-.coach-large-title {
-  font-size: 1.75rem;
-  line-height: 2.125rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  text-wrap: balance;
-}
-
-.coach-title {
-  font-size: 1.375rem;
-  line-height: 1.75rem;
-  font-weight: 700;
-}
-
-.coach-headline {
-  font-size: 1.0625rem;
-  line-height: 1.375rem;
-  font-weight: 600;
-}
-
-.coach-body {
-  font-size: 0.9375rem;
-  line-height: 1.3125rem;
-}
-
-.coach-footnote {
-  font-size: 0.8125rem;
-  line-height: 1.125rem;
-}
-
-.coach-caption {
-  font-size: 0.75rem;
-  line-height: 1rem;
-}
-
-@media (min-width: 640px) {
-  .coach-large-title {
-    font-size: 1.875rem;
-    line-height: 2.25rem;
-  }
 }

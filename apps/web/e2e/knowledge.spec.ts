@@ -96,8 +96,7 @@ test("blog hub herkese açık ve KPSS ile açılır", async ({ page }) => {
     "page",
   );
   await expect(page.getByRole("heading", { name: article.title })).toBeVisible();
-  // `exact`: "KPSS Sınav Günü Kuralları" is a post heading on the same page.
-  await expect(page.getByRole("heading", { name: "Sınav günü", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "KPSS Sınav Günü Kuralları", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Giriş yap" })).toBeVisible();
   await expect(page.getByTestId("app-sidebar")).toHaveCount(0);
   expect(api.unexpected).toEqual([]);
@@ -239,9 +238,8 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
     "page",
   );
   await expect(hub.getByRole("heading", { name: article.title }).first()).toBeVisible();
-  await expect(
-    hub.getByRole("link", { name: "Add to calendar" }),
-  ).toBeVisible();
+  // The isolated seed's 2026 calendar is now past; a stale event must not offer an ICS download.
+  await expect(hub.getByRole("link", { name: "Add to calendar" })).toHaveCount(0);
   expect(hubApi.unexpected).toEqual([]);
 });
 
@@ -285,7 +283,7 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
   const api = await mockKnowledgeApi(page, { authenticated: false });
   let requestedSlug: string | null = null;
   await page.route(
-    "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
+    `${process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3001/v1"}/ads/public/placements/knowledge.article.end**`,
     async (route) => {
       requestedSlug = new URL(route.request().url()).searchParams.get("contentSlug");
       await json(route, enabledContextualPlacement);
@@ -296,9 +294,7 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
 
   await page.waitForTimeout(150);
   expect(requestedSlug).toBeNull();
-  await page
-    .getByRole("complementary", { name: "Reklam" })
-    .scrollIntoViewIfNeeded();
+  await page.getByRole("region", { name: "Bu konu kafanı mı kurcalıyor?" }).scrollIntoViewIfNeeded();
   await expect.poll(() => requestedSlug).toBe(article.slug);
   await expect(page.getByRole("complementary", { name: "Reklam" })).toBeVisible();
   const log = await page.evaluate(() =>
@@ -316,7 +312,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
   await installDisplayGpt(page, true);
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.route(
-    "http://localhost:3001/v1/ads/public/placements/knowledge.article.end**",
+    `${process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3001/v1"}/ads/public/placements/knowledge.article.end**`,
     (route) => json(route, enabledContextualPlacement),
   );
   await page.goto(`/blog/${article.slug}`);
@@ -412,7 +408,7 @@ async function mockKnowledgeApi(
   const unexpected: string[] = [];
   let usersMeCalls = 0;
 
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3001/v1"}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname + url.search;

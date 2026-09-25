@@ -8,7 +8,7 @@ function ComparisonTable({ rows }: { rows: string[][] }) {
   return (
     <table className="w-full border-collapse text-sm">
       <thead>
-        <tr className="border-b border-[var(--color-border)] text-[var(--color-secondary)]">
+        <tr className="border-b border-[var(--play-line)] text-[var(--color-secondary)]">
           <th className="py-2 text-left font-semibold" scope="col" />
           <th className="py-2 text-right font-semibold" scope="col">
             {t("weekly_report_current")}
@@ -20,7 +20,7 @@ function ComparisonTable({ rows }: { rows: string[][] }) {
       </thead>
       <tbody>
         {rows.map(([label, current, previous]) => (
-          <tr key={label} className="border-b border-[var(--color-border)]">
+          <tr key={label} className="border-b border-[var(--play-line)]">
             <th
               className="py-2 text-left font-normal text-[var(--color-secondary)]"
               scope="row"
@@ -51,6 +51,7 @@ export function WeeklyReportPrintMetrics({
     maximumFractionDigits: 0,
   });
   const missing = t("weekly_report_missing");
+  const name = (ref: string) => report.subjectNames[ref] ?? ref;
   const net = (value: number | null) =>
     value === null ? missing : number.format(value);
   const percent = (value: number | null) =>
@@ -94,7 +95,7 @@ export function WeeklyReportPrintMetrics({
       net(report.snapshot.mocks.previousAverageNet),
     ],
     ...report.snapshot.mocks.subjects.map((subject) => [
-      subject.subjectRef,
+      name(subject.subjectRef),
       net(subject.currentAverageNet),
       net(subject.previousAverageNet),
     ]),
@@ -117,10 +118,10 @@ export function WeeklyReportPrintMetrics({
               {report.snapshot.subjects.map((subject) => (
                 <tr
                   key={subject.subjectRef ?? "unclassified"}
-                  className="border-b border-[var(--color-border)]"
+                  className="border-b border-[var(--play-line)]"
                 >
                   <th className="py-2 text-left font-normal" scope="row">
-                    {subject.subjectRef ?? t("weekly_report_unclassified")}
+                    {subject.subjectRef ? name(subject.subjectRef) : t("weekly_report_unclassified")}
                   </th>
                   <td className="py-2 text-right tabular-nums">
                     {t("weekly_report_subject_comparison", {

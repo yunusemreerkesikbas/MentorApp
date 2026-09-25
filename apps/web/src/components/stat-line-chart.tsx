@@ -25,6 +25,8 @@ export interface StatLineChartProps {
   valueSuffix?: string;
   /** Turns a point's `x` into its label (axis ticks, tooltip, table). */
   formatX?: (x: string) => string;
+  /** A longer label for the tooltip and the table than the axis has room for. Defaults to `formatX`. */
+  describeX?: (x: string) => string;
   /** A labelled threshold across the plot, e.g. the personal record. */
   marker?: { value: number; label: string };
   /** Caption of the screen-reader table that carries every value (dataviz: tooltips never gate). */
@@ -64,6 +66,7 @@ export function StatLineChart({
   color = "var(--color-accent)",
   valueSuffix = "",
   formatX = identity,
+  describeX = formatX,
   marker,
   tableCaption,
 }: StatLineChartProps) {
@@ -149,7 +152,7 @@ export function StatLineChart({
                 style={{ backgroundColor: point.seriesColor }}
               />
               <span className="font-bold text-[var(--color-secondary)]">
-                {formatX(String(point.data.x))}
+                {describeX(String(point.data.x))}
               </span>
               <strong className="font-black tabular-nums">
                 {point.data.yFormatted}
@@ -163,20 +166,24 @@ export function StatLineChart({
         />
       </div>
       {tableCaption ? (
-        <table className="sr-only">
-          <caption>{tableCaption}</caption>
-          <tbody>
-            {points.map((point) => (
-              <tr key={point.x}>
-                <th scope="row">{formatX(point.x)}</th>
-                <td>
-                  {point.y.toFixed(2)}
-                  {valueSuffix}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        // The wrapper hides it: a table ignores `sr-only`'s 1px width, and one with long row labels
+        // widened the page on a phone.
+        <div className="sr-only">
+          <table>
+            <caption>{tableCaption}</caption>
+            <tbody>
+              {points.map((point) => (
+                <tr key={point.x}>
+                  <th scope="row">{describeX(point.x)}</th>
+                  <td>
+                    {point.y.toFixed(2)}
+                    {valueSuffix}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       ) : null}
     </div>
   );

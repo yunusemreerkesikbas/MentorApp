@@ -119,8 +119,9 @@ const subscription: SubscriptionView = {
   discount: null,
 };
 
+const apiUrl = process.env.QA_STAGE3_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/v1";
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
   "access-control-allow-credentials": "true",
 };
 
@@ -213,7 +214,7 @@ async function mockSubscriptionApi(
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
   });
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${apiUrl}/**`, async (route) => {
     const request = route.request();
     const path = new URL(request.url()).pathname;
     const method = request.method();

@@ -2,6 +2,8 @@ import { defineConfig } from "@playwright/test";
 
 const nodeExecutable = JSON.stringify(process.execPath);
 const externalBaseUrl = process.env.PLAYWRIGHT_BASE_URL?.trim() || undefined;
+const firefoxQa = process.env.QA_BROWSER_CHANNEL === "firefox";
+const projectBrowser = firefoxQa ? "firefox" : "chromium";
 
 export default defineConfig({
   testDir: "./e2e",
@@ -11,14 +13,14 @@ export default defineConfig({
   outputDir: "test-results",
   use: {
     baseURL: externalBaseUrl ?? "http://localhost:3100",
-    browserName: "chromium",
+    browserName: projectBrowser,
     ...(process.env.QA_BROWSER_CHANNEL === "chrome" ? { channel: "chrome" as const } : {}),
     screenshot: "only-on-failure",
     trace: "retain-on-failure",
   },
   projects: [
-    { name: "mobile-chromium", use: { viewport: { width: 375, height: 812 } } },
-    { name: "desktop-chromium", use: { viewport: { width: 1280, height: 800 } } },
+    { name: `mobile-${projectBrowser}`, use: { viewport: { width: 375, height: 812 } } },
+    { name: `desktop-${projectBrowser}`, use: { viewport: { width: 1280, height: 800 } } },
   ],
   webServer: externalBaseUrl
     ? undefined

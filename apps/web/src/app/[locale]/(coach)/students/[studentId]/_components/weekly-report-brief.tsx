@@ -36,7 +36,7 @@ export function WeeklyReportBrief({
         <div>
           <h3
             id="weekly-ai-title"
-            className="coach-headline text-[var(--color-main)]"
+            className="text-base font-extrabold text-[var(--color-main)]"
           >
             {t("weekly_report_ai_title")}
           </h3>
@@ -91,6 +91,7 @@ export function WeeklyReportBrief({
         <WeeklyPreparation
           preparation={preview.brief.preparation}
           evidence={preview.snapshot.evidence}
+          subjectNames={preview.subjectNames}
         />
       ) : preview.brief ? (
         <ol className="flex flex-col gap-3">
@@ -100,15 +101,15 @@ export function WeeklyReportBrief({
               className={`${INSET_GROUP_CLASS} flex flex-col gap-3 p-4`}
             >
               <div>
-                <p className="coach-footnote font-semibold text-[var(--color-secondary)]">
+                <p className="text-caption font-extrabold text-[var(--color-secondary)]">
                   {t("weekly_report_observation")}
                 </p>
-                <p className="coach-body text-[var(--color-main)]">
+                <p className="text-body-sm text-[var(--color-main)]">
                   {finding.observation}
                 </p>
               </div>
               <div>
-                <p className="coach-footnote font-semibold text-[var(--color-secondary)]">
+                <p className="text-caption font-extrabold text-[var(--color-secondary)]">
                   {t("weekly_report_evidence")}
                 </p>
                 <ul className="mt-1 flex flex-wrap gap-2">
@@ -118,7 +119,7 @@ export function WeeklyReportBrief({
                     return (
                       <li
                         key={id}
-                        className="rounded-full bg-[var(--color-primary-soft)] px-3 py-1 coach-footnote text-[var(--color-primary)]"
+                        className="rounded-full bg-[var(--play-selected)] px-3 py-1 text-caption font-bold text-[var(--play-selected-ink)]"
                       >
                         {t(`weekly_report_evidence_${id}`)}:{" "}
                         {formatWeeklyMetric(item.kind, item.previous, locale)} →{" "}
@@ -130,18 +131,18 @@ export function WeeklyReportBrief({
               </div>
               <div className="grid gap-3 md:grid-cols-2">
                 <div>
-                  <p className="coach-footnote font-semibold text-[var(--color-secondary)]">
+                  <p className="text-caption font-extrabold text-[var(--color-secondary)]">
                     {t("weekly_report_uncertainty")}
                   </p>
-                  <p className="coach-body text-[var(--color-main)]">
+                  <p className="text-body-sm text-[var(--color-main)]">
                     {finding.uncertainty}
                   </p>
                 </div>
                 <div>
-                  <p className="coach-footnote font-semibold text-[var(--color-secondary)]">
+                  <p className="text-caption font-extrabold text-[var(--color-secondary)]">
                     {t("weekly_report_question")}
                   </p>
-                  <p className="coach-body text-[var(--color-main)]">
+                  <p className="text-body-sm text-[var(--color-main)]">
                     {finding.conversationQuestion}
                   </p>
                 </div>

@@ -67,6 +67,14 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 · Leaderboard flag QA coverage.** The real-Postgres community E2E fixture now
+  enables `community.leaderboard.enabled` explicitly for ranking checks, verifies the direct
+  endpoint is unavailable while the flag is off, and restores both leaderboard and economy
+  flags after the suite. The mocked Chrome hub test now derives CORS origin from the active
+  browser request and asserts the current Turkish empty-tags message. Run
+  `test/community.e2e-spec.ts` against isolated `mentor_test`; the browser fixture lives in
+  `apps/web/e2e/community-hub.spec.ts`. Related: `apps/api/test/community.e2e-spec.ts`.
+
 ### 2026-09-17 — XP / Coin launch integration
 
 - community.leaderboard.enabled defaults to false at launch and blocks direct leaderboard API access. Personal XP and journey levels remain in community summaries; web hides the ranking link when the API returns no leaderboard. Usage: manage the flag through central config. See community.service.ts and economy.md.
