@@ -1,10 +1,7 @@
-"use client";
-
-import { useId, type ReactNode } from "react";
-
 /**
- * Grouped inset sections for the coach workspace. They read Nuton tokens (`@mentor/ui`);
- * the tighter type scale is `.coach-*` in `(coach)/_components/coach-theme.css`.
+ * Inset group classes for the coach's side panels (the week composer, the weekly report, the
+ * follow-ups), on the panel's type scale and tokens (DESIGN.md §3). The pages themselves use the
+ * panel's classes (`components/panel/panel-styles.ts`).
  *
  * Fields, menus, date pickers and buttons are the app's shared components (`@mentor/ui`,
  * `MenuSelect`, `DateField`), the same ones the coach calendar uses; only the grouping lives here.
@@ -19,33 +16,8 @@ export const INSET_DIVIDE_CLASS = "divide-y divide-[var(--color-surface-containe
 /** One row of an inset group. Put `INSET_DIVIDE_CLASS` on the group. */
 export const INSET_ROW_CLASS = "flex min-h-11 items-center justify-between gap-3 px-4 py-2.5";
 
-/** A small grey heading inside a section or panel ("Hızlı başlangıç", "Silinen ödevler"). */
-export const SUBHEAD_CLASS = "coach-footnote px-1 font-semibold text-[var(--color-secondary)]";
+/** A small grey heading inside a section or panel ("Hızlı başlangıç", "Bu hafta"). */
+export const SUBHEAD_CLASS = "px-1 text-caption font-extrabold text-[var(--color-secondary)]";
 
 /** The quiet explanatory line under a block. */
-export const NOTE_CLASS = "coach-footnote px-1 text-[var(--color-secondary)]";
-
-export function InsetSection({
-  title,
-  action,
-  children,
-  className,
-}: {
-  title: ReactNode;
-  action?: ReactNode;
-  children: ReactNode;
-  className?: string;
-}) {
-  const headingId = useId();
-  return (
-    <section aria-labelledby={headingId} className={`flex min-w-0 flex-col gap-2.5 ${className ?? ""}`}>
-      <div className="flex min-h-8 items-center justify-between gap-3 px-1">
-        <h2 id={headingId} className="coach-headline text-[var(--color-main)]">
-          {title}
-        </h2>
-        {action}
-      </div>
-      {children}
-    </section>
-  );
-}
+export const NOTE_CLASS = "px-1 text-caption text-[var(--color-secondary)]";

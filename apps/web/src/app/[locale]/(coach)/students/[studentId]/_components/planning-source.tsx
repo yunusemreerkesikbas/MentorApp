@@ -11,6 +11,8 @@ import {
   shiftDate,
 } from "./planning-state";
 import { todayInIstanbul } from "@/lib/date-time";
+import { PLANNER_SUBHEAD } from "./planning-week";
+import { useReportDates } from "./use-report-dates";
 import { usePlanningTasks } from "./use-planning-tasks";
 
 export function PlanningSource({
@@ -27,6 +29,7 @@ export function PlanningSource({
   onAdd: (drafts: AssignDraft[], keys: string[]) => void;
 }) {
   const t = useTranslations("mentorship");
+  const dates = useReportDates();
   const current = monday(todayInIstanbul());
   const [week, setWeek] = useState(shiftDate(current, -7));
   const [filter, setFilter] = useState("ALL");
@@ -48,14 +51,15 @@ export function PlanningSource({
   const overflow = count + chosen.length > MAX_DRAFTS;
   return (
     <section className="flex flex-col gap-3">
-      <h3 className="font-semibold">{t("planning_source")}</h3>
-      <div className="flex flex-wrap gap-2">
+      <h3 className={PLANNER_SUBHEAD}>{t("planning_source")}</h3>
+      <div className="flex flex-wrap items-center gap-2">
         {[shiftDate(current, -7), current].map((value, i) => (
           <Button
             key={value}
             type="button"
             size="sm"
             variant={week === value ? "soft" : "ghost"}
+            aria-pressed={week === value}
             onClick={() => {
               setWeek(value);
               setSelected([]);
@@ -64,10 +68,10 @@ export function PlanningSource({
             {t(i === 0 ? "planning_last_week" : "assign_week_this")}
           </Button>
         ))}
+        <span className="text-caption font-semibold text-[var(--color-secondary)]">
+          {dates.range(week, shiftDate(week, 6))}
+        </span>
       </div>
-      <p>
-        {week} – {shiftDate(week, 6)}
-      </p>
       <div className="flex flex-wrap gap-2">
         {["ALL", "PENDING", "DONE"].map((value) => (
           <Button
@@ -75,6 +79,7 @@ export function PlanningSource({
             type="button"
             size="sm"
             variant={filter === value ? "soft" : "ghost"}
+            aria-pressed={filter === value}
             onClick={() => setFilter(value)}
           >
             {t(`planning_filter_${value}`)}
@@ -82,21 +87,22 @@ export function PlanningSource({
         ))}
       </div>
       {data.error ? (
-        <div role="alert">
-          <p>{data.error}</p>
-          <Button type="button" onClick={data.retry}>
+        <div role="alert" className="flex flex-col items-start gap-2">
+          <p className="text-body-sm font-semibold text-[var(--color-body)]">{data.error}</p>
+          <Button type="button" variant="secondary" size="sm" onClick={data.retry}>
             {t("planning_retry")}
           </Button>
         </div>
       ) : data.rows === null ? (
         <div role="status" aria-label={t("loading")}>
-          <Skeleton className="h-24 w-full" />
+          <Skeleton className="h-24 w-full rounded-[var(--radius-card)]" />
         </div>
       ) : (
         <>
           <Button
             type="button"
             variant="ghost"
+            className="self-start"
             onClick={() =>
               setSelected((prev) => [
                 ...new Set([...prev, ...available.map((r) => r.id)]),
@@ -105,15 +111,17 @@ export function PlanningSource({
           >
             {t("planning_select_visible")}
           </Button>
-          {visible.length === 0 && <p>{t("planning_empty")}</p>}
+          {visible.length === 0 && (
+            <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("planning_empty")}</p>
+          )}
           {visible.map((row) => (
             <label
               key={row.id}
-              className="flex min-h-11 items-start gap-3 py-2"
+              className="flex min-h-11 cursor-pointer items-start gap-3 py-2"
             >
               <input
                 type="checkbox"
-                className="mt-1 size-5"
+                className="mt-1 size-5 accent-[var(--play-cta)]"
                 disabled={copied.includes(copyKey(row.id, target))}
                 checked={selected.includes(row.id)}
                 onChange={(e) =>
@@ -124,18 +132,14 @@ export function PlanningSource({
                   )
                 }
               />
-              <span>
+              <span className="text-body-sm font-bold text-[var(--color-main)]">
                 {row.title}
-                <span className="block text-sm text-[var(--color-secondary)]">
+                <span className="block text-caption font-semibold text-[var(--color-secondary)]">
                   {[
-                    row.taskDate,
+                    dates.shortDay(row.taskDate),
                     row.subject,
                     row.topic,
-                    t(
-                      row.status === "DONE"
-                        ? "planning_filter_DONE"
-                        : "planning_filter_PENDING",
-                    ),
+                    t(row.status === "DONE" ? "task_status_DONE" : "task_status_PENDING"),
                   ]
                     .filter(Boolean)
                     .join(" · ")}
@@ -144,11 +148,15 @@ export function PlanningSource({
             </label>
           ))}
           {overflow && (
-            <p role="alert">{t("planning_capacity", { max: MAX_DRAFTS })}</p>
+            <p role="alert" className="text-body-sm font-semibold text-[var(--color-body)]">
+              {t("planning_capacity", { max: MAX_DRAFTS })}
+            </p>
           )}
           <Button
             type="button"
+            variant="secondary"
             size="sm"
+            className="self-start"
             disabled={chosen.length === 0 || overflow}
             onClick={() => {
               onAdd(

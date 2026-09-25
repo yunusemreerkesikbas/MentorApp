@@ -1409,7 +1409,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         {isSpread ? (
           <>
             {isMobile ? (
-              <div className="flex shrink-0 flex-col gap-2">
+              <div className="relative z-30 flex shrink-0 flex-col gap-2">
                 <NotebookMobileToolRail
                   open={mobileRailOpen}
                   reduceMotion={reduceMotion}

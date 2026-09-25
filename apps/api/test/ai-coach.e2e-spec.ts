@@ -229,6 +229,7 @@ describe("ai coach chat (e2e)", () => {
     if (app && adminToken) {
       await setConfig("forum.coach_bridge.enabled", false);
       await setConfig("forum.enabled", false);
+      await setConfig("economy.enabled", false);
     }
     await app?.close();
     await pool?.end();
@@ -257,6 +258,93 @@ describe("ai coach chat (e2e)", () => {
   it("free user with economy off is blocked (403)", async () => {
     await setConfig("economy.enabled", false);
     expect((await chat(freeToken)).status).toBe(403);
+  });
+
+  it("blocks Free calibration without access while official and safety replies stay local", async () => {
+    await setConfig("economy.enabled", false);
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query("update coach_profiles set calibration_status='NOT_STARTED' where user_id=$1", [freeId]);
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+    try {
+      const before = await request(app.getHttpServer())
+        .get("/v1/coach/conversations")
+        .set({ Authorization: `Bearer ${freeToken}` });
+      const usageBefore = await aiUsageCount(freeId);
+      expect((await chat(freeToken, "Merhaba")).status).toBe(403);
+      const streamed = await request(app.getHttpServer())
+        .post("/v1/coach/chat/stream")
+        .set({ Authorization: `Bearer ${freeToken}` })
+        .send({ message: "Merhaba" });
+      expect(streamed.status).toBe(403);
+      const afterBlocked = await request(app.getHttpServer())
+        .get("/v1/coach/conversations")
+        .set({ Authorization: `Bearer ${freeToken}` });
+      expect(afterBlocked.body).toEqual(before.body);
+      for (const message of ["KPSS sınav tarihi ne zaman?", "Kendime zarar vermek istiyorum"]) {
+        expect((await chat(freeToken, message)).status).toBe(201);
+      }
+      expect(await aiUsageCount(freeId)).toBe(usageBefore);
+    } finally {
+      await completeCalibration(freeId);
+    }
+  });
+
+  it("keeps local calibration free and blocks regeneration after the earned right is disabled", async () => {
+    await setConfig("economy.enabled", false);
+    const originalBalance = await coinBalance(freeId);
+    await grantCoin(freeId, 20);
+    const c = await pool.connect();
+    try {
+      await c.query("begin");
+      await c.query("select set_config('app.role','SERVICE',true)");
+      await c.query(
+        `insert into coach_profiles (user_id,calibration_status,memory_consent)
+         values ($1,'NOT_STARTED','DECLINED')
+         on conflict (user_id) do update set calibration_status='NOT_STARTED'`,
+        [freeId],
+      );
+      await c.query("commit");
+    } finally {
+      c.release();
+    }
+    try {
+      await setConfig("economy.enabled", true);
+      expect((await access(freeToken)).body).toMatchObject({ canChat: true, mode: "COIN" });
+      const balanceBefore = await coinBalance(freeId);
+      const usageBefore = await aiUsageCount(freeId);
+      const first = await chat(freeToken, "Merhaba");
+      const repeated = await chat(freeToken, "Merhaba");
+      expect(first.status).toBe(201);
+      expect(repeated.status).toBe(201);
+      expect(first.body.model).toBe("mentor-calibration");
+      expect(repeated.body.model).toBe("mentor-calibration");
+      expect(await coinBalance(freeId)).toBe(balanceBefore);
+      expect(await aiUsageCount(freeId)).toBe(usageBefore);
+
+      const conversationId = first.body.conversationId as string;
+      const messages = () => request(app.getHttpServer())
+        .get(`/v1/coach/conversations/${conversationId}/messages`)
+        .set({ Authorization: `Bearer ${freeToken}` });
+      const before = await messages();
+      expect(before.status).toBe(200);
+      await setConfig("economy.enabled", false);
+      expect((await access(freeToken)).body.canChat).toBe(false);
+      const regenerate = await request(app.getHttpServer())
+        .post(`/v1/coach/conversations/${conversationId}/regenerate/stream`)
+        .set({ Authorization: `Bearer ${freeToken}` });
+      expect(regenerate.status).toBe(403);
+      expect((await messages()).body).toEqual(before.body);
+    } finally {
+      await setConfig("economy.enabled", false);
+      await grantCoin(freeId, originalBalance - await coinBalance(freeId));
+      await completeCalibration(freeId);
+    }
   });
 
   it("GET /coach/access reflects premium vs coin vs none", async () => {

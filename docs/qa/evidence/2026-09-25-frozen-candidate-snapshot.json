@@ -1,0 +1,543 @@
+{
+  "capturedAt": "2026-09-25T08:54:56.0726980Z",
+  "branch": "feature/APP-110",
+  "head": "fcb2d8090d48cfb8344852a1e94b31d76c01e781",
+  "files": [
+    {
+      "path": "apps/api/test/cohort-evidence.e2e-spec.ts",
+      "sha256": "2b7ef605a559975f7d9efa5f5afe197c4053acdc9786a54b5d494fa2ae568f58"
+    },
+    {
+      "path": "apps/web/e2e/coach-student.fixture.ts",
+      "sha256": "de959c6b861bb65cf2f79715790804f32517490eefe89288e473743bd35864f8"
+    },
+    {
+      "path": "apps/web/e2e/coach-student.spec.ts",
+      "sha256": "b76658a2c78d612683f12151b916a85df325c641171a9bbe82876ac2a31e70ce"
+    },
+    {
+      "path": "apps/web/e2e/qa-stage3-real-api.spec.ts",
+      "sha256": "28ea0557e2e5ed508212972890905a2091b5caf6b452a5265f0cb65b71c4f526"
+    },
+    {
+      "path": "apps/web/e2e/qa-stage4-real-api.spec.ts",
+      "sha256": "6a58cbb4ff33849bde56d662084d482bfe0ab1b2c61db5daf0768e65c2f335c6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/activity-strip.tsx",
+      "sha256": "cff006f9cbac21e15e873b004c43e6fdb8ab57aeb9520e52b35f35eeb0c22fb6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/activity-tone.spec.ts",
+      "sha256": "e34f81d2b5ea0b3ab72e32b0e3f9d335768d5fc80132569d00beab67b82c51a6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/activity-tone.ts",
+      "sha256": "12b523760f8df5add6fe4f79cea7b3fea8c6a242e7e52cd38191d817c02361b6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/attention.spec.ts",
+      "sha256": "6615beb1b74c8208fed1830700147464eae42062a41d50b0133e648cd6c56018"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/attention.ts",
+      "sha256": "18983d62025a0e54f11a82a27d6e76e9c26b92b74e6140d3dcf4d288a86ffeba"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/coach-page-frame.ts",
+      "sha256": "c38cbfb0ab78eab7ac68e59936ec2fb3c69df0ee522effd4cec4cce8f3082d0f"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/flag-order.spec.ts",
+      "sha256": "1f6016feda12fa54a6727aff2ea8913f4d2758b40ece80004524bacef8e4bdcf"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/flag-order.ts",
+      "sha256": "9e98e7d1798a6c0269445baa1e7269d45ab4ba490103b229b3313b614004c7f8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/followup-due.ts",
+      "sha256": "2585df982be8517ab0e7be1545cf05ee8269efd488fdb8b16a96dd7d42fafed8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/round-order.spec.ts",
+      "sha256": "c9e8aa1874c0eb7e47f97931fcda9d40d112fbafa4fe597903ae5779fd0aaffd"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/round-order.ts",
+      "sha256": "03b26c6e2383999002d142fc691a24e2c38862dcbbc4e2c2fefcd4393564d235"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/student-avatar.tsx",
+      "sha256": "2a1146bf6feca404c1fe2b8ecd28d482fcde3017e8fb2eed9c5df5ba3476ad03"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/followup-card.tsx",
+      "sha256": "3a8e72a7906aa67d6a8dea61b9ff75831374fd4c8ad56855da0567a8e0e5b745"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/mocks-card.tsx",
+      "sha256": "b64aad608ed9a2de11b90f1470333c4137e0714862ef6b06bf9e8e5615033224"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/mood-card.tsx",
+      "sha256": "4292642417697433f3f33eccc92c0a2199d05e0722af61e59df624a608b40466"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/note-card.tsx",
+      "sha256": "163c7f8147be645c4fee3ac6a811095b3b553a6eadac4447a2a8f5c3971e1821"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/plan-card.tsx",
+      "sha256": "175494a767423bf3a24109b30dd1449ce993f43bfb3ff1a049f770be83aef18a"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/report-format.ts",
+      "sha256": "9c9cc5881d0ac805e77f7aaf2d8092cb6e8945363d1a10f6637c798e2a2742d0"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/rhythm-card.tsx",
+      "sha256": "bb9000d8c2760f1e4bc26695aacffa69084b2d5225d139f175cfd2043c4ec255"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-report-dates.ts",
+      "sha256": "4b70ca9aae1e0c71ee613f5853b9452283363fb007ff1e3931733ec727acb8c6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-student-brief.ts",
+      "sha256": "92fc01871383a0b67023a91b64da8cf272589a3d269b44a09a392106e520969f"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-student-report.ts",
+      "sha256": "235c8a6726b1af46846f0f3969ef54d39d4ee137e69756be0be385b4ff164472"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-weekly-brief-polling.ts",
+      "sha256": "8ef94709cf4184f62d679e194bab51cf50b3ef83e312a44c7c1df48aeee2895d"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/week-filmstrip-model.spec.ts",
+      "sha256": "e06b126a2cfe94545797b6a040f7702111884b9091f343d7c9593fe0aac69c0e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/week-filmstrip-model.ts",
+      "sha256": "fc90ca0fcc58e5e7af46ae6f5e630f7250e8541f1717fe13558e540e1fb4193e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/week-filmstrip.tsx",
+      "sha256": "9077d82d522a4f13edb82e67287926393728fed83ae01b0b52fda3bb8750dcb3"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/week-hero-card.tsx",
+      "sha256": "8a7288a9c67307a0238fb791e9dfd7b346e0316ff53a310c6a00aacd7edf576b"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-community-card.tsx",
+      "sha256": "3590515b4b23847f5281032006a33dcff8b8060023d3171d505709858796a9ed"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-card.tsx",
+      "sha256": "9de338973927243c6af6251a05cd1550c7085b937d2b00c2766adc913d67dfb8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-model.spec.ts",
+      "sha256": "4568c7a22c699c39bb887e6d439b6ce5bcac796df982e323728144eac534f7b6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-model.ts",
+      "sha256": "eb9d0c2d8a5077ddbb7f103585d24dd8c45ea2cfa1a38b43d2fe05323ae9290a"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-path.tsx",
+      "sha256": "56d7208d75b5bcdc6c9693794d07e50227b5384c9bd1f187b7081fe6312627a7"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/invite-code-row.tsx",
+      "sha256": "e11ee284120b30da992aff08656e0cf8be0df8d37cb38df2422bf20b8f107a51"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/invite-seats.tsx",
+      "sha256": "71b45020898e861d091ddda83c80b065986f3b26fa620d5c8f98f3e20ad72596"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/seat-state.spec.ts",
+      "sha256": "7beb603d8c6c5b07f1b3c35829972e8b65efa2d85457c30054d11ca03c7969eb"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/seat-state.ts",
+      "sha256": "636f2c34d876f90ac0a030faa43d8fbd62f7c7f089d36857c6afc97e6f264ae6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/student-row.tsx",
+      "sha256": "922ecd95ae7b7d41f89722ba5d26c4baeb06620d97c4bdb8ca0e1e179ee28fc0"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/students-card.tsx",
+      "sha256": "cfa6d8d4525127d95e46cb4d5fa10b9dc43c6027721a7e2cd634686c84835450"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/use-cohort-brief.ts",
+      "sha256": "6e8ea3eee6c19ecb7318a09a038d231b23e794b01299b689f4f6bbf369ecb26c"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/use-invite-actions.ts",
+      "sha256": "ae8fbbded22fbf2693f86ce652ab8a4870bd4c7b4419c27e7c40bf7341a7394c"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-tags.tsx",
+      "sha256": "0884dc269d7e3c4d2ee2c5cde64f7e0250305f9ce9acd7eefa46b3c6d5a7e559"
+    },
+    {
+      "path": "apps/web/src/components/panel/path-item.tsx",
+      "sha256": "0675b8655dc446ea41411e2261980fcc08d195817e7b7f5e9edbfbde4abbbd6d"
+    },
+    {
+      "path": "apps/web/src/lib/analysis-navigation.spec.ts",
+      "sha256": "1bd1ef12cb0df91abc8f913a77c89b7489b5571b1c402c11e5dca5ba1d00d061"
+    },
+    {
+      "path": "apps/web/src/lib/turkish-case.spec.ts",
+      "sha256": "525bb1ad6f691f91e4b2938051c1f02d560a0cc625ac77592f4756a655058d21"
+    },
+    {
+      "path": "apps/web/src/lib/turkish-case.ts",
+      "sha256": "c84f61970b86623a3194e50f91393185e52657e3c196531dc0181d899d40ea67"
+    },
+    {
+      "path": "apps/admin/AGENTS.md",
+      "sha256": "150db5105f0e987de51efa39641fc7f0a44109b5d0395bdaec2c8d35e47e223c"
+    },
+    {
+      "path": "apps/admin/src/app/login/page.tsx",
+      "sha256": "fec9ee3e8ec73acb37f1f1d4bcb77968d0079c7cc03b13f46f9999cdbe0f07f5"
+    },
+    {
+      "path": "apps/api/src/common/filters/all-exceptions.filter.spec.ts",
+      "sha256": "e9b731a7d3c92c146f15e0a19985e13076c61ec216b133632509353cfd8c40c6"
+    },
+    {
+      "path": "apps/api/src/common/filters/all-exceptions.filter.ts",
+      "sha256": "c06c7015e9dcbd3aa35940301530f4fd517611f245b685efac3ea61ca55f8de9"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/en/errors.json",
+      "sha256": "7ddb14e13750e71db3480a4682f00fa84a1f605b8cc1f2bbd52c04f4b5054065"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/tr/errors.json",
+      "sha256": "cf880c1924dd0bcc4ec05c2d61c5848e5049e9609b095af3c639b0e4bf53a05e"
+    },
+    {
+      "path": "apps/api/src/modules/ads/application/ads.service.spec.ts",
+      "sha256": "c2e9c05212128150b31f184e46d5a4e5b7bbc262c607a58daab2597da8d2bf33"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/chat.mentor.service.spec.ts",
+      "sha256": "7d2955be0e904c95a066501990359ce93454afceebe75f1a5a8f64d9cf2c02b4"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/chat.service.spec.ts",
+      "sha256": "c006624560922920fcfa54b436da44381756f6d5fa94ec5969b9657d61259ead"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/chat.service.ts",
+      "sha256": "a2268cf287f886924d99ae889621eb403a6f772a76eba66fe53188eb5487355a"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/cohort-evidence.service.spec.ts",
+      "sha256": "178ecd7b328c12385f004d455c04338549482d0662ecf36750a92fc17aba83c8"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/cohort-evidence.service.ts",
+      "sha256": "5da0bd5539147fbbad428705c17e48af25cd96ed3d2b19856413046246050743"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/mentorship-weekly-evidence.service.spec.ts",
+      "sha256": "3b2528aacb0e5bff202bfd0ea65933088427ccb6c1696751e9cea0e1875c2d62"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/mentorship-weekly-evidence.service.ts",
+      "sha256": "208b66d759e78b8681cc28eccb69ac24256b03a8eef356ba3f73b4ce530fac63"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/domain/cohort-evidence.ts",
+      "sha256": "658431e348a7e0ad0b049bb66118305352533c08e3e35a91885b3623eea15afb"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/infrastructure/cohort-evidence.repository.ts",
+      "sha256": "87ee8f0068b467f245352aa3fcd53d498754337fd2b7edd1915c43b84b8a572f"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.spec.ts",
+      "sha256": "eb9d9e79dd1de060a36401a591a17735a372cceff550b4f76ca65bd82f0d282a"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.ts",
+      "sha256": "e8309193c176fae83355a22b6f73388e2ba5e45632f721c03cb92f8c2385f9b8"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.spec.ts",
+      "sha256": "2807eb7238e9bdc8f6d75a352d433b6d572600feaf9f35e712cabf109a3ce33c"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.ts",
+      "sha256": "3c613341a667e126b1817e571c9b3c40b61b3c2ac22079ee90de7ec6aee19e6e"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-report.service.spec.ts",
+      "sha256": "66fb2cec3099f6df1ce23c0b4fbbc599577cc427c9c63dfa1f8ecd066fc51545"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-report.service.ts",
+      "sha256": "9a09f7803093843620017ba7f12f8381a134435688dfed63da15f1daee81c638"
+    },
+    {
+      "path": "apps/api/test/ads.e2e-spec.ts",
+      "sha256": "1b44263dcf70e50e923b0e45eadbc921214c789cc184d4418e76ebf2cd5203c7"
+    },
+    {
+      "path": "apps/api/test/ai-coach.e2e-spec.ts",
+      "sha256": "85b3f25fa0b5e6dabcc35a0aa427c2594d98339395c16f7d6af1e5eb98b76f12"
+    },
+    {
+      "path": "apps/api/test/community.e2e-spec.ts",
+      "sha256": "ab2bb158230255229083a8d7a01725d02886295551642f7d123827ee9f70ad98"
+    },
+    {
+      "path": "apps/web/e2e/analysis.fixture.ts",
+      "sha256": "2f5ae8d36612a34345d3816a4c8309ccbf92ccc1aa768d1842748b1fa38c896a"
+    },
+    {
+      "path": "apps/web/e2e/coach-home.spec.ts",
+      "sha256": "26964ce045f88f9898caef431fb6307fb2df0a8b26cc099d17ab8f746c1a44e2"
+    },
+    {
+      "path": "apps/web/e2e/coach-plan.spec.ts",
+      "sha256": "e39a43151dcfac1a94953bbecd6ea4d997afcb8d5bfad766ad0ddd4d0385e081"
+    },
+    {
+      "path": "apps/web/e2e/community-hub.spec.ts",
+      "sha256": "061ac4202fdc5754e145d018ea705273eba13fc08aa972d8dc7de76d8cea7039"
+    },
+    {
+      "path": "apps/web/e2e/knowledge.spec.ts",
+      "sha256": "fca420aeb7062f770e64b3dac090c67de1a7ad624f6f48db2cfa01ccb9edab23"
+    },
+    {
+      "path": "apps/web/e2e/mentorship-followups.spec.ts",
+      "sha256": "00f52c3bcade3bf350f29200a5440e330dcd4e741d6641900c598b8cff05b98c"
+    },
+    {
+      "path": "apps/web/e2e/mentorship-weekly-report.spec.ts",
+      "sha256": "61d42d7dba6f6ec521812f43f5eec79f42be05754a1df9de50a1bbd418d6a185"
+    },
+    {
+      "path": "apps/web/e2e/mentorship.spec.ts",
+      "sha256": "a7cd0e89a321583f45e588ec5a757b034aec5fc5008f5cb6fcee7778c225302f"
+    },
+    {
+      "path": "apps/web/e2e/panel.spec.ts",
+      "sha256": "3a8e14e1d20a655df23e011f84ec4293f6f3d7b71066d2c1ae7ceb5b16227287"
+    },
+    {
+      "path": "apps/web/e2e/qa-stage2-real-api.spec.ts",
+      "sha256": "e9baed9779a16b918138e0f88c2fa6e4def9673586820e6267433338d8c284d0"
+    },
+    {
+      "path": "apps/web/e2e/subscription.spec.ts",
+      "sha256": "8f165109a741c94c4d4377b07d4b9740880abdc141857737c76c3f1a21a52a4e"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "c1ce2bbe1391482d8be15bf63066264881d0c69aed5786bfb00b2e1aa348fd37"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "a7a8471e9f178104baf72009a52884a5f61103f183f810416df388f0b06ff4e4"
+    },
+    {
+      "path": "apps/web/playwright.config.ts",
+      "sha256": "6f9a7662f3e11d2fd559fb4dbd2b60ea5f3db22de7724f8dd393aba69307f39e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/app-shell.tsx",
+      "sha256": "8cc12cb241dc35c30223ee373429dd5f97a21a8e44798500b7f8bae58def8709"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/today-path.tsx",
+      "sha256": "1e088373c4f4df8956c0e3407023d38724f1e9454cc7e34f88572a76d005138f"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/coach-theme.css",
+      "sha256": "9f74b1abcc38e52e080ebb321ae79d22601763ce840d5a6f197b9e7a615f6cd1"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/risk-chip.tsx",
+      "sha256": "317d23000aaaf16cb636275c9888e788c00923964cc3b33c472b342fc35e255e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/signal-pill.tsx",
+      "sha256": "7f252440773b4f92e7dfeb4475d5f8656d90ba869fefb59b4fa33c792eb94fe5"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/coach-shell.tsx",
+      "sha256": "f8845f9a90b0c4bb1c1b30c029ae10129d9ffbe72c000fd88797972a6096faee"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/layout.tsx",
+      "sha256": "bc030d8d2fcc312ef7e47e87c391efd6d5aacd68069cccfbccd74cf583090ae8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/assign-task-form.tsx",
+      "sha256": "a8ce111daf5ea8dfd93f96777c7a745c3af642440a0b2e389198c07bdc24beb8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/coach-panel.tsx",
+      "sha256": "a4aa658874415780244dea32a2e117021a47d8a75d4d7983440e3720d2a767ec"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/composer-day-picker.tsx",
+      "sha256": "4144d31bf95b5f606cc9e9c496dff2b6e33031c18ca8b7922705e83a45ef2082"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-draft-list.tsx",
+      "sha256": "cfa38dce64199f3716b8bb5906e926e66e1287c54b732829ff4e2cdb4e448e20"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-editor.tsx",
+      "sha256": "aaef6d6b716141f247596506c411ad85a22ad3788fafa9d4d300b26a86205a5d"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-source.tsx",
+      "sha256": "c45ae5ecce82fe1f5376cc4d982905977aada470557969c1a1308122beb5dbb9"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-week.tsx",
+      "sha256": "0a8b7f819098bb9fa2d8181aa4f16247a32bcfc9058636e3b28a2b52d6b4f3e5"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/report-header.tsx",
+      "sha256": "5058504c52eacab69c993035dfd003b1fcbf076f854d06bdb54b3231431b5c75"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/student-report-shell.tsx",
+      "sha256": "86069d1e8d0823858852509216391bb97a697da3cf0e76b357cd6dadf88196b6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/template-bar.tsx",
+      "sha256": "76766242192c59c2bce065f976895978dd356b6b01ddf50701566816de83b3d4"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-weekly-report-card.ts",
+      "sha256": "6110ef05c30cf015efcfb3582090f386f8e12838e3ca03be11caf9961464352b"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-preparation.tsx",
+      "sha256": "4626138634650077aa1cb2b26035efe39affebb2ab6790fddc00f86604c024cd"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-archive.tsx",
+      "sha256": "b2dcbcae9a9fdadd886f8ef6b545311b178035e056869f6058c1d918506262ce"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-brief.tsx",
+      "sha256": "8e68018cfe573f2ccbc3d7256403e612bd64991050e9b5e9cad686bd32a184d5"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-card.tsx",
+      "sha256": "8ec67ad893a2d81e635e93cb29c2e0adbd4ae62d56c1a49e56d411bf4828794c"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-metrics.tsx",
+      "sha256": "cecf4960a6fae229551f6b8d36e2e6e44c833d2160166f6f782b721581e63adc"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-panel.tsx",
+      "sha256": "dbcb2b08c23a0ce75ec5fc4c6e7899ae745e714954a74234a0ea2dc6a4fbe0be"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/page.tsx",
+      "sha256": "f9412c8a8ad35f45d197e6aed59bef5f0110aeb4bbc2f5a8b3e1c3529d685719"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/weekly-reports/[reportId]/print/page.tsx",
+      "sha256": "7e23981c1fa3409b6384870a92c2fb507dcf170598120e5318442f94f91e5508"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/weekly-reports/[reportId]/print/weekly-report-pdf.ts",
+      "sha256": "d4564733e0ad51191b5544251d6faf7f241220c0cda71e90d2825081d51fc0d5"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/weekly-reports/[reportId]/print/weekly-report-print-metrics.tsx",
+      "sha256": "3a8e741338f578f37173188fbf52521681876bf84f011d1d57a5ad25ecfb36a3"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/weekly-reports/[reportId]/print/weekly-report-print-shell.tsx",
+      "sha256": "07f6cb6a0856575309fdc86866a41accd16b5649a541d2ab5359f5027ae55b27"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-countdown-card.tsx",
+      "sha256": "bc12840a6f85e978a285b5f7e82f43e7befd0ae30da042dc5eb57675db14da24"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/followup-inbox-card.tsx",
+      "sha256": "b5641ad4734fd0e6bc3a2c35abbf59e8680575883c5e3589c6d044cfe254395e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/roster-shell.tsx",
+      "sha256": "085fa40964ada433d66d392b00f8ab7b78429aece2a30e99ab64333e75d15c8b"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/profile/page.tsx",
+      "sha256": "0b27b4fd60f7e23e875028843dfc241314980fcfb55063d48fb2945cea016905"
+    },
+    {
+      "path": "apps/web/src/components/app-nav.tsx",
+      "sha256": "96f67eb70bf1c2811d0af0f194e226900e857bc6dace4cf382c628d2b3957f89"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-followup-item.tsx",
+      "sha256": "7cd6aac1983197b6cc32652ce24ae7c084af4b8a71af3cbe1ff12b0f799ec212"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-followups-card.tsx",
+      "sha256": "1eb113c488f841470d12fd15b2c46addd4bec9eb9dd8c0e15cd4c8d560a24c26"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-ui.tsx",
+      "sha256": "f34f807dc37b1f54ff4fe3d067c0af7a65e0cd02de79b56d04923e1baddd8d6c"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-create-form.tsx",
+      "sha256": "3f476a0ab67c95c243445f4f28305324004021ded1cfaef8f3c1388a64248766"
+    },
+    {
+      "path": "apps/web/src/components/panel/companion-bubble.tsx",
+      "sha256": "7c520a2d5e75e00aa28d7af3cfa0060208db36b8278715c1747f4a61fa483fea"
+    },
+    {
+      "path": "apps/web/src/components/panel/panel-styles.ts",
+      "sha256": "90349653a7f07a09c3587047da0ed343ce73d9bf0e0b9007d536097781d49d82"
+    },
+    {
+      "path": "apps/web/src/components/premium/premium-badge.tsx",
+      "sha256": "0013f330b29eff63841d3dd13f181d802ec5ecbb351ec0ec54c8576b2db2e510"
+    },
+    {
+      "path": "apps/web/src/components/stat-line-chart.tsx",
+      "sha256": "85aa58d9864b18a7eb490b63e96514c34e592407236ab2525e0644fc747313de"
+    },
+    {
+      "path": "packages/types/src/mentorship-weekly-report.ts",
+      "sha256": "466bdb5f48cc1ddb38fafb7bc33b0845cd7c112747532e36b29e8210125593d5"
+    },
+    {
+      "path": "packages/types/src/mentorship.ts",
+      "sha256": "5f9a79ec00709b403c96921d687de786422148e39b1653bddb2e4db8d2cafd9d"
+    },
+    {
+      "path": "packages/ui/src/theme.css",
+      "sha256": "5e440ef8b55f8fe8b00cae895942e3dbfd9a22c7186ad21936b6e7d3b220ec93"
+    }
+  ]
+}

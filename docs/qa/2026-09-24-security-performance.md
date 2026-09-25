@@ -83,4 +83,6 @@ This follow-up uses the dirty `feature/APP-109` checkout at `307de33cb988c4126eb
 
 Final Chrome run: **6/6 passed in 58.3 s** across the two viewports. An intermediate run completed 5/6 because six fresh accounts in one minute hit the product's intended signup limit (429) before the sixth scenario began. The fixture now creates one disposable account per browser project and logs in for each test; the next complete run passed. This was a harness issue, not a product failure. Targeted ESLint, TypeScript and production build passed. The final [budget report](evidence/2026-09-24-panel-followup-budget.json) passed: article 417.5/704 KiB attributable and 956.7/985 total, panel 752.9/760 attributable and 1292.1/1295 total, font preloads 2/2, message scopes 248/1024, 814/2048 and 4107/6144 bytes. Panel total JS has only 2.9 KiB remaining headroom, so rerun this gate after further panel edits. Full CI and deployed security controls remain release gates.
 
-The next product wave is specified in [the Stage 2 scenario matrix](2026-09-24-identity-content-coaching-plan.md). Its scenarios have not yet been executed as a wave; previous Stage 1 identity assertions are recorded separately above.
+The next product wave was executed locally against the isolated test database. Its scope is in
+[the Stage 2 scenario matrix](2026-09-24-identity-content-coaching-plan.md) and its results are in
+[the Stage 2 report](2026-09-24-identity-content-coaching-results.md). The Stage 1 assertions above remain separate evidence.

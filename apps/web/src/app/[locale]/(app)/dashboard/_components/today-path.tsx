@@ -1,9 +1,13 @@
 "use client";
 
-import type { ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import { BookOpen, Check, GraduationCap, Play, Plus } from "lucide-react";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
+import {
+  PATH_NODE_BASE as NODE_BASE,
+  PATH_NODE_TONE as NODE_TONE,
+  PathItem,
+} from "@/components/panel/path-item";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link, useRouter } from "@/i18n/navigation";
 import type { StudySessionHref } from "@/lib/plan-study-session-link";
@@ -12,17 +16,6 @@ import type {
   PathNode,
   TodayPath as TodayPathModel,
 } from "./today-path-model";
-
-const NODE_BASE =
-  "relative grid shrink-0 place-items-center rounded-full outline-none transition-transform duration-[120ms] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 active:translate-y-0.5 motion-reduce:transition-none";
-
-const NODE_TONE = {
-  done: "size-12 bg-[var(--play-cta)] text-[var(--play-cta-ink)] shadow-[0_4px_0_var(--play-cta-edge)] sm:size-14",
-  current:
-    "size-16 bg-[var(--play-cta)] text-[var(--play-cta-ink)] shadow-[0_5px_0_var(--play-cta-edge),0_0_0_8px_var(--play-selected)] sm:size-[72px]",
-  upcoming:
-    "size-12 bg-[var(--play-track)] text-[var(--color-secondary)] shadow-[0_4px_0_color-mix(in_srgb,var(--play-track),var(--color-main)_12%)] sm:size-14",
-} as const;
 
 type PanelT = ReturnType<typeof useTranslations<"panel">>;
 
@@ -150,43 +143,6 @@ export function TodayPath({
         />
       ) : null}
     </ol>
-  );
-}
-
-/** One stop. The connector to the previous stop is drawn by the stop itself, so no measuring. */
-function PathItem({
-  index,
-  reached,
-  node,
-  title,
-  meta,
-}: {
-  index: number;
-  reached: boolean;
-  node: ReactNode;
-  title: string;
-  meta?: string | null;
-}) {
-  return (
-    <li className="relative flex w-[76px] shrink-0 flex-col items-center gap-2 px-1 text-center sm:w-auto sm:min-w-0 sm:flex-1">
-      {index > 0 ? (
-        <span
-          aria-hidden
-          className={`absolute right-1/2 top-[30px] z-0 h-1 w-full rounded-full sm:top-[34px] ${reached ? "bg-[var(--play-cta)]" : "bg-[var(--play-track)]"}`}
-        />
-      ) : null}
-      <div className="relative z-[1] flex h-16 items-center sm:h-[72px]">
-        {node}
-      </div>
-      <span className="line-clamp-2 w-full text-caption font-extrabold leading-tight text-[var(--color-main)]">
-        {title}
-      </span>
-      {meta ? (
-        <span className="-mt-1 w-full truncate text-xs font-semibold text-[var(--color-secondary)]">
-          {meta}
-        </span>
-      ) : null}
-    </li>
   );
 }
 

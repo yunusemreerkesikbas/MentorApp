@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { MentorshipWeeklySnapshotDto } from "@mentor/types";
 import { MentorshipWeeklyReportVersionConflictError } from "../infrastructure/mentorship-weekly-report.repository";
@@ -58,6 +59,7 @@ function build() {
     periodId: "period-1",
   }));
   const getSnapshot = vi.fn(async () => snapshot);
+  const subjectNames = vi.fn(async () => ({ matematik: "Matematik" }));
   const findDraft = vi.fn(async () => null);
   const upsertDraft = vi.fn(async () => ({
     id: "draft-1",
@@ -69,7 +71,7 @@ function build() {
   const findFinalizedByOperation = vi.fn(async () => undefined);
   const service = new MentorshipWeeklyReportService(
     { assertEnabled: vi.fn(), requireActiveLink } as never,
-    { getSnapshot } as never,
+    { getSnapshot, subjectNames } as never,
     {
       listDisplayIdentities: vi.fn(
         async () =>
@@ -98,6 +100,7 @@ function build() {
   return {
     service,
     getSnapshot,
+    subjectNames,
     findDraft,
     upsertDraft,
     finalize,
@@ -123,6 +126,47 @@ describe("MentorshipWeeklyReportService", () => {
         snapshot,
       }),
     );
+  });
+
+  /**
+   * Names ride beside the snapshot, never inside it. The fingerprint is a hash of the snapshot, so
+   * a name inside it would invalidate every stored draft on deploy, 409 every open "finalize", and
+   * shift again whenever content renamed a subject.
+   */
+  it("names the week's subjects beside the snapshot, leaving the fingerprint alone", async () => {
+    const { service, upsertDraft } = build();
+
+    const result = await service.preview("coach-1", "student-1", "2026-08-31");
+
+    expect(result.subjectNames).toEqual({ matematik: "Matematik" });
+    expect(result.sourceFingerprint).toBe(
+      createHash("sha256").update(JSON.stringify(snapshot)).digest("hex"),
+    );
+    expect(JSON.stringify(upsertDraft.mock.calls)).not.toContain("Matematik");
+  });
+
+  it("names the subjects of a finalized report on the archive and print views", async () => {
+    const { service, findFinalized, subjectNames } = build();
+    const row = {
+      id: "report-1",
+      locale: "tr",
+      version: 1,
+      sourceFingerprint: "f".repeat(64),
+      snapshot,
+      coachEvaluation: null,
+      brief: null,
+      replacesId: null,
+      finalizedAt: new Date("2026-09-07T10:00:00.000Z"),
+    };
+    findFinalized.mockResolvedValue(row);
+
+    expect((await service.get("coach-1", "student-1", "report-1")).subjectNames).toEqual({
+      matematik: "Matematik",
+    });
+    expect((await service.share("coach-1", "student-1", "report-1")).subjectNames).toEqual({
+      matematik: "Matematik",
+    });
+    expect(subjectNames).toHaveBeenCalledWith("KPSS", snapshot);
   });
 
   it("does not reuse a brief created for another language", async () => {

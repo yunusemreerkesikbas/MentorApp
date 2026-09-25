@@ -33,12 +33,14 @@ export function AppShell({ children }: { children: ReactNode }) {
   const bouncedToCoachHome = isCoach(user) && isStudentOnlyPath(pathname);
 
   useEffect(() => {
-    if (status === "anonymous") router.replace("/login");
+    if (status === "anonymous") {
+      router.replace({ pathname: "/login", query: { next: `${pathname}${window.location.search}` } });
+    }
     if (status === "authenticated" && user && !hasCompletedOnboarding(user)) {
       router.replace("/onboarding");
     }
     if (status === "authenticated" && bouncedToCoachHome) router.replace(COACH_HOME);
-  }, [status, user, router, bouncedToCoachHome]);
+  }, [status, user, router, pathname, bouncedToCoachHome]);
 
   // `/plan` and `/dashboard` own their loading skeletons. Let them render while the silent refresh
   // resolves, inside the same chrome offsets the real page gets, so the swap moves nothing; every

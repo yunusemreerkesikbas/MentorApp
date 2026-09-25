@@ -4573,3 +4573,9 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
 - **2026-09-21 — Compose FAB: hidden reset render'da.** `coach-plan-compose-fab.tsx` `hidden` olunca menüyü
   effect ile değil, render sırasında `if (hidden && open) setOpen(false)` ile kapatır
   (`react-hooks/set-state-in-effect`). Davranış aynı: gizliyken açık kalmaz, tekrar görününce kapalı gelir.
+
+- **2026-09-25 — Mobile plan recurrence menu.** The recurrence fields in the coach event sheet now
+  open their option menus above the trigger, keeping weekly repeat and repeat-end choices inside
+  the visible phone area above the fixed submit action. Usage is unchanged: create an event, choose
+  `Tekrar` and `Tekrar bitişi`, then save. The shared `MenuSelect` already supports this placement;
+  do not add a second selector. Related: `coach-plan-form-fields.tsx`, `coach-plan.spec.ts`.

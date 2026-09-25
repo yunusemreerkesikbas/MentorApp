@@ -12,6 +12,7 @@ import {
   MAX_DAYS_AHEAD,
   type AssignDraft,
 } from "./planning-state";
+import { PLANNER_SUBHEAD } from "./planning-week";
 
 export function PlanningEditor({
   draft,
@@ -36,7 +37,7 @@ export function PlanningEditor({
     draft.taskDate <= shiftDate(today, MAX_DAYS_AHEAD);
   return (
     <section className="flex flex-col gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-4">
-      <h3 className="font-semibold">{t("planning_edit")}</h3>
+      <h3 className={PLANNER_SUBHEAD}>{t("planning_edit")}</h3>
       <TextField
         autoFocus
         dense
@@ -49,7 +50,6 @@ export function PlanningEditor({
         label={t("planning_date")}
         value={draft.taskDate}
         min={today}
-        menuClassName="coach-theme"
         onChange={(taskDate) => onChange({ ...draft, taskDate })}
       />
       <TaxonomyCascadeSelect
@@ -74,6 +74,7 @@ export function PlanningEditor({
       <TextAreaField
         dense
         label={t("assign_note")}
+        hint={t("assign_note_hint")}
         value={draft.coachNote ?? ""}
         maxLength={500}
         onChange={(e) =>
@@ -82,10 +83,13 @@ export function PlanningEditor({
       />
       {(draft.taskDate < today ||
         draft.taskDate > shiftDate(today, MAX_DAYS_AHEAD)) && (
-        <p role="alert">{t("planning_invalid_date")}</p>
+        <p role="alert" className="text-body-sm font-semibold text-[var(--color-danger)]">
+          {t("planning_invalid_date")}
+        </p>
       )}
       <div className="flex gap-2">
-        <Button type="button" size="sm" disabled={!valid} onClick={onSave}>
+        {/* Outlined: the panel's one filled button is the send at its foot. */}
+        <Button type="button" variant="secondary" size="sm" disabled={!valid} onClick={onSave}>
           {t("planning_save_draft")}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>

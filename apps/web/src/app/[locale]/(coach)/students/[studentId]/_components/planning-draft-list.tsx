@@ -7,6 +7,8 @@ import {
   type AssignDraft,
   type PlanningState,
 } from "./planning-state";
+import { PLANNER_SUBHEAD } from "./planning-week";
+import { useReportDates } from "./use-report-dates";
 
 export function PlanningDraftList({
   drafts,
@@ -24,9 +26,10 @@ export function PlanningDraftList({
   limit: string;
 }) {
   const t = useTranslations("mentorship");
+  const dates = useReportDates();
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className="font-semibold">
+    <section className="flex flex-col">
+      <h3 className={PLANNER_SUBHEAD}>
         {t("assign_in_program")} ({drafts.length}/{MAX_DRAFTS})
       </h3>
       {[...drafts]
@@ -34,20 +37,22 @@ export function PlanningDraftList({
         .map((draft) => (
           <article
             key={draft.key}
-            className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--color-border)] py-3"
+            className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--play-line)] py-2.5"
           >
-            <div>
-              <p>{draft.title}</p>
-              <p className="text-sm">
-                {[draft.taskDate, draft.subject, draft.topic, draft.coachNote]
+            <div className="min-w-0">
+              <p className="text-body-sm font-extrabold text-[var(--color-main)]">{draft.title}</p>
+              <p className="text-caption font-semibold text-[var(--color-secondary)]">
+                {[dates.shortDay(draft.taskDate), draft.subject, draft.topic, draft.coachNote]
                   .filter(Boolean)
                   .join(" · ")}
               </p>
               {(draft.taskDate < today || draft.taskDate > limit) && (
-                <p role="alert">{t("planning_invalid_date")}</p>
+                <p role="alert" className="text-caption font-semibold text-[var(--color-danger)]">
+                  {t("planning_invalid_date")}
+                </p>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-1">
               <Button
                 type="button"
                 size="sm"

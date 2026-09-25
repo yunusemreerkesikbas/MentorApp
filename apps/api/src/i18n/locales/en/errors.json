@@ -8,6 +8,8 @@
   "CONFLICT": "This action conflicts with an existing record.",
   "PAYLOAD_TOO_LARGE": "What you sent is too large.",
   "TOO_MANY_REQUESTS": "That was a bit fast. A short pause, then try again.",
+  "TOO_MANY_REQUESTS_RETRY": "That was a bit fast. Try again in {seconds} seconds.",
+  "TOO_MANY_REQUESTS_RETRY_ONE": "That was a bit fast. Try again in {seconds} second.",
   "SERVICE_UNAVAILABLE": "The service is down right now. Let's try again in a moment.",
   "AUTH_INVALID_CREDENTIALS": "Incorrect email or password.",
   "AUTH_EMAIL_IN_USE": "An account with this email already exists.",

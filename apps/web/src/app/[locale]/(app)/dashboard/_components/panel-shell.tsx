@@ -63,9 +63,11 @@ export function PanelShell() {
 function PanelContent() {
   const t = useTranslations("panel");
   const economyT = useTranslations("economy");
+  const rewardedT = useTranslations("ads.rewarded");
   const moodT = useTranslations("mood");
   const countdownT = useTranslations("countdown");
   const toast = useMentorToast();
+  const showRewardSuccess = toast.success;
   const sheet = useMentorBottomSheet();
   const searchParams = useSearchParams();
   const wide = useWideLayout();
@@ -94,7 +96,10 @@ function PanelContent() {
             rewardedAd={
               showRewardedQuest
                 ? {
-                    onCompleted: () => setRewardUnavailable(false),
+                    onCompleted: (rewardCoin) => {
+                      setRewardUnavailable(false);
+                      showRewardSuccess({ title: rewardedT("success", { count: rewardCoin }) });
+                    },
                     onOfferChange: setRewardOffer,
                     onUnavailable: () => setRewardUnavailable(true),
                   }
@@ -104,7 +109,7 @@ function PanelContent() {
         ),
       });
     },
-    [economyT, setRewardOffer, setRewardUnavailable, sheet, showRewardedQuest],
+    [economyT, rewardedT, setRewardOffer, setRewardUnavailable, sheet, showRewardSuccess, showRewardedQuest],
   );
   const rescue = useStreakRescue(panel, openQuests);
 

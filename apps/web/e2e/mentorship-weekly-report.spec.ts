@@ -42,7 +42,7 @@ const snapshot: MentorshipWeeklySnapshotDto = {
   },
   subjects: [
     {
-      subjectRef: "Türkçe",
+      subjectRef: "turkce",
       currentFocusMinutes: 120,
       previousFocusMinutes: 60,
       currentSessions: 3,
@@ -71,6 +71,9 @@ const snapshot: MentorshipWeeklySnapshotDto = {
   limitations: [],
 };
 
+/** Names sit beside the snapshot, never inside it: the fingerprint hashes the snapshot. */
+const subjectNames = { turkce: "Türkçe" };
+
 const brief = {
   findings: [
     {
@@ -94,7 +97,10 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
 
   const section = page.getByRole("region", { name: "Haftalık değerlendirme" });
   await expect(section).toBeVisible();
-  await expect(section.getByText("180 dk")).toBeVisible();
+  // Honest copy, no metric tiles: the numbers live in the panel, the PDF is the coach's to send.
+  await expect(section.getByText("Taslak")).toBeVisible();
+  await expect(section.getByText("PDF'i Ayşe'ye sen ilet.", { exact: false })).toBeVisible();
+  await expect(section.getByText("180 dk")).toHaveCount(0);
   await expect(
     section.getByRole("button", { name: "Değerlendirmeyi aç" }),
   ).toBeVisible();
@@ -105,6 +111,9 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
   await expect(panel).toBeVisible();
   await expect(panel.getByText("Yok").first()).toBeVisible();
+  // The subject's name, never its slug.
+  await expect(panel.getByText("Türkçe", { exact: true })).toBeVisible();
+  await expect(panel.getByText("turkce")).toHaveCount(0);
 
   await panel.getByRole("button", { name: "Hazırlık oluştur" }).click();
   await expect(panel.getByText("Kayıtlı çalışma süresi arttı.")).toBeVisible();
@@ -180,6 +189,24 @@ test("görüşme hazırlığı yönlendirmeyi korur, değişikliği belirtir ve 
   ).toBe(true);
 });
 
+test("panelde başka haftaya bakmak kartın haftasını değiştirmez", async ({
+  page,
+}) => {
+  await mockWeeklyReportApi(page);
+  await page.goto(`/kocluk/${STUDENT_ID}`);
+  const section = page.getByRole("region", { name: "Haftalık değerlendirme" });
+  // The latest week, 31 August to 6 September.
+  await expect(section).toContainText("6 Eylül");
+  await section.getByRole("button", { name: "Değerlendirmeyi aç" }).click();
+  const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
+  await panel.getByRole("button", { name: "Önceki hafta", exact: true }).click();
+  await expect(panel).toContainText("24");
+  await page.keyboard.press("Escape");
+  await expect(panel).toHaveCount(0);
+  await expect(section).toContainText("6 Eylül");
+  await expect(section).not.toContainText("24 Ağustos");
+});
+
 test("yazdırma görünümü yalnız paylaşılabilir sözleşmeyi kullanır", async ({
   page,
 }) => {
@@ -193,6 +220,8 @@ test("yazdırma görünümü yalnız paylaşılabilir sözleşmeyi kullanır", a
   ).toBeVisible();
   await expect(page.getByText("Ritmi birlikte koruyalım.")).toBeVisible();
   await expect(page.getByText("Hazırlayan: Koç Deniz")).toBeVisible();
+  await expect(page.getByText("Türkçe", { exact: true })).toBeVisible();
+  await expect(page.getByText("turkce")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "PDF indir" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Yazdır" })).toBeVisible();
   await expect(page.getByText("ÖZEL AI NOTU")).toHaveCount(0);
@@ -223,8 +252,9 @@ test("detay raporu başarısız olduğunda isteği sonsuz tekrarlamaz", async ({
   const api = await mockWeeklyReportApi(page, { failStudentReport: true });
 
   await page.goto(`/kocluk/${STUDENT_ID}`);
+  // Said in place, with one way to ask again; never a loop of requests.
   await expect(
-    page.getByRole("heading", { name: "Bu alan koçlar için" }),
+    page.getByRole("alert").filter({ hasText: "Öğrencinin raporu açılamadı." }),
   ).toBeVisible();
   await expect.poll(() => api.studentReportCalls).toBeGreaterThan(0);
   await page.waitForTimeout(500);
@@ -241,6 +271,13 @@ test("haftalık rapor başarısız olduğunda isteği sonsuz tekrarlamaz", async
 
   await page.goto(`/kocluk/${STUDENT_ID}`);
   await expect(page.getByText("Ayşe Yılmaz").first()).toBeVisible();
+  // Said in the card, with its retry; no toast on top of it.
+  await expect(
+    page
+      .getByRole("region", { name: "Haftalık değerlendirme" })
+      .getByText("Haftalık değerlendirme açılamadı."),
+  ).toBeVisible();
+  await expect(page.getByText("Bir sorun oluştu")).toHaveCount(0);
   await expect.poll(() => api.weeklyPreviewCalls).toBeGreaterThan(0);
   await page.waitForTimeout(500);
   const settledCalls = api.weeklyPreviewCalls;
@@ -296,6 +333,7 @@ async function mockWeeklyReportApi(
       ...snapshot,
       period: { ...snapshot.period, startDate: weekStart },
     },
+    subjectNames,
     coachContext: withBrief ? usedContext : null,
     brief: withBrief
       ? {
@@ -329,6 +367,7 @@ async function mockWeeklyReportApi(
     version: 1,
     sourceFingerprint: SOURCE_FINGERPRINT,
     snapshot,
+    subjectNames,
     brief,
     coachEvaluation: "Ritmi birlikte koruyalım.",
     replacesId: null,
@@ -468,6 +507,7 @@ async function mockWeeklyReportApi(
         version: 1,
         finalizedAt: finalizedReport.finalizedAt,
         snapshot: safeSnapshot,
+        subjectNames,
         coachEvaluation: "Ritmi birlikte koruyalım.",
       });
     }
@@ -512,6 +552,7 @@ function studentReport() {
       focusMinutes28d: 640,
       activeDays28d: 11,
     },
+    dailyFocusMinutes28d: Array.from({ length: 28 }, (_, day) => (day % 2 === 0 ? 40 : 0)),
     planCompletionRate7d: 2 / 3,
     mockTrend: [],
     latestMockSubjects: [],

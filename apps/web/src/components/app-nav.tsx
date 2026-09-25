@@ -10,8 +10,8 @@ import {
   NotebookPen,
   PanelLeft,
   Settings,
+  UserRoundCheck,
   Users,
-  UsersRound,
 } from "lucide-react";
 
 import { useLayoutEffect, useState } from "react";
@@ -27,6 +27,7 @@ import {
 import { NotificationBell } from "@mentor/ui";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { PremiumBadge } from "@/components/premium/premium-badge";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import {
   ThemeLamp,
@@ -74,6 +75,19 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  * exceptions visible.
  */
 const NAV_ITEMS = [
+  /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
+     NOT `/coach`, which is the AI companion chat below. First, because it is where a coach's day
+     starts; a student never sees it, so their order is untouched.
+
+     No longer `sidebarOnly`: it used to read "a coach does roster work at a desk", but that left a
+     coach on a phone with no way into their own surface at all. The role filter below now runs on
+     the tab bar too, so this costs a student nothing. */
+  {
+    href: "/students",
+    labelKey: "students",
+    icon: UserRoundCheck,
+    roles: [UserRole.COACH],
+  },
   { href: "/dashboard", labelKey: "home", icon: House, studentOnly: true },
   { href: "/plan", labelKey: "plan", icon: Calendar },
   {
@@ -100,18 +114,6 @@ const NAV_ITEMS = [
     studentOnly: true,
   },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
-  /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
-     NOT `/coach`, which is the AI companion chat above.
-
-     No longer `sidebarOnly`: it used to read "a coach does roster work at a desk", but that left a
-     coach on a phone with no way into their own surface at all. The role filter below now runs on
-     the tab bar too, so this costs a student nothing. */
-  {
-    href: "/students",
-    labelKey: "students",
-    icon: UsersRound,
-    roles: [UserRole.COACH],
-  },
   {
     href: "/settings",
     labelKey: "settings",
@@ -256,6 +258,7 @@ function DesktopSidebar({
   const t = useTranslations("nav");
   const forceCollapsed = isBoardEditorPath(pathname);
   const sidebarItems = visibleTo(SIDEBAR_ITEMS, user?.roles);
+  const coach = isCoach(user);
   const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
   const [sessionOverride, setSessionOverride] = useState<{
@@ -318,6 +321,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              coach={coach}
               examType={user?.examType}
             />
           ))}
@@ -372,6 +376,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              coach={coach}
               examType={user?.examType}
             />
           ))}
@@ -413,6 +418,7 @@ function MobileTabBar({
           item={item}
           label={t(item.labelKey)}
           active={isNavActive(pathname, item.href)}
+          coachUser={isCoach(user)}
           examType={user?.examType}
           reduceMotion={Boolean(reduceMotion)}
           transition={tabTransition}
@@ -426,6 +432,7 @@ function MobileTabLink({
   item,
   label,
   active,
+  coachUser,
   examType,
   reduceMotion,
   transition,
@@ -433,6 +440,8 @@ function MobileTabLink({
   item: NavItem;
   label: string;
   active: boolean;
+  /** The signed-in user is a human coach: the active tab wears their ink, like the sidebar. */
+  coachUser: boolean;
   examType: ExamType | null | undefined;
   reduceMotion: boolean;
   transition:
@@ -479,7 +488,11 @@ function MobileTabLink({
       <motion.span
         className="relative grid size-11 place-items-center"
         animate={{
-          color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
+          color: active
+            ? coachUser
+              ? "var(--coach-accent-ink)"
+              : "var(--color-btn-label)"
+            : "var(--color-secondary)",
         }}
         whileHover={
           reduceMotion || active ? undefined : { color: "var(--color-main)" }
@@ -492,7 +505,7 @@ function MobileTabLink({
         {active ? (
           <motion.span
             layoutId="mobile-tab-active-circle"
-            className="absolute inset-0 rounded-full bg-[var(--color-btn)]"
+            className={`absolute inset-0 rounded-full ${coachUser ? "bg-[var(--coach-accent-soft)]" : "bg-[var(--color-btn)]"}`}
             transition={transition}
             aria-hidden
           />
@@ -525,7 +538,12 @@ function MobileIdentity({
         >
           {greeting}
         </p>
-        <IdentityName name={user.displayName} premium={premium} />
+        {/* No crown for a coach: their plan reads as "KOÇ PRO" in the sidebar, not as a student's
+            Premium. The top bar has no room for the badge row, so it carries neither. */}
+        <IdentityName
+          name={user.displayName}
+          premium={premium && !isCoach(user)}
+        />
       </div>
     </>
   );
@@ -541,6 +559,7 @@ function SidebarIdentity({
   user: AuthUser;
 }) {
   const ui = useTranslations("common");
+  const coach = isCoach(user);
 
   // ponytail: no card chrome — identity sits flush in the sidebar rail.
   // No greeting here (2026-09-21): "Günaydın" belongs to the panel page, and the sidebar is on
@@ -555,7 +574,12 @@ function SidebarIdentity({
         />
       </div>
       <div className="mt-3 min-w-0">
-        <IdentityName name={user.displayName} premium={premium} primary />
+        <IdentityName
+          name={user.displayName}
+          premium={premium && !coach}
+          primary
+        />
+        {coach ? <CoachIdentity pro={premium} /> : null}
       </div>
       {balance ? (
         <div className="mt-3">
@@ -563,6 +587,23 @@ function SidebarIdentity({
         </div>
       ) : null}
     </div>
+  );
+}
+
+/**
+ * A coach's standing under their name (DESIGN.md §2.5): "Koç" in the coach's ink, and their plan
+ * in the premium clasp's gold. No crown for a coach: the clasp already says they subscribe.
+ */
+function CoachIdentity({ pro }: { pro: boolean }) {
+  const t = useTranslations("nav");
+
+  return (
+    <p className="mt-2 flex flex-wrap gap-1.5">
+      <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-[var(--coach-accent)] px-2 text-micro font-black tracking-[0.04em] text-[var(--color-bg)]">
+        {t("coach_role")}
+      </span>
+      {pro ? <PremiumBadge label={t("coach_pro_badge")} /> : null}
+    </p>
   );
 }
 
@@ -653,18 +694,31 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
   );
 }
 
+/** The active item wears the coach's ink for a coach, so their chrome says whose tool this is. */
+function activeNavTone(coach: boolean) {
+  return coach
+    ? { className: "bg-[var(--coach-accent-soft)]", color: "var(--coach-accent-ink)" }
+    : {
+        className: "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]",
+        color: "var(--color-main)",
+      };
+}
+
 function NavLink({
   item,
   label,
   active,
+  coach,
   examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  coach: boolean;
   examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
+  const tone = activeNavTone(coach);
 
   return (
     <Link
@@ -672,11 +726,11 @@ function NavLink({
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
         active
-          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          ? tone.className
           : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
       }`}
       style={{
-        color: active ? "var(--color-main)" : "var(--color-secondary)",
+        color: active ? tone.color : "var(--color-secondary)",
         fontFamily: "var(--font-body)",
         fontWeight: active ? 700 : 400,
       }}
@@ -691,14 +745,17 @@ function CollapsedNavLink({
   item,
   label,
   active,
+  coach,
   examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  coach: boolean;
   examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
+  const tone = activeNavTone(coach);
 
   return (
     <Link
@@ -707,11 +764,11 @@ function CollapsedNavLink({
       aria-label={label}
       className={`group relative flex size-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
         active
-          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          ? tone.className
           : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
       }`}
       style={{
-        color: active ? "var(--color-main)" : "var(--color-secondary)",
+        color: active ? tone.color : "var(--color-secondary)",
       }}
     >
       <NavIcon icon={Icon} active={active} />

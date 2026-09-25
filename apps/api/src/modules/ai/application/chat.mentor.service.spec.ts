@@ -119,6 +119,7 @@ function makeService(
     evidence as never,
     profiles as never,
     new CoachTurnPlanner(),
+    { getAccess: vi.fn(async () => ({ canChat: true })) } as never,
   );
   return {
     service,

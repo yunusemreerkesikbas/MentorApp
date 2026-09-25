@@ -214,13 +214,14 @@ test.describe("koç tarafı", () => {
     await expect(page.getByText(INVITE_CODE)).toHaveCount(0);
     await expect(page.getByText("MENTOR-KOC-••••••••••••")).toBeVisible();
 
-    await page.getByRole("button", { name: "Linki kopyala" }).click();
+    // No students yet: the round is the invitation, and copying the link is its one ledge.
+    await page.getByRole("button", { name: "Davet linkini kopyala" }).click();
     const copied = await page.evaluate(() => navigator.clipboard.readText());
     // The coach shares a link, not a bare code; the param only prefills the field.
     expect(copied).toContain(`/kocluk-daveti?code=${INVITE_CODE}`);
   });
 
-  test("kokpit kohortu özetler ve öğrenci başına tek öneri verir", async ({
+  test("tur bekleyenleri sayar ve öğrenci başına tek öneri verir", async ({
     page,
   }) => {
     await mockApi(page, {
@@ -234,35 +235,31 @@ test.describe("koç tarafı", () => {
     });
     await page.goto("/kocluk");
 
+    // The count lives in one place: the round's title.
     await expect(
-      page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor."),
+      page.getByRole("heading", { name: "2 öğrenci seni bekliyor" }),
     ).toBeVisible();
-    // The average leaves Bora out: he planned nothing, and counting that as 0% would report a
-    // cohort that never opened the plan screen as one that plans and fails.
-    await expect(page.getByText("Plan uyumu %50 · 2 öğrenci")).toBeVisible();
 
-    // Severity order, not the order the API happened to evaluate the flags in: the roster row
-    // for Ada lists PLAN_SLIPPING first, and the breakdown still puts INACTIVE at the front.
-    const chips = page
-      .getByRole("list", { name: "Risk dağılımı" })
-      .getByRole("listitem");
-    await expect(chips).toHaveText([
-      "1 Sessiz",
-      "1 Morali düşük",
-      "1 Plan aksıyor",
-    ]);
+    // Severity order, not the order the API happened to evaluate the flags in: Ada's row arrives
+    // with PLAN_SLIPPING first, and her pills still lead with LOW_MOOD.
+    const ada = page.getByTestId("student-row").filter({ hasText: "Ada" });
+    const adaText = await ada.innerText();
+    expect(adaText.indexOf("Morali düşük")).toBeGreaterThan(-1);
+    expect(adaText.indexOf("Morali düşük")).toBeLessThan(adaText.indexOf("Plan aksıyor"));
 
-    // One suggestion per student, for their worst flag — LOW_MOOD outranks PLAN_SLIPPING even
+    // One suggestion per student, for their worst flag: LOW_MOOD outranks PLAN_SLIPPING even
     // though the API lists it second.
     await expect(
-      page.getByText("Ona bir not bırak, bu haftanın yükünü hafiflet."),
+      ada.getByText("Ona bir not bırak, bu haftanın yükünü hafiflet."),
     ).toBeVisible();
     await expect(page.getByText("Bu haftanın ödevini hafiflet.")).toHaveCount(
       0,
     );
   });
 
-  test("ilgilendim işareti bekleyen sayacını düşürüyor", async ({ page }) => {
+  test("ilgilendim işareti turu ilerletir ve aynı yerden geri alınır", async ({
+    page,
+  }) => {
     const api = await mockApi(page, {
       roles: ["STUDENT", "COACH"],
       myCoach: null,
@@ -275,31 +272,29 @@ test.describe("koç tarafı", () => {
     await page.goto("/kocluk");
 
     await expect(
-      page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor."),
+      page.getByRole("heading", { name: "2 öğrenci seni bekliyor" }),
     ).toBeVisible();
 
-    // The button is offered only where there is something to attend to: Cem is calm.
-    const marks = page.getByRole("button", { name: "İlgilendim" });
-    await expect(marks).toHaveCount(2);
-    await marks.first().click();
+    // The mark is offered only where there is something to attend to: Cem is calm.
+    await expect(page.getByTestId("attention-toggle")).toHaveCount(2);
+    const attention = page.getByRole("button", { name: "Ada: ilgilendim", exact: true });
+    await expect(attention).toHaveAttribute("aria-pressed", "false");
+    await attention.click();
 
-    // The band stops counting the handled student, and says so in the other half of the sentence.
     await expect(
-      page.getByText("3 öğrenciden 1 tanesi ilgi bekliyor."),
+      page.getByRole("heading", { name: "1 öğrenci seni bekliyor" }),
     ).toBeVisible();
-    await expect(page.getByText("1 tanesiyle ilgilendin")).toBeVisible();
     await expect.poll(() => api.attentionCalls).toEqual([true]);
-
-    // The flag itself is untouched — the mark quiets the worklist, it does not edit the data.
-    const chips = page
-      .getByRole("list", { name: "Risk dağılımı" })
-      .getByRole("listitem");
-    await expect(chips).toHaveText(["1 Sessiz", "1 Plan aksıyor"]);
+    // The flag itself is untouched: the mark quiets the worklist, it does not edit the data.
+    await expect(
+      page.getByTestId("student-row").filter({ hasText: "Ada" }).getByText("Plan aksıyor"),
+    ).toBeVisible();
 
     // And it is reversible from the same spot.
-    await page.getByRole("button", { name: "İşareti kaldır" }).click();
+    await expect(attention).toHaveAttribute("aria-pressed", "true");
+    await attention.click();
     await expect(
-      page.getByText("3 öğrenciden 2 tanesi ilgi bekliyor."),
+      page.getByRole("heading", { name: "2 öğrenci seni bekliyor" }),
     ).toBeVisible();
     await expect.poll(() => api.attentionCalls).toEqual([true, false]);
   });
@@ -498,14 +493,10 @@ test.describe("koç tarafı", () => {
 
     // The quota is enforced on the STUDENT's redemption, so the coach's own screen is the only
     // place they can learn about it before handing the code to someone who will be refused.
-    await expect(page.getByText("2/2 öğrenci")).toBeVisible();
-    await expect(
-      page.getByText("Kontenjanın dolu.", { exact: false }),
-    ).toBeVisible();
-    // A full roster still empties; rotating is not blocked.
-    await expect(
-      page.getByRole("button", { name: "Yeni kod üret" }),
-    ).toBeEnabled();
+    await expect(page.getByText("koltuk dolu", { exact: false })).toContainText("2/2");
+    await expect(page.getByText("2 öğrenci sınırına ulaştın.")).toBeVisible();
+    // Full means the next student is refused, so the card stops offering the code to share.
+    await expect(page.getByText("MENTOR-KOC-", { exact: false })).toHaveCount(0);
   });
 
   test("koç kendi veri kapsamını Ayarlar'dan okuyabilir", async ({ page }) => {
@@ -537,7 +528,7 @@ test.describe("koç tarafı", () => {
     await page.goto(`/kocluk/${STUDENT_ID}`);
 
     await expect(
-      page.getByRole("heading", { name: "Silinen ödevler" }),
+      page.getByRole("heading", { name: "Planından çıkardığı" }),
     ).toBeVisible();
     await expect(page.getByText("Silinecek deneme")).toBeVisible();
   });
@@ -787,12 +778,10 @@ test.describe("koç tarafı", () => {
       myCoach: null,
     });
     await page.goto(`/kocluk/${STUDENT_ID}`);
-    // Below xl the note sits behind the action bar rather than in the rail.
-    if (test.info().project.name === "mobile-chromium") {
-      await page.getByRole("button", { name: "Öğrenciye notun" }).click();
-    }
+    // The note card edits in place, on every screen size.
+    await page.getByRole("button", { name: "Not yaz" }).click();
 
-    const field = page.getByRole("textbox", { name: "Öğrenciye notun" });
+    const field = page.getByRole("textbox", { name: "Ayşe'ye notun" });
     await field.fill("Bu hafta paragrafa ağırlık ver.");
     await page.getByRole("button", { name: "Notu kaydet" }).click();
 
@@ -802,10 +791,7 @@ test.describe("koç tarafı", () => {
   });
 });
 
-/**
- * The week composer lives in the report's side panel. The rail button (xl) and the action bar
- * button (below xl) share the accessible name, so one click works on both projects.
- */
+/** The week composer lives in the report's side panel; the week hero's ledge opens it on every size. */
 async function openWeekPlanner(page: Page) {
   await page.getByRole("button", { name: "Haftayı planla" }).click();
 }
@@ -835,6 +821,7 @@ function rosterRow(
       lastActiveDate: daysFromToday(-1),
       currentStreak: 2,
       focusMinutes7d: 120,
+      dailyFocusMinutes14d: [0, 20, 0, 40, 0, 0, 30, 0, 60, 0, 0, 25, 0, 0],
       sessions7d: 4,
       activeDays7d: 3,
       planCompletionRate7d,
@@ -909,6 +896,7 @@ async function mockApi(
       focusMinutes28d: 640,
       activeDays28d: 11,
     },
+    dailyFocusMinutes28d: Array.from({ length: 28 }, (_, day) => (day % 3 === 0 ? 45 : 0)),
     planCompletionRate7d: 0.6,
     mockTrend: [],
     latestMockSubjects: [],
@@ -1055,6 +1043,13 @@ async function mockApi(
         },
         activeStudents: options.roster?.length ?? 0,
         maxActiveStudents: options.maxActiveStudents ?? 20,
+        freeSeats: 3,
+        paidSeats: 0,
+        usedSeats: options.roster?.length ?? 0,
+        sponsorshipEnabled: true,
+        // The server's figure: free + paid, never past the follow cap.
+        seatAllowance: Math.min(3, options.maxActiveStudents ?? 20),
+        seatPlansOnSale: false,
         dataScope: DATA_SCOPE,
       });
     }

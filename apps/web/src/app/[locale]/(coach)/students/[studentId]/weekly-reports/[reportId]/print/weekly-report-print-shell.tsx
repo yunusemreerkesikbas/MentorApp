@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklyReportShareDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
+import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { trackMentorshipWeeklyReportEvent } from "@/lib/analytics";
 import { fetchWeeklyReportShare } from "@/lib/mentorship-weekly-report";
@@ -46,7 +47,7 @@ export function WeeklyReportPrintShell({
   if (error) {
     return (
       <div className="flex flex-col gap-4">
-        <p role="alert" className="coach-body text-[var(--color-main)]">
+        <p role="alert" className="text-body-sm font-semibold text-[var(--color-main)]">
           {error}
         </p>
         <Link
@@ -54,7 +55,7 @@ export function WeeklyReportPrintShell({
             pathname: "/students/[studentId]",
             params: { studentId },
           }}
-          className="coach-body font-semibold text-[var(--color-primary)]"
+          className={`${PANEL_TEXT_LINK} self-start`}
         >
           {t("weekly_report_back")}
         </Link>
@@ -122,10 +123,10 @@ export function WeeklyReportPrintShell({
     <div className="weekly-report-print-root flex flex-col gap-4">
       <div className="weekly-report-print-toolbar sticky top-4 z-10 flex flex-wrap items-center justify-between gap-3 rounded-[var(--radius-card)] bg-[var(--color-surface)] p-3 shadow-[var(--shadow-card)]">
         <div>
-          <Link href={{ pathname: "/students/[studentId]", params: { studentId } }} className="coach-body min-h-11 content-center font-semibold text-[var(--color-primary)]">
+          <Link href={{ pathname: "/students/[studentId]", params: { studentId } }} className={PANEL_TEXT_LINK}>
             {t("weekly_report_back")}
           </Link>
-          {downloadError ? <p role="alert" className="coach-footnote mt-1 text-[var(--color-error)]">{downloadError}</p> : null}
+          {downloadError ? <p role="alert" className="mt-1 text-caption font-semibold text-[var(--color-danger)]">{downloadError}</p> : null}
         </div>
         <div className="flex flex-wrap gap-2">
           <Button type="button" variant="secondary" onClick={() => window.print()}>
@@ -138,9 +139,11 @@ export function WeeklyReportPrintShell({
           </Button>
         </div>
       </div>
-      <article className="weekly-report-print-sheet mx-auto w-full max-w-[210mm] rounded-[var(--radius-card)] bg-white p-6 text-[var(--color-body)] shadow-[var(--shadow-card)] sm:p-12">
-        <header className="mb-8 border-b-2 border-[var(--color-primary)] pb-6">
-          <p className="mb-2 text-sm font-semibold text-[var(--color-primary)]">
+      {/* The sheet follows the theme on screen; the PDF, the page the student actually gets, keeps
+          its own fixed colours. */}
+      <article className="weekly-report-print-sheet mx-auto w-full max-w-[210mm] rounded-[var(--radius-card)] bg-[var(--color-surface)] p-6 text-[var(--color-body)] shadow-[var(--shadow-card)] sm:p-12">
+        <header className="mb-8 border-b-2 border-[var(--coach-accent)] pb-6">
+          <p className="mb-2 text-sm font-extrabold text-[var(--coach-accent-ink)]">
             {t("weekly_report_version", { version: report.version })}
           </p>
           <h1 className="text-3xl font-bold tracking-tight text-[var(--color-main)]">

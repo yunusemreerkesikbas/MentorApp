@@ -661,6 +661,11 @@ export const MentorshipWeeklyPreviewResponseDtoStatus = {
 } as const;
 
 /**
+ * Subject slug → display name for the week's subjects; a slug content no longer knows is absent.
+ */
+export type MentorshipWeeklyPreviewResponseDtoSubjectNames = {[key: string]: string};
+
+/**
  * @nullable
  */
 export type MentorshipWeeklyPreviewResponseDtoBrief = MentorshipWeeklyBriefResponseDto | null;
@@ -683,6 +688,8 @@ export interface MentorshipWeeklyPreviewResponseDto {
   sourceFingerprint: string;
   status: MentorshipWeeklyPreviewResponseDtoStatus;
   snapshot: MentorshipWeeklySnapshotResponseDto;
+  /** Subject slug → display name for the week's subjects; a slug content no longer knows is absent. */
+  subjectNames: MentorshipWeeklyPreviewResponseDtoSubjectNames;
   /** @nullable */
   brief: MentorshipWeeklyPreviewResponseDtoBrief;
 }
@@ -725,6 +732,11 @@ export const MentorshipWeeklyReportResponseDtoLocale = {
 } as const;
 
 /**
+ * Subject slug → display name for the week's subjects; a slug content no longer knows is absent.
+ */
+export type MentorshipWeeklyReportResponseDtoSubjectNames = {[key: string]: string};
+
+/**
  * @nullable
  */
 export type MentorshipWeeklyReportResponseDtoBrief = MentorshipWeeklyBriefResponseDto | null;
@@ -745,6 +757,8 @@ export interface MentorshipWeeklyReportResponseDto {
    */
   sourceFingerprint: string;
   snapshot: MentorshipWeeklySnapshotResponseDto;
+  /** Subject slug → display name for the week's subjects; a slug content no longer knows is absent. */
+  subjectNames: MentorshipWeeklyReportResponseDtoSubjectNames;
   /** @nullable */
   coachEvaluation: string | null;
   /** @nullable */
@@ -811,6 +825,11 @@ export const MentorshipWeeklyReportShareResponseDtoLocale = {
   en: 'en',
 } as const;
 
+/**
+ * Subject slug → display name for the week's subjects; a slug content no longer knows is absent.
+ */
+export type MentorshipWeeklyReportShareResponseDtoSubjectNames = {[key: string]: string};
+
 export interface MentorshipWeeklyReportShareResponseDto {
   id: string;
   locale: MentorshipWeeklyReportShareResponseDtoLocale;
@@ -820,6 +839,8 @@ export interface MentorshipWeeklyReportShareResponseDto {
   version: number;
   finalizedAt: string;
   snapshot: MentorshipWeeklyShareSnapshotResponseDto;
+  /** Subject slug → display name for the week's subjects; a slug content no longer knows is absent. */
+  subjectNames: MentorshipWeeklyReportShareResponseDtoSubjectNames;
   /** @nullable */
   coachEvaluation: string | null;
 }

@@ -1,0 +1,139 @@
+{
+  "createdAt": "2026-09-24T14:28:33.1831688Z",
+  "head": "0915d92cb7e04fe721fe8e26eba2f531519f1b72",
+  "branch": "feature/APP-110",
+  "webBuildId": "dtKtArCT2p0DgzqY_xW69",
+  "note": "Captured after the final browser run. Parallel mentorship changes in this manifest may postdate the tested web build; the build ID identifies the tested artifact.",
+  "dirtyCodeFiles": [
+    {
+      "path": "apps/api/src/modules/coaching/application/cohort-evidence.service.spec.ts",
+      "sha256": "178ecd7b328c12385f004d455c04338549482d0662ecf36750a92fc17aba83c8"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/cohort-evidence.service.ts",
+      "sha256": "5da0bd5539147fbbad428705c17e48af25cd96ed3d2b19856413046246050743"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/mentorship-weekly-evidence.service.spec.ts",
+      "sha256": "3b2528aacb0e5bff202bfd0ea65933088427ccb6c1696751e9cea0e1875c2d62"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/application/mentorship-weekly-evidence.service.ts",
+      "sha256": "208b66d759e78b8681cc28eccb69ac24256b03a8eef356ba3f73b4ce530fac63"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/domain/cohort-evidence.ts",
+      "sha256": "658431e348a7e0ad0b049bb66118305352533c08e3e35a91885b3623eea15afb"
+    },
+    {
+      "path": "apps/api/src/modules/coaching/infrastructure/cohort-evidence.repository.ts",
+      "sha256": "9e8eff8ba87d5d611258c9f3a126c4e1c09907ceea351bdf672678de64ff73a3"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.spec.ts",
+      "sha256": "eb9d9e79dd1de060a36401a591a17735a372cceff550b4f76ca65bd82f0d282a"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.ts",
+      "sha256": "e8309193c176fae83355a22b6f73388e2ba5e45632f721c03cb92f8c2385f9b8"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.spec.ts",
+      "sha256": "2807eb7238e9bdc8f6d75a352d433b6d572600feaf9f35e712cabf109a3ce33c"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.ts",
+      "sha256": "3c613341a667e126b1817e571c9b3c40b61b3c2ac22079ee90de7ec6aee19e6e"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-report.service.spec.ts",
+      "sha256": "66fb2cec3099f6df1ce23c0b4fbbc599577cc427c9c63dfa1f8ecd066fc51545"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-report.service.ts",
+      "sha256": "9a09f7803093843620017ba7f12f8381a134435688dfed63da15f1daee81c638"
+    },
+    {
+      "path": "apps/api/test/cohort-evidence.e2e-spec.ts",
+      "sha256": "de972b8125107b0c81ce617601f2fb683b23ee1fb059a5aa5516b1f8b51e40dd"
+    },
+    {
+      "path": "apps/web/e2e/analysis.fixture.ts",
+      "sha256": "2f5ae8d36612a34345d3816a4c8309ccbf92ccc1aa768d1842748b1fa38c896a"
+    },
+    {
+      "path": "apps/web/e2e/coach-plan.spec.ts",
+      "sha256": "e39a43151dcfac1a94953bbecd6ea4d997afcb8d5bfad766ad0ddd4d0385e081"
+    },
+    {
+      "path": "apps/web/e2e/knowledge.spec.ts",
+      "sha256": "fca420aeb7062f770e64b3dac090c67de1a7ad624f6f48db2cfa01ccb9edab23"
+    },
+    {
+      "path": "apps/web/e2e/panel.spec.ts",
+      "sha256": "3a8e14e1d20a655df23e011f84ec4293f6f3d7b71066d2c1ae7ceb5b16227287"
+    },
+    {
+      "path": "apps/web/e2e/qa-stage2-real-api.spec.ts",
+      "sha256": "e9baed9779a16b918138e0f88c2fa6e4def9673586820e6267433338d8c284d0"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "58527b3f2f9bb562d7f385b3a7f2e6388b0de3756c715f56f002815095f93a7a"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "16e2295f59bb7880b889b213d71edcf8cb89ac2530ac46e794a364b9b6651991"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/app-shell.tsx",
+      "sha256": "8cc12cb241dc35c30223ee373429dd5f97a21a8e44798500b7f8bae58def8709"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/dashboard/_components/today-path.tsx",
+      "sha256": "1e088373c4f4df8956c0e3407023d38724f1e9454cc7e34f88572a76d005138f"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/activity-tone.spec.ts",
+      "sha256": "e34f81d2b5ea0b3ab72e32b0e3f9d335768d5fc80132569d00beab67b82c51a6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/_components/activity-tone.ts",
+      "sha256": "12b523760f8df5add6fe4f79cea7b3fea8c6a242e7e52cd38191d817c02361b6"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/cohort-summary.spec.ts",
+      "sha256": "72a6dbde908e35098c67bb69381f46880de0a9592cd5f0ade6d3e387d0d60db5"
+    },
+    {
+      "path": "apps/web/src/components/panel/companion-bubble.tsx",
+      "sha256": "7c520a2d5e75e00aa28d7af3cfa0060208db36b8278715c1747f4a61fa483fea"
+    },
+    {
+      "path": "apps/web/src/components/panel/path-item.tsx",
+      "sha256": "973d10b563412f5835cb787747856cd42a8800e251a14ddd7a337927b2276e2e"
+    },
+    {
+      "path": "packages/types/src/mentorship-weekly-report.ts",
+      "sha256": "466bdb5f48cc1ddb38fafb7bc33b0845cd7c112747532e36b29e8210125593d5"
+    },
+    {
+      "path": "packages/types/src/mentorship.ts",
+      "sha256": "5f9a79ec00709b403c96921d687de786422148e39b1653bddb2e4db8d2cafd9d"
+    },
+    {
+      "path": "packages/ui/src/theme.css",
+      "sha256": "5e440ef8b55f8fe8b00cae895942e3dbfd9a22c7186ad21936b6e7d3b220ec93"
+    }
+  ],
+  "buildArtifacts": [
+    {
+      "path": "apps/web/.next/web-performance-budget-report.json",
+      "sha256": "9a18c9e8d014736655374dd66192413d69ecc0c29aa2fcdb307d7b829acc5e94"
+    },
+    {
+      "path": "apps/api/dist/main.js",
+      "sha256": "eb24ae6981ac51554008bd42d6c60c3b5f37ed26dc77f2047c179d236dc3efe1"
+    }
+  ]
+}

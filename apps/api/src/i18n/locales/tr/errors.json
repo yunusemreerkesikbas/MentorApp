@@ -8,6 +8,8 @@
   "CONFLICT": "Bu işlem mevcut bir kayıtla çakışıyor.",
   "PAYLOAD_TOO_LARGE": "Gönderilen içerik çok büyük.",
   "TOO_MANY_REQUESTS": "Biraz hızlı gittik. Kısa bir nefes, sonra tekrar.",
+  "TOO_MANY_REQUESTS_RETRY": "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim.",
+  "TOO_MANY_REQUESTS_RETRY_ONE": "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim.",
   "SERVICE_UNAVAILABLE": "Servis şimdi kapalı. Biraz sonra bir daha deneyelim.",
   "AUTH_INVALID_CREDENTIALS": "E-posta veya şifre hatalı.",
   "AUTH_EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",

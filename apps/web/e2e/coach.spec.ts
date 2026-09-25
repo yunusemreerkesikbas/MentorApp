@@ -262,7 +262,7 @@ test("tamamlanmış günde next-action chip göstermez", async ({ page }) => {
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Bugün nasıl çalışmalıyım?" }),
+    page.getByRole("button", { name: "Bugün tek adım ne olsun?" }),
   ).toBeVisible();
 });
 
@@ -273,7 +273,7 @@ test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karş�
 
   await page.goto("/koc/sohbet");
 
-  await expect(page.getByText("AI koç seninle", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Koçun yanında" })).toBeVisible();
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(page.getByTestId("coach-empty-landing")).toHaveCount(0);
   expect(api.todayCalls).toBe(0);

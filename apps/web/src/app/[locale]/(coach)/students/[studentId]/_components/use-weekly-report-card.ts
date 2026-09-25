@@ -14,12 +14,10 @@ import {
   fetchWeeklyReportArchive,
   fetchWeeklyReportPreview,
   finalizeWeeklyReport,
-  readWeeklyReportBrief,
   requestWeeklyReportBrief,
   shiftWeekStart,
 } from "@/lib/mentorship-weekly-report";
-
-const BRIEF_POLL_INTERVAL_MS = 2_000;
+import { useWeeklyBriefPolling } from "./use-weekly-brief-polling";
 
 async function fetchInitialWeeklyReport(studentId: string) {
   const [preview, archive] = await Promise.all([
@@ -109,13 +107,10 @@ export function useWeeklyReportCard(studentId: string) {
     [acceptPreview],
   );
 
-  const rejectInitial = useCallback(
-    (error: unknown) => {
-      setState(isFeatureDisabled(error) ? "disabled" : "failed");
-      if (!isFeatureDisabled(error)) showError(error);
-    },
-    [showError],
-  );
+  // The rail card says a failed load in place, with its retry; a toast on top would say it twice.
+  const rejectInitial = useCallback((error: unknown) => {
+    setState(isFeatureDisabled(error) ? "disabled" : "failed");
+  }, []);
 
   const loadInitial = useCallback(async () => {
     try {
@@ -144,40 +139,7 @@ export function useWeeklyReportCard(studentId: string) {
     await loadInitial();
   }, [loadInitial]);
 
-  useEffect(() => {
-    if (!preview || preview.status !== "BRIEF_PENDING") return;
-    let cancelled = false;
-    let failures = 0;
-    let timeout: ReturnType<typeof setTimeout> | undefined;
-    const poll = async () => {
-      try {
-        const next = await readWeeklyReportBrief(
-          studentId,
-          preview.snapshot.period.startDate,
-        );
-        if (cancelled) return;
-        failures = 0;
-        setPreview(next);
-        if (next.status === "BRIEF_PENDING") {
-          timeout = setTimeout(() => void poll(), BRIEF_POLL_INTERVAL_MS);
-        }
-      } catch (error) {
-        if (cancelled) return;
-        // A blip must not strand the card on "pending": keep polling, backing off, and toast once.
-        if (failures === 0) showError(error);
-        failures += 1;
-        timeout = setTimeout(
-          () => void poll(),
-          BRIEF_POLL_INTERVAL_MS * 2 ** Math.min(failures, 4),
-        );
-      }
-    };
-    timeout = setTimeout(() => void poll(), BRIEF_POLL_INTERVAL_MS);
-    return () => {
-      cancelled = true;
-      if (timeout) clearTimeout(timeout);
-    };
-  }, [preview, showError, studentId]);
+  useWeeklyBriefPolling(studentId, preview, setPreview, showError);
 
   const reloadSelected = useCallback(async () => {
     if (!preview) return;

@@ -7,7 +7,10 @@ import {
   CoachOverlayFooter,
 } from "@/components/coach-overlay";
 import { NOTE_CLASS } from "@/components/mentorship/coach-ui";
+import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
+import { firstName } from "@/lib/greeting";
+import { dativeOf } from "@/lib/turkish-case";
 import { CoachPanel } from "./coach-panel";
 import { useWeeklyReportCard } from "./use-weekly-report-card";
 import { WeeklyReportArchive } from "./weekly-report-archive";
@@ -16,22 +19,30 @@ import { WeeklyReportMetrics } from "./weekly-report-metrics";
 
 type WeeklyReportState = ReturnType<typeof useWeeklyReportCard>;
 
+/**
+ * The weekly report in the side panel: the week's numbers against the week before, the private
+ * preparation, and the evaluation the coach finalizes into a PDF. The one filled button is
+ * "Raporu sonlandır"; the PDF is the coach's to send, and the copy says so.
+ */
 export function WeeklyReportPanel({
   studentId,
   report,
   period,
-  formatDate,
+  archiveOpen = false,
   onClose,
 }: {
   studentId: string;
   report: WeeklyReportState;
+  /** The shown week in words, "14–20 Eylül". */
   period: string;
-  formatDate: (value: string) => string;
+  /** Opened from "Arşiv" or the header menu: the finalized reports are what the coach came for. */
+  archiveOpen?: boolean;
   onClose: () => void;
 }) {
   const t = useTranslations("mentorship");
   if (!report.preview) return null;
   const preview = report.preview;
+  const name = firstName(preview.studentDisplayName);
   const previousReport = report.archive.find(
     (item) => item.period.startDate === preview.snapshot.period.startDate,
   );
@@ -39,45 +50,40 @@ export function WeeklyReportPanel({
   return (
     <CoachPanel
       title={t("weekly_report_title")}
-      subtitle={period}
+      subtitle={`${preview.studentDisplayName} · ${period}`}
       busy={report.busy}
       wide
       onClose={onClose}
     >
       <CoachOverlayBody>
         <div className="flex flex-col gap-6 pb-6">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className={NOTE_CLASS}>
-              {t("weekly_report_period", {
-                start: formatDate(preview.snapshot.period.startDate),
-                end: formatDate(preview.snapshot.period.endDate),
-              })}
-            </p>
-            <div className="flex items-center gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={report.busy}
-                onClick={() => void report.moveWeek(-1)}
-              >
-                {t("weekly_report_previous_week")}
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={
-                  report.busy ||
-                  preview.snapshot.period.startDate === report.latestWeek
-                }
-                onClick={() => void report.moveWeek(1)}
-              >
-                {t("weekly_report_next_week")}
-              </Button>
-            </div>
+          <div className="flex items-center justify-between gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={report.busy}
+              onClick={() => void report.moveWeek(-1)}
+            >
+              {t("weekly_report_previous_week")}
+            </Button>
+            <span className="inline-flex h-6 items-center rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
+              {previousReport ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+            </span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={
+                report.busy ||
+                preview.snapshot.period.startDate === report.latestWeek
+              }
+              onClick={() => void report.moveWeek(1)}
+            >
+              {t("weekly_report_next_week")}
+            </Button>
           </div>
-          <WeeklyReportMetrics snapshot={preview.snapshot} />
+          <WeeklyReportMetrics snapshot={preview.snapshot} subjectNames={preview.subjectNames} />
           <WeeklyReportBrief
             preview={preview}
             coachContext={report.coachContext}
@@ -86,7 +92,7 @@ export function WeeklyReportPanel({
             onGenerate={() => void report.generateBrief()}
           />
           <section className="flex flex-col gap-3">
-            <h3 className="coach-body font-semibold text-[var(--color-main)]">
+            <h3 className="text-base font-extrabold text-[var(--color-main)]">
               {t("weekly_report_share_title")}
             </h3>
             <TextAreaField
@@ -95,6 +101,8 @@ export function WeeklyReportPanel({
               maxLength={1200}
               hint={t("weekly_report_share_hint", {
                 count: report.evaluation.length,
+                name,
+                dative: dativeOf(name),
               })}
               onChange={(event) => report.setEvaluation(event.target.value)}
             />
@@ -106,8 +114,11 @@ export function WeeklyReportPanel({
               </p>
             ) : null}
           </section>
-          <details className="rounded-[var(--radius-card)] bg-[var(--color-surface)] px-4 py-3">
-            <summary className="coach-body cursor-pointer font-semibold text-[var(--color-main)]">
+          <details
+            open={archiveOpen}
+            className="rounded-[var(--radius-card)] bg-[var(--color-surface)] px-4 py-3"
+          >
+            <summary className="min-h-11 cursor-pointer content-center text-body-sm font-extrabold text-[var(--color-main)]">
               {t("weekly_report_archive")} ({report.archive.length})
             </summary>
             <div className="pt-4">
@@ -124,7 +135,7 @@ export function WeeklyReportPanel({
         {report.finalized ? (
           <Link
             locale={report.finalized.locale}
-            className="coach-footnote min-h-11 content-center px-2 font-semibold text-[var(--color-primary)]"
+            className={`${PANEL_TEXT_LINK} px-2`}
             href={{
               pathname: "/students/[studentId]/weekly-reports/[reportId]/print",
               params: { studentId, reportId: report.finalized.id },

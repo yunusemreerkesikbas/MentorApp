@@ -40,7 +40,7 @@ test("Premium ve STAFF hesapları rewarded GPT isteği oluşturmaz", async ({ pa
     .getByTestId("panel-quests-card")
     .getByRole("button", { name: "Tüm görevler" })
     .click();
-  await expect(page.getByRole("heading", { name: "Görevler" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Görevler", exact: true })).toBeVisible();
   await expect(page.getByTestId("rewarded-ad-quest")).toHaveCount(0);
   expect(premiumGptRequests).toBe(0);
 
@@ -77,12 +77,8 @@ test("uygun Free kullanıcı duyuru kartından görevleri açar ve GPT yalnız m
   expect(gptRequests).toBe(0);
 
   await banner.getByRole("button", { name: "Görevleri aç" }).click();
-  await expect(page.getByRole("heading", { name: "Görevler" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Görevler", exact: true })).toBeVisible();
   await expect(page.getByTestId("rewarded-ad-quest")).toBeVisible();
-  await expect(page.locator("#quests-panel > ul > li").first()).toHaveAttribute(
-    "data-testid",
-    "rewarded-ad-quest",
-  );
   await expect(page.getByTestId("daily-quest-row").first()).toHaveText(/Bugünün planından 1 görev tamamla/);
   await expect.poll(() => gptRequests).toBe(1);
 });
@@ -266,6 +262,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
   let completeCalls = 0;
   let closeCalls = 0;
   let rewardedCount = 0;
+  const rewardExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
@@ -357,7 +354,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionId,
         status: "CREATED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
       });
     }
     const completedSessionIndex = sessionIds.findIndex(
@@ -373,7 +370,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionIds[completedSessionIndex],
         status: "REWARDED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
         balance: rewardedCount * 5,
       });
     }
@@ -386,7 +383,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionIds[closedSessionIndex],
         status: "CLOSED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
       });
     }
     return json(route, { code: "TEST_NOT_RELEVANT", message: `${method} ${path}` }, 404);

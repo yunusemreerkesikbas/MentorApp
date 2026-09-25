@@ -93,7 +93,7 @@ const QUESTS: QuestProgressView[] = [
 ];
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.trim() || "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 
@@ -115,7 +115,7 @@ async function mockPanel(page: Page, initialTasks: PlanTaskDto[]) {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
   });
-  await page.route("http://localhost:3001/v1/**", async (route) => {
+  await page.route(`${process.env.QA_STAGE2_API_URL?.trim() || "http://localhost:3001/v1"}/**`, async (route) => {
     const request = route.request();
     const url = new URL(request.url());
     const path = url.pathname;

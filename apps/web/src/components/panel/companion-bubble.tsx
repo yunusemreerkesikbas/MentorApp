@@ -60,7 +60,8 @@ export function CompanionBubble({
  * whole: the toggle would take more room than the line it hides.
  */
 function ExpandableNote({ text }: { text: string }) {
-  const t = useTranslations("panel");
+  // `common`, not `panel`: the coach routes load a narrower message scope without `panel`.
+  const t = useTranslations("common");
   const reduceMotion = useReducedMotion();
   const textRef = useRef<HTMLParagraphElement>(null);
   const [expanded, setExpanded] = useState(false);
@@ -108,7 +109,7 @@ function ExpandableNote({ text }: { text: string }) {
           aria-expanded={expanded}
           onClick={() => setExpanded((value) => !value)}
         >
-          {expanded ? t("rhythm_show_less") : t("rhythm_show_more")}
+          {expanded ? t("show_less") : t("show_more")}
         </button>
       ) : null}
     </div>

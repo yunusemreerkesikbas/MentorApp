@@ -1,5 +1,6 @@
-import { HttpStatus, Logger } from "@nestjs/common";
+import { HttpException, HttpStatus, Logger } from "@nestjs/common";
 import type { ArgumentsHost } from "@nestjs/common";
+import { I18nContext } from "nestjs-i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Sentry } from "../../observability/sentry";
 import { NotFoundError } from "../errors/domain-error";
@@ -9,11 +10,12 @@ vi.mock("../../observability/sentry", () => ({ Sentry: { captureException: vi.fn
 
 const REQUEST_ID = "677c9bcb-5824-4f37-901c-e4ffec7c6213";
 
-function mockHost(requestId = REQUEST_ID) {
+function mockHost(requestId = REQUEST_ID, headers: Record<string, string | number | undefined> = {}) {
   const res = {
     headersSent: false,
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
+    getHeader: (name: string) => headers[name],
   };
   const host = {
     switchToHttp: () => ({
@@ -58,4 +60,50 @@ describe("AllExceptionsFilter", () => {
     expect(capture.mock.calls[0]?.[0]).not.toBe(error);
     expect(log.mock.calls[0]?.[0]).toMatchObject({ statusCode: 500, code: "INTERNAL_ERROR" });
   });
+
+  it("puts Retry-After seconds into the 429 message", () => {
+    mockErrorCatalog({
+      "errors.TOO_MANY_REQUESTS_RETRY": "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim.",
+    });
+    const { host, res } = mockHost(REQUEST_ID, { "Retry-After": 42 });
+    filter.catch(new HttpException("throttle", HttpStatus.TOO_MANY_REQUESTS), host);
+    expect(res.status).toHaveBeenCalledWith(HttpStatus.TOO_MANY_REQUESTS);
+    expect(res.json.mock.calls[0]![0]).toMatchObject({
+      code: "TOO_MANY_REQUESTS",
+      message: "Biraz hızlı gittik. 42 saniye sonra tekrar deneyelim.",
+    });
+  });
+
+  it("uses the singular retry line when one second remains", () => {
+    mockErrorCatalog({
+      "errors.TOO_MANY_REQUESTS_RETRY_ONE": "That was a bit fast. Try again in {seconds} second.",
+    });
+    const { host, res } = mockHost(REQUEST_ID, { "Retry-After": "1" });
+    filter.catch(new HttpException("throttle", HttpStatus.TOO_MANY_REQUESTS), host);
+    expect(res.json.mock.calls[0]![0]).toMatchObject({
+      message: "That was a bit fast. Try again in 1 second.",
+    });
+  });
+
+  it("keeps the static 429 message when Retry-After is absent", () => {
+    mockErrorCatalog({
+      "errors.TOO_MANY_REQUESTS": "Biraz hızlı gittik. Kısa bir nefes, sonra tekrar.",
+    });
+    const { host, res } = mockHost();
+    filter.catch(new HttpException("throttle", HttpStatus.TOO_MANY_REQUESTS), host);
+    expect(res.json.mock.calls[0]![0]).toMatchObject({
+      message: "Biraz hızlı gittik. Kısa bir nefes, sonra tekrar.",
+    });
+  });
 });
+
+function mockErrorCatalog(messages: Record<string, string>) {
+  vi.spyOn(I18nContext, "current").mockReturnValue({
+    translate: (key: string, options?: { args?: { seconds?: number } }) => {
+      const template = messages[key];
+      if (!template) return key;
+      const seconds = options?.args?.seconds;
+      return seconds === undefined ? template : template.replaceAll("{seconds}", String(seconds));
+    },
+  } as unknown as I18nContext);
+}

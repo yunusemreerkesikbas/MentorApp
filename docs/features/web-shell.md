@@ -1027,3 +1027,11 @@ eklendi.
   `--font-nunito`; `theme.css` `--font-heading/--font-body` bunu bağlar. Canvas export'lar (haftalık özet
   kartı, vision board) hash'li aile adı yüzünden `"Nunito"` literalini bulamıyordu; `lib/app-font.ts`
   `appFontFamily()` çözülmüş değeri okur. Gotcha: canvas'ta font string'ini literal yazma.
+
+- **2026-09-25 — Menus inside dialogs and mobile notebook controls.** `PopoverMenu` places a menu
+  inside its nearest open native dialog and positions it in that dialog's coordinates, so browser
+  top-layer rules no longer leave notebook subject options behind the form. Menus also sit above
+  mobile drawers. The notebook's expanded tool rail stays clickable below the decorative mobile
+  header. Usage is unchanged; native dialogs and mobile sheets can use the shared menu. Related:
+  `components/popover-menu.tsx`, `notebook-shell.tsx`, `notebooks.spec.ts`, `notebook.spec.ts`,
+  `vision-board.spec.ts`.

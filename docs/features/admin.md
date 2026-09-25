@@ -100,6 +100,12 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-24 · Login fields have real labels.** Stage 4 Chrome QA found that the visible email
+  and password labels were not associated with their inputs. The admin login form now uses matching
+  `htmlFor` and `id` values so keyboard and assistive-technology users can identify the fields, and
+  role-gated browser tests can select them by accessible name. Usage is unchanged. Related:
+  `apps/admin/src/app/login/page.tsx`, `apps/web/e2e/qa-stage4-real-api.spec.ts`.
+
 - **Independent admin session (2026-09-23)** — Admin login, refresh, and logout now call
   `/v1/auth/admin/{login,refresh,logout}`. Its `mentor_admin_refresh` cookie is separate from web's;
   a second tab restores the admin session from that cookie, while logging out of admin leaves web

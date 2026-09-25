@@ -124,11 +124,13 @@ export function PopoverMenu({
   }, [open]);
 
   const closedOffset = side === "top" ? 4 : -4;
+  const containingDialog = anchorRef.current?.closest<HTMLDialogElement>("dialog[open]") ?? null;
   const panelStyle = panelPosition(anchor, {
     align,
     side,
     matchTriggerWidth,
     panelWidth,
+    containingDialog,
   });
 
   const panel = (
@@ -136,7 +138,7 @@ export function PopoverMenu({
       {open && anchor ? (
         <PopoverMenuContext.Provider value={{ close }}>
           <div
-            className="fixed inset-0 z-[60]"
+            className={`${containingDialog ? "absolute" : "fixed"} inset-0 z-[90]`}
             onClick={close}
             aria-hidden
           />
@@ -145,7 +147,7 @@ export function PopoverMenu({
             id={menuId}
             role={panelRole}
             className={[
-              "z-[61] rounded-[var(--radius-card)] bg-[var(--color-surface)]",
+              "z-[91] rounded-[var(--radius-card)] bg-[var(--color-surface)]",
               overflow === "hidden" ? "overflow-hidden" : "overflow-visible",
               optsSideOrigin(side),
               menuClassName ?? (matchTriggerWidth ? "py-1" : "w-48 py-1"),
@@ -179,7 +181,7 @@ export function PopoverMenu({
       {trigger({ open, setOpen, menuId })}
       {typeof document === "undefined"
         ? null
-        : createPortal(panel, document.body)}
+        : createPortal(panel, containingDialog ?? document.body)}
     </div>
   );
 }
@@ -195,35 +197,41 @@ function panelPosition(
     side: PopoverMenuSide;
     matchTriggerWidth: boolean;
     panelWidth?: number;
+    containingDialog: HTMLDialogElement | null;
   },
 ): CSSProperties {
   if (!box) return { position: "fixed" };
   const gutter = 16;
-  const style: CSSProperties = { position: "fixed" };
+  const dialogBox = opts.containingDialog?.getBoundingClientRect();
+  const originLeft = dialogBox?.left ?? 0;
+  const originTop = dialogBox?.top ?? 0;
+  const frameWidth = dialogBox?.width ?? window.innerWidth;
+  const frameHeight = dialogBox?.height ?? window.innerHeight;
+  const style: CSSProperties = { position: dialogBox ? "absolute" : "fixed" };
   if (opts.side === "top") {
-    style.bottom = window.innerHeight - box.top + 4;
+    style.bottom = frameHeight - (box.top - originTop) + 4;
   } else {
-    style.top = box.bottom + 4;
+    style.top = box.bottom - originTop + 4;
   }
   if (opts.matchTriggerWidth) {
-    style.left = Math.max(gutter, box.left);
+    style.left = Math.max(gutter, box.left - originLeft);
     style.width = box.width;
     return style;
   }
   if (opts.panelWidth) {
-    let left = opts.align === "right" ? box.right - opts.panelWidth : box.left;
+    let left = (opts.align === "right" ? box.right - opts.panelWidth : box.left) - originLeft;
     left = Math.min(
       Math.max(gutter, left),
-      window.innerWidth - opts.panelWidth - gutter,
+      frameWidth - opts.panelWidth - gutter,
     );
     style.left = left;
     style.width = opts.panelWidth;
     return style;
   }
   if (opts.align === "right") {
-    style.right = Math.max(gutter, window.innerWidth - box.right);
+    style.right = Math.max(gutter, frameWidth - (box.right - originLeft));
   } else {
-    style.left = Math.max(gutter, box.left);
+    style.left = Math.max(gutter, box.left - originLeft);
   }
   return style;
 }

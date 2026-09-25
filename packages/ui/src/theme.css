@@ -161,6 +161,15 @@ html {
    */
   --chart-correct: #55acee;
   --chart-wrong: #f3705a;
+  /*
+   * A day's focus minutes on the coach's activity strip and rhythm grid (DESIGN.md §2.3): one
+   * ordinal ramp, 1–29 / 30–89 / 90+ minutes, validated light and dark with the dataviz checker.
+   * An empty day is `--play-track`, not a step. The light end is ~2.5:1, so the drawings always
+   * carry a text alternative.
+   */
+  --chart-activity-1: #55acee;
+  --chart-activity-2: #3b8fd0;
+  --chart-activity-3: #1a5fa3;
 }
 
 ::placeholder {
@@ -221,6 +230,10 @@ html.dark {
   /* The light pair sits above the dark theme's lightness band; these are its own validated steps. */
   --chart-correct: #3f95d8;
   --chart-wrong: #e0634d;
+  /* The activity ramp runs dark to light here, so more minutes still read as more. */
+  --chart-activity-1: #2f6fae;
+  --chart-activity-2: #3f95d8;
+  --chart-activity-3: #94c6f4;
 }
 
 /*

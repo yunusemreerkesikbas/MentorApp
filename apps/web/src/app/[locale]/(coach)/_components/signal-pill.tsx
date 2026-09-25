@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
@@ -14,12 +13,8 @@ import type { ReactNode } from "react";
  * So form carries the distinction here, not colour:
  *
  *  - {@link SignalPill} — a finding about somebody. Hairline ring, no fill, a dot that names it.
- *  - {@link SignalCount} — a measurement. Deliberately NOT a pill: the pill shape is reserved
- *    for "this is a flag on a person", and a count is not something you can act on.
- *  - {@link NewBadge} — chrome on one line of the brief. At tag weight it out-shouted the
- *    student's name beside it.
- *  - {@link CalmLabel} — not a pill at all. "Nothing is wrong" must not carry the visual weight
- *    of a finding, or it competes with real flags two rows down.
+ *  - Nothing wrong carries no mark at all: a calm student is simply "Yolunda" in the roster's
+ *    groups, so it never competes with real flags two rows down.
  *
  * Hues come from `coach-theme.css`, scoped to the shell's `.coach-signals` class.
  */
@@ -62,65 +57,6 @@ export function SignalPill({
       }}
     >
       <Dot hue={hue} />
-      {children}
-    </span>
-  );
-}
-
-/** The cohort breakdown: how many students carry this signal. A number, not a badge. */
-export function SignalCount({
-  hue,
-  count,
-  children,
-}: {
-  hue: SignalHue;
-  count: number;
-  children: ReactNode;
-}) {
-  return (
-    <span
-      className="inline-flex items-center gap-[7px] text-[13px]"
-      style={{ color: "var(--color-body)" }}
-    >
-      <Dot hue={hue} />
-      {/* Count and label are ONE text run. As two flex items the gap would separate them
-          visually but leave the accessible name as "1Sessiz" — the space has to be real. */}
-      <span>
-        <b className="font-bold tabular-nums" style={{ color: "var(--color-main)" }}>
-          {count}
-        </b>{" "}
-        {children}
-      </span>
-    </span>
-  );
-}
-
-/**
- * "Yeni" on a brief line. The accent rather than the flag vocabulary, because it is not a finding
- * about the student — it says the brief has news since the last one.
- */
-export function NewBadge({ children }: { children: ReactNode }) {
-  return (
-    <span
-      className="inline-flex h-[18px] items-center rounded-full px-[7px] text-[11px] font-bold leading-none tracking-[0.01em]"
-      style={{
-        backgroundColor: "color-mix(in srgb, var(--color-progress) 16%, transparent)",
-        color: "var(--color-focus-ring)",
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-
-/** A student with nothing wrong. Quiet text, so "nothing to do" reads as nothing to do. */
-export function CalmLabel({ children }: { children: ReactNode }) {
-  return (
-    <span
-      className="inline-flex items-center gap-1.5 text-xs font-medium"
-      style={{ color: "var(--color-secondary)" }}
-    >
-      <Check aria-hidden size={14} strokeWidth={2.25} />
       {children}
     </span>
   );

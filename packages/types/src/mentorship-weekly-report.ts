@@ -143,8 +143,16 @@ export interface MentorshipWeeklyReportPreviewDto {
   sourceFingerprint: string;
   status: MentorshipWeeklyReportStatus;
   snapshot: MentorshipWeeklySnapshotDto;
+  subjectNames: MentorshipWeeklySubjectNamesDto;
   brief: MentorshipWeeklyBriefDto | null;
 }
+
+/**
+ * Display names for the subject slugs in `snapshot`, resolved when the report is read. Kept beside
+ * the snapshot, never inside it: `sourceFingerprint` hashes the snapshot, and a renamed subject
+ * must not turn a stored week into a different one. A slug without an entry renders as itself.
+ */
+export type MentorshipWeeklySubjectNamesDto = Record<string, string>;
 
 export interface MentorshipWeeklyReportListItemDto {
   id: string;
@@ -160,6 +168,7 @@ export interface MentorshipWeeklyReportDto extends MentorshipWeeklyReportListIte
   studentDisplayName: string;
   sourceFingerprint: string;
   snapshot: MentorshipWeeklySnapshotDto;
+  subjectNames: MentorshipWeeklySubjectNamesDto;
   coachEvaluation: string | null;
   brief: MentorshipWeeklyBriefDto | null;
 }
@@ -174,5 +183,6 @@ export interface MentorshipWeeklyReportShareDto {
   version: number;
   finalizedAt: string;
   snapshot: Omit<MentorshipWeeklySnapshotDto, "evidence">;
+  subjectNames: MentorshipWeeklySubjectNamesDto;
   coachEvaluation: string | null;
 }
