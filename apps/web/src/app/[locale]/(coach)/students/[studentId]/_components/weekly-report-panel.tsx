@@ -1,16 +1,25 @@
 "use client";
 
+import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button, TextAreaField } from "@mentor/ui";
+import { Button, TextAreaField, TextSwap } from "@mentor/ui";
 import {
   CoachOverlayBody,
   CoachOverlayFooter,
 } from "@/components/coach-overlay";
-import { NOTE_CLASS } from "@/components/mentorship/coach-ui";
+import {
+  NOTE_CLASS,
+  PANEL_LINK_BUTTON,
+  PANEL_QUIET_BUTTON,
+} from "@/components/mentorship/coach-ui";
 import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { firstName } from "@/lib/greeting";
 import { dativeOf } from "@/lib/turkish-case";
+import { CoachCheck } from "@/components/mentorship/coach-check";
+import { COACH_EASE } from "@/components/mentorship/coach-motion";
 import { CoachPanel } from "./coach-panel";
 import { useWeeklyReportCard } from "./use-weekly-report-card";
 import { WeeklyReportArchive } from "./weekly-report-archive";
@@ -23,6 +32,9 @@ type WeeklyReportState = ReturnType<typeof useWeeklyReportCard>;
  * The weekly report in the side panel: the week's numbers against the week before, the private
  * preparation, and the evaluation the coach finalizes into a PDF. The one filled button is
  * "Raporu sonlandır"; the PDF is the coach's to send, and the copy says so.
+ *
+ * Moving a week slides its tables 12 px the way the link points. Finalizing turns the status tag to
+ * "Sonlandırıldı" in place and draws a ✓ in it; the link to the PDF fades in at the foot.
  */
 export function WeeklyReportPanel({
   studentId,
@@ -40,6 +52,14 @@ export function WeeklyReportPanel({
   onClose: () => void;
 }) {
   const t = useTranslations("mentorship");
+  const start = report.preview?.snapshot.period.startDate ?? null;
+  // Which way the week moved; adjusted while rendering, not in an effect.
+  const [shownStart, setShownStart] = useState(start);
+  const [direction, setDirection] = useState(0);
+  if (start !== shownStart) {
+    setDirection(start !== null && shownStart !== null && start < shownStart ? -1 : 1);
+    setShownStart(start);
+  }
   if (!report.preview) return null;
   const preview = report.preview;
   const name = firstName(preview.studentDisplayName);
@@ -56,24 +76,27 @@ export function WeeklyReportPanel({
       onClose={onClose}
     >
       <CoachOverlayBody>
-        <div className="flex flex-col gap-6 pb-6">
+        <div className="flex flex-col gap-5 pb-6">
           <div className="flex items-center justify-between gap-2">
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className={PANEL_LINK_BUTTON}
               disabled={report.busy}
               onClick={() => void report.moveWeek(-1)}
             >
+              <ChevronLeft className="size-4" aria-hidden />
               {t("weekly_report_previous_week")}
-            </Button>
-            <span className="inline-flex h-6 items-center rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
-              {previousReport ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+            </button>
+            <span className="inline-flex h-6 items-center gap-1 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
+              {/* `finalized` is this week's report finalized just now (it resets when the week moves). */}
+              {report.finalized && previousReport ? <CoachCheck draw className="size-3.5" /> : null}
+              <TextSwap
+                text={previousReport ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+              />
             </span>
-            <Button
+            <button
               type="button"
-              variant="ghost"
-              size="sm"
+              className={PANEL_LINK_BUTTON}
               disabled={
                 report.busy ||
                 preview.snapshot.period.startDate === report.latestWeek
@@ -81,22 +104,31 @@ export function WeeklyReportPanel({
               onClick={() => void report.moveWeek(1)}
             >
               {t("weekly_report_next_week")}
-            </Button>
+              <ChevronRight className="size-4" aria-hidden />
+            </button>
           </div>
-          <WeeklyReportMetrics snapshot={preview.snapshot} subjectNames={preview.subjectNames} />
+          <AnimatePresence initial={false} mode="wait">
+            <motion.div
+              key={preview.snapshot.period.startDate}
+              initial={{ opacity: 0, x: direction * 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.2, ease: COACH_EASE }}
+            >
+              <WeeklyReportMetrics snapshot={preview.snapshot} subjectNames={preview.subjectNames} />
+            </motion.div>
+          </AnimatePresence>
           <WeeklyReportBrief
+            // Per week: whether the focus field starts open follows that week's own focus.
+            key={preview.snapshot.period.startDate}
             preview={preview}
             coachContext={report.coachContext}
             onContextChange={report.setCoachContext}
             busy={report.busy}
             onGenerate={() => void report.generateBrief()}
           />
-          <section className="flex flex-col gap-3">
-            <h3 className="text-base font-extrabold text-[var(--color-main)]">
-              {t("weekly_report_share_title")}
-            </h3>
+          <section className="flex flex-col gap-2">
             <TextAreaField
-              label={t("weekly_report_share_label")}
+              label={t("weekly_report_share_title")}
               value={report.evaluation}
               maxLength={1200}
               hint={t("weekly_report_share_hint", {
@@ -135,7 +167,7 @@ export function WeeklyReportPanel({
         {report.finalized ? (
           <Link
             locale={report.finalized.locale}
-            className={`${PANEL_TEXT_LINK} px-2`}
+            className={`${PANEL_TEXT_LINK} coach-reveal px-2`}
             href={{
               pathname: "/students/[studentId]/weekly-reports/[reportId]/print",
               params: { studentId, reportId: report.finalized.id },
@@ -144,6 +176,9 @@ export function WeeklyReportPanel({
             {t("weekly_report_open_finalized")}
           </Link>
         ) : null}
+        <button type="button" className={`${PANEL_QUIET_BUTTON} px-2`} disabled={report.busy} onClick={onClose}>
+          {t("confirm_cancel")}
+        </button>
         <Button
           type="button"
           busy={report.busy}

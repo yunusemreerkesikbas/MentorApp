@@ -7,6 +7,7 @@ import type { MentorshipStudentReportDto } from "@mentor/types";
 import { Skeleton } from "@mentor/ui";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { firstName } from "@/lib/greeting";
+import { drawOrder } from "@/components/mentorship/coach-motion";
 import { formatNet } from "../../../_components/mentorship-format";
 
 // Nivo is the heaviest thing on the page, and the chart sits below the fold everywhere.
@@ -33,7 +34,7 @@ export function MocksCard({ report }: { report: MentorshipStudentReportDto }) {
 
   if (!latest) {
     return (
-      <section className={`${PANEL_CARD} flex flex-col gap-3`} aria-labelledby="mocks-title">
+      <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-3`} aria-labelledby="mocks-title">
         <h2 id="mocks-title" className={PANEL_CARD_TITLE}>
           {t("report_mocks")}
         </h2>
@@ -54,7 +55,7 @@ export function MocksCard({ report }: { report: MentorshipStudentReportDto }) {
   const longDate = (iso: string) => format.dateTime(new Date(iso), { day: "numeric", month: "long" });
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-4`} aria-labelledby="mocks-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-4`} aria-labelledby="mocks-title">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="mocks-title" className={PANEL_CARD_TITLE}>
           {t("report_mocks")}
@@ -140,7 +141,7 @@ export function MocksCard({ report }: { report: MentorshipStudentReportDto }) {
             </p>
           </div>
           <ul className="flex flex-col">
-            {report.latestMockSubjects.map((subject) => (
+            {report.latestMockSubjects.map((subject, index) => (
               <li
                 key={subject.subjectRef}
                 className="grid grid-cols-[minmax(0,8rem)_minmax(0,1fr)_3.5rem] items-center gap-3 py-1.5 sm:grid-cols-[9rem_minmax(0,1fr)_4rem] sm:gap-3.5"
@@ -166,7 +167,9 @@ export function MocksCard({ report }: { report: MentorshipStudentReportDto }) {
                     blank: subject.blank,
                     net: net(subject.net),
                   })}
-                  className="flex h-2.5 gap-0.5"
+                  // Each subject's bar grows from its start once; the first four step, the rest go together.
+                  className="coach-draw-grow-x flex h-2.5 gap-0.5"
+                  style={drawOrder(Math.min(index, 3))}
                 >
                   <Part grow={subject.correct} className="bg-[var(--chart-correct)]" />
                   <Part grow={subject.wrong} className="bg-[var(--chart-wrong)]" />

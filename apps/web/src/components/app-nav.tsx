@@ -58,7 +58,8 @@ import { useAppSidebar } from "@/lib/use-app-sidebar";
 const TAB_EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * App navigation (DESIGN.md §6 Tab bar + §8 adaptation):
- *  - mobile: avatar header + floating pill tab (Koç elevated center, icons only)
+ *  - mobile: avatar header + floating pill tab, icons only, the role's home raised in the centre
+ *    (Koç for a student, Öğrencilerim for a coach); the same active look for every role
  *  - ≥1024px (lg): left sidebar with sentence-case labels; Koç is desktop floating
  *    Puhu FAB (bottom-right), not a sidebar item
  * Public profile is avatar-only on mobile; sidebar keeps Ayarlar + Topluluk.
@@ -144,13 +145,26 @@ const SIDEBAR_ITEMS = NAV_ITEMS.filter(
  * So a coach's pill mirrors their sidebar instead. That is also exactly five items, because
  * `visibleTo` drops every `studentOnly` entry before this list is rendered. The desktop sidebar
  * is untouched in both roles — `sidebarOnly` items already render there.
+ *
+ * Both pills share one silhouette: the role's home sits raised in the centre (`ELEVATED_HREFS`),
+ * Koç for a student and Öğrencilerim for a coach, so the coach's home moves to the middle here.
  */
 function tabItemsFor(roles: readonly string[] | undefined): readonly NavItem[] {
-  const items = isCoach({ roles: roles ?? [] })
-    ? SIDEBAR_ITEMS
-    : NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
-  return visibleTo(items, roles);
+  if (!isCoach({ roles: roles ?? [] })) {
+    return visibleTo(
+      NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly)),
+      roles,
+    );
+  }
+  const items = visibleTo(SIDEBAR_ITEMS, roles);
+  const home = items.filter((item) => item.href === "/students");
+  const rest = items.filter((item) => item.href !== "/students");
+  const middle = Math.floor(rest.length / 2);
+  return [...rest.slice(0, middle), ...home, ...rest.slice(middle)];
 }
+
+/** The raised centre of the tab pill: each role sees exactly one of these. */
+const ELEVATED_HREFS: readonly string[] = ["/coach", "/students"];
 
 /**
  * An item with no `roles` is open to everyone; otherwise the user must hold one of them. A
@@ -200,7 +214,11 @@ export function AppNav() {
       />
 
       {hideMobileChrome ? null : (
-        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
+        // The chrome is named so a page slide (the coach screens, `coach-theme.css`) passes under it.
+        <header
+          className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden"
+          style={{ viewTransitionName: "app-topbar" }}
+        >
           {user ? (
             <MobileIdentity premium={premium} user={user} />
           ) : (
@@ -229,6 +247,7 @@ export function AppNav() {
       {hideMobileChrome ? null : (
         <nav
           className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
+          style={{ viewTransitionName: "app-tabbar" }}
           aria-label={t("aria_label")}
         >
           <MobileTabBar pathname={pathname} user={user} />
@@ -258,7 +277,6 @@ function DesktopSidebar({
   const t = useTranslations("nav");
   const forceCollapsed = isBoardEditorPath(pathname);
   const sidebarItems = visibleTo(SIDEBAR_ITEMS, user?.roles);
-  const coach = isCoach(user);
   const startsCollapsed = isDefaultCollapsedSidebarPath(pathname);
   const { open: storedOpen, setOpen } = useAppSidebar();
   const [sessionOverride, setSessionOverride] = useState<{
@@ -291,7 +309,7 @@ function DesktopSidebar({
   return (
     <aside
       className="mentor-app-sidebar fixed inset-y-0 left-0 z-20 hidden overflow-visible flex-col border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:flex"
-      style={{ boxShadow: "var(--shadow-card)" }}
+      style={{ boxShadow: "var(--shadow-card)", viewTransitionName: "app-sidebar" }}
       aria-label={t("aria_label")}
       data-testid="app-sidebar"
     >
@@ -321,7 +339,6 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
-              coach={coach}
               examType={user?.examType}
             />
           ))}
@@ -376,7 +393,6 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
-              coach={coach}
               examType={user?.examType}
             />
           ))}
@@ -418,7 +434,6 @@ function MobileTabBar({
           item={item}
           label={t(item.labelKey)}
           active={isNavActive(pathname, item.href)}
-          coachUser={isCoach(user)}
           examType={user?.examType}
           reduceMotion={Boolean(reduceMotion)}
           transition={tabTransition}
@@ -432,7 +447,6 @@ function MobileTabLink({
   item,
   label,
   active,
-  coachUser,
   examType,
   reduceMotion,
   transition,
@@ -440,24 +454,23 @@ function MobileTabLink({
   item: NavItem;
   label: string;
   active: boolean;
-  /** The signed-in user is a human coach: the active tab wears their ink, like the sidebar. */
-  coachUser: boolean;
   examType: ExamType | null | undefined;
   reduceMotion: boolean;
   transition:
     | { duration: number }
     | { type: "spring"; stiffness: number; damping: number; mass: number };
 }) {
-  const isCoach = item.href === "/coach";
+  const elevated = ELEVATED_HREFS.includes(item.href);
   const Icon = item.icon;
   const tap = reduceMotion ? undefined : { scale: 0.94 };
 
-  if (isCoach) {
+  if (elevated) {
     return (
       <Link
         href={item.href}
         aria-current={active ? "page" : undefined}
         aria-label={label}
+        data-elevated="true"
         className="relative flex h-full min-w-0 flex-1 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
       >
         <motion.span
@@ -488,11 +501,7 @@ function MobileTabLink({
       <motion.span
         className="relative grid size-11 place-items-center"
         animate={{
-          color: active
-            ? coachUser
-              ? "var(--coach-accent-ink)"
-              : "var(--color-btn-label)"
-            : "var(--color-secondary)",
+          color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
         }}
         whileHover={
           reduceMotion || active ? undefined : { color: "var(--color-main)" }
@@ -505,7 +514,7 @@ function MobileTabLink({
         {active ? (
           <motion.span
             layoutId="mobile-tab-active-circle"
-            className={`absolute inset-0 rounded-full ${coachUser ? "bg-[var(--coach-accent-soft)]" : "bg-[var(--color-btn)]"}`}
+            className="absolute inset-0 rounded-full bg-[var(--color-btn)]"
             transition={transition}
             aria-hidden
           />
@@ -694,31 +703,28 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
   );
 }
 
-/** The active item wears the coach's ink for a coach, so their chrome says whose tool this is. */
-function activeNavTone(coach: boolean) {
-  return coach
-    ? { className: "bg-[var(--coach-accent-soft)]", color: "var(--coach-accent-ink)" }
-    : {
-        className: "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]",
-        color: "var(--color-main)",
-      };
-}
+/**
+ * The active item, the same for every role: whose tool this is is said by the "Koç" badge under
+ * the name, not by the navigation's colour (DESIGN.md §6 Tab bar).
+ */
+const ACTIVE_NAV_TONE = {
+  className: "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]",
+  color: "var(--color-main)",
+};
 
 function NavLink({
   item,
   label,
   active,
-  coach,
   examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
-  coach: boolean;
   examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
-  const tone = activeNavTone(coach);
+  const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link
@@ -745,17 +751,15 @@ function CollapsedNavLink({
   item,
   label,
   active,
-  coach,
   examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
-  coach: boolean;
   examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
-  const tone = activeNavTone(coach);
+  const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link

@@ -1145,3 +1145,33 @@ html.dark .mentor-theme-lamp {
   --lamp-shade-rim: #3f5075;
   --lamp-cord: color-mix(in srgb, var(--color-secondary) 80%, transparent);
 }
+
+/*
+ * App chrome during a view transition (only the coach screens start one today, `coach-theme.css`).
+ * The names are set in `app-nav.tsx`; the rules live here so any surface that adopts a view
+ * transition finds the chrome pinned, whichever page loaded first. The chrome holds still above the
+ * moving page. While a transition runs, named elements (the page and the chrome) are skipped by
+ * hit-testing, and the overlay itself lets clicks through: keep transitions short.
+ */
+::view-transition-group(app-topbar),
+::view-transition-group(app-tabbar),
+::view-transition-group(app-sidebar) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(app-topbar),
+::view-transition-old(app-tabbar),
+::view-transition-old(app-sidebar) {
+  display: none;
+}
+
+::view-transition-new(app-topbar),
+::view-transition-new(app-tabbar),
+::view-transition-new(app-sidebar) {
+  animation: none;
+}
+
+::view-transition {
+  pointer-events: none;
+}

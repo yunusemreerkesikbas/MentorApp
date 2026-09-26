@@ -30,7 +30,8 @@ export function FollowupCreateForm({
 }: {
   studentId: string;
   replacesId: string | null;
-  onSaved: () => void;
+  /** Gets the new record's id, so the history can mark it as it arrives. */
+  onSaved: (createdId: string) => void;
   onCancel: () => void;
 }) {
   const t = useTranslations("mentorship");
@@ -59,11 +60,11 @@ export function FollowupCreateForm({
     };
     pending.current = operationForDraft(pending.current, draft, () => crypto.randomUUID());
     try {
-      await createFollowup(studentId, {
+      const created = await createFollowup(studentId, {
         ...draft,
         operationId: pending.current.operationId,
       });
-      onSaved();
+      onSaved(created.id);
     } catch (failure) {
       setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
     } finally {

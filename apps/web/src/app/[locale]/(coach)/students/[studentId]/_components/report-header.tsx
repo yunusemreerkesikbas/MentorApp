@@ -1,12 +1,15 @@
 "use client";
 
-import { useMemo, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Check, ChevronLeft, ChevronRight, Ellipsis } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import { Skeleton } from "@mentor/ui";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link } from "@/i18n/navigation";
+import { CoachCheck } from "@/components/mentorship/coach-check";
+import { COACH_FAST } from "@/components/mentorship/coach-motion";
 import { daysSinceMark, isAttended } from "../../../_components/attention";
 import { sortFlags } from "../../../_components/flag-order";
 import { formatDate } from "../../../_components/mentorship-format";
@@ -22,7 +25,7 @@ import { StudentAvatar } from "../../../_components/student-avatar";
 const noSubscription = () => () => {};
 
 const PILL =
-  "inline-flex min-h-11 items-center gap-2.5 rounded-full border border-[var(--play-line)] bg-[var(--color-surface)] py-1 pl-1.5 pr-2 shadow-[0_2px_0_var(--play-line)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
+  "inline-flex min-h-11 items-center gap-2.5 rounded-full border border-[var(--play-line)] bg-[var(--color-surface)] py-1 pl-1.5 pr-2 shadow-[0_2px_0_var(--play-line)] outline-none [--glow-base:0_2px_0_var(--play-line)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
 
 /**
  * Who this is and what the rules flagged, with the acts that belong to the whole student: the
@@ -30,6 +33,9 @@ const PILL =
  *
  * "Sıradaki" walks the round the roster saved in this tab. A report opened from a link, a
  * notification or another tab has no round behind it, and then the header says nothing.
+ *
+ * Marking the student here is a small moment (Durak F): the mark draws its ✓, "Bugün baktın" rises
+ * in, and the "Sıradaki" pill rings once, since that is where the round goes on.
  */
 export function ReportHeader({
   studentId,
@@ -60,12 +66,20 @@ export function ReportHeader({
   const t = useTranslations("mentorship");
   const raw = useSyncExternalStore(noSubscription, readRoundOrderRaw, () => null);
   const next = useMemo(() => nextInRound(parseRoundOrder(raw), studentId), [raw, studentId]);
+  // Only a mark made on this screen animates; the one the report loaded with is simply there.
+  const [pressed, setPressed] = useState(false);
+  const glow = pressed && report !== null && isAttended(report);
+  const toggle = (attended: boolean) => {
+    setPressed(true);
+    onToggleAttention(attended);
+  };
 
   return (
     <header className="flex flex-col gap-2">
       <div className="flex min-h-11 flex-wrap items-center justify-between gap-3">
         <Link
           href="/students"
+          transitionTypes={["nav-back"]}
           className="-ml-1 inline-flex min-h-11 items-center gap-0.5 rounded-[var(--radius-card)] pr-2 text-body-sm font-extrabold text-[var(--play-selected-ink)] outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
         >
           <ChevronLeft className="size-5" aria-hidden />
@@ -75,7 +89,7 @@ export function ReportHeader({
             the link moves beside the coach's mark, which is where the round moves on from anyway. */}
         {next ? (
           <div className="hidden lg:block">
-            <RoundNextLink next={next} />
+            <RoundNextLink next={next} glow={glow} />
           </div>
         ) : null}
       </div>
@@ -85,10 +99,12 @@ export function ReportHeader({
           report={report}
           next={next}
           today={today}
+          pressed={pressed}
+          glow={glow}
           marking={marking}
           ending={ending}
           showArchive={showArchive}
-          onToggleAttention={onToggleAttention}
+          onToggleAttention={toggle}
           onOpenArchive={onOpenArchive}
           onEndLink={onEndLink}
         />
@@ -109,11 +125,12 @@ export function ReportHeader({
  * "Sıradaki: Ece ›" on the round, "Turun sonu ›" back to the roster on its last stop. Not "tur
  * tamam": the coach may have marked nobody on the way, and the roster would still say who waits.
  */
-function RoundNextLink({ next }: { next: RoundNext }) {
+function RoundNextLink({ next, glow }: { next: RoundNext; glow: boolean }) {
   const t = useTranslations("mentorship");
+  const className = `${PILL} ${glow ? "coach-glow" : ""}`;
   if (next.kind === "complete") {
     return (
-      <Link href="/students" className={PILL} data-testid="round-next">
+      <Link href="/students" transitionTypes={["nav-forward"]} className={className} data-testid="round-next">
         <span
           aria-hidden
           className="grid size-8 place-items-center rounded-full bg-[var(--coach-accent)] text-[var(--color-bg)]"
@@ -128,8 +145,9 @@ function RoundNextLink({ next }: { next: RoundNext }) {
   return (
     <Link
       href={{ pathname: "/students/[studentId]", params: { studentId: next.studentId } }}
+      transitionTypes={["nav-forward"]}
       aria-label={t("next_aria", { name: next.name })}
-      className={PILL}
+      className={className}
       data-testid="round-next"
     >
       <StudentAvatar name={next.name} src={null} size={32} />
@@ -146,6 +164,8 @@ function Identity({
   report,
   next,
   today,
+  pressed,
+  glow,
   marking,
   ending,
   showArchive,
@@ -156,6 +176,9 @@ function Identity({
   report: MentorshipStudentReportDto;
   next: RoundNext | null;
   today: string;
+  /** The coach pressed the mark on this screen: its ✓ draws. */
+  pressed: boolean;
+  glow: boolean;
   marking: boolean;
   ending: boolean;
   showArchive: boolean;
@@ -190,12 +213,21 @@ function Identity({
               <RiskChip key={flag} flag={flag} />
             ))}
             {/* When the coach looked: said here, so the toggle can keep one name in both states. */}
-            {attended ? (
-              <span className="inline-flex items-center gap-1 text-body-sm font-extrabold text-[var(--coach-accent-ink)]">
-                <Check className="size-4" strokeWidth={3} aria-hidden />
-                {seen}
-              </span>
-            ) : null}
+            <AnimatePresence initial={false}>
+              {attended ? (
+                <motion.span
+                  key="seen"
+                  initial={{ opacity: 0, y: 4 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  transition={COACH_FAST}
+                  className="inline-flex items-center gap-1 text-body-sm font-extrabold text-[var(--coach-accent-ink)]"
+                >
+                  <CoachCheck draw={pressed} className="size-4" />
+                  {seen}
+                </motion.span>
+              ) : null}
+            </AnimatePresence>
           </div>
         </div>
       </div>
@@ -209,13 +241,13 @@ function Identity({
             disabled={marking}
             onClick={() => onToggleAttention(!attended)}
             data-testid="report-attention"
-            className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border-2 px-4 text-body-sm font-extrabold outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-wait motion-reduce:transition-none ${
+            className={`inline-flex h-11 cursor-pointer items-center gap-2 rounded-full border-2 px-4 text-body-sm font-extrabold outline-none transition-[color,background-color,border-color,scale] duration-150 ease-[var(--ease-smooth-out)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-95 disabled:cursor-wait motion-reduce:transition-none ${
               attended
                 ? "border-[var(--coach-accent)] bg-[var(--coach-accent)] text-[var(--color-bg)]"
                 : "border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] hover:border-[var(--coach-accent)]"
             }`}
           >
-            <Check className="size-4.5" strokeWidth={3} aria-hidden />
+            <CoachCheck key={String(attended)} draw={attended && pressed} className="size-4.5" />
             {t("attention_mark")}
           </button>
         ) : null}
@@ -243,7 +275,7 @@ function Identity({
         </PopoverMenu>
         {next ? (
           <div className="ml-auto lg:hidden">
-            <RoundNextLink next={next} />
+            <RoundNextLink next={next} glow={glow} />
           </div>
         ) : null}
       </div>

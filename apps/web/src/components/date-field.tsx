@@ -17,6 +17,7 @@ export function DateField({
   required,
   clearLabel,
   menuClassName,
+  display = "numeric",
   onChange,
 }: {
   label: string;
@@ -28,18 +29,21 @@ export function DateField({
   clearLabel?: string;
   /** Extra classes on the portaled calendar panel (e.g. a scoped theme class). */
   menuClassName?: string;
+  /** How the chosen day reads: "25.09.2026" by default, "24 Eylül Perşembe" when `long`. */
+  display?: "numeric" | "long";
   onChange: (value: string) => void;
 }) {
   const t = useTranslations("common.date_picker");
   const locale = useLocale();
   const labelId = useId();
   const [open, setOpen] = useState(false);
-  const display = value
-    ? new Intl.DateTimeFormat(locale, {
-        day: "2-digit",
-        month: "2-digit",
-        year: "numeric",
-      }).format(new Date(`${value}T12:00:00`))
+  const shown = value
+    ? new Intl.DateTimeFormat(
+        locale,
+        display === "long"
+          ? { weekday: "long", day: "numeric", month: "long" }
+          : { day: "2-digit", month: "2-digit", year: "numeric" },
+      ).format(new Date(`${value}T12:00:00`))
     : "";
 
   return (
@@ -73,7 +77,7 @@ export function DateField({
               fontFamily: "var(--font-body)",
             }}
           >
-            <span className="min-w-0 flex-1 truncate text-sm">{display}</span>
+            <span className="min-w-0 flex-1 truncate text-sm">{shown}</span>
             {clearLabel && value && !disabled ? (
               <button
                 type="button"

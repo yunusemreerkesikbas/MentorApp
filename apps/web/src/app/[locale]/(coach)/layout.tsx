@@ -5,7 +5,8 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { CoachShell } from "./coach-shell";
-// Signal hues, scoped to `.coach-signals` on the shell.
+import { CoachMotionConfig } from "./_components/coach-motion-config";
+// Signal hues (`.coach-signals` on the shell) and the coach's motion classes.
 import "./_components/coach-theme.css";
 
 /**
@@ -41,7 +42,9 @@ export default async function CoachLayout({
   );
   return (
     <NextIntlClientProvider messages={messages}>
-      <CoachShell>{children}</CoachShell>
+      <CoachMotionConfig>
+        <CoachShell>{children}</CoachShell>
+      </CoachMotionConfig>
     </NextIntlClientProvider>
   );
 }

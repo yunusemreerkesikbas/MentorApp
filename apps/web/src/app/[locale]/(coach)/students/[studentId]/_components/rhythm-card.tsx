@@ -5,6 +5,7 @@ import { Flame } from "lucide-react";
 import { useFormatter, useTranslations, type DateTimeFormatOptions } from "next-intl";
 import type { MentorshipStudentReportDto } from "@mentor/types";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
+import { drawOrder } from "@/components/mentorship/coach-motion";
 import { ActivityLegend, FUTURE_CELL_CLASS } from "../../../_components/activity-strip";
 import { ACTIVITY_TONE_CLASS, activityTone } from "../../../_components/activity-tone";
 import { durationLabel, hasTrace } from "./report-format";
@@ -15,6 +16,7 @@ const CELL = "size-7.5 rounded-[var(--radius-card)]";
 /**
  * "Çalışma ritmi": four calendar weeks of focus drawn on the roster's ramp, rows aligned with the
  * week above, then the totals and the streak. The 28-day numbers live here and nowhere else.
+ * The grid fills once in a diagonal wave (column + row) when the report arrives.
  */
 export function RhythmCard({
   report,
@@ -35,7 +37,7 @@ export function RhythmCard({
     format.dateTime(new Date(`${iso}T00:00:00.000Z`), { ...options, timeZone: "UTC" });
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-4`} aria-labelledby="rhythm-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-4`} aria-labelledby="rhythm-title">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="rhythm-title" className={PANEL_CARD_TITLE}>
           {t("rhythm_title")}
@@ -60,9 +62,10 @@ export function RhythmCard({
             })}
             className="grid grid-cols-7 gap-1.5"
           >
-            {rhythm.cells.map((cell) => (
+            {rhythm.cells.map((cell, index) => (
               <span
                 key={cell.date}
+                style={drawOrder((index % 7) + Math.floor(index / 7))}
                 title={
                   cell.minutes === null
                     ? undefined
@@ -71,7 +74,7 @@ export function RhythmCard({
                         minutes: cell.minutes,
                       })
                 }
-                className={`${CELL} ${cell.minutes === null ? FUTURE_CELL_CLASS : ACTIVITY_TONE_CLASS[activityTone(cell.minutes)]}`}
+                className={`coach-draw-cell ${CELL} ${cell.minutes === null ? FUTURE_CELL_CLASS : ACTIVITY_TONE_CLASS[activityTone(cell.minutes)]}`}
               />
             ))}
           </div>

@@ -2,6 +2,7 @@
 
 import { Check } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
+import { drawOrder } from "@/components/mentorship/coach-motion";
 import type { FilmDay } from "./week-filmstrip-model";
 
 /** A two-hour day fills the column; more than that still reads as a full day. */
@@ -40,7 +41,8 @@ export function FilmMark({ mark }: { mark: Mark }) {
 /**
  * The student's week drawn day by day (DESIGN.md §6.1 "Hafta şeridi"): the minutes as a bar, the
  * coach's tasks as ink-blue marks, the student's own as small dots, and the days to come as frames.
- * Each day is one sentence for a screen reader; the drawing is hidden from it.
+ * Each day is one sentence for a screen reader; the drawing is hidden from it. The bars rise once,
+ * left to right, when the week arrives, and the marks settle after them.
  */
 export function WeekFilmstrip({ days }: { days: readonly FilmDay[] }) {
   const t = useTranslations("mentorship");
@@ -49,7 +51,7 @@ export function WeekFilmstrip({ days }: { days: readonly FilmDay[] }) {
 
   return (
     <ol aria-label={t("week_film_label")} className="grid grid-cols-7 gap-1 sm:gap-1.5">
-      {days.map((day) => {
+      {days.map((day, dayIndex) => {
         const marks = marksOf(day);
         const shown = marks.slice(0, MAX_MARKS);
         const extra = marks.length - shown.length;
@@ -94,12 +96,16 @@ export function WeekFilmstrip({ days }: { days: readonly FilmDay[] }) {
                 <span className="h-1 w-6 rounded-full bg-[var(--play-track)] sm:w-7" />
               ) : (
                 <span
-                  className="w-6 rounded-t-[var(--radius-card)] bg-[var(--chart-activity-2)] sm:w-7"
-                  style={{ height }}
+                  className="coach-draw-rise w-6 rounded-t-[var(--radius-card)] bg-[var(--chart-activity-2)] sm:w-7"
+                  style={{ height, ...drawOrder(dayIndex) }}
                 />
               )}
             </span>
-            <span aria-hidden className="flex h-5 items-center justify-center gap-0.5 sm:gap-1">
+            <span
+              aria-hidden
+              className="coach-draw-pop flex h-5 items-center justify-center gap-0.5 sm:gap-1"
+              style={drawOrder(dayIndex)}
+            >
               {shown.map((mark, index) => (
                 <FilmMark key={index} mark={mark} />
               ))}

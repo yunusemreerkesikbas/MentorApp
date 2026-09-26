@@ -1,13 +1,16 @@
 "use client";
 
+import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { Check, Flag } from "lucide-react";
+import { Flag } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { MentorshipRiskFlag } from "@mentor/types";
 import { PATH_NODE_BASE, PATH_NODE_TONE, PathItem } from "@/components/panel/path-item";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { useRouter } from "@/i18n/navigation";
 import { firstName } from "@/lib/greeting";
+import { CoachCheck } from "@/components/mentorship/coach-check";
+import { COACH_PROGRESS } from "@/components/mentorship/coach-motion";
 import { daysSince } from "../../_components/mentorship-format";
 import { RISK_FLAG_HUE } from "../../_components/risk-chip";
 import { initialsOf } from "../../_components/student-avatar";
@@ -39,6 +42,10 @@ function reasonOf(node: RoundNode, t: T): string {
  * Today's round as a path (DESIGN.md §6.1): who the coach has seen, who is next (the only big
  * node), who waits after them, and the finish. A node opens a small menu rather than acting on the
  * tap, like the panel path, so a thumb brushing the path never marks a student by accident.
+ *
+ * Marking a student is the round's progress moment (Durak F, under 400 ms): the node draws its ✓,
+ * the connector fills toward the next student, whose node grows from its centre while the
+ * "Sıradaki" tip glides over to it.
  */
 export function CoachRoundPath({
   round,
@@ -87,6 +94,7 @@ export function CoachRoundPath({
             // The connector into the next student is drawn in ink: the coach has walked up to them.
             reached={reachedUntil === -1 || offset <= reachedUntil}
             tone="coach"
+            animateReach
             title={firstName(node.row.studentDisplayName)}
             meta={
               node.state === "done" ? (
@@ -139,6 +147,7 @@ export function CoachRoundPath({
         index={1}
         reached={complete}
         tone="coach"
+        animateReach
         title={t("round_node_end")}
         node={
           <motion.span
@@ -176,61 +185,87 @@ function StudentNode({
   const { row, state } = node;
   const tone =
     state === "done" ? TONE.done : state === "current" ? PATH_NODE_TONE.current : TONE.upcoming;
+  // A node that turns done on this screen draws its ✓; one that loaded done stays still.
+  const [loadedDone] = useState(state === "done");
+  // The size step (48 ↔ 64 px) as a one-shot scale from the node's centre: the button takes its new
+  // size at once and eases in from the old one. Only a change seen on this screen plays it.
+  const [shownState, setShownState] = useState(state);
+  const [step, setStep] = useState<"grow" | "shrink" | null>(null);
+  if (state !== shownState) {
+    setStep(state === "current" ? "grow" : shownState === "current" ? "shrink" : null);
+    setShownState(state);
+  }
 
   return (
-    <PopoverMenu
-      align="left"
-      menuClassName="w-56 py-1"
-      trigger={({ open, setOpen, menuId }) => (
-        <button
-          type="button"
-          className={`${PATH_NODE_BASE} ${tone} cursor-pointer font-black disabled:cursor-wait ${state === "current" ? "text-title" : "text-body-sm"}`}
-          aria-haspopup="menu"
-          aria-expanded={open}
-          aria-controls={open ? menuId : undefined}
-          aria-label={[row.studentDisplayName, t(`round_node_state_${state}`), state === "done" ? null : reason]
-            .filter(Boolean)
-            .join(", ")}
-          disabled={busy}
-          onClick={() => setOpen(!open)}
-          data-testid="round-node"
+    <div className="relative">
+      {state === "current" ? (
+        // One tip on the path; `layoutId` carries it from the student just seen to the next. It
+        // sits outside the scaling node so its glide measures a still box. The node's name says
+        // "sıradaki" already, so the tip is for the eye only.
+        <motion.span
+          layoutId="round-next-tip"
+          transition={COACH_PROGRESS}
+          aria-hidden
+          className="pointer-events-none absolute -top-9 left-1/2 z-[2] -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-card)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-black text-[var(--play-selected-ink)]"
+          data-testid="round-next-tip"
         >
-          {state === "current" ? (
-            <span className="absolute -top-9 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-[var(--radius-card)] border-2 border-[var(--play-line)] bg-[var(--color-surface)] px-2.5 py-0.5 text-xs font-black text-[var(--play-selected-ink)]">
-              {t("round_node_next")}
-            </span>
-          ) : null}
-          {state === "done" ? (
-            <Check className="size-6" strokeWidth={3} aria-hidden />
-          ) : (
-            <span aria-hidden>{initialsOf(row.studentDisplayName)}</span>
+          {t("round_node_next")}
+        </motion.span>
+      ) : null}
+      <div className={step === "grow" ? "coach-node-grow" : step === "shrink" ? "coach-node-shrink" : undefined}>
+        <PopoverMenu
+          align="left"
+          menuClassName="w-56 py-1"
+          trigger={({ open, setOpen, menuId }) => (
+            <button
+              type="button"
+              className={`${PATH_NODE_BASE} ${tone} cursor-pointer font-black disabled:cursor-wait ${state === "current" ? "text-title" : "text-body-sm"}`}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-controls={open ? menuId : undefined}
+              aria-label={[row.studentDisplayName, t(`round_node_state_${state}`), state === "done" ? null : reason]
+                .filter(Boolean)
+                .join(", ")}
+              disabled={busy}
+              onClick={() => setOpen(!open)}
+              data-testid="round-node"
+            >
+              {state === "done" ? (
+                <CoachCheck draw={!loadedDone} className="size-6" />
+              ) : (
+                <span aria-hidden>{initialsOf(row.studentDisplayName)}</span>
+              )}
+              {node.flag ? (
+                <span
+                  aria-hidden
+                  className={`absolute size-4 rounded-full border-[3px] border-[var(--color-surface)] ${state === "current" ? "right-0.5 top-0.5" : "-right-0.5 -top-0.5"}`}
+                  style={{ backgroundColor: `var(${RISK_FLAG_HUE[node.flag]})` }}
+                />
+              ) : null}
+            </button>
           )}
-          {node.flag ? (
-            <span
-              aria-hidden
-              className={`absolute size-4 rounded-full border-[3px] border-[var(--color-surface)] ${state === "current" ? "right-0.5 top-0.5" : "-right-0.5 -top-0.5"}`}
-              style={{ backgroundColor: `var(${RISK_FLAG_HUE[node.flag]})` }}
-            />
-          ) : null}
-        </button>
-      )}
-    >
-      <PopoverMenuItem
-        onClick={() =>
-          router.push({ pathname: "/students/[studentId]", params: { studentId: row.studentId } })
-        }
-      >
-        {t("round_menu_open")}
-      </PopoverMenuItem>
-      {state === "done" ? (
-        <PopoverMenuItem onClick={() => onMark(row.studentId, false)}>
-          {t("round_menu_undo")}
-        </PopoverMenuItem>
-      ) : (
-        <PopoverMenuItem onClick={() => onMark(row.studentId, true)}>
-          {t("attention_mark")}
-        </PopoverMenuItem>
-      )}
-    </PopoverMenu>
+        >
+          <PopoverMenuItem
+            onClick={() =>
+              router.push(
+                { pathname: "/students/[studentId]", params: { studentId: row.studentId } },
+                { transitionTypes: ["nav-forward"] },
+              )
+            }
+          >
+            {t("round_menu_open")}
+          </PopoverMenuItem>
+          {state === "done" ? (
+            <PopoverMenuItem onClick={() => onMark(row.studentId, false)}>
+              {t("round_menu_undo")}
+            </PopoverMenuItem>
+          ) : (
+            <PopoverMenuItem onClick={() => onMark(row.studentId, true)}>
+              {t("attention_mark")}
+            </PopoverMenuItem>
+          )}
+        </PopoverMenu>
+      </div>
+    </div>
   );
 }

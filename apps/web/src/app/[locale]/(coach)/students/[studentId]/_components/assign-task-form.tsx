@@ -9,32 +9,39 @@ import {
   CoachOverlayBody,
   CoachOverlayFooter,
 } from "@/components/coach-overlay";
+import { PANEL_QUIET_BUTTON } from "@/components/mentorship/coach-ui";
+import { todayInIstanbul } from "@/lib/date-time";
+import { firstName } from "@/lib/greeting";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks } from "@/lib/mentorship";
-import { todayInIstanbul } from "@/lib/date-time";
-import { PlanningWeek } from "./planning-week";
+import { CoachCheck, useSuccessMoment } from "@/components/mentorship/coach-check";
+import { PlanningComposer } from "./planning-composer";
 import { PlanningDraftList } from "./planning-draft-list";
-import {
-  SuggestButton,
-  TemplateLoadSelect,
-  TemplateSaveRow,
-  useProgramTemplates,
-} from "./template-bar";
+import { PlanningSources } from "./planning-sources";
+import { PlanningWeek } from "./planning-week";
 import { buildTemplateDrafts } from "./template-apply";
-import { PlanningEditor } from "./planning-editor";
-import { PlanningSource } from "./planning-source";
+import { TemplateSave, useProgramTemplates } from "./template-bar";
 import { usePlanningTasks } from "./use-planning-tasks";
 import {
   MAX_DRAFTS,
-  assignmentInput,
   MAX_DAYS_AHEAD,
+  assignmentInput,
+  composerMode,
+  hasUnsavedInput,
   monday,
   shiftDate,
+  showWeek,
   type AssignDraft,
   type PlanningState,
 } from "./planning-state";
 export type { AssignDraft } from "./planning-state";
 
+/**
+ * "Haftayı planla" (canvas "Panel · Haftayı planla"): the week and its days, what the chosen day
+ * already holds, an always-open task form, the program being composed, and where a program can
+ * start from. One filled button, the send at the foot; everything else is a text action.
+ * A send that lands draws a ✓ on that button before the panel closes (Durak F).
+ */
 export function AssignTaskForm({
   studentId,
   studentName,
@@ -64,6 +71,8 @@ export function AssignTaskForm({
   const common = useTranslations("common");
   const toast = useMentorToast();
   const locked = useRef(false);
+  const titleRef = useRef<HTMLInputElement>(null);
+  const success = useSuccessMoment();
   const [templates, setTemplates] = useProgramTemplates();
   const data = usePlanningTasks(studentId, state.week);
   const today = todayInIstanbul();
@@ -81,16 +90,15 @@ export function AssignTaskForm({
             data.rows!.filter((d) => d.taskDate === day).length,
           ]),
         );
+  const mode = composerMode(state.editor, drafts);
+  const unsaved = hasUnsavedInput(state.editor, drafts);
   const payload = drafts.map(assignmentInput);
   const valid =
     createMentorshipAssignmentsSchema.safeParse({ tasks: payload }).success &&
     drafts.every((d) => d.taskDate >= today && d.taskDate <= limit);
-  function showWeek(week: string) {
-    setState((s) => ({
-      ...s,
-      week,
-      day: week === monday(today) ? today : week,
-    }));
+
+  function moveWeek(week: string) {
+    setState((s) => showWeek(s, week, today, drafts));
   }
   function loadTemplate(template: MentorshipProgramTemplateDto) {
     if (locked.current) return;
@@ -114,7 +122,8 @@ export function AssignTaskForm({
         message: t("template_topics_cleared", { count: load.clearedTopics }),
       });
   }
-  function saveEditor() {
+  /** "Taslağa ekle" or "Değişikliği kaydet": the form's task joins (or updates) the program. */
+  function commitEditor() {
     const editor = state.editor;
     if (!editor || locked.current) return;
     setDrafts((prev) =>
@@ -129,9 +138,14 @@ export function AssignTaskForm({
       day: editor.taskDate,
     }));
   }
+  function editDraft(draft: AssignDraft) {
+    setState((s) => ({ ...s, editor: { ...draft } }));
+    // The draft now sits in the form above the list: take the keyboard there with it.
+    requestAnimationFrame(() => titleRef.current?.focus());
+  }
   async function submit(event: React.FormEvent) {
     event.preventDefault();
-    if (!valid || state.editor || locked.current || busy) return;
+    if (!valid || unsaved || locked.current || busy) return;
     locked.current = true;
     setBusy(true);
     try {
@@ -143,6 +157,7 @@ export function AssignTaskForm({
           count: drafts.length,
         }),
       });
+      await success.play();
       setDrafts([]);
       setState((s) => ({ ...s, copied: [] }));
       onAssigned();
@@ -160,106 +175,77 @@ export function AssignTaskForm({
   return (
     <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
       <CoachOverlayBody>
-        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-5 pb-4">
+        <fieldset disabled={busy} className="flex min-w-0 flex-col gap-6 pb-4">
           <PlanningWeek
             state={state}
             setState={setState}
+            drafts={drafts}
             today={today}
             limit={limit}
             days={days}
             counts={counts}
             existingCounts={existingCounts}
             data={data}
-            showWeek={showWeek}
+            showWeek={moveWeek}
           />
-          <Button
-            type="button"
-            variant="secondary"
-            className="self-start"
-            disabled={
-              drafts.length >= MAX_DRAFTS ||
-              !!state.editor ||
-              state.day < today ||
-              state.day > limit
-            }
-            onClick={() =>
-              setState((s) => ({
-                ...s,
-                editor: {
-                  key: crypto.randomUUID(),
-                  taskDate: s.day,
-                  title: "",
-                  subject: null,
-                  topic: null,
-                  coachNote: null,
-                },
-              }))
-            }
-          >
-            {t("assign_add_to_day")}
-          </Button>
-          {state.editor && (
-            <PlanningEditor
-              draft={state.editor}
-              examType={studentExamType}
-              onChange={(editor) => setState((s) => ({ ...s, editor }))}
-              onSave={saveEditor}
-              onCancel={() => setState((s) => ({ ...s, editor: null }))}
-            />
-          )}
+          <PlanningComposer
+            draft={state.editor}
+            mode={mode}
+            day={state.day}
+            dirty={unsaved}
+            examType={studentExamType}
+            studentName={firstName(studentName)}
+            titleRef={titleRef}
+            onChange={(editor) => setState((s) => ({ ...s, editor }))}
+            onCommit={commitEditor}
+            onReset={() => setState((s) => ({ ...s, editor: null }))}
+          />
           <PlanningDraftList
             drafts={drafts}
             setDrafts={setDrafts}
-            state={state}
-            setState={setState}
+            editingKey={mode === "edit" ? state.editor!.key : null}
+            editLocked={unsaved}
+            onEdit={editDraft}
             today={today}
             limit={limit}
+            footer={
+              <TemplateSave
+                templates={templates}
+                setTemplates={setTemplates}
+                drafts={drafts}
+                examType={studentExamType}
+                disabled={busy}
+              />
+            }
           />
-          <fieldset
-            disabled={!!state.editor}
-            className="flex min-w-0 flex-col gap-4"
-          >
-            <PlanningSource
-              studentId={studentId}
-              target={state.week}
-              count={drafts.length}
-              copied={state.copied}
-              onAdd={(added, keys) => {
-                setDrafts((prev) => [...prev, ...added]);
-                setState((s) => ({ ...s, copied: [...s.copied, ...keys] }));
-              }}
-            />
-            <TemplateLoadSelect
-              templates={templates}
-              disabled={busy || drafts.length >= MAX_DRAFTS}
-              onLoad={loadTemplate}
-            />
-            <SuggestButton
-              studentId={studentId}
-              onPendingChange={setBusy}
-              disabled={busy || drafts.length >= MAX_DRAFTS}
-              onLoad={loadTemplate}
-            />
-            <TemplateSaveRow
-              templates={templates}
-              setTemplates={setTemplates}
-              drafts={drafts}
-              examType={studentExamType}
-              disabled={busy}
-            />
-          </fieldset>
+          <PlanningSources
+            studentId={studentId}
+            target={state.week}
+            count={drafts.length}
+            copied={state.copied}
+            onCopy={(added, keys) => {
+              setDrafts((prev) => [...prev, ...added]);
+              setState((s) => ({ ...s, copied: [...s.copied, ...keys] }));
+            }}
+            templates={templates}
+            canLoad={!busy && drafts.length < MAX_DRAFTS}
+            onLoad={loadTemplate}
+            onPendingChange={setBusy}
+          />
         </fieldset>
       </CoachOverlayBody>
       <CoachOverlayFooter>
-        <Button
-          type="button"
-          variant="secondary"
-          disabled={busy}
-          onClick={onCancel}
-        >
+        {unsaved ? (
+          // Its own line: the two actions stay together below it.
+          <p className="basis-full text-caption font-semibold text-[var(--color-secondary)]">
+            {t(mode === "edit" ? "planning_unsaved_edit" : "planning_unsaved")}
+          </p>
+        ) : null}
+        <button type="button" className={`${PANEL_QUIET_BUTTON} px-2`} disabled={busy} onClick={onCancel}>
           {t("confirm_cancel")}
-        </Button>
-        <Button type="submit" busy={busy} disabled={!valid || !!state.editor}>
+        </button>
+        <Button type="submit" busy={busy && !success.shown} disabled={!valid || unsaved || success.shown}>
+          {success.shown ? <CoachCheck draw className="size-5" /> : null}
           {t("assign_action", { count: drafts.length })}
         </Button>
       </CoachOverlayFooter>

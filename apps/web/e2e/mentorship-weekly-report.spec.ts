@@ -110,7 +110,10 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   await section.getByRole("button", { name: "Değerlendirmeyi aç" }).click();
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
   await expect(panel).toBeVisible();
-  await expect(panel.getByText("Yok").first()).toBeVisible();
+  // The canvas table: this week against the one before; sessions and plan percentages stay in the PDF.
+  await expect(panel.getByRole("rowheader", { name: "Tamamlanan görev" })).toBeVisible();
+  await expect(panel.getByRole("cell", { name: "3 sa", exact: true })).toBeVisible();
+  await expect(panel.getByText("Seans", { exact: true })).toHaveCount(0);
   // The subject's name, never its slug.
   await expect(panel.getByText("Türkçe", { exact: true })).toBeVisible();
   await expect(panel.getByText("turkce")).toHaveCount(0);
@@ -120,7 +123,7 @@ test("koç haftalık raporu açık istekle hazırlar ve sonlandırır", async ({
   expect(api.briefCalls).toBe(1);
 
   await panel
-    .getByLabel("Koç değerlendirmesi")
+    .getByLabel("Öğrenciyle paylaşılacak değerlendirme")
     .fill("Ritmi birlikte koruyalım.");
   await panel.getByRole("button", { name: "Raporu sonlandır" }).click();
   await expect(
@@ -147,6 +150,8 @@ test("görüşme hazırlığı yönlendirmeyi korur, değişikliği belirtir ve 
   const open = page.getByRole("button", { name: "Değerlendirmeyi aç" });
   await open.click();
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
+  // The focus waits behind its link; once written, the panel opens with it showing.
+  await panel.getByRole("button", { name: "Odak konusu ekle (isteğe bağlı)" }).click();
   const context = panel.getByLabel("Bu görüşmede odaklanmak istediğin konu");
   await expect(context).toHaveAttribute("maxlength", "500");
   await context.fill("Program yoğunluğunu konuşacağız.");
@@ -178,6 +183,9 @@ test("görüşme hazırlığı yönlendirmeyi korur, değişikliği belirtir ve 
   await panel
     .getByRole("button", { name: "Önceki hafta", exact: true })
     .click();
+  // That week has no focus written: its field starts closed, and opened it is empty.
+  await expect(context).toHaveCount(0);
+  await panel.getByRole("button", { name: "Odak konusu ekle (isteğe bağlı)" }).click();
   await expect(context).toHaveValue("");
   await expect(
     panel.getByRole("heading", { name: "Görüşmenin odağı" }),
@@ -200,7 +208,8 @@ test("panelde başka haftaya bakmak kartın haftasını değiştirmez", async ({
   await section.getByRole("button", { name: "Değerlendirmeyi aç" }).click();
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
   await panel.getByRole("button", { name: "Önceki hafta", exact: true }).click();
-  await expect(panel).toContainText("24");
+  await expect(panel.getByText(/^Ayşe Yılmaz · 24 Ağustos/)).toBeVisible();
+  await expect(panel.getByRole("button", { name: "Vazgeç" })).toBeEnabled();
   await page.keyboard.press("Escape");
   await expect(panel).toHaveCount(0);
   await expect(section).toContainText("6 Eylül");

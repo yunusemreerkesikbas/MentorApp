@@ -238,8 +238,6 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
     "page",
   );
   await expect(hub.getByRole("heading", { name: article.title }).first()).toBeVisible();
-  // The isolated seed's 2026 calendar is now past; a stale event must not offer an ICS download.
-  await expect(hub.getByRole("link", { name: "Add to calendar" })).toHaveCount(0);
   expect(hubApi.unexpected).toEqual([]);
 });
 

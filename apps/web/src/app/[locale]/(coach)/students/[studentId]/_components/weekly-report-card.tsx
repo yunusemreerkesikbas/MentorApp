@@ -2,6 +2,7 @@
 
 import { FileText } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { TextSwap } from "@mentor/ui";
 import {
   PANEL_CARD,
   PANEL_CARD_TITLE,
@@ -53,14 +54,17 @@ export function WeeklyReportCard({
   const beforeLink = period !== null && joinedOn != null && joinedOn > period.endDate;
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-2`} aria-labelledby="weekly-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-2`} aria-labelledby="weekly-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="weekly-title" className={PANEL_CARD_TITLE}>
           {t("weekly_report_title")}
         </h2>
         {period && !beforeLink ? (
           <span className="inline-flex h-6 items-center rounded-[var(--radius-card)] bg-[var(--color-surface-container)] px-2 text-xs font-extrabold text-[var(--color-body)]">
-            {finalized ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+            {/* Finalizing in the panel swaps the word here too, in place. */}
+            <TextSwap
+              text={finalized ? t("weekly_report_status_finalized") : t("weekly_report_status_draft")}
+            />
           </span>
         ) : null}
       </div>

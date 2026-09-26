@@ -23,6 +23,7 @@ export function PathItem({
   title,
   meta,
   tone = "play",
+  animateReach = false,
 }: {
   index: number;
   reached: boolean;
@@ -31,14 +32,23 @@ export function PathItem({
   meta?: ReactNode;
   /** The reached connector's ink: the student's sky blue, or the coach's ink blue on the round. */
   tone?: "play" | "coach";
+  /** The connector fills toward this stop when it becomes reached (the coach's round). */
+  animateReach?: boolean;
 }) {
   const reachedClass = tone === "coach" ? "bg-[var(--coach-accent)]" : "bg-[var(--play-cta)]";
+  const connector = "absolute right-1/2 top-[30px] z-0 h-1 w-full rounded-full sm:top-[34px]";
   return (
     <li className="relative flex w-[76px] shrink-0 flex-col items-center gap-2 px-1 text-center sm:w-auto sm:min-w-0 sm:flex-1">
-      {index > 0 ? (
+      {index > 0 && animateReach ? (
+        <span aria-hidden className={`${connector} bg-[var(--play-track)]`}>
+          <span
+            className={`block size-full origin-left rounded-full transition-[scale] duration-300 ease-[var(--ease-smooth-out)] motion-reduce:transition-none ${reachedClass} ${reached ? "scale-x-100" : "scale-x-0"}`}
+          />
+        </span>
+      ) : index > 0 ? (
         <span
           aria-hidden
-          className={`absolute right-1/2 top-[30px] z-0 h-1 w-full rounded-full sm:top-[34px] ${reached ? reachedClass : "bg-[var(--play-track)]"}`}
+          className={`${connector} ${reached ? reachedClass : "bg-[var(--play-track)]"}`}
         />
       ) : null}
       <div className="relative z-[1] flex h-16 items-center sm:h-[72px]">

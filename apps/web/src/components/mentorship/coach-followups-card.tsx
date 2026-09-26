@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
@@ -9,6 +9,7 @@ import { fetchMentorshipFollowups } from "@/lib/mentorship-followups";
 import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 import { NOTE_CLASS } from "./coach-ui";
 import { CoachFollowupItem } from "./coach-followup-item";
+import { openFollowupId } from "./followup-accordion";
 import { FollowupCreateForm } from "./followup-create-form";
 import { FollowupPageState, FollowupPagination } from "./followup-page-state";
 import { useFollowupPage } from "./use-followup-page";
@@ -45,6 +46,13 @@ export function CoachFollowupsPanel({
   onCompose: (next: FollowupCompose | null) => void;
 }) {
   const t = useTranslations("mentorship");
+  // What the coach last opened or closed; undefined until they choose (see `openFollowupId`).
+  const [choice, setChoice] = useState<string | null | undefined>(undefined);
+  // The record just written (arrives tinted) and the one just completed (its tag draws a ✓).
+  const [arrivedId, setArrivedId] = useState<string | null>(null);
+  const [completedId, setCompletedId] = useState<string | null>(null);
+  const items = resource.data?.items ?? [];
+  const openId = openFollowupId(items, choice);
 
   if (compose) {
     return (
@@ -53,8 +61,9 @@ export function CoachFollowupsPanel({
         studentId={studentId}
         replacesId={compose.replacesId}
         onCancel={() => onCompose(null)}
-        onSaved={() => {
+        onSaved={(createdId) => {
           // Back to the history, first page, where the record just written is waiting.
+          setArrivedId(createdId);
           onCompose(null);
           resource.setPage(1);
           resource.reload();
@@ -66,7 +75,7 @@ export function CoachFollowupsPanel({
   return (
     <>
       <CoachOverlayBody>
-        <div className="flex flex-col gap-5 pb-4">
+        <div className="flex flex-col gap-4 pb-4">
           <p className={`${NOTE_CLASS} max-w-[56ch]`}>{t("followup_history_body")}</p>
           <FollowupPageState loading={resource.loading} error={resource.error} retry={resource.reload}>
             {resource.data?.items.length === 0 ? (
@@ -74,18 +83,43 @@ export function CoachFollowupsPanel({
                 {t("followup_history_empty")}
               </p>
             ) : null}
-            <div className="flex flex-col gap-3">
-              {resource.data?.items.map((item) => (
+            <ul className="flex flex-col border-b border-[var(--play-line)] empty:hidden">
+              {items.map((item) => (
                 <CoachFollowupItem
                   key={`${item.id}:${item.version}`}
                   item={item}
-                  onChanged={resource.reload}
+                  open={item.id === openId}
+                  arrived={item.id === arrivedId}
+                  justCompleted={item.id === completedId}
+                  onToggle={() => {
+                    setArrivedId(null);
+                    setChoice(item.id === openId ? null : item.id);
+                  }}
+                  onChanged={(status) => {
+                    // The record just acted on stays open, closed or not: its next step is there.
+                    setArrivedId(null);
+                    setCompletedId(status === "COMPLETED" ? item.id : null);
+                    setChoice(item.id);
+                    resource.reload();
+                  }}
                   onError={resource.showError}
                   onReplace={() => onCompose({ replacesId: item.id })}
                 />
               ))}
-            </div>
-            {resource.data ? <FollowupPagination {...resource.data} onChange={resource.setPage} /> : null}
+            </ul>
+            {resource.data ? (
+              <FollowupPagination
+                {...resource.data}
+                quiet
+                onChange={(page) => {
+                  setChoice(undefined);
+                  // A new page is a fresh read: nothing on it "just" arrived or completed.
+                  setArrivedId(null);
+                  setCompletedId(null);
+                  resource.setPage(page);
+                }}
+              />
+            ) : null}
           </FollowupPageState>
         </div>
       </CoachOverlayBody>

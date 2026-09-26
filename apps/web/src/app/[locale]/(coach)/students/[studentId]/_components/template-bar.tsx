@@ -1,12 +1,16 @@
 "use client";
 
 import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, TextField } from "@mentor/ui";
-import { NOTE_CLASS } from "@/components/mentorship/coach-ui";
-import { PLANNER_SUBHEAD } from "./planning-week";
+import { Button, ShimmerText, TextField } from "@mentor/ui";
+import {
+  NOTE_CLASS,
+  PANEL_LINK_BUTTON,
+  PANEL_QUIET_BUTTON,
+} from "@/components/mentorship/coach-ui";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -15,20 +19,17 @@ import {
   saveTemplate,
   suggestAssignments,
 } from "@/lib/mentorship";
-import { ComposerSelect } from "./composer-select";
 import { toTemplateTasks, type DatedDraft } from "./template-apply";
 
 /**
- * Save / load / delete for the composer's saved programs, plus the AI suggestion that arrives
- * through the same door.
+ * Save / delete for the composer's saved programs, plus the AI suggestion that arrives through the
+ * same door a template does. Loading one is a menu among the planner's sources
+ * (`planning-sources.tsx`); saving sits under the program it would save.
  *
- * Split into pieces because the planner shows them in two places: loading and the suggestion open
- * the panel ("Hızlı başlangıç"), saving closes it, once there is a week worth keeping. The list
- * lives in `useProgramTemplates` so both ends read the same rows.
- *
- * Loading fills the composer client-side — there is no server-side "apply" — so the coach sees
- * exactly what will be written and the subject/topic picker stays the only real gate on a program
- * built against another exam's taxonomy.
+ * The list lives in `useProgramTemplates` so both ends read the same rows. Loading fills the
+ * composer client-side (there is no server-side "apply"), so the coach sees exactly what will be
+ * written and the subject/topic picker stays the only real gate on a program built against another
+ * exam's taxonomy.
  */
 export function useProgramTemplates() {
   const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>(
@@ -61,41 +62,6 @@ function useShowError() {
     });
 }
 
-export function TemplateLoadSelect({
-  templates,
-  disabled,
-  onLoad,
-}: {
-  templates: readonly MentorshipProgramTemplateDto[];
-  disabled: boolean;
-  onLoad: (template: MentorshipProgramTemplateDto) => void;
-}) {
-  const t = useTranslations("mentorship");
-  return (
-    <ComposerSelect
-      label={t("template_load")}
-      value=""
-      placeholder={
-        templates.length === 0
-          ? t("template_none")
-          : t("template_load_placeholder")
-      }
-      options={templates.map((row) => ({
-        value: row.id,
-        label: t("template_option", {
-          name: row.name,
-          count: row.tasks.length,
-        }),
-      }))}
-      disabled={disabled || templates.length === 0}
-      onChange={(id) => {
-        const template = templates.find((row) => row.id === id);
-        if (template) onLoad(template);
-      }}
-    />
-  );
-}
-
 /**
  * The model drafts a week; it arrives through the SAME door a saved program does.
  *
@@ -104,7 +70,7 @@ export function TemplateLoadSelect({
  * still the only path onto a student's plan. `examType: null` marks it as belonging to no exam,
  * which is honest — the model was never given a taxonomy, and every `topic` it returns is null.
  */
-export function SuggestButton({
+export function SuggestLink({
   studentId,
   disabled,
   onLoad,
@@ -145,24 +111,24 @@ export function SuggestButton({
   }
 
   return (
-    <Button
+    <button
       type="button"
-      variant="secondary"
-      size="sm"
-      // Full width stacks cleanly on a phone; in the quick-start grid's auto column it is still
-      // only as wide as its label. Outlined: the panel's one filled button is the send.
-      fullWidth
-      className="min-h-11"
-      busy={suggesting}
-      disabled={disabled}
-      onClick={suggest}
+      className={PANEL_LINK_BUTTON}
+      aria-busy={suggesting || undefined}
+      disabled={disabled || suggesting}
+      onClick={() => void suggest()}
     >
-      {t("suggest_action")}
-    </Button>
+      <Sparkles className="size-4" aria-hidden />
+      {suggesting ? <ShimmerText text={t("suggest_busy")} /> : t("suggest_action")}
+    </button>
   );
 }
 
-export function TemplateSaveRow({
+/**
+ * "Şablon olarak kaydet" under the program: a quiet link that opens the name field in place.
+ * Saving over an existing name replaces that template, so it asks once.
+ */
+export function TemplateSave({
   templates,
   setTemplates,
   drafts,
@@ -180,6 +146,7 @@ export function TemplateSaveRow({
   const toast = useMentorToast();
   const dialog = useMentorDialog();
   const showError = useShowError();
+  const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -192,7 +159,7 @@ export function TemplateSaveRow({
       !(await dialog.confirm({
         title: t("template_overwrite_title"),
         message: t("template_overwrite_body", { name: trimmed }),
-        confirmLabel: t("template_save"),
+        confirmLabel: t("template_save_confirm"),
         cancelLabel: t("confirm_cancel"),
       }))
     ) {
@@ -210,6 +177,7 @@ export function TemplateSaveRow({
         ...prev.filter((row) => row.id !== saved.id),
       ]);
       setName("");
+      setOpen(false);
       toast.success({ title: t("template_saved", { name: saved.name }) });
     } catch (err) {
       showError(err);
@@ -240,42 +208,52 @@ export function TemplateSaveRow({
   const named = templates.find((row) => row.name === name.trim());
 
   return (
-    <section className="flex flex-col gap-2">
-      <h3 className={PLANNER_SUBHEAD}>{t("template_save_title")}</h3>
-      <div className="flex flex-wrap items-end gap-2">
-        <TextField
-          dense
-          label={t("template_name")}
-          value={name}
-          maxLength={60}
-          onChange={(event) => setName(event.target.value)}
-          className="min-w-48 flex-1"
-        />
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          className="min-h-11"
-          busy={busy}
-          disabled={disabled || drafts.length === 0 || name.trim() === ""}
-          onClick={save}
-        >
-          {t("template_save")}
-        </Button>
-        {named ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="min-h-11"
-            disabled={busy}
-            onClick={() => remove(named)}
-          >
-            {t("template_delete_action")}
-          </Button>
-        ) : null}
-      </div>
-      <p className={NOTE_CLASS}>{t("template_hint")}</p>
-    </section>
+    <div className="flex flex-col gap-2 pt-1">
+      <button
+        type="button"
+        className={`${PANEL_QUIET_BUTTON} self-start`}
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {t("template_save")}
+      </button>
+      {open ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <TextField
+              dense
+              label={t("template_name")}
+              value={name}
+              maxLength={60}
+              onChange={(event) => setName(event.target.value)}
+              className="min-w-48 flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="min-h-11"
+              busy={busy}
+              disabled={disabled || name.trim() === ""}
+              onClick={() => void save()}
+            >
+              {t("template_save_confirm")}
+            </Button>
+            {named ? (
+              <button
+                type="button"
+                className={PANEL_QUIET_BUTTON}
+                disabled={busy}
+                onClick={() => void remove(named)}
+              >
+                {t("template_delete_action")}
+              </button>
+            ) : null}
+          </div>
+          <p className={NOTE_CLASS}>{t("template_hint")}</p>
+        </div>
+      ) : null}
+    </div>
   );
 }

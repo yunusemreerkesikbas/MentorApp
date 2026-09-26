@@ -157,7 +157,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Premium identity (global, 2026-09-20):** `--premium-ring-from` `#2F55D4` → `--premium-ring-to` `#F2B544` (the cape-blue → clasp-gold avatar ring), `--premium-badge-bg` `#1E2A5A` with `--premium-badge-ink` `#FFD76A` (gold on night blue, ~9:1, so the 11px label holds). Dark lifts the ring's blue end to `#7E9BFF`. See §7 for how they are used.
 
-**Coach accent (global, 2026-09-21):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` on `html` in `@mentor/ui` `theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue means "a human coach did this", on both sides: the coach's workspace chrome (role badge, avatar, row actions, program progress) and, on the student panel, the coach mark on assigned path nodes, the coach's avatar and the coach's note (§6.1). It started scoped to `.coach-workspace` (2026-09-20) and moved to `html` because a student surface could not reach it. On ink blue, labels use `--color-bg` (white in light, charcoal in dark — the lifted dark accent needs the dark label). The primary CTA stays the play ledge, so "the blue button starts work" holds in both roles.
+**Coach accent (global, 2026-09-21):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` on `html` in `@mentor/ui` `theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue means "a human coach did this", on both sides: the coach's workspace chrome (role badge, avatar, row actions, program progress) and, on the student panel, the coach mark on assigned path nodes, the coach's avatar and the coach's note (§6.1). It started scoped to `.coach-workspace` (2026-09-20) and moved to `html` because a student surface could not reach it. On ink blue, labels use `--color-bg` (white in light, charcoal in dark — the lifted dark accent needs the dark label). The primary CTA stays the play ledge, so "the blue button starts work" holds in both roles. The navigation stays role-neutral (2026-09-26): the same active tab and sidebar tone for a coach as for a student (§6 Tab bar); the role badge carries the coach's identity.
 
 **Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (shine, frost, scrim, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
 
@@ -265,7 +265,7 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 **Text field** (`field` 2:722): translucent surface + white border + `shadow-card`.
 
-**Tab bar** (mobile): floating pill, icons only; active = bold `#111`. Center **Koç** elevated black FAB. Desktop sidebar: sentence-case labels; Koç is a floating bottom-right Puhu coach FAB (not in the sidebar).
+**Tab bar** (mobile): floating pill, icons only; active = bold `#111`. The role's home sits in the center as an elevated black FAB: **Koç** for a student, **Öğrencilerim** for a human coach; every other item and the active look are the same for both roles. Desktop sidebar: sentence-case labels, one active tone for every role (a coach is told by the "Koç" badge under their name, never by the navigation's colour); Koç is a floating bottom-right Puhu coach FAB (not in the sidebar). A page's floating add button above the pill uses the same black (`--color-btn`) in both roles.
 
 **Tag / chip** (`tag` 141:1736): violet @30%, chip-text `#7C6F97`.
 
@@ -449,6 +449,22 @@ uniformly restrained — it is loud where progress happens and quiet where work 
 
 Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
 deliberate presence cue, disabled under reduced motion.
+
+**The coach's screens (2026-09-26, Durak F).** `/kocluk` is a Measured work surface with two
+Progress moments of its own. Classes live in `(coach)/_components/coach-theme.css`; framer defaults
+come from `CoachMotionConfig` (`reducedMotion="user"`); constants in `components/mentorship/coach-motion.ts`.
+
+| Where | Motion | Budget |
+| --- | --- | --- |
+| Round progress (marking a student) | ✓ draws on the node (`CoachCheck`), the connector fills (`PathItem animateReach`), the next node grows from its centre (`.coach-node-grow`), the one "Sıradaki" tip glides (`layoutId`), the count pops (`CountPop`) | ≤400 ms |
+| Charts | Draw once when their section arrives: week bars rise, rhythm cells wave diagonally, mood and subject bars grow, progress fills from zero (`.coach-draw-*`); the 14-day row strips stay still | ≤400 ms |
+| Sections | Skeleton → content fade (`.coach-reveal`), bubble lines rise in when they replace another (`CompanionBubble reveal`) | 250 ms |
+| Success | ✓ on the button or tag (`useSuccessMoment`), then the panel closes or the tag turns; the toast still shows | ≈350 ms |
+| Panels | Day tint slides between chips, weeks slide 12 px the way the arrow points, drafts enter and leave, sections open by height | 150–250 ms |
+| Pages | `CoachPageTransition`: `nav-forward` (into a student, "Sıradaki") slides left, `nav-back` ("‹ Öğrencilerim") right, 48 px; the chrome stays still; untyped navigation does not slide | 300 ms |
+
+Nothing waits on these: under reduced motion the check shows at once, panels close at once and pages
+swap without a slide.
 
 ---
 

@@ -1,0 +1,150 @@
+{
+  "capturedAt": "2026-09-25T22:29:32.9005223Z",
+  "head": "3055c2ff128ce790e29b85cceb4ddfa537779f6b",
+  "files": [
+    {
+      "path": "apps/web/e2e/coach-student.spec.ts",
+      "sha256": "c7c4480867451cdfe042194d02413d2c9c5e5f57ce21b00cc76c7ce803b98dbf"
+    },
+    {
+      "path": "apps/web/e2e/knowledge.spec.ts",
+      "sha256": "31a2b407010ad51397a922d5b7785bc1ece8dae265d339ce5d59d74d020f33cf"
+    },
+    {
+      "path": "apps/web/e2e/mentorship-weekly-report.spec.ts",
+      "sha256": "01a540a33c6d4904e247fd14a48f980de8b53a96620114d717dd49d4cf90cfc9"
+    },
+    {
+      "path": "apps/web/e2e/mentorship.spec.ts",
+      "sha256": "cc7593c8e270f33d67c861938c65048b4148693238475625639b3e74c5fbe314"
+    },
+    {
+      "path": "apps/web/e2e/notebooks.spec.ts",
+      "sha256": "394af3330e6899f8683ac960caa6c9ab7f50a9a7050def45d9596b4996233f07"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "54017fc04e17c2b82889d1fcdd2c2dcf01179177a43549d4588fdb8f882d5d3f"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "581610ac72d90bb253922d0c6235db650cc1bbb9a494f19ca55a367fc3fa2c9e"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/assign-task-form.tsx",
+      "sha256": "cff93c2a9ed4844bf13ba1bd30bfd268459af0e963d5d85fce92bc0383dfb5bd"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/composer-day-picker.tsx",
+      "sha256": "cc233b50a5dab3d3d53c78105ff5e9e85d1017e7a68e206001861e8379498eaa"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/plan-card.tsx",
+      "sha256": "850b089faea138536b72d77bc92731e8a004468e747bcfb8d6e569d1042db765"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-composer.tsx",
+      "sha256": "686d84dfe381af3566f91711cafc5814f465234d41c2b4da4dc7880c54bfa808"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-draft-list.tsx",
+      "sha256": "d4818b518abd03d13e19937c5f4ca1172f5c68379611205919cc0fe75105dd45"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-source.tsx",
+      "sha256": "46d1816c66350a9c990b51cfb9953f1c975266ad2dad362ef13ce623f2955774"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-sources.tsx",
+      "sha256": "0ec2d7c108d680d5dfe3d558ea47f17c69557c96d23e4df086de7b726d1c1149"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-state.spec.ts",
+      "sha256": "1ec92e1b7576e7dcebe156fc11376ab03ac7d2778abd99cda7abab44ae432bf4"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-state.ts",
+      "sha256": "43563926e492497e28f04b9dd63b8d331738a181d47edf4c3e256e7b8e47a38b"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-week.tsx",
+      "sha256": "e8a2a827dd052139c62d57294cac04aca85e41b7dd7409fce0797dbf73e6cd57"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/student-report-shell.tsx",
+      "sha256": "e7ad006f899b617f24899665718558f56b523d72f1ff01ca19be4a42268b61b8"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/task-mark.tsx",
+      "sha256": "c6c1fd89cd7fd138f90e35f38540793cabb260cb5720bfb89e148943a08dd07a"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/template-bar.tsx",
+      "sha256": "cd01de79d68bcb041971b9bce6985b37efcb5c5313dc130ae2deb83285e18061"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/use-report-dates.ts",
+      "sha256": "e453f04143fa87bec18d8b5d8f0957a2a09380ea978a63f83e48835b5c78ac72"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-brief.tsx",
+      "sha256": "f271a244686187b1455d241b192659e2ea94e587cdc610fef6ce68c11d456a19"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-metrics.tsx",
+      "sha256": "a7a3690b25c4251e024aa473d9ca6916933f311755c80feda8aeba8d2190dbce"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/weekly-report-panel.tsx",
+      "sha256": "1df6a508d89d10f40cbccb5fa7edf1c50cd215e3335e38793ceab5dda7e531ba"
+    },
+    {
+      "path": "apps/web/src/components/date-field.tsx",
+      "sha256": "3d8760be3022222eb34b384c12383b301adedf32b16bf61c5e9268052499d9d5"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-followup-item.tsx",
+      "sha256": "eef23f2eb7c3cb97cfd8edeb53281d06ecf0f94b7ff81a79403ef04811676d7e"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-followups-card.tsx",
+      "sha256": "811851d95ba3cd24d7e8f9b7cd08dc74d4383fc8aa4777a2f4bb504d914e6b43"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/coach-ui.tsx",
+      "sha256": "922f4ff77123756f69f95c95274dac4b46ba9c1931e3f7b57979d6ebf66d7a5b"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-accordion.spec.ts",
+      "sha256": "9a878a7491835cca06eef01a3bdef8dfca9c8eacad9ae732c40fda21401d27fb"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-accordion.ts",
+      "sha256": "540b55bf398279e47c48ff2c4b108b46a16396321c242b8a8e3245ceb851ab3c"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-page-state.tsx",
+      "sha256": "86f1ad166fc1e9f4d76a5033b114d7efb3990fe788236f5b19170ed1231a7d7c"
+    },
+    {
+      "path": "apps/web/src/components/mentorship/followup-tags.tsx",
+      "sha256": "7cb49fd011cbe926c232ef2dc466789451fce6cde8d8f8841cecc08982677290"
+    },
+    {
+      "path": "apps/web/src/components/popover-menu.tsx",
+      "sha256": "51584748e9488d7e9885522812d1d3ca44ab4cf56416cb54e1f777b4c9df0228"
+    },
+    {
+      "path": "apps/web/src/lib/turkish-case.spec.ts",
+      "sha256": "30e21db9604f47688d8b6616f42ced224c093b15f042ae75069c26a7296ec04c"
+    },
+    {
+      "path": "apps/web/src/lib/turkish-case.ts",
+      "sha256": "02bd116ca4a3ccd66955c43af4fdfcf77827345a755190952b847740655bbd52"
+    }
+  ],
+  "deleted": [
+    "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/composer-select.tsx",
+    "apps/web/src/app/[locale]/(coach)/students/[studentId]/_components/planning-editor.tsx"
+  ]
+}

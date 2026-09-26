@@ -78,6 +78,24 @@ describe("buildCoachRound", () => {
     expect(round.order).toEqual(["zeynep", "ali"]);
   });
 
+  it("orders the handled by when the coach looked, so the one just marked stays beside the next", () => {
+    // The server lists Zeynep before Mert; the coach looked at Mert first. Marking Zeynep must turn
+    // her node done where it stands, not move it past Mert (the round's progress moment, Durak F).
+    const round = buildCoachRound(
+      [
+        row("zeynep", {
+          flags: [MentorshipRiskFlag.INACTIVE],
+          needsAttention: false,
+          attendedAt: `${TODAY}T09:30:00.000Z`,
+        }),
+        waiting("ali", MentorshipRiskFlag.NET_DROP),
+        seenToday("mert"),
+      ],
+      TODAY,
+    );
+    expect(states(round)).toEqual(["mert:done", "zeynep:done", "ali:current"]);
+  });
+
   it("names each waiting node by its worst flag", () => {
     const round = buildCoachRound(
       [row("ece", { flags: [MentorshipRiskFlag.PLAN_SLIPPING, MentorshipRiskFlag.LOW_MOOD] })],

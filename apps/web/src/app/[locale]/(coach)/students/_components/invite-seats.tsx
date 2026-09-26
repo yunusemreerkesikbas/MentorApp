@@ -3,7 +3,7 @@
 import { useTranslations } from "next-intl";
 import { ChevronRight, Link2 } from "lucide-react";
 import type { MentorshipCoachOverviewDto, MentorshipInviteCodeDto } from "@mentor/types";
-import { Button, Skeleton } from "@mentor/ui";
+import { Button, Skeleton, TextSwap } from "@mentor/ui";
 import {
   PANEL_CARD,
   PANEL_CARD_TITLE,
@@ -12,6 +12,7 @@ import {
 } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
 import { Link } from "@/i18n/navigation";
+import { CoachCheck } from "@/components/mentorship/coach-check";
 import { InviteCodeRow, InviteExpiry } from "./invite-code-row";
 import type { InviteLock } from "./invite-lock";
 import { seatCardState } from "./seat-state";
@@ -35,6 +36,32 @@ function OverviewFailed({ onRetry }: { onRetry?: () => void }) {
         {t("roster_retry")}
       </button>
     </div>
+  );
+}
+
+/**
+ * The copy ledge's label: a drawn ✓ and "Kopyalandı" for 1.5 s after a copy. The longer label
+ * stays in the grid, unseen, so the ledge keeps its width while the words swap.
+ */
+function CopyLinkLabel({ copied, iconClassName }: { copied: boolean; iconClassName: string }) {
+  const t = useTranslations("mentorship");
+  return (
+    <>
+      {copied ? (
+        <CoachCheck draw className={iconClassName} />
+      ) : (
+        <Link2 className={iconClassName} aria-hidden />
+      )}
+      <span className="grid justify-items-center">
+        <span aria-hidden className="invisible col-start-1 row-start-1">
+          {t("invite_copy_link")}
+        </span>
+        <TextSwap
+          className="col-start-1 row-start-1"
+          text={copied ? t("invite_copied_short") : t("invite_copy_link")}
+        />
+      </span>
+    </>
   );
 }
 
@@ -82,7 +109,12 @@ export function InviteSeatsCard({ overview, inviteLock, onCode, failed = false, 
                 ),
               })}
             </p>
-            <ProgressLine label={t("seats_progress_label")} value={state.used} max={state.total} />
+            <ProgressLine
+              label={t("seats_progress_label")}
+              value={state.used}
+              max={state.total}
+              fillClassName="coach-draw-grow-x [--draw-dur:400ms]"
+            />
             {state.kind === "open" ? (
               <p className={NOTE}>
                 {state.paidSeats > 0
@@ -110,7 +142,11 @@ export function InviteSeatsCard({ overview, inviteLock, onCode, failed = false, 
             </>
           ) : code ? (
             <>
-              <InviteCodeRow code={code} onCopy={() => void actions.copyCode()} />
+              <InviteCodeRow
+                code={code}
+                copied={actions.copied === "code"}
+                onCopy={() => void actions.copyCode()}
+              />
               <Button
                 type="button"
                 variant="secondary"
@@ -118,8 +154,7 @@ export function InviteSeatsCard({ overview, inviteLock, onCode, failed = false, 
                 className="self-start"
                 onClick={() => void actions.copyLink()}
               >
-                <Link2 className="size-4" aria-hidden />
-                {t("invite_copy_link")}
+                <CopyLinkLabel copied={actions.copied === "link"} iconClassName="size-4" />
               </Button>
               <InviteExpiry code={code} busy={actions.busy} onRotate={() => void actions.rotate()} />
             </>
@@ -164,8 +199,7 @@ export function InviteHero({ overview, inviteLock, onCode, failed = false, onRet
     <div className="flex flex-col gap-3">
       {code ? (
         <Button type="button" className="w-full sm:w-fit" onClick={() => void actions.copyLink()}>
-          <Link2 className="size-5" aria-hidden />
-          {t("invite_copy_link")}
+          <CopyLinkLabel copied={actions.copied === "link"} iconClassName="size-5" />
         </Button>
       ) : (
         <Button type="button" className="w-full sm:w-fit" busy={actions.busy} onClick={() => void actions.rotate()}>
@@ -181,7 +215,11 @@ export function InviteHero({ overview, inviteLock, onCode, failed = false, onRet
       ) : null}
       {code ? (
         <>
-          <InviteCodeRow code={code} onCopy={() => void actions.copyCode()} />
+          <InviteCodeRow
+            code={code}
+            copied={actions.copied === "code"}
+            onCopy={() => void actions.copyCode()}
+          />
           <InviteExpiry code={code} busy={actions.busy} onRotate={() => void actions.rotate()} />
         </>
       ) : null}

@@ -211,6 +211,73 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-26 — Stop F review fixes.** An independent review of stops E, nav and F found no critical issue;
+  fixed: draft rows no longer glide when the day list above them changes (`layoutDependency`); the round's
+  next node grows from its centre (a CSS scale, the tip moved out of the node) instead of jumping 8 px; the
+  note stays busy while its ✓ shows; the week arrows carry a half-typed new task to the new day
+  (`showWeek` in `planning-state.ts`); `TextSwap` no longer sticks invisible on a quick A→B→A (shared
+  `@mentor/ui` fix); the weekly focus field opens per week. Also: the first assistant batch steps in, the
+  follow-up paging clears its "just" marks, the chrome's view-transition pins live in `globals.css`, an
+  edit-mode unsaved note. **Gotchas:** framer drops `transitionEnd` when a re-render restarts a height
+  animation, so the height sections clip with a 12–16 px margin rather than switching overflow.
+
+- **2026-09-26 — Coach redesign, stop F: motion on the coach screens.** Marking a student is the round's
+  progress moment: the node draws its ✓, the connector fills toward the next student, whose node grows while the
+  one "Sıradaki" tip glides to it, and the title's count pops (all under 400 ms). Charts draw once when their
+  section arrives (week bars rise, rhythm cells wave, mood and subject bars grow, plan and seat lines fill);
+  the 14-day row strips stay still. Sections fade in from their skeletons; the bubble's line rises in when it
+  replaces another (the brief arriving, the next student's name). Success is a ✓: on the planner's send and the
+  note's save before the panel closes or the note returns, in the weekly status tag ("Sonlandırıldı") and a
+  completed follow-up's tag; the toasts stay. Copying the invite link says "Kopyalandı" on the button for 1.5 s.
+  Panels: the day tint slides between chips, weeks slide 12 px the way the arrow points, drafts enter (an
+  assistant batch 40 ms apart) and leave, earlier tasks / the focus field / follow-up bodies open by height, a
+  new follow-up arrives tinted. Pages slide with React `<ViewTransition>`: into a student and "Sıradaki" move
+  left, "‹ Öğrencilerim" moves right; the chrome holds still. **Usage:** DESIGN.md §9.1 "The coach's screens",
+  `docs/features/motion.md` 2026-09-26. **Gotchas:** (1) `FollowupCreateForm.onSaved` now passes the new
+  record's id; rows are keyed by `id:version`, so "just completed" and "just arrived" live in the list, not the
+  row. (2) `round_title_waiting` is a rich message (`<n>{count}</n>`) so the count can pop; the heading carries
+  the plain sentence as `aria-label` (`t.markup`), since split digits can be read apart and a hidden copy
+  would double the text (`getByText` saw "22/21"). (3) `useSuccessMoment` holds the panel open 350 ms only when
+  motion is allowed. (4) `components/mentorship/coach-check.tsx` and `coach-motion.ts` sit beside `coach-ui.tsx`
+  so `components/mentorship` never imports from `app/(coach)`. **Related:** the files in motion.md's entry;
+  `e2e/coach-home.spec.ts` "hareket", `e2e/coach-student.spec.ts` (slide types via `startViewTransition`).
+
+- **2026-09-26 — The coach's navigation looks like the student's.** The mobile tab pill has one
+  silhouette for both roles: the role's home sits raised in the centre (Koç for a student, Öğrencilerim
+  for a coach: Plan · Blog · Öğrencilerim · Topluluk · Ayarlar), and the active tab is the same black circle.
+  The desktop sidebar's active item no longer wears the coach's ink; the "Koç" badge under the name says whose
+  tool it is. The coach's plan "+" button is the student's black at the student's height above the pill.
+  **Gotchas:** `tabItemsFor` moves `/students` to the middle for a coach; `ELEVATED_HREFS` (`/coach`,
+  `/students`) marks the raised item, and each role sees exactly one of them (`data-elevated` in e2e).
+  **Related:** `components/app-nav.tsx`, `(app)/plan/_components/coach-plan-compose-fab.tsx`, DESIGN.md §2.5
+  and §6 Tab bar, `e2e/coach-home.spec.ts`.
+
+- **2026-09-26 — Coach redesign, stop E: the three side panels drawn as the canvas draws them.**
+  **Haftayı planla:** the subtitle names the student ("Ali'nin planına tek seferde düşer.", `genitiveOf`);
+  the week sits between two arrows; each day chip says "2 görev", "2 + 1 taslak" or "1 taslak" ("2+1" on a
+  phone, the full sentence in its name); the chosen day's tasks carry the coach's cap or the student's book
+  (`TaskMark`, shared with the plan card). The task form is always open ("Yeni görev", `planning-composer.tsx`):
+  "Taslağa ekle" puts it on the chosen day, "Düzenle" on a draft loads it into the same form ("Değişikliği
+  kaydet"). "Bu programda · 2/21" lists drafts with "Düzenle · Çıkar"; "Şablon olarak kaydet" under it opens the
+  name field. Earlier tasks, a template and the assistant are three links (`planning-sources.tsx`): the first
+  opens in place, the second is a menu, the third drafts a week. **Haftalık değerlendirme:** three plain tables
+  whose columns are the two weeks' dates (`period.previousStartDate/EndDate`): logged study, active days, tasks
+  done; minutes by subject; the average net with the attempt counts and the caveat in one caption. Sessions,
+  plan percentages, per-subject nets and publishers stay in the print and the PDF. "Görüşmeye hazırlan" is one
+  block; its optional focus opens from "Odak konusu ekle" and comes back open once written. **Takip:** "Ali Demir ·
+  3 kayıt" under the title; records are an accordion (`openFollowupId`): the first open record is open, the rest
+  are one line with their tags and "Kontrol 1 Ekim"; the record the coach just acted on stays open. **Usage:**
+  `PANEL_LINK_BUTTON` / `PANEL_QUIET_BUTTON` (`coach-ui.tsx`) are the panels' text actions as buttons;
+  `DateField display="long"` reads "24 Eylül Perşembe"; `hasUnsavedInput` keeps the send disabled while the form
+  holds something, with a note at the foot. **Gotchas:** (1) The print and the PDF share many `weekly_report_*`
+  keys, so panel-only wording is `weekly_panel_*`; changing a shared key changes the PDF. (2) `FollowupPagination`
+  is also the student's `/kocum` card: the coach panel passes `quiet`, and the coach tags say "Kabul etti" while
+  the student keys keep "Kabul edildi". (3) In e2e, earlier tasks are hidden until "Önceki görevlerden seç",
+  templates are `menuitem`s, draft actions are named "{title}: düzenle" / "{title}: çıkar", and the planner's date
+  field is "Tarih". **Related:** `(coach)/students/[studentId]/_components/{assign-task-form,planning-*,composer-day-picker,task-mark,template-bar,weekly-report-*}`,
+  `components/mentorship/{coach-followup*,followup-accordion,followup-page-state,followup-tags,coach-ui}`,
+  `components/date-field.tsx`, `lib/turkish-case.ts`, `e2e/{mentorship,coach-student,mentorship-weekly-report}.spec.ts`.
+
 - **2026-09-25 — Coach redesign, fixes from the independent review.** PLAN_SLIPPING no longer fires
   on the day a plan starts: `planTotalsSince` counts a task dated today only once it is done, so
   "Haftayı planla" on a Monday cannot put the student straight back in the round. The morning
