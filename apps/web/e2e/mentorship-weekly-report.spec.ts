@@ -183,6 +183,9 @@ test("görüşme hazırlığı yönlendirmeyi korur, değişikliği belirtir ve 
   await panel
     .getByRole("button", { name: "Önceki hafta", exact: true })
     .click();
+  // That week has no focus written: its field starts closed, and opened it is empty.
+  await expect(context).toHaveCount(0);
+  await panel.getByRole("button", { name: "Odak konusu ekle (isteğe bağlı)" }).click();
   await expect(context).toHaveValue("");
   await expect(
     panel.getByRole("heading", { name: "Görüşmenin odağı" }),

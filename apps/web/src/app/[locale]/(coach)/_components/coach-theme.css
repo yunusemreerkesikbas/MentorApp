@@ -133,6 +133,30 @@
   }
 }
 
+/*
+ * The round's node size step (48 ↔ 64 px, `coach-round-path.tsx`): the node takes its new size at
+ * once and scales in from its old one, around its centre.
+ */
+.coach-node-grow {
+  animation: coach-node-grow 300ms var(--ease-smooth-out) backwards;
+}
+
+@keyframes coach-node-grow {
+  from {
+    scale: 0.75;
+  }
+}
+
+.coach-node-shrink {
+  animation: coach-node-shrink 300ms var(--ease-smooth-out) backwards;
+}
+
+@keyframes coach-node-shrink {
+  from {
+    scale: 1.33;
+  }
+}
+
 /* One soft ring, once: "the next one is here". `--glow-base` keeps the element's own shadow. */
 .coach-glow {
   animation: coach-glow 600ms var(--ease-smooth-out) backwards;
@@ -226,30 +250,7 @@
   }
 }
 
-/* The chrome (named in `app-nav.tsx`) holds still above the sliding page. */
-::view-transition-group(app-topbar),
-::view-transition-group(app-tabbar),
-::view-transition-group(app-sidebar) {
-  animation: none;
-  z-index: 100;
-}
-
-::view-transition-old(app-topbar),
-::view-transition-old(app-tabbar),
-::view-transition-old(app-sidebar) {
-  display: none;
-}
-
-::view-transition-new(app-topbar),
-::view-transition-new(app-tabbar),
-::view-transition-new(app-sidebar) {
-  animation: none;
-}
-
-/* Clicks during the slide reach the live page instead of the overlay. */
-::view-transition {
-  pointer-events: none;
-}
+/* The still chrome (`app-topbar`, `app-tabbar`, `app-sidebar`) is pinned in `globals.css`, beside the names. */
 
 @media (prefers-reduced-motion: reduce) {
   ::view-transition-old(*),
@@ -264,6 +265,8 @@
   .coach-draw-grow-x,
   .coach-draw-cell,
   .coach-draw-pop,
+  .coach-node-grow,
+  .coach-node-shrink,
   .coach-stagger > *,
   .coach-flash,
   .coach-glow {

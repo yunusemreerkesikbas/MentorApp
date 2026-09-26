@@ -22,7 +22,8 @@ const BLOCK_TEXT = "whitespace-pre-wrap break-words text-body-sm text-[var(--col
  * with its tags and the day that matters; open, what only the coach sees and what the student sees
  * in two visibly different blocks, then the date and the actions.
  *
- * The body opens and closes by height (a 4 px margin keeps focus rings clear of the clipping edge).
+ * The body opens and closes by height; a 12 px margin keeps its fields' shadows clear of the
+ * clipping edge.
  * A record completed here draws a ✓ in its status tag (`justCompleted`), and a record just
  * written arrives tinted (`arrived`). Both come from the list: a changed record is a new row
  * (its key carries the version), so the row itself remembers nothing across the change.
@@ -123,7 +124,7 @@ export function CoachFollowupItem({
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={COACH_FAST}
-            className="-mx-1 overflow-hidden px-1"
+            className="-mx-3 overflow-hidden px-3"
           >
             <div className="flex flex-col gap-3 pb-4">
               <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">

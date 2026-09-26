@@ -3756,6 +3756,7 @@
     "followup_opened_on": "You opened it on {date}",
     "followup_coach_accepted": "Accepted",
     "followup_page_of": "Page {page} of {pages}",
-    "invite_copied_short": "Copied"
+    "invite_copied_short": "Copied",
+    "planning_unsaved_edit": "Save the change in the form first, or cancel it."
   }
 }

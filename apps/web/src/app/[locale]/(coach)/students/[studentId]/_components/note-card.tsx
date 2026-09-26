@@ -62,7 +62,7 @@ export function NoteCard({
     try {
       await setCoachNote(studentId, body);
       toast.success({ title: body === null ? t("note_cleared") : t("note_saved") });
-      setBusy(false);
+      // Still busy while the ✓ shows: clearing or cancelling now would race the save.
       if (body !== null) await success.play();
       onSaved(body === null ? null : { body, updatedAt: new Date().toISOString() });
     } catch (err) {
@@ -106,6 +106,7 @@ export function NoteCard({
               <TextAreaField
                 id={fieldId}
                 autoFocus
+                readOnly={busy}
                 dense
                 label={t("note_field_label", { name, dative: dativeOf(name) })}
                 hint={`${t("note_field_hint", { name })} · ${draft.length}/${NOTE_MAX}`}

@@ -30,6 +30,7 @@ import {
   hasUnsavedInput,
   monday,
   shiftDate,
+  showWeek,
   type AssignDraft,
   type PlanningState,
 } from "./planning-state";
@@ -96,12 +97,8 @@ export function AssignTaskForm({
     createMentorshipAssignmentsSchema.safeParse({ tasks: payload }).success &&
     drafts.every((d) => d.taskDate >= today && d.taskDate <= limit);
 
-  function showWeek(week: string) {
-    setState((s) => ({
-      ...s,
-      week,
-      day: week === monday(today) ? today : week,
-    }));
+  function moveWeek(week: string) {
+    setState((s) => showWeek(s, week, today, drafts));
   }
   function loadTemplate(template: MentorshipProgramTemplateDto) {
     if (locked.current) return;
@@ -189,7 +186,7 @@ export function AssignTaskForm({
             counts={counts}
             existingCounts={existingCounts}
             data={data}
-            showWeek={showWeek}
+            showWeek={moveWeek}
           />
           <PlanningComposer
             draft={state.editor}
@@ -241,7 +238,7 @@ export function AssignTaskForm({
         {unsaved ? (
           // Its own line: the two actions stay together below it.
           <p className="basis-full text-caption font-semibold text-[var(--color-secondary)]">
-            {t("planning_unsaved")}
+            {t(mode === "edit" ? "planning_unsaved_edit" : "planning_unsaved")}
           </p>
         ) : null}
         <button type="button" className={`${PANEL_QUIET_BUTTON} px-2`} disabled={busy} onClick={onCancel}>

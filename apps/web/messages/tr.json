@@ -3756,6 +3756,7 @@
     "followup_opened_on": "{date} tarihinde açtın",
     "followup_coach_accepted": "Kabul etti",
     "followup_page_of": "Sayfa {page} / {pages}",
-    "invite_copied_short": "Kopyalandı"
+    "invite_copied_short": "Kopyalandı",
+    "planning_unsaved_edit": "Formdaki değişikliği önce kaydet ya da vazgeç."
   }
 }

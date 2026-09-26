@@ -8,6 +8,7 @@ import {
   hasUnsavedInput,
   monday,
   shiftDate,
+  showWeek,
   type AssignDraft,
 } from "./planning-state";
 import { todayInIstanbul } from "@/lib/date-time";
@@ -90,5 +91,30 @@ describe("weekly planning dates", () => {
     expect(copyKey(source.id, "2026-09-21")).not.toBe(
       copyKey(source.id, "2026-09-28"),
     );
+  });
+});
+
+describe("moving the week", () => {
+  const state = (editor: AssignDraft | null) => ({
+    week: "2026-09-21",
+    day: "2026-09-24",
+    editor,
+    copied: [],
+  });
+
+  it("opens today in this week and the Monday in any other, and a typed task goes with it", () => {
+    const typed = draft({ key: "typed", taskDate: "2026-09-24" });
+    const next = showWeek(state(typed), "2026-09-28", "2026-09-24", []);
+    expect(next.week).toBe("2026-09-28");
+    expect(next.day).toBe("2026-09-28");
+    // The chip that is lit is the date the task lands on (review finding: it stayed a week behind).
+    expect(next.editor?.taskDate).toBe("2026-09-28");
+    expect(showWeek(next, "2026-09-21", "2026-09-24", []).day).toBe("2026-09-24");
+  });
+
+  it("leaves an edited draft on its own date", () => {
+    const saved = draft({ key: "saved", taskDate: "2026-09-24" });
+    const next = showWeek(state({ ...saved }), "2026-09-28", "2026-09-24", [saved]);
+    expect(next.editor?.taskDate).toBe("2026-09-24");
   });
 });

@@ -69,8 +69,8 @@ export function WeeklyReportBrief({
         </Button>
       </div>
 
-      {/* The field opens by height; the gap above it collapses with it, and a 4 px margin keeps
-          focus rings clear of the clipping edge. */}
+      {/* The field opens by height; the gap above it collapses with it, and a 12–16 px margin keeps
+          focus rings and the field's card shadow clear of the clipping edge. */}
       <div className="flex flex-col">
         <button
           type="button"
@@ -90,7 +90,7 @@ export function WeeklyReportBrief({
               animate={{ height: "auto", opacity: 1 }}
               exit={{ height: 0, opacity: 0 }}
               transition={COACH_FAST}
-              className="-mx-1 -mb-1 overflow-hidden px-1 pb-1"
+              className="-mx-3 -mb-4 overflow-hidden px-3 pb-4"
             >
               <div className="pt-3">
                 <TextAreaField

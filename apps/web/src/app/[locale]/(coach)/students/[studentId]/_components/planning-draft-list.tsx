@@ -54,11 +54,16 @@ export function PlanningDraftList({
   const dates = useReportDates();
   const headingId = useId();
   const sorted = [...drafts].sort((a, b) => a.taskDate.localeCompare(b.taskDate));
-  const arrived = useArrivals(sorted.map((draft) => draft.key));
-  if (drafts.length === 0) return null;
+  const keys = sorted.map((draft) => draft.key);
+  const arrived = useArrivals(keys);
+  // Rows re-measure only when the program changes: a list above growing or shrinking (another
+  // day chosen, the week's tasks loading) moves them at once instead of gliding them over the form.
+  const layoutKey = keys.join(",");
 
   return (
-    <section className="flex flex-col" aria-labelledby={headingId}>
+    // Hidden, not unmounted, while empty: the list's entrances belong to the panel's lifetime, so
+    // the first batch (the assistant's, a template's) steps in like any later one.
+    <section className="flex flex-col" aria-labelledby={headingId} hidden={drafts.length === 0}>
       <h3
         id={headingId}
         className={PLANNER_SUBHEAD}
@@ -82,6 +87,7 @@ export function PlanningDraftList({
               <motion.li
                 key={draft.key}
                 layout="position"
+                layoutDependency={layoutKey}
                 initial={{ opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, transition: { duration: 0.15 } }}

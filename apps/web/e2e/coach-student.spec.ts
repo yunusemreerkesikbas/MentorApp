@@ -348,3 +348,133 @@ test("haftalık kart dürüst metni söyler ve arşivi açar", async ({ page }) 
   const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
   await expect(panel.getByRole("link", { name: "PDF önizlemesini aç" }).first()).toBeVisible();
 });
+
+/**
+ * Review fixes to the stop F motion (2026-09-26). Each pins a behaviour the first pass got wrong.
+ */
+test.describe("hareket düzeltmeleri", () => {
+  /** Two animation frames after an action: the first frame of any motion it started. */
+  const twoFrames = (page: import("@playwright/test").Page) =>
+    page.evaluate(
+      () => new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve()))),
+    );
+
+  test("taslaklar, üstteki gün listesi değişince yerinde kalır, kaymaz", async ({ page }) => {
+    await mockStudentApi(page);
+    // Three tasks on the week's Monday, none on its other days.
+    await page.route("**/planning-tasks?**", async (route) => {
+      const from = new URL(route.request().url()).searchParams.get("from")!;
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "access-control-allow-origin": route.request().headers().origin ?? "http://localhost:3100",
+          "access-control-allow-credentials": "true",
+        },
+        body: JSON.stringify({
+          items: [0, 1, 2].map((i) => ({
+            id: `mon-${i}`,
+            taskDate: from,
+            title: `Pazartesi ${i}`,
+            subject: null,
+            topic: null,
+            coachNote: null,
+            assignedByCoach: true,
+            status: "PENDING",
+          })),
+          total: 3,
+          page: 1,
+          pageSize: 100,
+        }),
+      });
+    });
+    await page.goto(`/kocluk/${ALI_ID}`);
+    await page.getByRole("button", { name: "Haftayı planla" }).click();
+    const panel = page.getByRole("dialog", { name: "Haftayı planla" });
+    await panel.getByRole("button", { name: "Sonraki hafta", exact: true }).click();
+    await expect(panel.getByText("Pazartesi 0")).toBeVisible();
+    await panel.getByLabel("Görev", { exact: true }).fill("Paragraf: 25 soru");
+    await panel.getByRole("button", { name: "Taslağa ekle" }).click();
+    const row = panel.getByRole("region", { name: /Bu programda/ }).getByRole("listitem").first();
+    await expect(row).toBeVisible();
+    await page.waitForTimeout(600);
+
+    // Wednesday: the three Monday rows above leave, the program moves up with them at once.
+    await panel.getByRole("group", { name: "Gün seç" }).getByRole("button").nth(2).click();
+    await twoFrames(page);
+    expect(await row.evaluate((node) => getComputedStyle(node).transform)).toBe("none");
+  });
+
+  test("not kaydedilirken ✓ görünürken kaldır ve vazgeç kapalıdır", async ({ page }) => {
+    await mockStudentApi(page);
+    await page.goto(`/kocluk/${ALI_ID}`);
+    const card = page.getByRole("region", { name: "Notun" });
+    await card.getByRole("button", { name: "Düzenle" }).click();
+    await card.getByRole("textbox").fill("Deneme öncesi erken yat.");
+    const save = card.getByRole("button", { name: "Notu kaydet" });
+    await save.click();
+    // The moment the ✓ shows, nothing else in the card may act on the note.
+    await expect(save.locator(".t-success-check")).toHaveCount(1);
+    expect(await card.getByRole("button", { name: "Notu kaldır" }).isDisabled()).toBe(true);
+    expect(await card.getByRole("button", { name: "Vazgeç" }).isDisabled()).toBe(true);
+  });
+
+  test("Düzenle ve Vazgeç art arda basılınca form başlığı görünür kalır", async ({ page }) => {
+    await mockStudentApi(page);
+    await page.goto(`/kocluk/${ALI_ID}`);
+    await page.getByRole("button", { name: "Haftayı planla" }).click();
+    const panel = page.getByRole("dialog", { name: "Haftayı planla" });
+    await panel.getByLabel("Görev", { exact: true }).fill("Paragraf: 25 soru");
+    await panel.getByRole("button", { name: "Taslağa ekle" }).click();
+    await expect(panel.getByRole("button", { name: "Paragraf: 25 soru: düzenle" })).toBeVisible();
+    await page.waitForTimeout(400);
+    // Both presses inside the title's 150 ms swap.
+    await panel.getByRole("button", { name: "Paragraf: 25 soru: düzenle" }).evaluate((edit) => {
+      (edit as HTMLButtonElement).click();
+      setTimeout(() => {
+        const cancel = [...document.querySelectorAll("button")].find((b) => b.textContent?.trim() === "Vazgeç" && b.closest("section"));
+        cancel?.click();
+      }, 40);
+    });
+    await page.waitForTimeout(700);
+    const title = panel.getByRole("heading", { name: "Yeni görev" }).locator(".t-text-swap");
+    await expect(title).not.toHaveClass(/is-exit/);
+    expect(await title.evaluate((node) => getComputedStyle(node).opacity)).toBe("1");
+  });
+
+  test("haftalık panelde odak alanı her hafta kendi durumuyla açılır", async ({ page }) => {
+    await mockStudentApi(page, { weekly: "ready" });
+    // Any week the arrows ask for answers as that week: the fixture's week, re-dated.
+    let preview: Record<string, unknown> | null = null;
+    page.on("response", async (response) => {
+      if (/\/weekly-reports\/preview$/.test(new URL(response.url()).pathname) && !preview) {
+        preview = (await response.json()) as Record<string, unknown>;
+      }
+    });
+    await page.route("**/weekly-reports/preview?**", async (route) => {
+      const weekStart = new URL(route.request().url()).searchParams.get("weekStart")!;
+      const base = preview as { snapshot: { period: Record<string, string> } } & Record<string, unknown>;
+      const end = new Date(Date.parse(`${weekStart}T00:00:00Z`) + 6 * 86_400_000).toISOString().slice(0, 10);
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        headers: {
+          "access-control-allow-origin": route.request().headers().origin ?? "http://localhost:3100",
+          "access-control-allow-credentials": "true",
+        },
+        body: JSON.stringify({
+          ...base,
+          snapshot: { ...base.snapshot, period: { ...base.snapshot.period, startDate: weekStart, endDate: end } },
+        }),
+      });
+    });
+    await page.goto(`/kocluk/${ALI_ID}`);
+    await page.getByRole("region", { name: "Haftalık değerlendirme" }).getByRole("button", { name: "Değerlendirmeyi aç" }).click();
+    const panel = page.getByRole("dialog", { name: "Haftalık değerlendirme" });
+    await panel.getByRole("button", { name: "Odak konusu ekle (isteğe bağlı)" }).click();
+    await panel.getByLabel("Bu görüşmede odaklanmak istediğin konu").fill("Tarih kronolojisi");
+    await panel.getByRole("button", { name: "Önceki hafta" }).click();
+    // The week before has no focus written: its field starts closed.
+    await expect(panel.getByLabel("Bu görüşmede odaklanmak istediğin konu")).toHaveCount(0);
+  });
+});

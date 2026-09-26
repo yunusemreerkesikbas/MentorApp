@@ -23,7 +23,13 @@ export function TextSwap({ text, className, style, as: Tag = "span" }: TextSwapP
   const runningRef = useRef(false);
 
   useEffect(() => {
-    if (prevRef.current === text) return;
+    if (prevRef.current === text) {
+      // Back to the shown text before a swap finished (A→B→A inside the exit): the cleanup cancelled
+      // that swap, so settle here instead of leaving the text faded out.
+      setDisplay(text);
+      setPhase("idle");
+      return;
+    }
     const el = ref.current;
     if (!el || prefersReducedMotion() || runningRef.current) {
       prevRef.current = text;

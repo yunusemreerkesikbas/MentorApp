@@ -113,6 +113,9 @@ export function CoachFollowupsPanel({
                 quiet
                 onChange={(page) => {
                   setChoice(undefined);
+                  // A new page is a fresh read: nothing on it "just" arrived or completed.
+                  setArrivedId(null);
+                  setCompletedId(null);
                   resource.setPage(page);
                 }}
               />

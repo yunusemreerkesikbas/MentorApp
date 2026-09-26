@@ -211,6 +211,16 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-26 — Stop F review fixes.** An independent review of stops E, nav and F found no critical issue;
+  fixed: draft rows no longer glide when the day list above them changes (`layoutDependency`); the round's
+  next node grows from its centre (a CSS scale, the tip moved out of the node) instead of jumping 8 px; the
+  note stays busy while its ✓ shows; the week arrows carry a half-typed new task to the new day
+  (`showWeek` in `planning-state.ts`); `TextSwap` no longer sticks invisible on a quick A→B→A (shared
+  `@mentor/ui` fix); the weekly focus field opens per week. Also: the first assistant batch steps in, the
+  follow-up paging clears its "just" marks, the chrome's view-transition pins live in `globals.css`, an
+  edit-mode unsaved note. **Gotchas:** framer drops `transitionEnd` when a re-render restarts a height
+  animation, so the height sections clip with a 12–16 px margin rather than switching overflow.
+
 - **2026-09-26 — Coach redesign, stop F: motion on the coach screens.** Marking a student is the round's
   progress moment: the node draws its ✓, the connector fills toward the next student, whose node grows while the
   one "Sıradaki" tip glides to it, and the title's count pops (all under 400 ms). Charts draw once when their

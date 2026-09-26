@@ -77,6 +77,20 @@ export function followDay(
   return { ...editor, taskDate: day };
 }
 
+/**
+ * The week arrows and "Bu haftaya dön": this week opens on today, any other on its Monday, and a
+ * new task being typed moves to that day like it does on a chip; an edited draft keeps its date.
+ */
+export function showWeek(
+  state: PlanningState,
+  week: string,
+  today: string,
+  drafts: readonly AssignDraft[],
+): PlanningState {
+  const day = week === monday(today) ? today : week;
+  return { ...state, week, day, editor: followDay(state.editor, day, drafts) };
+}
+
 /** Whether sending now would leave something behind in the composer. */
 export function hasUnsavedInput(
   editor: AssignDraft | null,

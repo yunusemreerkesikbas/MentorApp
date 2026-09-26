@@ -118,6 +118,8 @@ export function WeeklyReportPanel({
             </motion.div>
           </AnimatePresence>
           <WeeklyReportBrief
+            // Per week: whether the focus field starts open follows that week's own focus.
+            key={preview.snapshot.period.startDate}
             preview={preview}
             coachContext={report.coachContext}
             onContextChange={report.setCoachContext}

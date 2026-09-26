@@ -456,7 +456,7 @@ come from `CoachMotionConfig` (`reducedMotion="user"`); constants in `components
 
 | Where | Motion | Budget |
 | --- | --- | --- |
-| Round progress (marking a student) | ✓ draws on the node (`CoachCheck`), the connector fills (`PathItem animateReach`), the next node grows (`layout="size"`), the one "Sıradaki" tip glides (`layoutId`), the count pops (`CountPop`) | ≤400 ms |
+| Round progress (marking a student) | ✓ draws on the node (`CoachCheck`), the connector fills (`PathItem animateReach`), the next node grows from its centre (`.coach-node-grow`), the one "Sıradaki" tip glides (`layoutId`), the count pops (`CountPop`) | ≤400 ms |
 | Charts | Draw once when their section arrives: week bars rise, rhythm cells wave diagonally, mood and subject bars grow, progress fills from zero (`.coach-draw-*`); the 14-day row strips stay still | ≤400 ms |
 | Sections | Skeleton → content fade (`.coach-reveal`), bubble lines rise in when they replace another (`CompanionBubble reveal`) | 250 ms |
 | Success | ✓ on the button or tag (`useSuccessMoment`), then the panel closes or the tag turns; the toast still shows | ≈350 ms |

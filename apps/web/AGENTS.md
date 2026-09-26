@@ -5,7 +5,8 @@
 
 **When working in this app:**
 - UI values come from **DESIGN.md tokens** (`@mentor/ui` / CSS variables) — no magic numbers.
-- **Loading UI:** until data fetch resolves, show a **page-specific** `*-content-skeleton.tsx` layout;
+- **Loading UI:** until data fetch resolves, show a skeleton that mirrors the loaded UI: a page-level
+  `*-content-skeleton.tsx`, or one skeleton per section on screens that draw at once (DESIGN.md §1 rule 7);
   shimmer/enter animation uses **global** classes only (`.mentor-skeleton-shimmer`, `.mentor-skeleton-enter`
   via `@mentor/ui` `Skeleton` / `SkeletonGroup`) — see [`docs/standards/frontend.md`](../../docs/standards/frontend.md) § Loading skeletons.
 - All React/Next.js code follows the **`vercel-react-best-practices`** skill (priority: async-waterfall → bundle → server).

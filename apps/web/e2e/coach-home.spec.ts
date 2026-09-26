@@ -492,6 +492,30 @@ test.describe("koçun turu", () => {
     await expect(page.getByText("Bir sorun oluştu")).toHaveCount(0);
   });
 
+  test("asistan yazarken bekleme satırı ekran okuyucuya bir kez okunur", async ({ page }) => {
+    // ShimmerText draws its highlight band as `::before { content: attr(data-text) }`; generated
+    // content reaches the accessibility tree unless it carries empty alt text.
+    await mockApi(page, COACH, { pro: true });
+    await page.route("**/v1/mentorship/brief", async (route) => {
+      await new Promise((resolve) => setTimeout(resolve, 8_000));
+      await route.fallback();
+    });
+    await page.goto("/kocluk");
+
+    const busy = page.locator('[aria-busy="true"]').filter({ hasText: "Asistanın bakıyor…" });
+    await expect(busy).toBeVisible();
+    const snapshot = await busy.ariaSnapshot();
+    const cdp = await page.context().newCDPSession(page);
+    const { nodes } = (await cdp.send("Accessibility.getFullAXTree")) as {
+      nodes: { role?: { value: string }; name?: { value: string } }[];
+    };
+    const spoken = nodes.filter(
+      (node) => node.role?.value === "StaticText" && node.name?.value.includes("Asistanın bakıyor"),
+    );
+    expect(snapshot.split("Asistanın bakıyor").length - 1).toBe(1);
+    expect(spoken).toHaveLength(1);
+  });
+
   test("kimse beklemiyorsa tur sakin, buton koç planına", async ({ page }) => {
     await mockApi(page, COACH, { rows: [BURAK] });
     await page.goto("/kocluk");
@@ -680,7 +704,9 @@ test.describe("hareket", () => {
     const round = page.getByTestId("coach-round");
     const nodes = round.getByTestId("round-node");
     await expect(round.getByTestId("round-next-tip")).toHaveCount(1);
-    await expect(nodes.nth(1).getByTestId("round-next-tip")).toBeVisible();
+    // The tip sits beside the node, in the same stop (it stays still while the node scales).
+    const stops = round.getByRole("listitem");
+    await expect(stops.nth(1).getByTestId("round-next-tip")).toBeVisible();
 
     await nodes.nth(1).click();
     await page.getByRole("menuitem", { name: "İlgilendim" }).click();
@@ -691,12 +717,36 @@ test.describe("hareket", () => {
     await expect(title.locator(".t-digit-group")).toHaveCount(1);
     // Still one tip, now on Ali's node.
     await expect(round.getByTestId("round-next-tip")).toHaveCount(1);
-    await expect(nodes.nth(2).getByTestId("round-next-tip")).toBeVisible();
+    await expect(stops.nth(2).getByTestId("round-next-tip")).toBeVisible();
     // Zeynep was marked here, so her check draws; Mert's came with the page and stays still.
     await expect(nodes.nth(1).locator(".t-success-check")).toHaveCount(1);
     await expect(nodes.nth(0).locator(".t-success-check")).toHaveCount(0);
   });
 
+  test("sıradaki düğüm merkezinden büyür, yerinden sıçramaz", async ({ page }) => {
+    await mockApi(page, COACH);
+    await page.goto("/kocluk");
+    const round = page.getByTestId("coach-round");
+    await round.getByTestId("round-node").nth(1).click();
+    await page.getByRole("menuitem", { name: "İlgilendim" }).click();
+    // Ali's node (third after the mark), on the first frame of its growth and once it has settled.
+    const centre = (framesFirst: boolean) =>
+      page.evaluate(async (waitFrames) => {
+        if (waitFrames) {
+          await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+        }
+        const node = document.querySelectorAll('[data-testid="coach-round"] [data-testid="round-node"]')[2]!;
+        // Against its own stop: on a phone the path scrolls sideways when focus returns to a node.
+        const box = node.getBoundingClientRect();
+        const stop = node.closest("li")!.getBoundingClientRect();
+        return { x: box.x + box.width / 2 - stop.x, y: box.y + box.height / 2 - stop.y };
+      }, framesFirst);
+    const early = await centre(true);
+    await page.waitForTimeout(700);
+    const settled = await centre(false);
+    expect(Math.abs(early.x - settled.x)).toBeLessThan(1.5);
+    expect(Math.abs(early.y - settled.y)).toBeLessThan(1.5);
+  });
   test("azaltılmış harekette tur ve liste hemen görünür, hiçbir çizim oynamaz", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await mockApi(page, COACH);
