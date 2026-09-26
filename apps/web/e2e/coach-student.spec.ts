@@ -151,6 +151,52 @@ test("Sıradaki turun sırasını izler ve son öğrencide turu bitirir", async 
   await expect(page.getByRole("link", { name: "Turun sonu" })).toBeVisible();
 });
 
+test("Sıradaki sayfayı ileri, Öğrencilerim geri kaydırır; yeni sayfa hemen tıklanır", async ({ page }) => {
+  // Records the types React hands the browser's view transition, one entry per navigation.
+  await page.addInitScript(() => {
+    const seen: string[][] = [];
+    Object.assign(window, { __viewTransitionTypes: seen });
+    const start = document.startViewTransition?.bind(document);
+    if (!start) return;
+    document.startViewTransition = ((options?: unknown) => {
+      const types = (options as { types?: Iterable<string> } | undefined)?.types;
+      seen.push(types ? [...types] : []);
+      return start(options as Parameters<typeof start>[0]);
+    }) as typeof document.startViewTransition;
+  });
+  await page.addInitScript(
+    ([key, value]) => window.sessionStorage.setItem(key, value),
+    [
+      ROUND_KEY,
+      JSON.stringify([
+        { studentId: ALI_ID, name: "Ali" },
+        { studentId: "s-ece", name: "Ece" },
+      ]),
+    ] as const,
+  );
+  await mockStudentApi(page);
+  const types = () =>
+    page.evaluate(() => (window as unknown as { __viewTransitionTypes: string[][] }).__viewTransitionTypes);
+
+  await page.goto(`/kocluk/${ALI_ID}`);
+  // A coach reads the page before moving on, by which time the link has prefetched the next page.
+  // Clicked before that, the page is fetched after the click and commits in a transition of its
+  // own, without the type: it swaps without the slide (a fallback, not a failure).
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("link", { name: "Sıradaki öğrenci: Ece" }).click();
+  await expect(page).toHaveURL(/\/kocluk\/s-ece$/);
+  // Polled: the type lands with the transition, a beat after the URL may already read the new page.
+  await expect.poll(types).toContainEqual(["nav-forward"]);
+  // The slide never holds the page: the next student's mark takes a click straight away.
+  const toggle = page.getByRole("button", { name: "İlgilendim", exact: true });
+  await toggle.click();
+  await expect(toggle).toHaveAttribute("aria-pressed", "true");
+
+  // The header's way back, not the menu's tab (the menu's is a plain navigation, no slide).
+  await page.getByRole("main").getByRole("link", { name: "Öğrencilerim", exact: true }).click();
+  await expect(page).toHaveURL(/\/kocluk$/);
+  await expect.poll(types).toContainEqual(["nav-back"]);
+});
 test("doğrudan açılan raporda Sıradaki görünmez", async ({ page }) => {
   await mockStudentApi(page);
   await page.goto(`/kocluk/${ALI_ID}`);

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import type { MentorshipInviteCodeDto } from "@mentor/types";
+import { CoachCheck } from "@/components/mentorship/coach-check";
 import { formatDate } from "../../_components/mentorship-format";
 import { maskInviteCode } from "./invite-code";
 
@@ -13,9 +14,12 @@ import { maskInviteCode } from "./invite-code";
  */
 export function InviteCodeRow({
   code,
+  copied = false,
   onCopy,
 }: {
   code: MentorshipInviteCodeDto;
+  /** Just copied: the copy control shows a drawn ✓ for a moment. */
+  copied?: boolean;
   /** Omitted while seats are closed: a code shared then only earns the student a refusal. */
   onCopy?: () => void;
 }) {
@@ -35,7 +39,7 @@ export function InviteCodeRow({
       </IconButton>
       {onCopy ? (
         <IconButton label={t("invite_copy")} onClick={onCopy}>
-          <Copy className="size-5" aria-hidden />
+          {copied ? <CoachCheck draw className="size-5" /> : <Copy className="size-5" aria-hidden />}
         </IconButton>
       ) : null}
     </div>

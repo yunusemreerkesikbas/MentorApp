@@ -14,6 +14,7 @@ import { todayInIstanbul } from "@/lib/date-time";
 import { firstName } from "@/lib/greeting";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { assignTasks } from "@/lib/mentorship";
+import { CoachCheck, useSuccessMoment } from "@/components/mentorship/coach-check";
 import { PlanningComposer } from "./planning-composer";
 import { PlanningDraftList } from "./planning-draft-list";
 import { PlanningSources } from "./planning-sources";
@@ -38,6 +39,7 @@ export type { AssignDraft } from "./planning-state";
  * "Haftayı planla" (canvas "Panel · Haftayı planla"): the week and its days, what the chosen day
  * already holds, an always-open task form, the program being composed, and where a program can
  * start from. One filled button, the send at the foot; everything else is a text action.
+ * A send that lands draws a ✓ on that button before the panel closes (Durak F).
  */
 export function AssignTaskForm({
   studentId,
@@ -69,6 +71,7 @@ export function AssignTaskForm({
   const toast = useMentorToast();
   const locked = useRef(false);
   const titleRef = useRef<HTMLInputElement>(null);
+  const success = useSuccessMoment();
   const [templates, setTemplates] = useProgramTemplates();
   const data = usePlanningTasks(studentId, state.week);
   const today = todayInIstanbul();
@@ -157,6 +160,7 @@ export function AssignTaskForm({
           count: drafts.length,
         }),
       });
+      await success.play();
       setDrafts([]);
       setState((s) => ({ ...s, copied: [] }));
       onAssigned();
@@ -243,7 +247,8 @@ export function AssignTaskForm({
         <button type="button" className={`${PANEL_QUIET_BUTTON} px-2`} disabled={busy} onClick={onCancel}>
           {t("confirm_cancel")}
         </button>
-        <Button type="submit" busy={busy} disabled={!valid || unsaved}>
+        <Button type="submit" busy={busy && !success.shown} disabled={!valid || unsaved || success.shown}>
+          {success.shown ? <CoachCheck draw className="size-5" /> : null}
           {t("assign_action", { count: drafts.length })}
         </Button>
       </CoachOverlayFooter>

@@ -48,6 +48,9 @@ export function CoachFollowupsPanel({
   const t = useTranslations("mentorship");
   // What the coach last opened or closed; undefined until they choose (see `openFollowupId`).
   const [choice, setChoice] = useState<string | null | undefined>(undefined);
+  // The record just written (arrives tinted) and the one just completed (its tag draws a ✓).
+  const [arrivedId, setArrivedId] = useState<string | null>(null);
+  const [completedId, setCompletedId] = useState<string | null>(null);
   const items = resource.data?.items ?? [];
   const openId = openFollowupId(items, choice);
 
@@ -58,8 +61,9 @@ export function CoachFollowupsPanel({
         studentId={studentId}
         replacesId={compose.replacesId}
         onCancel={() => onCompose(null)}
-        onSaved={() => {
+        onSaved={(createdId) => {
           // Back to the history, first page, where the record just written is waiting.
+          setArrivedId(createdId);
           onCompose(null);
           resource.setPage(1);
           resource.reload();
@@ -85,9 +89,16 @@ export function CoachFollowupsPanel({
                   key={`${item.id}:${item.version}`}
                   item={item}
                   open={item.id === openId}
-                  onToggle={() => setChoice(item.id === openId ? null : item.id)}
-                  onChanged={() => {
+                  arrived={item.id === arrivedId}
+                  justCompleted={item.id === completedId}
+                  onToggle={() => {
+                    setArrivedId(null);
+                    setChoice(item.id === openId ? null : item.id);
+                  }}
+                  onChanged={(status) => {
                     // The record just acted on stays open, closed or not: its next step is there.
+                    setArrivedId(null);
+                    setCompletedId(status === "COMPLETED" ? item.id : null);
                     setChoice(item.id);
                     resource.reload();
                   }}

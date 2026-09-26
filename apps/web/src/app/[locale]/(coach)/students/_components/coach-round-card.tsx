@@ -21,6 +21,7 @@ import {
 import { Link } from "@/i18n/navigation";
 import { firstName } from "@/lib/greeting";
 import { dativeOf } from "@/lib/turkish-case";
+import { CountPop } from "../../_components/count-pop";
 import type { CoachRound } from "./coach-round-model";
 import { CoachRoundPath } from "./coach-round-path";
 import type { InviteLock } from "./invite-lock";
@@ -102,16 +103,32 @@ export function CoachRoundCard({
       : t(`round_line_${round.kind}`);
 
   return (
-    <section className={PANEL_HERO} aria-labelledby="round-title" data-testid="coach-round">
+    <section
+      className={`${PANEL_HERO} coach-reveal`}
+      aria-labelledby="round-title"
+      data-testid="coach-round"
+    >
       <CompanionBubble
         puhu={round.kind === "complete" ? "happy" : "host"}
         text={line}
         aiLabel={ai ? t("round_ai_label") : null}
         busy={round.kind === "waiting" && briefBusy}
+        reveal
       />
-      <h2 id="round-title" className={PANEL_HERO_TITLE}>
+      <h2
+        id="round-title"
+        className={PANEL_HERO_TITLE}
+        aria-label={
+          round.kind === "waiting"
+            ? t.markup("round_title_waiting", { count: round.waiting, n: (chunks) => chunks })
+            : undefined
+        }
+      >
         {round.kind === "waiting"
-          ? t("round_title_waiting", { count: round.waiting })
+          ? t.rich("round_title_waiting", {
+              count: round.waiting,
+              n: () => <CountPop value={round.waiting} />,
+            })
           : t(`round_title_${round.kind}`)}
       </h2>
 
@@ -132,6 +149,7 @@ export function CoachRoundCard({
           {next ? (
             <Link
               href={{ pathname: "/students/[studentId]", params: { studentId: next.studentId } }}
+              transitionTypes={["nav-forward"]}
               className={`${LEDGE} ${LEDGE_FILLED}`}
             >
               {t("round_cta", { name: nextName, dative: dativeOf(nextName) })}

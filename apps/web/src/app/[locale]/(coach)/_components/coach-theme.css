@@ -32,3 +32,241 @@
   /* Weekly plan completion below the floor. `--color-progress`. */
   --sig-plan: #55acee;
 }
+
+/*
+ * Motion (DESIGN.md §9.1, Durak F). The coach screens are a measured work surface: charts draw once
+ * when their section arrives, a check draws when the coach earns it, nothing loops. Every class
+ * here animates `scale`, `opacity`, `filter` or a colour, never layout, and uses `backwards` fill
+ * so the element keeps its own styles once the animation ends (a lasting `filter` would trap fixed
+ * descendants). `--i` staggers siblings; the longest chain stays under 400 ms.
+ */
+
+/* A section replacing its skeleton. */
+.coach-reveal {
+  animation: coach-reveal var(--duration-fast) var(--ease-smooth-out) backwards;
+}
+
+@keyframes coach-reveal {
+  from {
+    opacity: 0;
+    filter: blur(var(--blur-small));
+  }
+}
+
+/* Minute bars rise from their baseline, left to right. */
+.coach-draw-rise {
+  transform-origin: bottom;
+  animation: coach-draw-rise 260ms var(--ease-smooth-out) backwards;
+  animation-delay: calc(var(--i, 0) * 20ms);
+}
+
+@keyframes coach-draw-rise {
+  from {
+    scale: 1 0;
+  }
+}
+
+/* Horizontal bars and progress fills grow from their start. */
+.coach-draw-grow-x {
+  transform-origin: left;
+  animation: coach-draw-grow-x var(--draw-dur, 300ms) var(--ease-smooth-out) backwards;
+  animation-delay: calc(var(--i, 0) * 30ms);
+}
+
+@keyframes coach-draw-grow-x {
+  from {
+    scale: 0 1;
+  }
+}
+
+/* The rhythm grid's cells, in a diagonal wave (`--i` = column + row). */
+.coach-draw-cell {
+  animation: coach-draw-cell 180ms var(--ease-smooth-out) backwards;
+  animation-delay: calc(var(--i, 0) * 24ms);
+}
+
+@keyframes coach-draw-cell {
+  from {
+    opacity: 0;
+    scale: 0.6;
+  }
+}
+
+/* Task marks settle on the week after its bars. */
+.coach-draw-pop {
+  animation: coach-draw-cell 160ms var(--ease-smooth-out) backwards;
+  animation-delay: calc(120ms + var(--i, 0) * 20ms);
+}
+
+/* Parts that arrive together (the weekly preparation) rise in one after another. */
+.coach-stagger > * {
+  animation: coach-rise var(--duration-fast) var(--ease-smooth-out) backwards;
+}
+
+.coach-stagger > :nth-child(2) {
+  animation-delay: 50ms;
+}
+
+.coach-stagger > :nth-child(3) {
+  animation-delay: 100ms;
+}
+
+.coach-stagger > :nth-child(n + 4) {
+  animation-delay: 150ms;
+}
+
+@keyframes coach-rise {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+}
+
+/* A row that just arrived (a new draft, a new record): its tint fades out. */
+.coach-flash {
+  animation: coach-flash 600ms var(--ease-smooth-out) backwards;
+}
+
+@keyframes coach-flash {
+  from {
+    background-color: var(--play-selected);
+  }
+}
+
+/* One soft ring, once: "the next one is here". `--glow-base` keeps the element's own shadow. */
+.coach-glow {
+  animation: coach-glow 600ms var(--ease-smooth-out) backwards;
+}
+
+@keyframes coach-glow {
+  from {
+    box-shadow:
+      var(--glow-base, 0 0 #0000),
+      0 0 0 0 color-mix(in srgb, var(--coach-accent) 40%, transparent);
+  }
+  to {
+    box-shadow:
+      var(--glow-base, 0 0 #0000),
+      0 0 0 10px transparent;
+  }
+}
+
+/* `DigitPopIn` at the coach's pace: the round's count settles inside the progress moment. */
+.coach-count {
+  --digit-dur: var(--duration-fast);
+  --digit-stagger: var(--duration-stagger);
+}
+
+/* `SuccessCheck` at the coach's scale: about 350 ms, a small turn, no 30 px bob. */
+.coach-check {
+  --check-opacity-dur: 200ms;
+  --check-rotate-dur: 350ms;
+  --check-rotate-from: 12deg;
+  --check-bob-dur: 350ms;
+  --check-y-amount: 3px;
+  --check-blur-dur: 250ms;
+  --check-blur-from: var(--blur-small);
+  --check-path-dur: 300ms;
+  --check-path-delay: 40ms;
+}
+
+/*
+ * The page slide between the coach's two screens (`CoachPageTransition`; Next's view-transitions
+ * guide, shortened): forward moves the page left, back moves it right, 48 px in 300 ms. The old page
+ * is gone in 120 ms; the new one fades in over 200 ms after 60 ms, so the two overlap instead of
+ * leaving an empty frame between them. A navigation without a type
+ * (the browser's back button, a refresh) does not slide. The exit has its own keyframes rather than
+ * `reverse`: a reversed ease-out runs as an ease-in, and the old page would linger before it moves.
+ */
+::view-transition-old(.nav-forward),
+::view-transition-old(.nav-back) {
+  animation:
+    120ms var(--ease-smooth-out) both coach-page-fade-out,
+    300ms var(--ease-smooth-out) both coach-page-slide-out;
+}
+
+::view-transition-new(.nav-forward),
+::view-transition-new(.nav-back) {
+  animation:
+    200ms var(--ease-smooth-out) 60ms both coach-page-fade-in,
+    300ms var(--ease-smooth-out) both coach-page-slide-in;
+}
+
+::view-transition-old(.nav-forward),
+::view-transition-new(.nav-back) {
+  --coach-slide: -48px;
+}
+
+::view-transition-new(.nav-forward),
+::view-transition-old(.nav-back) {
+  --coach-slide: 48px;
+}
+
+@keyframes coach-page-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes coach-page-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes coach-page-slide-in {
+  from {
+    translate: var(--coach-slide);
+  }
+}
+
+@keyframes coach-page-slide-out {
+  to {
+    translate: var(--coach-slide);
+  }
+}
+
+/* The chrome (named in `app-nav.tsx`) holds still above the sliding page. */
+::view-transition-group(app-topbar),
+::view-transition-group(app-tabbar),
+::view-transition-group(app-sidebar) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(app-topbar),
+::view-transition-old(app-tabbar),
+::view-transition-old(app-sidebar) {
+  display: none;
+}
+
+::view-transition-new(app-topbar),
+::view-transition-new(app-tabbar),
+::view-transition-new(app-sidebar) {
+  animation: none;
+}
+
+/* Clicks during the slide reach the live page instead of the overlay. */
+::view-transition {
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-old(*),
+  ::view-transition-new(*),
+  ::view-transition-group(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+
+  .coach-reveal,
+  .coach-draw-rise,
+  .coach-draw-grow-x,
+  .coach-draw-cell,
+  .coach-draw-pop,
+  .coach-stagger > *,
+  .coach-flash,
+  .coach-glow {
+    animation: none;
+  }
+}

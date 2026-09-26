@@ -92,34 +92,37 @@ export function StudentsCard({
         />
       </div>
 
-      {rows === null ? (
-        <RowsSkeleton />
-      ) : tab === "ENDED" ? (
-        rows.length === 0 ? (
-          <p className={EMPTY}>{t("roster_ended_empty_body")}</p>
+      {/* Keyed by what it shows: arriving rows and a switched tab fade in; the skeleton does not. */}
+      <div key={rows === null ? "loading" : tab} className={rows === null ? undefined : "coach-reveal"}>
+        {rows === null ? (
+          <RowsSkeleton />
+        ) : tab === "ENDED" ? (
+          rows.length === 0 ? (
+            <p className={EMPTY}>{t("roster_ended_empty_body")}</p>
+          ) : (
+            <ul className="mt-3 flex flex-col">
+              {rows.map((row) => (
+                <EndedStudentRow key={row.linkId} row={row} />
+              ))}
+            </ul>
+          )
+        ) : rows.length === 0 ? (
+          <p className={EMPTY}>{t("roster_empty_body")}</p>
         ) : (
-          <ul className="mt-3 flex flex-col">
-            {rows.map((row) => (
-              <EndedStudentRow key={row.linkId} row={row} />
-            ))}
-          </ul>
-        )
-      ) : rows.length === 0 ? (
-        <p className={EMPTY}>{t("roster_empty_body")}</p>
-      ) : (
-        <>
-          <div className="mt-4">
-            <ActivityLegend title={t("activity_legend_title", { days: 14 })} />
-          </div>
-          {groups ? (
-            <>
-              {group(t("students_group_waiting"), groups.waiting)}
-              {group(t("students_group_seen"), groups.seenToday)}
-              {group(t("students_group_on_track"), groups.onTrack)}
-            </>
-          ) : null}
-        </>
-      )}
+          <>
+            <div className="mt-4">
+              <ActivityLegend title={t("activity_legend_title", { days: 14 })} />
+            </div>
+            {groups ? (
+              <>
+                {group(t("students_group_waiting"), groups.waiting)}
+                {group(t("students_group_seen"), groups.seenToday)}
+                {group(t("students_group_on_track"), groups.onTrack)}
+              </>
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }

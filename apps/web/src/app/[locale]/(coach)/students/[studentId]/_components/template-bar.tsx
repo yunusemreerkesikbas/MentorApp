@@ -5,7 +5,7 @@ import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, TextField } from "@mentor/ui";
+import { Button, ShimmerText, TextField } from "@mentor/ui";
 import {
   NOTE_CLASS,
   PANEL_LINK_BUTTON,
@@ -119,7 +119,7 @@ export function SuggestLink({
       onClick={() => void suggest()}
     >
       <Sparkles className="size-4" aria-hidden />
-      {suggesting ? t("suggest_busy") : t("suggest_action")}
+      {suggesting ? <ShimmerText text={t("suggest_busy")} /> : t("suggest_action")}
     </button>
   );
 }

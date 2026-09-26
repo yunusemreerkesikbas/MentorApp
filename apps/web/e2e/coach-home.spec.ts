@@ -666,3 +666,63 @@ test.describe("davet ve koltuklar", () => {
     await expect(tabs.getByRole("link", { name: "Analiz" })).toHaveCount(0);
   });
 });
+
+/**
+ * Motion (Durak F, DESIGN.md §9.1). What is pinned here is behaviour, not timing: one "Sıradaki"
+ * tip that moves, a check drawn only for a mark made on this screen, a count that pops without
+ * changing what a reader hears, and nothing animating when the coach asked for less motion.
+ */
+test.describe("hareket", () => {
+  test("İlgilendim: tek Sıradaki etiketi sıradakine geçer, işaretlenen düğüm ✓ çizer", async ({ page }) => {
+    await mockApi(page, COACH);
+    await page.goto("/kocluk");
+
+    const round = page.getByTestId("coach-round");
+    const nodes = round.getByTestId("round-node");
+    await expect(round.getByTestId("round-next-tip")).toHaveCount(1);
+    await expect(nodes.nth(1).getByTestId("round-next-tip")).toBeVisible();
+
+    await nodes.nth(1).click();
+    await page.getByRole("menuitem", { name: "İlgilendim" }).click();
+
+    // The count pops, and a reader still hears one sentence.
+    const title = round.getByRole("heading", { name: "2 öğrenci seni bekliyor" });
+    await expect(title).toBeVisible();
+    await expect(title.locator(".t-digit-group")).toHaveCount(1);
+    // Still one tip, now on Ali's node.
+    await expect(round.getByTestId("round-next-tip")).toHaveCount(1);
+    await expect(nodes.nth(2).getByTestId("round-next-tip")).toBeVisible();
+    // Zeynep was marked here, so her check draws; Mert's came with the page and stays still.
+    await expect(nodes.nth(1).locator(".t-success-check")).toHaveCount(1);
+    await expect(nodes.nth(0).locator(".t-success-check")).toHaveCount(0);
+  });
+
+  test("azaltılmış harekette tur ve liste hemen görünür, hiçbir çizim oynamaz", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await mockApi(page, COACH);
+    await page.goto("/kocluk");
+
+    await expect(page.getByTestId("coach-round")).toBeVisible();
+    await expect(page.getByTestId("student-row").first()).toBeVisible();
+    const running = await page.evaluate(
+      () =>
+        document
+          .getAnimations()
+          .filter((animation) => animation instanceof CSSAnimation && animation.animationName.startsWith("coach-"))
+          .length,
+    );
+    expect(running).toBe(0);
+  });
+
+  test("davet linkini kopyalayınca düğme bir an Kopyalandı der", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await mockApi(page, COACH);
+    await page.goto("/kocluk");
+
+    const seats = page.getByRole("region", { name: "Davet ve koltuklar" });
+    await seats.getByRole("button", { name: "Davet linkini kopyala" }).click();
+    await expect(seats.getByRole("button", { name: "Kopyalandı" })).toBeVisible();
+    // 1.5 s later it is the copy button again.
+    await expect(seats.getByRole("button", { name: "Davet linkini kopyala" })).toBeVisible({ timeout: 5_000 });
+  });
+});

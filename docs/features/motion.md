@@ -50,6 +50,13 @@ import {
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-26 — Koç ekranlarında hareket (APP-111, Durak F)
+
+- **What:** `/kocluk` ve `/kocluk/[studentId]` hareket aldı (tablo: DESIGN.md §9.1 "The coach's screens"). Tur ilerleme anı (✓ çizimi, bağlayıcı dolumu, sıradaki düğümün büyümesi, tek "Sıradaki" etiketinin kayması, sayının DigitPopIn'i), grafiklerin tek seferlik çizimi, bölümlerin iskeletten gelişi, panel başarı anı, planlayıcıda kayan gün vurgusu ve sırayla gelen taslaklar, akordeon ve alanların yükseklikle açılması, React `<ViewTransition>` ile yönlü sayfa kayması.
+- **Usage:** `CoachCheck draw` (✓, `.coach-check` = SuccessCheck'in ≈350 ms hali), `useSuccessMoment().play()` (✓'yi gösterir, sonra çözülür; azaltılmış harekette hemen), `CountPop` (sayfa açıldığındaki sayı sabit, değişince DigitPopIn; başlığı cümleyi `aria-label` olarak taşır), `drawOrder(i)` + `.coach-draw-rise/grow-x/cell/pop`, `.coach-reveal`, `.coach-flash`, `.coach-glow`, `.coach-stagger`. Sayfa geçişi: `CoachPageTransition` her `page.tsx`'i sarar; bağlantılar `transitionTypes={["nav-forward"]}` ya da `["nav-back"]` taşır, `router.push(href, { transitionTypes })` da çalışır. Paylaşılan parçalar yeni hareketi isteğe bağlı prop'la alır, `/panel` değişmez: `PathItem animateReach`, `CompanionBubble reveal`, `ProgressLine fillClassName`.
+- **Gotchas:** SkeletonReveal iki katmanı kalıcı olarak tek grid hücresinde tutar; iskeletinden kısa bir bölüm iskeletin yüksekliğinde kalır, bu yüzden koç bölümleri `.coach-reveal` kullanır. Çizim sınıfları `backwards` doldurur: bitmiş bir animasyon kalıcı `filter`/`scale` bırakmaz (kalıcı `filter`, `fixed` torunlar için içerme bloğu olur). `layout` animasyonu CSS `transition-transform` taşıyan bir öğeye konmaz (framer ile `transform` için çekişir); tur düğümünde sarmalayıcı `motion.div layout="size"` bu yüzden var. `AnimatePresence mode="wait"` ile gelen alanın odağı effect'le değil `autoFocus` ile verilir (alan eskisi çıktıktan sonra mount olur). Sürümü anahtarında taşıyan satırlar (takip) değişince yeniden mount olur; "az önce" bilgisi listeden gelir. View transition sırasında adlı kabuk (üst çubuk, alt menü, kenar çubuğu) tıklama almaz; süre kısa tutuldu. Tipsiz gezinme (tarayıcı geri tuşu, menü sekmesi) kaymaz.
+- **Related:** `(coach)/_components/{coach-theme.css, coach-motion-config.tsx, coach-page-transition.tsx, count-pop.tsx}`, `components/mentorship/{coach-check.tsx, coach-motion.ts}`, `components/panel/{path-item,companion-bubble,progress-line}.tsx`, `components/app-nav.tsx` (`viewTransitionName`), `src/types/react-canary.d.ts`.
+
 ### 2026-09-08 — Bulut geçişi hiç ilerlemiyordu (APP-089'da bulundu)
 
 `CloudTransitionProvider` faz makinesi doğruydu (`cloud-transition.spec.ts` onu zaten

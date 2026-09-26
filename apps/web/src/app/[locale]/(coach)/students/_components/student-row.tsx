@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { Check, Sparkles } from "lucide-react";
+import { Sparkles } from "lucide-react";
 import type { MentorshipRosterRowDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
+import { CoachCheck } from "@/components/mentorship/coach-check";
 import { ActivityStrip } from "../../_components/activity-strip";
 import { daysSinceMark, isAttended } from "../../_components/attention";
 import { sortFlags, worstFlag } from "../../_components/flag-order";
@@ -67,11 +69,14 @@ export function StudentRow({
   const rest = flags.slice(2);
   const attended = isAttended(row);
   const ai = row.needsAttention && aiWhy !== null;
+  // The ✓ draws only for a mark the coach made on this row; a loaded mark sits still.
+  const [pressed, setPressed] = useState(false);
 
   return (
     <li className={ROW} data-testid="student-row">
       <Link
         href={{ pathname: "/students/[studentId]", params: { studentId: row.studentId } }}
+        transitionTypes={["nav-forward"]}
         className="flex min-h-[72px] min-w-0 flex-1 flex-wrap items-center gap-x-3.5 gap-y-2.5 rounded-[var(--radius-card)] py-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       >
         {/* The name keeps its room; when strip and pills cannot fit beside it they take the next
@@ -124,15 +129,19 @@ export function StudentRow({
           aria-pressed={attended}
           aria-label={t("row_attention_aria", { name: row.studentDisplayName })}
           disabled={busy}
-          onClick={() => onMark(row.studentId, !attended)}
-          className={`grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border-2 outline-none transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-wait motion-reduce:transition-none ${
+          onClick={() => {
+            setPressed(true);
+            onMark(row.studentId, !attended);
+          }}
+          className={`grid size-11 shrink-0 cursor-pointer place-items-center rounded-full border-2 outline-none transition-[color,background-color,border-color,scale] duration-150 ease-[var(--ease-smooth-out)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:scale-95 disabled:cursor-wait motion-reduce:transition-none ${
             attended
               ? "border-[var(--coach-accent)] bg-[var(--coach-accent)] text-[var(--color-bg)]"
               : "border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-secondary)] hover:border-[var(--coach-accent)] hover:text-[var(--coach-accent)]"
           }`}
           data-testid="attention-toggle"
         >
-          <Check className="size-5" strokeWidth={3} aria-hidden />
+          {/* Keyed by the mark, so turning it on mounts a fresh ✓ that draws itself. */}
+          <CoachCheck key={String(attended)} draw={attended && pressed} />
         </button>
       ) : (
         <span aria-hidden className="w-11 shrink-0" />

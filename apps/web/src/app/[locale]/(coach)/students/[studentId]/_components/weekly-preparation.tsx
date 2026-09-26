@@ -66,7 +66,8 @@ export function WeeklyPreparation({
 }) {
   const t = useTranslations("mentorship");
   return (
-    <div className={`${INSET_GROUP_CLASS} flex flex-col gap-5 p-4`}>
+    // Its four parts rise in one after another when the preparation arrives (`.coach-stagger`).
+    <div className={`${INSET_GROUP_CLASS} coach-stagger flex flex-col gap-5 p-4`}>
       <section className="flex flex-col gap-2">
         <h4 className={HEADING}>{t("preparation_focus")}</h4>
         <p className={BODY}>{preparation.focus.text}</p>

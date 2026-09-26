@@ -3596,7 +3596,7 @@
     "roster_load_failed": "Öğrencilerini şu an getiremedik.",
     "roster_retry": "Yeniden dene",
     "round_label": "Bugünün turu",
-    "round_title_waiting": "{count} öğrenci seni bekliyor",
+    "round_title_waiting": "<n>{count}</n> öğrenci seni bekliyor",
     "round_title_complete": "Bugünkü tur tamam",
     "round_title_calm": "Bugün herkes yolunda",
     "round_title_empty": "İlk öğrencini davet et",
@@ -3755,6 +3755,7 @@
     "followup_panel_subtitle": "{name} · {count} kayıt",
     "followup_opened_on": "{date} tarihinde açtın",
     "followup_coach_accepted": "Kabul etti",
-    "followup_page_of": "Sayfa {page} / {pages}"
+    "followup_page_of": "Sayfa {page} / {pages}",
+    "invite_copied_short": "Kopyalandı"
   }
 }

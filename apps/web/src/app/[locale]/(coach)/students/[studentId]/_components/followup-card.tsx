@@ -34,7 +34,7 @@ export function FollowupCard({
   const open = (resource.data?.items ?? []).filter((item) => item.status === "OPEN").slice(0, RAIL_ITEMS);
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-1`} aria-labelledby="followup-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-1`} aria-labelledby="followup-title">
       <div className="flex items-center justify-between gap-3">
         <h2 id="followup-title" className={PANEL_CARD_TITLE}>
           {t("followup_recent_title")}

@@ -3596,7 +3596,7 @@
     "roster_load_failed": "We could not load your students just now.",
     "roster_retry": "Try again",
     "round_label": "Today's round",
-    "round_title_waiting": "{count, plural, one {# student is} other {# students are}} waiting for you",
+    "round_title_waiting": "{count, plural, one {<n>#</n> student is} other {<n>#</n> students are}} waiting for you",
     "round_title_complete": "Today's round is done",
     "round_title_calm": "Everyone is on track today",
     "round_title_empty": "Invite your first student",
@@ -3755,6 +3755,7 @@
     "followup_panel_subtitle": "{name} · {count, plural, one {# record} other {# records}}",
     "followup_opened_on": "You opened it on {date}",
     "followup_coach_accepted": "Accepted",
-    "followup_page_of": "Page {page} of {pages}"
+    "followup_page_of": "Page {page} of {pages}",
+    "invite_copied_short": "Copied"
   }
 }

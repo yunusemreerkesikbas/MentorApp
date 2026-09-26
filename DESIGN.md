@@ -450,6 +450,22 @@ uniformly restrained — it is loud where progress happens and quiet where work 
 Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
 deliberate presence cue, disabled under reduced motion.
 
+**The coach's screens (2026-09-26, Durak F).** `/kocluk` is a Measured work surface with two
+Progress moments of its own. Classes live in `(coach)/_components/coach-theme.css`; framer defaults
+come from `CoachMotionConfig` (`reducedMotion="user"`); constants in `components/mentorship/coach-motion.ts`.
+
+| Where | Motion | Budget |
+| --- | --- | --- |
+| Round progress (marking a student) | ✓ draws on the node (`CoachCheck`), the connector fills (`PathItem animateReach`), the next node grows (`layout="size"`), the one "Sıradaki" tip glides (`layoutId`), the count pops (`CountPop`) | ≤400 ms |
+| Charts | Draw once when their section arrives: week bars rise, rhythm cells wave diagonally, mood and subject bars grow, progress fills from zero (`.coach-draw-*`); the 14-day row strips stay still | ≤400 ms |
+| Sections | Skeleton → content fade (`.coach-reveal`), bubble lines rise in when they replace another (`CompanionBubble reveal`) | 250 ms |
+| Success | ✓ on the button or tag (`useSuccessMoment`), then the panel closes or the tag turns; the toast still shows | ≈350 ms |
+| Panels | Day tint slides between chips, weeks slide 12 px the way the arrow points, drafts enter and leave, sections open by height | 150–250 ms |
+| Pages | `CoachPageTransition`: `nav-forward` (into a student, "Sıradaki") slides left, `nav-back` ("‹ Öğrencilerim") right, 48 px; the chrome stays still; untyped navigation does not slide | 300 ms |
+
+Nothing waits on these: under reduced motion the check shows at once, panels close at once and pages
+swap without a slide.
+
 ---
 
 ## 10. Empty & loading

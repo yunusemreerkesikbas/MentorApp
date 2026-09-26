@@ -33,7 +33,7 @@ export function PlanCard({
   };
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-1`} aria-labelledby="plan-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-1`} aria-labelledby="plan-title">
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="plan-title" className={PANEL_CARD_TITLE}>
           {t("report_plan")}
@@ -78,6 +78,7 @@ export function PlanCard({
                       value={row.done}
                       max={row.total}
                       complete={row.done === row.total}
+                      fillClassName="coach-draw-grow-x [--draw-dur:400ms]"
                     />
                   </div>
                 );

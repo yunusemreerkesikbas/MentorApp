@@ -2,7 +2,7 @@
 import { useId, type Ref } from "react";
 import { Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button, TextField, TextAreaField } from "@mentor/ui";
+import { Button, TextAreaField, TextField, TextSwap } from "@mentor/ui";
 import { mentorshipAssignmentTaskSchema } from "@mentor/validation";
 import { DateField } from "@/components/date-field";
 import { PANEL_QUIET_BUTTON } from "@/components/mentorship/coach-ui";
@@ -70,7 +70,7 @@ export function PlanningComposer({
   return (
     <section className="flex flex-col gap-3" aria-labelledby={headingId}>
       <h3 id={headingId} className={PLANNER_SUBHEAD}>
-        {t(mode === "edit" ? "planning_edit_task" : "planning_new_task")}
+        <TextSwap text={t(mode === "edit" ? "planning_edit_task" : "planning_new_task")} />
       </h3>
       <TextField
         ref={titleRef}

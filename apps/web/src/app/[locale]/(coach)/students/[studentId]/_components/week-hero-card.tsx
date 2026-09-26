@@ -63,12 +63,13 @@ export function WeekHeroCard({
           : t("week_line_calm", { name });
 
   return (
-    <section className={PANEL_HERO} aria-labelledby="week-title" data-testid="week-hero">
+    <section className={`${PANEL_HERO} coach-reveal`} aria-labelledby="week-title" data-testid="week-hero">
       <CompanionBubble
         puhu="host"
         text={line}
         aiLabel={ai ? t("round_ai_label") : null}
         busy={briefBusy}
+        reveal
       />
       <h2 id="week-title" className={PANEL_HERO_TITLE}>
         {!trace

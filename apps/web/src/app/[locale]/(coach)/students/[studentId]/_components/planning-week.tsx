@@ -1,9 +1,11 @@
 "use client";
-import type { Dispatch, SetStateAction } from "react";
+import { useState, type Dispatch, type SetStateAction } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button, Skeleton } from "@mentor/ui";
+import { Button, Skeleton, TextSwap } from "@mentor/ui";
 import { PANEL_QUIET_BUTTON } from "@/components/mentorship/coach-ui";
+import { COACH_EASE } from "@/components/mentorship/coach-motion";
 import { ComposerDayPicker } from "./composer-day-picker";
 import {
   followDay,
@@ -25,6 +27,8 @@ const WEEK_ARROW =
  * The top of the planner: the week between two arrows, its seven days, and what the chosen day
  * already holds on the student's plan (the coach's tasks under the cap, the student's own under the
  * book), so a new task is written knowing what is there.
+ *
+ * Moving a week swaps its range in place and slides the days 12 px the way the arrow points.
  */
 export function PlanningWeek({
   state,
@@ -53,6 +57,13 @@ export function PlanningWeek({
   const dates = useReportDates();
   const current = monday(today);
   const rows = (data.rows ?? []).filter((row) => row.taskDate === state.day);
+  // Which way the week moved, for the days' slide; adjusted while rendering, not in an effect.
+  const [shownWeek, setShownWeek] = useState(state.week);
+  const [direction, setDirection] = useState(0);
+  if (state.week !== shownWeek) {
+    setDirection(state.week > shownWeek ? 1 : -1);
+    setShownWeek(state.week);
+  }
 
   return (
     <>
@@ -68,7 +79,7 @@ export function PlanningWeek({
         </button>
         <div className="flex min-w-0 flex-col items-center">
           <p className="text-base font-extrabold text-[var(--color-main)]">
-            {dates.range(state.week, shiftDate(state.week, 6))}
+            <TextSwap text={dates.range(state.week, shiftDate(state.week, 6))} />
           </p>
           {state.week === current ? (
             <span className="text-caption font-semibold text-[var(--color-secondary)]">
@@ -90,15 +101,24 @@ export function PlanningWeek({
           <ChevronRight className="size-5" aria-hidden />
         </button>
       </div>
-      <ComposerDayPicker
-        days={days}
-        selectedDate={state.day}
-        counts={counts}
-        existingCounts={existingCounts}
-        onSelect={(day) =>
-          setState((s) => ({ ...s, day, editor: followDay(s.editor, day, drafts) }))
-        }
-      />
+      <AnimatePresence initial={false} mode="wait">
+        <motion.div
+          key={state.week}
+          initial={{ opacity: 0, x: direction * 12 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.2, ease: COACH_EASE }}
+        >
+          <ComposerDayPicker
+            days={days}
+            selectedDate={state.day}
+            counts={counts}
+            existingCounts={existingCounts}
+            onSelect={(day) =>
+              setState((s) => ({ ...s, day, editor: followDay(s.editor, day, drafts) }))
+            }
+          />
+        </motion.div>
+      </AnimatePresence>
       <section className="flex flex-col">
         <h3 className={PLANNER_SUBHEAD}>
           {dates.longDay(state.day)} · {t("planning_existing")}

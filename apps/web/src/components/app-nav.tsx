@@ -214,7 +214,11 @@ export function AppNav() {
       />
 
       {hideMobileChrome ? null : (
-        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
+        // The chrome is named so a page slide (the coach screens, `coach-theme.css`) passes under it.
+        <header
+          className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden"
+          style={{ viewTransitionName: "app-topbar" }}
+        >
           {user ? (
             <MobileIdentity premium={premium} user={user} />
           ) : (
@@ -243,6 +247,7 @@ export function AppNav() {
       {hideMobileChrome ? null : (
         <nav
           className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
+          style={{ viewTransitionName: "app-tabbar" }}
           aria-label={t("aria_label")}
         >
           <MobileTabBar pathname={pathname} user={user} />
@@ -304,7 +309,7 @@ function DesktopSidebar({
   return (
     <aside
       className="mentor-app-sidebar fixed inset-y-0 left-0 z-20 hidden overflow-visible flex-col border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:flex"
-      style={{ boxShadow: "var(--shadow-card)" }}
+      style={{ boxShadow: "var(--shadow-card)", viewTransitionName: "app-sidebar" }}
       aria-label={t("aria_label")}
       data-testid="app-sidebar"
     >

@@ -211,6 +211,27 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-26 — Coach redesign, stop F: motion on the coach screens.** Marking a student is the round's
+  progress moment: the node draws its ✓, the connector fills toward the next student, whose node grows while the
+  one "Sıradaki" tip glides to it, and the title's count pops (all under 400 ms). Charts draw once when their
+  section arrives (week bars rise, rhythm cells wave, mood and subject bars grow, plan and seat lines fill);
+  the 14-day row strips stay still. Sections fade in from their skeletons; the bubble's line rises in when it
+  replaces another (the brief arriving, the next student's name). Success is a ✓: on the planner's send and the
+  note's save before the panel closes or the note returns, in the weekly status tag ("Sonlandırıldı") and a
+  completed follow-up's tag; the toasts stay. Copying the invite link says "Kopyalandı" on the button for 1.5 s.
+  Panels: the day tint slides between chips, weeks slide 12 px the way the arrow points, drafts enter (an
+  assistant batch 40 ms apart) and leave, earlier tasks / the focus field / follow-up bodies open by height, a
+  new follow-up arrives tinted. Pages slide with React `<ViewTransition>`: into a student and "Sıradaki" move
+  left, "‹ Öğrencilerim" moves right; the chrome holds still. **Usage:** DESIGN.md §9.1 "The coach's screens",
+  `docs/features/motion.md` 2026-09-26. **Gotchas:** (1) `FollowupCreateForm.onSaved` now passes the new
+  record's id; rows are keyed by `id:version`, so "just completed" and "just arrived" live in the list, not the
+  row. (2) `round_title_waiting` is a rich message (`<n>{count}</n>`) so the count can pop; the heading carries
+  the plain sentence as `aria-label` (`t.markup`), since split digits can be read apart and a hidden copy
+  would double the text (`getByText` saw "22/21"). (3) `useSuccessMoment` holds the panel open 350 ms only when
+  motion is allowed. (4) `components/mentorship/coach-check.tsx` and `coach-motion.ts` sit beside `coach-ui.tsx`
+  so `components/mentorship` never imports from `app/(coach)`. **Related:** the files in motion.md's entry;
+  `e2e/coach-home.spec.ts` "hareket", `e2e/coach-student.spec.ts` (slide types via `startViewTransition`).
+
 - **2026-09-26 — The coach's navigation looks like the student's.** The mobile tab pill has one
   silhouette for both roles: the role's home sits raised in the centre (Koç for a student, Öğrencilerim
   for a coach: Plan · Blog · Öğrencilerim · Topluluk · Ayarlar), and the active tab is the same black circle.

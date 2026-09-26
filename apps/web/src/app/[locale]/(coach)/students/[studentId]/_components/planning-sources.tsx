@@ -1,9 +1,11 @@
 "use client";
 import { useId, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { PANEL_LINK_BUTTON } from "@/components/mentorship/coach-ui";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { COACH_FAST } from "@/components/mentorship/coach-motion";
 import type { AssignDraft } from "./planning-state";
 import { PlanningSource } from "./planning-source";
 import { SuggestLink } from "./template-bar";
@@ -12,6 +14,9 @@ import { SuggestLink } from "./template-bar";
  * Where a week can start from, as three quiet links: earlier tasks (opened in place), a saved
  * template (a menu) or the assistant's draft. None of them sends anything; each only fills the
  * program, which the coach still reads before the send.
+ *
+ * Earlier tasks open and close by height. The spacing above them sits inside the part that
+ * collapses, and a 4 px margin keeps focus rings clear of its clipping edge.
  */
 export function PlanningSources({
   studentId,
@@ -41,7 +46,7 @@ export function PlanningSources({
   const [showPrevious, setShowPrevious] = useState(false);
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col">
       <div className="flex flex-wrap items-center gap-x-5">
         <button
           type="button"
@@ -60,11 +65,23 @@ export function PlanningSources({
           onPendingChange={onPendingChange}
         />
       </div>
-      {showPrevious ? (
-        <div id={previousId}>
-          <PlanningSource studentId={studentId} target={target} count={count} copied={copied} onAdd={onCopy} />
-        </div>
-      ) : null}
+      <AnimatePresence initial={false}>
+        {showPrevious ? (
+          <motion.div
+            key="previous"
+            id={previousId}
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={COACH_FAST}
+            className="-mx-1 -mb-1 overflow-hidden px-1 pb-1"
+          >
+            <div className="pt-3">
+              <PlanningSource studentId={studentId} target={target} count={count} copied={copied} onAdd={onCopy} />
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
     </div>
   );
 }

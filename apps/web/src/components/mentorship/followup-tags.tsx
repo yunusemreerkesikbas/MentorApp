@@ -2,10 +2,12 @@
 
 import { Check, Clock, MessageSquare } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { TextSwap } from "@mentor/ui";
 import type {
   MentorshipFollowupResponse,
   MentorshipFollowupStatus,
 } from "@mentor/types";
+import { CoachCheck } from "./coach-check";
 
 const TAG =
   "inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-[var(--radius-card)] px-2 text-xs font-extrabold";
@@ -15,14 +17,25 @@ const ASKED = "bg-[var(--play-selected)] text-[var(--play-selected-ink)]";
 
 /**
  * Where a follow-up stands, on the coach's side, as small tags rather than outlined pills (the
- * panel's language). The student's screen keeps its own `FollowupStatus`.
+ * panel's language). The student's screen keeps its own `FollowupStatus`. `drawCheck`: the coach
+ * completed it just now, so the ✓ draws and the word swaps in place.
  */
-export function FollowupStatusTag({ status }: { status: MentorshipFollowupStatus }) {
+export function FollowupStatusTag({
+  status,
+  drawCheck = false,
+}: {
+  status: MentorshipFollowupStatus;
+  drawCheck?: boolean;
+}) {
   const t = useTranslations("mentorship");
   return (
-    <span className={`${TAG} ${status === "COMPLETED" ? DONE : NEUTRAL}`}>
-      {status === "COMPLETED" ? <Check className="size-3.5" strokeWidth={3} aria-hidden /> : null}
-      {t(`followup_status_${status}`)}
+    <span
+      className={`${TAG} transition-colors duration-250 motion-reduce:transition-none ${status === "COMPLETED" ? DONE : NEUTRAL}`}
+    >
+      {status === "COMPLETED" ? (
+        <CoachCheck draw={drawCheck} className="size-3.5" />
+      ) : null}
+      <TextSwap text={t(`followup_status_${status}`)} />
     </span>
   );
 }

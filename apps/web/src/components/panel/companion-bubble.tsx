@@ -2,10 +2,13 @@
 
 import type { ReactNode } from "react";
 import { useLayoutEffect, useRef, useState } from "react";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { Sparkles } from "lucide-react";
+import { ShimmerText } from "@mentor/ui";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
+
+const REVEAL_EASE = [0.22, 1, 0.36, 1] as const;
 
 /**
  * Puhu speaking in a bubble (DESIGN.md §1 rule 4, §6.1): one line, first person. An AI-written line
@@ -16,6 +19,7 @@ export function CompanionBubble({
   text,
   aiLabel = null,
   busy = false,
+  reveal = false,
   children,
 }: {
   puhu: PuhuVariant;
@@ -23,31 +27,59 @@ export function CompanionBubble({
   aiLabel?: string | null;
   /** The AI line is still being written; `text` is the waiting line. */
   busy?: boolean;
+  /**
+   * The coach's bubbles: the waiting line shimmers, and a line that replaces another (the brief
+   * arriving, the next student's name) rises in. The first line on the screen draws still.
+   */
+  reveal?: boolean;
   /** Under the line: a free user's lock nudge. */
   children?: ReactNode;
 }) {
+  const line = (
+    <>
+      {aiLabel ? (
+        <span className="mb-1 flex items-center gap-1.5 text-xs font-extrabold text-[var(--play-selected-ink)]">
+          <Sparkles
+            className="size-3.5 fill-current text-[var(--premium-ring-from)]"
+            aria-hidden
+          />
+          {aiLabel}
+        </span>
+      ) : null}
+      {busy && reveal ? (
+        <ShimmerText as="p" text={text} className="text-body-sm font-semibold leading-6" />
+      ) : busy ? (
+        <p className="text-body-sm font-semibold leading-6 text-[var(--color-secondary)]">
+          {text}
+        </p>
+      ) : (
+        <ExpandableNote text={text} />
+      )}
+    </>
+  );
+
   return (
     <div className="flex items-start gap-3 sm:gap-4">
       <PuhuImage variant={puhu} size={72} className="shrink-0" />
       <div
         aria-busy={busy || undefined}
-        className={`min-w-0 flex-1 rounded-[var(--play-radius)] px-4 py-3 ${aiLabel ? "bg-[color-mix(in_srgb,var(--premium-ring-from)_10%,var(--color-surface))]" : "bg-[var(--play-selected)]"}`}
+        className={`min-w-0 flex-1 rounded-[var(--play-radius)] px-4 py-3 ${aiLabel ? "bg-[color-mix(in_srgb,var(--premium-ring-from)_10%,var(--color-surface))]" : "bg-[var(--play-selected)]"} ${reveal ? "transition-colors duration-200 motion-reduce:transition-none" : ""}`}
       >
-        {aiLabel ? (
-          <span className="mb-1 flex items-center gap-1.5 text-xs font-extrabold text-[var(--play-selected-ink)]">
-            <Sparkles
-              className="size-3.5 fill-current text-[var(--premium-ring-from)]"
-              aria-hidden
-            />
-            {aiLabel}
-          </span>
-        ) : null}
-        {busy ? (
-          <p className="text-body-sm font-semibold leading-6 text-[var(--color-secondary)]">
-            {text}
-          </p>
+        {reveal ? (
+          // `wait`: the old line leaves in 100 ms before the new one rises, so the two never stack.
+          <AnimatePresence initial={false} mode="wait">
+            <motion.div
+              key={`${busy ? "busy" : "line"}:${text}`}
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, transition: { duration: 0.1 } }}
+              transition={{ duration: 0.25, ease: REVEAL_EASE }}
+            >
+              {line}
+            </motion.div>
+          </AnimatePresence>
         ) : (
-          <ExpandableNote text={text} />
+          line
         )}
         {children}
       </div>

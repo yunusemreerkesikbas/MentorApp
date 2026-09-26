@@ -40,7 +40,7 @@ export function MoodCard({
 
   if (entries.length === 0) {
     return (
-      <section className={`${PANEL_CARD} flex flex-col gap-3`} aria-labelledby="mood-title">
+      <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-3`} aria-labelledby="mood-title">
         {header}
         <p className="text-body-sm font-semibold text-[var(--color-body)]">{t("report_mood_empty")}</p>
       </section>
@@ -52,7 +52,7 @@ export function MoodCard({
   const days = Array.from({ length: WINDOW_DAYS }, (_, index) => shiftIso(today, index - (WINDOW_DAYS - 1)));
 
   return (
-    <section className={`${PANEL_CARD} flex flex-col gap-4`} aria-labelledby="mood-title">
+    <section className={`${PANEL_CARD} coach-reveal flex flex-col gap-4`} aria-labelledby="mood-title">
       {header}
       <div className="flex items-end gap-6">
         <div aria-hidden className="grid h-14 flex-1 grid-cols-14 items-end gap-1.5">
@@ -63,7 +63,7 @@ export function MoodCard({
             ) : (
               <span
                 key={date}
-                className="rounded-t-[var(--radius-card)] bg-[var(--color-chip-text)]"
+                className="coach-draw-rise rounded-t-[var(--radius-card)] bg-[var(--color-chip-text)]"
                 style={{ height: `${(level / 5) * 100}%` }}
               />
             );

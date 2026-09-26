@@ -56,7 +56,11 @@ export function buildCoachRound(
   today: string,
 ): CoachRound {
   const active = rows.filter((row) => row.status === "ACTIVE" && row.metrics !== null);
-  const seen = active.filter((row) => seenOn(row, today));
+  // In the order the coach looked: the student just marked stays right before the next one, so
+  // marking turns a node done where it stands instead of moving it past earlier marks.
+  const seen = active
+    .filter((row) => seenOn(row, today))
+    .sort((a, b) => a.attendedAt!.localeCompare(b.attendedAt!));
   const waiting = active.filter((row) => row.needsAttention);
   const studiedToday = active.filter(
     (row) => (row.metrics?.dailyFocusMinutes14d.at(-1) ?? 0) > 0,

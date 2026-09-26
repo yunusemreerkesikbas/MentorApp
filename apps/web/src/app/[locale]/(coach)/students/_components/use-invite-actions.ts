@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError, usersControllerResendVerificationEmail } from "@mentor/api-client";
 import type { MentorshipInviteCodeDto } from "@mentor/types";
@@ -20,6 +20,8 @@ import type { InviteLock } from "./invite-lock";
  * - Rotation asks first when a code exists: it kills every copy already in a student's hands.
  *   Creating the first one invalidates nothing, so that press goes straight through.
  * - EMAIL is the one lock the coach can clear, so pressing create asks to send the verification.
+ * - A copy answers where it was pressed as well: `copied` names what was copied for 1.5 s, and the
+ *   control shows a ✓ meanwhile. The toast stays, it is what a screen reader hears.
  */
 export function useInviteActions({
   inviteCode,
@@ -36,11 +38,18 @@ export function useInviteActions({
   const { success: toastSuccess, error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
   const [busy, setBusy] = useState(false);
+  const [copied, setCopied] = useState<"link" | "code" | null>(null);
+  const copiedTimer = useRef<number | undefined>(undefined);
 
-  async function copy(text: string, title: string) {
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+
+  async function copy(text: string, title: string, what: "link" | "code") {
     try {
       await navigator.clipboard.writeText(text);
       toastSuccess({ title });
+      setCopied(what);
+      window.clearTimeout(copiedTimer.current);
+      copiedTimer.current = window.setTimeout(() => setCopied(null), 1500);
     } catch {
       /* Clipboard can be blocked; revealing the code is the way back to it either way. */
     }
@@ -52,11 +61,12 @@ export function useInviteActions({
     await copy(
       `${window.location.origin}${path}?code=${encodeURIComponent(inviteCode.code)}`,
       t("invite_link_copied"),
+      "link",
     );
   }
 
   async function copyCode() {
-    if (inviteCode) await copy(inviteCode.code, t("invite_copied"));
+    if (inviteCode) await copy(inviteCode.code, t("invite_copied"), "code");
   }
 
   async function verifyEmail() {
@@ -115,5 +125,5 @@ export function useInviteActions({
     }
   }
 
-  return { busy, copyLink, copyCode, rotate };
+  return { busy, copied, copyLink, copyCode, rotate };
 }

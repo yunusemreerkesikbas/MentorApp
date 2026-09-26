@@ -8,12 +8,15 @@ export function ProgressLine({
   max,
   complete = false,
   className = "",
+  fillClassName = "",
 }: {
   label: string;
   value: number;
   max: number;
   complete?: boolean;
   className?: string;
+  /** Extra classes on the fill; the coach screens pass their one-time draw-in. */
+  fillClassName?: string;
 }) {
   const percent = max > 0 ? Math.round((Math.min(value, max) / max) * 100) : 0;
 
@@ -27,7 +30,7 @@ export function ProgressLine({
       className={`h-2 overflow-hidden rounded-full bg-[var(--play-track)] ${className}`}
     >
       <span
-        className={`block h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${complete ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}`}
+        className={`block h-full rounded-full transition-[width] duration-500 motion-reduce:transition-none ${complete ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"} ${fillClassName}`}
         style={{ width: `${percent}%` }}
       />
     </div>

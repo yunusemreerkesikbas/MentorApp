@@ -1,12 +1,14 @@
 "use client";
 
 import { useId, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { Sparkles } from "lucide-react";
 import { MENTORSHIP_COACH_CONTEXT_MAX_LENGTH } from "@mentor/validation";
+import { COACH_FAST } from "@/components/mentorship/coach-motion";
 import { WeeklyPreparation } from "./weekly-preparation";
 import { useLocale, useTranslations } from "next-intl";
 import type { MentorshipWeeklyReportPreviewDto } from "@mentor/types";
-import { Button, TextAreaField } from "@mentor/ui";
+import { Button, ShimmerText, TextAreaField } from "@mentor/ui";
 import {
   INSET_GROUP_CLASS,
   NOTE_CLASS,
@@ -67,29 +69,45 @@ export function WeeklyReportBrief({
         </Button>
       </div>
 
-      <button
-        type="button"
-        className={`${PANEL_QUIET_BUTTON} self-start`}
-        aria-expanded={showContext}
-        aria-controls={showContext ? contextId : undefined}
-        onClick={() => setShowContext((value) => !value)}
-      >
-        {t("weekly_panel_add_context")}
-      </button>
-      {showContext ? (
-        <div id={contextId}>
-          <TextAreaField
-            label={t("preparation_context_label")}
-            value={coachContext}
-            onChange={(event) => onContextChange(event.target.value)}
-            maxLength={MENTORSHIP_COACH_CONTEXT_MAX_LENGTH}
-            disabled={busy || preview.status === "BRIEF_PENDING"}
-            hint={t("preparation_context_hint", { count: coachContext.length })}
-            placeholder={t("preparation_context_placeholder")}
-            rows={3}
-          />
-        </div>
-      ) : null}
+      {/* The field opens by height; the gap above it collapses with it, and a 4 px margin keeps
+          focus rings clear of the clipping edge. */}
+      <div className="flex flex-col">
+        <button
+          type="button"
+          className={`${PANEL_QUIET_BUTTON} self-start`}
+          aria-expanded={showContext}
+          aria-controls={showContext ? contextId : undefined}
+          onClick={() => setShowContext((value) => !value)}
+        >
+          {t("weekly_panel_add_context")}
+        </button>
+        <AnimatePresence initial={false}>
+          {showContext ? (
+            <motion.div
+              key="context"
+              id={contextId}
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={COACH_FAST}
+              className="-mx-1 -mb-1 overflow-hidden px-1 pb-1"
+            >
+              <div className="pt-3">
+                <TextAreaField
+                  label={t("preparation_context_label")}
+                  value={coachContext}
+                  onChange={(event) => onContextChange(event.target.value)}
+                  maxLength={MENTORSHIP_COACH_CONTEXT_MAX_LENGTH}
+                  disabled={busy || preview.status === "BRIEF_PENDING"}
+                  hint={t("preparation_context_hint", { count: coachContext.length })}
+                  placeholder={t("preparation_context_placeholder")}
+                  rows={3}
+                />
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
+      </div>
       {preview.brief &&
         coachContext.trim() !== (preview.brief.coachContext ?? "") && (
           <p className={NOTE_CLASS} role="status">
@@ -105,7 +123,7 @@ export function WeeklyReportBrief({
       )}
       {preview.status === "BRIEF_PENDING" ? (
         <p className={NOTE_CLASS} role="status">
-          {t("weekly_report_ai_pending")}
+          <ShimmerText text={t("weekly_report_ai_pending")} />
         </p>
       ) : preview.status === "BRIEF_FAILED" ? (
         <p className={NOTE_CLASS} role="status">
