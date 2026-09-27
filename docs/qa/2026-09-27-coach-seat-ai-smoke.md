@@ -59,3 +59,46 @@ C05 proves sequential daily enforcement. Simultaneous coach AI requests and a re
 flow for this new AI surface remain untested. Full CI, deployed Cloudflare/Render/R2 controls,
 Firefox and real Safari also remain release gates. The failed production build is an open
 release blocker; the full test plan is not complete.
+
+## Follow-up: dashboard bundle and celebration browser regression
+
+Production budget snapshot: `8380c5d07e0c7e7c20b4a4b55db9f1ce178f0972` on
+`feature/APP-111`. Final browser and targeted source-check snapshot:
+`c34b465adb255eb52b7c010ad393b821dd97792c` on `feat/qa-dashboard-performance`.
+The earlier Linux [CI run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36319480394)
+compiled the production web app successfully. Its dashboard total was **1,326,206 B**, **126 B**
+over the **1,326,080 B** gate; dashboard route code was **774,055/778,240 B**. Article route and
+total, font preload and all three message scopes passed. This refines the local P02/P05 finding:
+the Windows Turbopack font error remains a local build failure, while Linux CI produced a valid
+manifest and found a real dashboard budget failure.
+
+The app-wide shell and dashboard journey card now load celebration scenes on demand. During the
+Chrome check, the existing live SSE test exposed a focus defect: React's repeated development
+effect setup replaced the original opener with the scene itself, so closing returned focus to the
+page body. The scene now retains the opener and cancels a pending focus restore when the effect
+sets up again. The test fixture also derives its CORS origin from the selected browser URL, so
+the same suite works on the live port 3000 and the default port 3100.
+
+| ID | Expected | Actual | Status | Duration / evidence |
+| --- | --- | --- | --- | --- |
+| B01 Installed Chrome journey celebration | Open, acknowledge, retry after API error, recover missed SSE, and return keyboard focus on mobile and desktop. | **6/6 passed** after the focus fix. The failure was reproduced with both static and dynamic scene imports before the fix. | PASS for mocked-API UI | 34.2 s; `apps/web/e2e/journey-level-celebration.spec.ts` |
+| B02 Installed Chrome achievement celebration | Load the visual on demand, acknowledge once, and keep it closed after reload. | **2/2 passed** in mobile and desktop Chrome with reduced motion. | PASS for mocked-API UI | 7.2 s; same spec |
+| B03 Installed Chrome dashboard spotlight | The level card opens its visual on demand and Escape restores keyboard focus to the card. | **2/2 passed** in mobile and desktop Chrome after passing the opener ref through the asynchronous scene mount. | PASS for mocked-API UI | 7.3 s targeted rerun; same spec |
+| P06 Targeted web checks | Changed source and test compile and lint. | Web TypeScript check, five-file ESLint and diff check passed. | PASS for targeted scope | Local command results; under 1 min each |
+| P07 Production bundle gate | Dashboard total ≤1,326,080 B; all other declared budgets pass with a valid manifest. | CI production build and budget step passed: dashboard **1,293,744/1,326,080 B** total and **741,593/778,240 B** route code; article **987,569/1,008,640 B** total and **435,418/720,896 B** route code; 2/2 font preloads and message scopes **248/1024**, **814/2048**, **4107/6144 B**. | PASS for production budgets | [CI run and artifact](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36322206484) |
+
+The B01 failure left local Playwright screenshots and traces in `apps/web/test-results/`; they
+showed the dialog closing and focus landing on the body. These diagnostics are local, not pushed.
+The B03 test initially found the same symptom by another path: the dashboard card was rerendered
+during loading, so passing the button element's value at render time passed `null`. Passing the
+ref lets the scene read the mounted button when it needs to restore focus. The complete installed
+Chrome celebration suite then passed **10/10** on mobile and desktop in **1.0 min**.
+The first B02 run used the wrong translated action label in the new test; the visible button said
+"Devam edelim". Correcting that fixture made both cases pass. No personal browser profile or
+real external provider was used. The CI bundle result is the release gate; development-server
+page sizes are not substituted for production output. Against the pre-fix CI artifact, dashboard
+total fell **32,462 B** and now has **32,336 B** of headroom. Article total rose **7,137 B** but
+remains **21,071 B** below its gate. The complete CI test and browser steps were still running
+when these budget values were recorded; their result is tracked separately from P07. The final
+browser snapshot adds the replay focus ref after the measured build, so the new PR's CI must
+remeasure its production bundle before this scope can be declared release-ready.
