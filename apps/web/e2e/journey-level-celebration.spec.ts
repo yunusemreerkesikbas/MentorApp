@@ -118,9 +118,11 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   page,
 }) => {
   const api = await mockJourneyCelebrationApi(page, null);
-  await page.goto("/profil");
-  await expect(page).toHaveURL(/\/ayarlar$/);
-  await page.waitForLoadState("networkidle");
+  await page.goto("/ayarlar");
+  await expect.poll(() => page.evaluate(() => {
+    const testWindow = window as typeof window & { __journeyEventSources?: EventSource[] };
+    return testWindow.__journeyEventSources?.length ?? 0;
+  })).toBeGreaterThan(0);
 
   const previousFocus = page.getByRole("button", { name: /temaya geç/ });
   await expect(previousFocus).toBeVisible();
