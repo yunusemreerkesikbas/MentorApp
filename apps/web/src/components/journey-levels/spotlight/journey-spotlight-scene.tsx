@@ -112,6 +112,8 @@ function SpotlightStage(
   const titleId = useId();
   const dialogRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
+  const restoreFocusFrameRef = useRef<number | null>(null);
   const stageRectRef = useRef<DOMRect | null>(null);
 
   /* Reduced motion zeroes the whole timeline, so every beat starts already finished. */
@@ -170,7 +172,13 @@ function SpotlightStage(
 
   /* Dialog plumbing — same contract as the guide dialog. */
   useEffect(() => {
-    const previousFocus = document.activeElement as HTMLElement | null;
+    if (restoreFocusFrameRef.current !== null) {
+      window.cancelAnimationFrame(restoreFocusFrameRef.current);
+      restoreFocusFrameRef.current = null;
+    }
+    if (!dialogRef.current?.contains(document.activeElement)) {
+      previousFocusRef.current = document.activeElement as HTMLElement | null;
+    }
     const previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     /* Focus the stage itself first: the CTA is still faded out during the sweep, and parking focus
@@ -213,7 +221,10 @@ function SpotlightStage(
       document.body.style.overflow = previousBodyOverflow;
       /* Hand focus back to whatever opened the scene — the badge button, or the page behind an
          auto-fired celebration. Same contract as the card this replaced. */
-      window.requestAnimationFrame(() => previousFocus?.focus());
+      restoreFocusFrameRef.current = window.requestAnimationFrame(() => {
+        previousFocusRef.current?.focus();
+        restoreFocusFrameRef.current = null;
+      });
     };
   }, []);
 

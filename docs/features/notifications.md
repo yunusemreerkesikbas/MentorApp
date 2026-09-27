@@ -115,6 +115,13 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-27 · Celebration visuals load only when queued.** The app-wide notification shell
+  now loads achievement art and the journey spotlight when an unseen celebration is present.
+  Usage: the notification and celebration flow is unchanged. Gotcha: first display fetches the
+  relevant visual chunk; the installed-Chrome celebration suite covers both paths. Related:
+  `apps/web/src/lib/notification-drawer-shell.tsx`,
+  `apps/web/e2e/journey-level-celebration.spec.ts`.
+
 - **2026-09-24 — Stage/dev konsol e-postası, admin anahtarı `dev.email.console_enabled`.** Stage/dev'de
   e-posta onay akışları gerçek inbox olmadan çalışıyor. **Bulgu:** e-posta OTP akışı yok; bütün onaylar
   link (kayıt, yeniden gönder, e-posta değişikliği → `/eposta-dogrula?token=`; şifre sıfırlama →
