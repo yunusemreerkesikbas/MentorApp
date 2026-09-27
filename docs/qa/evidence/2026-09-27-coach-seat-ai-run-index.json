@@ -51,6 +51,26 @@
     {
       "name": "2026-09-27-coach-seats-chrome-final.log",
       "sha256": "8a3da43eb9de7abb725114e27ea379bd0df01f11aff87251172f7ef847e5421d"
+    },
+    {
+      "name": "2026-09-27-coach-production-build.log",
+      "sha256": "47b06770d21e69325aa8653f10366fa4b3b6865af512a39eb261b4baa55f6dd8"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-probe.log",
+      "sha256": "7c36951a472f427147166dd5b398566e65e611d2b18ef2f489a0b4df4ce642ae"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-with-site.log",
+      "sha256": "f257a27fcb698752c6ec1dd4cc92d0a050c9a165dcf282d54a47c5a76942b7fb"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-budget-probe.log",
+      "sha256": "738ff775e2edce8578cacf984c110a3bab6fa6c20012764dd7379d04a32b94ff"
+    },
+    {
+      "name": "2026-09-27-coach-turbopack-with-site.log",
+      "sha256": "5ecd693f1a93f4c436c63d1e045078b8f3122be3b9e66eef4da300deb8623496"
     }
   ]
 }

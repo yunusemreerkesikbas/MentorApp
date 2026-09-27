@@ -33,6 +33,10 @@ used. The test setup migrated only `mentor_test`; the new suite removed its conf
 | C07 Installed Chrome seat UI | Mobile and desktop show the correct waiting, disabled and sponsorship-off states. | Final warm run: **23 passed, 1 conditional skip, 0 failed**. | PASS for mocked-API UI | 1.5 min; `2026-09-27-coach-seats-chrome-final.log` |
 | C08 Targeted static checks | Current API/web source typechecks. | Both package typechecks exited successfully. | PASS for package source | `2026-09-27-coach-entitlement-api-typecheck.log`, `2026-09-27-coach-entitlement-web-typecheck.log` |
 | P01 Message payload budgets | Root ≤1024 B, welcome ≤2048 B, article ≤6144 B. | Current TR/EN maximums: **248/1024**, **814/2048**, **4107/6144 B**. | PASS for message scopes only | [measurement](evidence/2026-09-27-coach-message-budgets.json); under 1 s |
+| P02 Default production build | `next build` completes at the tested commit. | In an isolated worktree at `28c702e1`, the configured Turbopack build failed with ten `Bitter` font resolver errors (`next/font/google queries have exactly one entry`). Four dependency packages built successfully. The same ten errors recurred with `NEXT_PUBLIC_SITE_URL` set. | FAIL locally; release gate blocked | 1m 21s, then 11 s repeat; `2026-09-27-coach-production-build.log`, `2026-09-27-coach-turbopack-with-site.log` |
+| P03 Compiler diagnostic | Determine whether the failure precedes general code compilation. | A separate webpack probe compiled in 63 s and completed TypeScript in 58 s, then stopped during `/tr/join-room` prerender because the isolated worktree lacked required `NEXT_PUBLIC_SITE_URL`. This suggests the P02 font error is specific to Turbopack in this environment; it does not clear the default build gate. | DIAGNOSTIC, incomplete build | `2026-09-27-coach-webpack-probe.log` |
+| P04 Webpack diagnostic build | Complete the alternative build with a non-production HTTPS site origin. | With `NEXT_PUBLIC_SITE_URL=https://mentor.example`, webpack compiled, typechecked and generated **104/104** static pages. | PASS for alternative compiler only | `2026-09-27-coach-webpack-with-site.log` |
+| P05 Budget checker | Required article/panel/font manifests are readable and all limits pass. | Against P04, `check:budgets` rejected the webpack client reference manifest schema. The default Turbopack build in P02 produced no complete manifest. | BLOCKED; no JS/font budget result | `2026-09-27-coach-webpack-budget-probe.log` |
 
 The first Chrome run had **19 passes, 4 navigation timeouts and 1 skip**. Each timeout occurred
 while `page.goto` waited for the cold development server's `load` event, before a product
@@ -43,14 +47,15 @@ the route correctly returned 200. The expectation was corrected before the passi
 
 ## Open gates and next check
 
-There is no current production-build manifest for this W8 overlay. The Next development server
-is using the checkout's `.next` directory, so this run did not replace it with a concurrent build.
-The 704/985 KiB article, 760/1295 KiB panel and font budgets therefore remain
-**unverified on this source**. Message scopes passed separately in P01. The prior candidate's panel total had only 1.2 KiB headroom; see
-the linked release-gate report. A production build and budget check are the next local gate once
-the development server is free or an isolated build checkout contains the same overlay.
+The isolated production build failed before generating the required route manifests. The
+704/985 KiB article, 760/1295 KiB panel and font budgets therefore remain **unverified on this
+source**; an unsupported or missing manifest fails the budget gate, rather than counting as zero
+bytes. Message scopes passed separately in P01. The prior candidate's panel total had only 1.2 KiB headroom; see the
+linked release-gate report. The next local step is to diagnose the Turbopack font resolver,
+rerun the configured build with required production environment variables, then run
+`check:budgets` on its output.
 
 C05 proves sequential daily enforcement. Simultaneous coach AI requests and a real-API Chrome
 flow for this new AI surface remain untested. Full CI, deployed Cloudflare/Render/R2 controls,
-Firefox and real Safari also remain release gates. No new product P0/P1 defect was established
-in this targeted run, but these open gates prevent declaring the full test plan complete.
+Firefox and real Safari also remain release gates. The failed production build is an open
+release blocker; the full test plan is not complete.
