@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
@@ -21,8 +22,6 @@ import type {
 } from "@mentor/types";
 import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
-import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
-import { JourneySpotlightScene } from "@/components/journey-levels/spotlight/journey-spotlight-scene";
 import { CelebrationOverlayProvider } from "@/lib/celebration-overlay";
 import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import {
@@ -41,6 +40,17 @@ import {
   markNotificationUnread,
 } from "./notification-api";
 import { apiBaseUrl } from "./api-base";
+
+const AchievementCelebration = dynamic(() =>
+  import("@/components/achievements/achievement-celebration").then(
+    (module) => module.AchievementCelebration,
+  ),
+);
+const JourneySpotlightScene = dynamic(() =>
+  import("@/components/journey-levels/spotlight/journey-spotlight-scene").then(
+    (module) => module.JourneySpotlightScene,
+  ),
+);
 
 const ICON_BY_CATEGORY = {
   COACH: Brain,

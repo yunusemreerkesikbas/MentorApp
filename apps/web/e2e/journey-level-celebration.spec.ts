@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
+  AchievementCelebrationDto,
   AuthUser,
   JourneyLevelCelebrationView,
 } from "@mentor/types";
@@ -166,6 +167,43 @@ test("kaçırılan canlı sinyali sonraki açılışta kalıcı kaynaktan toparl
   ).toBeVisible();
 });
 
+test("başarım kutlamasını gerektiğinde yükler ve bir kez gösterir", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockJourneyCelebrationApi(page, null);
+  const achievement: AchievementCelebrationDto = {
+    kind: "ACHIEVEMENT",
+    items: [{
+      id: "first_step",
+      title: "İlk adım",
+      description: "QA",
+      unlockHint: "QA",
+      artKey: "first_step",
+      status: "EARNED",
+      earnedAt: "2026-08-22T12:00:00.000Z",
+      progress: null,
+    }],
+  };
+  let pending = true;
+  await page.route("http://localhost:3001/v1/community/achievements/**", async (route) => {
+    if (route.request().method() === "GET") {
+      return json(route, { celebrations: pending ? [achievement] : [] });
+    }
+    if (route.request().method() === "POST") {
+      pending = false;
+      return json(route, null, 204);
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/profil");
+  const dialog = page.getByRole("dialog", { name: "İlk adım" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Devam edelim" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(dialog).toHaveCount(0);
+});
+
 interface JourneyCelebrationApi {
   celebration: JourneyLevelCelebrationView | null;
   failAcknowledgement: boolean;
@@ -263,7 +301,9 @@ async function mockJourneyCelebrationApi(
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(
+    process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
+  ).origin,
   "access-control-allow-credentials": "true",
 };
 

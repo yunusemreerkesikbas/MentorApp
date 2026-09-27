@@ -2,13 +2,19 @@
 
 import { useState } from "react";
 import { AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Snowflake } from "lucide-react";
 import type { JourneyLevelKey } from "@mentor/types";
 import { JourneyLevelCompact } from "@/components/journey-levels/journey-level-compact";
-import { JourneySpotlightScene } from "@/components/journey-levels/spotlight/journey-spotlight-scene";
 import { useEconomySnapshot } from "@/lib/economy-store";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
+
+const JourneySpotlightScene = dynamic(() =>
+  import("@/components/journey-levels/spotlight/journey-spotlight-scene").then(
+    (module) => module.JourneySpotlightScene,
+  ),
+);
 
 type LevelNameKey = `levels.${JourneyLevelKey}.name`;
 
