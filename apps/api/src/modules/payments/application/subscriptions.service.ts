@@ -284,9 +284,25 @@ export class SubscriptionsService {
     return plan?.seatCount ?? 0;
   }
 
-  /** How many of these coach links currently carry a sponsored subscription. */
-  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
-    return this.subsRepo.countSponsoredForLinks(linkIds);
+  /**
+   * Which of these users pay for their own Premium right now (W8's one-payer rule: such a student
+   * holds no coach seat). A SPONSOR row is somebody else paying, an INCOMPLETE checkout has bought
+   * nothing yet, and a row whose time ran out pays for nothing, so all three are "no". The same
+   * `computeEntitlement` the user is shown decides, so the seat and the screen cannot disagree.
+   */
+  async listSelfPayingUserIds(userIds: readonly string[]): Promise<Set<string>> {
+    if (userIds.length === 0) return new Set();
+    const now = new Date();
+    const open = await this.subsRepo.listOpenForUsers(userIds);
+    return new Set(
+      open
+        .filter(
+          (sub) =>
+            sub.provider !== SUBSCRIPTION_PROVIDER_SPONSOR &&
+            computeEntitlement(sub, now).isPremium,
+        )
+        .map((sub) => sub.userId),
+    );
   }
 
   async getSubscriptionStats(): Promise<SubscriptionStats> {

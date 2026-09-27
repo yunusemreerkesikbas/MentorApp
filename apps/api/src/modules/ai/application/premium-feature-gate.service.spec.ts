@@ -48,4 +48,37 @@ describe("PremiumFeatureGateService", () => {
       httpStatus: HttpStatus.FORBIDDEN,
     });
   });
+
+  /**
+   * A coach has no Premium to buy, so "open on Premium" sends them nowhere. A caller may name its
+   * own code for the one refusal a free coach meets: the day's taste is used up.
+   */
+  it("names the caller's code when the free taste is used up", async () => {
+    countFeaturesSince.mockResolvedValue(1);
+    await expect(
+      gate.assertAllowed(
+        "coach",
+        [],
+        PremiumFeatureId.MENTORSHIP_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      ),
+    ).rejects.toMatchObject({
+      code: ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      httpStatus: HttpStatus.FORBIDDEN,
+    });
+  });
+
+  it("keeps the Premium refusal when no free taste is switched on", async () => {
+    configGet.mockImplementation(async (key: string) =>
+      key.endsWith("free_enabled") ? false : 1,
+    );
+    await expect(
+      gate.assertAllowed(
+        "coach",
+        [],
+        PremiumFeatureId.MENTORSHIP_BRIEF,
+        ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+      ),
+    ).rejects.toMatchObject({ code: ErrorCode.PAYMENT_PREMIUM_REQUIRED });
+  });
 });

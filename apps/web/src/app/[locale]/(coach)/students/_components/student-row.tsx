@@ -150,6 +150,27 @@ export function StudentRow({
   );
 }
 
+/**
+ * A student waiting for a seat: the link stands but is frozen, so the row names who waits and
+ * nothing about how they are doing. Nothing opens (the report would refuse), nothing is drawn.
+ */
+export function SeatWaitingRow({ row }: { row: MentorshipRosterRowDto }) {
+  const t = useTranslations("mentorship");
+  return (
+    <li className={`${ROW} min-h-[72px] py-3`} data-testid="student-row-seat-waiting">
+      <StudentAvatar name={row.studentDisplayName} src={row.avatarUrl} />
+      <span className="flex min-w-0 flex-col gap-0.5">
+        <span className="truncate text-body-sm font-extrabold text-[var(--color-main)]">
+          {row.studentDisplayName}
+        </span>
+        <span className="text-caption font-semibold text-[var(--color-secondary)]">
+          {t("row_seat_waiting")}
+        </span>
+      </span>
+    </li>
+  );
+}
+
 /** A student whose link ended: who they were and when it closed. Nothing opens, nothing is drawn. */
 export function EndedStudentRow({ row }: { row: MentorshipRosterRowDto }) {
   const t = useTranslations("mentorship");

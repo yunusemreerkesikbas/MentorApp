@@ -368,6 +368,13 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
   ölçeğine indirilmiş hâli; §9 zaten koç↔B2B'yi "ayrı silo değil, bir süreklilik" sayıyor.
   Ücretli koltuk (Pro Koç) hâlâ opsiyonel ve iyzico doğrulanana kadar bayrak arkasında.
   AGENTS.md §4 #4 bu yüzden iki yoldan üç yola genişletildi.
+- **REVİZYON (2026-09-26, koç fiyat review'ı):** Koltuk artık **takip hakkı**; Premium'u
+  sponsorluk bayrağı ekliyor. İlk `free_seats` (3, admin'den) öğrenci tüm özelliklerle ücretsiz:
+  takip araçları + koç AI'ı (günlük limitli tadım, SMS OTP beklemeden; §4 #4 dördüncü yol). Ötesi
+  **kademe paketleri** (+5/+10/+20, "öğrenci başı" dille). **Tek ödeyen:** kendi Premium'unu ödeyen
+  öğrenci koltuk tutmaz. Koçun planı biterse fazla bağlar **dondurulur**, silinmez. Satış kanalı
+  önce mağaza (web ödemesi netleşene kadar); mobil uygulama ve IAP gelene kadar ücretli koltuk satışta
+  değil. Karar kaydı ve uygulama sırası: `docs/features/mentorship.md` (2026-09-26 timeline + Backlog).
 
 **B2B — en stabil/yüksek marj:**
 - Öğrenci-başı lisans (seat-based), hacme göre kademeli indirim.

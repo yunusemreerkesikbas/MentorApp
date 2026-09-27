@@ -90,7 +90,10 @@ export class MentorshipFollowupService {
     const active = await this.linkRepo.findActiveByStudent(studentId);
     if (!active) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     const result = await this.links.withServiceTransaction(async (tx) => {
-      const link = await this.links.requireActiveLinkInTransaction(tx, active.coachId, studentId);
+      // The student's own side: a link frozen while it waits for a seat still takes their answer.
+      const link = await this.links.requireActiveLinkInTransaction(tx, active.coachId, studentId, {
+        allowWaiting: true,
+      });
       const row = requireRow(await this.repo.find(tx, link, id));
       if (row.sharedDecision === null) throw new DomainError(ErrorCode.MENTORSHIP_FOLLOWUP_NOT_FOUND, HttpStatus.NOT_FOUND);
       if (row.status !== "OPEN") conflict();

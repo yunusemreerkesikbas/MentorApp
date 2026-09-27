@@ -99,31 +99,28 @@ export interface MentorshipCoachOverviewDto {
   /** Null when the coach has never issued one. */
   inviteCode: MentorshipInviteCodeDto | null;
   activeStudents: number;
-  /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
+  /** `mentorship.coach.max_active_students`: the hard roster ceiling, whatever the seats say. */
   maxActiveStudents: number;
   /**
-   * How many of this coach's students get sponsored Premium (`mentorship.coach.free_seats`).
-   * Distinct from `maxActiveStudents`: that one caps who may be followed, this one caps who is
-   * paid for. A coach at 5/20 students with 3 free seats is following five and sponsoring three.
+   * How many students this coach follows for free (`mentorship.coach.free_seats`). While
+   * `sponsorshipEnabled` is on, each of them also gets sponsored Premium.
    */
   freeSeats: number;
-  /**
-   * Extra sponsored seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan.
-   * The allowance is `freeSeats + paidSeats`; past it a student is followed but not sponsored.
-   */
+  /** Extra seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan. */
   paidSeats: number;
   /**
-   * Seats actually in use right now — counted, never inferred from `activeStudents`. A live link
-   * does not imply a seat: a student who already pays for themselves is never sponsored, and
-   * lowering `freeSeats` leaves existing sponsorships standing.
+   * Seats held (FREE + PAID), the card's "used". Not `activeStudents`: a student who pays for their
+   * own Premium holds none, and neither does one waiting for a seat.
    */
   usedSeats: number;
-  /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
+  /** Links waiting for a seat (frozen): the coach cannot open them until one returns. */
+  waitingStudents: number;
+  /** Whether a seat also opens the student's Premium (`mentorship.seats.sponsorship_enabled`). */
   sponsorshipEnabled: boolean;
   /**
-   * How many students the next accept can reach: `freeSeats + paidSeats` while sponsorship is on,
-   * 0 while it is off, never past `maxActiveStudents`. The same number the accept lock refuses at,
-   * so "full" is `activeStudents >= seatAllowance` and the client computes nothing else.
+   * How many students the next accept can reach: `freeSeats + paidSeats`, never past
+   * `maxActiveStudents`. The same number the accept lock refuses at, so "full" is
+   * `activeStudents >= seatAllowance` and the client computes nothing else.
    */
   seatAllowance: number;
   /** A coach seat plan is in the `/subscription` catalog right now (some channel sells it). */
@@ -161,6 +158,11 @@ export interface MyCoachDto {
    * Null when the coach holds the role without a registry row.
    */
   coachStatus: MentorshipApplicationStatusId | null;
+  /**
+   * The coach's seats are full and this link waits for one (seat NONE): it stands, but the coach
+   * opens nothing through it and a Premium the seat carried is closed until a seat returns.
+   */
+  seatWaiting: boolean;
 }
 
 /**
@@ -179,6 +181,19 @@ export const MentorshipRiskFlag = {
 } as const;
 export type MentorshipRiskFlagId =
   (typeof MentorshipRiskFlag)[keyof typeof MentorshipRiskFlag];
+
+/**
+ * A coach's seat on one link (W8). FREE and PAID are the coach's room to follow the student (free
+ * quota, then the coach's plan); SELF is a student who pays for their own Premium and so holds no
+ * seat; NONE waits for one and is frozen: the coach cannot open the student until a seat returns.
+ */
+export const MentorshipSeat = {
+  FREE: "FREE",
+  PAID: "PAID",
+  SELF: "SELF",
+  NONE: "NONE",
+} as const;
+export type MentorshipSeatId = (typeof MentorshipSeat)[keyof typeof MentorshipSeat];
 
 /**
  * The numbers on a roster row. Separated from the row on purpose: an ENDED link carries `null`
@@ -212,7 +227,9 @@ export interface MentorshipRosterRowDto {
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
   endedAt: string | null;
-  /** Null for an ENDED link — the coach's window onto this student is closed. */
+  /** The coach's seat on this link. NONE: waiting for a seat, frozen (no metrics, not openable). */
+  seat: MentorshipSeatId;
+  /** Null for an ENDED link, and for one waiting for a seat: the coach's window is closed. */
   metrics: MentorshipRosterMetricsDto | null;
   /** Always empty for an ENDED link (no data to triage, and nothing to act on). */
   riskFlags: MentorshipRiskFlagId[];

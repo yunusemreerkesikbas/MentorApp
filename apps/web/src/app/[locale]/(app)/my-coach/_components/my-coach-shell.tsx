@@ -149,6 +149,16 @@ export function MyCoachShell() {
             </Card>
           )}
 
+          {/* The coach's seats are full: the link stands, but the student's work waits with it
+              until a seat opens. Said here for the same reason as the suspended line above. */}
+          {coach.seatWaiting && (
+            <Card>
+              <p className="text-sm" style={{ color: "var(--color-body)" }}>
+                {t("my_coach_seat_waiting")}
+              </p>
+            </Card>
+          )}
+
           {/* Re-readable after the fact: a student who agreed to something should not have to dig
               out the invite they used months ago to remember who they agreed with. */}
           <CoachProfileCard profile={coach.coachProfile} />

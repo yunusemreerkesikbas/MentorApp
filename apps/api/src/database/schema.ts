@@ -228,6 +228,15 @@ export const coachStudents = pgTable(
      */
     attendedAt: timestamp("attended_at", { withTimezone: true }),
     attendedFlags: text("attended_flags").array(),
+    /**
+     * The coach's seat on this link (`MentorshipSeat`): FREE and PAID hold the coach's room to
+     * follow the student, SELF pays for their own Premium and holds none, NONE waits and is frozen
+     * (the coach cannot open the student). Decided under the coach's advisory lock by
+     * `mentorship/domain/seats.ts`. Stored, not computed per read, because a free seat already held
+     * must survive a lowered `mentorship.coach.free_seats`. Defaults to NONE: a link nobody has
+     * seated yet is frozen, never silently open.
+     */
+    seat: text("seat").notNull().default("NONE"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -250,6 +259,10 @@ export const coachStudents = pgTable(
     check(
       "coach_students_source_chk",
       sql`${t.source} in ('INVITE', 'MARKETPLACE')`,
+    ),
+    check(
+      "coach_students_seat_chk",
+      sql`${t.seat} in ('FREE', 'PAID', 'SELF', 'NONE')`,
     ),
   ],
 );

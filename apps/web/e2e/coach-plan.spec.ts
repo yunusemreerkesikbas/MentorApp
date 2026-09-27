@@ -268,6 +268,7 @@ function rosterRow(studentId: string, studentDisplayName: string): MentorshipRos
     status: "ACTIVE",
     acceptedAt: "2026-09-01T00:00:00.000Z",
     endedAt: null,
+    seat: "FREE",
     metrics: {
       lastActiveDate: null,
       currentStreak: 0,

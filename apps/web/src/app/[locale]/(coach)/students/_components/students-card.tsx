@@ -8,7 +8,7 @@ import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 import { SegmentPillControl } from "@/components/segment-pill-control";
 import { ActivityLegend } from "../../_components/activity-strip";
 import { groupRoster } from "./coach-round-model";
-import { EndedStudentRow, StudentRow } from "./student-row";
+import { EndedStudentRow, SeatWaitingRow, StudentRow } from "./student-row";
 
 export type RosterTab = "ACTIVE" | "ENDED";
 
@@ -118,6 +118,18 @@ export function StudentsCard({
                 {group(t("students_group_waiting"), groups.waiting)}
                 {group(t("students_group_seen"), groups.seenToday)}
                 {group(t("students_group_on_track"), groups.onTrack)}
+                {groups.seatWaiting.length > 0 ? (
+                  <div className="mt-4 flex flex-col">
+                    <h3 className="text-caption font-extrabold text-[var(--color-secondary)]">
+                      {t("students_group_seat_waiting")}
+                    </h3>
+                    <ul className="mt-1 flex flex-col">
+                      {groups.seatWaiting.map((row) => (
+                        <SeatWaitingRow key={row.linkId} row={row} />
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
               </>
             ) : null}
           </>

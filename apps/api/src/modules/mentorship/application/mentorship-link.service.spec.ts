@@ -35,10 +35,11 @@ function link(overrides: Partial<MentorshipLinkRow> = {}): MentorshipLinkRow {
     coachNoteAt: null,
     attendedAt: null,
     attendedFlags: null,
+    seat: "FREE",
     createdAt: now,
     updatedAt: now,
     ...overrides,
-  };
+  } as MentorshipLinkRow;
 }
 
 function setup(
@@ -47,6 +48,8 @@ function setup(
     codeOwner?: string;
     paidSeats?: number;
     plans?: { seatCount: number }[];
+    /** Students who pay for their own Premium (payments' answer). */
+    selfPaying?: string[];
   } = {},
 ) {
   const rows = options.rows ?? [];
@@ -65,29 +68,42 @@ function setup(
       const matched = rows.filter((r) => r.coachId === coachId && r.status === status);
       return { rows: matched, total: matched.length };
     }),
-    // Mirrors the repository contract: quota + upsert inside one transaction.
     listActiveByCoach: vi.fn(async (coachId: string) =>
       rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE"),
     ),
-    acceptInvite: vi.fn(
-      async (coachId: string, studentId: string, maxActive: number, seatAllowance: number) => {
-      const active = rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE").length;
-      if (active >= maxActive) return "QUOTA_FULL";
-      if (active >= seatAllowance) return "SEATS_FULL";
-      const existing = rows.find((r) => r.coachId === coachId && r.studentId === studentId);
-      if (existing && existing.status !== "ENDED") return "ALREADY_ACTIVE";
-      if (existing) {
-        existing.status = "ACTIVE";
-        existing.endedAt = null;
-        existing.endedBy = null;
-        // `activeBefore` is the count taken under the accept lock — the seat decision reads it.
-        return { link: existing, activeBefore: active };
-      }
-      const row = link({ id: `link-${rows.length}`, coachId, studentId });
-      rows.push(row);
-      return { link: row, activeBefore: active };
-    },
+    // The transaction primitives the service composes under the coach's lock.
+    lockCoachInTransaction: vi.fn(async () => undefined),
+    listActiveByCoachInTransaction: vi.fn(async (_tx: unknown, coachId: string) =>
+      rows.filter((r) => r.coachId === coachId && r.status === "ACTIVE"),
     ),
+    insertOrReviveInTransaction: vi.fn(
+      async (_tx: unknown, coachId: string, studentId: string, seat: string, now: Date) => {
+        const existing = rows.find((r) => r.coachId === coachId && r.studentId === studentId);
+        if (existing && existing.status !== "ENDED") return undefined;
+        if (existing) {
+          Object.assign(existing, { status: "ACTIVE", endedAt: null, endedBy: null, seat, acceptedAt: now });
+          return existing;
+        }
+        const row = link({ id: `link-${rows.length}`, coachId, studentId, seat, acceptedAt: now });
+        rows.push(row);
+        return row;
+      },
+    ),
+    setSeatsInTransaction: vi.fn(
+      async (_tx: unknown, changes: { id: string; seat: string }[]) => {
+        for (const change of changes) {
+          const row = rows.find((r) => r.id === change.id);
+          if (row) row.seat = change.seat;
+        }
+      },
+    ),
+    listCoachIdsTouching: vi.fn(async (userId: string) => [
+      ...new Set(
+        rows
+          .filter((r) => r.status === "ACTIVE" && (r.coachId === userId || r.studentId === userId))
+          .map((r) => r.coachId),
+      ),
+    ]),
     end: vi.fn(async (linkId: string, endedBy: string) => {
       const row = rows.find((r) => r.id === linkId);
       if (!row || row.status !== "ACTIVE") return undefined;
@@ -186,11 +202,13 @@ function setup(
   // every coach looks like until seat billing is switched on.
   const subscriptions = {
     paidSeatsFor: vi.fn(async () => options.paidSeats ?? 0),
-    countSponsoredForLinks: vi.fn(async () => 0),
     // The catalog as `/subscription` shows it: only plans some channel can sell right now.
     listPlans: vi.fn(async () => options.plans ?? [{ seatCount: 0 }]),
+    listSelfPayingUserIds: vi.fn(
+      async (ids: string[]) => new Set(ids.filter((id) => (options.selfPaying ?? []).includes(id))),
+    ),
   };
-  const seats = { grant: vi.fn(async () => true) };
+  const seats = { grant: vi.fn(async () => true), revoke: vi.fn(async () => true) };
 
   // The profile the consent screen and /kocum now carry. Null is the common case: every coach
   // granted COACH by hand has no vetted application behind them.
@@ -317,6 +335,88 @@ describe("MentorshipLinkService", () => {
         ),
       ).rejects.toMatchObject({ code: ErrorCode.MENTORSHIP_LINK_NOT_FOUND });
     });
+
+    /** Frozen: the link stands, but the coach cannot open the student until a seat returns. */
+    it("freezes a link that waits for a seat", async () => {
+      const { service } = setup({ rows: [link({ seat: "NONE" })] });
+      await expect(service.requireActiveLink(COACH, STUDENT)).rejects.toMatchObject({
+        code: ErrorCode.MENTORSHIP_SEAT_WAITING,
+        httpStatus: 409,
+      });
+      await expect(
+        service.requireActiveLinksInTransaction(TX as never, COACH, [STUDENT]),
+      ).rejects.toMatchObject({ code: ErrorCode.MENTORSHIP_SEAT_WAITING });
+      // The student's side of the link still answers: a frozen seat stops the coach, not them.
+      await expect(
+        service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT, { allowWaiting: true }),
+      ).resolves.toMatchObject({ seat: "NONE" });
+    });
+
+    it("lets the coach end a frozen link", async () => {
+      const { service, rows } = setup({ rows: [link({ seat: "NONE" })] });
+      await service.endByCoach(COACH, STUDENT);
+      expect(rows[0]!.status).toBe("ENDED");
+    });
+
+    it("leaves frozen students out of the coach's plan scopes", async () => {
+      const { service } = setup({
+        rows: [link(), link({ id: "l2", studentId: OTHER_STUDENT, seat: "NONE" })],
+      });
+      const scopes = await service.listActiveScopes(COACH);
+      expect(scopes.map((scope) => scope.studentId)).toEqual([STUDENT]);
+    });
+  });
+
+  describe("reseating a coach's links", () => {
+    const day = (n: number) => new Date(Date.UTC(2026, 8, n));
+
+    it("freezes the newest paid student when the coach's plan ends, and ends their Premium", async () => {
+      const { service, rows, seats } = setup({
+        rows: [
+          link({ id: "l1", studentId: "s1", acceptedAt: day(1) }),
+          link({ id: "l2", studentId: "s2", seat: "PAID", acceptedAt: day(2) }),
+        ],
+        paidSeats: 0,
+      });
+      await service.reseatCoach(COACH);
+      expect(rows.map((row) => row.seat)).toEqual(["FREE", "NONE"]);
+      expect(seats.revoke).toHaveBeenCalledWith("l2");
+      expect(seats.grant).not.toHaveBeenCalled();
+    });
+
+    it("brings a waiting student back with their Premium when a seat returns", async () => {
+      const { service, rows, seats } = setup({
+        rows: [
+          link({ id: "l1", studentId: "s1", acceptedAt: day(1) }),
+          link({ id: "l2", studentId: "s2", seat: "NONE", acceptedAt: day(2) }),
+        ],
+        paidSeats: 1,
+      });
+      await service.reseatCoach(COACH);
+      expect(rows[1]!.seat).toBe("PAID");
+      expect(seats.grant).toHaveBeenCalledWith("s2", "l2");
+    });
+
+    it("moves a student who pays for themselves off the seat, freeing it", async () => {
+      const { service, rows, seats } = setup({
+        rows: [link({ id: "l1", studentId: "s1", acceptedAt: day(1) })],
+        selfPaying: ["s1"],
+      });
+      await service.reseatCoach(COACH);
+      expect(rows[0]!.seat).toBe("SELF");
+      expect(seats.grant).not.toHaveBeenCalled();
+      expect(seats.revoke).not.toHaveBeenCalled();
+    });
+
+    it("reseats the coach behind a student whose own subscription changed", async () => {
+      const { service, rows, seats } = setup({
+        rows: [link({ id: "l1", studentId: "s1", seat: "SELF", acceptedAt: day(1) })],
+      });
+      // s1's own subscription ended (payments no longer names them): back on the free seat.
+      await service.reseatForUser("s1");
+      expect(rows[0]!.seat).toBe("FREE");
+      expect(seats.grant).toHaveBeenCalledWith("s1", "l1");
+    });
   });
 
   describe("accepting an invitation", () => {
@@ -407,17 +507,23 @@ describe("MentorshipLinkService", () => {
       expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "PAID" } });
     });
 
-    it("refuses the link while sponsorship is switched off", async () => {
+    /**
+     * A seat is the coach's room to follow a student; sponsorship only decides whether it also
+     * opens Premium. With the flag off the free quota still links, and the grant stays with the
+     * listener, which the flag already gates.
+     */
+    it("links within the free seats while sponsorship is switched off", async () => {
       config["mentorship.seats.sponsorship_enabled"] = false;
-      try {
-        const { service, emitted } = setup();
-        expect(await codeOf(() => service.acceptInvitation(STUDENT, CODE))).toBe(
-          ErrorCode.MENTORSHIP_SEATS_FULL,
-        );
-        expect(emitted).toHaveLength(0);
-      } finally {
-        config["mentorship.seats.sponsorship_enabled"] = true;
-      }
+      const { service, emitted } = setup();
+      await expect(service.acceptInvitation(STUDENT, CODE)).resolves.toMatchObject({
+        status: "ACTIVE",
+      });
+      expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "FREE" } });
+
+      // free_seats is 1: the quota still bounds the roster.
+      expect(await codeOf(() => service.acceptInvitation(OTHER_STUDENT, CODE))).toBe(
+        ErrorCode.MENTORSHIP_SEATS_FULL,
+      );
     });
 
     it("counts only ACTIVE links against the quota", async () => {
@@ -432,30 +538,84 @@ describe("MentorshipLinkService", () => {
         status: "ACTIVE",
       });
     });
+
+    /** One payer per student: the student already pays, so the coach's seats are not touched. */
+    it("links a student who pays for their own Premium without taking a seat", async () => {
+      const { service, rows, emitted } = setup({
+        rows: [link({ id: "l1", studentId: "s1" })],
+        selfPaying: [STUDENT],
+      });
+      await service.acceptInvitation(STUDENT, CODE);
+      expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "SELF" } });
+      expect(rows.find((row) => row.studentId === STUDENT)?.seat).toBe("SELF");
+    });
+
+    it("never lets a new student overtake one already waiting for a seat", async () => {
+      config["mentorship.coach.max_active_students"] = 5;
+      config["mentorship.coach.free_seats"] = 2;
+      const { service } = setup({
+        rows: [
+          link({ id: "l1", studentId: "s1", acceptedAt: new Date("2026-09-01T00:00:00Z") }),
+          link({ id: "l2", studentId: "s2", seat: "NONE", acceptedAt: new Date("2026-09-02T00:00:00Z") }),
+        ],
+      });
+      // One free seat is open, and it belongs to s2.
+      expect(await codeOf(() => service.acceptInvitation(STUDENT, CODE))).toBe(
+        ErrorCode.MENTORSHIP_SEATS_FULL,
+      );
+    });
+  });
+
+  describe("the student's view of a frozen link", () => {
+    it("says the coach's seats are full while the link waits", async () => {
+      const { service } = setup({ rows: [link({ seat: "NONE" })] });
+      await expect(service.getMyCoach(STUDENT)).resolves.toMatchObject({ seatWaiting: true });
+    });
+
+    it("says nothing of seats while the link holds one", async () => {
+      const { service } = setup({ rows: [link()] });
+      await expect(service.getMyCoach(STUDENT)).resolves.toMatchObject({ seatWaiting: false });
+    });
   });
 
   describe("the coach overview", () => {
-    it("grants the oldest in-quota link that never received a seat", async () => {
-      const older = link({
+    it("writes the Premium a seated link never received, and none for a waiting one", async () => {
+      const seated = link({
         id: "older",
         studentId: "s-old",
         acceptedAt: new Date("2026-09-01T00:00:00Z"),
       });
-      const newer = link({
+      const waiting = link({
         id: "newer",
         studentId: "s-new",
+        seat: "NONE",
         acceptedAt: new Date("2026-09-10T00:00:00Z"),
       });
-      const { service, seats } = setup({ rows: [newer, older] });
+      const { service, seats } = setup({ rows: [waiting, seated] });
       const overview = await service.getCoachOverview(COACH);
       expect(overview.activeStudents).toBe(2);
       expect(seats.grant).toHaveBeenCalledTimes(1);
       expect(seats.grant).toHaveBeenCalledWith("s-old", "older");
     });
 
+    /** The card's "used" is seats held: a student who pays for themselves and one waiting hold none. */
+    it("counts the seats held, and the students waiting for one, apart from the students linked", async () => {
+      config["mentorship.coach.max_active_students"] = 5;
+      const { service } = setup({
+        rows: [
+          link({ id: "l1", studentId: "s1", acceptedAt: new Date("2026-09-01T00:00:00Z") }),
+          link({ id: "l2", studentId: "s2", seat: "SELF", acceptedAt: new Date("2026-09-02T00:00:00Z") }),
+          link({ id: "l3", studentId: "s3", seat: "NONE", acceptedAt: new Date("2026-09-03T00:00:00Z") }),
+        ],
+        selfPaying: ["s2"],
+      });
+      const overview = await service.getCoachOverview(COACH);
+      expect(overview).toMatchObject({ activeStudents: 3, usedSeats: 1, waitingStudents: 1 });
+    });
+
     /**
      * The card decides "full" from this number alone, so it has to be the number the accept lock
-     * refuses at: free + paid while sponsorship is on, never past the follow cap.
+     * refuses at: free + paid, never past the follow cap.
      */
     it("reports the seat allowance the accept lock enforces", async () => {
       const { service } = setup();
@@ -468,10 +628,14 @@ describe("MentorshipLinkService", () => {
       expect((await service.getCoachOverview(COACH)).seatAllowance).toBe(2);
     });
 
-    it("reports no seats while sponsorship is switched off", async () => {
+    it("keeps the free seats while sponsorship is switched off", async () => {
       config["mentorship.seats.sponsorship_enabled"] = false;
-      const { service } = setup({ paidSeats: 5 });
-      expect((await service.getCoachOverview(COACH)).seatAllowance).toBe(0);
+      const { service, seats } = setup({ rows: [link()] });
+      const overview = await service.getCoachOverview(COACH);
+      expect(overview.seatAllowance).toBe(1);
+      expect(overview.sponsorshipEnabled).toBe(false);
+      // No Premium to hand out: the overview's backfill stays behind the flag.
+      expect(seats.grant).not.toHaveBeenCalled();
     });
 
     it("says whether a coach seat plan can be bought right now", async () => {

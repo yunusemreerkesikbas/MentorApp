@@ -1,6 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { OnEvent } from "@nestjs/event-emitter";
+import { MentorshipSeat } from "@mentor/types";
 import {
   CoachingEventTopic,
   PlanTaskCompleted,
@@ -100,7 +101,8 @@ export class PlanTaskFeedbackListener {
         this.links.findById(event.originRefId),
         this.users.listDisplayIdentities([event.userId]),
       ]);
-      if (!link || link.status !== "ACTIVE") return;
+      // A link waiting for a seat is frozen: nothing about the student reaches the coach meanwhile.
+      if (!link || link.status !== "ACTIVE" || link.seat === MentorshipSeat.NONE) return;
       await emit(link, people.get(event.userId)?.displayName ?? "");
     } catch (err) {
       // Logged, not swallowed silently: the plan change already committed, so throwing here would

@@ -48,6 +48,8 @@ function rosterRow(
     lastActiveDaysAgo?: number | null;
     streak?: number;
     ended?: boolean;
+    /** Waiting for a seat: frozen, so the server sends no numbers. */
+    seatWaiting?: boolean;
   } = {},
 ): MentorshipRosterRowDto {
   const flags = over.flags ?? [];
@@ -61,7 +63,8 @@ function rosterRow(
     status: over.ended ? "ENDED" : "ACTIVE",
     acceptedAt: "2026-09-01T10:00:00.000Z",
     endedAt: over.ended ? "2026-09-10T10:00:00.000Z" : null,
-    metrics: over.ended
+    seat: over.seatWaiting ? "NONE" : "FREE",
+    metrics: over.ended || over.seatWaiting
       ? null
       : {
           lastActiveDate: last === null ? null : dateDaysAgo(last),
@@ -593,7 +596,8 @@ test.describe("davet ve koltuklar", () => {
   test("koltuklar sunucunun sayısıyla dolar: kod gizlenir, plan satıştaysa tek çağrı", async ({ page }) => {
     await mockApi(page, COACH, {
       rows: [ZEYNEP, ALI, BURAK],
-      overview: { paidSeats: 0, seatAllowance: 3, seatPlansOnSale: true, usedSeats: 2 },
+      // Three students on three held seats (`usedSeats` counts seats held, not sponsorships).
+      overview: { paidSeats: 0, seatAllowance: 3, seatPlansOnSale: true, usedSeats: 3 },
     });
     await page.goto("/kocluk");
 
@@ -608,8 +612,49 @@ test.describe("davet ve koltuklar", () => {
     await expect(page.getByText("MENTOR-KOC-", { exact: false })).toHaveCount(0);
   });
 
+  test("sponsorluk kapalıyken dolu kart Premium demez, satışta plan yoksa bunu söyler", async ({ page }) => {
+    await mockApi(page, COACH, {
+      rows: [ZEYNEP, ALI, BURAK],
+      overview: { paidSeats: 0, seatAllowance: 3, sponsorshipEnabled: false, usedSeats: 3 },
+    });
+    await page.goto("/kocluk");
+
+    await expect(page.getByText("koltuk dolu", { exact: false })).toContainText("3/3");
+    await expect(
+      page.getByText("Bağladığın 3 öğrenci ücretsiz koltukta. 4. öğrencin için ek koltuk şu an açık değil."),
+    ).toBeVisible();
+    await expect(page.getByRole("link", { name: "Abonelik seçenekleri" })).toHaveCount(0);
+  });
+
+  test("sponsorluk kapalıyken açık kart ücretsiz koltuğu Premium'suz anlatır", async ({ page }) => {
+    await mockApi(page, COACH, {
+      rows: [ZEYNEP],
+      overview: { paidSeats: 0, seatAllowance: 3, sponsorshipEnabled: false, usedSeats: 1 },
+    });
+    await page.goto("/kocluk");
+    await expect(page.getByText("İlk 3 öğrencin ücretsiz koltukta.", { exact: true })).toBeVisible();
+  });
+
+  test("koltuk bekleyen öğrenci ayrı grupta durur, açılmaz ve kart sayısını söyler", async ({ page }) => {
+    const waitingRow = rosterRow("s-ece", "Ece Yılmaz", { seatWaiting: true, needsAttention: false });
+    await mockApi(page, COACH, {
+      rows: [ZEYNEP, ALI, BURAK, waitingRow],
+      overview: { paidSeats: 0, seatAllowance: 3, usedSeats: 3, waitingStudents: 1 },
+    });
+    await page.goto("/kocluk");
+
+    await expect(page.getByRole("heading", { name: "Koltuk bekleyenler" })).toBeVisible();
+    const row = page.getByTestId("student-row-seat-waiting");
+    await expect(row).toContainText("Ece Yılmaz");
+    await expect(row).toContainText("Koltuk açılınca verileri yeniden görünür.");
+    // Frozen: nothing to open.
+    await expect(row.getByRole("link")).toHaveCount(0);
+    await expect(page.getByText("1 öğrencin koltuk bekliyor.")).toBeVisible();
+  });
+
   test("koltuklar açılmadıysa kart sakin söyler", async ({ page }) => {
-    await mockApi(page, COACH, { overview: { sponsorshipEnabled: false, seatAllowance: 0 } });
+    // The server reports no allowance only when `free_seats` is 0 and there is no seat plan.
+    await mockApi(page, COACH, { overview: { freeSeats: 0, paidSeats: 0, seatAllowance: 0 } });
     await page.goto("/kocluk");
     await expect(page.getByText("Koltuklar henüz açılmadı.", { exact: false })).toBeVisible();
   });

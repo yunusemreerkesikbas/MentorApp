@@ -101,6 +101,7 @@ describe("AssignmentSuggestionService", () => {
       COACH.id,
       COACH.roles,
       "mentorship.suggestions",
+      "MENTORSHIP_AI_DAILY_LIMIT",
     );
     expect(append.mock.calls[0]![0]).toMatchObject({
       userId: COACH.id,

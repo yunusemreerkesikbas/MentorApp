@@ -15,7 +15,7 @@ import { Link } from "@/i18n/navigation";
 import { CoachCheck } from "@/components/mentorship/coach-check";
 import { InviteCodeRow, InviteExpiry } from "./invite-code-row";
 import type { InviteLock } from "./invite-lock";
-import { seatCardState } from "./seat-state";
+import { seatCardState, type SeatCardState } from "./seat-state";
 import { useInviteActions } from "./use-invite-actions";
 
 type Props = {
@@ -68,6 +68,46 @@ function CopyLinkLabel({ copied, iconClassName }: { copied: boolean; iconClassNa
 const NOTE = "text-caption font-semibold leading-relaxed text-[var(--color-secondary)]";
 const BODY = "text-body-sm leading-relaxed text-[var(--color-body)]";
 
+type T = ReturnType<typeof useTranslations<"mentorship">>;
+
+/** How the open seats split. Premium is named only while a seat actually opens it. */
+function SeatSplit({
+  state,
+  className,
+}: {
+  state: Extract<SeatCardState, { kind: "open" }>;
+  className: string;
+}) {
+  const t = useTranslations("mentorship");
+  return (
+    <p className={className}>
+      {state.paidSeats > 0
+        ? t("seats_split_paid", { free: state.freeSeats, paid: state.paidSeats })
+        : t(state.sponsored ? "seats_split_free" : "seats_split_free_plain", { free: state.freeSeats })}
+    </p>
+  );
+}
+
+/**
+ * Why the full card cannot take the next student. Two sentences: what the free seats hold (Premium
+ * only while a seat opens it), then what the next student needs, which is a plan only while one is
+ * on sale. Promising a subscription nobody can buy would send the coach to an empty catalog.
+ */
+function fullSeatsLine(
+  t: T,
+  state: Extract<SeatCardState, { kind: "full" }>,
+  paidSeats: number,
+): string {
+  const next = state.used + 1;
+  // The follow limit counts every student, those paying for themselves included.
+  if (state.reason === "cap") return t("seats_full_cap", { total: state.limit });
+  if (paidSeats > 0) return t("seats_full_paid", { next });
+  const held = t(state.sponsored ? "seats_full_free_premium" : "seats_full_free_plain", {
+    used: state.used,
+  });
+  return `${held} ${t(state.plansOnSale ? "seats_next_plan" : "seats_next_closed", { next })}`;
+}
+
 /**
  * Invite and seats in the rail (DESIGN.md §6.1): can this coach take another student right now.
  * Every number is the server's (`seatAllowance` is where the accept lock refuses), so "full" here is
@@ -115,24 +155,16 @@ export function InviteSeatsCard({ overview, inviteLock, onCode, failed = false, 
               max={state.total}
               fillClassName="coach-draw-grow-x [--draw-dur:400ms]"
             />
-            {state.kind === "open" ? (
-              <p className={NOTE}>
-                {state.paidSeats > 0
-                  ? t("seats_split_paid", { free: state.freeSeats, paid: state.paidSeats })
-                  : t("seats_split_free", { free: state.freeSeats })}
-              </p>
+            {state.kind === "open" ? <SeatSplit state={state} className={NOTE} /> : null}
+            {/* Frozen students wait for a seat; the roster lists them apart. */}
+            {state.waiting > 0 ? (
+              <p className={NOTE}>{t("seats_waiting", { count: state.waiting })}</p>
             ) : null}
           </div>
 
           {state.kind === "full" ? (
             <>
-              <p className={BODY}>
-                {state.reason === "cap"
-                  ? t("seats_full_cap", { total: state.total })
-                  : overview && overview.paidSeats > 0
-                    ? t("seats_full_paid", { next: state.used + 1 })
-                    : t("seats_full_free", { used: state.used, next: state.used + 1 })}
-              </p>
+              <p className={BODY}>{fullSeatsLine(t, state, overview?.paidSeats ?? 0)}</p>
               {state.reason === "seats" && state.plansOnSale ? (
                 <Link href="/subscription" className={`${PANEL_TEXT_LINK} self-start`}>
                   {t("seats_plans_link")}
@@ -206,13 +238,7 @@ export function InviteHero({ overview, inviteLock, onCode, failed = false, onRet
           {t("invite_create")}
         </Button>
       )}
-      {state.kind === "open" ? (
-        <p className={BODY}>
-          {state.paidSeats > 0
-            ? t("seats_split_paid", { free: state.freeSeats, paid: state.paidSeats })
-            : t("seats_split_free", { free: state.freeSeats })}
-        </p>
-      ) : null}
+      {state.kind === "open" ? <SeatSplit state={state} className={BODY} /> : null}
       {code ? (
         <>
           <InviteCodeRow

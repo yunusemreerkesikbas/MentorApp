@@ -6,6 +6,8 @@
  * link (roadmap §11) and is not worth a rename migration.
  */
 
+import { MentorshipSeat, type MentorshipSeatId } from "@mentor/types";
+
 /** Invite-code prefix. `KOC` keeps it visually distinct from the economy `MENTOR-` friend code. */
 export const MENTORSHIP_INVITE_CODE_PREFIX = "MENTOR-KOC-";
 
@@ -43,23 +45,16 @@ export const MentorshipEventTopic = {
 /**
  * Which kind of seat a student landed on.
  *
- * The seat is what decides whether the student gets sponsored Premium, so the value is computed
- * inside the accept transaction (under the coach's advisory lock) and travels on the event. W8
- * decides the seat; W4 grants the entitlement. Neither module imports the other.
+ * A seat is the coach's room to follow a student. While `mentorship.seats.sponsorship_enabled` is
+ * on it also opens the student's Premium, so the value is computed inside the accept transaction
+ * (under the coach's advisory lock) and travels on the event. W8 decides the seat; W4's listener
+ * grants the entitlement, and its grant is the one that checks the flag.
  */
-export const MentorshipSeatKind = {
-  /** Inside `mentorship.coach.free_seats` — the coach sponsors this student's Premium at no cost. */
-  FREE: "FREE",
-  /** Beyond the free quota, covered by a paid seat plan (`plans.seat_count`). */
-  PAID: "PAID",
-  /**
-   * No seat. A successful accept no longer emits this: a full allowance refuses the link.
-   * The listener still ignores it, so an in-flight event from before the change stays harmless.
-   */
-  NONE: "NONE",
-} as const;
-export type MentorshipSeatKind =
-  (typeof MentorshipSeatKind)[keyof typeof MentorshipSeatKind];
+// One definition with the stored `coach_students.seat` (`MentorshipSeat` in `@mentor/types`):
+// FREE inside `mentorship.coach.free_seats`; PAID on the coach's seat plan; SELF pays for their own
+// Premium and holds no seat; NONE waits for one. An accept never emits NONE (no seat, no link).
+export const MentorshipSeatKind = MentorshipSeat;
+export type MentorshipSeatKind = MentorshipSeatId;
 
 /** A student accepted a coach's invite. Carries display names so listeners need no extra lookup. */
 export class MentorshipLinkAccepted {

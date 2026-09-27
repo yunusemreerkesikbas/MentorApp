@@ -44,13 +44,14 @@ function build(state = preview) {
   const generate = vi
     .fn()
     .mockResolvedValue({ findings: [], preparation: {}, model: "fake" });
+  const assertAvailable = vi.fn().mockResolvedValue(undefined);
   const service = new MentorshipWeeklyBriefService(
     { preview: read } as never,
     repo as never,
     { enqueue } as never,
-    { generate } as never,
+    { generate, assertAvailable } as never,
   );
-  return { service, read, repo, enqueue, generate };
+  return { service, read, repo, enqueue, generate, assertAvailable };
 }
 
 describe("weekly meeting preparation lifecycle", () => {
@@ -96,8 +97,20 @@ describe("weekly meeting preparation lifecycle", () => {
         ),
       ).toBe(state);
       expect(b.enqueue).not.toHaveBeenCalled();
+      // Reading back what is already written spends nothing, so a coach past today's taste keeps it.
+      expect(b.assertAvailable).not.toHaveBeenCalled();
     },
   );
+  it("refuses before claiming or queueing when the coach cannot have a brief right now", async () => {
+    const b = build();
+    b.assertAvailable.mockRejectedValue(new Error("MENTORSHIP_AI_DAILY_LIMIT"));
+    await expect(b.service.request(coach, "student-1", input, "tr")).rejects.toThrow(
+      "MENTORSHIP_AI_DAILY_LIMIT",
+    );
+    // Without this the coach saw a pending brief quietly fail in the worker.
+    expect(b.repo.markBriefPending).not.toHaveBeenCalled();
+    expect(b.enqueue).not.toHaveBeenCalled();
+  });
   it("regenerates ready output when direction changes", async () => {
     const b = build({
       ...pending,

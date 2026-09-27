@@ -83,7 +83,7 @@ pnpm --filter @mentor/api exec vitest run mentorship          # unit + e2e
 
 ## Going live — the flag order
 
-Six steps, and the order is the whole point. Turning `mentorship.enabled` on first opens a screen
+Seven steps, and the order is the whole point. Turning `mentorship.enabled` on first opens a screen
 that cannot work: a student who redeems a code before any coach exists gets "invalid code", and the
 surface is a promise nobody can keep. Each step below is one `POST /v1/admin/config` (SUPER_ADMIN,
 audited) or one admin screen.
@@ -91,30 +91,39 @@ audited) or one admin screen.
 | #   | Step                                          | What it opens                                                                                                 | Cost                                 | Turning it back off                                                                                                          |
 | --- | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | 1   | `mentorship.applications.open = true`         | Self-service coach registration: `/kayit?rol=koc`, the form at `/koc-ol` and the profile row. **Students see nothing.** | None                                 | Clean. Existing coaches stay; entry points hide, `?rol=koc` says "closed" and the API refuses the intent.                                                                      |
-| 2   | `mentorship.enabled = true`                   | The coach panel and the student's invite screen.                                                              | None                                 | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
+| 2   | `mentorship.enabled = true`                   | The coach panel and the student's invite screen. Each coach follows `mentorship.coach.free_seats` (3) students for free; the next one needs a seat plan. | None                                 | Clean, and immediate: every W8 endpoint calls `assertEnabled` first. Existing links survive, they just stop being reachable. |
 | 3   | `mentorship.weekly_reports.enabled = true`    | Completed-week comparison, explicit AI preparation and finalized print view in the student report.          | LLM cost only when a coach requests a brief | Clean. Existing snapshots remain stored but unreachable.                                                               |
-| 4   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
-| 5   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 6.                                                         | A provider bill                      | n/a                                                                                                                          |
-| 6   | `mentorship.seats.sponsorship_enabled = true` | Coach-sponsored Premium. **Spends money.**                                                                    | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
+| 4   | `ai.features.mentorship.{brief,cohort_brief,suggestions}.free_enabled = true`, limits 6 / 3 / 3 | The coach assistant for a coach without a plan: student brief and meeting preparation (one shared quota), the cohort brief, homework drafts. Past the day's limit the refusal is `MENTORSHIP_AI_DAILY_LIMIT`. | LLM per free coach per day, capped by the limits and `ai.budget.monthly_cap_usd_cents` | Clean. Stored briefs stay readable; new ones refuse with `PAYMENT_PREMIUM_REQUIRED`. |
+| 5   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
+| 6   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 7.                                                         | A provider bill                      | n/a                                                                                                                          |
+| 7   | `mentorship.seats.sponsorship_enabled = true` | A seat also opens the student's Premium. **Spends money.** Seated links made before it get their Premium when the coach next opens `/kocluk` (`fillMissingSponsorships`). | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
 
-**Step 5 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
+**Step 6 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
 human said yes to each one, so `coaches x free_seats` had a person in front of it. Registration is
 self-service now, so that number is bounded by how many verified email addresses somebody can
 produce, which is not a bound. Email verification stops nothing here — free addresses are
 unlimited — and SMS is the first thing that costs an attacker anything per account. Until it
 ships, `sponsorship_enabled = false` IS the defence.
 
-**Before step 6, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
+**Step 4 does not wait for SMS OTP (decision 2026-09-26).** Its exposure is per coach per day and
+small (short, fingerprint-cached briefs), the global budget cap sits above it, and one config write
+turns it off. A seat's Premium is a whole student's AI, which is why step 7 still waits. AGENTS.md
+§4 #4 names both paths.
+
+**Before step 7, read `GET /v1/admin/metrics/sponsorship`.** It reports live seats, the setting, and
 the cohort's 30-day LLM cost per seat — the number `mentorship.coach.free_seats` is calibrated
 against. It exists precisely so this flag is not flipped on a guess (APP-077).
 
-**Two knobs at step 6, two different severities, and neither is the other's undo:**
+**Two knobs at step 7, two different severities, and neither is the other's undo:**
 
-- `mentorship.seats.sponsorship_enabled = false` is the **emergency brake**: it expires live seats
-  immediately, not just future ones. An operator hitting it means "now", not "from the next student".
-  Turning it back on does not restore them — the seat decision is made at accept time.
+- `mentorship.seats.sponsorship_enabled = false` is the **emergency brake**: it expires live
+  sponsorships immediately, not just future ones. An operator hitting it means "now", not "from the
+  next student". Links stay: a seat is the room to follow a student, only its Premium stops. Turning
+  it back on writes the Premium again, each coach's students the next time the coach opens `/kocluk`.
 - `mentorship.coach.free_seats` lowered is **not retroactive**: it shapes who gets a seat next, it
   does not take back one already granted. Deciding which existing seats to revoke would be arbitrary.
+  Raising it is how an early coach gets room before seat plans are on sale; lowering it later keeps
+  what they already hold.
 
 **Rollback of the whole surface** is step 2 alone: `mentorship.enabled = false` closes every door in
 one config write. Links, applications and assignments are untouched — nothing is deleted by a flag.
@@ -180,10 +189,12 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
 `MENTORSHIP_INVITE_EXPIRED` · `MENTORSHIP_ALREADY_LINKED` · `MENTORSHIP_STUDENT_QUOTA_EXCEEDED` ·
+`MENTORSHIP_SEATS_FULL` · `MENTORSHIP_SEAT_WAITING` (409, a frozen link) · `MENTORSHIP_AI_DAILY_LIMIT` (thrown by the W3 coach AI services) ·
 `MENTORSHIP_SELF_LINK` · `MENTORSHIP_TEMPLATE_NOT_FOUND` · `MENTORSHIP_TEMPLATE_QUOTA_EXCEEDED`.
 
 Config: `mentorship.enabled` (flag, default **false**) · `mentorship.coach.max_active_students`
-(20) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
+(25) · `mentorship.coach.free_seats` (3) · `mentorship.seats.sponsorship_enabled` (flag, default
+**false**) · `mentorship.invite_code.ttl_days` (14) · `mentorship.risk.inactive_days` (3) ·
 `mentorship.risk.plan_completion_floor` (0.5) · `mentorship.risk.low_mood_ceiling` (2) ·
 `mentorship.risk_digest.enabled` (flag, default **false**) ·
 `mentorship.risk_digest.repeat_after_days` (7).
@@ -210,6 +221,68 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-27 — Coach seats, phase B: the seat lives on the link.** `coach_students.seat` (FREE |
+  PAID | SELF | NONE, default NONE, check constraint; migration `0117_w8_coach_seat_state`, which
+  backfills live links oldest first: 3 FREE, the rest PAID, adds `coach-plus-5/10/20` and retires the
+  never-sold `coach-pro-10/25`). One pure decision, `mentorship/domain/seats.ts` `assignSeats`: a
+  student paying for their own Premium holds no seat (SELF, **one payer per student**); a FREE seat
+  already held stays held (lowering `free_seats` takes nothing back); everyone else, oldest first,
+  takes a free seat, then one of the plan's, else waits (NONE). So a plan that shrinks or runs out
+  freezes the **newest** paid students, and seats that return bring the longest waiting back first.
+  **Who runs it:** `MentorshipLinkService.reseatCoach` under the coach's advisory lock (the accept's
+  lock), then the Premium follows after the commit (NONE → `revoke`, back on a seat → `grant`, which
+  checks the sponsorship flag). Triggers: `payments.subscription.{activated,canceled,expired}` via the
+  new `SeatEventsListener` (`reseatForUser`: the user's own roster or their coach's), a link ending,
+  and the coach overview (the reseat of last resort). The accept decides only the newcomer
+  (`seatForNewcomer`, after everyone already linked, so nobody waiting is overtaken; NONE refuses with
+  `MENTORSHIP_SEATS_FULL`); a self-paying student links even when every seat is taken. **Frozen:**
+  `requireActiveLink*` refuses a NONE link with `MENTORSHIP_SEAT_WAITING` (409) except ending it (either
+  side) and the student's follow-up answer; the roster lists it with `seat: NONE` and no metrics, and
+  the plan scopes, the morning digest, the cohort brief and the task-feedback notifications skip it.
+  `max_active_students` default 20 → 25 (the +20 tier plus 3 free seats). **API:** roster rows carry
+  `seat`; the overview's `usedSeats` is now seats held (FREE + PAID) and `waitingStudents` is new;
+  `MyCoachDto.seatWaiting`; payments `listSelfPayingUserIds` (and `countSponsoredForLinks` is gone).
+  **Web:** the seat card counts seats held, is full at the roster cap too (the cap sentence names
+  `maxActiveStudents`), and says "{n} öğrencin koltuk bekliyor"; the roster has a "Koltuk bekleyenler"
+  group of rows that do not open; `/kocum` tells the student the coach's seats are full.
+  **Gotchas:** (1) An ACTIVE plan whose period ended without a renewal stops counting at once
+  (`paidSeatsFor` → 0), but the sweeper emits EXPIRED only past the 3-day dunning window: the coach's
+  home freezes the links at once, every other path follows the event. (2) A test or seed that inserts
+  `coach_students` directly must set `seat` (the default NONE reads as frozen). (3) The fake provider's
+  instant checkout emits no ACTIVATED, so in dev a purchase reaches the seats when the coach opens
+  their home. (4) `@mentor/types` is read from its `dist`: rebuild it after changing `MentorshipSeat`.
+  **Related:** `mentorship/domain/seats.ts`, `mentorship-link.{service,repository}.ts`,
+  `seat-events.listener.ts`, `payments/application/{subscriptions.service,sponsored-seat.listener}.ts`,
+  `test/mentorship-seats.e2e-spec.ts` (SELF link, freeze, frozen answer, plan back + sweeper freeze,
+  leaving), `(coach)/students/_components/{seat-state,coach-round-model,student-row,students-card}`,
+  `(app)/my-coach/_components/my-coach-shell.tsx`.
+
+- **2026-09-26 — Coach seats, phase A: a seat is the room to follow; Premium is what sponsorship
+  adds.** From the coach pricing review (first `mentorship.coach.free_seats` students free with every
+  feature, tiered seat plans beyond, one payer per student, frozen links when a coach's plan ends; the
+  last three are phase B). **Seats:** the allowance is `free_seats + paid seats` whatever
+  `mentorship.seats.sponsorship_enabled` says (`seatAllowanceOf` is gone); before, sponsorship off
+  meant an allowance of 0, so no coach could follow anyone until SMS OTP shipped. The grant still
+  checks the flag, so with it off a seat links the student and writes no Premium. **Card:** the seat
+  card names Premium only while `sponsorshipEnabled` is on (`SeatCardState.sponsored`,
+  `seats_split_free_plain`, `seats_full_free_plain`), and the next student needs a subscription only
+  while a plan is on sale (`seats_next_plan` / `seats_next_closed`); the full line is two sentences.
+  `MENTORSHIP_SEATS_FULL` says the seats are full and to tell the coach. **Coach AI for a coach without
+  a plan:** go-live step 4 (config only). `PremiumFeatureGateService.assertAllowed` takes an optional
+  `limitCode` used when the refusal is a used-up free taste; the four coach AI services pass
+  `MENTORSHIP_AI_DAILY_LIMIT` ("Bugünkü asistan hakkın doldu. Yarın yeniden açılır."), since "open on
+  Premium" named a product a coach cannot buy. Meeting preparation now asks
+  `MentorshipWeeklyBriefWriterService.assertAvailable` before it claims and queues, after the reuse
+  returns, so a refused coach hears it at once instead of watching a pending brief fail in the worker,
+  and a stored brief stays readable past the limit. **Gotchas:** (1) Turning sponsorship on later
+  writes Premium for already-linked students only when their coach opens `/kocluk` (`fillMissingSeats`).
+  (2) `usedSeats` counts sponsored links, not the card's "used"; the card reads `activeStudents`.
+  (3) `seatAllowance` is 0 only when `free_seats` is 0 and there is no seat plan; that is the card's
+  "Koltuklar henüz açılmadı" state. **Related:** `mentorship-link.service.ts`,
+  `ai/application/{premium-feature-gate,mentorship-brief,cohort-brief,assignment-suggestion,mentorship-weekly-brief-writer}.service.ts`,
+  `mentorship-weekly-brief.service.ts`, `(coach)/students/_components/{seat-state.ts,invite-seats.tsx}`,
+  `test/mentorship-seats.e2e-spec.ts`, `e2e/coach-home.spec.ts`, AGENTS.md §4 #4, roadmap §7.
 
 - **2026-09-26 — Stop F review fixes.** An independent review of stops E, nav and F found no critical issue;
   fixed: draft rows no longer glide when the day list above them changes (`layoutDependency`); the round's
@@ -2207,13 +2280,29 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
 
 - ~~AI "smart brief"~~ — shipped (APP-078). The rules stayed as the floor, as planned.
 - **Whole-cohort risk ranking — not needed yet, and here is why.** Today a page is sorted, not the
-  cohort. But `mentorship.coach.max_active_students` defaults to 20 against a page size of 100, so
+  cohort. But `mentorship.coach.max_active_students` defaults to 25 against a page size of 100, so
   one page IS the cohort: nothing is ranked out of view. The item is born the day that ceiling is
   raised past 100, and not before. The cohort brief (APP-085) relies on the same fact.
 - ~~AI cohort brief~~ — shipped (APP-085). Rules stayed the floor there too: the chips beside each
   line are `risk-flags.ts`, the "new" badge is a set comparison, and only the sentence is a model's.
 - ~~Seat billing beyond the free quota~~ — shipped (APP-076/077/079: sponsored seats, the kill
   switch and the paid Koç Pro plans).
+- ~~Coach seats, phase B~~ — **shipped 2026-09-27** (see the timeline): the seat on the link, one
+  payer per student, frozen links on a lapsed plan, tier plans, the 25-student ceiling.
+- **Seat plan change and an upgrade prompt — with the sales channel.** Nothing moves a coach from
+  one tier to another yet (one open subscription; a CANCELED row stays open until its period
+  ends). The stores do it for store subscriptions; the seats already follow `paidSeatsFor` whatever
+  moved it. A "waiting student" prompt that ties the purchase to a named student is the natural
+  upsell once a plan can actually be bought.
+- **A full card still hides the invite code.** A student who pays for their own Premium could link
+  even then (SELF takes no seat), but the coach has to copy the code from before. Worth showing the
+  code on a full card, with a line saying who can still join, if coaches with paying students ask.
+- **Coach seat sales channel — waits on the mobile app.** Payments will first redirect from the web
+  to the stores (2026-09-26), so seat tiers are store subscription-group levels: the store runs
+  upgrades, downgrades and proration. Needs IAP receipt validation and store notifications writing
+  subscription rows (payments backlog) and a coach purchase screen in the app; until both exist,
+  `mentorship.seats.mobile_billing_enabled` would send a coach to a store where they cannot buy. The
+  iyzico upgrade flow comes only when web checkout returns.
 - ~~Coach vetting queue~~ — **shipped (APP-082)**, minus the document: the evidence is a
   structured claim plus the admin's mark of what they checked. A credential file stays out on
   purpose (it would be the heaviest personal data in the system, retained for rejected

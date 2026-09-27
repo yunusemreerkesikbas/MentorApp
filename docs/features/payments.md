@@ -245,6 +245,14 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Gotchas / Known issues
 
+- **Coach seats read payments twice, and never write it (W8 phase B, 2026-09-27).** The seat on a
+  coach link is decided in W8 (`coach_students.seat`); payments answers two questions for it:
+  `paidSeatsFor(coach)` (the plan's `seat_count` while it grants premium) and
+  `listSelfPayingUserIds(students)` (an open, non-SPONSOR row that `computeEntitlement` calls premium:
+  such a student holds no seat, one payer per student). Every `payments.subscription.*` activated /
+  canceled / expired event reseats the coaches it touches (W8's `SeatEventsListener`), so a new event
+  on a subscription change needs no seat code. The seat plans are now `coach-plus-5/10/20`
+  (`coach-pro-10/25` inactive, never sold).
 - **A subscription row is not always a purchase (W8 seats, APP-076).** `provider = 'SPONSOR'` marks
   a row a coach's seat pays for: no checkout, no webhook, no ledger entry, `plan_id = 'coach-seat'`
   (priced 0) and `current_period_end = null` while it holds. `computeEntitlement` is deliberately
