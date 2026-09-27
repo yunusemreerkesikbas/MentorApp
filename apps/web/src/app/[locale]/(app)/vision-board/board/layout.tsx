@@ -1,85 +1,34 @@
-import type { ReactNode } from "react";
-import {
-  Anton,
-  Baloo_2,
-  Bitter,
-  Caveat,
-  Dancing_Script,
-  Merriweather,
-  Oswald,
-  Playfair_Display,
-  Poppins,
-  Space_Mono,
-} from "next/font/google";
+import type { CSSProperties, ReactNode } from "react";
+import "@fontsource-variable/caveat/wght.css";
+import "@fontsource/poppins/400.css";
+import "@fontsource/poppins/700.css";
+import "@fontsource-variable/playfair-display/wght.css";
+import "@fontsource-variable/baloo-2/wght.css";
+import "@fontsource-variable/oswald/wght.css";
+import "@fontsource-variable/merriweather/wght.css";
+import "@fontsource/anton/400.css";
+import "@fontsource-variable/dancing-script/wght.css";
+import "@fontsource-variable/bitter/wght.css";
+import "@fontsource/space-mono/400.css";
+import "@fontsource/space-mono/700.css";
 
-const script = Caveat({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-script",
-});
-const visionHeading = Poppins({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-heading",
-});
-const visionSerif = Playfair_Display({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-serif",
-});
-const visionRounded = Baloo_2({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-rounded",
-});
-const visionCondensed = Oswald({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-condensed",
-});
-const visionClassic = Merriweather({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-classic",
-});
-const visionImpact = Anton({
-  subsets: ["latin", "latin-ext"],
-  weight: "400",
-  variable: "--font-vision-impact",
-});
-const visionElegant = Dancing_Script({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-elegant",
-});
-const visionSlab = Bitter({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-slab",
-});
-const visionMono = Space_Mono({
-  subsets: ["latin", "latin-ext"],
-  weight: ["400", "700"],
-  variable: "--font-vision-mono",
-});
-
-const fontVariables = [
-  script.variable,
-  visionHeading.variable,
-  visionSerif.variable,
-  visionRounded.variable,
-  visionCondensed.variable,
-  visionClassic.variable,
-  visionImpact.variable,
-  visionElegant.variable,
-  visionSlab.variable,
-  visionMono.variable,
-].join(" ");
+const fontVariables = {
+  "--font-script": '"Caveat Variable", cursive',
+  "--font-vision-heading": '"Poppins", sans-serif',
+  "--font-vision-serif": '"Playfair Display Variable", serif',
+  "--font-vision-rounded": '"Baloo 2 Variable", sans-serif',
+  "--font-vision-condensed": '"Oswald Variable", sans-serif',
+  "--font-vision-classic": '"Merriweather Variable", serif',
+  "--font-vision-impact": '"Anton", sans-serif',
+  "--font-vision-elegant": '"Dancing Script Variable", cursive',
+  "--font-vision-slab": '"Bitter Variable", serif',
+  "--font-vision-mono": '"Space Mono", monospace',
+} as CSSProperties;
 
 export default function VisionBoardFontsLayout({
   children,
 }: {
   children: ReactNode;
 }) {
-  return <div className={fontVariables}>{children}</div>;
+  return <div style={fontVariables}>{children}</div>;
 }

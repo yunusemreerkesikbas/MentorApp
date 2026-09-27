@@ -4586,3 +4586,9 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   the visible phone area above the fixed submit action. Usage is unchanged: create an event, choose
   `Tekrar` and `Tekrar bitişi`, then save. The shared `MenuSelect` already supports this placement;
   do not add a second selector. Related: `coach-plan-form-fields.tsx`, `coach-plan.spec.ts`.
+
+- **2026-09-27 — Local vision-board fonts.** The collage editor keeps its ten text styles but loads
+  their font files from Fontsource packages instead of asking Next's Google-font resolver to fetch
+  them during production builds. Usage is unchanged: choose a text style in the board editor.
+  Gotcha: these faces are scoped to the board route; other screens still use their own typography.
+  Related: `vision-board/board/layout.tsx`, `vision-board.spec.ts`, `apps/web/package.json`.

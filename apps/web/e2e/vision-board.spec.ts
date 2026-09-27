@@ -194,6 +194,23 @@ async function chooseCareer(page: Page, label: string) {
   await page.getByRole("option", { name: label }).click();
 }
 
+test("pano yazı tipi Türkçe karakterleri yerel dosyadan yükler", async ({ page }) => {
+  await mockVisionApi(page);
+  await page.goto("/vision-board/board");
+
+  const fonts = page.locator('[style*="--font-vision-slab"]').first();
+  await expect(fonts).toBeVisible();
+  await expect.poll(() => fonts.evaluate((element) =>
+    getComputedStyle(element).getPropertyValue("--font-vision-slab").trim(),
+  )).toContain("Bitter Variable");
+  const loaded = await page.evaluate(async () => ({
+    variable: (await document.fonts.load('400 20px "Bitter Variable"', "İğüşç")).length,
+    static: (await document.fonts.load('700 20px "Poppins"', "İğüşç")).length,
+  }));
+  expect(loaded.variable).toBeGreaterThan(0);
+  expect(loaded.static).toBeGreaterThan(0);
+});
+
 test("şehir ve Puhu'nun alanı seçilip kaydedilir", async ({ page }) => {
   const api = await mockVisionApi(page);
   await page.goto("/hedef");
@@ -375,7 +392,7 @@ async function mockVisionApi(page: Page) {
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL?.replace(/\/$/, "") ?? "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 

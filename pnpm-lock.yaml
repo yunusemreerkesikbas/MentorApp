@@ -345,6 +345,36 @@ importers:
 
   apps/web:
     dependencies:
+      '@fontsource-variable/baloo-2':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/bitter':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/caveat':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/dancing-script':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/merriweather':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/oswald':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/playfair-display':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/anton':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/poppins':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource/space-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@googlemaps/js-api-loader':
         specifier: ^2.1.1
         version: 2.1.1
@@ -1569,6 +1599,36 @@ packages:
 
   '@floating-ui/utils@0.2.11':
     resolution: {integrity: sha512-RiB/yIh78pcIxl6lLMG0CgBXAZ2Y0eVHqMPYugu+9U0AeT6YBeiJpf7lbdJNIugFP5SIjwNRgo4DhR1Qxi26Gg==}
+
+  '@fontsource-variable/baloo-2@5.3.0':
+    resolution: {integrity: sha512-F7UfemLyAzp22LWRuy0IumnAPy/us+H5sxlDUsJ5a6LxinGf1BZaauL5kxBiLkvsfvoQWpY7DuUZ7GSdz+cR7g==}
+
+  '@fontsource-variable/bitter@5.3.0':
+    resolution: {integrity: sha512-TNGusdX+fjWE2b8pTG7kH1A615DbjjSj8/PwVm+iyiFiLFtioHXt6eH5jIFE2kmiA3Ogp03jEyZDsukotzC+4Q==}
+
+  '@fontsource-variable/caveat@5.3.0':
+    resolution: {integrity: sha512-Q3mjghoYIlXgwqBPJKZ4q6f3zu921Gq7UU76r9Z+NAmhapHfX130GIFpOCYf8vt2SIcgCi9RHDT7anfJKg/kiA==}
+
+  '@fontsource-variable/dancing-script@5.3.0':
+    resolution: {integrity: sha512-5Z/flvW1UPkznr0hzejY+Wq72GV3hmtJiDGw2hWMu7n6TmCTB6O2jsfySl7+xuMp6R6bWyuNrKjdpT0yt91sfw==}
+
+  '@fontsource-variable/merriweather@5.3.0':
+    resolution: {integrity: sha512-wK7S4NtPXWUWll/sZCdub93pqSCnFkpKFbnoOE8fh+9Ut6JFjgkc9UlBxHJ0RVMkDpoWwGwMwYYTMvd3G9aAXA==}
+
+  '@fontsource-variable/oswald@5.3.0':
+    resolution: {integrity: sha512-sSZzcTeaQGNyZbTVlS4tNNHElK38UktFLqKd6NQDLFCBV27320rQC3kXSZVytYm1PPjKmPxqVaGwqj7LEKUWQw==}
+
+  '@fontsource-variable/playfair-display@5.3.0':
+    resolution: {integrity: sha512-IHdzTvE8eGIXHteZql7KXoqdc3Gfm+Zs1u4XlSC3MeplkwviT3sx/P6gI0tLwg/xIYLF4ZJYveZ5V+bl9cnDwA==}
+
+  '@fontsource/anton@5.3.0':
+    resolution: {integrity: sha512-OR1D5n124n2XRs66SbX7IjcOSptljEJE8FcDNnlni2y1/M6KpTx7cU2PIWzTSsBj4WFkHPw24On8qw3qkQZuTw==}
+
+  '@fontsource/poppins@5.3.0':
+    resolution: {integrity: sha512-cms1nM7U6SN8epIV1WMVOV8VsA645aSm3wHfzIQnkk188U341ThbJGSl2Sv54V29gnDbT2arMPfLzvVIIVCceQ==}
+
+  '@fontsource/space-mono@5.3.0':
+    resolution: {integrity: sha512-FrpBMOVWn3PRdRHlrZWC55X3kZG/2BTH7SM5ZyS/bky3iKya2BturI5lk+t0RoDQL2JyHzURsVq/EisCsxpI5A==}
 
   '@formatjs/fast-memoize@3.1.7':
     resolution: {integrity: sha512-zXfhLpvA6T7+efdt9JLbBwZ00tT7NsBMDVnDu8rpHeNNv8KfRZAMo2gkG0k9lK/Nzc//3kJ9pImsfuJxk3KhUA==}
@@ -9074,6 +9134,26 @@ snapshots:
       tabbable: 6.4.0
 
   '@floating-ui/utils@0.2.11': {}
+
+  '@fontsource-variable/baloo-2@5.3.0': {}
+
+  '@fontsource-variable/bitter@5.3.0': {}
+
+  '@fontsource-variable/caveat@5.3.0': {}
+
+  '@fontsource-variable/dancing-script@5.3.0': {}
+
+  '@fontsource-variable/merriweather@5.3.0': {}
+
+  '@fontsource-variable/oswald@5.3.0': {}
+
+  '@fontsource-variable/playfair-display@5.3.0': {}
+
+  '@fontsource/anton@5.3.0': {}
+
+  '@fontsource/poppins@5.3.0': {}
+
+  '@fontsource/space-mono@5.3.0': {}
 
   '@formatjs/fast-memoize@3.1.7': {}
 
