@@ -84,8 +84,14 @@ the same suite works on the live port 3000 and the default port 3100.
 | B01 Installed Chrome journey celebration | Open, acknowledge, retry after API error, recover missed SSE, and return keyboard focus on mobile and desktop. | **6/6 passed** after the focus fix. The failure was reproduced with both static and dynamic scene imports before the fix. | PASS for mocked-API UI | 34.2 s; `apps/web/e2e/journey-level-celebration.spec.ts` |
 | B02 Installed Chrome achievement celebration | Load the visual on demand, acknowledge once, and keep it closed after reload. | **2/2 passed** in mobile and desktop Chrome with reduced motion. | PASS for mocked-API UI | 7.2 s; same spec |
 | B03 Installed Chrome dashboard spotlight | The level card opens its visual on demand and Escape restores keyboard focus to the card. | **2/2 passed** in mobile and desktop Chrome after passing the opener ref through the asynchronous scene mount. | PASS for mocked-API UI | 7.3 s targeted rerun; same spec |
+| B04 Installed Chrome CI-regression targets | SSE focus and coach next/back navigation work at both viewport sizes without waiting for all network traffic to stop. | Final targeted run: **8/8 passed** across mobile and desktop, two repeats each. The coach page remained interactive even when the next route was not prefetched. | PASS for mocked-API UI | 31.5 s; `coach-student.spec.ts`, `journey-level-celebration.spec.ts` at `6afb5f2f` |
 | P06 Targeted web checks | Changed source and test compile and lint. | Web TypeScript check, five-file ESLint and diff check passed. | PASS for targeted scope | Local command results; under 1 min each |
-| P07 Production bundle gate | Dashboard total ≤1,326,080 B; all other declared budgets pass with a valid manifest. | CI production build and budget step passed: dashboard **1,293,744/1,326,080 B** total and **741,593/778,240 B** route code; article **987,569/1,008,640 B** total and **435,418/720,896 B** route code; 2/2 font preloads and message scopes **248/1024**, **814/2048**, **4107/6144 B**. | PASS for production budgets | [CI run and artifact](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36322206484) |
+| P07 Production bundle gate | Dashboard total ≤1,326,080 B; all other declared budgets pass with a valid manifest. | At `3157d6dd`, the production build and budget artifact passed: dashboard **1,293,788/1,326,080 B** total and **741,637/778,240 B** route code; article **987,569/1,008,640 B** total and **435,418/720,896 B** route code; 2/2 font preloads and message scopes **248/1024**, **814/2048**, **4107/6144 B**. No budget violations. | PASS for latest production-source snapshot | [CI run and artifact](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36338113134) |
+| P08 Full CI browser gate | Production web tests have seeded server data and complete without browser errors. | The pre-fix PR run passed **569**, skipped **63**, and failed **20** browser cases. With the seeded API and stable UI waits, `6afb5f2f` passed **588/588** runnable cases in **15.3 min**; the local-font snapshot `d8837761` passed **590/590** in **14.6 min**. At `3157d6dd`, **590 passed, 63 skipped, 1 failed**: a notebook test read the first empty draft save before the later typed save. Its retry failed the same way. | FAIL at latest head; test fix pending CI | [pre-fix run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36323269562), [API-enabled run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36336623060), [local-font run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36337645976), [failing run and trace](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36338113134) |
+| P09 Local real-API knowledge Chrome | Server-rendered article and hub content load from seeded API in mobile and desktop Chrome; browser interactions remain mocked where specified. | **20/22** passed on the cold development server. Both composer-navigation cases reached an unfinished Next route request during first compilation; the same two passed **2/2** on a warm rerun. The production CI run with seeded API passed its whole Chrome suite, including the knowledge cases. | PASS on warm dev server and production CI at `6afb5f2f` | `knowledge.spec.ts`; 1.2 min cold run, 7.7 s targeted rerun; local Playwright traces and [passing CI run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36336623060) |
+| P10 Repeatable production build | A fresh Linux build creates the production manifest on the first attempt. | At `6afb5f2f`, CI attempt 1 stopped at Next 16.3.4's `next/font/google` Turbopack resolver (`Merriweather`); build, budgets and browser steps were skipped. The same source built and passed budgets on CI attempt 2. Commit `d8837761` replaced the ten board-only Google font calls with locally bundled faces; both its first clean Linux build and the later `3157d6dd` build passed budgets on their first attempts. | PASS for two fresh Linux builds; browser gate pending | [old CI attempts](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36336623060), [local-font CI run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36337645976), [latest CI run](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36338113134), [related upstream report](https://github.com/vercel/next.js/issues/97344) |
+| P11 Board font assets in installed Chrome | Board font choices use local files and render Turkish glyphs at mobile and desktop sizes. | Variable Bitter and fixed-weight Poppins loaded Turkish glyphs through `document.fonts` **2/2**; observed WOFF2 requests all used the local origin. The existing goal-save browser case passed **2/2**. Editor and PNG export now share font-family values; web typecheck, two unit cases and targeted lint passed. The local-font production build and its full Chrome suite succeeded. | PASS for local UI and Linux CI at `d8837761`; latest head pending | `vision-board.spec.ts`; 5.2 s font run and 11.5 s goal-save run; [local-font CI](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36337645976) |
+| P12 Notebook note persistence in Chrome | A typed note eventually persists; an empty second note does not appear in the final page document. | The `3157d6dd` trace captured an empty draft PUT before the text was typed; the test read that first mock save. The API's text schema requires a non-empty string, so the mock accepted a payload the API would reject. The test now waits for the latest saved document containing the typed note, then a later save after the empty note is removed. Installed Chrome passed **4/4** across mobile and desktop, two repeats each, on a warm development server, then **2/2** at the default timeout. Web typecheck and targeted lint passed. | PASS locally; production CI pending | `notebook.spec.ts`; 26.9 s repeated run and 18.3 s final run; [failed CI trace and screenshot](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/36338113134) |
 
 The B01 failure left local Playwright screenshots and traces in `apps/web/test-results/`; they
 showed the dialog closing and focus landing on the body. These diagnostics are local, not pushed.
@@ -97,8 +103,32 @@ The first B02 run used the wrong translated action label in the new test; the vi
 "Devam edelim". Correcting that fixture made both cases pass. No personal browser profile or
 real external provider was used. The CI bundle result is the release gate; development-server
 page sizes are not substituted for production output. Against the pre-fix CI artifact, dashboard
-total fell **32,462 B** and now has **32,336 B** of headroom. Article total rose **7,137 B** but
+total fell **32,418 B** and now has **32,292 B** of headroom. Article total rose **7,137 B** but
 remains **21,071 B** below its gate. The complete CI test and browser steps were still running
-when these budget values were recorded; their result is tracked separately from P07. The final
-browser snapshot adds the replay focus ref after the measured build, so the new PR's CI must
-remeasure its production bundle before this scope can be declared release-ready.
+when these budget values were recorded; their result is tracked separately from P07. The replay
+focus ref added **44 B** to the first passing bundle snapshot and stayed within the final PR gate.
+
+The coach next/back test previously required React view-transition types after a prefetch-dependent
+route change. An uncached click can navigate correctly without that animation, which the test's own
+comment already accepted. B04 now verifies navigation, immediate interaction and return. Directional
+animation types remain outside this smoke assertion. The SSE test opens the settings route directly
+and waits for its mocked event connection; an unrelated profile redirect and ongoing network
+requests no longer decide the focus result. The API-enabled CI run closed the earlier P08 failure;
+the font/export snapshot exposed P12 and needs a browser rerun after the test correction.
+P09's unfinished route request is visible in the local Playwright trace; this is development
+compilation timing, not evidence that the production build passes the same case.
+P10's failure occurred in a build with no font-source code change from the prior successful run,
+and another font family had failed in the earlier local attempt. This supports an intermittent
+resolver failure rather than a deterministic bad import. The local Fontsource smoke covers the
+board's variable and fixed faces. Two clean CI builds with local fonts passed, while the
+browser rerun after P12's test correction remains a separate pending gate. PNG export uses the
+same font family values as the editor; pixel-for-pixel visual parity has not been asserted.
+
+The latest full browser run exposed P12, while its build, budget and unit-test steps passed.
+The first local repeat against a cold Next development server timed out on both mobile runs
+after the typed PUT was sent near the overall test deadline; both desktop runs passed. The warm
+rerun with a 60 s local timeout passed 4/4 in 26.9 s. This development compile timing is
+separate from the CI production failure, which was the test reading its first draft save.
+Sending an empty in-progress note to the API is a low-priority follow-up: the real validation
+rejects it, and a later edit or blur triggers another save. The mocked API accepted it for this
+test. The transient request does not demonstrate data loss, but it is unnecessary traffic.

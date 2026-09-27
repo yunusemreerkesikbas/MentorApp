@@ -675,28 +675,29 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await editor.fill("Bir daha köklü ifade unutma");
   await editor.blur();
 
-  await expect
-    .poll(() => api.savedPages.length, { timeout: 5_000 })
-    .toBeGreaterThan(0);
-  const saved = api.savedPages.find((entry) => entry.index === 0);
-  const doc = saved!.doc as { items: Array<{ kind: string; text?: string }> };
-  const notes = doc.items.filter((item) => item.kind === "text");
-  expect(notes).toHaveLength(1);
-  expect(notes[0]!.text).toBe("Bir daha köklü ifade unutma");
+  const savedNoteTexts = () => {
+    const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1);
+    const doc = latest?.doc as
+      | { items: Array<{ kind: string; text?: string }> }
+      | undefined;
+    return doc?.items.filter((item) => item.kind === "text").map((item) => item.text) ?? [];
+  };
+  await expect.poll(savedNoteTexts, { timeout: 5_000 }).toEqual([
+    "Bir daha köklü ifade unutma",
+  ]);
 
   // A second note, left empty, must never be persisted — the schema requires non-empty text.
+  const savesBeforeEmptyNote = api.savedPages.filter((entry) => entry.index === 0).length;
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   await page.getByLabel("Not metni").blur();
   await expect
     .poll(() => {
-      const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1)!
-        .doc as {
-        items: Array<{ kind: string }>;
-      };
-      return latest.items.filter((item) => item.kind === "text").length;
+      if (api.savedPages.filter((entry) => entry.index === 0).length <= savesBeforeEmptyNote)
+        return [];
+      return savedNoteTexts();
     })
-    .toBe(1);
+    .toEqual(["Bir daha köklü ifade unutma"]);
 });
 
 test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizleme açılır", async ({
