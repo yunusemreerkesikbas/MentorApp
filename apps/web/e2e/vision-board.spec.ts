@@ -195,6 +195,10 @@ async function chooseCareer(page: Page, label: string) {
 }
 
 test("pano yazı tipi Türkçe karakterleri yerel dosyadan yükler", async ({ page }) => {
+  const fontUrls: string[] = [];
+  page.on("request", (request) => {
+    if (request.resourceType() === "font") fontUrls.push(request.url());
+  });
   await mockVisionApi(page);
   await page.goto("/vision-board/board");
 
@@ -209,6 +213,8 @@ test("pano yazı tipi Türkçe karakterleri yerel dosyadan yükler", async ({ pa
   }));
   expect(loaded.variable).toBeGreaterThan(0);
   expect(loaded.static).toBeGreaterThan(0);
+  expect(fontUrls.some((url) => url.endsWith(".woff2"))).toBe(true);
+  expect(fontUrls.every((url) => new URL(url).origin === new URL(page.url()).origin)).toBe(true);
 });
 
 test("şehir ve Puhu'nun alanı seçilip kaydedilir", async ({ page }) => {

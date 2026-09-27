@@ -4590,5 +4590,7 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
 - **2026-09-27 — Local vision-board fonts.** The collage editor keeps its ten text styles but loads
   their font files from Fontsource packages instead of asking Next's Google-font resolver to fetch
   them during production builds. Usage is unchanged: choose a text style in the board editor.
-  Gotcha: these faces are scoped to the board route; other screens still use their own typography.
-  Related: `vision-board/board/layout.tsx`, `vision-board.spec.ts`, `apps/web/package.json`.
+  Gotcha: these faces are scoped to the board route; the PNG exporter names the same variable faces
+  so downloaded text matches the editor. Other screens still use their own typography. Related:
+  `vision-board/board/layout.tsx`, `board-font-families.ts`, `board-export.ts`,
+  `vision-board.spec.ts`, `apps/web/package.json`.

@@ -11,18 +11,19 @@ import "@fontsource-variable/dancing-script/wght.css";
 import "@fontsource-variable/bitter/wght.css";
 import "@fontsource/space-mono/400.css";
 import "@fontsource/space-mono/700.css";
+import { FONT_FAMILIES } from "@/components/vision-board/board-font-families";
 
 const fontVariables = {
-  "--font-script": '"Caveat Variable", cursive',
-  "--font-vision-heading": '"Poppins", sans-serif',
-  "--font-vision-serif": '"Playfair Display Variable", serif',
-  "--font-vision-rounded": '"Baloo 2 Variable", sans-serif',
-  "--font-vision-condensed": '"Oswald Variable", sans-serif',
-  "--font-vision-classic": '"Merriweather Variable", serif',
-  "--font-vision-impact": '"Anton", sans-serif',
-  "--font-vision-elegant": '"Dancing Script Variable", cursive',
-  "--font-vision-slab": '"Bitter Variable", serif',
-  "--font-vision-mono": '"Space Mono", monospace',
+  "--font-script": FONT_FAMILIES.script,
+  "--font-vision-heading": FONT_FAMILIES.heading,
+  "--font-vision-serif": FONT_FAMILIES.serif,
+  "--font-vision-rounded": FONT_FAMILIES.rounded,
+  "--font-vision-condensed": FONT_FAMILIES.condensed,
+  "--font-vision-classic": FONT_FAMILIES.classic,
+  "--font-vision-impact": FONT_FAMILIES.impact,
+  "--font-vision-elegant": FONT_FAMILIES.elegant,
+  "--font-vision-slab": FONT_FAMILIES.slab,
+  "--font-vision-mono": FONT_FAMILIES.mono,
 } as CSSProperties;
 
 export default function VisionBoardFontsLayout({
