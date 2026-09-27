@@ -10,6 +10,7 @@ function overview(over: Partial<MentorshipCoachOverviewDto> = {}): MentorshipCoa
     freeSeats: 3,
     paidSeats: 0,
     usedSeats: 1,
+    waitingStudents: 0,
     sponsorshipEnabled: true,
     seatAllowance: 3,
     seatPlansOnSale: false,
@@ -24,41 +25,80 @@ describe("seatCardState", () => {
   });
 
   it("offers the code while seats remain", () => {
-    expect(seatCardState(overview({ activeStudents: 2 }), null)).toEqual({
+    expect(seatCardState(overview({ activeStudents: 2, usedSeats: 2 }), null)).toEqual({
       kind: "open",
       used: 2,
       total: 3,
       freeSeats: 3,
       paidSeats: 0,
+      sponsored: true,
+      waiting: 0,
     });
   });
 
-  it("is full exactly where the accept lock refuses, whatever the sponsored count says", () => {
-    // Three live links, one of them never sponsored: the old card read `usedSeats` and said 2/3.
-    expect(seatCardState(overview({ activeStudents: 3, usedSeats: 2 }), null)).toEqual({
+  it("keeps the seats open while sponsorship is off, and says no seat opens Premium", () => {
+    // A seat is the room to follow a student; sponsorship is only what it adds.
+    expect(
+      seatCardState(overview({ activeStudents: 2, usedSeats: 2, sponsorshipEnabled: false }), null),
+    ).toMatchObject({ kind: "open", used: 2, total: 3, sponsored: false });
+  });
+
+  /** One payer per student: a student paying for their own Premium holds no seat. */
+  it("does not count a student who pays for their own Premium", () => {
+    expect(seatCardState(overview({ activeStudents: 3, usedSeats: 2 }), null)).toMatchObject({
+      kind: "open",
+      used: 2,
+    });
+  });
+
+  it("is full exactly where the accept lock refuses: at the seats held", () => {
+    // Four students, one of them paying for themselves: three seats held of three.
+    expect(seatCardState(overview({ activeStudents: 4, usedSeats: 3 }), null)).toEqual({
       kind: "full",
       used: 3,
       total: 3,
       reason: "seats",
       plansOnSale: false,
+      sponsored: true,
+      waiting: 0,
+      limit: 20,
     });
   });
 
+  it("carries how many students wait for a seat", () => {
+    expect(
+      seatCardState(overview({ activeStudents: 5, usedSeats: 3, waitingStudents: 2 }), null),
+    ).toMatchObject({ kind: "full", waiting: 2 });
+  });
+
   it("points at a plan only when one is on sale", () => {
-    const state = seatCardState(overview({ activeStudents: 3, seatPlansOnSale: true }), null);
+    const state = seatCardState(
+      overview({ activeStudents: 3, usedSeats: 3, seatPlansOnSale: true }),
+      null,
+    );
     expect(state).toMatchObject({ kind: "full", plansOnSale: true });
   });
 
   it("names the follow cap when that is what stops the next student", () => {
     const state = seatCardState(
-      overview({ activeStudents: 20, paidSeats: 25, seatAllowance: 20 }),
+      overview({ activeStudents: 20, usedSeats: 20, paidSeats: 25, seatAllowance: 20 }),
       null,
     );
-    expect(state).toMatchObject({ kind: "full", reason: "cap", total: 20 });
+    expect(state).toMatchObject({ kind: "full", reason: "cap", total: 20, limit: 20 });
   });
 
-  it("says seats have not opened while sponsorship is off", () => {
-    expect(seatCardState(overview({ seatAllowance: 0, sponsorshipEnabled: false }), null)).toEqual({
+  it("is full at the follow cap even while seats are left", () => {
+    // Students paying for themselves filled the roster: the accept refuses on the cap, not seats.
+    const state = seatCardState(
+      overview({ activeStudents: 20, usedSeats: 5, paidSeats: 10, seatAllowance: 13 }),
+      null,
+    );
+    expect(state).toMatchObject({ kind: "full", reason: "cap", used: 5, limit: 20 });
+  });
+
+  it("says seats have not opened when the coach has none at all", () => {
+    // `free_seats` set to 0 and no seat plan: the only way the server reports no allowance.
+    expect(seatCardState(overview({ seatAllowance: 0, freeSeats: 0, usedSeats: 0 }), null)).toEqual({
       kind: "closed",
     });
   });

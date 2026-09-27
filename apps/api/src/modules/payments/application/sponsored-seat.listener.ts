@@ -33,7 +33,10 @@ export class SponsoredSeatListener {
 
   @OnEvent(MentorshipEventTopic.LINK_ACCEPTED)
   async onLinkAccepted(event: MentorshipLinkAccepted): Promise<void> {
-    if (event.seatKind === MentorshipSeatKind.NONE) return;
+    // Only a held seat carries Premium: SELF pays for themselves (one payer per student).
+    if (event.seatKind !== MentorshipSeatKind.FREE && event.seatKind !== MentorshipSeatKind.PAID) {
+      return;
+    }
     await this.seats.grant(event.studentId, event.linkId).catch((err: unknown) => {
       this.logger.error(`Sponsored seat grant failed for link ${event.linkId}`, err);
     });

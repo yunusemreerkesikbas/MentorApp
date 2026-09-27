@@ -54,6 +54,7 @@ const MY_COACH = {
   dataScope: DATA_SCOPE,
   coachNote: null as CoachNote | null,
   coachProfile: null as Record<string, unknown> | null,
+  seatWaiting: false,
 };
 
 /**
@@ -187,6 +188,14 @@ test.describe("öğrenci tarafı", () => {
     await expect(
       page.getByText("Bu hafta paragrafa ağırlık ver."),
     ).toBeVisible();
+  });
+
+  test("koltuk bekleyen bağda öğrenci durumu kendi ekranında okur", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: { ...MY_COACH, seatWaiting: true } });
+    await page.goto("/kocum");
+
+    await expect(page.getByText("Koç Mert")).toBeVisible();
+    await expect(page.getByText("Koçunun koltukları şu an dolu.", { exact: false })).toBeVisible();
   });
 
   test("bayrak kapalıyken hata değil, kapalı durumu gösterir", async ({

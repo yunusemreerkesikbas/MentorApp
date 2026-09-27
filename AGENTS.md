@@ -60,9 +60,16 @@ verification) · Policy/Guard + RLS (tenancy). Full table + where: [docs/core/ar
 2. **Photo→topic only CATEGORIZES, never solves** (§0/§10). Vision = classification.
 3. **Economy: coin is non-monetary, capped.** **Never put coin in the chat zone.** The ledger never
    stores a single number / never deletes. **Reward ≤ action value** (don't leak AI cost — §3).
-4. **No unconditional/ongoing AI on Free** (cost ~0). The **three** ways to taste AI: carded trial ·
+4. **No unconditional/ongoing AI on Free** (cost ~0). The **four** ways to taste AI: carded trial ·
    earned right (invite/quest) · **a curated coach's sponsored seat**, bounded by
-   `mentorship.coach.free_seats`. No unconditional metered sampling (§7/§10).
+   `mentorship.coach.free_seats` · **a coach's daily assistant taste** (below). No unconditional
+   metered sampling (§7/§10).
+   *The coach taste was added 2026-09-26: a coach without a plan gets the coach AI (student and
+   cohort briefs, meeting preparation, homework drafts) for the students their free seats cover, on
+   `ai.features.mentorship.*.free_enabled` with a per-coach daily limit, charged to the coach and
+   under `ai.budget.monthly_cap_usd_cents`. It is conditional on the COACH role, an active link and
+   the flags, and it does not wait for SMS OTP: its exposure is per coach per day, not a student's
+   whole AI. The sponsored seat below still waits.*
    *The seat was added 2026-09-05 (APP-076) and revises roadmap §7's "koçtan abonelik sıkma".*
    *It is a widening, not a removal: the path is conditional on a coach account in good standing,
    on a config'd seat count, and on `mentorship.seats.sponsorship_enabled`, and every call it

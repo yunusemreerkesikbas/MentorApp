@@ -373,14 +373,16 @@ export const CONFIG_CATALOG = {
     "Gate for completed-week coach reports, AI findings, archive and printable student views.",
   ),
   "mentorship.coach.max_active_students": mentorshipCount(
-    20,
+    // 25: the largest seat tier (+20) plus the 3 free seats has to fit, or a coach pays for seats
+    // the roster ceiling will never let them use.
+    25,
     1,
     500,
-    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students get sponsored Premium.",
+    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students are free.",
   ),
   "mentorship.seats.sponsorship_enabled": mentorshipFlag(
     false,
-    "Gate for coach-sponsored Premium. Separate from mentorship.enabled so the coach surface can open before anyone is granted paid AI on someone else's behalf.",
+    "Whether a coach's seat also opens the student's Premium. Seats let a coach follow students either way. Off ends live sponsorships at once. Keep off until SMS OTP ships (AGENTS.md §4 #4): coach registration is self-service.",
   ),
   "mentorship.seats.billing_enabled": mentorshipFlag(
     false,
@@ -394,7 +396,7 @@ export const CONFIG_CATALOG = {
     3,
     0,
     50,
-    "How many of a coach's students get sponsored Premium for free. THE cost knob: coaches x this = free premium seats, each one real LLM spend. Raise deliberately; 0 turns sponsorship off without touching the flag.",
+    "How many students a coach follows for free. While mentorship.seats.sponsorship_enabled is on, each of them also gets sponsored Premium: coaches x this = free Premium seats, each one real LLM spend. Lowering it keeps existing seats. 0 = every student needs a paid seat.",
   ),
   "mentorship.invite_code.ttl_days": mentorshipCount(
     14,

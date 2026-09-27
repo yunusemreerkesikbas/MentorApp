@@ -96,6 +96,25 @@ export class SubscriptionsRepository {
     });
   }
 
+  /**
+   * The open subscription of each of these users, in one query (W8 seats ask about a whole roster).
+   * SERVICE context: the rows belong to several users, so a per-user RLS context cannot read them.
+   */
+  async listOpenForUsers(userIds: readonly string[]): Promise<SubscriptionRow[]> {
+    if (userIds.length === 0) return [];
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            inArray(subscriptions.userId, [...userIds]),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        ),
+    );
+  }
+
   /** Trial-once rule (§7): has this user EVER had a subscription row? */
   async hasAnyForUser(userId: string): Promise<boolean> {
     return withServiceContext(this.db, async (tx) => {
@@ -193,30 +212,6 @@ export class SubscriptionsRepository {
         .where(
           and(
             eq(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
-            notInArray(subscriptions.status, TERMINAL),
-          ),
-        );
-      return rows[0]?.n ?? 0;
-    });
-  }
-
-  /**
-   * How many of these links are actually sponsoring somebody right now.
-   *
-   * Ids in, count out — the same shape the cost metric uses, and for the same reason: the links
-   * belong to W8 and the subscriptions to W4, so the two tables meet in neither module's SQL.
-   * A link can be live without a seat (the student already pays for themselves), which is exactly
-   * why this cannot be inferred from the roster size.
-   */
-  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
-    if (linkIds.length === 0) return 0;
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .select({ n: count() })
-        .from(subscriptions)
-        .where(
-          and(
-            inArray(subscriptions.sponsorLinkId, [...linkIds]),
             notInArray(subscriptions.status, TERMINAL),
           ),
         );

@@ -1,11 +1,13 @@
 import { Injectable } from "@nestjs/common";
 import type { ListMentorshipPlanningTasksInput } from "@mentor/validation";
-import type {
-  MentorshipLinkStatus,
-  MentorshipRiskFlagId,
-  MentorshipRosterRowDto,
-  MentorshipStudentReportDto,
-  Paginated,
+import {
+  MentorshipSeat,
+  type MentorshipLinkStatus,
+  type MentorshipRiskFlagId,
+  type MentorshipRosterRowDto,
+  type MentorshipSeatId,
+  type MentorshipStudentReportDto,
+  type Paginated,
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
@@ -88,10 +90,11 @@ export class MentorshipRosterService {
     );
     if (rows.length === 0) return { items: [], total, page, pageSize };
 
-    // Only ACTIVE links get metrics. Ending a link revokes consent, so the history tab shows that
-    // the relationship existed and nothing about how the student is doing now.
+    // Only ACTIVE links that hold a seat get metrics. Ending a link revokes consent, so the history
+    // tab shows that the relationship existed and nothing about how the student is doing now; a
+    // link waiting for a seat is frozen, so its row says who waits and not how they are doing.
     const activeStudentIds = rows
-      .filter((row) => row.status === "ACTIVE")
+      .filter((row) => row.status === "ACTIVE" && row.seat !== MentorshipSeat.NONE)
       .map((row) => row.studentId);
     const [people, snapshots, thresholds, attentionTtlDays] = await Promise.all(
       [
@@ -118,6 +121,7 @@ export class MentorshipRosterService {
         status: link.status as MentorshipLinkStatus,
         acceptedAt: link.acceptedAt?.toISOString() ?? null,
         endedAt: link.endedAt?.toISOString() ?? null,
+        seat: link.seat as MentorshipSeatId,
         metrics: snapshot
           ? {
               lastActiveDate: snapshot.lastActiveDate,

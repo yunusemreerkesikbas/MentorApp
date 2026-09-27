@@ -1,0 +1,17 @@
+{
+  "root": {
+    "bytes": 248,
+    "limit": 1024,
+    "pass": true
+  },
+  "welcome": {
+    "bytes": 814,
+    "limit": 2048,
+    "pass": true
+  },
+  "article": {
+    "bytes": 4107,
+    "limit": 6144,
+    "pass": true
+  }
+}

@@ -59,6 +59,7 @@ export class AssignmentSuggestionService {
       coach.id,
       coach.roles,
       PremiumFeatureId.MENTORSHIP_SUGGESTIONS,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
 
     // The brief's evidence shaper, reused: names and the coach's own note are already stripped

@@ -92,6 +92,9 @@ export class MentorshipWeeklyBriefService {
     )
       return preview;
     if (preview.status === "BRIEF_PENDING") conflict();
+    // Past the reuse returns above: reading back a written brief spends nothing, so only a new
+    // generation asks. Refusing here beats a pending brief that quietly fails in the worker.
+    await this.writer.assertAvailable(coach);
     const payload: MentorshipWeeklyBriefJob = {
       draftId: preview.draftId!,
       coachId: coach.id,

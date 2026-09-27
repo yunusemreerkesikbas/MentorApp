@@ -16,6 +16,7 @@ function row(
     attendedAt?: string | null;
     studiedToday?: number;
     status?: "ACTIVE" | "ENDED";
+    seat?: MentorshipRosterRowDto["seat"];
   } = {},
 ): MentorshipRosterRowDto {
   const flags = over.flags ?? [];
@@ -30,8 +31,9 @@ function row(
     status: over.status ?? "ACTIVE",
     acceptedAt: "2026-09-01T00:00:00.000Z",
     endedAt: null,
+    seat: over.seat ?? "FREE",
     metrics:
-      over.status === "ENDED"
+      over.status === "ENDED" || over.seat === "NONE"
         ? null
         : {
             lastActiveDate: "2026-09-20",
@@ -196,5 +198,20 @@ describe("groupRoster", () => {
       attendedAt: "2026-09-22T10:00:00.000Z",
     });
     expect(groupRoster([earlier], TODAY).onTrack).toHaveLength(1);
+  });
+
+  /** Frozen students are nobody's "on track": they wait for a seat, apart from everyone else. */
+  it("keeps students waiting for a seat in a group of their own", () => {
+    const groups = groupRoster(
+      [calm("burak"), row("ayse", { seat: "NONE", needsAttention: false })],
+      TODAY,
+    );
+    expect(groups.seatWaiting.map((r) => r.studentId)).toEqual(["ayse"]);
+    expect(groups.onTrack.map((r) => r.studentId)).toEqual(["burak"]);
+  });
+
+  it("leaves a student waiting for a seat out of the round", () => {
+    const round = buildCoachRound([row("ayse", { seat: "NONE", needsAttention: false })], TODAY);
+    expect(round.kind).toBe("empty");
   });
 });

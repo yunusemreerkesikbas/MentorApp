@@ -62,6 +62,8 @@ describe("weekly preparation database concurrency", () => {
           source: "INVITE",
           periodId,
           acceptedAt: new Date(),
+          // Explicit: the column defaults to NONE, and a link waiting for a seat is frozen.
+          seat: "FREE",
         });
     });
     const draft = await reports.upsertDraft({

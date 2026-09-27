@@ -4,6 +4,7 @@ import { PremiumFeatureId } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { AiUsageFeature, estimateCostMicros } from "../domain/ai.constants";
 import { LLM_PORT, type LlmPort } from "../domain/llm.port";
 import {
@@ -25,13 +26,12 @@ export class MentorshipWeeklyBriefWriterService {
     private readonly featureGate: PremiumFeatureGateService,
   ) {}
 
-  async generate(
-    snapshot: MentorshipWeeklySnapshotDto,
-    /** `roles` undefined = the entitlement reads current roles from the DB (queued callers). */
-    coach: { id: string; roles: string[] | undefined },
-    locale: PromptLocale,
-    coachContext: string | null = null,
-  ) {
+  /**
+   * The request path asks this before it queues a job, so a coach whose taste is used up hears it
+   * then, instead of watching the preparation fail in the worker. `generate` asks again: the
+   * answer can change while the job waits.
+   */
+  async assertAvailable(coach: { id: string; roles: string[] | undefined }): Promise<void> {
     if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
       throw new DomainError("AI_DISABLED", HttpStatus.NOT_FOUND);
     }
@@ -39,7 +39,18 @@ export class MentorshipWeeklyBriefWriterService {
       coach.id,
       coach.roles,
       PremiumFeatureId.MENTORSHIP_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
+  }
+
+  async generate(
+    snapshot: MentorshipWeeklySnapshotDto,
+    /** `roles` undefined = the entitlement reads current roles from the DB (queued callers). */
+    coach: { id: string; roles: string[] | undefined },
+    locale: PromptLocale,
+    coachContext: string | null = null,
+  ) {
+    await this.assertAvailable(coach);
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete(
       buildMentorshipWeeklyBriefPrompt(snapshot, locale, coachContext),

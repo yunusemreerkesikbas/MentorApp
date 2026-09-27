@@ -1,0 +1,234 @@
+{
+  "capturedAt": "2026-09-27T12:04:28.3661573Z",
+  "head": "e3a0fa8739ddb1f48ee05be78c6b5f02b6768ac4",
+  "files": [
+    {
+      "path": "apps/api/drizzle/0117_w8_coach_seat_state.sql",
+      "sha256": "1ee41f6b8f4fd15f6b3244427cb1032b4e3d6fd352512f057f17c2a5c0cebdf9"
+    },
+    {
+      "path": "apps/api/drizzle/meta/_journal.json",
+      "sha256": "0e35b9a82e03e5b7877ae700cac552dd0745da187aa21b0eb603e9d6e0c0d1a7"
+    },
+    {
+      "path": "apps/api/drizzle/meta/0117_snapshot.json",
+      "sha256": "967b526f8e62301528f3bf16e7da133ebc4479b13b15d9e9408ad3443eb645dd"
+    },
+    {
+      "path": "apps/api/src/common/config/config.catalog.ts",
+      "sha256": "0d9c9771a018d1a0163c54ea30d1b8270aab11e4d75d78c5353019f066b589e7"
+    },
+    {
+      "path": "apps/api/src/common/errors/error-code.ts",
+      "sha256": "4214307ae663423ccc86198a9b4d2bbb3a44e66613fa0c36ec533435c649be29"
+    },
+    {
+      "path": "apps/api/src/database/schema.ts",
+      "sha256": "3184517dbdd46e66a3830dd1472691cb24459f8e507551b83f34d62541fd8a91"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/en/errors.json",
+      "sha256": "7922a1d18960a54980ea96b8ec9bb2a6a0e96e6775469173bdb195e98d692986"
+    },
+    {
+      "path": "apps/api/src/i18n/locales/tr/errors.json",
+      "sha256": "f201a7aa34efdffc956fff7b754fe3a8ea6e6cd4f4eb79d6d8e7642f2a0a87d2"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/assignment-suggestion.service.spec.ts",
+      "sha256": "c4a6f88c92b20962e740cbecbc1192ac8df29af0d2feda856b42d048fbbf0b86"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/assignment-suggestion.service.ts",
+      "sha256": "54353d01aef958050f32d9ebdb2840f7a1a22c0e1cd21b5343dbd6dbb4da165a"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/coach-ai-daily-limit.spec.ts",
+      "sha256": "1b9b720332a4de67a65dd59b4884ffe2d11ab5fcd7085fb510d327335cc74815"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/cohort-brief.service.ts",
+      "sha256": "ee2af443ebafeeadb90b6e68b1b0b79b3e1d66c3cf8afabf7f7140bd343a2579"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/mentorship-brief.service.ts",
+      "sha256": "6f22dcfab2dd78e975d551a7cbc52205047d8ae3eb5b067059b14f161bf6499d"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/mentorship-weekly-brief-writer.service.spec.ts",
+      "sha256": "80e15dbd552287afdec90021e265ce4eb3e79d731d2e41fac566e499cbbf480c"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/mentorship-weekly-brief-writer.service.ts",
+      "sha256": "8edf7f8164645686da4e6786f35d94fd4f680a0d36537eb2218a4bec2775c51d"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/premium-feature-gate.service.spec.ts",
+      "sha256": "a0e65e5f35de12a9d224a2f6ac8b8dee6f5bdfd4f64130d6d4ff924039c717c5"
+    },
+    {
+      "path": "apps/api/src/modules/ai/application/premium-feature-gate.service.ts",
+      "sha256": "68e07a0f2a52ac5d411cbf4f0a1ecfc33775f87da28e8496f96b5bebc227b90e"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-cohort-brief.service.spec.ts",
+      "sha256": "edc6f08ee34a1005e41e05037240a529651c6373be5551c9ad9230cfc7fd3543"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-cohort-brief.service.ts",
+      "sha256": "8453e31156c26d8a91cc0bde21f3c28e7839a7573b4bbdd7ebb4b86864adfb14"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-followup.service.ts",
+      "sha256": "05e6e7f150bbeb4341a2be138daec16365f51fc51e354510fc9c24fb071324ed"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.spec.ts",
+      "sha256": "6473cd2069b9fac62b157030d9265aea2aca7b7709f2653562d6295bf3efc01f"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-link.service.ts",
+      "sha256": "f57f935ea2622a3a876e65eb31a9d4022069730d7de54f8bc5619269bec9b66d"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.spec.ts",
+      "sha256": "4152a42a6aaaeab13ab907ff5b9537083a388ad2e0a0d95c8afd9d96aef4d46f"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-roster.service.ts",
+      "sha256": "d360d488017fdbfce718eadd92b0f50a47b62a8519f717114485195daaeeeb7d"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-brief.service.spec.ts",
+      "sha256": "bf670f51c30e40319f01633484611eba8ac0837fa0a9937bce55cb87ed90e8be"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/mentorship-weekly-brief.service.ts",
+      "sha256": "d04a58e53cdf4bb8908e94a3ed8bb59fc62b2ce93111330b4ebed9f59def65fa"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/plan-task-feedback.listener.spec.ts",
+      "sha256": "3d10c18ca17297e7c2d748b6e5f2e81aff106a7e4fd9af94474fc6c5dcbae53d"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/plan-task-feedback.listener.ts",
+      "sha256": "e5eb72c3b9eacb145b7bb15e0fd9813ca21b8f6026eb81ba482a9b75606cdf24"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/seat-events.listener.spec.ts",
+      "sha256": "4952d1c32adecaaac0cd31aacc71fab02a0092e95c32f243cb39ba01665b497d"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/application/seat-events.listener.ts",
+      "sha256": "f6f9b3cf66f2ac77e149340c7d311673aed33bc5d0fe66683789408574aa29f5"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/domain/mentorship.constants.ts",
+      "sha256": "1a44d094b01e59c59686bcd366a71ee9b32e3a79e0fdad177fd917d8f5a3cb4b"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/domain/seats.spec.ts",
+      "sha256": "9db1c7cf6476fb0f7ec987d1e83fc5da8e2b2840b70b33ebb6381accf7d8405d"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/domain/seats.ts",
+      "sha256": "0e4761c6e0cf2fd10c45ae3f40f3a6f81a4eadb98665a93665e2d544e6f31213"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/infrastructure/mentorship-link.repository.ts",
+      "sha256": "53766e5f526f94da74e8dde33cfedc8d89207134ad6c45af40a670b2bfbd6925"
+    },
+    {
+      "path": "apps/api/src/modules/mentorship/mentorship.module.ts",
+      "sha256": "b1f262933717c8263b7fbadbb2d73d99acbf67ce24974f3dfa5ca2d1d094be69"
+    },
+    {
+      "path": "apps/api/src/modules/payments/application/sponsored-seat.listener.spec.ts",
+      "sha256": "dc0355a9385fbc785088b0c7aed7b84ba3479205b3144974659e9bd72d446f71"
+    },
+    {
+      "path": "apps/api/src/modules/payments/application/sponsored-seat.listener.ts",
+      "sha256": "167dfd0e3df01a6d7e14def6a6b3f9b3598544ad82909426b44a9e87bbb07db9"
+    },
+    {
+      "path": "apps/api/src/modules/payments/application/subscriptions.service.spec.ts",
+      "sha256": "21e569e246fb48c475e461e34536d303c27d3c9327e3a1b998eb02baeba2fbb0"
+    },
+    {
+      "path": "apps/api/src/modules/payments/application/subscriptions.service.ts",
+      "sha256": "bbd30f86523124d3f444c46643491f00c81db83a8602c15a41b410859d25136f"
+    },
+    {
+      "path": "apps/api/src/modules/payments/infrastructure/payments.repositories.ts",
+      "sha256": "4226973d38bbd7cb38776b60e8f3bf9f5129ae3f40c2cbfb0f0269f76cdd9f8f"
+    },
+    {
+      "path": "apps/api/test/mentorship-followups.e2e-spec.ts",
+      "sha256": "c630bf27f522fca71990a9ee6c91d5b5a9f7bb2e2f4dfd388a201f623b66e668"
+    },
+    {
+      "path": "apps/api/test/mentorship-seats.e2e-spec.ts",
+      "sha256": "788f7fb26c22464b6a8bec61e4be8989ed577a7236f7f3cc3c67a2d1ab0f4a63"
+    },
+    {
+      "path": "apps/api/test/mentorship-weekly-brief.e2e-spec.ts",
+      "sha256": "331176ad2ec5632e80b7ace2aae4c9e857b73a16739974eecd91a559eed5393f"
+    },
+    {
+      "path": "apps/web/e2e/coach-home.spec.ts",
+      "sha256": "c3d4f49da245c0cc0e616c9f599aff1527e880d41ac1810cc158d4776ef94882"
+    },
+    {
+      "path": "apps/web/e2e/coach-plan.spec.ts",
+      "sha256": "a2ef2cbdfa0558ba1c4fcc313eeb255f2471e8fc695ad50b146c07783b45f744"
+    },
+    {
+      "path": "apps/web/e2e/mentorship.spec.ts",
+      "sha256": "6dccb597d3e5c46959b887c6e01ae184ca598bf95205d5fa2a64222b7baed33d"
+    },
+    {
+      "path": "apps/web/messages/en.json",
+      "sha256": "db898fb0f8169571afc3480601e936ace1150ba16e10fa3e64d7e0cbfe9e153c"
+    },
+    {
+      "path": "apps/web/messages/tr.json",
+      "sha256": "8abc4963a35667790e2d36a388833fdb6fc833c4582d841c54b3808a23c99c1b"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(app)/my-coach/_components/my-coach-shell.tsx",
+      "sha256": "11e2fe7b825eadef0c879df501fbc5ab4552ab9e3f46bb1d5eea0b09bd2c42bb"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-model.spec.ts",
+      "sha256": "c8470a58cf442189f175a9673ca4ea87b2b9eb05baed958aad8bc4030e659fdc"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/coach-round-model.ts",
+      "sha256": "8e930c4612dc42ff0fa9cc8f1c31acbd79c39c484b23f414ec8b35aec4c43e68"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/invite-seats.tsx",
+      "sha256": "f8be1c240fa84247556624b528095b2c8e1e7a62e5437b7584135102e89cb31a"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/seat-state.spec.ts",
+      "sha256": "f8bf4de1750fabd40767e827395043d86151ce12e5621ca597e29f1799eb2b88"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/seat-state.ts",
+      "sha256": "fb916abe8ef9f450278934731acef714fb98ffb95b9cf2312e8f034622873689"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/student-row.tsx",
+      "sha256": "ea772774f3d3e99d88a6f2b104b17d6d5d0f5442875a1f002519fdbd019defec"
+    },
+    {
+      "path": "apps/web/src/app/[locale]/(coach)/students/_components/students-card.tsx",
+      "sha256": "d013217a0de05b174ec27204bef2abfbb732546fc3b67f6e071b8205f4c666eb"
+    },
+    {
+      "path": "packages/types/src/mentorship.ts",
+      "sha256": "6c413ca1e99739a7341194a718ad773a9215ab59f1f4b96a30ac5ac4364b06d1"
+    }
+  ]
+}

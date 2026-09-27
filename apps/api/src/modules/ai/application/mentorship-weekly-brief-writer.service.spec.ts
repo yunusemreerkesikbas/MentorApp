@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 import type { MentorshipWeeklySnapshotDto } from "@mentor/types";
 import { PremiumFeatureId } from "@mentor/types";
+import { ErrorCode } from "../../../common/errors/error-code";
 import { AiUsageFeature } from "../domain/ai.constants";
 import { MentorshipWeeklyBriefWriterService } from "./mentorship-weekly-brief-writer.service";
 
@@ -67,6 +68,7 @@ describe("MentorshipWeeklyBriefWriterService", () => {
       "coach",
       ["COACH"],
       PremiumFeatureId.MENTORSHIP_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
     expect(append).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -74,6 +76,29 @@ describe("MentorshipWeeklyBriefWriterService", () => {
         feature: AiUsageFeature.MENTORSHIP_BRIEF,
       }),
     );
+  });
+
+  it("answers up front, with the coach's daily-limit code, whether a brief can be written", async () => {
+    const assertAllowed = vi.fn();
+    const complete = vi.fn();
+    const service = new MentorshipWeeklyBriefWriterService(
+      { complete } as never,
+      { get: vi.fn(async () => true) } as never,
+      { append: vi.fn() } as never,
+      { assertWithinBudget: vi.fn() } as never,
+      { assertAllowed } as never,
+    );
+
+    await service.assertAvailable({ id: "coach", roles: ["COACH"] });
+
+    expect(assertAllowed).toHaveBeenCalledWith(
+      "coach",
+      ["COACH"],
+      PremiumFeatureId.MENTORSHIP_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
+    );
+    // Asking spends nothing.
+    expect(complete).not.toHaveBeenCalled();
   });
 
   it("rejects a model response without valid evidence references, still recording its usage", async () => {

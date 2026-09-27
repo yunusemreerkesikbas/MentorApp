@@ -134,6 +134,15 @@ describe("PlanTaskFeedbackListener", () => {
     expect(dropped.record).not.toHaveBeenCalled();
   });
 
+  it("says nothing to a coach whose link waits for a seat", async () => {
+    // Frozen: the link stands, but nothing about the student reaches the coach until a seat returns.
+    const { listener, emitted, dropped } = setup({ ...activeLink, seat: "NONE" } as never);
+    await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
+    await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
+    expect(emitted).toEqual([]);
+    expect(dropped.record).not.toHaveBeenCalled();
+  });
+
   it("says nothing when the link is gone — the soft ref outlived its row (erasure)", async () => {
     const { listener, emitted } = setup(undefined);
     await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));

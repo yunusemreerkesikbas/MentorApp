@@ -7,7 +7,7 @@ import type { InviteLock } from "./invite-lock";
  */
 export type SeatCardState =
   | { kind: "loading" }
-  /** Sponsorship is off: no seat grants anything yet. */
+  /** No seat at all: `mentorship.coach.free_seats` is 0 and the coach has no seat plan. */
   | { kind: "closed" }
   /**
    * An admin withheld the code: nothing here would work, so the card explains. An unverified email
@@ -21,10 +21,24 @@ export type SeatCardState =
       total: number;
       /** `cap`: the follow limit stops the next student, not the seats. */
       reason: "seats" | "cap";
+      /** The follow limit itself (`maxActiveStudents`), what the cap sentence names. */
+      limit: number;
       /** A coach seat plan is in the `/subscription` catalog right now. */
       plansOnSale: boolean;
+      /** A seat also opens the student's Premium, so the card may say so. */
+      sponsored: boolean;
+      /** Students waiting for a seat (frozen until one returns). */
+      waiting: number;
     }
-  | { kind: "open"; used: number; total: number; freeSeats: number; paidSeats: number };
+  | {
+      kind: "open";
+      used: number;
+      total: number;
+      freeSeats: number;
+      paidSeats: number;
+      sponsored: boolean;
+      waiting: number;
+    };
 
 export function seatCardState(
   overview: MentorshipCoachOverviewDto | null,
@@ -32,16 +46,23 @@ export function seatCardState(
 ): SeatCardState {
   if (overview === null) return { kind: "loading" };
   if (overview.seatAllowance === 0) return { kind: "closed" };
-  const used = overview.activeStudents;
+  // Seats held, not students linked: one who pays for their own Premium holds none.
+  const used = overview.usedSeats;
   const total = overview.seatAllowance;
-  if (used >= total) {
+  const capReached = overview.activeStudents >= overview.maxActiveStudents;
+  if (used >= total || capReached) {
     return {
       kind: "full",
       used,
       total,
       reason:
-        overview.freeSeats + overview.paidSeats >= overview.maxActiveStudents ? "cap" : "seats",
+        capReached || overview.freeSeats + overview.paidSeats >= overview.maxActiveStudents
+          ? "cap"
+          : "seats",
+      limit: overview.maxActiveStudents,
       plansOnSale: overview.seatPlansOnSale,
+      sponsored: overview.sponsorshipEnabled,
+      waiting: overview.waitingStudents,
     };
   }
   // A code that arrived is the server saying this coach may invite; the lock only explains a
@@ -53,5 +74,7 @@ export function seatCardState(
     total,
     freeSeats: overview.freeSeats,
     paidSeats: overview.paidSeats,
+    sponsored: overview.sponsorshipEnabled,
+    waiting: overview.waitingStudents,
   };
 }

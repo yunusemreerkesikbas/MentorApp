@@ -496,3 +496,65 @@ describe("SubscriptionsService plan catalog admin", () => {
     });
   });
 });
+
+/**
+ * W8's one-payer rule reads this: a student who pays for their own Premium holds no coach seat.
+ * "Pays" is the whole question, so a coach's seat, a checkout that bought nothing yet and time that
+ * already ran out are all "no".
+ */
+describe("SubscriptionsService self-paying users", () => {
+  const future = new Date(Date.now() + 10 * 86_400_000);
+  const past = new Date(Date.now() - 10 * 86_400_000);
+  const row = (userId: string, over: Record<string, unknown> = {}) => ({
+    userId,
+    status: "ACTIVE",
+    provider: "fake",
+    currentPeriodEnd: future,
+    trialEndsAt: null,
+    updatedAt: new Date(),
+    ...over,
+  });
+  function makeService(rows: unknown[]) {
+    const subsRepo = { listOpenForUsers: vi.fn().mockResolvedValue(rows) };
+    const service = new SubscriptionsService(
+      {} as never,
+      {} as never,
+      subsRepo as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      { append: vi.fn() } as never,
+    );
+    return { service, subsRepo };
+  }
+
+  it("names only the users whose own subscription gives them Premium right now", async () => {
+    const { service } = makeService([
+      row("paying"),
+      row("sponsored", { provider: "SPONSOR", currentPeriodEnd: null }),
+      row("checkout", { status: "INCOMPLETE" }),
+      row("lapsed", { currentPeriodEnd: past }),
+    ]);
+    const paying = await service.listSelfPayingUserIds([
+      "paying",
+      "sponsored",
+      "checkout",
+      "lapsed",
+      "nobody",
+    ]);
+    expect([...paying]).toEqual(["paying"]);
+  });
+
+  it("asks nothing when there is nobody to ask about", async () => {
+    const { service, subsRepo } = makeService([]);
+    expect((await service.listSelfPayingUserIds([])).size).toBe(0);
+    expect(subsRepo.listOpenForUsers).not.toHaveBeenCalled();
+  });
+});

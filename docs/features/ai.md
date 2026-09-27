@@ -103,6 +103,16 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-26 · The coach AI names its own daily limit.** `PremiumFeatureGateService.assertAllowed`
+  takes an optional `limitCode`, thrown only when the refusal is a used-up free taste; with no taste
+  switched on the refusal stays `PAYMENT_PREMIUM_REQUIRED`. The student brief, cohort brief,
+  assignment suggestions and weekly brief writer pass `MENTORSHIP_AI_DAILY_LIMIT`: a coach has no
+  Premium to buy. `MentorshipWeeklyBriefWriterService.assertAvailable` is the same check without a
+  call, which W8 now asks before queueing meeting preparation. Student surfaces are unchanged
+  (weekly recap and plan adaptation still open the paywall on `PAYMENT_PREMIUM_REQUIRED`).
+  **Usage/rollout:** [mentorship.md](./mentorship.md) go-live step 4. **Related:**
+  `premium-feature-gate.service.ts`, `coach-ai-daily-limit.spec.ts`.
+
 - **2026-09-24 · Free calibration follows chat access.** Stage 3 QA found that a new Free account
   could call the chat API directly and persist the deterministic first-turn calibration reply even
   while `GET /coach/access` denied chat. Blocking, streaming, and regenerate calibration now use

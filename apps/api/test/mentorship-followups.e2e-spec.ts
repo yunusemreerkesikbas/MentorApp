@@ -7,6 +7,7 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { MentorshipFollowupService } from "../src/modules/mentorship/application/mentorship-followup.service";
+import { MentorshipLinkService } from "../src/modules/mentorship/application/mentorship-link.service";
 import { MentorshipLinkRepository } from "../src/modules/mentorship/infrastructure/mentorship-link.repository";
 import { followupToday } from "../src/modules/mentorship/domain/mentorship-followup";
 
@@ -82,7 +83,8 @@ describe("mentorship followups HTTP and database", () => {
     await config.set(ids.coach!, "mentorship.enabled", true);
     await config.set(ids.coach!, "mentorship.followups.enabled", true);
     const relation = await sql(
-      "insert into coach_students(coach_id,student_id,status,source,accepted_at) values($1,$2,'ACTIVE','INVITE',now()) returning id",
+      // An explicit seat: the column defaults to NONE, and a link waiting for a seat is frozen.
+      "insert into coach_students(coach_id,student_id,status,source,accepted_at,seat) values($1,$2,'ACTIVE','INVITE',now(),'FREE') returning id",
       [ids.coach, ids.student],
     );
     linkId = relation.rows[0].id;
@@ -284,9 +286,14 @@ describe("mentorship followups HTTP and database", () => {
     expect((await http().get(shared).set(auth("student"))).body.total).toBe(0);
     const service = app.get(MentorshipFollowupService);
     expect(await service.getDueCount(ids.coach!, new Date())).toBe(0);
+    // Revived straight through the repository (the accept endpoint is throttled), on a free seat.
     const renewed = await app
-      .get(MentorshipLinkRepository)
-      .acceptInvite(ids.coach!, ids.student!, 20, 20);
+      .get(MentorshipLinkService)
+      .withServiceTransaction((tx) =>
+        app
+          .get(MentorshipLinkRepository)
+          .insertOrReviveInTransaction(tx, ids.coach!, ids.student!, "FREE", new Date()),
+      );
     expect(typeof renewed).toBe("object");
     expect((await http().get(shared).set(auth("student"))).body.total).toBe(0);
     expect(

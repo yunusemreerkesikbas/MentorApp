@@ -4,7 +4,23 @@ import { MentorshipRosterService } from "./mentorship-roster.service";
 const studentId = "00000000-0000-4000-8000-000000000002";
 const STRIP = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 25];
 
-async function listRoster() {
+async function listRoster(seat = "FREE") {
+  const listCohortSnapshots = vi.fn(async (ids: string[]) => new Map(ids.includes(studentId) ? [
+    [studentId, {
+      studentId,
+      lastActiveDate: "2026-09-09",
+      currentStreak: 2,
+      focusMinutes7d: 50,
+      dailyFocusMinutes14d: STRIP,
+      sessions7d: 2,
+      activeDays7d: 2,
+      planCompletionRate7d: 0.5,
+      latestMockNet: null,
+      latestMockAt: null,
+      moodLevel7dAvg: null,
+      previousMockNets: [],
+    }],
+  ] : []));
   const service = new MentorshipRosterService(
     {
       listByCoach: vi.fn(async () => ({
@@ -16,30 +32,14 @@ async function listRoster() {
           endedAt: null,
           attendedAt: null,
           attendedFlags: [],
+          seat,
         }],
         total: 1,
       })),
     } as never,
     {} as never,
     { assertEnabled: vi.fn() } as never,
-    {
-      listCohortSnapshots: vi.fn(async () => new Map([
-        [studentId, {
-          studentId,
-          lastActiveDate: "2026-09-09",
-          currentStreak: 2,
-          focusMinutes7d: 50,
-          dailyFocusMinutes14d: STRIP,
-          sessions7d: 2,
-          activeDays7d: 2,
-          planCompletionRate7d: 0.5,
-          latestMockNet: null,
-          latestMockAt: null,
-          moodLevel7dAvg: null,
-          previousMockNets: [],
-        }],
-      ])),
-    } as never,
+    { listCohortSnapshots } as never,
     {
       listDisplayIdentities: vi.fn(async () => new Map([
         [studentId, {
@@ -60,13 +60,14 @@ async function listRoster() {
     } as never,
   );
 
-  return service.listRoster(
+  const result = await service.listRoster(
     "00000000-0000-4000-8000-000000000001",
     "ACTIVE",
     1,
     100,
     new Date("2026-09-09T12:00:00.000Z"),
   );
+  return { ...result, snapshotIds: listCohortSnapshots.mock.calls[0]?.[0] ?? [] };
 }
 
 describe("MentorshipRosterService", () => {
@@ -82,6 +83,21 @@ describe("MentorshipRosterService", () => {
   it("carries the 14-day activity strip the row draws", async () => {
     const result = await listRoster();
     expect(result.items[0]?.metrics?.dailyFocusMinutes14d).toEqual(STRIP);
+    expect(result.items[0]?.seat).toBe("FREE");
+  });
+
+  /** Frozen: the coach sees who waits for a seat and nothing about how they are doing. */
+  it("lists a student waiting for a seat with none of their numbers", async () => {
+    const result = await listRoster("NONE");
+    expect(result.items[0]).toMatchObject({
+      seat: "NONE",
+      metrics: null,
+      riskFlags: [],
+      needsAttention: false,
+      attendedAt: null,
+    });
+    // Not even read: their data never leaves coaching for this coach.
+    expect(result.snapshotIds).toEqual([]);
   });
 
   describe("reads that only need the flags", () => {

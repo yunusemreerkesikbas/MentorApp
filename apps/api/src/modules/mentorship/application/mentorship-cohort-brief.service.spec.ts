@@ -125,6 +125,39 @@ describe("MentorshipCohortBriefService", () => {
     expect(repeat.items[0]!.isNew).toBe(false);
   });
 
+  /** A frozen link (waiting for a seat) is out of the coach's window: no evidence, no stored line. */
+  it("leaves a student waiting for a seat out of the evidence", async () => {
+    build([
+      row(),
+      row({
+        studentId: "student-b",
+        seat: "NONE",
+        metrics: null,
+        riskFlags: [],
+        needsAttention: false,
+      }),
+    ]);
+    await service.generate(COACH);
+    expect(generate.mock.calls[0]![0]).toMatchObject({ activeStudents: 1 });
+  });
+
+  it("drops a stored line about a student whose link froze since it was written", async () => {
+    listByCoach.mockResolvedValue({ rows: [{ studentId: "student-a", seat: "NONE" }], total: 1 });
+    find.mockResolvedValue({
+      brief: {
+        overall: "dün",
+        items: [
+          { studentId: "student-a", riskFlags: ["INACTIVE"], why: "w", action: "a", isNew: true },
+        ],
+      },
+      fingerprint: "x",
+      pairs: [],
+      generatedAt: new Date(),
+    });
+    const result = await service.read(COACH.id);
+    expect(result!.items).toEqual([]);
+  });
+
   it("records only the lines the coach can actually read", async () => {
     // The model answers about S1 only; S2 was selected but never written about, so tomorrow it
     // must still be able to arrive as news.

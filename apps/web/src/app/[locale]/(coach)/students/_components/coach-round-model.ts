@@ -102,20 +102,23 @@ export interface RosterGroups {
   waiting: MentorshipRosterRowDto[];
   seenToday: MentorshipRosterRowDto[];
   onTrack: MentorshipRosterRowDto[];
+  /** Links waiting for a seat: frozen, so no numbers and nothing to open. */
+  seatWaiting: MentorshipRosterRowDto[];
 }
 
 /**
- * The student list's three groups, from the rows as the server sent them. The shell passes the
- * loaded rows, not the optimistic ones, so a row the coach just marked keeps its place until the
- * next load instead of jumping away under the pointer.
+ * The student list's groups, from the rows as the server sent them. The shell passes the loaded
+ * rows, not the optimistic ones, so a row the coach just marked keeps its place until the next
+ * load instead of jumping away under the pointer.
  */
 export function groupRoster(
   rows: readonly MentorshipRosterRowDto[],
   today: string,
 ): RosterGroups {
-  const groups: RosterGroups = { waiting: [], seenToday: [], onTrack: [] };
+  const groups: RosterGroups = { waiting: [], seenToday: [], onTrack: [], seatWaiting: [] };
   for (const row of rows) {
-    if (row.needsAttention) groups.waiting.push(row);
+    if (row.seat === "NONE") groups.seatWaiting.push(row);
+    else if (row.needsAttention) groups.waiting.push(row);
     else if (seenOn(row, today)) groups.seenToday.push(row);
     else groups.onTrack.push(row);
   }

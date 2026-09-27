@@ -25,6 +25,7 @@ import { MentorshipSelfViewService } from "./application/mentorship-self-view.se
 import { MentorshipSuggestionService } from "./application/mentorship-suggestion.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
+import { SeatEventsListener } from "./application/seat-events.listener";
 import { MentorshipApplicationRepository } from "./infrastructure/mentorship-application.repository";
 import { MentorshipCohortBriefRepository } from "./infrastructure/mentorship-cohort-brief.repository";
 import { MentorshipDroppedAssignmentRepository } from "./infrastructure/mentorship-dropped-assignment.repository";
@@ -86,6 +87,7 @@ import { MentorshipWeeklyReportController } from "./presentation/mentorship-week
     MentorshipApplicationService,
     MentorshipErasureService,
     PlanTaskFeedbackListener,
+    SeatEventsListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
     MentorshipCohortBriefRepository,
