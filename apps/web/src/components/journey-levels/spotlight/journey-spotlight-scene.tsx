@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type RefObject } from "react";
 import { createPortal } from "react-dom";
 import {
   AnimatePresence,
@@ -62,7 +62,7 @@ const TRAVEL_EASE = [0.22, 1, 0.36, 1] as const;
 type LevelCopyKey = `levels.${JourneyLevelKey}.${"name" | "story"}`;
 type ChapterCopyKey = `chapters.${JourneyLevelChapterId}.label`;
 
-type JourneySpotlightSceneProps = { onClose: () => void } & (
+type JourneySpotlightSceneProps = { onClose: () => void; returnFocusRef?: RefObject<HTMLElement | null> } & (
   /** Tapped from the profile badge. Nothing to acknowledge, so the close button is the only exit. */
   | { mode: "replay"; level: CommunityLevelView }
   /** Took over the level-up card: adds the eyebrow and the acknowledge CTA. */
@@ -97,7 +97,7 @@ export function JourneySpotlightScene(props: JourneySpotlightSceneProps) {
 function SpotlightStage(
   props: JourneySpotlightSceneProps & { reduceMotion: boolean },
 ) {
-  const { onClose, reduceMotion } = props;
+  const { onClose, reduceMotion, returnFocusRef } = props;
   const t = useTranslations("journey_levels");
   const timeline = resolveSpotlightTimeline(reduceMotion);
 
@@ -176,7 +176,10 @@ function SpotlightStage(
       window.cancelAnimationFrame(restoreFocusFrameRef.current);
       restoreFocusFrameRef.current = null;
     }
-    if (!dialogRef.current?.contains(document.activeElement)) {
+    const opener = returnFocusRef?.current;
+    if (opener?.isConnected) {
+      previousFocusRef.current = opener;
+    } else if (!dialogRef.current?.contains(document.activeElement)) {
       previousFocusRef.current = document.activeElement as HTMLElement | null;
     }
     const previousBodyOverflow = document.body.style.overflow;
@@ -226,7 +229,7 @@ function SpotlightStage(
         restoreFocusFrameRef.current = null;
       });
     };
-  }, []);
+  }, [returnFocusRef]);
 
   /* Once the beam settles the copy and CTA are on screen, so focus can land somewhere useful. */
   useEffect(() => {
