@@ -30,12 +30,12 @@ export function TextAreaField({
   const describedBy =
     [error ? errorId : null, hintId].filter(Boolean).join(" ") || undefined;
 
+  // Only the label text names the field. The hint and the error describe it (aria-describedby):
+  // inside the <label> they became part of the name, and a counter hint changes it per keystroke.
   return (
-    <label
-      htmlFor={inputId}
-      className={`flex flex-col gap-1 ${className ?? ""}`}
-    >
-      <span
+    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
+      <label
+        htmlFor={inputId}
         className="text-xs font-semibold"
         style={{
           color: "var(--color-secondary)",
@@ -43,7 +43,7 @@ export function TextAreaField({
         }}
       >
         {label}
-      </span>
+      </label>
       <textarea
         {...rest}
         id={inputId}
@@ -80,6 +80,6 @@ export function TextAreaField({
           {hint}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }

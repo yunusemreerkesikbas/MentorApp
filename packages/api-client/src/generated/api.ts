@@ -468,6 +468,8 @@ export interface CancelMentorshipEventDto { [key: string]: unknown }
 
 export interface MentorshipInviteCodeParamDto { [key: string]: unknown }
 
+export interface MentorshipStudentNoteDto { [key: string]: unknown }
+
 export type MentorshipWeeklyPeriodResponseDtoTimeZone = typeof MentorshipWeeklyPeriodResponseDtoTimeZone[keyof typeof MentorshipWeeklyPeriodResponseDtoTimeZone];
 
 
@@ -482,6 +484,32 @@ export interface MentorshipWeeklyPeriodResponseDto {
   previousStartDate: string;
   previousEndDate: string;
   timeZone: MentorshipWeeklyPeriodResponseDtoTimeZone;
+}
+
+export type MentorshipWeeklyReportListItemResponseDtoLocale = typeof MentorshipWeeklyReportListItemResponseDtoLocale[keyof typeof MentorshipWeeklyReportListItemResponseDtoLocale];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MentorshipWeeklyReportListItemResponseDtoLocale = {
+  tr: 'tr',
+  en: 'en',
+} as const;
+
+export interface MentorshipWeeklyReportListItemResponseDto {
+  id: string;
+  locale: MentorshipWeeklyReportListItemResponseDtoLocale;
+  period: MentorshipWeeklyPeriodResponseDto;
+  version: number;
+  finalizedAt: string;
+  /** @nullable */
+  replacesId: string | null;
+}
+
+export interface MentorshipWeeklyReportPageResponseDto {
+  items: MentorshipWeeklyReportListItemResponseDto[];
+  total: number;
+  page: number;
+  pageSize: number;
 }
 
 export interface MentorshipWeeklyMetricsResponseDto {
@@ -536,6 +564,60 @@ export interface MentorshipWeeklyMockResponseDto {
   currentPublishers: string[];
   previousPublishers: string[];
   subjects: MentorshipWeeklyMockSubjectResponseDto[];
+}
+
+export type MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem = typeof MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem[keyof typeof MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem = {
+  NO_CURRENT_ACTIVITY: 'NO_CURRENT_ACTIVITY',
+  NO_PREVIOUS_ACTIVITY: 'NO_PREVIOUS_ACTIVITY',
+  NO_CURRENT_MOCK: 'NO_CURRENT_MOCK',
+  NO_PREVIOUS_MOCK: 'NO_PREVIOUS_MOCK',
+  MIXED_MOCK_SCOPE: 'MIXED_MOCK_SCOPE',
+  MOCK_PUBLISHERS_DIFFER: 'MOCK_PUBLISHERS_DIFFER',
+  LIMITED_MOCK_ATTEMPTS: 'LIMITED_MOCK_ATTEMPTS',
+  UNCLASSIFIED_SESSIONS: 'UNCLASSIFIED_SESSIONS',
+} as const;
+
+export interface MentorshipWeeklyShareSnapshotResponseDto {
+  period: MentorshipWeeklyPeriodResponseDto;
+  current: MentorshipWeeklyMetricsResponseDto;
+  previous: MentorshipWeeklyMetricsResponseDto;
+  deltas: MentorshipWeeklyDeltasResponseDto;
+  subjects: MentorshipWeeklySubjectResponseDto[];
+  mocks: MentorshipWeeklyMockResponseDto;
+  limitations: MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem[];
+}
+
+export type MentorshipWeeklyReportShareResponseDtoLocale = typeof MentorshipWeeklyReportShareResponseDtoLocale[keyof typeof MentorshipWeeklyReportShareResponseDtoLocale];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const MentorshipWeeklyReportShareResponseDtoLocale = {
+  tr: 'tr',
+  en: 'en',
+} as const;
+
+/**
+ * Subject slug → display name for the week's subjects; a slug content no longer knows is absent.
+ */
+export type MentorshipWeeklyReportShareResponseDtoSubjectNames = {[key: string]: string};
+
+export interface MentorshipWeeklyReportShareResponseDto {
+  id: string;
+  locale: MentorshipWeeklyReportShareResponseDtoLocale;
+  studentDisplayName: string;
+  coachDisplayName: string;
+  period: MentorshipWeeklyPeriodResponseDto;
+  version: number;
+  finalizedAt: string;
+  snapshot: MentorshipWeeklyShareSnapshotResponseDto;
+  /** Subject slug → display name for the week's subjects; a slug content no longer knows is absent. */
+  subjectNames: MentorshipWeeklyReportShareResponseDtoSubjectNames;
+  /** @nullable */
+  coachEvaluation: string | null;
 }
 
 export type MentorshipWeeklyEvidenceResponseDtoKind = typeof MentorshipWeeklyEvidenceResponseDtoKind[keyof typeof MentorshipWeeklyEvidenceResponseDtoKind];
@@ -763,86 +845,6 @@ export interface MentorshipWeeklyReportResponseDto {
   coachEvaluation: string | null;
   /** @nullable */
   brief: MentorshipWeeklyReportResponseDtoBrief;
-}
-
-export type MentorshipWeeklyReportListItemResponseDtoLocale = typeof MentorshipWeeklyReportListItemResponseDtoLocale[keyof typeof MentorshipWeeklyReportListItemResponseDtoLocale];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MentorshipWeeklyReportListItemResponseDtoLocale = {
-  tr: 'tr',
-  en: 'en',
-} as const;
-
-export interface MentorshipWeeklyReportListItemResponseDto {
-  id: string;
-  locale: MentorshipWeeklyReportListItemResponseDtoLocale;
-  period: MentorshipWeeklyPeriodResponseDto;
-  version: number;
-  finalizedAt: string;
-  /** @nullable */
-  replacesId: string | null;
-}
-
-export interface MentorshipWeeklyReportPageResponseDto {
-  items: MentorshipWeeklyReportListItemResponseDto[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-export type MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem = typeof MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem[keyof typeof MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem = {
-  NO_CURRENT_ACTIVITY: 'NO_CURRENT_ACTIVITY',
-  NO_PREVIOUS_ACTIVITY: 'NO_PREVIOUS_ACTIVITY',
-  NO_CURRENT_MOCK: 'NO_CURRENT_MOCK',
-  NO_PREVIOUS_MOCK: 'NO_PREVIOUS_MOCK',
-  MIXED_MOCK_SCOPE: 'MIXED_MOCK_SCOPE',
-  MOCK_PUBLISHERS_DIFFER: 'MOCK_PUBLISHERS_DIFFER',
-  LIMITED_MOCK_ATTEMPTS: 'LIMITED_MOCK_ATTEMPTS',
-  UNCLASSIFIED_SESSIONS: 'UNCLASSIFIED_SESSIONS',
-} as const;
-
-export interface MentorshipWeeklyShareSnapshotResponseDto {
-  period: MentorshipWeeklyPeriodResponseDto;
-  current: MentorshipWeeklyMetricsResponseDto;
-  previous: MentorshipWeeklyMetricsResponseDto;
-  deltas: MentorshipWeeklyDeltasResponseDto;
-  subjects: MentorshipWeeklySubjectResponseDto[];
-  mocks: MentorshipWeeklyMockResponseDto;
-  limitations: MentorshipWeeklyShareSnapshotResponseDtoLimitationsItem[];
-}
-
-export type MentorshipWeeklyReportShareResponseDtoLocale = typeof MentorshipWeeklyReportShareResponseDtoLocale[keyof typeof MentorshipWeeklyReportShareResponseDtoLocale];
-
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const MentorshipWeeklyReportShareResponseDtoLocale = {
-  tr: 'tr',
-  en: 'en',
-} as const;
-
-/**
- * Subject slug → display name for the week's subjects; a slug content no longer knows is absent.
- */
-export type MentorshipWeeklyReportShareResponseDtoSubjectNames = {[key: string]: string};
-
-export interface MentorshipWeeklyReportShareResponseDto {
-  id: string;
-  locale: MentorshipWeeklyReportShareResponseDtoLocale;
-  studentDisplayName: string;
-  coachDisplayName: string;
-  period: MentorshipWeeklyPeriodResponseDto;
-  version: number;
-  finalizedAt: string;
-  snapshot: MentorshipWeeklyShareSnapshotResponseDto;
-  /** Subject slug → display name for the week's subjects; a slug content no longer knows is absent. */
-  subjectNames: MentorshipWeeklyReportShareResponseDtoSubjectNames;
-  /** @nullable */
-  coachEvaluation: string | null;
 }
 
 export interface UpdateUserStatusDto { [key: string]: unknown }
@@ -1378,6 +1380,18 @@ pageSize?: number;
 export type MentorshipCoachControllerListPlanningTasksParams = {
 from: string;
 to: string;
+/**
+ * @minimum 1
+ */
+page?: number;
+/**
+ * @minimum 1
+ * @maximum 100
+ */
+pageSize?: number;
+};
+
+export type MentorshipStudentControllerMyWeeklyReportsParams = {
 /**
  * @minimum 1
  */
@@ -10544,6 +10558,113 @@ export const getMentorshipStudentControllerSharedDataUrl = () => {
 export const mentorshipStudentControllerSharedData = async ( options?: RequestInit): Promise<mentorshipStudentControllerSharedDataResponse> => {
   
   return http<mentorshipStudentControllerSharedDataResponse>(getMentorshipStudentControllerSharedDataUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipStudentControllerSetNoteResponse204 = {
+  data: void
+  status: 204
+}
+    
+export type mentorshipStudentControllerSetNoteResponseSuccess = (mentorshipStudentControllerSetNoteResponse204) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerSetNoteResponse = (mentorshipStudentControllerSetNoteResponseSuccess)
+
+export const getMentorshipStudentControllerSetNoteUrl = () => {
+
+
+  
+
+  return `/v1/mentorship/my-coach/note`
+}
+
+export const mentorshipStudentControllerSetNote = async (mentorshipStudentNoteDto: MentorshipStudentNoteDto, options?: RequestInit): Promise<mentorshipStudentControllerSetNoteResponse> => {
+  
+  return http<mentorshipStudentControllerSetNoteResponse>(getMentorshipStudentControllerSetNoteUrl(),
+  {      
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      mentorshipStudentNoteDto,)
+  }
+);}
+
+
+
+export type mentorshipStudentControllerMyWeeklyReportsResponse200 = {
+  data: MentorshipWeeklyReportPageResponseDto
+  status: 200
+}
+    
+export type mentorshipStudentControllerMyWeeklyReportsResponseSuccess = (mentorshipStudentControllerMyWeeklyReportsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerMyWeeklyReportsResponse = (mentorshipStudentControllerMyWeeklyReportsResponseSuccess)
+
+export const getMentorshipStudentControllerMyWeeklyReportsUrl = (params?: MentorshipStudentControllerMyWeeklyReportsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+    
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/v1/mentorship/my-coach/weekly-reports?${stringifiedParams}` : `/v1/mentorship/my-coach/weekly-reports`
+}
+
+export const mentorshipStudentControllerMyWeeklyReports = async (params?: MentorshipStudentControllerMyWeeklyReportsParams, options?: RequestInit): Promise<mentorshipStudentControllerMyWeeklyReportsResponse> => {
+  
+  return http<mentorshipStudentControllerMyWeeklyReportsResponse>(getMentorshipStudentControllerMyWeeklyReportsUrl(params),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export type mentorshipStudentControllerMyWeeklyReportResponse200 = {
+  data: MentorshipWeeklyReportShareResponseDto
+  status: 200
+}
+    
+export type mentorshipStudentControllerMyWeeklyReportResponseSuccess = (mentorshipStudentControllerMyWeeklyReportResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mentorshipStudentControllerMyWeeklyReportResponse = (mentorshipStudentControllerMyWeeklyReportResponseSuccess)
+
+export const getMentorshipStudentControllerMyWeeklyReportUrl = (reportId: string,) => {
+
+
+  
+
+  return `/v1/mentorship/my-coach/weekly-reports/${reportId}`
+}
+
+export const mentorshipStudentControllerMyWeeklyReport = async (reportId: string, options?: RequestInit): Promise<mentorshipStudentControllerMyWeeklyReportResponse> => {
+  
+  return http<mentorshipStudentControllerMyWeeklyReportResponse>(getMentorshipStudentControllerMyWeeklyReportUrl(reportId),
   {      
     ...options,
     method: 'GET'

@@ -6,6 +6,7 @@ import {
   deletePendingMentorshipGroup as deletePendingMentorshipGroupRows,
   deletePendingMentorshipTask as deletePendingMentorshipTaskRow,
   listOwnedCoachTasks,
+  releasePendingMentorshipTasks as releasePendingMentorshipTaskRows,
   updatePendingMentorshipGroup as updatePendingMentorshipGroupRows,
   updatePendingMentorshipTask as updatePendingMentorshipTaskRow,
   type MentorshipTaskVisibleSignature,
@@ -331,6 +332,13 @@ export class PlanTaskRepository {
       assignmentGroupId,
       expectedSignature,
     );
+  }
+
+  async releasePendingMentorshipTasks(
+    tx: DatabaseTx,
+    scope: MentorshipTaskScope,
+  ): Promise<number> {
+    return releasePendingMentorshipTaskRows(tx, scope);
   }
 
   /**

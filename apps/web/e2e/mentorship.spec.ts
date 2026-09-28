@@ -11,6 +11,60 @@ import type { AuthUser } from "@mentor/types";
 
 const STUDENT_ID = "33333333-3333-4333-8333-333333333333";
 const INVITE_CODE = "MENTOR-KOC-ABCDEF012345";
+const REPORT_ID = "55555555-5555-4555-8555-555555555555";
+
+/** A week the coach finalized, as the student's side of the API returns it (the safe projection). */
+const MY_WEEKLY_REPORT = {
+  id: REPORT_ID,
+  locale: "tr",
+  studentDisplayName: "Ayşe Yılmaz",
+  coachDisplayName: "Koç Mert",
+  period: {
+    startDate: "2026-08-31",
+    endDate: "2026-09-06",
+    previousStartDate: "2026-08-24",
+    previousEndDate: "2026-08-30",
+    timeZone: "Europe/Istanbul",
+  },
+  version: 1,
+  finalizedAt: "2026-09-07T10:00:00.000Z",
+  snapshot: {
+    period: {
+      startDate: "2026-08-31",
+      endDate: "2026-09-06",
+      previousStartDate: "2026-08-24",
+      previousEndDate: "2026-08-30",
+      timeZone: "Europe/Istanbul",
+    },
+    current: { focusMinutes: 180, sessions: 5, activeDays: 4, plannedTasks: 6, completedTasks: 4, completionRate: 2 / 3, hasRecordedActivity: true },
+    previous: { focusMinutes: 120, sessions: 4, activeDays: 3, plannedTasks: 0, completedTasks: 0, completionRate: null, hasRecordedActivity: true },
+    deltas: { focusMinutes: 60, sessions: 1, activeDays: 1, plannedTasks: 6, completedTasks: 4, completionRate: null },
+    subjects: [],
+    mocks: {
+      examScopeName: null,
+      currentAttemptCount: 0,
+      previousAttemptCount: 0,
+      currentAverageNet: null,
+      previousAverageNet: null,
+      currentPublishers: [],
+      previousPublishers: [],
+      subjects: [],
+    },
+    limitations: [],
+  },
+  subjectNames: {},
+  coachEvaluation: "Ritmi birlikte koruyalım.",
+};
+
+/** The same week with nothing logged in the app: the page must not print a row of zeroes. */
+const EMPTY_WEEKLY_REPORT = {
+  ...MY_WEEKLY_REPORT,
+  snapshot: {
+    ...MY_WEEKLY_REPORT.snapshot,
+    current: { focusMinutes: 0, sessions: 0, activeDays: 0, plannedTasks: 0, completedTasks: 0, completionRate: null, hasRecordedActivity: false },
+    limitations: ["NO_CURRENT_ACTIVITY"],
+  },
+};
 
 function makeUser(roles: AuthUser["roles"]): AuthUser {
   return {
@@ -53,6 +107,7 @@ const MY_COACH = {
   acceptedAt: "2026-09-01T10:00:00.000Z",
   dataScope: DATA_SCOPE,
   coachNote: null as CoachNote | null,
+  studentNote: null as CoachNote | null,
   coachProfile: null as Record<string, unknown> | null,
   seatWaiting: false,
 };
@@ -83,7 +138,7 @@ test.describe("öğrenci tarafı", () => {
     await expect(page).toHaveURL(/\/kocum$/);
     await expect(page.getByText("Henüz bir koçun yok")).toBeVisible();
 
-    await page.getByRole("link", { name: "Koçluk daveti" }).click();
+    await page.getByRole("link", { name: "Davet kodunu gir" }).click();
     await expect(page).toHaveURL(/\/kocluk-daveti$/);
     expect(api.acceptCalls).toBe(0);
   });
@@ -101,17 +156,181 @@ test.describe("öğrenci tarafı", () => {
       page.getByText("Koç Mert", { exact: false }).first(),
     ).toBeVisible();
     // KVKK informed consent: the scope list is part of the contract, not decorative copy.
-    await expect(
-      page.getByRole("heading", { name: "Koçunun görebildikleri" }),
-    ).toBeVisible();
-    await expect(
-      page.getByRole("heading", { name: "Koçunun göremedikleri" }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Koçun görecekleri" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Koçun göremeyecekleri" })).toBeVisible();
     // Reading a code is not consenting to it.
     expect(api.acceptCalls).toBe(0);
 
     await page.getByRole("button", { name: "Onaylıyorum, bağlan" }).click();
     await expect.poll(() => api.acceptCalls).toBe(1);
+  });
+
+  test("onay tek sayfada açılır: kod çipe döner, ekranda her an tek dolu ledge", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: null });
+    await page.goto("/kocluk-daveti");
+
+    const ledges = page.locator('[class*="shadow-[0_4px_0_var(--play-cta-edge)]"]:visible');
+    await expect(ledges).toHaveCount(1);
+    await expect(ledges).toHaveText("Kodu getir");
+
+    await page.getByLabel("Davet kodu").fill(INVITE_CODE);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+
+    // The code folds into a chip and its button leaves; the consent is the one filled ledge.
+    await expect(page.getByText("MENTOR-KOC-ABCD…2345")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Kodu getir" })).toHaveCount(0);
+    await expect(ledges).toHaveCount(1);
+    await expect(ledges).toHaveText("Onaylıyorum, bağlan");
+
+    // "Değiştir" opens the field again with the code still in it.
+    await page.getByRole("button", { name: "Değiştir" }).click();
+    await expect(page.getByLabel("Davet kodu")).toHaveValue(INVITE_CODE);
+    await expect(page.getByRole("button", { name: "Onaylıyorum, bağlan" })).toHaveCount(0);
+  });
+
+  test("geçersiz kod alanın altında söylenir, geçici bir bildirimde değil", async ({ page }) => {
+    const message = "Bu davet kodu geçerli değil. Koçundan yeni bir kod isteyebilirsin.";
+    await mockApi(page, {
+      roles: ["STUDENT"],
+      myCoach: null,
+      previewError: { status: 404, code: "MENTORSHIP_INVITE_NOT_FOUND", message },
+    });
+    await page.goto("/kocluk-daveti");
+
+    const field = page.getByLabel("Davet kodu");
+    await field.fill("MENTOR-KOC-000000000000");
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+
+    await expect(field).toHaveAttribute("aria-invalid", "true");
+    await expect(field).toHaveAccessibleDescription(new RegExp(message));
+    await expect(page.getByText("Bir sorun oluştu")).toHaveCount(0);
+    // Typing again is a new attempt, so the old verdict goes.
+    await field.fill(INVITE_CODE);
+    await expect(field).not.toHaveAttribute("aria-invalid", "true");
+  });
+
+  test("Koçum, koçun kesinleştirdiği haftayı listeler; rapor koçun değerlendirmesiyle açılır", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH, weeklyReport: true });
+    await page.goto("/kocum");
+
+    const card = page.getByRole("region", { name: "Haftalık değerlendirmelerin" });
+    await card.getByRole("link", { name: /31 Ağustos/ }).click();
+    await expect(page.getByRole("heading", { name: "Haftalık değerlendirmen" })).toBeVisible();
+    // The coach's words come first, under the coach's name, before any number.
+    const evaluation = page.getByRole("region", { name: "Koç Mert" });
+    await expect(evaluation).toContainText("Koçunun değerlendirmesi");
+    await expect(evaluation.getByText("Ritmi birlikte koruyalım.")).toBeVisible();
+    // Every drawing carries its sentence for a screen reader.
+    await expect(
+      page.getByRole("img", { name: "Kayıtlı çalışma: bu hafta 3 sa, önceki hafta 2 sa" }),
+    ).toBeVisible();
+    await expect(page.getByRole("img", { name: "Aktif gün: bu hafta 4/7, önceki hafta 3/7" })).toBeVisible();
+  });
+
+  test("kayıtsız haftada sıfır tablosu yerine Puhu'nun cümlesi çıkar", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH, weeklyReport: "empty" });
+    await page.goto(`/kocum/haftalik-raporlar/${REPORT_ID}`);
+
+    await expect(page.getByRole("region", { name: "Koç Mert" })).toBeVisible();
+    await expect(page.getByText("Bu hafta uygulamaya kayıt düşmemiş.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("img", { name: /bu hafta/ })).toHaveCount(0);
+  });
+
+  test("öğrenci Koçum'dan koçuna tek bir not bırakır, düzenler ve kaldırır", async ({ page }) => {
+    const api = await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto("/kocum");
+
+    const card = page.getByRole("region", { name: "Koçuna notun" });
+    await card.getByRole("button", { name: "Not yaz" }).click();
+    const field = card.getByRole("textbox", { name: "Koçuna notun", exact: true });
+    await expect(field).toBeFocused();
+    await expect(field).toHaveAccessibleDescription(/Koçun bunu senin raporunda görür/);
+    await field.fill("Cuma akşamları çalışamıyorum.");
+    await card.getByRole("button", { name: "Notu kaydet" }).click();
+
+    await expect.poll(() => api.myNoteBodies).toEqual(["Cuma akşamları çalışamıyorum."]);
+    await expect(card.getByText("Cuma akşamları çalışamıyorum.")).toBeVisible();
+    await expect(card.getByRole("textbox")).toHaveCount(0);
+
+    await card.getByRole("button", { name: "Düzenle" }).click();
+    await card.getByRole("button", { name: "Notu kaldır" }).click();
+    await expect.poll(() => api.myNoteBodies).toEqual(["Cuma akşamları çalışamıyorum.", null]);
+    await expect(card.getByRole("button", { name: "Not yaz" })).toBeVisible();
+  });
+
+  test("kesinleşmiş hafta yoksa Koçum'da kart çizilmez", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto("/kocum");
+    await expect(page.getByRole("heading", { name: "Koçunun gördükleri" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Haftalık değerlendirmelerin" })).toHaveCount(0);
+  });
+
+  test("kabulden sonra Koçum bir kez karşılar; yenileyince karşılama tekrar etmez", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: null });
+    await page.goto(`/kocluk-daveti?code=${INVITE_CODE}`);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+    await page.getByRole("button", { name: "Onaylıyorum, bağlan" }).click();
+
+    await expect(page.getByText("Koç Mert artık koçun.", { exact: false })).toBeVisible();
+    // The greeting is spent on arrival: the address bar no longer carries it.
+    await expect(page).toHaveURL(/\/kocum$/);
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Koç Mert" })).toBeVisible();
+    await expect(page.getByText("artık koçun", { exact: false })).toHaveCount(0);
+  });
+
+  test("bağlantıyı sonlandırma onayı yıkıcı: kırmızı ledge, odak Vazgeç'te", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto("/kocum");
+    // Under the data it stops, not at the top of the page.
+    await page
+      .getByRole("region", { name: "Koçunun gördükleri" })
+      .getByRole("button", { name: "Bağlantıyı sonlandır" })
+      .click();
+
+    const dialog = page.getByRole("dialog", { name: "Koçunla bağlantın sonlansın mı?" });
+    const end = dialog.getByRole("button", { name: "Sonlandır" });
+    const cancel = dialog.getByRole("button", { name: "Vazgeç" });
+    // Solid surface, no glass (overlay kit, 2026-09-28).
+    await expect(dialog).toHaveCSS("backdrop-filter", "none");
+    // Irreversible: the one filled ledge is danger red, and focus starts on the way out.
+    await expect(end).toHaveCSS("background-color", "rgb(180, 35, 24)");
+    await expect(cancel).toBeFocused();
+    // "Vazgeç" is a text link, not a second ledge.
+    await expect(cancel).toHaveCSS("box-shadow", "none");
+    await cancel.click();
+    await expect(dialog).toHaveCount(0);
+  });
+
+  test("zaten koçu olan öğrenci bunu onay metnini okumadan önce görür", async ({ page }) => {
+    const api = await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto(`/kocluk-daveti?code=${INVITE_CODE}`);
+
+    await expect(page.getByText(/Zaten bir koçun var: Koç Mert/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Koçum'a git" })).toBeVisible();
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+    await expect(page.getByRole("heading", { name: "Koçun görecekleri" })).toBeVisible();
+    // A consent they cannot give is not offered; the decision says what comes first instead.
+    await expect(page.getByRole("button", { name: "Onaylıyorum, bağlan" })).toHaveCount(0);
+    await expect(page.getByText(/bağlanmak için önce Koçum'dan Koç Mert ile/)).toBeVisible();
+    expect(api.acceptCalls).toBe(0);
+  });
+
+  test("kabulün reddi ekranda kalır, kaybolan bir bildirimde değil", async ({ page }) => {
+    const message = "Koçunun koltukları şu an dolu. Koçuna haber ver, yer açılınca yeniden dene.";
+    await mockApi(page, {
+      roles: ["STUDENT"],
+      myCoach: null,
+      acceptError: { status: 409, code: "MENTORSHIP_SEATS_FULL", message },
+    });
+    await page.goto(`/kocluk-daveti?code=${INVITE_CODE}`);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+    await page.getByRole("button", { name: "Onaylıyorum, bağlan" }).click();
+
+    // On the page itself, whole, for as long as the screen is open; not a passing "Bir sorun
+    // oluştu" toast whose text a phone cut short.
+    await expect(page.getByRole("alert").filter({ hasText: message })).toHaveText(message);
+    await expect(page.getByText("Bir sorun oluştu")).toHaveCount(0);
   });
 
   test("onay ekranı koçun doğrulanmış profilini gösteriyor", async ({
@@ -207,9 +426,7 @@ test.describe("öğrenci tarafı", () => {
     await page.goto("/kocum");
 
     await expect(page.getByText("Koçluk şu an kapalı")).toBeVisible();
-    await expect(page.getByRole("link", { name: "Koçluk daveti" })).toHaveCount(
-      0,
-    );
+    await expect(page.getByRole("link", { name: "Davet kodunu gir" })).toHaveCount(0);
   });
 });
 
@@ -896,12 +1113,20 @@ async function mockApi(
     emailVerified?: boolean;
     /** The coach's vetted profile as the student sees it; null = granted the role by hand. */
     coachProfile?: Record<string, unknown> | null;
+    /** The accept's refusal (seats full, already linked…), as the API words it. */
+    acceptError?: { status: number; code: string; message: string };
+    /** The preview's refusal (unknown or spent code), as the API words it. */
+    previewError?: { status: number; code: string; message: string };
+    /** One finalized week on the student's side; left out, the student has none. "empty": a week with no record. */
+    weeklyReport?: boolean | "empty";
   },
 ) {
   const user = makeUser(options.roles);
+  let myCoach = options.myCoach;
   let previewCalls = 0;
   let acceptCalls = 0;
   const noteBodies: (string | null)[] = [];
+  const myNoteBodies: (string | null)[] = [];
   const attentionCalls: boolean[] = [];
   /** The applicant's own row, or null before they apply. Mutated by the POST below. */
   let application: Record<string, unknown> | null = options.application ?? null;
@@ -1006,14 +1231,25 @@ async function mockApi(
       // Empty 200, not a null body, when there is no coach — same as the API.
       return json(
         route,
-        options.myCoach
-          ? { ...options.myCoach, coachProfile: options.coachProfile ?? null }
-          : options.myCoach,
-        options.myCoach ? 200 : 204,
+        myCoach ? { ...myCoach, coachProfile: options.coachProfile ?? null } : myCoach,
+        myCoach ? 200 : 204,
       );
+    }
+    if (method === "GET" && path.startsWith("/v1/mentorship/my-coach/weekly-reports?")) {
+      const items = options.weeklyReport
+        ? [{ id: REPORT_ID, locale: "tr", period: MY_WEEKLY_REPORT.period, version: 1, finalizedAt: MY_WEEKLY_REPORT.finalizedAt, replacesId: null }]
+        : [];
+      return json(route, { items, total: items.length, page: 1, pageSize: 20 });
+    }
+    if (method === "GET" && path === `/v1/mentorship/my-coach/weekly-reports/${REPORT_ID}`) {
+      return json(route, options.weeklyReport === "empty" ? EMPTY_WEEKLY_REPORT : MY_WEEKLY_REPORT);
     }
     if (method === "POST" && path === "/v1/mentorship/invitations/preview") {
       previewCalls += 1;
+      if (options.previewError) {
+        const { status, code, message } = options.previewError;
+        return json(route, { code, message }, status);
+      }
       return json(route, {
         coachDisplayName: "Koç Mert",
         coachUsername: "kocmert",
@@ -1024,6 +1260,12 @@ async function mockApi(
     }
     if (method === "POST" && path === "/v1/mentorship/invitations/accept") {
       acceptCalls += 1;
+      if (options.acceptError) {
+        const { status, code, message } = options.acceptError;
+        return json(route, { code, message }, status);
+      }
+      // Linked from here on: Koçum reads the coach the accept just created.
+      myCoach = MY_COACH;
       return json(route, MY_COACH);
     }
     // The profile screen gained a Google-linking card that queries on mount. The harness answers
@@ -1104,6 +1346,10 @@ async function mockApi(
       path === `/v1/mentorship/students/${STUDENT_ID}/note`
     ) {
       noteBodies.push((request.postDataJSON() as { body: string | null }).body);
+      return json(route, null, 204);
+    }
+    if (method === "PUT" && path === "/v1/mentorship/my-coach/note") {
+      myNoteBodies.push((request.postDataJSON() as { body: string | null }).body);
       return json(route, null, 204);
     }
     if (
@@ -1206,6 +1452,9 @@ async function mockApi(
     },
     get noteBodies() {
       return noteBodies;
+    },
+    get myNoteBodies() {
+      return myNoteBodies;
     },
     get attentionCalls() {
       return attentionCalls;

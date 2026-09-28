@@ -3,6 +3,7 @@ import type {
   AuthUser,
   CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
+  PlanEventDto,
   PlanTaskDto,
   SubscriptionView,
 } from "@mentor/types";
@@ -486,6 +487,8 @@ interface MockPlanOptions {
   tasks?: PlanTaskDto[];
   /** Seeds the persisted Takvim view + scale before the app boots. */
   calendar?: { scale: "day" | "week" | "month" };
+  /** Events the student takes part in (their coach's meetings); none by default. */
+  events?: PlanEventDto[];
 }
 
 for (const conflict of [false, true]) {
@@ -530,6 +533,147 @@ for (const conflict of [false, true]) {
       await expect(title).toHaveCount(0);
       await expect(page.getByText("Korunan taslak", { exact: true })).toBeVisible();
     }
+  });
+}
+
+test.describe("bildirim linki", () => {
+  // A coach's program for next week: "Koçundan görevler" links to /plan?date=<its first day>.
+  const day = istanbulDay(7);
+  const coachTask: PlanTaskDto = {
+    ...task,
+    title: "Koçun gelecek hafta görevi",
+    taskDate: day,
+    origin: { type: "MENTORSHIP", linkId: "44444444-4444-4444-8444-444444444444" },
+  };
+
+  test("?date= ile açılan plan görevin gününü gösterir", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+    await routeTasksByDate(page, [coachTask]);
+    await page.goto(`/plan?date=${day}`);
+
+    await expect(page.getByRole("button", { name: dayChip(day), exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByText("Koçun gelecek hafta görevi")).toBeVisible();
+  });
+
+  test("plandayken bildirime dokunmak görevin gününe geçer", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+    await routeTasksByDate(page, [coachTask]);
+    await page.route("http://localhost:3001/v1/notifications**", async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      if (request.method() === "PATCH") return json(route, null, 204);
+      if (request.method() !== "GET" || path !== "/v1/notifications") return route.fallback();
+      return json(route, {
+        items: [
+          {
+            id: "55555555-5555-4555-8555-555555555555",
+            category: "MENTORSHIP",
+            title: "Koçundan görevler",
+            body: "Koçun planına 3 görev ekledi.",
+            readAt: null,
+            linkUrl: `/plan?date=${day}`,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        unreadCount: 1,
+        hasMore: false,
+      });
+    });
+    await page.goto("/plan");
+    await expect(page.getByRole("button", { name: "Sonraki hafta" })).toBeVisible();
+
+    await page.getByRole("button", { name: /Bildirimler/ }).first().click();
+    await page.getByText("Koçundan görevler").click();
+
+    await expect(page.getByRole("button", { name: dayChip(day), exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByText("Koçun gelecek hafta görevi")).toBeVisible();
+  });
+});
+
+test.describe("koçun görüşmesi", () => {
+  // The coach set up a meeting with this student next week; the student is an attendee.
+  const day = istanbulDay(7);
+  const meeting: PlanEventDto = {
+    id: "77777777-7777-4777-8777-777777777777",
+    seriesId: null,
+    organizerUserId: "88888888-8888-4888-8888-888888888888",
+    orgId: null,
+    title: "Haftalık görüşme",
+    description: "Denemeyi birlikte konuşalım.",
+    eventDate: day,
+    startTime: "18:00",
+    endTime: "18:30",
+    status: "SCHEDULED",
+    attendeeCount: 1,
+    recurrence: null,
+    createdAt: "2026-09-27T18:00:00.000Z",
+    updatedAt: "2026-09-27T18:00:00.000Z",
+  };
+
+  test("günün listesinde salt-okunur durur ve detayı açılır", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [], events: [meeting] });
+    await page.goto(`/plan?date=${day}`);
+
+    const row = page.getByRole("button", { name: /Haftalık görüşme/ });
+    await expect(row).toContainText("Koçunla");
+    await expect(row).toContainText("18:00 – 18:30");
+    await row.click();
+    const sheet = page.getByRole("dialog", { name: "Etkinlik detayı" });
+    await expect(sheet.getByText("Denemeyi birlikte konuşalım.")).toBeVisible();
+    // The coach's meeting is theirs to change: the student gets no edit or delete.
+    await expect(sheet.getByRole("button", { name: /Düzenle|Sil/ })).toHaveCount(0);
+  });
+
+  test("bildirimdeki &event= detayı kendiliğinden açar", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [], events: [meeting] });
+    await page.goto(`/plan?date=${day}&event=${meeting.id}`);
+
+    const sheet = page.getByRole("dialog", { name: "Etkinlik detayı" });
+    await expect(sheet.getByText("Haftalık görüşme")).toBeVisible();
+  });
+
+  test("Takvim'de o saatin çipi olarak görünür", async ({ page }) => {
+    await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [],
+      events: [meeting],
+      calendar: { scale: "day" },
+    });
+    await page.goto(`/plan?date=${day}`);
+
+    await expect(page.getByRole("button", { name: /Haftalık görüşme/ }).first()).toBeVisible();
+  });
+});
+
+function istanbulDay(offsetDays: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(
+    new Date(Date.now() + offsetDays * 86_400_000),
+  );
+}
+
+/** The week strip names a day "Pzt 28". */
+function dayChip(isoDate: string): string {
+  const day = new Date(`${isoDate}T12:00:00Z`);
+  return `${["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cts"][day.getUTCDay()]} ${day.getUTCDate()}`;
+}
+
+/** `mockPlanApi` returns every task for any day; this answers each day with its own tasks only. */
+async function routeTasksByDate(page: Page, tasks: PlanTaskDto[]) {
+  await page.route("http://localhost:3001/v1/plan-tasks**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() !== "GET" || url.pathname !== "/v1/plan-tasks") return route.fallback();
+    const date = url.searchParams.get("date");
+    const from = url.searchParams.get("from") ?? date ?? "";
+    const to = url.searchParams.get("to") ?? date ?? "";
+    const items = tasks.filter((item) => item.taskDate >= from && item.taskDate <= to);
+    return json(route, { items, total: items.length, page: 1, pageSize: 50 });
   });
 }
 
@@ -586,6 +730,12 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     }
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, subscription);
+    }
+    if (method === "GET" && path === "/v1/plan-events") {
+      const from = url.searchParams.get("from") ?? url.searchParams.get("date") ?? "";
+      const to = url.searchParams.get("to") ?? url.searchParams.get("date") ?? "";
+      const items = (options.events ?? []).filter((e) => e.eventDate >= from && e.eventDate <= to);
+      return json(route, { items, total: items.length, page: 1, pageSize: 100 });
     }
     if (method === "GET" && path === "/v1/plan-tasks/calendar") {
       return json(route, { dates: tasks.map((x) => x.taskDate) });

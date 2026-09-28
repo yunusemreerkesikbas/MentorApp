@@ -192,6 +192,7 @@ export function TemplateSave({
       message: t("template_delete_body", { name: template.name }),
       confirmLabel: t("template_delete_action"),
       cancelLabel: t("confirm_cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
     setBusy(true);

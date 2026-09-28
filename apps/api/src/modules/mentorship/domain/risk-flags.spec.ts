@@ -28,8 +28,11 @@ function healthy(overrides: Partial<CohortStudentSnapshot> = {}): CohortStudentS
   };
 }
 
-const flags = (overrides: Partial<CohortStudentSnapshot>) =>
-  evaluateRiskFlags(healthy(overrides), THRESHOLDS, TODAY);
+/** Linked long before any of these dates, so only the activity decides, as it always did. */
+const LONG_AGO = "2026-01-01";
+
+const flags = (overrides: Partial<CohortStudentSnapshot>, joinedOn: string | null = LONG_AGO) =>
+  evaluateRiskFlags(healthy(overrides), THRESHOLDS, TODAY, joinedOn);
 
 describe("evaluateRiskFlags", () => {
   it("flags nothing for a student who is doing fine", () => {
@@ -47,6 +50,19 @@ describe("evaluateRiskFlags", () => {
 
     it("fires for a student who has never been active at all", () => {
       expect(flags({ lastActiveDate: null })).toContain(MentorshipRiskFlag.INACTIVE);
+    });
+
+    it("stays quiet for a student who joined today and has done nothing yet", () => {
+      expect(flags({ lastActiveDate: null }, TODAY)).toEqual([]);
+    });
+
+    it("counts a student who never started from the day they joined", () => {
+      expect(flags({ lastActiveDate: null }, "2026-09-07")).toEqual([]); // 3 days
+      expect(flags({ lastActiveDate: null }, "2026-09-06")).toEqual([MentorshipRiskFlag.INACTIVE]);
+    });
+
+    it("counts from the join when the last activity is older (a student linking again)", () => {
+      expect(flags({ lastActiveDate: "2026-08-20" }, "2026-09-09")).toEqual([]);
     });
   });
 

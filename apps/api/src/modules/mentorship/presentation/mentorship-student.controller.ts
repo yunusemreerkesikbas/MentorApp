@@ -1,15 +1,25 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, Post, Put, Query } from "@nestjs/common";
 import { Throttle } from "@nestjs/throttler";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import type {
   MentorshipInvitationPreviewDto,
   MentorshipSharedDataDto,
+  MentorshipWeeklyReportListItemDto,
+  MentorshipWeeklyReportShareDto,
   MyCoachDto,
+  Paginated,
 } from "@mentor/types";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { MentorshipLinkService } from "../application/mentorship-link.service";
 import { MentorshipSelfViewService } from "../application/mentorship-self-view.service";
-import { MentorshipInviteCodeParamDto } from "./mentorship.dto";
+import { MentorshipWeeklyReportService } from "../application/mentorship-weekly-report.service";
+import { MentorshipInviteCodeParamDto, MentorshipStudentNoteDto } from "./mentorship.dto";
+import {
+  ListMentorshipWeeklyReportsDto,
+  MentorshipWeeklyReportPageResponseDto,
+  MentorshipWeeklyReportShareResponseDto,
+  MyWeeklyReportParamDto,
+} from "./mentorship-weekly-report.dto";
 
 /**
  * The student's side (W8) - no role required: any student may be invited.
@@ -25,6 +35,7 @@ export class MentorshipStudentController {
   constructor(
     private readonly links: MentorshipLinkService,
     private readonly selfView: MentorshipSelfViewService,
+    private readonly weeklyReports: MentorshipWeeklyReportService,
   ) {}
 
   /** What am I about to consent to? Rendered before the accept button, never after. */
@@ -63,6 +74,39 @@ export class MentorshipStudentController {
     @CurrentUser() user: RequestUser,
   ): Promise<MentorshipSharedDataDto | null> {
     return this.selfView.getSharedData(user.id);
+  }
+
+  /**
+   * My standing note to my coach (QA F4), read back on my `/my-coach` screen and shown on my
+   * coach's report. PUT because it replaces a singleton; `{ body: null }` removes it. Not a thread:
+   * in-app conversation is Phase 3 (roadmap §9).
+   */
+  @Put("my-coach/note")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  setNote(@CurrentUser() user: RequestUser, @Body() dto: MentorshipStudentNoteDto): Promise<void> {
+    return this.links.setStudentNote(user.id, dto.body);
+  }
+
+  /**
+   * The weeks my coach finalized, each once at its latest version: the page the coach would print
+   * for me, through my live link only (404 without one).
+   */
+  @Get("my-coach/weekly-reports")
+  @ApiOkResponse({ type: MentorshipWeeklyReportPageResponseDto })
+  myWeeklyReports(
+    @CurrentUser() user: RequestUser,
+    @Query() query: ListMentorshipWeeklyReportsDto,
+  ): Promise<Paginated<MentorshipWeeklyReportListItemDto>> {
+    return this.weeklyReports.listForStudent(user.id, query.page, query.pageSize);
+  }
+
+  @Get("my-coach/weekly-reports/:reportId")
+  @ApiOkResponse({ type: MentorshipWeeklyReportShareResponseDto })
+  myWeeklyReport(
+    @CurrentUser() user: RequestUser,
+    @Param() params: MyWeeklyReportParamDto,
+  ): Promise<MentorshipWeeklyReportShareDto> {
+    return this.weeklyReports.shareForStudent(user.id, params.reportId);
   }
 
   @Delete("my-coach")

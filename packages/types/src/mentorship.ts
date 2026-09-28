@@ -147,6 +147,11 @@ export interface MyCoachDto {
   dataScope: MentorshipDataScopeKey[];
   /** Null when the coach has not left one. Cleared with the link, never inherited by a successor. */
   coachNote: MentorshipCoachNoteDto | null;
+  /**
+   * The student's own note to this coach (QA F4), read back to them. Same shape and lifetime as
+   * `coachNote`; the coach reads it on the report.
+   */
+  studentNote: MentorshipCoachNoteDto | null;
   /** The same profile the consent screen showed, so the student can re-read what they agreed to. */
   coachProfile: MentorshipCoachProfileDto | null;
   /**
@@ -326,7 +331,10 @@ export type CoachPlanItemDto =
   | { kind: "TASK"; task: CoachPlanGroupedTaskDto }
   | { kind: "EVENT"; event: CoachPlanEventDto };
 
-/** The single-student report. Numbers, dates, statuses and task headings — never free text. */
+/**
+ * The single-student report. Numbers, dates, statuses and task headings, never the student's free
+ * text, with one exception the student chose: `studentNote`, written for this coach.
+ */
 export interface MentorshipStudentReportDto {
   studentId: string;
   studentDisplayName: string;
@@ -336,6 +344,11 @@ export interface MentorshipStudentReportDto {
   studentExamType: string | null;
   /** What THIS coach wrote for this student, read back to them. */
   coachNote: MentorshipCoachNoteDto | null;
+  /**
+   * What the student wrote for THIS coach on their Koçum screen (QA F4). Cleared with the link, and
+   * kept out of every AI prompt: the brief and the suggestions read an allow-list that omits it.
+   */
+  studentNote: MentorshipCoachNoteDto | null;
   riskFlags: MentorshipRiskFlagId[];
   /** Same pair as on the roster row, so the report can carry the same button. */
   attendedAt: string | null;

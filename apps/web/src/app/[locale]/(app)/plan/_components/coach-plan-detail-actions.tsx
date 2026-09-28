@@ -66,6 +66,7 @@ export function CoachPlanDetailActions({
       message: t("remove_task_body"),
       confirmLabel: t("remove_task"),
       cancelLabel: t("form_cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
     setBusy(true);
@@ -105,6 +106,7 @@ export function CoachPlanDetailActions({
       message: t("cancel_event_body"),
       confirmLabel: t("cancel_event"),
       cancelLabel: t("form_cancel"),
+      destructive: true,
     });
     requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
     if (!confirmed) return;

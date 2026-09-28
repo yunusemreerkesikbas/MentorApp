@@ -104,6 +104,7 @@ export function AnalysisHistoryDetail({
       }),
       confirmLabel: t("delete_confirm_yes"),
       cancelLabel: t("delete_confirm_no"),
+      destructive: true,
     });
     if (!confirmed) return;
 

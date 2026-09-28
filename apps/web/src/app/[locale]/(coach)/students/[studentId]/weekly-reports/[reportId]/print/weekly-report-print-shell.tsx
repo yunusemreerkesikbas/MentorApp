@@ -10,7 +10,7 @@ import { PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { trackMentorshipWeeklyReportEvent } from "@/lib/analytics";
 import { fetchWeeklyReportShare } from "@/lib/mentorship-weekly-report";
-import { WeeklyReportPrintMetrics } from "./weekly-report-print-metrics";
+import { WeeklyReportPrintMetrics } from "@/components/mentorship/weekly-report-print-metrics";
 
 export function WeeklyReportPrintShell({
   studentId,

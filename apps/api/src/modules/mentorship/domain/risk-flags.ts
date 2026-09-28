@@ -26,19 +26,29 @@ const SEVERITY: MentorshipRiskFlagId[] = [
   MentorshipRiskFlag.PLAN_SLIPPING,
 ];
 
+/**
+ * `joinedOn` is the Istanbul date the student accepted THIS coach (null only for a link with no
+ * acceptance on record). Silence is counted from it as well as from the last activity: a student who
+ * joined this morning has not been quiet for the window, and one linking again is not charged with
+ * the gap before they came back.
+ */
 export function evaluateRiskFlags(
   snapshot: CohortTriageSnapshot,
   thresholds: RiskThresholds,
   today: string,
+  joinedOn: string | null,
 ): MentorshipRiskFlagId[] {
   const flags: MentorshipRiskFlagId[] = [];
 
-  // A student who has never been active is not "inactive for 0 days" — they never started.
-  // Both cases deserve the flag, so a null last-active counts as inactive.
+  // A student who has never been active is not "inactive for 0 days" — they never started. That
+  // still deserves the flag once the window has passed since they joined, so with neither date the
+  // silence is unbounded.
+  const idleSince =
+    snapshot.lastActiveDate && joinedOn
+      ? (snapshot.lastActiveDate > joinedOn ? snapshot.lastActiveDate : joinedOn)
+      : (snapshot.lastActiveDate ?? joinedOn);
   const idleDays =
-    snapshot.lastActiveDate === null
-      ? Number.POSITIVE_INFINITY
-      : daysBetweenIso(snapshot.lastActiveDate, today);
+    idleSince === null ? Number.POSITIVE_INFINITY : daysBetweenIso(idleSince, today);
   if (idleDays > thresholds.inactiveDays) flags.push(MentorshipRiskFlag.INACTIVE);
 
   // Null completion means nothing was planned — silence, not failure. Don't flag it here;

@@ -1,11 +1,13 @@
 "use client";
 
-import type { PlanTaskDto, PublicHolidayDto } from "@mentor/types";
+import type { PlanEventDto, PlanTaskDto, PublicHolidayDto } from "@mentor/types";
 import { Card } from "@mentor/ui";
 import { useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
-import { planTaskCalendarItems } from "@/lib/plan-calendar-item";
+import { useAuth } from "@/lib/auth-context";
+import { planTaskCalendarItems, type PlanCalendarItem } from "@/lib/plan-calendar-item";
+import { studentEventCalendarItem } from "@/lib/plan-events";
 import { listPlanTaskCalendarDates } from "@/lib/plan-tasks";
 import { PlanCalendarFab } from "./plan-calendar-fab";
 import { PlanCalendarFrame } from "./plan-calendar-frame";
@@ -37,6 +39,7 @@ export function PlanCalendarView({
   selectedDate,
   weekStartDate,
   tasksByDate,
+  eventsByDate,
   holidaysByDate,
   loading,
   busyId,
@@ -49,6 +52,7 @@ export function PlanCalendarView({
   onEdit,
   onDelete,
   onOpenEvent,
+  onOpenCoachEvent,
   onAddTask,
   completionPromptTaskId,
   onDismissCompletionPrompt,
@@ -58,6 +62,8 @@ export function PlanCalendarView({
   weekStartDate: string;
   /** Whatever range the shell has loaded for the current scale. */
   tasksByDate: Record<string, PlanTaskDto[]>;
+  /** The student's meetings over the same range: chips beside the tasks, read-only. */
+  eventsByDate: Record<string, PlanEventDto[]>;
   /** Verified public holidays for the same range — display only, never editable. */
   holidaysByDate: Record<string, PublicHolidayDto>;
   loading: boolean;
@@ -72,6 +78,7 @@ export function PlanCalendarView({
   onDelete: (task: PlanTaskDto) => void;
   /** Mobile tap on an event → details sheet (desktop uses hover preview + click-to-edit). */
   onOpenEvent: (task: PlanTaskDto) => void;
+  onOpenCoachEvent: (event: PlanEventDto) => void;
   /** Slot/day click → add sheet, optionally prefilled with a date and start time. */
   onAddTask: (prefill?: {
     taskDate?: string;
@@ -83,21 +90,32 @@ export function PlanCalendarView({
 }) {
   const t = useTranslations("plan");
   const locale = useLocale();
-  const { preview, onHover } = usePlanEventPreview<PlanTaskDto>();
+  const { user } = useAuth();
+  const { preview, onHover } = usePlanEventPreview<PlanTaskDto | PlanEventDto>();
   const [pickedSubject, setPickedSubject] = useState<string | null>(null);
   const monthAnchor = monthStart(selectedDate);
   const monthDays = useMemo(() => {
     const d = new Date(`${monthAnchor}T12:00:00`);
     return monthGridDays(d.getFullYear(), d.getMonth());
   }, [monthAnchor]);
-  const itemsByDate = useMemo(
-    () =>
+  const itemsByDate = useMemo(() => {
+    const byDate: Record<string, PlanCalendarItem<PlanTaskDto | PlanEventDto>[]> =
       planTaskCalendarItems(tasksByDate, {
         done: t("calendar_preview_done"),
         hint: t("calendar_preview_hint"),
-      }),
-    [t, tasksByDate],
-  );
+      });
+    const labels = { withCoach: t("event_with_coach"), cancelled: t("event_cancelled") };
+    for (const [iso, events] of Object.entries(eventsByDate)) {
+      byDate[iso] = [
+        ...(byDate[iso] ?? []),
+        ...events.map((event) => studentEventCalendarItem(event, user?.id ?? "", labels)),
+      ];
+    }
+    return byDate;
+  }, [t, tasksByDate, eventsByDate, user?.id]);
+  // A chip is a task or a meeting; each opens its own details.
+  const openItem = (source: PlanTaskDto | PlanEventDto) =>
+    "eventDate" in source ? onOpenCoachEvent(source) : onOpenEvent(source);
 
   /**
    * The legend only exists on Ay, and a subject can vanish when the user steps to a month where
@@ -154,7 +172,7 @@ export function PlanCalendarView({
     itemsByDate,
     holidaysByDate,
     onDateChange,
-    onOpenItem: onOpenEvent,
+    onOpenItem: openItem,
     onCreateAt: (iso: string, startTime: string) =>
       addOnCalendar({ taskDate: iso, startTime }),
     onHover,
@@ -167,7 +185,7 @@ export function PlanCalendarView({
     holidaysByDate,
     highlightGroup: highlightSubject,
     onDateChange,
-    onOpenItem: onOpenEvent,
+    onOpenItem: openItem,
     onCreateAt: (iso: string) => addOnCalendar({ taskDate: iso }),
     onHover,
   };
@@ -201,7 +219,7 @@ export function PlanCalendarView({
           highlightGroup={highlightSubject}
           expanded={scale === "month"}
           onDateChange={onDateChange}
-          onOpenItem={onOpenEvent}
+          onOpenItem={openItem}
           onExpand={() => onScaleChange("month")}
           onCollapse={() => onScaleChange("day")}
         />
@@ -234,7 +252,7 @@ export function PlanCalendarView({
               itemsByDate={itemsByDate}
               holidaysByDate={holidaysByDate}
               onDateChange={onDateChange}
-              onOpenItem={onOpenEvent}
+              onOpenItem={openItem}
             />
           </>
         )}

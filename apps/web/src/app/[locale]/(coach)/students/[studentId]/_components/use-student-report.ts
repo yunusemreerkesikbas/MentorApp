@@ -88,6 +88,7 @@ export function useStudentReport(studentId: string) {
       message: t("report_end_confirm_body", { name: report.studentDisplayName }),
       confirmLabel: t("report_end_confirm_action"),
       cancelLabel: t("confirm_cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
     setEnding(true);

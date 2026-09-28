@@ -12,7 +12,7 @@ import { useTranslations } from "next-intl";
 import { useCallback, useMemo, type ReactNode } from "react";
 import type { PuhuVariant } from "@/components/puhu-image";
 import { getDialogHero } from "./dialog-hero";
-import { getDialogErrorLeading } from "./dialog-lead";
+import { getDialogLeading } from "./dialog-lead";
 
 export type MentorDialogConfirmOptions = Omit<
   DialogConfirmOptions,
@@ -56,7 +56,7 @@ export function useMentorDialog() {
       dialog.confirm({
         ...options,
         closeLabel: options.closeLabel ?? closeLabel,
-        leading: options.leading ?? getDialogErrorLeading(),
+        leading: options.leading ?? getDialogLeading(options.destructive),
       }),
     [closeLabel, dialog],
   );

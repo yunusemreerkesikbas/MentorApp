@@ -23,6 +23,7 @@ import type {
 import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { CelebrationOverlayProvider } from "@/lib/celebration-overlay";
+import { NOTIFICATION_ARRIVED } from "@/lib/notification-events";
 import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import {
   getUnseenAchievements,
@@ -63,25 +64,26 @@ const ICON_BY_CATEGORY = {
 };
 
 /**
- * The glyph is the primary category carrier (never colour alone — WCAG 1.4.1); colour only adds
- * emphasis. Tokens only: `--color-accent` is an alias of `--color-progress`, so ACHIEVEMENT and
- * FORUM used to render in the identical blue, and PLAN carried a hard-coded hex.
+ * The glyph is the category carrier (never colour alone — WCAG 1.4.1). Colour only where it means
+ * something (overlay kit, 2026-09-28): the human coach wears the coach ink (DESIGN.md §2.5), the
+ * AI coach its violet, a win the streak coral; everything else stays neutral. Four hues for seven
+ * categories read as confetti, and the light blue and yellow sat under 3:1 as thin line glyphs.
  */
 const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   COACH: "var(--color-chip-text)",
-  PLAN: "var(--color-progress)",
+  PLAN: "var(--color-secondary)",
   CONTENT: "var(--color-secondary)",
-  FORUM: "var(--color-progress)",
-  ACHIEVEMENT: "var(--color-star)",
-  MENTORSHIP: "var(--color-chip-text)",
-  SYSTEM: "var(--color-main)",
+  FORUM: "var(--color-secondary)",
+  ACHIEVEMENT: "var(--color-streak)",
+  MENTORSHIP: "var(--coach-accent)",
+  SYSTEM: "var(--color-secondary)",
 };
 
 function CategoryIcon({ category }: { category: NotificationCategory }) {
   const Icon = ICON_BY_CATEGORY[category];
 
   return (
-    <Icon size={18} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={2} aria-hidden />
+    <Icon size={22} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={1.75} aria-hidden />
   );
 }
 
@@ -186,6 +188,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
             payload = null; // heartbeat sends an empty frame — nothing to do
           }
           if (!payload?.event) return;
+          window.dispatchEvent(new Event(NOTIFICATION_ARRIVED));
           if (
             payload.event === "achievement_awarded" ||
             payload.event === "journey_level_unlocked"
@@ -262,18 +265,8 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   const emptyState = (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       <PuhuImage variant="default" size={64} className="mb-3 opacity-80 drop-shadow-sm" />
-      <p
-        className="mb-1 text-base font-bold"
-        style={{ fontFamily: "var(--font-heading)", color: "var(--color-main)" }}
-      >
-        {t("empty_title")}
-      </p>
-      <p
-        className="text-sm"
-        style={{ fontFamily: "var(--font-body)", color: "var(--color-secondary)" }}
-      >
-        {t("empty_body")}
-      </p>
+      <p className="mb-1 text-base font-extrabold text-[var(--color-main)]">{t("empty_title")}</p>
+      <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("empty_body")}</p>
     </div>
   );
 

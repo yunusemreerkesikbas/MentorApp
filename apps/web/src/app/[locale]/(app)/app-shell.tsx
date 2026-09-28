@@ -10,6 +10,7 @@ import { MOBILE_TAB_BAR_PADDING_CLASS } from "@/lib/app-shell";
 import { useAuth } from "@/lib/auth-context";
 import { COACH_HOME, isCoach, isStudentOnlyPath } from "@/lib/coach-surface";
 import { NotificationDrawerShell } from "@/lib/notification-drawer-shell";
+import { rememberPendingInvite } from "@/lib/pending-invite";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { PremiumPaywallProvider } from "@/lib/premium-paywall";
 import { SubscriptionProvider } from "@/lib/subscription-context";
@@ -33,10 +34,17 @@ export function AppShell({ children }: { children: ReactNode }) {
   const bouncedToCoachHome = isCoach(user) && isStudentOnlyPath(pathname);
 
   useEffect(() => {
+    // A coach's invite link is usually sent to someone with no account yet. `next` does not
+    // survive signup and onboarding, so it is remembered the way a study-room link is, and the
+    // onboarding's last step returns to it.
+    const invite =
+      pathname === "/coach-invitation" ? `${pathname}${window.location.search}` : null;
     if (status === "anonymous") {
+      if (invite) rememberPendingInvite(invite);
       router.replace({ pathname: "/login", query: { next: `${pathname}${window.location.search}` } });
     }
     if (status === "authenticated" && user && !hasCompletedOnboarding(user)) {
+      if (invite) rememberPendingInvite(invite);
       router.replace("/onboarding");
     }
     if (status === "authenticated" && bouncedToCoachHome) router.replace(COACH_HOME);

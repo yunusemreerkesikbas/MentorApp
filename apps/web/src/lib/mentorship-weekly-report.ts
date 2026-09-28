@@ -14,6 +14,7 @@ import {
   mentorshipWeeklyReportControllerPreview,
   mentorshipWeeklyReportControllerReadBrief,
   mentorshipWeeklyReportControllerShare,
+  http,
 } from "@mentor/api-client";
 
 const DAY_MS = 86_400_000;
@@ -116,5 +117,25 @@ export async function fetchWeeklyReportShare(
   return (await mentorshipWeeklyReportControllerShare(
     studentId,
     reportId,
+  )) as MentorshipWeeklyReportShareDto;
+}
+
+/*
+ * The student's side goes through `http` like the rest of `/my-coach` (lib/mentorship.ts): the
+ * generated functions for that controller are typed as `{ data, status }` wrappers they never return.
+ */
+
+/** Each finalized week once, at its latest version, newest first. */
+export async function fetchMyWeeklyReports(): Promise<Paginated<MentorshipWeeklyReportListItemDto>> {
+  // ponytail: one page at the schema max, like the coach's archive above.
+  return (await http<Paginated<MentorshipWeeklyReportListItemDto>>(
+    "/v1/mentorship/my-coach/weekly-reports?page=1&pageSize=100",
+  )) as Paginated<MentorshipWeeklyReportListItemDto>;
+}
+
+/** The same safe projection the coach prints (no brief, no evidence), through the student's own link. */
+export async function fetchMyWeeklyReport(reportId: string): Promise<MentorshipWeeklyReportShareDto> {
+  return (await http<MentorshipWeeklyReportShareDto>(
+    `/v1/mentorship/my-coach/weekly-reports/${encodeURIComponent(reportId)}`,
   )) as MentorshipWeeklyReportShareDto;
 }

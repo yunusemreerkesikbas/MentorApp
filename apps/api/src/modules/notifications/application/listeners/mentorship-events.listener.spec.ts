@@ -8,6 +8,7 @@ import {
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
   MentorshipNoteUpdated,
+  MentorshipStudentNoteUpdated,
 } from "../../../mentorship/domain/mentorship.constants";
 import { todayIso } from "../../../coaching/domain/date.util";
 
@@ -67,6 +68,20 @@ describe("MentorshipEventsListener", () => {
     expect(sent[0]!.options?.args).toMatchObject({ name: "Koç Mert" });
     // A coach rewording one sentence five times is still one piece of news.
     expect(sent[0]!.options?.dedupeKey).toBe(`mentorship-note:${STUDENT}:${todayIso()}`);
+  });
+
+  it("tells the coach their student left a note, deduped to one a day, linking the report", async () => {
+    const { listener, sent } = setup();
+    await listener.onStudentNoteUpdated(new MentorshipStudentNoteUpdated(LINK, COACH, STUDENT, "Ayşe"));
+    expect(sent[0]).toMatchObject({
+      userId: COACH,
+      templateKey: "mentorshipStudentNote",
+      linkUrl: `/students/${STUDENT}`,
+    });
+    expect(sent[0]!.options?.args).toMatchObject({ name: "Ayşe" });
+    expect(sent[0]!.options?.dedupeKey).toBe(`mentorship-student-note:${STUDENT}:${todayIso()}`);
+    // A note is not a plan change: inbox only, no push.
+    expect(sent[0]!.options?.push).toBeUndefined();
   });
 
   it("tells the coach their invite was accepted", async () => {

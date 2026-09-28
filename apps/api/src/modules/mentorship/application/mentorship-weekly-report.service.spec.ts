@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, expect, it, vi } from "vitest";
 import type { MentorshipWeeklySnapshotDto } from "@mentor/types";
+import { MentorshipEventTopic } from "../domain/mentorship.constants";
 import { MentorshipWeeklyReportVersionConflictError } from "../infrastructure/mentorship-weekly-report.repository";
 import { MentorshipWeeklyReportService } from "./mentorship-weekly-report.service";
 
@@ -58,6 +59,14 @@ function build() {
     id: "link-1",
     periodId: "period-1",
   }));
+  // The student's own side: their live link, whoever the coach is.
+  const requireStudentLink = vi.fn(async () => ({
+    id: "link-1",
+    periodId: "period-1",
+    coachId: "coach-1",
+  }));
+  const listLatestFinalized = vi.fn(async () => ({ rows: [] as unknown[], total: 0 }));
+  const events = { emit: vi.fn() };
   const getSnapshot = vi.fn(async () => snapshot);
   const subjectNames = vi.fn(async () => ({ matematik: "Matematik" }));
   const findDraft = vi.fn(async () => null);
@@ -70,7 +79,7 @@ function build() {
   const findFinalized = vi.fn();
   const findFinalizedByOperation = vi.fn(async () => undefined);
   const service = new MentorshipWeeklyReportService(
-    { assertEnabled: vi.fn(), requireActiveLink } as never,
+    { assertEnabled: vi.fn(), requireActiveLink, requireStudentLink } as never,
     { getSnapshot, subjectNames } as never,
     {
       listDisplayIdentities: vi.fn(
@@ -94,8 +103,10 @@ function build() {
       finalize,
       findFinalized,
       findFinalizedByOperation,
+      listLatestFinalized,
     } as never,
     { get: vi.fn(async () => true) } as never,
+    events as never,
   );
   return {
     service,
@@ -106,6 +117,9 @@ function build() {
     finalize,
     findFinalized,
     findFinalizedByOperation,
+    requireStudentLink,
+    listLatestFinalized,
+    events,
   };
 }
 
@@ -344,5 +358,89 @@ describe("MentorshipWeeklyReportService", () => {
       /evidence|brief|conversationQuestion|coachContext|preparation|PRIVATE/,
     );
     expect(result.coachEvaluation).toBe("Ritmi birlikte koruyalım.");
+  });
+
+  describe("the student's side", () => {
+    const finalized = (over: Record<string, unknown> = {}) => ({
+      id: "report-1",
+      locale: "tr",
+      version: 1,
+      weekStart: "2026-08-31",
+      sourceFingerprint: "f".repeat(64),
+      snapshot,
+      coachEvaluation: "Ritmi birlikte koruyalım.",
+      briefCoachContext: "PRIVATE DIRECTION",
+      brief: { coachContext: "PRIVATE DIRECTION", findings: [], model: "fake" },
+      replacesId: null,
+      finalizedAt: new Date("2026-09-07T10:00:00.000Z"),
+      ...over,
+    });
+
+    it("reads the same safe projection the coach prints, through the student's own link", async () => {
+      const { service, findFinalized, requireStudentLink } = build();
+      findFinalized.mockResolvedValueOnce(finalized());
+
+      const result = await service.shareForStudent("student-1", "report-1");
+
+      expect(requireStudentLink).toHaveBeenCalledWith("student-1");
+      expect(findFinalized).toHaveBeenCalledWith("report-1", "link-1", "period-1");
+      expect(result).toMatchObject({
+        id: "report-1",
+        coachDisplayName: "Koç Deniz",
+        studentDisplayName: "Ayşe",
+        coachEvaluation: "Ritmi birlikte koruyalım.",
+      });
+      expect(JSON.stringify(result)).not.toMatch(/evidence|brief|coachContext|PRIVATE/);
+    });
+
+    it("says 404 for a report outside the student's live link", async () => {
+      const { service, findFinalized } = build();
+      findFinalized.mockResolvedValueOnce(undefined);
+      await expect(service.shareForStudent("student-1", "report-x")).rejects.toMatchObject({
+        code: "MENTORSHIP_WEEKLY_REPORT_NOT_FOUND",
+      });
+    });
+
+    it("lists only the latest version of each week", async () => {
+      const { service, listLatestFinalized } = build();
+      listLatestFinalized.mockResolvedValueOnce({
+        rows: [finalized({ id: "report-2", version: 2, replacesId: "report-1" })],
+        total: 1,
+      });
+
+      const page = await service.listForStudent("student-1", 1, 20);
+
+      expect(listLatestFinalized).toHaveBeenCalledWith("link-1", "period-1", 1, 20);
+      expect(page).toMatchObject({ total: 1, page: 1, pageSize: 20 });
+      expect(page.items.map((item) => [item.id, item.version])).toEqual([["report-2", 2]]);
+    });
+
+    it("tells the student when the coach finalizes a week, and not again on a replay", async () => {
+      const { service, finalize, findFinalizedByOperation, events } = build();
+      const live = await service.preview("coach-1", "student-1", "2026-08-31");
+      const row = finalized({ sourceFingerprint: live.sourceFingerprint, coachEvaluation: null });
+      finalize.mockResolvedValueOnce(row);
+      const input = {
+        weekStart: "2026-08-31",
+        sourceFingerprint: live.sourceFingerprint,
+        operationId: "00000000-0000-4000-8000-000000000009",
+      };
+
+      await service.finalize("coach-1", "student-1", input);
+      expect(events.emit).toHaveBeenCalledTimes(1);
+      expect(events.emit).toHaveBeenCalledWith(
+        MentorshipEventTopic.WEEKLY_REPORT_FINALIZED,
+        expect.objectContaining({
+          reportId: "report-1",
+          coachId: "coach-1",
+          studentId: "student-1",
+          coachDisplayName: "Koç Deniz",
+        }),
+      );
+
+      findFinalizedByOperation.mockResolvedValueOnce(row as never);
+      await service.finalize("coach-1", "student-1", input);
+      expect(events.emit).toHaveBeenCalledTimes(1);
+    });
   });
 });

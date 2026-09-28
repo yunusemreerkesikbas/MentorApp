@@ -1035,3 +1035,24 @@ eklendi.
   header. Usage is unchanged; native dialogs and mobile sheets can use the shared menu. Related:
   `components/popover-menu.tsx`, `notebook-shell.tsx`, `notebooks.spec.ts`, `notebook.spec.ts`,
   `vision-board.spec.ts`.
+
+- **2026-09-28 — Overlay kiti panel diline geçti (redesign turu 1, Durak A).** Dialog, BottomSheet,
+  Modal, NotificationDrawer ve Toast katı `--color-surface` üstünde; cam ve `backdrop-blur` yok. Tek
+  örtü `--color-scrim`, tek gölge `--shadow-overlay` (telefondaki alt sayfa `--shadow-sheet`), köşe
+  `--play-radius`, alt sayfanın üst köşesi `--play-sheet-radius` (artık `html` üstünde). Başlık 20/800
+  (alt sayfa ve çekmece 16/800), gövde `text-body-sm`, kapatma 44 px, ikonlar kuyusuz çizgi (22 px,
+  1.75). Onay diyaloğu tek ledge + "Vazgeç" metin bağlantısı; promo'nun ikinci seçeneği de metin.
+  Birincil ledge yazısı `--play-cta-ink` #0F2233. Hareket: diyalog 200 ms, alt sayfa ve çekmece
+  250 ms, çıkışlar 150 ms. **Kullanım:** geri alınamayan onayda `confirm({ destructive: true })`:
+  ledge `Button variant="danger"` olur, varsayılan ikon kırmızı, odak "Vazgeç"te başlar (Enter hiçbir
+  şeyi sonlandırmaz). Bayrak şu an: Koçum'da ve koçun öğrenci sayfasında bağlantıyı sonlandırma, görev
+  silme ve kaldırma, etkinlik iptali, analiz, AI sohbeti ve şablon silme, hesabı silme. Topluluktan
+  ayrılma ve abonelik iptali geri alınabildiği için nötr. **Gotcha:** Toast'ların
+  `/visuals/toast-*.svg` sanat yuvası kalktı: dosyalar hiç gelmemişti, her
+  toast önce 404 alıp yedek ikona düşüyordu. Çekmecenin alt çizgili sekmeleri büyük harf değil;
+  kategori ikonunda renk yalnız insan koç (mürekkep), AI koç (menekşe) ve başarı (seri mercanı) için.
+  Defterlerim'deki silme onayı paralel oturumun dosyasında olduğu için henüz bayraksız. İlgili:
+  `packages/ui/src/components/{dialog,bottom-sheet,notification-drawer,toast}/*`, `modal.tsx`,
+  `button.tsx`, `theme.css`, `transitions/{index,tabs-sliding}.css`,
+  `lib/{mentor-dialog.ts,dialog-lead.tsx,toast-lead.tsx,notification-drawer-shell.tsx}`,
+  `e2e/mentorship.spec.ts` (yıkıcı onay testi).

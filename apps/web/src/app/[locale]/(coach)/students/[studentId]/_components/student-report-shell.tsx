@@ -28,6 +28,7 @@ import { initialPlanningState } from "./planning-state";
 import { hasTrace } from "./report-format";
 import { ReportHeader } from "./report-header";
 import { RhythmCard } from "./rhythm-card";
+import { StudentNoteCard } from "./student-note-card";
 import { useStudentBrief } from "./use-student-brief";
 import { useStudentReport } from "./use-student-report";
 import { useWeeklyReportCard } from "./use-weekly-report-card";
@@ -90,17 +91,21 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
       <WeekHeroSkeleton />
     );
   const note = report ? (
-    <NoteCard
-      studentId={studentId}
-      name={name}
-      note={report.coachNote}
-      draft={noteDraft}
-      onDraft={setNoteDraft}
-      onSaved={(coachNote) => {
-        student.setReport((prev) => (prev ? { ...prev, coachNote } : prev));
-        setNoteDraft(null);
-      }}
-    />
+    <>
+      {/* The student's words above the coach's own, so a reply reads in order. */}
+      {report.studentNote ? <StudentNoteCard name={name} note={report.studentNote} /> : null}
+      <NoteCard
+        studentId={studentId}
+        name={name}
+        note={report.coachNote}
+        draft={noteDraft}
+        onDraft={setNoteDraft}
+        onSaved={(coachNote) => {
+          student.setReport((prev) => (prev ? { ...prev, coachNote } : prev));
+          setNoteDraft(null);
+        }}
+      />
+    </>
   ) : (
     <Skeleton className="h-36 rounded-[var(--radius-card)]" />
   );

@@ -77,6 +77,7 @@ export function richReport(over: Partial<MentorshipStudentReportDto> = {}): Ment
       body: "Denemeden önceki gün dinlen. Paragrafı sabah, tarihi akşam çalış.",
       updatedAt: `${shiftDay(TODAY, -6)}T09:00:00.000Z`,
     },
+    studentNote: null,
     riskFlags: ["NET_DROP"],
     attendedAt: null,
     needsAttention: true,

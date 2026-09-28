@@ -4,8 +4,10 @@ import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import type { Paginated } from "@mentor/types";
 import { fetchFollowupAvailability } from "@/lib/mentorship-followups";
+import { NOTIFICATION_ARRIVED } from "@/lib/notification-events";
 type Result<T> = {
-  key: object | null;
+  /** The list and page this result answers; a reload of the same view keeps it on screen. */
+  view: object | null;
   enabled: boolean | null;
   data: Paginated<T> | null;
   error: string | null;
@@ -17,9 +19,10 @@ export function useFollowupPage<T>(
   const common = useTranslations("common");
   const [page, setPage] = useState(1);
   const [revision, setRevision] = useState(0);
-  const key = useMemo(() => ({ load, page, revision }), [load, page, revision]);
+  const view = useMemo(() => ({ load, page }), [load, page]);
+  const key = useMemo(() => ({ view, revision }), [view, revision]);
   const [result, setResult] = useState<Result<T>>({
-    key: null,
+    view: null,
     enabled: null,
     data: null,
     error: null,
@@ -37,19 +40,33 @@ export function useFollowupPage<T>(
     [common],
   );
   const reload = useCallback(() => setRevision((value) => value + 1), []);
+
+  // The other side can decide or answer while this screen is open: read again when a notification
+  // arrives or the tab comes back. Silent, because the current list stays until the new one lands.
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") reload();
+    };
+    window.addEventListener(NOTIFICATION_ARRIVED, refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.removeEventListener(NOTIFICATION_ARRIVED, refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [reload]);
   useEffect(() => {
     const controller = new AbortController();
     void fetchFollowupAvailability(controller.signal)
       .then(async (availability) => {
         if (controller.signal.aborted) return;
         if (!availability.enabled) {
-          setResult({ key, enabled: false, data: null, error: null });
+          setResult({ view: key.view, enabled: false, data: null, error: null });
           return;
         }
         const data = await load(page, controller.signal);
         if (!controller.signal.aborted) {
           if (page > 1 && data.items.length === 0) setPage(1);
-          else setResult({ key, enabled: true, data, error: null });
+          else setResult({ view: key.view, enabled: true, data, error: null });
         }
       })
       .catch((failure: unknown) => {
@@ -58,7 +75,7 @@ export function useFollowupPage<T>(
           failure instanceof ApiClientError &&
           failure.body.code === "MENTORSHIP_FOLLOWUP_DISABLED";
         setResult({
-          key,
+          view: key.view,
           enabled: disabled ? false : true,
           data: null,
           error: disabled
@@ -70,7 +87,7 @@ export function useFollowupPage<T>(
       });
     return () => controller.abort();
   }, [load, page, key, common]);
-  const loading = result.key !== key;
+  const loading = result.view !== view;
   return {
     enabled: result.enabled,
     data: loading ? null : result.data,

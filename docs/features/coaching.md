@@ -145,6 +145,29 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-27 · W8 link-end seam: pending coach tasks are released.**
+  `PlanService.releaseMentorshipTasksInTransaction(tx, scope)` clears origin and coach note on the
+  ending link's PENDING tasks, in W8's link-end transaction; DONE tasks keep both. The student can
+  edit them from then on (`assertMentorshipTaskEditable` no longer applies). Why and the product
+  side: mentorship.md 2026-09-27. Related: `plan-task-mentorship.repository.ts`
+  `releasePendingMentorshipTasks`, `test/mentorship-link-end.e2e-spec.ts`.
+
+- **2026-09-27 · The student plan opens the day a notification names, and shows the coach's meetings.** `/plan?date=YYYY-MM-DD`
+  now starts on that day, and a link tapped in the notification drawer while already on `/plan`
+  moves there too (the query is followed during render). Every student plan notification points
+  here: coach assignments and changes, plan events and their reminders. Before, all of them opened
+  on today. The parser is the coach plan's `coachPlanQueryTransition`. **The coach's meetings are
+  on the plan too:** until now the student plan read `/plan-tasks` only, so a meeting the coach set
+  up with the student existed in a notification and nowhere else. `use-plan-events.ts` reads
+  `/plan-events` for the selected day's month board; a meeting is a read-only row above the day's
+  tasks ("18:00 – 18:30 · Koçunla") and a `glyph: "event"` chip on every Takvim surface, and both
+  open a details sheet without edit or delete. `&event=` opens that sheet once its month has loaded.
+  **Usage:** tap "Koçundan görevler" or "Planına bir etkinlik eklendi". **Gotchas:** (1) sheets
+  render outside `AuthProvider`, so `PlanCoachEventDetails` takes "Koçunla" as a prop instead of
+  calling `useAuth`. (2) Events are best-effort like holidays: a failed read shows none. (3) The
+  Timeline view does not draw meetings yet. Related: `plan-shell.tsx`, `plan-coach-event.tsx`,
+  `use-plan-events.ts`, `lib/plan-events.ts`, `e2e/plan.spec.ts` "bildirim linki", "koçun görüşmesi".
+
 - **2026-09-27 · Dashboard journey scene loads on demand.** The journey card now loads its
   spotlight scene when the student opens the level row, keeping the closed scene out of the
   initial dashboard JavaScript. Usage: open "Yolculuğun" as before. Gotcha: the first opening

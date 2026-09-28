@@ -2,11 +2,12 @@
 import { notifyEconomyChanged } from "@/lib/economy";
 import { ArrowLeft } from "lucide-react";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
+  PlanEventDto,
   PlanTaskDto,
   PlanTaskOriginDto,
   PlanTaskStatus,
@@ -15,6 +16,7 @@ import type {
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
 import { useRouter } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
 import { FormError } from "@/components/form";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
@@ -31,6 +33,7 @@ import {
   updatePlanTask,
 } from "@/lib/plan-tasks";
 import { createCommunityCoachPlanTask } from "@/lib/coach";
+import { coachPlanQueryTransition } from "@/lib/coach-plan-calendar";
 import { monthGridDays } from "@/lib/plan-calendar-layout";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { parsePlanAdaptationQuery } from "@/lib/plan-coach-adaptation-utils";
@@ -50,7 +53,9 @@ import { summarizePendingWeek } from "./plan-coach-adaptation-brief-note";
 import { PlanCalendarView } from "./plan-calendar-view";
 import { PlanDateNav } from "./plan-date-nav";
 import { PlanDatePickerSheet, type PlanDatePickerSheetHandle } from "./plan-date-picker-sheet";
+import { PlanCoachEventDetails } from "./plan-coach-event";
 import { PlanEventDetails } from "./plan-event-details";
+import { usePlanEvents } from "./use-plan-events";
 import { PlanListView } from "./plan-list-view";
 import { PlanTimelineView } from "./plan-timeline-view";
 import { PlanViewSwitcher } from "./plan-view-switcher";
@@ -104,6 +109,7 @@ export function PlanShell() {
   const tCommon = useTranslations("common");
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const {
     filterSheet,
     show: showSheet,
@@ -116,8 +122,21 @@ export function PlanShell() {
 
   const [viewMode, setViewMode] = useState<PlanViewMode>("list");
   const [calendarScale, setCalendarScale] = useState<PlanCalendarScale>("week");
-  const [date, setDate] = useState(todayIso);
-  const [weekAnchor, setWeekAnchor] = useState(() => weekStart(todayIso()));
+  // Notifications open a day here (`?date=`), from outside and from the drawer on this very page,
+  // where only the query changes; so the query is followed during render, not just read once.
+  // The parser is the coach plan's: both plans take the same query.
+  const queryDate =
+    coachPlanQueryTransition({ date: searchParams.get("date"), event: null })?.selectedDate ?? null;
+  const [date, setDate] = useState(() => queryDate ?? todayIso());
+  const [weekAnchor, setWeekAnchor] = useState(() => weekStart(queryDate ?? todayIso()));
+  const [followedQueryDate, setFollowedQueryDate] = useState(queryDate);
+  if (queryDate !== followedQueryDate) {
+    setFollowedQueryDate(queryDate);
+    if (queryDate) {
+      setDate(queryDate);
+      setWeekAnchor(weekStart(queryDate));
+    }
+  }
   const [tasks, setTasks] = useState<PlanTaskDto[]>([]);
   const [weekTasks, setWeekTasks] = useState<Record<string, PlanTaskDto[]>>({});
   const [monthTasks, setMonthTasks] = useState<Record<string, PlanTaskDto[]>>({});
@@ -195,6 +214,25 @@ export function PlanShell() {
   }, []);
 
   const monthAnchor = monthStart(date);
+  // Events load for the selected day's month board, which holds the day, its week and all of Takvim.
+  const eventRange = useMemo(() => {
+    const anchor = new Date(`${monthAnchor}T12:00:00`);
+    const days = monthGridDays(anchor.getFullYear(), anchor.getMonth());
+    return { from: days[0]!, to: days[days.length - 1]! };
+  }, [monthAnchor]);
+  const eventsByDate = usePlanEvents(eventRange.from, eventRange.to);
+
+  // A notification's `&event=` opens that meeting once its month has loaded, and only once.
+  const queryEventId = searchParams.get("event");
+  const openedQueryEvent = useRef<string | null>(null);
+  const openQueryEvent = useEffectEvent((event: PlanEventDto) => openCoachEventSheet(event));
+  useEffect(() => {
+    if (!queryEventId || openedQueryEvent.current === queryEventId) return;
+    const event = Object.values(eventsByDate).flat().find((item) => item.id === queryEventId);
+    if (!event) return;
+    openedQueryEvent.current = queryEventId;
+    openQueryEvent(event);
+  }, [queryEventId, eventsByDate]);
   /**
    * The whole Takvim view reads from the month range, not just Ay: the 6×7 grid always contains
    * the selected date's full week, and the mobile agenda scrolls across the month. One request
@@ -535,6 +573,7 @@ export function PlanShell() {
       message: t("task_delete_confirm_message"),
       confirmLabel: t("task_delete_confirm_yes"),
       cancelLabel: t("task_delete_confirm_no"),
+      destructive: true,
     });
     if (ok) await remove(task.id);
   }
@@ -560,6 +599,21 @@ export function PlanShell() {
             dismissSheetNow();
             void confirmDeleteTask(task);
           }}
+        />
+      ),
+    });
+  }
+
+  /** A meeting someone set up with the student: details only, nothing to edit or delete. */
+  function openCoachEventSheet(event: PlanEventDto) {
+    showSheet({
+      title: t("event_details_title"),
+      layout: "filter",
+      bodyScroll: true,
+      children: (
+        <PlanCoachEventDetails
+          event={event}
+          withWhom={event.organizerUserId === user?.id ? null : t("event_with_coach")}
         />
       ),
     });
@@ -868,6 +922,8 @@ export function PlanShell() {
             {viewMode === "list" ? (
               <PlanListView
                 tasks={tasks}
+                events={eventsByDate[date] ?? []}
+                onOpenEvent={openCoachEventSheet}
                 loading={dayLoading}
                 busyId={busyId}
                 readOnly={readOnly}
@@ -901,6 +957,8 @@ export function PlanShell() {
                 selectedDate={date}
                 weekStartDate={weekAnchor}
                 tasksByDate={monthTasks}
+                eventsByDate={eventsByDate}
+                onOpenCoachEvent={openCoachEventSheet}
                 holidaysByDate={holidays}
                 loading={monthLoading}
                 busyId={busyId}

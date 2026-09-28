@@ -1,29 +1,38 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
 import type { MentorshipSharedDataDto, MyCoachDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
-import { EmptyState } from "@/components/empty-state";
-import { Link } from "@/i18n/navigation";
+import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endMyCoachLink, fetchMyCoach, fetchSharedData } from "@/lib/mentorship";
-import { CoachProfileCard } from "./coach-profile-card";
+import { MyCoachEmpty } from "./my-coach-empty";
+import { MyCoachHero } from "./my-coach-hero";
+import { MyCoachRail } from "./my-coach-rail";
+import { MyNoteCard } from "./my-note-card";
+import { MyWeeklyReportsCard } from "./my-weekly-reports-card";
 import { SharedFollowupsCard } from "./shared-followups-card";
-import { scopeValue } from "./scope-values";
+
+const TITLE = "text-display font-extrabold leading-tight tracking-[-0.01em] text-[var(--color-main)]";
 
 /**
- * The student's transparency screen. Its job is not to manage a relationship — it is to answer
- * "who can see my data, exactly what, and how do I stop it", on one page, without asking anyone.
+ * The student's side of the relationship, in the panel's frame: the coach and what passes between
+ * them in the main column (who, notes, shared decisions, finalized weeks), and in the rail what the
+ * coach sees, with the way to stop it under the data it stops. Below 1280 px the rail follows the
+ * main column in reading order (a CSS grid, so no width change remounts the note editor).
  */
 export function MyCoachShell() {
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
-  const locale = useLocale();
   const { error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
+  const searchParams = useSearchParams();
+  /** Read once: the invite page sends the student here with `?hosgeldin=1` right after they agree. */
+  const [welcome] = useState(() => searchParams.get("hosgeldin") === "1");
   const [coach, setCoach] = useState<MyCoachDto | null>(null);
   const [shared, setShared] = useState<MentorshipSharedDataDto | null>(null);
   const [off, setOff] = useState(false);
@@ -44,14 +53,16 @@ export function MyCoachShell() {
     showErrorRef.current = showError;
   }, [showError]);
 
-  const load = useCallback(() => {
+  useEffect(() => {
+    // Spend the greeting on arrival, so a refresh or a copied address does not greet again.
+    if (welcome) window.history.replaceState(null, "", window.location.pathname);
+  }, [welcome]);
+
+  useEffect(() => {
     // Beside the coach fetch, never behind it (`standards/frontend.md`: no waterfalls). The mirror
     // is settled separately so a failure there cannot blank the screen: the numbers are the newer,
     // less important half, and "who can see my data and how do I stop it" has to render regardless.
-    Promise.all([
-      fetchMyCoach(),
-      fetchSharedData().catch(() => null),
-    ])
+    Promise.all([fetchMyCoach(), fetchSharedData().catch(() => null)])
       .then(([myCoach, sharedData]) => {
         setCoach(myCoach);
         setShared(sharedData);
@@ -68,14 +79,13 @@ export function MyCoachShell() {
       .finally(() => setLoaded(true));
   }, []);
 
-  useEffect(load, [load]);
-
   async function endLink() {
     const confirmed = await dialog.confirm({
       title: t("my_coach_end_confirm_title"),
       message: t("my_coach_end_confirm_body"),
       confirmLabel: t("my_coach_end_confirm_action"),
       cancelLabel: t("confirm_cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
     setBusy(true);
@@ -89,179 +99,46 @@ export function MyCoachShell() {
     }
   }
 
-  const body = !loaded ? (
-    <div className="h-52" aria-hidden />
-  ) : (
-    <div className="flex flex-col gap-6">
-      <SectionHeading>{t("my_coach_title")}</SectionHeading>
-
-      {off ? (
-        <EmptyState
-          title={t("my_coach_off_title")}
-          description={t("my_coach_off_body")}
-          puhuVariant="encouraging"
-        />
-      ) : coach === null ? (
-        <EmptyState
-          title={t("my_coach_empty_title")}
-          description={t("my_coach_empty_body")}
-          puhuVariant="encouraging"
-          action={
-            <Link href="/coach-invitation">
-              <Button>{t("invitation_title")}</Button>
-            </Link>
-          }
-        />
+  const body = (
+    <div className="flex flex-col gap-5">
+      <h1 className={TITLE}>{t("my_coach_title")}</h1>
+      {off || coach === null ? (
+        <MyCoachEmpty off={off} />
       ) : (
-        <>
-          <Card>
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <p className="font-semibold" style={{ color: "var(--color-main)" }}>
-                  {coach.coachDisplayName}
-                </p>
-                {coach.acceptedAt ? (
-                  <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-                    {t("my_coach_since", {
-                      date: new Intl.DateTimeFormat(locale, {
-                        day: "numeric",
-                        month: "long",
-                        year: "numeric",
-                      }).format(new Date(coach.acceptedAt)),
-                    })}
-                  </p>
-                ) : null}
-              </div>
-              <Button variant="ghost" busy={busy} onClick={endLink}>
-                {t("my_coach_end")}
-              </Button>
-            </div>
-          </Card>
-
-          {/* An admin stopped this coach (APP-089). The link is untouched and nothing was ended, but
-              they can no longer open this student's report — and a coach who has gone quiet for an
-              administrative reason otherwise reads as a coach who stopped caring. */}
-          {coach.coachStatus !== null && coach.coachStatus !== "ACTIVE" && (
-            <Card>
-              <p className="text-sm" style={{ color: "var(--color-body)" }}>
-                {t("my_coach_suspended")}
-              </p>
-            </Card>
-          )}
-
-          {/* The coach's seats are full: the link stands, but the student's work waits with it
-              until a seat opens. Said here for the same reason as the suspended line above. */}
-          {coach.seatWaiting && (
-            <Card>
-              <p className="text-sm" style={{ color: "var(--color-body)" }}>
-                {t("my_coach_seat_waiting")}
-              </p>
-            </Card>
-          )}
-
-          {/* Re-readable after the fact: a student who agreed to something should not have to dig
-              out the invite they used months ago to remember who they agreed with. */}
-          <CoachProfileCard profile={coach.coachProfile} />
-
-          {coach.coachNote ? (
-            <Card>
-              <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-                {t("my_coach_note_title")}
-              </h2>
-              <p className="whitespace-pre-line text-sm" style={{ color: "var(--color-main)" }}>
-                {coach.coachNote.body}
-              </p>
-              <p className="mt-2 text-xs" style={{ color: "var(--color-secondary)" }}>
-                {t("my_coach_note_since", {
-                  date: new Intl.DateTimeFormat(locale, {
-                    day: "numeric",
-                    month: "long",
-                  }).format(new Date(coach.coachNote.updatedAt)),
-                })}
-              </p>
-            </Card>
-          ) : null}
-
-          <SharedFollowupsCard />
-
-          <DataScopeCard scope={coach.dataScope} values={shared} />
-        </>
+        <div className={PANEL_GRID_CLASS}>
+          <div className="flex min-w-0 flex-col gap-5">
+            <MyCoachHero coach={coach} welcome={welcome} />
+            <MyNoteCard
+              note={coach.studentNote}
+              onSaved={(studentNote) => setCoach((prev) => (prev ? { ...prev, studentNote } : prev))}
+            />
+            <SharedFollowupsCard />
+            <MyWeeklyReportsCard coachName={coach.coachDisplayName} />
+          </div>
+          <MyCoachRail scope={coach.dataScope} values={shared} busy={busy} onEnd={endLink} />
+        </div>
       )}
     </div>
   );
 
   return (
-    <div className="mx-auto w-full max-w-3xl px-5 py-6 sm:px-8 lg:py-10">
+    <div className={PANEL_MAIN_CLASS}>
       <SkeletonGroup
         label={t("loading")}
         loading={!loaded}
-        revealed={body}
-        className="flex flex-col gap-4"
+        revealed={loaded ? body : <div className="h-52" aria-hidden />}
       >
-        <Skeleton className="h-10 w-48 rounded-[var(--radius-card)]" />
-        <Skeleton className="h-40 w-full rounded-[var(--radius-card)]" />
-        <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
+        <div className="flex flex-col gap-5">
+          <Skeleton className="h-9 w-40 rounded-[var(--radius-card)]" />
+          <div className={PANEL_GRID_CLASS}>
+            <div className="flex flex-col gap-5">
+              <Skeleton className="h-64 w-full rounded-[var(--radius-card)]" />
+              <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
+            </div>
+            <Skeleton className="h-96 w-full rounded-[var(--radius-card)]" />
+          </div>
+        </div>
       </SkeletonGroup>
-    </div>
-  );
-}
-
-/**
- * The consent contract, rendered. `dataScope` comes from the API rather than being hardcoded here,
- * so this list cannot drift from what the server actually sends a coach.
- *
- * `values` is optional because this card serves two moments. On the consent screen the link does
- * not exist yet, so there is nothing to report and the list stays a promise. On `/kocum` the link
- * is live, and each line gains the figure actually travelling — the same argument APP-073 made for
- * giving the COACH a scope mirror, pointed the other way: the side handing data over should not
- * know less about it than the side receiving it.
- */
-export function DataScopeCard({
-  scope,
-  values,
-}: {
-  scope: readonly string[];
-  values?: MentorshipSharedDataDto | null;
-}) {
-  const t = useTranslations("mentorship");
-  const locale = useLocale();
-  return (
-    <div className="flex flex-col gap-4">
-      <Card>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("scope_title")}
-        </h2>
-        <ul
-          className="flex list-disc flex-col gap-2 pl-5 text-sm"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          {scope.map((key) => {
-            const value = values ? scopeValue(key, values, t, locale) : null;
-            return (
-              <li key={key}>
-                {t(`scope_${key}`)}
-                {value !== null && (
-                  <span className="mt-0.5 block" style={{ color: "var(--color-body)" }}>
-                    {value}
-                  </span>
-                )}
-              </li>
-            );
-          })}
-        </ul>
-        {/* What the coach can WRITE, not see — so it sits beside the list, not inside it. */}
-        <p className="mt-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("scope_coach_writes")}
-        </p>
-      </Card>
-      <Card>
-        <h2 className="mb-2 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("scope_never_title")}
-        </h2>
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("scope_never_body")}
-        </p>
-      </Card>
     </div>
   );
 }

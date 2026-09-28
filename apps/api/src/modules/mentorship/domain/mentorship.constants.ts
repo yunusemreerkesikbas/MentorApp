@@ -40,6 +40,8 @@ export const MentorshipEventTopic = {
   ASSIGNMENT_PROGRESSED: "mentorship.assignment.progressed",
   ASSIGNMENTS_CHANGED: "mentorship.assignments.changed",
   NOTE_UPDATED: "mentorship.note.updated",
+  STUDENT_NOTE_UPDATED: "mentorship.student_note.updated",
+  WEEKLY_REPORT_FINALIZED: "mentorship.weekly_report.finalized",
 } as const;
 
 /**
@@ -77,6 +79,30 @@ export class MentorshipLinkAccepted {
 export class MentorshipNoteUpdated {
   constructor(
     readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly coachDisplayName: string,
+  ) {}
+}
+
+/**
+ * The student wrote (or rewrote) their standing note to the coach (QA F4), the mirror of
+ * {@link MentorshipNoteUpdated}: deduped to once a day, nothing on clearing, and nothing while the
+ * link waits for a seat, because nothing reaches a frozen coach.
+ */
+export class MentorshipStudentNoteUpdated {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly studentDisplayName: string,
+  ) {}
+}
+
+/** A coach finalized a week's evaluation; the student can read it on their side now. */
+export class MentorshipWeeklyReportFinalized {
+  constructor(
+    readonly reportId: string,
     readonly coachId: string,
     readonly studentId: string,
     readonly coachDisplayName: string,

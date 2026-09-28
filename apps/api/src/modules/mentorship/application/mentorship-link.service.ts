@@ -24,12 +24,14 @@ import { UsersService } from "../../identity/application/users.service";
 import { SponsoredSeatService } from "../../payments/application/sponsored-seat.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { PlanEventService } from "../../coaching/application/plan-event.service";
-import { toCoachNoteDto } from "../domain/coach-note";
+import { PlanService } from "../../coaching/application/plan.service";
+import { toCoachNoteDto, toStudentNoteDto } from "../domain/coach-note";
 import {
   MentorshipEventTopic,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
   MentorshipNoteUpdated,
+  MentorshipStudentNoteUpdated,
 } from "../domain/mentorship.constants";
 import { assignSeats, seatForNewcomer, type SeatedLink } from "../domain/seats";
 import {
@@ -91,6 +93,7 @@ export class MentorshipLinkService {
     private readonly seats: SponsoredSeatService,
     private readonly events: EventEmitter2,
     private readonly planEvents: PlanEventService,
+    private readonly planTasks: PlanService,
     @Inject(DRIZZLE) private readonly db: Database,
   ) {}
 
@@ -457,6 +460,34 @@ export class MentorshipLinkService {
     );
   }
 
+  /**
+   * The student's standing note to their coach (QA F4), the mirror of {@link setCoachNote}: one row
+   * overwritten in place, no thread and no reply. A link waiting for a seat keeps it for when the
+   * coach can open the student again and tells them nothing now, since nothing reaches a frozen
+   * coach. The coach reads it on the student's report; it never goes to an AI provider.
+   */
+  async setStudentNote(studentId: string, body: string | null): Promise<void> {
+    await this.assertEnabled();
+    const link = await this.requireStudentLink(studentId);
+    await this.links.setStudentNote(link.id, body);
+    if (body === null || link.seat === MentorshipSeat.NONE) return;
+    const student = await this.findPerson(studentId);
+    this.events.emit(
+      MentorshipEventTopic.STUDENT_NOTE_UPDATED,
+      new MentorshipStudentNoteUpdated(link.id, link.coachId, studentId, student?.displayName ?? ""),
+    );
+  }
+
+  /**
+   * The student's side of their live link, for what the student reads through it (a finalized
+   * week). A frozen link counts: the freeze stops the coach, not the student. 404 without one.
+   */
+  async requireStudentLink(studentId: string): Promise<MentorshipLinkRow> {
+    const link = await this.links.findActiveByStudent(studentId);
+    if (!link) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
+    return link;
+  }
+
   /** The student's transparency view: who their coach is and exactly what that coach can see. */
   async getMyCoach(studentId: string): Promise<MyCoachDto | null> {
     await this.assertEnabled();
@@ -505,6 +536,11 @@ export class MentorshipLinkService {
         coachId,
         studentId,
       );
+      // What the coach set and the student has not done yet is the student's own from here on.
+      await this.planTasks.releaseMentorshipTasksInTransaction(tx, {
+        studentId,
+        mentorshipLinkId: scope!.mentorshipLinkId,
+      });
       return this.links.endInTransaction(
         tx,
         scope!.mentorshipLinkId,
@@ -548,6 +584,7 @@ export class MentorshipLinkService {
       acceptedAt: link.acceptedAt?.toISOString() ?? null,
       dataScope: [...MENTORSHIP_DATA_SCOPE],
       coachNote: toCoachNoteDto(link),
+      studentNote: toStudentNoteDto(link),
       // The same profile the consent screen showed. A student who agreed to something should be
       // able to re-read it without digging out the invite they used months ago.
       coachProfile,

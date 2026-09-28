@@ -191,14 +191,14 @@ test("M01: consent gates a coach link and ending it revokes private reads", asyn
   expect(noCoach.status()).toBe(200);
   expect(await noCoach.text()).toBe("");
   await page.getByRole("button", { name: "Kodu getir" }).click();
-  await expect(page.getByRole("heading", { name: "Koçunun görebildikleri" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Koçunun göremedikleri" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Koçun görecekleri" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Koçun göremeyecekleri" })).toBeVisible();
   await page.screenshot({ path: `../../docs/qa/evidence/${evidenceDate}-stage4-consent-${testInfo.project.name}.png` });
 
   await page.goto(`/en/coach-invitation?code=${code}`);
   await expect(page.getByLabel("Invite code")).toHaveValue(code);
   await page.getByRole("button", { name: "Look it up" }).click();
-  await expect(page.getByRole("heading", { name: "What your coach can see" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "What your coach will see" })).toBeVisible();
   await page.getByRole("button", { name: "I agree, connect me" }).click();
   await expect(page).toHaveURL(/\/en\/my-coach$/);
   await expect(page.getByText(coach.displayName)).toBeVisible();
