@@ -456,8 +456,10 @@ test("eski mesajları sırayla başa ekler ve görünür konumu korur", async ({
     transcript?.indexOf("En eski yanıt") ?? -1,
   );
 
-  const after = await anchor.boundingBox();
-  expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(20);
+  await expect.poll(async () => {
+    const after = await anchor.boundingBox();
+    return Math.abs((after?.y ?? 0) - (before?.y ?? 0));
+  }).toBeLessThan(20);
 });
 
 test("eski sayfa hatasında görünür geçmişi korur ve yeniden dener", async ({
@@ -971,7 +973,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 
