@@ -297,8 +297,10 @@ describe("mentorship (e2e)", () => {
       latestMockNet: null,
       moodLevel7dAvg: null,
     });
-    // …and be flagged, because "never started" is exactly what a coach needs surfaced.
-    expect(row.riskFlags).toContain("INACTIVE");
+    // …and not flagged yet: silence counts from the day they joined, so a student who accepted a
+    // minute ago has not been quiet for the window (2026-09-27). "Never started" still fires once
+    // it has passed, which the cohort brief block below sets up by ageing the link.
+    expect(row.riskFlags).not.toContain("INACTIVE");
   });
 
   it("serves the single-student report behind the same gate", async () => {
@@ -1279,11 +1281,11 @@ describe("mentorship (e2e)", () => {
     beforeAll(async () => {
       // The premise, made rather than assumed. A student reaches the brief only when they need
       // attention, so: clear any "I dealt with this" an earlier block left, and age their activity
-      // past the idle window so INACTIVE actually fires. Without this the suite would be asserting
-      // whatever state the tests above happened to leave behind.
+      // and their joining past the idle window so INACTIVE actually fires (silence counts from
+      // both). Without this the suite would be asserting whatever state the tests above left.
       await svc(async (c) => {
         await c.query(
-          "update coach_students set attended_at = null, attended_flags = '{}' where coach_id = any($1)",
+          "update coach_students set attended_at = null, attended_flags = '{}', accepted_at = accepted_at - interval '30 days' where coach_id = any($1)",
           [[userId.coach, userId.coach2]],
         );
         await c.query(

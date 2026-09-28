@@ -50,7 +50,7 @@ export function BottomSheetViewport({
       <button
         type="button"
         aria-label={closeLabel}
-        className={`absolute inset-0 bg-black/35 backdrop-blur-[6px] dark:bg-black/55 dark:backdrop-blur-[8px] ${
+        className={`absolute inset-0 bg-[var(--color-scrim)] ${
           sheet.exiting
             ? "animate-dialog-backdrop-exit motion-reduce:opacity-0"
             : "animate-dialog-backdrop-enter motion-reduce:animate-none"

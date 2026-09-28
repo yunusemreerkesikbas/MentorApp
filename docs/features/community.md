@@ -69,9 +69,11 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 - **2026-09-27 · Journey celebration restores keyboard focus after closing.** The scene retains
   the opener across React's repeated development effect setup and cancels a pending focus restore
-  before reopening. Usage: close a journey celebration with the action button or Escape; focus
-  returns to the previous control when it still exists. Related:
+  before reopening. Replay callers pass their button ref so asynchronous scene loading can still
+  find the opener after a rerender. Usage: close a journey celebration with the action button or
+  Escape; focus returns to the previous control when it still exists. Related:
   `apps/web/src/components/journey-levels/spotlight/journey-spotlight-scene.tsx`,
+  `apps/web/src/components/journey-levels/journey-level-profile.tsx`,
   `apps/web/e2e/journey-level-celebration.spec.ts`.
 
 - **2026-09-24 · Leaderboard flag QA coverage.** The real-Postgres community E2E fixture now

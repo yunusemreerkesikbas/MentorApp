@@ -138,6 +138,8 @@ function setup(
         row.endedBy = endedBy;
         row.coachNote = null;
         row.coachNoteAt = null;
+        row.studentNote = null;
+        row.studentNoteAt = null;
         row.brief = null;
         row.briefAt = null;
         row.briefFingerprint = null;
@@ -151,6 +153,13 @@ function setup(
       if (!row || row.status !== "ACTIVE") return undefined;
       row.coachNote = body;
       row.coachNoteAt = body === null ? null : new Date("2026-09-04T09:00:00Z");
+      return row;
+    }),
+    setStudentNote: vi.fn(async (linkId: string, body: string | null) => {
+      const row = rows.find((r) => r.id === linkId);
+      if (!row || row.status !== "ACTIVE") return undefined;
+      row.studentNote = body;
+      row.studentNoteAt = body === null ? null : new Date("2026-09-05T18:00:00Z");
       return row;
     }),
     purgeForUser: vi.fn(),
@@ -192,6 +201,7 @@ function setup(
     removeFutureAttendee: vi.fn(async () => 2),
     removeFutureAttendeeInTransaction: vi.fn(async () => 2),
   };
+  const planTasks = { releaseMentorshipTasksInTransaction: vi.fn(async () => 2) };
   const db = {
     transaction: vi.fn(async (callback: (tx: unknown) => Promise<unknown>) =>
       callback(TX),
@@ -229,6 +239,7 @@ function setup(
     seats as never,
     events as never,
     planEvents as never,
+    planTasks as never,
     db as never,
   );
   return {
@@ -242,6 +253,7 @@ function setup(
     seats,
     events,
     planEvents,
+    planTasks,
     db,
     emitted,
     rows,
@@ -671,6 +683,18 @@ describe("MentorshipLinkService", () => {
       );
     });
 
+    it("hands the student the coach's pending tasks before the link ends, in the same transaction", async () => {
+      const { service, links, planTasks } = setup({ rows: [link()] });
+      await service.endByStudent(STUDENT);
+      expect(planTasks.releaseMentorshipTasksInTransaction).toHaveBeenCalledWith(TX, {
+        studentId: STUDENT,
+        mentorshipLinkId: link().id,
+      });
+      expect(planTasks.releaseMentorshipTasksInTransaction.mock.invocationCallOrder[0]).toBeLessThan(
+        links.endInTransaction.mock.invocationCallOrder[0]!,
+      );
+    });
+
     it("is idempotent — a second end emits nothing", async () => {
       const { service, emitted } = setup({ rows: [link()] });
       await service.endByStudent(STUDENT);
@@ -737,6 +761,68 @@ describe("MentorshipLinkService", () => {
     });
   });
 
+  /** QA F4 (2026-09-27): the mirror of the coach's note, written by the student for this coach. */
+  describe("the student's standing note", () => {
+    it("writes the note on the student's own link and tells the coach", async () => {
+      const { service, emitted, links } = setup({ rows: [link()] });
+      await service.setStudentNote(STUDENT, "Cuma akşamları çalışamıyorum.");
+      expect(links.setStudentNote).toHaveBeenCalledWith(
+        "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa",
+        "Cuma akşamları çalışamıyorum.",
+      );
+      expect(emitted).toEqual([
+        {
+          topic: MentorshipEventTopic.STUDENT_NOTE_UPDATED,
+          payload: expect.objectContaining({
+            coachId: COACH,
+            studentId: STUDENT,
+            studentDisplayName: "Elif",
+          }),
+        },
+      ]);
+    });
+
+    it("reads the note back to the student on their transparency view", async () => {
+      const { service } = setup({ rows: [link()] });
+      await service.setStudentNote(STUDENT, "Cuma akşamları çalışamıyorum.");
+      expect((await service.getMyCoach(STUDENT))?.studentNote).toEqual({
+        body: "Cuma akşamları çalışamıyorum.",
+        updatedAt: "2026-09-05T18:00:00.000Z",
+      });
+    });
+
+    it("clears the note without telling the coach", async () => {
+      const { service, emitted } = setup({ rows: [link()] });
+      await service.setStudentNote(STUDENT, "Bir şey");
+      emitted.length = 0;
+      await service.setStudentNote(STUDENT, null);
+      expect(emitted).toEqual([]);
+      expect((await service.getMyCoach(STUDENT))?.studentNote).toBeNull();
+    });
+
+    it("keeps the note of a link waiting for a seat, and tells the frozen coach nothing", async () => {
+      const { service, emitted, links } = setup({ rows: [link({ seat: "NONE" })] });
+      await service.setStudentNote(STUDENT, "Merhaba");
+      expect(links.setStudentNote).toHaveBeenCalledOnce();
+      expect(emitted).toEqual([]);
+    });
+
+    it("refuses a student with no coach, with 404", async () => {
+      const { service } = setup({ rows: [] });
+      expect(await codeOf(() => service.setStudentNote(STUDENT, "Merhaba"))).toBe(
+        ErrorCode.MENTORSHIP_LINK_NOT_FOUND,
+      );
+    });
+
+    it("does not survive the link", async () => {
+      const { service } = setup({ rows: [link()] });
+      await service.setStudentNote(STUDENT, "Eski not");
+      await service.endByStudent(STUDENT);
+      await service.acceptInvitation(STUDENT, CODE);
+      expect((await service.getMyCoach(STUDENT))?.studentNote).toBeNull();
+    });
+  });
+
   describe("the kill switch", () => {
     it("closes every entry point when the flag is off", async () => {
       config["mentorship.enabled"] = false;
@@ -746,6 +832,7 @@ describe("MentorshipLinkService", () => {
         () => service.previewInvitation(CODE),
         () => service.getMyCoach(STUDENT),
         () => service.setCoachNote(COACH, STUDENT, "Merhaba"),
+        () => service.setStudentNote(STUDENT, "Merhaba"),
         () => service.endByStudent(STUDENT),
         () => service.endByCoach(COACH, STUDENT),
       ]) {

@@ -297,6 +297,18 @@ export class PlanService {
   }
 
   /**
+   * W8 link-end seam: the ending link's PENDING tasks become the student's own (no coach mark, no
+   * coach note, editable); DONE ones stay the coach's record. Runs in the caller's transaction so
+   * the tasks change hands exactly when the link ends.
+   */
+  releaseMentorshipTasksInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+  ): Promise<number> {
+    return this.tasks.releasePendingMentorshipTasks(tx, scope);
+  }
+
+  /**
    * W8 erasure seam: forget that these links ever assigned anything.
    *
    * Called when a coach's account is erased. Without it the student keeps tasks badged

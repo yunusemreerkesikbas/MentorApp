@@ -119,10 +119,12 @@ test("yazısı olmayan sınav ve son sayfanın ötesi sakin mesaj verir", async 
 }) => {
   await mockKnowledgeApi(page, { authenticated: false });
   await page.goto("/blog?family=YKS");
-  await expect(page.getByText("Bu sınav için henüz doğrulanmış yazı yok.")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Bu sınav için henüz doğrulanmış yazı yok." }),
+  ).toBeVisible();
 
   await page.goto("/blog?page=9");
-  await expect(page.getByText("Bu sayfada yazı yok.")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Bu sayfada yazı yok." })).toBeVisible();
   await expect(page.getByRole("link", { name: "İlk sayfaya dön" })).toHaveAttribute(
     "href",
     "/blog",

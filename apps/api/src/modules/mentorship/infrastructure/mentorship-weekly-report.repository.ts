@@ -1,5 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, count, desc, eq, sql } from "drizzle-orm";
+import { and, count, desc, eq, notExists, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import type {
   MentorshipWeeklyBriefDto,
   MentorshipWeeklySnapshotDto,
@@ -174,6 +175,40 @@ export class MentorshipWeeklyReportRepository {
           .select({ value: count() })
           .from(mentorshipWeeklyReports)
           .where(where),
+      ]);
+      return { rows, total: totals[0]?.value ?? 0 };
+    });
+  }
+
+  /**
+   * The student's list: each week once, at its latest version. A correction supersedes the report it
+   * replaces, so a row some other finalized row replaces is left out.
+   */
+  listLatestFinalized(linkId: string, periodId: string, page: number, pageSize: number) {
+    return withServiceContext(this.db, async (tx) => {
+      const newer = alias(mentorshipWeeklyReports, "newer");
+      const where = and(
+        eq(mentorshipWeeklyReports.linkId, linkId),
+        eq(mentorshipWeeklyReports.periodId, periodId),
+        eq(mentorshipWeeklyReports.status, "FINALIZED"),
+        notExists(
+          tx
+            .select({ id: newer.id })
+            .from(newer)
+            .where(
+              and(eq(newer.replacesId, mentorshipWeeklyReports.id), eq(newer.status, "FINALIZED")),
+            ),
+        ),
+      );
+      const [rows, totals] = await Promise.all([
+        tx
+          .select()
+          .from(mentorshipWeeklyReports)
+          .where(where)
+          .orderBy(desc(mentorshipWeeklyReports.weekStart))
+          .limit(pageSize)
+          .offset((page - 1) * pageSize),
+        tx.select({ value: count() }).from(mentorshipWeeklyReports).where(where),
       ]);
       return { rows, total: totals[0]?.value ?? 0 };
     });

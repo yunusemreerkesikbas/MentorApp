@@ -60,6 +60,7 @@ export default function SignupPage() {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const kvkkLabelId = useId();
+  const termsLabelId = useId();
   /** `mentorship.applications.open`. Null while unknown: neither the link nor the closed notice shows. */
   const [coachOpen, setCoachOpen] = useState<boolean | null>(null);
 
@@ -224,8 +225,16 @@ export default function SignupPage() {
         className="flex min-h-11 items-start gap-3 text-sm"
         style={{ color: "var(--color-body)" }}
       >
-        <CheckBox checked={termsChecked} onChange={setTermsChecked} name="terms" value="on" required className="mt-1" />
-        <span>
+        <CheckBox
+          checked={termsChecked}
+          onChange={setTermsChecked}
+          name="terms"
+          value="on"
+          required
+          aria-labelledby={termsLabelId}
+          className="mt-1"
+        />
+        <span id={termsLabelId}>
           {translate.rich("terms", {
             link: (chunks) => <LegalLink slug="kullanim-kosullari">{chunks}</LegalLink>,
           })}

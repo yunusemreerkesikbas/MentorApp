@@ -15,8 +15,8 @@ const DONE = "bg-[color-mix(in_srgb,var(--color-success)_14%,var(--color-surface
 const ASKED = "bg-[var(--play-selected)] text-[var(--play-selected-ink)]";
 
 /**
- * Where a follow-up stands, on the coach's side, as small tags rather than outlined pills (the
- * panel's language). The student's screen keeps its own `FollowupStatus`. `drawCheck`: the coach
+ * Where a follow-up stands, as small tags rather than outlined pills (the panel's language), on
+ * the coach's side and on the student's Koçum alike. `drawCheck`: the coach
  * completed it just now, so the ✓ draws. (A changed record is a new row, keyed by its version, so the
  * word is simply the new one.)
  */
@@ -39,14 +39,21 @@ export function FollowupStatusTag({
 }
 
 /**
- * Where the student stands on the shared decision, said from the coach's side ("Kabul etti");
- * drawn only when there is one. The student's own screen keeps its "Kabul edildi" keys.
+ * Where the student stands on the shared decision, said from the coach's side ("Kabul etti"), or
+ * with `you` to the student themselves on Koçum ("Kabul ettin", "Yanıtını bekliyor").
  */
-export function FollowupResponseTag({ response }: { response: MentorshipFollowupResponse }) {
+export function FollowupResponseTag({
+  response,
+  you = false,
+}: {
+  response: MentorshipFollowupResponse;
+  you?: boolean;
+}) {
   const t = useTranslations("mentorship");
   const Icon = response === "ACCEPTED" ? Check : response === "CHANGE_REQUESTED" ? MessageSquare : Clock;
-  const label =
-    response === "ACCEPTED"
+  const label = you
+    ? t(`followup_you_${response}`)
+    : response === "ACCEPTED"
       ? t("followup_coach_accepted")
       : response === "CHANGE_REQUESTED"
         ? t("followup_changes_requested")

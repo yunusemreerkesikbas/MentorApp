@@ -242,13 +242,18 @@ test("student only sees shared decisions and can change their response", async (
   await page.goto("/kocum");
   await expect(page.getByText(initial.sharedDecision!)).toBeVisible();
   await expect(page.getByText(/PRIVATE/)).toHaveCount(0);
+  // A decision waiting on the student is the page's one filled ledge; nothing else asks to be pressed.
+  const ledges = page.locator('[class*="shadow-[0_4px_0_var(--play-cta-edge)]"]:visible');
+  await expect(ledges).toHaveCount(1);
+  await expect(ledges).toHaveText("Kabul et");
   await page.getByRole("button", { name: "Kabul et", exact: true }).click();
-  await expect(page.getByText("Kabul edildi", { exact: true })).toBeVisible();
+  await expect(page.getByText("Kabul ettin", { exact: true })).toBeVisible();
+  await expect(ledges).toHaveCount(0);
   await page
     .getByRole("button", { name: "Değişiklik iste", exact: true })
     .click();
   await expect(
-    page.getByText("Değişiklik istendi", { exact: true }),
+    page.getByText("Değişiklik istedin", { exact: true }),
   ).toBeVisible();
   expect(api.writes.map((item) => item.response)).toEqual([
     "ACCEPTED",

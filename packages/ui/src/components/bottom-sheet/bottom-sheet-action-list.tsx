@@ -29,49 +29,31 @@ export function BottomSheetActionList({
         const Icon = action.icon ? ICONS[action.icon] : null;
         const destructive = action.destructive === true;
         const showChevron = action.showChevron ?? (destructive ? false : true);
-        const labelColor = destructive
-          ? "var(--color-danger)"
-          : "var(--color-body)";
-        const iconColor = destructive
-          ? "var(--color-danger)"
-          : "var(--color-secondary)";
+        // Bare line icon, no well (overlay kit): colour only where it means something.
+        const tone = destructive ? "var(--color-danger)" : "var(--color-main)";
 
         return (
           <li key={action.id}>
             <button
               type="button"
               onClick={() => onSelect(action.id)}
-              className={`flex h-14 w-full items-center justify-between border-b px-0 text-left transition-transform active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none ${destructive ? "hover:bg-[var(--color-error-container)]/30" : "hover:bg-[var(--color-surface-variant)]/30"}`}
-              style={{
-                borderColor:
-                  "color-mix(in srgb, var(--color-main) 6%, transparent)",
-              }}
+              className="flex min-h-[60px] w-full cursor-pointer items-center gap-3 border-t border-[var(--play-line)] text-left outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)] active:opacity-70 motion-reduce:transition-none"
             >
-              <span className="flex min-w-0 flex-1 items-center gap-4">
-                {Icon ? (
-                  <Icon
-                    size={20}
-                    strokeWidth={2}
-                    color={iconColor}
-                    aria-hidden
-                  />
-                ) : (
-                  <span className="w-5 shrink-0" aria-hidden />
-                )}
-                <span
-                  className="truncate text-base"
-                  style={{
-                    color: labelColor,
-                    fontFamily: "var(--font-body)",
-                  }}
-                >
-                  {action.label}
-                </span>
+              {Icon ? (
+                <Icon size={22} strokeWidth={1.75} color={tone} aria-hidden />
+              ) : (
+                <span className="w-[22px] shrink-0" aria-hidden />
+              )}
+              <span
+                className="min-w-0 flex-1 truncate text-body-sm font-extrabold"
+                style={{ color: tone }}
+              >
+                {action.label}
               </span>
               {showChevron ? (
                 <ChevronRight
                   size={20}
-                  strokeWidth={2}
+                  strokeWidth={1.75}
                   color="var(--color-secondary)"
                   aria-hidden
                 />

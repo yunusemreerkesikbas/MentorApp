@@ -241,6 +241,7 @@ export function AccountLinksCard({
       message: t("delete_account.description"),
       confirmLabel: t("delete_account.confirm_cta"),
       cancelLabel: t("delete_account.cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
 

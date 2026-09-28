@@ -7,8 +7,10 @@ import {
   MentorshipAssignmentsCreated,
   MentorshipEventTopic,
   MentorshipNoteUpdated,
+  MentorshipStudentNoteUpdated,
   MentorshipLinkAccepted,
   MentorshipLinkEnded,
+  MentorshipWeeklyReportFinalized,
 } from "../../../mentorship/domain/mentorship.constants";
 import { todayIso } from "../../../coaching/domain/date.util";
 import { MentorshipFollowupService } from "../../../mentorship/application/mentorship-followup.service";
@@ -169,6 +171,47 @@ export class MentorshipEventsListener {
         {
           args: { name: event.coachDisplayName },
           dedupeKey: `mentorship-note:${event.studentId}:${todayIso()}`,
+        },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * The student left their coach a standing note (QA F4). The mirror of the coach's: one a day, in
+   * the inbox only, and it opens the student's report, where the note is.
+   */
+  @OnEvent(MentorshipEventTopic.STUDENT_NOTE_UPDATED)
+  async onStudentNoteUpdated(event: MentorshipStudentNoteUpdated): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.coachId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_STUDENT_NOTE,
+        `/students/${event.studentId}`,
+        {
+          args: { name: event.studentDisplayName },
+          dedupeKey: `mentorship-student-note:${event.studentId}:${todayIso()}`,
+        },
+      )
+      .catch(() => {});
+  }
+
+  /**
+   * The coach finalized a week and the student can read it now. In the inbox only: it does not
+   * change the student's plan, which is what push is kept for. One per report, so a correction is
+   * news again.
+   */
+  @OnEvent(MentorshipEventTopic.WEEKLY_REPORT_FINALIZED)
+  async onWeeklyReportFinalized(event: MentorshipWeeklyReportFinalized): Promise<void> {
+    await this.notifications
+      .createFromTemplate(
+        event.studentId,
+        "MENTORSHIP",
+        NotificationCopyKey.MENTORSHIP_WEEKLY_REPORT_SHARED,
+        `/my-coach/weekly-reports/${event.reportId}`,
+        {
+          args: { name: event.coachDisplayName },
+          dedupeKey: `mentorship-weekly-report:${event.reportId}`,
         },
       )
       .catch(() => {});

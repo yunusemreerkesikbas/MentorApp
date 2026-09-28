@@ -182,12 +182,12 @@ export function DialogProvider({ children }: DialogProviderProps) {
             {
               id: "confirm",
               label: options.confirmLabel,
-              variant: "primary",
+              variant: options.destructive ? "danger" : "primary",
             },
             {
               id: "cancel",
               label: options.cancelLabel,
-              variant: "secondary",
+              variant: "link",
             },
           ],
         });
@@ -237,7 +237,7 @@ export function DialogProvider({ children }: DialogProviderProps) {
           actions.push({
             id: "link",
             label: options.linkLabel,
-            variant: "secondary",
+            variant: "link",
           });
         }
         openDialog({
@@ -275,9 +275,12 @@ export function DialogProvider({ children }: DialogProviderProps) {
     if (!dialog || dialog.exiting) return;
     const frame = requestAnimationFrame(() => {
       const panel = document.querySelector("[data-mentor-dialog-panel]");
-      const focusable = panel?.querySelector<HTMLElement>(
-        'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-      );
+      // A destructive confirm marks its cancel, so Enter never lands on the irreversible action.
+      const focusable =
+        panel?.querySelector<HTMLElement>("[data-dialog-autofocus]") ??
+        panel?.querySelector<HTMLElement>(
+          'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+        );
       focusable?.focus();
     });
     return () => cancelAnimationFrame(frame);

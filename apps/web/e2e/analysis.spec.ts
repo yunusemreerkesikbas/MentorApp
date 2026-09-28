@@ -153,7 +153,9 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   await hero.getByRole("button", { name: "İlk denemeni gir" }).click();
   await expect(page).toHaveURL(/tab=entry/);
 
-  const firstPage = await page.context().newPage();
+  const context = page.context();
+  await page.close();
+  const firstPage = await context.newPage();
   const firstApi = await mockAnalysisApi(firstPage, {
     analysis: firstAnalysis,
   });
@@ -178,7 +180,8 @@ test("boş ve ilk deneme durumlarını sakin biçimde gösterir", async ({
   ).toBeVisible();
   expect(firstApi.unexpected).toEqual([]);
 
-  const noFocusPage = await page.context().newPage();
+  await firstPage.close();
+  const noFocusPage = await context.newPage();
   const noFocusApi = await mockAnalysisApi(noFocusPage, {
     analysis: { ...firstAnalysis, nextFocus: null },
   });

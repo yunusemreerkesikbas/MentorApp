@@ -13,7 +13,7 @@ export interface DialogViewportProps {
 }
 
 /**
- * Portaled dialog overlay (Stitch Prompt 02): backdrop z-60, panel z-70.
+ * Portaled dialog overlay: solid scrim (no blur) z-60, 440px panel z-70.
  */
 export function DialogViewport({
   dialog,
@@ -39,14 +39,14 @@ export function DialogViewport({
   if (!mounted || !dialog) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[60] flex items-center justify-center p-5">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
       <button
         type="button"
         aria-label={closeLabel}
-        className={`absolute inset-0 bg-[#111111]/40 backdrop-blur-sm ${dialog.exiting ? "opacity-0" : "animate-dialog-backdrop-enter motion-reduce:animate-none"} motion-reduce:transition-none transition-opacity duration-200`}
+        className={`absolute inset-0 bg-[var(--color-scrim)] ${dialog.exiting ? "opacity-0" : "animate-dialog-backdrop-enter motion-reduce:animate-none"} transition-opacity duration-150 motion-reduce:transition-none`}
         onClick={onBackdropClick}
       />
-      <div className="relative z-[70] flex w-full max-w-[360px] justify-center lg:max-w-[480px]">
+      <div className="relative z-[70] flex w-full max-w-[440px] justify-center">
         <DialogPanel dialog={dialog} onAction={onAction} />
       </div>
     </div>,

@@ -116,7 +116,7 @@ export function PlanEventDetails({
   );
 }
 
-function DetailRow({
+export function DetailRow({
   label,
   value,
   multiline,

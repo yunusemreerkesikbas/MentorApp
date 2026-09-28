@@ -23,7 +23,7 @@ import {
   evaluateRiskFlags,
   type RiskThresholds,
 } from "../domain/risk-flags";
-import { toCoachNoteDto } from "../domain/coach-note";
+import { toCoachNoteDto, toStudentNoteDto } from "../domain/coach-note";
 import { MentorshipDroppedAssignmentRepository } from "../infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipLinkService } from "./mentorship-link.service";
@@ -110,7 +110,7 @@ export class MentorshipRosterService {
       const person = people.get(link.studentId);
       const snapshot = snapshots.get(link.studentId);
       const flags = snapshot
-        ? evaluateRiskFlags(snapshot, thresholds, today)
+        ? evaluateRiskFlags(snapshot, thresholds, today, joinedOn(link))
         : [];
       return {
         linkId: link.id,
@@ -185,7 +185,7 @@ export class MentorshipRosterService {
     // No snapshot means no evidence to triage. An empty mark is still worth writing: it records
     // that the coach looked, and `needsAttention` reads it as covering nothing if flags appear.
     const flags = snapshot
-      ? evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now))
+      ? evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now), joinedOn(link))
       : [];
     await this.links.setAttention(link.id, flags);
   }
@@ -223,7 +223,7 @@ export class MentorshipRosterService {
       this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
     ]);
     const snapshot = snapshots.get(studentId)!;
-    const flags = evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now));
+    const flags = evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now), joinedOn(link));
 
     return {
       studentId,
@@ -235,6 +235,8 @@ export class MentorshipRosterService {
       // Read back to the coach who wrote it. Scoped to the live link, so a successor coach starts
       // on a blank page rather than inheriting somebody else's words.
       coachNote: toCoachNoteDto(link),
+      // The one free text of the student's on this report: they wrote it for this coach (QA F4).
+      studentNote: toStudentNoteDto(link),
       riskFlags: flags,
       attendedAt: link.attendedAt?.toISOString() ?? null,
       needsAttention: needsAttention(
@@ -265,4 +267,9 @@ export class MentorshipRosterService {
       ]);
     return { inactiveDays, planCompletionFloor, lowMoodCeiling };
   }
+}
+
+/** The Istanbul day a link was accepted: where a new student's silence starts counting. */
+function joinedOn(link: { acceptedAt: Date | null }): string | null {
+  return link.acceptedAt ? todayInIstanbul(link.acceptedAt) : null;
 }

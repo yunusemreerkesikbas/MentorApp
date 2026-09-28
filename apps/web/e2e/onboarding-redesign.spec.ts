@@ -73,6 +73,13 @@ test("welcome skip opens the final account choice and desktop auth split", async
   await expect(page.getByRole("heading", { name: "Hesap oluştur" })).toBeVisible();
 });
 
+test("signup's consent checkboxes are named by their sentences", async ({ page }) => {
+  await page.goto("/kayit");
+  // A screen reader must hear what is being agreed to, the terms and the age line included.
+  await expect(page.getByRole("checkbox", { name: /KVKK aydınlatma/ })).toBeVisible();
+  await expect(page.getByRole("checkbox", { name: /Kullanım Koşulları.*13 yaşında/ })).toBeVisible();
+});
+
 test("welcome remains immediately usable with reduced motion", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/");
@@ -183,4 +190,75 @@ test("a student answers one question per screen and lands on their summary", asy
   await expect(summary).toContainText("Alan: Eğitim");
   // No push in this browser, so no promise of a reminder.
   await expect(summary).not.toContainText("Hatırlatma açık");
+});
+
+test("a coach's invite link survives signup and onboarding", async ({ page }) => {
+  const code = "MENTOR-KOC-ABCDEF123456";
+  let session: AuthUser | null = null;
+
+  await page.route("http://localhost:3001/v1/**", async (route) => {
+    const request = route.request();
+    const path = new URL(request.url()).pathname;
+    const headers = {
+      "access-control-allow-origin": request.headers().origin ?? "http://localhost:3100",
+      "access-control-allow-credentials": "true",
+      "access-control-allow-headers": "content-type, authorization, accept-language",
+      "access-control-allow-methods": "GET, POST, PATCH, DELETE, OPTIONS",
+    };
+    const json = (body: unknown) =>
+      route.fulfill({ status: 200, contentType: "application/json", headers, body: JSON.stringify(body) });
+
+    if (request.method() === "OPTIONS") return route.fulfill({ status: 204, headers });
+    if (request.method() === "POST" && path === "/v1/auth/refresh") {
+      if (!session) {
+        return route.fulfill({
+          status: 401,
+          contentType: "application/json",
+          headers,
+          body: JSON.stringify({ code: "AUTH_INVALID_REFRESH", message: "Oturum bulunamadı." }),
+        });
+      }
+      return json({ accessToken: "test-token", expiresIn: 3600, user: session });
+    }
+    if (request.method() === "POST" && path === "/v1/auth/signup") {
+      session = { ...onboardingUser, displayName: "Deniz Kaya" };
+      return json({ accessToken: "test-token", expiresIn: 3600, user: session });
+    }
+    if (request.method() === "PATCH" && path === "/v1/users/me" && session) {
+      session = { ...session, ...(request.postDataJSON() as Partial<AuthUser>) };
+      return json(session);
+    }
+    if (request.method() === "GET" && path === "/v1/coaching/vision") return json(null);
+    if (request.method() === "POST" && path === "/v1/coaching/vision") return json(request.postDataJSON());
+    return route.fulfill({ status: 204, headers });
+  });
+
+  // The coach sent a link to someone with no account yet.
+  await page.goto(`/kocluk-daveti?code=${code}`);
+  await expect(page).toHaveURL(/\/giris\?next=/);
+  await page.getByRole("link", { name: "Hesap oluştur" }).click();
+  await page.getByRole("textbox", { name: "Ad Soyad" }).fill("Deniz Kaya");
+  await page.getByRole("textbox", { name: "E-posta" }).fill("deniz@test.local");
+  await page.locator('input[type="password"]').fill("MentorQa!2026");
+  await page.getByRole("checkbox", { name: /KVKK aydınlatma/ }).click();
+  await page.getByRole("checkbox", { name: /Kullanım Koşulları/ }).click();
+  await page.getByRole("button", { name: "Kayıt ol" }).click();
+
+  await expect(page).toHaveURL(/\/baslangic/);
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "YKS" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "Ailem için" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "Eğitim" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "Düzenli" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByLabel("Kullanıcı adı").fill("deniz_davet");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("button", { name: "Panele git" }).click();
+
+  // Back on the invite with the code in place; accepting it is still the student's own step.
+  await expect(page).toHaveURL(new RegExp(`/kocluk-daveti\\?code=${code}$`));
+  await expect(page.getByLabel("Davet kodu")).toHaveValue(code);
 });

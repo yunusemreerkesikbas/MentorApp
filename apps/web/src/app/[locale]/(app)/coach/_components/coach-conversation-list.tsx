@@ -85,6 +85,7 @@ export function CoachConversationList({
       message: t("delete_confirm_message", { title }),
       confirmLabel: t("delete_confirm_yes"),
       cancelLabel: t("delete_confirm_no"),
+      destructive: true,
     });
     if (!ok) return;
     setPendingId(id);

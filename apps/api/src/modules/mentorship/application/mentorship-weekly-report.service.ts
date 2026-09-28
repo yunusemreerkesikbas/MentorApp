@@ -1,5 +1,6 @@
 import { createHash } from "node:crypto";
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   MentorshipWeeklyReportDto,
   MentorshipWeeklyReportListItemDto,
@@ -15,6 +16,10 @@ import { MentorshipWeeklyEvidenceService } from "../../coaching/application/ment
 import { UsersService } from "../../identity/application/users.service";
 import { MENTORSHIP_WEEKLY_BRIEF_PROMPT_VERSION } from "../../ai/domain/mentorship-weekly-brief-prompt";
 import type { PromptLocale } from "../../ai/domain/prompt-locale";
+import {
+  MentorshipEventTopic,
+  MentorshipWeeklyReportFinalized,
+} from "../domain/mentorship.constants";
 import {
   MentorshipWeeklyReportRepository,
   MentorshipWeeklyReportVersionConflictError,
@@ -34,6 +39,7 @@ export class MentorshipWeeklyReportService {
     private readonly users: UsersService,
     private readonly reports: MentorshipWeeklyReportRepository,
     private readonly config: ConfigRegistryService,
+    private readonly events: EventEmitter2,
   ) {}
 
   private async assertEnabled(): Promise<void> {
@@ -197,6 +203,12 @@ export class MentorshipWeeklyReportService {
     }
     // The repository replays under its lock too (a concurrent retry won the race); same rule there.
     this.assertSameRequest(row, input, weekStart);
+    // Told once per finalized report: the early replay above returns before here.
+    const coach = (await this.users.listDisplayIdentities([coachId])).get(coachId);
+    this.events.emit(
+      MentorshipEventTopic.WEEKLY_REPORT_FINALIZED,
+      new MentorshipWeeklyReportFinalized(row.id, coachId, studentId, coach?.displayName ?? ""),
+    );
     return this.toDto(
       row,
       studentId,
@@ -247,12 +259,64 @@ export class MentorshipWeeklyReportService {
       reportId,
     );
     const coach = await this.users.listDisplayIdentities([coachId]);
+    return this.toShareDto(row, studentDisplayName, coach.get(coachId)?.displayName ?? "", subjectNames);
+  }
+
+  /**
+   * The student reads what the coach would print for them: the same projection, through the
+   * student's own live link and its current period, so an ended or earlier relationship shows none.
+   */
+  async listForStudent(
+    studentId: string,
+    page: number,
+    pageSize: number,
+  ): Promise<Paginated<MentorshipWeeklyReportListItemDto>> {
+    await this.assertEnabled();
+    const link = await this.links.requireStudentLink(studentId);
+    const result = await this.reports.listLatestFinalized(link.id, link.periodId, page, pageSize);
+    return {
+      items: result.rows.map((row) => this.toListItem(row)),
+      total: result.total,
+      page,
+      pageSize,
+    };
+  }
+
+  async shareForStudent(
+    studentId: string,
+    reportId: string,
+  ): Promise<MentorshipWeeklyReportShareDto> {
+    await this.assertEnabled();
+    const link = await this.links.requireStudentLink(studentId);
+    const [row, identities, profile] = await Promise.all([
+      this.reports.findFinalized(reportId, link.id, link.periodId),
+      this.users.listDisplayIdentities([studentId, link.coachId]),
+      this.users.getDiscoveryProfile(studentId),
+    ]);
+    if (!row) {
+      throw new DomainError(ErrorCode.MENTORSHIP_WEEKLY_REPORT_NOT_FOUND, HttpStatus.NOT_FOUND);
+    }
+    return this.toShareDto(
+      row,
+      identities.get(studentId)?.displayName ?? "",
+      identities.get(link.coachId)?.displayName ?? "",
+      await this.evidence.subjectNames(profile.examType, row.snapshot),
+    );
+  }
+
+  /** Evidence, the coach-only brief and its context never leave the coach's side. */
+  private toShareDto(
+    row: MentorshipWeeklyReportRow,
+    studentDisplayName: string,
+    coachDisplayName: string,
+    subjectNames: Record<string, string>,
+  ): MentorshipWeeklyReportShareDto {
     const { evidence: _evidence, ...safeSnapshot } = row.snapshot;
     return {
       id: row.id,
       locale: row.locale as "tr" | "en",
       studentDisplayName,
-      coachDisplayName: coach.get(coachId)?.displayName ?? "",
+      coachDisplayName,
       period: row.snapshot.period,
       version: row.version,
       finalizedAt: row.finalizedAt!.toISOString(),

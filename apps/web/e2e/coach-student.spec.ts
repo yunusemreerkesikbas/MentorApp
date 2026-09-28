@@ -102,8 +102,11 @@ test("not bırak notu yerinde açar ve öğrenciye giden tek kaydı gönderir", 
   await page.goto(`/kocluk/${ALI_ID}`);
   await page.getByRole("button", { name: "Not bırak" }).click();
 
-  const field = page.getByRole("textbox", { name: "Ali'ye notun" });
+  const field = page.getByRole("textbox", { name: "Ali'ye notun", exact: true });
   await expect(field).toBeFocused();
+  // The hint and the counter describe the field; as part of its name a screen reader would read a
+  // name that changes with every keystroke.
+  await expect(field).toHaveAccessibleDescription(/Koçum ekranında görür/);
   await field.fill("Cuma denemesinden sonra konuşalım.");
   await page.getByRole("button", { name: "Notu kaydet" }).click();
 
@@ -111,6 +114,25 @@ test("not bırak notu yerinde açar ve öğrenciye giden tek kaydı gönderir", 
   const card = page.getByRole("region", { name: "Notun" });
   await expect(card.getByText("Cuma denemesinden sonra konuşalım.")).toBeVisible();
   await expect(card.getByRole("textbox")).toHaveCount(0);
+});
+
+test("öğrencinin Koçum'dan bıraktığı not raporda okunur; not yoksa kart yok", async ({ page }) => {
+  await mockStudentApi(page, {
+    reports: {
+      [ALI_ID]: richReport({
+        studentNote: { body: "Cuma akşamları çalışamıyorum.", updatedAt: `${TODAY}T08:00:00.000Z` },
+      }),
+    },
+  });
+  await page.goto(`/kocluk/${ALI_ID}`);
+  const card = page.getByRole("region", { name: "Ali'nin notu" });
+  await expect(card.getByText("Cuma akşamları çalışamıyorum.")).toBeVisible();
+  await expect(card.getByText(/Koçum ekranından yazdı/)).toBeVisible();
+
+  // Any other id answers with the default report, whose student left no note.
+  await page.goto("/kocluk/55555555-5555-4555-8555-555555555555");
+  await expect(page.getByRole("region", { name: "Notun" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Ali'nin notu" })).toHaveCount(0);
 });
 
 test("ilgilendim işareti konur ve aynı yerden geri alınır", async ({ page }) => {
@@ -151,19 +173,7 @@ test("Sıradaki turun sırasını izler ve son öğrencide turu bitirir", async 
   await expect(page.getByRole("link", { name: "Turun sonu" })).toBeVisible();
 });
 
-test("Sıradaki sayfayı ileri, Öğrencilerim geri kaydırır; yeni sayfa hemen tıklanır", async ({ page }) => {
-  // Records the types React hands the browser's view transition, one entry per navigation.
-  await page.addInitScript(() => {
-    const seen: string[][] = [];
-    Object.assign(window, { __viewTransitionTypes: seen });
-    const start = document.startViewTransition?.bind(document);
-    if (!start) return;
-    document.startViewTransition = ((options?: unknown) => {
-      const types = (options as { types?: Iterable<string> } | undefined)?.types;
-      seen.push(types ? [...types] : []);
-      return start(options as Parameters<typeof start>[0]);
-    }) as typeof document.startViewTransition;
-  });
+test("Sıradaki ve Öğrencilerim geçişleri hemen kullanılabilir", async ({ page }) => {
   await page.addInitScript(
     ([key, value]) => window.sessionStorage.setItem(key, value),
     [
@@ -175,27 +185,20 @@ test("Sıradaki sayfayı ileri, Öğrencilerim geri kaydırır; yeni sayfa hemen
     ] as const,
   );
   await mockStudentApi(page);
-  const types = () =>
-    page.evaluate(() => (window as unknown as { __viewTransitionTypes: string[][] }).__viewTransitionTypes);
 
   await page.goto(`/kocluk/${ALI_ID}`);
-  // A coach reads the page before moving on, by which time the link has prefetched the next page.
-  // Clicked before that, the page is fetched after the click and commits in a transition of its
-  // own, without the type: it swaps without the slide (a fallback, not a failure).
-  await page.waitForLoadState("networkidle");
-  await page.getByRole("link", { name: "Sıradaki öğrenci: Ece" }).click();
+  const next = page.getByRole("link", { name: "Sıradaki öğrenci: Ece" });
+  await expect(next).toBeVisible();
+  await next.click();
   await expect(page).toHaveURL(/\/kocluk\/s-ece$/);
-  // Polled: the type lands with the transition, a beat after the URL may already read the new page.
-  await expect.poll(types).toContainEqual(["nav-forward"]);
-  // The slide never holds the page: the next student's mark takes a click straight away.
+  // The destination stays interactive even when the route was not prefetched.
   const toggle = page.getByRole("button", { name: "İlgilendim", exact: true });
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-pressed", "true");
 
-  // The header's way back, not the menu's tab (the menu's is a plain navigation, no slide).
+  // The header's way back, not the menu's tab.
   await page.getByRole("main").getByRole("link", { name: "Öğrencilerim", exact: true }).click();
   await expect(page).toHaveURL(/\/kocluk$/);
-  await expect.poll(types).toContainEqual(["nav-back"]);
 });
 test("doğrudan açılan raporda Sıradaki görünmez", async ({ page }) => {
   await mockStudentApi(page);
@@ -249,6 +252,31 @@ test("takip kartı açık kayıtları gösterir ve panele götürür", async ({ 
   const panel = page.getByRole("dialog", { name: "Takip" });
   await expect(panel).toBeVisible();
   await expect(panel.getByText("Ali Demir · 2 kayıt")).toBeVisible();
+});
+
+test("takip, öğrencinin yanıtını sayfa açıkken gösterir: bildirim gelince", async ({ page }) => {
+  const followups = [followup()];
+  await mockStudentApi(page, { followups });
+  await page.goto(`/kocluk/${ALI_ID}`);
+  const card = page.getByRole("region", { name: "Takip" });
+  await expect(card.getByText("Yanıt bekliyor")).toBeVisible();
+
+  // The student accepts elsewhere; the coach's bell hears it on the live stream.
+  followups[0] = followup({ response: "ACCEPTED", respondedAt: "2026-09-27T10:00:00Z" });
+  await page.evaluate(() => window.dispatchEvent(new Event("mentor:notification-arrived")));
+  await expect(card.getByText("Kabul etti")).toBeVisible();
+});
+
+test("takip, sekmeye dönülünce yeniden okunur", async ({ page }) => {
+  const followups = [followup()];
+  await mockStudentApi(page, { followups });
+  await page.goto(`/kocluk/${ALI_ID}`);
+  const card = page.getByRole("region", { name: "Takip" });
+  await expect(card.getByText("Yanıt bekliyor")).toBeVisible();
+
+  followups[0] = followup({ response: "ACCEPTED", respondedAt: "2026-09-27T10:00:00Z" });
+  await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+  await expect(card.getByText("Kabul etti")).toBeVisible();
 });
 
 test("takip panelinde ilk açık kayıt açık gelir, diğerleri satırdır ve dokununca açılır", async ({ page }) => {

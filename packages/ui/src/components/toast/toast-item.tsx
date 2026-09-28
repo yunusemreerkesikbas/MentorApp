@@ -20,8 +20,8 @@ const STACK_OPACITY: Record<number, string> = {
 };
 
 /**
- * Single toast card (Stitch Prompt 01): translucent surface, optional leading,
- * title + message, dismiss, optional auto-dismiss progress bar.
+ * Single toast card (overlay kit, DESIGN.md §6.1): solid surface, bare status glyph, title 14/800
+ * + message 13/600, one text action, dismiss, optional auto-dismiss progress bar.
  */
 export function ToastItem({
   toast,
@@ -38,33 +38,18 @@ export function ToastItem({
       role={toast.variant === "error" ? "alert" : "status"}
       data-toast-id={toast.id}
       data-exiting={toast.exiting ? "" : undefined}
-      className={`pointer-events-auto relative w-full overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_85%,transparent)] backdrop-blur-sm transition-opacity duration-200 motion-reduce:transition-none ${stackOpacity} ${toast.exiting ? "!opacity-0" : stackIndex === 0 ? "animate-toast-enter motion-reduce:animate-none" : ""}`}
-      style={{ boxShadow: "var(--shadow-card)" }}
+      className={`pointer-events-auto relative w-full overflow-hidden rounded-[var(--play-radius)] border border-[var(--play-line)] bg-[var(--color-surface)] shadow-[var(--shadow-overlay)] transition-opacity duration-200 motion-reduce:transition-none ${stackOpacity} ${toast.exiting ? "!opacity-0" : stackIndex === 0 ? "animate-toast-enter motion-reduce:animate-none" : ""}`}
     >
-      <div className="flex items-start p-3">
+      <div className="flex items-start gap-3 py-3.5 pl-3.5 pr-2">
         {leading ? (
-          <div className="mt-1 flex shrink-0 items-center justify-center">
-            {leading}
-          </div>
+          <div className="flex size-6 shrink-0 items-center justify-center">{leading}</div>
         ) : null}
-        <div className={`min-w-0 flex-1 ${leading ? "ml-3" : ""}`}>
-          <h4
-            className="text-sm font-bold leading-snug"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-body)",
-            }}
-          >
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5 pt-0.5">
+          <h4 className="text-sm font-extrabold leading-[1.35] text-[var(--color-main)]">
             {toast.title}
           </h4>
           {toast.message ? (
-            <p
-              className="mt-0.5 line-clamp-2 text-sm leading-snug"
-              style={{
-                color: "var(--color-secondary)",
-                fontFamily: "var(--font-body)",
-              }}
-            >
+            <p className="line-clamp-2 text-caption font-semibold text-[var(--color-body)]">
               {toast.message}
             </p>
           ) : null}
@@ -77,13 +62,7 @@ export function ToastItem({
                 toast.action?.onClick();
                 onDismiss(toast.id);
               }}
-              className="mt-1.5 inline-flex min-h-9 cursor-pointer items-center rounded-[var(--radius-card)] px-2 text-sm font-bold outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-              style={{
-                color: "var(--color-accent)",
-                backgroundColor: "var(--color-accent-soft)",
-                fontFamily: "var(--font-body)",
-                marginLeft: "-0.5rem",
-              }}
+              className="inline-flex min-h-9 cursor-pointer items-center self-start text-sm font-extrabold text-[var(--play-selected-ink)] underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             >
               {toast.action.label}
             </button>
@@ -93,9 +72,9 @@ export function ToastItem({
           type="button"
           onClick={() => onDismiss(toast.id)}
           aria-label={toast.dismissLabel}
-          className="-mr-2 -mt-2 flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 motion-reduce:transition-none"
+          className="-my-1.5 flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
         >
-          <X size={20} strokeWidth={2} aria-hidden />
+          <X size={18} strokeWidth={1.75} aria-hidden />
         </button>
       </div>
       {showProgress ? (

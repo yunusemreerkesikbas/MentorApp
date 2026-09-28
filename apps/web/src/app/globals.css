@@ -123,13 +123,14 @@ body {
   }
 }
 
+/* Overlay motion (DESIGN.md §6.1): dialog 200ms, sheet and drawer 250ms, every exit 150ms. */
 .animate-dialog-backdrop-enter {
-  animation: dialog-backdrop-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-backdrop-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: opacity;
 }
 
 .animate-dialog-backdrop-exit {
-  animation: dialog-backdrop-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-backdrop-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: opacity;
 }
 
@@ -145,7 +146,7 @@ body {
 }
 
 @utility animate-dialog-enter {
-  animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   transform-origin: center;
   will-change: transform, opacity;
 }
@@ -162,7 +163,7 @@ body {
 }
 
 @utility animate-dialog-exit {
-  animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   transform-origin: center;
   will-change: transform, opacity;
 }
@@ -236,10 +237,10 @@ body {
 }
 
 .animate-drawer-in {
-  animation: drawer-slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: drawer-slide-in 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .animate-drawer-out {
-  animation: drawer-slide-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: drawer-slide-out 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 .animate-drawer-left-in {
   animation: drawer-slide-in-left 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -373,35 +374,35 @@ html.mentor-sheet-open {
 }
 
 @utility animate-sheet-enter {
-  animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards;
+  animation: sheet-enter 250ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards;
   will-change: transform;
 }
 
 @utility animate-sheet-exit {
-  animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation: sheet-exit 150ms cubic-bezier(0.32, 0, 0.67, 0) forwards;
   will-change: transform;
 }
 
-/* Bottom sheet panel responsive animations (Apple liquid glass modal) */
+/* Bottom sheet: slides up on phones, rises as a dialog on desktop (reduced motion: below). */
 @media (max-width: 63.999rem) {
   [data-mentor-bottom-sheet-panel] {
-    animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards !important;
+    animation: sheet-enter 250ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards !important;
     will-change: transform;
   }
   [data-mentor-bottom-sheet-panel][data-exiting="true"] {
-    animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards !important;
+    animation: sheet-exit 150ms cubic-bezier(0.32, 0, 0.67, 0) forwards !important;
     will-change: transform;
   }
 }
 
 @media (min-width: 64rem) {
   [data-mentor-bottom-sheet-panel] {
-    animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    animation: dialog-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
     transform-origin: center;
     will-change: transform, opacity;
   }
   [data-mentor-bottom-sheet-panel][data-exiting="true"] {
-    animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    animation: dialog-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
     transform-origin: center;
     will-change: transform, opacity;
   }

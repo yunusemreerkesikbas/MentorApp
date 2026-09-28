@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AchievementCelebrationDto,
   AuthUser,
+  EconomyBalance,
   JourneyLevelCelebrationView,
 } from "@mentor/types";
 
@@ -117,9 +118,11 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   page,
 }) => {
   const api = await mockJourneyCelebrationApi(page, null);
-  await page.goto("/profil");
-  await expect(page).toHaveURL(/\/ayarlar$/);
-  await page.waitForLoadState("networkidle");
+  await page.goto("/ayarlar");
+  await expect.poll(() => page.evaluate(() => {
+    const testWindow = window as typeof window & { __journeyEventSources?: EventSource[] };
+    return testWindow.__journeyEventSources?.length ?? 0;
+  })).toBeGreaterThan(0);
 
   const previousFocus = page.getByRole("button", { name: /temaya geç/ });
   await expect(previousFocus).toBeVisible();
@@ -202,6 +205,40 @@ test("başarım kutlamasını gerektiğinde yükler ve bir kez gösterir", async
   await expect(dialog).toHaveCount(0);
   await page.reload();
   await expect(dialog).toHaveCount(0);
+});
+
+test("panel rozeti sahneyi tıklayınca yükler ve odağı geri verir", async ({ page }) => {
+  await mockJourneyCelebrationApi(page, null);
+  const balance: EconomyBalance = {
+    xp: 120,
+    coinConfirmed: 0,
+    coinPending: 0,
+    level: {
+      tier: 4,
+      xp: 120,
+      nextAt: 200,
+      key: "cycle",
+      chapter: "harmony",
+      currentAt: 100,
+      nextKey: "rhythm",
+      progress: { current: 20, target: 100, remaining: 80, percent: 20 },
+    },
+  };
+  await page.route("http://localhost:3001/v1/economy/balance", (route) =>
+    json(route, balance),
+  );
+
+  await page.goto("/panel");
+  const opener = page.getByRole("button", { name: "Döngü rozetini sahne ışığında gör" });
+  await expect(opener).toBeVisible();
+  await opener.focus();
+  await expect(opener).toBeFocused();
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Seviye 4 · Döngü" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
 });
 
 interface JourneyCelebrationApi {

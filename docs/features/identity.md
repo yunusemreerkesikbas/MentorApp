@@ -94,6 +94,12 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-27 — The terms checkbox is named
+
+The signup's terms and 13+ checkbox now carries `aria-labelledby` like the KVKK one. A screen
+reader used to announce an unnamed checkbox for a legal declaration. Found by the mentorship
+real-API QA. Related: `(auth)/signup/page.tsx`, `e2e/onboarding-redesign.spec.ts`.
+
 ### 2026-09-24 — Login 429 says how long to wait
 
 Throttled `429` responses (`TOO_MANY_REQUESTS`) now include the `Retry-After` seconds already set by the throttler: "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim." One second uses the singular English line. If the header is missing, the static sentence stays. Login stays at 10 requests per minute per IP. Related: `all-exceptions.filter.ts`, `i18n/locales/{tr,en}/errors.json`.

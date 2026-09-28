@@ -19,7 +19,9 @@ student's world is an assignment, and `plan_tasks.coach_note` carries their inst
 their words, read back only to them, never mixed into the student's own `description`.
 
 Communication is deliberately absent. In Phase 2 the coach and student talk off-platform; in-app
-chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel.
+chat is Phase 3 (roadmap §9). The app is the tracking tool, not the channel. The only words that
+cross are two standing notes, one per direction (the coach's since APP-071, the student's since
+QA F4), each overwritten in place and neither a thread.
 
 ## Architecture (key decisions)
 
@@ -157,6 +159,9 @@ POST   /v1/mentorship/invitations/preview  { code } -> { coachDisplayName, coach
 POST   /v1/mentorship/invitations/accept   { code } -> MyCoachDto
 GET    /v1/mentorship/my-coach                      -> MyCoachDto | (empty = no coach)
 GET    /v1/mentorship/my-coach/data                 -> MentorshipSharedDataDto | (empty = no coach)
+PUT    /v1/mentorship/my-coach/note                 -> 204  { body: string | null }
+GET    /v1/mentorship/my-coach/weekly-reports       -> Paginated<MentorshipWeeklyReportListItemDto>
+GET    /v1/mentorship/my-coach/weekly-reports/:id   -> MentorshipWeeklyReportShareDto (safe projection)
 DELETE /v1/mentorship/my-coach                      -> 204
 ```
 
@@ -185,6 +190,9 @@ kopyalar; link yalnız alanı doldurur, kabul gene öğrencinin iki adımıdır.
 | `POST /v1/mentorship/invitations/accept`                         | Student's half of the double opt-in → ACTIVE                                                                                                                                 |
 | `GET /v1/mentorship/my-coach`                                    | Student transparency: who my coach is, what they see                                                                                                                         |
 | `GET /v1/mentorship/my-coach/data`                               | The same contract with the actual figures in it: how much is travelling under each scope key. No coach-authored field can appear — the snapshot is fetched without a link id |
+| `PUT /v1/mentorship/my-coach/note`                               | The student's standing note to their coach; `{ body: null }` clears it. Shown on the coach's report, never sent to an AI provider                                            |
+| `GET /v1/mentorship/my-coach/weekly-reports`                     | The weeks my coach finalized, each once at its latest version (`mentorship.weekly_reports.enabled`)                                                                          |
+| `GET /v1/mentorship/my-coach/weekly-reports/:reportId`           | One of them as the printout's safe projection: no brief, no evidence                                                                                                         |
 | `DELETE /v1/mentorship/my-coach`                                 | Student revokes consent, unilaterally (KVKK)                                                                                                                                 |
 
 Error codes: `MENTORSHIP_ASSIGNMENT_TOO_FAR` · `MENTORSHIP_DISABLED` · `MENTORSHIP_LINK_NOT_FOUND` · `MENTORSHIP_INVITE_INVALID` ·
@@ -211,7 +219,7 @@ data without a deploy.
 
 | Flag            | Fires when                                                                                             | Threshold key                           |
 | --------------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------- |
-| `INACTIVE`      | No completed session or done task for longer than the idle window (a student who never started counts) | `mentorship.risk.inactive_days`         |
+| `INACTIVE`      | No completed session or done task for longer than the idle window, counted from the later of the last activity and the day the student joined this coach (a student who never started counts once the window has passed since joining) | `mentorship.risk.inactive_days`         |
 | `LOW_MOOD`      | Weekly mean check-in at or below the ceiling                                                           | `mentorship.risk.low_mood_ceiling`      |
 | `NET_DROP`      | Latest mock net strictly below the mean of up to three earlier attempts of the same exam               | —                                       |
 | `PLAN_SLIPPING` | Weekly plan completion below the floor                                                                 | `mentorship.risk.plan_completion_floor` |
@@ -221,6 +229,179 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-09-28 — The student's weekly review, drawn (redesign round 1, stop B3).**
+  `/kocum/haftalik-raporlar/:id` reads the coach first: an ink hero with the coach's disk,
+  "Koçunun değerlendirmesi", their name, "{date} tarihinde paylaştı" and the evaluation on the coach
+  ink (the old "Hazırlayan:" line folded into it). Then "Haftan, geçen haftayla": logged study,
+  sessions and active days as paired bars, this week in `--chart-activity-2`, the week before as a
+  gray bar half as thick (dataviz emphasis form: one series is the point, the other is context; the
+  light activity step failed the palette validator as a second hue, so the context is neutral), the
+  plan as a `ProgressLine` with last week's count under it. Each pair is a `role="img"` with a
+  sentence ("Kayıtlı çalışma: bu hafta 3 sa, önceki hafta 2 sa"); the numbers beside it are
+  `aria-hidden`. Then this week's minutes per subject as bars, and the mock average as one number
+  with its change (up in the success ink with an arrow, down in secondary ink, never red) and the
+  caveat. A week with nothing logged shows Puhu's sentence instead of zeroes. The limitations moved
+  into a "Bu haftanın notları" disclosure under the footnote. **Usage:**
+  `weekly-reports/[reportId]/weekly-report-cards.tsx` (`EvaluationHero`, `WeekCompareCard`,
+  `SubjectsCard`, `MocksCard`); durations through the coach report's `durationLabel`.
+  **Gotchas:** (1) the coach's print page and PDF keep `WeeklyReportPrintMetrics` and its tables,
+  untouched. (2) The limitation copy is still the coach's wording, shared with the printout.
+  **Related:** `e2e/mentorship.spec.ts` (drawing sentences, empty week),
+  `qa-mentorship-flows-real-api.spec.ts` M10b.
+
+- **2026-09-28 — Koçum in the panel's frame (redesign round 1, stop B2).** `/kocum` is a panel
+  page now: title, then a CSS grid (`PANEL_GRID_CLASS`) with the relationship in the main column
+  and the transparency half in a 340 px rail; below 1280 px the rail follows in reading order.
+  Main: the coach hero (ink disk, "Koçun", name, since + @username, headline, bio, the two claim
+  groups, "Koçundan not" on the coach ink; a stopped coach or a waiting seat is a calm line inside
+  it), "Koçuna notun" (the student's voice in a neutral block), "Ortak kararlarımız" (small tags in
+  the student's words: "Yanıtını bekliyor", "Kabul ettin", "Değişiklik istedin"; the first decision
+  waiting on them is the page's one filled ledge, later ones get the outline ledge, answered ones
+  none), "Haftalık değerlendirmelerin" (latest week as a row, `Intl.DateTimeFormat.formatRange`
+  for the period, the rest behind "Önceki haftalar"). Rail: "Koçunun gördükleri" (one ink glyph per
+  scope line with the figure actually travelling, the plan completion rate drawn as a line, then
+  "Bağlantıyı sonlandır" under the data it stops, destructive confirm) and "Koçunun göremedikleri".
+  No coach: a Puhu card with the "Davet kodunu gir" ledge; flag off: the same card without it.
+  Accepting an invite now lands on `/kocum?hosgeldin=1`: Puhu says "{name} artık koçun" once and
+  the disk rises in (0.5 s, still under reduced motion), then the param is dropped with
+  `history.replaceState`, so a refresh does not greet again; the accept toast is gone.
+  **Usage:** `_components/{my-coach-hero,my-coach-rail,my-coach-empty}.tsx`,
+  `FollowupResponseTag you` for the student's wording. **Gotchas:** (1) the page needs its
+  `<Suspense>` for `useSearchParams`. (2) The weekly row has no numbers and the rail no 7-day
+  strip: the list DTO carries no totals and `MentorshipSharedDataDto` no per-day series, and a
+  drawing the API cannot back would be made up. (3) Removed: `coach-profile-card.tsx`,
+  `DataScopeCard`, the student's `FollowupStatus`, keys `invitation_accepted`, `scope_never_body`,
+  `followup_response_{ACCEPTED,CHANGE_REQUESTED}`; `scope_title` reads "Koçunun gördükleri".
+  **Related:** `e2e/mentorship.spec.ts` (welcome once, end link inside the scope card),
+  `e2e/mentorship-followups.spec.ts` (one filled ledge while a decision waits),
+  `qa-mentorship-flows-real-api.spec.ts` (M08 "Kabul ettin", M10 scope region).
+
+- **2026-09-28 — The invite becomes one page that unfolds (redesign round 1, stop B1).**
+  `/kocluk-daveti` now reads code → WHO → WHAT → decision, with one filled ledge on screen at any
+  moment: Puhu says what happens next, "Kodu getir" looks the code up, then the code folds into a
+  chip ("Değiştir" reopens the field with the code kept) and "Onaylıyorum, bağlan" takes over, with
+  "Vazgeç" as a quiet link. The inviting coach gets an identity card in the coach ink (initials
+  disk, "Seni öğrencisi olarak takip etmek istiyor", name, @username, headline, bio) and the two
+  claim groups of APP-089 as chips: checked claims on the ink with a badge, the coach's own words
+  dashed. "Onaylarsan" puts what the coach will and will not see side by side (stacked on phones),
+  one bare ink glyph per scope key. A refused code answers under the field (`aria-invalid` + the
+  API's sentence), a refused accept (seats full) beside the button, both `role="alert"`, never a
+  toast. With a coach already, a notice on top links to Koçum and the decision card says what has
+  to come first instead of offering the ledge. **Usage:** `components/mentorship/coach-identity.tsx`
+  (`CoachAvatar`, `CoachClaims`) and `scope-rows.tsx` (`ScopeRow`, `ScopeNeverList`,
+  `SCOPE_ICON`) are shared with `/kocum`; new copy keys `invitation_*`, `scope_label_*`,
+  `scope_never_*` (the old `invitation_from` and `invitation_already_linked` are gone).
+  **Gotchas:** (1) the scope still comes from the API; only the "never" list is static copy, as it
+  was. (2) `scope_coach_writes` now also says the student can leave a note (QA F4), on both screens.
+  (3) the real-API specs (`qa-mentorship-flows-real-api`, `qa-stage4-real-api`) moved to the new
+  headings "Koçun görecekleri" / "Koçun göremeyecekleri". **Related:**
+  `(app)/coach-invitation/_components/*`, `e2e/mentorship.spec.ts` (one ledge + chip, inline invalid
+  code), canvas https://claude.ai/artifact/EmAR9QsVo2qWXDQVhyMPxe.
+
+- **2026-09-28 — The student can leave their coach a standing note (QA F4).** The mirror of the
+  coach's note: one note per link, overwritten in place, never a thread (in-app chat stays Phase 3,
+  roadmap §9). Written on `/kocum` ("Koçuna notun": write, edit, remove), read back there, and shown
+  on the coach's report above the coach's own note ("Ada'nın notu", drawn apart from the coach's
+  accent). The coach gets one inbox notification a day ("{name} sana not bıraktı", dedupe
+  `mentorship-student-note:{studentId}:{day}`, opens `/students/:id`); clearing emits nothing, and
+  a link waiting for a seat keeps the note but tells the frozen coach nothing. Cleared at link end
+  with the coach's note, because re-linking revives the row. It is the one free text of the
+  student's on the report, and it never reaches an AI provider: the brief and the assignment
+  suggestions shape the report through `buildMentorshipBriefEvidence`, an allow-list without it
+  (pinned in `assignment-suggestion.service.spec.ts`). No new `MENTORSHIP_DATA_SCOPE` key: the scope
+  lists what the coach reads without the student acting, and this card says who reads it.
+  **Usage:** `PUT /v1/mentorship/my-coach/note { body: string | null }` (the coach note's schema,
+  500 characters); `MyCoachDto.studentNote`, `MentorshipStudentReportDto.studentNote`; migration
+  `0118_w8_mentorship_student_note` (two nullable columns). **Gotchas:** (1) migrate a database
+  before an API that has this change reaches it: every `coach_students` read selects the two
+  columns. (2) The web calls the student's endpoints through `http` (`lib/mentorship.ts`,
+  `lib/mentorship-weekly-report.ts`): the generated functions for `MentorshipStudentController` are
+  typed as `{ data, status }` wrappers they never return. **Related:** `mentorship-link.service.ts`
+  (`setStudentNote`), `domain/coach-note.ts` (`toStudentNoteDto`), `mentorship-events.listener.ts`,
+  `(app)/my-coach/_components/my-note-card.tsx`,
+  `(coach)/students/[studentId]/_components/student-note-card.tsx`,
+  `test/mentorship-student-note.e2e-spec.ts`, QA M10c.
+
+- **2026-09-28 — A finalized week reaches the student (QA F5).** Until now the coach downloaded
+  the PDF and sent it elsewhere. Finalizing emits `mentorship.weekly_report.finalized`; the student
+  gets an inbox notification ("Koçun haftanı değerlendirdi", one per report so a correction is news
+  again, no push) that opens `/my-coach/weekly-reports/:reportId` (tr
+  `/kocum/haftalik-raporlar/:reportId`): the coach's evaluation first, then the numbers the
+  printout carries (`components/mentorship/weekly-report-print-metrics.tsx`, moved out of the
+  coach's print route to serve both). `/kocum` lists the weeks ("Haftalık değerlendirmelerin", the
+  latest three, the rest under a `<details>`), and draws nothing when there are none, when the flag
+  is off or on an error. The student gets the share projection only (no brief, no evidence, no
+  coach context), each week once at its latest version, through their own live link (frozen
+  allowed, 404 without one), behind `mentorship.weekly_reports.enabled` like the coach's side.
+  **Usage:** `GET /v1/mentorship/my-coach/weekly-reports`, `GET …/weekly-reports/:reportId`;
+  `MentorshipWeeklyReportService.listForStudent/shareForStudent`, repository
+  `listLatestFinalized` (leaves out a row that a finalized correction replaces). **Gotchas:**
+  (1) the list is per link period: after a re-link it starts empty. (2) One page of 100, like the
+  coach's archive. **Related:** `mentorship-weekly-report.{service,repository}.ts`,
+  `mentorship-student.controller.ts`, `(app)/my-coach/weekly-reports/[reportId]/`,
+  `(app)/my-coach/_components/my-weekly-reports-card.tsx`, `test/mentorship-weekly-share.e2e-spec.ts`,
+  QA M10b.
+
+- **2026-09-28 — Three small fixes from the flow QA (O1–O3).** (O1) `@mentor/ui` `TextAreaField`
+  labels only its label text, so a field's accessible name is the label and the hint and counter
+  are its description: the coach's note field used to be named "Ada'ya notun Ada bunu Koçum
+  ekranında görür · 0/500", a name that changed on every keystroke. (O2) The invitation screen tells
+  an already-linked student up front ("Zaten bir koçun var: {name}…", a link to Koçum, no accept
+  button), and an accept refusal (seats full, for one) stays on the screen as an alert instead
+  of a toast cut off on a phone. (O3) The coach's open follow-up panel re-reads silently when a
+  notification arrives on the live stream or the tab becomes visible again, so "Yanıt bekliyor"
+  turns to "Kabul etti" without a reload. **Usage:** `NOTIFICATION_ARRIVED` in
+  `lib/notification-events.ts`, dispatched on `window` by the notification drawer for every
+  streamed notification. **Gotchas:** the silent re-read keeps the list on screen (no skeleton
+  flash). **Related:** `packages/ui/src/components/text-area-field.tsx`,
+  `coach-invitation/_components/coach-invitation-shell.tsx`,
+  `components/mentorship/use-followup-page.ts`, `lib/notification-drawer-shell.tsx`.
+
+- **2026-09-27 — When a link ends, the coach's pending tasks become the student's.** They used to
+  stay in the student's plan badged "Koçundan", locked against any edit (403) for a coach who could
+  no longer see the report the lock protected. Decision (QA F1): at link end, whoever ends it, the
+  link's PENDING tasks lose their mentorship origin in the same transaction that ends the link and
+  removes the student from the coach's future events. They stay in the plan as the student's own:
+  no badge, editable. The coach note leaves with them, because `plan_tasks_coach_note_origin_chk`
+  allows a note only on a coach-origin task (the erasure seam, `clearMentorshipOrigin`, already does
+  the same for an erased coach). DONE tasks keep origin and note as the record of the coach's work.
+  **Usage:** `PlanService.releaseMentorshipTasksInTransaction(tx, { studentId, mentorshipLinkId })`,
+  called from `MentorshipLinkService.endLink`. **Gotchas:** (1) a re-link starts with no coach
+  tasks; nothing is re-attached. (2) Releasing emits nothing: it is neither a deletion (no dropped
+  log, no coach notification) nor an edit. **Related:** `mentorship-link.service.ts`,
+  `coaching/{application/plan.service.ts,infrastructure/plan-task{,-mentorship}.repository.ts}`,
+  `test/mentorship-link-end.e2e-spec.ts`, `mentorship-link.service.spec.ts`.
+
+- **2026-09-27 — A new student is not "Sessiz" on day one.** `INACTIVE` fired the moment a student
+  accepted: a null last-active date counted as endless silence, so the coach saw "Sessiz" beside
+  the assistant's "yeni başladı", the student sat in "Seni bekleyenler", and the next morning's
+  digest named them. Decision (QA F3): silence counts from the later of the last activity and the
+  day the student joined this coach. A student who never starts still fires once
+  `mentorship.risk.inactive_days` has passed since joining, and one linking again is not charged
+  with the gap before they came back. **Usage:** `evaluateRiskFlags(snapshot, thresholds, today,
+  joinedOn)`; `joinedOn` is required on purpose so no caller keeps the old rule silently (roster,
+  attention mark, report, digest). **Gotchas:** (1) the digest's `ActiveLinkRow` now carries
+  `acceptedAt`. (2) An e2e that wants "never started" to fire must age `coach_students.accepted_at`
+  as well as the activity (the cohort brief block does). **Related:** `domain/risk-flags.ts`,
+  `mentorship-roster.service.ts`, `mentorship-query.adapter.ts`, `mentorship-link.repository.ts`,
+  `risk-flags.spec.ts`, `test/mentorship.e2e-spec.ts`.
+
+- **2026-09-27 — Real-API coach ↔ student browser suite.** `e2e/qa-mentorship-flows-real-api.spec.ts`
+  drives both sides in two browsers against the real API (16 scenarios × mobile/desktop): invite,
+  consent, week planner, note, follow-up privacy, completion/deletion feedback, activity → roster,
+  limits, leaving, re-linking, code rotation. Result and evidence:
+  [`docs/qa/2026-09-27-mentorship-flows-real-api.md`](../qa/2026-09-27-mentorship-flows-real-api.md).
+  **Fixed the same day (test-first):** a new student's coach invite now survives signup and
+  onboarding (`(app)/app-shell.tsx` remembers `/coach-invitation?…` like a study-room link); the
+  student `/plan` opens a notification's `?date=`, also when tapped from the drawer on `/plan`; the
+  signup terms/age checkbox is named; a coach's meeting now shows on the student's plan (list row,
+  Takvim chip, read-only sheet) and the notification's `&event=` opens it (coaching.md); a new
+  student is no longer `INACTIVE` on day one, and a coach's pending tasks become the student's
+  when the link ends (entries above). **Usage:** isolated stack only (API
+  on `mentor_test` with fake providers, a web build pointing at it), `--workers=1`; the rerun block
+  is in the QA report. **Gotchas:** (1) the plan keeps a live stream open, so `networkidle` never
+  settles there. (2) `openPlanDay` walks the week arrows and day chips; M06 owns `?date=`.
 
 - **2026-09-27 — Coach seats, phase B: the seat lives on the link.** `coach_students.seat` (FREE |
   PAID | SELF | NONE, default NONE, check constraint; migration `0117_w8_coach_seat_state`, which
@@ -2294,6 +2475,11 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   ends). The stores do it for store subscriptions; the seats already follow `paidSeatsFor` whatever
   moved it. A "waiting student" prompt that ties the purchase to a named student is the natural
   upsell once a plan can actually be bought.
+- **A weekly report for a week before the student joined (QA O6).** The API previews and
+  finalizes the last completed week even when it ended before `acceptedAt`, while the coach's card
+  offers nothing until the first full week. Only a direct API call reaches it, and the week is
+  inside the consented data scope. Either refuse such weeks in preview/finalize or let the card
+  offer them; decide which before anyone builds on the API's behaviour.
 - **A full card still hides the invite code.** A student who pays for their own Premium could link
   even then (SELF takes no seat), but the coach has to copy the code from before. Worth showing the
   code on a full card, with a line saying who can still join, if coaches with paying students ask.
@@ -2313,6 +2499,9 @@ false` ile açılıp `configureBodyParsers` çağırıyor; o helper yükleme PUT
   classifier that survives deliberate evasion) stays Phase 2, roadmap §9.
 - ~~Minors~~ — **decided and shipped (APP-084).** No separate parental-consent flow; the signup
   consent checkbox now carries "18 yaşından büyüğüm" / "I am over 18" (`auth.register.kvkk`).
+  **Superseded by APP-101 (2026-09-17):** signup is a 13+ self-declaration, not 18+. Re-decided
+  2026-09-27 (QA F2): the mentorship flow adds no age declaration of its own; the signup's 13+
+  self-declaration stays the only age gate.
   `users` still holds no birth date and the app enforces no age it cannot verify — the consent
   screen states it instead. **The wording awaits legal sign-off** (roadmap §12 keeps that as a
   pre-launch item); changing it is a copy edit, not a code change.

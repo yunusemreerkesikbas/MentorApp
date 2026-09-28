@@ -50,6 +50,12 @@ export class MentorshipWeeklyReportParamDto extends createZodDto(
   @ApiProperty({ type: String, format: "uuid" }) declare studentId: string;
   @ApiProperty({ type: String, format: "uuid" }) declare reportId: string;
 }
+/** The student's route: the report id alone, their own live link is the rest. */
+export class MyWeeklyReportParamDto extends createZodDto(
+  mentorshipWeeklyReportParamSchema.pick({ reportId: true }),
+) {
+  @ApiProperty({ type: String, format: "uuid" }) declare reportId: string;
+}
 
 /**
  * Subject slug → name, beside the snapshot and never inside it: the fingerprint hashes the snapshot,

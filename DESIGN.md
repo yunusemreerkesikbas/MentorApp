@@ -104,11 +104,16 @@ Blobs carry atmosphere. Do not introduce cream/sand body backgrounds (PRODUCT an
 | Token             | Hex       | Usage                                                                                |
 | ----------------- | --------- | ------------------------------------------------------------------------------------ |
 | `danger`          | `#b42318` | Error/destructive — ≥4.5:1 on white                                                  |
+| `danger-ink`      | `#ffffff` | Label on the danger ledge (6.6:1); dark `#12141a` on the lifted `#f28b82` (7.7:1)     |
+| `danger-edge`     | `#8a1b12` | The danger ledge's 4 px edge; dark `#b85a52`                                         |
 | `success`         | `#2e7d54` | Positive/upward — ≥4.5:1 on white. Downward analytics use `secondary`, **never** red |
 | `focus-ring`      | `#1d6fbf` | Keyboard focus — ≥3:1 for UI indicators                                              |
 | `error-container` | `#ffdad6` | Error icon circle background                                                         |
+| `scrim`           | `#111` 40 % | Behind every overlay (dialog, sheet, modal, drawer); dark black 58 %. Solid tint, no blur |
 
-Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red).
+Errors use `danger` — not `like-active`. Countdown is calm (not alarm-red). The danger **ledge** is
+only for an irreversible confirm (end a link, delete); everything else destructive-sounding stays a
+text action.
 
 ### 2.5 Light / dark theme
 
@@ -151,7 +156,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
 
-**Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#ffffff` (6.6:1; white would be 2.4:1), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
+**Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` navy (6.6:1; white is 2.46:1 and fails AA, so it went back to navy on 2026-09-28), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `danger` = the same ledge in `--color-danger` with `--color-danger-ink` / `--color-danger-edge`, only for an irreversible confirm; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
 **Play wells + selected fill (global, 2026-09-20):** `--play-selected` and `--play-well-{blue,peri,violet,coral,pink}` moved from `.onboarding-play-theme` to `html` (dark values on `html.dark`). The panel's quest rows and path nodes speak the same language as the onboarding choice cards, and a token that two surfaces share does not belong to one of them.
 
@@ -159,7 +164,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Coach accent (global, 2026-09-21):** `--coach-accent` `#26377F`, `--coach-accent-soft` `#E6E9F7`, `--coach-accent-ink` `#1F2C66` on `html` in `@mentor/ui` `theme.css` (dark: `#8FA2EE` / `#252B40` / `#C3CCF5`). Ink blue means "a human coach did this", on both sides: the coach's workspace chrome (role badge, avatar, row actions, program progress) and, on the student panel, the coach mark on assigned path nodes, the coach's avatar and the coach's note (§6.1). It started scoped to `.coach-workspace` (2026-09-20) and moved to `html` because a student surface could not reach it. On ink blue, labels use `--color-bg` (white in light, charcoal in dark — the lifted dark accent needs the dark label). The primary CTA stays the play ledge, so "the blue button starts work" holds in both roles. The navigation stays role-neutral (2026-09-26): the same active tab and sidebar tone for a coach as for a student (§6 Tab bar); the role badge carries the coach's identity.
 
-**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (shine, frost, scrim, lamp window, `--play-sheet-radius` 28px) stay scoped here. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
+**Welcome + onboarding play surface (`.onboarding-play-theme`, 2026-09-16):** choice cards, 800-weight questions, artwork chrome on `/` and `/onboarding`. Remaining `--play-*` (shine, frost, scrim, lamp window) stay scoped here; `--play-sheet-radius` 28px moved to `html` on 2026-09-28 because the shared bottom sheet uses it. Surfaces still follow `html.dark`; chrome that sits on artwork keeps one look.
 
 **Coach workspace (`(coach)` / `/kocluk`):** same tokens, type scale and panel language as `/panel` (Nunito, play-ledge `Button`, blob canvas, §6.1 cards, rows and frame), plus the coach accent above. What the coach's screens add: the `.coach-signals` hues (the four flag dots) and the side panels' inset groups in `coach-ui.tsx`. The old `.coach-large-title`…`.coach-caption` scale is gone (2026-09-25). Not a second brand.
 
@@ -243,11 +248,14 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 
 ## 5. Radius & Elevation
 
-- **Radius: three values, nothing else.**
+- **Radius: three values, plus the sheet.**
   - `--radius-card` **10 px** — cards, fields, chips, thumbs, icon wells, inline rows (chest row,
     coach note), menus, close buttons.
-  - `--play-radius` **16 px** — play ledges (filled and outline), the companion bubble, the mood row.
+  - `--play-radius` **16 px** — play ledges (filled and outline), the companion bubble, the mood row,
+    and every floating overlay: dialog, form modal, notification drawer, toast, the desktop sheet.
   - **Full round** — path nodes, avatars, dots, badges, progress bars.
+  - `--play-sheet-radius` **28 px** — only the top corners of a bottom sheet on phones (the shared
+    `BottomSheet`, the welcome sheet).
 - **Cards are solid:** `--color-surface` + `--color-border` hairline + `shadow-card` (`PANEL_CARD`).
   `surface-translucent` is for fields and chrome that sits over art, not for content cards.
 - **Shadow family** (same tint `#254996` @ 10% — not multi-layer soft-UI stacks):
@@ -256,6 +264,11 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 | ------------------- | -------------------------------------- | -------------------------------------- |
 | `shadow-card`       | `0px 4px 10px rgba(37, 73, 150, 0.10)` | Default cards, fields, floating chrome |
 | `shadow-card-hover` | `0px 6px 14px rgba(37, 73, 150, 0.10)` | Hover / elevated interactive cards     |
+| `shadow-overlay`    | `0px 24px 48px -12px rgba(37, 73, 150, 0.30)` | Dialog, modal, drawer, toast, desktop sheet (dark: black 65 %) |
+| `shadow-sheet`      | `0px -12px 40px rgba(37, 73, 150, 0.18)` | A phone's bottom sheet, cast upward (dark: black 50 %) |
+
+Overlays are **solid**: `--color-surface` on the scrim (§2.4), never glass, `backdrop-filter` or a
+translucent surface; one overlay shadow, not an inset-highlight stack.
 
 ---
 
@@ -311,6 +324,14 @@ from them (2026-09-22).
 | **Activity strip**      | A student's last 14 days as 12 px cells on the activity ramp (§2.5), oldest first, today last, one sentence for screen readers; the key sits once above the rows. Roster rows only.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | `(coach)/_components/activity-strip.tsx`                  |
 | **Week filmstrip**      | The student page's hero: Monday → Sunday as seven columns. Each has the minutes (a bar, full at two hours, in `--chart-activity-2`; a track stub on an empty day; a dashed frame on a day to come), the coach's tasks as 20 px ink marks (done filled with a check, waiting a ring, future dashed) and the student's own as 10 px dots, max three marks then "+N". Today is a `--play-selected` column. Every day is one sentence for screen readers.                                                                                                                                                                                                                                                                             | `(coach)/students/[studentId]/_components/week-filmstrip.tsx` |
 | **Rhythm grid**         | Four calendar weeks (Monday-first rows under weekday heads) of 30 px cells on the activity ramp, days to come as frames; beside it the drawn days' total (display) with active days, and the streak in a flame well. Totals cover only the drawn cells.                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | `(coach)/students/[studentId]/_components/rhythm-card.tsx` |
+| **Dialog**              | Solid surface on the scrim, `--play-radius`, `shadow-overlay`, 24 px padding, max 440 px. Optional bare 28 px glyph above a 20/800 title, message 15/600, then one ledge (`size="sm"`) with text actions beside it ("Vazgeç" 15/800 `--color-secondary`), never two ledges. `destructive`: the ledge turns danger (§2.4) and focus starts on "Vazgeç". Promo: centred on a 72 px Puhu, full-width ledge, the second option a text link. (2026-09-28) | `@mentor/ui` `dialog/*`, `lib/mentor-dialog.ts` |
+| **Bottom sheet**        | Phones: a bottom panel with 28 px top corners, `shadow-sheet`, a 40×5 handle, title 16/800 centred; action rows 60 px (bare 22 px glyph in `--color-main`, 15/800, hairline on top, a destructive row in danger), cancel a 52 px quiet row on `--color-surface-container`. Desktop: a centred 16 px card. Filter sheets: 44 px close, the apply ledge in the footer. | `@mentor/ui` `bottom-sheet/*` |
+| **Form modal**          | Native `<dialog>`, 520 px, header 20/800 + 44 px close on hairlines, 24 px gutters, footer actions right with 18 px gaps (the text action before the ledge). | `@mentor/ui` `modal.tsx` |
+| **Notification drawer** | A 400 px card (phones: 88 vw from the right). Header 16/800 + unread count chip (`--play-selected`) + "Tümünü okundu işaretle" (words on desktop, glyph on phones) + 44 px close; sentence-case tabs; groups 13/800. Rows: bare 22 px category glyph (colour only for the human coach, the AI coach and wins), title 14/800 unread and 700 read, body 13/600, the time over an 8 px `--play-cta` dot, unread rows tinted `--play-selected` 45 % into the surface (opaque: it hides the swipe actions). | `notification-drawer/*`, `lib/notification-drawer-shell.tsx` |
+| **Toast**               | A 380 px solid card, 1 px `--play-line`, `shadow-overlay`; bare 22 px status glyph (success, danger, the warning mix, `--play-selected-ink`), title 14/800, body 13/600, one text action under the body, 44 px dismiss. | `@mentor/ui` `toast/*`, `lib/toast-lead.tsx` |
+| **Coach identity**      | A human coach as a person: the initials disk on `--coach-accent` with a surface gap and a `--coach-accent-soft` ring (40 / 56 / 72 px), an ink eyebrow ("Koçun", "Seni öğrencisi olarak takip etmek istiyor", "Koçunun değerlendirmesi"), the name 20/800, meta 13/600. Claims in two groups (APP-089): checked ones as ink chips with a badge, the coach's own words dashed and quiet, each under its heading. | `components/mentorship/coach-identity.tsx` |
+| **Scope rows**          | The consent contract: one bare ink glyph per scope key, a short name 15/800 and the plain words (on Koçum the figure actually travelling, the plan rate drawn as a line), beside an EyeOff "never" list. The invite reads "Koçun görecekleri / göremeyecekleri" side by side (stacked on phones); Koçum's rail ends with "Bağlantıyı sonlandır" under the data it stops. | `components/mentorship/scope-rows.tsx` |
+| **Paired bars**         | This week against the last: a 12 px bar in `--chart-activity-2` over a 6 px gray one (`--color-secondary` 45 %), both against the row's larger value; the numbers beside them (this week 16/900, the last 12/700) are `aria-hidden` and the bars carry one sentence as `role="img"`. Emphasis form: the last week is context, never a second hue. | `my-coach/weekly-reports/[reportId]/weekly-report-cards.tsx` |
 
 ---
 
@@ -326,6 +347,10 @@ from them (2026-09-22).
   `--color-star` stays next to the display name. Do not overlay the avatar with icons, do not use a
   blue verification tick (that is email verified), no prize ribbons or saturated-gradient medals.
   Feed and comment avatars stay unmarked — membership is identity chrome, not a ranking stamp.
+- **Glyphs stand bare (2026-09-28):** in rows, overlays and the coaching screens an icon is a 22 px
+  line at 1.75 stroke with no well behind it: `--color-secondary` by default, `--coach-accent` for
+  what a human coach does, and colour only when it means something (danger, success, streak). Wells
+  stay on the panel's quest rows and the blog's category wells (§6.1), where they carry the category.
 - **Coach mark:** Lucide `GraduationCap` in a 24 px `--coach-accent` disc (§6.1). Only for work a
   human coach assigned; AI suggestions are never marked as coach work.
 - **Custom glyphs** only where Lucide has no fit, drawn at the same 2 px stroke (e.g. the weekly
@@ -349,7 +374,7 @@ Same light: pastel matte, rounded forms, soft shadow, light ground. Final art is
 | Token | px  | Typical use                            |
 | ----- | --- | -------------------------------------- |
 | `sm`  | 40  | Inline companion, greetings, quest row |
-| `md`  | 72  | Coach bubble, dialogs, toasts          |
+| `md`  | 72  | Companion bubble, promo dialogs        |
 | `lg`  | 120 | Empty / nudge hero                     |
 
 ### 8.3 Usage patterns (max density)
@@ -419,6 +444,10 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
   while hovered or focused; reduced motion swaps instantly. Only content that is truly several
   things may rotate — never to fit more into a slot.
 - **Menus** open in 160 ms (fade + slight vertical scale) from their trigger.
+- **Overlays** (2026-09-28): dialog 200 ms, sheet and drawer 250 ms, every exit 150 ms, ease-out;
+  reduced motion swaps them without movement.
+- **Arrival on Koçum:** right after a student accepts an invite, Puhu greets once and the coach's
+  disk rises in (500 ms, a `Moment`); the flag is spent on arrival, so a refresh does not repeat it.
 
 Shared helpers: `apps/web/src/lib/stagger-motion.ts`. Overlay enter/exit lives in web `globals.css`.
 Shared transitions.dev recipes + tokens: `packages/ui/src/transitions/` (imported via `theme.css`); React primitives from `@mentor/ui` — see [`docs/features/motion.md`](./docs/features/motion.md).
@@ -537,6 +566,10 @@ swap without a slide.
       student rows with the 14-day strip; the student page with the week filmstrip, the rhythm grid,
       mocks in `/analiz`'s language and a rail for the note, follow-ups and the weekly report; the side
       panels on the panel's scale with one filled button each; the coach type scale retired.
+- [x] Student coaching side + overlay kit converged (2026-09-28): the invite as one page that unfolds
+      (code → coach → scope → one ledge), Koçum in the panel frame with the transparency rail, the
+      weekly review drawn against the week before; dialog, sheet, modal, drawer and toast solid, on
+      one scrim and one overlay shadow; the primary ledge's ink back to navy.
 - [ ] **Converge every screen to the panel** as it is touched: plan, topluluk,
       seans, defterlerim, profil/ayarlar, and the coach profile (`/kocluk/profil`). Checklist per
       screen: §1 rules, §3 scale (no arbitrary `text-[Npx]`), §5 radius set, §6.1 patterns.

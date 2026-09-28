@@ -2,7 +2,8 @@ import type * as React from "react";
 
 export type DialogLayout = "standard" | "promo";
 
-export type DialogActionVariant = "primary" | "secondary" | "link";
+/** `danger` = the red ledge of an irreversible confirm; `link` = a text action ("Vazgeç"). */
+export type DialogActionVariant = "primary" | "secondary" | "danger" | "link";
 
 export interface DialogAction {
   id: string;
@@ -41,6 +42,8 @@ export interface DialogConfirmOptions {
   cancelLabel: string;
   closeLabel: string;
   leading?: React.ReactNode;
+  /** Irreversible (end a link, delete): the confirm turns danger red and focus starts on cancel. */
+  destructive?: boolean;
 }
 
 export interface DialogInfoOptions {
@@ -71,4 +74,4 @@ export interface DialogContextValue {
   promo: (options: DialogPromoOptions) => Promise<DialogPromoResult>;
 }
 
-export const DIALOG_EXIT_MS = 200;
+export const DIALOG_EXIT_MS = 150;

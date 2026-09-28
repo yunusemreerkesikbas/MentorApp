@@ -16,6 +16,8 @@ export type MentorshipLinkRow = typeof coachStudents.$inferSelect;
 export interface ActiveLinkRow {
   coachId: string;
   studentId: string;
+  /** Where a new student's silence starts counting (`evaluateRiskFlags`). */
+  acceptedAt: Date | null;
   attendedAt: Date | null;
   attendedFlags: string[] | null;
 }
@@ -109,6 +111,7 @@ export class MentorshipLinkRepository {
         .select({
           coachId: coachStudents.coachId,
           studentId: coachStudents.studentId,
+          acceptedAt: coachStudents.acceptedAt,
           // The digest reads the same mark the roster does — a student the coach handled must not
           // be named again in the morning email while a different one has news.
           attendedAt: coachStudents.attendedAt,
@@ -266,6 +269,8 @@ export class MentorshipLinkRepository {
         endedBy,
         coachNote: null,
         coachNoteAt: null,
+        studentNote: null,
+        studentNoteAt: null,
         brief: null,
         briefAt: null,
         briefFingerprint: null,
@@ -287,6 +292,19 @@ export class MentorshipLinkRepository {
       const rows = await tx
         .update(coachStudents)
         .set({ coachNote: body, coachNoteAt: body === null ? null : now, updatedAt: now })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning();
+      return rows[0];
+    });
+  }
+
+  /** The student's standing note to their coach (QA F4), the mirror of {@link setCoachNote}. */
+  setStudentNote(linkId: string, body: string | null): Promise<MentorshipLinkRow | undefined> {
+    const now = new Date();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(coachStudents)
+        .set({ studentNote: body, studentNoteAt: body === null ? null : now, updatedAt: now })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning();
       return rows[0];

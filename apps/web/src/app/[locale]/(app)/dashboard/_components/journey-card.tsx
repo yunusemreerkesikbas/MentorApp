@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import dynamic from "next/dynamic";
 import { useTranslations } from "next-intl";
@@ -31,6 +31,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
   const tJourney = useTranslations("journey_levels");
   const { balance } = useEconomySnapshot();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
 
   if (!balance) return null;
 
@@ -46,6 +47,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
           {t("journey_title")}
         </h2>
         <button
+          ref={openerRef}
           type="button"
           onClick={() => setSpotlightOpen(true)}
           aria-label={tJourney("spotlight_open", { name: levelName })}
@@ -75,6 +77,7 @@ export function JourneyCard({ freezeTokens }: { freezeTokens: number | null }) {
             key="journey-spotlight"
             mode="replay"
             level={balance.level}
+            returnFocusRef={openerRef}
             onClose={() => setSpotlightOpen(false)}
           />
         ) : null}

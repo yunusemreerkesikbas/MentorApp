@@ -62,18 +62,8 @@ export function Modal({
 
   const chrome = (
     <>
-      <header
-        className="flex items-center justify-between gap-3 border-b px-5 py-4"
-        style={{ borderColor: "var(--color-border)" }}
-      >
-        <h2
-          id={titleId}
-          className="text-lg font-semibold leading-snug"
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
+      <header className="flex items-center justify-between gap-3 border-b border-[var(--play-line)] pb-3 pl-6 pr-3 pt-4">
+        <h2 id={titleId} className="text-xl font-extrabold leading-snug text-[var(--color-main)]">
           {title}
         </h2>
         <button
@@ -81,20 +71,16 @@ export function Modal({
           disabled={closeDisabled}
           onClick={requestClose}
           aria-label={closeLabel}
-          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
-          style={{ color: "var(--color-main)" }}
+          className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60 motion-reduce:transition-none"
         >
-          <X aria-hidden size={20} strokeWidth={2} />
+          <X aria-hidden size={22} strokeWidth={1.75} />
         </button>
       </header>
-      <div className="mentor-scrollarea flex flex-col gap-5 overflow-y-auto p-5">
+      <div className="mentor-scrollarea flex flex-col gap-4 overflow-y-auto px-6 py-5">
         {children}
       </div>
       {footer ? (
-        <footer
-          className="flex justify-end gap-3 border-t p-4"
-          style={{ borderColor: "var(--color-border)" }}
-        >
+        <footer className="flex items-center justify-end gap-[18px] border-t border-[var(--play-line)] px-6 py-4">
           {footer}
         </footer>
       ) : null}
@@ -111,13 +97,13 @@ export function Modal({
       initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
       animate={closing ? { opacity: 0, scale: 0.96 } : { opacity: 1, scale: 1 }}
       transition={{
-        duration: reduceMotion ? 0 : closing ? 0.15 : 0.25,
+        duration: reduceMotion ? 0 : closing ? 0.15 : 0.2,
         ease: [0.22, 1, 0.36, 1],
       }}
       onAnimationComplete={() => {
         if (closing) onClose();
       }}
-      className="m-auto w-[min(92vw,32rem)] rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-card)] backdrop:bg-[color-mix(in_srgb,var(--color-main)_40%,transparent)]"
+      className="m-auto w-[min(92vw,32.5rem)] rounded-[var(--play-radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-overlay)] backdrop:bg-[var(--color-scrim)]"
     >
       {onSubmit ? (
         <form onSubmit={onSubmit} className={shellClass}>

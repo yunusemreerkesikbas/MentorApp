@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { AnimatePresence } from "framer-motion";
 import { useLocale, useTranslations } from "next-intl";
 import type {
@@ -27,6 +27,7 @@ export function JourneyLevelProfile({
   const t = useTranslations("journey_levels");
   const locale = useLocale();
   const [spotlightOpen, setSpotlightOpen] = useState(false);
+  const openerRef = useRef<HTMLButtonElement>(null);
   const name = t(`levels.${level.key}.name` as LevelNameKey);
   const story = t(`levels.${level.key}.story` as LevelNameKey);
   const chapterLabel = t(`chapters.${level.chapter}.label` as ChapterLabelKey);
@@ -43,6 +44,7 @@ export function JourneyLevelProfile({
             sentence on someone else's profile. */}
         {isOwner ? (
           <button
+            ref={openerRef}
             type="button"
             onClick={() => setSpotlightOpen(true)}
             aria-label={t("spotlight_open", { name })}
@@ -94,6 +96,7 @@ export function JourneyLevelProfile({
             key="journey-spotlight"
             mode="replay"
             level={level}
+            returnFocusRef={openerRef}
             onClose={() => setSpotlightOpen(false)}
           />
         ) : null}

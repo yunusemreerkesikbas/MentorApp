@@ -47,12 +47,15 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
     const today = todayInIstanbul(now);
 
     // Evaluate each student once, not once per coach: two coaches cannot hold the same student
-    // today, but the flags are a property of the student either way.
+    // today, so the one live link's acceptance day is the student's too.
+    const joinedOn = new Map(
+      pairs.map((pair) => [pair.studentId, pair.acceptedAt ? todayInIstanbul(pair.acceptedAt) : null]),
+    );
     const flagsByStudent = new Map<string, CoachRiskDigestStudent>();
     for (const studentId of studentIds) {
       const snapshot = snapshots.get(studentId);
       if (!snapshot) continue;
-      const flags = evaluateRiskFlags(snapshot, thresholds, today);
+      const flags = evaluateRiskFlags(snapshot, thresholds, today, joinedOn.get(studentId) ?? null);
       if (flags.length === 0) continue;
       flagsByStudent.set(studentId, {
         studentId,

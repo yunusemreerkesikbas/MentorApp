@@ -210,6 +210,16 @@
       "title": "A note from your coach",
       "body": "{name} left you a note."
     },
+    "mentorshipStudentNote": {
+      "register": "companion",
+      "title": "{name} left you a note",
+      "body": "You can read it on their report."
+    },
+    "mentorshipWeeklyReportShared": {
+      "register": "companion",
+      "title": "Your coach reviewed your week",
+      "body": "{name} shared your weekly review."
+    },
     "mentorshipFollowupShared": {
       "register": "companion",
       "title": "Your coach shared a decision",

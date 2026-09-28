@@ -201,6 +201,14 @@ export const coachStudents = pgTable(
     coachNote: text("coach_note"),
     coachNoteAt: timestamp("coach_note_at", { withTimezone: true }),
     /**
+     * The student's standing note to their coach (QA F4, 2026-09-27), the mirror of `coach_note`:
+     * one row overwritten in place, not a thread. It is the only free text the coach's report
+     * carries, and only because the student wrote it for this coach; it never goes to an AI
+     * provider (the brief reads an allow-list). Cleared by `end()` for the same reason as the note.
+     */
+    studentNote: text("student_note"),
+    studentNoteAt: timestamp("student_note_at", { withTimezone: true }),
+    /**
      * The coach's last AI brief about this student (W8), cached on the link.
      *
      * No table of its own: it is one text per relationship, overwritten in place, the same shape
