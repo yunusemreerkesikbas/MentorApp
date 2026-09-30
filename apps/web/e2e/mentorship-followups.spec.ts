@@ -249,12 +249,16 @@ test("student only sees shared decisions and can change their response", async (
   await page.getByRole("button", { name: "Kabul et", exact: true }).click();
   await expect(page.getByText("Kabul ettin", { exact: true })).toBeVisible();
   await expect(ledges).toHaveCount(0);
-  await page
-    .getByRole("button", { name: "Değişiklik iste", exact: true })
-    .click();
+  // The pressed button is gone; focus moves to what the row still offers.
+  const change = page.getByRole("button", { name: "Değişiklik iste", exact: true });
+  await expect(change).toBeFocused();
+  await change.click();
   await expect(
     page.getByText("Değişiklik istedin", { exact: true }),
   ).toBeVisible();
+  // Pushed back on is answered too: "Kabul et" stays offered, but not as the filled ledge.
+  await expect(ledges).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Kabul et", exact: true })).toBeFocused();
   expect(api.writes.map((item) => item.response)).toEqual([
     "ACCEPTED",
     "CHANGE_REQUESTED",

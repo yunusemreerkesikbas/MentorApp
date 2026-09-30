@@ -1,29 +1,6 @@
 "use client";
 
 import { useLocale, useTranslations } from "next-intl";
-import { Card } from "@mentor/ui";
-
-function SetupStat({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex flex-1 flex-col items-center gap-0.5">
-      <span
-        className="text-[11px] font-bold uppercase tracking-wider"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {label}
-      </span>
-      <span
-        className="text-sm font-bold tabular-nums"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-        }}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
 
 export interface SessionSetupSummaryProps {
   focusMinutes: number;
@@ -32,33 +9,28 @@ export interface SessionSetupSummaryProps {
 }
 
 /**
- * 3-Stat Liquid Glass Summary Card (Focus, Break, Finish Time).
+ * What pressing "Başla" will do, in one line: focus, break, and when it ends. It used to be a
+ * three-cell card with an uppercase caption over every number, which made a sentence look like a
+ * dashboard. "bitiş 11:38" rather than "11:38'de biter": the Turkish suffix after a clock time
+ * changes with how the minute is read, and one template cannot get it right for every minute.
  */
-export function SessionSetupSummary({
-  focusMinutes,
-  breakMinutes,
-  now,
-}: SessionSetupSummaryProps) {
+export function SessionSetupSummary({ focusMinutes, breakMinutes, now }: SessionSetupSummaryProps) {
   const t = useTranslations("session");
   const locale = useLocale();
 
-  const estimatedFinish = new Date(
-    now + (focusMinutes + breakMinutes) * 60_000,
-  ).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });
+  const finish = new Date(now + (focusMinutes + breakMinutes) * 60_000).toLocaleTimeString(locale, {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
 
   return (
-    <Card className="flex w-full items-center px-2 py-3 session-liquid-card">
-      <SetupStat
-        label={t("summary_focus")}
-        value={t("minutes_value", { minutes: focusMinutes })}
-      />
-      <span aria-hidden className="h-7 w-px shrink-0 bg-[color-mix(in_srgb,var(--color-main)_20%,transparent)]" />
-      <SetupStat
-        label={t("summary_break")}
-        value={t("minutes_value", { minutes: breakMinutes })}
-      />
-      <span aria-hidden className="h-7 w-px shrink-0 bg-[color-mix(in_srgb,var(--color-main)_20%,transparent)]" />
-      <SetupStat label={t("summary_finish")} value={estimatedFinish} />
-    </Card>
+    <p className="text-center text-body-sm font-semibold tabular-nums text-[var(--color-secondary)]">
+      {t.rich("summary_line", {
+        focus: focusMinutes,
+        breakMin: breakMinutes,
+        finish,
+        b: (chunks) => <span className="font-extrabold text-[var(--color-main)]">{chunks}</span>,
+      })}
+    </p>
   );
 }

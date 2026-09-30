@@ -145,6 +145,87 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-29 · Plan sihirbazı ve hedef dakikalar.** Plan önizlemesinde koç notu üstte, görev nedeni kartta, kanıtların tamamı açılır bölümde. Plan sihirbazı ile kayıt onboarding’i 60/120/240/360 dk ve aynı ızgarada 10–600 dk serbest giriş sunar; eski özel hedef görünür. Gün seçimi geniş ekranda iki sütun, kısa ekranda kaydırılabilir. Uygulama seçili görevlerin doğrulanmış konusunu `plan_tasks.topic` alanına yazar, 24 değişikliğe izin verir ve İstanbul günündeki revizyonu doğrular. Kullanım: görevleri işaretleyip “Seçilenleri uygula” seç; plan arada değiştiyse önizlemeyi yeniden hazırla. İlgili: `plan.service.ts`, `plan-coach-adaptation-brief-steps.tsx`, `plan-coach-adaptation-preview.tsx`, `daily-goal-step.tsx`.
+
+- **2026-09-30 · Seans redesign turu 2, Durak E: "Işıklar kısılır" hareket seti.** `/seans` artık
+  fazlar arasında kalıcı tek bir zeminde duruyor (`session-stage.tsx`): kurulum, odak, mola ve bitiş
+  kartı aynı sahnenin üstünde çizilir; faz değişince sayfa değil ışık değişir. Başla'da odanın perdesi
+  koyulaşır (`STAGE_ROOM_VEIL`: kurulum 58 · odak 86 · mola 44 · bitiş 74, `RoomBackdrop` perdesinin
+  çarpanı; 500 ms ease-out-quint), uygulama kabuğu (kenar çubuğu, telefonda başlık ve alt menü) koyu
+  örtüyle kararır, sade görünümde karanlık salon belirir. Kurulum ekranı 200 ms'de geri çekilir (üst bar
+  yukarı, sayaç aşağı, ray yana; seanstan dönüşte aynı yoldan gelir, ilk boyamada durağan:
+  `AnimatePresence initial={false}`). Halka taşınır: Başla'da kurulum halkasının merkezi ölçülür
+  (`measureIdleRing`), odak halkası yerine çizilip oradan WAAPI ile uçurulur (FLIP, 450 ms); eski halka
+  aynı karede `[data-lights=down]` ile gizlenir, iki halka bir an bile üst üste görünmez. Odak katmanı
+  zeminin kutusuna oturur (masaüstünde kenar çubuğunun sağı), etiket ve kontroller 150 ms gecikmeyle
+  gelir; mola artık katmanı yeniden oynatmaz. Molada ışık açılır ve ısınır (`.session-break-warmth`,
+  soft-light), halkanın yayı odanın yeşiline döner (`@property --session-ring-tint`, 300 ms). Seanstan
+  dönüşte biten seans Bugün şeridine soldan büyür (`freshSessionId`, 450 ms; sayı zaten `DigitPopIn`).
+  Masada biri oturduğunda avatarı bir kez parlar, sonra nefes alır (`room-seat-arrive`, 600 ms; ilk
+  boyamadaki oturanlar parlamaz). Sürekli yeni döngü yok; reduced-motion'da hepsi anında.
+  **Gotcha:** sahne ışıklar kapalıyken `z-30` ile kabuğun üstüne çıkar ve ışık tamamen açılana dek orada
+  kalır (yoksa kenar çubuğu örtüsü solmadan geri gelir); `isolate` sarmalayıcı zemini `-z-10`'da tutar.
+  CDP `Animation.setPlaybackRate` ile yavaşlatılmış yakalamalarda framer'ın WAAPI opaklık animasyonları
+  takılı kalabilir; hareketi gerçek hızda ölçün. Testler: `e2e/study-session.spec.ts` (ışık, mola, bitiş),
+  `e2e/study-rooms.spec.ts` (koltuk parlaması, `page.clock`).
+
+- **2026-09-29 · Seans redesign turu 2, Durak C: masa durumları ve davet varışı.** Masa yüklenirken
+  boş ekran yerine sahne iskeleti var (`room-stage-skeleton.tsx`: zemin, başlık, masa elipsi, koltuklar,
+  CTA; ayrıca sayfanın Suspense fallback'i). Kemikler odanın mürekkebinden türüyor: kitin shimmer'ı
+  `--color-surface-container`/`--color-surface`'ten katman dışı bir gradyan çizdiği için `bg-` sınıfı
+  işe yaramıyor, token'lar değiştiriliyor. Bulunamayan masa (404/403) Puhu'lu sakin bir kart gösteriyor
+  ("Seansa dön" ledge); başka hatalarda "Masa şu an açılamadı" + "Yeniden dene" var. Oturan koltuğun
+  etiketi yeşil yazı yerine odanın mürekkebiyle "Matematik · 18 dk", yanında `--room-live` noktası
+  (yeni oda token'ı: koyu odalarda açık, "Ev"de koyu yeşil). `/masaya-katil` artık bir karşılama kartı
+  (`room-notice-card.tsx`, bulunamadı durumuyla ortak): katılırken Puhu, kod çipi ve ilerleme çizgisi;
+  başarıda perde kararır, masa `?hosgeldin=1` ile açılıp perdeyi kaldırır ve bayrağı adresten siler.
+  Kod geçersiz ya da yoksa "Kodu elle gir" `/seans?katil=1`'e gider ve katılma penceresi bir kez açılır;
+  zaten üyeysen "Masalarına git", ağ hatasında "Yeniden dene" var. Sayfa uygulama kabuğunun dışında
+  olduğu için pastel blob atmosferini kendisi taşıyor. **Gotcha:** `?hosgeldin=1` ve `?katil=1` tek
+  seferlik; ikisi de okunduktan hemen sonra `history.replaceState` ile adresten silinir (yenileme ya da
+  kopyalanan bağlantı normal açılır). İlgili: `room-shell.tsx`, `rooms/[id]/page.tsx`, `room-seats.tsx`,
+  `session-room-list.tsx`, `join-room/_components/room-join-shell.tsx`, `packages/ui/src/theme.css`,
+  `e2e/join-room.spec.ts`, `e2e/study-rooms.spec.ts`.
+
+- **2026-09-29 · Seans redesign turu 2, Durak B: `/seans` iki bölge.** Kurulum ekranı panel
+  çerçevesine geçti (`session-idle-view.tsx`; kabuk yönetir, bileşen çizer): sayaç ana sütunda,
+  `xl`'den itibaren 340 px ray (Bugün · Masaların · Yol arkadaşın); daha darda kartlar sayacın
+  altında, `md`'den iki sütun. Sol geçmiş rayı kalktı; geçmiş her genişlikte sağdan açılan
+  çekmecede (`HistorySideDrawer` `side="right"` + `desktop`, vizyon panosunun varsayılanı aynı).
+  Sahne zemini `fixed` (kenar çubuğundan sonra, telefon başlığının altında), sayfa tek
+  kaydırmalı. "Bugün" kartı (`session-today-card.tsx`, eski hedef kartının yerine): hedef çizgisi
+  bugün tamamlanan seanslardan oluşur (her parça bir seans), yarım kalanlar metinde; seans listesi
+  gelmezse dakikalar tek parça çizilir. Kartlar `PANEL_CARD_TITLE`, çerçeveli ledge ve metin
+  bağlantısı kullanıyor; masa adları tam görünüyor, satırda "1 kişi çalışıyor" ve "uzun süredir
+  sessiz" var. Telefon üst barı: sahne çipinin menüsü (temalar + sade görünüm), ses hapı yalnız
+  ikon, satır `justify-center-safe`. Özet tek satır ("bitiş 18:01"; saatten sonraki Türkçe ek
+  dakikanın okunuşuna göre değiştiği için "'de biter" kullanılmadı). Sade görünümde seçili ön ayar
+  panelin seçili çipi; "Başla" kitin ledge'i (hap değil). `theme.css` cam eşlemesine
+  `--play-selected(-ink)`, `--color-surface-container`, `--play-line`, `--play-track` ve açık
+  `--color-success` eklendi, panelin sınıfları camda okunuyor. **Gotcha:** Playwright'ın tam
+  sayfa görüntüsü sabit zemini yalnız ilk ekran boyunca çizer, alt kartlar beyaz üstünde görünür;
+  gerçek kaydırmada zemin yerinde kalır. Doğrulamayı kaydırılmış görünümün görüntüsüyle yap.
+  İlgili: `study-session-shell.tsx`, `session-today-card.tsx`, `session-room-list.tsx`,
+  `session-buddy-card.tsx`, `session-top-bar.tsx`, `session-setup-summary.tsx`,
+  `session-content-skeleton.tsx`, `packages/ui/src/theme.css`, `e2e/study-session.spec.ts`,
+  `e2e/qa-stage2-real-api.spec.ts` (K03 çekmeceyi her genişlikte açar).
+
+- **2026-09-29 · Seans redesign turu 2, Durak A: masa pencereleri sahnenin dışında, yıkıcı onaylar.**
+  `RoomSheet` artık kit `Modal`'ın `placement="sheet"` hali ve `document.body`'ye portal'lı. İki
+  kritik hata kapandı: pencere `.room-stage`'in içinde çizildiği için token eşlemesi davet kodunu
+  beyaz üstüne krem yazıyordu; telefonda `backdrop-filter`'lı kartın içine sıkışıp alt menünün
+  altında kalıyordu (masa kurulamıyor, koda katılınamıyordu). Masa menüsü uygulamanın
+  `PopoverMenu`'sü (zaten body'ye portal'lı). Masayı kapat, masadan ayrıl ve yol arkadaşlığını
+  bitir "ikinci dokunuşta onay" yerine kitin yıkıcı onayını kullanıyor (kırmızı ledge, odak
+  "Vazgeç"te). Katılma hatası toast değil, alanın altında; `studyRoomJoinFailure` hem pencere hem
+  `/masaya-katil` için ortak. Davet penceresi `room-invite-sheet.tsx`'e ayrıldı: mono kod çipi ve
+  kopyala, `navigator.share` varsa "Bağlantıyı paylaş", kopyalama ve yenileme sonucu bir durum
+  satırında. **Gotcha:** native `<dialog>` açıkken kit `confirm()` ya da toast açma. O katmanlar
+  üst katmanın altında kalır, karartılır ve tıklanamaz; bu yüzden "Kodu yenile" onayı pencerenin
+  içinde soruluyor. İlgili: `room-sheet.tsx`, `room-invite-sheet.tsx`, `room-shell.tsx`,
+  `room-create-sheet.tsx`, `session-room-list.tsx`, `session-buddy-card.tsx`, `lib/study-rooms.ts`
+  (+ spec), `e2e/study-session.spec.ts`, `e2e/study-rooms.spec.ts`.
+
 - **2026-09-27 · W8 link-end seam: pending coach tasks are released.**
   `PlanService.releaseMentorshipTasksInTransaction(tx, scope)` clears origin and coach note on the
   ending link's PENDING tasks, in W8's link-end transaction; DONE tasks keep both. The student can

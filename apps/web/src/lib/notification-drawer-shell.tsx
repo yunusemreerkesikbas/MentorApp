@@ -74,7 +74,8 @@ const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   PLAN: "var(--color-secondary)",
   CONTENT: "var(--color-secondary)",
   FORUM: "var(--color-secondary)",
-  ACHIEVEMENT: "var(--color-streak)",
+  // Raw coral is 2.9:1 as a thin glyph; mixed toward the main ink it clears 3:1 in both themes.
+  ACHIEVEMENT: "color-mix(in srgb, var(--color-streak) 75%, var(--color-main))",
   MENTORSHIP: "var(--coach-accent)",
   SYSTEM: "var(--color-secondary)",
 };

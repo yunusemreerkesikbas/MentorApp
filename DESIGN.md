@@ -156,6 +156,8 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
 
+**Study scene (`.room-stage`, `SessionStage`, 2026-09-30):** a room is a place, so its stage never follows the cookie either: per-theme `--room-*` tokens (LIBRARY and CAFE dark, HOME light) in `theme.css`, and the stage remaps `--color-main` / `--color-body` / `--color-secondary` to `--room-ink` / `--room-ink-soft` so one set of controls reads in every room. Four rules. (1) Glass on the stage (`.session-liquid-card` / `-pill`) always writes in `--color-main` / `--color-secondary`; the glass remap supplies `--color-surface-container`, `--play-selected(-ink)`, `--play-line`, `--play-track` and `--color-success`, so the panel's text links, outline ledge and progress line read on glass without their own variants. (2) Anything that opens from the stage (sheet, menu, confirm) is portalled to `body` and drawn on the kit's solid surfaces: a window rendered inside the stage inherits room ink and prints cream on white. (3) `--room-live` means "someone is working now", a dot beside room ink; `--room-accent` is for rings; the primary CTA stays the play ledge in every room. (4) `/seans` stands on one `SessionStage` ground through setup, focus, break and the done card: the veil changes per phase (a multiplier on the theme's own `--room-veil`: 58 · 86 · 44 · 74) and while a session runs the app chrome sits under the focus charcoal (§9.1).
+
 **Play CTA (global, 2026-09-18):** `@mentor/ui` `Button` is the play ledge on every surface (welcome, onboarding, auth, `(app)`, `(coach)`). Tokens on `html`: `--play-cta` `#55ACEE`, `--play-cta-ink` `#0F2233` navy (6.6:1; white is 2.46:1 and fails AA, so it went back to navy on 2026-09-28), `--play-cta-edge` `#3B8FD0` 4px, `--play-radius` 16px. `primary`/`accent` = filled ledge; `danger` = the same ledge in `--color-danger` with `--color-danger-ink` / `--color-danger-edge`, only for an irreversible confirm; `secondary`/`soft`/`ghost` = outline ledge (`--play-line` + `--play-selected-ink`). `--color-btn` is not this CTA.
 
 **Play wells + selected fill (global, 2026-09-20):** `--play-selected` and `--play-well-{blue,peri,violet,coral,pink}` moved from `.onboarding-play-theme` to `html` (dark values on `html.dark`). The panel's quest rows and path nodes speak the same language as the onboarding choice cards, and a token that two surfaces share does not belong to one of them.
@@ -332,6 +334,10 @@ from them (2026-09-22).
 | **Coach identity**      | A human coach as a person: the initials disk on `--coach-accent` with a surface gap and a `--coach-accent-soft` ring (40 / 56 / 72 px), an ink eyebrow ("Koçun", "Seni öğrencisi olarak takip etmek istiyor", "Koçunun değerlendirmesi"), the name 20/800, meta 13/600. Claims in two groups (APP-089): checked ones as ink chips with a badge, the coach's own words dashed and quiet, each under its heading. | `components/mentorship/coach-identity.tsx` |
 | **Scope rows**          | The consent contract: one bare ink glyph per scope key, a short name 15/800 and the plain words (on Koçum the figure actually travelling, the plan rate drawn as a line), beside an EyeOff "never" list. The invite reads "Koçun görecekleri / göremeyecekleri" side by side (stacked on phones); Koçum's rail ends with "Bağlantıyı sonlandır" under the data it stops. | `components/mentorship/scope-rows.tsx` |
 | **Paired bars**         | This week against the last: a 12 px bar in `--chart-activity-2` over a 6 px gray one (`--color-secondary` 45 %), both against the row's larger value; the numbers beside them (this week 16/900, the last 12/700) are `aria-hidden` and the bars carry one sentence as `role="img"`. Emphasis form: the last week is context, never a second hue. | `my-coach/weekly-reports/[reportId]/weekly-report-cards.tsx` |
+| **Stage card**          | A card on a room stage: glass (`.session-liquid-card`) with the panel's inside (title 16/800 in sentence case, body 14, text links, one outline ledge at most); ink is always the room's (§2.5 study scene). On the plain view it is the panel's solid card. The page keeps one filled ledge ("Başla"). Room rows: 44 px theme photo, the full name over two lines (never cut), "Kütüphane · 2/4 koltuk", live presence as a `--color-success` dot + words; a long-quiet room dims. | `study-session/_components/session-today-card.tsx` (`SESSION_CARD_CLASS`), `session-room-list.tsx` |
+| **Room sheet**          | The form modal with `placement="sheet"`: on phones bottom-aligned with 28 px top corners, a 40×5 handle, `shadow-sheet` and the safe area; from `lg` the centred modal. An optional `banner` runs edge to edge above the title (the room theme carousel). Portalled to `body`. Errors stay under their field, never a toast; a follow-up question inside a sheet ("Kodu yenileyelim mi?") is asked inline in the sheet, because the kit's confirm and toast layers sit under a native dialog's top layer. | `@mentor/ui` `modal.tsx`, `study-session/_components/room-sheet.tsx` |
+| **Day strip**           | The day's focus goal as a 12 px `--play-track` track filled by one segment per completed session (width by minutes, 3 px gaps, `--play-cta`; all `--color-success` once the goal is met), scaled to the goal or to the day's total when it runs past. Abandoned sessions are said in words, not drawn. `role="img"` with one sentence. The session just finished grows in from the left. | `study-session/_components/session-today-card.tsx` |
+| **Welcome card**        | An invitation link's landing outside the app shell: blob canvas, "Mentor" wordmark, one centred card (≤ 26 rem) with a 112 px Puhu over its top edge, title 20/800, one sentence, one ledge and a quiet link. States: joining (code chip + a thin travelling bar, still under reduced motion), invalid or missing code ("Kodu elle gir"), already a member, network error ("Yeniden dene"). Success cuts to black and the room lifts the curtain. | `study-session/_components/room-notice-card.tsx`, `join-room/_components/room-join-shell.tsx` |
 
 ---
 
@@ -495,6 +501,18 @@ come from `CoachMotionConfig` (`reducedMotion="user"`); constants in `components
 Nothing waits on these: under reduced motion the check shows at once, panels close at once and pages
 swap without a slide.
 
+**The study scene (2026-09-30, "Işıklar kısılır").** `/seans` changes the light, not the page
+(`SessionStage`, §2.5). One signature moment, the rest is feedback; no new ambient loop.
+
+| Where | Motion | Budget |
+| --- | --- | --- |
+| Start | The room's veil thickens (58 → 86), the app chrome goes under the focus charcoal, the plain view's theatre fades in; the setup recedes (top bar up 8 px, timer down 8 px, rail aside 24 px); the ring travels from where it stood to the focus centre (FLIP), words and controls follow it 150 ms later | lights 500 ms, recede 200 ms, ring 450 ms |
+| Break | The light lifts and warms (veil 44 + a soft-light wash); the ring's arc turns `--room-live` | 500 ms / 300 ms |
+| Back at setup | The setup returns the way it left; the session just finished grows into the day strip from the left and the count pops | 200 ms / 450 ms |
+| Room | A member who sits down: one ring of light leaves the avatar, then the usual breathing; arriving from an invite, the black curtain lifts | 600 ms / 280 ms |
+
+Under reduced motion every change lands at once.
+
 ---
 
 ## 10. Empty & loading
@@ -511,7 +529,7 @@ swap without a slide.
 
 - Bottom Tab Bar → **left sidebar** at `lg` (1024px); active `#111`.
   Desktop rail is 240px with sentence-case labels. A top-right `PanelLeft` control
-  collapses it to a 52px icon strip (same width as the history rail on seans and vizyon panosu).
+  collapses it to a 52px icon strip (same width as the vizyon panosu history rail).
   Hover/focus on a rail icon reveals the link name. Preference persists via the
   `mentor-sidebar` cookie (no expanded flash on reload). `/hedef/pano` and
   community keep this collapsed rail visible (do not hide AppNav).
@@ -570,8 +588,12 @@ swap without a slide.
       (code → coach → scope → one ledge), Koçum in the panel frame with the transparency rail, the
       weekly review drawn against the week before; dialog, sheet, modal, drawer and toast solid, on
       one scrim and one overlay shadow; the primary ledge's ink back to navy.
+- [x] Seans converged (2026-09-30): the scene, glass cards, ring and room art kept; `/seans` in two
+      zones (timer + a 340 px rail: Bugün with the day strip, Masaların, Yol arkadaşın; history in a
+      drawer), room windows as portalled sheets with destructive confirms, the room's loading and
+      not-found states, the invite link as a welcome card, and the "Işıklar kısılır" motion set (§9.1).
 - [ ] **Converge every screen to the panel** as it is touched: plan, topluluk,
-      seans, defterlerim, profil/ayarlar, and the coach profile (`/kocluk/profil`). Checklist per
+      defterlerim, profil/ayarlar, and the coach profile (`/kocluk/profil`). Checklist per
       screen: §1 rules, §3 scale (no arbitrary `text-[Npx]`), §5 radius set, §6.1 patterns.
 - [x] §6.1 primitives shared once a second screen needed them: `apps/web/src/components/panel/`, not
       `@mentor/ui`, because the bubble needs `PuhuImage` / `next/image` (2026-09-22).

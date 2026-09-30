@@ -1,12 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import {
-  PLAN_ADAPTATION_MINUTES_MAX,
-  PLAN_ADAPTATION_MINUTES_MIN,
-} from "@mentor/validation";
 import { PlayGridCard, PlayOptionRow } from "@/components/onboarding-play/play-choice";
+import { MinuteEntryCard } from "@/components/onboarding-play/minute-entry-card";
 import {
   PLAN_ADAPTATION_MINUTE_CHOICES,
   PLAN_ADAPTATION_NOTE_MAX,
@@ -37,9 +33,9 @@ export function BriefWeekdaysStep({
   const weekday = new Intl.DateTimeFormat(locale, { weekday: "long" });
   const dayMonth = new Intl.DateTimeFormat(locale, { day: "numeric", month: "long" });
   return (
-    <div role="group" aria-label={title} className="flex flex-col gap-3">
+    <div role="group" aria-label={title} className="grid gap-3 lg:grid-cols-2">
       {rhythmWeekdays.length > 0 ? (
-        <p className="text-sm font-medium text-[var(--color-secondary)]">
+        <p className="text-sm font-medium text-[var(--color-secondary)] lg:col-span-2">
           {t("coach_adaptation_days_rhythm")}
         </p>
       ) : null}
@@ -84,12 +80,10 @@ export function BriefMinutesStep({
   onSelect: (minutes: number | null) => void;
 }) {
   const t = useTranslations("plan");
-  const isPreset = (PLAN_ADAPTATION_MINUTE_CHOICES as readonly number[]).includes(minutes ?? -1);
-  // A goal like 45 dk has no card; it starts in the field instead.
-  const [draft, setDraft] = useState(() => (minutes != null && !isPreset ? String(minutes) : ""));
+  const custom = minutes != null && !(PLAN_ADAPTATION_MINUTE_CHOICES as readonly number[]).includes(minutes);
   return (
-    <div className="flex flex-col gap-4 pt-3">
-      <div role="radiogroup" aria-label={title} className="grid grid-cols-2 gap-3">
+    <div className="pt-3">
+      <div role="group" aria-label={title} className="grid grid-cols-2 gap-3">
         {PLAN_ADAPTATION_MINUTE_CHOICES.map((choice, choiceIndex) => (
           <PlayGridCard
             key={choice}
@@ -104,37 +98,18 @@ export function BriefMinutesStep({
             }
             art={<ChoiceFigure value={String(choice)} selected={minutes === choice} />}
             selected={minutes === choice}
-            onSelect={() => {
-              setDraft("");
-              onSelect(choice);
-            }}
+            onSelect={() => onSelect(choice)}
           />
         ))}
+        <MinuteEntryCard
+          label={t("coach_adaptation_minutes_custom_label")}
+          unit={t("coach_adaptation_minutes_unit")}
+          placeholder={t("coach_adaptation_minutes_custom_placeholder")}
+          value={minutes}
+          selected={custom}
+          onChange={onSelect}
+        />
       </div>
-      <label className="flex flex-col gap-2">
-        <span className="text-base font-bold text-[var(--color-main)]">
-          {t("coach_adaptation_minutes_custom_label")}
-        </span>
-        <span className="flex items-center gap-3">
-          <input
-            type="number"
-            inputMode="numeric"
-            min={PLAN_ADAPTATION_MINUTES_MIN}
-            max={PLAN_ADAPTATION_MINUTES_MAX}
-            step={5}
-            value={draft}
-            onChange={(event) => {
-              setDraft(event.target.value);
-              onSelect(event.target.value === "" ? null : Number(event.target.value));
-            }}
-            placeholder={t("coach_adaptation_minutes_custom_placeholder")}
-            className={`min-h-12 ${FIELD}`}
-          />
-          <span className="text-base font-bold text-[var(--color-secondary)]">
-            {t("coach_adaptation_minutes_unit")}
-          </span>
-        </span>
-      </label>
     </div>
   );
 }

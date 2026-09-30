@@ -1,12 +1,28 @@
 "use client";
 
-import type { CSSProperties } from "react";
+import { useLayoutEffect, useRef, type CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { useTranslations } from "next-intl";
 import type { SessionPresetDto } from "@mentor/types";
 import { CircularTimerRing } from "@mentor/ui";
 
 /** Visual diameter of the session ring; focus ripples scale from this. */
 export const SESSION_TIMER_RING_PX = 280;
+const RING_FLIGHT_MS = 450;
+
+export type RingCenter = { x: number; y: number };
+
+/** The ring sits at the top of its box, centred across it. */
+function ringCenter(box: Element): RingCenter {
+  const r = box.getBoundingClientRect();
+  return { x: r.left + r.width / 2, y: r.top + SESSION_TIMER_RING_PX / 2 };
+}
+
+/** Where the setup ring is on screen, read on Start so the running ring can fly from there. */
+export function measureIdleRing(): RingCenter | null {
+  const box = document.querySelector("[data-session-ring]");
+  return box ? ringCenter(box) : null;
+}
 
 export interface SessionTimerRingProps {
   phase: "idle" | "focus" | "break" | "done";
@@ -21,6 +37,8 @@ export interface SessionTimerRingProps {
     minutes: number,
     breakMinutes: number,
   ) => void;
+  /** Set when Start was pressed on the setup screen: the running ring flies in from there. */
+  flyFrom?: RingCenter | null;
 }
 
 export function SessionTimerRing({
@@ -32,12 +50,27 @@ export function SessionTimerRing({
   selectedPresetId,
   onMinutesChange,
   onPresetSelect,
+  flyFrom = null,
 }: SessionTimerRingProps) {
+  const t = useTranslations("session");
   const reduceMotion = useReducedMotion();
   const isIdle = phase === "idle";
   const isBreak = phase === "break";
   const isCountdown = phase === "focus" || phase === "break";
   const referenceMinutes = isBreak ? breakMinutes : focusMinutes;
+
+  // The ring is the one thing that carries over from setup to focus, so it travels rather than
+  // being swapped (FLIP): drawn where it will live, then played back from where it was.
+  const ringRef = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const box = ringRef.current;
+    if (!flyFrom || !box || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const to = ringCenter(box);
+    box.animate(
+      [{ transform: `translate(${flyFrom.x - to.x}px, ${flyFrom.y - to.y}px)` }, { transform: "none" }],
+      { duration: RING_FLIGHT_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
+    );
+  }, [flyFrom]);
 
   return (
     <div
@@ -46,7 +79,17 @@ export function SessionTimerRing({
         { "--session-ring-size": `${SESSION_TIMER_RING_PX}px` } as CSSProperties
       }
     >
-      <div className="relative flex w-full flex-col items-center">
+      <div
+        ref={ringRef}
+        data-session-ring
+        data-phase={phase}
+        // The setup ring hides in the very frame the lights go down (the stage's `data-lights`),
+        // while the setup screen around it recedes: the running ring is already on top of it,
+        // on its way to the centre, and two rings must not show at once.
+        className={`session-ring relative flex w-full flex-col items-center${
+          isIdle ? " [[data-lights=down]_&]:invisible" : ""
+        }`}
+      >
         {isCountdown ? (
           <div
             aria-hidden
@@ -76,7 +119,7 @@ export function SessionTimerRing({
         <div
           className="flex flex-wrap justify-center gap-2"
           role="group"
-          aria-label="Preset"
+          aria-label={t("preset_group")}
         >
           {presets.map((p) => {
             const selected = selectedPresetId === p.id;

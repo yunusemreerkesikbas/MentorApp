@@ -66,9 +66,11 @@ export function RoomBackdrop({
       )}
       {/* `veilPercent` scales the theme's OWN veil rather than mixing its ground colour: a
           light room and a dark room need opposite veils, and one shared percentage of
-          `--room-ground-to` gave the light one a bleach bath. */}
+          `--room-ground-to` gave the light one a bleach bath. It eases between strengths: on
+          /seans the lights go down for focus and come up for the break. */}
       <div
-        className="absolute inset-0"
+        data-room-veil
+        className="absolute inset-0 transition-opacity duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
         style={{ backgroundColor: "var(--room-veil)", opacity: veilPercent / 100 }}
       />
       {/* Vignette: pulls the eye to the table and darkens the edges the chrome floats over. */}

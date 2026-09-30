@@ -1056,3 +1056,24 @@ eklendi.
   `button.tsx`, `theme.css`, `transitions/{index,tabs-sliding}.css`,
   `lib/{mentor-dialog.ts,dialog-lead.tsx,toast-lead.tsx,notification-drawer-shell.tsx}`,
   `e2e/mentorship.spec.ts` (yıkıcı onay testi).
+
+- **2026-09-29 — Diyalog odağı: tanımlı, kapalı devre, geri dönen.** Bağımsız incelemenin
+  bulgusu: yıkıcı onayda odak "Vazgeç"te başladığı için ekran okuyucu sonucu hiç okumuyordu ve
+  tek Tab odağı diyalogdan arkadaki sayfaya kaçırıyordu. Artık panelin `aria-describedby`'ı mesajı
+  gösteriyor, Tab / Shift+Tab panelin içinde dönüyor, diyalog kapanınca odak onu açan kontrole
+  geri gidiyor (o kontrol eylemle kalktıysa gitmiyor; açıkken yerine gelen diyalog ilk açanı
+  korur). Çekmecenin masaüstü kapanışı 150 ms'e eşitlendi (JS zamanlayıcısıyla aynı). **Gotcha:**
+  rol bilerek `dialog` kaldı (`alertdialog` değil): testler ve gerçek API senaryoları
+  `getByRole("dialog")` ile buluyor. İlgili: `packages/ui/src/components/dialog/{dialog-provider,dialog-panel}.tsx`,
+  `apps/web/src/app/globals.css`, `e2e/mentorship.spec.ts` (Tab döngüsü, açıklama, odağın dönüşü).
+
+- **2026-09-29 — Kit `Modal`: `banner` ve `placement="sheet"` (redesign turu 2, Durak A).**
+  `placement="sheet"` lg altında ekranın altına yaslanır (üst köşeler `--play-sheet-radius`, tutamak,
+  `--shadow-sheet`, güvenli alan boşluğu; 250 ms yukarı kayar, 150 ms'de çıkar), lg ve üstünde
+  ortada kalır; `banner` başlığın üstünde kenardan kenara çizilir (masa kurmada tema karuseli).
+  Scrim'de başlayıp scrim'de biten bir basış pencereyi kapatır; içeriden başlayıp dışarı sürüklenen
+  bir metin seçimi kapatmaz. Varsayılan `center` davranışı değişmedi. **Gotcha:** sınıf listesinde
+  template deliğini bir sınıfın sonuna yapıştırma (`…scrim)]${x}`): Tailwind tarayıcısı adayı
+  okuyamaz ve kural hiç derlenmez. Bu durakta `backdrop:bg-[var(--color-scrim)]` böyle kayboldu ve
+  pencereler karartmasız açıldı; önüne boşluk koy. `e2e/study-session.spec.ts` artık `::backdrop`
+  rengini kontrol ediyor. İlgili: `packages/ui/src/components/modal.tsx`.

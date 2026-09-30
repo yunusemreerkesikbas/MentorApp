@@ -1,10 +1,17 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useState } from "react";
+import { Hand } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { BuddySuggestionRef, BuddyViewDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
+import {
+  PANEL_CARD_TITLE,
+  PANEL_QUIET_LINK,
+  PANEL_TEXT_LINK,
+} from "@/components/panel/panel-styles";
+import { PuhuImage } from "@/components/puhu-image";
 import {
   acceptBuddyRequest,
   deleteBuddyRequest,
@@ -14,8 +21,10 @@ import {
   nudgeBuddy,
   sendBuddyRequest,
 } from "@/lib/buddy";
+import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { AuthorAvatar } from "../../community/_components/author-avatar";
+import { SESSION_CARD_CLASS } from "./session-today-card";
 
 type State =
   | { status: "loading" }
@@ -23,15 +32,20 @@ type State =
   | { status: "ready"; view: BuddyViewDto };
 
 /**
- * Study-buddy card on the /study-session idle screen: active partner (today's effort + nudge),
- * incoming/outgoing requests, or a quiet empty-state invite. Effort only — never results.
+ * "Yol arkadaşın" on the /seans rail: the active partner (today's effort, live presence, a
+ * nudge), a request either way, or the people you already studied beside. Effort only, never
+ * results.
+ *
+ * Actions are the panel's: an outline ledge for the one thing to do ("Dürt", "Kabul et"),
+ * quiet links for the rest. The page's single filled ledge stays "Başla".
  */
 export function SessionBuddyCard() {
   const t = useTranslations("session");
+  const titleId = useId();
+  const dialog = useMentorDialog();
   const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
-  const [endConfirm, setEndConfirm] = useState(false);
 
   const load = useCallback(() => {
     getBuddy()
@@ -72,80 +86,69 @@ export function SessionBuddyCard() {
       });
     } finally {
       setBusy(false);
-      setEndConfirm(false);
     }
   };
 
-  // Request a buddy from the cohort suggestion list. Returns success so the caller can react;
-  // the card flips to outgoing-pending via load(). (The username invite box moved to study
-  // rooms — finding someone by handle was exactly the friction the invite code removes.)
-  const requestByUsername = async (username: string): Promise<boolean> => {
+  // Ending a pairing hides both people's effort from each other, so it asks in the kit's
+  // destructive confirm instead of relabelling the link and waiting for a second tap.
+  const endPairing = async (partnerName: string) => {
+    const confirmed = await dialog.confirm({
+      title: t("buddy_end_confirm_title"),
+      message: t("buddy_end_confirm_body", { name: partnerName }),
+      confirmLabel: t("buddy_end_confirm_action"),
+      cancelLabel: t("goal_cancel"),
+      destructive: true,
+    });
+    if (confirmed) await run(endBuddy);
+  };
+
+  // Request a buddy from the cohort suggestion list. The card flips to outgoing-pending via
+  // load(). (The username invite box moved to study rooms — finding someone by handle was
+  // exactly the friction the invite code removes.)
+  const requestByUsername = async (username: string) => {
     setBusy(true);
     try {
       await sendBuddyRequest(username);
       load();
-      return true;
     } catch (err) {
       showErrorToast({
         title: t("buddy_action_error_title"),
         message: err instanceof ApiClientError ? err.body.message : undefined,
         duration: 3000,
       });
-      return false;
     } finally {
       setBusy(false);
     }
   };
 
-  if (state.status === "loading" || state.status === "hidden") return null;
+  if (state.status === "hidden") return null;
+  if (state.status === "loading") return <SessionBuddyCardSkeleton />;
   const { active, outgoing, incoming } = state.view;
 
-  const textButton = (label: string, onClick: () => void, tone: "accent" | "quiet" = "quiet") => (
-    <button
-      type="button"
-      disabled={busy}
-      onClick={onClick}
-      className="min-h-11 cursor-pointer text-sm font-semibold disabled:opacity-50"
-      style={{ color: tone === "accent" ? "var(--color-progress)" : "var(--color-secondary)" }}
-    >
-      {label}
-    </button>
-  );
-
   return (
-    <Card className="flex flex-col gap-4 px-4 py-4 session-liquid-card">
-      <span
-        className="text-[11px] font-semibold uppercase tracking-wide"
-        style={{ color: "var(--color-secondary)" }}
-      >
+    <section className={SESSION_CARD_CLASS} aria-labelledby={titleId}>
+      <h2 id={titleId} className={PANEL_CARD_TITLE}>
         {t("buddy_title")}
-      </span>
+      </h2>
 
       {active ? (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-start gap-3">
-            <AuthorAvatar name={active.partner.displayName} size={40} src={active.partner.avatarUrl} />
-            <div className="min-w-0 flex-1 leading-snug">
-              <p
-                className="truncate text-sm font-bold"
-                style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-              >
+        <>
+          <div className="flex items-center gap-3">
+            <AuthorAvatar name={active.partner.displayName} size={44} src={active.partner.avatarUrl} />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="truncate text-body-sm font-extrabold text-[var(--color-main)]">
                 {active.partner.displayName}
               </p>
               {active.partnerStudyingNow ? (
-                <p
-                  className="mt-1 flex items-center gap-1.5 text-xs font-semibold"
-                  style={{ color: "var(--color-success)" }}
-                >
+                <p className="inline-flex items-center gap-1.5 text-caption font-extrabold text-[var(--color-main)]">
                   <span
                     aria-hidden
-                    className="h-2 w-2 rounded-full animate-pulse motion-reduce:animate-none"
-                    style={{ backgroundColor: "var(--color-success)" }}
+                    className="size-2 shrink-0 rounded-full bg-[var(--color-success)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-success)_24%,transparent)]"
                   />
                   {t("buddy_studying_now")}
                 </p>
               ) : (
-                <p className="mt-1 text-xs leading-relaxed" style={{ color: "var(--color-secondary)" }}>
+                <p className="text-caption font-semibold text-[var(--color-secondary)]">
                   {t("buddy_active_stats", {
                     minutes: active.focusMinutesToday,
                     days: active.currentStreak,
@@ -153,10 +156,9 @@ export function SessionBuddyCard() {
                 </p>
               )}
             </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <button
-              type="button"
+            <Button
+              size="sm"
+              variant="secondary"
               disabled={busy || !active.canNudge}
               onClick={() =>
                 void run(nudgeBuddy, {
@@ -164,76 +166,90 @@ export function SessionBuddyCard() {
                   message: t("buddy_nudge_sent_message", { name: active.partner.displayName }),
                 })
               }
-              className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-40"
-              style={{
-                backgroundColor: "var(--color-surface-container)",
-                color: "var(--color-main)",
-              }}
             >
+              <Hand className="size-[18px]" strokeWidth={1.75} aria-hidden />
               {t("buddy_nudge")}
-            </button>
-            <div className="flex justify-center">
-              {endConfirm
-                ? textButton(t("buddy_end_confirm"), () => void run(endBuddy), "accent")
-                : textButton(t("buddy_end"), () => setEndConfirm(true))}
-            </div>
+            </Button>
           </div>
-        </div>
+          <button
+            type="button"
+            disabled={busy}
+            onClick={() => void endPairing(active.partner.displayName)}
+            className={`${PANEL_QUIET_LINK} -mb-1 self-start`}
+          >
+            {t("buddy_end")}
+          </button>
+        </>
       ) : incoming.length > 0 || outgoing ? (
         <div className="flex flex-col gap-4">
           {incoming.map((req) => (
             <div key={req.id} className="flex flex-col gap-2">
               <div className="flex items-start gap-3">
-                <AuthorAvatar name={req.partner.displayName} size={36} src={req.partner.avatarUrl} />
-                <p className="min-w-0 flex-1 text-sm leading-relaxed" style={{ color: "var(--color-main)" }}>
-                  <span className="font-bold">{req.partner.displayName}</span>{" "}
+                <AuthorAvatar name={req.partner.displayName} size={40} src={req.partner.avatarUrl} />
+                <p className="min-w-0 flex-1 text-body-sm font-semibold text-[var(--color-body)]">
+                  <span className="font-extrabold text-[var(--color-main)]">{req.partner.displayName}</span>{" "}
                   {t("buddy_incoming_suffix")}
                 </p>
               </div>
-              <div className="flex items-center gap-4 px-0.5">
-                {textButton(t("buddy_accept"), () => void run(() => acceptBuddyRequest(req.id)), "accent")}
-                {textButton(t("buddy_decline"), () => void run(() => deleteBuddyRequest(req.id)))}
+              <div className="flex flex-wrap items-center gap-x-[18px] gap-y-2 pl-[52px]">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  disabled={busy}
+                  onClick={() => void run(() => acceptBuddyRequest(req.id))}
+                >
+                  {t("buddy_accept")}
+                </Button>
+                <button
+                  type="button"
+                  disabled={busy}
+                  onClick={() => void run(() => deleteBuddyRequest(req.id))}
+                  className={PANEL_QUIET_LINK}
+                >
+                  {t("buddy_decline")}
+                </button>
               </div>
             </div>
           ))}
           {outgoing ? (
-            <div className="flex flex-col gap-2">
-              <div className="flex items-start gap-3">
-                <AuthorAvatar
-                  name={outgoing.partner.displayName}
-                  size={36}
-                  src={outgoing.partner.avatarUrl}
-                />
-                <p
-                  className="min-w-0 flex-1 text-sm leading-relaxed"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("buddy_outgoing", { name: outgoing.partner.displayName })}
+            <div className="flex items-center gap-3">
+              <AuthorAvatar name={outgoing.partner.displayName} size={40} src={outgoing.partner.avatarUrl} />
+              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <p className="truncate text-body-sm font-extrabold text-[var(--color-main)]">
+                  {outgoing.partner.displayName}
+                </p>
+                <p className="text-caption font-semibold text-[var(--color-secondary)]">
+                  {t("buddy_outgoing_waiting")}
                 </p>
               </div>
-              <div className="px-0.5">
-                {textButton(t("buddy_cancel"), () => void run(() => deleteBuddyRequest(outgoing.id)))}
-              </div>
+              <button
+                type="button"
+                disabled={busy}
+                onClick={() => void run(() => deleteBuddyRequest(outgoing.id))}
+                className={PANEL_QUIET_LINK}
+              >
+                {t("buddy_cancel")}
+              </button>
             </div>
           ) : null}
         </div>
       ) : (
-        <BuddyEmptyState busy={busy} onRequest={requestByUsername} />
+        <BuddySuggestions busy={busy} onRequest={(username) => void requestByUsername(username)} />
       )}
-    </Card>
+    </section>
   );
 }
 
 /**
- * Empty state: same-cohort suggestions with a one-tap request. When there's no one to suggest,
- * a quiet community link takes its place.
+ * No pairing yet: the people you already studied beside at a table, one tap each. When there
+ * is nobody to suggest, Puhu points at the tables instead of at a directory of strangers.
  */
-function BuddyEmptyState({
+function BuddySuggestions({
   busy,
   onRequest,
 }: {
   busy: boolean;
-  onRequest: (username: string) => Promise<boolean>;
+  onRequest: (username: string) => void;
 }) {
   const t = useTranslations("session");
   const [suggestions, setSuggestions] = useState<BuddySuggestionRef[] | null>(null);
@@ -252,59 +268,65 @@ function BuddyEmptyState({
     };
   }, []);
 
-  const hasSuggestions = suggestions !== null && suggestions.length > 0;
+  if (suggestions === null) {
+    return <Skeleton className="h-11 w-full rounded-[var(--radius-card)]" />;
+  }
+
+  if (suggestions.length === 0) {
+    return (
+      <div className="flex items-center gap-3 py-1">
+        <PuhuImage variant="encouraging" size={56} className="shrink-0" />
+        <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("buddy_empty_hint")}</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex flex-col gap-4">
-      {hasSuggestions ? (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("buddy_suggest_title")}
-          </p>
-          <ul className="flex flex-col gap-3">
-            {suggestions.map((u) => (
-              <li key={u.userId} className="flex flex-col gap-2">
-                {/* Two rows, not one: in the 288px sidebar a name, a handle and a button on the
-                    same line left ~90px for the name and truncated almost everyone. */}
-                <div className="flex items-center gap-3">
-                  <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
-                  <div className="min-w-0 flex-1 leading-tight">
-                    <p
-                      className="truncate text-sm font-semibold"
-                      style={{ color: "var(--color-main)" }}
-                      title={u.displayName}
-                    >
-                      {u.displayName}
-                    </p>
-                    {/* The reason they are here, in place of the handle nobody types any more. */}
-                    <p className="truncate text-xs" style={{ color: "var(--color-secondary)" }}>
-                      {t("buddy_together_count", { count: u.sessionsTogether })}
-                    </p>
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  disabled={busy || !u.username}
-                  onClick={() => u.username && void onRequest(u.username)}
-                  className="min-h-11 w-full cursor-pointer rounded-[var(--radius-card)] text-sm font-semibold disabled:opacity-50"
-                  style={{
-                    backgroundColor: "color-mix(in srgb, var(--color-progress) 14%, transparent)",
-                    color: "var(--color-main)",
-                  }}
-                >
-                  {t("buddy_suggest_action")}
-                </button>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : suggestions !== null ? (
-        // Nobody to suggest yet: a buddy is earned at a table, so point there rather than at a
-        // directory of strangers.
-        <p className="text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
-          {t("buddy_empty_hint")}
-        </p>
-      ) : null}
+    <div className="flex flex-col">
+      <p className="text-caption font-semibold text-[var(--color-secondary)]">{t("buddy_suggest_title")}</p>
+      <ul className="flex flex-col">
+        {suggestions.map((u, index) => (
+          <li
+            key={u.userId}
+            className={`flex items-center gap-3 py-2.5${index > 0 ? " border-t border-[var(--play-line)]" : ""}`}
+          >
+            <AuthorAvatar name={u.displayName} size={36} src={u.avatarUrl} />
+            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+              <p className="truncate text-body-sm font-extrabold text-[var(--color-main)]" title={u.displayName}>
+                {u.displayName}
+              </p>
+              {/* The reason they are here, in place of the handle nobody types any more. */}
+              <p className="truncate text-caption font-semibold text-[var(--color-secondary)]">
+                {t("buddy_together_count", { count: u.sessionsTogether })}
+              </p>
+            </div>
+            <button
+              type="button"
+              disabled={busy || !u.username}
+              onClick={() => u.username && onRequest(u.username)}
+              className={`${PANEL_TEXT_LINK} shrink-0`}
+            >
+              {t("buddy_suggest_action")}
+            </button>
+          </li>
+        ))}
+      </ul>
     </div>
+  );
+}
+
+function SessionBuddyCardSkeleton() {
+  const t = useTranslations("session");
+  return (
+    <SkeletonGroup label={t("loading")} className={SESSION_CARD_CLASS}>
+      <Skeleton className="h-5 w-32 rounded-[var(--radius-card)]" />
+      <div className="flex items-center gap-3">
+        <Skeleton className="size-11 rounded-full" />
+        <div className="flex flex-1 flex-col gap-1.5">
+          <Skeleton className="h-4 w-28 rounded-[var(--radius-card)]" />
+          <Skeleton className="h-3 w-20 rounded-[var(--radius-card)]" />
+        </div>
+      </div>
+    </SkeletonGroup>
   );
 }

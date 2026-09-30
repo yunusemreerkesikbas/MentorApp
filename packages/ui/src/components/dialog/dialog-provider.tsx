@@ -23,6 +23,9 @@ import {
 
 export const DialogContext = createContext<DialogContextValue | null>(null);
 
+const FOCUSABLE =
+  'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])';
+
 function createDialogId(): string {
   if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
     return crypto.randomUUID();
@@ -44,6 +47,8 @@ export function DialogProvider({ children }: DialogProviderProps) {
   const exitTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingRef = useRef<PendingResolver | null>(null);
   const dialogRef = useRef<DialogRecord | null>(null);
+  /** Where focus was before the dialog opened; it goes back there when the dialog closes. */
+  const returnFocusRef = useRef<HTMLElement | null>(null);
 
   dialogRef.current = dialog;
 
@@ -81,6 +86,10 @@ export function DialogProvider({ children }: DialogProviderProps) {
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
       exitTimerRef.current = setTimeout(() => {
         removeDialog();
+        // Back to the control that opened it, unless the action removed that control.
+        const returnTo = returnFocusRef.current;
+        returnFocusRef.current = null;
+        if (returnTo?.isConnected) returnTo.focus();
         if (result === "default") {
           const pending = pendingRef.current;
           if (pending?.kind === "boolean") resolvePending(false);
@@ -101,6 +110,10 @@ export function DialogProvider({ children }: DialogProviderProps) {
 
   const openDialog = useCallback((options: DialogShowOptions) => {
     if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    // A dialog replacing an open one keeps the first opener as the place to return to.
+    if (!dialogRef.current && document.activeElement instanceof HTMLElement) {
+      returnFocusRef.current = document.activeElement;
+    }
     setDialog({
       id: createDialogId(),
       title: options.title,
@@ -260,6 +273,26 @@ export function DialogProvider({ children }: DialogProviderProps) {
     if (!dialog || dialog.exiting) return;
 
     const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Tab") {
+        // Keep focus inside the panel: the page behind the scrim is not inert.
+        const panel = document.querySelector<HTMLElement>("[data-mentor-dialog-panel]");
+        const items = panel ? Array.from(panel.querySelectorAll<HTMLElement>(FOCUSABLE)) : [];
+        const first = items[0];
+        const last = items[items.length - 1];
+        if (!panel || !first || !last) return;
+        const active = document.activeElement;
+        if (!panel.contains(active)) {
+          event.preventDefault();
+          first.focus();
+        } else if (event.shiftKey && active === first) {
+          event.preventDefault();
+          last.focus();
+        } else if (!event.shiftKey && active === last) {
+          event.preventDefault();
+          first.focus();
+        }
+        return;
+      }
       if (event.key !== "Escape") return;
       const current = dialogRef.current;
       if (!current?.dismissOnEscape || current.busyActionId) return;
@@ -278,9 +311,7 @@ export function DialogProvider({ children }: DialogProviderProps) {
       // A destructive confirm marks its cancel, so Enter never lands on the irreversible action.
       const focusable =
         panel?.querySelector<HTMLElement>("[data-dialog-autofocus]") ??
-        panel?.querySelector<HTMLElement>(
-          'input:not([disabled]), textarea:not([disabled]), select:not([disabled]), button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
-        );
+        panel?.querySelector<HTMLElement>(FOCUSABLE);
       focusable?.focus();
     });
     return () => cancelAnimationFrame(frame);

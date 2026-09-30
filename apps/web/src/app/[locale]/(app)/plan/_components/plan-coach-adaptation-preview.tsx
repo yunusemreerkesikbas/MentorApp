@@ -82,8 +82,11 @@ export const PlanCoachAdaptationPreview = forwardRef<
 
   return (
     <div className="flex flex-col gap-4">
-      {preview.groundingLine ? (
-        <CompanionBubble puhu="encouraging" text={preview.groundingLine} />
+      {preview.coachNote || preview.groundingLine ? (
+        <CompanionBubble puhu="encouraging" text={preview.coachNote ?? preview.groundingLine!} />
+      ) : null}
+      {preview.coachNote && preview.groundingLine ? (
+        <p className="text-xs text-[var(--color-secondary)]">{preview.groundingLine}</p>
       ) : null}
       <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
         {preview.message}

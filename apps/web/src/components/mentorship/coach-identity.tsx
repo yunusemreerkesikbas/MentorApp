@@ -49,7 +49,7 @@ export function CoachClaims({ claims }: { claims: MentorshipCoachProfileDto["cla
             {verified.map(({ claim, value }) => (
               <li
                 key={claim}
-                className="inline-flex h-7.5 items-center gap-1.5 rounded-full bg-[var(--coach-accent-soft)] px-3 text-caption font-extrabold text-[var(--coach-accent-ink)]"
+                className="inline-flex min-h-7.5 items-center gap-1.5 rounded-full bg-[var(--coach-accent-soft)] px-3 py-1 text-caption font-extrabold text-[var(--coach-accent-ink)]"
               >
                 <BadgeCheck aria-hidden className="size-4 shrink-0" strokeWidth={1.75} />
                 {t(`coach_profile_claim_${claim}`, { value })}
@@ -69,7 +69,7 @@ export function CoachClaims({ claims }: { claims: MentorshipCoachProfileDto["cla
             {declared.map(({ claim, value }) => (
               <li
                 key={claim}
-                className="inline-flex h-7.5 items-center rounded-full border-[1.5px] border-dashed border-[var(--color-secondary)]/40 px-3 text-caption font-bold text-[var(--color-secondary)]"
+                className="inline-flex min-h-7.5 items-center rounded-full border-[1.5px] border-dashed border-[var(--color-secondary)]/40 px-3 py-1 text-caption font-bold text-[var(--color-secondary)]"
               >
                 {t(`coach_profile_claim_${claim}`, { value })}
               </li>

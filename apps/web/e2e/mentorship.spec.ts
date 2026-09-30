@@ -181,10 +181,24 @@ test.describe("öğrenci tarafı", () => {
     await expect(page.getByRole("button", { name: "Kodu getir" })).toHaveCount(0);
     await expect(ledges).toHaveCount(1);
     await expect(ledges).toHaveText("Onaylıyorum, bağlan");
+    // The button that had focus is gone; focus lands on who is asking, not on the page body.
+    await expect(page.getByRole("heading", { name: "Koç Mert", level: 2 })).toBeFocused();
 
-    // "Değiştir" opens the field again with the code still in it.
+    // "Değiştir" opens the field again with the code still in it, and focus goes back to it.
     await page.getByRole("button", { name: "Değiştir" }).click();
     await expect(page.getByLabel("Davet kodu")).toHaveValue(INVITE_CODE);
+    await expect(page.getByLabel("Davet kodu")).toBeFocused();
+    await expect(page.getByRole("button", { name: "Onaylıyorum, bağlan" })).toHaveCount(0);
+  });
+
+  test("koçunun kendi daveti yeniden açılınca bağlantıyı sonlandırması istenmez", async ({ page }) => {
+    await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    await page.goto(`/kocluk-daveti?code=${INVITE_CODE}`);
+    await page.getByRole("button", { name: "Kodu getir" }).click();
+
+    const decision = page.getByRole("region", { name: "Karar" });
+    await expect(decision).toContainText("Koç Mert zaten koçun.");
+    await expect(decision.getByText(/bağlanmak için önce/)).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Onaylıyorum, bağlan" })).toHaveCount(0);
   });
 
@@ -251,6 +265,8 @@ test.describe("öğrenci tarafı", () => {
     await expect.poll(() => api.myNoteBodies).toEqual(["Cuma akşamları çalışamıyorum."]);
     await expect(card.getByText("Cuma akşamları çalışamıyorum.")).toBeVisible();
     await expect(card.getByRole("textbox")).toHaveCount(0);
+    // The editor closed under the keyboard; focus goes to the card, not to the page body.
+    await expect(card.getByRole("heading", { name: "Koçuna notun" })).toBeFocused();
 
     await card.getByRole("button", { name: "Düzenle" }).click();
     await card.getByRole("button", { name: "Notu kaldır" }).click();
@@ -283,27 +299,40 @@ test.describe("öğrenci tarafı", () => {
     await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
     await page.goto("/kocum");
     // Under the data it stops, not at the top of the page.
-    await page
+    const trigger = page
       .getByRole("region", { name: "Koçunun gördükleri" })
-      .getByRole("button", { name: "Bağlantıyı sonlandır" })
-      .click();
+      .getByRole("button", { name: "Bağlantıyı sonlandır" });
+    await trigger.click();
 
     const dialog = page.getByRole("dialog", { name: "Koçunla bağlantın sonlansın mı?" });
     const end = dialog.getByRole("button", { name: "Sonlandır" });
     const cancel = dialog.getByRole("button", { name: "Vazgeç" });
     // Solid surface, no glass (overlay kit, 2026-09-28).
     await expect(dialog).toHaveCSS("backdrop-filter", "none");
+    // Focus starts on "Vazgeç", so the consequence has to come with the dialog's name.
+    await expect(dialog).toHaveAccessibleDescription(/Verilerine erişimi hemen kapanır/);
     // Irreversible: the one filled ledge is danger red, and focus starts on the way out.
     await expect(end).toHaveCSS("background-color", "rgb(180, 35, 24)");
     await expect(cancel).toBeFocused();
     // "Vazgeç" is a text link, not a second ledge.
     await expect(cancel).toHaveCSS("box-shadow", "none");
+    // Focus stays in the dialog: Tab from the last action goes round to the first, and back.
+    await page.keyboard.press("Tab");
+    await expect(end).toBeFocused();
+    await page.keyboard.press("Shift+Tab");
+    await expect(cancel).toBeFocused();
     await cancel.click();
     await expect(dialog).toHaveCount(0);
+    // And it returns to the control that opened the dialog.
+    await expect(trigger).toBeFocused();
   });
 
   test("zaten koçu olan öğrenci bunu onay metnini okumadan önce görür", async ({ page }) => {
-    const api = await mockApi(page, { roles: ["STUDENT"], myCoach: MY_COACH });
+    const api = await mockApi(page, {
+      roles: ["STUDENT"],
+      myCoach: MY_COACH,
+      previewCoach: { coachDisplayName: "Koç Ayşe", coachUsername: "kocayse" },
+    });
     await page.goto(`/kocluk-daveti?code=${INVITE_CODE}`);
 
     await expect(page.getByText(/Zaten bir koçun var: Koç Mert/)).toBeVisible();
@@ -312,7 +341,7 @@ test.describe("öğrenci tarafı", () => {
     await expect(page.getByRole("heading", { name: "Koçun görecekleri" })).toBeVisible();
     // A consent they cannot give is not offered; the decision says what comes first instead.
     await expect(page.getByRole("button", { name: "Onaylıyorum, bağlan" })).toHaveCount(0);
-    await expect(page.getByText(/bağlanmak için önce Koçum'dan Koç Mert ile/)).toBeVisible();
+    await expect(page.getByText("Koç Ayşe'ye bağlanmak için önce Koçum'dan Koç Mert ile", { exact: false })).toBeVisible();
     expect(api.acceptCalls).toBe(0);
   });
 
@@ -1117,6 +1146,8 @@ async function mockApi(
     acceptError?: { status: number; code: string; message: string };
     /** The preview's refusal (unknown or spent code), as the API words it. */
     previewError?: { status: number; code: string; message: string };
+    /** Who the invite is from; defaults to the student's own coach, Koç Mert. */
+    previewCoach?: { coachDisplayName: string; coachUsername: string };
     /** One finalized week on the student's side; left out, the student has none. "empty": a week with no record. */
     weeklyReport?: boolean | "empty";
   },
@@ -1251,8 +1282,8 @@ async function mockApi(
         return json(route, { code, message }, status);
       }
       return json(route, {
-        coachDisplayName: "Koç Mert",
-        coachUsername: "kocmert",
+        coachDisplayName: options.previewCoach?.coachDisplayName ?? "Koç Mert",
+        coachUsername: options.previewCoach?.coachUsername ?? "kocmert",
         dataScope: DATA_SCOPE,
         // Unspecified means "no profile", which is what every hand-granted coach looks like.
         coachProfile: options.coachProfile ?? null,

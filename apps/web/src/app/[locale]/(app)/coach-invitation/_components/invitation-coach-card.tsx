@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { useTranslations } from "next-intl";
 import type { MentorshipInvitationPreviewDto } from "@mentor/types";
 import { CoachAvatar, CoachClaims } from "@/components/mentorship/coach-identity";
@@ -14,7 +14,11 @@ import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 export function InvitationCoachCard({ preview }: { preview: MentorshipInvitationPreviewDto }) {
   const t = useTranslations("mentorship");
   const titleId = useId();
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const profile = preview.coachProfile;
+
+  // "Kodu getir" had focus and is gone now; focus lands on who is asking, not on the page body.
+  useEffect(() => titleRef.current?.focus(), []);
 
   return (
     <section aria-labelledby={titleId} className={`${PANEL_CARD} flex flex-col gap-4.5 sm:p-6`}>
@@ -24,7 +28,12 @@ export function InvitationCoachCard({ preview }: { preview: MentorshipInvitation
           <span className="text-caption font-extrabold text-[var(--coach-accent)]">
             {t("invitation_from_eyebrow")}
           </span>
-          <h2 id={titleId} className="text-xl font-extrabold leading-snug text-[var(--color-main)]">
+          <h2
+            id={titleId}
+            ref={titleRef}
+            tabIndex={-1}
+            className="text-xl font-extrabold leading-snug text-[var(--color-main)] outline-none"
+          >
             {preview.coachDisplayName}
           </h2>
           {preview.coachUsername ? (

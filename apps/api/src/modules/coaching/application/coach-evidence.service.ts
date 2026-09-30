@@ -368,6 +368,7 @@ export class CoachEvidenceService {
 
     return {
       examType: me.examType,
+      examVariant: me.examVariant,
       dailyFocusGoalMinutes: me.dailyFocusGoalMinutes,
       moodLevel: mood?.today ?? null,
       moodTrend: mood?.trend ?? "UNKNOWN",

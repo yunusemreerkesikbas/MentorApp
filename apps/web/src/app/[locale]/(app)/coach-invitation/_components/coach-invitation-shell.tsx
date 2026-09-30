@@ -54,6 +54,8 @@ export function CoachInvitationShell() {
   const [codeError, setCodeError] = useState<string | null>(null);
   /** The API's own words for a refused accept (seats full…), beside the button that got it. */
   const [refusal, setRefusal] = useState<string | null>(null);
+  /** Set once the student steps back from a preview, so the field takes focus when it returns. */
+  const [backToField, setBackToField] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -113,7 +115,16 @@ export function CoachInvitationShell() {
   function editCode() {
     setPreview(null);
     setRefusal(null);
+    setBackToField(true);
   }
+
+  /** The invite is from the coach they already have (a re-shared link): nothing to end, nothing to do. */
+  const sameCoach =
+    current !== null &&
+    preview !== null &&
+    (current.coachUsername && preview.coachUsername
+      ? current.coachUsername === preview.coachUsername
+      : current.coachDisplayName === preview.coachDisplayName);
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-5 px-5 py-4 sm:px-8 lg:py-8">
@@ -134,7 +145,8 @@ export function CoachInvitationShell() {
           className={`${PANEL_CARD} flex flex-wrap items-center gap-3.5`}
         >
           <CoachAvatar name={current.coachDisplayName} size="sm" />
-          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+          {/* min-w-48: on a phone the link wraps under the sentences instead of squeezing them. */}
+          <div className="flex min-w-48 flex-1 flex-col gap-0.5">
             <p className="text-body-sm font-extrabold text-[var(--color-main)]">
               {t("invitation_already_linked_title", { name: current.coachDisplayName })}
             </p>
@@ -154,6 +166,7 @@ export function CoachInvitationShell() {
           code={code}
           error={codeError}
           busy={busy}
+          focusOnMount={backToField}
           onChange={(value) => {
             setCode(value);
             setCodeError(null);
@@ -190,14 +203,17 @@ export function CoachInvitationShell() {
               </p>
             ) : null}
             {current ? (
-              // A consent they cannot give is not offered; the card says what has to come first.
+              // A consent they cannot give is not offered; the card says what has to come first,
+              // or, for their own coach's link, that there is nothing to do.
               <p className={CALM}>
                 <Info aria-hidden className="mt-0.5 size-5 shrink-0 text-[var(--play-selected-ink)]" strokeWidth={1.75} />
-                {t("invitation_blocked", {
-                  coach: preview.coachDisplayName,
-                  dative: dativeOf(preview.coachDisplayName),
-                  current: current.coachDisplayName,
-                })}
+                {sameCoach
+                  ? t("invitation_same_coach", { name: current.coachDisplayName })
+                  : t("invitation_blocked", {
+                      coach: preview.coachDisplayName,
+                      dative: dativeOf(preview.coachDisplayName),
+                      current: current.coachDisplayName,
+                    })}
               </p>
             ) : (
               <div className="flex flex-wrap items-center gap-x-4.5 gap-y-3">

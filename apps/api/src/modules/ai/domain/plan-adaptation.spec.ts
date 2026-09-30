@@ -1,5 +1,5 @@
 import { CoachEvidenceType } from "@mentor/types";
-import { coachPlanAdaptationSchema } from "@mentor/validation";
+import { applyPlanAdaptationSchema, coachPlanAdaptationSchema, updateMeSchema } from "@mentor/validation";
 import { describe, expect, it } from "vitest";
 import {
   buildPlanAdaptationPrompt,
@@ -31,7 +31,116 @@ const TASKS = [
   },
 ];
 
+describe("plan minute and apply contracts", () => {
+  it("accepts whole custom goals from 10 through 600 minutes", () => {
+    for (const minutes of [10, 75, 120, 600]) {
+      expect(updateMeSchema.safeParse({ dailyFocusGoalMinutes: minutes }).success).toBe(true);
+    }
+    for (const minutes of [9, 60.5, 601]) {
+      expect(updateMeSchema.safeParse({ dailyFocusGoalMinutes: minutes }).success).toBe(false);
+    }
+  });
+
+  it("accepts 24 preview changes but rejects 25", () => {
+    const change = { kind: "ADD", title: "Tarih soru çöz", subject: "Tarih", topic: null, taskDate: TODAY };
+    const planRevision = "a".repeat(64);
+    expect(applyPlanAdaptationSchema.safeParse({ planRevision, changes: Array(24).fill(change) }).success).toBe(true);
+    expect(applyPlanAdaptationSchema.safeParse({ planRevision, changes: Array(25).fill(change) }).success).toBe(false);
+  });
+});
+
 describe("parsePlanAdaptation", () => {
+  it("builds two verified 60-minute blocks for an empty 120-minute study day", () => {
+    const result = parsePlanAdaptation(
+      JSON.stringify({ changes: [] }),
+      TODAY,
+      "PLAN",
+      [],
+      [],
+      {
+        studyDates: [TODAY],
+        minutesPerDay: 120,
+        focusSubjects: ["Matematik"],
+        topics: [
+          { subjectName: "Matematik", slug: "sayisal-mantik", name: "Sayısal mantık" },
+          { subjectName: "Matematik", slug: "problemler", name: "Problemler" },
+        ],
+      },
+    );
+
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toHaveLength(2);
+    expect(result.changes).toEqual([
+      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Sayısal mantık", title: expect.stringContaining("60 dk") }),
+      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Problemler", title: expect.stringContaining("60 dk") }),
+    ]);
+  });
+  it("covers four selected subjects with verified topics across four 120-minute days", () => {
+    const dates = [TODAY, "2026-07-22", "2026-07-24", "2026-07-26"];
+    const subjects = ["Matematik", "Vatandaşlık", "Güncel Bilgiler", "Coğrafya"];
+    const result = parsePlanAdaptation(
+      "not-json",
+      TODAY,
+      "PLAN",
+      [],
+      [],
+      {
+        studyDates: dates,
+        minutesPerDay: 120,
+        focusSubjects: subjects,
+        topics: subjects.map((subject, index) => ({
+          subjectName: subject,
+          slug: `topic-${index}`,
+          name: `Doğrulanmış konu ${index}`,
+        })),
+      },
+      { evidence: [], weakSubjects: ["Vatandaşlık", "Güncel Bilgiler"], notebookReason: "Yanlış defterinde Doğrulanmış konu 0 tekrar ediyor." },
+    );
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toHaveLength(8);
+    expect(new Set(result.changes.map((item) => item.subject))).toEqual(new Set(subjects));
+    expect(result.changes.filter((item) => item.subject === "Matematik").length).toBeGreaterThan(1);
+    expect(result.changes.filter((item) => item.subject === "Vatandaşlık").length).toBeGreaterThan(1);
+    expect(result.changes.filter((item) => item.subject === "Güncel Bilgiler").length).toBeGreaterThan(1);
+    for (const date of dates) {
+      const day = result.changes.filter((item) => item.kind === "ADD" && item.taskDate === date);
+      expect(day).toHaveLength(2);
+      expect(day.every((item) => item.kind === "ADD" && item.title.includes("60 dk") && item.topic?.startsWith("Doğrulanmış konu"))).toBe(true);
+    }
+  });
+
+  it("adds one task to a filled day, none to a full day, and rejects model topic inventions", () => {
+    const existing = [
+      { ...TASKS[0]!, taskDate: TODAY },
+      { ...TASKS[1]!, taskDate: "2026-07-22" },
+      { ...TASKS[1]!, id: "t3", taskDate: "2026-07-22", title: "İkinci" },
+      { ...TASKS[1]!, id: "t4", taskDate: "2026-07-22", title: "Üçüncü" },
+    ];
+    const result = parsePlanAdaptation(
+      JSON.stringify({ changes: [{ kind: "ADD", taskDate: TODAY, subject: "Matematik", topicSlug: "uydurma" }] }),
+      TODAY,
+      "PLAN",
+      existing,
+      existing,
+      { studyDates: [TODAY, "2026-07-22"], minutesPerDay: 120, focusSubjects: ["Matematik"], topics: [{ subjectName: "Matematik", slug: "verified", name: "Problemler" }] },
+    );
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toEqual([expect.objectContaining({ kind: "ADD", taskDate: TODAY, topic: "Problemler" })]);
+  });
+
+  it("uses three nearly equal tasks for 121–600 minutes and a subject action without taxonomy", () => {
+    const result = parsePlanAdaptation('{"changes":[]}', TODAY, "PLAN", [], [], {
+      studyDates: [TODAY], minutesPerDay: 121, focusSubjects: ["Tarih"], topics: [],
+    });
+    expect(result.kind).toBe("VALID");
+    if (result.kind !== "VALID") return;
+    expect(result.changes).toHaveLength(3);
+    expect(result.changes.map((item) => item.title.match(/\d+ dk/)?.[0])).toEqual(["41 dk", "40 dk", "40 dk"]);
+    expect(result.changes.every((item) => item.kind === "ADD" && item.topic === null && item.title.includes("Tarih:"))).toBe(true);
+  });
   it("distinguishes malformed output from a valid empty preview", () => {
     expect(parsePlanAdaptation("not-json", TODAY, "PLAN", TASKS)).toEqual({
       kind: "MALFORMED",
@@ -451,7 +560,7 @@ describe("parsePlanAdaptation", () => {
       focusSubjects: ["Tarih"],
     });
 
-    expect(prompt.system).toContain("Tam 5 farklı güne");
+    expect(prompt.system).toContain("Yalnız 5 farklı gün için ADD yaz");
     expect(prompt.system).not.toContain("3 ADD");
     expect(prompt.user).toContain("Bağlayıcı ritim: 5 farklı gün");
     expect(prompt.user).toContain("60 dakika");
@@ -520,9 +629,9 @@ describe("parsePlanAdaptation", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     expect(result.changes).toEqual([
-      expect.objectContaining({ title: "Tarih soru", taskDate: "2026-07-22" }),
-      expect.objectContaining({ title: "Tarih · 45 dk", taskDate: "2026-07-24" }),
-      expect.objectContaining({ title: "Tarih · 45 dk", taskDate: "2026-07-27" }),
+      expect.objectContaining({ title: "Tarih: 22 dk soru çöz", taskDate: "2026-07-22" }),
+      expect.objectContaining({ title: "Tarih: 45 dk soru çöz", taskDate: "2026-07-24" }),
+      expect.objectContaining({ title: "Tarih: 45 dk soru çöz", taskDate: "2026-07-27" }),
     ]);
   });
 
@@ -702,9 +811,9 @@ describe("selectPlanEvidence", () => {
       CoachEvidenceType.EXAM_PHASE,
       CoachEvidenceType.WEAK_SUBJECTS,
       CoachEvidenceType.NOTEBOOK_TOPICS,
-      CoachEvidenceType.SUBJECT_BALANCE,
-      CoachEvidenceType.PLAN_FOLLOW_THROUGH,
       CoachEvidenceType.LONG_TERM_RHYTHM,
+      CoachEvidenceType.GOAL,
+      CoachEvidenceType.PLAN_FOLLOW_THROUGH,
     ]);
     expect(selected.map((item) => item.ref)).toEqual(["E1", "E2", "E3", "E4", "E5", "E6"]);
   });
@@ -812,14 +921,14 @@ describe("suggestPlanBrief", () => {
 
   it.each([
     [60, null, 60],
-    [45, null, 30],
-    [200, null, 120],
-    [null, 43, 30],
-    [null, 100, 90],
+    [45, null, 45],
+    [200, null, 200],
+    [null, 43, 43],
+    [null, 100, 100],
     [null, 0, null],
     [null, null, null],
   ] as const)(
-    "snaps minutes (goal %s, average session %s) to %s",
+    "preserves minutes (goal %s, average session %s) as %s",
     (dailyFocusGoalMinutes, averageSessionMinutes28d, minutes) => {
       expect(
         suggestPlanBrief({ ...base, dailyFocusGoalMinutes, averageSessionMinutes28d })

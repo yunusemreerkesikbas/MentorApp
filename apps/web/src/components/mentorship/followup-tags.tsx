@@ -11,7 +11,8 @@ import { CoachCheck } from "./coach-check";
 const TAG =
   "inline-flex h-6 items-center gap-1 whitespace-nowrap rounded-[var(--radius-card)] px-2 text-xs font-extrabold";
 const NEUTRAL = "bg-[var(--color-surface-container)] text-[var(--color-body)]";
-const DONE = "bg-[color-mix(in_srgb,var(--color-success)_14%,var(--color-surface))] text-[var(--color-success)]";
+/** 8 % tint: the 12 px success label holds 4.5:1 on it (14 % left it at 4.19:1). */
+const DONE = "bg-[color-mix(in_srgb,var(--color-success)_8%,var(--color-surface))] text-[var(--color-success)]";
 const ASKED = "bg-[var(--play-selected)] text-[var(--play-selected-ink)]";
 
 /**

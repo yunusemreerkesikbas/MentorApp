@@ -52,13 +52,14 @@ export function SessionAmbientPicker({
           aria-controls={open ? menuId : undefined}
           aria-label={translate("picker_label")}
           onClick={() => setOpen(!open)}
-          className={SESSION_CHROME_PILL_CLASS}
+          // A phone shows the icon alone: the top bar's three pills fit one row only that way.
+          className={`${SESSION_CHROME_PILL_CLASS} max-sm:w-11 max-sm:justify-center max-sm:px-0`}
           style={SESSION_CHROME_PILL_STYLE}
         >
           <Music2 className="size-4 shrink-0" strokeWidth={2.25} aria-hidden />
-          <span className="min-w-0 truncate">{trackLabel}</span>
+          <span className="min-w-0 truncate max-sm:sr-only">{trackLabel}</span>
           <ChevronDown
-            className={`size-4 shrink-0 transition-transform duration-200 motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
+            className={`size-4 shrink-0 transition-transform duration-200 max-sm:hidden motion-reduce:transition-none ${open ? "rotate-180" : ""}`}
             strokeWidth={2.25}
             aria-hidden
             style={{ color: "var(--color-secondary)" }}
