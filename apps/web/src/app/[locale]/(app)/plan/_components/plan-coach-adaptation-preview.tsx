@@ -150,14 +150,7 @@ export const PlanCoachAdaptationPreview = forwardRef<
                   className="mt-0.5 size-5 shrink-0 accent-[var(--color-btn)]"
                 />
                 <span className="min-w-0">
-                  <span
-                    className="block text-xs font-bold uppercase"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {row.change.kind === "MOVE"
-                      ? t("coach_adaptation_move")
-                      : t("coach_adaptation_add")}
-                  </span>
+                  
                   <span
                     className="block text-sm font-semibold"
                     style={{ color: "var(--color-body)" }}

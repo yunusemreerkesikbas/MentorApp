@@ -391,8 +391,10 @@ describe("PlanAdaptationService", () => {
     const result = await service.preview(USER, {
       source: "PLAN", studyWeekdays: [weekday], minutesPerDay: 120, focusSubjects: ["Matematik"],
     });
-    expect(result.changes).toEqual([expect.objectContaining({ kind: "ADD", subject: "Matematik", topic: null })]);
+    expect(result.changes).toHaveLength(2);
+    expect(result.changes.every((change) => change.kind === "ADD" && change.subject === "Matematik" && change.topic === null && change.title.includes("60 dk"))).toBe(true);
     expect(result.coachNote).toBeTruthy();
+    expect(result.coachNote).toContain("Hedef alanın: Sağlık.");
     expect(complete).toHaveBeenCalledOnce();
   });
 

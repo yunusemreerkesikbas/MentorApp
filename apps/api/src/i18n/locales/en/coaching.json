@@ -97,9 +97,9 @@
     "READY": "I prepared a safe preview without changing your plan. Select only the changes you want.",
     "NO_CHANGE": "Your plan does not need a change right now. You can continue with the current small steps.",
     "reasonChosenSubject": "A subject you chose to focus on this week.",
-    "coachNotePriority": "I added short review and question tasks for {subjects}.",
-    "coachNoteRhythm": "Your recent sessions averaged {average} minutes. I split the {minutes} minutes on your empty days into smaller tasks; you can change the time if you like.",
-    "coachNoteGoal": "I split the {minutes} minutes on your empty days into smaller tasks; you can change the time if you like.",
+    "coachNotePriority": "I prioritized {subjects} in review and question tasks.",
+    "coachNoteRhythm": "Your recent sessions averaged {average} minutes. The new program has {minutes} minutes on each of {days} days; your existing tasks are separate. You can change the time if you like.",
+    "coachNoteGoal": "The new program has {minutes} minutes on each of {days} days; your existing tasks are separate. You can change the time if you like.",
     "REST": "There is nothing left to lighten today. We'll pick it up together tomorrow."
   },
   "official": {

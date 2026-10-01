@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import type {
   CoachPlanAdaptationBriefDto,
   ExamType,
   ExamVariant,
 } from "@mentor/types";
-import { coachPlanAdaptationSchema, type CoachPlanAdaptationInput } from "@mentor/validation";
+import {
+  coachPlanAdaptationSchema,
+  type CoachPlanAdaptationInput,
+} from "@mentor/validation";
 import { Button } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
@@ -42,29 +45,44 @@ export function PlanCoachAdaptationBrief({
   profile,
   onComplete,
   onClose,
+  initialInput,
 }: {
   knownWeek: PlanAdaptationKnownWeek;
   /** The coach's reading of the student's data; null while loading or when it failed. */
   brief: CoachPlanAdaptationBriefDto | null;
   profile: PlanAdaptationBriefProfile;
-  onComplete: (input: CoachPlanAdaptationInput) => void;
+  onComplete: (
+    input: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>,
+  ) => void;
   onClose: () => void;
+  initialInput?: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>;
 }) {
   const t = useTranslations("plan");
   const tExam = useTranslations("profile.exam_settings");
   const taxonomy = useExamSubjectTaxonomy();
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
   const [direction, setDirection] = useState<1 | -1>(1);
   const suggestion = brief?.suggestion ?? null;
 
   // Opened on a click, so "today" is the student's own day; the API maps weekdays onto its window.
   const [planDays] = useState(() => {
-    const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Istanbul", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date());
-    const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
-    return planWindowDays(new Date(part("year"), part("month") - 1, part("day"), 12));
+    const parts = new Intl.DateTimeFormat("en-US", {
+      timeZone: "Europe/Istanbul",
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    }).formatToParts(new Date());
+    const part = (type: string) =>
+      Number(parts.find((item) => item.type === type)?.value);
+    return planWindowDays(
+      new Date(part("year"), part("month") - 1, part("day"), 12),
+    );
   });
   // The days the student really studies on come pre-picked once the brief arrives.
-  const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(null);
+  const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(
+    initialInput ? (initialInput.studyWeekdays ?? []) : null,
+  );
   const rhythmWeekdays = suggestion?.weekdays ?? null;
   const weekdays = weekdaysOverride ?? rhythmWeekdays ?? [];
   // The student's answer always wins; until there is one, the coach's reading fills the blank.
@@ -72,12 +90,23 @@ export function PlanCoachAdaptationBrief({
     ? profile.dailyFocusGoalMinutes
     : null;
   const suggestedMinutes = suggestion?.minutesPerDay ?? null;
-  const rhythmMinutes = goalMinutes === null && isMinuteEntry(suggestedMinutes) ? suggestedMinutes : null;
-  const [minutesOverride, setMinutesOverride] = useState<number | null | undefined>(undefined);
-  const minutes = minutesOverride !== undefined ? minutesOverride : (goalMinutes ?? rhythmMinutes);
+  const rhythmMinutes =
+    goalMinutes === null && isMinuteEntry(suggestedMinutes)
+      ? suggestedMinutes
+      : null;
+  const [minutesOverride, setMinutesOverride] = useState<
+    number | null | undefined
+  >(initialInput ? (initialInput.minutesPerDay ?? null) : undefined);
+  const minutes =
+    minutesOverride !== undefined
+      ? minutesOverride
+      : (goalMinutes ?? rhythmMinutes);
   const coachSubjects = suggestion?.focusSubjects;
   const suggested = useMemo(
-    () => new Set((coachSubjects ?? []).map((name) => name.toLocaleLowerCase("tr-TR"))),
+    () =>
+      new Set(
+        (coachSubjects ?? []).map((name) => name.toLocaleLowerCase("tr-TR")),
+      ),
     [coachSubjects],
   );
   const seededSubjects = useMemo(
@@ -90,15 +119,20 @@ export function PlanCoachAdaptationBrief({
         : [],
     [taxonomy.loaded, taxonomy.subjects, coachSubjects, knownWeek.subjects],
   );
-  const [subjectOverride, setSubjectOverride] = useState<string[] | null>(null);
+  const [subjectOverride, setSubjectOverride] = useState<string[] | null>(
+    initialInput ? (initialInput.focusSubjects ?? []) : null,
+  );
   const subjects = subjectOverride ?? seededSubjects;
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(initialInput?.note ?? "");
   const [error, setError] = useState<string | null>(null);
 
   const steps = useMemo(
     () =>
       BRIEF_STEPS.filter(
-        (step) => step !== "subjects" || !taxonomy.loaded || taxonomy.subjects.length > 0,
+        (step) =>
+          step !== "subjects" ||
+          !taxonomy.loaded ||
+          taxonomy.subjects.length > 0,
       ),
     [taxonomy.loaded, taxonomy.subjects.length],
   );
@@ -114,7 +148,9 @@ export function PlanCoachAdaptationBrief({
     exam,
     goal:
       profile.dailyFocusGoalMinutes != null
-        ? t("coach_adaptation_known_goal", { count: profile.dailyFocusGoalMinutes })
+        ? t("coach_adaptation_known_goal", {
+            count: profile.dailyFocusGoalMinutes,
+          })
         : null,
     pending:
       knownWeek.pendingCount > 0
@@ -122,18 +158,16 @@ export function PlanCoachAdaptationBrief({
         : null,
   });
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const node = dialogRef.current!;
     const previous = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
+    node.showModal();
     return () => {
+      node.close();
       document.body.style.overflow = previous;
-      window.removeEventListener("keydown", onKey);
     };
-  }, [onClose]);
+  }, []);
 
   function go(next: number) {
     setDirection(next > safeIndex ? 1 : -1);
@@ -202,7 +236,9 @@ export function PlanCoachAdaptationBrief({
   function toggleSubject(name: string) {
     setSubjectOverride((current) => {
       const base = current ?? seededSubjects;
-      return base.includes(name) ? base.filter((item) => item !== name) : [...base, name];
+      return base.includes(name)
+        ? base.filter((item) => item !== name)
+        : [...base, name];
     });
   }
 
@@ -233,7 +269,15 @@ export function PlanCoachAdaptationBrief({
 
   return (
     <OnboardingDirectionProvider value={direction}>
-      <div className="fixed inset-0 z-[80] overflow-y-auto" role="dialog" aria-modal="true" aria-label={title}>
+      <dialog
+        ref={dialogRef}
+        className="fixed inset-0 m-0 h-dvh w-full max-h-none max-w-none overflow-y-auto border-0 p-0"
+        aria-label={title}
+        onCancel={(event) => {
+          event.preventDefault();
+          onClose();
+        }}
+      >
         <OnboardingStepLayout
           key={step}
           root="div"
@@ -250,7 +294,9 @@ export function PlanCoachAdaptationBrief({
                 onClick={continueStep}
                 disabled={step === "subjects" && !taxonomy.loaded}
               >
-                {step === "note" ? t("coach_adaptation_generate") : t("coach_adaptation_continue")}
+                {step === "note"
+                  ? t("coach_adaptation_generate")
+                  : t("coach_adaptation_continue")}
               </Button>
             </PlayFooter>
           }
@@ -286,9 +332,11 @@ export function PlanCoachAdaptationBrief({
               onToggle={toggleSubject}
             />
           ) : null}
-          {step === "note" ? <BriefNoteStep note={note} onChange={setNote} /> : null}
+          {step === "note" ? (
+            <BriefNoteStep note={note} onChange={setNote} />
+          ) : null}
         </OnboardingStepLayout>
-      </div>
+      </dialog>
     </OnboardingDirectionProvider>
   );
 }

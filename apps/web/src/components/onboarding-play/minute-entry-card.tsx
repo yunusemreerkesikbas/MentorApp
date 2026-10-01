@@ -5,7 +5,6 @@ import { useId } from "react";
 export function MinuteEntryCard({
   label,
   unit,
-  placeholder,
   value,
   selected,
   disabled,
@@ -14,7 +13,6 @@ export function MinuteEntryCard({
 }: {
   label: string;
   unit: string;
-  placeholder: string;
   value: number | null;
   selected: boolean;
   disabled?: boolean;
@@ -47,11 +45,10 @@ export function MinuteEntryCard({
               event.target.value === "" ? null : Number(event.target.value),
             )
           }
-          placeholder={placeholder}
           aria-label={label}
           aria-invalid={invalid}
           aria-describedby={invalid && invalidMessage ? errorId : undefined}
-          className="w-24 rounded-[var(--play-radius)] border border-[var(--play-line)] bg-[var(--color-surface)] px-2 py-1 text-center text-xl font-bold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          className="w-24 rounded-[var(--play-radius)] border border-[var(--play-line)] bg-[var(--color-surface)] px-2 py-1 text-center text-xl font-bold text-[var(--color-main)] outline-none [appearance:textfield] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
         />
         <span className="font-bold text-[var(--color-secondary)]">{unit}</span>
       </span>

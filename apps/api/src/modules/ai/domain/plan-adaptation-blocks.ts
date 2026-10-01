@@ -14,7 +14,7 @@ interface BlockGrounding {
   notebookReason?: string | null;
 }
 
-const ACTIONS = ["PRACTICE", "REVIEW", "NOTEBOOK"] as const;
+const ACTIONS = ["PRACTICE", "REVIEW", "RECALL", "NOTEBOOK"] as const;
 type Action = (typeof ACTIONS)[number];
 
 function key(value: string): string {
@@ -23,21 +23,33 @@ function key(value: string): string {
 
 function actionText(action: Action, locale: PromptLocale): string {
   if (locale === "en") {
+    if (action === "RECALL") return "test yourself without notes";
     return action === "PRACTICE"
-      ? "practice questions"
+      ? "practice questions and review mistakes"
       : action === "REVIEW"
         ? "review"
-        : "review mistake cards";
+        : "retry mistake cards";
   }
+  if (action === "RECALL") return "notlarına bakmadan kendini test et";
   return action === "PRACTICE"
-    ? "soru çöz"
+    ? "soru çöz ve yanlışlarını incele"
     : action === "REVIEW"
       ? "tekrar et"
-      : "yanlış kartlarını gözden geçir";
+      : "yanlış kartlarını yeniden çöz";
 }
 
 function slotsFor(minutes: number): number {
   return minutes <= 45 ? 1 : minutes <= 120 ? 2 : 3;
+}
+
+function blockTitle(
+  label: string,
+  minutes: number,
+  action: Action,
+  locale: PromptLocale,
+): string {
+  const suffix = `: ${minutes} ${locale === "en" ? "min" : "dk"} ${actionText(action, locale)}`;
+  return `${label.slice(0, 200 - suffix.length).trimEnd()}${suffix}`;
 }
 
 /** PLAN-only safe fill. The model selects among verified topics; the server owns load and titles. */
@@ -45,7 +57,6 @@ export function fillPersonalizedPlanBlocks(input: {
   rawChanges: readonly unknown[];
   dates: readonly string[];
   minutesPerDay: number;
-  pendingByDate: Map<string, number>;
   titleCounts: Map<string, number>;
   focusSubjects: readonly string[];
   topics: readonly VerifiedPlanTopic[];
@@ -76,11 +87,7 @@ export function fillPersonalizedPlanBlocks(input: {
             notebook.includes(key(topic.name)),
         ),
       );
-  const prioritized = subjects
-    .filter((subject) => score(subject) > 0)
-    .sort((a, b) => score(b) - score(a));
-  const extras = prioritized.length ? prioritized : subjects;
-  let extraIndex = 0;
+  const subjectUses = new Map<string, number>();
   const candidates = input.rawChanges.filter(
     (raw): raw is Record<string, unknown> =>
       typeof raw === "object" &&
@@ -89,32 +96,38 @@ export function fillPersonalizedPlanBlocks(input: {
   );
   const used = new Set<number>();
   const topicUses = new Map<string, number>();
+  const topicDates = new Map<string, string>();
   const result: Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> =
     [];
 
   for (const date of input.dates) {
-    const existing = input.pendingByDate.get(date) ?? 0;
-    if (existing >= 3) continue;
-    const total =
-      existing === 0
-        ? input.minutesPerDay
-        : Math.max(10, Math.min(60, Math.floor(input.minutesPerDay / 2)));
+    const total = input.minutesPerDay;
     if (total < 10) continue;
-    const count = existing === 0 ? slotsFor(total) : 1;
-    for (
-      let slot = 0;
-      slot < count && (input.pendingByDate.get(date) ?? 0) < 3;
-      slot += 1
-    ) {
+    const count = slotsFor(total);
+    const daySubjects = new Set<string>();
+    for (let slot = 0; slot < count; slot += 1) {
       const minutes =
         Math.floor(total / count) + (slot < total % count ? 1 : 0);
       const preferred = uncovered.shift() ?? null;
+      const alternatives = subjects.filter(
+        (name) => !daySubjects.has(key(name)),
+      );
+      // ponytail: weighted rotation uses subject-level evidence; topic mastery can refine weights later.
+      const subject =
+        preferred ??
+        [...(alternatives.length ? alternatives : subjects)].sort(
+          (a, b) =>
+            (subjectUses.get(key(a)) ?? 0) / (1 + score(a)) -
+              (subjectUses.get(key(b)) ?? 0) / (1 + score(b)) ||
+            score(b) - score(a),
+        )[0] ??
+        null;
       const available = candidates.findIndex(
         (raw, index) =>
           !used.has(index) &&
           raw.taskDate === date &&
-          (preferred === null ||
-            key(String(raw.subject ?? "")) === key(preferred)) &&
+          (subject === null ||
+            key(String(raw.subject ?? "")) === key(subject)) &&
           (subjects.length === 0 ||
             subjects.some(
               (subject) => key(subject) === key(String(raw.subject ?? "")),
@@ -122,7 +135,6 @@ export function fillPersonalizedPlanBlocks(input: {
       );
       if (available >= 0) used.add(available);
       const raw = available >= 0 ? candidates[available]! : null;
-      const subject = preferred ?? extras[extraIndex++ % extras.length] ?? null;
       const allowed = input.topics.filter(
         (topic) => subject && key(topic.subjectName) === key(subject),
       );
@@ -143,26 +155,34 @@ export function fillPersonalizedPlanBlocks(input: {
                 topic.slug === raw.topicSlug && !topicUses.has(topicKey(topic)),
             )
           : undefined;
+      const revisit =
+        (subjectUses.get(key(subject ?? "")) ?? 0) % 2 === 1
+          ? allowed.find(
+              (topic) =>
+                topicDates.has(topicKey(topic)) &&
+                topicDates.get(topicKey(topic))! < date,
+            )
+          : undefined;
       let chosen: Extract<
         CoachPlanAdaptationChangeDto,
         { kind: "ADD" }
       > | null = null;
-      for (const topic of [modelTopic, ...allowed].filter(
+      for (const topic of [revisit, modelTopic, ...allowed].filter(
         (item): item is VerifiedPlanTopic => Boolean(item),
       )) {
         const activity =
-          ACTIONS.includes(raw?.activity as Action) &&
-          (raw?.activity !== "NOTEBOOK" || isNotebookTopic(topic))
-            ? (raw!.activity as Action)
-            : isNotebookTopic(topic)
-              ? "NOTEBOOK"
-              : ACTIONS[slot % 2]!;
-        for (const action of [activity, ...ACTIONS]) {
-          const title =
-            `${topic.name}: ${minutes} ${locale === "en" ? "min" : "dk"} ${actionText(action, locale)}`.slice(
-              0,
-              200,
-            );
+          topic === revisit
+            ? "RECALL"
+            : ACTIONS.includes(raw?.activity as Action) &&
+                (raw?.activity !== "NOTEBOOK" || isNotebookTopic(topic))
+              ? (raw!.activity as Action)
+              : isNotebookTopic(topic)
+                ? "NOTEBOOK"
+                : ACTIONS[slot % 3]!;
+        for (const action of [activity, ...ACTIONS].filter(
+          (action) => action !== "NOTEBOOK" || isNotebookTopic(topic),
+        )) {
+          const title = blockTitle(topic.name, minutes, action, locale);
           const titleKey = `${date}:${key(title)}`;
           if (input.titleCounts.has(titleKey)) continue;
           const reason = isNotebookTopic(topic)
@@ -183,6 +203,7 @@ export function fillPersonalizedPlanBlocks(input: {
             topicKey(topic),
             (topicUses.get(topicKey(topic)) ?? 0) + 1,
           );
+          topicDates.set(topicKey(topic), date);
           break;
         }
         if (chosen) break;
@@ -190,12 +211,10 @@ export function fillPersonalizedPlanBlocks(input: {
       if (!chosen) {
         const label =
           subject ?? (locale === "en" ? "General review" : "Genel tekrar");
-        for (const action of ACTIONS) {
-          const title =
-            `${label}: ${minutes} ${locale === "en" ? "min" : "dk"} ${actionText(action, locale)}`.slice(
-              0,
-              200,
-            );
+        for (const action of ACTIONS.filter(
+          (action) => action !== "NOTEBOOK",
+        )) {
+          const title = blockTitle(label, minutes, action, locale);
           const titleKey = `${date}:${key(title)}`;
           if (input.titleCounts.has(titleKey)) continue;
           const reason = weak.has(key(subject ?? ""))
@@ -215,7 +234,11 @@ export function fillPersonalizedPlanBlocks(input: {
       }
       if (!chosen) continue;
       result.push(chosen);
-      input.pendingByDate.set(date, (input.pendingByDate.get(date) ?? 0) + 1);
+      daySubjects.add(key(subject ?? ""));
+      subjectUses.set(
+        key(subject ?? ""),
+        (subjectUses.get(key(subject ?? "")) ?? 0) + 1,
+      );
     }
   }
   return result;

@@ -189,6 +189,8 @@ export const APPLY_PLAN_ADAPTATION_MAX_CHANGES = 24;
 
 export const applyPlanAdaptationSchema = z.object({
   planRevision: z.string().regex(/^[a-f0-9]{64}$/),
+  /** PLAN additions have their own daily budget; omitted keeps the legacy capacity rule. */
+  source: z.enum(["PLAN", "MOOD", "SESSION"]).optional(),
   changes: planAdaptationChangeSchema
     .array()
     .min(1)

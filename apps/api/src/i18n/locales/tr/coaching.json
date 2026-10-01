@@ -97,9 +97,9 @@
     "READY": "Planına dokunmadan güvenli bir önizleme hazırladım. İstediğin değişiklikleri seçebilirsin.",
     "NO_CHANGE": "Şu an planını değiştirmen gerekmiyor. Mevcut küçük adımlarla devam edebilirsin.",
     "reasonChosenSubject": "Bu hafta ağırlık vermek istediğin ders.",
-    "coachNotePriority": "{subjects} için kısa tekrar ve soru görevleri ekledim.",
-    "coachNoteRhythm": "Son seansların ortalama {average} dakikaydı. Boş günlerindeki {minutes} dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.",
-    "coachNoteGoal": "Boş günlerindeki {minutes} dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.",
+    "coachNotePriority": "{subjects} derslerini tekrar ve soru görevlerinde önceliklendirdim.",
+    "coachNoteRhythm": "Son seansların ortalama {average} dakikaydı. Yeni programı {days} günün her biri için {minutes} dakika olarak hazırladım; mevcut görevlerin bu süreye dahil değil. İstersen süreyi değiştirebilirsin.",
+    "coachNoteGoal": "Yeni programı {days} günün her biri için {minutes} dakika olarak hazırladım; mevcut görevlerin bu süreye dahil değil. İstersen süreyi değiştirebilirsin.",
     "REST": "Bugün hafifletilecek bir görev kalmadı. Yarın kaldığın yerden birlikte devam ederiz."
   },
   "official": {

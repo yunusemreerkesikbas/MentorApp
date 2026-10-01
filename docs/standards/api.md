@@ -138,6 +138,10 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > enum; `focusSubjects` is capped at 30 names instead of 3. Additive for existing clients.
 > The brief's `suggestion` additively carries `weekdays` (ISO weekdays the student studied on most
 > in the last 28 days, `days` of them, or null).
+> Change (2026-09-30): apply optionally accepts `source: PLAN`, limiting the new program to three
+> additions per date independently of existing tasks. Omitted source, MOOD and SESSION preserve
+> the previous capacity rule. Preview minute budgets apply to new tasks only; existing tasks are
+> additional workload. Date, revision and duplicate-title checks remain mandatory.
 
 > Community → coach bridge catalog addition (2026-07-31):
 > `GET /v1/forum/threads/:id/coach-bridge` returns only public-safe structural eligibility;

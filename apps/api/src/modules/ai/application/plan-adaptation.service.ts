@@ -243,7 +243,7 @@ export class PlanAdaptationService {
       );
     }
     const coachNote = input.source === "PLAN" && input.minutesPerDay && parsed.changes.some((change) => change.kind === "ADD")
-      ? this.coachNote(pool, input.minutesPerDay, input.focusSubjects ?? [])
+      ? this.coachNote(pool, input.minutesPerDay, parsed.changes)
       : null;
     return this.response(
       parsed.changes.length > 0 ? "READY" : "NO_CHANGE",
@@ -260,9 +260,12 @@ export class PlanAdaptationService {
   private coachNote(
     pool: Awaited<ReturnType<CoachEvidenceService["build"]>>,
     minutes: number,
-    selectedSubjects: readonly string[],
+    changes: CoachPlanAdaptationDto["changes"],
   ): string {
     const lang = I18nContext.current()?.lang;
+    const additions = changes.filter((change) => change.kind === "ADD");
+    const days = new Set(additions.map((change) => change.taskDate)).size;
+    const selectedSubjects = additions.flatMap((change) => change.subject ? [change.subject] : []);
     const weak = pool.weakSubjects.filter((subject) =>
       selectedSubjects.some((selected) => selected.toLocaleLowerCase("tr-TR") === subject.toLocaleLowerCase("tr-TR")),
     );
@@ -275,13 +278,14 @@ export class PlanAdaptationService {
     const rhythm = pool.averageSessionMinutes28d != null && pool.averageSessionMinutes28d > 0
       ? this.i18n.translate("coaching.planAdaptation.coachNoteRhythm", {
           lang,
-          args: { average: Math.round(pool.averageSessionMinutes28d), minutes },
+          args: { average: Math.round(pool.averageSessionMinutes28d), minutes, days },
         }) as unknown as string
       : this.i18n.translate("coaching.planAdaptation.coachNoteGoal", {
           lang,
-          args: { minutes },
+          args: { minutes, days },
         }) as unknown as string;
-    return [priority, rhythm].filter(Boolean).join(" ");
+    const goal = pool.evidence.find((item) => item.type === CoachEvidenceType.GOAL)?.summary;
+    return [goal, priority, rhythm].filter(Boolean).join(" ");
   }
 
   private async assertAvailable(user: RequestUser): Promise<void> {
