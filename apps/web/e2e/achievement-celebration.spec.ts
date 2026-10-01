@@ -157,6 +157,19 @@ test("ışık Enter ile yanar; CTA odağı alır ve sahne tek istekle kapanır",
   await expect(dialog).toHaveCount(0);
 });
 
+test("ışık yandıktan sonra dokunmak sona atlar ve CTA odağı alır", async ({ page }) => {
+  await mockSceneApi(page, firstStep);
+  await page.goto("/profil");
+
+  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
+  await expect(dialog.getByRole("button", { name: "Işığı yak" })).toBeFocused();
+  await page.keyboard.press("Enter");
+  // After the burst, well before the reveal would end by itself (about 3 s after the ignite).
+  await page.waitForTimeout(1_200);
+  await page.mouse.click(24, 120);
+  await expect(dialog.getByRole("button", { name: "Devam edelim" })).toBeFocused({ timeout: 1_000 });
+});
+
 test("dokunulmazsa ışık kendiliğinden yanar", async ({ page }) => {
   await mockSceneApi(page, firstStep);
   await page.goto("/profil");

@@ -67,6 +67,17 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-01 · Achievement scene preview page (development only).** `pnpm dev`, then
+  `/dev/basari-sahnesi` (or `/en/dev/basari-sahnesi`) plays the scene on a stand-in panel with
+  sample data: no API, login or earned achievement needed. "Bitti olarak işaretle" starts it (the
+  spark leaves from that press), the settings pick a single achievement or a deck of 3 or 7, and
+  "Kapanış bir kez hata versin" shows the failed-close path. Production builds answer 404. Also
+  fixed while previewing: a tap that skipped the reveal left focus on the dialog, because the
+  mousedown that follows the skip moved it there after the CTA had taken it; the scene now moves
+  focus a frame after the phase changes. Related:
+  `app/[locale]/dev/basari-sahnesi/*`, `components/achievements/scene/achievement-scene.tsx`,
+  `e2e/achievement-celebration.spec.ts`.
+
 - **2026-10-01 · "Işık Yandı" ships: the achievement celebration is the approved film (phase B).**
   The blurred card with Lottie confetti is gone. `AchievementCelebration` keeps its API and adds
   an `error` prop; the scene lives in `components/achievements/scene/`. The spark starts from the

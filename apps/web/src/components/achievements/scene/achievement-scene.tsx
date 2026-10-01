@@ -135,16 +135,21 @@ export function AchievementScene({
   }, [geometry, deck, lights, kick]);
 
   // Focus follows the phase: the light while it waits, the dialog while it reveals, then the CTA.
+  // A frame later, after the event that changed the phase is done: a tap that skips the reveal
+  // would otherwise hand focus straight back to the dialog (the default action of its mousedown).
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const target =
-      phase === "waiting"
-        ? root.querySelector<HTMLElement>('[data-scene="ignite"]')
-        : phase === "revealed"
-          ? root.querySelector<HTMLElement>('[data-scene="cta"]')
-          : root;
-    (target ?? root).focus({ preventScroll: true });
+    const frame = window.requestAnimationFrame(() => {
+      const target =
+        phase === "waiting"
+          ? root.querySelector<HTMLElement>('[data-scene="ignite"]')
+          : phase === "revealed"
+            ? root.querySelector<HTMLElement>('[data-scene="cta"]')
+            : root;
+      (target ?? root).focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(frame);
   }, [phase]);
 
   /** The flight home also lights the avatar as each badge lands in it. */
