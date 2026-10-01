@@ -359,7 +359,6 @@ export function parsePlanAdaptation(
       rawChanges,
       dates,
       minutesPerDay: rhythm.minutesPerDay,
-      pendingByDate,
       titleCounts,
       focusSubjects,
       topics: rhythm.topics ?? [],
@@ -557,7 +556,7 @@ export function buildPlanAdaptationPrompt(input: {
   const policy =
     input.source === "PLAN"
       ? input.minutesPerDay
-        ? `En fazla 3 MOVE öner. Yalnız ${input.studyDates?.length ? named(input.studyDates) : input.days ? `${input.days} farklı gün` : "7 günlük pencere"} için ADD yaz. Boş güne 1-3, mevcut görevi olan güne en fazla 1 ADD öner. Her ADD için subject, topicSlug (yoksa null), activity (PRACTICE/REVIEW/NOTEBOOK), taskDate ve evidenceRef döndür. Konuyu yalnız verilen konu listesinden seç. Günlük ${input.minutesPerDay} dakika hedefini günün görevlerine böl; mevcut görevi aynen kopyalama.`
+        ? `En fazla 3 MOVE öner. Yalnız ${input.studyDates?.length ? named(input.studyDates) : input.days ? `${input.days} farklı gün` : "7 günlük pencere"} için ADD yaz. Her seçili gün için 1-3 yeni görev öner; mevcut görevler yeni programın süre bütçesinden ayrı tutulur. Her ADD için subject, topicSlug (yoksa null), activity (PRACTICE/REVIEW/RECALL/NOTEBOOK), taskDate ve evidenceRef döndür. Konuyu yalnız verilen konu listesinden seç. Günlük ${input.minutesPerDay} dakika hedefini yeni görevlerine böl; mevcut görevi aynen kopyalama.`
         : input.studyDates?.length
           ? `En fazla 3 MOVE öner. Yalnız şu günlere birer ADD yaz: ${named(input.studyDates)}. Başka bir güne ADD ya da MOVE yazma.`
           : input.days
@@ -583,7 +582,10 @@ export function buildPlanAdaptationPrompt(input: {
         ]
       : []),
     policy,
-    "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma. Bir günde en fazla 3 görev olsun.",
+    "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma.",
+    input.source === "PLAN" && input.minutesPerDay
+      ? "Her gün yeni programda en fazla üç görev olsun. Süreyi son çalışma ritmine göre azaltma. Ders sayısı elveriyorsa aynı güne farklı dersler dağıt. İlk kapsamdan sonra zayıf derslere ve tekrarlanan yanlış konularına daha fazla yer ver. Önceki çalışma gününde ele alınan bir konuyu sonraki günlerde RECALL ile hatırlat. NOTEBOOK yalnız o konu için yanlış kartı kanıtı varsa kullanılabilir. GOAL hedefini sınav ve çalışma verileriyle birlikte yorumla; meslek alanından sınav ders ağırlığı uydurma. Bir görevin süresi soru çözümü ve yanlış incelemesini birlikte kapsar. RECALL notlara bakmadan kendini test etmektir."
+      : "Bir günde en fazla 3 görev olsun.",
     "ADD görevleri somut olsun; mevcut görevin aynı adlı kopyasını ekleme.",
     "Her değişikliğe onu en iyi açıklayan tek bir E referansını evidenceRef olarak yaz; uygun kanıt yoksa null yaz. Kanıtta olmayan bir bilgi uydurma.",
     "Tarih veya gün sayısı yazma: sınav tarihi, kalan gün ve takvim bilgisi hiçbir başlığa girmez.",
@@ -634,7 +636,7 @@ export function buildPlanAdaptationPrompt(input: {
               ? `${input.days} farklı gün`
               : null,
           input.minutesPerDay
-            ? `boş seçili günlerin toplam hedefi yaklaşık ${input.minutesPerDay} dakika olsun`
+            ? `her seçili günün yeni program hedefi ${input.minutesPerDay} dakika olsun; mevcut görevler bu bütçeye dahil değildir`
             : null,
           input.focusSubjects?.length
             ? `ADD subject yalnız şunlardan biri olsun: ${input.focusSubjects.join(", ")}`

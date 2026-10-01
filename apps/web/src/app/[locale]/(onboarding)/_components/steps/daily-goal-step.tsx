@@ -101,7 +101,6 @@ export function DailyGoalStep({
         <MinuteEntryCard
           label={t("custom")}
           unit={t("unit")}
-          placeholder={t("custom_placeholder")}
           value={selected}
           selected={custom}
           disabled={saving}

@@ -104,7 +104,6 @@ export function BriefMinutesStep({
         <MinuteEntryCard
           label={t("coach_adaptation_minutes_custom_label")}
           unit={t("coach_adaptation_minutes_unit")}
-          placeholder={t("coach_adaptation_minutes_custom_placeholder")}
           value={minutes}
           selected={custom}
           onChange={onSelect}

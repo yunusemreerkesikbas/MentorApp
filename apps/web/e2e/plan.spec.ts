@@ -113,7 +113,7 @@ const groundedPreview: CoachPlanAdaptationDto = {
 };
 
 /** Walks the four wizard steps on their defaults and asks for the preview. */
-async function generateFromWizard(page: Page) {
+async function generateFromWizard(page: Page, note?: string) {
   const wizard = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
   await expect(wizard).toBeVisible();
   for (const next of [
@@ -124,8 +124,187 @@ async function generateFromWizard(page: Page) {
     await page.getByRole("button", { name: "Devam" }).click();
     await expect(page.getByRole("dialog", { name: next })).toBeVisible();
   }
+  if (note) await page.getByPlaceholder("Örn. Cuma gününü biraz daha hafif tut.").fill(note);
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
 }
+
+test("Puhu hazırlık sahnesi kapanınca istek sürer ve sonuç kendiliğinden açılmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    brief,
+    previewResponse: async (route) => { await gate; await json(route, readyPreview); },
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
+  await expect(scene).toBeVisible();
+  await expect(scene).toContainText("60 dk / gün");
+  await page.keyboard.press("Escape");
+  const resume = page.getByRole("button", { name: "Hazırlık sahnesine dön" });
+  await expect(resume).toBeFocused();
+  await resume.click();
+  await expect(scene).toBeVisible();
+  await scene.getByRole("button", { name: "Planına dön" }).click();
+  finish();
+  const showPreview = page.getByRole("button", { name: "Önizlemeyi aç", exact: true });
+  await expect(showPreview).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await showPreview.click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  await page.getByRole("dialog").getByRole("button", { name: "Kapat", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(showPreview).toBeFocused();
+  await showPreview.click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  expect(api.previewCalls).toBe(1);
+});
+
+test("Puhu isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await page.keyboard.press("Escape");
+  await page.getByRole("link", { name: "Anasayfa", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/panel$/);
+  const response = page.waitForResponse((response) => response.url().endsWith("/v1/coach/plan-adaptation"));
+  finish();
+  await response;
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
+});
+
+test("Puhu sahnesi çift tıklamayı kilitler, video hatasında posteri tutar ve hemen önizlemeye geçer", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, { preview: readyPreview, brief, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Devam" }).click();
+  const firstFrameHasScene = await page.getByRole("button", { name: "Önizlemeyi hazırla" }).evaluate((button) => {
+    (button as HTMLButtonElement).click(); (button as HTMLButtonElement).click();
+    return new Promise<boolean>((resolve) => requestAnimationFrame(() => resolve(Boolean(document.querySelector("dialog[open] h1")))));
+  });
+  expect(firstFrameHasScene).toBe(true);
+  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
+  await expect(scene).toBeVisible();
+  await expect(scene.locator("video")).toHaveCount(1);
+  await scene.locator("video").dispatchEvent("error");
+  await expect(scene.locator("video")).toHaveCount(0);
+  await expect(scene.locator("picture img")).toBeVisible();
+  expect(await scene.evaluate((node) => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight)).toBe(true);
+  await page.screenshot({ path: `test-results/puhu-flight-${test.info().project.name}.png` });
+  finish();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  await expect(scene).toHaveCount(0);
+  expect(api.previewCalls).toBe(1);
+});
+
+test("Puhu sahnesinde uzun bekleme ve hareket azaltma, klavye odağıyla birlikte çalışır", async ({ page }) => {
+  await page.clock.install();
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, brief, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
+  await expect(scene).toBeVisible();
+  await expect(scene.locator("video")).toHaveCount(0);
+  await expect(scene.getByRole("button", { name: "Planına dön" })).toBeFocused();
+  await page.clock.fastForward(20_100);
+  await expect(scene.getByRole("status")).toHaveText("Biraz uzadı. Hazırlık sürüyor; istersen planına dönebilirsin.");
+  expect(await scene.locator("ul img").first().evaluate((node) => getComputedStyle(node).animationName)).toBe("none");
+  await page.keyboard.press("Escape");
+  await page.getByRole("button", { name: "Hazırlık sahnesine dön" }).click();
+  await expect(scene.getByRole("status")).toContainText("Biraz uzadı.");
+  finish();
+});
+
+test("Puhu hata ekranında yeniden deneme aynı seçimleri kullanır; düzenleme seçimleri korur", async ({ page }) => {
+  const api = await mockPlanApi(page, {
+    preview: readyPreview, brief, dailyGoalMinutes: 120,
+    previewResponse: async (route, call) => call < 3 ? json(route, { code: "AI_UNAVAILABLE", message: "Koç şu an yanıt veremedi." }, 503) : json(route, readyPreview),
+  });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page, "Cuma hafif olsun");
+  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
+  await expect(scene.getByRole("alert")).toHaveText("Koç şu an yanıt veremedi.");
+  await scene.getByRole("button", { name: "Yeniden dene" }).click();
+  await expect.poll(() => api.previewCalls).toBe(2);
+  await expect(scene.getByRole("alert")).toBeVisible();
+  expect(api.previewBodies[1]).toEqual(api.previewBodies[0]);
+  await scene.getByRole("button", { name: "Seçimlerini düzenle" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect(page.getByRole("radio", { checked: true })).toContainText("120");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect(page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" }).getByRole("checkbox", { name: /Matematik/ })).toBeChecked();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect(page.getByPlaceholder("Örn. Cuma gününü biraz daha hafif tut.")).toHaveValue("Cuma hafif olsun");
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  expect(api.previewBodies[2]).toEqual(api.previewBodies[0]);
+});
+
+test("Puhu servisi Premium reddi verdiğinde mevcut paywall açılır", async ({ page }) => {
+  const api = await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => json(route, { code: "PAYMENT_PREMIUM_REQUIRED", message: "Premium gerekli." }, 403) });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await expect(page.getByTestId("premium-paywall")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" })).toHaveCount(0);
+  expect(api.previewCalls).toBe(1);
+});
+
+test("Puhu videosu doğru kadrajda döner ve yedi gün görünümü taşmaz", async ({ page }) => {
+  if (page.viewportSize()!.width >= 1024) await page.setViewportSize({ width: 1368, height: 911 });
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, brief: { ...brief, suggestion: { ...brief.suggestion, weekdays: [1,2,3,4,5,6,7], days: 7, focusSubjects: ["Matematik", "Türkçe", "Tarih", "Coğrafya"] } }, dailyGoalMinutes: 120, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
+  const video = scene.locator("video");
+  await expect.poll(() => video.evaluate((node: HTMLVideoElement) => !node.paused && node.readyState >= 2)).toBe(true);
+  await expect(scene.locator("ul li")).toHaveCount(7);
+  expect(await video.evaluate((node: HTMLVideoElement) => ({ width: node.videoWidth, height: node.videoHeight, duration: node.duration, muted: node.muted }))).toEqual({ width: page.viewportSize()!.width >= 1024 ? 1920 : 1080, height: page.viewportSize()!.width >= 1024 ? 1080 : 1920, duration: 8, muted: true });
+  const bounds = await scene.evaluate((node) => ({ width: node.clientWidth, scrollWidth: node.scrollWidth, height: node.clientHeight, scrollHeight: node.scrollHeight }));
+  expect(bounds.width).toBe(page.viewportSize()!.width);
+  expect(bounds.height).toBe(page.viewportSize()!.height);
+  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width);
+  expect(bounds.scrollHeight).toBeLessThanOrEqual(bounds.height);
+  await video.evaluate((node: HTMLVideoElement) => { node.currentTime = 7.7; });
+  await expect.poll(() => video.evaluate((node: HTMLVideoElement) => node.currentTime)).toBeLessThan(2);
+  await page.screenshot({ path: `test-results/puhu-flight-${test.info().project.name}.png` });
+  finish();
+});
+
+test("Puhu önizleme sonrası yenileme sürerken başka sayfanın penceresini kapatmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, afterApplyRead: gate });
+  await page.goto("/panel");
+  await page.getByRole("link", { name: "Plan", exact: true }).first().click();
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Yeni görev" })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/panel$/);
+  await expect(page.getByRole("dialog", { name: "Yeni görev" })).toBeVisible();
+  finish();
+});
 
 test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", async ({
   page,
@@ -139,8 +318,9 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   await expect(
     page.getByText("Bekleyen işlerin arasında Matematik var."),
   ).toBeVisible();
-  await expect(page.getByText("Taşı", { exact: true })).toBeVisible();
-  await expect(page.getByText("Ekle", { exact: true })).toBeVisible();
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview.getByRole("checkbox", { name: /Matematik çöz/ })).toBeChecked();
+  await expect(preview.getByRole("checkbox", { name: /Kısa tekrar/ })).toBeChecked();
   await expect(page.getByText(/21 Temmuz.*23 Temmuz/)).toBeVisible();
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
 
@@ -148,6 +328,7 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   expect(api.previewCalls).toBe(1);
   expect(api.applyBodies).toEqual([
     {
+      source: "PLAN",
       planRevision: revision,
       changes: readyPreview.changes,
     },
@@ -276,6 +457,8 @@ test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf
   await expect(minutes.getByText("Ritmin")).toBeVisible();
   // A typed minute count replaces the card; one out of range stops the step.
   const custom = minutes.getByRole("spinbutton", { name: "Ya da kendin yaz" });
+  await expect(custom).not.toHaveAttribute("placeholder");
+  await expect(custom).toHaveCSS("appearance", "textfield");
   await custom.fill("700");
   await page.getByRole("button", { name: "Devam" }).click();
   const tooLong = page.getByText("10 ile 600 dakika arasında bir süre yaz.");
@@ -330,6 +513,7 @@ test("önizleme koçun baktıklarını ve her görevin nedenini gösterir", asyn
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
   await expect(page.getByText("Planın güncellendi")).toBeVisible();
   expect(api.applyBodies).toHaveLength(1);
+  expect(api.applyBodies[0]).toMatchObject({ source: "PLAN" });
 });
 
 test("eski özel günlük hedef serbest giriş kartında görünür", async ({ page }) => {
@@ -491,6 +675,8 @@ test.describe("Takvim", () => {
 
 interface MockPlanOptions {
   preview: CoachPlanAdaptationDto;
+  previewResponse?: (route: Route, call: number) => Promise<void>;
+  afterApplyRead?: Promise<void>;
   /** Wizard seed. Left out, the route answers 501 and the wizard must work without it. */
   brief?: CoachPlanAdaptationBriefDto;
   premium?: boolean;
@@ -694,6 +880,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
   let previewCalls = 0;
   let briefCalls = 0;
   let staleApply = options.staleApplyOnce ?? false;
+  let applied = false;
   const previewBodies: unknown[] = [];
   const applyBodies: unknown[] = [];
   const createBodies: Record<string, unknown>[] = [];
@@ -774,6 +961,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       );
     }
     if (method === "GET" && path === "/v1/plan-tasks") {
+      if (applied) await options.afterApplyRead;
       return json(route, {
         items: tasks,
         total: tasks.length,
@@ -784,6 +972,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     if (method === "POST" && path === "/v1/coach/plan-adaptation") {
       previewCalls += 1;
       previewBodies.push(request.postDataJSON());
+      if (options.previewResponse) return options.previewResponse(route, previewCalls);
       return json(route, options.preview);
     }
     if (method === "GET" && path === "/v1/coach/plan-adaptation/brief" && options.brief) {
@@ -803,6 +992,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
           409,
         );
       }
+      applied = true;
       return json(route, {
         moved: [{ ...task, taskDate: "2026-07-23", sortOrder: 1 }],
         added: [

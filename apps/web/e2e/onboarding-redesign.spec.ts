@@ -178,6 +178,8 @@ test("a student answers one question per screen and lands on their summary", asy
     .toMatchObject({ goalTitle: "Eğitim alanında ilerlemek", careerGroup: "EGITIM", motivation: "Ailem için" });
 
   const customMinutes = page.getByRole("spinbutton", { name: "Kendin yaz" });
+  await expect(customMinutes).not.toHaveAttribute("placeholder");
+  await expect(customMinutes).toHaveCSS("appearance", "textfield");
   await customMinutes.fill("700");
   await expect(customMinutes).toHaveAttribute("aria-invalid", "true");
   await expect(page.getByText("10 ile 600 arasında tam dakika yaz.")).toBeVisible();

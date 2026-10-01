@@ -678,18 +678,20 @@ export class PlanService {
         move.sortOrder = nextOrder(move.toDate);
       }
 
+      const addedByDate = new Map<string, number>();
       for (const change of input.changes) {
         if (change.kind !== "ADD") continue;
         assertDate(change.taskDate);
         const additionTitleKey = titleKey(change.taskDate, change.title);
         if (
           (titleCounts.get(additionTitleKey) ?? 0) > 0 ||
-          (pendingByDate.get(change.taskDate) ?? 0) >= 3
+          ((input.source === "PLAN" ? addedByDate : pendingByDate).get(change.taskDate) ?? 0) >= 3
         ) {
           throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
         }
         adjustTitleCount(additionTitleKey, 1);
         pendingByDate.set(change.taskDate, (pendingByDate.get(change.taskDate) ?? 0) + 1);
+        addedByDate.set(change.taskDate, (addedByDate.get(change.taskDate) ?? 0) + 1);
         additions.push({
           title: change.title,
           subject: change.subject,
