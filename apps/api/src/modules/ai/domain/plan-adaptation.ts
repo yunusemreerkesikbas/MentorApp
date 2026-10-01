@@ -5,7 +5,7 @@ import {
   type CoachPlanAdaptationSource,
   type CoachUsedEvidenceDto,
 } from "@mentor/types";
-import { PLAN_ADAPTATION_MINUTES } from "@mentor/validation";
+import { PLAN_ADAPTATION_MINUTES_MAX, PLAN_ADAPTATION_MINUTES_MIN } from "@mentor/validation";
 import type {
   CoachEvidenceSnapshot,
   CoachExamPhase,
@@ -16,6 +16,7 @@ import {
   promptLanguageInstruction,
   type PromptLocale,
 } from "./prompt-locale";
+import { fillPersonalizedPlanBlocks, type VerifiedPlanTopic } from "./plan-adaptation-blocks";
 
 export interface PromptPlanTask extends PlanAdaptationSnapshotTask {
   ref: string;
@@ -31,6 +32,7 @@ export interface PlanAdaptationGrounding {
   weakSubjects?: readonly string[];
   weakReason?: string | null;
   chosenReason?: string | null;
+  notebookReason?: string | null;
 }
 
 // A plan reads the whole pool; mood and session adaptations stay as narrow as they always were.
@@ -42,12 +44,12 @@ const PLAN_EVIDENCE: Record<
     CoachEvidenceType.EXAM_PHASE,
     CoachEvidenceType.WEAK_SUBJECTS,
     CoachEvidenceType.NOTEBOOK_TOPICS,
-    CoachEvidenceType.SUBJECT_BALANCE,
-    CoachEvidenceType.PLAN_FOLLOW_THROUGH,
     CoachEvidenceType.LONG_TERM_RHYTHM,
+    CoachEvidenceType.GOAL,
+    CoachEvidenceType.PLAN_FOLLOW_THROUGH,
+    CoachEvidenceType.SUBJECT_BALANCE,
     CoachEvidenceType.RECENT_RHYTHM,
     CoachEvidenceType.MOOD,
-    CoachEvidenceType.GOAL,
     CoachEvidenceType.STREAK,
   ],
   MOOD: [
@@ -91,13 +93,9 @@ export function suggestPlanBrief(
     input.activeDays28d != null && input.activeDays28d >= 4
       ? Math.min(7, Math.max(3, Math.round(input.activeDays28d / 4)))
       : null;
-  const target =
-    input.dailyFocusGoalMinutes ?? (input.averageSessionMinutes28d || null);
-  // Ties go to the smaller block: a gentler plan is the safer guess.
-  const minutesPerDay = target
-    ? PLAN_ADAPTATION_MINUTES.reduce((best, option) =>
-        Math.abs(option - target) < Math.abs(best - target) ? option : best,
-      )
+  const target = input.dailyFocusGoalMinutes ?? input.averageSessionMinutes28d;
+  const minutesPerDay = target != null && target >= PLAN_ADAPTATION_MINUTES_MIN
+    ? Math.min(PLAN_ADAPTATION_MINUTES_MAX, Math.round(target))
     : null;
   const focusSubjects = [
     ...new Set(
@@ -183,6 +181,7 @@ export interface PlanAdaptationRhythm {
   studyDates?: readonly string[];
   minutesPerDay?: number;
   focusSubjects?: readonly string[];
+  topics?: readonly VerifiedPlanTopic[];
   locale?: PromptLocale;
 }
 
@@ -195,6 +194,7 @@ export function parsePlanAdaptation(
   rhythm?: PlanAdaptationRhythm,
   grounding?: PlanAdaptationGrounding,
 ): PlanAdaptationParseResult {
+  const personalized = source === "PLAN" && Boolean(rhythm?.minutesPerDay && rhythm.studyDates?.length);
   const reasonByRef = new Map(
     (grounding?.evidence ?? []).map((item) => [item.ref, item.summary]),
   );
@@ -205,20 +205,25 @@ export function parsePlanAdaptation(
   };
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start === -1 || end <= start) return { kind: "MALFORMED" };
+  if (start === -1 || end <= start) {
+    if (personalized) text = '{"changes":[]}';
+    else return { kind: "MALFORMED" };
+  }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text.slice(start, end + 1));
+    parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
   } catch {
-    return { kind: "MALFORMED" };
+    if (personalized) parsed = { changes: [] };
+    else return { kind: "MALFORMED" };
   }
-  const rawChanges = (parsed as { changes?: unknown }).changes;
-  if (!Array.isArray(rawChanges)) return { kind: "MALFORMED" };
+  const received = parsed && typeof parsed === "object" ? (parsed as { changes?: unknown }).changes : undefined;
+  const rawChanges = Array.isArray(received) ? received : personalized ? [] : null;
+  if (!rawChanges) return { kind: "MALFORMED" };
 
   const windowEnd = addDays(todayIso, 6);
   // The model reads the note and names the days it keeps free; the backend is what keeps them free.
-  const rawOffDates = (parsed as { offDates?: unknown }).offDates;
+  const rawOffDates = parsed && typeof parsed === "object" ? (parsed as { offDates?: unknown }).offDates : undefined;
   const offDates = new Set(
     source === "PLAN" && Array.isArray(rawOffDates)
       ? rawOffDates.filter(
@@ -344,6 +349,24 @@ export function parsePlanAdaptation(
       pendingByDate = nextPending;
       titleCounts = nextTitles;
     }
+  }
+
+  if (personalized && rhythm?.minutesPerDay) {
+    const dates = (rhythm.studyDates?.length ? rhythm.studyDates : planWindow(todayIso))
+      .filter(isOpenDay)
+      .slice(0, requestedDays ?? PLAN_WINDOW_DAYS);
+    const additions = fillPersonalizedPlanBlocks({
+      rawChanges,
+      dates,
+      minutesPerDay: rhythm.minutesPerDay,
+      pendingByDate,
+      titleCounts,
+      focusSubjects,
+      topics: rhythm.topics ?? [],
+      locale: rhythm.locale,
+      grounding,
+    });
+    return { kind: "VALID", changes: [...moves, ...additions] };
   }
 
   const additions: Array<
@@ -525,6 +548,7 @@ export function buildPlanAdaptationPrompt(input: {
   studyDates?: readonly string[];
   minutesPerDay?: number;
   focusSubjects?: readonly string[];
+  topics?: readonly VerifiedPlanTopic[];
   locale?: PromptLocale;
   moodLevel?: number | null;
 }): { system: string; user: string } {
@@ -532,11 +556,13 @@ export function buildPlanAdaptationPrompt(input: {
     dates.map((date) => namedDate(date, input.locale)).join(", ");
   const policy =
     input.source === "PLAN"
-      ? input.studyDates?.length
-        ? `En fazla 3 MOVE öner. Yalnız şu günlere birer ADD yaz: ${named(input.studyDates)}. Başka bir güne ADD ya da MOVE yazma.`
-        : input.days
-        ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
-        : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
+      ? input.minutesPerDay
+        ? `En fazla 3 MOVE öner. Yalnız ${input.studyDates?.length ? named(input.studyDates) : input.days ? `${input.days} farklı gün` : "7 günlük pencere"} için ADD yaz. Boş güne 1-3, mevcut görevi olan güne en fazla 1 ADD öner. Her ADD için subject, topicSlug (yoksa null), activity (PRACTICE/REVIEW/NOTEBOOK), taskDate ve evidenceRef döndür. Konuyu yalnız verilen konu listesinden seç. Günlük ${input.minutesPerDay} dakika hedefini günün görevlerine böl; mevcut görevi aynen kopyalama.`
+        : input.studyDates?.length
+          ? `En fazla 3 MOVE öner. Yalnız şu günlere birer ADD yaz: ${named(input.studyDates)}. Başka bir güne ADD ya da MOVE yazma.`
+          : input.days
+            ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
+            : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
       : input.source === "MOOD"
         ? "Yalnız bugünkü görevlerden en fazla 2 MOVE öner; ADD önerme."
         : "En fazla 2 MOVE ve sonraki günlere 1 küçük tekrar ADD öner.";
@@ -558,7 +584,7 @@ export function buildPlanAdaptationPrompt(input: {
       : []),
     policy,
     "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma. Bir günde en fazla 3 görev olsun.",
-    "ADD görevleri küçük, somut ve kısa olsun; mevcut görevin aynı adlı kopyasını ekleme.",
+    "ADD görevleri somut olsun; mevcut görevin aynı adlı kopyasını ekleme.",
     "Her değişikliğe onu en iyi açıklayan tek bir E referansını evidenceRef olarak yaz; uygun kanıt yoksa null yaz. Kanıtta olmayan bir bilgi uydurma.",
     "Tarih veya gün sayısı yazma: sınav tarihi, kalan gün ve takvim bilgisi hiçbir başlığa girmez.",
     ...(input.source === "PLAN" && !input.focusSubjects?.length
@@ -571,7 +597,7 @@ export function buildPlanAdaptationPrompt(input: {
           "Sınav son düzlükte: ADD görevleri yeni konu yerine tekrar, soru çözümü ve deneme ritmi olsun.",
         ]
       : []),
-    `${PLAN_ADAPTATION_JSON_SENTINEL}: {${input.source === "PLAN" ? '"offDates":[],' : ""}"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}]}`,
+    `${PLAN_ADAPTATION_JSON_SENTINEL}: {${input.source === "PLAN" ? '"offDates":[],' : ""}"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},${input.source === "PLAN" && input.minutesPerDay ? '{"kind":"ADD","subject":"Matematik","topicSlug":"sayisal-mantik","activity":"PRACTICE","taskDate":"YYYY-MM-DD","evidenceRef":"E2"}' : '{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}'}]}`,
   ].join("\n");
   const evidence = input.evidence.length
     ? input.evidence
@@ -608,7 +634,7 @@ export function buildPlanAdaptationPrompt(input: {
               ? `${input.days} farklı gün`
               : null,
           input.minutesPerDay
-            ? `her görev yaklaşık ${input.minutesPerDay} dakika sürsün`
+            ? `boş seçili günlerin toplam hedefi yaklaşık ${input.minutesPerDay} dakika olsun`
             : null,
           input.focusSubjects?.length
             ? `ADD subject yalnız şunlardan biri olsun: ${input.focusSubjects.join(", ")}`
@@ -629,6 +655,6 @@ export function buildPlanAdaptationPrompt(input: {
     : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nKanıtlar:\n${evidence}\nSinyal: ${contextSignal}${mood}${memories}${preferences}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nKanıtlar:\n${evidence}\nSinyal: ${contextSignal}${mood}${memories}${preferences}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${input.source === "PLAN" && input.minutesPerDay ? `\nDoğrulanmış konular: ${JSON.stringify(input.topics?.slice(0, 120) ?? [])}` : ""}${note}`,
   };
 }

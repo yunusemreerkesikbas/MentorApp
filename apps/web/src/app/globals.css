@@ -214,6 +214,23 @@ body {
   }
 }
 
+/* `/masaya-katil`: a short bar travelling across while the seat is taken (reduced motion: a full, still bar). */
+@keyframes room-join-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* `/seans` Bugün card: the session you just finished grows into the day's strip from the left. */
+@keyframes session-strip-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 @keyframes popover-enter {
   from {
     opacity: 0;
@@ -254,7 +271,7 @@ body {
     animation: popover-enter 200ms ease-out forwards;
   }
   .lg\:animate-popover-out {
-    animation: popover-exit 160ms ease-in forwards;
+    animation: popover-exit 150ms ease-in forwards;
   }
 }
 

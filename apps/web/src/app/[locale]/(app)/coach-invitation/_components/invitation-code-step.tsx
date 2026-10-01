@@ -1,6 +1,6 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId, useRef } from "react";
 import { CircleAlert } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { Button } from "@mentor/ui";
@@ -16,12 +16,15 @@ export function InvitationCodeStep({
   code,
   error,
   busy,
+  focusOnMount,
   onChange,
   onSubmit,
 }: {
   code: string;
   error: string | null;
   busy: boolean;
+  /** Back from the preview ("Değiştir", "Vazgeç"): the pressed control is gone, the field takes focus. */
+  focusOnMount: boolean;
   onChange: (code: string) => void;
   onSubmit: () => void;
 }) {
@@ -29,6 +32,11 @@ export function InvitationCodeStep({
   const fieldId = useId();
   const errorId = useId();
   const helpId = useId();
+  const fieldRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (focusOnMount) fieldRef.current?.focus();
+  }, [focusOnMount]);
 
   return (
     <>
@@ -45,6 +53,7 @@ export function InvitationCodeStep({
         </label>
         <input
           id={fieldId}
+          ref={fieldRef}
           value={code}
           placeholder={t("invitation_code_placeholder")}
           autoComplete="off"

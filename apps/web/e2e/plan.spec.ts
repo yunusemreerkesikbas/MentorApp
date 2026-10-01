@@ -98,6 +98,7 @@ const brief: CoachPlanAdaptationBriefDto = {
 const groundedPreview: CoachPlanAdaptationDto = {
   ...readyPreview,
   groundingLine: coverageLine,
+  coachNote: "Seçtiğin 120 dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.",
   usedEvidence: brief.evidence,
   changes: [
     { ...readyPreview.changes[0]!, reason: rhythmLine },
@@ -247,12 +248,14 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
 test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf dersi önerir", async ({
   page,
 }) => {
+  await page.setViewportSize({ width: 1368, height: 911 });
   const api = await mockPlanApi(page, { preview: groundedPreview, brief });
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/plan");
   await page.getByRole("button", { name: "Koçla planla" }).click();
 
   const days = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
+  await expect.poll(() => days.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
   await expect(days.getByText(coverageLine)).toBeVisible();
   await expect(days.getByText("Son 4 haftada en çok bu günlerde çalıştın.")).toBeVisible();
   // Seven rows starting today, the student's most-studied weekdays already picked and badged.
@@ -294,6 +297,7 @@ test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
   await expect(page.getByText(coverageLine)).toBeVisible();
+  await expect(page.getByText("Seçtiğin 120 dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.")).toBeVisible();
   expect(api.briefCalls).toBe(1);
   expect(api.previewBodies).toEqual([
     {
@@ -326,6 +330,14 @@ test("önizleme koçun baktıklarını ve her görevin nedenini gösterir", asyn
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
   await expect(page.getByText("Planın güncellendi")).toBeVisible();
   expect(api.applyBodies).toHaveLength(1);
+});
+
+test("eski özel günlük hedef serbest giriş kartında görünür", async ({ page }) => {
+  await mockPlanApi(page, { preview: groundedPreview, brief, dailyGoalMinutes: 75 });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect(page.getByRole("spinbutton", { name: "Ya da kendin yaz" })).toHaveValue("75");
 });
 
 /** Today in the browser's local calendar — the calendar view's "past is read-only" rule uses it. */
@@ -482,6 +494,7 @@ interface MockPlanOptions {
   /** Wizard seed. Left out, the route answers 501 and the wizard must work without it. */
   brief?: CoachPlanAdaptationBriefDto;
   premium?: boolean;
+  dailyGoalMinutes?: number;
   staleApplyOnce?: boolean;
   /** Overrides the default single-task list. */
   tasks?: PlanTaskDto[];
@@ -713,9 +726,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
 
     if (method === "OPTIONS") return json(route, null, 204);
     if (method === "POST" && path === "/v1/auth/refresh") {
-      return json(route, { accessToken: "test-token", expiresIn: 3600, user });
+      return json(route, { accessToken: "test-token", expiresIn: 3600, user: { ...user, dailyFocusGoalMinutes: options.dailyGoalMinutes ?? user.dailyFocusGoalMinutes } });
     }
-    if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me") return json(route, { ...user, dailyFocusGoalMinutes: options.dailyGoalMinutes ?? user.dailyFocusGoalMinutes });
     if (method === "GET" && path.startsWith("/v1/notifications")) {
       return json(route, {
         items: [],

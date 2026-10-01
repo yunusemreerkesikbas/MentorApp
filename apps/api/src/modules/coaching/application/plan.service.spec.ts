@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
-import { addDays } from "../domain/date.util";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import { PlanService } from "./plan.service";
 
 const USER = "u1";
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayInIstanbul();
 
 interface TaskRow {
   id: string;
@@ -12,6 +12,7 @@ interface TaskRow {
   taskDate: string;
   title: string;
   subject: string | null;
+  topic?: string | null;
   status: string;
   sortOrder: number;
   /** Absent on most fixtures — an all-day task, which is what every pre-calendar row is. */
@@ -74,6 +75,7 @@ function makePlanRepoFake(rows: TaskRow[]) {
         taskDate: data.taskDate!,
         title: data.title!,
         subject: data.subject ?? null,
+        topic: data.topic ?? null,
         status: data.status ?? "PENDING",
         sortOrder: data.sortOrder ?? 0,
         startTime: data.startTime ?? null,
@@ -495,6 +497,7 @@ describe("PlanService plan adaptations", () => {
           kind: "ADD",
           title: "Tarih tekrar",
           subject: "Tarih",
+          topic: "Osmanlı Devleti",
           taskDate: addDays(TODAY, 2),
         },
       ],
@@ -520,6 +523,7 @@ describe("PlanService plan adaptations", () => {
         taskDate: addDays(TODAY, 2),
         sortOrder: 0,
         title: "Tarih tekrar",
+        topic: "Osmanlı Devleti",
         origin: null,
       },
     ]);

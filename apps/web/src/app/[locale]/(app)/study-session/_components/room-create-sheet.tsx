@@ -1,9 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { Minus, Plus } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { StudyRoomTheme } from "@mentor/types";
+import { Button, TextField } from "@mentor/ui";
+import { PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import {
   STUDY_ROOM_CAPACITY_DEFAULT,
   STUDY_ROOM_CAPACITY_MAX,
@@ -32,6 +34,8 @@ export function RoomCreateSheet({
   onSubmit: (input: { name: string; theme: StudyRoomTheme; capacity: number }) => void;
 }) {
   const t = useTranslations("session_room");
+  const capacityLabelId = useId();
+  const nameRef = useRef<HTMLInputElement>(null);
   const [name, setName] = useState("");
   const [theme, setTheme] = useState<StudyRoomTheme>("LIBRARY");
   const [capacity, setCapacity] = useState(STUDY_ROOM_CAPACITY_DEFAULT);
@@ -42,70 +46,64 @@ export function RoomCreateSheet({
       onClose={onClose}
       title={t("create_title")}
       banner={<RoomThemeCarousel value={theme} onChange={setTheme} disabled={busy} />}
+      initialFocusRef={nameRef}
+      closeDisabled={busy}
+      onSubmit={(e) => {
+        e.preventDefault();
+        if (!name.trim() || busy) return;
+        onSubmit({ name: name.trim(), theme, capacity });
+      }}
+      footer={
+        <>
+          {/* Phones close from the handle row's X; a second way out would crowd the ledge. */}
+          <button type="button" onClick={onClose} className={`${PANEL_QUIET_LINK} max-lg:hidden`}>
+            {t("cancel")}
+          </button>
+          <Button type="submit" busy={busy} disabled={!name.trim()} className="max-lg:w-full">
+            {t("create_submit")}
+          </Button>
+        </>
+      }
     >
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!name.trim() || busy) return;
-          onSubmit({ name: name.trim(), theme, capacity });
-        }}
-        className="flex flex-col gap-4"
-      >
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-            {t("name_label")}
-          </span>
-          <input
-            type="text"
-            value={name}
-            maxLength={40}
-            autoFocus
-            onChange={(e) => setName(e.target.value)}
-            placeholder={t("name_placeholder")}
-            className="min-h-12 rounded-[var(--radius-card)] border px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ borderColor: "var(--color-progress-track)", color: "var(--color-main)" }}
+      <TextField
+        ref={nameRef}
+        label={t("name_label")}
+        value={name}
+        maxLength={40}
+        onChange={(e) => setName(e.target.value)}
+        placeholder={t("name_placeholder")}
+        autoComplete="off"
+      />
+
+      <div className="flex flex-col gap-1">
+        <span id={capacityLabelId} className="text-xs font-semibold text-[var(--color-secondary)]">
+          {t("capacity_label")}
+        </span>
+        {/* A stepper, not a number field: the range is 2–10 and a keyboard is overkill for it. */}
+        <div role="group" aria-labelledby={capacityLabelId} className="flex items-center gap-3.5">
+          <StepperButton
+            label={t("capacity_less")}
+            disabled={busy || capacity <= STUDY_ROOM_CAPACITY_MIN}
+            onClick={() => setCapacity((c) => Math.max(STUDY_ROOM_CAPACITY_MIN, c - 1))}
+            icon={<Minus className="size-5" strokeWidth={1.75} aria-hidden />}
           />
-        </label>
-
-        <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-semibold" style={{ color: "var(--color-secondary)" }}>
-            {t("capacity_label")}
+          <output
+            aria-live="polite"
+            className="min-w-10 text-center text-2xl font-extrabold tabular-nums text-[var(--color-main)]"
+          >
+            {capacity}
+          </output>
+          <StepperButton
+            label={t("capacity_more")}
+            disabled={busy || capacity >= STUDY_ROOM_CAPACITY_MAX}
+            onClick={() => setCapacity((c) => Math.min(STUDY_ROOM_CAPACITY_MAX, c + 1))}
+            icon={<Plus className="size-5" strokeWidth={1.75} aria-hidden />}
+          />
+          <span className="text-body-sm font-semibold text-[var(--color-secondary)]">
+            {t("capacity_hint")}
           </span>
-          {/* A stepper, not a number field: the range is 2–10 and a keyboard is overkill for it. */}
-          <div className="flex items-center gap-3">
-            <StepperButton
-              label={t("capacity_less")}
-              disabled={busy || capacity <= STUDY_ROOM_CAPACITY_MIN}
-              onClick={() => setCapacity((c) => Math.max(STUDY_ROOM_CAPACITY_MIN, c - 1))}
-              icon={<Minus className="size-4" strokeWidth={2.5} aria-hidden />}
-            />
-            <output
-              className="min-w-12 text-center text-2xl font-bold tabular-nums"
-              style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-            >
-              {capacity}
-            </output>
-            <StepperButton
-              label={t("capacity_more")}
-              disabled={busy || capacity >= STUDY_ROOM_CAPACITY_MAX}
-              onClick={() => setCapacity((c) => Math.min(STUDY_ROOM_CAPACITY_MAX, c + 1))}
-              icon={<Plus className="size-4" strokeWidth={2.5} aria-hidden />}
-            />
-            <span className="text-sm" style={{ color: "var(--color-secondary)" }}>
-              {t("capacity_hint")}
-            </span>
-          </div>
         </div>
-
-        <button
-          type="submit"
-          disabled={busy || !name.trim()}
-          className="min-h-12 w-full cursor-pointer rounded-full text-sm font-bold transition-transform duration-200 hover:scale-[1.01] disabled:opacity-50 motion-reduce:transition-none motion-reduce:hover:scale-100"
-          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
-        >
-          {t("create_submit")}
-        </button>
-      </form>
+      </div>
     </RoomSheet>
   );
 }
@@ -117,7 +115,7 @@ function StepperButton({
   disabled,
 }: {
   label: string;
-  icon: React.ReactNode;
+  icon: ReactNode;
   onClick: () => void;
   disabled?: boolean;
 }) {
@@ -127,8 +125,7 @@ function StepperButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] disabled:opacity-40 motion-reduce:transition-none"
-      style={{ backgroundColor: "var(--color-surface-container)", color: "var(--color-main)" }}
+      className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full border-2 border-[var(--play-line)] bg-[var(--color-surface)] text-[var(--color-main)] transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
     >
       {icon}
     </button>

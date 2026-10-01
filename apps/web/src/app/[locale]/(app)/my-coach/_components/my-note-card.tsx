@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import { PenLine } from "lucide-react";
 import { useFormatter, useTranslations } from "next-intl";
 import type { MentorshipCoachNoteDto } from "@mentor/types";
@@ -34,9 +34,16 @@ export function MyNoteCard({
   const toast = useMentorToast();
   const titleId = useId();
   const fieldId = useId();
+  const titleRef = useRef<HTMLHeadingElement>(null);
   const [draft, setDraft] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const trimmed = draft?.trim() ?? "";
+
+  /** The editor closes under the keyboard; focus goes to the card title, not to the page body. */
+  function closeEditor() {
+    setDraft(null);
+    titleRef.current?.focus();
+  }
 
   async function save(body: string | null) {
     setBusy(true);
@@ -44,7 +51,7 @@ export function MyNoteCard({
       await setMyNote(body);
       toast.success({ title: body === null ? t("note_cleared") : t("note_saved") });
       onSaved(body === null ? null : { body, updatedAt: new Date().toISOString() });
-      setDraft(null);
+      closeEditor();
     } catch (err) {
       toast.error({
         title: common("error_title"),
@@ -58,7 +65,7 @@ export function MyNoteCard({
   return (
     <section aria-labelledby={titleId} className={`${PANEL_CARD} flex flex-col gap-3`}>
       <div className="flex items-center justify-between gap-3">
-        <h2 id={titleId} className={PANEL_CARD_TITLE}>
+        <h2 id={titleId} ref={titleRef} tabIndex={-1} className={`${PANEL_CARD_TITLE} outline-none`}>
           {t("my_note_title")}
         </h2>
         {note && draft === null ? (
@@ -95,7 +102,7 @@ export function MyNoteCard({
             >
               {t("note_save")}
             </Button>
-            <button type="button" className={PANEL_QUIET_LINK} disabled={busy} onClick={() => setDraft(null)}>
+            <button type="button" className={PANEL_QUIET_LINK} disabled={busy} onClick={closeEditor}>
               {t("confirm_cancel")}
             </button>
             {note ? (

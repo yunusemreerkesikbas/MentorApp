@@ -3,7 +3,7 @@ import type {
   StudyRoomDto,
   StudyRoomTheme,
 } from "@mentor/types";
-import { http } from "@mentor/api-client";
+import { ApiClientError, http } from "@mentor/api-client";
 
 /**
  * Typed wrappers over the study-room surface (`/v1/study-rooms`) — persistent, themed,
@@ -30,6 +30,20 @@ export async function createStudyRoom(input: {
     method: "POST",
     body: JSON.stringify(input),
   })) as StudyRoomDetailDto;
+}
+
+export type StudyRoomJoinFailure = "already_member" | "invalid" | "error";
+
+/**
+ * Why a join failed, in the words both join surfaces use (the join sheet and `/masaya-katil`).
+ * An unknown code and a closed room read the same to the person holding the code: ask for a
+ * new link. Anything else is worth retrying.
+ */
+export function studyRoomJoinFailure(err: unknown): StudyRoomJoinFailure {
+  const code = err instanceof ApiClientError ? err.body.code : null;
+  if (code === "COACHING_ROOM_ALREADY_MEMBER") return "already_member";
+  if (code === "COACHING_ROOM_CODE_INVALID" || code === "COACHING_ROOM_NOT_FOUND") return "invalid";
+  return "error";
 }
 
 /** Join by invite code. The API upper-cases and validates the `MASA-XXXXXX` shape. */

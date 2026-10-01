@@ -279,7 +279,7 @@ test("K02 response-mock: delayed 503 shows an error and recovers on retry", asyn
   expect(todayCalls).toBe(2);
 });
 
-test("K03: completed study session persists in the browser history", async ({ page, context }, testInfo) => {
+test("K03: completed study session persists in the browser history", async ({ page, context }) => {
   const token = await login(context);
   const auth = { Authorization: `Bearer ${token}` };
   const start = await context.request.post(`${api}/study-sessions`, {
@@ -296,9 +296,9 @@ test("K03: completed study session persists in the browser history", async ({ pa
   expect((await finish.json() as { countsAsFocusSession: boolean }).countsAsFocusSession).toBe(true);
 
   await page.goto("/seans");
-  const mobile = testInfo.project.name === "mobile-chromium";
-  if (mobile) await page.getByTestId("session-history-open").click();
-  const history = page.getByTestId(mobile ? "session-history-drawer" : "session-history-rail");
+  // History lives in one drawer at every width since the two-zone /seans (2026-09-29).
+  await page.getByTestId("session-history-open").click();
+  const history = page.getByTestId("session-history-drawer");
   await expect(history.getByText("QA Tarih")).toBeVisible();
 });
 

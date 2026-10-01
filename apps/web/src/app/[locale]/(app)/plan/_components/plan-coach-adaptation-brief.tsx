@@ -15,7 +15,6 @@ import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { OnboardingDirectionProvider } from "@/app/[locale]/(onboarding)/_components/onboarding-direction";
 import { OnboardingStepLayout } from "@/app/[locale]/(onboarding)/_components/onboarding-step-layout";
 import {
-  PLAN_ADAPTATION_MINUTE_CHOICES,
   formatKnownBrief,
   isMinuteEntry,
   planWindowDays,
@@ -59,7 +58,11 @@ export function PlanCoachAdaptationBrief({
   const suggestion = brief?.suggestion ?? null;
 
   // Opened on a click, so "today" is the student's own day; the API maps weekdays onto its window.
-  const [planDays] = useState(() => planWindowDays(new Date()));
+  const [planDays] = useState(() => {
+    const parts = new Intl.DateTimeFormat("en-US", { timeZone: "Europe/Istanbul", year: "numeric", month: "numeric", day: "numeric" }).formatToParts(new Date());
+    const part = (type: string) => Number(parts.find((item) => item.type === type)?.value);
+    return planWindowDays(new Date(part("year"), part("month") - 1, part("day"), 12));
+  });
   // The days the student really studies on come pre-picked once the brief arrives.
   const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(null);
   const rhythmWeekdays = suggestion?.weekdays ?? null;
@@ -69,11 +72,7 @@ export function PlanCoachAdaptationBrief({
     ? profile.dailyFocusGoalMinutes
     : null;
   const suggestedMinutes = suggestion?.minutesPerDay ?? null;
-  const rhythmMinutes =
-    goalMinutes === null &&
-    (PLAN_ADAPTATION_MINUTE_CHOICES as readonly (number | null)[]).includes(suggestedMinutes)
-      ? suggestedMinutes
-      : null;
+  const rhythmMinutes = goalMinutes === null && isMinuteEntry(suggestedMinutes) ? suggestedMinutes : null;
   const [minutesOverride, setMinutesOverride] = useState<number | null | undefined>(undefined);
   const minutes = minutesOverride !== undefined ? minutesOverride : (goalMinutes ?? rhythmMinutes);
   const coachSubjects = suggestion?.focusSubjects;
@@ -238,6 +237,7 @@ export function PlanCoachAdaptationBrief({
         <OnboardingStepLayout
           key={step}
           root="div"
+          wide={step === "days"}
           progress={{ done: safeIndex + 1, total: steps.length + 1 }}
           onBack={safeIndex === 0 ? onClose : () => go(safeIndex - 1)}
           skipLabel={t("coach_adaptation_skip")}

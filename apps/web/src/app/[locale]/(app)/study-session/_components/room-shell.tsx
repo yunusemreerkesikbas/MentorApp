@@ -2,29 +2,28 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
-import { useLocale, useTranslations } from "next-intl";
-import {
-  ArrowLeft,
-  Check,
-  Copy,
-  MoreHorizontal,
-  RefreshCw,
-  X,
-} from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { ArrowLeft, CircleX, LogOut, MoreHorizontal, UserPlus } from "lucide-react";
 import type { StudyRoomDetailDto, StudyRoomTheme } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Link, getPathname, useRouter } from "@/i18n/navigation";
+import { LEDGE, LEDGE_FILLED, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { Link, useRouter } from "@/i18n/navigation";
 import {
   closeStudyRoom,
   getStudyRoom,
   leaveStudyRoom,
-  rotateStudyRoomCode,
   updateStudyRoom,
 } from "@/lib/study-rooms";
 import { ROOM_CURTAIN_MS } from "@/lib/study-room-theme";
+import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { RoomBackdropSlide } from "./room-backdrop-slide";
+import { RoomInviteSheet } from "./room-invite-sheet";
+import { RoomNoticeCard } from "./room-notice-card";
 import { RoomSeats } from "./room-seats";
+import { RoomStageSkeleton } from "./room-stage-skeleton";
 import { RoomThemeSwitcher } from "./room-theme-switcher";
 
 /** Presence poll. Cheap because the API answers it in one indexed query. */
@@ -33,7 +32,8 @@ const REFRESH_MS = 30_000;
 
 type State =
   | { status: "loading" }
-  | { status: "error" }
+  /** `notFound`: the table is gone (or was never yours); anything else is worth retrying. */
+  | { status: "error"; notFound: boolean }
   | { status: "ready"; room: StudyRoomDetailDto };
 
 /**
@@ -51,23 +51,40 @@ type State =
 export function RoomShell({ roomId }: { roomId: string }) {
   const t = useTranslations("session_room");
   const reduceMotion = useReducedMotion();
-  const locale = useLocale();
   const router = useRouter();
-  const { error: showErrorToast, success: showSuccessToast } = useMentorToast();
+  const dialog = useMentorDialog();
+  const { error: showErrorToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
   const [inviteOpen, setInviteOpen] = useState(false);
-  const [confirming, setConfirming] = useState<"leave" | "close" | null>(null);
   /** Set while the cut-to-black plays, so the CTA cannot be fired twice into one navigation. */
   const [leaving, setLeaving] = useState(false);
   /** Which way the ground travels on the next theme change — set by the arrow you pressed. */
   const [themeDirection, setThemeDirection] = useState<1 | -1>(1);
+  /**
+   * `?hosgeldin=1` comes from an invite link (`/masaya-katil`), which faded to black on the way
+   * here: the lights come back up once the table is ready. One shot, so the flag leaves the
+   * address as soon as it is read and a reload or a copied link lands normally.
+   */
+  const searchParams = useSearchParams();
+  const [curtainUp, setCurtainUp] = useState(() => searchParams.get("hosgeldin") === "1");
+  const welcomed = searchParams.get("hosgeldin") === "1";
+  useEffect(() => {
+    if (!welcomed) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("hosgeldin");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [welcomed]);
 
   const load = useCallback(() => {
     getStudyRoom(roomId)
       .then((room) => setState({ status: "ready", room }))
-      .catch(() => setState({ status: "error" }));
+      .catch((err: unknown) =>
+        setState({
+          status: "error",
+          notFound: err instanceof ApiClientError && (err.status === 404 || err.status === 403),
+        }),
+      );
   }, [roomId]);
 
   useEffect(() => {
@@ -84,11 +101,10 @@ export function RoomShell({ roomId }: { roomId: string }) {
     return () => clearInterval(id);
   }, [roomId]);
 
-  const run = async (action: () => Promise<unknown>, successTitle?: string) => {
+  const run = async (action: () => Promise<unknown>) => {
     setBusy(true);
     try {
       await action();
-      if (successTitle) showSuccessToast({ title: successTitle, duration: 2500 });
       return true;
     } catch (err) {
       showErrorToast({
@@ -99,35 +115,79 @@ export function RoomShell({ roomId }: { roomId: string }) {
       return false;
     } finally {
       setBusy(false);
-      setConfirming(null);
     }
   };
 
   /**
-   * A link, not a bare code: pasted into a chat it works for someone who has never opened the
-   * app. Built through `getPathname` so the shared URL is already in the reader's locale.
+   * Closing a table or leaving one cannot be undone from here, so it asks first, in the kit's
+   * destructive confirm (red ledge, focus on "Vazgeç"). It used to relabel the menu item and
+   * wait for a second tap, which one stray double-tap could satisfy.
    */
-  const inviteLink = (code: string) =>
-    `${window.location.origin}${getPathname({ href: { pathname: "/join-room", query: { kod: code } }, locale })}`;
-
-  const copyLink = async (code: string) => {
-    try {
-      await navigator.clipboard.writeText(inviteLink(code));
-      showSuccessToast({ title: t("invite_copied"), duration: 2000 });
-    } catch {
-      // Clipboard denied (insecure context / permission) — the code is on screen to read out.
-    }
+  const endMembership = async (kind: "close" | "leave", roomId: string, roomName: string) => {
+    const confirmed = await dialog.confirm({
+      title: t(`confirm_${kind}_title`),
+      message: t(`confirm_${kind}_body`, { name: roomName }),
+      confirmLabel: t(`confirm_${kind}_action`),
+      cancelLabel: t("cancel"),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    const ok = await run(() => (kind === "close" ? closeStudyRoom(roomId) : leaveStudyRoom(roomId)));
+    if (ok) router.replace("/study-session");
   };
 
-  if (state.status === "loading") return null;
+  const lightsUp = state.status !== "loading";
+  const curtain =
+    curtainUp && !reduceMotion ? (
+      <motion.div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-50"
+        style={{ backgroundColor: "#000" }}
+        initial={{ opacity: 1 }}
+        animate={{ opacity: lightsUp ? 0 : 1 }}
+        transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeOut" }}
+        onAnimationComplete={() => {
+          if (lightsUp) setCurtainUp(false);
+        }}
+      />
+    ) : null;
+
+  if (state.status === "loading") {
+    return (
+      <>
+        <RoomStageSkeleton />
+        {curtain}
+      </>
+    );
+  }
 
   if (state.status === "error") {
     return (
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-4 px-5 py-8">
-        <BackLink label={t("back_to_session")} />
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {t("not_found")}
-        </p>
+      <main className={PANEL_MAIN_CLASS}>
+        {state.notFound ? (
+          <RoomNoticeCard puhu="encouraging" title={t("not_found_title")} body={t("not_found_body")}>
+            <Link href="/study-session" className={`${LEDGE} ${LEDGE_FILLED} w-full`}>
+              {t("back_to_session")}
+            </Link>
+          </RoomNoticeCard>
+        ) : (
+          <RoomNoticeCard puhu="encouraging" title={t("load_failed_title")} body={t("load_failed_body")}>
+            <button
+              type="button"
+              onClick={() => {
+                setState({ status: "loading" });
+                load();
+              }}
+              className={`${LEDGE} ${LEDGE_FILLED} w-full`}
+            >
+              {t("arrive_retry")}
+            </button>
+            <Link href="/study-session" className="inline-flex min-h-11 items-center text-sm font-extrabold text-[var(--color-secondary)] underline-offset-4 hover:underline">
+              {t("back_to_session")}
+            </Link>
+          </RoomNoticeCard>
+        )}
+        {curtain}
       </main>
     );
   }
@@ -194,39 +254,48 @@ export function RoomShell({ roomId }: { roomId: string }) {
           </div>
         </div>
 
-        <RoomMenu
-          open={menuOpen}
-          onOpenChange={setMenuOpen}
-          label={t("room_menu")}
-          items={[
-            isOwner && room.inviteCode
-              ? { key: "invite", label: t("invite_title"), onSelect: () => setInviteOpen(true) }
-              : null,
-            isOwner
-              ? {
-                  key: "close",
-                  label: confirming === "close" ? t("close_confirm") : t("close_room"),
-                  destructive: true,
-                  onSelect: () =>
-                    confirming === "close"
-                      ? void run(() => closeStudyRoom(room.id)).then(
-                          (ok) => ok && router.replace("/study-session"),
-                        )
-                      : setConfirming("close"),
-                }
-              : {
-                  key: "leave",
-                  label: confirming === "leave" ? t("leave_confirm") : t("leave"),
-                  destructive: true,
-                  onSelect: () =>
-                    confirming === "leave"
-                      ? void run(() => leaveStudyRoom(room.id)).then(
-                          (ok) => ok && router.replace("/study-session"),
-                        )
-                      : setConfirming("leave"),
-                },
-          ]}
-        />
+        {/* Destructive room actions, out of the way. The app's own menu, portalled to the
+            body: rendered on the stage, its white panel inherited the room's cream ink. */}
+        <PopoverMenu
+          align="right"
+          menuClassName="min-w-[13.5rem] py-1.5"
+          trigger={({ open, setOpen, menuId }) => (
+            <button
+              type="button"
+              aria-label={t("room_menu")}
+              aria-haspopup="menu"
+              aria-expanded={open}
+              aria-controls={open ? menuId : undefined}
+              onClick={() => setOpen(!open)}
+              className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-ink)] motion-reduce:transition-none"
+              style={{ backgroundColor: "var(--room-scrim)", color: "var(--room-ink)", opacity: 0.85 }}
+            >
+              <MoreHorizontal className="size-5" strokeWidth={2.25} aria-hidden />
+            </button>
+          )}
+        >
+          {isOwner && room.inviteCode ? (
+            <PopoverMenuItem onClick={() => setInviteOpen(true)}>
+              <span className="flex items-center gap-2.5">
+                <UserPlus className="size-[22px]" strokeWidth={1.75} aria-hidden />
+                {t("invite_title")}
+              </span>
+            </PopoverMenuItem>
+          ) : null}
+          <PopoverMenuItem
+            danger
+            onClick={() => void endMembership(isOwner ? "close" : "leave", room.id, room.name)}
+          >
+            <span className="flex items-center gap-2.5">
+              {isOwner ? (
+                <CircleX className="size-[22px]" strokeWidth={1.75} aria-hidden />
+              ) : (
+                <LogOut className="size-[22px]" strokeWidth={1.75} aria-hidden />
+              )}
+              {isOwner ? t("close_room") : t("leave")}
+            </span>
+          </PopoverMenuItem>
+        </PopoverMenu>
       </motion.div>
 
       {/* --- the room --------------------------------------------------------- */}
@@ -276,6 +345,8 @@ export function RoomShell({ roomId }: { roomId: string }) {
         </Link>
       </motion.div>
 
+      {curtain}
+
       {/* The curtain. `z-50` clears the invite sheet; nothing on the stage should outlive it. */}
       {leaving ? (
         <motion.div
@@ -289,17 +360,11 @@ export function RoomShell({ roomId }: { roomId: string }) {
       ) : null}
 
       {inviteOpen && room.inviteCode ? (
-        <InviteSheet
+        <RoomInviteSheet
+          room={room}
           code={room.inviteCode}
-          busy={busy}
           onClose={() => setInviteOpen(false)}
-          onCopy={() => void copyLink(room.inviteCode!)}
-          onRotate={() =>
-            void run(async () => {
-              const updated = await rotateStudyRoomCode(room.id);
-              setState({ status: "ready", room: updated });
-            }, t("invite_rotated"))
-          }
+          onRotated={(updated) => setState({ status: "ready", room: updated })}
         />
       ) : null}
     </main>
@@ -325,189 +390,5 @@ function BackLink({ label, onStage }: { label: string; onStage?: boolean }) {
     >
       <ArrowLeft className="size-5" strokeWidth={2.25} aria-hidden />
     </Link>
-  );
-}
-
-interface MenuItem {
-  key: string;
-  label: string;
-  onSelect: () => void;
-  destructive?: boolean;
-}
-
-/** Destructive room actions, out of the way. Closing a table should take intent, not a stray tap. */
-function RoomMenu({
-  open,
-  onOpenChange,
-  label,
-  items,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  label: string;
-  items: (MenuItem | null | false)[];
-}) {
-  const visible = items.filter((i): i is MenuItem => Boolean(i));
-  return (
-    <div className="relative shrink-0">
-      <button
-        type="button"
-        aria-label={label}
-        aria-haspopup="menu"
-        aria-expanded={open}
-        onClick={() => onOpenChange(!open)}
-        className="inline-flex size-11 cursor-pointer items-center justify-center rounded-full transition-opacity duration-200 hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
-        style={{ backgroundColor: "var(--room-scrim)", color: "var(--room-ink)", opacity: 0.85 }}
-      >
-        <MoreHorizontal className="size-5" strokeWidth={2.25} aria-hidden />
-      </button>
-      {open ? (
-        <>
-          <button
-            type="button"
-            aria-hidden
-            tabIndex={-1}
-            className="fixed inset-0 z-20 cursor-default"
-            onClick={() => onOpenChange(false)}
-          />
-          <div
-            role="menu"
-            className="absolute right-0 z-20 mt-2 min-w-[12rem] overflow-hidden rounded-[var(--radius-card)] shadow-[var(--shadow-card-hover)]"
-            style={{ backgroundColor: "var(--color-surface)" }}
-          >
-            {visible.map((item) => (
-              <button
-                key={item.key}
-                type="button"
-                role="menuitem"
-                onClick={() => {
-                  item.onSelect();
-                  if (!item.destructive) onOpenChange(false);
-                }}
-                className="block min-h-11 w-full cursor-pointer px-4 text-left text-sm font-semibold transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] motion-reduce:transition-none"
-                style={{ color: item.destructive ? "var(--color-danger)" : "var(--color-main)" }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </>
-      ) : null}
-    </div>
-  );
-}
-
-/** Invite, on demand. It is a once-per-room job, so it does not get a permanent slot. */
-function InviteSheet({
-  code,
-  busy,
-  onClose,
-  onCopy,
-  onRotate,
-}: {
-  code: string;
-  busy: boolean;
-  onClose: () => void;
-  onCopy: () => void;
-  onRotate: () => void;
-}) {
-  const t = useTranslations("session_room");
-  const [copied, setCopied] = useState(false);
-
-  return (
-    <div className="fixed inset-0 z-40 flex items-end justify-center sm:items-center">
-      <button
-        type="button"
-        aria-label={t("cancel")}
-        className="absolute inset-0 cursor-default"
-        style={{ backgroundColor: "color-mix(in srgb, #000 45%, transparent)" }}
-        onClick={onClose}
-      />
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t("invite_title")}
-        className="relative m-4 w-full max-w-md rounded-[var(--radius-card)] p-5 shadow-[var(--shadow-card-hover)]"
-        style={{ backgroundColor: "var(--color-surface)" }}
-      >
-        <div className="flex items-start justify-between gap-3">
-          <h2
-            className="text-base font-bold"
-            style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-          >
-            {t("invite_title")}
-          </h2>
-          <button
-            type="button"
-            aria-label={t("cancel")}
-            onClick={onClose}
-            className="inline-flex size-9 cursor-pointer items-center justify-center rounded-full"
-            style={{ color: "var(--color-secondary)" }}
-          >
-            <X className="size-4" strokeWidth={2.25} aria-hidden />
-          </button>
-        </div>
-
-        <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
-          {t("invite_hint")}
-        </p>
-
-        {/*
-          Copy lives ON the code, not under it. A full-width primary button below made copying
-          look like the dialog's main event and pushed the code — the thing you might read out
-          loud to someone — into being a caption for it. One row: the code, and the icon that
-          takes it.
-        */}
-        <div
-          className="mt-4 flex items-center gap-2 rounded-[var(--radius-card)] py-2 pr-2 pl-3"
-          style={{ backgroundColor: "var(--color-surface-container)" }}
-        >
-          <code
-            className="min-w-0 flex-1 truncate text-center text-lg font-bold tracking-[0.2em]"
-            style={{ color: "var(--color-main)" }}
-          >
-            {code}
-          </code>
-          <button
-            type="button"
-            aria-label={copied ? t("invite_copied") : t("invite_copy_link")}
-            title={copied ? t("invite_copied") : t("invite_copy_link")}
-            onClick={() => {
-              onCopy();
-              setCopied(true);
-            }}
-            className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            style={{ color: copied ? "var(--color-progress)" : "var(--color-main)" }}
-          >
-            {copied ? (
-              <Check className="size-5" strokeWidth={2.5} aria-hidden />
-            ) : (
-              <Copy className="size-5" strokeWidth={2.25} aria-hidden />
-            )}
-          </button>
-        </div>
-
-        {/*
-          Rotate stays, demoted. It is the ONLY way to revoke a link that has leaked into a
-          group chat, so removing it would remove the capability, not just a button — but it is
-          a rare, mildly destructive action and had no business sitting at the same weight as
-          copy. Now it is a labelled text button: what it does is written out, because a bare
-          refresh glyph does not say "everyone's old link stops working".
-        */}
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => {
-            setCopied(false);
-            onRotate();
-          }}
-          className="mt-3 inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-2 text-xs font-semibold transition-colors duration-150 hover:bg-[color-mix(in_srgb,var(--color-main)_6%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50 motion-reduce:transition-none"
-          style={{ color: "var(--color-secondary)" }}
-        >
-          <RefreshCw className="size-3.5" strokeWidth={2.25} aria-hidden />
-          {t("invite_rotate")}
-        </button>
-      </div>
-    </div>
   );
 }

@@ -177,16 +177,22 @@ test("a student answers one question per screen and lands on their summary", asy
     .poll(() => vision)
     .toMatchObject({ goalTitle: "Eğitim alanında ilerlemek", careerGroup: "EGITIM", motivation: "Ailem için" });
 
-  await page.getByRole("radio", { name: "Düzenli" }).click();
+  const customMinutes = page.getByRole("spinbutton", { name: "Kendin yaz" });
+  await customMinutes.fill("700");
+  await expect(customMinutes).toHaveAttribute("aria-invalid", "true");
+  await expect(page.getByText("10 ile 600 arasında tam dakika yaz.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Devam" })).toBeDisabled();
+  await customMinutes.fill("75");
+  await expect(customMinutes).toHaveValue("75");
   await page.getByRole("button", { name: "Devam" }).click();
-  await expect.poll(() => user.dailyFocusGoalMinutes).toBe(30);
+  await expect.poll(() => user.dailyFocusGoalMinutes).toBe(75);
 
   await page.getByLabel("Kullanıcı adı").fill("deniz_yks");
   await page.getByRole("button", { name: "Devam" }).click();
 
   await expect(page.getByRole("heading", { name: "Yolun hazır." })).toBeVisible();
   const summary = page.getByRole("list", { name: "Seçimlerin" });
-  await expect(summary).toContainText("Günde 30 dk odak");
+  await expect(summary).toContainText("Günde 75 dk odak");
   await expect(summary).toContainText("Alan: Eğitim");
   // No push in this browser, so no promise of a reminder.
   await expect(summary).not.toContainText("Hatırlatma açık");
@@ -252,8 +258,10 @@ test("a coach's invite link survives signup and onboarding", async ({ page }) =>
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("radio", { name: "Eğitim" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByRole("radio", { name: "Düzenli" }).click();
+  await page.getByRole("radio", { name: "Dengeli" }).focus();
+  await page.keyboard.press("Enter");
   await page.getByRole("button", { name: "Devam" }).click();
+  await expect.poll(() => session?.dailyFocusGoalMinutes).toBe(120);
   await page.getByLabel("Kullanıcı adı").fill("deniz_davet");
   await page.getByRole("button", { name: "Devam" }).click();
   await page.getByRole("button", { name: "Panele git" }).click();

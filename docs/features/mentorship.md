@@ -230,6 +230,22 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-29 — Round 1 review fixes (stop D).** An independent review of stops A to B3 found no
+  critical issue; the fixes: (1) focus no longer falls to the page body when a control removes
+  itself: after "Kodu getir" it lands on the coach's name, "Değiştir"/"Vazgeç" return it to the
+  code field, a saved or cancelled note returns it to the card title, and an answered shared
+  decision moves it to the row's other answer. (2) An invite from the coach the student already
+  has says "{name} zaten koçun" instead of asking them to end that link
+  (`invitation_same_coach`, usernames compared, names as the fallback). (3) Only a decision
+  still waiting (`PENDING`) gets the filled "Kabul et"; one pushed back on keeps the outline
+  ledge. (4) Claim chips grow with long values (`min-h-7.5 py-1`); the already-linked card lets
+  its link wrap on phones (`min-w-48`); the "Tamamlandı" tag's tint dropped to 8 % (4.5:1) and the
+  achievement glyph mixes toward the main ink (3:1). "Koçundan not" is an `h3` again, so screen
+  readers can jump to it. **Verification:** real-API suite (isolated stack, `mentor_test`, fake
+  providers) 19/19 on mobile and 19/19 on desktop; back-to-back runs from one IP trip the auth
+  throttles (signup 5/min, login 10/min, refresh 30/min, in memory in the API) and log a student
+  out mid-run, so rerun on a freshly started API rather than blaming the UI. Web budgets pass.
+
 - **2026-09-28 — The student's weekly review, drawn (redesign round 1, stop B3).**
   `/kocum/haftalik-raporlar/:id` reads the coach first: an ink hero with the coach's disk,
   "Koçunun değerlendirmesi", their name, "{date} tarihinde paylaştı" and the evaluation on the coach

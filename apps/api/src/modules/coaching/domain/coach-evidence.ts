@@ -34,6 +34,7 @@ export interface CoachRhythmEvidence {
 
 export interface CoachEvidenceSnapshot {
   examType: string | null;
+  examVariant: string | null;
   dailyFocusGoalMinutes: number | null;
   moodLevel: number | null;
   moodTrend: CoachMoodTrend;

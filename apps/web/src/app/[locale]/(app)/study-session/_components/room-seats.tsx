@@ -97,6 +97,21 @@ export function RoomSeats({
   const markFailed = (src: string) =>
     setFailedSrc((prev) => (prev.includes(src) ? prev : [...prev, src]));
 
+  // Who sat down since the last presence poll: their avatar sends out one ring of light. The
+  // first paint is not an arrival; whoever is seated then was already there before you came.
+  const seatedKey = seats
+    .filter((s) => s.isSeated)
+    .map((s) => s.userId)
+    .join(",");
+  const [presence, setPresence] = useState({ key: seatedKey, arrived: [] as string[] });
+  if (presence.key !== seatedKey) {
+    const before = presence.key.split(",");
+    setPresence({
+      key: seatedKey,
+      arrived: seatedKey.split(",").filter((id) => id && !before.includes(id)),
+    });
+  }
+
   const [portrait, setPortrait] = useState(false);
   const [wide, setWide] = useState(false);
   useEffect(() => {
@@ -163,6 +178,7 @@ export function RoomSeats({
               {seat ? (
                 <OccupiedSeat
                   seat={seat}
+                  arrived={presence.arrived.includes(seat.userId)}
                   src={seatSrc}
                   avatarPx={avatarPx}
                   imageFailed={seatImageFailed}
@@ -335,12 +351,15 @@ function ChairFrame({
 
 function OccupiedSeat({
   seat,
+  arrived,
   src,
   avatarPx,
   imageFailed,
   onImageError,
 }: {
   seat: StudyRoomSeatDto;
+  /** Sat down since the last poll: one glow before the breathing. */
+  arrived: boolean;
   src: string;
   avatarPx: number;
   imageFailed: boolean;
@@ -356,7 +375,9 @@ function OccupiedSeat({
         onImageError={onImageError}
       >
         <span
-          className={`relative inline-flex rounded-full ${seat.isSeated ? "room-seat-live" : ""}`}
+          className={`relative inline-flex rounded-full ${seat.isSeated ? "room-seat-live" : ""}${
+            seat.isSeated && arrived ? " room-seat-arrive" : ""
+          }`}
         >
           <AuthorAvatar name={seat.displayName} size={avatarPx} src={seat.avatarUrl} />
         </span>
@@ -375,12 +396,23 @@ function OccupiedSeat({
         {seatLabel(seat.displayName)}
       </span>
       {seat.isSeated ? (
+        // Room ink, not `--room-accent`: green text on the dark wood did not read. The dot
+        // carries "working now"; the words carry what and for how long.
         <span
-          className="w-full truncate text-[11px] font-semibold tabular-nums sm:text-xs"
-          style={{ color: "var(--room-accent)", textShadow: "0 1px 3px var(--room-ground-to)" }}
+          className="flex w-full items-center justify-center gap-1.5 text-[11px] font-semibold tabular-nums sm:text-xs"
+          style={{ color: "var(--room-ink)", textShadow: "0 1px 3px var(--room-ground-to)" }}
           title={seat.subject ?? undefined}
         >
-          {seat.subject ?? t("seat_focusing_short", { minutes: seat.seatedMinutes ?? 0 })}
+          <span
+            aria-hidden
+            className="size-1.5 shrink-0 rounded-full"
+            style={{ backgroundColor: "var(--room-live)" }}
+          />
+          <span className="min-w-0 truncate">
+            {seat.subject
+              ? t("seat_live_line", { subject: seat.subject, minutes: seat.seatedMinutes ?? 0 })
+              : t("seat_focusing_short", { minutes: seat.seatedMinutes ?? 0 })}
+          </span>
         </span>
       ) : (
         <span

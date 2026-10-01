@@ -20,6 +20,7 @@ const LINK_ACTION =
  */
 export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
   const titleId = useId();
+  const messageId = useId();
   const isPromo = dialog.layout === "promo";
   const hasDanger = dialog.actions.some((action) => action.variant === "danger");
 
@@ -28,6 +29,8 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
       role="dialog"
       aria-modal="true"
       aria-labelledby={titleId}
+      // Focus may start on "Vazgeç"; the consequence still has to be read out with the title.
+      aria-describedby={dialog.message ? messageId : undefined}
       data-mentor-dialog-panel
       className={`relative flex w-full flex-col gap-3.5 rounded-[var(--play-radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-6 shadow-[var(--shadow-overlay)] transition-opacity duration-150 motion-reduce:transition-none ${isPromo ? "items-center text-center" : ""} ${dialog.exiting ? "opacity-0" : "animate-dialog-enter motion-reduce:animate-none"}`}
       onClick={(e) => e.stopPropagation()}
@@ -42,7 +45,9 @@ export function DialogPanel({ dialog, onAction }: DialogPanelProps) {
       </h2>
 
       {dialog.message ? (
-        <p className="text-body-sm font-semibold text-[var(--color-body)]">{dialog.message}</p>
+        <p id={messageId} className="text-body-sm font-semibold text-[var(--color-body)]">
+          {dialog.message}
+        </p>
       ) : null}
 
       {dialog.content ? <div className="w-full">{dialog.content}</div> : null}

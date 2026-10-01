@@ -255,13 +255,7 @@ export function SessionHistory({ variant = "liquid" }: SessionHistoryProps = {})
           <div className="flex flex-col gap-3">
             {groupByDay(sessions).map((group) => (
               <section key={group.key} className="flex flex-col gap-0.5">
-                <h3
-                  className="px-2.5 pb-0.5 text-[11px] font-bold uppercase tracking-wide"
-                  style={{
-                    color: "var(--color-secondary)",
-                    fontFamily: "var(--font-heading)",
-                  }}
-                >
+                <h3 className="px-2.5 pb-0.5 text-caption font-extrabold text-[var(--color-secondary)]">
                   {dayLabel(group.key, locale, t)}
                 </h3>
                 <ul className="flex flex-col gap-0.5">

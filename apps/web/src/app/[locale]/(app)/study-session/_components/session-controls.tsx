@@ -59,16 +59,9 @@ export function SessionControls({
   const translate = useTranslations("session_controls");
 
   if (phase === "idle") {
+    // The page's one filled ledge (DESIGN.md §6), in the kit's own shape: it was a pill here.
     return (
-      <Button
-        onClick={onStart}
-        busy={busy}
-        fullWidth
-        className="!rounded-full py-3.5 text-base font-bold transition-all duration-150 hover:scale-[1.01] active:scale-[0.98]"
-        style={{
-          fontFamily: "var(--font-heading)",
-        }}
-      >
+      <Button onClick={onStart} busy={busy} fullWidth>
         {translate("start")}
       </Button>
     );

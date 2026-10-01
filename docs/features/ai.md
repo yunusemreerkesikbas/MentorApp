@@ -103,6 +103,8 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-29 · Koçla planla kişisel görevler.** Seçilen gün ve süre, boş günlerde 1/2/3 somut göreve bölünür (120 dk = 2×60 dk); dolu güne en fazla bir görev eklenir. Seçilen dersler kapsanır, zayıf dersler ve yanlış defteri öncelik kazanır. Konu yalnız sınavın editoryal taksonomisinden alınır; model çıktısı eksik veya geçersizse sunucu güvenli görevler üretir. Önizleme `coachNote` ve doğrulanmış `topic` döner; `MOOD`/`SESSION` akışı aynı kalır. Kullanım: plan sihirbazında gün, süre ve ders seçip önizlemeyi incele, istediğin görevleri uygula. Taksonomi yoksa konu uydurulmaz. İlgili: `plan-adaptation.ts`, `plan-adaptation-blocks.ts`, `plan-adaptation.service.ts`.
+
 - **2026-09-26 · The coach AI names its own daily limit.** `PremiumFeatureGateService.assertAllowed`
   takes an optional `limitCode`, thrown only when the refusal is a used-up free taste; with no taste
   switched on the refusal stays `PAYMENT_PREMIUM_REQUIRED`. The student brief, cohort brief,

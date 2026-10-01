@@ -175,6 +175,7 @@ const planAdaptationAddSchema = z.object({
   kind: z.literal("ADD"),
   title: z.string().trim().min(1).max(200),
   subject: z.string().trim().min(1).max(80).nullable(),
+  topic: z.string().trim().min(1).max(160).nullable().optional(),
   taskDate: isoDateSchema,
 });
 
@@ -183,8 +184,8 @@ export const planAdaptationChangeSchema = z.discriminatedUnion("kind", [
   planAdaptationAddSchema,
 ]);
 
-/** 3 MOVE plus one ADD on each day of the 7-day window. */
-export const APPLY_PLAN_ADAPTATION_MAX_CHANGES = 10;
+/** Up to three additions per day plus three moves in the seven-day window. */
+export const APPLY_PLAN_ADAPTATION_MAX_CHANGES = 24;
 
 export const applyPlanAdaptationSchema = z.object({
   planRevision: z.string().regex(/^[a-f0-9]{64}$/),
@@ -192,6 +193,15 @@ export const applyPlanAdaptationSchema = z.object({
     .array()
     .min(1)
     .max(APPLY_PLAN_ADAPTATION_MAX_CHANGES),
+}).superRefine((value, ctx) => {
+  value.changes.forEach((change, index) => {
+    if (change.kind !== "ADD" || !change.topic || change.subject) return;
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "topic_without_subject",
+      path: ["changes", index, "topic"],
+    });
+  });
 });
 export type ApplyPlanAdaptationInput = z.infer<
   typeof applyPlanAdaptationSchema

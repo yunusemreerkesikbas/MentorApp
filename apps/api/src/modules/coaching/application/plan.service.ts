@@ -21,7 +21,7 @@ import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { addDays, todayIso } from "../domain/date.util";
+import { addDays, todayInIstanbul, todayIso } from "../domain/date.util";
 import {
   buildPlanRevision,
   PLAN_ADAPTATION_WINDOW_DAYS,
@@ -552,7 +552,7 @@ export class PlanService {
   }
 
   getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
-    const from = todayIso();
+    const from = todayInIstanbul();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
@@ -581,7 +581,7 @@ export class PlanService {
     userId: string,
     input: ApplyPlanAdaptationInput,
   ): Promise<ApplyPlanAdaptationResultDto> {
-    const from = todayIso();
+    const from = todayInIstanbul();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -621,6 +621,7 @@ export class PlanService {
       const additions: Array<{
         title: string;
         subject: string | null;
+        topic: string | null;
         taskDate: string;
         sortOrder: number;
       }> = [];
@@ -692,6 +693,7 @@ export class PlanService {
         additions.push({
           title: change.title,
           subject: change.subject,
+          topic: change.topic ?? null,
           taskDate: change.taskDate,
           sortOrder: nextOrder(change.taskDate),
         });

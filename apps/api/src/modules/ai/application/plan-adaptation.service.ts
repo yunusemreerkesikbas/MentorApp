@@ -14,6 +14,7 @@ import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { CoachEvidenceService } from "../../coaching/application/coach-evidence.service";
+import { ContentService } from "../../content/application/content.service";
 import { MoodService } from "../../coaching/application/mood.service";
 import { PlanService } from "../../coaching/application/plan.service";
 import { SessionService } from "../../coaching/application/session.service";
@@ -55,6 +56,7 @@ export class PlanAdaptationService {
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
     private readonly profiles: CoachProfileService,
+    private readonly content: ContentService,
   ) {}
 
   /** Wizard seed: what the coach will read and sensible defaults. No model call, no quota. */
@@ -141,6 +143,15 @@ export class PlanAdaptationService {
         : referencedTasks;
     const locale = promptLocale(I18nContext.current()?.lang);
     const selected = selectPlanEvidence(input.source, pool.evidence);
+    let topics: Awaited<ReturnType<ContentService["listExamTopicsByExamId"]>> = [];
+    if (input.source === "PLAN" && pool.examType) {
+      try {
+        const exam = await this.content.getCurrentExamByFamily(pool.examType, pool.examVariant);
+        topics = await this.content.listExamTopicsByExamId(exam.id);
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== ErrorCode.CONTENT_EXAM_NOT_FOUND) throw error;
+      }
+    }
     const studyDates =
       input.source === "PLAN" && input.studyWeekdays?.length
         ? studyDatesFor(snapshot.window.from, input.studyWeekdays)
@@ -161,6 +172,7 @@ export class PlanAdaptationService {
       studyDates,
       minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
       focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
+      topics,
       locale,
       moodLevel: pool.moodLevel,
     });
@@ -204,6 +216,7 @@ export class PlanAdaptationService {
             studyDates,
             minutesPerDay: input.minutesPerDay,
             focusSubjects: input.focusSubjects,
+            topics,
             locale,
           }
         : undefined,
@@ -218,6 +231,9 @@ export class PlanAdaptationService {
           "coaching.planAdaptation.reasonChosenSubject",
           { lang: I18nContext.current()?.lang },
         ) as unknown as string,
+        notebookReason: pool.evidence.find(
+          (item) => item.type === CoachEvidenceType.NOTEBOOK_TOPICS,
+        )?.summary ?? null,
       },
     );
     if (parsed.kind === "MALFORMED") {
@@ -226,6 +242,9 @@ export class PlanAdaptationService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+    const coachNote = input.source === "PLAN" && input.minutesPerDay && parsed.changes.some((change) => change.kind === "ADD")
+      ? this.coachNote(pool, input.minutesPerDay, input.focusSubjects ?? [])
+      : null;
     return this.response(
       parsed.changes.length > 0 ? "READY" : "NO_CHANGE",
       snapshot,
@@ -233,7 +252,36 @@ export class PlanAdaptationService {
       result.model,
       groundingLine,
       selected,
+      undefined,
+      coachNote,
     );
+  }
+
+  private coachNote(
+    pool: Awaited<ReturnType<CoachEvidenceService["build"]>>,
+    minutes: number,
+    selectedSubjects: readonly string[],
+  ): string {
+    const lang = I18nContext.current()?.lang;
+    const weak = pool.weakSubjects.filter((subject) =>
+      selectedSubjects.some((selected) => selected.toLocaleLowerCase("tr-TR") === subject.toLocaleLowerCase("tr-TR")),
+    );
+    const priority = weak.length
+      ? this.i18n.translate("coaching.planAdaptation.coachNotePriority", {
+          lang,
+          args: { subjects: weak.join(", ") },
+        }) as unknown as string
+      : "";
+    const rhythm = pool.averageSessionMinutes28d != null && pool.averageSessionMinutes28d > 0
+      ? this.i18n.translate("coaching.planAdaptation.coachNoteRhythm", {
+          lang,
+          args: { average: Math.round(pool.averageSessionMinutes28d), minutes },
+        }) as unknown as string
+      : this.i18n.translate("coaching.planAdaptation.coachNoteGoal", {
+          lang,
+          args: { minutes },
+        }) as unknown as string;
+    return [priority, rhythm].filter(Boolean).join(" ");
   }
 
   private async assertAvailable(user: RequestUser): Promise<void> {
@@ -321,6 +369,7 @@ export class PlanAdaptationService {
     groundingLine: string | null,
     evidence: PromptEvidence[],
     messageKey: CoachPlanAdaptationStatus | "REST" = status,
+    coachNote: string | null = null,
   ): CoachPlanAdaptationDto {
     return {
       status,
@@ -328,6 +377,7 @@ export class PlanAdaptationService {
         lang: I18nContext.current()?.lang,
       }) as unknown as string,
       groundingLine,
+      ...(coachNote ? { coachNote } : {}),
       window: snapshot.window,
       planRevision: snapshot.planRevision,
       changes,

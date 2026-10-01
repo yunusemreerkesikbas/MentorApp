@@ -176,6 +176,8 @@ export type CoachPlanAdaptationChangeDto =
       kind: "ADD";
       title: string;
       subject: string | null;
+      /** Verified exam-taxonomy topic, when available. */
+      topic?: string | null;
       taskDate: string;
       /** Backend-written "Neden" line: the verified evidence the coach tied to this change. */
       reason?: string;
@@ -188,6 +190,8 @@ export interface CoachPlanAdaptationDto {
   message: string;
   /** One verified fact for the preview bubble. Null when no safe subject or plan count exists. */
   groundingLine: string | null;
+  /** Short, backend-grounded explanation of the proposed rhythm and priorities. */
+  coachNote?: string | null;
   window: { from: string; to: string };
   /** Opaque snapshot hash used to reject stale confirmations. */
   planRevision: string;
@@ -207,7 +211,7 @@ export interface CoachPlanAdaptationBriefDto {
     days: number | null;
     /** ISO weekdays (1 = Monday) the student studied on most in the last 28 days; `days` of them. */
     weekdays: number[] | null;
-    minutesPerDay: 15 | 30 | 60 | 90 | 120 | null;
+    minutesPerDay: number | null;
     focusSubjects: string[];
   };
 }

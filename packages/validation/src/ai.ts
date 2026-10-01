@@ -72,8 +72,8 @@ export const planDraftSchema = z.object({
 });
 export type PlanDraftInput = z.infer<typeof planDraftSchema>;
 
-/** Preset block sizes the plan wizard offers as cards; the brief's suggestion snaps to one of these. */
-export const PLAN_ADAPTATION_MINUTES = [15, 30, 60, 90, 120] as const;
+/** Daily target presets offered as cards in the plan wizard. */
+export const PLAN_ADAPTATION_MINUTES = [60, 120, 240, 360] as const;
 /** Bounds of a minute count the student types in themselves. */
 export const PLAN_ADAPTATION_MINUTES_MIN = 10;
 export const PLAN_ADAPTATION_MINUTES_MAX = 600;
@@ -95,7 +95,7 @@ export const coachPlanAdaptationSchema = z
       .max(7)
       .refine((days) => new Set(days).size === days.length, "studyWeekdays must be unique")
       .optional(),
-    /** Target size of each added block, in minutes. PLAN only. */
+    /** Daily target on an empty selected day, split across tasks. PLAN only. */
     minutesPerDay: z
       .number()
       .int()

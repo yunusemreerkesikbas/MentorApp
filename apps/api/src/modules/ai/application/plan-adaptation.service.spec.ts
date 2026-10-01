@@ -23,6 +23,7 @@ const evidenceItem = (type: CoachEvidenceType, summary: string) => ({
 function evidenceSnapshot() {
   return {
     examType: "KPSS",
+    examVariant: null,
     dailyFocusGoalMinutes: 60,
     moodLevel: 1,
     moodTrend: "DOWN",
@@ -66,6 +67,8 @@ describe("PlanAdaptationService", () => {
   let getProfile: ReturnType<typeof vi.fn>;
   let getPromptMemories: ReturnType<typeof vi.fn>;
   let assertWithinBudget: ReturnType<typeof vi.fn>;
+  let getCurrentExamByFamily: ReturnType<typeof vi.fn>;
+  let listExamTopicsByExamId: ReturnType<typeof vi.fn>;
   let aiEnabled: boolean;
   let service: PlanAdaptationService;
 
@@ -125,6 +128,8 @@ describe("PlanAdaptationService", () => {
       { id: "m1", key: "STUDY_TIME", value: "EVENING" },
     ]);
     assertWithinBudget = vi.fn(async () => undefined);
+    getCurrentExamByFamily = vi.fn(async () => ({ id: "exam-1" }));
+    listExamTopicsByExamId = vi.fn(async () => [{ subjectName: "Matematik", slug: "problemler", name: "Problemler" }]);
 
     service = new PlanAdaptationService(
       { complete } as never,
@@ -153,6 +158,7 @@ describe("PlanAdaptationService", () => {
       { assertWithinBudget } as never,
       { translate: vi.fn((key: string) => key) } as never,
       { getProfile, getPromptMemories } as never,
+      { getCurrentExamByFamily, listExamTopicsByExamId } as never,
     );
   });
 
@@ -317,9 +323,9 @@ describe("PlanAdaptationService", () => {
       CoachEvidenceType.EXAM_PHASE,
       CoachEvidenceType.WEAK_SUBJECTS,
       CoachEvidenceType.NOTEBOOK_TOPICS,
+      CoachEvidenceType.GOAL,
       CoachEvidenceType.RECENT_RHYTHM,
       CoachEvidenceType.MOOD,
-      CoachEvidenceType.GOAL,
     ]);
     expect(result.usedEvidence?.[0]).not.toHaveProperty("ref");
     expect(result.changes[0]).toMatchObject({
@@ -374,9 +380,20 @@ describe("PlanAdaptationService", () => {
     });
 
     const prompt = complete.mock.calls.at(-1)?.[0];
-    expect(prompt.system).toContain("Tam 5 farklı güne");
+    expect(prompt.system).toContain("Yalnız 5 farklı gün için ADD yaz");
     expect(prompt.user).toContain("90 dakika");
     expect(prompt.user).toContain("Tarih");
+  });
+
+  it("uses a concrete subject action when the exam has no topic taxonomy", async () => {
+    getCurrentExamByFamily.mockRejectedValue(new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND));
+    const weekday = ((new Date(`${TODAY}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    const result = await service.preview(USER, {
+      source: "PLAN", studyWeekdays: [weekday], minutesPerDay: 120, focusSubjects: ["Matematik"],
+    });
+    expect(result.changes).toEqual([expect.objectContaining({ kind: "ADD", subject: "Matematik", topic: null })]);
+    expect(result.coachNote).toBeTruthy();
+    expect(complete).toHaveBeenCalledOnce();
   });
 
   it("keeps the plan on the weekdays the student picked", async () => {
@@ -525,9 +542,9 @@ describe("PlanAdaptationService", () => {
           CoachEvidenceType.EXAM_PHASE,
           CoachEvidenceType.WEAK_SUBJECTS,
           CoachEvidenceType.NOTEBOOK_TOPICS,
+          CoachEvidenceType.GOAL,
           CoachEvidenceType.RECENT_RHYTHM,
           CoachEvidenceType.MOOD,
-          CoachEvidenceType.GOAL,
         ].map((type) => byType.get(type)),
         suggestion: {
           days: 5,
