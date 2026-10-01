@@ -1,0 +1,3 @@
+# Intermediate render output (frame dumps, silent passes, sound stems, QA stills).
+renders/.*
+renders/qa/

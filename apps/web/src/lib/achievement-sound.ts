@@ -1,3 +1,8 @@
+/**
+ * The achievement chime's signature (E5 → G♯5 → B5) and the one AudioContext every achievement
+ * sound shares. The scene voices the chime with the rest of its sound design
+ * (achievement-scene-sfx.ts); this module owns the context and its unlock.
+ */
 export const ACHIEVEMENT_CHIME_NOTES: ReadonlyArray<{
   frequency: number;
   offset: number;
@@ -7,74 +12,41 @@ export const ACHIEVEMENT_CHIME_NOTES: ReadonlyArray<{
   { frequency: 830.61, offset: 0.14, duration: 0.62 },
   { frequency: 987.77, offset: 0.3, duration: 0.78 },
 ];
-export const ACHIEVEMENT_CHIME_MASTER_GAIN = 0.55;
-export const ACHIEVEMENT_CHIME_NOTE_GAIN = 0.5;
 
 let audioContext: AudioContext | null = null;
 
-export async function unlockAchievementChime(): Promise<boolean> {
-  if (typeof window === "undefined") return false;
-
+/**
+ * The shared context, created on first use. Creating one before the page has had a user gesture
+ * only yields a suspended context (and a console warning), so callers check
+ * `pageHasUserActivation()` first.
+ */
+export function achievementAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
   try {
     if (!audioContext || audioContext.state === "closed") {
       audioContext = new AudioContext();
     }
-    if (audioContext.state === "suspended") {
-      await audioContext.resume();
-    }
-    return audioContext.state === "running";
+    return audioContext;
   } catch {
-    return false;
+    return null;
   }
 }
 
-export async function playAchievementChime(): Promise<boolean> {
+/** Browsers let audio start once the page has been interacted with (sticky activation). */
+export function pageHasUserActivation(): boolean {
+  if (typeof navigator === "undefined") return false;
+  // Browsers without the API (older Safari) report nothing; trying costs only a warning there.
+  return navigator.userActivation?.hasBeenActive ?? true;
+}
+
+/** Resumes the shared context. Autoplay policy or missing Web Audio must never block a celebration. */
+export async function unlockAchievementAudio(): Promise<boolean> {
+  const context = achievementAudioContext();
+  if (!context) return false;
   try {
-    if (!(await unlockAchievementChime()) || !audioContext) return false;
-
-    const master = audioContext.createGain();
-    const compressor = audioContext.createDynamicsCompressor();
-    const start = audioContext.currentTime + 0.01;
-    master.gain.setValueAtTime(ACHIEVEMENT_CHIME_MASTER_GAIN, start);
-    compressor.threshold.setValueAtTime(-18, start);
-    compressor.knee.setValueAtTime(20, start);
-    compressor.ratio.setValueAtTime(6, start);
-    compressor.attack.setValueAtTime(0.003, start);
-    compressor.release.setValueAtTime(0.2, start);
-    master.connect(compressor).connect(audioContext.destination);
-
-    for (const note of ACHIEVEMENT_CHIME_NOTES) {
-      const oscillator = audioContext.createOscillator();
-      const gain = audioContext.createGain();
-      const noteStart = start + note.offset;
-      const noteEnd = noteStart + note.duration;
-
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(note.frequency, noteStart);
-      gain.gain.setValueAtTime(0.0001, noteStart);
-      gain.gain.exponentialRampToValueAtTime(
-        ACHIEVEMENT_CHIME_NOTE_GAIN,
-        noteStart + 0.025,
-      );
-      gain.gain.exponentialRampToValueAtTime(0.0001, noteEnd);
-      oscillator.connect(gain).connect(master);
-      oscillator.start(noteStart);
-      oscillator.stop(noteEnd + 0.02);
-    }
-
-    const finalNote = ACHIEVEMENT_CHIME_NOTES.at(-1);
-    if (finalNote) {
-      window.setTimeout(
-        () => {
-          master.disconnect();
-          compressor.disconnect();
-        },
-        (finalNote.offset + finalNote.duration + 0.1) * 1_000,
-      );
-    }
-    return true;
+    if (context.state === "suspended") await context.resume();
+    return context.state === "running";
   } catch {
-    // Autoplay policy or unavailable Web Audio must not block the celebration.
     return false;
   }
 }

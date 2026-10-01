@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  ACHIEVEMENT_CHIME_MASTER_GAIN,
-  ACHIEVEMENT_CHIME_NOTES,
-  ACHIEVEMENT_CHIME_NOTE_GAIN,
-} from "./achievement-sound";
+import { ACHIEVEMENT_CHIME_NOTES } from "./achievement-sound";
 
 describe("ACHIEVEMENT_CHIME_NOTES", () => {
   it("uses a short ascending three-note signature", () => {
@@ -22,12 +18,5 @@ describe("ACHIEVEMENT_CHIME_NOTES", () => {
         ),
       ),
     ).toBeLessThanOrEqual(1.2);
-  });
-
-  it("uses an audible but non-clipping output level", () => {
-    const peakGain =
-      ACHIEVEMENT_CHIME_MASTER_GAIN * ACHIEVEMENT_CHIME_NOTE_GAIN;
-    expect(peakGain).toBeGreaterThanOrEqual(0.2);
-    expect(peakGain).toBeLessThanOrEqual(0.35);
   });
 });

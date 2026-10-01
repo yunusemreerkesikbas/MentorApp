@@ -516,6 +516,49 @@ html.dark {
   --spotlight-floor: rgba(255, 244, 214, 0.24);
 }
 
+/* "Işık Yandı" achievement scene (DESIGN.md §9.1). Always night, whatever the theme cookie. The
+   light itself comes from each badge (`SCENE_LIGHT` in the scene's choreography) as the inline
+   `--scene-glow` / `--scene-alt` pair. */
+.achievement-scene-theme {
+  color-scheme: dark;
+  --color-main: #ffffff;
+  --color-body: #d9e0f7;
+  --color-focus-ring: #9ec8f0;
+  --achievement-scene-badge: clamp(196px, 29vh, 260px);
+  --achievement-eyebrow: #ffd58a;
+  --achievement-hint: rgba(255, 255, 255, 0.86);
+  --achievement-label: rgba(236, 241, 255, 0.86);
+  --achievement-chip: rgba(255, 255, 255, 0.14);
+  /* The heart of the flash and of every light: warm, never blue. */
+  --achievement-flash-core: #fffcf2;
+  --achievement-flash-warm: rgba(255, 246, 227, 0.92);
+  /* The night falls as one sheet, 1.6 viewports tall: deep at the top, dusk at its soft edge. */
+  --achievement-curtain: linear-gradient(
+    180deg,
+    #050920 0%,
+    #0a1033 20%,
+    #121b4b 40%,
+    #1b2762 54%,
+    #24317a 62.5%,
+    rgba(36, 49, 122, 0.82) 70%,
+    rgba(36, 49, 122, 0.35) 84%,
+    rgba(36, 49, 122, 0) 100%
+  );
+  --achievement-horizon:
+    radial-gradient(ellipse 130% 42% at 50% 104%, rgba(255, 168, 112, 0.42), rgba(255, 168, 112, 0) 72%),
+    radial-gradient(ellipse 70% 30% at 50% 36%, rgba(143, 184, 255, 0.16), rgba(143, 184, 255, 0) 72%);
+  /* The card back: cream rim, blue border, a night field with stars and Puhu engraved in gold. */
+  --achievement-card-rim: linear-gradient(160deg, #fcf3e6 0%, #efdcc6 46%, #d9bfa1 100%);
+  --achievement-card-border: linear-gradient(160deg, #6f97ef 0%, #3f63c9 100%);
+  --achievement-card-field: radial-gradient(120% 95% at 32% 18%, #3d5fcf 0%, #263a92 38%, #172358 72%, #111a44 100%);
+  --achievement-card-stars:
+    radial-gradient(circle at 30% 40%, rgba(255, 244, 214, 0.75) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 70% 80%, rgba(190, 214, 255, 0.6) 0 0.7px, transparent 1.2px);
+  --achievement-card-puhu: linear-gradient(180deg, #fff6dc 0%, #ffd98f 55%, #ffc46b 100%);
+  --achievement-card-ink: #22337c;
+  --achievement-card-edge: linear-gradient(180deg, #f6e7d4, #cfb08f);
+}
+
 /* Ambient blob drift (DESIGN.md §9) — transform only; very slow. */
 @keyframes mentor-blob-drift {
   0%,

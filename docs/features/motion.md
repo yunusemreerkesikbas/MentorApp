@@ -50,6 +50,28 @@ import {
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-01 — "Işık Yandı": a seekable scene engine for the achievement celebration
+
+- **What:** The achievement celebration is a time-driven scene, not a framer-motion tree. The
+  prototype's engine was ported to TypeScript: `scene-engine.ts` (cubic-bezier, framer's own damped
+  spring equation and units, velocity kicks, keyframes, seeded noise), `scene-choreography.ts`
+  (beats, springs, light colours, sound cues, deck layout), `scene-poses.ts` (where every part is
+  at time `t`, pure and unit-tested). React renders the structure and owns the phase; one
+  requestAnimationFrame clock (`use-scene-clock.ts`) writes transforms and opacities through
+  `data-scene` refs (`scene-frame.ts`) and repaints three canvases (stars, light behind the card,
+  light in front, `paint-*.ts`). The clock stops when nothing moves. Overshoot is allowed here only
+  (DESIGN.md §9.1).
+- **Usage:** Change motion in `scene-choreography.ts` and keep `design/achievement-scene/timeline.mjs`
+  in step; re-render the film when the timing changes. To look at a frame, drive the page with
+  Playwright's clock (`page.clock.install()`, `pauseAt`, `runFor`): it fakes `performance.now`,
+  timers and requestAnimationFrame, so every screenshot lands on an exact scene time.
+- **Gotchas:** Phase changes run on timers, never on frames (a background tab stops rAF and the CTA
+  must still arrive). Canvases cap their backing store at 1.5× and 2.5 M pixels. Sound is
+  synthesised once per session (`lib/achievement-scene-sfx.ts`); the voices the opening needs are
+  rendered at mount, while the curtain is still invisible, and the rest in idle slots; the room is a
+  convolver with the film's reverb as impulse response.
+- **Related:** `apps/web/src/components/achievements/scene/*`, `apps/web/src/lib/achievement-scene-*.ts`.
+
 ### 2026-09-26 — ShimmerText ekran okuyucuya iki kez okunuyordu
 
 - **What:** Parlama bandı `.t-shimmer::before { content: attr(data-text) }` ile çiziliyor; Chromium üretilmiş içeriği erişilebilirlik ağacına koyduğu için bekleme satırı ("Asistanın bakıyor…", "Hazırlık yazılıyor…") iki kez okunuyordu (`ariaSnapshot`: `paragraph: Asistanın bakıyor… Asistanın bakıyor…`, CDP'de 2 StaticText). `::before` artık boş alternatif metin taşır: `content: attr(data-text) / "";`. Görünüm piksel piksel aynı, azaltılmış hareket kuralı yerinde.

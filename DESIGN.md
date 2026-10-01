@@ -154,7 +154,7 @@ toggle slot keeps the plain Sun/Moon icon button.
 
 **Runtime:** `html.dark` overrides the same `--color-*` CSS variables. New UI must use those tokens — never `bg-white`, `#fff`, or `dark:bg-black`. Tailwind `dark:` is an escape hatch only when a value cannot be a token.
 
-**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`).
+**Does not follow theme:** `--notebook-*` (physical paper), `.weekly-recap-theme` (celebration palette), vision-board canvas (user collage), `.premium-paywall-theme` (scoped dark paywall moment — charcoal tokens from this table so the sheet does not flip with the cookie; blob opacities use the light-canvas values in §2.2 so the top glow reads; plan tiles use `--paywall-plan-radius: 24px`), `.session-focus-theme` (immersive focus/break overlay — charcoal tokens so `html.dark` does not invert the atmosphere art; blobs use light-canvas opacities; optional `/visuals/session-focus-bg.webp`), `.achievement-scene-theme` (the "Işık Yandı" achievement scene, §9.1: always night; its curtain, card-back and text tokens live there, the light colours come from each badge).
 
 **Study scene (`.room-stage`, `SessionStage`, 2026-09-30):** a room is a place, so its stage never follows the cookie either: per-theme `--room-*` tokens (LIBRARY and CAFE dark, HOME light) in `theme.css`, and the stage remaps `--color-main` / `--color-body` / `--color-secondary` to `--room-ink` / `--room-ink-soft` so one set of controls reads in every room. Four rules. (1) Glass on the stage (`.session-liquid-card` / `-pill`) always writes in `--color-main` / `--color-secondary`; the glass remap supplies `--color-surface-container`, `--play-selected(-ink)`, `--play-line`, `--play-track` and `--color-success`, so the panel's text links, outline ledge and progress line read on glass without their own variants. (2) Anything that opens from the stage (sheet, menu, confirm) is portalled to `body` and drawn on the kit's solid surfaces: a window rendered inside the stage inherits room ink and prints cream on white. (3) `--room-live` means "someone is working now", a dot beside room ink; `--room-accent` is for rings; the primary CTA stays the play ledge in every room. (4) `/seans` stands on one `SessionStage` ground through setup, focus, break and the done card: the veil changes per phase (a multiplier on the theme's own `--room-veil`: 58 · 86 · 44 · 74) and while a session runs the app chrome sits under the focus charcoal (§9.1).
 
@@ -444,7 +444,7 @@ Flat files under `public/visuals/`, WebP preferred, e.g. `plan-empty.webp`, `ana
 - Ease-out (quart/quint/expo). No elastic/bounce easing.
 - **`prefers-reduced-motion: reduce`:** crossfade or instant; never gate content visibility on entrance animation.
 - No orchestrated full-page load “shows.”
-- **Checkout success** shares the achievement confetti lottie (`/lottie/confetti.lottie`, play once) plus `/animation/success.svg`. Reduced-motion skips both and uses a static `--color-success` check.
+- **Checkout success** plays the confetti lottie (`/lottie/confetti.lottie`, once) plus `/animation/success.svg`. Reduced-motion skips both and uses a static `--color-success` check. The achievement celebration no longer uses the lottie (2026-10-01, §9.1).
 - **Press:** ledges sink 4 px into their edge, path nodes 2 px (120 ms, shadow collapses with it).
 - **Rotation** (announcement card): 5 s per slide, 300 ms crossfade with a 12 px slide, paused
   while hovered or focused; reduced motion swaps instantly. Only content that is truly several
@@ -481,6 +481,32 @@ uniformly restrained — it is loud where progress happens and quiet where work 
   in §9 still stands; revisit it as its own decision if a moment truly needs overshoot.
 - `prefers-reduced-motion: reduce` still wins everywhere, celebration included: keep the reward
   (copy, colour, badge), drop the movement.
+
+**The achievement scene, "Işık Yandı" (2026-10-01): the overshoot decision.** Earning an
+achievement is the one moment that gets the whole screen and more than the `Moment` budget. Decided
+with the product owner and scoped to this scene only: springs may overshoot (12–18 %), the card
+squashes and stretches, and the film runs about 6 s with sound. Everything else in §9 stands.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Dusk | A night curtain wipes down over the page | 0–0.55 s |
+| Spark | The tap that earned it (the task's ✓) launches a spark that arcs to the badge slot | 0.1–0.72 s |
+| Gather | The spark becomes an orb, motes spiral in, the badge outline draws itself; "Dokun, ışığı yak" | until the tap, or 1.5 s |
+| Burst | Anticipation squash, flash, shockwaves, rays, particles; the card is born showing Puhu's back | ignite + 0.12 s |
+| Flip | The card turns to the art with a comet swoosh and an edge flash, lands with a bounce | burst + 0.73 s |
+| Copy | Eyebrow, the title word by word, body, the "Devam edelim" ledge rising | burst + 1.18–2.3 s |
+| Home | The badge flies into the avatar, the curtain lifts, the avatar pulses | 1.6 s |
+
+- **Trigger:** hybrid. The student lights it (tap, Enter or Space) or it lights itself 1.5 s after
+  the orb is ready; after the burst a tap jumps to the end of the reveal.
+- **Backfill summary:** up to five cards are dealt from a stack into a fan (titles under up to
+  three), "+N" for the rest, eyebrow "{n} ışık birden yandı".
+- **Reduced motion:** no curtain, spark or flight; the final frame crossfades in (200 ms) and out
+  (150 ms). The reward (badge, copy, chime) stays.
+- **Sound:** synthesised in the browser (spark, gather hum, burst, the app's chime, swish, land,
+  twinkles, press, flight, arrival); reduced motion keeps only the chime and the press.
+- **Source of truth:** `components/achievements/scene/scene-choreography.ts` mirrors the approved
+  film in `design/achievement-scene/`; change both together.
 
 Existing exception: `.mentor-puhu-bounce` (globals.css) loops a 2 s idle bob for the mascot — a
 deliberate presence cue, disabled under reduced motion.

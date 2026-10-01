@@ -23,6 +23,7 @@ import type {
 import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
 import { CelebrationOverlayProvider } from "@/lib/celebration-overlay";
+import { installLastPointer } from "@/lib/last-pointer";
 import { NOTIFICATION_ARRIVED } from "@/lib/notification-events";
 import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import {
@@ -110,12 +111,13 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
 export function NotificationDrawerShell({ children }: NotificationDrawerShellProps) {
   const t = useTranslations("notifications");
   const tJourney = useTranslations("journey_levels");
+  const tAchievements = useTranslations("achievements");
   const router = useRouter();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
   const [achievementCelebrations, setAchievementCelebrations] = useState<AchievementCelebrationDto[]>([]);
   const [journeyLevelCelebrations, setJourneyLevelCelebrations] = useState<JourneyLevelCelebrationView[]>([]);
   const [celebrationBusy, setCelebrationBusy] = useState(false);
-  const [journeyCelebrationError, setJourneyCelebrationError] = useState<string | null>(null);
+  const [celebrationError, setCelebrationError] = useState<string | null>(null);
   const [celebrationsReady, setCelebrationsReady] = useState(false);
 
  /*
@@ -143,6 +145,9 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     [achievementCelebrations, journeyLevelCelebrations],
   );
   const currentCelebration = celebrationQueue[0];
+
+  // The achievement scene starts its light from the tap that earned it (the task's ✓).
+  useEffect(() => installLastPointer(), []);
 
   useEffect(() => {
     void Promise.allSettled([
@@ -282,7 +287,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     const current = currentCelebration;
     if (!current || celebrationBusy) return;
     setCelebrationBusy(true);
-    setJourneyCelebrationError(null);
+    setCelebrationError(null);
     try {
       if (current.type === "achievement") {
         await markAchievementsCelebrated(
@@ -298,11 +303,11 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         );
       }
     } catch {
-      if (current.type === "journey-level") {
-        setJourneyCelebrationError(
-          tJourney("celebration.acknowledge_error"),
-        );
-      }
+      setCelebrationError(
+        current.type === "journey-level"
+          ? tJourney("celebration.acknowledge_error")
+          : tAchievements("celebration_close_error"),
+      );
     } finally {
       setCelebrationBusy(false);
     }
@@ -351,6 +356,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
               key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
               celebration={currentCelebration.celebration}
               busy={celebrationBusy}
+              error={celebrationError}
               onClose={() => void handleCelebrationClose()}
             />
           ) : currentCelebration?.type === "journey-level" ? (
@@ -359,7 +365,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
               mode="celebration"
               celebration={currentCelebration.celebration}
               busy={celebrationBusy}
-              error={journeyCelebrationError}
+              error={celebrationError}
               onClose={() => void handleCelebrationClose()}
             />
           ) : null}
