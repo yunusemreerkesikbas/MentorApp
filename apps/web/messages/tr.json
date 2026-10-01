@@ -3137,8 +3137,6 @@
     "locked": "Kilitli",
     "close": "Kapat",
     "celebration_eyebrow": "Yeni bir ışık yandı",
-    "celebration_ignite": "Dokun, ışığı yak",
-    "celebration_ignite_aria": "Işığı yak",
     "celebration_more": "+{count}",
     "celebration_close_error": "Kutlamayı şimdilik kapatamadık. Tekrar deneyebilirsin.",
     "history_eyebrow": "{count, plural, one {Bir ışık daha yandı} other {# ışık birden yandı}}",

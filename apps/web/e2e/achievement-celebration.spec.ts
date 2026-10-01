@@ -126,22 +126,22 @@ async function mockSceneApi(page: Page, celebration: AchievementCelebrationDto):
   return api;
 }
 
-/** The scene waits for the light, reveals the badge, then the ledge settles: allow for all three. */
+/** The scene plays by itself: the light gathers, the badge is revealed, the ledge settles. */
 const REVEAL = { timeout: 10_000 };
 
-test("ışık Enter ile yanar; CTA odağı alır ve sahne tek istekle kapanır", async ({ page }) => {
+test("sahne kendiliğinden oynar; CTA odağı alır ve tek istekle kapanır", async ({ page }) => {
   const api = await mockSceneApi(page, firstStep);
   await page.goto("/profil");
 
   const dialog = page.getByRole("dialog", { name: "İlk Adım" });
   await expect(dialog).toBeVisible();
-  const ignite = dialog.getByRole("button", { name: "Işığı yak" });
-  await expect(ignite).toBeFocused();
+  // Nothing to tap: the dialog holds focus while the light gathers and comes on.
+  await expect(dialog).toBeFocused();
+  await expect(dialog.getByText("Dokun, ışığı yak")).toHaveCount(0);
   await expect
     .poll(() => page.evaluate(() => document.body.style.overflow))
     .toBe("hidden");
 
-  await page.keyboard.press("Enter");
   const proceed = dialog.getByRole("button", { name: "Devam edelim" });
   await expect(proceed).toBeFocused(REVEAL);
   await expect(dialog.getByText("Yolculuğun başladı")).toBeVisible();
@@ -157,34 +157,12 @@ test("ışık Enter ile yanar; CTA odağı alır ve sahne tek istekle kapanır",
   await expect(dialog).toHaveCount(0);
 });
 
-test("ışık yandıktan sonra dokunmak sona atlar ve CTA odağı alır", async ({ page }) => {
-  await mockSceneApi(page, firstStep);
-  await page.goto("/profil");
-
-  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
-  await expect(dialog.getByRole("button", { name: "Işığı yak" })).toBeFocused();
-  await page.keyboard.press("Enter");
-  // After the burst, well before the reveal would end by itself (about 3 s after the ignite).
-  await page.waitForTimeout(1_200);
-  await page.mouse.click(24, 120);
-  await expect(dialog.getByRole("button", { name: "Devam edelim" })).toBeFocused({ timeout: 1_000 });
-});
-
-test("dokunulmazsa ışık kendiliğinden yanar", async ({ page }) => {
-  await mockSceneApi(page, firstStep);
-  await page.goto("/profil");
-
-  const dialog = page.getByRole("dialog", { name: "İlk Adım" });
-  await expect(dialog.getByRole("button", { name: "Devam edelim" })).toBeFocused(REVEAL);
-  await expect(dialog.getByRole("button", { name: "Işığı yak" })).toHaveCount(0);
-});
-
-test("ışık beklerken Escape sahneyi tek istekle kapatır", async ({ page }) => {
+test("ışık toplanırken Escape sahneyi tek istekle kapatır", async ({ page }) => {
   const api = await mockSceneApi(page, firstStep);
   await page.goto("/profil");
 
   const dialog = page.getByRole("dialog", { name: "İlk Adım" });
-  await expect(dialog.getByRole("button", { name: "Işığı yak" })).toBeFocused();
+  await expect(dialog).toBeFocused();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   expect(api.closeCalls).toBe(1);
@@ -216,11 +194,11 @@ test("geçmiş özeti, yanan ışıkların sayısını söyler", async ({ page }
   await page.goto("/profil");
 
   const dialog = page.getByRole("dialog", { name: "Geçmiş emeklerin de burada" });
-  await expect(dialog).toBeVisible();
-  await dialog.getByRole("button", { name: "Işığı yak" }).click();
-  await expect(dialog.getByText("3 ışık birden yandı")).toBeVisible(REVEAL);
+  const proceed = dialog.getByRole("button", { name: "Devam edelim" });
+  await expect(proceed).toBeFocused(REVEAL);
+  await expect(dialog.getByText("3 ışık birden yandı")).toBeVisible();
 
-  await dialog.getByRole("button", { name: "Devam edelim" }).click();
+  await proceed.click();
   await expect(dialog).toHaveCount(0);
   expect(api.closeCalls).toBe(1);
 });

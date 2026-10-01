@@ -31,7 +31,8 @@ import { useSceneClock } from "./use-scene-clock";
  * reads a mutable timeline, so nothing re-renders per frame. Transitions run on timers, never on
  * frames: a background tab stops requestAnimationFrame, and the scene must still reach the CTA.
  *
- * waiting ──tap / 1.5 s──▶ revealing ──timer / skip──▶ revealed ──"Devam edelim"──▶ (closing)
+ * waiting ──1.5 s──▶ revealing ──timer──▶ revealed ──"Devam edelim"──▶ (closing)
+ * The scene plays by itself; the student only presses "Devam edelim" (or Escape).
  * A close is optimistic: the flight (or fade) starts at once; a failed close brings the scene back.
  */
 export type ScenePhase = "waiting" | "revealing" | "revealed";
@@ -45,7 +46,7 @@ export interface SceneMoment {
 }
 
 interface Timeline {
-  /** `performance.now()` at scene time 0; a skip moves it back. */
+  /** `performance.now()` at scene time 0. */
   origin: number;
   ignitedAt: number | null;
   /** "Devam edelim": the flight home. */
@@ -58,12 +59,10 @@ interface Timeline {
 }
 
 /** Synthesised before the curtain is visible: a stall there costs nothing, during the spark it would. */
-const OPENING_VOICES: SfxVoice[] = ["spark", "gather", "pop", "tap", "burst", "chime"];
+const OPENING_VOICES: SfxVoice[] = ["spark", "gather", "pop", "burst", "chime"];
 const STILL_VOICES: SfxVoice[] = ["chime", "press"];
 const STILL_OPENING: SfxCue[] = [{ at: 0, voice: "chime" }];
 const STILL_EXIT: SfxCue[] = [{ at: 0, voice: "press" }];
-/** A skip waits until the burst and the chime have sounded. */
-const SKIP_AFTER_BURST = 0.05;
 
 const timeOf = (timeline: Timeline, now: number) => (now - timeline.origin) / 1000;
 const fadeLength = (reduced: boolean) => (reduced ? CHOREO.reducedOut : CHOREO.dismiss);
@@ -148,33 +147,27 @@ export function useSceneDirector({ reduced, count, paint, onClose, isPresent, sa
     };
   }, [kick, reduced]);
 
-  const ignite = useCallback(
-    (byTap: boolean) => {
-      const scene = timeline.current;
-      if (reduced || scene.closing || scene.ignitedAt !== null) return;
-      scene.ignitedAt = timeOf(scene, performance.now());
-      const beats = beatsOf(scene, count);
-      cues.current.opening?.cancel();
-      cutSceneGather();
-      const play = () => {
-        const ignited = beats.ignite ?? 0;
-        cues.current.ignite = playSceneCues(
-          igniteCues({ cards: beats.cards, byTap, copyAfter: (beats.copy ?? ignited) - ignited }),
-          ignited - timeOf(scene, performance.now()),
-        );
-      };
-      if (byTap) void unlockSceneAudio().then(play);
-      else play();
-      setPhase("revealing");
-      kick();
-    },
-    [count, kick, reduced],
-  );
+  /** The light has gathered: it comes on by itself. */
+  const ignite = useCallback(() => {
+    const scene = timeline.current;
+    if (reduced || scene.closing || scene.ignitedAt !== null) return;
+    scene.ignitedAt = timeOf(scene, performance.now());
+    const beats = beatsOf(scene, count);
+    const ignited = beats.ignite ?? 0;
+    cues.current.opening?.cancel();
+    cutSceneGather();
+    cues.current.ignite = playSceneCues(
+      igniteCues({ cards: beats.cards, copyAfter: (beats.copy ?? ignited) - ignited }),
+      ignited - timeOf(scene, performance.now()),
+    );
+    setPhase("revealing");
+    kick();
+  }, [count, kick, reduced]);
 
   useEffect(() => {
     if (phase !== "waiting") return;
     const wait = AUTO_IGNITE_AT - timeOf(timeline.current, performance.now());
-    const id = window.setTimeout(() => ignite(false), Math.max(0, wait) * 1000);
+    const id = window.setTimeout(ignite, Math.max(0, wait) * 1000);
     return () => window.clearTimeout(id);
   }, [phase, ignite]);
 
@@ -185,19 +178,6 @@ export function useSceneDirector({ reduced, count, paint, onClose, isPresent, sa
     const id = window.setTimeout(() => setPhase("revealed"), Math.max(0, wait) * 1000);
     return () => window.clearTimeout(id);
   }, [phase, count]);
-
-  /** After the burst, a tap on the night jumps to the end of the reveal. */
-  const skip = useCallback(() => {
-    const scene = timeline.current;
-    const beats = beatsOf(scene, count);
-    const t = timeOf(scene, performance.now());
-    if (scene.closing || beats.burst === null || beats.ready === null) return;
-    if (t < beats.burst + SKIP_AFTER_BURST || t >= beats.ready) return;
-    scene.origin -= (beats.ready - t) * 1000;
-    cues.current.ignite?.cancel();
-    setPhase("revealed");
-    kick();
-  }, [count, kick]);
 
   /** "Devam edelim". Returns whether the close started (it is a no-op while one is in flight). */
   const proceed = useCallback((): boolean => {
@@ -237,7 +217,7 @@ export function useSceneDirector({ reduced, count, paint, onClose, isPresent, sa
     scene.restoreAt = timeOf(scene, performance.now());
     kick();
     if (reduced || scene.ignitedAt !== null) return;
-    const id = window.setTimeout(() => ignite(false), 0);
+    const id = window.setTimeout(ignite, 0);
     return () => window.clearTimeout(id);
   }, [error, ignite, kick, reduced]);
 
@@ -258,7 +238,5 @@ export function useSceneDirector({ reduced, count, paint, onClose, isPresent, sa
     return () => window.clearTimeout(id);
   }, [isPresent, count, kick, reduced]);
 
-  const tapIgnite = useCallback(() => ignite(true), [ignite]);
-
-  return { phase, ignite: tapIgnite, skip, proceed, dismiss, kick };
+  return { phase, proceed, dismiss, kick };
 }

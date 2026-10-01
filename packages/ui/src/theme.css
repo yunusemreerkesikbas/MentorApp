@@ -495,7 +495,6 @@ html.dark {
   --color-focus-ring: #9ec8f0;
   --achievement-scene-badge: clamp(196px, 29vh, 260px);
   --achievement-eyebrow: #ffd58a;
-  --achievement-hint: rgba(255, 255, 255, 0.86);
   --achievement-label: rgba(236, 241, 255, 0.86);
   --achievement-chip: rgba(255, 255, 255, 0.14);
   /* The heart of the flash and of every light: warm, never blue. */

@@ -25,7 +25,6 @@ export interface SceneDom {
   cam: HTMLElement;
   halo: HTMLElement;
   flash: HTMLElement;
-  hint: HTMLElement | null;
   eyebrow: HTMLElement;
   words: HTMLElement[];
   body: HTMLElement;
@@ -92,7 +91,6 @@ export function collectSceneDom(root: HTMLElement): SceneDom | null {
     cam,
     halo,
     flash,
-    hint: get<HTMLElement>("hint"),
     eyebrow,
     words: all(root, '[data-scene="word"]'),
     body,

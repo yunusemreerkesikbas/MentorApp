@@ -30,10 +30,8 @@ interface SceneStageProps {
   titleId: string;
   bodyId: string;
   text: SceneText;
-  igniteLabel: string;
   /** Announced once the light comes on; the live region is in the DOM from the start. */
   announcement: string | null;
-  waiting: boolean;
   ready: boolean;
   /** Visible cards; their edge is known once the slot has been measured. */
   cards: ReadonlyArray<StageCard>;
@@ -44,15 +42,12 @@ interface SceneStageProps {
   center: Point | null;
   light: { glow: string; alt: string };
   error: string | null;
-  onIgnite: () => void;
   onProceed: () => void;
-  onPointerDown: (event: React.PointerEvent<HTMLElement>) => void;
-  onKeyDown: (event: React.KeyboardEvent<HTMLElement>) => void;
 }
 
 /**
  * The layers of "Işık Yandı", back to front: the night curtain, the stars, the camera (halo, light
- * behind, cards, light in front), the words and the ledge, the ignite target, the flash. Every
+ * behind, cards, light in front), the words and the ledge, the flash. Every
  * moving part starts at its t = 0 pose here; the frame painter takes it from there.
  */
 export function SceneStage(props: SceneStageProps) {
@@ -67,8 +62,6 @@ export function SceneStage(props: SceneStageProps) {
       tabIndex={-1}
       className="achievement-scene-theme fixed inset-0 z-[120] touch-manipulation select-none overflow-hidden text-[var(--color-main)] outline-none"
       style={{ "--scene-glow": props.light.glow, "--scene-alt": props.light.alt } as React.CSSProperties}
-      onPointerDown={props.onPointerDown}
-      onKeyDown={props.onKeyDown}
     >
       <div aria-hidden="true" className={`${FILL} overflow-hidden`}>
         <div
@@ -132,24 +125,6 @@ export function SceneStage(props: SceneStageProps) {
         ) : null}
         <SceneLedge label={props.text.cta} ready={props.ready} error={props.error} onPress={props.onProceed} />
       </div>
-
-      {props.waiting ? (
-        <button
-          type="button"
-          data-scene="ignite"
-          aria-label={props.igniteLabel}
-          onClick={props.onIgnite}
-          className="group absolute inset-0 z-[3] cursor-pointer outline-none"
-        >
-          {center ? (
-            <span
-              aria-hidden="true"
-              className="pointer-events-none absolute size-24 -translate-x-1/2 -translate-y-1/2 rounded-full ring-[var(--color-focus-ring)] group-focus-visible:ring-2"
-              style={{ left: center.x, top: center.y }}
-            />
-          ) : null}
-        </button>
-      ) : null}
 
       <div
         data-scene="flash"

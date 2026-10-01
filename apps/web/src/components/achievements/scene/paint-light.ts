@@ -1,7 +1,7 @@
 /**
  * The light before the badge: the spark leaving the student's tap, the orb it becomes, the motes
- * it pulls in on a tilted ring (far half behind, near half in front), the badge outline drawing
- * itself and the soft rings that invite the tap.
+ * it pulls in on a tilted ring (far half behind, near half in front) and the badge outline drawing
+ * itself around them.
  */
 import { BADGE_PENTAGON, CHOREO, type SceneBeats } from "./scene-choreography";
 import { clamp, ease, lerp, progress, quadPoint, quadTangent, rng, rgba, type Point } from "./scene-engine";
@@ -182,21 +182,12 @@ export function paintOutline(
 export function paintOrb(scene: LightScene): void {
   const pose = orbPose(scene.t, scene.beats);
   if (!pose) return;
-  const { t, beats, center, front: g } = scene;
+  const { t, center, front: g } = scene;
   const k = scene.size / REFERENCE_BADGE;
 
   const drawn = ease.outQuint(progress(t, 0.85, 0.95));
   const tip = paintOutline(scene.back, center, scene.size, drawn, "#FFE2AA", 0.5 * (1 - pose.windup * 0.4), 1.6);
   if (tip && drawn < 1) glow(scene.back, tip.x, tip.y, 10, scene.glow, 0.9);
-
-  // Tap affordance: soft rings breathe out of the orb while it waits.
-  const waitEnd = beats.ignite ?? Number.POSITIVE_INFINITY;
-  for (let i = 0; i < 3; i += 1) {
-    const start = CHOREO.hintAt + 0.1 + i * 0.82;
-    const p = progress(t, start, 0.82);
-    if (p <= 0 || p >= 1 || start > waitEnd || t >= waitEnd) continue;
-    ring(g, center.x, center.y, (30 + 46 * ease.outCubic(p)) * k, 1.4, WARM_WHITE, 0.42 * (1 - p));
-  }
 
   g.save();
   g.translate(center.x, center.y);

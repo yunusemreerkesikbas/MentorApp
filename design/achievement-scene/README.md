@@ -16,9 +16,10 @@ mechanic. An achievement here is a trace of effort, not loot (`docs/copy/voice.m
 The film ships as `apps/web/src/components/achievements/scene/` (phase B). `timeline.mjs` and
 `engine.mjs` are mirrored by `scene-choreography.ts` and `scene-engine.ts`, the drawing by
 `paint-*.ts` and `scene-frame.ts`, and `sfx.mjs` by `apps/web/src/lib/achievement-scene-sfx.ts`.
-Change a beat in both places and re-render, so the film stays the spec. What the app adds: the
-spark leaves from the student's last press, the light can be lit with Enter or Space, a tap after
-the burst skips to the end of the reveal, and a failed close brings the scene back.
+Change a beat in both places and re-render, so the film stays the spec. Where the app differs:
+it has no "Dokun, ışığı yak" and nothing to tap, the light comes on by itself 1.5 s after the orb
+is ready (the film's tap is not played); the spark leaves from the student's last press, and a
+failed close brings the scene back.
 
 ## Renders
 

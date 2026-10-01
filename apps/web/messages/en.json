@@ -3137,8 +3137,6 @@
     "locked": "Locked",
     "close": "Close",
     "celebration_eyebrow": "A new light came on",
-    "celebration_ignite": "Tap to light it",
-    "celebration_ignite_aria": "Light it",
     "celebration_more": "+{count}",
     "celebration_close_error": "We couldn't close the celebration just yet. Let's try again in a moment.",
     "history_eyebrow": "{count, plural, one {One more light came on} other {# lights came on at once}}",

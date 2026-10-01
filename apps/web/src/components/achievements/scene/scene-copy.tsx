@@ -4,8 +4,6 @@ import type { RefObject } from "react";
 import { Button } from "@mentor/ui";
 
 export interface SceneText {
-  /** "Dokun, ışığı yak" under the waiting light. */
-  hint: string;
   eyebrow: string;
   title: string;
   body: string;
@@ -31,13 +29,6 @@ export function SceneCopy({
   const words = text.title.split(/\s+/).filter(Boolean);
   return (
     <div ref={copyRef} className="relative mt-9 w-full max-w-md text-center">
-      <p
-        data-scene="hint"
-        aria-hidden="true"
-        className="absolute inset-x-0 -top-7 text-body-sm font-extrabold text-[var(--achievement-hint)] opacity-0"
-      >
-        {text.hint}
-      </p>
       <p data-scene="eyebrow" className="text-caption font-extrabold text-[var(--achievement-eyebrow)] opacity-0">
         {text.eyebrow}
       </p>

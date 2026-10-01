@@ -3,8 +3,8 @@
  * scene. It mirrors `design/achievement-scene/timeline.mjs`, the timeline behind the approved
  * video, so a change here is a change to the film; re-render the prototype when one is made.
  *
- * Times are scene-local seconds from the moment the scene mounts. The ignite (the student's tap,
- * or the automatic one) is the hinge: everything after it hangs off `burst = ignite + windup`.
+ * Times are scene-local seconds from the moment the scene mounts. The ignite (the light coming on
+ * by itself once it has gathered) is the hinge: everything after it hangs off `burst = ignite + windup`.
  * Kept free of DOM and React so the Node test environment can assert on it.
  */
 import type { AchievementId } from "@mentor/types";
@@ -21,9 +21,9 @@ export const CHOREO = {
   sparkLand: 0.72,
   /** The spark is now an orb and light motes spiral in. An ignite cannot land before this. */
   orbReady: 0.75,
-  /** "Dokun, ışığı yak" pops under the orb. */
-  hintAt: 1,
-  /** Hybrid trigger: with no tap the light comes on by itself this long after the orb is ready. */
+  /** The gathering orb starts to breathe. */
+  breatheAt: 1,
+  /** The scene plays by itself: the light comes on this long after the orb is ready. */
   autoIgniteDelay: 1.5,
   /** ignite → burst: the orb is squashed hard first (anticipation). */
   windup: 0.12,
@@ -85,7 +85,6 @@ export const SPRINGS = {
   orbLand: { stiffness: 260, damping: 9 },
   title: { stiffness: 500, damping: 25 }, // ≈12 %
   ledge: { stiffness: 380, damping: 20 }, // ≈15 %
-  hint: { stiffness: 420, damping: 18 },
   punch: { stiffness: 520, damping: 14 },
   pulse: { stiffness: 420, damping: 13 },
   toss: { stiffness: 210, damping: 17 },
@@ -188,19 +187,17 @@ export function openingCues(): SceneCue[] {
   return [
     { at: CHOREO.sparkLaunch - 0.04, voice: "spark" },
     { at: CHOREO.orbReady, voice: "gather" },
-    { at: CHOREO.hintAt, voice: "pop", gain: 0.35 },
   ];
 }
 
 /** From the ignite. `copyAfter` is `beats.copy - beats.ignite`. */
-export function igniteCues(input: { cards: number; byTap: boolean; copyAfter: number }): SceneCue[] {
+export function igniteCues(input: { cards: number; copyAfter: number }): SceneCue[] {
   const burst = CHOREO.windup;
   const cues: SceneCue[] = [
     { at: burst, voice: "burst" },
     { at: burst + 0.02, voice: "chime" },
     { at: input.copyAfter + 0.1, voice: "pop", gain: 0.45 },
   ];
-  if (input.byTap) cues.push({ at: 0, voice: "tap", gain: 0.7 });
   if (input.cards === 1) {
     const flip = burst + CHOREO.flip;
     cues.push(

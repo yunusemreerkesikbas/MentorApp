@@ -13,7 +13,6 @@ import {
   exitBadgePose,
   flashOpacity,
   haloPose,
-  hintPose,
   singleBadgePose,
   sparklePop,
   type BadgePose,
@@ -88,11 +87,6 @@ function writeStage(dom: SceneDom, frame: SceneFrame, curtain: ReturnType<typeof
   dom.halo.style.opacity = String(halo.opacity);
   dom.halo.style.transform = `translate3d(${geo.center.x}px, ${geo.center.y}px, 0) translate(-50%, -50%) scale(${halo.scale})`;
   dom.flash.style.opacity = String(flashOpacity(t, beats));
-  if (dom.hint) {
-    const hint = hintPose(t, beats);
-    dom.hint.style.opacity = String(hint.opacity);
-    dom.hint.style.transform = `translate3d(0, ${hint.y}px, 0) scale(${hint.scale})`;
-  }
 }
 
 function writeBadges(dom: SceneDom, frame: SceneFrame, placed: ReadonlyArray<Placed | null>): void {

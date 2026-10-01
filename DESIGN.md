@@ -485,14 +485,14 @@ squashes and stretches, and the film runs about 6 s with sound. Everything else 
 | --- | --- | --- |
 | Dusk | A night curtain wipes down over the page | 0–0.55 s |
 | Spark | The tap that earned it (the task's ✓) launches a spark that arcs to the badge slot | 0.1–0.72 s |
-| Gather | The spark becomes an orb, motes spiral in, the badge outline draws itself; "Dokun, ışığı yak" | until the tap, or 1.5 s |
+| Gather | The spark becomes an orb, motes spiral in, the badge outline draws itself | 1.5 s |
 | Burst | Anticipation squash, flash, shockwaves, rays, particles; the card is born showing Puhu's back | ignite + 0.12 s |
 | Flip | The card turns to the art with a comet swoosh and an edge flash, lands with a bounce | burst + 0.73 s |
 | Copy | Eyebrow, the title word by word, body, the "Devam edelim" ledge rising | burst + 1.18–2.3 s |
 | Home | The badge flies into the avatar, the curtain lifts, the avatar pulses | 1.6 s |
 
-- **Trigger:** hybrid. The student lights it (tap, Enter or Space) or it lights itself 1.5 s after
-  the orb is ready; after the burst a tap jumps to the end of the reveal.
+- **Trigger:** none. The scene plays by itself: the light comes on 1.5 s after the orb is ready,
+  with no hint and nothing to tap. The student only presses "Devam edelim" (Escape also closes).
 - **Backfill summary:** up to five cards are dealt from a stack into a fan (titles under up to
   three), "+N" for the rest, eyebrow "{n} ışık birden yandı".
 - **Reduced motion:** no curtain, spark or flight; the final frame crossfades in (200 ms) and out

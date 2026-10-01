@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useId, useMemo, useRef } from "react";
-import type * as React from "react";
 import { createPortal } from "react-dom";
 import { usePresence, useReducedMotion } from "framer-motion";
 
@@ -43,7 +42,6 @@ export interface AchievementSceneProps {
   /** Every achievement being celebrated; a backfill summary deals the first five as a fan. */
   cards: ReadonlyArray<StageCard>;
   text: SceneText;
-  igniteLabel: string;
   /** Said by screen readers when the light comes on ("Yeni bir ışık yandı"). */
   litAnnouncement: string;
   moreLabel: (count: number) => string;
@@ -59,7 +57,6 @@ export interface AchievementSceneProps {
 export function AchievementScene({
   cards,
   text,
-  igniteLabel,
   litAnnouncement,
   moreLabel,
   busy,
@@ -98,7 +95,7 @@ export function AchievementScene({
     });
   }, []);
 
-  const { phase, ignite, skip, proceed, dismiss, kick } = useSceneDirector({
+  const { phase, proceed, dismiss, kick } = useSceneDirector({
     reduced,
     count,
     paint,
@@ -134,22 +131,12 @@ export function AchievementScene({
     kick();
   }, [geometry, deck, lights, kick]);
 
-  // Focus follows the phase: the light while it waits, the dialog while it reveals, then the CTA.
-  // A frame later, after the event that changed the phase is done: a tap that skips the reveal
-  // would otherwise hand focus straight back to the dialog (the default action of its mousedown).
+  // Focus follows the phase: the dialog while the scene plays, then the CTA once it has settled.
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return;
-    const frame = window.requestAnimationFrame(() => {
-      const target =
-        phase === "waiting"
-          ? root.querySelector<HTMLElement>('[data-scene="ignite"]')
-          : phase === "revealed"
-            ? root.querySelector<HTMLElement>('[data-scene="cta"]')
-            : root;
-      (target ?? root).focus({ preventScroll: true });
-    });
-    return () => window.cancelAnimationFrame(frame);
+    const cta = phase === "revealed" ? root.querySelector<HTMLElement>('[data-scene="cta"]') : null;
+    (cta ?? root).focus({ preventScroll: true });
   }, [phase]);
 
   /** The flight home also lights the avatar as each badge lands in it. */
@@ -168,23 +155,6 @@ export function AchievementScene({
     rootRef.current?.querySelector<HTMLElement>('[data-scene="cta"]')?.focus({ preventScroll: true });
   }, [error]);
 
-  const handlePointerDown = useCallback(
-    (event: React.PointerEvent<HTMLElement>) => {
-      if (phase === "revealing" && event.isPrimary) skip();
-    },
-    [phase, skip],
-  );
-
-  const handleKeyDown = useCallback(
-    (event: React.KeyboardEvent<HTMLElement>) => {
-      if (phase !== "revealing" || event.target !== event.currentTarget) return;
-      if (event.key !== "Enter" && event.key !== " ") return;
-      event.preventDefault();
-      skip();
-    },
-    [phase, skip],
-  );
-
   if (typeof document === "undefined") return null;
 
   const edge = geometry ? (deck ? deck.card : geometry.size) : null;
@@ -197,9 +167,7 @@ export function AchievementScene({
       titleId={titleId}
       bodyId={bodyId}
       text={text}
-      igniteLabel={igniteLabel}
       announcement={phase === "waiting" ? null : litAnnouncement}
-      waiting={phase === "waiting"}
       ready={phase === "revealed"}
       cards={shown}
       edge={edge}
@@ -208,10 +176,7 @@ export function AchievementScene({
       center={geometry?.center ?? null}
       light={{ glow: lights[0]!.glow, alt: lights.at(-1)!.alt }}
       error={error}
-      onIgnite={ignite}
       onProceed={handleProceed}
-      onPointerDown={handlePointerDown}
-      onKeyDown={handleKeyDown}
     />,
     document.body,
   );
