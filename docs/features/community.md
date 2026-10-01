@@ -67,6 +67,26 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-01 · "Işık Yandı" ships: the achievement celebration is the approved film (phase B).**
+  The blurred card with Lottie confetti is gone. `AchievementCelebration` keeps its API and adds
+  an `error` prop; the scene lives in `components/achievements/scene/`. The spark starts from the
+  student's last press (the task's ✓, `lib/last-pointer.ts`, installed by the notification drawer
+  shell) when it is under 6 s old, else from beyond the bottom-left corner; the badge flies home to
+  `[data-achievement-home]` (the nav avatar) and folds away in place where none is on screen. Close
+  is optimistic: "Devam edelim" starts the flight at once, the drawer shell marks the achievements
+  celebrated, and a failed request brings the scene back with "Kutlamayı şimdilik kapatamadık"
+  (the shell now reports achievement failures too, not only journey ones). Escape fades the scene
+  (swallowed while a request is in flight). A single achievement keeps its own eyebrow
+  (`celebration_items.*.eyebrow`); "Yeni bir ışık yandı" is announced to screen readers when the
+  light comes on; a backfill summary says "{n} ışık birden yandı" (plural key). Usage: nothing to
+  wire, the queue shows it. Gotchas: the page reserves a stable scrollbar gutter that Chrome paints
+  white and no fixed layer can cover, so the scene's scroll lock drops the gutter and pads the body
+  by its width while it is up; e2e for the full-motion path is `e2e/achievement-celebration.spec.ts`
+  (reduced motion stays in `journey-level-celebration.spec.ts`). Related:
+  `components/achievements/achievement-celebration.tsx`, `components/achievements/scene/*`,
+  `lib/achievement-scene-{sfx,synth,audio}.ts`, `lib/notification-drawer-shell.tsx`,
+  `components/app-nav.tsx`, DESIGN.md §9.1.
+
 - **2026-10-01 · "Işık Yandı": achievement celebration redesign, phase A (motion prototype +
   videos).** The celebration is being redesigned around its own copy ("Yeni bir ışık yandı"):
   the completed task's ✓ becomes a spark, night falls, the light gathers until the student taps

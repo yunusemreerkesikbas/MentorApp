@@ -665,6 +665,8 @@ function AvatarLink({
           : "/settings"
       }
       aria-label={t("profile_link")}
+      // Where a celebrated achievement flies home to (achievement scene, DESIGN.md §9.1).
+      data-achievement-home=""
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
       <UserAvatar
