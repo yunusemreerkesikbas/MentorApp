@@ -67,6 +67,21 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-01 · "Işık Yandı": achievement celebration redesign, phase A (motion prototype +
+  videos).** The celebration is being redesigned around its own copy ("Yeni bir ışık yandı"):
+  the completed task's ✓ becomes a spark, night falls, the light gathers until the student taps
+  (or 1.5 s passes), it bursts, the badge is born out of the flash, flips out of a Puhu-marked back
+  with a comet swoosh, and on "Devam edelim" flies home to the avatar. A backfill summary deals its
+  badges into a fan; reduced motion keeps the reward and only crossfades. Decided with the product
+  owner: bold motion (overshoot and squash-stretch, about 6 s) as a scoped exception to DESIGN.md §9,
+  a hybrid tap/auto trigger, no chest or "chance" mechanic. Usage: renders and the seekable
+  prototype live in `design/achievement-scene/` (`README.md` has the commands); its
+  `timeline.mjs` holds the beats, springs and per-badge light colours the React port (phase B,
+  after the video is approved) will reuse. Gotcha: `document.fonts.check()` reports true for a
+  family with no face at all, so the renderer counts loaded Nunito faces instead, and Nunito is
+  vendored (OFL) so a render never needs the network or silently falls back. Related:
+  `design/achievement-scene/*`, `apps/web/src/components/achievements/achievement-celebration.tsx`.
+
 - **2026-09-27 · Journey celebration restores keyboard focus after closing.** The scene retains
   the opener across React's repeated development effect setup and cancels a pending focus restore
   before reopening. Replay callers pass their button ref so asynchronous scene loading can still

@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>Işık Yandı</title>
+  <style>
+    /* Nunito (SIL OFL 1.1, fonts/OFL.txt), vendored so a render never depends on the network. */
+    @font-face {
+      font-family: "Nunito"; font-style: normal; font-weight: 200 1000; font-display: block;
+      src: url(./fonts/nunito-latin-ext.woff2) format("woff2");
+      unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+    }
+    @font-face {
+      font-family: "Nunito"; font-style: normal; font-weight: 200 1000; font-display: block;
+      src: url(./fonts/nunito-latin.woff2) format("woff2");
+      unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+    }
+
+    /*
+     * "Işık Yandı" motion prototype. Nothing in this file animates by itself: there are no CSS
+     * transitions or keyframes. scene.mjs writes every style for a given time, which is what lets
+     * render.mjs capture frame-exact video.
+     */
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body {
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Nunito", system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      background: #f6f8fc;
+    }
+
+    /* ── Stage ─────────────────────────────────────────────────────────── */
+    #stage { position: relative; width: 1080px; height: 1080px; overflow: hidden; background: #f7f9fd; }
+    /* Pre-softened gradients instead of filter: blur(); a blur re-rasterises on every captured frame. */
+    .stage-blob { position: absolute; border-radius: 50%; }
+    .stage-blob.pink { width: 900px; height: 900px; left: 450px; top: -310px; background: radial-gradient(circle, rgba(255, 45, 171, 0.15) 0%, rgba(255, 45, 171, 0.06) 38%, rgba(255, 45, 171, 0) 68%); }
+    .stage-blob.blue { width: 1040px; height: 1040px; left: -380px; top: 280px; background: radial-gradient(circle, rgba(155, 193, 251, 0.5) 0%, rgba(155, 193, 251, 0.2) 38%, rgba(155, 193, 251, 0) 68%); }
+    .stage-blob.cyan { width: 900px; height: 900px; left: -70px; top: -330px; background: radial-gradient(circle, rgba(189, 235, 255, 0.55) 0%, rgba(189, 235, 255, 0.22) 38%, rgba(189, 235, 255, 0) 68%); }
+    .stage-caption { position: absolute; left: 56px; bottom: 44px; color: #111; }
+    .stage-caption .name { font-size: 18px; font-weight: 900; letter-spacing: -0.01em; }
+    .stage-caption .what { margin-top: 2px; font-size: 13px; font-weight: 700; color: #5d6577; }
+    .stage-fps { position: absolute; right: 56px; bottom: 46px; font-size: 13px; font-weight: 800; color: #97a0b3; }
+
+    /* ── Phone ─────────────────────────────────────────────────────────── */
+    #phone {
+      position: absolute; left: 333px; top: 106px; width: 414px; height: 868px;
+      border-radius: 66px; padding: 12px;
+      background: linear-gradient(145deg, #2a2e37 0%, #14161b 45%, #23262e 100%);
+      box-shadow:
+        0 60px 100px -36px rgba(37, 73, 150, 0.5),
+        0 26px 44px -26px rgba(17, 24, 39, 0.45),
+        inset 0 0 0 2px rgba(255, 255, 255, 0.06);
+    }
+    .phone-btn { position: absolute; width: 4px; border-radius: 2px; background: #1b1e24; }
+    .phone-btn.l1 { left: -3px; top: 170px; height: 34px; }
+    .phone-btn.l2 { left: -3px; top: 230px; height: 64px; }
+    .phone-btn.l3 { left: -3px; top: 308px; height: 64px; }
+    .phone-btn.r1 { right: -3px; top: 250px; height: 96px; }
+    #screen {
+      position: relative; width: 390px; height: 844px; border-radius: 54px; overflow: hidden;
+      isolation: isolate; transform: translateZ(0);
+      /* What shows around the page while it steps back: the night, never a white seam. */
+      background: #050920;
+    }
+    #island {
+      position: absolute; left: 50%; top: 11px; width: 122px; height: 35px; margin-left: -61px;
+      border-radius: 20px; background: #000; z-index: 60;
+    }
+    #homebar {
+      position: absolute; left: 50%; bottom: 8px; width: 134px; height: 5px; margin-left: -67px;
+      border-radius: 3px; z-index: 60;
+    }
+
+    /* ── App (panel mock) ──────────────────────────────────────────────── */
+    .theme-light {
+      --bg: #ffffff; --surface: #ffffff; --border: #ffffff; --main: #111111; --body: #333333;
+      --secondary: #666666; --play-cta: #55acee; --play-cta-ink: #0f2233; --play-cta-edge: #3b8fd0;
+      --play-line: #e7e7e7; --play-track: #f0edec; --play-selected: #e4eefe; --play-selected-ink: #1a5fa3;
+      --streak: #f3705a; --streak-soft: #ffe8e2; --streak-core: #ffd15c; --success: #2e7d54;
+      --well-blue: #c3d9fd; --well-peri: #d6dbfd; --shadow-card: 0 4px 10px rgba(37, 73, 150, 0.1);
+      --shadow-overlay: 0 24px 48px -12px rgba(37, 73, 150, 0.3);
+      --blob-pink: rgba(255, 45, 171, 0.22); --blob-blue: rgba(155, 193, 251, 0.5); --blob-cyan: rgba(189, 235, 255, 0.6);
+      --tabbar: #ffffff; --fab: #111111; --fab-ink: #ffffff;
+    }
+    .theme-dark {
+      --bg: #12141a; --surface: #1a1d24; --border: rgba(255, 255, 255, 0.1); --main: #f4f4f5; --body: #d4d4d8;
+      --secondary: #a1a1aa; --play-cta: #55acee; --play-cta-ink: #0f2233; --play-cta-edge: #3b8fd0;
+      --play-line: rgba(255, 255, 255, 0.1); --play-track: #242833; --play-selected: #2c3d56; --play-selected-ink: #7eb6e8;
+      --streak: #f3705a; --streak-soft: #3a2a28; --streak-core: #ffd15c; --success: #6bc49a;
+      --well-blue: #242833; --well-peri: #2a2f45; --shadow-card: 0 4px 10px rgba(0, 0, 0, 0.35);
+      --shadow-overlay: 0 24px 48px -12px rgba(0, 0, 0, 0.65);
+      --blob-pink: rgba(255, 45, 171, 0.14); --blob-blue: rgba(155, 193, 251, 0.2); --blob-cyan: rgba(189, 235, 255, 0.18);
+      --tabbar: #1a1d24; --fab: #f4f4f5; --fab-ink: #12141a;
+    }
+    #app {
+      position: absolute; inset: 0; overflow: hidden; background: var(--bg); color: var(--main);
+      transform-origin: 50% 40%;
+    }
+    .app-blob { position: absolute; border-radius: 50%; }
+    .app-blob.pink { width: 440px; height: 440px; right: -180px; top: -50px; background: radial-gradient(circle, var(--blob-pink) 0%, transparent 66%); }
+    .app-blob.blue { width: 500px; height: 500px; left: -240px; top: 200px; background: radial-gradient(circle, var(--blob-blue) 0%, transparent 66%); }
+    .app-blob.cyan { width: 460px; height: 460px; left: -130px; top: -180px; background: radial-gradient(circle, var(--blob-cyan) 0%, transparent 66%); }
+    #appDim { position: absolute; inset: 0; background: #050920; opacity: 0; pointer-events: none; z-index: 9; }
+
+    .p-header { position: absolute; left: 20px; right: 20px; top: 54px; height: 48px; display: flex; align-items: center; gap: 12px; }
+    .avatar {
+      position: relative; width: 44px; height: 44px; border-radius: 50%; flex: none;
+      display: grid; place-items: center; font-size: 17px; font-weight: 900; color: #1f2c66;
+      background: linear-gradient(140deg, #c3d9fd 0%, #ece3ff 100%);
+      box-shadow: 0 0 0 2px var(--surface), 0 4px 10px rgba(37, 73, 150, 0.16);
+    }
+    .greet-title { font-size: 20px; font-weight: 800; letter-spacing: -0.01em; line-height: 1.2; }
+    .greet-sub { font-size: 13px; font-weight: 700; color: var(--secondary); line-height: 1.3; }
+    .bell { margin-left: auto; width: 40px; height: 40px; display: grid; place-items: center; color: var(--main); }
+
+    .card {
+      position: absolute; left: 20px; right: 20px; border-radius: 10px; background: var(--surface);
+      border: 1px solid var(--border); box-shadow: var(--shadow-card); overflow: hidden;
+    }
+    .hero { top: 116px; }
+    .hero-inner { padding: 18px 18px 0; }
+    .bubble-row { display: flex; align-items: center; gap: 10px; }
+    .bubble-row img { width: 56px; height: 56px; object-fit: contain; flex: none; }
+    .bubble {
+      position: relative; padding: 11px 14px; border-radius: 16px; background: var(--play-selected);
+      font-size: 15px; font-weight: 600; line-height: 1.4; color: var(--body);
+    }
+    .hero-title { margin: 14px 0 0; font-size: 20px; font-weight: 800; line-height: 1.3; letter-spacing: -0.005em; }
+    .path { position: relative; list-style: none; margin: 30px 0 0; padding: 0; display: flex; justify-content: space-between; }
+    .stop { position: relative; width: 76px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+    .stop .conn { position: absolute; right: 50%; top: 30px; width: 100%; height: 4px; border-radius: 2px; background: var(--play-track); z-index: 0; }
+    .stop .conn.reached { background: var(--play-cta); }
+    .slot { position: relative; z-index: 1; height: 64px; display: flex; align-items: center; }
+    .node { position: relative; display: grid; place-items: center; border-radius: 50%; }
+    .node svg { display: block; }
+    .node.done { width: 48px; height: 48px; background: var(--play-cta); color: var(--play-cta-ink); box-shadow: 0 4px 0 var(--play-cta-edge); }
+    .node.current {
+      width: 64px; height: 64px; background: var(--play-cta); color: var(--play-cta-ink);
+      box-shadow: 0 5px 0 var(--play-cta-edge), 0 0 0 8px var(--play-selected);
+    }
+    .node.upcoming { width: 48px; height: 48px; background: var(--play-track); color: var(--secondary); box-shadow: 0 4px 0 color-mix(in srgb, var(--play-track), var(--main) 12%); }
+    .node.chest { width: 48px; height: 48px; background: color-mix(in srgb, var(--streak-core) 30%, var(--surface)); color: #b7791f; box-shadow: 0 4px 0 color-mix(in srgb, var(--streak-core) 45%, var(--surface)); }
+    .stop .lbl { font-size: 13px; font-weight: 800; line-height: 1.15; color: var(--main); }
+    .stop .meta { margin-top: -4px; font-size: 12px; font-weight: 600; color: var(--secondary); }
+    .tip {
+      position: absolute; top: -27px; left: 50%; transform: translateX(-50%); white-space: nowrap;
+      padding: 3px 9px; border-radius: 999px; background: var(--play-selected-ink); color: #fff;
+      font-size: 11px; font-weight: 800; z-index: 3;
+    }
+    .tip::after {
+      content: ""; position: absolute; left: 50%; bottom: -4px; width: 8px; height: 8px; margin-left: -4px;
+      background: var(--play-selected-ink); transform: rotate(45deg); border-radius: 1px;
+    }
+    .ledge {
+      display: flex; align-items: center; justify-content: center; width: 100%; height: 52px; margin-top: 18px;
+      border-radius: 16px; background: var(--play-cta); color: var(--play-cta-ink); font-size: 16px; font-weight: 800;
+      box-shadow: 0 4px 0 var(--play-cta-edge); font-family: inherit;
+    }
+    .text-link { display: block; margin: 12px 0 14px; text-align: center; font-size: 14px; font-weight: 800; color: var(--play-selected-ink); }
+    .week-band {
+      display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 10px; padding: 12px 16px 12px;
+      border-top: 1px solid var(--play-line); background: color-mix(in srgb, var(--play-track) 35%, var(--surface));
+    }
+    .days { list-style: none; margin: 0; padding: 0; display: flex; gap: 3px; }
+    .day { width: 28px; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+    .dot { position: relative; width: 24px; height: 24px; border-radius: 50%; display: grid; place-items: center; }
+    .dot.active { background: var(--streak-soft); }
+    .dot.today { box-shadow: 0 0 0 2px var(--streak); }
+    .dot img { width: 14px; height: 14px; display: block; }
+    .dot img.idle { opacity: 0.3; filter: grayscale(1) contrast(0.75); }
+    .wd { font-size: 11px; font-weight: 800; color: var(--secondary); line-height: 1.2; }
+    .wd.today { color: var(--streak); }
+    .streak { margin-left: auto; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; text-align: right; white-space: nowrap; }
+    .streak-count { display: flex; align-items: center; gap: 5px; font-size: 16px; font-weight: 900; }
+    .streak-count img { width: 18px; height: 18px; }
+    .num-wrap { position: relative; display: inline-block; height: 21px; overflow: hidden; vertical-align: bottom; }
+    .num-wrap span { display: block; line-height: 21px; }
+    .num-wrap .next { position: absolute; left: 0; top: 0; }
+    .goal { font-size: 12px; font-weight: 700; color: var(--secondary); }
+
+    .quests { top: 632px; padding: 16px 18px; }
+    .quests-head { display: flex; justify-content: space-between; align-items: center; font-size: 16px; font-weight: 800; }
+    .quests-head span { font-size: 13px; font-weight: 800; color: var(--secondary); }
+    .q-row { display: flex; align-items: center; gap: 12px; margin-top: 14px; }
+    .q-well { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; color: var(--main); }
+    .q-title { font-size: 14px; font-weight: 800; }
+    .q-meta { font-size: 13px; font-weight: 600; color: var(--secondary); }
+
+    .tabbar {
+      position: absolute; left: 20px; right: 20px; bottom: 30px; height: 62px; border-radius: 31px;
+      background: var(--tabbar); box-shadow: 0 10px 30px -10px rgba(37, 73, 150, 0.35), 0 0 0 1px var(--border);
+      display: flex; align-items: center; justify-content: space-around; padding: 0 14px; color: var(--secondary);
+    }
+    .tabbar .on { color: var(--main); }
+    .fab {
+      width: 58px; height: 58px; margin-top: -26px; border-radius: 50%; background: var(--fab); color: var(--fab-ink);
+      display: grid; place-items: center; box-shadow: 0 10px 20px -8px rgba(17, 17, 17, 0.5);
+    }
+
+    .menu {
+      position: absolute; width: 228px; border-radius: 16px; background: var(--surface); box-shadow: var(--shadow-overlay);
+      border: 1px solid var(--play-line); padding: 6px; transform-origin: 50% 0; z-index: 8;
+    }
+    .menu-item { display: flex; align-items: center; gap: 10px; height: 44px; padding: 0 12px; border-radius: 10px; font-size: 15px; font-weight: 800; color: var(--main); }
+    .menu-item svg { color: var(--secondary); }
+
+    /* ── Status bar ────────────────────────────────────────────────────── */
+    #statusbar {
+      position: absolute; left: 0; right: 0; top: 0; height: 50px; z-index: 50; display: flex; align-items: center;
+      justify-content: space-between; padding: 10px 30px 0 40px; font-size: 16px; font-weight: 800;
+    }
+    #statusbar .icons { display: flex; align-items: center; gap: 6px; }
+
+    /* ── Scene ─────────────────────────────────────────────────────────── */
+    .layer { position: absolute; inset: 0; pointer-events: none; }
+    #dusk { z-index: 10; overflow: hidden; }
+    #duskSheet {
+      position: absolute; left: 0; top: 0; width: 100%; height: 160%;
+      background: linear-gradient(180deg,
+        #050920 0%, #0a1033 20%, #121b4b 40%, #1b2762 54%, #24317a 62.5%,
+        rgba(36, 49, 122, 0.82) 70%, rgba(36, 49, 122, 0.35) 84%, rgba(36, 49, 122, 0) 100%);
+    }
+    #duskGlow {
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(ellipse 130% 42% at 50% 104%, rgba(255, 168, 112, 0.42), rgba(255, 168, 112, 0) 72%),
+        radial-gradient(ellipse 70% 30% at 50% 36%, rgba(143, 184, 255, 0.16), rgba(143, 184, 255, 0) 72%);
+    }
+    #stars { z-index: 11; }
+    #cam { z-index: 12; }
+    #halo { position: absolute; width: 560px; height: 560px; border-radius: 50%; }
+    #fxBack, #fxFront { position: absolute; left: 0; top: 0; width: 390px; height: 844px; }
+    #badges { position: absolute; inset: 0; }
+
+    .badge { position: absolute; left: 0; top: 0; }
+    .badge-tf { position: absolute; inset: 0; will-change: transform; }
+    .badge-persp { position: absolute; inset: 0; perspective: 900px; }
+    .badge-rot { position: absolute; inset: 0; transform-style: preserve-3d; }
+    .face { position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden; }
+    .face.front { transform: rotateY(180deg); }
+    .face img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+    .masked { position: absolute; inset: 0; mask-repeat: no-repeat; mask-position: center; -webkit-mask-repeat: no-repeat; -webkit-mask-position: center; }
+    .back-rim { background: linear-gradient(160deg, #fcf3e6 0%, #efdcc6 46%, #d9bfa1 100%); }
+    .back-border { background: linear-gradient(160deg, #6f97ef 0%, #3f63c9 100%); }
+    .back-inner { background: radial-gradient(120% 95% at 32% 18%, #3d5fcf 0%, #263a92 38%, #172358 72%, #111a44 100%); }
+    .back-pattern {
+      opacity: 0.55;
+      background-image:
+        radial-gradient(circle at 30% 40%, rgba(255, 244, 214, 0.75) 0 0.9px, transparent 1.4px),
+        radial-gradient(circle at 70% 80%, rgba(190, 214, 255, 0.6) 0 0.7px, transparent 1.2px);
+      background-size: 26px 26px, 19px 19px;
+    }
+    .back-puhu-glow { position: absolute; inset: 0; }
+    .back-puhu { background: linear-gradient(180deg, #fff6dc 0%, #ffd98f 55%, #ffc46b 100%); }
+    .sheen { position: absolute; inset: 0; background: linear-gradient(115deg, rgba(255, 255, 255, 0) 30%, rgba(255, 255, 255, 0.9) 50%, rgba(255, 255, 255, 0) 70%); }
+    .glint-band { position: absolute; top: -10%; bottom: -10%; width: 34%; transform: skewX(-14deg); background: linear-gradient(90deg, rgba(255, 255, 255, 0) 0%, rgba(255, 255, 255, 0.7) 50%, rgba(255, 255, 255, 0) 100%); filter: blur(3px); }
+    .edge { position: absolute; left: 50%; top: 7%; height: 86%; width: 9px; margin-left: -4.5px; border-radius: 4px; transform: rotateY(90deg); background: linear-gradient(180deg, #f6e7d4, #cfb08f); }
+    .badge-label {
+      position: absolute; left: 50%; top: 100%; width: 130px; margin-left: -65px; margin-top: 6px; text-align: center;
+      font-size: 12px; font-weight: 800; color: rgba(236, 241, 255, 0.86); line-height: 1.2;
+    }
+
+    #copy { z-index: 16; }
+    .hint { position: absolute; left: 0; right: 0; text-align: center; font-size: 15px; font-weight: 800; color: rgba(255, 255, 255, 0.86); letter-spacing: 0.005em; }
+    .eyebrow { position: absolute; left: 0; right: 0; text-align: center; font-size: 13px; font-weight: 800; color: #ffd58a; letter-spacing: 0.01em; }
+    .title { position: absolute; left: 24px; right: 24px; text-align: center; font-size: 28px; font-weight: 800; line-height: 1.2; letter-spacing: -0.01em; color: #fff; text-wrap: balance; }
+    .title .w { display: inline-block; margin: 0 0.04em; transform-origin: 50% 70%; }
+    .body { position: absolute; left: 40px; right: 40px; text-align: center; font-size: 15px; font-weight: 600; line-height: 1.55; color: #d9e0f7; text-wrap: balance; }
+    #cta { z-index: 17; }
+    .cta-ledge {
+      position: absolute; left: 28px; right: 28px; height: 56px; border-radius: 16px; display: flex; align-items: center;
+      justify-content: center; background: #55acee; color: #0f2233; font-size: 18px; font-weight: 800; box-shadow: 0 4px 0 #3b8fd0;
+    }
+    #flash { z-index: 18; mix-blend-mode: screen; }
+    #touch { z-index: 40; }
+    .touch { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; }
+    .touch-ring { position: absolute; width: 46px; height: 46px; margin: -23px 0 0 -23px; border-radius: 50%; }
+
+    /* Storyboard overlay (only in ?storyboard frames). */
+    #sbLabel { position: absolute; left: 56px; top: 44px; font-size: 22px; font-weight: 900; color: #111; display: none; }
+    #sbLabel small { display: block; font-size: 15px; font-weight: 700; color: #5d6577; }
+  </style>
+</head>
+<body>
+  <div id="stage">
+    <div class="stage-blob cyan"></div>
+    <div class="stage-blob pink"></div>
+    <div class="stage-blob blue"></div>
+    <div id="sbLabel"></div>
+    <div id="phone">
+      <div class="phone-btn l1"></div>
+      <div class="phone-btn l2"></div>
+      <div class="phone-btn l3"></div>
+      <div class="phone-btn r1"></div>
+      <div id="screen">
+        <div id="app"></div>
+        <div id="dusk" class="layer"><div id="duskSheet"></div><div id="duskGlow"></div></div>
+        <canvas id="stars" class="layer" width="390" height="844"></canvas>
+        <div id="cam" class="layer">
+          <div id="halo"></div>
+          <canvas id="fxBack" width="390" height="844"></canvas>
+          <div id="badges"></div>
+          <canvas id="fxFront" width="390" height="844"></canvas>
+          <div id="copy" class="layer"></div>
+        </div>
+        <div id="cta" class="layer"></div>
+        <div id="flash" class="layer"></div>
+        <div id="statusbar"></div>
+        <div id="touch" class="layer"></div>
+        <div id="homebar"></div>
+      </div>
+      <div id="island"></div>
+    </div>
+    <div class="stage-caption"><div class="name">Işık Yandı</div><div class="what" id="caption"></div></div>
+    <div class="stage-fps">60 fps</div>
+  </div>
+  <script type="module" src="./scene.mjs"></script>
+</body>
+</html>
