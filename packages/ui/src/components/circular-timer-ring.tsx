@@ -16,7 +16,7 @@ import {
   timerTickLine,
 } from "./circular-timer-ring.utils.js";
 
-export type CircularTimerRingMode = "setup" | "countdown";
+export type CircularTimerRingMode = "setup" | "countdown" | "stopwatch";
 
 export interface CircularTimerRingProps {
   mode: CircularTimerRingMode;
@@ -24,6 +24,8 @@ export interface CircularTimerRingProps {
   minutes: number;
   /** Remaining seconds — required in countdown mode. */
   secondsLeft?: number;
+  elapsedSeconds?: number;
+  secondaryLabel?: string;
   min?: number;
   max?: number;
   step?: number;
@@ -47,6 +49,8 @@ export function CircularTimerRing({
   mode,
   minutes,
   secondsLeft = 0,
+  elapsedSeconds = 0,
+  secondaryLabel,
   min = DEFAULT_TIMER_MIN,
   max = DEFAULT_TIMER_MAX,
   step = DEFAULT_TIMER_STEP,
@@ -67,9 +71,11 @@ export function CircularTimerRing({
   const circumference = 2 * Math.PI * radius;
 
   const progress =
-    mode === "countdown" && minutes > 0
-      ? secondsLeft / (minutes * 60)
-      : (minutes - min) / (max - min);
+    mode === "stopwatch"
+      ? 0
+      : mode === "countdown" && minutes > 0
+        ? secondsLeft / (minutes * 60)
+        : (minutes - min) / (max - min);
 
   const dashOffset = circumference * (1 - Math.min(1, Math.max(0, progress)));
   const displayAngle =
@@ -139,15 +145,24 @@ export function CircularTimerRing({
   };
 
   const centerPrimary =
-    mode === "countdown" ? formatCountdown(secondsLeft) : String(minutes);
-  const centerSecondary = mode === "countdown" ? "kaldı" : "dk";
+    mode === "stopwatch"
+      ? formatCountdown(elapsedSeconds)
+      : mode === "countdown"
+        ? formatCountdown(secondsLeft)
+        : String(minutes);
+  const centerSecondary =
+    secondaryLabel ?? (mode === "countdown" ? "kaldı" : "dk");
 
   return (
     <div className={`flex flex-col items-center gap-3 ${className ?? ""}`}>
       <div
         ref={rootRef}
         className={`relative select-none rounded-full outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${interactive ? "cursor-grab touch-none active:cursor-grabbing" : ""}`}
-        style={{ width: size, height: size, WebkitTapHighlightColor: "transparent" }}
+        style={{
+          width: size,
+          height: size,
+          WebkitTapHighlightColor: "transparent",
+        }}
         role={interactive ? "slider" : undefined}
         aria-label={interactive ? "Odak süresi" : undefined}
         aria-labelledby={interactive ? labelId : undefined}

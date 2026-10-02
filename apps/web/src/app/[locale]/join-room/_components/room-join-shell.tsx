@@ -10,7 +10,7 @@ import { useAuth } from "@/lib/auth-context";
 import { rememberPendingInvite } from "@/lib/pending-invite";
 import { hasCompletedOnboarding } from "@/lib/post-auth-destination";
 import { ROOM_CURTAIN_MS } from "@/lib/study-room-theme";
-import { joinStudyRoom, studyRoomJoinFailure } from "@/lib/study-rooms";
+import { joinStudyRoom, studyRoomJoinFailure, type StudyRoomJoinFailure } from "@/lib/study-rooms";
 import { RoomNoticeCard } from "../../(app)/study-session/_components/room-notice-card";
 
 /** The `?kod=` value a shared link carries. English `code` is accepted too, for the EN route. */
@@ -20,7 +20,7 @@ function readCode(params: URLSearchParams): string | null {
   return value ? value : null;
 }
 
-type FailureReason = "no_code" | "already_member" | "invalid" | "error";
+type FailureReason = "no_code" | StudyRoomJoinFailure;
 
 /**
  * Redeems an invite link. Four paths, and the last one is the reason this page exists:

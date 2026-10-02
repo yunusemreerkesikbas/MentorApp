@@ -193,11 +193,16 @@ describe("SessionService.startFromAiCoach", () => {
     expect(result.id).toBe(existing.id);
   });
 
-  it("creates one default session for an owned plan task", async () => {
+  it.each([
+    { durationMinutes: 80, startTime: null, endTime: null, planned: 80, preset: "custom" },
+    { durationMinutes: null, startTime: "09:00", endTime: "09:41", planned: 41, preset: "custom" },
+    { durationMinutes: null, startTime: null, endTime: null, planned: null, preset: "stopwatch" },
+  ])("creates the resolved session $preset / $planned", async ({ durationMinutes, startTime, endTime, planned, preset }) => {
     const acquireUserLock = vi.fn(async () => undefined);
     const findOpenByPlanTask = vi.fn(async () => undefined);
     const findById = vi.fn(async () => ({
       id: planTaskId,
+      durationMinutes, startTime, endTime,
       subject: "Türkçe",
     }));
     const create = vi.fn(async (_tx, data) => ({
@@ -223,12 +228,14 @@ describe("SessionService.startFromAiCoach", () => {
     expect(create).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({
-        preset: "25_5",
+        preset,
+        plannedFocusMinutes: planned,
         subject: "Türkçe",
         planTaskId,
       }),
     );
     expect(result.id).toBe("session-created");
+    expect(result.plannedFocusMinutes).toBe(planned);
   });
 });
 

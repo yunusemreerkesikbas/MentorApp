@@ -194,7 +194,7 @@ export function parsePlanAdaptation(
   rhythm?: PlanAdaptationRhythm,
   grounding?: PlanAdaptationGrounding,
 ): PlanAdaptationParseResult {
-  const personalized = source === "PLAN" && Boolean(rhythm?.minutesPerDay && rhythm.studyDates?.length);
+  const personalized = source === "PLAN" && Boolean(rhythm?.minutesPerDay);
   const reasonByRef = new Map(
     (grounding?.evidence ?? []).map((item) => [item.ref, item.summary]),
   );
@@ -352,7 +352,12 @@ export function parsePlanAdaptation(
   }
 
   if (personalized && rhythm?.minutesPerDay) {
-    const dates = (rhythm.studyDates?.length ? rhythm.studyDates : planWindow(todayIso))
+    const availableDates = rhythm.studyDates?.length
+      ? rhythm.studyDates
+      : planWindow(todayIso).sort((a, b) =>
+          (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) || a.localeCompare(b),
+        );
+    const dates = availableDates
       .filter(isOpenDay)
       .slice(0, requestedDays ?? PLAN_WINDOW_DAYS);
     const additions = fillPersonalizedPlanBlocks({
@@ -415,7 +420,7 @@ export function parsePlanAdaptation(
     // A reassigned subject would contradict the model's title ("Matematik" filed under Tarih).
     const title =
       focusSubjects.length > 0 && !matched
-        ? studyBlockTitle(subject, rhythm?.minutesPerDay, rhythm?.locale)
+        ? studyBlockTitle(subject, rhythm?.locale)
         : modelTitle;
     const key = `${taskDate}:${normalizedTitle(title)}`;
     if ((titleCounts.get(key) ?? 0) > 0) continue;
@@ -447,7 +452,6 @@ export function parsePlanAdaptation(
           pendingByDate,
           titleCounts,
           focusSubjects,
-          rhythm?.minutesPerDay,
           rhythm?.locale,
           isOpenDay,
           grounding,
@@ -464,7 +468,6 @@ function fillStudyDays(
   pendingByDate: Map<string, number>,
   titleCounts: Map<string, number>,
   focusSubjects: readonly string[],
-  minutesPerDay: number | undefined,
   locale: PromptLocale | undefined,
   isOpenDay: (date: string) => boolean,
   grounding?: PlanAdaptationGrounding,
@@ -498,7 +501,7 @@ function fillStudyDays(
     const subject = fillSubjects.length
       ? fillSubjects[synthetic % fillSubjects.length]!
       : null;
-    const title = studyBlockTitle(subject, minutesPerDay, locale);
+    const title = studyBlockTitle(subject, locale);
     const key = `${date}:${normalizedTitle(title)}`;
     if ((titleCounts.get(key) ?? 0) > 0) continue;
     synthetic += 1;
@@ -517,14 +520,10 @@ function fillStudyDays(
 
 function studyBlockTitle(
   subject: string | null,
-  minutesPerDay: number | undefined,
   locale: PromptLocale = "tr",
 ): string {
   const en = locale === "en";
-  const unit = en ? "min" : "dk";
-  if (subject && minutesPerDay) return `${subject} · ${minutesPerDay} ${unit}`;
   if (subject) return en ? `${subject} study` : `${subject} çalışması`;
-  if (minutesPerDay) return en ? `${minutesPerDay} min study` : `${minutesPerDay} dk çalışma`;
   return en ? "Study block" : "Çalışma bloğu";
 }
 

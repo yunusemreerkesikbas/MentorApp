@@ -130,4 +130,13 @@ describe("seatPositions", () => {
   it("is deterministic", () => {
     expect(seatPositions(5)).toEqual(seatPositions(5));
   });
+
+  it("keeps a taller stage's steps short in percentage, even in pixels", () => {
+    const round = { radiusXPct: 30, radiusYPct: 30 };
+    const even = seatPositions(6, round);
+    const tall = seatPositions(6, { ...round, yScale: 2 });
+    // The sides of a tall stage make up more of the walk, so the first step
+    // reaches further down before it has spent its share of the edge.
+    expect(tall[1]!.topPct).toBeGreaterThan(even[1]!.topPct + 1);
+  });
 });

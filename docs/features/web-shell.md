@@ -1077,3 +1077,27 @@ eklendi.
   okuyamaz ve kural hiç derlenmez. Bu durakta `backdrop:bg-[var(--color-scrim)]` böyle kayboldu ve
   pencereler karartmasız açıldı; önüne boşluk koy. `e2e/study-session.spec.ts` artık `::backdrop`
   rengini kontrol ediyor. İlgili: `packages/ui/src/components/modal.tsx`.
+
+- **2026-10-01 — Bare panel rail icons and compact journey progress.** Membership perks, daily
+  quest rows and the vision heading keep their 40 px alignment slots but remove the coloured icon
+  wells; Lucide glyphs stay 20 px at stroke 1.75 with existing semantic inks. Usage is unchanged.
+  `JourneyLevelCompact` selects `appearance="play"` on `JourneyLevelProgressBar`: a 12 px blue pill
+  with the onboarding highlight, now backed by the global `--play-cta-shine` token. This applies
+  to panel, profile balance and community summary; detailed level bars retain the default look.
+  Gotchas: fill still uses backend `progress.percent`, no previous-step animation; chest rows,
+  provenance chips, badges and buttons keep their surfaces. Related: dashboard
+  `_components/{membership-card,daily-quests-card,vision-board-card}.tsx`,
+  `components/journey-levels/{journey-level-compact,journey-level-progress}.tsx`,
+  `packages/ui/src/theme.css`, `DESIGN.md`, `e2e/panel.spec.ts`.
+
+- **2026-10-01 — Onboarding-style daily quest progress.** Daily quest rows now select
+  `ProgressLine appearance="play"`: a 12 px rounded track, upper shine stripe and 300 ms ease-out
+  fill transition. Usage and accessible progress values stay the same; completed quests retain
+  success green. Other `ProgressLine` callers keep the default 8 px line. Related:
+  `components/panel/progress-line.tsx`, `dashboard/_components/daily-quests-card.tsx`,
+  `e2e/panel.spec.ts`, `DESIGN.md`.
+
+- **2026-10-02 — Vision note provenance matches CompanionBubble.** The vision card's coach label
+  is now a plain blue, bold caption with the same 14 px premium Sparkles glyph and spacing as
+  `CompanionBubble`, replacing the bordered Chip. Usage and premium gating are unchanged. Related:
+  `dashboard/_components/vision-board-card.tsx`, `components/panel/companion-bubble.tsx`.

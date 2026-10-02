@@ -10,6 +10,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { LEDGE, LEDGE_FILLED, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
 import { Link, useRouter } from "@/i18n/navigation";
+import { useAuth } from "@/lib/auth-context";
 import {
   closeStudyRoom,
   getStudyRoom,
@@ -50,6 +51,7 @@ type State =
  */
 export function RoomShell({ roomId }: { roomId: string }) {
   const t = useTranslations("session_room");
+  const { user } = useAuth();
   const reduceMotion = useReducedMotion();
   const router = useRouter();
   const dialog = useMentorDialog();
@@ -194,6 +196,7 @@ export function RoomShell({ roomId }: { roomId: string }) {
 
   const { room } = state;
   const isOwner = room.role === "OWNER";
+  const viewerSeated = room.seats.some((seat) => seat.userId === user?.id && seat.isSeated);
 
   /**
    * Right there under the name, not behind a menu: the theme is the thing about a room a
@@ -300,7 +303,7 @@ export function RoomShell({ roomId }: { roomId: string }) {
 
       {/* --- the room --------------------------------------------------------- */}
       {/* Bottom padding reserves the pinned CTA's strip so a low seat never lands under it. */}
-      <div className="relative z-0 flex flex-1 items-center justify-center px-5 pt-4 pb-28 lg:pb-32">
+      <div className="relative z-0 flex min-h-0 flex-1 items-center justify-center px-5 pt-4 pb-28 lg:pb-32">
         <RoomSeats
           seats={room.seats}
           capacity={room.capacity}
@@ -341,7 +344,7 @@ export function RoomShell({ roomId }: { roomId: string }) {
           className="flex min-h-[3.25rem] w-full max-w-sm items-center justify-center rounded-full px-6 text-base font-bold shadow-[var(--shadow-card)] transition-transform duration-200 hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--room-ink)] motion-reduce:transition-none motion-reduce:hover:scale-100"
           style={{ backgroundColor: "var(--room-cta)", color: "var(--room-cta-ink)" }}
         >
-          {t("start_here")}
+          {t(viewerSeated ? "seated_here" : "start_here")}
         </Link>
       </motion.div>
 

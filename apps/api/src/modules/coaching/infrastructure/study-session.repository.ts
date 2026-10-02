@@ -1,3 +1,4 @@
+import { SESSION_ACTUAL_SECONDS_MAX } from "@mentor/types";
 import { Injectable } from "@nestjs/common";
 import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -22,11 +23,12 @@ const RECENT_SUMMARY_SCAN_ROWS = 20;
  * orphaned row (tab died) stops reading as active once its planned time elapses instead of
  * lingering for hours. Preset lengths are the domain defaults when `plannedFocusMinutes` is null.
  */
+// ponytail: no session heartbeat yet; orphaned stopwatches expire after the existing 24-hour resume window.
 function runningNow(graceMinutes: number) {
   return and(
     eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
     isNull(studySessions.endedAt),
-    sql`now() < ${studySessions.startedAt} + (coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes}) * interval '1 minute'`,
+    sql`now() < ${studySessions.startedAt} + (case when ${studySessions.preset} = 'stopwatch' then ${SESSION_ACTUAL_SECONDS_MAX / 60} else coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes} end) * interval '1 minute'`,
   );
 }
 
@@ -119,7 +121,7 @@ export class StudySessionRepository {
           eq(studySessions.userId, userId),
           eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
           isNull(studySessions.endedAt),
-          sql`${studySessions.startedAt} < now() - (coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes}) * interval '1 minute'`,
+          sql`${studySessions.startedAt} < now() - (case when ${studySessions.preset} = 'stopwatch' then ${SESSION_ACTUAL_SECONDS_MAX / 60} else coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes} end) * interval '1 minute'`,
         ),
       );
   }

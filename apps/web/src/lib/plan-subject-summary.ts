@@ -7,6 +7,7 @@ export interface SummarizableTask {
   status: string;
   startTime: string | null;
   endTime: string | null;
+  durationMinutes?: number | null;
 }
 
 export interface PlanSubjectSummary {
@@ -15,7 +16,7 @@ export interface PlanSubjectSummary {
   percent: number;
   /** Distinct days the subject appears on — answers "did I cram it into one day?". */
   dayCount: number;
-  /** Sum of timed durations; null when nothing in the month has a time. */
+  /** Explicit study durations first, then legacy calendar durations; null when neither exists. */
   plannedMinutes: number | null;
   /** Nearest task on or after today, within the loaded month; null when none is left. */
   next: { date: string; title: string } | null;
@@ -50,7 +51,10 @@ export function summarizeSubjectMonth(
     for (const task of matches) {
       total += 1;
       if (task.status === "DONE") done += 1;
-      if (task.startTime) {
+      if (task.durationMinutes != null) {
+        hasTimed = true;
+        plannedMinutes += task.durationMinutes;
+      } else if (task.startTime) {
         hasTimed = true;
         // Open-ended items are drawn as one hour on the board — count them the same way so the
         // number matches what the user actually sees.

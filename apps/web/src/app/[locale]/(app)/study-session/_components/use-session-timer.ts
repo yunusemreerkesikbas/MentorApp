@@ -2,7 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
-import type { StudySessionDto } from "@mentor/types";
+import {
+  SESSION_ACTUAL_SECONDS_MAX,
+  type SessionPresetId,
+  type StudySessionDto,
+} from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import {
   finalizeStudySession,
@@ -11,11 +15,10 @@ import {
 } from "@/lib/study-sessions";
 import {
   clearActiveSession,
-  readActiveSession,
-  resolveResume,
   writeActiveSession,
 } from "@/lib/session-persistence";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { useSessionRestoration } from "./use-session-restoration";
 import { playChime, unlockChime } from "./session-chime";
 
 export type SessionPhase = "idle" | "focus" | "break" | "done";
@@ -26,7 +29,7 @@ const CUSTOM_BREAK_MINUTES = 5;
 export interface UseSessionTimerOptions {
   initialMinutes?: number;
   initialBreakMinutes?: number;
-  initialPreset?: "25_5" | "50_10" | "custom";
+  initialPreset?: SessionPresetId;
   /** Optional subject carried from a plan task deep-link. */
   subject?: string | null;
   /** Optional plan task id from a plan → seans deep-link (persisted on start). */
@@ -51,6 +54,8 @@ export interface UseSessionTimerResult {
     minutes: number,
     breakMinutes: number,
   ) => void;
+  isStopwatch: boolean;
+  selectStopwatch: () => void;
   secondsLeft: number;
   focusElapsed: number;
   isPaused: boolean;
@@ -90,6 +95,8 @@ export function useSessionTimer(
   const tCommon = useTranslations("common");
   const { error: showErrorToast } = useMentorToast();
 
+  const [isStopwatch, setIsStopwatch] = useState(initialPreset === "stopwatch");
+  const stopwatchStartedAtRef = useRef(0);
   const [phase, setPhase] = useState<SessionPhase>("idle");
   const [focusMinutes, setFocusMinutesState] = useState(initialMinutes);
   const [breakMinutes, setBreakMinutesState] = useState(initialBreakMinutes);
@@ -103,7 +110,7 @@ export function useSessionTimer(
   const pausedAtRef = useRef(0);
   const focusElapsedRef = useRef(0);
   const advanceRef = useRef(false);
-  const selectedPresetRef = useRef<"25_5" | "50_10" | "custom">(initialPreset);
+  const selectedPresetRef = useRef<SessionPresetId>(initialPreset);
   const focusMinutesRef = useRef(initialMinutes);
   const breakMinutesRef = useRef(initialBreakMinutes);
   const sessionRef = useRef<StudySessionDto | null>(null);
@@ -112,6 +119,7 @@ export function useSessionTimer(
     setFocusMinutesState(minutes);
     focusMinutesRef.current = minutes;
     selectedPresetRef.current = "custom";
+    setIsStopwatch(false);
     setBreakMinutesState(CUSTOM_BREAK_MINUTES);
     breakMinutesRef.current = CUSTOM_BREAK_MINUTES;
   }, []);
@@ -119,6 +127,7 @@ export function useSessionTimer(
   const selectPreset = useCallback(
     (presetId: "25_5" | "50_10", minutes: number, breakLen: number) => {
       selectedPresetRef.current = presetId;
+      setIsStopwatch(false);
       setFocusMinutesState(minutes);
       focusMinutesRef.current = minutes;
       setBreakMinutesState(breakLen);
@@ -126,6 +135,13 @@ export function useSessionTimer(
     },
     [],
   );
+
+  const selectStopwatch = useCallback(() => {
+    selectedPresetRef.current = "stopwatch";
+    setIsStopwatch(true);
+    setBreakMinutesState(0);
+    breakMinutesRef.current = 0;
+  }, []);
 
   const showSessionError = useCallback(
     (err: unknown) => {
@@ -144,6 +160,7 @@ export function useSessionTimer(
   );
 
   const beginPhase = useCallback((next: "focus" | "break", seconds: number) => {
+    stopwatchStartedAtRef.current = Date.now();
     phaseEndsAtRef.current = Date.now() + seconds * 1000;
     advanceRef.current = false;
     setSecondsLeft(seconds);
@@ -152,75 +169,52 @@ export function useSessionTimer(
   }, []);
 
   const togglePause = useCallback(() => {
-    setIsPaused((wasPaused) => {
-      if (wasPaused) {
-        const pausedFor = Date.now() - pausedAtRef.current;
-        phaseEndsAtRef.current += pausedFor;
-      } else {
-        pausedAtRef.current = Date.now();
+    const now = Date.now();
+    if (isPaused) {
+      const pausedFor = now - pausedAtRef.current;
+      phaseEndsAtRef.current += pausedFor;
+      stopwatchStartedAtRef.current += pausedFor;
+    } else {
+      pausedAtRef.current = now;
+      if (selectedPresetRef.current === "stopwatch") {
+        const elapsed = Math.max(
+          0,
+          Math.floor((now - stopwatchStartedAtRef.current) / 1000),
+        );
+        focusElapsedRef.current = elapsed;
+        setFocusElapsed(elapsed);
       }
-      return !wasPaused;
-    });
-  }, []);
+    }
+    setIsPaused(!isPaused);
+  }, [isPaused]);
 
-  // Resume a persisted session once on mount (reload / in-app navigation).
-  const restoredRef = useRef(false);
-  useEffect(() => {
-    if (restoredRef.current) return;
-    const hydrationId = window.setTimeout(() => {
-      if (restoredRef.current) return;
-      restoredRef.current = true;
-      const record = readActiveSession();
-      if (!record) {
-        if (!existingSessionId || !autoStartExisting) return;
-        const stub = { id: existingSessionId } as StudySessionDto;
-        setSession(stub);
-        sessionRef.current = stub;
-        focusElapsedRef.current = 0;
-        setFocusElapsed(0);
-        beginPhase("focus", presetSeconds(focusMinutesRef.current));
-        return;
-      }
-      const resolution = resolveResume(record, Date.now());
-      if (resolution.kind === "discard" || resolution.kind === "done") {
-        clearActiveSession();
-        return;
-      }
+  useSessionRestoration({
+    existingSessionId,
+    autoStartExisting,
+    onBusy: setBusy,
+    onError: showSessionError,
+    onExisting: (id) => {
+      const stub = { id } as StudySessionDto;
+      setSession(stub);
+      sessionRef.current = stub;
+      beginPhase("focus", presetSeconds(focusMinutesRef.current));
+    },
+    onRecord: (record) => {
       setFocusMinutesState(record.focusMinutes);
       focusMinutesRef.current = record.focusMinutes;
       setBreakMinutesState(record.breakMinutes);
       breakMinutesRef.current = record.breakMinutes;
       selectedPresetRef.current = record.preset;
-      if (resolution.kind === "finalize-expired") {
-        setBusy(true);
-        finalizeStudySession(record.sessionId, {
-          status: "COMPLETED",
-          actualFocusSeconds: resolution.creditSeconds,
-        })
-          .then((finalized) => {
-            // Clear only once the credit is safely persisted (or provably gone, below) —
-            // a transient failure keeps the record so the next mount retries.
-            clearActiveSession();
-            setSession(finalized);
-            sessionRef.current = finalized;
-            focusElapsedRef.current = resolution.creditSeconds;
-            setFocusElapsed(resolution.creditSeconds);
-            setPhase("done");
-          })
-          .catch((err: unknown) => {
-            // Already closed elsewhere (stale-cleanup / another device) — stay idle.
-            if (
-              err instanceof ApiClientError &&
-              (err.status === 409 || err.status === 404)
-            ) {
-              clearActiveSession();
-              return;
-            }
-            showSessionError(err);
-          })
-          .finally(() => setBusy(false));
-        return;
-      }
+      setIsStopwatch(record.preset === "stopwatch");
+    },
+    onFinalized: (finalized) => {
+      setSession(finalized);
+      sessionRef.current = finalized;
+      focusElapsedRef.current = finalized.actualFocusSeconds;
+      setFocusElapsed(finalized.actualFocusSeconds);
+      setPhase("done");
+    },
+    onResume: (record, resolution) => {
       const stub = { id: record.sessionId } as StudySessionDto;
       setSession(stub);
       sessionRef.current = stub;
@@ -229,6 +223,15 @@ export function useSessionTimer(
       if (record.isPaused && record.pausedAt !== null) {
         pausedAtRef.current = record.pausedAt;
         setIsPaused(true);
+      }
+      if (resolution.kind === "resume-stopwatch") {
+        stopwatchStartedAtRef.current =
+          (record.isPaused ? (record.pausedAt ?? Date.now()) : Date.now()) -
+          resolution.elapsedSeconds * 1000;
+        focusElapsedRef.current = resolution.elapsedSeconds;
+        setFocusElapsed(resolution.elapsedSeconds);
+        setPhase("focus");
+        return;
       }
       setSecondsLeft(resolution.secondsLeft);
       if (resolution.kind === "resume-focus") {
@@ -242,9 +245,8 @@ export function useSessionTimer(
         setFocusElapsed(record.focusElapsed);
         setPhase("break");
       }
-    }, 0);
-    return () => window.clearTimeout(hydrationId);
-  }, [autoStartExisting, beginPhase, existingSessionId, showSessionError]);
+    },
+  });
 
   // Persist the running session on every tick / pause / phase change so a
   // reload (or navigating away) can resume it.
@@ -267,11 +269,28 @@ export function useSessionTimer(
       focusElapsed: focusElapsedRef.current,
       savedAt: Date.now(),
     });
-  }, [phase, isPaused, secondsLeft, subject, planTaskId, planTaskTitle]);
+  }, [
+    phase,
+    isPaused,
+    secondsLeft,
+    focusElapsed,
+    subject,
+    planTaskId,
+    planTaskTitle,
+  ]);
 
   useEffect(() => {
     if ((phase !== "focus" && phase !== "break") || isPaused) return;
     const id = setInterval(() => {
+      if (phase === "focus" && selectedPresetRef.current === "stopwatch") {
+        const elapsed = Math.max(
+          0,
+          Math.floor((Date.now() - stopwatchStartedAtRef.current) / 1000),
+        );
+        focusElapsedRef.current = elapsed;
+        setFocusElapsed(elapsed);
+        return;
+      }
       const remaining = Math.max(
         0,
         Math.round((phaseEndsAtRef.current - Date.now()) / 1000),
@@ -360,10 +379,25 @@ export function useSessionTimer(
       try {
         const finalized = await finalizeStudySession(session.id, {
           status,
-          actualFocusSeconds: focusElapsedRef.current,
+          actualFocusSeconds:
+            selectedPresetRef.current === "stopwatch"
+              ? Math.min(
+                  SESSION_ACTUAL_SECONDS_MAX,
+                  Math.max(
+                    0,
+                    Math.floor(
+                      ((isPaused ? pausedAtRef.current : Date.now()) -
+                        stopwatchStartedAtRef.current) /
+                        1000,
+                    ),
+                  ),
+                )
+              : focusElapsedRef.current,
         });
         setSession(finalized);
         sessionRef.current = finalized;
+        focusElapsedRef.current = finalized.actualFocusSeconds;
+        setFocusElapsed(finalized.actualFocusSeconds);
         clearActiveSession();
         setPhase("done");
       } catch (err) {
@@ -372,7 +406,7 @@ export function useSessionTimer(
         setBusy(false);
       }
     },
-    [session, showSessionError],
+    [session, isPaused, showSessionError],
   );
 
   const recordFeedback = useCallback(
@@ -408,6 +442,8 @@ export function useSessionTimer(
   }, []);
 
   return {
+    isStopwatch,
+    selectStopwatch,
     phase,
     focusMinutes,
     breakMinutes,

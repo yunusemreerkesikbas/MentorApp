@@ -17,7 +17,7 @@ export type MentorshipTaskVisibleSignature = Pick<
   | "startTime"
   | "endTime"
   | "coachNote"
->;
+> & { durationMinutes?: number | null };
 
 const scopePredicate = (scopes: MentorshipTaskScope[]) =>
   or(
@@ -50,6 +50,9 @@ const visibleSignaturePredicate = (
     nullableTextPredicate(planTasks.startTime, signature.startTime),
     nullableTextPredicate(planTasks.endTime, signature.endTime),
     nullableTextPredicate(planTasks.coachNote, signature.coachNote),
+    signature.durationMinutes === undefined ? undefined
+      : signature.durationMinutes === null ? isNull(planTasks.durationMinutes)
+      : eq(planTasks.durationMinutes, signature.durationMinutes),
   );
 
 export function listOwnedCoachTasks(

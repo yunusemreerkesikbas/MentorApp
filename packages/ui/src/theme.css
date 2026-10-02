@@ -129,6 +129,8 @@ html {
    * `--color-btn` stays for nav pills, not for `@mentor/ui` Button.
    */
   --play-cta: #55acee;
+  /** Highlight stripe shared by onboarding and compact journey progress. */
+  --play-cta-shine: rgba(255, 255, 255, 0.35);
   --play-cta-ink: #0f2233;
   --play-cta-edge: #3b8fd0;
   --play-line: #e7e7e7;
@@ -293,8 +295,6 @@ html.dark {
  * artwork chrome. CTA tokens live on `html` — `@mentor/ui` Button uses them app-wide.
  */
 .onboarding-play-theme {
-  /** Highlight stripe on the progress fill. */
-  --play-cta-shine: rgba(255, 255, 255, 0.35);
   /* Chrome that sits on artwork, so it keeps one look in both themes. */
   --play-frost: rgba(255, 255, 255, 0.72);
   --play-frost-ink: #111111;

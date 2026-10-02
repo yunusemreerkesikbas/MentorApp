@@ -190,6 +190,8 @@ export function StudySessionShell() {
     focusMinutes,
     breakMinutes,
     secondsLeft,
+    isStopwatch,
+    selectStopwatch,
     focusElapsed,
     isPaused,
     busy,
@@ -214,8 +216,9 @@ export function StudySessionShell() {
   useEffect(() => {
     initialTitleRef.current ??= document.title;
     if (phase === "focus" || phase === "break") {
-      const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
-      const ss = String(secondsLeft % 60).padStart(2, "0");
+      const displaySeconds = isStopwatch ? focusElapsed : secondsLeft;
+      const mm = String(Math.floor(displaySeconds / 60)).padStart(2, "0");
+      const ss = String(displaySeconds % 60).padStart(2, "0");
       const label =
         phase === "break"
           ? t("break_label")
@@ -226,7 +229,7 @@ export function StudySessionShell() {
     } else {
       document.title = initialTitleRef.current;
     }
-  }, [phase, secondsLeft, isPaused, t]);
+  }, [phase, secondsLeft, isStopwatch, focusElapsed, isPaused, t]);
   useEffect(
     () => () => {
       if (initialTitleRef.current) document.title = initialTitleRef.current;
@@ -336,6 +339,9 @@ export function StudySessionShell() {
       focusMinutes={focusMinutes}
       breakMinutes={breakMinutes}
       secondsLeft={secondsLeft}
+      isStopwatch={isStopwatch}
+      focusElapsed={focusElapsed}
+      onStopwatchSelect={() => { selectStopwatch(); setSelectedPresetId("stopwatch"); }}
       presets={presets}
       selectedPresetId={selectedPresetId}
       onMinutesChange={handleMinutesChange}
@@ -373,7 +379,7 @@ export function StudySessionShell() {
           ) : null}
           {planTaskChip}
           {timerRing}
-          <SessionSetupSummary focusMinutes={focusMinutes} breakMinutes={breakMinutes} now={now} />
+          <SessionSetupSummary isStopwatch={isStopwatch} focusMinutes={focusMinutes} breakMinutes={breakMinutes} now={now} />
           {sessionControls}
           {focusingNow !== null ? (
             <p className="flex items-center gap-1.5 text-center text-body-sm font-semibold text-[var(--color-secondary)]">
@@ -435,7 +441,7 @@ export function StudySessionShell() {
         <CompletionOverlay open label={t("done_title")}>
           <SessionDoneState
             focusElapsed={focusElapsed}
-            plannedMinutes={focusMinutes}
+            plannedMinutes={isStopwatch ? focusElapsed / 60 : focusMinutes}
             sessionId={session?.id ?? null}
             subject={subject}
             planTaskTitle={planTaskContext.taskTitle}

@@ -45,10 +45,11 @@ import {
  * slides, because scaling text mid-transition reads as a glitch rather than depth. Both stay on
  * transform and opacity — no `filter`, which would drop the pair off the compositor.
  */
+type BadgeTravel = { x: number; y: number; scale: number };
 const BADGE_TRAVEL_VARIANTS = {
-  enter: (slot: number) => ({ x: slot * 170, opacity: 0, scale: 0.72 }),
-  center: { x: 0, opacity: 1, scale: 1 },
-  exit: (slot: number) => ({ x: slot * -170, opacity: 0, scale: 0.72 }),
+  enter: ({ x, y, scale }: BadgeTravel) => ({ transform: `translate(${x}px, ${y}px) scale(${scale})`, opacity: 0 }),
+  center: { transform: "translate(0px, 0px) scale(1)", opacity: 1 },
+  exit: ({ x, y, scale }: BadgeTravel) => ({ transform: `translate(${-x}px, ${y}px) scale(${scale})`, opacity: 0 }),
 };
 
 const COPY_TRAVEL_VARIANTS = {
@@ -124,7 +125,8 @@ function SpotlightStage(
 
   /* One value owns the rig. The sweep animates it; the pointer writes it; the spring smooths both. */
   const rawX = useMotionValue(SPOTLIGHT_CENTER_X);
-  const lightX = useSpring(rawX, { stiffness: 140, damping: 22, mass: 0.6 });
+  const smoothedX = useSpring(rawX, { stiffness: 140, damping: 22, mass: 0.6 });
+  const lightX = reduceMotion ? rawX : smoothedX;
 
   /* Which tier is on stage. Starts at the student's own and walks the ladder from there.
      A celebration stays put: wandering off mid-moment dilutes the thing being celebrated. */
@@ -135,7 +137,10 @@ function SpotlightStage(
       JOURNEY_LEVEL_CATALOG[0]!,
   );
   const [travelSlot, setTravelSlot] = useState<-1 | 1>(1);
+  const badgeRef = useRef<HTMLDivElement>(null);
+  const [badgeTravel, setBadgeTravel] = useState<BadgeTravel>({ x: 0, y: 0, scale: 1 });
   const travellingRef = useRef(false);
+  const [travelling, setTravelling] = useState(false);
   const idleTimerRef = useRef<number | undefined>(undefined);
   const travelTimerRef = useRef<number | undefined>(undefined);
   const releaseTimerRef = useRef<number | undefined>(undefined);
@@ -283,7 +288,7 @@ function SpotlightStage(
 
   const handlePointerMove = useCallback(
     (event: React.PointerEvent<HTMLElement>) => {
-      if (!settled || travellingRef.current) return;
+      if (reduceMotion || !settled || travellingRef.current) return;
       /* Touch and pen only steer while pressed; a mouse steers on hover. */
       if (event.pointerType !== "mouse" && event.buttons === 0) return;
       const rect = stageRectRef.current;
@@ -299,7 +304,7 @@ function SpotlightStage(
         animate(rawX, SPOTLIGHT_CENTER_X, { duration: 0.9, ease: "easeInOut" });
       }, idleRecentreMs);
     },
-    [settled, rawX, idleRecentreMs],
+    [reduceMotion, settled, rawX, idleRecentreMs],
   );
 
   useEffect(
@@ -317,11 +322,18 @@ function SpotlightStage(
    * is what makes it read as "the light found it, then it took the stage" rather than a crossfade.
    */
   const handleTravel = useCallback(
-    (target: JourneyLevelCatalogItem, slot: -1 | 1) => {
+    (target: JourneyLevelCatalogItem, slot: -1 | 1, origin: DOMRect) => {
       if (travellingRef.current) return;
       travellingRef.current = true;
+      setTravelling(true);
       window.clearTimeout(idleTimerRef.current);
       setTravelSlot(slot);
+      const centre = badgeRef.current?.getBoundingClientRect();
+      setBadgeTravel(centre && !reduceMotion ? {
+        x: origin.x + origin.width / 2 - centre.x - centre.width / 2,
+        y: origin.y + origin.height / 2 - centre.y - centre.height / 2,
+        scale: origin.width / centre.width,
+      } : { x: 0, y: 0, scale: 1 });
 
       const reachX = slot === -1 ? NEIGHBOUR_SLOT_X.previous : NEIGHBOUR_SLOT_X.next;
 
@@ -342,16 +354,17 @@ function SpotlightStage(
         });
         releaseTimerRef.current = window.setTimeout(() => {
           travellingRef.current = false;
+          setTravelling(false);
         }, travel.settleMs);
       }, travel.reachMs);
     },
-    [rawX, travel.reachMs, travel.settleMs],
+    [reduceMotion, rawX, travel.reachMs, travel.settleMs],
   );
 
   if (typeof document === "undefined") return null;
 
   return createPortal(
-    <motion.section
+      <motion.section
       ref={dialogRef}
       role="dialog"
       tabIndex={-1}
@@ -374,6 +387,8 @@ function SpotlightStage(
         backdropWord={name}
         lightX={lightX}
         lit={lit}
+        reduceMotion={reduceMotion}
+        travelling={travelling || !settled}
         onTravel={canTravel ? handleTravel : undefined}
         travelLabel={(key) =>
           t("spotlight_travel", { name: t(`levels.${key}.name` as LevelCopyKey) })
@@ -408,20 +423,21 @@ function SpotlightStage(
             the incoming tier until the outgoing one finishes, so a tab with throttled animation
             frames never shows the new level at all. */}
         <motion.div
+          ref={badgeRef}
           className="relative size-40 sm:size-52"
           initial={{ opacity: 0, scale: reduceMotion ? 1 : 0.86 }}
           animate={{ opacity: lit ? 1 : 0, scale: 1 }}
           transition={{ duration: timeline.badgeRevealMs / 1000 || 0.12, ease: "easeOut" }}
         >
-          <AnimatePresence custom={travelSlot} initial={false}>
+          <AnimatePresence custom={badgeTravel} initial={false}>
             <motion.div
               key={viewed.tier}
-              custom={travelSlot}
+              custom={badgeTravel}
               variants={BADGE_TRAVEL_VARIANTS}
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: reduceMotion ? 0 : 0.55, ease: TRAVEL_EASE }}
+              transition={{ duration: travel.settleMs / 1000, ease: TRAVEL_EASE }}
               className="absolute inset-0"
             >
               <JourneyBadgeStage
@@ -436,7 +452,7 @@ function SpotlightStage(
         </motion.div>
 
         <motion.div
-          className="relative mt-10 min-h-[8.5rem] w-full max-w-md text-center"
+          className="relative mt-8 min-h-48 w-full max-w-md text-center"
           initial={{ opacity: 0, y: reduceMotion ? 0 : 12 }}
           animate={{ opacity: settled ? 1 : 0, y: 0 }}
           transition={{ duration: reduceMotion ? 0.12 : 0.5, ease: "easeOut" }}
@@ -449,20 +465,20 @@ function SpotlightStage(
               initial="enter"
               animate="center"
               exit="exit"
-              transition={{ duration: reduceMotion ? 0 : 0.55, ease: TRAVEL_EASE }}
+              transition={{ duration: reduceMotion ? 0 : 0.25, ease: TRAVEL_EASE }}
               className="absolute inset-x-0 top-0"
             >
               {eyebrow ? (
                 <p className="text-sm font-bold text-[var(--spotlight-beam)]">{eyebrow}</p>
               ) : null}
-              <p className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-secondary)]">
+              <p className="mt-2 text-xs font-bold uppercase tracking-[0.18em] text-[var(--color-body)]">
                 {chapterLabel}
               </p>
-              {/* The name is written across the back wall instead, so the heading stays short.
-                  It is still in the accessible name — the wall copy is decorative. */}
-              <h2 id={titleId} className="mt-2 text-2xl font-extrabold sm:text-3xl">
+              <p className="mt-2 text-sm font-bold text-[var(--color-body)]">
                 {t("level_label", { tier })}
-                <span className="sr-only"> · {name}</span>
+              </p>
+              <h2 id={titleId} className="mt-2 text-2xl font-extrabold sm:text-3xl">
+                {name}
               </h2>
               <p className="mx-auto mt-3 max-w-sm text-sm leading-6 text-[var(--color-body)]">
                 {locked ? t("spotlight_locked") : story}

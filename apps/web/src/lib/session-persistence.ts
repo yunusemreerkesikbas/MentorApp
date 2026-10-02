@@ -6,11 +6,13 @@
  * apps/api/src/session-persistence.spec.ts (repo convention).
  */
 
+import { SESSION_ACTUAL_SECONDS_MAX } from "@mentor/types";
+
 const STORAGE_KEY = "mentor.session.active";
 /** Records older than this are stale garbage, not a resumable session. */
-const MAX_RECORD_AGE_MS = 24 * 60 * 60 * 1000;
+const MAX_RECORD_AGE_MS = SESSION_ACTUAL_SECONDS_MAX * 1000;
 
-export type PersistedPreset = "25_5" | "50_10" | "custom";
+export type PersistedPreset = "25_5" | "50_10" | "custom" | "stopwatch";
 
 export interface ActiveSessionRecord {
   sessionId: string;
@@ -34,6 +36,7 @@ export interface ActiveSessionRecord {
 
 export type ResumeResolution =
   | { kind: "resume-focus"; secondsLeft: number }
+  | { kind: "resume-stopwatch"; elapsedSeconds: number }
   | { kind: "resume-break"; secondsLeft: number }
   /** Focus expired while the tab was away — finalize with the credited seconds. */
   | { kind: "finalize-expired"; creditSeconds: number }
@@ -53,7 +56,7 @@ function isValidRecord(value: unknown): value is ActiveSessionRecord {
     (r.pausedAt === null || Number.isFinite(r.pausedAt)) &&
     Number.isFinite(r.focusMinutes) &&
     Number.isFinite(r.breakMinutes) &&
-    (r.preset === "25_5" || r.preset === "50_10" || r.preset === "custom") &&
+    (r.preset === "25_5" || r.preset === "50_10" || r.preset === "custom" || r.preset === "stopwatch") &&
     Number.isFinite(r.focusElapsed) &&
     Number.isFinite(r.savedAt)
   );
@@ -105,6 +108,10 @@ export function resolveResume(
 ): ResumeResolution {
   if (now - record.savedAt > MAX_RECORD_AGE_MS) return { kind: "discard" };
 
+  if (record.preset === "stopwatch") {
+    const advance = record.isPaused ? 0 : Math.max(0, Math.floor((now - record.savedAt) / 1000));
+    return { kind: "resume-stopwatch", elapsedSeconds: record.focusElapsed + advance };
+  }
   const frozen = record.isPaused && record.pausedAt !== null;
   const remainingMs = record.phaseEndsAt - (frozen ? record.pausedAt! : now);
   const secondsLeft = Math.max(0, Math.round(remainingMs / 1000));

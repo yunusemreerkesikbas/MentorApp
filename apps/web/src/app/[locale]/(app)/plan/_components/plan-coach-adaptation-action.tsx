@@ -29,11 +29,6 @@ import { useSubscription } from "@/lib/subscription-context";
 import { PlanCoachAdaptationBrief } from "./plan-coach-adaptation-brief";
 import type { PlanAdaptationKnownWeek } from "./plan-coach-adaptation-brief-note";
 import { usePlanCoachPreview, readCoachError } from "./use-plan-coach-preview";
-import {
-  usePlanCoachPreparation,
-  type PlanCoachInput,
-} from "./use-plan-coach-preparation";
-import { PlanCoachPreparationScene } from "./plan-coach-preparation-scene";
 
 interface PlanCoachAdaptationActionProps {
   knownWeek: PlanAdaptationKnownWeek;
@@ -61,7 +56,6 @@ export const PlanCoachAdaptationAction = forwardRef<
   const wizardLock = useRef(false);
   const [wizardOpen, setWizardOpen] = useState(false);
   const [brief, setBrief] = useState<CoachPlanAdaptationBriefDto | null>(null);
-  const [wizardInput, setWizardInput] = useState<PlanCoachInput>();
   const busyRef = useRef(false);
   const [busy, setBusy] = useState(false);
   const { view: subscriptionView, refresh: refreshSubscription } =
@@ -70,26 +64,18 @@ export const PlanCoachAdaptationAction = forwardRef<
     returnFocusRef: triggerRef,
     onApplied,
     onPlanChanged,
-    onRegenerate: (input) =>
-      input.source === "PLAN"
-        ? void preparation.start(input)
-        : void generatePreview(input),
-    onAppliedPlan: () => preparation.clear(),
-  });
-  const preparation = usePlanCoachPreparation({
-    onReady: (preview, input) => void openPreview(preview, input),
-    onPremiumRequired: () => openPaywall({ sourceFeature: "plan.ai" }),
-    errorMessage: (error) => readCoachError(error, tCommon("error_unknown")),
+    onRegenerate: (input) => void generatePreview(input),
   });
 
   async function generatePreview(input: CoachPlanAdaptationInput) {
+    busyRef.current = true;
     setBusy(true);
     try {
       trackCoachEvent("coach_plan_adaptation_request", {
         source: input.source,
       });
       const preview = await requestCoachPlanAdaptation(input);
-      await openPreview(preview, input);
+      void openPreview(preview, input);
     } catch (error) {
       if (isPremiumRequiredError(error)) {
         openPaywall({ sourceFeature: "plan.ai" });
@@ -107,11 +93,6 @@ export const PlanCoachAdaptationAction = forwardRef<
   }
 
   async function open(input: CoachPlanAdaptationInput) {
-    if (input.source === "PLAN" && preparation.state.status !== "idle") {
-      preparation.resume();
-      return;
-    }
-    if (preparation.state.status === "loading") return;
     if (busyRef.current || wizardLock.current) return;
     busyRef.current = true;
     setBusy(true);
@@ -135,7 +116,6 @@ export const PlanCoachAdaptationAction = forwardRef<
       // The wizard opens at once; the coach's reading lands in it when ready, and a failed read
       // leaves today's defaults.
       setBrief(null);
-      setWizardInput(undefined);
       void fetchPlanAdaptationBrief().then(setBrief, () => undefined);
       setWizardOpen(true);
     } catch (error) {
@@ -170,18 +150,13 @@ export const PlanCoachAdaptationAction = forwardRef<
           className="min-h-10 px-3 py-2 text-sm"
         >
           <Sparkles size={16} strokeWidth={2.25} aria-hidden />
-          {preparation.state.status === "idle"
-            ? t("coach_adaptation_cta")
-            : preparation.state.status === "ready"
-              ? t("coach_flight_preview")
-              : t("coach_flight_resume")}
+          {t("coach_adaptation_cta")}
         </Button>
       </span>
       {wizardOpen ? (
         <PlanCoachAdaptationBrief
           knownWeek={knownWeek}
           brief={brief}
-          initialInput={wizardInput}
           profile={{
             examType: user?.examType ?? null,
             examVariant: user?.examVariant ?? null,
@@ -189,26 +164,10 @@ export const PlanCoachAdaptationAction = forwardRef<
           }}
           onClose={closeWizard}
           onComplete={(input) => {
+            if (busyRef.current) return;
             wizardLock.current = false;
             setWizardOpen(false);
-            void preparation.start(input);
-          }}
-        />
-      ) : null}
-      {preparation.visible &&
-      (preparation.state.status === "loading" ||
-        preparation.state.status === "error") ? (
-        <PlanCoachPreparationScene
-          state={preparation.state}
-          slow={preparation.slow}
-          returnFocusRef={triggerRef}
-          onClose={preparation.close}
-          onRetry={(input) => void preparation.start(input)}
-          onEdit={(input) => {
-            preparation.clear();
-            setWizardInput(input);
-            wizardLock.current = true;
-            setWizardOpen(true);
+            void generatePreview(input);
           }}
         />
       ) : null}

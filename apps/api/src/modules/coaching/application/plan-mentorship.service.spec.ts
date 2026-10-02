@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { PlanService } from "./plan.service";
+import type { MentorshipTaskVisibleSignature } from "../infrastructure/plan-task-mentorship.repository";
 
 const STUDENT_A = "00000000-0000-4000-8000-000000000002";
 const STUDENT_B = "00000000-0000-4000-8000-000000000003";
@@ -19,6 +20,7 @@ type Row = {
   sortOrder: number;
   startTime: string | null;
   endTime: string | null;
+  durationMinutes: number | null;
   description: string | null;
   coachNote: string | null;
   originType: string | null;
@@ -41,6 +43,7 @@ function row(overrides: Partial<Row>): Row {
     sortOrder: 0,
     startTime: null,
     endTime: null,
+    durationMinutes: null,
     description: null,
     coachNote: null,
     originType: "MENTORSHIP",
@@ -53,7 +56,7 @@ function row(overrides: Partial<Row>): Row {
   };
 }
 
-const expectedSignature = {
+const expectedSignature: MentorshipTaskVisibleSignature = {
   taskDate: TODAY,
   title: "Paragraf",
   subject: "Türkçe",
@@ -200,11 +203,12 @@ describe("PlanService W8 assignment seams", () => {
         { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
         { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
       ],
-      { title: "Paragraf", coachNote: "20 soru" },
+      { title: "Paragraf", coachNote: "20 soru", durationMinutes: 80 },
     );
 
     expect(lockOrder).toEqual([STUDENT_A, STUDENT_B]);
     expect(created).toHaveLength(2);
+    expect(created.every(task => task.durationMinutes === 80 && task.sessionFocusMinutes === 80)).toBe(true);
     expect(new Set(rows.map((item) => item.assignmentGroupId)).size).toBe(1);
     expect(rows).toEqual(
       expect.arrayContaining([
@@ -220,6 +224,28 @@ describe("PlanService W8 assignment seams", () => {
         }),
       ]),
     );
+  });
+
+  it("preserves, updates and clears the coach duration without touching completed tasks", async () => {
+    const pending = row({ id: "pending", durationMinutes: 80 });
+    const { service, rows } = setup([pending]);
+    const scope = { studentId: STUDENT_A, mentorshipLinkId: LINK_A };
+    await service.updateMentorshipTask(scope, pending.id, { coachNote: "Review" });
+    expect(rows[0]!.durationMinutes).toBe(80);
+    await service.updateMentorshipTask(scope, pending.id, { durationMinutes: 41 });
+    expect(rows[0]!.durationMinutes).toBe(41);
+    await service.updateMentorshipTask(scope, pending.id, { durationMinutes: null });
+    expect(rows[0]!.durationMinutes).toBeNull();
+  });
+
+  it("rejects a group signature when only duration changed", async () => {
+    const { service, rows } = setup([row({ id: "a", durationMinutes: 80 }), row({ id: "b", userId: STUDENT_B, originRefId: LINK_B, durationMinutes: 41 })]);
+    await expect(service.updateMentorshipTaskGroup([
+      { studentId: STUDENT_A, mentorshipLinkId: LINK_A },
+      { studentId: STUDENT_B, mentorshipLinkId: LINK_B },
+    ], GROUP, { durationMinutes: 200 }, { ...expectedSignature, durationMinutes: 80 }))
+      .rejects.toMatchObject({ code: "MENTORSHIP_ASSIGNMENT_STALE" });
+    expect(rows.map(task => task.durationMinutes)).toEqual([80, 41]);
   });
 
   it("rolls every student back when one batch write fails", async () => {

@@ -311,6 +311,7 @@ export interface CoachPlanGroupedTaskDto {
   topic: string | null;
   startTime: string | null;
   endTime: string | null;
+  durationMinutes?: number | null;
   coachNote: string | null;
   participants: CoachPlanParticipantDto[];
 }

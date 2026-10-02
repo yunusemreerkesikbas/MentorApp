@@ -37,7 +37,15 @@ export interface AiChatDto {
   contextArticleSlug?: string;
 }
 
-export interface CommunityCoachPlanTaskDto { [key: string]: unknown }
+export interface CommunityCoachPlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface PlanDraftBodyDto {
   /** @maxLength 500 */
@@ -137,7 +145,15 @@ export interface PromotionOffersDto { [key: string]: unknown }
 
 export interface CheckoutDto { [key: string]: unknown }
 
-export interface CreateAnalysisPlanTaskDto { [key: string]: unknown }
+export interface CreateAnalysisPlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface CompleteWeeklyReviewDto { [key: string]: unknown }
 
@@ -153,15 +169,64 @@ export interface PutPreferenceSimulationDto { [key: string]: unknown }
 
 export interface RefreshPreferenceSimulationDto { [key: string]: unknown }
 
-export interface CreatePlanTaskDto { [key: string]: unknown }
+export interface CreatePlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
-export interface BulkCreatePlanTasksDto { [key: string]: unknown }
+export type BulkCreatePlanTasksDtoTasksItem = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface ApplyPlanAdaptationDto { [key: string]: unknown }
+export interface BulkCreatePlanTasksDto {
+  tasks?: BulkCreatePlanTasksDtoTasksItem[];
+  [key: string]: unknown;
+ }
 
-export interface UpdatePlanTaskDto { [key: string]: unknown }
+export type ApplyPlanAdaptationDtoChangesItem = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface StartStudySessionDto { [key: string]: unknown }
+export interface ApplyPlanAdaptationDto {
+  changes?: ApplyPlanAdaptationDtoChangesItem[];
+  [key: string]: unknown;
+ }
+
+export interface UpdatePlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
+
+export interface StartStudySessionDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   */
+  focusMinutes?: number;
+  [key: string]: unknown;
+ }
 
 export interface UpdateStudySessionDto { [key: string]: unknown }
 
@@ -452,11 +517,40 @@ export interface MentorshipAttentionDto { [key: string]: unknown }
 
 export interface SaveMentorshipTemplateDto { [key: string]: unknown }
 
-export interface CreateMentorshipBatchAssignmentDto { [key: string]: unknown }
+export type CreateMentorshipBatchAssignmentDtoTask = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface UpdateMentorshipAssignmentDto { [key: string]: unknown }
+export interface CreateMentorshipBatchAssignmentDto {
+  task?: CreateMentorshipBatchAssignmentDtoTask;
+  [key: string]: unknown;
+ }
 
-export interface UpdateMentorshipAssignmentGroupDto { [key: string]: unknown }
+export interface UpdateMentorshipAssignmentDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
+
+export interface UpdateMentorshipAssignmentGroupDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface RemoveMentorshipAssignmentGroupDto { [key: string]: unknown }
 

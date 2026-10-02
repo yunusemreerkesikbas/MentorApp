@@ -91,7 +91,7 @@ export function RoomInviteSheet({
       <div className="flex flex-col gap-1.5">
         {/* Copy lives ON the code: the code is what you might read out loud, not a caption. */}
         <div className="flex min-h-16 items-center gap-1.5 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] py-2 pl-4 pr-1.5">
-          <code className="min-w-0 flex-1 truncate text-center font-mono text-xl font-extrabold tracking-[0.14em] text-[var(--color-main)]">
+          <code className="min-w-0 flex-1 truncate text-center font-mono text-xl font-extrabold tracking-normal text-[var(--color-main)]">
             {code}
           </code>
           <button

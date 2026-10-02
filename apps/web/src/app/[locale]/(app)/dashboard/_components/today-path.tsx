@@ -151,11 +151,8 @@ function nodeMeta(node: PathNode, t: PanelT): string {
   return [
     state === "done"
       ? t("node_done")
-      : node.rangeMinutes != null
-        ? t("node_minutes", { minutes: node.rangeMinutes })
-        : task.subject && task.subject !== task.title
-          ? task.subject
-          : null,
+      : node.minutes === null ? t("node_stopwatch") : t("node_minutes", { minutes: node.minutes }),
+    task.subject && task.subject !== task.title ? task.subject : null,
     node.fromCoach ? t("node_from_coach") : null,
   ]
     .filter(Boolean)

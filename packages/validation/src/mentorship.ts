@@ -185,6 +185,7 @@ export const mentorshipAssignmentVisibleSignatureSchema = z
     topic: planTaskFieldsSchema.shape.topic.unwrap(),
     startTime: planTaskFieldsSchema.shape.startTime.unwrap(),
     endTime: planTaskFieldsSchema.shape.endTime.unwrap(),
+    durationMinutes: planTaskFieldsSchema.shape.durationMinutes,
     coachNote: z
       .string()
       .trim()

@@ -38,6 +38,7 @@ export function JourneyLevelCompact({
       </div>
       {progress ? (
         <JourneyLevelProgressBar
+          appearance="play"
           progress={progress}
           ariaLabel={t("progress_aria", { name })}
           ariaValueText={t("progress_value", {
@@ -54,4 +55,3 @@ export function JourneyLevelCompact({
     </div>
   );
 }
-

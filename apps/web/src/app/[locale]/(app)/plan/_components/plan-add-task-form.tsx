@@ -3,6 +3,8 @@
 import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
 import { useTranslations } from "next-intl";
 import { TextAreaField, TextField } from "@mentor/ui";
+import { studyDurationMinutesSchema } from "@mentor/validation";
+import { SESSION_FOCUS_MINUTES_MIN, SESSION_FOCUS_MINUTES_MAX, SESSION_FOCUS_MINUTES_STEP } from "@mentor/types";
 import { FormError } from "@/components/form";
 import {
   SubjectChipsSkeleton,
@@ -21,6 +23,7 @@ export type PlanTaskFormValues = {
   startTime: string | null;
   endTime: string | null;
   description: string | null;
+  durationMinutes: number | null;
 };
 
 export type PlanAddTaskFormHandle = {
@@ -35,6 +38,7 @@ interface PlanAddTaskFormProps {
   initialStartTime?: string | null;
   initialEndTime?: string | null;
   initialDescription?: string | null;
+  initialDurationMinutes?: number | null;
   lockedFocus?: { subjectName: string; topicName?: string };
   initialTaskDate?: string;
   analysisFocus?: AnalysisFocusRefs;
@@ -54,6 +58,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
       initialStartTime = null,
       initialEndTime = null,
       initialDescription = null,
+      initialDurationMinutes = null,
       lockedFocus,
       initialTaskDate,
       analysisFocus,
@@ -71,6 +76,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
       initialEndTime ?? plusOneHour(initialStartTime ?? "09:00"),
     );
     const [description, setDescription] = useState(initialDescription ?? "");
+    const [duration, setDuration] = useState(initialDurationMinutes?.toString() ?? "");
     const [error, setError] = useState<string | null>(null);
     const [focusChanged, setFocusChanged] = useState(false);
     const [verifiedFocus, setVerifiedFocus] = useState<typeof lockedFocus>();
@@ -93,6 +99,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
       getValues: () => ({
         ...(taskDate && { taskDate }),
         title,
+        durationMinutes: duration === "" ? null : Number(duration),
         subject: displayFocus?.subjectName ?? subject,
         startTime: allDay ? null : startTime,
         endTime: allDay || !endTime ? null : endTime,
@@ -103,6 +110,10 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
         if (!taxonomy.loaded) return false;
         if (initialTaskDate && !validAnalysisTaskDate(taskDate, new Date().toISOString().slice(0, 10))) {
           setError(t("analysis_date_required"));
+          return false;
+        }
+        if (duration !== "" && !studyDurationMinutesSchema.safeParse(Number(duration)).success) {
+          setError(t("duration_invalid"));
           return false;
         }
         if (!title.trim()) {
@@ -218,6 +229,19 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
             taxonomy={taxonomy}
           />
         )}
+
+        <TextField
+          type="number"
+          label={t("duration_label")}
+          className="max-w-full self-start flex-row flex-wrap items-center gap-x-3 gap-y-1 [&>div]:w-36"
+          dense
+          value={duration}
+          min={SESSION_FOCUS_MINUTES_MIN}
+          max={SESSION_FOCUS_MINUTES_MAX}
+          step={SESSION_FOCUS_MINUTES_STEP}
+          placeholder={t("duration_optional")}
+          onChange={(event) => { setDuration(event.target.value); if (error) setError(null); }}
+        />
 
         <TextAreaField
           label={t("description")}

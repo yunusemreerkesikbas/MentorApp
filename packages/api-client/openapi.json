@@ -10693,7 +10693,15 @@
       },
       "CommunityCoachPlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "PlanDraftBodyDto": {
         "type": "object",
@@ -10806,7 +10814,15 @@
       },
       "CreateAnalysisPlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "CompleteWeeklyReviewDto": {
         "type": "object",
@@ -10838,23 +10854,90 @@
       },
       "CreatePlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "BulkCreatePlanTasksDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "durationMinutes": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 200,
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "ApplyPlanAdaptationDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "durationMinutes": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 200,
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "UpdatePlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "StartStudySessionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "focusMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": false
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "25_5",
+              "50_10",
+              "custom",
+              "stopwatch"
+            ]
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateStudySessionDto": {
         "type": "object",
@@ -11463,15 +11546,45 @@
       },
       "CreateMentorshipBatchAssignmentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "task": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 200,
+                "nullable": true
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateMentorshipAssignmentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateMentorshipAssignmentGroupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "RemoveMentorshipAssignmentGroupDto": {
         "type": "object",
