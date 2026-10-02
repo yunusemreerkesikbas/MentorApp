@@ -100,6 +100,7 @@ describe("CoachActionService", () => {
     };
     const sessions = {
       startFromAiCoach: vi.fn(async () => ({ id: "session-1" })),
+      getFromAiCoach: vi.fn(async () => ({ id: "session-1", preset: "custom", plannedFocusMinutes: 80 })),
     };
     const service = new CoachActionService(
       messages as never,
@@ -109,7 +110,10 @@ describe("CoachActionService", () => {
 
     await expect(
       service.decide("user-1", "message-1", "ACCEPT"),
-    ).resolves.toMatchObject({ resultRefId: "session-1" });
+    ).resolves.toMatchObject({ resultRefId: "session-1", session: { plannedFocusMinutes: 80 } });
     expect(sessions.startFromAiCoach).toHaveBeenCalledWith("user-1", "task-1");
+    messages.getOwnedCoachAction.mockResolvedValue({ action: startAction, status: CoachActionStatus.ACCEPTED as never, resultRefId: "session-1" as never });
+    await expect(service.decide("user-1", "message-1", "ACCEPT")).resolves.toMatchObject({ session: { plannedFocusMinutes: 80 } });
+    expect(sessions.startFromAiCoach).toHaveBeenCalledTimes(1);
   });
 });

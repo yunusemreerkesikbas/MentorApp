@@ -77,6 +77,8 @@ const pendingToday: TodayPanelResponse = {
       coachNote: null,
       origin: null,
       assignmentGroupId: null,
+    durationMinutes: null,
+    sessionFocusMinutes: 25,
     },
   ],
   nextAction: {
@@ -93,6 +95,27 @@ const pendingToday: TodayPanelResponse = {
   focusingNow: null,
   weeklyRecapPeriod: null,
 };
+
+test("coach accepted session uses its actual 80-minute duration", async ({ page }) => {
+  const action = { type: "START_PLAN_SESSION" as const, label: "Seansi baslat", payload: { planTaskId: taskId } };
+  const messageId = "66666666-6666-4666-8666-666666666666";
+  await mockCoachApi(page, {
+    today: pendingToday, access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+    messages: [{ id: messageId, role: "COACH", content: "Bir adimla baslayabiliriz.", sources: [], feedback: null, createdAt: new Date().toISOString(), action, actionStatus: "PROPOSED" }],
+  });
+  await page.route(`http://localhost:3001/v1/coach/messages/${messageId}/action`, route => json(route, {
+    action, status: "ACCEPTED", resultRefId: "session-80",
+    session: { id: "session-80", preset: "custom", plannedFocusMinutes: 80, subject: "Matematik", endedAt: null },
+  }));
+  await page.goto(`/koc/sohbet?c=${conversationId}`);
+  await page.getByRole("button", { name: /Onayla/ }).click();
+  await expect(page).toHaveURL(/minutes=80/);
+  await expect(page).toHaveURL(/sessionId=session-80/);
+  await expect.poll(() => page.evaluate(() => {
+    const record = window.localStorage.getItem("mentor.session.active");
+    return record ? JSON.parse(record).focusMinutes : null;
+  })).toBe(80);
+});
 
 test("landing next-action chip pending görevi seansa taşır", async ({
   page,

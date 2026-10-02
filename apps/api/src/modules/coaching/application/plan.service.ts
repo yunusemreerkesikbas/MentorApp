@@ -162,6 +162,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
@@ -203,6 +204,7 @@ export class PlanService {
         topic: resolved.topicName ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "ANALYSIS",
@@ -250,6 +252,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "COMMUNITY_COACH",
@@ -284,6 +287,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "AI_COACH",
@@ -373,6 +377,7 @@ export class PlanService {
           topic: input.topic ?? null,
           startTime: input.startTime ?? null,
           endTime: input.endTime ?? null,
+          durationMinutes: input.durationMinutes ?? null,
           description: null,
           coachNote: input.coachNote ?? null,
           ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
@@ -538,6 +543,7 @@ export class PlanService {
             topic: input.topic ?? null,
             startTime: input.startTime ?? null,
             endTime: input.endTime ?? null,
+            durationMinutes: input.durationMinutes ?? null,
             description: input.description ?? null,
             ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
           }),
@@ -622,6 +628,7 @@ export class PlanService {
         title: string;
         subject: string | null;
         topic: string | null;
+      durationMinutes: number | null;
         taskDate: string;
         sortOrder: number;
       }> = [];
@@ -696,6 +703,7 @@ export class PlanService {
           title: change.title,
           subject: change.subject,
           topic: change.topic ?? null,
+          durationMinutes: change.durationMinutes ?? null,
           taskDate: change.taskDate,
           sortOrder: nextOrder(change.taskDate),
         });
@@ -752,6 +760,7 @@ export class PlanService {
         ...(input.status !== undefined && { status: input.status }),
         ...(input.startTime !== undefined && { startTime: input.startTime }),
         ...(input.endTime !== undefined && { endTime: input.endTime }),
+        ...(input.durationMinutes !== undefined && { durationMinutes: input.durationMinutes }),
         ...(input.description !== undefined && { description: input.description }),
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
@@ -830,7 +839,7 @@ export class PlanService {
     if (originType !== "MENTORSHIP") return;
     const touchesMoreThanStatus = (
       // `taskDate` is absent from updatePlanTaskSchema, so it can never arrive here.
-      ["title", "subject", "startTime", "endTime", "description", "sortOrder"] as const
+      ["title", "subject", "startTime", "endTime", "durationMinutes", "description", "sortOrder"] as const
     ).some((field) => (input as Record<string, unknown>)[field] !== undefined);
     if (touchesMoreThanStatus) {
       throw new DomainError(ErrorCode.COACHING_TASK_COACH_ASSIGNED, HttpStatus.FORBIDDEN);

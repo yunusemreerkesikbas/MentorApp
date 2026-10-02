@@ -25,21 +25,37 @@ const AVATAR_PX = { portrait: 34, base: 44, wide: 60 } as const;
 /**
  * Table box and seat ellipse, as a share of the square stage.
  *
- * `portrait` is the same room turned 90°, not a second design: a phone has height to spare and
- * no width, so the table stands on its end and the seats file down its long sides — which is
- * how a narrow reading desk is actually used. The seat ellipse always clears the table by
- * enough to fit a chair plus its label; those numbers are clearance, not taste.
+ * `portrait` is the same room turned 90°, standing in a stage that is 4/3 as tall as it is
+ * wide. A phone has height to spare and no width; a square stage spent that height on empty
+ * floor and crushed the chairs into the oval. The taller stage is where the two-line captions
+ * sit, outside the table. `yScale` is height ÷ width so the seat walk stays even in pixels.
  *
- * `tableBox` is a SQUARE, because the artwork is square (1254×1254 with the oval drawn inside
- * it). Sizing the box to the oval's own proportions looked right on paper and was the reason
- * the table kept reading as a doll's-house piece: `object-contain` fits a square image into a
- * wide box by its SHORT side, so a 60%×44% box rendered the artwork at 44% — the width was
- * doing nothing. A square box renders it at exactly `tableBox`, and the oval inside comes out
- * that wide.
+ * The table box is a SQUARE in pixels, because the artwork is square (1254×1254 with the oval
+ * drawn inside it). On the tall stage that means the height percentage is the width percentage
+ * times 3/4. A wide percentage box used to letterbox the art down to its short side.
  */
+const PORTRAIT_Y_SCALE = 4 / 3;
 const LAYOUT = {
-  landscape: { tableBox: 66, fallbackX: 33, fallbackY: 24, seatX: 43, seatY: 38, rotated: false },
-  portrait: { tableBox: 64, fallbackX: 23, fallbackY: 32, seatX: 31, seatY: 44, rotated: true },
+  landscape: {
+    tableW: 66,
+    tableH: 66,
+    fallbackX: 33,
+    fallbackY: 24,
+    seatX: 43,
+    seatY: 38,
+    rotated: false,
+    yScale: 1,
+  },
+  portrait: {
+    tableW: 48,
+    tableH: 36,
+    fallbackX: 18,
+    fallbackY: 22,
+    seatX: 36,
+    seatY: 34,
+    rotated: true,
+    yScale: PORTRAIT_Y_SCALE,
+  },
 } as const;
 
 /** Apparent thickness of the CSS-fallback tabletop — the edge that makes it read as furniture. */
@@ -141,16 +157,20 @@ export function RoomSeats({
   const positions = seatPositions(total, {
     radiusXPct: layout.seatX,
     radiusYPct: layout.seatY,
+    yScale: layout.yScale,
   });
 
   return (
     <motion.div
-      // The stage is square, so a width-only cap left a doll's-house table adrift in a
-      // full-bleed room on anything wider than a phone. `min(…, 78vh)` lets it grow with
-      // whichever dimension actually runs out first. Square in both orientations on purpose:
-      // `seatPositions` measures arc length with x and y in the same unit, which is exact only
-      // when a percentage of width and a percentage of height are the same number of pixels.
-      className="relative mx-auto aspect-square w-full max-w-[min(46rem,78vh)]"
+      // Desktop stays square and grows until width or 78vh runs out. The phone stage is
+      // 3/4 (taller than wide) and `max-h-full` so a short screen shrinks it instead of
+      // sliding the bottom chairs under the pinned action. `yScale` keeps the walk even.
+      data-room-table=""
+      className={
+        portrait
+          ? "relative mx-auto aspect-[3/4] max-h-full min-h-0 w-full"
+          : "relative mx-auto aspect-square w-full max-w-[min(46rem,78vh)]"
+      }
       initial={reduceMotion ? false : { opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
@@ -205,7 +225,7 @@ export function RoomSeats({
 type Layout = (typeof LAYOUT)[keyof typeof LAYOUT];
 
 /**
- * The tabletop illustration, sized to the layout's square table box.
+ * The tabletop illustration, sized to a box that is square in pixels.
  *
  * Portrait rooms rotate the same asset rather than shipping a second one — the view is
  * straight top-down, so turning a table is physically meaningful in a way it would not be on a
@@ -221,16 +241,15 @@ function TableImage({
   layout: Layout;
   onError: () => void;
 }) {
-  const side = layout.tableBox;
   return (
     <div
       aria-hidden
       className="pointer-events-none absolute"
       style={{
-        left: `${50 - side / 2}%`,
-        top: `${50 - side / 2}%`,
-        width: `${side}%`,
-        height: `${side}%`,
+        left: `${50 - layout.tableW / 2}%`,
+        top: `${50 - layout.tableH / 2}%`,
+        width: `${layout.tableW}%`,
+        height: `${layout.tableH}%`,
         transform: layout.rotated ? "rotate(90deg)" : undefined,
       }}
     >
@@ -399,16 +418,16 @@ function OccupiedSeat({
         // Room ink, not `--room-accent`: green text on the dark wood did not read. The dot
         // carries "working now"; the words carry what and for how long.
         <span
-          className="flex w-full items-center justify-center gap-1.5 text-[11px] font-semibold tabular-nums sm:text-xs"
+          className="flex w-full items-start justify-center gap-1.5 text-[11px] font-semibold leading-tight tabular-nums sm:text-xs"
           style={{ color: "var(--room-ink)", textShadow: "0 1px 3px var(--room-ground-to)" }}
           title={seat.subject ?? undefined}
         >
           <span
             aria-hidden
-            className="size-1.5 shrink-0 rounded-full"
+            className="mt-1 size-1.5 shrink-0 rounded-full"
             style={{ backgroundColor: "var(--room-live)" }}
           />
-          <span className="min-w-0 truncate">
+          <span className="min-w-0 line-clamp-2">
             {seat.subject
               ? t("seat_live_line", { subject: seat.subject, minutes: seat.seatedMinutes ?? 0 })
               : t("seat_focusing_short", { minutes: seat.seatedMinutes ?? 0 })}
@@ -416,7 +435,7 @@ function OccupiedSeat({
         </span>
       ) : (
         <span
-          className="w-full truncate text-[11px] font-medium sm:text-xs"
+          className="line-clamp-2 w-full text-[11px] font-medium leading-tight sm:text-xs"
           style={{ color: "var(--room-ink-soft)", textShadow: "0 1px 3px var(--room-ground-to)" }}
         >
           {t("seat_idle")}

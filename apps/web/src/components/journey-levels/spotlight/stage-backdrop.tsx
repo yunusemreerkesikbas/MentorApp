@@ -28,16 +28,16 @@ interface StageBackdropProps {
   /** The student's real tier — decides which badge wears the accent ring and which stay locked. */
   ownTier: number;
   /**
-   * The level's own name, written across the back wall. It carries the name so the copy below can
-   * stay to "Seviye 3" — the alternative was the same word twice on one screen. Decorative here:
-   * the accessible name still comes from the heading.
+   * Decorative wall lettering; the readable level name lives below the badge.
    */
   backdropWord: string;
   lightX: MotionValue<number>;
   /** Nothing is on stage until the lamp is on. */
   lit: boolean;
+  reduceMotion: boolean;
+  travelling: boolean;
   /** Travel to a neighbour. Omitted during a celebration, which stays a single moment. */
-  onTravel?: (item: JourneyLevelCatalogItem, slot: -1 | 1) => void;
+  onTravel?: (item: JourneyLevelCatalogItem, slot: -1 | 1, origin: DOMRect) => void;
   travelLabel: (levelKey: JourneyLevelKey) => string;
 }
 
@@ -55,6 +55,8 @@ export function StageBackdrop({
   backdropWord,
   lightX,
   lit,
+  reduceMotion,
+  travelling,
   onTravel,
   travelLabel,
 }: StageBackdropProps) {
@@ -90,13 +92,13 @@ export function StageBackdrop({
           key={backdropWord}
           aria-hidden="true"
           className="pointer-events-none absolute inset-x-0 top-[40%] -translate-y-1/2"
-          initial={{ opacity: 0, scale: 1.08 }}
+          initial={{ opacity: 0, scale: reduceMotion ? 1 : 1.08 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.94 }}
-          transition={{ duration: 0.55, ease: [0.22, 1, 0.36, 1] }}
+          exit={{ opacity: 0, scale: reduceMotion ? 1 : 0.94 }}
+          transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
         >
           <span
-            className={`${WORD_CLASS} text-[color-mix(in_srgb,var(--color-main)_7%,transparent)]`}
+            className={`${WORD_CLASS} text-[color-mix(in_srgb,var(--color-main)_12%,transparent)]`}
           >
             {backdropWord}
           </span>
@@ -114,6 +116,7 @@ export function StageBackdrop({
         slot={-1}
         ownTier={ownTier}
         opacity={previousOpacity}
+        travelling={travelling}
         onTravel={onTravel}
         travelLabel={travelLabel}
       />
@@ -122,6 +125,7 @@ export function StageBackdrop({
         slot={1}
         ownTier={ownTier}
         opacity={nextOpacity}
+        travelling={travelling}
         onTravel={onTravel}
         travelLabel={travelLabel}
       />
@@ -134,6 +138,7 @@ function NeighbourSlot({
   slot,
   ownTier,
   opacity,
+  travelling,
   onTravel,
   travelLabel,
 }: {
@@ -141,7 +146,8 @@ function NeighbourSlot({
   slot: -1 | 1;
   ownTier: number;
   opacity: MotionValue<number>;
-  onTravel?: (item: JourneyLevelCatalogItem, slot: -1 | 1) => void;
+  travelling: boolean;
+  onTravel?: (item: JourneyLevelCatalogItem, slot: -1 | 1, origin: DOMRect) => void;
   travelLabel: (levelKey: JourneyLevelKey) => string;
 }) {
   /* The ends of the ladder simply have empty stage on that side. */
@@ -164,7 +170,8 @@ function NeighbourSlot({
       {onTravel ? (
         <button
           type="button"
-          onClick={() => onTravel(item, slot)}
+          disabled={travelling}
+          onClick={(event) => onTravel(item, slot, event.currentTarget.getBoundingClientRect())}
           aria-label={travelLabel(item.key)}
           className="pointer-events-auto rounded-full transition-transform hover:scale-105 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--color-bg)] motion-reduce:transition-none motion-reduce:hover:scale-100"
         >

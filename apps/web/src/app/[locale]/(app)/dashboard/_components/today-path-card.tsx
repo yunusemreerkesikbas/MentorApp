@@ -63,7 +63,7 @@ export function TodayPathCard({
 
   const title =
     cta.kind === "START_TASK"
-      ? t("path_title_start", { count: path.total, minutes: cta.minutes })
+      ? cta.minutes === null ? t("path_title_stopwatch", {count: path.total}) : t("path_title_start", { count: path.total, minutes: cta.minutes })
       : cta.kind === "ADD_TASK"
         ? t("path_title_empty")
         : t("path_title_done");
@@ -110,23 +110,23 @@ export function TodayPathCard({
         <TodayPath
           path={path}
           busyTaskId={busyTaskId}
-          sessionHref={(task) => sessionHrefFor(task, defaultMinutes)}
+          sessionHref={(task) => sessionHrefFor(task)}
           onSetStatus={onSetStatus}
         />
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-4">
           {cta.kind === "START_TASK" ? (
             <Link
-              href={sessionHrefFor(cta.task, defaultMinutes)}
+              href={sessionHrefFor(cta.task)}
               onClick={trackClick}
-              aria-label={t("cta_start", { title: cta.task.title, minutes: cta.minutes })}
+              aria-label={cta.minutes === null ? t("cta_start_stopwatch", { title: cta.task.title }) : t("cta_start", { title: cta.task.title, minutes: cta.minutes })}
               className={`${LEDGE} ${LEDGE_FILLED} w-full sm:w-auto sm:max-w-md`}
               data-testid="today-path-cta"
             >
               <Play className="size-[18px] shrink-0 fill-current" aria-hidden />
               <span className="truncate">{cta.task.title}</span>
               <span className="shrink-0">
-                {t("cta_start_minutes", { minutes: cta.minutes })}
+                {cta.minutes === null ? t("cta_stopwatch") : t("cta_start_minutes", { minutes: cta.minutes })}
               </span>
             </Link>
           ) : cta.kind === "ADD_TASK" ? (

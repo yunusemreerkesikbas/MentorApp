@@ -48,6 +48,16 @@ describe("plan-task mentorship group predicates", () => {
     expect(render(capture.where()).sql).toContain('"plan_tasks"."end_time" is null');
   });
 
+  it.each([80, null])("includes duration %s in the optimistic group predicate", async durationMinutes => {
+    const capture = mutationCapture("update");
+    await updatePendingMentorshipGroup(capture.tx, [{ studentId: STUDENT, mentorshipLinkId: LINK }], GROUP,
+      { ...expectedSignature, durationMinutes }, { durationMinutes: 41 });
+    const query = render(capture.where());
+    expect(query.sql).toContain('"plan_tasks"."duration_minutes"');
+    if (durationMinutes === null) expect(query.sql).toContain('"plan_tasks"."duration_minutes" is null');
+    else expect(query.params).toContain(durationMinutes);
+  });
+
   it("constrains deletes by the same visible signature", async () => {
     const capture = mutationCapture("delete");
 

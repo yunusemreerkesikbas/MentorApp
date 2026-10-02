@@ -1,4 +1,4 @@
-import { expect, test, type Page, type Route } from "@playwright/test";
+import { expect, test, type Page, type Route, type TestInfo } from "@playwright/test";
 import type { AuthUser, StudyRoomDetailDto } from "@mentor/types";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -108,7 +108,7 @@ test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
 
-test("çalışma masası iki viewportta koltukları ve timer devrini gösterir", async ({ page }) => {
+test("çalışma masası iki viewportta koltukları ve timer devrini gösterir", async ({ page }, testInfo) => {
   await mockApi(page);
   await page.goto(`/seans/masa/${ROOM_ID}`);
 
@@ -120,12 +120,29 @@ test("çalışma masası iki viewportta koltukları ve timer devrini gösterir",
   // of lying on the table.
   const seats = page.getByRole("main").getByRole("listitem");
   await expect(seats).toHaveCount(4);
+  if (testInfo.project.name.startsWith("mobile")) {
+    const stage = page.locator("[data-room-table]");
+    await expect.poll(async () => {
+      const box = await stage.boundingBox();
+      return box ? box.height / box.width : 0;
+    }).toBeGreaterThan(1.2);
+    const stageBox = await stage.boundingBox();
+    expect(stageBox).not.toBeNull();
+    for (const seat of await seats.all()) {
+      const box = await seat.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.y).toBeGreaterThanOrEqual(stageBox!.y - 1);
+      expect(box!.y + box!.height).toBeLessThanOrEqual(stageBox!.y + stageBox!.height + 1);
+      expect(box!.x).toBeGreaterThanOrEqual(stageBox!.x - 1);
+      expect(box!.x + box!.width).toBeLessThanOrEqual(stageBox!.x + stageBox!.width + 1);
+    }
+  }
   await expect(seats.nth(0)).toContainText("Matematik");
   await expect(seats.nth(1)).toContainText("Şu an masada değil");
   await expect(page.getByRole("button", { name: "Davet et" })).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Masa menüsü" })).toBeVisible();
 
-  const start = page.getByRole("link", { name: "Bu masada çalışmaya başla" });
+  const start = page.getByRole("link", { name: "Bu masadasın" });
   await expect(start).toHaveAttribute("href", `/seans?room=${ROOM_ID}`);
   expect((await start.boundingBox())?.height).toBeGreaterThanOrEqual(44);
 });
@@ -143,6 +160,7 @@ test("davet kodu penceresi sahnenin dışında açılır ve kod okunur", async (
   // sheet, and the code was all but invisible. Outside the stage it takes the app's own ink.
   await expect(page.locator(".room-stage dialog")).toHaveCount(0);
   await expect(dialog.getByText("MASA-A1B2C3")).toHaveCSS("color", "rgb(17, 17, 17)");
+  await expect(dialog.getByText("MASA-A1B2C3")).toHaveCSS("letter-spacing", "normal");
   await expect(dialog.getByRole("button", { name: "Davet bağlantısını kopyala" })).toBeVisible();
 });
 
@@ -189,12 +207,27 @@ test("masayı kapatmak kırmızı onay ister, onaylanınca seansa döner", async
   await expect(page).toHaveURL(/\/seans$/);
 });
 
+test("oturmayan kişi çalışmaya başla der", async ({ page }) => {
+  await mockApi(page, {
+    ...room,
+    seats: room.seats.map((seat) =>
+      seat.userId === USER_ID ? { ...seat, isSeated: false, seatedMinutes: null, subject: null } : seat,
+    ),
+  });
+  await page.goto(`/seans/masa/${ROOM_ID}`);
+
+  const start = page.getByRole("link", { name: "Bu masada çalışmaya başla" });
+  await expect(start).toBeVisible();
+  await expect(start).toHaveAttribute("href", `/seans?room=${ROOM_ID}`);
+});
+
 test("üye masadan ayrılırken kırmızı onay görür", async ({ page }) => {
   const calls = await mockApi(page, { ...room, role: "MEMBER", inviteCode: null });
   await page.goto(`/seans/masa/${ROOM_ID}`);
 
   await page.getByRole("button", { name: "Masa menüsü" }).click();
   await expect(page.getByRole("menuitem", { name: "Davet kodu" })).toHaveCount(0);
+  await expect(page.getByText("MASA-A1B2C3")).toHaveCount(0);
   await page.getByRole("menuitem", { name: "Masadan ayrıl" }).click();
 
   const confirm = page.getByRole("dialog", { name: "Masadan ayrılalım mı?" });
@@ -239,6 +272,7 @@ test("oturan koltuğun etiketi dersi ve süreyi odanın mürekkebiyle yazar", as
   await expect(line).toBeVisible();
   // It used to be `--room-accent` green on the dark wood; the ink carries it now, a dot the life.
   await expect(line).toHaveCSS("color", "rgb(247, 240, 228)");
+  await expect(page.getByText("Şu an masada değil")).toHaveCSS("text-overflow", "clip");
 });
 
 test("masaya biri oturunca avatarı bir kez parlar, zaten oturan parlamaz", async ({ page }) => {
@@ -269,4 +303,41 @@ test("masaya biri oturunca avatarı bir kez parlar, zaten oturan parlamaz", asyn
   await page.clock.fastForward(31_000);
   await expect(member.locator(".room-seat-live.room-seat-arrive")).toHaveCount(1);
   await expect(owner.locator(".room-seat-arrive")).toHaveCount(0);
+});
+
+async function flowShot(page: Page, testInfo: TestInfo, name: string) {
+  await page.screenshot({ path: testInfo.outputPath(`flow-${name}.png`) });
+}
+
+test("davet bağlantısı panoya masaya katıl adresini yazar", async ({ page, context }, testInfo) => {
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await mockApi(page);
+  await page.goto(`/seans/masa/${ROOM_ID}`);
+
+  await page.getByRole("button", { name: "Masa menüsü" }).click();
+  await page.getByRole("menuitem", { name: "Davet kodu" }).click();
+  const invite = page.getByRole("dialog", { name: "Davet kodu" });
+  await invite.getByRole("button", { name: "Davet bağlantısını kopyala" }).click();
+
+  await expect(invite.getByRole("status")).toHaveText("Bağlantı kopyalandı");
+  const copied = await page.evaluate(() => navigator.clipboard.readText());
+  expect(copied).toContain("/masaya-katil?kod=MASA-A1B2C3");
+  await flowShot(page, testInfo, "invite-copied");
+});
+
+test("kodu yenilemeden vazgeçmek isteği atmaz", async ({ page }, testInfo) => {
+  const calls = await mockApi(page);
+  await page.goto(`/seans/masa/${ROOM_ID}`);
+
+  await page.getByRole("button", { name: "Masa menüsü" }).click();
+  await page.getByRole("menuitem", { name: "Davet kodu" }).click();
+  const invite = page.getByRole("dialog", { name: "Davet kodu" });
+  await invite.getByRole("button", { name: "Kodu yenile" }).click();
+  const ask = invite.getByRole("group", { name: "Kodu yenileyelim mi?" });
+  await ask.getByRole("button", { name: "Vazgeç" }).click();
+
+  await expect(ask).toBeHidden();
+  await expect(invite.getByText("MASA-A1B2C3")).toBeVisible();
+  expect(calls.some((c) => c.path.endsWith("/code"))).toBe(false);
+  await flowShot(page, testInfo, "rotate-cancel");
 });

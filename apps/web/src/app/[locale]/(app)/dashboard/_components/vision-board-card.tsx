@@ -6,7 +6,6 @@ import { useTranslations } from "next-intl";
 import { Sparkles, Target, X } from "lucide-react";
 import type { VisionDto, VisionNoteDto } from "@mentor/types";
 import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api-client";
-import { Chip } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { BoardFrame } from "@/components/vision-board/board-frame";
 import { BoardStage } from "@/components/vision-board/board-stage";
@@ -103,10 +102,10 @@ export function VisionBoardCard() {
       <section className={PANEL_CARD} aria-labelledby="vision-card-title">
         <div className="flex items-center gap-2.5">
           <span
-            className="grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-text)]"
+            className="grid size-10 shrink-0 place-items-center text-[var(--color-chip-text)]"
             aria-hidden
           >
-            <Target className="size-5" strokeWidth={2.2} />
+            <Target className="size-5" strokeWidth={1.75} />
           </span>
           <h2 id="vision-card-title" className={PANEL_CARD_TITLE}>
             {translate("card_title")}
@@ -152,7 +151,7 @@ export function VisionBoardCard() {
             ) : premium && note ? (
               <motion.div
                 role="status"
-                className="flex flex-col gap-2"
+                className="flex flex-col"
                 initial={reduceMotion ? false : { opacity: 0, y: 6 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25 }}
@@ -160,10 +159,10 @@ export function VisionBoardCard() {
                 {/* Sparkles marks AI-authored content, matching the coach module's own convention.
                     Quiet on purpose: this is a provenance label for the sentence below it, not an
                     action — the note itself stays glanceable rather than hidden behind a click. */}
-                <Chip size="sm" className="inline-flex w-fit items-center gap-1">
-                  <Sparkles aria-hidden size={11} />
+                <span className="mb-1 flex items-center gap-1.5 text-xs font-extrabold text-[var(--play-selected-ink)]">
+                  <Sparkles aria-hidden className="size-3.5 fill-current text-[var(--premium-ring-from)]" />
                   {translate("coach_chip")}
-                </Chip>
+                </span>
                 <p className="text-sm" style={{ color: "var(--color-body)" }}>
                   {note}
                 </p>

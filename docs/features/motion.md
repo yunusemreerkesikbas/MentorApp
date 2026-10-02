@@ -147,3 +147,10 @@ kalmaya devam ediyor — onlar callback'e bağlı değil.
 - **Usage:** Import primitives from `@mentor/ui`; styles via `@import "@mentor/ui/transitions.css"` in web `globals.css`. `SkeletonGroup` `loading`+`revealed` for in-place skeleton→content.
 - **Gotchas:** No live-timer digit animation; no bounce easings; nested CSS `@import` broken under Tailwind/Next — use flattened file; Suspense fallbacks stay mount/unmount (no shared tree); Framer remains for overlays/pickers.
 - **Related:** files listed above.
+
+### 2026-10-02 — Spotlight name, beam and neighbour travel
+
+- **What:** The level name is a visible heading beneath the badge; wall lettering stays decorative with a slightly stronger ambient ink. The warm cone and cool penumbra now reach the viewport floor with a soft distance fade. Neighbour travel uses the clicked badge rectangle to enter from its actual position and size, with a 250 ms beam reach and 450 ms badge settlement.
+- **Usage:** Open a level badge from the panel/profile, then select the adjacent level. Navigation waits until the initial sweep or current travel settles; close/Escape and focus restoration stay available.
+- **Gotchas:** Reduced-motion replay keeps a fixed light and immediate badge travel; celebration retains its calm card fallback. No new assets or runtime.
+- **Related:** `components/journey-levels/spotlight/{journey-spotlight-scene,stage-backdrop,spotlight-lamp,spotlight-choreography}.tsx` (choreography is `.ts`), `e2e/panel.spec.ts`.

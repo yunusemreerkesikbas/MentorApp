@@ -12,6 +12,7 @@ import {
 import { SuccessCheck } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { decideCoachAction } from "@/lib/coach";
+import { buildStudySessionHrefFromPlanTask } from "@/lib/plan-study-session-link";
 import { trackCoachEvent } from "@/lib/analytics";
 
 const DESTINATION = {
@@ -65,11 +66,22 @@ export function CoachActionCard({
           query: { adaptation: "1", source: action.payload.source },
         });
       } else if (action.type === CoachActionType.START_PLAN_SESSION) {
+        const href = buildStudySessionHrefFromPlanTask(
+          {
+            id: action.payload.planTaskId,
+            title: "",
+            subject: result.session?.subject ?? null,
+            sessionFocusMinutes:
+              result.session?.plannedFocusMinutes ?? undefined,
+          },
+          "coach",
+        );
         router.push({
-          pathname: "/study-session",
+          ...href,
           query: {
-            taskId: action.payload.planTaskId,
-            ...(result.resultRefId
+            ...href.query,
+            ...(result.session ? { preset: result.session.preset } : {}),
+            ...(result.resultRefId && !result.session?.endedAt
               ? { sessionId: result.resultRefId, autostart: "1" }
               : {}),
           },

@@ -44,11 +44,10 @@ function slotsFor(minutes: number): number {
 
 function blockTitle(
   label: string,
-  minutes: number,
   action: Action,
   locale: PromptLocale,
 ): string {
-  const suffix = `: ${minutes} ${locale === "en" ? "min" : "dk"} ${actionText(action, locale)}`;
+  const suffix = `: ${actionText(action, locale)}`;
   return `${label.slice(0, 200 - suffix.length).trimEnd()}${suffix}`;
 }
 
@@ -182,7 +181,7 @@ export function fillPersonalizedPlanBlocks(input: {
         for (const action of [activity, ...ACTIONS].filter(
           (action) => action !== "NOTEBOOK" || isNotebookTopic(topic),
         )) {
-          const title = blockTitle(topic.name, minutes, action, locale);
+          const title = blockTitle(topic.name, action, locale);
           const titleKey = `${date}:${key(title)}`;
           if (input.titleCounts.has(titleKey)) continue;
           const reason = isNotebookTopic(topic)
@@ -193,6 +192,7 @@ export function fillPersonalizedPlanBlocks(input: {
           chosen = {
             kind: "ADD",
             title,
+            durationMinutes: minutes,
             subject,
             topic: topic.name,
             taskDate: date,
@@ -214,7 +214,7 @@ export function fillPersonalizedPlanBlocks(input: {
         for (const action of ACTIONS.filter(
           (action) => action !== "NOTEBOOK",
         )) {
-          const title = blockTitle(label, minutes, action, locale);
+          const title = blockTitle(label, action, locale);
           const titleKey = `${date}:${key(title)}`;
           if (input.titleCounts.has(titleKey)) continue;
           const reason = weak.has(key(subject ?? ""))
@@ -223,6 +223,7 @@ export function fillPersonalizedPlanBlocks(input: {
           chosen = {
             kind: "ADD",
             title,
+            durationMinutes: minutes,
             subject,
             topic: null,
             taskDate: date,

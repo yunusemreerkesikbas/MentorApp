@@ -19,7 +19,7 @@ export interface MentorshipPlanScope {
 
 export type MentorshipAssignmentUpdate = Pick<
   MentorshipAssignmentInput,
-  "title" | "subject" | "topic" | "taskDate" | "startTime" | "endTime" | "coachNote"
+  "title" | "subject" | "topic" | "taskDate" | "startTime" | "endTime" | "durationMinutes" | "coachNote"
 >;
 export type MentorshipAssignmentVisibleSignature =
   MentorshipTaskVisibleSignature;
@@ -47,6 +47,7 @@ function mutablePatch(input: Partial<MentorshipAssignmentUpdate>) {
     ...(input.taskDate !== undefined && { taskDate: input.taskDate }),
     ...(input.startTime !== undefined && { startTime: input.startTime }),
     ...(input.endTime !== undefined && { endTime: input.endTime }),
+    ...(input.durationMinutes !== undefined && { durationMinutes: input.durationMinutes }),
     ...(input.coachNote !== undefined && { coachNote: input.coachNote }),
     updatedAt: new Date(),
   };
@@ -80,6 +81,7 @@ export async function createMentorshipBatchInTransaction(
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: null,
         coachNote: input.coachNote ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),

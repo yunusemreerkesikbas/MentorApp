@@ -1,4 +1,11 @@
-import { expect, test, type Locator, type Page, type Route } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Locator,
+  type Page,
+  type Route,
+  type TestInfo,
+} from "@playwright/test";
 import type { AuthUser } from "@mentor/types";
 
 const USER_ID = "11111111-1111-4111-8111-111111111111";
@@ -51,7 +58,13 @@ const rooms = [
   },
 ];
 
-function sessionAt(id: string, minutesAgo: number, minutes: number, subject: string, status = "COMPLETED") {
+function sessionAt(
+  id: string,
+  minutesAgo: number,
+  minutes: number,
+  subject: string,
+  status = "COMPLETED",
+) {
   const startedAt = new Date(Date.now() - minutesAgo * 60_000).toISOString();
   return {
     id,
@@ -80,7 +93,12 @@ const todaySessions = [
 const activeBuddy = {
   active: {
     pairId: "pair-1",
-    partner: { userId: PARTNER_ID, displayName: "Elif Yılmaz", username: "elify", avatarUrl: null },
+    partner: {
+      userId: PARTNER_ID,
+      displayName: "Elif Yılmaz",
+      username: "elify",
+      avatarUrl: null,
+    },
     focusMinutesToday: 70,
     currentStreak: 5,
     partnerStudyingNow: true,
@@ -96,7 +114,8 @@ function json(route: Route, body: unknown, status = 200) {
   return route.fulfill({
     status,
     headers: {
-      "access-control-allow-origin": "http://localhost:3100",
+      "access-control-allow-origin":
+        route.request().headers().origin ?? "http://localhost:3100",
       "access-control-allow-credentials": "true",
     },
     contentType: "application/json",
@@ -104,8 +123,47 @@ function json(route: Route, body: unknown, status = 200) {
   });
 }
 
-async function mockApi(page: Page, opts: { joinError?: string; sessions?: unknown[] } = {}) {
+const JOIN_FULL = "Bu masa dolu.";
+const JOIN_QUOTA =
+  "En fazla 3 masaya üye olabilirsin. Katılmak için birinden ayrılman yeterli.";
+const JOIN_MALFORMED = "Kod MASA- ile başlar, ardından 6 karakter gelir.";
+
+const createdRoom = {
+  id: "44444444-4444-4444-8444-444444444444",
+  inviteCode: "MASA-N3W4R0",
+};
+
+const joinedRoom = {
+  id: "66666666-6666-4666-8666-666666666666",
+  name: "Akşam Masası",
+  theme: "CAFE",
+  capacity: 4,
+  memberCount: 2,
+  activeCount: 0,
+  role: "MEMBER" as const,
+  isActive: true,
+};
+
+async function flowShot(page: Page, testInfo: TestInfo, name: string) {
+  await page.screenshot({
+    path: testInfo.outputPath(`flow-${name}.png`),
+  });
+}
+
+async function mockApi(
+  page: Page,
+  opts: {
+    joinError?: string;
+    joinStatus?: number;
+    sessions?: unknown[];
+    /** `hidden` is the feature-flag 403: the section unmounts. `empty` is a real empty list. */
+    rooms?: "default" | "empty" | "hidden";
+    createError?: { code: string; message: string };
+  } = {},
+) {
   const calls: Call[] = [];
+  const listed =
+    opts.rooms === "empty" ? [] : rooms.map((room) => ({ ...room }));
   /** Set once the session started here is finalized: the day's list then includes it. */
   let finished = false;
   await page.addInitScript(() =>
@@ -116,7 +174,8 @@ async function mockApi(page: Page, opts: { joinError?: string; sessions?: unknow
     const path = new URL(request.url()).pathname;
     const method = request.method();
     if (method === "OPTIONS") return json(route, null, 204);
-    if (method !== "GET") calls.push({ method, path, body: request.postDataJSON() });
+    if (method !== "GET")
+      calls.push({ method, path, body: request.postDataJSON() });
     if (method === "POST" && path === "/v1/auth/refresh") {
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
@@ -128,31 +187,94 @@ async function mockApi(page: Page, opts: { joinError?: string; sessions?: unknow
         focusingNow: 38,
       });
     }
-    if (method === "GET" && path === "/v1/study-rooms") return json(route, rooms);
+    if (method === "GET" && path === "/v1/study-rooms") {
+      if (opts.rooms === "hidden") {
+        return json(
+          route,
+          { code: "COACHING_ROOM_DISABLED", message: "Kapalı." },
+          403,
+        );
+      }
+      return json(route, listed);
+    }
     if (method === "POST" && path === "/v1/study-rooms") {
-      return json(route, { ...rooms[0], id: "44444444-4444-4444-8444-444444444444", inviteCode: "MASA-N3W4R0", seats: [] }, 201);
+      if (opts.createError) return json(route, opts.createError, 409);
+      const body = request.postDataJSON() as {
+        name: string;
+        theme: string;
+        capacity: number;
+      };
+      const created = {
+        id: createdRoom.id,
+        name: body.name,
+        theme: body.theme,
+        capacity: body.capacity,
+        memberCount: 1,
+        activeCount: 0,
+        role: "OWNER" as const,
+        isActive: true,
+      };
+      listed.push(created);
+      return json(
+        route,
+        { ...created, inviteCode: createdRoom.inviteCode, seats: [] },
+        201,
+      );
     }
     if (method === "POST" && path === "/v1/study-rooms/join") {
-      return opts.joinError
-        ? json(route, { code: opts.joinError, message: "Kod geçersiz." }, 404)
-        : json(route, { ...rooms[0], inviteCode: null, seats: [] });
+      if (opts.joinError) {
+        return json(
+          route,
+          { code: opts.joinError, message: "Kod geçersiz." },
+          opts.joinStatus ?? 404,
+        );
+      }
+      if (!listed.some((room) => room.id === joinedRoom.id))
+        listed.push({ ...joinedRoom });
+      return json(route, { ...joinedRoom, inviteCode: null, seats: [] });
     }
-    if (method === "GET" && path === "/v1/buddy") return json(route, activeBuddy);
-    if (method === "DELETE" && path === "/v1/buddy") return json(route, null, 204);
+    if (method === "GET" && path === "/v1/buddy")
+      return json(route, activeBuddy);
+    if (method === "DELETE" && path === "/v1/buddy")
+      return json(route, null, 204);
     if (method === "POST" && path === "/v1/study-sessions") {
-      return json(route, { ...sessionAt("s-new", 0, 0, "Matematik", "ACTIVE"), countsAsFocusSession: true }, 201);
+      return json(
+        route,
+        {
+          ...sessionAt("s-new", 0, 0, "Matematik", "ACTIVE"),
+          countsAsFocusSession: true,
+        },
+        201,
+      );
     }
     if (method === "PATCH" && path === "/v1/study-sessions/s-new") {
       finished = true;
-      return json(route, { ...sessionAt("s-new", 0, 25, "Matematik"), countsAsFocusSession: true });
+      const body = request.postDataJSON() as {
+        actualFocusSeconds: number;
+        status: string;
+      };
+      return json(route, {
+        ...sessionAt("s-new", 0, 25, "Matematik"),
+        ...body,
+        countsAsFocusSession: true,
+      });
     }
     if (method === "GET" && path === "/v1/study-sessions") {
       const items =
-        opts.sessions ?? (finished ? [sessionAt("s-new", 0, 25, "Matematik"), ...todaySessions] : todaySessions);
+        opts.sessions ??
+        (finished
+          ? [sessionAt("s-new", 0, 25, "Matematik"), ...todaySessions]
+          : todaySessions);
       return json(route, { items, total: items.length, page: 1, pageSize: 20 });
     }
     if (method === "GET" && path === "/v1/notifications") {
-      return json(route, { items: [], total: 0, page: 1, pageSize: 20, unreadCount: 0 });
+      return json(route, {
+        items: [],
+        total: 0,
+        page: 1,
+        pageSize: 20,
+        unreadCount: 0,
+      });
     }
     return json(route, null, 204);
   });
@@ -164,7 +286,10 @@ async function isReachable(target: Locator) {
   return target.evaluate((el) => {
     const r = el.getBoundingClientRect();
     if (r.bottom > window.innerHeight || r.top < 0) return false;
-    const hit = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    const hit = document.elementFromPoint(
+      r.left + r.width / 2,
+      r.top + r.height / 2,
+    );
     return hit === el || el.contains(hit);
   });
 }
@@ -172,7 +297,8 @@ async function isReachable(target: Locator) {
 /** The stage's lights, read off live styles (reduced motion: every change lands at once). */
 async function stageLights(page: Page) {
   return page.getByTestId("session-stage").evaluate((stage) => {
-    const opacity = (selector: string) => Number(getComputedStyle(stage.querySelector(selector)!).opacity);
+    const opacity = (selector: string) =>
+      Number(getComputedStyle(stage.querySelector(selector)!).opacity);
     return {
       phase: stage.getAttribute("data-phase"),
       zIndex: getComputedStyle(stage).zIndex,
@@ -186,6 +312,35 @@ async function stageLights(page: Page) {
 test.beforeEach(async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" });
 });
+
+for (const minutes of [41, 80, 200]) {
+  test(`görev süresi: ${minutes} dakika custom seans olarak başlar`, async ({
+    page,
+  }) => {
+    const calls = await mockApi(page, { rooms: "hidden" });
+    await page.goto(`/seans?minutes=${minutes}`);
+    const dial = page.getByRole("slider");
+    await expect(dial).toHaveAttribute("aria-valuenow", String(minutes));
+    await expect(dial).toHaveAttribute("aria-valuemax", "200");
+    await dial.press("ArrowUp");
+    await expect(dial).toHaveAttribute(
+      "aria-valuenow",
+      String(Math.min(200, minutes + 1)),
+    );
+    if (minutes < 200) await dial.press("ArrowDown");
+    await expect(dial).toHaveAttribute("aria-valuenow", String(minutes));
+    await page.getByRole("button", { name: "Başla", exact: true }).click();
+    await expect
+      .poll(
+        () =>
+          calls.find(
+            (call) =>
+              call.path === "/v1/study-sessions" && call.method === "POST",
+          )?.body,
+      )
+      .toMatchObject({ preset: "custom", focusMinutes: minutes });
+  });
+}
 
 test("masa kurma penceresi sahnenin dışında açılır ve butonu hiçbir şeyin altında kalmaz", async ({
   page,
@@ -201,9 +356,11 @@ test("masa kurma penceresi sahnenin dışında açılır ve butonu hiçbir şeyi
   await expect(page.locator(".room-stage dialog")).toHaveCount(0);
   // The page behind is dimmed by the kit scrim (a template hole glued to the class once hid
   // `backdrop:bg-…` from Tailwind's scanner, and every native modal opened on a bright page).
-  expect(await dialog.evaluate((el) => getComputedStyle(el, "::backdrop").backgroundColor)).toBe(
-    "rgba(17, 17, 17, 0.4)",
-  );
+  expect(
+    await dialog.evaluate(
+      (el) => getComputedStyle(el, "::backdrop").backgroundColor,
+    ),
+  ).toBe("rgba(17, 17, 17, 0.4)");
 
   await dialog.getByLabel("Masa adı").fill("Öğle Molası");
   const submit = dialog.getByRole("button", { name: "Masayı kur" });
@@ -211,11 +368,19 @@ test("masa kurma penceresi sahnenin dışında açılır ve butonu hiçbir şeyi
   await submit.click();
 
   await expect(dialog).toBeHidden();
-  const created = calls.find((c) => c.method === "POST" && c.path === "/v1/study-rooms");
-  expect(created?.body).toMatchObject({ name: "Öğle Molası", theme: "LIBRARY", capacity: 4 });
+  const created = calls.find(
+    (c) => c.method === "POST" && c.path === "/v1/study-rooms",
+  );
+  expect(created?.body).toMatchObject({
+    name: "Öğle Molası",
+    theme: "LIBRARY",
+    capacity: 4,
+  });
 });
 
-test("kod ile katılma hatası toast değil, alanın altında söylenir", async ({ page }) => {
+test("kod ile katılma hatası toast değil, alanın altında söylenir", async ({
+  page,
+}) => {
   await mockApi(page, { joinError: "COACHING_ROOM_CODE_INVALID" });
   await page.goto("/seans");
 
@@ -230,7 +395,270 @@ test("kod ile katılma hatası toast değil, alanın altında söylenir", async 
     "Bu davet kodu artık geçerli değil. Masayı kuran kişiden yeni bir bağlantı iste.",
   );
   await expect(field).toHaveAttribute("aria-invalid", "true");
-  expect(await isReachable(dialog.getByRole("button", { name: "Katıl" }))).toBe(true);
+  expect(await isReachable(dialog.getByRole("button", { name: "Katıl" }))).toBe(
+    true,
+  );
+});
+
+test("boş ya da boşluk ad masa kurmaz", async ({ page }, testInfo) => {
+  const calls = await mockApi(page);
+  await page.goto("/seans");
+  await expect(page.locator('button[aria-label="Masa kur"]')).toHaveCount(1);
+
+  await page.getByRole("button", { name: "Masa kur" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Yeni masa" });
+  const submit = dialog.getByRole("button", { name: "Masayı kur" });
+  const name = dialog.getByLabel("Masa adı");
+  await expect(submit).toBeDisabled();
+
+  await name.fill("   ");
+  await expect(submit).toBeDisabled();
+  await name.press("Enter");
+  await expect(dialog).toBeVisible();
+  expect(
+    calls.some((c) => c.method === "POST" && c.path === "/v1/study-rooms"),
+  ).toBe(false);
+  await flowShot(page, testInfo, "create-empty-name");
+});
+
+test("kurma formu temayı, koltuk sınırını ve kırpılmış adı gönderir", async ({
+  page,
+}, testInfo) => {
+  const calls = await mockApi(page);
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Masa kur" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Yeni masa" });
+  const less = dialog.getByRole("button", { name: "Bir koltuk azalt" });
+  const more = dialog.getByRole("button", { name: "Bir koltuk ekle" });
+  const seats = dialog.locator("output");
+  await expect(seats).toHaveText("4");
+  await less.click();
+  await less.click();
+  await expect(seats).toHaveText("2");
+  await expect(less).toBeDisabled();
+  for (let step = 0; step < 8; step += 1) await more.click();
+  await expect(seats).toHaveText("10");
+  await expect(more).toBeDisabled();
+
+  await dialog.getByRole("button", { name: "Sonraki tema" }).click();
+  await expect(dialog.getByText("Kafe")).toBeVisible();
+
+  const name = dialog.getByLabel("Masa adı");
+  await expect(name).toHaveAttribute("maxlength", "40");
+  await name.fill("a".repeat(50));
+  await expect(name).toHaveValue("a".repeat(40));
+  await name.fill("  Akşam Kafe  ");
+  await flowShot(page, testInfo, "create-theme-capacity");
+  await dialog.getByRole("button", { name: "Masayı kur" }).click();
+
+  await expect(dialog).toBeHidden();
+  const created = calls.find(
+    (c) => c.method === "POST" && c.path === "/v1/study-rooms",
+  );
+  expect(created?.body).toMatchObject({
+    name: "Akşam Kafe",
+    theme: "CAFE",
+    capacity: 10,
+  });
+});
+
+test("vazgeç ve escape masa kurma isteği atmaz", async ({ page }, testInfo) => {
+  const calls = await mockApi(page);
+  await page.goto("/seans");
+  const open = () =>
+    page.getByRole("button", { name: "Masa kur" }).first().click();
+
+  await open();
+  const dialog = page.getByRole("dialog", { name: "Yeni masa" });
+  if (!testInfo.project.name.startsWith("mobile")) {
+    await dialog.getByRole("button", { name: "Vazgeç" }).click();
+    await expect(dialog).toBeHidden();
+    await open();
+  }
+  await page.keyboard.press("Escape");
+  await expect(dialog).toBeHidden();
+  expect(
+    calls.some((c) => c.method === "POST" && c.path === "/v1/study-rooms"),
+  ).toBe(false);
+});
+
+test("masa kotası dolunca pencere açık kalır ve toast söyler", async ({
+  page,
+}, testInfo) => {
+  await mockApi(page, {
+    createError: {
+      code: "COACHING_ROOM_QUOTA_EXCEEDED",
+      message:
+        "En fazla 3 masaya üye olabilirsin; katılmak için birinden ayrılman yeterli.",
+    },
+  });
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Masa kur" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Yeni masa" });
+  await dialog.getByLabel("Masa adı").fill("Dördüncü Masa");
+  await dialog.getByRole("button", { name: "Masayı kur" }).click();
+
+  const toast = page
+    .getByRole("alert")
+    .filter({ hasText: "Masa işlemi tamamlanamadı" });
+  await expect(toast).toContainText("En fazla 3 masaya üye olabilirsin");
+  await expect(dialog).toBeVisible();
+  await flowShot(page, testInfo, "create-quota");
+});
+
+test("kurulan masa listeye düşer", async ({ page }, testInfo) => {
+  await mockApi(page);
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Masa kur" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Yeni masa" });
+  await dialog.getByLabel("Masa adı").fill("Öğle Molası");
+  await dialog.getByRole("button", { name: "Masayı kur" }).click();
+
+  const card = page.getByRole("region", { name: "Masaların" });
+  await expect(dialog).toBeHidden();
+  await expect(card.getByText("Öğle Molası")).toBeVisible();
+  await flowShot(page, testInfo, "create-listed");
+});
+
+test("küçük harf kod büyük harfle katılır ve masa listeye düşer", async ({
+  page,
+}, testInfo) => {
+  const calls = await mockApi(page);
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Kod ile katıl" }).click();
+  const dialog = page.getByRole("dialog", { name: "Kod ile katıl" });
+  await dialog.getByLabel("Davet kodu").fill("masa-a1b2c3");
+  await dialog.getByRole("button", { name: "Katıl" }).click();
+
+  await expect(dialog).toBeHidden();
+  const joined = calls.find(
+    (c) => c.method === "POST" && c.path === "/v1/study-rooms/join",
+  );
+  expect(joined?.body).toMatchObject({ code: "MASA-A1B2C3" });
+  await expect(
+    page.getByRole("region", { name: "Masaların" }).getByText("Akşam Masası"),
+  ).toBeVisible();
+  await flowShot(page, testInfo, "join-listed");
+});
+
+test("zaten üye olan kodu alanın altında söylenir", async ({
+  page,
+}, testInfo) => {
+  await mockApi(page, {
+    joinError: "COACHING_ROOM_ALREADY_MEMBER",
+    joinStatus: 409,
+  });
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Kod ile katıl" }).click();
+  const dialog = page.getByRole("dialog", { name: "Kod ile katıl" });
+  const field = dialog.getByLabel("Davet kodu");
+  await field.fill("MASA-A1B2C3");
+  await dialog.getByRole("button", { name: "Katıl" }).click();
+
+  await expect(dialog.getByRole("alert")).toHaveText("Zaten bu masadasın.");
+  await expect(field).toBeFocused();
+  await expect(dialog).toBeVisible();
+  await flowShot(page, testInfo, "join-already-member");
+});
+
+for (const [code, text] of [
+  ["COACHING_ROOM_FULL", JOIN_FULL],
+  ["COACHING_ROOM_QUOTA_EXCEEDED", JOIN_QUOTA],
+] as const) {
+  test(`${code} katılmayı kendi cümlesiyle söyler`, async ({
+    page,
+  }, testInfo) => {
+    await mockApi(page, { joinError: code, joinStatus: 409 });
+    await page.goto("/seans");
+
+    await page.getByRole("button", { name: "Kod ile katıl" }).click();
+    const dialog = page.getByRole("dialog", { name: "Kod ile katıl" });
+    await dialog.getByLabel("Davet kodu").fill("MASA-A1B2C3");
+    await dialog.getByRole("button", { name: "Katıl" }).click();
+
+    await expect(dialog.getByRole("alert")).toHaveText(text);
+    await expect(dialog.getByLabel("Davet kodu")).toBeFocused();
+    await flowShot(page, testInfo, "join-specific");
+  });
+}
+
+test("biçimsiz kod alanın altında kalır ve yazınca silinir", async ({
+  page,
+}, testInfo) => {
+  const calls = await mockApi(page, {
+    joinError: "VALIDATION_ERROR",
+    joinStatus: 400,
+  });
+  await page.goto("/seans");
+
+  await page.getByRole("button", { name: "Kod ile katıl" }).click();
+  const dialog = page.getByRole("dialog", { name: "Kod ile katıl" });
+  const field = dialog.getByLabel("Davet kodu");
+
+  await field.fill("abc");
+  await dialog.getByRole("button", { name: "Katıl" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(JOIN_MALFORMED);
+  await expect(field).toBeFocused();
+  expect(
+    calls.filter((c) => c.path === "/v1/study-rooms/join").at(-1)?.body,
+  ).toMatchObject({
+    code: "ABC",
+  });
+
+  await field.fill("MASA-ZZZZZZ");
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+  await dialog.getByRole("button", { name: "Katıl" }).click();
+  await expect(dialog.getByRole("alert")).toHaveText(JOIN_MALFORMED);
+  await expect(field).toBeFocused();
+  expect(
+    calls.filter((c) => c.path === "/v1/study-rooms/join").at(-1)?.body,
+  ).toMatchObject({
+    code: "MASA-ZZZZZZ",
+  });
+  await flowShot(page, testInfo, "join-malformed");
+});
+
+test("katil parametresi pencereyi bir kez açar", async ({ page }, testInfo) => {
+  await mockApi(page);
+  await page.goto("/seans?katil=1");
+
+  await expect(
+    page.getByRole("dialog", { name: "Kod ile katıl" }),
+  ).toBeVisible();
+  await expect(page).toHaveURL(/\/seans$/);
+  await flowShot(page, testInfo, "join-query");
+  await page.reload();
+  await expect(page.getByRole("dialog", { name: "Kod ile katıl" })).toHaveCount(
+    0,
+  );
+});
+
+test("masa özelliği kapalıyken bölüm görünmez", async ({ page }) => {
+  await mockApi(page, { rooms: "hidden" });
+  await page.goto("/seans");
+
+  await expect(page.getByRole("button", { name: "Başla" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Masaların" })).toHaveCount(0);
+});
+
+test("boş masa listesinde kurma yazısı durur, artı ikon durmaz", async ({
+  page,
+}, testInfo) => {
+  await mockApi(page, { rooms: "empty" });
+  await page.goto("/seans");
+
+  const card = page.getByRole("region", { name: "Masaların" });
+  await expect(card).toContainText(
+    "Masan henüz yok. Kod paylaş, ya da verilen kodla otur.",
+  );
+  await expect(card.getByRole("button", { name: "Masa kur" })).toBeVisible();
+  await expect(page.locator('button[aria-label="Masa kur"]')).toHaveCount(0);
+  await flowShot(page, testInfo, "rooms-empty");
 });
 
 test("yol arkadaşlığını bitirmek kırmızı bir onay ister", async ({ page }) => {
@@ -238,24 +666,37 @@ test("yol arkadaşlığını bitirmek kırmızı bir onay ister", async ({ page 
   await page.goto("/seans");
 
   await page.getByRole("button", { name: "Yol arkadaşlığını bitir" }).click();
-  const confirm = page.getByRole("dialog", { name: "Yol arkadaşlığını bitirelim mi?" });
+  const confirm = page.getByRole("dialog", {
+    name: "Yol arkadaşlığını bitirelim mi?",
+  });
   await expect(confirm).toBeVisible();
-  await expect(confirm).toContainText("Elif Yılmaz artık bugünkü emeğini görmez, sen de onunkini.");
+  await expect(confirm).toContainText(
+    "Elif Yılmaz artık bugünkü emeğini görmez, sen de onunkini.",
+  );
   await expect(confirm.getByRole("button", { name: "Vazgeç" })).toBeFocused();
   await expect(confirm.getByRole("button", { name: "Bitir" })).toHaveCSS(
     "background-color",
     "rgb(180, 35, 24)",
   );
-  expect(calls.some((c) => c.method === "DELETE" && c.path === "/v1/buddy")).toBe(false);
+  expect(
+    calls.some((c) => c.method === "DELETE" && c.path === "/v1/buddy"),
+  ).toBe(false);
 
   await confirm.getByRole("button", { name: "Bitir" }).click();
-  await expect.poll(() => calls.some((c) => c.method === "DELETE" && c.path === "/v1/buddy")).toBe(true);
+  await expect
+    .poll(() =>
+      calls.some((c) => c.method === "DELETE" && c.path === "/v1/buddy"),
+    )
+    .toBe(true);
 });
 
 test("iki bölge: geniş ekranda ray sayacın sağında, 1024'te altında iki sütun", async ({
   page,
 }, testInfo) => {
-  test.skip(testInfo.project.name.startsWith("mobile"), "genişlik testi masaüstü projesinde");
+  test.skip(
+    testInfo.project.name.startsWith("mobile"),
+    "genişlik testi masaüstü projesinde",
+  );
   await mockApi(page);
   await page.goto("/seans");
 
@@ -280,7 +721,9 @@ test("iki bölge: geniş ekranda ray sayacın sağında, 1024'te altında iki s�
   expect(narrowRooms.x).toBeGreaterThan(narrowToday.x + 200);
 });
 
-test("telefonda Başla ilk ekranda, üst barın hiçbir hapı kesik değil", async ({ page }, testInfo) => {
+test("telefonda Başla ilk ekranda, üst barın hiçbir hapı kesik değil", async ({
+  page,
+}, testInfo) => {
   test.skip(!testInfo.project.name.startsWith("mobile"), "telefon testi");
   await mockApi(page);
   await page.goto("/seans");
@@ -299,12 +742,17 @@ test("telefonda Başla ilk ekranda, üst barın hiçbir hapı kesik değil", asy
   expect(soundBox.height).toBeGreaterThanOrEqual(44);
 });
 
-test("Bugün kartı hedefi seanslardan çizer ve Tüm geçmiş çekmeceyi açar", async ({ page }) => {
+test("Bugün kartı hedefi seanslardan çizer ve Tüm geçmiş çekmeceyi açar", async ({
+  page,
+}) => {
   await mockApi(page);
   await page.goto("/seans");
 
   const today = page.getByRole("region", { name: "Bugün" });
-  await expect(today.getByRole("heading", { name: "Bugün" })).toHaveCSS("text-transform", "none");
+  await expect(today.getByRole("heading", { name: "Bugün" })).toHaveCSS(
+    "text-transform",
+    "none",
+  );
   await expect(today.getByText("45")).toBeVisible();
   await expect(today.getByRole("img")).toHaveAttribute(
     "aria-label",
@@ -318,14 +766,18 @@ test("Bugün kartı hedefi seanslardan çizer ve Tüm geçmiş çekmeceyi açar"
   await expect(drawer.getByText("Türkçe")).toBeVisible();
 });
 
-test("masa adları kesilmez, uzun süredir sessiz masa söylenir", async ({ page }) => {
+test("masa adları kesilmez, uzun süredir sessiz masa söylenir", async ({
+  page,
+}) => {
   await mockApi(page);
   await page.goto("/seans");
 
   const card = page.getByRole("region", { name: "Masaların" });
   const longName = card.getByText("Hafta Sonu Tarih ve Coğrafya Tekrarı");
   await expect(longName).toBeVisible();
-  expect(await longName.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  expect(
+    await longName.evaluate((el) => el.scrollWidth <= el.clientWidth + 1),
+  ).toBe(true);
   await expect(card).toContainText("uzun süredir sessiz");
   await expect(card).toContainText("1 kişi çalışıyor");
 });
@@ -344,7 +796,9 @@ test("sahnedeki Dürt butonu odanın mürekkebiyle okunur", async ({ page }) => 
   expect(alpha).toBeLessThan(0.5);
 });
 
-test("seans listesi gelmese de bugünkü dakikalar çizgide görünür", async ({ page }) => {
+test("seans listesi gelmese de bugünkü dakikalar çizgide görünür", async ({
+  page,
+}) => {
   await mockApi(page, { sessions: [] });
   await page.goto("/seans");
 
@@ -356,22 +810,40 @@ test("seans listesi gelmese de bugünkü dakikalar çizgide görünür", async (
   await expect(today).toContainText("Hedefe 75 dk var.");
 });
 
-test("Başla'da ışıklar kısılır: menü karanlıkta kalır, halka sahnenin ortasına geçer", async ({ page }) => {
+test("Başla'da ışıklar kısılır: menü karanlıkta kalır, halka sahnenin ortasına geçer", async ({
+  page,
+}) => {
   await mockApi(page);
   await page.goto("/seans");
-  await expect(page.getByRole("heading", { name: "Bugün", level: 2 })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Bugün", level: 2 }),
+  ).toBeVisible();
   const idle = await stageLights(page);
-  expect(idle).toMatchObject({ phase: "idle", zIndex: "auto", cover: 0, warmth: 0 });
+  expect(idle).toMatchObject({
+    phase: "idle",
+    zIndex: "auto",
+    cover: 0,
+    warmth: 0,
+  });
   expect(idle.veil).toBeCloseTo(0.58, 2);
 
   await page.getByRole("button", { name: "Başla" }).click();
-  await expect(page.getByRole("button", { name: "Seansı bitir" })).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Seansı bitir" }),
+  ).toBeVisible();
   const focus = await stageLights(page);
   // Raised over the app chrome, which goes dark; the room's veil thickens.
-  expect(focus).toMatchObject({ phase: "focus", zIndex: "30", cover: 0.94, warmth: 0 });
+  expect(focus).toMatchObject({
+    phase: "focus",
+    zIndex: "30",
+    cover: 0.94,
+    warmth: 0,
+  });
   expect(focus.veil).toBeCloseTo(0.86, 2);
   // The setup screen is gone and one ring is left, centred on the room rather than the window.
-  await expect(page.getByRole("heading", { name: "Bugün", level: 2 })).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Bugün", level: 2 }),
+  ).toHaveCount(0);
   await expect(page.locator("[data-session-ring]")).toHaveCount(1);
   const centres = await page.evaluate(() => {
     const centre = (el: Element) => {
@@ -386,7 +858,9 @@ test("Başla'da ışıklar kısılır: menü karanlıkta kalır, halka sahnenin 
   expect(Math.abs(centres.ring - centres.room)).toBeLessThan(2);
 });
 
-test("mola ışığı açar ve ısıtır, halka molanın yeşiline döner", async ({ page }) => {
+test("mola ışığı açar ve ısıtır, halka molanın yeşiline döner", async ({
+  page,
+}) => {
   await mockApi(page);
   await page.addInitScript(() => {
     const now = Date.now();
@@ -413,15 +887,21 @@ test("mola ışığı açar ve ısıtır, halka molanın yeşiline döner", asyn
 
   await expect(page.getByRole("button", { name: "Molayı geç" })).toBeVisible();
   const lights = await stageLights(page);
-  expect(lights).toMatchObject({ phase: "break", zIndex: "30", cover: 0.94, warmth: 0.4 });
+  expect(lights).toMatchObject({
+    phase: "break",
+    zIndex: "30",
+    cover: 0.94,
+    warmth: 0.4,
+  });
   expect(lights.veil).toBeCloseTo(0.44, 2);
-  await expect(page.locator("[data-session-ring] circle[stroke-dasharray]")).toHaveCSS(
-    "stroke",
-    "rgb(107, 196, 154)",
-  );
+  await expect(
+    page.locator("[data-session-ring] circle[stroke-dasharray]"),
+  ).toHaveCSS("stroke", "rgb(107, 196, 154)");
 });
 
-test("bitişte ışık açılır ve biten seans Bugün şeridine eklenir", async ({ page }) => {
+test("bitişte ışık açılır ve biten seans Bugün şeridine eklenir", async ({
+  page,
+}) => {
   await mockApi(page);
   await page.goto("/seans");
   await page.getByRole("button", { name: "Başla" }).click();
@@ -438,5 +918,71 @@ test("bitişte ışık açılır ve biten seans Bugün şeridine eklenir", async
   // Only the session just finished grows in; the day's earlier ones stay put.
   await expect(today.locator("[data-fresh]")).toHaveCount(1);
   await expect.poll(async () => (await stageLights(page)).zIndex).toBe("auto");
-  expect(await stageLights(page)).toMatchObject({ phase: "idle", cover: 0, warmth: 0 });
+  expect(await stageLights(page)).toMatchObject({
+    phase: "idle",
+    cover: 0,
+    warmth: 0,
+  });
+});
+
+test("stopwatch counts up, excludes pauses, resumes and records actual work", async ({
+  page,
+}) => {
+  const calls = await mockApi(page);
+  await page.clock.install();
+  await page.goto(
+    "/seans?preset=stopwatch&taskTitle=Review&taskId=33333333-3333-4333-8333-333333333333",
+  );
+  await expect(
+    page.getByRole("button", { name: "S\u00fcresiz", exact: true }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("slider")).toHaveCount(0);
+  await page.getByRole("button", { name: "Ba\u015fla", exact: true }).click();
+  await expect(
+    page.getByRole("button", { name: "Duraklat", exact: true }),
+  ).toBeVisible();
+  await page.clock.fastForward(125 * 60_000);
+  await expect(page.locator("[data-session-ring]")).toContainText("125:00");
+  expect(
+    calls.filter(
+      (c) => c.method === "PATCH" && c.path === "/v1/study-sessions/s-new",
+    ),
+  ).toHaveLength(0);
+  await page.getByRole("button", { name: "Duraklat", exact: true }).click();
+  await page.clock.fastForward(10 * 60_000);
+  await expect(page.locator("[data-session-ring]")).toContainText("125:00");
+  await page.reload();
+  await expect(
+    page.getByRole("button", { name: "Devam et", exact: true }),
+  ).toBeVisible();
+  await expect(page.locator("[data-session-ring]")).toContainText("125:00");
+  await page.getByRole("button", { name: "Devam et", exact: true }).click();
+  await page.clock.fastForward(60_000);
+  await expect(page.locator("[data-session-ring]")).toContainText("126:00");
+  await page
+    .getByRole("button", { name: "Seans\u0131 bitir", exact: true })
+    .click();
+  await expect(page.getByRole("button", { name: "Yeni seans" })).toBeVisible();
+  expect(
+    calls.find((c) => c.path === "/v1/study-sessions" && c.method === "POST")
+      ?.body,
+  ).toMatchObject({ preset: "stopwatch" });
+  expect(
+    calls.find(
+      (c) => c.path === "/v1/study-sessions/s-new" && c.method === "PATCH",
+    )?.body,
+  ).toMatchObject({ status: "COMPLETED", actualFocusSeconds: 7560 });
+  await expect(
+    page.getByRole("button", { name: "Molay\u0131 ge\u00e7" }),
+  ).toHaveCount(0);
+});
+
+test("stopwatch setup can switch back to a timed preset", async ({ page }) => {
+  await mockApi(page);
+  await page.goto("/seans?preset=stopwatch");
+  await page.getByRole("button", { name: "50 / 10 dk", exact: true }).click();
+  await expect(page.getByRole("slider")).toHaveAttribute("aria-valuenow", "50");
+  await expect(
+    page.getByRole("button", { name: "S\u00fcresiz", exact: true }),
+  ).toHaveAttribute("aria-pressed", "false");
 });

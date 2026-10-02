@@ -42,6 +42,8 @@ const task: PlanTaskDto = {
   coachNote: null,
   origin: null,
   assignmentGroupId: null,
+  durationMinutes: null,
+  sessionFocusMinutes: 25,
 };
 
 const readyPreview: CoachPlanAdaptationDto = {
@@ -65,6 +67,7 @@ const readyPreview: CoachPlanAdaptationDto = {
       title: "Kısa tekrar",
       subject: null,
       taskDate: "2026-07-22",
+      durationMinutes: 41,
     },
   ],
 };
@@ -113,7 +116,7 @@ const groundedPreview: CoachPlanAdaptationDto = {
 };
 
 /** Walks the four wizard steps on their defaults and asks for the preview. */
-async function generateFromWizard(page: Page, note?: string) {
+async function generateFromWizard(page: Page) {
   const wizard = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
   await expect(wizard).toBeVisible();
   for (const next of [
@@ -124,11 +127,47 @@ async function generateFromWizard(page: Page, note?: string) {
     await page.getByRole("button", { name: "Devam" }).click();
     await expect(page.getByRole("dialog", { name: next })).toBeVisible();
   }
-  if (note) await page.getByPlaceholder("Örn. Cuma gününü biraz daha hafif tut.").fill(note);
   await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
 }
 
-test("Puhu hazırlık sahnesi kapanınca istek sürer ve sonuç kendiliğinden açılmaz", async ({ page }) => {
+test("görev süresi: tüm gün görevini 80 dakika ile oluşturur", async ({ page }) => {
+  const api = await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  const sheet = page.getByLabel("Yeni görev", { exact: true }).filter({ has: page.getByRole("button", { name: "Görev ekle", exact: true }) });
+  await expect(page.getByLabel("Çalışma süresi (dk)")).toHaveValue("");
+  await page.getByRole("textbox", { name: "Yeni görev", exact: true }).fill("Duration review");
+  await page.getByLabel("Çalışma süresi (dk)").fill("80");
+  await sheet.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  await expect.poll(() => api.createBodies.length).toBe(1);
+  expect(api.createBodies[0]).toMatchObject({ title: "Duration review", durationMinutes: 80 });
+  expect(api.createBodies[0]).not.toHaveProperty("startTime");
+});
+
+test("görev süresi: düzenlerken yükler, değiştirir ve temizler", async ({ page }) => {
+  const current = { ...task, taskDate: new Date().toISOString().slice(0, 10), durationMinutes: 80, sessionFocusMinutes: 80 };
+  await mockPlanApi(page, { preview: readyPreview, tasks: [current] });
+  const patches: unknown[] = [];
+  await page.route(`http://localhost:3001/v1/plan-tasks/${taskId}`, async (route) => {
+    const body = route.request().postDataJSON();
+    patches.push(body);
+    Object.assign(current, body, { sessionFocusMinutes: body.durationMinutes ?? 25 });
+    return json(route, current);
+  });
+  await page.goto("/plan");
+  await page.getByRole("tab", { name: "Liste", exact: true }).click();
+  for (const [input, expected] of [["41", 41], ["", null]] as const) {
+    await page.getByRole("button", { name: "Matematik çöz için seçenekler" }).click();
+    await page.getByRole("menuitem", { name: "Görevi düzenle" }).click();
+    const sheet = page.getByLabel("Görevi düzenle", { exact: true });
+    await expect(page.getByLabel("Çalışma süresi (dk)")).toHaveValue(expected === 41 ? "80" : "41");
+    await page.getByLabel("Çalışma süresi (dk)").fill(input);
+    await sheet.getByRole("button", { name: "Kaydet", exact: true }).click();
+    await expect.poll(() => patches.at(-1)).toMatchObject({ durationMinutes: expected });
+  }
+});
+
+test("Koçla planla beklerken sayfada yüklenir ve sonuç doğrudan önizlemeye geçer", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   const api = await mockPlanApi(page, {
@@ -137,39 +176,27 @@ test("Puhu hazırlık sahnesi kapanınca istek sürer ve sonuç kendiliğinden a
     previewResponse: async (route) => { await gate; await json(route, readyPreview); },
   });
   await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
+  const trigger = page.getByRole("button", { name: "Koçla planla" });
+  await trigger.click();
   await generateFromWizard(page);
-  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
-  await expect(scene).toBeVisible();
-  await expect(scene).toContainText("60 dk / gün");
-  await page.keyboard.press("Escape");
-  const resume = page.getByRole("button", { name: "Hazırlık sahnesine dön" });
-  await expect(resume).toBeFocused();
-  await resume.click();
-  await expect(scene).toBeVisible();
-  await scene.getByRole("button", { name: "Planına dön" }).click();
+  await expect.poll(() => api.previewCalls).toBe(1);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(trigger).toHaveAttribute("aria-busy", "true");
   finish();
-  const showPreview = page.getByRole("button", { name: "Önizlemeyi aç", exact: true });
-  await expect(showPreview).toBeVisible();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await showPreview.click();
-  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
-  await page.getByRole("dialog").getByRole("button", { name: "Kapat", exact: true }).click();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await expect(showPreview).toBeFocused();
-  await showPreview.click();
-  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview).toBeVisible();
+  await preview.getByRole("button", { name: "Kapat", exact: true }).click();
+  await expect(trigger).toBeFocused();
   expect(api.previewCalls).toBe(1);
 });
 
-test("Puhu isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açmaz", async ({ page }) => {
+test("Plan isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açmaz", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
   await page.goto("/plan");
   await page.getByRole("button", { name: "Koçla planla" }).click();
   await generateFromWizard(page);
-  await page.keyboard.press("Escape");
   await page.getByRole("link", { name: "Anasayfa", exact: true }).first().click();
   await expect(page).toHaveURL(/\/panel$/);
   const response = page.waitForResponse((response) => response.url().endsWith("/v1/coach/plan-adaptation"));
@@ -178,117 +205,7 @@ test("Puhu isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açma
   await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
 });
 
-test("Puhu sahnesi çift tıklamayı kilitler, video hatasında posteri tutar ve hemen önizlemeye geçer", async ({ page }) => {
-  let finish!: () => void;
-  const gate = new Promise<void>((resolve) => { finish = resolve; });
-  const api = await mockPlanApi(page, { preview: readyPreview, brief, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
-  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Devam" }).click();
-  const firstFrameHasScene = await page.getByRole("button", { name: "Önizlemeyi hazırla" }).evaluate((button) => {
-    (button as HTMLButtonElement).click(); (button as HTMLButtonElement).click();
-    return new Promise<boolean>((resolve) => requestAnimationFrame(() => resolve(Boolean(document.querySelector("dialog[open] h1")))));
-  });
-  expect(firstFrameHasScene).toBe(true);
-  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
-  await expect(scene).toBeVisible();
-  await expect(scene.locator("video")).toHaveCount(1);
-  await scene.locator("video").dispatchEvent("error");
-  await expect(scene.locator("video")).toHaveCount(0);
-  await expect(scene.locator("picture img")).toBeVisible();
-  expect(await scene.evaluate((node) => node.scrollWidth <= node.clientWidth && node.scrollHeight <= node.clientHeight)).toBe(true);
-  await page.screenshot({ path: `test-results/puhu-flight-${test.info().project.name}.png` });
-  finish();
-  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
-  await expect(scene).toHaveCount(0);
-  expect(api.previewCalls).toBe(1);
-});
-
-test("Puhu sahnesinde uzun bekleme ve hareket azaltma, klavye odağıyla birlikte çalışır", async ({ page }) => {
-  await page.clock.install();
-  let finish!: () => void;
-  const gate = new Promise<void>((resolve) => { finish = resolve; });
-  await mockPlanApi(page, { preview: readyPreview, brief, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
-  await generateFromWizard(page);
-  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
-  await expect(scene).toBeVisible();
-  await expect(scene.locator("video")).toHaveCount(0);
-  await expect(scene.getByRole("button", { name: "Planına dön" })).toBeFocused();
-  await page.clock.fastForward(20_100);
-  await expect(scene.getByRole("status")).toHaveText("Biraz uzadı. Hazırlık sürüyor; istersen planına dönebilirsin.");
-  expect(await scene.locator("ul img").first().evaluate((node) => getComputedStyle(node).animationName)).toBe("none");
-  await page.keyboard.press("Escape");
-  await page.getByRole("button", { name: "Hazırlık sahnesine dön" }).click();
-  await expect(scene.getByRole("status")).toContainText("Biraz uzadı.");
-  finish();
-});
-
-test("Puhu hata ekranında yeniden deneme aynı seçimleri kullanır; düzenleme seçimleri korur", async ({ page }) => {
-  const api = await mockPlanApi(page, {
-    preview: readyPreview, brief, dailyGoalMinutes: 120,
-    previewResponse: async (route, call) => call < 3 ? json(route, { code: "AI_UNAVAILABLE", message: "Koç şu an yanıt veremedi." }, 503) : json(route, readyPreview),
-  });
-  await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
-  await generateFromWizard(page, "Cuma hafif olsun");
-  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
-  await expect(scene.getByRole("alert")).toHaveText("Koç şu an yanıt veremedi.");
-  await scene.getByRole("button", { name: "Yeniden dene" }).click();
-  await expect.poll(() => api.previewCalls).toBe(2);
-  await expect(scene.getByRole("alert")).toBeVisible();
-  expect(api.previewBodies[1]).toEqual(api.previewBodies[0]);
-  await scene.getByRole("button", { name: "Seçimlerini düzenle" }).click();
-  await page.getByRole("button", { name: "Devam" }).click();
-  await expect(page.getByRole("radio", { checked: true })).toContainText("120");
-  await page.getByRole("button", { name: "Devam" }).click();
-  await expect(page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" }).getByRole("checkbox", { name: /Matematik/ })).toBeChecked();
-  await page.getByRole("button", { name: "Devam" }).click();
-  await expect(page.getByPlaceholder("Örn. Cuma gününü biraz daha hafif tut.")).toHaveValue("Cuma hafif olsun");
-  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
-  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toBeVisible();
-  expect(api.previewBodies[2]).toEqual(api.previewBodies[0]);
-});
-
-test("Puhu servisi Premium reddi verdiğinde mevcut paywall açılır", async ({ page }) => {
-  const api = await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => json(route, { code: "PAYMENT_PREMIUM_REQUIRED", message: "Premium gerekli." }, 403) });
-  await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
-  await generateFromWizard(page);
-  await expect(page.getByTestId("premium-paywall")).toBeVisible();
-  await expect(page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" })).toHaveCount(0);
-  expect(api.previewCalls).toBe(1);
-});
-
-test("Puhu videosu doğru kadrajda döner ve yedi gün görünümü taşmaz", async ({ page }) => {
-  if (page.viewportSize()!.width >= 1024) await page.setViewportSize({ width: 1368, height: 911 });
-  let finish!: () => void;
-  const gate = new Promise<void>((resolve) => { finish = resolve; });
-  await mockPlanApi(page, { preview: readyPreview, brief: { ...brief, suggestion: { ...brief.suggestion, weekdays: [1,2,3,4,5,6,7], days: 7, focusSubjects: ["Matematik", "Türkçe", "Tarih", "Coğrafya"] } }, dailyGoalMinutes: 120, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
-  await page.emulateMedia({ reducedMotion: "no-preference" });
-  await page.goto("/plan");
-  await page.getByRole("button", { name: "Koçla planla" }).click();
-  await generateFromWizard(page);
-  const scene = page.getByRole("dialog", { name: "Haftana bir yol çiziyoruz" });
-  const video = scene.locator("video");
-  await expect.poll(() => video.evaluate((node: HTMLVideoElement) => !node.paused && node.readyState >= 2)).toBe(true);
-  await expect(scene.locator("ul li")).toHaveCount(7);
-  expect(await video.evaluate((node: HTMLVideoElement) => ({ width: node.videoWidth, height: node.videoHeight, duration: node.duration, muted: node.muted }))).toEqual({ width: page.viewportSize()!.width >= 1024 ? 1920 : 1080, height: page.viewportSize()!.width >= 1024 ? 1080 : 1920, duration: 8, muted: true });
-  const bounds = await scene.evaluate((node) => ({ width: node.clientWidth, scrollWidth: node.scrollWidth, height: node.clientHeight, scrollHeight: node.scrollHeight }));
-  expect(bounds.width).toBe(page.viewportSize()!.width);
-  expect(bounds.height).toBe(page.viewportSize()!.height);
-  expect(bounds.scrollWidth).toBeLessThanOrEqual(bounds.width);
-  expect(bounds.scrollHeight).toBeLessThanOrEqual(bounds.height);
-  await video.evaluate((node: HTMLVideoElement) => { node.currentTime = 7.7; });
-  await expect.poll(() => video.evaluate((node: HTMLVideoElement) => node.currentTime)).toBeLessThan(2);
-  await page.screenshot({ path: `test-results/puhu-flight-${test.info().project.name}.png` });
-  finish();
-});
-
-test("Puhu önizleme sonrası yenileme sürerken başka sayfanın penceresini kapatmaz", async ({ page }) => {
+test("Plan önizleme sonrası yenileme sürerken başka sayfanın penceresini kapatmaz", async ({ page }) => {
   let finish!: () => void;
   const gate = new Promise<void>((resolve) => { finish = resolve; });
   await mockPlanApi(page, { preview: readyPreview, afterApplyRead: gate });
@@ -322,6 +239,7 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   await expect(preview.getByRole("checkbox", { name: /Matematik çöz/ })).toBeChecked();
   await expect(preview.getByRole("checkbox", { name: /Kısa tekrar/ })).toBeChecked();
   await expect(page.getByText(/21 Temmuz.*23 Temmuz/)).toBeVisible();
+  await expect(preview.getByText("41 dk", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
 
   await expect(page.getByText("Planın güncellendi")).toBeVisible();
@@ -541,6 +459,8 @@ const timedTask: PlanTaskDto = {
   coachNote: null,
   origin: null,
   assignmentGroupId: null,
+  durationMinutes: null,
+  sessionFocusMinutes: 25,
 };
 
 test.describe("Takvim", () => {
@@ -633,6 +553,7 @@ test.describe("Takvim", () => {
     await page.getByLabel("Yeni görev").fill("Deneme çöz");
     await page.getByLabel("Bitiş").fill("10:30");
     await page.getByLabel("Açıklama").fill("Sayısal bölüm");
+    await page.getByLabel("Çalışma süresi (dk)").fill("80");
     await sheet.getByRole("button", { name: "Görev ekle" }).click();
 
     await expect.poll(() => api.createBodies.length).toBe(1);
@@ -642,6 +563,7 @@ test.describe("Takvim", () => {
       startTime: "09:00",
       endTime: "10:30",
       description: "Sayısal bölüm",
+      durationMinutes: 80,
     });
     // The student's form omits these rather than sending explicit nulls. Server-side both are
     // `nullish()`, so absence and null mean the same thing — but only one of them is the student's

@@ -392,7 +392,7 @@ describe("PlanAdaptationService", () => {
       source: "PLAN", studyWeekdays: [weekday], minutesPerDay: 120, focusSubjects: ["Matematik"],
     });
     expect(result.changes).toHaveLength(2);
-    expect(result.changes.every((change) => change.kind === "ADD" && change.subject === "Matematik" && change.topic === null && change.title.includes("60 dk"))).toBe(true);
+    expect(result.changes.every((change) => change.kind === "ADD" && change.subject === "Matematik" && change.topic === null && change.durationMinutes === 60 && !/\d+\s*dk/.test(change.title))).toBe(true);
     expect(result.coachNote).toBeTruthy();
     expect(result.coachNote).toContain("Hedef alanın: Sağlık.");
     expect(complete).toHaveBeenCalledOnce();
