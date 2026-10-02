@@ -7,6 +7,8 @@ export const checkoutSchema = z.object({
   planId: z.string().min(1).max(64),
   /** Optional coupon. Re-validated server-side at checkout — the preview call is advisory only. */
   code: promotionCodeSchema.optional(),
+  /** False purchases without a trial; true fails rather than silently switching to paid. */
+  useTrial: z.boolean().optional(),
 });
 export type CheckoutInput = z.infer<typeof checkoutSchema>;
 

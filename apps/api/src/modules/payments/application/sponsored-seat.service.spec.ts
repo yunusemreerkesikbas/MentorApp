@@ -3,9 +3,10 @@ import { costPerSeatMicros, SponsoredSeatService } from "./sponsored-seat.servic
 
 const STUDENT = "11111111-1111-4111-8111-111111111111";
 const LINK = "22222222-2222-4222-8222-222222222222";
+const COACH = "33333333-3333-4333-8333-333333333333";
 
 function setup(
-  over: { sponsorshipEnabled?: boolean; openForUser?: unknown; openBySponsorLink?: unknown } = {},
+  over: { sponsorshipEnabled?: boolean; openForUser?: unknown; openBySponsorLink?: unknown; unverified?: string } = {},
 ) {
   const config = {
     get: vi.fn(async () => over.sponsorshipEnabled ?? true),
@@ -19,7 +20,9 @@ function setup(
     expireSponsorship: vi.fn(async () => undefined),
   };
   return {
-    service: new SponsoredSeatService(subscriptions as never, config as never),
+    service: new SponsoredSeatService(subscriptions as never, config as never, {
+      isPhoneVerified: vi.fn(async (id: string) => id !== over.unverified),
+    } as never),
     subscriptions,
     config,
   };
@@ -28,7 +31,7 @@ function setup(
 describe("SponsoredSeatService.grant", () => {
   it("writes an endless ACTIVE row so no extension cron is ever needed", async () => {
     const { service, subscriptions } = setup();
-    expect(await service.grant(STUDENT, LINK)).toBe(true);
+    expect(await service.grant(STUDENT, LINK, COACH)).toBe(true);
     expect(subscriptions.create).toHaveBeenCalledWith(
       expect.objectContaining({
         userId: STUDENT,
@@ -50,14 +53,20 @@ describe("SponsoredSeatService.grant", () => {
    */
   it("leaves a student who already pays for themselves alone", async () => {
     const { service, subscriptions } = setup({ openForUser: { id: "own", status: "ACTIVE" } });
-    expect(await service.grant(STUDENT, LINK)).toBe(false);
+    expect(await service.grant(STUDENT, LINK, COACH)).toBe(false);
     expect(subscriptions.create).not.toHaveBeenCalled();
   });
 
   it("writes nothing while sponsorship is switched off", async () => {
     const { service, subscriptions } = setup({ sponsorshipEnabled: false });
-    expect(await service.grant(STUDENT, LINK)).toBe(false);
+    expect(await service.grant(STUDENT, LINK, COACH)).toBe(false);
     expect(subscriptions.findOpenForUser).not.toHaveBeenCalled();
+    expect(subscriptions.create).not.toHaveBeenCalled();
+  });
+
+  it.each([STUDENT, COACH])("does not grant when %s has no ACTIVE verified phone", async (id) => {
+    const { service, subscriptions } = setup({ unverified: id });
+    expect(await service.grant(STUDENT, LINK, COACH)).toBe(false);
     expect(subscriptions.create).not.toHaveBeenCalled();
   });
 });

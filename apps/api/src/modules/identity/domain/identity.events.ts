@@ -5,6 +5,7 @@
 export const IdentityEventTopic = {
   PROFILE_UPDATED: "identity.profile.updated",
   EMAIL_VERIFIED: "identity.email.verified",
+  PHONE_VERIFIED: "identity.phone.verified",
   /** A user followed another user → the followee is notified. */
   USER_FOLLOWED: "identity.user.followed",
   /** A user sent a study-buddy request → the addressee is notified. */

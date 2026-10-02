@@ -7,11 +7,12 @@ import { loadTurnstile, type TurnstileApi } from "@/lib/turnstile";
 
 export const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim();
 
-export function SignupTurnstile({ onToken, resetKey }: {
+export function SignupTurnstile({ onToken, resetKey, action = "signup" }: {
   onToken: (token: string | null) => void;
   resetKey: number;
+  action?: "signup" | "phone-verification";
 }) {
-  const translate = useTranslations("auth.turnstile");
+  const translate = useTranslations(action === "signup" ? "auth.turnstile" : "phone.turnstile");
   const container = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState("loading");
@@ -26,7 +27,7 @@ export function SignupTurnstile({ onToken, resetKey }: {
       api = loadedApi;
       widgetId = api.render(container.current, {
         sitekey: turnstileSiteKey,
-        action: "signup",
+        action,
         callback: (token) => { if (!cancelled) { onToken(token); setState("ready"); } },
         "expired-callback": () => { if (!cancelled) { onToken(null); setState("expired"); } },
         "error-callback": () => { if (!cancelled) { onToken(null); setState("error"); } },
@@ -36,7 +37,7 @@ export function SignupTurnstile({ onToken, resetKey }: {
       cancelled = true;
       if (widgetId !== undefined) api?.remove(widgetId);
     };
-  }, [attempt, onToken, resetKey]);
+  }, [action, attempt, onToken, resetKey]);
 
   if (!turnstileSiteKey) return null;
   return (

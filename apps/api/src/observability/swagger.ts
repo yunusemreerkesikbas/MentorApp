@@ -1,3 +1,4 @@
+import { SESSION_PRESETS } from "@mentor/validation";
 import type { INestApplication } from "@nestjs/common";
 import {
   SESSION_FOCUS_MINUTES_MIN,
@@ -56,7 +57,7 @@ export function addStudyDurationProperties(document: OpenAPIObject): void {
     session.properties = {
       ...session.properties,
       focusMinutes: { ...duration, nullable: false },
-      preset: { type: "string", enum: ["25_5", "50_10", "custom", "stopwatch"] },
+      preset: { type: "string", enum: [...SESSION_PRESETS] },
     };
   }
   for (const [name, property] of [

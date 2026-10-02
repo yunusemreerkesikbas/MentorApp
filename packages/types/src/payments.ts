@@ -173,6 +173,15 @@ export interface SubscriptionView {
   features: Record<PremiumFeatureId, FeaturePolicyDto>;
   /** null when the subscription pays the list price. */
   discount: SubscriptionDiscountDto | null;
+  /** Backend-owned account/phone eligibility. The selected plan must also offer trialDays > 0. */
+  trialEligibility: TrialEligibilityDto;
+  /** Owner-only hosted URL for a known PENDING trial; null for absent or unknown outcomes. */
+  pendingTrialCheckoutUrl: string | null;
+}
+
+export interface TrialEligibilityDto {
+  eligible: boolean;
+  reason: "AVAILABLE" | "PHONE_REQUIRED" | "ACCOUNT_USED" | "PHONE_USED" | "PENDING" | "NO_TRIAL";
 }
 
 /** POST /v1/subscription/checkout response. */

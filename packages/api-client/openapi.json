@@ -710,6 +710,113 @@
         ]
       }
     },
+    "/v1/users/me/phone": {
+      "get": {
+        "operationId": "PhoneController_getStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
+    "/v1/users/me/phone/verifications": {
+      "post": {
+        "operationId": "PhoneController_requestVerification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneVerificationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneVerificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
+    "/v1/users/me/phone/verifications/{challengeId}/confirm": {
+      "post": {
+        "operationId": "PhoneController_confirmVerification",
+        "parameters": [
+          {
+            "name": "challengeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneVerificationConfirmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
     "/v1/coach/access": {
       "get": {
         "operationId": "AiChatController_getAccess",
@@ -10660,6 +10767,95 @@
       "GoogleLinkStartDto": {
         "type": "object",
         "properties": {}
+      },
+      "PhoneStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": "boolean"
+          },
+          "maskedPhoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "reauthenticationRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verified",
+          "maskedPhoneNumber",
+          "available",
+          "reauthenticationRequired"
+        ]
+      },
+      "PhoneVerificationRequestDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+905321234567",
+            "maxLength": 32
+          },
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "phoneNumber"
+        ]
+      },
+      "PhoneVerificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resendAvailableAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maskedPhoneNumber": {
+            "type": "string"
+          },
+          "sendStatus": {
+            "type": "string",
+            "enum": [
+              "SENT",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "challengeId",
+          "expiresAt",
+          "resendAvailableAt",
+          "maskedPhoneNumber",
+          "sendStatus"
+        ]
+      },
+      "PhoneVerificationConfirmDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        },
+        "required": [
+          "code"
+        ]
       },
       "AiChatDto": {
         "type": "object",

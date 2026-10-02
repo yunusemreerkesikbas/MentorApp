@@ -117,6 +117,8 @@ const subscription: SubscriptionView = {
     },
   },
   discount: null,
+  trialEligibility: { eligible: false, reason: "PHONE_REQUIRED" },
+  pendingTrialCheckoutUrl: null,
 };
 
 const apiUrl = process.env.QA_STAGE3_API_URL?.replace(/\/$/, "") ?? "http://localhost:3001/v1";

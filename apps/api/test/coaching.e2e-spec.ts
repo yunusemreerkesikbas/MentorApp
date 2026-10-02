@@ -91,6 +91,7 @@ describe("coaching (e2e)", () => {
     const response = await request(app.getHttpServer()).get("/v1/docs-json");
     expect(response.status).toBe(200);
     const schemas = response.body.components.schemas;
+    expect(schemas.StartStudySessionDto.properties.preset.enum).toContain("stopwatch");
     expect(schemas.CreatePlanTaskDto.properties.durationMinutes).toMatchObject({
       type: "integer",
       minimum: 5,

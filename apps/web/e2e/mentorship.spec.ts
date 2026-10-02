@@ -1402,6 +1402,7 @@ async function mockApi(
       // in, and the panel needs the email flag to explain a locked invite code.
       return json(route, {
         registrationOpen: !options.applicationsClosed,
+        phoneVerified: true,
         registration: application,
         emailVerified: options.emailVerified ?? true,
       });

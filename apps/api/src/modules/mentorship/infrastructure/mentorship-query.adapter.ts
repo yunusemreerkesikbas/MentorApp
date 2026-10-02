@@ -34,7 +34,11 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
   ) {}
 
   async listRiskDigestCandidates(now: Date): Promise<CoachRiskDigestCandidate[]> {
-    const pairs = await this.links.listAllActiveLinks();
+    const activePairs = await this.links.listAllActiveLinks();
+    const coachIds = [...new Set(activePairs.map((pair) => pair.coachId))];
+    const verified = await Promise.all(coachIds.map((id) => this.users.isPhoneVerified(id)));
+    const verifiedCoachIds = new Set(coachIds.filter((_, index) => verified[index]));
+    const pairs = activePairs.filter((pair) => verifiedCoachIds.has(pair.coachId));
     if (pairs.length === 0) return [];
 
     const studentIds = [...new Set(pairs.map((pair) => pair.studentId))];

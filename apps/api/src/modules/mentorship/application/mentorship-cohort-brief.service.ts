@@ -58,6 +58,7 @@ export class MentorshipCohortBriefService {
    */
   async read(coachId: string): Promise<MentorshipCohortBriefDto | null> {
     await this.links.assertEnabled();
+    await this.links.assertCoachPhoneVerified(coachId);
     const row = await this.repo.find(coachId);
     if (!row) return null;
     const items = await this.hydrate(coachId, row.brief.items);
@@ -80,6 +81,7 @@ export class MentorshipCohortBriefService {
     roles: string[];
   }): Promise<MentorshipCohortBriefDto> {
     await this.links.assertEnabled();
+    await this.links.assertCoachPhoneVerified(coach.id);
     const now = new Date();
     const maxActiveStudents = await this.config.get(
       "mentorship.coach.max_active_students",

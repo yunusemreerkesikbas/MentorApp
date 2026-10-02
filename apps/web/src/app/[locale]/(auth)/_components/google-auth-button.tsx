@@ -6,6 +6,7 @@ import { getPathname } from "@/i18n/navigation";
 import type { Locale } from "@/i18n/routing";
 import { apiBaseUrl } from "@/lib/api-base";
 import { fetchGoogleAuthEnabled } from "@/lib/google-auth";
+import { readAuthNextParam } from "@/lib/post-auth-destination";
 import { useAuthSheetExit } from "./auth-shell";
 
 interface GoogleAuthButtonProps {
@@ -71,7 +72,9 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
       locale,
       returnTo: getPathname({
         locale: locale as Locale,
-        href: "/dashboard",
+        href: mode === "login" && readAuthNextParam() === "/settings?section=phone"
+          ? { pathname: "/settings", query: { section: "phone" } }
+          : "/dashboard",
       }),
     });
     if (mode === "signup") {

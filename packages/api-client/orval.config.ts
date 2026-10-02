@@ -20,6 +20,7 @@ export default defineConfig({
         // Our mutator returns the parsed body. Scope this to the new contract so
         // existing generated callers keep their current public types.
         tags: {
+          phone: { fetch: { includeHttpResponseReturnType: false } },
           "mentorship-followups": {
             fetch: { includeHttpResponseReturnType: false },
           },

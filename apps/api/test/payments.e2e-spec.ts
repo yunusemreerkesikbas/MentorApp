@@ -22,6 +22,7 @@ describe("payments (e2e)", () => {
   let pool: Pool;
   let accessToken = "";
   let providerRef = "";
+  let userId = "";
 
   /** SERVICE-context helper to seed an INCOMPLETE (verification-gate) row the fake provider can't produce. */
   const svc = async (fn: (c: import("pg").PoolClient) => Promise<void>) => {
@@ -37,6 +38,7 @@ describe("payments (e2e)", () => {
   };
 
   beforeAll(async () => {
+    process.env.PHONE_FINGERPRINT_SECRET = "test-phone-fingerprint-secret-at-least-32-characters";
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
@@ -66,6 +68,7 @@ describe("payments (e2e)", () => {
       ageEligibilityConfirmed: true,
     });
     accessToken = signup.body.accessToken;
+    userId = signup.body.user.id;
   }, 90_000); // cold module compile under load can exceed the global hookTimeout
 
   afterAll(async () => {
@@ -101,9 +104,24 @@ describe("payments (e2e)", () => {
     expect(res.status).toBe(200);
     expect(res.body.subscription).toBeNull();
     expect(res.body.entitlement.isPremium).toBe(false);
+    expect(res.body.trialEligibility).toEqual({ eligible: false, reason: "PHONE_REQUIRED" });
+  });
+
+  it("rejects a requested trial without a verified phone, before any provider subscription", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/subscription/checkout").set(auth())
+      .send({ planId: "premium-monthly", useTrial: true });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("AUTH_PHONE_REQUIRED");
+    await svc(async (c) => {
+      const count = await c.query("select count(*)::int as n from subscriptions where user_id=$1", [userId]);
+      expect(count.rows[0].n).toBe(0);
+    });
   });
 
   it("checkout starts a TRIALING subscription → entitlement PREMIUM", async () => {
+    await svc(async (c) => {
+      await c.query("update users set phone_number=$2, phone_verified_at=now() where id=$1", [userId, `+9055${String(RUN).slice(-8)}`]);
+    });
     const res = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth())
@@ -115,6 +133,12 @@ describe("payments (e2e)", () => {
     expect(view.body.subscription.status).toBe("TRIALING");
     expect(view.body.entitlement.isPremium).toBe(true);
     expect(view.body.entitlement.reason).toBe("TRIALING");
+    await svc(async (c) => {
+      const claims = await c.query("select status, consumed_at, expires_at from phone_trial_claims where user_id=$1", [userId]);
+      expect(claims.rows).toHaveLength(1);
+      expect(claims.rows[0].status).toBe("CONSUMED");
+      expect(claims.rows[0].expires_at.getUTCFullYear()).toBe(claims.rows[0].consumed_at.getUTCFullYear() + 1);
+    });
     providerRef = new URL(res.body.checkoutUrl).searchParams.get("ref")!;
   });
 
@@ -242,6 +266,10 @@ describe("payments (e2e)", () => {
   });
 
   it("re-subscribe after expiry works WITHOUT a second trial (trial-once §7)", async () => {
+    const explicit = await request(app.getHttpServer()).post("/v1/subscription/checkout").set(auth())
+      .send({ planId: "premium-monthly", useTrial: true });
+    expect(explicit.status).toBe(409);
+    expect(explicit.body.code).toBe("PAYMENT_TRIAL_UNAVAILABLE");
     const res = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth())
@@ -250,6 +278,20 @@ describe("payments (e2e)", () => {
 
     const view = await request(app.getHttpServer()).get("/v1/subscription").set(auth());
     expect(view.body.subscription.status).toBe("ACTIVE"); // no TRIALING this time
+    expect(view.body.subscription.trialEndsAt).toBeNull();
+  });
+
+  it("explicit paid checkout needs no verified phone", async () => {
+    const signup = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `w4-paid-${RUN}@test.local`, password: "Sifre1234", displayName: "Paid without phone",
+      kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true,
+    });
+    const paidAuth = { Authorization: `Bearer ${signup.body.accessToken}` };
+    const res = await request(app.getHttpServer()).post("/v1/subscription/checkout").set(paidAuth)
+      .send({ planId: "premium-monthly", useTrial: false });
+    expect(res.status).toBe(200);
+    const view = await request(app.getHttpServer()).get("/v1/subscription").set(paidAuth);
+    expect(view.body.subscription.status).toBe("ACTIVE");
     expect(view.body.subscription.trialEndsAt).toBeNull();
   });
 

@@ -69,6 +69,32 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Verified-phone carded trials and sponsorship gates (2026-10-02).** Checkout accepts
+  additive `useTrial`: `false` buys without phone verification, `true` rejects unavailable trials,
+  and omitted values keep automatic account-trial selection. `GET /v1/subscription` returns
+  backend-owned `trialEligibility` for the web. An eligible trial requires an ACTIVE verified phone;
+  `pendingTrialCheckoutUrl` exposes only the current owner's known pending hosted URL, so the
+  subscription/paywall can resume directly without another provider call. Unknown holds return null.
+  account purchase history still permits only one account trial. A payment-owned keyed fingerprint
+  is reserved before provider I/O, with unique phone and pending-account constraints. The intended
+  INCOMPLETE subscription and promotion reservation are committed before that single call. Instant
+  fake checkout, `checkout_completed`, and first `payment_succeeded` consume the snapshot in the
+  same transaction that grants access, retaining it for twelve calendar months. Hosted trial
+  confirmation starts the duration reserved at checkout, even after a delayed webhook;
+  it never silently changes an intended trial into paid ACTIVE access. Binding and
+  activation recheck ACTIVE verification under an identity row lock and
+  require the claim's original user association, so erasure cannot reattach a detached reservation;
+  the fingerprint snapshot itself never follows a phone change. Erasure detaches
+  the user; the retention job purges only expired CONSUMED claims. Definitive rejection/cancellation
+  releases PENDING claims; ambiguous outcomes retain them without a timer. Matching retries return
+  the original hosted URL; unknown outcomes return `PAYMENT_TRIAL_PENDING` and require provider or
+  operator evidence before reconciliation. Do not delete a hold solely because it is old. The
+  iyzico skeleton makes no live calls; its local refusal is explicitly definitive. Sponsored-seat
+  `grant(studentId, linkId, coachId)` verifies BOTH ACTIVE phones centrally even when sponsorship is
+  enabled. Related: `phone-trial.service.ts`, `trial-checkout.service.ts`,
+  `phone-trials.repository.ts`, `schema-phone-trials.ts`, `subscriptions.service.ts`,
+  `sponsored-seat.service.ts`, migration `0120`, `payments.e2e-spec.ts`, `phone-trials.e2e-spec.ts`.
+
 ### 2026-09-17 — XP / Coin launch integration
 
 - First-positive-charge and source-payment refund events are persisted with payment transactions through the existing JobQueuePort transaction option. The retry handler restores the original payment timestamp. PaymentEvidenceService exposes refund evidence without sharing tables. Trials and later renewals do not create invite grants. Usage: process existing jobs normally. See payment-reward-events.service.ts and economy.md.
@@ -292,11 +318,21 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - **iyzico adapter is UNVERIFIED** — fails loudly until Phase-0 sandbox keys. **Prod lock:** `fake`
   forbidden in production (env validation at boot). `createCheckout`/`cancel`/`verifyWebhook`/`refund`
   all `notVerified()` until the real HTTP + HMAC-SHA1 mapping lands with sandbox creds.
-- **Verification gate (shipped, WP-I):** hosted-page providers create an INCOMPLETE row at
+- **Phone-trial live launch blocker (2026-10-02).** Before enabling live trials, the real adapter
+  must correlate a callback that arrives before the checkout response/provider reference is saved.
+  The current general webhook behavior records and acknowledges unknown references. That evidence
+  must be reconciled with the payment-owned pending claim and intended subscription before applying
+  activation; replaying the HTTP webhook alone will hit its idempotency record. A transport timeout
+  or an old claim is not rejection evidence. Retain the hold, obtain a verified provider result,
+  restore the reference/hosted URL only for its still-attached ACTIVE account, then apply the
+  recorded normalized event through the existing transactional subscription service. Confirm the
+  provider billing calendar matches the duration reserved at checkout before declaring trial
+  launch ready. There are no live iyzico calls in this development.
+- **Verification gate (shipped, WP-I; phone trials revised 2026-10-02):** hosted-page providers create an INCOMPLETE row at
   checkout-INIT; only `checkout_completed` activates it (INCOMPLETE→TRIALING/ACTIVE by the row's
   `trialEndsAt`). INCOMPLETE grants no premium (`computeEntitlement` → `free("INCOMPLETE")`). An
-  abandoned INCOMPLETE row is **deleted** on the next checkout (not expired) so the user isn't locked
-  out and trial-once stays intact. The FAKE provider stays instant (its INCOMPLETE path is exercised
+  legacy paid INCOMPLETE row is **deleted** on the next checkout. A phone-trial INCOMPLETE row is
+  retained with its phone hold until a definitive outcome; retries reuse its checkout URL. The FAKE provider stays instant (its INCOMPLETE path is exercised
   only via a seeded row + signed webhook in e2e).
 - **Refund calls the provider (shipped, WP-I):** `refundLastCharge` invokes `PaymentsPort.refund()`
   before appending the `REFUND`/`REFUNDED` ledger row; the returned `refundRef` is stored in the row's
@@ -306,7 +342,10 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 - **Append-only ledger (§3):** the original charge row is never edited/deleted; net revenue = Σ amounts.
 - **Webhook controller needs the raw body** — captured via the json `verify` hook in main.ts (e2e
   mirrors it). Payments e2e `beforeAll` has a 90s timeout (cold compile under load on Windows).
-- **Trial-once** = "has the user EVER had a subscription row"; expired users re-subscribe without trial.
+- **Trial-once** = account purchase history excluding INCOMPLETE and SPONSOR rows, plus a verified-phone
+  fingerprint that may be used once within twelve calendar months. Expired subscribers still
+  re-subscribe without another account trial. Phone-change and account erasure cannot clear an
+  unexpired consumed phone fingerprint; unknown pending claims have no automatic expiry.
 - **Cancel confirm** — web `/abonelik` uses `useMentorDialog().confirm()` + post-success `info()`;
   dialog copy from `subscription.*` i18n; API errors from backend message.
 - **Checkout redirect** (`window.location.assign`) unchanged — provider-hosted flow.

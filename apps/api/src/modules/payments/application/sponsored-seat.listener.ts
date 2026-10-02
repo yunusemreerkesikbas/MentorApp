@@ -37,7 +37,7 @@ export class SponsoredSeatListener {
     if (event.seatKind !== MentorshipSeatKind.FREE && event.seatKind !== MentorshipSeatKind.PAID) {
       return;
     }
-    await this.seats.grant(event.studentId, event.linkId).catch((err: unknown) => {
+    await this.seats.grant(event.studentId, event.linkId, event.coachId).catch((err: unknown) => {
       this.logger.error(`Sponsored seat grant failed for link ${event.linkId}`, err);
     });
   }

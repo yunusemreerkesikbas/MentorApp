@@ -48,7 +48,7 @@ export class MentorshipApplicationController {
    * One call rather than three because every screen that asks one of these asks all of them: the
    * registration form needs `registrationOpen` BEFORE it is filled in (the old endpoint only
    * revealed a closed intake by rejecting a completed submission), and the coach panel needs
-   * `emailVerified` to explain a locked invite code.
+   * `emailVerified` and `phoneVerified` to explain a locked invite code.
    *
    * `registration: null` rather than a 404, matching `GET /my-coach`: "you have not registered" is
    * a state, not an error, and a 404 would render a failure for the most common case there is.

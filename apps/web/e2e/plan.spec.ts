@@ -817,6 +817,8 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     },
     features: {} as SubscriptionView["features"],
     discount: null,
+    trialEligibility: { eligible: false, reason: "NO_TRIAL" },
+    pendingTrialCheckoutUrl: null,
   };
 
   await page.addInitScript((scale: string | null) => {

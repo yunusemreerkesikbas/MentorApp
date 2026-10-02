@@ -1,4 +1,8 @@
 import { randomUUID } from "node:crypto";
+import { ConfigService } from "@nestjs/config";
+import type { Env } from "../../../config/env.validation";
+import type { DatabaseTx } from "../../../database/drizzle";
+import { phoneFingerprint } from "../domain/phone";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger, Optional } from "@nestjs/common";
@@ -44,6 +48,7 @@ export class UsersService {
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
     private readonly events: EventEmitter2,
     @Optional() private readonly authService?: AuthService,
+    @Optional() private readonly phoneEnv?: ConfigService<Env, true>,
   ) {}
 
   /** Resolve @mention handles → `lowercase-username → userId` map (used by the forum mention notifier). */
@@ -134,6 +139,18 @@ export class UsersService {
   async isEmailVerified(userId: string): Promise<boolean> {
     const user = await this.usersRepo.findByIdService(userId);
     return user?.emailVerifiedAt != null;
+  }
+
+  async isPhoneVerified(userId: string): Promise<boolean> {
+    return (await this.usersRepo.findActiveVerifiedPhone(userId)) !== null;
+  }
+
+  /** The only trial seam exposed to payments. Raw phones remain inside identity. */
+  async getVerifiedPhoneFingerprint(userId: string, tx?: DatabaseTx): Promise<string | null> {
+    const secret = this.phoneEnv?.get("PHONE_FINGERPRINT_SECRET", { infer: true });
+    if (!secret) return null;
+    const phone = await this.usersRepo.findActiveVerifiedPhone(userId, tx);
+    return phone ? phoneFingerprint(secret, phone) : null;
   }
 
   /**

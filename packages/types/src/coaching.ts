@@ -143,8 +143,7 @@ export interface PlanTaskDto {
   endTime: string | null;
   /** Optional study length, independent of the calendar slot. */
   durationMinutes: number | null;
-  /** Backend-resolved focus length: explicit duration, usable slot, then default preset. */
-  /** Null means an untimed stopwatch session. */
+  /** Backend-resolved focus length: explicit duration, usable slot, otherwise null for stopwatch. */
   sessionFocusMinutes: number | null;
   /** Free-text note shown in the calendar event preview. The STUDENT's own words. */
   description: string | null;

@@ -88,6 +88,10 @@ describe("mentorship coach registry (e2e)", () => {
       await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
     });
 
+  const verifyPhone = (label: string) => svc(async (c) => {
+    await c.query("update users set phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1", [userId[label]]);
+  });
+
   const setOpen = (open: boolean) =>
     app.get(ConfigRegistryService).set(userId.admin!, "mentorship.applications.open", open);
 
@@ -180,6 +184,7 @@ describe("mentorship coach registry (e2e)", () => {
       registrationOpen: true,
       registration: null,
       emailVerified: false,
+      phoneVerified: false,
     });
   });
 
@@ -222,26 +227,40 @@ describe("mentorship coach registry (e2e)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("registers a coach as ACTIVE, unverified and unbadged", async () => {
+  it("requires verified email and phone before registering an ACTIVE, unbadged coach", async () => {
+    const missingEmail = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
+    expect(missingEmail.status).toBe(403);
+    expect(missingEmail.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
+    await verifyEmail("coach");
+    const missingPhone = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
+    expect(missingPhone.status).toBe(403);
+    expect(missingPhone.body.code).toBe("AUTH_PHONE_REQUIRED");
+    await verifyPhone("coach");
     const created = await http()
       .post("/v1/mentorship/coach-registration")
       .set(auth("coach"))
       .send(REGISTRATION);
     expect(created.status).toBe(201);
     expect(created.body.status).toBe("ACTIVE");
-    // Nobody approved anything, so nothing is verified. This is the normal case now, not the edge.
+    // Contact verification activates coaching; profile claims still require independent review.
     expect(created.body.verifiedClaims).toEqual([]);
 
-    const registry = await http().get("/v1/admin/coaches").set(auth("admin"));
-    expect(registry.status).toBe(200);
-    const row = registry.body.find((r: { userId: string }) => r.userId === userId.coach);
-    expect(row).toMatchObject({ status: "ACTIVE", hasCoachRole: true });
-    // The registry joins the person back on: W8 never reads `users`, admin does.
-    expect(row.email).toContain("w8reg-coach");
+    // The admin registry has a fixed 200-row cap and oldest-first ordering; repeated runs need
+    // not include this fixture in that global page. Read our own authoritative row instead.
+    const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
+    expect(state.body).toMatchObject({
+      registration: { id: created.body.id, status: "ACTIVE" },
+      emailVerified: true,
+      phoneVerified: true,
+    });
+    expect(await rolesOf("coach")).toContain(UserRole.COACH);
   });
 
   it("still refuses the invite code until the email is verified", async () => {
-    // The registry row exists now, so this isolates the email condition on its own.
+    // Losing contact verification after registration closes the gate on every existing token.
+    await svc(async (c) => {
+      await c.query("update users set email_verified_at = null where id = $1", [userId.coach]);
+    });
     const code = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
     expect(code.status).toBe(403);
     expect(code.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");

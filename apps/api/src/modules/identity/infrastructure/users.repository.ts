@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, asc, desc, eq, gt, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { users } from "../../../database/schema";
+import { phoneVerifications } from "../../../database/schema-phone";
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -39,6 +40,17 @@ export interface PublicUserSearchRow {
 @Injectable()
 export class UsersRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  /** Public-service seam for payments: lock in its transaction, keeping the phone inside identity. */
+  async findActiveVerifiedPhone(id: string, tx?: DatabaseTx): Promise<string | null> {
+    const read = async (context: DatabaseTx, lock: boolean) => {
+      const query = context.select({ phone: users.phoneNumber }).from(users).where(and(
+        eq(users.id, id), eq(users.status, "ACTIVE"), isNotNull(users.phoneVerifiedAt), isNotNull(users.phoneNumber)));
+      const [row] = await (lock ? query.for("update") : query);
+      return row?.phone ?? null;
+    };
+    return tx ? read(tx, true) : withServiceContext(this.db, (context) => read(context, false));
+  }
 
   async findByEmailService(email: string): Promise<UserRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -363,8 +375,12 @@ export class UsersRepository {
           bio: null,
           website: null,
           avatarStorageKey: null,
+          phoneNumber: null,
+          phoneVerifiedAt: null,
         })
         .where(eq(users.id, id));
+
+      await tx.delete(phoneVerifications).where(eq(phoneVerifications.userId, id));
 
       const { avatarStorageKey, ...before } = current;
       return { before, after, avatarStorageKey };
