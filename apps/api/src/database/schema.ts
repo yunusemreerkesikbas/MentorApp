@@ -126,6 +126,8 @@ export const users = pgTable(
     /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    phoneNumber: text("phone_number"),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
       withTimezone: true,
@@ -149,6 +151,8 @@ export const users = pgTable(
   (t) => [
     uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`),
     uniqueIndex("users_username_unique_idx").on(sql`lower(${t.username})`),
+    uniqueIndex("users_active_phone_unique_idx").on(t.phoneNumber)
+      .where(sql`${t.status} = 'ACTIVE' AND ${t.phoneVerifiedAt} IS NOT NULL`),
   ],
 );
 

@@ -201,6 +201,7 @@ async function mockApi(page: Page, user: AuthUser, options: MockOptions = {}) {
     if (path === "/v1/mentorship/coach-registration/mine") {
       return json({
         registrationOpen: true,
+        phoneVerified: true,
         emailVerified: options.emailVerified ?? user.emailVerified,
         registration: {
           id: "reg-1",

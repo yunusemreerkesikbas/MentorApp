@@ -98,7 +98,7 @@ audited) or one admin screen.
 | 4   | `ai.features.mentorship.{brief,cohort_brief,suggestions}.free_enabled = true`, limits 6 / 3 / 3 | The coach assistant for a coach without a plan: student brief and meeting preparation (one shared quota), the cohort brief, homework drafts. Past the day's limit the refusal is `MENTORSHIP_AI_DAILY_LIMIT`. | LLM per free coach per day, capped by the limits and `ai.budget.monthly_cap_usd_cents` | Clean. Stored briefs stay readable; new ones refuse with `PAYMENT_PREMIUM_REQUIRED`. |
 | 5   | `mentorship.risk_digest.enabled = true`       | The 07:00 UTC morning email. Do this **after** a cohort exists.                                               | Email volume                         | Clean.                                                                                                                       |
 | 6   | **SMS OTP shipped**                           | Nothing by itself. It is the PREREQUISITE for step 7.                                                         | A provider bill                      | n/a                                                                                                                          |
-| 7   | `mentorship.seats.sponsorship_enabled = true` | A seat also opens the student's Premium. **Spends money.** Seated links made before it get their Premium when the coach next opens `/kocluk` (`fillMissingSponsorships`). | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
+| 7   | `mentorship.seats.sponsorship_enabled = true` | A seat opens the student's Premium only after both ACTIVE accounts verify their phones. **Spends money.** `identity.phone.verified` backfills existing seated links immediately; opening `/kocluk` remains the repair path. | `coaches x free_seats` in LLM budget | **NOT clean — see below.**                                                                                                   |
 
 **Step 6 is not optional, and it is new (APP-089).** Approval used to bound the coach count: a
 human said yes to each one, so `coaches x free_seats` had a person in front of it. Registration is
@@ -107,7 +107,8 @@ produce, which is not a bound. Email verification stops nothing here — free ad
 unlimited — and SMS is the first thing that costs an attacker anything per account. Until it
 ships, `sponsorship_enabled = false` IS the defence.
 
-**Step 4 does not wait for SMS OTP (decision 2026-09-26).** Its exposure is per coach per day and
+**Step 4 does not require the student's SMS OTP (decision 2026-09-26).** Coach activation still
+requires the coach's verified contact. The assistant's exposure is per coach per day and
 small (short, fingerprint-cached briefs), the global budget cap sits above it, and one config write
 turns it off. A seat's Premium is a whole student's AI, which is why step 7 still waits. AGENTS.md
 §4 #4 names both paths.
@@ -229,6 +230,26 @@ is null, not zero) and one who never checked in. Absence of data is not evidence
 flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-02 — Phone verification gates for coaches and sponsored seats.** Coach registration
+  and admin activation require verified email and a verified phone on an ACTIVE account before
+  registry/role writes. Invite issue and redemption recheck the phone, including manually granted
+  COACH roles. Existing coach-to-student reads/writes, collection briefs, followups and risk/due
+  reminders/assignment notifications recheck coach verification; student acceptance, own reads,
+  responses and leaving stay available without student verification. `coach-registration/mine`
+  adds `phoneVerified`;
+  `my-coach` adds server-computed `sponsoredPremiumPending` for a seated link held by verification,
+  false when Premium already exists (including STAFF). Verifying either
+  participant triggers `SeatEventsListener` reconciliation and idempotent sponsorship grants for
+  unchanged FREE/PAID seats, so the student does not wait for a coach overview visit. **Usage:**
+  complete the identity phone flow before activating a coach; render the student verification CTA
+  only from `sponsoredPremiumPending`. **Gotchas:** no legacy bypass; the sponsorship switch remains
+  off by default, and the coach assistant's daily taste limits/budget policy are unchanged. The
+  pending flag describes held eligibility, not a promise that other entitlement checks will grant.
+  **Files:** `mentorship-application.service.ts`, `mentorship-link.service.ts`,
+  `seat-events.listener.ts`, `plan-task-feedback.listener.ts`,
+  `mentorship-{roster,cohort-brief,followup}.service.ts`,
+  `mentorship-query.adapter.ts`, `packages/types/src/mentorship.ts` and matching regression tests.
 
 - **2026-09-29 — Round 1 review fixes (stop D).** An independent review of stops A to B3 found no
   critical issue; the fixes: (1) focus no longer falls to the page body when a control removes

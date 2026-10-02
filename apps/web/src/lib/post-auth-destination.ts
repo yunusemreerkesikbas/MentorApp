@@ -41,7 +41,7 @@ export function postAuthDestination(
   if (!hasCompletedOnboarding(user)) return "/onboarding";
   if (isCoach(user)) {
     const safeNext = safeNextPath(next);
-    return safeNext && /^\/(?:[a-z]{2}\/)?plan(?:[/?#]|$)/.test(safeNext)
+    return safeNext && /^\/(?:[a-z]{2}\/)?(?:plan|settings|profile)(?:[/?#]|$)/.test(safeNext)
       ? safeNext
       : COACH_HOME;
   }

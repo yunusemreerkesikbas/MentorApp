@@ -408,3 +408,15 @@ for (const scenario of [
     await page.screenshot({ path: testInfo.outputPath("panel-rail.png"), fullPage: true });
   });
 }
+
+
+test("untimed dashboard task opens a stopwatch", async ({page}) => {
+  await mockPanel(page, [{ ...task(FIRST_TASK, "Review", "PENDING"), durationMinutes: null, sessionFocusMinutes: null }]);
+  await page.goto("/panel");
+  const card = page.getByTestId("today-path-card");
+  await expect(card).toContainText("Kendi temponda ba\u015fla");
+  const cta = page.getByTestId("today-path-cta");
+  await expect(cta).toHaveAccessibleName("Review \u00b7 S\u00fcresiz ba\u015fla");
+  await expect(cta).toHaveAttribute("href", /preset=stopwatch/);
+  await expect(cta).not.toHaveAttribute("href", /minutes=/);
+});

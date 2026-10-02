@@ -96,7 +96,7 @@ describe("mentorship (e2e)", () => {
       );
       if (role === UserRole.COACH) {
         await c.query(
-          "update users set email_verified_at = now() where id = $1",
+          "update users set email_verified_at = now(), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1",
           [userId[label]],
         );
         await c.query(
@@ -402,8 +402,8 @@ describe("mentorship (e2e)", () => {
     const roster = await http()
       .get("/v1/mentorship/students")
       .set(auth("admin"));
-    expect(roster.status).toBe(200);
-    expect(roster.body.total).toBe(0);
+    expect(roster.status).toBe(403);
+    expect(roster.body.code).toBe("AUTH_PHONE_REQUIRED");
 
     const reach = await http()
       .delete(`/v1/mentorship/students/${userId.student}`)

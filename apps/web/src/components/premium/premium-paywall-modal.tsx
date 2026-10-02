@@ -29,6 +29,8 @@ import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
 import { fetchAutoPromotionOffers, fetchPromotionOffers } from "@/lib/promotions";
 import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
 import { StoreButtons } from "./store-buttons";
+import { SubscriptionPurchaseChoice } from "./subscription-purchase-choice";
+import { PendingTrialCheckout } from "./pending-trial-checkout";
 
 function apiMessage(err: unknown): string {
   return err instanceof ApiClientError || err instanceof Error ? err.message : String(err);
@@ -113,6 +115,7 @@ export function PremiumPaywallModal({
   const [view, setView] = useState<SubscriptionView | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [consent, setConsent] = useState(false);
+  const [wantsTrial, setWantsTrial] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -191,6 +194,7 @@ export function PremiumPaywallModal({
 
   const mode = purchaseMode(plans, getStoreLinks());
   const purchaseEnabled = mode === "checkout";
+  const pendingTrial = view?.trialEligibility?.reason === "PENDING";
   const selected = plans.find((plan) => plan.id === selectedId) ?? plans[0];
   const selectedOffer = selected ? offers?.offers[selected.id] : undefined;
   const selectedDiscount =
@@ -209,6 +213,7 @@ export function PremiumPaywallModal({
     try {
       const session = (await subscriptionsControllerCheckout({
         planId: selected.id,
+        useTrial: wantsTrial,
         ...(appliedCode ? { code: appliedCode } : {}),
       })) as unknown as { checkoutUrl: string };
       window.location.assign(session.checkoutUrl);
@@ -221,6 +226,14 @@ export function PremiumPaywallModal({
             : String(err),
       );
       setBusy(false);
+    }
+  }
+
+  async function refreshEligibility() {
+    try {
+      setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
+    } catch (err) {
+      setError(apiMessage(err));
     }
   }
 
@@ -250,13 +263,10 @@ export function PremiumPaywallModal({
 
   if (!mounted) return null;
 
-  const trialDays = selected?.trialDays ?? 0;
+  const trialDays = wantsTrial ? selected?.trialDays ?? 0 : 0;
   /**
    * The pre-purchase disclosure (ön bilgilendirme formu) must state the ACTUAL total charged and,
    * when only the first period is discounted, the price of every renewal after it.
-   *
-   * ponytail: the trial half mirrors the existing `trialDays > 0` check. The client still cannot
-   * tell whether a returning subscriber is trial-eligible — a pre-existing gap this does not widen.
    */
   const consentText = selectedDiscount
     ? tSub(
@@ -274,7 +284,9 @@ export function PremiumPaywallModal({
           renewalPrice: formatPrice(selectedDiscount.renewalPriceMinor, locale),
         },
       )
-    : tSub("trial_consent");
+    : trialDays > 0
+      ? tSub("trial_consent_days", { days: trialDays })
+      : tSub("paid_consent", { price: formatPrice(selected?.priceMinor ?? 0, locale) });
 
   const couponField = appliedCode ? (
     <div
@@ -346,7 +358,7 @@ export function PremiumPaywallModal({
     </button>
   );
 
-  const footer = (
+  const footer = pendingTrial ? <PendingTrialCheckout checkoutUrl={view?.pendingTrialCheckoutUrl ?? null} /> : (
     <motion.div
       className="flex flex-col gap-3"
       initial={reduceMotion ? false : { opacity: 0, y: 10 }}
@@ -395,11 +407,11 @@ export function PremiumPaywallModal({
         <Button
           fullWidth
           className="min-h-[60px]"
-          disabled={!selected || !consent || view?.entitlement.isPremium}
+          disabled={!selected || !consent || !selected.purchaseEnabled || view?.entitlement.isPremium || (wantsTrial && !view?.trialEligibility.eligible)}
           busy={busy}
           onClick={() => void checkout()}
         >
-          {t("subscribe")}
+          {tSub(wantsTrial ? "start_trial" : "start_paid")}
         </Button>
       ) : mode === "store" ? (
         <StoreButtons links={getStoreLinks()} />
@@ -566,6 +578,12 @@ export function PremiumPaywallModal({
           </div>
         ) : null}
 
+        {!loading && purchaseEnabled && !pendingTrial && selected ? (
+          <div className="mt-5">
+            <SubscriptionPurchaseChoice eligibility={view?.trialEligibility} trialDays={selected.trialDays} wantsTrial={wantsTrial} onChange={(next) => { setWantsTrial(next); setConsent(false); }} onPhoneVerified={() => void refreshEligibility()} />
+          </div>
+        ) : null}
+
         <div className="min-h-8 flex-1 lg:hidden" aria-hidden />
 
         {loading ? (
@@ -575,7 +593,7 @@ export function PremiumPaywallModal({
           </SkeletonGroup>
         ) : null}
 
-        {!loading && plans.length > 0 ? (
+        {!loading && !pendingTrial && plans.length > 0 ? (
           <motion.div
             // One plan must not sit in a half-width column (the catalog is monthly-only today).
             className={`mt-5 grid gap-3 lg:mt-4 ${plans.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
@@ -599,7 +617,7 @@ export function PremiumPaywallModal({
                   key={plan.id}
                   type="button"
                   variants={reduceMotion ? undefined : staggerItemVariants}
-                  onClick={() => setSelectedId(plan.id)}
+                  onClick={() => { setSelectedId(plan.id); setWantsTrial(false); setConsent(false); }}
                   aria-pressed={selectedPlan}
                   className="relative min-h-11 rounded-[var(--paywall-plan-radius)] px-3 py-3 text-left transition-[border-color,background-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:active:scale-100"
                   style={{

@@ -168,6 +168,8 @@ export interface MyCoachDto {
    * opens nothing through it and a Premium the seat carried is closed until a seat returns.
    */
   seatWaiting: boolean;
+  /** Sponsor access is held by phone verification; false when Premium already exists. */
+  sponsoredPremiumPending: boolean;
 }
 
 /**
@@ -656,6 +658,8 @@ export interface MentorshipCoachRegistrationStateDto {
   registrationOpen: boolean;
   /** Null when this person has never registered as a coach. */
   registration: MentorshipApplicationDto | null;
-  /** The invite code stays locked until this is true (APP-089). */
+  /** Coach activation and the invite code require verified email. */
   emailVerified: boolean;
+  /** Coach activation and invitations require verified phone on an ACTIVE identity account. */
+  phoneVerified: boolean;
 }

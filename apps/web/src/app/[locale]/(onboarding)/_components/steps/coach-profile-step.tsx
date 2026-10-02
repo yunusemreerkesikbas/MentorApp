@@ -6,6 +6,7 @@ import { ApiClientError } from "@mentor/api-client";
 import { Button, TextAreaField, TextField } from "@mentor/ui";
 import { PlayFooter } from "@/components/onboarding-play/play-footer";
 import { PuhuBubble } from "@/components/onboarding-play/play-heading";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { registerCoach } from "@/lib/mentorship";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
@@ -42,9 +43,10 @@ export function CoachProfileStep({
   const [years, setYears] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   const trimmed = (value: string) => (value.trim() === "" ? null : value.trim());
-  const canSave = headline.trim() !== "" && bio.trim() !== "" && !saving;
+  const canSave = phoneVerified && headline.trim() !== "" && bio.trim() !== "" && !saving;
 
   async function handleSave() {
     if (!canSave) return;
@@ -84,6 +86,7 @@ export function CoachProfileStep({
         </PlayFooter>
       }
     >
+      <PhoneVerificationCard onStatusChange={(phone) => setPhoneVerified(phone.verified)} />
       <form
         id={FORM_ID}
         className="flex w-full flex-col gap-4"

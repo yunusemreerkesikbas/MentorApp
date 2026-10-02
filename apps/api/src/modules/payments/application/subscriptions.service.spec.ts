@@ -2,6 +2,20 @@ import { describe, expect, it, vi } from "vitest";
 import { CONFIG_CATALOG, type ConfigKey } from "../../../common/config/config.catalog";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { SubscriptionsService, nextPeriodEnd } from "./subscriptions.service";
+import { DomainError } from "../../../common/errors/domain-error";
+import { TrialCheckoutService } from "./trial-checkout.service";
+import { CheckoutRejectedError } from "../domain/checkout-rejected.error";
+
+function trialStub() {
+  return {
+    eligibility: vi.fn(async () => ({ eligible: true, reason: "AVAILABLE" })),
+    pendingCheckoutUrl: vi.fn(async () => null),
+    resume: vi.fn(async () => null),
+    selectTrial: vi.fn(async (_user: string, days: number, requested: boolean | undefined, used: boolean) => requested !== false && days > 0 && !used),
+    reserve: vi.fn(async () => ({ id: "claim-1" })),
+    bind: vi.fn(), saveCheckout: vi.fn(), consume: vi.fn(), release: vi.fn(), releaseForSubscription: vi.fn(),
+  };
+}
 
 const MONTH = 1;
 const addMonths = (d: Date, m: number) => {
@@ -119,6 +133,8 @@ describe("SubscriptionsService payment availability", () => {
       paymentProvider as never,
       {} as never,
       { append: vi.fn() } as never,
+      trialStub() as never,
+      {} as never,
     );
     return { service, paymentProvider };
   }
@@ -212,6 +228,8 @@ describe("SubscriptionsService checkout with a promotion", () => {
         .fn()
         .mockResolvedValue({ checkoutUrl: "https://pay/x", providerRef: "ref-1" }),
     };
+    const trials = trialStub();
+    (subsRepo as unknown as { update: unknown }).update = vi.fn();
     const service = new SubscriptionsService(
       db as never,
       plansRepo as never,
@@ -227,8 +245,10 @@ describe("SubscriptionsService checkout with a promotion", () => {
       paymentProvider as never,
       {} as never,
       { append: vi.fn() } as never,
+      trials as never,
+      new TrialCheckoutService(db as never, subsRepo as never, promotions as never, trials as never, paymentProvider as never),
     );
-    return { service, subsRepo, promotions, paymentProvider, db, tx };
+    return { service, subsRepo, promotions, paymentProvider, db, tx, trials };
   }
 
   /** A subscriber whose paid period ran out last month: the win-back audience. */
@@ -316,11 +336,77 @@ describe("SubscriptionsService checkout with a promotion", () => {
 
     await service.checkout(USER, plan.id, "HOSGELDIN");
 
-    expect(db.transaction).toHaveBeenCalledTimes(1);
+    expect(db.transaction).toHaveBeenCalled();
     expect(subsRepo.create).toHaveBeenCalledWith(expect.any(Object), tx);
     expect(promotions.reserve).toHaveBeenCalledWith(
       expect.objectContaining({ tx, subscriptionId: "sub-1", offer: DISCOUNTED_OFFER }),
     );
+  });
+
+  it("rejects trial eligibility before retiring a sponsored seat or calling the provider", async () => {
+    const { service, subsRepo, trials, paymentProvider } = makeService(LIST_OFFER);
+    const expire = vi.fn();
+    (subsRepo as unknown as { expireSponsorship: unknown }).expireSponsorship = expire;
+    subsRepo.findOpenForUser.mockResolvedValue({ id: "sponsor", status: "ACTIVE", provider: "SPONSOR" });
+    trials.selectTrial.mockRejectedValue(new DomainError("AUTH_PHONE_REQUIRED", 403));
+    await expect(service.checkout(USER, plan.id, undefined, true)).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
+    expect(expire).not.toHaveBeenCalled();
+    expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("returns a known pending URL without opening another provider checkout", async () => {
+    const { service, trials, paymentProvider } = makeService(LIST_OFFER);
+    trials.resume.mockResolvedValue({ checkoutUrl: "https://pay/original" } as never);
+    expect(await service.checkout(USER, plan.id, undefined, true)).toEqual({ checkoutUrl: "https://pay/original" });
+    expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("retains an unknown provider outcome and rejects rather than opening another checkout", async () => {
+    const { service, trials, paymentProvider } = makeService(LIST_OFFER);
+    paymentProvider.createCheckout.mockRejectedValue(new Error("connection lost"));
+    await expect(service.checkout(USER, plan.id, undefined, true)).rejects.toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
+    expect(trials.release).not.toHaveBeenCalled();
+  });
+
+  it("releases only a definitive provider rejection and discards the unconfirmed row", async () => {
+    const { service, subsRepo, trials, paymentProvider, tx } = makeService(LIST_OFFER);
+    const remove = vi.fn();
+    (subsRepo as unknown as { deleteById: unknown }).deleteById = remove;
+    paymentProvider.createCheckout.mockRejectedValue(new CheckoutRejectedError());
+    await expect(service.checkout(USER, plan.id, undefined, true)).rejects.toMatchObject({ code: "PAYMENT_PROVIDER_ERROR" });
+    expect(trials.release).toHaveBeenCalledWith("claim-1", tx);
+    expect(remove).toHaveBeenCalledWith("sub-1", tx);
+  });
+
+  it("maps a concurrent subscription race before any provider call and releases the unused claim", async () => {
+    const { service, subsRepo, trials, paymentProvider } = makeService(LIST_OFFER);
+    subsRepo.create.mockRejectedValue({ cause: { code: "23505" } });
+    await expect(service.checkout(USER, plan.id, undefined, true)).rejects.toMatchObject({ code: "PAYMENT_ALREADY_SUBSCRIBED" });
+    expect(trials.release).toHaveBeenCalledWith("claim-1");
+    expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("persists a paid checkout before provider I/O so a subscription race cannot charge twice", async () => {
+    const { service, subsRepo, paymentProvider } = makeService(LIST_OFFER);
+    subsRepo.create.mockRejectedValue({ cause: { code: "23505" } });
+    await expect(service.checkout(USER, plan.id, undefined, false)).rejects.toMatchObject({ code: "PAYMENT_ALREADY_SUBSCRIBED" });
+    expect(paymentProvider.createCheckout).not.toHaveBeenCalled();
+  });
+
+  it("retains an ambiguous paid checkout instead of discarding it for another provider call", async () => {
+    const { service, subsRepo, paymentProvider } = makeService(LIST_OFFER);
+    paymentProvider.createCheckout.mockRejectedValue(new Error("timeout"));
+    await expect(service.checkout(USER, plan.id, undefined, false)).rejects.toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
+    subsRepo.findOpenForUser.mockResolvedValue({ id: "sub-1", planId: plan.id, status: "INCOMPLETE", checkoutUrl: null });
+    await expect(service.checkout(USER, plan.id, undefined, false)).rejects.toMatchObject({ code: "PAYMENT_TRIAL_PENDING" });
+    expect(paymentProvider.createCheckout).toHaveBeenCalledTimes(1);
+  });
+
+  it("consumes the reserved phone in the same transaction as instant trial access", async () => {
+    const { service, trials, tx } = makeService(LIST_OFFER);
+    await service.checkout(USER, plan.id, undefined, true);
+    expect(trials.bind).toHaveBeenCalledWith("claim-1", "sub-1", USER.id, tx);
+    expect(trials.consume).toHaveBeenCalledWith("sub-1", tx);
   });
 
   it("fails a typed code that does not stick rather than charging the list price", async () => {
@@ -340,7 +426,7 @@ describe("SubscriptionsService checkout with a promotion", () => {
 
     await service.checkout(USER, plan.id);
 
-    expect(promotions.voidForSubscription).toHaveBeenCalledWith("old-sub");
+    expect(promotions.voidForSubscription).toHaveBeenCalledWith("old-sub", expect.anything());
   });
 });
 
@@ -379,6 +465,8 @@ describe("SubscriptionsService webhook amounts", () => {
       {} as never,
       {} as never,
       { append: vi.fn() } as never,
+      trialStub() as never,
+      {} as never,
     );
     return { service, eventsRepo, promotions };
   }
@@ -444,6 +532,120 @@ describe("SubscriptionsService webhook amounts", () => {
   });
 });
 
+describe("SubscriptionView pending trial checkout", () => {
+  it("returns a current-owner stored resume URL without opening another provider checkout", async () => {
+    const trials = trialStub();
+    trials.eligibility.mockResolvedValue({ eligible: false, reason: "PENDING" });
+    trials.pendingCheckoutUrl.mockResolvedValue("https://provider/current-owner" as never);
+    const provider = { createCheckout: vi.fn() };
+    const service = new SubscriptionsService({} as never, {} as never,
+      { findOpenForUser: vi.fn(async () => undefined) } as never, {} as never,
+      { getEntitlement: vi.fn(async () => ({ isPremium: false })) } as never,
+      { listPolicies: vi.fn(async () => ({})) } as never, {} as never, {} as never,
+      {} as never, {} as never, {} as never, provider as never, {} as never,
+      {} as never, trials as never, {} as never);
+    expect(await service.getView(USER.id)).toMatchObject({
+      trialEligibility: { eligible: false, reason: "PENDING" },
+      pendingTrialCheckoutUrl: "https://provider/current-owner",
+    });
+    expect(trials.pendingCheckoutUrl).toHaveBeenCalledWith(USER.id);
+    expect(provider.createCheckout).not.toHaveBeenCalled();
+  });
+});
+
+describe("trial activation and cancellation", () => {
+  function setup() {
+    const tx = { execute: vi.fn() };
+    const db = { transaction: vi.fn(async (fn: (tx: unknown) => unknown) => fn(tx)) };
+    const sub = { id: "sub-trial", userId: USER.id, planId: plan.id, providerRef: "ref-trial",
+      status: "INCOMPLETE", currentPeriodStart: new Date(), trialEndsAt: new Date(Date.now() + 86_400_000), currentPeriodEnd: null };
+    const repo = { findByProviderRef: vi.fn(async () => sub), findOpenForUser: vi.fn(async () => sub),
+      lockById: vi.fn(async () => sub), update: vi.fn(), deleteById: vi.fn() };
+    const provider = { cancel: vi.fn() };
+    const promotions = { markApplied: vi.fn(), voidForSubscription: vi.fn(), findActiveForSubscription: vi.fn() };
+    const trials = trialStub();
+    const ledger = { appendTransaction: vi.fn(), hasSuccessfulCharge: vi.fn(async () => false) };
+    const service = new SubscriptionsService(db as never, { findById: vi.fn(async () => plan) } as never,
+      repo as never, ledger as never, {} as never, {} as never, promotions as never, {} as never,
+      { emit: vi.fn() } as never, {} as never, {} as never, provider as never, {} as never, { append: vi.fn() } as never,
+      trials as never, {} as never);
+    vi.spyOn(service, "getView").mockResolvedValue({} as never);
+    return { service, sub, repo, trials, provider, ledger, tx };
+  }
+  const event = (type: "checkout_completed" | "payment_succeeded" | "payment_failed" | "subscription_canceled" | "trial_started") =>
+    ({ eventId: "event", providerRef: "ref-trial", occurredAt: new Date().toISOString(), type });
+
+  it.each(["checkout_completed", "payment_succeeded"] as const)("consumes the frozen phone on %s in the activation transaction", async (type) => {
+    const { service, trials, tx } = setup();
+    await service.applyProviderEvent(event(type), tx as never);
+    expect(trials.consume).toHaveBeenCalledWith("sub-trial", tx);
+  });
+
+  it("does not grant access when consumption fails", async () => {
+    const { service, trials, repo, tx } = setup();
+    trials.consume.mockRejectedValue(new DomainError("PAYMENT_TRIAL_UNAVAILABLE", 409));
+    await expect(service.applyProviderEvent(event("payment_succeeded"), tx as never)).rejects.toMatchObject({ code: "PAYMENT_TRIAL_UNAVAILABLE" });
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("a delayed confirmed checkout starts the intended trial instead of switching to paid", async () => {
+    const { service, sub, repo, tx } = setup();
+    sub.currentPeriodStart = new Date("2020-01-01T00:00:00Z");
+    sub.trialEndsAt = new Date("2020-01-08T00:00:00Z");
+    const before = Date.now();
+    await service.applyProviderEvent(event("checkout_completed"), tx as never);
+    const patch = repo.update.mock.calls[0][1] as { status: string; trialEndsAt: Date; currentPeriodStart: Date; currentPeriodEnd: Date };
+    expect(patch.status).toBe("TRIALING");
+    expect(patch.trialEndsAt.getTime()).toBeGreaterThanOrEqual(before + 7 * 86_400_000);
+    expect(patch.currentPeriodEnd).toEqual(patch.trialEndsAt);
+  });
+
+  it.each(["payment_failed", "subscription_canceled"] as const)("releases pending holds on definitive %s without granting access", async (type) => {
+    const { service, trials, repo, tx } = setup();
+    await service.applyProviderEvent(event(type), tx as never);
+    expect(trials.releaseForSubscription).toHaveBeenCalledWith("sub-trial", tx);
+    expect(repo.deleteById).toHaveBeenCalledWith("sub-trial", tx);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("does not append an unactivated trial event that would prevent safe rejection cleanup", async () => {
+    const { service, ledger, tx } = setup();
+    await service.applyProviderEvent(event("trial_started"), tx as never);
+    expect(ledger.appendTransaction).not.toHaveBeenCalled();
+  });
+
+  it("cancels a known pending checkout without changing it into granting CANCELED access", async () => {
+    const { service, trials, repo, tx } = setup();
+    await service.cancel(USER.id);
+    expect(trials.releaseForSubscription).toHaveBeenCalledWith("sub-trial", tx);
+    expect(repo.deleteById).toHaveBeenCalledWith("sub-trial", tx);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+
+  it("retains pending holds when cancellation has an unknown outcome", async () => {
+    const { service, trials, provider } = setup();
+    provider.cancel.mockRejectedValue(new Error("timeout"));
+    await expect(service.cancel(USER.id)).rejects.toThrow();
+    expect(trials.releaseForSubscription).not.toHaveBeenCalled();
+  });
+
+  it("preserves a trial activated while the cancellation call was in flight", async () => {
+    const { service, sub, repo, trials, provider, tx } = setup();
+    provider.cancel.mockImplementation(async () => { sub.status = "TRIALING"; });
+    await service.cancel(USER.id);
+    expect(repo.deleteById).not.toHaveBeenCalled();
+    expect(trials.releaseForSubscription).not.toHaveBeenCalled();
+    expect(repo.update).toHaveBeenCalledWith("sub-trial", expect.objectContaining({ status: "CANCELED", cancelAtPeriodEnd: true }), tx);
+  });
+
+  it("does not resurrect access ended by a cancellation webhook while provider.cancel was in flight", async () => {
+    const { service, sub, repo, provider } = setup();
+    provider.cancel.mockImplementation(async () => { sub.status = "EXPIRED"; });
+    await service.cancel(USER.id);
+    expect(repo.update).not.toHaveBeenCalled();
+  });
+});
+
 describe("SubscriptionsService plan catalog admin", () => {
   it("updates editable fields and leaves periodMonths locked", async () => {
     const existing = {
@@ -478,6 +680,8 @@ describe("SubscriptionsService plan catalog admin", () => {
       {} as never,
       {} as never,
       { append: vi.fn() } as never,
+      trialStub() as never,
+      {} as never,
     );
 
     const updated = await service.updatePlan("premium-monthly", {
@@ -531,6 +735,8 @@ describe("SubscriptionsService self-paying users", () => {
       {} as never,
       {} as never,
       { append: vi.fn() } as never,
+      trialStub() as never,
+      {} as never,
     );
     return { service, subsRepo };
   }

@@ -9,7 +9,7 @@ describe("SponsoredSeatListener", () => {
   it.each(["FREE", "PAID"])("opens Premium for a student on a %s seat", async (seat) => {
     const seats = { grant: vi.fn(async () => true) };
     await new SponsoredSeatListener(seats as never).onLinkAccepted(accepted(seat));
-    expect(seats.grant).toHaveBeenCalledWith("student-1", "link-1");
+    expect(seats.grant).toHaveBeenCalledWith("student-1", "link-1", "coach-1");
   });
 
   /** SELF pays for themselves (one payer per student); NONE holds no seat to carry Premium. */

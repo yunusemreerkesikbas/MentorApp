@@ -3,7 +3,7 @@
   "welcome": ["welcome"],
   "article": ["article", "knowledge", "ads"],
   "auth": ["auth", "common", "economy"],
-  "onboarding": ["onboarding", "profile", "vision", "common", "economy", "mentorship"],
+  "onboarding": ["onboarding", "profile", "vision", "common", "economy", "mentorship", "phone"],
   "joinRoom": ["session_room"],
   "plan": ["plan", "coachPlan", "common"],
   "coaching": ["mentorship", "common", "nav", "notifications", "journey_levels", "countdown", "community"]

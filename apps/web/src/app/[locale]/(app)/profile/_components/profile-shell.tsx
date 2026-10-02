@@ -11,6 +11,7 @@ import {
 } from "@mentor/api-client";
 import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { AccountLinksCard } from "./account-links-card";
@@ -136,6 +137,10 @@ export function ProfileShell({
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <GoogleAccountCard />
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <PhoneVerificationCard allowNumberChange />
           </motion.div>
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>

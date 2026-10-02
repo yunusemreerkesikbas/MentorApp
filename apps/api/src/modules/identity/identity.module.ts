@@ -23,6 +23,10 @@ import { BuddyRepository } from "./infrastructure/buddy.repository";
 import { AuthController } from "./presentation/auth.controller";
 import { UsersController } from "./presentation/users.controller";
 import { FollowController } from "./presentation/follow.controller";
+import { PhoneController } from "./presentation/phone.controller";
+import { PhoneVerificationService } from "./application/phone-verification.service";
+import { PhoneVerificationRepository } from "./infrastructure/phone-verification.repository";
+import { NetgsmSmsAdapter } from "./infrastructure/netgsm-sms.adapter";
 
 /**
  * W0 — identity bounded context: auth (own JWT + refresh rotation), users/orgs, RLS-backed access.
@@ -39,7 +43,7 @@ import { FollowController } from "./presentation/follow.controller";
       }),
     }),
   ],
-  controllers: [AuthController, UsersController, FollowController, GoogleLinkingController],
+  controllers: [AuthController, UsersController, FollowController, GoogleLinkingController, PhoneController],
   providers: [
     AuthService,
     GoogleAuthService,
@@ -58,7 +62,10 @@ import { FollowController } from "./presentation/follow.controller";
     RefreshTokenRepository,
     AuthSessionRepository,
     EmailTokenRepository,
+    PhoneVerificationService,
+    PhoneVerificationRepository,
+    NetgsmSmsAdapter,
   ],
-  exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService],
+  exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService, PhoneVerificationService],
 })
 export class IdentityModule {}

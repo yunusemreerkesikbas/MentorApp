@@ -1,6 +1,6 @@
 interface TurnstileOptions {
   sitekey: string;
-  action: "signup";
+  action: "signup" | "phone-verification";
   callback: (token: string) => void;
   "expired-callback": () => void;
   "error-callback": () => void;
@@ -17,7 +17,7 @@ declare global {
 
 let pending: Promise<TurnstileApi> | undefined;
 
-/** Loads only on the signup screen; a failed script can be retried explicitly. */
+/** Loads only for protected forms; a failed script can be retried explicitly. */
 export function loadTurnstile(): Promise<TurnstileApi> {
   if (window.turnstile) return Promise.resolve(window.turnstile);
   if (pending) return pending;

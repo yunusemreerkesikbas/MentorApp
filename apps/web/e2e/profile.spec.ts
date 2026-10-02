@@ -210,6 +210,7 @@ async function mockProfileApi(page: Page) {
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me/phone") return json(route, { verified: false, maskedPhoneNumber: null, available: false, reauthenticationRequired: false });
     // The Google card reads `.enabled` off this body; the empty catch-all 204 crashed the page.
     if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
       return json(route, { enabled: false, linked: false, providerEmail: null, canLink: false });

@@ -12,6 +12,8 @@ function setup(link?: { id: string; coachId: string; status: string } | undefine
   const links = { findById: vi.fn(async () => link) };
   const dropped = { record: vi.fn(async () => undefined) };
   const users = {
+    isEmailVerified: vi.fn(async () => true),
+    isPhoneVerified: vi.fn(async () => true),
     listDisplayIdentities: vi.fn(async () => new Map([[STUDENT, { displayName: "Ayşe" }]])),
   };
   const events = {
@@ -141,6 +143,24 @@ describe("PlanTaskFeedbackListener", () => {
     await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
     expect(emitted).toEqual([]);
     expect(dropped.record).not.toHaveBeenCalled();
+  });
+
+  it("says nothing to an unverified coach even while their link holds a seat", async () => {
+    const { listener, emitted, users, dropped } = setup(activeLink);
+    users.isPhoneVerified.mockResolvedValue(false);
+    await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
+    await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
+    expect(emitted).toEqual([]);
+    expect(dropped.record).toHaveBeenCalledWith(LINK, "Paragraf 20 soru", "2026-09-10", null);
+  });
+
+  it("withholds assignment notifications from a coach's changed, unverified email", async () => {
+    const { listener, emitted, users, dropped } = setup(activeLink);
+    users.isEmailVerified.mockResolvedValue(false);
+    await listener.onPlanTaskDeleted(deleted("MENTORSHIP", LINK));
+    await listener.onPlanTaskCompleted(completed("MENTORSHIP", LINK));
+    expect(emitted).toEqual([]);
+    expect(dropped.record).toHaveBeenCalled();
   });
 
   it("says nothing when the link is gone — the soft ref outlived its row (erasure)", async () => {

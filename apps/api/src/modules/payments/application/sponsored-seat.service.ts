@@ -2,6 +2,7 @@ import { Injectable, Logger } from "@nestjs/common";
 import { COACH_SEAT_PLAN_ID, SUBSCRIPTION_PROVIDER_SPONSOR, SubscriptionStatus } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { SubscriptionsRepository } from "../infrastructure/payments.repositories";
+import { UsersService } from "../../identity/application/users.service";
 
 /**
  * Coach-sponsored Premium (W8 seats).
@@ -41,6 +42,7 @@ export class SponsoredSeatService {
   constructor(
     private readonly subscriptions: SubscriptionsRepository,
     private readonly config: ConfigRegistryService,
+    private readonly users: UsersService,
   ) {}
 
   /**
@@ -54,8 +56,13 @@ export class SponsoredSeatService {
    * expiry check when there is no end date (the shape STAFF already uses), so the seat needs no
    * monthly extension cron. It ends when {@link revoke} says it does.
    */
-  async grant(studentId: string, linkId: string): Promise<boolean> {
+  async grant(studentId: string, linkId: string, coachId: string): Promise<boolean> {
     if (!(await this.config.get("mentorship.seats.sponsorship_enabled"))) return false;
+    const verified = await Promise.all([
+      this.users.isPhoneVerified(studentId),
+      this.users.isPhoneVerified(coachId),
+    ]);
+    if (!verified.every(Boolean)) return false;
     if (await this.subscriptions.findOpenForUser(studentId)) return false;
 
     await this.subscriptions.create({

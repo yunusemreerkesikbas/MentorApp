@@ -76,7 +76,7 @@ describe("mentorship followups HTTP and database", () => {
       tokens[who] = result.body.accessToken;
     }
     await sql(
-      "update users set roles = array_append(roles, 'COACH') where id = any($1::uuid[])",
+      "update users set roles = array_append(roles, 'COACH'), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = any($1::uuid[])",
       [[ids.coach, ids.other]],
     );
     const config = app.get(ConfigRegistryService);

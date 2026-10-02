@@ -51,6 +51,8 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
   };
   const evidence = { listTriageSnapshots };
   const users = {
+    isEmailVerified: vi.fn(async () => true),
+    isPhoneVerified: vi.fn(async () => true),
     listDisplayIdentities: vi.fn(
       async (ids: string[]) => new Map(ids.map((id) => [id, { displayName: `Ad ${id.slice(0, 4)}` }])),
     ),
@@ -76,6 +78,16 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
 }
 
 describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
+  it("stops an existing coach digest when their email changes, until it is reverified", async () => {
+    const { adapter, users, listTriageSnapshots } = setup([{ coachId: COACH_A, studentId: IDLE }], [idleSnapshot(IDLE)]);
+    users.isEmailVerified.mockResolvedValue(false);
+    await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
+    expect(listTriageSnapshots).not.toHaveBeenCalled();
+    expect(users.getNotificationContact).not.toHaveBeenCalled();
+    users.isEmailVerified.mockResolvedValue(true);
+    await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toMatchObject([{ coachId: COACH_A, students: [{ studentId: IDLE }] }]);
+  });
+
   it("returns nothing — and asks nothing — when no link is active", async () => {
     const { adapter, listTriageSnapshots } = setup([], []);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);

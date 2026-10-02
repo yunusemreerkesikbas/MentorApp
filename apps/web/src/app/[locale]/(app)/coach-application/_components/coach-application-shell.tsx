@@ -7,6 +7,7 @@ import { ApiClientError, usersControllerMe } from "@mentor/api-client";
 import { Button, Card, Chip, SectionHeading, TextAreaField, TextField } from "@mentor/ui";
 import { EmptyState } from "@/components/empty-state";
 import { FormError } from "@/components/form";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
@@ -167,6 +168,10 @@ export function CoachApplicationShell() {
           puhuVariant="encouraging"
         />
       ) : (
+        <>
+        {!state.phoneVerified ? (
+          <PhoneVerificationCard onStatusChange={(phone) => setState((current) => current ? { ...current, phoneVerified: phone.verified } : current)} />
+        ) : null}
         <Card>
           <form className="flex flex-col gap-4" onSubmit={(e) => void submit(e)}>
             {/* Nobody reads this before a student does. The two fields below go straight onto the
@@ -205,11 +210,12 @@ export function CoachApplicationShell() {
             {/* No free-text note: it was written for a reviewer, and nobody reviews a registration. */}
 
             <FormError message={error} />
-            <Button type="submit" busy={busy}>
+            <Button type="submit" busy={busy} disabled={!state.phoneVerified}>
               {t("registration_submit")}
             </Button>
           </form>
         </Card>
+        </>
       )}
     </div>
   );

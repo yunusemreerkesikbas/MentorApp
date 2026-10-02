@@ -18,7 +18,7 @@ export class TurnstileService {
 
   constructor(private readonly config: ConfigService<Env, true>) {}
 
-  async assertValid(token: string | undefined): Promise<void> {
+  async assertValid(token: string | undefined, expectedAction?: string): Promise<void> {
     const secret = this.config.get("TURNSTILE_SECRET_KEY", { infer: true });
     const production = this.config.get("NODE_ENV", { infer: true }) === "production";
     if (!secret?.trim()) {
@@ -26,7 +26,7 @@ export class TurnstileService {
       return; // Unconfigured development/test environments intentionally bypass the widget.
     }
     const hostname = this.config.get("TURNSTILE_EXPECTED_HOSTNAME", { infer: true });
-    const action = this.config.get("TURNSTILE_EXPECTED_ACTION", { infer: true });
+    const action = expectedAction ?? this.config.get("TURNSTILE_EXPECTED_ACTION", { infer: true });
 
     if (!token || token.length > 2048 || (production && (!hostname || !action))) {
       throw new DomainError(ErrorCode.AUTH_TURNSTILE_FAILED, HttpStatus.BAD_REQUEST);
