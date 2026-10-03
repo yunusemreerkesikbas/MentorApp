@@ -3,7 +3,12 @@
 import { useLayoutEffect, useRef, type CSSProperties } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import type { SessionPresetDto } from "@mentor/types";
+import {
+  SESSION_FOCUS_MINUTES_MIN,
+  SESSION_FOCUS_MINUTES_MAX,
+  SESSION_FOCUS_MINUTES_STEP,
+  type SessionPresetDto,
+} from "@mentor/types";
 import { CircularTimerRing } from "@mentor/ui";
 
 /** Visual diameter of the session ring; focus ripples scale from this. */
@@ -29,6 +34,9 @@ export interface SessionTimerRingProps {
   focusMinutes: number;
   breakMinutes: number;
   secondsLeft: number;
+  isStopwatch: boolean;
+  focusElapsed: number;
+  onStopwatchSelect: () => void;
   presets: SessionPresetDto[];
   selectedPresetId: string | null;
   onMinutesChange: (minutes: number) => void;
@@ -46,6 +54,9 @@ export function SessionTimerRing({
   focusMinutes,
   breakMinutes,
   secondsLeft,
+  isStopwatch,
+  focusElapsed,
+  onStopwatchSelect,
   presets,
   selectedPresetId,
   onMinutesChange,
@@ -64,10 +75,20 @@ export function SessionTimerRing({
   const ringRef = useRef<HTMLDivElement>(null);
   useLayoutEffect(() => {
     const box = ringRef.current;
-    if (!flyFrom || !box || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (
+      !flyFrom ||
+      !box ||
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    )
+      return;
     const to = ringCenter(box);
     box.animate(
-      [{ transform: `translate(${flyFrom.x - to.x}px, ${flyFrom.y - to.y}px)` }, { transform: "none" }],
+      [
+        {
+          transform: `translate(${flyFrom.x - to.x}px, ${flyFrom.y - to.y}px)`,
+        },
+        { transform: "none" },
+      ],
       { duration: RING_FLIGHT_MS, easing: "cubic-bezier(0.22, 1, 0.36, 1)" },
     );
   }, [flyFrom]);
@@ -106,11 +127,18 @@ export function SessionTimerRing({
         ) : null}
         <CircularTimerRing
           className="relative z-[1]"
-          mode={isCountdown ? "countdown" : "setup"}
+          mode={isStopwatch ? "stopwatch" : isCountdown ? "countdown" : "setup"}
+          elapsedSeconds={focusElapsed}
+          secondaryLabel={
+            isStopwatch ? t(isIdle ? "stopwatch" : "elapsed") : undefined
+          }
           minutes={referenceMinutes}
           secondsLeft={secondsLeft}
           disabled={!isIdle}
           onMinutesChange={isIdle ? onMinutesChange : undefined}
+          min={SESSION_FOCUS_MINUTES_MIN}
+          max={SESSION_FOCUS_MINUTES_MAX}
+          step={SESSION_FOCUS_MINUTES_STEP}
           size={SESSION_TIMER_RING_PX}
         />
       </div>
@@ -121,8 +149,16 @@ export function SessionTimerRing({
           role="group"
           aria-label={t("preset_group")}
         >
+          <button
+            type="button"
+            onClick={onStopwatchSelect}
+            aria-pressed={isStopwatch}
+            className={`min-h-11 cursor-pointer rounded-full px-5 text-sm font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${isStopwatch ? "session-liquid-btn-obsidian" : "session-liquid-pill"}`}
+          >
+            {t("stopwatch")}
+          </button>
           {presets.map((p) => {
-            const selected = selectedPresetId === p.id;
+            const selected = !isStopwatch && selectedPresetId === p.id;
             return (
               <motion.button
                 key={p.id}
@@ -135,7 +171,9 @@ export function SessionTimerRing({
                   )
                 }
                 className={`min-h-11 cursor-pointer rounded-full px-5 text-sm font-bold transition-all duration-150 hover:scale-[1.03] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:hover:scale-100 ${
-                  selected ? "session-liquid-btn-obsidian" : "session-liquid-pill"
+                  selected
+                    ? "session-liquid-btn-obsidian"
+                    : "session-liquid-pill"
                 }`}
                 aria-pressed={selected}
                 whileTap={reduceMotion ? undefined : { scale: 0.97 }}

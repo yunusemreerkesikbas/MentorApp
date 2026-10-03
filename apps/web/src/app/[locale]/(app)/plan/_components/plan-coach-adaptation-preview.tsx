@@ -157,6 +157,11 @@ export const PlanCoachAdaptationPreview = forwardRef<
                   >
                     {row.change.title}
                   </span>
+                  {row.change.kind === "ADD" && row.change.durationMinutes != null ? (
+                    <span className="mt-0.5 block text-xs font-semibold text-[var(--color-secondary)]">
+                      {t("duration_minutes", { minutes: row.change.durationMinutes })}
+                    </span>
+                  ) : null}
                   {row.change.kind === "MOVE" ? (
                     <span
                       className="mt-0.5 block text-xs"

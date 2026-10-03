@@ -22,6 +22,7 @@ import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { UsersService } from "../../identity/application/users.service";
 import { SponsoredSeatService } from "../../payments/application/sponsored-seat.service";
+import { EntitlementService } from "../../payments/application/entitlement.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
 import { PlanEventService } from "../../coaching/application/plan-event.service";
 import { PlanService } from "../../coaching/application/plan.service";
@@ -95,12 +96,20 @@ export class MentorshipLinkService {
     private readonly planEvents: PlanEventService,
     private readonly planTasks: PlanService,
     @Inject(DRIZZLE) private readonly db: Database,
+    private readonly entitlement: EntitlementService,
   ) {}
 
   /** Runtime kill-switch (config registry). Every W8 entry point calls this first. */
   async assertEnabled(): Promise<void> {
     const enabled = await this.config.get(FeatureFlag.MENTORSHIP_ENABLED);
     if (!enabled) throw new DomainError(ErrorCode.MENTORSHIP_DISABLED, HttpStatus.FORBIDDEN);
+  }
+
+  /** Protected coach reads require current verification, including manually granted COACH roles. */
+  async assertCoachPhoneVerified(coachId: string): Promise<void> {
+    if (!(await this.users.isPhoneVerified(coachId))) {
+      throw new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, HttpStatus.FORBIDDEN);
+    }
   }
 
   /**
@@ -132,6 +141,7 @@ export class MentorshipLinkService {
     if (!link) {
       throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    await this.assertCoachPhoneVerified(coachId);
     assertSeated(link);
     return link;
   }
@@ -155,7 +165,10 @@ export class MentorshipLinkService {
   ): Promise<MentorshipLinkRow> {
     const [link] = await this.links.lockActiveInTransaction(tx, coachId, [studentId]);
     if (!link) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
-    if (!options.allowWaiting) assertSeated(link);
+    if (!options.allowWaiting) {
+      await this.assertCoachPhoneVerified(coachId);
+      assertSeated(link);
+    }
     return link;
   }
 
@@ -181,7 +194,10 @@ export class MentorshipLinkService {
         HttpStatus.NOT_FOUND,
       );
     }
-    if (!options.allowWaiting) locked.forEach(assertSeated);
+    if (!options.allowWaiting) {
+      await this.assertCoachPhoneVerified(coachId);
+      locked.forEach(assertSeated);
+    }
     return studentIds.map((studentId) => ({
       studentId,
       mentorshipLinkId: byStudent.get(studentId)!.id,
@@ -192,6 +208,7 @@ export class MentorshipLinkService {
   async listActiveScopes(
     coachId: string,
   ): Promise<Array<{ studentId: string; mentorshipLinkId: string }>> {
+    await this.assertCoachPhoneVerified(coachId);
     const links = await this.links.listActiveByCoach(coachId);
     return links
       .filter((link) => link.seat !== MentorshipSeat.NONE)
@@ -226,10 +243,6 @@ export class MentorshipLinkService {
       ]);
     const allowance = freeSeats + paidSeats;
     const seated = activeLinks.filter((link) => holdsSeat(link.seat));
-    // Links seated while sponsorship was off, or whose grant was swallowed, hold a seat with no
-    // subscription row behind it. The panel is what shows the count, so the missing Premium is
-    // written here. `grant` leaves a student who already pays for themselves alone.
-    if (sponsorshipEnabled) await this.fillMissingSponsorships(seated);
     return {
       // Withheld, not absent (APP-089). A coach who has not verified their email, or whom an admin
       // pulled back, keeps whatever code they were issued in the database — reinstating them must
@@ -355,6 +368,7 @@ export class MentorshipLinkService {
       people.get(coachId),
       await this.applications.findPublicProfile(coachId),
       MentorshipApplicationStatus.ACTIVE,
+      await this.isSponsoredPremiumPending(link),
     );
   }
 
@@ -367,8 +381,8 @@ export class MentorshipLinkService {
     for (const link of seated) await this.grantSeat(link);
   }
 
-  private grantSeat(link: Pick<MentorshipLinkRow, "id" | "studentId">): Promise<unknown> {
-    return this.seats.grant(link.studentId, link.id).catch((err: unknown) => {
+  private grantSeat(link: Pick<MentorshipLinkRow, "id" | "studentId" | "coachId">): Promise<unknown> {
+    return this.seats.grant(link.studentId, link.id, link.coachId).catch((err: unknown) => {
       this.logger.error(`Sponsored seat grant failed for link ${link.id}`, err);
     });
   }
@@ -393,10 +407,10 @@ export class MentorshipLinkService {
    */
   async reseatCoach(coachId: string): Promise<{ freeSeats: number; paidSeats: number }> {
     const quota = await this.seatQuota(coachId);
-    const changed = await this.withServiceTransaction(async (tx) => {
+    const { changed, seated } = await this.withServiceTransaction(async (tx) => {
       await this.links.lockCoachInTransaction(tx, coachId);
       const active = await this.links.listActiveByCoachInTransaction(tx, coachId);
-      if (active.length === 0) return [];
+      if (active.length === 0) return { changed: [], seated: [] };
       const selfPaying = await this.subscriptions.listSelfPayingUserIds(
         active.map((link) => link.studentId),
       );
@@ -411,7 +425,10 @@ export class MentorshipLinkService {
         tx,
         changes.map(({ link, seat }) => ({ id: link.id, seat })),
       );
-      return changes;
+      return {
+        changed: changes,
+        seated: active.filter((link) => holdsSeat(next.get(link.id)!)),
+      };
     });
 
     // After the commit, so a rolled-back reseat moves no Premium.
@@ -420,9 +437,11 @@ export class MentorshipLinkService {
         await this.seats.revoke(link.id).catch((err: unknown) => {
           this.logger.error(`Sponsored seat revoke failed for link ${link.id}`, err);
         });
-      } else if (holdsSeat(seat)) {
-        await this.grantSeat(link);
       }
+    }
+    // Phone verification does not move a seat, so unchanged seats need the same idempotent grant.
+    if (await this.config.get("mentorship.seats.sponsorship_enabled")) {
+      await this.fillMissingSponsorships(seated);
     }
     if (changed.length > 0) {
       this.logger.log(`Reseated ${changed.length} link(s) for coach ${coachId}`);
@@ -493,14 +512,15 @@ export class MentorshipLinkService {
     await this.assertEnabled();
     const link = await this.links.findActiveByStudent(studentId);
     if (!link) return null;
-    const [person, profile, coachStatus] = await Promise.all([
+    const [person, profile, coachStatus, sponsoredPremiumPending] = await Promise.all([
       this.findPerson(link.coachId),
       this.applications.findPublicProfile(link.coachId),
       // Only this screen asks. A coach an admin stopped keeps the link but can open nothing, and a
       // coach who has simply gone quiet looks identical from here — so the student is told which.
       this.applications.findStatus(link.coachId),
+      this.isSponsoredPremiumPending(link),
     ]);
-    return this.toMyCoachDto(link, person, profile, coachStatus);
+    return this.toMyCoachDto(link, person, profile, coachStatus, sponsoredPremiumPending);
   }
 
   /** Coach ends the link. */
@@ -570,11 +590,23 @@ export class MentorshipLinkService {
     return (await this.users.listDisplayIdentities([userId])).get(userId);
   }
 
+  private async isSponsoredPremiumPending(link: MentorshipLinkRow): Promise<boolean> {
+    if (!holdsSeat(link.seat)) return false;
+    if (!(await this.config.get("mentorship.seats.sponsorship_enabled"))) return false;
+    const [coachVerified, studentVerified, entitlement] = await Promise.all([
+      this.users.isPhoneVerified(link.coachId),
+      this.users.isPhoneVerified(link.studentId),
+      this.entitlement.getEntitlement(link.studentId),
+    ]);
+    return !entitlement.isPremium && (!coachVerified || !studentVerified);
+  }
+
   private toMyCoachDto(
     link: MentorshipLinkRow,
     coach: DisplayPerson | undefined,
     coachProfile: MentorshipCoachProfileDto | null,
     coachStatus: MentorshipApplicationStatusId | null = null,
+    sponsoredPremiumPending = false,
   ): MyCoachDto {
     return {
       linkId: link.id,
@@ -591,6 +623,7 @@ export class MentorshipLinkService {
       coachStatus,
       // The coach's seats are full: the link stands, but nothing reaches the coach until one opens.
       seatWaiting: link.seat === MentorshipSeat.NONE,
+      sponsoredPremiumPending,
     };
   }
 }

@@ -543,11 +543,12 @@ export function PlanShell() {
             initialStartTime={task.startTime}
             initialEndTime={task.endTime}
             initialDescription={task.description}
+            initialDurationMinutes={task.durationMinutes}
           />
         ),
         onApply: async () => {
           if (!addFormRef.current?.validate()) throw new Error("validation");
-          const { title, subject, startTime, endTime, description } =
+          const { title, subject, startTime, endTime, description, durationMinutes } =
             addFormRef.current.getValues();
           const updated = await updatePlanTask(task.id, {
             title: title.trim(),
@@ -556,6 +557,7 @@ export function PlanShell() {
             startTime,
             endTime,
             description,
+            durationMinutes,
           });
           patchTaskLists(updated);
       notifyEconomyChanged();
@@ -662,7 +664,7 @@ export function PlanShell() {
       ),
       onApply: async () => {
         if (!addFormRef.current?.validate()) throw new Error("validation");
-        const { title, subject, startTime, endTime, description, taskDate: editedDate } =
+        const { title, subject, startTime, endTime, description, durationMinutes, taskDate: editedDate } =
           addFormRef.current.getValues();
         const input = {
           title: title.trim(),
@@ -670,6 +672,7 @@ export function PlanShell() {
           ...(subject.trim() ? { subject: subject.trim() } : {}),
           ...(startTime ? { startTime, endTime } : {}),
           ...(description ? { description } : {}),
+          durationMinutes,
         };
         let created: PlanTaskDto;
         try {
@@ -688,6 +691,7 @@ export function PlanShell() {
               taskDate: editedDate || targetDate,
               ...(startTime ? { startTime, endTime } : {}),
               ...(description ? { description } : {}),
+              durationMinutes,
             })
           : communityAttribution
           ? await createCommunityCoachPlanTask(

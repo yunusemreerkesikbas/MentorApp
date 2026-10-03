@@ -4,8 +4,6 @@ import {
   buildTodayPath,
   CHEST_QUEST_ID,
   sessionHrefFor,
-  sessionMinutesParam,
-  taskRangeMinutes,
 } from "./today-path-model";
 
 function task(index: number, overrides: Partial<PlanTaskDto> = {}): PlanTaskDto {
@@ -19,12 +17,14 @@ function task(index: number, overrides: Partial<PlanTaskDto> = {}): PlanTaskDto 
     taskDate: "2026-09-21",
     startTime: null,
     endTime: null,
+    durationMinutes: null,
+    sessionFocusMinutes: 25,
     description: null,
     coachNote: null,
     origin: null,
     assignmentGroupId: null,
     ...overrides,
-  };
+  } as PlanTaskDto;
 }
 
 function chestQuest(overrides: Partial<QuestProgressView> = {}): QuestProgressView {
@@ -127,47 +127,31 @@ describe("buildTodayPath", () => {
 
   describe("CTA minutes", () => {
     it("uses the task's own 40 minute range and passes it to the session", () => {
-      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "14:40" })], null, 25);
-      expect(path.cta).toMatchObject({ minutes: 40, minutesParam: 40 });
+      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "14:40", sessionFocusMinutes: 40 })], null, 25);
+      expect(path.cta).toMatchObject({ minutes: 40 });
     });
 
     it("falls back to the preset when the range is longer than the session allows", () => {
-      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "16:30" })], null, 25);
-      expect(path.cta).toMatchObject({ minutes: 25, minutesParam: null });
+      const path = buildTodayPath([task(0, { startTime: "14:00", endTime: "18:00", sessionFocusMinutes: 25 })], null, 25);
+      expect(path.cta).toMatchObject({ minutes: 25 });
     });
 
     it("falls back to the preset when the task has no time range", () => {
-      const path = buildTodayPath([task(0)], null, 50);
-      expect(path.cta).toMatchObject({ minutes: 50, minutesParam: null });
+      const path = buildTodayPath([task(0, { sessionFocusMinutes: 50 })], null, 50);
+      expect(path.cta).toMatchObject({ minutes: 50 });
     });
 
-    it("does not pass a param that equals the preset", () => {
+    it("uses the backend preset duration without recomputing the time range", () => {
       const path = buildTodayPath([task(0, { startTime: "09:00", endTime: "09:25" })], null, 25);
-      expect(path.cta).toMatchObject({ minutes: 25, minutesParam: null });
+      expect(path.cta).toMatchObject({ minutes: 25 });
     });
-  });
-});
-
-describe("taskRangeMinutes / sessionMinutesParam", () => {
-  it("needs both ends and a positive range", () => {
-    expect(taskRangeMinutes({ startTime: "10:00", endTime: null })).toBeNull();
-    expect(taskRangeMinutes({ startTime: "10:30", endTime: "10:00" })).toBeNull();
-    expect(taskRangeMinutes({ startTime: "10:00", endTime: "10:45" })).toBe(45);
-  });
-
-  it("accepts only what the session screen accepts", () => {
-    expect(sessionMinutesParam(null)).toBeNull();
-    expect(sessionMinutesParam(3)).toBeNull();
-    expect(sessionMinutesParam(42)).toBeNull();
-    expect(sessionMinutesParam(125)).toBeNull();
-    expect(sessionMinutesParam(120)).toBe(120);
   });
 });
 
 describe("sessionHrefFor", () => {
   it("opens the session from the panel, with the task's own length when it has one", () => {
-    const ranged = task(0, { startTime: "14:00", endTime: "14:40", subject: "Tarih" });
-    expect(sessionHrefFor(ranged, 25)).toEqual({
+    const ranged = task(0, { startTime: "14:00", endTime: "14:40", sessionFocusMinutes: 40, subject: "Tarih" });
+    expect(sessionHrefFor(ranged)).toEqual({
       pathname: "/study-session",
       query: {
         taskId: "task-0",
@@ -177,9 +161,9 @@ describe("sessionHrefFor", () => {
         minutes: "40",
       },
     });
-    expect(sessionHrefFor(task(1), 25)).toMatchObject({
+    expect(sessionHrefFor(task(1))).toMatchObject({
       query: { taskId: "task-1", source: "dashboard" },
     });
-    expect(sessionHrefFor(task(1), 25)).not.toHaveProperty("query.minutes");
+    expect(sessionHrefFor(task(1))).toHaveProperty("query.minutes", "25");
   });
 });

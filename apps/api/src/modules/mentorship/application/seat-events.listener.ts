@@ -1,5 +1,6 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { OnEvent } from "@nestjs/event-emitter";
+import { IdentityEventTopic } from "../../identity/domain/identity.events";
 import {
   PaymentsEventTopic,
   type SubscriptionActivated,
@@ -14,7 +15,8 @@ import { MentorshipLinkService } from "./mentorship-link.service";
  * subscription decides whether they hold one at all (one payer per student). A cancel by the user
  * keeps access to the period end, so its reseat changes nothing until the sweeper's EXPIRED.
  *
- * Only payments' event constants cross the boundary; payments never learns what a seat is.
+ * Identity verification also retries unchanged seats: verified phones unlock funding, not seating.
+ * Only public event constants cross the boundary; payments never learns what a seat is.
  * Best-effort, like every listener on these events: the payment already committed, and a reseat
  * that fails here is redone the next time the coach opens their home.
  */
@@ -39,9 +41,14 @@ export class SeatEventsListener {
     return this.reseat(event.userId);
   }
 
+  @OnEvent(IdentityEventTopic.PHONE_VERIFIED)
+  onPhoneVerified(event: { userId: string }): Promise<void> {
+    return this.reseat(event.userId);
+  }
+
   private async reseat(userId: string): Promise<void> {
     await this.links.reseatForUser(userId).catch((err: unknown) => {
-      this.logger.error(`Reseat after a subscription change failed for user ${userId}`, err);
+      this.logger.error(`Reseat after an eligibility change failed for user ${userId}`, err);
     });
   }
 }

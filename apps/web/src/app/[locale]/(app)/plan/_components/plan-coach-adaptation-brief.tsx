@@ -45,7 +45,6 @@ export function PlanCoachAdaptationBrief({
   profile,
   onComplete,
   onClose,
-  initialInput,
 }: {
   knownWeek: PlanAdaptationKnownWeek;
   /** The coach's reading of the student's data; null while loading or when it failed. */
@@ -55,7 +54,6 @@ export function PlanCoachAdaptationBrief({
     input: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>,
   ) => void;
   onClose: () => void;
-  initialInput?: Extract<CoachPlanAdaptationInput, { source: "PLAN" }>;
 }) {
   const t = useTranslations("plan");
   const tExam = useTranslations("profile.exam_settings");
@@ -81,7 +79,7 @@ export function PlanCoachAdaptationBrief({
   });
   // The days the student really studies on come pre-picked once the brief arrives.
   const [weekdaysOverride, setWeekdaysOverride] = useState<number[] | null>(
-    initialInput ? (initialInput.studyWeekdays ?? []) : null,
+    null,
   );
   const rhythmWeekdays = suggestion?.weekdays ?? null;
   const weekdays = weekdaysOverride ?? rhythmWeekdays ?? [];
@@ -96,7 +94,7 @@ export function PlanCoachAdaptationBrief({
       : null;
   const [minutesOverride, setMinutesOverride] = useState<
     number | null | undefined
-  >(initialInput ? (initialInput.minutesPerDay ?? null) : undefined);
+  >(undefined);
   const minutes =
     minutesOverride !== undefined
       ? minutesOverride
@@ -120,10 +118,10 @@ export function PlanCoachAdaptationBrief({
     [taxonomy.loaded, taxonomy.subjects, coachSubjects, knownWeek.subjects],
   );
   const [subjectOverride, setSubjectOverride] = useState<string[] | null>(
-    initialInput ? (initialInput.focusSubjects ?? []) : null,
+    null,
   );
   const subjects = subjectOverride ?? seededSubjects;
-  const [note, setNote] = useState(initialInput?.note ?? "");
+  const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const steps = useMemo(

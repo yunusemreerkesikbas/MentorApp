@@ -109,6 +109,7 @@ export class MentorshipFollowupService {
 
   async listCoach(coachId: string, query: ListMentorshipFollowupsQuery) {
     await this.assertEnabled();
+    await this.links.assertCoachPhoneVerified(coachId);
     if (query.studentId) await this.links.requireActiveLink(coachId, query.studentId);
     const result = await this.repo.listCoach(coachId, query, followupToday(new Date()));
     const identities = await this.users.listDisplayIdentities([...new Set(result.rows.map((row) => row.studentId))]);
@@ -129,14 +130,19 @@ export class MentorshipFollowupService {
     if (!(await this.getAvailability()).enabled) return null;
     const target = await this.repo.notificationTarget(followupId, kind, version);
     if (!target) return null;
+    if (kind === "responded" && !(await this.users.isPhoneVerified(target.coachId))) return null;
     return kind === "shared" ? { recipientId: target.studentId, link: "/my-coach" } : { recipientId: target.coachId, link: `/students/${target.studentId}` };
   }
 
   async listDueCoachIds(now: Date): Promise<string[]> {
-    return (await this.getAvailability()).enabled ? this.repo.listDueCoachIds(followupToday(now)) : [];
+    if (!(await this.getAvailability()).enabled) return [];
+    const coachIds = await this.repo.listDueCoachIds(followupToday(now));
+    const verified = await Promise.all(coachIds.map((id) => this.users.isPhoneVerified(id)));
+    return coachIds.filter((_, index) => verified[index]);
   }
 
   async getDueCount(coachId: string, now: Date): Promise<number> {
-    return (await this.getAvailability()).enabled ? this.repo.getDueCount(coachId, followupToday(now)) : 0;
+    if (!(await this.getAvailability()).enabled || !(await this.users.isPhoneVerified(coachId))) return 0;
+    return this.repo.getDueCount(coachId, followupToday(now));
   }
 }

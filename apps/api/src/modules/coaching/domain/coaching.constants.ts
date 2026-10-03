@@ -21,6 +21,7 @@ export const SessionPreset = {
   POMODORO_25_5: "25_5",
   DEEP_50_10: "50_10",
   CUSTOM: "custom",
+  STOPWATCH: "stopwatch",
 } as const;
 export type SessionPreset = (typeof SessionPreset)[keyof typeof SessionPreset];
 

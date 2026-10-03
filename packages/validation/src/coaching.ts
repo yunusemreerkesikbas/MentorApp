@@ -5,6 +5,9 @@
 import { z } from "zod";
 import {
   CAREER_GROUPS,
+  SESSION_ACTUAL_SECONDS_MAX,
+  SESSION_FOCUS_MINUTES_MIN,
+  SESSION_FOCUS_MINUTES_MAX,
   NOTEBOOK_COVER_COLORS,
   NOTEBOOK_COVER_MATERIALS,
   NOTEBOOK_COVER_TITLE_MAX_LENGTH,
@@ -39,7 +42,7 @@ export const isoDateSchema = z
   );
 
 export const PLAN_TASK_STATUSES = ["PENDING", "DONE"] as const;
-export const SESSION_PRESETS = ["25_5", "50_10", "custom"] as const;
+export const SESSION_PRESETS = ["25_5", "50_10", "custom", "stopwatch"] as const;
 export const STUDY_SESSION_STATUSES = [
   "IN_PROGRESS",
   "COMPLETED",
@@ -55,6 +58,10 @@ export const hhmmSchema = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/);
 
 /** Max description length — a calendar note, not an essay. */
 export const PLAN_TASK_DESCRIPTION_MAX = 2000;
+
+/** Study duration, deliberately independent of the calendar time range. */
+export const studyDurationMinutesSchema = z.number().int()
+  .min(SESSION_FOCUS_MINUTES_MIN).max(SESSION_FOCUS_MINUTES_MAX);
 
 /**
  * `startTime` null/absent = all-day item. `endTime` requires a `startTime` and must be later —
@@ -125,6 +132,7 @@ export const planTaskFieldsSchema = z.object({
   startTime: hhmmSchema.nullish(),
   endTime: hhmmSchema.nullish(),
   description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
+  durationMinutes: studyDurationMinutesSchema.nullish(),
   sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
 });
 
@@ -176,6 +184,7 @@ const planAdaptationAddSchema = z.object({
   title: z.string().trim().min(1).max(200),
   subject: z.string().trim().min(1).max(80).nullable(),
   topic: z.string().trim().min(1).max(160).nullable().optional(),
+  durationMinutes: studyDurationMinutesSchema.nullish(),
   taskDate: isoDateSchema,
 });
 
@@ -222,6 +231,7 @@ export const updatePlanTaskSchema = z
     startTime: hhmmSchema.nullish(),
     endTime: hhmmSchema.nullish(),
     description: z.string().trim().max(PLAN_TASK_DESCRIPTION_MAX).nullish(),
+    durationMinutes: studyDurationMinutesSchema.nullish(),
     sortOrder: z.coerce.number().int().min(0).max(10_000).optional(),
   })
   .superRefine(refinePlanTaskTimes)
@@ -415,14 +425,8 @@ export type CancelPlanEventInput = z.infer<typeof cancelPlanEventSchema>;
 export const startStudySessionSchema = z
   .object({
     preset: z.enum(SESSION_PRESETS),
-    /** Required when preset is `custom`; 5-minute steps from 5 to 120. */
-    focusMinutes: z.coerce
-      .number()
-      .int()
-      .min(5)
-      .max(120)
-      .refine((v) => v % 5 === 0, { message: "invalid_focus_minutes_step" })
-      .optional(),
+    /** Required when preset is `custom`; whole minutes from 5 to 200. */
+    focusMinutes: z.coerce.number().pipe(studyDurationMinutesSchema).optional(),
     subject: z.string().trim().min(1).max(80).nullish(),
     /** When starting from a plan task deep-link; must belong to the current user. */
     planTaskId: z.string().uuid().optional(),
@@ -432,6 +436,9 @@ export const startStudySessionSchema = z
     startedAt: z.string().datetime({ offset: true }).optional(),
   })
   .superRefine((data, ctx) => {
+    if (data.preset === "stopwatch" && data.focusMinutes !== undefined) {
+      ctx.addIssue({code: "custom", message: "stopwatch_has_no_duration", path: ["focusMinutes"]});
+    }
     if (data.preset === "custom" && data.focusMinutes == null) {
       ctx.addIssue({
         code: "custom",
@@ -444,7 +451,7 @@ export type StartStudySessionInput = z.infer<typeof startStudySessionSchema>;
 
 export const updateStudySessionSchema = z.object({
   status: z.enum(FINAL_STUDY_SESSION_STATUSES),
-  actualFocusSeconds: z.coerce.number().int().min(0).max(86_400),
+  actualFocusSeconds: z.coerce.number().int().min(0).max(SESSION_ACTUAL_SECONDS_MAX),
 });
 export type UpdateStudySessionInput = z.infer<typeof updateStudySessionSchema>;
 

@@ -135,6 +135,11 @@ export function PlanTaskRow({
               {task.subject}
             </span>
           ) : null}
+          {task.durationMinutes != null ? (
+            <span className="text-xs font-semibold text-[var(--color-secondary)]">
+              {t("duration_minutes", { minutes: task.durationMinutes })}
+            </span>
+          ) : null}
           {coachAssigned ? (
             <span
               className={`inline-flex items-center gap-1 font-bold ${dense ? "text-[10px] max-lg:text-[9px]" : "text-[10px]"}`}

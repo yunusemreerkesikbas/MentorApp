@@ -1,4 +1,5 @@
 /** Row → API DTO projections (single place so every endpoint returns the same shape). */
+import { SESSION_FOCUS_MINUTES_MIN, SESSION_FOCUS_MINUTES_MAX } from "@mentor/types";
 import type {
   CareerGroup,
   MoodCheckinDto,
@@ -32,11 +33,24 @@ export function toPlanTaskDto(row: PlanTaskRow): PlanTaskDto {
     taskDate: row.taskDate,
     startTime: toHhmm(row.startTime),
     endTime: toHhmm(row.endTime),
+    durationMinutes: row.durationMinutes ?? null,
+    sessionFocusMinutes: planTaskSessionMinutes(row),
     description: row.description,
     coachNote: row.coachNote,
     origin: toPlanTaskOriginDto(row),
     assignmentGroupId: row.assignmentGroupId,
   };
+}
+
+/** Legacy tasks retain a usable calendar duration; untimed tasks return null for stopwatch mode. */
+export function planTaskSessionMinutes(row: PlanTaskRow): number | null {
+  if (row.durationMinutes != null) return row.durationMinutes;
+  if (row.startTime && row.endTime) {
+    const minutes = (clock: string) => Number(clock.slice(0, 2)) * 60 + Number(clock.slice(3, 5));
+    const range = minutes(row.endTime) - minutes(row.startTime);
+    if (range >= SESSION_FOCUS_MINUTES_MIN && range <= SESSION_FOCUS_MINUTES_MAX) return range;
+  }
+  return null;
 }
 
 function toPlanTaskOriginDto(row: PlanTaskRow): PlanTaskOriginDto | null {

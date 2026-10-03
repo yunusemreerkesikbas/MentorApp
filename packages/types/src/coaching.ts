@@ -12,7 +12,15 @@ import type { ForumCoachIntent } from "./forum.js";
 
 export type PlanTaskStatus = "PENDING" | "DONE";
 export type StudySessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
-export type SessionPresetId = "25_5" | "50_10" | "custom";
+/** Existing session credit and persistence ceiling, independent of countdown length. */
+export const SESSION_ACTUAL_SECONDS_MAX = 86_400;
+
+export type SessionPresetId = "25_5" | "50_10" | "custom" | "stopwatch";
+
+/** Shared duration contract for plan tasks and custom focus sessions. */
+export const SESSION_FOCUS_MINUTES_MIN = 5;
+export const SESSION_FOCUS_MINUTES_MAX = 200;
+export const SESSION_FOCUS_MINUTES_STEP = 1;
 
 export const PlanTaskOriginType = {
   COMMUNITY_COACH: "COMMUNITY_COACH",
@@ -133,6 +141,10 @@ export interface PlanTaskDto {
   startTime: string | null;
   /** Wall-clock "HH:MM"; null when open-ended. Never set without `startTime`. */
   endTime: string | null;
+  /** Optional study length, independent of the calendar slot. */
+  durationMinutes: number | null;
+  /** Backend-resolved focus length: explicit duration, usable slot, otherwise null for stopwatch. */
+  sessionFocusMinutes: number | null;
   /** Free-text note shown in the calendar event preview. The STUDENT's own words. */
   description: string | null;
   /**
@@ -176,6 +188,8 @@ export type CoachPlanAdaptationChangeDto =
       kind: "ADD";
       title: string;
       subject: string | null;
+      /** Backend-calculated study length; absent for legacy previews. */
+      durationMinutes?: number | null;
       /** Verified exam-taxonomy topic, when available. */
       topic?: string | null;
       taskDate: string;

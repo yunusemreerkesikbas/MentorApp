@@ -24,13 +24,11 @@ export function usePlanCoachPreview({
   onApplied,
   onPlanChanged,
   onRegenerate,
-  onAppliedPlan,
   returnFocusRef,
 }: {
   onApplied: (result: ApplyPlanAdaptationResultDto) => Promise<void>;
   onPlanChanged: () => Promise<void>;
   onRegenerate: (input: CoachPlanAdaptationInput) => void;
-  onAppliedPlan: () => void;
   returnFocusRef: RefObject<HTMLSpanElement | null>;
 }) {
   const t = useTranslations("plan");
@@ -51,7 +49,7 @@ export function usePlanCoachPreview({
     preview: CoachPlanAdaptationDto,
     input: CoachPlanAdaptationInput,
   ) {
-    if (previewOpen.current) return;
+    if (!mounted.current || previewOpen.current) return;
     previewOpen.current = true;
     let settled = false;
     let replacing = false;
@@ -109,7 +107,6 @@ export function usePlanCoachPreview({
       if (mounted.current && !replacing && returnButton?.isConnected)
         returnButton.focus();
       if (!mounted.current || result !== "apply" || !applied.result) return;
-      if (input.source === "PLAN") onAppliedPlan();
       await onApplied(applied.result);
       if (!mounted.current) return;
       const moveCount = applied.result.moved.length;

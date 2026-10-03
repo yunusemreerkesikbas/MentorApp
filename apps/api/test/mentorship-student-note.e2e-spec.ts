@@ -60,7 +60,7 @@ describe("mentorship student note (e2e)", () => {
         userId[label],
       ]);
       if (role === UserRole.COACH) {
-        await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
+        await c.query("update users set email_verified_at = now(), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1", [userId[label]]);
         await c.query(
           "insert into mentorship_coach_applications (user_id, status, headline, bio) values ($1, $2, $3, $4) on conflict (user_id) do nothing",
           [userId[label], "ACTIVE", "Test kocu", "Test koc profili."],

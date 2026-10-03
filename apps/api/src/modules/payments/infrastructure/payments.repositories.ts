@@ -116,8 +116,8 @@ export class SubscriptionsRepository {
   }
 
   /** Trial-once rule (§7): has this user EVER had a subscription row? */
-  async hasAnyForUser(userId: string): Promise<boolean> {
-    return withServiceContext(this.db, async (tx) => {
+  async hasAnyForUser(userId: string, tx?: Exec): Promise<boolean> {
+    return onServiceTx(this.db, tx, async (tx) => {
       const rows = await tx
         .select({ id: subscriptions.id })
         .from(subscriptions)
@@ -128,6 +128,7 @@ export class SubscriptionsRepository {
             // it, never carded it, and the moment coaching ends is exactly when a trial is worth
             // the most — walking them into a full-price wall would be the worst possible timing.
             ne(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            ne(subscriptions.status, SubscriptionStatus.INCOMPLETE),
           ),
         )
         .limit(1);
@@ -166,8 +167,8 @@ export class SubscriptionsRepository {
    * non-terminal for three more days and `findOpenForUser` would keep reporting it — which would
    * block the student from starting their own checkout at the one moment they are most likely to.
    */
-  async expireSponsorship(id: string, now: Date): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async expireSponsorship(id: string, now: Date, tx?: Exec): Promise<void> {
+    await onServiceTx(this.db, tx, async (tx) => {
       await tx
         .update(subscriptions)
         .set({ status: SubscriptionStatus.EXPIRED, currentPeriodEnd: now, updatedAt: now })
@@ -248,6 +249,7 @@ export class SubscriptionsRepository {
         .select()
         .from(subscriptions)
         .where(eq(subscriptions.providerRef, providerRef))
+        .for("update")
         .limit(1);
       return rows[0];
     });
@@ -328,8 +330,8 @@ export class SubscriptionsRepository {
    * checkout so the user can retry — a deleted (vs expired) row also keeps trial-once intact, since
    * an unpaid checkout never consumed the trial.
    */
-  async deleteById(id: string): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async deleteById(id: string, tx?: Exec): Promise<void> {
+    await onServiceTx(this.db, tx, async (tx) => {
       await tx.delete(subscriptions).where(eq(subscriptions.id, id));
     });
   }

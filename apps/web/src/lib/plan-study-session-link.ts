@@ -9,7 +9,7 @@ const UUID_RE =
 export type PlanTaskStudySessionLinkInput = Pick<
   PlanTaskDto,
   "id" | "title" | "subject"
->;
+> & Partial<Pick<PlanTaskDto, "sessionFocusMinutes">>;
 
 export type StudySessionHref =
   | "/study-session"
@@ -18,16 +18,18 @@ export type StudySessionHref =
       query: Record<string, string>;
     };
 
-/** Deep-link from a plan task into `/study-session` with subject + task context (FE-only; no backend taskId). */
+/** Deep-link with task context and the backend-resolved session duration. */
 export function buildStudySessionHrefFromPlanTask(
   task: PlanTaskStudySessionLinkInput,
   source?: "dashboard" | "coach",
-): StudySessionHref {
+): Exclude<StudySessionHref, string> {
   const query: Record<string, string> = {
     taskId: task.id,
   };
 
   if (source) query.source = source;
+  if (task.sessionFocusMinutes === null) query.preset = "stopwatch";
+  if (task.sessionFocusMinutes != null) query.minutes = String(task.sessionFocusMinutes);
   const title = task.title.trim().slice(0, PLAN_TASK_TITLE_MAX);
   if (title) {
     query.taskTitle = title;

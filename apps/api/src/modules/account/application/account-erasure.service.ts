@@ -11,6 +11,7 @@ import { TokenService } from "../../identity/application/token.service";
 import { UsersService } from "../../identity/application/users.service";
 import { NotificationsErasureService } from "../../notifications/application/notifications-erasure.service";
 import { SubscriptionsService } from "../../payments/application/subscriptions.service";
+import { PhoneTrialService } from "../../payments/application/phone-trial.service";
 
 export interface AccountErasureResult {
   before: Record<string, unknown>;
@@ -49,6 +50,7 @@ export class AccountErasureService {
     private readonly mentorshipErasure: MentorshipErasureService,
     private readonly notificationsErasure: NotificationsErasureService,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly phoneTrials: PhoneTrialService,
   ) {}
 
   async eraseAccount(userId: string, status: string): Promise<AccountErasureResult> {
@@ -66,6 +68,7 @@ export class AccountErasureService {
     await this.socialErasure.eraseUserData(userId);
     await this.mentorshipErasure.eraseUserData(userId);
     await this.notificationsErasure.eraseUserData(userId);
+    await this.phoneTrials.detachUser(userId);
 
     // 3. Identity row (identity owns `users`) + kill every session.
     const change = await this.users.anonymizeAccount(userId, status);

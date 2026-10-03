@@ -50,6 +50,9 @@ function setup(
     plans?: { seatCount: number }[];
     /** Students who pay for their own Premium (payments' answer). */
     selfPaying?: string[];
+    unverifiedPhones?: string[];
+    unverifiedEmails?: string[];
+    premium?: boolean;
   } = {},
 ) {
   const rows = options.rows ?? [];
@@ -176,6 +179,8 @@ function setup(
   };
 
   const users = {
+    isEmailVerified: vi.fn(async (id: string) => !(options.unverifiedEmails ?? []).includes(id)),
+    isPhoneVerified: vi.fn(async (id: string) => !(options.unverifiedPhones ?? []).includes(id)),
     listDisplayIdentities: vi.fn(async (ids: string[]) => {
       const names: Record<string, string> = {
         [COACH]: "Koç Ayşe",
@@ -241,6 +246,7 @@ function setup(
     planEvents as never,
     planTasks as never,
     db as never,
+    { getEntitlement: vi.fn(async () => ({ isPremium: options.premium ?? false })) } as never,
   );
   return {
     service,
@@ -278,6 +284,44 @@ describe("MentorshipLinkService", () => {
   });
 
   describe("the authorization gate", () => {
+    it("closes coach authority after an email change and restores it only after re-verification", async () => {
+      const { service, users } = setup({ rows: [link()] });
+      users.isEmailVerified.mockResolvedValue(false);
+      for (const call of [
+        () => service.requireActiveLink(COACH, STUDENT),
+        () => service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT),
+        () => service.requireActiveLinksInTransaction(TX as never, COACH, [STUDENT]),
+        () => service.listActiveScopes(COACH),
+      ]) await expect(call()).rejects.toMatchObject({ code: ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED });
+      await expect(service.requireStudentLink(STUDENT)).resolves.toMatchObject({ id: link().id });
+      await expect(service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT, { allowWaiting: true })).resolves.toMatchObject({ id: link().id });
+      users.isEmailVerified.mockResolvedValue(true);
+      await expect(service.requireActiveLink(COACH, STUDENT)).resolves.toMatchObject({ id: link().id });
+    });
+
+    it("never requires the student's email for coach authority", async () => {
+      const { service } = setup({ rows: [link()], unverifiedEmails: [STUDENT] });
+      await expect(service.requireActiveLink(COACH, STUDENT)).resolves.toMatchObject({ id: link().id });
+    });
+
+    it("requires coach phone verification on all protected relationship paths", async () => {
+      const { service } = setup({ rows: [link()], unverifiedPhones: [COACH] });
+      for (const call of [
+        () => service.requireActiveLink(COACH, STUDENT),
+        () => service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT),
+        () => service.requireActiveLinksInTransaction(TX as never, COACH, [STUDENT]),
+        () => service.listActiveScopes(COACH),
+      ]) await expect(call()).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
+    });
+
+    it("keeps student access, responses and revocation when either phone is unverified", async () => {
+      const { service, rows } = setup({ rows: [link()], unverifiedPhones: [COACH, STUDENT] });
+      await expect(service.requireStudentLink(STUDENT)).resolves.toMatchObject({ id: link().id });
+      await expect(service.requireActiveLinkInTransaction(TX as never, COACH, STUDENT, { allowWaiting: true })).resolves.toMatchObject({ id: link().id });
+      await service.endByStudent(STUDENT);
+      expect(rows[0]!.status).toBe("ENDED");
+    });
+
     it("returns the link when it is active", async () => {
       const { service } = setup({ rows: [link()] });
       await expect(service.requireActiveLink(COACH, STUDENT)).resolves.toMatchObject({
@@ -380,6 +424,25 @@ describe("MentorshipLinkService", () => {
   });
 
   describe("reseating a coach's links", () => {
+    it.each([COACH, STUDENT])("backfills unchanged seated links immediately after %s verifies", async (userId) => {
+      const { service, seats, links } = setup({ rows: [link()] });
+      await service.reseatForUser(userId);
+      expect(links.setSeatsInTransaction).toHaveBeenCalledWith(TX, []);
+      expect(seats.grant).toHaveBeenCalledWith(STUDENT, link().id, COACH);
+    });
+
+    it("does not require the linked student's phone for coach data access", async () => {
+      const { service } = setup({ rows: [link()], unverifiedPhones: [STUDENT] });
+      await expect(service.requireActiveLink(COACH, STUDENT)).resolves.toMatchObject({ id: link().id });
+    });
+
+    it("keeps sponsorship backfill behind the kill switch", async () => {
+      config["mentorship.seats.sponsorship_enabled"] = false;
+      const { service, seats } = setup({ rows: [link()] });
+      await service.reseatForUser(STUDENT);
+      expect(seats.grant).not.toHaveBeenCalled();
+    });
+
     const day = (n: number) => new Date(Date.UTC(2026, 8, n));
 
     it("freezes the newest paid student when the coach's plan ends, and ends their Premium", async () => {
@@ -393,7 +456,8 @@ describe("MentorshipLinkService", () => {
       await service.reseatCoach(COACH);
       expect(rows.map((row) => row.seat)).toEqual(["FREE", "NONE"]);
       expect(seats.revoke).toHaveBeenCalledWith("l2");
-      expect(seats.grant).not.toHaveBeenCalled();
+      expect(seats.grant).toHaveBeenCalledWith("s1", "l1", COACH);
+      expect(seats.grant).not.toHaveBeenCalledWith("s2", "l2", COACH);
     });
 
     it("brings a waiting student back with their Premium when a seat returns", async () => {
@@ -406,7 +470,7 @@ describe("MentorshipLinkService", () => {
       });
       await service.reseatCoach(COACH);
       expect(rows[1]!.seat).toBe("PAID");
-      expect(seats.grant).toHaveBeenCalledWith("s2", "l2");
+      expect(seats.grant).toHaveBeenCalledWith("s2", "l2", COACH);
     });
 
     it("moves a student who pays for themselves off the seat, freeing it", async () => {
@@ -427,7 +491,7 @@ describe("MentorshipLinkService", () => {
       // s1's own subscription ended (payments no longer names them): back on the free seat.
       await service.reseatForUser("s1");
       expect(rows[0]!.seat).toBe("FREE");
-      expect(seats.grant).toHaveBeenCalledWith("s1", "l1");
+      expect(seats.grant).toHaveBeenCalledWith("s1", "l1", COACH);
     });
   });
 
@@ -590,6 +654,36 @@ describe("MentorshipLinkService", () => {
     });
   });
 
+  describe("sponsored Premium pending state", () => {
+    it("accepts an unverified student while reporting held sponsorship", async () => {
+      const { service, emitted } = setup({ unverifiedPhones: [STUDENT] });
+      await expect(service.acceptInvitation(STUDENT, CODE)).resolves.toMatchObject({
+        status: "ACTIVE",
+        seatWaiting: false,
+        sponsoredPremiumPending: true,
+      });
+      expect(emitted.at(-1)).toMatchObject({ payload: { seatKind: "FREE" } });
+    });
+
+    it.each([
+      { phones: [STUDENT], seat: "FREE", premium: false, expected: true },
+      { phones: [COACH], seat: "PAID", premium: false, expected: true },
+      { phones: [], seat: "FREE", premium: false, expected: false },
+      { phones: [STUDENT], seat: "FREE", premium: true, expected: false },
+      { phones: [STUDENT], seat: "SELF", premium: false, expected: false },
+      { phones: [STUDENT], seat: "NONE", premium: false, expected: false },
+    ])("derives pending sponsorship on the server: %j", async ({ phones, seat, premium, expected }) => {
+      const { service } = setup({ rows: [link({ seat })], unverifiedPhones: phones, premium });
+      await expect(service.getMyCoach(STUDENT)).resolves.toMatchObject({ sponsoredPremiumPending: expected });
+    });
+
+    it("withholds the phone CTA while sponsorship is disabled", async () => {
+      config["mentorship.seats.sponsorship_enabled"] = false;
+      const { service } = setup({ rows: [link()], unverifiedPhones: [STUDENT] });
+      await expect(service.getMyCoach(STUDENT)).resolves.toMatchObject({ sponsoredPremiumPending: false });
+    });
+  });
+
   describe("the coach overview", () => {
     it("writes the Premium a seated link never received, and none for a waiting one", async () => {
       const seated = link({
@@ -607,7 +701,7 @@ describe("MentorshipLinkService", () => {
       const overview = await service.getCoachOverview(COACH);
       expect(overview.activeStudents).toBe(2);
       expect(seats.grant).toHaveBeenCalledTimes(1);
-      expect(seats.grant).toHaveBeenCalledWith("s-old", "older");
+      expect(seats.grant).toHaveBeenCalledWith("s-old", "older", COACH);
     });
 
     /** The card's "used" is seats held: a student who pays for themselves and one waiting hold none. */

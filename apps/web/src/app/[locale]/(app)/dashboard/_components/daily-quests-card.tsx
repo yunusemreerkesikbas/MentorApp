@@ -15,17 +15,15 @@ import { CHEST_QUEST_ID } from "./today-path-model";
 import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
 
-const WELL_BY_ACTION: Partial<Record<NonNullable<QuestAction>, [LucideIcon, string]>> = {
-  plan: [CalendarCheck, "bg-[var(--play-well-peri)] text-[var(--play-selected-ink)]"],
-  "study-session": [Clock3, "bg-[var(--play-well-blue)] text-[var(--play-selected-ink)]"],
-  "mood-checkin": [Heart, "bg-[var(--play-well-coral)] text-[var(--color-streak)]"],
+const ICON_BY_ACTION: Partial<Record<NonNullable<QuestAction>, [LucideIcon, string]>> = {
+  plan: [CalendarCheck, "text-[var(--play-selected-ink)]"],
+  "study-session": [Clock3, "text-[var(--play-selected-ink)]"],
+  "mood-checkin": [Heart, "text-[var(--color-streak)]"],
 };
-const DEFAULT_WELL: [LucideIcon, string] = [
+const DEFAULT_ICON: [LucideIcon, string] = [
   ListChecks,
-  "bg-[var(--play-well-violet)] text-[var(--color-chip-text)]",
+  "text-[var(--color-chip-text)]",
 ];
-const DONE_WELL =
-  "bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface))] text-[var(--color-success)]";
 
 /**
  * Today's ritual quests with their progress, and the weekly chest. The list only shows; acting on a
@@ -104,7 +102,7 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
   const economyT = useTranslations("economy");
   const target = Math.max(quest.progressTarget ?? 1, 1);
   const current = quest.completed ? target : Math.min(quest.progressCurrent ?? 0, target);
-  const [Icon, well] = (quest.action && WELL_BY_ACTION[quest.action]) || DEFAULT_WELL;
+  const [Icon, color] = (quest.action && ICON_BY_ACTION[quest.action]) || DEFAULT_ICON;
   const reward =
     quest.rewardUnit === "XP"
       ? economyT("quest_reward_xp", { count: quest.rewardAmount })
@@ -115,10 +113,10 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
   return (
     <li className="flex items-center gap-3">
       <span
-        className={`grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] ${quest.completed ? DONE_WELL : well}`}
+        className={`grid size-10 shrink-0 place-items-center ${quest.completed ? "text-[var(--color-success)]" : color}`}
         aria-hidden
       >
-        <Icon className="size-5" strokeWidth={2.2} />
+        <Icon className="size-5" strokeWidth={1.75} />
       </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
@@ -132,6 +130,7 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
           ) : null}
         </div>
         <ProgressLine
+          appearance="play"
           label={quest.title}
           value={current}
           max={target}

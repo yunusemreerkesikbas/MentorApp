@@ -20,8 +20,10 @@ function task(overrides: Partial<PlanTaskDto> = {}): PlanTaskDto {
     coachNote: null,
     origin: null,
     assignmentGroupId: null,
+    durationMinutes: null,
+    sessionFocusMinutes: 25,
     ...overrides,
-  };
+  } as PlanTaskDto;
 }
 
 describe("planTaskCalendarItem", () => {

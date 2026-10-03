@@ -64,12 +64,19 @@ export class CoachActionService {
       }
     }
 
-    if (current.resultRefId) return current;
-    const resultRefId = await this.execute(userId, messageId, current.action);
-    if (resultRefId) {
-      await this.messages.setActionResult(userId, messageId, resultRefId);
+    let resultRefId = current.resultRefId;
+    if (!resultRefId) {
+      resultRefId = await this.execute(userId, messageId, current.action);
+      if (resultRefId)
+        await this.messages.setActionResult(userId, messageId, resultRefId);
     }
-    return { ...current, resultRefId };
+    const session =
+      current.action.type === CoachActionType.START_PLAN_SESSION &&
+      resultRefId &&
+      this.sessions
+        ? await this.sessions.getFromAiCoach(userId, resultRefId)
+        : undefined;
+    return { ...current, resultRefId, ...(session ? { session } : {}) };
   }
 
   private async execute(

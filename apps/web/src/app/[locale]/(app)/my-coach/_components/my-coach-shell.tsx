@@ -7,6 +7,8 @@ import type { MentorshipSharedDataDto, MyCoachDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
+import { useSubscription } from "@/lib/subscription-context";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { endMyCoachLink, fetchMyCoach, fetchSharedData } from "@/lib/mentorship";
@@ -30,6 +32,7 @@ export function MyCoachShell() {
   const common = useTranslations("common");
   const { error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
+  const { refresh: refreshSubscription } = useSubscription();
   const searchParams = useSearchParams();
   /** Read once: the invite page sends the student here with `?hosgeldin=1` right after they agree. */
   const [welcome] = useState(() => searchParams.get("hosgeldin") === "1");
@@ -108,6 +111,15 @@ export function MyCoachShell() {
         <div className={PANEL_GRID_CLASS}>
           <div className="flex min-w-0 flex-col gap-5">
             <MyCoachHero coach={coach} welcome={welcome} />
+            {coach.sponsoredPremiumPending ? (
+              <section className="flex flex-col gap-3">
+                <p className="text-sm text-[var(--color-secondary)]">{t("sponsored_premium_pending")}</p>
+                <PhoneVerificationCard onStatusChange={(phone) => {
+                  if (!phone.verified) return;
+                  void Promise.all([fetchMyCoach(), refreshSubscription()]).then(([next]) => setCoach(next)).catch(showError);
+                }} />
+              </section>
+            ) : null}
             <MyNoteCard
               note={coach.studentNote}
               onSaved={(studentNote) => setCoach((prev) => (prev ? { ...prev, studentNote } : prev))}

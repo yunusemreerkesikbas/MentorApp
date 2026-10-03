@@ -47,8 +47,8 @@ export function RoomStageSkeleton() {
           </div>
           <Skeleton className="size-11 rounded-full" />
         </div>
-        <div className="relative flex flex-1 items-center justify-center px-5 pb-28 pt-4 lg:pb-32">
-          <div className="relative mx-auto aspect-square w-full max-w-[min(46rem,78vh)]">
+        <div className="relative flex min-h-0 flex-1 items-center justify-center px-5 pb-28 pt-4 lg:pb-32">
+          <div className="relative mx-auto aspect-[3/4] max-h-full min-h-0 w-full sm:aspect-square sm:max-w-[min(46rem,78vh)]">
             <Skeleton className="absolute left-[20%] top-[28%] h-[44%] w-[60%] rounded-[50%]" />
             {SEATS.map((seat, index) => (
               <Skeleton

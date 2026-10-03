@@ -138,6 +138,16 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > enum; `focusSubjects` is capped at 30 names instead of 3. Additive for existing clients.
 > The brief's `suggestion` additively carries `weekdays` (ISO weekdays the student studied on most
 > in the last 28 days, `days` of them, or null).
+> Change (2026-10-02): task create/update and adaptation ADD accept optional nullable
+> `durationMinutes` (whole minutes 5–200). Omitted updates retain the value; null clears it.
+> Accepted coach session actions also return the actual `session` DTO, so retries keep its stored duration.
+> Task reads add `durationMinutes` and backend-resolved `sessionFocusMinutes` (explicit duration,
+> usable calendar range, otherwise null for a stopwatch). Custom study sessions accept 5–200 whole minutes.
+> `POST /v1/study-sessions` also accepts `preset: stopwatch` without `focusMinutes`; supplied
+> minutes are rejected for that preset. It retains null planned minutes and records actual seconds on
+> manual completion, with the existing 24-hour credit/resume ceiling and minimum-focus rules.
+> Personalized plan ADD titles omit minutes and return their allocated duration separately.
+
 > Change (2026-09-30): apply optionally accepts `source: PLAN`, limiting the new program to three
 > additions per date independently of existing tasks. Omitted source, MOOD and SESSION preserve
 > the previous capacity rule. Preview minute budgets apply to new tasks only; existing tasks are

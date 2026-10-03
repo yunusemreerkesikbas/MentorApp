@@ -126,6 +126,8 @@ export const users = pgTable(
     /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    phoneNumber: text("phone_number"),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
       withTimezone: true,
@@ -149,6 +151,8 @@ export const users = pgTable(
   (t) => [
     uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`),
     uniqueIndex("users_username_unique_idx").on(sql`lower(${t.username})`),
+    uniqueIndex("users_active_phone_unique_idx").on(t.phoneNumber)
+      .where(sql`${t.status} = 'ACTIVE' AND ${t.phoneVerifiedAt} IS NOT NULL`),
   ],
 );
 
@@ -1280,6 +1284,8 @@ export const planTasks = pgTable(
     startTime: time("start_time"),
     /** Wall-clock end; requires `start_time` and must be later (plan_tasks_time_range_chk). */
     endTime: time("end_time"),
+    /** Optional study length, independent of start/end times. */
+    durationMinutes: integer("duration_minutes"),
     /** Optional free-text note shown in the calendar event preview. THE STUDENT'S own words. */
     description: text("description"),
     /**
@@ -1325,6 +1331,7 @@ export const planTasks = pgTable(
       .defaultNow(),
   },
   (t) => [
+    check("plan_tasks_duration_minutes_chk", sql`${t.durationMinutes} between 5 and 200`),
     index("plan_tasks_user_date_idx").on(t.userId, t.taskDate),
     index("plan_tasks_assignment_group_idx").on(t.assignmentGroupId),
     uniqueIndex("plan_tasks_ai_coach_origin_idx")

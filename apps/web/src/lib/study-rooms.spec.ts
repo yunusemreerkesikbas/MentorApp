@@ -15,8 +15,13 @@ describe("studyRoomJoinFailure", () => {
     expect(studyRoomJoinFailure(apiError("COACHING_ROOM_NOT_FOUND"))).toBe("invalid");
   });
 
-  it("falls back to a retryable error for anything else", () => {
-    expect(studyRoomJoinFailure(apiError("COACHING_ROOM_FULL"))).toBe("error");
+  it("names a bad shape, a full table, and the membership cap", () => {
+    expect(studyRoomJoinFailure(apiError("VALIDATION_ERROR"))).toBe("malformed");
+    expect(studyRoomJoinFailure(apiError("COACHING_ROOM_FULL"))).toBe("full");
+    expect(studyRoomJoinFailure(apiError("COACHING_ROOM_QUOTA_EXCEEDED"))).toBe("quota");
+  });
+
+  it("falls back to a retryable error when the connection drops", () => {
     expect(studyRoomJoinFailure(new TypeError("Failed to fetch"))).toBe("error");
   });
 });

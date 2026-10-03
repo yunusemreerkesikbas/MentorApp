@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import { ApiClientError, usersControllerResendVerificationEmail } from "@mentor/api-client";
 import type { MentorshipInviteCodeDto } from "@mentor/types";
-import { getPathname } from "@/i18n/navigation";
+import { getPathname, useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { rotateInviteCode } from "@/lib/mentorship";
@@ -35,6 +35,7 @@ export function useInviteActions({
   const t = useTranslations("mentorship");
   const common = useTranslations("common");
   const locale = useLocale();
+  const router = useRouter();
   const { success: toastSuccess, error: toastError } = useMentorToast();
   const dialog = useMentorDialog();
   const [busy, setBusy] = useState(false);
@@ -101,6 +102,10 @@ export function useInviteActions({
   async function rotate() {
     if (inviteLock === "EMAIL") {
       await verifyEmail();
+      return;
+    }
+    if (inviteLock === "PHONE") {
+      router.push({ pathname: "/settings", query: { section: "phone" } });
       return;
     }
     if (inviteCode !== null) {

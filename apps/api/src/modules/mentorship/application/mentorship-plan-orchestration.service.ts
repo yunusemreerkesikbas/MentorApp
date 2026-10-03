@@ -91,6 +91,7 @@ export class MentorshipPlanOrchestrationService {
       topic: task.topic,
       startTime: task.startTime,
       endTime: task.endTime,
+      durationMinutes: task.durationMinutes,
       coachNote: task.coachNote,
       participants: [],
     };
@@ -118,6 +119,7 @@ export class MentorshipPlanOrchestrationService {
         topic: row.task.topic,
         startTime: row.task.startTime,
         endTime: row.task.endTime,
+        durationMinutes: row.task.durationMinutes,
         coachNote: row.task.coachNote,
         participants: [],
       };
@@ -161,6 +163,7 @@ function visibleTaskSignature(task: PlanTaskDto): string {
     task.topic,
     task.startTime,
     task.endTime,
+    task.durationMinutes ?? null,
     task.coachNote,
   ]);
 }

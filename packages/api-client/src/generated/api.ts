@@ -21,6 +21,47 @@ export interface AvatarUploadUrlDto { [key: string]: unknown }
 
 export interface GoogleLinkStartDto { [key: string]: unknown }
 
+export interface PhoneStatusResponseDto {
+  verified: boolean;
+  /** @nullable */
+  maskedPhoneNumber: string | null;
+  available: boolean;
+  reauthenticationRequired: boolean;
+}
+
+export interface PhoneVerificationRequestDto {
+  /** @maxLength 32 */
+  phoneNumber: string;
+  /** @maxLength 2048 */
+  turnstileToken?: string;
+}
+
+export type PhoneVerificationResponseDtoSendStatus = typeof PhoneVerificationResponseDtoSendStatus[keyof typeof PhoneVerificationResponseDtoSendStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const PhoneVerificationResponseDtoSendStatus = {
+  SENT: 'SENT',
+  UNKNOWN: 'UNKNOWN',
+} as const;
+
+export interface PhoneVerificationResponseDto {
+  challengeId: string;
+  expiresAt: string;
+  resendAvailableAt: string;
+  maskedPhoneNumber: string;
+  sendStatus: PhoneVerificationResponseDtoSendStatus;
+}
+
+export interface PhoneVerificationConfirmDto {
+  /**
+   * @minLength 6
+   * @maxLength 6
+   * @pattern ^\d{6}$
+   */
+  code: string;
+}
+
 export interface AiChatDto {
   /**
    * @minLength 1
@@ -37,7 +78,15 @@ export interface AiChatDto {
   contextArticleSlug?: string;
 }
 
-export interface CommunityCoachPlanTaskDto { [key: string]: unknown }
+export interface CommunityCoachPlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface PlanDraftBodyDto {
   /** @maxLength 500 */
@@ -137,7 +186,15 @@ export interface PromotionOffersDto { [key: string]: unknown }
 
 export interface CheckoutDto { [key: string]: unknown }
 
-export interface CreateAnalysisPlanTaskDto { [key: string]: unknown }
+export interface CreateAnalysisPlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface CompleteWeeklyReviewDto { [key: string]: unknown }
 
@@ -153,15 +210,76 @@ export interface PutPreferenceSimulationDto { [key: string]: unknown }
 
 export interface RefreshPreferenceSimulationDto { [key: string]: unknown }
 
-export interface CreatePlanTaskDto { [key: string]: unknown }
+export interface CreatePlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
-export interface BulkCreatePlanTasksDto { [key: string]: unknown }
+export type BulkCreatePlanTasksDtoTasksItem = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface ApplyPlanAdaptationDto { [key: string]: unknown }
+export interface BulkCreatePlanTasksDto {
+  tasks?: BulkCreatePlanTasksDtoTasksItem[];
+  [key: string]: unknown;
+ }
 
-export interface UpdatePlanTaskDto { [key: string]: unknown }
+export type ApplyPlanAdaptationDtoChangesItem = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface StartStudySessionDto { [key: string]: unknown }
+export interface ApplyPlanAdaptationDto {
+  changes?: ApplyPlanAdaptationDtoChangesItem[];
+  [key: string]: unknown;
+ }
+
+export interface UpdatePlanTaskDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
+
+export type StartStudySessionDtoPreset = typeof StartStudySessionDtoPreset[keyof typeof StartStudySessionDtoPreset];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const StartStudySessionDtoPreset = {
+  '25_5': '25_5',
+  '50_10': '50_10',
+  custom: 'custom',
+  stopwatch: 'stopwatch',
+} as const;
+
+export interface StartStudySessionDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   */
+  focusMinutes?: number;
+  preset?: StartStudySessionDtoPreset;
+  [key: string]: unknown;
+ }
 
 export interface UpdateStudySessionDto { [key: string]: unknown }
 
@@ -452,11 +570,40 @@ export interface MentorshipAttentionDto { [key: string]: unknown }
 
 export interface SaveMentorshipTemplateDto { [key: string]: unknown }
 
-export interface CreateMentorshipBatchAssignmentDto { [key: string]: unknown }
+export type CreateMentorshipBatchAssignmentDtoTask = {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ };
 
-export interface UpdateMentorshipAssignmentDto { [key: string]: unknown }
+export interface CreateMentorshipBatchAssignmentDto {
+  task?: CreateMentorshipBatchAssignmentDtoTask;
+  [key: string]: unknown;
+ }
 
-export interface UpdateMentorshipAssignmentGroupDto { [key: string]: unknown }
+export interface UpdateMentorshipAssignmentDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
+
+export interface UpdateMentorshipAssignmentGroupDto {
+  /**
+   * @minimum 5
+   * @maximum 200
+   * @nullable
+   */
+  durationMinutes?: number | null;
+  [key: string]: unknown;
+ }
 
 export interface RemoveMentorshipAssignmentGroupDto { [key: string]: unknown }
 
@@ -2343,6 +2490,72 @@ export const googleLinkingControllerStart = async (googleLinkStartDto: GoogleLin
     headers: { 'Content-Type': 'application/json', ...options?.headers },
     body: JSON.stringify(
       googleLinkStartDto,)
+  }
+);}
+
+
+
+export const getPhoneControllerGetStatusUrl = () => {
+
+
+  
+
+  return `/v1/users/me/phone`
+}
+
+export const phoneControllerGetStatus = async ( options?: RequestInit): Promise<PhoneStatusResponseDto> => {
+  
+  return http<PhoneStatusResponseDto>(getPhoneControllerGetStatusUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
+export const getPhoneControllerRequestVerificationUrl = () => {
+
+
+  
+
+  return `/v1/users/me/phone/verifications`
+}
+
+export const phoneControllerRequestVerification = async (phoneVerificationRequestDto: PhoneVerificationRequestDto, options?: RequestInit): Promise<PhoneVerificationResponseDto> => {
+  
+  return http<PhoneVerificationResponseDto>(getPhoneControllerRequestVerificationUrl(),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      phoneVerificationRequestDto,)
+  }
+);}
+
+
+
+export const getPhoneControllerConfirmVerificationUrl = (challengeId: string,) => {
+
+
+  
+
+  return `/v1/users/me/phone/verifications/${challengeId}/confirm`
+}
+
+export const phoneControllerConfirmVerification = async (challengeId: string,
+    phoneVerificationConfirmDto: PhoneVerificationConfirmDto, options?: RequestInit): Promise<PhoneStatusResponseDto> => {
+  
+  return http<PhoneStatusResponseDto>(getPhoneControllerConfirmVerificationUrl(challengeId),
+  {      
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      phoneVerificationConfirmDto,)
   }
 );}
 

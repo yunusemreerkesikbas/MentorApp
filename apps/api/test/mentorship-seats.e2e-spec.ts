@@ -1,12 +1,14 @@
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { EventEmitter2 } from "@nestjs/event-emitter";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
+import { IdentityEventTopic } from "../src/modules/identity/domain/identity.events";
 
 const CRON_SECRET = `seats-cron-secret-for-e2e-${Date.now()}-only`;
 
@@ -74,7 +76,7 @@ describe("mentorship seats (e2e)", () => {
         userId[label],
       ]);
       if (role === UserRole.COACH) {
-        await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
+        await c.query("update users set email_verified_at = now(), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1", [userId[label]]);
         await c.query(
           "insert into mentorship_coach_applications (user_id, status, headline, bio) values ($1, $2, $3, $4) on conflict (user_id) do nothing",
           [userId[label], "ACTIVE", "Test kocu", "Test koc profili."],
@@ -136,6 +138,9 @@ describe("mentorship seats (e2e)", () => {
 
     stamp = Date.now();
     for (const label of ["coach", "seated", "spare", "payer", "admin"]) await signup(label);
+    await svc(async (c) => {
+      await c.query("update users set phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = any($1::uuid[])", [[userId.spare, userId.payer]]);
+    });
     await grantRoleAndRelogin("coach", UserRole.COACH);
     await grantRoleAndRelogin("admin", UserRole.SUPER_ADMIN);
 
@@ -161,7 +166,7 @@ describe("mentorship seats (e2e)", () => {
   /** Platform-wide subscription counters as they stood before this suite handed out any seat. */
   let baseline = { payingSubscriptions: 0, active: 0 };
 
-  it("hands the seated student Premium the moment the link is accepted", async () => {
+  it("links an unverified student and grants Premium immediately after phone verification", async () => {
     const before = await http().get("/v1/admin/metrics").set(auth("admin"));
     baseline = {
       payingSubscriptions: before.body.subscriptions.payingSubscriptions,
@@ -179,6 +184,14 @@ describe("mentorship seats (e2e)", () => {
       .set(auth("seated"))
       .send({ code });
     expect(accept.status).toBe(200);
+    expect(accept.body).toMatchObject({ status: "ACTIVE", sponsoredPremiumPending: true });
+    expect((await subscriptionOf("seated")).entitlement.isPremium).toBe(false);
+
+    await svc(async (c) => {
+      await c.query("update users set phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1", [userId.seated]);
+    });
+    // Identity emits this only after verified state commits. No coach overview repairs this test.
+    app.get(EventEmitter2).emit(IdentityEventTopic.PHONE_VERIFIED, { userId: userId.seated });
 
     // The listener runs off a fire-and-forget emit, so the row can land a beat after the response.
     let view = await subscriptionOf("seated");
@@ -196,6 +209,7 @@ describe("mentorship seats (e2e)", () => {
       sponsored: true,
       currentPeriodEnd: null,
     });
+    expect((await http().get("/v1/mentorship/my-coach").set(auth("seated"))).body.sponsoredPremiumPending).toBe(false);
   });
 
   it("keeps the seat plans out of the catalog anyone can buy", async () => {

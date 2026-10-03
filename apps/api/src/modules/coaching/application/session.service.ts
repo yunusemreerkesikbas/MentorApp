@@ -22,6 +22,7 @@ import {
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
   STALE_SESSION_GRACE_MINUTES,
+  SESSION_PRESETS,
   type RecentSessionSummary,
 } from "../domain/coaching.constants";
 import {
@@ -39,7 +40,7 @@ import {
   StudySessionRepository,
   type CoWorkerRow,
 } from "../infrastructure/study-session.repository";
-import { toStudySessionDto } from "./coaching.mappers";
+import { planTaskSessionMinutes, toStudySessionDto } from "./coaching.mappers";
 import type { CoachRhythmEvidence } from "../domain/coach-evidence";
 import { hasSevenFullIstanbulDaysBetween } from "../domain/achievement-evidence";
 
@@ -305,15 +306,27 @@ export class SessionService {
           HttpStatus.NOT_FOUND,
         );
       }
+      const minutes = planTaskSessionMinutes(task);
+      const defaultMinutes = SESSION_PRESETS[0]!.focusMinutes;
       const created = await this.sessions.create(tx, {
         userId,
         startedAt: new Date(),
-        preset: "25_5",
-        plannedFocusMinutes: null,
+        preset: minutes === null ? "stopwatch" : minutes === defaultMinutes ? "25_5" : "custom",
+        plannedFocusMinutes: minutes === defaultMinutes ? null : minutes,
         subject: task.subject,
         planTaskId,
       });
       return toStudySessionDto(created, minFocusSeconds);
+    });
+  }
+
+  /** W3 seam: reads the actual session on accepted-action retries without starting another. */
+  async getFromAiCoach(userId: string, sessionId: string): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.sessions.findById(tx, userId, sessionId);
+      if (!row) throw new DomainError(ErrorCode.COACHING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND);
+      return toStudySessionDto(row, minFocusSeconds);
     });
   }
 

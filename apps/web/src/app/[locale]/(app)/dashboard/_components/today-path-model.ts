@@ -16,8 +16,8 @@ export interface PathNode {
   state: PathNodeState;
   /** Assigned by the student's human coach (not the AI). */
   fromCoach: boolean;
-  /** Length of the task's own time range, when it has a usable one. */
-  rangeMinutes: number | null;
+  /** Backend-resolved session length, shared by the node, CTA and link. */
+  minutes: number | null;
 }
 
 export interface PathChest {
@@ -32,9 +32,7 @@ export type PathCta =
       kind: "START_TASK";
       task: PlanTaskDto;
       /** What the label promises and the session opens with — always the same number. */
-      minutes: number;
-      /** Passed to `/study-session` only when it differs from the default preset. */
-      minutesParam: number | null;
+      minutes: number | null;
     }
   | { kind: "ADD_TASK" }
   | { kind: "DAY_COMPLETE" };
@@ -50,51 +48,9 @@ export interface TodayPath {
   cta: PathCta;
 }
 
-function toMinutes(clock: string): number | null {
-  const match = /^(\d{2}):(\d{2})$/.exec(clock);
-  if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-/** `startTime`–`endTime` in minutes; null unless both are set and the end is after the start. */
-export function taskRangeMinutes(
-  task: Pick<PlanTaskDto, "startTime" | "endTime">,
-): number | null {
-  if (!task.startTime || !task.endTime) return null;
-  const start = toMinutes(task.startTime);
-  const end = toMinutes(task.endTime);
-  if (start == null || end == null || end <= start) return null;
-  return end - start;
-}
-
-/**
- * The session screen accepts a custom length of 5–120 minutes in steps of 5
- * (`study-session/_components/session-params.ts`). Anything else would silently open the default
- * preset, so it is not offered at all: the label then shows the preset instead.
- */
-export function sessionMinutesParam(minutes: number | null): number | null {
-  if (minutes == null) return null;
-  return minutes >= 5 && minutes <= 120 && minutes % 5 === 0 ? minutes : null;
-}
-
-/** Minutes a task's session opens with, and the param that asks for it (null = the preset). */
-function taskSessionMinutes(
-  task: PlanTaskDto,
-  defaultMinutes: number,
-): { minutes: number; param: number | null } {
-  const own = sessionMinutesParam(taskRangeMinutes(task));
-  return {
-    minutes: own ?? defaultMinutes,
-    param: own != null && own !== defaultMinutes ? own : null,
-  };
-}
-
-/** `/study-session` for this task from the panel; carries the task's own length when it has one. */
-export function sessionHrefFor(task: PlanTaskDto, defaultMinutes: number): StudySessionHref {
-  const href = buildStudySessionHrefFromPlanTask(task, "dashboard");
-  const { param } = taskSessionMinutes(task, defaultMinutes);
-  if (typeof href === "string" || param == null) return href;
-  return { ...href, query: { ...href.query, minutes: String(param) } };
+/** Every surface uses the shared link builder; no dashboard-specific duration calculation. */
+export function sessionHrefFor(task: PlanTaskDto): StudySessionHref {
+  return buildStudySessionHrefFromPlanTask(task, "dashboard");
 }
 
 /**
@@ -124,19 +80,18 @@ export function buildTodayPath(
             ? "current"
             : "upcoming",
       fromCoach: task.origin?.type === "MENTORSHIP",
-      rangeMinutes: taskRangeMinutes(task),
+      minutes: task.sessionFocusMinutes === undefined ? defaultMinutes : task.sessionFocusMinutes,
     };
   });
 
   const current = currentIndex === -1 ? null : tasks[currentIndex]!;
-  const session = current ? taskSessionMinutes(current, defaultMinutes) : null;
+  const minutes = current?.sessionFocusMinutes === undefined ? defaultMinutes : current.sessionFocusMinutes;
   const cta: PathCta =
-    current && session
+    current
       ? {
           kind: "START_TASK",
           task: current,
-          minutes: session.minutes,
-          minutesParam: session.param,
+          minutes,
         }
       : total === 0
       ? { kind: "ADD_TASK" }

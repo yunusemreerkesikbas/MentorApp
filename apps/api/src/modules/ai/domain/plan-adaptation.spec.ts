@@ -72,8 +72,8 @@ describe("parsePlanAdaptation", () => {
     if (result.kind !== "VALID") return;
     expect(result.changes).toHaveLength(2);
     expect(result.changes).toEqual([
-      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Sayısal mantık", title: expect.stringContaining("60 dk") }),
-      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Problemler", title: expect.stringContaining("60 dk") }),
+      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Sayısal mantık", durationMinutes: 60 }),
+      expect.objectContaining({ kind: "ADD", taskDate: TODAY, subject: "Matematik", topic: "Problemler", durationMinutes: 60 }),
     ]);
   });
   it("covers four selected subjects with verified topics across four 120-minute days", () => {
@@ -107,7 +107,7 @@ describe("parsePlanAdaptation", () => {
     for (const date of dates) {
       const day = result.changes.filter((item) => item.kind === "ADD" && item.taskDate === date);
       expect(day).toHaveLength(2);
-      expect(day.every((item) => item.kind === "ADD" && item.title.includes("60 dk") && item.topic?.startsWith("Doğrulanmış konu"))).toBe(true);
+      expect(day.every((item) => item.kind === "ADD" && item.durationMinutes === 60 && item.topic?.startsWith("Doğrulanmış konu"))).toBe(true);
     }
   });
 
@@ -132,7 +132,7 @@ describe("parsePlanAdaptation", () => {
     for (const date of [TODAY, "2026-07-22"]) {
       const day = result.changes.filter((change) => change.kind === "ADD" && change.taskDate === date);
       expect(day).toHaveLength(2);
-      expect(day.every((change) => change.kind === "ADD" && change.topic === "Problemler" && change.title.includes("60 dk"))).toBe(true);
+      expect(day.every((change) => change.kind === "ADD" && change.topic === "Problemler" && change.durationMinutes === 60)).toBe(true);
     }
   });
 
@@ -143,7 +143,7 @@ describe("parsePlanAdaptation", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     expect(result.changes).toHaveLength(3);
-    expect(result.changes.map((item) => item.title.match(/\d+ dk/)?.[0])).toEqual(["41 dk", "40 dk", "40 dk"]);
+    expect(result.changes.map((item) => item.kind === "ADD" ? item.durationMinutes : null)).toEqual([41, 40, 40]);
     expect(result.changes.every((item) => item.kind === "ADD" && item.topic === null && item.title.includes("Tarih:"))).toBe(true);
   });
   it("fills the reported four-day program with 480 new minutes despite existing tasks", () => {
@@ -162,7 +162,7 @@ describe("parsePlanAdaptation", () => {
       const day = result.changes.filter((change) => change.kind === "ADD" && change.taskDate === date);
       expect(day).toHaveLength(2);
       expect(new Set(day.map((change) => change.subject)).size).toBe(2);
-      expect(day.reduce((sum, change) => sum + Number(change.title.match(/(\d+) dk/)?.[1]), 0)).toBe(120);
+      expect(day.reduce((sum, change) => sum + (change.kind === "ADD" ? change.durationMinutes ?? 0 : 0), 0)).toBe(120);
     }
     expect(result.changes.filter((change) => change.subject === "Vatandaşlık").length).toBeGreaterThanOrEqual(2);
     expect(result.changes.filter((change) => change.subject === "Güncel Bilgiler").length).toBeGreaterThanOrEqual(2);
@@ -506,7 +506,7 @@ describe("parsePlanAdaptation", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     const adds = result.changes.filter((change) => change.kind === "ADD");
-    expect(adds.map((change) => change.taskDate)).toEqual([
+    expect([...new Set(adds.map((change) => change.taskDate))]).toEqual([
       "2026-07-23",
       "2026-07-24",
       "2026-07-25",
@@ -514,10 +514,11 @@ describe("parsePlanAdaptation", () => {
       "2026-07-27",
     ]);
     expect(adds[0]).toMatchObject({
-      title: "Türkçe · 60 dk",
+      durationMinutes: 30,
       subject: "Türkçe",
     });
-    expect(adds.every((change) => change.subject != null)).toBe(true);
+    expect(adds.every((change) => change.subject != null && !/\d+\s*dk/.test(change.title))).toBe(true);
+    expect(adds).toHaveLength(10);
   });
 
   it("rewrites a model title whose subject was not selected", () => {
@@ -542,14 +543,12 @@ describe("parsePlanAdaptation", () => {
 
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
-    expect(result.changes).toEqual([
-      { kind: "ADD", title: "Tarih · 30 dk", subject: "Tarih", taskDate: "2026-07-24" },
-      { kind: "ADD", title: "Osmanlı kronolojisi", subject: "Tarih", taskDate: "2026-07-25" },
-    ]);
+    expect(result.changes).toHaveLength(2);
+    expect(result.changes.every(change => change.kind === "ADD" && change.subject === "Tarih" && change.durationMinutes === 30 && !/\d+\s*dk/.test(change.title))).toBe(true);
   });
 
-  it("moves a colliding filler to the next free day and writes it in the request language", () => {
-    // Least-loaded days (23, 24) already hold the filler title; every other day holds two tasks.
+  it("uses another activity for a colliding filler in the request language", () => {
+    // Least-loaded days (23, 24) already hold the practice title; use a different activity.
     const task = (taskDate: string, title: string, index: number) => ({
       ref: `X${index}`,
       id: `x-${index}`,
@@ -560,8 +559,8 @@ describe("parsePlanAdaptation", () => {
       sortOrder: 0,
     });
     const taken = [
-      task("2026-07-23", "History · 30 min", 0),
-      task("2026-07-24", "History · 30 min", 1),
+      task("2026-07-23", "History: practice questions and review mistakes", 0),
+      task("2026-07-24", "History: practice questions and review mistakes", 1),
       task(TODAY, "Extra", 2),
       task("2026-07-22", "Extra", 3),
       ...["2026-07-25", "2026-07-26", "2026-07-27"].flatMap((date, index) => [
@@ -582,8 +581,8 @@ describe("parsePlanAdaptation", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     expect(result.changes).toHaveLength(2);
-    expect(result.changes.every((change) => change.kind === "ADD" && change.title === "History · 30 min")).toBe(true);
-    expect(result.changes.map((change) => change.kind === "ADD" && change.taskDate)).not.toContain("2026-07-23");
+    expect(result.changes.every((change) => change.kind === "ADD" && change.durationMinutes === 30 && change.title === "History: review")).toBe(true);
+    expect([...new Set(result.changes.map((change) => change.kind === "ADD" && change.taskDate))]).toEqual(["2026-07-23", "2026-07-24"]);
   });
 
   it("tells the model to cover the selected day count", () => {
@@ -641,7 +640,7 @@ describe("parsePlanAdaptation", () => {
     if (result.kind !== "VALID") return;
     expect(result.changes.some((change) => change.kind === "MOVE")).toBe(false);
     expect(
-      result.changes.map((change) => change.kind === "ADD" && change.taskDate),
+      [...new Set(result.changes.map((change) => change.kind === "ADD" && change.taskDate))],
     ).toEqual(["2026-07-23", "2026-07-25", "2026-07-26", "2026-07-27"]);
   });
 
@@ -667,9 +666,9 @@ describe("parsePlanAdaptation", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     expect(result.changes).toEqual([
-      expect.objectContaining({ title: "Tarih: 45 dk soru çöz ve yanlışlarını incele", taskDate: "2026-07-22" }),
-      expect.objectContaining({ title: "Tarih: 45 dk soru çöz ve yanlışlarını incele", taskDate: "2026-07-24" }),
-      expect.objectContaining({ title: "Tarih: 45 dk soru çöz ve yanlışlarını incele", taskDate: "2026-07-27" }),
+      expect.objectContaining({ title: "Tarih: soru çöz ve yanlışlarını incele", durationMinutes: 45, taskDate: "2026-07-22" }),
+      expect.objectContaining({ title: "Tarih: soru çöz ve yanlışlarını incele", durationMinutes: 45, taskDate: "2026-07-24" }),
+      expect.objectContaining({ title: "Tarih: soru çöz ve yanlışlarını incele", durationMinutes: 45, taskDate: "2026-07-27" }),
     ]);
   });
 
@@ -807,8 +806,8 @@ describe("plan adaptation reasons", () => {
     expect(result.kind).toBe("VALID");
     if (result.kind !== "VALID") return;
     expect(result.changes).toEqual([
-      expect.objectContaining({ title: "Matematik · 30 dk", subject: "Matematik", reason: WEAK }),
-      expect.objectContaining({ title: "Fen Bilimleri · 30 dk", subject: "Fen Bilimleri", reason: WEAK }),
+      expect.objectContaining({ durationMinutes: 30, subject: "Matematik", reason: WEAK }),
+      expect.objectContaining({ durationMinutes: 30, subject: "Fen Bilimleri", reason: WEAK }),
     ]);
   });
 

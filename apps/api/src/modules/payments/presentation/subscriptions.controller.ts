@@ -73,7 +73,7 @@ export class SubscriptionsController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CheckoutDto,
   ): Promise<CheckoutSession> {
-    return this.subscriptions.checkout(await this.checkoutUser(user), dto.planId, dto.code);
+    return this.subscriptions.checkout(await this.checkoutUser(user), dto.planId, dto.code, dto.useTrial);
   }
 
   /** Email + signup date come from identity's public service (cross-module rule §AGENTS-2). */

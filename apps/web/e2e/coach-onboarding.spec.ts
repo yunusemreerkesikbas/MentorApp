@@ -34,10 +34,16 @@ const COACH: AuthUser = {
 /** Mutated as the wizard PATCHes, so `hasCompletedOnboarding` flips exactly when the app says it does. */
 let user: AuthUser;
 let registered: Record<string, unknown> | null;
+let phoneVerified: boolean;
 
 test.beforeEach(async ({ page }) => {
   user = { ...COACH };
   registered = null;
+  phoneVerified = true;
+
+  await page.addInitScript(() => Object.defineProperty(window, "turnstile", { value: {
+    render: (_container: unknown, widget: { callback: (token: string) => void }) => { widget.callback("test-token"); return "widget"; }, remove: () => {},
+  } }));
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
@@ -66,7 +72,13 @@ test.beforeEach(async ({ page }) => {
       return json(registered, 201);
     }
     if (request.method() === "GET" && path === "/v1/mentorship/coach-registration/mine") {
-      return json({ registrationOpen: true, registration: registered, emailVerified: false });
+      return json({ registrationOpen: true, registration: registered, emailVerified: false, phoneVerified });
+    }
+    if (path === "/v1/users/me/phone") return json({ verified: phoneVerified, maskedPhoneNumber: phoneVerified ? "+90 5** *** **67" : null, available: true, reauthenticationRequired: false });
+    if (path === "/v1/users/me/phone/verifications") return json({ challengeId: "44444444-4444-4444-8444-444444444444", expiresAt: new Date(Date.now() + 60_000).toISOString(), resendAvailableAt: new Date(Date.now() + 30_000).toISOString(), maskedPhoneNumber: "+90 5** *** **67", sendStatus: "SENT" }, 201);
+    if (path.endsWith("/confirm") && path.startsWith("/v1/users/me/phone/verifications/")) {
+      phoneVerified = true;
+      return json({ verified: true, maskedPhoneNumber: "+90 5** *** **67", available: true, reauthenticationRequired: false });
     }
     if (request.method() === "GET" && path === "/v1/mentorship/overview") {
       // The code is withheld, not absent: this coach has not verified their email yet.
@@ -156,4 +168,22 @@ test("doğrulanmamış e-posta davet kodundan önce doğrulama istiyor", async (
   await page.getByRole("button", { name: "Kod oluştur" }).click();
   await expect(page.getByRole("dialog", { name: "Önce e-postanı doğrula" })).toBeVisible();
   await expect(page.getByText("Davet kodu e-postan doğrulanınca açılır.", { exact: false })).toBeVisible();
+});
+
+test("koç kaydı telefon doğrulanmadan açılmıyor", async ({ page }) => {
+  phoneVerified = false;
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "YKS" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByLabel("Tek cümlede sen").fill("YKS matematik koçu");
+  await page.getByLabel("Kendini anlat").fill("Sekiz yıldır YKS adaylarıyla çalışıyorum.");
+  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeDisabled();
+  expect(registered).toBeNull();
+  await page.getByLabel("Cep telefonu numaran").fill("0532 123 45 67");
+  await page.getByRole("button", { name: "SMS kodu gönder" }).click();
+  await page.getByLabel("SMS doğrulama kodu").fill("123456");
+  await page.getByRole("button", { name: "Telefonu doğrula" }).click();
+  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeEnabled();
+  expect(registered).toBeNull();
 });

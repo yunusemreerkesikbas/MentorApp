@@ -16,6 +16,7 @@ describe("AccountErasureService", () => {
   let eraseMentorship: ReturnType<typeof vi.fn>;
   let eraseNotifications: ReturnType<typeof vi.fn>;
   let deleteObject: ReturnType<typeof vi.fn>;
+  let detachPhoneTrials: ReturnType<typeof vi.fn>;
   let service: AccountErasureService;
 
   beforeEach(() => {
@@ -34,6 +35,7 @@ describe("AccountErasureService", () => {
     eraseMentorship = vi.fn(async () => undefined);
     eraseNotifications = vi.fn(async () => undefined);
     deleteObject = vi.fn(async () => undefined);
+    detachPhoneTrials = vi.fn(async () => undefined);
     service = new AccountErasureService(
       { anonymizeAccount } as never,
       { revokeAllForUser } as never,
@@ -46,6 +48,7 @@ describe("AccountErasureService", () => {
       { eraseUserData: eraseMentorship } as never,
       { eraseUserData: eraseNotifications } as never,
       { deleteObject } as never,
+      { detachUser: detachPhoneTrials } as never,
     );
   });
 
@@ -60,6 +63,7 @@ describe("AccountErasureService", () => {
     expect(eraseSocial).toHaveBeenCalledWith(USER);
     expect(eraseMentorship).toHaveBeenCalledWith(USER);
     expect(eraseNotifications).toHaveBeenCalledWith(USER);
+    expect(detachPhoneTrials).toHaveBeenCalledWith(USER);
     expect(anonymizeAccount).toHaveBeenCalledWith(USER, "DELETED");
     expect(revokeAllForUser).toHaveBeenCalledWith(USER);
     expect(deleteObject).toHaveBeenCalledWith("avatars/u.png");

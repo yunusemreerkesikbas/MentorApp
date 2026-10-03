@@ -38,7 +38,7 @@ const PENUMBRA_WEDGE =
 
 /** Distance falloff, shared by both wedges: carries most of the way, then dissolves at the floor. */
 const THROW_MASK =
-  "radial-gradient(ellipse 120% 100% at 50% 0%, #000 0%, rgba(0,0,0,0.95) 50%, rgba(0,0,0,0.72) 80%, transparent 100%)";
+  "linear-gradient(to bottom, #000 0%, rgba(0,0,0,0.95) 28%, rgba(0,0,0,0.55) 48%, rgba(0,0,0,0.3) 78%, transparent 100%)";
 
 interface SpotlightLampProps {
   /** 0..1 across the stage. Written by the scene from the sweep, the pointer or a drag. */
@@ -174,7 +174,7 @@ export function SpotlightLamp({ lightX, visible, lit, dropMs }: SpotlightLampPro
         {/* A modest blur only dithers the conic banding; the softness itself comes from the
             gradient, so this no longer has a silhouette to fight. */}
         <motion.span
-          className="absolute left-1/2 top-0 h-[70vh] w-[150vw] -translate-x-1/2 blur-[12px]"
+          className="absolute left-1/2 top-0 h-[calc(100dvh-96px)] w-[150vw] -translate-x-1/2 blur-[12px]"
           style={{
             opacity: throwFalloff,
             background: PENUMBRA_WEDGE,
@@ -183,7 +183,7 @@ export function SpotlightLamp({ lightX, visible, lit, dropMs }: SpotlightLampPro
           }}
         />
         <motion.span
-          className="absolute left-1/2 top-0 h-[68vh] w-[150vw] -translate-x-1/2 blur-[6px]"
+          className="absolute left-1/2 top-0 h-[calc(100dvh-96px)] w-[150vw] -translate-x-1/2 blur-[6px]"
           style={{
             opacity: throwFalloff,
             background: CORE_WEDGE,

@@ -202,6 +202,8 @@ export interface CoachActionResultDto {
   action: CoachActionDto;
   status: CoachActionStatus;
   resultRefId: string | null;
+  /** Actual accepted session, including idempotent retries. */
+  session?: import("./coaching.js").StudySessionDto;
 }
 
 /** POST /v1/coach/chat response (no coin fields in the chat zone §4 #3). */

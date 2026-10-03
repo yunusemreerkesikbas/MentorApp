@@ -55,7 +55,7 @@ describe("MentorshipCohortBriefService", () => {
     }));
     assertEnabled = vi.fn(async () => undefined);
     service = new MentorshipCohortBriefService(
-      { assertEnabled } as never,
+      { assertEnabled, assertCoachPhoneVerified: vi.fn() } as never,
       { listByCoach } as never,
       { listRoster } as never,
       { find, upsert } as never,

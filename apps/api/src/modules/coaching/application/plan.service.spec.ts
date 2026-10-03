@@ -18,6 +18,7 @@ interface TaskRow {
   /** Absent on most fixtures — an all-day task, which is what every pre-calendar row is. */
   startTime?: string | null;
   endTime?: string | null;
+  durationMinutes?: number | null;
   description?: string | null;
   originType?: string | null;
   originRefId?: string | null;
@@ -80,6 +81,7 @@ function makePlanRepoFake(rows: TaskRow[]) {
         sortOrder: data.sortOrder ?? 0,
         startTime: data.startTime ?? null,
         endTime: data.endTime ?? null,
+        durationMinutes: data.durationMinutes ?? null,
         description: data.description ?? null,
         originType: data.originType ?? null,
         originRefId: data.originRefId ?? null,
@@ -198,6 +200,22 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     });
     expect(completed.title).toBe("Bugün 25 paragraf sorusu");
     expect(completed.origin).toEqual(created.origin);
+  });
+
+  it("persists an independent study duration and preserves it on unrelated updates", async () => {
+    const task = await service.create(USER, { title: "Review", startTime: "09:00", endTime: "11:00", durationMinutes: 80 });
+    expect(task).toMatchObject({ durationMinutes: 80, sessionFocusMinutes: 80 });
+    expect(await service.update(USER, task.id, { title: "New title" }))
+      .toMatchObject({ durationMinutes: 80, sessionFocusMinutes: 80 });
+    expect(await service.update(USER, task.id, { durationMinutes: null }))
+      .toMatchObject({ durationMinutes: null, sessionFocusMinutes: 120 });
+  });
+
+  it("prevents the student changing a human coach assignment's duration", async () => {
+    const task = await service.create(USER, { title: "Review" });
+    planRepo.rows[0]!.originType = "MENTORSHIP";
+    await expect(service.update(USER, task.id, { durationMinutes: 80 }))
+      .rejects.toMatchObject({ code: "COACHING_TASK_COACH_ASSIGNED" });
   });
 
   it("persists calendar times and description, and can clear them back to all-day", async () => {
@@ -498,6 +516,7 @@ describe("PlanService plan adaptations", () => {
           title: "Tarih tekrar",
           subject: "Tarih",
           topic: "Osmanlı Devleti",
+          durationMinutes: 41,
           taskDate: addDays(TODAY, 2),
         },
       ],
@@ -524,6 +543,8 @@ describe("PlanService plan adaptations", () => {
         sortOrder: 0,
         title: "Tarih tekrar",
         topic: "Osmanlı Devleti",
+        durationMinutes: 41,
+        sessionFocusMinutes: 41,
         origin: null,
       },
     ]);

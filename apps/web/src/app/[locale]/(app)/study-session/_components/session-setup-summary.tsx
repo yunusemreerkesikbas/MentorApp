@@ -3,6 +3,7 @@
 import { useLocale, useTranslations } from "next-intl";
 
 export interface SessionSetupSummaryProps {
+  isStopwatch?: boolean;
   focusMinutes: number;
   breakMinutes: number;
   now: number;
@@ -14,7 +15,7 @@ export interface SessionSetupSummaryProps {
  * dashboard. "bitiş 11:38" rather than "11:38'de biter": the Turkish suffix after a clock time
  * changes with how the minute is read, and one template cannot get it right for every minute.
  */
-export function SessionSetupSummary({ focusMinutes, breakMinutes, now }: SessionSetupSummaryProps) {
+export function SessionSetupSummary({ isStopwatch = false, focusMinutes, breakMinutes, now }: SessionSetupSummaryProps) {
   const t = useTranslations("session");
   const locale = useLocale();
 
@@ -25,7 +26,7 @@ export function SessionSetupSummary({ focusMinutes, breakMinutes, now }: Session
 
   return (
     <p className="text-center text-body-sm font-semibold tabular-nums text-[var(--color-secondary)]">
-      {t.rich("summary_line", {
+      {isStopwatch ? t("stopwatch_summary") : t.rich("summary_line", {
         focus: focusMinutes,
         breakMin: breakMinutes,
         finish,

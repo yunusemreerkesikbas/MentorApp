@@ -43,18 +43,20 @@ export class PlanTaskFeedbackListener {
    */
   @OnEvent(CoachingEventTopic.PLAN_TASK_DELETED)
   async onPlanTaskDeleted(event: PlanTaskDeleted): Promise<void> {
-    await this.forward(event, async (link, displayName) => {
-      this.events.emit(
-        MentorshipEventTopic.ASSIGNMENT_DROPPED,
-        new MentorshipAssignmentDropped(
-          link.id,
-          link.coachId,
-          event.userId,
-          displayName,
-          event.title,
-          event.assignmentGroupId,
-        ),
-      );
+    await this.forward(event, async (link, displayName, canNotify) => {
+      if (canNotify) {
+        this.events.emit(
+          MentorshipEventTopic.ASSIGNMENT_DROPPED,
+          new MentorshipAssignmentDropped(
+            link.id,
+            link.coachId,
+            event.userId,
+            displayName,
+            event.title,
+            event.assignmentGroupId,
+          ),
+        );
+      }
       // Notify first, log second. Both can fail, and the timely signal is the half worth
       // protecting: a coach who hears nothing cannot intervene, while a missing history row only
       // costs them the retrospective. The log is what makes the report stop lying by omission.
@@ -70,7 +72,8 @@ export class PlanTaskFeedbackListener {
   /** The student did the work — including via a session seated at the task, which is still doing it. */
   @OnEvent(CoachingEventTopic.PLAN_TASK_COMPLETED)
   async onPlanTaskCompleted(event: PlanTaskCompleted): Promise<void> {
-    await this.forward(event, (link, displayName) => {
+    await this.forward(event, (link, displayName, canNotify) => {
+      if (!canNotify) return;
       this.events.emit(
         MentorshipEventTopic.ASSIGNMENT_PROGRESSED,
         // No date travels: the notification is deduped on the day the coach is told, not on the
@@ -91,6 +94,7 @@ export class PlanTaskFeedbackListener {
     emit: (
       link: { id: string; coachId: string },
       studentDisplayName: string,
+      canNotify: boolean,
     ) => void | Promise<void>,
   ): Promise<void> {
     if (event.originType !== "MENTORSHIP" || !event.originRefId) return;
@@ -103,7 +107,12 @@ export class PlanTaskFeedbackListener {
       ]);
       // A link waiting for a seat is frozen: nothing about the student reaches the coach meanwhile.
       if (!link || link.status !== "ACTIVE" || link.seat === MentorshipSeat.NONE) return;
-      await emit(link, people.get(event.userId)?.displayName ?? "");
+      // Retain dropped-task history while verification blocks delivery to the coach.
+      await emit(
+        link,
+        people.get(event.userId)?.displayName ?? "",
+        await this.users.isPhoneVerified(link.coachId),
+      );
     } catch (err) {
       // Logged, not swallowed silently: the plan change already committed, so throwing here would
       // fail an action that succeeded — but a listener that vanishes without trace is undebuggable.
