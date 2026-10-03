@@ -662,10 +662,11 @@ function Pill({
       type="button"
       aria-pressed={active}
       onClick={onClick}
-      className="min-h-9 rounded-full px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+      className="min-h-9 rounded-full border px-2.5 text-xs font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
       style={{
-        backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
-        color: active ? "var(--color-btn-label)" : "var(--color-body)",
+        backgroundColor: active ? "var(--play-selected)" : "var(--color-surface)",
+        color: active ? "var(--play-selected-ink)" : "var(--color-body)",
+        borderColor: active ? "var(--play-cta)" : "transparent",
         fontFamily,
       }}
     >

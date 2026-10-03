@@ -411,10 +411,10 @@ function ChipRow({
               onClick={() => onChange(active ? "" : option.value)}
               className="min-h-8 cursor-pointer rounded-full border px-3 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{
-                backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
-                color: active ? "var(--color-btn-label)" : "var(--color-body)",
+                backgroundColor: active ? "var(--play-selected)" : "var(--color-surface)",
+                color: active ? "var(--play-selected-ink)" : "var(--color-body)",
                 borderColor: active
-                  ? "var(--color-btn)"
+                  ? "var(--play-cta)"
                   : "color-mix(in srgb, var(--color-main) 12%, transparent)",
               }}
             >

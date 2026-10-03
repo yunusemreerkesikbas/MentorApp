@@ -35,7 +35,8 @@ export const RAIL_CATEGORIES: {
 ];
 
 /**
- * Shared active fill for the notebook rail. `layoutId` morphs the pill between neighbours the
+ * Shared active fill for the notebook rail: DESIGN.md's selected chip (`--play-selected` well,
+ * `--play-cta` rim, `--play-selected-ink` label), not a black pill. `layoutId` morphs the pill between neighbours the
  * same way the vision board's editor nav does; reduced-motion skips the travel and snaps.
  * Only one rail item may own it at a time — overlapping fills (e.g. "Not" while another
  * category panel is open) would give Framer two elements with the same id.
@@ -50,7 +51,10 @@ export function NotebookRailActiveFill({
       <span
         aria-hidden
         className="absolute inset-0 rounded-[var(--radius-card)]"
-        style={{ backgroundColor: "var(--color-btn)" }}
+        style={{
+          backgroundColor: "var(--play-selected)",
+          boxShadow: "inset 0 0 0 1.5px var(--play-cta)",
+        }}
       />
     );
   }
@@ -59,7 +63,10 @@ export function NotebookRailActiveFill({
       layoutId="notebook-rail-active"
       aria-hidden
       className="absolute inset-0 rounded-[var(--radius-card)]"
-      style={{ backgroundColor: "var(--color-btn)" }}
+      style={{
+        backgroundColor: "var(--play-selected)",
+        boxShadow: "inset 0 0 0 1.5px var(--play-cta)",
+      }}
       transition={boardChromeTransition}
     />
   );

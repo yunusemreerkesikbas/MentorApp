@@ -1170,7 +1170,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[11px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] aria-pressed:focus-visible:ring-0 lg:w-full lg:flex-none lg:gap-1 lg:px-1 lg:py-2"
             style={{
               color: active
-                ? "var(--color-btn-label)"
+                ? "var(--play-selected-ink)"
                 : "var(--color-secondary)",
             }}
           >
@@ -1192,7 +1192,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         style={{
           color:
             activeRail === "note"
-              ? "var(--color-btn-label)"
+              ? "var(--play-selected-ink)"
               : "var(--color-secondary)",
         }}
       >
@@ -1285,9 +1285,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       disabled={saving || (!leftPage.state.dirty && !rightPage.state.dirty)}
       aria-busy={saving || undefined}
       onClick={() => void saveNow()}
-      className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-semibold text-[var(--color-btn-label)] outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      className="inline-flex h-9 items-center gap-1.5 rounded-full px-3 text-xs font-extrabold text-[var(--play-cta-ink)] outline-none disabled:opacity-40 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
       style={{
-        backgroundColor: "var(--color-btn)",
+        // The page's one action, so it wears the play CTA's blue and navy ink (DESIGN.md §6).
+        backgroundColor: "var(--play-cta)",
         boxShadow: "var(--shadow-card)",
       }}
     >
