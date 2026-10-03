@@ -104,6 +104,25 @@ export function deskTapeColor(subjectKey: string): string {
 }
 
 /**
+ * Mixes a `#rrggbb` colour towards black (negative `amount`) or white (positive), 0…1.
+ *
+ * The book's boards, its inside cover and the edge of its page block are all the cover colour in
+ * a different light. Deriving them keeps a new cover colour a one-line change instead of four.
+ */
+export function shadeHex(hex: string, amount: number): string {
+  const value = Number.parseInt(hex.replace("#", ""), 16);
+  if (!Number.isFinite(value)) return hex;
+  const target = amount < 0 ? 0 : 255;
+  const share = Math.min(1, Math.abs(amount));
+  const channel = (shift: number) => {
+    const current = (value >> shift) & 255;
+    return Math.round(current + (target - current) * share);
+  };
+  const mixed = (1 << 24) + (channel(16) << 16) + (channel(8) << 8) + channel(0);
+  return `#${mixed.toString(16).slice(1)}`;
+}
+
+/**
  * The lift-and-open moment: beats in milliseconds from the click.
  *
  * DESIGN.md §9.1 caps a Moment at 600 ms. This one is a scoped exception (2026-10-01, decided with
@@ -122,8 +141,13 @@ export const NOTEBOOK_OPENING = {
   navigateAtMs: 520,
   settleMs: 320,
   fadeMs: 240,
-  /** If the editor never says it is ready, the overlay still leaves. */
-  readyTimeoutMs: 3600,
+  /**
+   * How long the open book waits in the air for the editor to land under it. Held open it reads as
+   * the book being read from; past this it lets go and whatever the editor shows takes over.
+   */
+  landingWaitMs: 2600,
+  /** A hard stop from the click, whatever happened to the animations (a hidden tab, say). */
+  giveUpMs: 8000,
   /** The fly overshoots a little (≈ 6 %), the one place the scene allows a spring's overshoot. */
   flyEase: "cubic-bezier(.22,1.18,.32,1)",
   liftEase: "cubic-bezier(.2,.8,.25,1)",

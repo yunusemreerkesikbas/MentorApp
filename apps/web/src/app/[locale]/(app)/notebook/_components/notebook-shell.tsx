@@ -50,6 +50,11 @@ import {
   SPINE_GUTTER,
 } from "@/components/notebook/notebook-surface";
 import { NotebookPageStage } from "@/components/notebook/notebook-page-stage";
+import { useAuth } from "@/lib/auth-context";
+import { notebookOpening } from "@/lib/notebook-opening";
+import { forgetNotebookContents } from "@/lib/notebook-contents-cache";
+import { NotebookContentsSpread } from "./notebook-contents-spread";
+import { useNotebookContents } from "./use-notebook-contents";
 import { NotebookInkLayer } from "@/components/notebook/notebook-ink-layer";
 import { useInkDraw } from "@/components/notebook/use-ink-draw";
 import {} from "@/lib/notebook-ink";
@@ -67,9 +72,11 @@ import {
   fitWithin,
   MOBILE_LEAF_MAX_WIDTH_PX,
   MOBILE_QUERY,
+  nextView,
   NOTEBOOK_MAX_WIDTH_PX,
   NOTEBOOK_TRAY_RADIUS_CLASS,
   NOTEBOOK_Z,
+  spreadOf,
   useFitSize,
   type Side,
   type View,
@@ -145,8 +152,19 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const t = useTranslations("notebook");
   const toast = useMentorToast();
   const reduceMotion = useReducedMotion();
+  const { user } = useAuth();
 
-  const [view, setView] = useState<View>({ kind: "cover" });
+  /*
+   * Lifted off the desk, the book arrives already open: its cover swung open in the air, so the
+   * editor starts on the contents spread instead of the closed cover, and tells the flying book
+   * where that spread came to rest (`notebook-opening.ts`). Opened any other way, a link or a
+   * reload, it starts closed as it always has.
+   */
+  const openingKey = notebookId ?? "mistake";
+  const [view, setView] = useState<View>(() =>
+    notebookOpening.isOpening(openingKey) ? { kind: "contents" } : { kind: "cover" },
+  );
+  const [landingPending] = useState(() => notebookOpening.isOpening(openingKey));
   const [overview, setOverview] = useState<NotebookOverviewDto | null>(null);
   const [exam, setExam] = useState<ExamContext | null>(null);
   const [leftMeta, setLeftMeta] = useState<NotebookPageDto | null>(null);
@@ -248,7 +266,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       ? false
       : window.matchMedia(MOBILE_QUERY).matches,
   );
-  const [mobileSide, setMobileSide] = useState<Side>("left");
+  // On a phone the open book shows its contents page first, the page the flying book landed on.
+  const [mobileSide, setMobileSide] = useState<Side>(() =>
+    notebookOpening.isOpening(openingKey) ? "right" : "left",
+  );
   const [mobileRailOpen, setMobileRailOpen] = useState(false);
   useEffect(() => {
     const mq = window.matchMedia(MOBILE_QUERY);
@@ -265,6 +286,24 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     (isMobile ? mobileSide : focusedSide) === "left" ? leftPage : rightPage;
 
   const [fitRef, fitBox] = useFitSize<HTMLDivElement>();
+  /**
+   * The book's own box: what a notebook flying in from the desk lands on.
+   *
+   * Measured straight off the element rather than from `fitBox`: the book's size is settled by CSS
+   * (`maxHeight` with `aspectRatio`) by the time it first paints, so its box is already final here.
+   */
+  const bookRef = useRef<HTMLDivElement>(null);
+  const landed = useRef(false);
+  useEffect(() => {
+    if (!landingPending || landed.current || !overview || view.kind !== "contents") return;
+    const box = bookRef.current?.getBoundingClientRect();
+    if (!box || box.width <= 0 || box.height <= 0) return;
+    landed.current = true;
+    notebookOpening.land(openingKey, {
+      rect: { x: box.left, y: box.top, width: box.width, height: box.height },
+      single: isMobile,
+    });
+  }, [landingPending, overview, view.kind, isMobile, openingKey]);
 
   const [due, setDue] = useState<NotebookEntryDto[]>([]);
   const [reviewing, setReviewing] = useState(false);
@@ -503,7 +542,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     const doc = leftPage.state.doc;
     const timer = setTimeout(() => {
       saveNotebookPage(index, doc, notebookId)
-        .then(() => leftPage.dispatch({ type: "saved" }))
+        .then(() => {
+          leftPage.dispatch({ type: "saved" });
+          forgetNotebookContents(notebookId);
+        })
         .catch(() => undefined);
     }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
@@ -516,7 +558,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     const doc = rightPage.state.doc;
     const timer = setTimeout(() => {
       saveNotebookPage(index, doc, notebookId)
-        .then(() => rightPage.dispatch({ type: "saved" }))
+        .then(() => {
+          rightPage.dispatch({ type: "saved" });
+          forgetNotebookContents(notebookId);
+        })
         .catch(() => undefined);
     }, AUTOSAVE_DELAY_MS);
     return () => clearTimeout(timer);
@@ -548,6 +593,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             ).then(() => rightPage.dispatch({ type: "saved" }))
           : null,
       ]);
+      forgetNotebookContents(notebookId);
     } finally {
       setSaving(false);
     }
@@ -602,33 +648,27 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
        * the flying sheet is ruled like the book it came out of.
        */
       if (
-        view.kind === "spread" &&
         !reduceMotion &&
-        view.left + delta * 2 >= 0
+        (view.kind === "spread" || (view.kind === "contents" && delta > 0))
       ) {
         // On mobile the pages slide past each other instead of one turning over: a phone shows
         // one page at a time, and a book that flips a whole leaf to move one page reads as a
         // stutter. Which of the two runs is decided here, once, so nothing downstream has to ask.
-        if (isMobile) startSlide(delta);
-        else {
+        if (isMobile) {
+          if (view.kind === "spread") startSlide(delta);
+        } else {
           flipSeq.current += 1;
           setFlip({
             seq: flipSeq.current,
             dir: delta,
-            paper: delta > 0 ? rightPaper : leftPaper,
+            paper:
+              view.kind === "contents" ? "plain" : delta > 0 ? rightPaper : leftPaper,
             single: false,
           });
         }
       }
 
-      setView((current) => {
-        if (current.kind === "cover") {
-          return delta > 0 ? { kind: "spread", left: 0 } : current;
-        }
-        const nextLeft = current.left + delta * 2;
-        if (nextLeft < 0) return { kind: "cover" };
-        return { kind: "spread", left: nextLeft };
-      });
+      setView((current) => nextView(current, delta));
     },
     [view, reduceMotion, leftPaper, rightPaper, isMobile, startSlide],
   );
@@ -643,20 +683,34 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
    */
   const goPage = useCallback(
     (dir: 1 | -1) => {
-      if (isMobile && view.kind === "spread") {
+      if (isMobile && (view.kind === "spread" || view.kind === "contents")) {
         const atSpreadEdge =
           dir > 0 ? mobileSide === "right" : mobileSide === "left";
         if (!atSpreadEdge) {
-          startSlide(dir);
+          if (view.kind === "spread") startSlide(dir);
           setMobileSide(dir > 0 ? "right" : "left");
           return;
         }
       }
       turn(dir);
-      if (isMobile) setMobileSide(dir > 0 ? "left" : "right");
+      // Opening the cover on a phone shows the contents page, not the inside of the board.
+      if (isMobile) {
+        setMobileSide(view.kind === "cover" ? "right" : dir > 0 ? "left" : "right");
+      }
     },
     [isMobile, view, mobileSide, startSlide, turn],
   );
+
+  const contentsData = useNotebookContents(notebookId, view.kind === "contents");
+
+  /** A contents line was chosen: turn straight to the spread that page lies in. */
+  const openPage = useCallback((pageIndex: number) => {
+    const { left, side } = spreadOf(pageIndex);
+    setFocusedSide(side);
+    setEditingText(null);
+    setMobileSide(side);
+    setView({ kind: "spread", left });
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -1087,23 +1141,28 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         // transitions competing to describe the same move.
         { duration: 0 }
       : { duration: PAGE_TURN_SECONDS * 0.8, ease: "easeInOut" as const };
-  const pageLabel = !isSpread
-    ? t("cover_label")
-    : isMobile
-      ? t("page_label", { page: view.left + (mobileSide === "left" ? 1 : 2) })
-      : t("page_range_label", { from: view.left + 1, to: view.left + 2 });
+  const pageLabel =
+    view.kind === "cover"
+      ? t("cover_label")
+      : view.kind === "contents"
+        ? t("contents_label")
+        : isMobile
+          ? t("page_label", { page: view.left + (mobileSide === "left" ? 1 : 2) })
+          : t("page_range_label", { from: view.left + 1, to: view.left + 2 });
   /** The single page mobile shows — derived once here rather than repeated in every prop below. */
   const mobilePage = mobileSide === "left" ? leftPage : rightPage;
   const mobileGesture = mobileSide === "left" ? leftGesture : rightGesture;
   const mobileInk = mobileSide === "left" ? leftInk : rightInk;
   const mobileMeta = mobileSide === "left" ? leftMeta : rightMeta;
 
+  /** Open at all: the contents spread is as wide as any other, even though nothing on it is written. */
+  const isOpen = view.kind !== "cover";
   const notebookRatio =
-    isSpread && !isMobile
+    isOpen && !isMobile
       ? (NOTEBOOK_PAGE_CANVAS.width * 2 + SPINE_GUTTER) /
         NOTEBOOK_PAGE_CANVAS.height
       : NOTEBOOK_PAGE_CANVAS.width / NOTEBOOK_PAGE_CANVAS.height;
-  const notebookMaxWidthPx = isSpread
+  const notebookMaxWidthPx = isOpen
     ? isMobile
       ? MOBILE_LEAF_MAX_WIDTH_PX
       : NOTEBOOK_MAX_WIDTH_PX
@@ -1570,6 +1629,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             className="flex w-full min-h-0 flex-1 items-center justify-center"
           >
             <div
+              ref={bookRef}
               className="relative w-full select-none"
               style={{
                 // `width: 100%` of the OUTER box, capped at the measured-fit value — never `auto`,
@@ -1727,6 +1787,25 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                       }
                       onOpen={() => goPage(1)}
                       openLabel={t("cover_open")}
+                    />
+                  </motion.div>
+                ) : view.kind === "contents" ? (
+                  <motion.div
+                    key="contents"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
+                    style={{ position: "absolute", inset: 0, display: "flex" }}
+                  >
+                    <NotebookContentsSpread
+                      cover={cover}
+                      owner={user?.displayName ?? null}
+                      contents={contentsData.contents}
+                      failed={contentsData.failed}
+                      mobileSide={isMobile ? mobileSide : null}
+                      onOpenPage={openPage}
+                      onStart={() => goPage(1)}
                     />
                   </motion.div>
                 ) : (

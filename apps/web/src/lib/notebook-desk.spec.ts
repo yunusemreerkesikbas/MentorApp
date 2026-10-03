@@ -9,6 +9,7 @@ import {
   deskPose,
   deskTapeColor,
   DESK_TAPE_COLORS,
+  shadeHex,
 } from "./notebook-desk";
 
 describe("notebook desk", () => {
@@ -40,6 +41,14 @@ describe("notebook desk", () => {
     expect(deskDueTabs(0)).toBe(0);
     expect(deskDueTabs(3)).toBe(3);
     expect(deskDueTabs(11)).toBe(5);
+  });
+
+  it("shades a cover colour towards black or white", () => {
+    expect(shadeHex("#33415c", 0)).toBe("#33415c");
+    expect(shadeHex("#33415c", -1)).toBe("#000000");
+    expect(shadeHex("#33415c", 1)).toBe("#ffffff");
+    expect(shadeHex("#808080", -0.5)).toBe("#404040");
+    expect(shadeHex("not-a-colour", -0.4)).toBe("not-a-colour");
   });
 
   it("gives the same subject the same tape", () => {
