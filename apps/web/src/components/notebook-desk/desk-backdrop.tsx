@@ -191,7 +191,9 @@ export function DeskBackdrop() {
       </div>
 
       <div className="desk-day-only" style={{ position: "absolute", inset: 0 }}>
-        <div className="desk-sunpatch" />
+        <div className="desk-sunpatch">
+          <div className="desk-sunpatch-panes" />
+        </div>
       </div>
     </div>
   );

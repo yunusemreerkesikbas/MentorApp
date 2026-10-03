@@ -311,33 +311,71 @@ html.dark .mentor-notebook-desk {
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
 }
 
-/* Day: a patch of sun from the window, crossed by the mullions' shadow. */
+/*
+ * Day: the window laid on the wood as a patch of sun, crossed by the mullions' shadow.
+ *
+ * Two boxes on purpose. The inner one draws the panes (the light, with the mullions cut out of it
+ * by a mask) and the outer one skews and blurs the result. Blur on the same box as a clip or a
+ * mask leaves its edges razor sharp, which is what made the old patch and beam read as a pane of
+ * glass lying on the desk rather than light falling on it.
+ */
 .desk-sunpatch {
   position: absolute;
-  top: var(--desk-wall-h);
-  left: calc(var(--desk-window-x) - 8%);
-  width: calc(var(--desk-window-w) * 1.5);
-  height: 420px;
-  clip-path: polygon(26% 0, 100% 0, 74% 100%, 0 100%);
-  background:
-    linear-gradient(108deg, transparent 0 47%, rgba(80, 50, 20, 0.4) 47% 51%, transparent 51%),
-    linear-gradient(180deg, transparent 0 46%, rgba(80, 50, 20, 0.34) 46% 50%, transparent 50%),
-    linear-gradient(180deg, rgba(255, 249, 228, 0.98), rgba(255, 236, 200, 0));
+  top: calc(var(--desk-wall-h) + 14px);
+  left: calc(var(--desk-window-x) - var(--desk-window-w) * 0.18);
+  width: calc(var(--desk-window-w) * 1.12);
+  height: clamp(150px, 22vw, 240px);
+  transform-origin: 50% 0;
+  transform: skewX(-22deg);
+  filter: blur(7px);
   mix-blend-mode: soft-light;
-  filter: blur(4px);
+  opacity: 0.9;
 }
 
-.desk-shaft {
+.desk-sunpatch-panes {
   position: absolute;
   inset: 0;
-  clip-path: polygon(
-    calc(var(--desk-window-x) + 12px) 0,
-    calc(var(--desk-window-x) + var(--desk-window-w) - 12px) 0,
-    calc(var(--desk-window-x) + var(--desk-window-w) * 0.9) calc(var(--desk-wall-h) + 420px),
-    calc(var(--desk-window-x) - var(--desk-window-w) * 0.3) calc(var(--desk-wall-h) + 420px)
+  border-radius: 6px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 248, 226, 0.95) 0%,
+    rgba(255, 238, 200, 0.7) 55%,
+    rgba(255, 232, 190, 0.18) 100%
   );
-  background: linear-gradient(196deg, rgba(255, 250, 230, 0.3), rgba(255, 244, 214, 0.08) 60%, transparent 90%);
-  filter: blur(10px);
+  -webkit-mask-image:
+    linear-gradient(90deg, #000 calc(50% - 6px), transparent calc(50% - 6px) calc(50% + 6px), #000 calc(50% + 6px)),
+    linear-gradient(180deg, #000 calc(44% - 5px), transparent calc(44% - 5px) calc(44% + 5px), #000 calc(44% + 5px));
+  -webkit-mask-composite: source-in;
+  mask-image:
+    linear-gradient(90deg, #000 calc(50% - 6px), transparent calc(50% - 6px) calc(50% + 6px), #000 calc(50% + 6px)),
+    linear-gradient(180deg, #000 calc(44% - 5px), transparent calc(44% - 5px) calc(44% + 5px), #000 calc(44% + 5px));
+  mask-composite: intersect;
+}
+
+/*
+ * The air the sun comes through: a faint beam from the sill down to the patch, with no edge of its
+ * own. Masked to fade in below the sill and out before the front of the desk.
+ */
+.desk-shaft {
+  position: absolute;
+  top: calc(var(--desk-wall-h) - 56px);
+  left: calc(var(--desk-window-x) + 8px);
+  width: calc(var(--desk-window-w) - 16px);
+  height: calc(70px + clamp(150px, 22vw, 240px));
+  transform-origin: 50% 0;
+  transform: skewX(-22deg);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 247, 222, 0) 0%,
+    rgba(255, 247, 222, 0.16) 25%,
+    rgba(255, 247, 222, 0.2) 50%,
+    rgba(255, 247, 222, 0.16) 75%,
+    rgba(255, 247, 222, 0) 100%
+  );
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, 0.55) 70%, transparent 100%);
+  mask-image: linear-gradient(180deg, transparent 0, #000 22%, rgba(0, 0, 0, 0.55) 70%, transparent 100%);
+  filter: blur(12px);
+  mix-blend-mode: screen;
 }
 
 /*
@@ -709,7 +747,8 @@ html.dark .mentor-notebook-desk {
   -webkit-tap-highlight-color: transparent;
 }
 
-.desk-book-link:focus-visible .nb-book-front {
+.desk-book-link:focus-visible .nb-book-front,
+.desk-book-link:focus-visible .nb-package-face {
   outline: 0.9cqw solid var(--color-focus-ring);
   outline-offset: 1.6cqw;
 }
@@ -1089,19 +1128,43 @@ html.dark .mentor-notebook-desk {
   pointer-events: none;
 }
 
+/*
+ * A glint that crosses the cover twice when the book is picked up, the way light runs over a
+ * glossy board as it tilts in the hand. The band lives in a background twice the cover's width and
+ * slides by `background-position`, so it never paints outside the cover's rounded corners.
+ */
 .nb-book-sheen {
   position: absolute;
   inset: 0;
-  background: linear-gradient(115deg, rgba(255, 255, 255, 0) 32%, rgba(255, 236, 205, 0.26) 47%, rgba(255, 255, 255, 0) 62%);
+  background-image: linear-gradient(
+    105deg,
+    rgba(255, 246, 226, 0) 38%,
+    rgba(255, 246, 226, 0.08) 44%,
+    rgba(255, 250, 238, 0.42) 50%,
+    rgba(255, 246, 226, 0.08) 56%,
+    rgba(255, 246, 226, 0) 62%
+  );
+  background-size: 260% 100%;
+  background-position: 100% 0;
+  background-repeat: no-repeat;
   opacity: 0;
-  transform: translateX(-8cqw);
-  transition: opacity 320ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: opacity 240ms ease;
   pointer-events: none;
 }
 
 [data-lifted="true"] .nb-book-sheen {
   opacity: 1;
-  transform: translateX(8cqw);
+  animation: nb-sheen-sweep 1050ms cubic-bezier(0.45, 0.05, 0.3, 1) 2 both;
+}
+
+@keyframes nb-sheen-sweep {
+  0% {
+    background-position: 100% 0;
+  }
+  78%,
+  100% {
+    background-position: 0% 0;
+  }
 }
 
 .nb-book-coil {
@@ -1394,7 +1457,8 @@ button.nb-contents-row:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .desk-star,
   .desk-mote,
-  .desk-steam {
+  .desk-steam,
+  [data-lifted="true"] .nb-book-sheen {
     animation: none;
   }
 
@@ -1416,6 +1480,52 @@ button.nb-contents-row:focus-visible {
   .nb-book-shadow {
     transition: none;
   }
+}
+
+/* ── The closed book in the editor ───────────────────────────────────────────────────────── */
+
+/*
+ * The desk behind the closed cover, out of focus. Declared after `.mentor-notebook-desk`, which it
+ * also carries for the palette, so its own position wins.
+ */
+.nb-cover-room {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: var(--desk-root);
+}
+
+.nb-cover-room .desk-backdrop {
+  filter: blur(9px) saturate(0.9);
+  transform: scale(1.08);
+}
+
+.nb-cover-room-scrim {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(70% 70% at 50% 48%, rgba(8, 7, 16, 0.12), rgba(8, 7, 16, 0.42));
+}
+
+.nb-closed-cover {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  outline: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Smaller than the page box: the coil, the tabs and the shadow all stand outside the board. */
+.nb-closed-cover-book {
+  width: 80%;
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.nb-closed-cover:focus-visible .nb-book-front {
+  outline: 0.9cqw solid var(--color-focus-ring);
+  outline-offset: 1.6cqw;
 }
 
 /* ── Turning pages ────────────────────────────────────────────────────────────────────────── */

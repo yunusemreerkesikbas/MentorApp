@@ -329,7 +329,7 @@ export function useNotebookTurns({
 
       const drive: CurlDrive = drag
         ? { kind: "drag", pointerId: drag.pointerId, grab: drag.grab, reverse, gain: reverse ? 2 : 1 }
-        : { kind: "auto", reverse, durationMs: single ? 560 : 680 };
+        : { kind: "auto", reverse, durationMs: single ? 640 : 860 };
       if (!drag) playNotebookSfx("page");
       seq.current += 1;
       setOverlay(
@@ -342,7 +342,9 @@ export function useNotebookTurns({
           back={back}
           top={top}
           drive={drive}
-          lift={(single ? 90 : 150) * (geometry.leafWidth / 1080)}
+          // Low on purpose: the fold tilts by the lift, and a high corner swung the whole sheet
+          // around like a card pivoting on the coil. A low one keeps it reading as paper.
+          lift={(single ? 54 : 70) * (geometry.leafWidth / 1080)}
           onDone={(committed) => {
             if (drag && committed) playNotebookSfx("page");
             finish(committed ? target : null, view);

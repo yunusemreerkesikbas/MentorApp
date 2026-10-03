@@ -24,7 +24,7 @@ import { prefetchNotebookContents } from "@/lib/notebook-contents-cache";
 import { preloadNotebookOpeningFlight } from "@/components/notebook-desk/notebook-opening-overlay";
 import { useTheme } from "@/lib/use-theme";
 import { NotebookFormDialog } from "./notebook-form-dialog";
-import { DeskBackdrop, DeskLight } from "./desk-backdrop";
+import { DeskBackdrop, DeskLight } from "@/components/notebook-desk/desk-backdrop";
 import { DeskHeader } from "./desk-header";
 import { DeskLamp } from "./desk-lamp";
 import { DeskPuhu } from "./desk-puhu";
@@ -314,7 +314,7 @@ export function NotebooksShell() {
     >
       <DeskBackdrop />
       <div className="desk-content relative mx-auto w-full max-w-[1360px] px-4 pb-20 sm:px-6 lg:px-10">
-        <DeskHeader onCreate={() => setForm("new")} />
+        <DeskHeader />
 
         <DeskPuhu
           className="desk-puhu-spot"
@@ -361,7 +361,7 @@ export function NotebooksShell() {
                 );
               })
             : null}
-          {!loading && !error ? (
+          {!loading ? (
             <DeskPackage
               label={t("create")}
               lifted={packageActive}

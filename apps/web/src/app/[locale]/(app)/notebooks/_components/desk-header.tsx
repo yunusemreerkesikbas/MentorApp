@@ -1,12 +1,16 @@
 "use client";
 
-import { Plus, Volume2, VolumeX } from "lucide-react";
+import { Volume2, VolumeX } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { Button } from "@mentor/ui";
 import { useNotebookSound } from "@/lib/notebook-sfx";
 
-/** The page's title on the wall, and the two things you can do from it: sound, and a new notebook. */
-export function DeskHeader({ onCreate }: { onCreate: () => void }) {
+/**
+ * The page's title on the wall, and the sound switch.
+ *
+ * A new notebook is not made from here: the wrapped package at the end of the desk is that control
+ * (`desk-package.tsx`), and a second button with the same name said everything twice.
+ */
+export function DeskHeader() {
   const t = useTranslations("notebooks");
   const sound = useNotebookSound();
   return (
@@ -34,10 +38,6 @@ export function DeskHeader({ onCreate }: { onCreate: () => void }) {
             <VolumeX aria-hidden size={20} />
           )}
         </button>
-        <Button type="button" onClick={onCreate}>
-          <Plus aria-hidden size={18} />
-          {t("create")}
-        </Button>
       </div>
     </header>
   );

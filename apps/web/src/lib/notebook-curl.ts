@@ -233,27 +233,31 @@ export function curlGradientCss(
  * The light on a fold, as gradient stops measured from the fold line in a 1080-wide page's units.
  *
  * - `flap`: the folded-over part. Dark right at the crease, a highlight where the paper rolls over
- *   towards the light, then flat again: the three cues that read as a curved sheet, not a flat one.
- * - `under`: the shadow the lifted part throws on the page it uncovers, darkest under the crease.
+ *   towards the light, a long falloff, then a faint shade towards the far edge: the cues that read
+ *   as a sheet curving away from the eye, not a flat card folded in two.
+ * - `under`: the shadow the lifted part throws on the page it uncovers, darkest under the crease
+ *   and reaching well into the page, the way a sheet held up shades what lies under it.
  * - `front`: the flat part darkening into the crease, where it starts to bend upwards.
  */
 export const CURL_SHADES = {
   flap: [
-    [0, "rgba(0,0,0,0.20)"],
-    [14, "rgba(0,0,0,0.06)"],
+    [0, "rgba(0,0,0,0.26)"],
+    [10, "rgba(0,0,0,0.1)"],
     [42, "rgba(255,255,255,0.42)"],
-    [110, "rgba(255,255,255,0.12)"],
-    [420, "rgba(0,0,0,0.06)"],
+    [96, "rgba(255,255,255,0.16)"],
+    [240, "rgba(255,255,255,0)"],
+    [560, "rgba(0,0,0,0.08)"],
   ],
   under: [
-    [0, "rgba(0,0,0,0.42)"],
-    [24, "rgba(0,0,0,0.18)"],
-    [96, "rgba(0,0,0,0)"],
+    [0, "rgba(0,0,0,0.48)"],
+    [28, "rgba(0,0,0,0.22)"],
+    [140, "rgba(0,0,0,0)"],
   ],
   front: [
-    [-64, "rgba(0,0,0,0)"],
-    [-8, "rgba(0,0,0,0.08)"],
-    [0, "rgba(0,0,0,0.16)"],
+    [-130, "rgba(0,0,0,0)"],
+    [-28, "rgba(0,0,0,0.08)"],
+    [-6, "rgba(0,0,0,0.18)"],
+    [0, "rgba(0,0,0,0.26)"],
   ],
 } as const satisfies Record<string, ReadonlyArray<readonly [number, string]>>;
 

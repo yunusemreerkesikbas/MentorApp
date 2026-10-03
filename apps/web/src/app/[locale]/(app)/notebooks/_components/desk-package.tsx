@@ -7,9 +7,9 @@ import { deskBookTransform } from "./desk-notebook";
 /**
  * A new notebook still in its wrapping, tied with twine, sitting at the end of the desk.
  *
- * A shortcut for the pointer only, and hidden from assistive tech on purpose: the header's
- * "Yeni defter" button is the control, and a second control with the same job and the same name
- * would make the desk say everything twice.
+ * The page's one "Yeni defter" control: a real button, so a keyboard reaches it and a screen
+ * reader names it by the tag it carries. A `div` with a button role rather than a `<button>`,
+ * because what it holds is a stack of 3D faces, not phrasing content. Focus lifts it the same way the pointer does.
  */
 export function DeskPackage({
   label,
@@ -30,9 +30,19 @@ export function DeskPackage({
     >
       <div className="desk-book-slot relative">
         <div
-          className="desk-package cursor-pointer"
-          aria-hidden="true"
+          role="button"
+          tabIndex={0}
+          className="desk-package desk-book-link block cursor-pointer outline-none"
+          aria-label={label}
           onClick={onOpen}
+          onKeyDown={(event) => {
+            if (event.key === "Enter" || event.key === " ") {
+              event.preventDefault();
+              onOpen();
+            }
+          }}
+          onFocus={() => onActive(true)}
+          onBlur={() => onActive(false)}
         >
           <div className="nb-book" data-lifted={lifted} style={{ ["--nb-th" as string]: "3.4cqw" }}>
             <div
@@ -73,7 +83,9 @@ export function DeskPackage({
                     <span className="nb-package-twine" data-axis="v" />
                     <span className="nb-package-twine" data-axis="h" />
                     <span className="nb-package-bow" />
-                    <span className="nb-package-tag">{label}</span>
+                    <span className="nb-package-tag" aria-hidden="true">
+                      {label}
+                    </span>
                     <div className="nb-book-sheen" />
                   </div>
                 </div>

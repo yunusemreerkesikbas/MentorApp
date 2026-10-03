@@ -39,7 +39,6 @@ import type { NotebookCoverDoc } from "@mentor/types";
 import { FormError } from "@/components/form";
 import {
   DEFAULT_COVER,
-  NotebookCover,
   NotebookPageSurface,
   NotebookSpine,
   PAGE_PERCENT,
@@ -50,6 +49,7 @@ import { useAuth } from "@/lib/auth-context";
 import { notebookOpening } from "@/lib/notebook-opening";
 import { forgetNotebookContents } from "@/lib/notebook-contents-cache";
 import { NotebookContentsSpread } from "./notebook-contents-spread";
+import { NotebookClosedCover, NotebookCoverRoom } from "./notebook-closed-cover";
 import { useNotebookContents } from "./use-notebook-contents";
 import { NotebookInkLayer } from "@/components/notebook/notebook-ink-layer";
 import { useInkDraw } from "@/components/notebook/use-ink-draw";
@@ -145,6 +145,7 @@ interface ExamContext {
  */
 export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const t = useTranslations("notebook");
+  const deskT = useTranslations("notebooks");
   const toast = useMentorToast();
   const reduceMotion = useReducedMotion();
   const { user } = useAuth();
@@ -1352,8 +1353,24 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
      * Mobile keeps the floor: there the panel is a half-height sheet and the page really does scroll.
      */
     <div
-      className={`flex flex-col gap-2 p-2 overflow-hidden ${MOBILE_BELOW_APP_CHROME_HEIGHT_CLASS}`}
+      className={`relative isolate flex flex-col gap-2 p-2 overflow-hidden ${MOBILE_BELOW_APP_CHROME_HEIGHT_CLASS}`}
     >
+      {/* The closed book is held up over the desk it came from, out of focus behind it. */}
+      <AnimatePresence>
+        {view.kind === "cover" ? (
+          <motion.div
+            key="cover-room"
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 -z-10"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: reduceMotion ? 0.15 : 0.45 }}
+          >
+            <NotebookCoverRoom />
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
       <FormError message={error} />
 
       {reviewing ? (
@@ -1745,22 +1762,21 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                       transformStyle: reduceMotion ? undefined : "preserve-3d",
                     }}
                   >
-                    <NotebookCover
+                    <NotebookClosedCover
+                      summary={overview?.notebook ?? null}
                       cover={cover}
                       title={
                         cover?.title?.trim() ||
                         overview?.notebook.title ||
                         t("cover_title")
                       }
-                      subtitle={
-                        notebookId
-                          ? t("cover_custom_subtitle", {
-                              pages: overview?.pageCount ?? 0,
-                            })
-                          : t("cover_subtitle", {
-                              entries: overview?.entryCount ?? 0,
-                              healed: overview?.healedCount ?? 0,
-                            })
+                      pageCount={overview?.pageCount ?? 0}
+                      dueCount={overview?.dueCount ?? 0}
+                      meta={deskT("pages", { count: overview?.pageCount ?? 0 })}
+                      dueLabel={
+                        !notebookId && (overview?.dueCount ?? 0) > 0
+                          ? deskT("due", { count: overview?.dueCount ?? 0 })
+                          : null
                       }
                       onOpen={() => goPage(1)}
                       openLabel={t("cover_open")}

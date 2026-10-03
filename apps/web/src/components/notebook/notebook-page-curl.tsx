@@ -125,7 +125,9 @@ export function NotebookPageCurl({
       el.under.style.clipPath = view.folded;
       el.under.style.background = view.underShade;
       el.flapWrap.style.visibility = "visible";
-      el.flapWrap.style.filter = `drop-shadow(0 ${(10 * scale + 4).toFixed(1)}px ${(14 * scale + 6).toFixed(1)}px rgba(0,0,0,${(0.08 + 0.2 * view.lift).toFixed(3)}))`;
+      // The higher the sheet stands, the further and softer the shadow it throws on the book.
+      const rise = view.lift;
+      el.flapWrap.style.filter = `drop-shadow(0 ${(4 + 18 * rise * scale).toFixed(1)}px ${(6 + 34 * rise * scale).toFixed(1)}px rgba(0,0,0,${(0.1 + 0.26 * rise).toFixed(3)}))`;
       el.flap.style.clipPath = view.folded;
       el.flap.style.transform = view.reflection;
       el.flapShade.style.background = view.flapShade;
