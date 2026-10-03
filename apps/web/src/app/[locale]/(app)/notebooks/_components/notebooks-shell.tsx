@@ -282,7 +282,8 @@ export function NotebooksShell() {
 
   const customCount = items.filter((item) => item.kind === "CUSTOM").length;
   const mistake = items.find((item) => item.kind === "MISTAKE") ?? null;
-  const awayKey = opening.start?.book.key ?? null;
+  // The copy flies in its place; under reduced motion there is no copy, so the book stays put.
+  const awayKey = opening.underway && !reduceMotion ? (opening.start?.book.key ?? null) : null;
   const litId = activeId ?? mistake?.id ?? items[0]?.id ?? null;
   useDeskLight({
     sceneRef,

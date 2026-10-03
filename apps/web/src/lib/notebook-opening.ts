@@ -58,11 +58,20 @@ export interface NotebookOpeningState {
   /** Bumps on every new opening, so a stale ready signal cannot settle a newer book. */
   run: number;
   start: NotebookOpeningStart | null;
+  /**
+   * The flight has taken over: its copy of the book is drawn over the desk's own (under reduced
+   * motion, it has sent the student on). The flight is loaded on demand, so a click can come a
+   * frame or so before it; until this is set the desk keeps its book where it was, or the book
+   * would blink out before its copy appears.
+   */
+  underway: boolean;
   /** The editor's first spread on screen, once it is laid out. */
   landing: NotebookOpeningLanding | null;
 }
 
-let state: NotebookOpeningState = { run: 0, start: null, landing: null };
+const IDLE = { start: null, underway: false, landing: null } as const;
+
+let state: NotebookOpeningState = { run: 0, ...IDLE };
 const listeners = new Set<() => void>();
 
 function emit(next: NotebookOpeningState) {
@@ -84,8 +93,14 @@ export const notebookOpening = {
 
   begin(start: NotebookOpeningStart): number {
     const run = state.run + 1;
-    emit({ run, start, landing: null });
+    emit({ run, start, underway: false, landing: null });
     return run;
+  },
+
+  /** The flight is on screen and has the moment: the desk can let go of its book. */
+  underway(run: number): void {
+    if (run !== state.run || !state.start || state.underway) return;
+    emit({ ...state, underway: true });
   },
 
   /**
@@ -106,11 +121,11 @@ export const notebookOpening = {
   /** The overlay is gone. Leaves `run` so the next opening is still a new one. */
   finish(run: number): void {
     if (run !== state.run) return;
-    emit({ run: state.run, start: null, landing: null });
+    emit({ run: state.run, ...IDLE });
   },
 };
 
-const SERVER_STATE: NotebookOpeningState = { run: 0, start: null, landing: null };
+const SERVER_STATE: NotebookOpeningState = { run: 0, ...IDLE };
 
 export function useNotebookOpening(): NotebookOpeningState {
   return useSyncExternalStore(

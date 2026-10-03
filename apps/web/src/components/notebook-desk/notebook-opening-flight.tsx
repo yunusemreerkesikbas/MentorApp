@@ -293,6 +293,8 @@ export function OpeningFlight({
     });
     flight.current = current;
     current.begin();
+    // Inside the layout effect, so the desk hides its own book in this same frame.
+    notebookOpening.underway(run);
     const onKey = (event: KeyboardEvent) => {
       if (event.key === "Escape" || event.key === "Enter" || event.key === " ") {
         event.preventDefault();
