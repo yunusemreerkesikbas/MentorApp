@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
@@ -29,7 +29,6 @@ import {
   COVER_COLORS,
   COVER_MATERIALS,
   DEFAULT_COVER,
-  PAPERS,
 } from "@/components/notebook/notebook-surface";
 import { NotebookAddPanel } from "./notebook-add-panel";
 import { NotebookIndexPanel } from "./notebook-index-panel";
@@ -127,7 +126,7 @@ export interface NotebookSidePanelProps {
 function Panel({ children }: { children: React.ReactNode }) {
   return (
     <div className="mentor-scrollarea h-full min-h-0 overflow-y-auto">
-      <div className="flex flex-col gap-3 px-3 pb-3 pt-4">{children}</div>
+      <div className="flex flex-col gap-4 px-4 pb-4 pt-1">{children}</div>
     </div>
   );
 }
@@ -182,7 +181,7 @@ export function NotebookSidePanel({
         {selectedText ? (
           <>
             <Field label={boardT("font")}>
-              <div className="flex flex-col gap-1">
+              <div className="grid grid-cols-2 gap-1">
                 {VISION_TEXT_FONTS.map((font) => (
                   <Pill
                     key={font}
@@ -324,76 +323,171 @@ export function NotebookSidePanel({
 
   if (category === "sticker") {
     return (
-      <Panel>
-        <div className="flex flex-wrap gap-1">
-          {VISION_STICKERS.map((asset) => (
-            <button
-              key={asset}
-              type="button"
-              onClick={() => onAddSticker(asset)}
-              aria-label={stickerNames(
-                `sticker_${asset.startsWith("MASCOT_") ? "mascot" : asset.toLowerCase()}`,
-              )}
-              className="grid size-11 shrink-0 cursor-pointer place-items-center rounded-[var(--radius-card)] outline-none hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            >
-              <StickerPreview asset={asset} />
-            </button>
-          ))}
-        </div>
-      </Panel>
+      <StickerPanel
+        onAddSticker={onAddSticker}
+        stickerName={(asset) =>
+          stickerNames(
+            `sticker_${asset.startsWith("MASCOT_") ? "mascot" : asset.toLowerCase()}`,
+          )
+        }
+      />
     );
   }
 
   return (
     <Panel>
-      <span
-        className="text-xs font-bold"
-        style={{ color: "var(--color-secondary)" }}
+      <Field label={t("paper_page_section")}>
+        <div className="grid grid-cols-2 gap-2">
+          {NOTEBOOK_PAPERS.map((value) => {
+            const active = value === paper;
+            return (
+              <button
+                key={value}
+                type="button"
+                aria-pressed={active}
+                onClick={() => onSetPaper(value)}
+                className="flex cursor-pointer flex-col gap-1.5 rounded-[var(--radius-card)] border p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                style={{
+                  borderColor: active
+                    ? "var(--color-accent)"
+                    : "color-mix(in srgb, var(--color-main) 12%, transparent)",
+                  backgroundColor: active
+                    ? "var(--color-accent-soft)"
+                    : "var(--color-surface)",
+                }}
+              >
+                <span
+                  aria-hidden
+                  className="h-14 w-full rounded"
+                  style={{
+                    backgroundColor: "var(--notebook-paper)",
+                    border:
+                      "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+                    ...PAPER_PREVIEWS[value],
+                  }}
+                />
+                <span
+                  className="px-1 text-sm font-semibold"
+                  style={{ color: "var(--color-main)" }}
+                >
+                  {t(`paper.${value}`)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      </Field>
+
+      <CoverSection cover={cover} onCover={onCover} />
+    </Panel>
+  );
+}
+
+/**
+ * Paper swatches at preview scale.
+ *
+ * Not `PAPERS` itself: the page's patterns are sized in `cqw` against the page's own container, and a
+ * swatch in this panel has no such container, so the units fell back to the viewport and a 36px
+ * swatch held at most one ruling. Every paper then looked like "Düz". Same colours and the same
+ * three patterns, just a fixed step small enough to show several lines in the tile.
+ */
+const PREVIEW_STEP = "8px";
+const PAPER_PREVIEWS: Record<NotebookPaper, CSSProperties> = {
+  ruled: {
+    backgroundImage: `repeating-linear-gradient(180deg, transparent 0 calc(${PREVIEW_STEP} - 1px), var(--notebook-rule) calc(${PREVIEW_STEP} - 1px) ${PREVIEW_STEP})`,
+  },
+  grid: {
+    backgroundImage: `repeating-linear-gradient(180deg, transparent 0 calc(${PREVIEW_STEP} - 1px), var(--notebook-rule) calc(${PREVIEW_STEP} - 1px) ${PREVIEW_STEP}), repeating-linear-gradient(90deg, transparent 0 calc(${PREVIEW_STEP} - 1px), var(--notebook-rule) calc(${PREVIEW_STEP} - 1px) ${PREVIEW_STEP})`,
+  },
+  dotted: {
+    backgroundImage:
+      "radial-gradient(var(--notebook-rule) 1px, transparent 1.4px)",
+    backgroundSize: `${PREVIEW_STEP} ${PREVIEW_STEP}`,
+  },
+  plain: {},
+};
+
+/**
+ * The catalogue split three ways, in the order the vision board ships it. One flat grid of 77 put
+ * Puhu, a check mark and a strip of washi tape side by side, and the student had to scan all of it
+ * to find any one kind. Grouped by what the sticker *is*, not by where its art came from.
+ */
+type StickerGroup = "puhu" | "shape" | "decor";
+const STICKER_GROUPS: readonly StickerGroup[] = ["puhu", "shape", "decor"];
+const SHAPE_STICKERS: ReadonlySet<VisionSticker> = new Set<VisionSticker>([
+  "STAR",
+  "HEART",
+  "SPARKLE",
+  "ARROW",
+  "PIN",
+  "TARGET",
+  "FLAG",
+  "CHECK",
+  "TROPHY",
+  "ROCKET",
+  "GRADCAP",
+  "CROWN",
+  "LIGHTNING",
+]);
+function stickerGroup(asset: VisionSticker): StickerGroup {
+  if (asset.startsWith("MASCOT_") || asset.startsWith("PUHU_")) return "puhu";
+  return SHAPE_STICKERS.has(asset) ? "shape" : "decor";
+}
+
+function StickerPanel({
+  onAddSticker,
+  stickerName,
+}: {
+  onAddSticker: (asset: VisionSticker) => void;
+  stickerName: (asset: VisionSticker) => string;
+}) {
+  const t = useTranslations("notebook");
+  const [group, setGroup] = useState<StickerGroup>("puhu");
+
+  return (
+    <Panel>
+      <div
+        role="tablist"
+        aria-label={t("sidebar_sticker")}
+        className="grid grid-cols-3 gap-1 rounded-full p-1"
+        style={{ backgroundColor: "var(--color-surface-container)" }}
       >
-        {t("paper_section")}
-      </span>
-      <div className="flex flex-col gap-2">
-        {NOTEBOOK_PAPERS.map((value) => {
-          const active = value === paper;
+        {STICKER_GROUPS.map((value) => {
+          const active = value === group;
           return (
             <button
               key={value}
               type="button"
-              aria-pressed={active}
-              onClick={() => onSetPaper(value)}
-              className="flex cursor-pointer items-center gap-3 rounded-[var(--radius-card)] border p-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+              role="tab"
+              aria-selected={active}
+              onClick={() => setGroup(value)}
+              className="min-h-9 cursor-pointer rounded-full text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
               style={{
-                borderColor: active
-                  ? "var(--color-accent)"
-                  : "color-mix(in srgb, var(--color-main) 12%, transparent)",
-                backgroundColor: active
-                  ? "var(--color-accent-soft)"
-                  : "var(--color-surface)",
+                backgroundColor: active ? "var(--color-surface)" : "transparent",
+                color: active ? "var(--color-main)" : "var(--color-secondary)",
+                boxShadow: active ? "var(--shadow-card)" : undefined,
               }}
             >
-              {/* A live swatch, not just a name — the same styles the page itself renders with. */}
-              <span
-                aria-hidden
-                className="size-9 shrink-0 rounded"
-                style={{
-                  backgroundColor: "var(--notebook-paper)",
-                  border:
-                    "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
-                  ...PAPERS[value],
-                }}
-              />
-              <span
-                className="text-sm font-semibold"
-                style={{ color: "var(--color-main)" }}
-              >
-                {t(`paper.${value}`)}
-              </span>
+              {t(`sticker_group.${value}`)}
             </button>
           );
         })}
       </div>
-
-      <CoverSection cover={cover} onCover={onCover} />
+      <div role="tabpanel" className="grid grid-cols-6 gap-1">
+        {VISION_STICKERS.filter((asset) => stickerGroup(asset) === group).map(
+          (asset) => (
+            <button
+              key={asset}
+              type="button"
+              onClick={() => onAddSticker(asset)}
+              aria-label={stickerName(asset)}
+              className="grid aspect-square w-full cursor-pointer place-items-center rounded-[var(--radius-card)] outline-none hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            >
+              <StickerPreview asset={asset} />
+            </button>
+          ),
+        )}
+      </div>
     </Panel>
   );
 }
@@ -406,8 +500,7 @@ export function NotebookSidePanel({
  * inch of the rail to save one of them a scroll.
  *
  * Every swatch is drawn with the recipe the cover itself uses (`COVER_COLORS`, `COVER_MATERIALS`),
- * so a preview cannot drift from the thing it previews — the same reason the paper swatches above
- * render through `PAPERS`.
+ * so a preview cannot drift from the thing it previews.
  */
 function CoverSection({
   cover,
@@ -427,12 +520,7 @@ function CoverSection({
           "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
       }}
     >
-      <span
-        className="text-xs font-bold"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("cover_section")}
-      </span>
+      <FieldLabel>{t("cover_section")}</FieldLabel>
 
       <div className="flex flex-wrap gap-2">
         {NOTEBOOK_COVER_COLORS.map((value) => {
@@ -496,9 +584,7 @@ function CoverSection({
       </div>
 
       <label className="flex flex-col gap-1">
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t("cover_title_label")}
-        </span>
+        <FieldLabel>{t("cover_title_label")}</FieldLabel>
         {/* Blank is a real answer, not an empty field: clearing it puts the app's own name back on
             the cover rather than leaving the book untitled. */}
         <input
@@ -530,15 +616,26 @@ function CoverSection({
  * above; duplicating ~80 lines of styling-only helpers reads better than that cross-route reach.
  */
 
+/**
+ * The one section-label style every panel body uses. The text panel used to shout its labels in
+ * 10px capitals while the paper panel whispered in sentence case; one style now, sentence case.
+ */
+export function FieldLabel({ children, id }: { children: ReactNode; id?: string }) {
+  return (
+    <span
+      id={id}
+      className="text-xs font-bold"
+      style={{ color: "var(--color-secondary)" }}
+    >
+      {children}
+    </span>
+  );
+}
+
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span
-        className="text-[10px] font-semibold uppercase tracking-wide"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {label}
-      </span>
+      <FieldLabel>{label}</FieldLabel>
       {children}
     </div>
   );

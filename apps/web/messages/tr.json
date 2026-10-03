@@ -2265,7 +2265,15 @@
       "error": "İçindekiler şu an gelmedi. Sayfaları çevirerek yine gezebilirsin."
     },
     "contents_label": "İçindekiler",
-    "owner_kicker": "Bu defterin sahibi"
+    "owner_kicker": "Bu defterin sahibi",
+    "paper_page_section": "Sayfa",
+    "index_search_label": "Kayıtlarda ara",
+    "index_search_placeholder": "Konu, not ya da hata tipi",
+    "sticker_group": {
+      "puhu": "Puhu",
+      "shape": "Şekil",
+      "decor": "Süs"
+    }
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",

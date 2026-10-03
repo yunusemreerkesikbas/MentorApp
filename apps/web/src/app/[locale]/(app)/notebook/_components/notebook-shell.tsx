@@ -123,6 +123,16 @@ import { reviewFeedback } from "@/lib/notebook-review-deck";
 import { NotebookEntryEditDialog } from "./notebook-entry-edit-dialog";
 import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
 
+/** The side panel's header, per category. "draw" never opens the panel; it is listed for the type. */
+const PANEL_TITLE_KEYS = {
+  add: "add_title",
+  index: "sidebar_index",
+  sticker: "sidebar_sticker",
+  paper: "edit_paper",
+  text: "sidebar_note",
+  draw: "sidebar_draw",
+} as const satisfies Record<NotebookPanelCategory, string>;
+
 interface ExamContext {
   id: string;
   name: string;
@@ -1157,7 +1167,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
             type="button"
             aria-pressed={active}
             onClick={() => openCategory(id)}
-            className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:flex-none lg:gap-0.5 lg:px-1 lg:py-1.5"
+            className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[11px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] aria-pressed:focus-visible:ring-0 lg:w-full lg:flex-none lg:gap-1 lg:px-1 lg:py-2"
             style={{
               color: active
                 ? "var(--color-btn-label)"
@@ -1178,7 +1188,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         type="button"
         aria-pressed={activeRail === "note"}
         onClick={handleAddNote}
-        className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[10px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:w-full lg:flex-none lg:gap-0.5 lg:px-1 lg:py-1.5"
+        className="relative flex min-h-11 min-w-0 flex-1 flex-col items-center justify-center gap-0 rounded-[var(--radius-card)] px-0 py-1 text-[11px] font-semibold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] aria-pressed:focus-visible:ring-0 lg:w-full lg:flex-none lg:gap-1 lg:px-1 lg:py-2"
         style={{
           color:
             activeRail === "note"
@@ -1290,6 +1300,25 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
       ) : null}
       {t("save")}
     </button>
+  );
+
+  const inkToolbar = (
+    <NotebookInkToolbar
+      tool={ink.tool}
+      color={ink.color}
+      size={ink.size}
+      opacity={ink.opacity}
+      canUndo={focused.canUndo}
+      canRedo={focused.canRedo}
+      hasInk={focused.state.doc.ink.length > 0}
+      onToolChange={ink.changeTool}
+      onColorChange={ink.setColor}
+      onSizeChange={ink.setSize}
+      onOpacityChange={ink.setOpacity}
+      onUndo={() => focused.dispatch({ type: "undo" })}
+      onRedo={() => focused.dispatch({ type: "redo" })}
+      onClear={() => focused.dispatch({ type: "clearInk" })}
+    />
   );
 
   const pageNav = (
@@ -1480,7 +1509,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               <LayoutGroup id="notebook-rail">
                 <nav
                   aria-label={t("sidebar_nav")}
-                  className={`mentor-scrollarea flex shrink-0 gap-0 overflow-x-auto border px-1 py-1 lg:absolute lg:top-1/2 lg:left-2 lg:w-16 lg:-translate-y-1/2 lg:flex-col lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:px-1 lg:py-3 lg:shadow-[var(--shadow-card)] ${NOTEBOOK_TRAY_RADIUS_CLASS}`}
+                  className={`mentor-scrollarea flex shrink-0 gap-0 overflow-x-auto border px-1 py-1 lg:absolute lg:top-1/2 lg:left-2 lg:w-[4.5rem] lg:-translate-y-1/2 lg:flex-col lg:gap-1 lg:overflow-x-visible lg:overflow-y-auto lg:px-1 lg:py-3 lg:shadow-[var(--shadow-card)] ${NOTEBOOK_TRAY_RADIUS_CLASS}`}
                   style={{
                     backgroundColor: "var(--color-surface)",
                     borderColor:
@@ -1514,7 +1543,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                     clipped top and bottom by the very overflow rule meant to tame the panel.
                     Bounding the panel alone leaves the book's sizing exactly as it was.
                   */
-                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:absolute lg:top-2 lg:bottom-2 lg:left-20 lg:max-h-none lg:w-96 lg:shadow-[var(--shadow-card)]"
+                  className="relative flex min-h-0 max-h-[50vh] w-full shrink-0 flex-col rounded-[var(--radius-card)] border lg:absolute lg:top-2 lg:bottom-2 lg:left-[5.5rem] lg:max-h-none lg:w-80 lg:shadow-[var(--shadow-card)]"
                   style={{
                     backgroundColor: "var(--color-surface)",
                     borderColor:
@@ -1522,19 +1551,25 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                     zIndex: NOTEBOOK_Z.panel,
                   }}
                 >
-                  <button
-                    type="button"
-                    aria-label={t("sidebar_collapse")}
-                    onClick={() => setDetailCollapsed(true)}
-                    className="absolute end-0 top-1/2 z-10 hidden h-11 w-5 -translate-y-1/2 translate-x-1/2 items-center justify-center rounded-full lg:inline-flex"
-                    style={{
-                      backgroundColor: "var(--color-surface)",
-                      boxShadow: "var(--shadow-card)",
-                      color: "var(--color-main)",
-                    }}
-                  >
-                    <ChevronLeft aria-hidden size={14} />
-                  </button>
+                  {/* Title and collapse share one header row. The collapse used to be a tab stuck to
+                      the panel's edge at mid-height, where it read as part of the page behind. */}
+                  <div className="flex shrink-0 items-center justify-between gap-2 py-2 ps-4 pe-2">
+                    <h2
+                      className="truncate text-base font-bold"
+                      style={{ color: "var(--color-main)" }}
+                    >
+                      {t(PANEL_TITLE_KEYS[activePanel])}
+                    </h2>
+                    <button
+                      type="button"
+                      aria-label={t("sidebar_collapse")}
+                      onClick={() => setDetailCollapsed(true)}
+                      className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+                      style={{ color: "var(--color-secondary)" }}
+                    >
+                      <ChevronLeft aria-hidden size={18} />
+                    </button>
+                  </div>
                   <div className="min-h-0 flex-1 overflow-hidden">
                     <AnimatePresence mode="wait" initial={false}>
                       <motion.div
@@ -1686,7 +1721,8 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               ) : null}
 
               {/*
-              Floats over the notebook's own top edge rather than sitting in flow above it (pushed
+              Phone only (desktop's tray sits at the book's bottom edge, further down). Floats over
+              the leaf's own top edge rather than sitting in flow above it (pushed
               the whole book down and shrank it — `useFitSize` measures the OUTER box, so a taller
               toolbar row meant a shorter notebook the instant draw mode turned on) or pinned over
               the bottom (clipped off-screen there against the pagination row + safe-area inset).
@@ -1695,32 +1731,13 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               either side of the tray from stealing taps meant for the page underneath.
             */}
               <AnimatePresence>
-                {drawing ? (
+                {drawing && isMobile ? (
                   <div
                     key="ink-toolbar"
-                    className={
-                      isMobile
-                        ? "pointer-events-none absolute inset-x-0 top-2 flex justify-center px-2"
-                        : "pointer-events-none absolute inset-x-0 top-14 flex justify-center px-2 sm:top-16"
-                    }
+                    className="pointer-events-none absolute inset-x-0 top-2 flex justify-center px-2"
                     style={{ zIndex: NOTEBOOK_Z.ink }}
                   >
-                    <NotebookInkToolbar
-                      tool={ink.tool}
-                      color={ink.color}
-                      size={ink.size}
-                      opacity={ink.opacity}
-                      canUndo={focused.canUndo}
-                      canRedo={focused.canRedo}
-                      hasInk={focused.state.doc.ink.length > 0}
-                      onToolChange={ink.changeTool}
-                      onColorChange={ink.setColor}
-                      onSizeChange={ink.setSize}
-                      onOpacityChange={ink.setOpacity}
-                      onUndo={() => focused.dispatch({ type: "undo" })}
-                      onRedo={() => focused.dispatch({ type: "redo" })}
-                      onClear={() => focused.dispatch({ type: "clearInk" })}
-                    />
+                    {inkToolbar}
                   </div>
                 ) : null}
               </AnimatePresence>
@@ -2146,6 +2163,23 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                   {pageNav}
                 </div>
               ) : null}
+              {/*
+                Desktop pen tray: bottom centre, just above the pager. At the top it sat across the
+                spine's coils and over the first lines of both pages, where writing starts; the
+                bottom of a spread is the part a student reaches last. Inside the book box, so it
+                follows the book's own fitted size instead of the column around it.
+              */}
+              <AnimatePresence>
+                {drawing && !isMobile ? (
+                  <div
+                    key="ink-toolbar"
+                    className="pointer-events-none absolute inset-x-0 bottom-16 flex justify-center px-2"
+                    style={{ zIndex: NOTEBOOK_Z.ink }}
+                  >
+                    {inkToolbar}
+                  </div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
         </div>

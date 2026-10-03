@@ -2265,7 +2265,15 @@
       "error": "The contents did not come through just now. You can still turn the pages."
     },
     "contents_label": "Contents",
-    "owner_kicker": "This notebook belongs to"
+    "owner_kicker": "This notebook belongs to",
+    "paper_page_section": "Page",
+    "index_search_label": "Search entries",
+    "index_search_placeholder": "Topic, note or error type",
+    "sticker_group": {
+      "puhu": "Puhu",
+      "shape": "Shapes",
+      "decor": "Decor"
+    }
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",

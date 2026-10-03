@@ -5,7 +5,7 @@ import Image from "next/image";
 import { useTranslations } from "next-intl";
 import type { ExamSubjectDto, ExamTopicDto, NotebookEntryDto } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES, type NotebookErrorType } from "@mentor/types";
-import { Card, SectionHeading, TextAreaField } from "@mentor/ui";
+import { TextAreaField } from "@mentor/ui";
 import { FormError } from "@/components/form";
 import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
@@ -127,10 +127,12 @@ export function NotebookAddPanel({
   }
 
   return (
-    <Card className="flex flex-col gap-4">
-      <SectionHeading as="h2" subtitle={t("add_subtitle")}>
-        {t("add_title")}
-      </SectionHeading>
+    // No card of its own: the side panel is already the surface, and a bordered card inside it
+    // read as a box in a box. The panel header carries the title.
+    <div className="flex flex-col gap-4">
+      <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+        {t("add_subtitle")}
+      </p>
 
       <FormError message={error} />
 
@@ -271,6 +273,6 @@ export function NotebookAddPanel({
           {t("add_cancel")}
         </NotebookCompactButton>
       </div>
-    </Card>
+    </div>
   );
 }

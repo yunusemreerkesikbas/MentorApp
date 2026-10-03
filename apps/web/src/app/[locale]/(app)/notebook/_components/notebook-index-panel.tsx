@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
-import { CalendarOff, Check, FileText, LayoutGrid } from "lucide-react";
+import { CalendarOff, Check, FileText, LayoutGrid, Search } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
@@ -11,7 +11,6 @@ import type {
   NotebookErrorType,
 } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES } from "@mentor/types";
-import { MenuSelect } from "@/components/menu-select";
 import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
@@ -36,8 +35,13 @@ import {
  * deleted, because both of those are reached by double-clicking a card that no longer existed.
  *
  * Filtering is by subject, error type and status — the two the entry table is already indexed for
- * plus the one that answers "what have I actually healed". Searching inside notes is deliberately
- * absent: it would be an unindexed scan, and a trigram index is a migration with its own reasons.
+ * plus the one that answers "what have I actually healed". Searching inside notes on the server is
+ * deliberately absent: it would be an unindexed scan, and a trigram index is a migration with its
+ * own reasons. The search box narrows the rows already loaded instead (subject, topic, error type,
+ * note), which is what a student typing "paragraf" into a twenty-row list actually wants.
+ *
+ * Error type and status are chip rows, not dropdowns: each is a handful of fixed values, and a
+ * dropdown hid all but one of them behind a tap while taking the same height as the open row.
  *
  * ponytail: a "show more" button, not infinite scroll. The panel is a narrow rail column and the
  * page count is small; a scroll observer would be machinery for a list nobody scrolls far into.
@@ -93,6 +97,7 @@ export function NotebookIndexPanel({
   const [topicRef, setTopicRef] = useState(restoredFilters?.topicRef ?? "");
   const [errorType, setErrorType] = useState(restoredFilters?.errorType ?? "");
   const [status, setStatus] = useState(restoredFilters?.status ?? "");
+  const [query, setQuery] = useState("");
   /**
    * Ids ticked for a study session, by id rather than by row: the list is paginated and filterable,
    * and an index would point at a different card the moment either changes.
@@ -224,16 +229,41 @@ export function NotebookIndexPanel({
     ...(topicRef && topicName
       ? [{ key: "topic", label: topicName, onClear: () => setTopicRef("") }]
       : []),
-    ...(errorType
-      ? [{ key: "errorType", label: t(`error_type.${errorType}`), onClear: () => setErrorType("") }]
-      : []),
-    ...(status
-      ? [{ key: "status", label: t(`index_status_${status.toLowerCase()}`), onClear: () => setStatus("") }]
-      : []),
   ];
+  const needle = query.trim().toLocaleLowerCase("tr");
+  const visibleItems = needle
+    ? items.filter((entry) =>
+        [
+          entry.subjectName,
+          entry.topicName,
+          entry.note,
+          entry.solutionNote,
+          t(`error_type.${entry.errorType}`),
+        ].some((text) => text?.toLocaleLowerCase("tr").includes(needle)),
+      )
+    : items;
 
   return (
     <div className="flex flex-col gap-3">
+      <label
+        className="flex min-h-11 items-center gap-2 rounded-full border px-3 focus-within:ring-2 focus-within:ring-[var(--color-focus-ring)]"
+        style={{
+          backgroundColor: "var(--color-surface)",
+          borderColor: "color-mix(in srgb, var(--color-main) 12%, transparent)",
+        }}
+      >
+        <Search aria-hidden size={16} style={{ color: "var(--color-secondary)" }} />
+        <input
+          type="search"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={t("index_search_placeholder")}
+          aria-label={t("index_search_label")}
+          className="min-w-0 flex-1 bg-transparent text-sm outline-none"
+          style={{ color: "var(--color-main)" }}
+        />
+      </label>
+
       <TaxonomyCascadeSelect
         subjects={subjects}
         topics={topics}
@@ -259,59 +289,41 @@ export function NotebookIndexPanel({
         }}
       />
 
-      <div className="flex flex-col gap-1">
-        <span
-          id={errorLabelId}
-          className="text-sm font-semibold"
-          style={{ color: "var(--color-main)" }}
-        >
-          {t("index_filter_error_type")}
-        </span>
-        <MenuSelect
-          value={errorType}
-          aria-labelledby={errorLabelId}
-          options={[
-            { value: "", label: t("index_filter_all") },
-            ...NOTEBOOK_ERROR_TYPES.map((type) => ({
-              value: type,
-              label: t(`error_type.${type}`),
-            })),
-          ]}
-          onChange={setErrorType}
-        />
-      </div>
+      <ChipRow
+        labelId={statusLabelId}
+        label={t("index_filter_status")}
+        value={status}
+        allLabel={t("index_filter_all")}
+        options={[
+          { value: "ACTIVE", label: t("index_status_active") },
+          { value: "HEALED", label: t("index_status_healed") },
+          { value: "ARCHIVED", label: t("index_status_archived") },
+        ]}
+        onChange={setStatus}
+      />
 
-      <div className="flex flex-col gap-1">
-        <span
-          id={statusLabelId}
-          className="text-sm font-semibold"
-          style={{ color: "var(--color-main)" }}
-        >
-          {t("index_filter_status")}
-        </span>
-        <MenuSelect
-          value={status}
-          aria-labelledby={statusLabelId}
-          options={[
-            { value: "", label: t("index_filter_all") },
-            { value: "ACTIVE", label: t("index_status_active") },
-            { value: "HEALED", label: t("index_status_healed") },
-            { value: "ARCHIVED", label: t("index_status_archived") },
-          ]}
-          onChange={setStatus}
-        />
-      </div>
+      <ChipRow
+        labelId={errorLabelId}
+        label={t("index_filter_error_type")}
+        value={errorType}
+        allLabel={t("index_filter_all")}
+        options={NOTEBOOK_ERROR_TYPES.map((type) => ({
+          value: type,
+          label: t(`error_type.${type}`),
+        }))}
+        onChange={setErrorType}
+      />
 
       <FormError message={error} />
 
-      {items.length === 0 && loaded ? (
+      {visibleItems.length === 0 && loaded ? (
         <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
           {t("index_empty")}
         </p>
       ) : null}
 
       <div className="flex flex-col">
-        {items.map((entry) => (
+        {visibleItems.map((entry) => (
           <IndexRow
             key={entry.id}
             entry={entry}
@@ -355,6 +367,62 @@ export function NotebookIndexPanel({
           {t("index_load_more", { count: total - items.length })}
         </NotebookCompactButton>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * One single-choice filter as a row of chips. Tapping the chosen chip again, or "Hepsi", clears it.
+ * A labelled radio group in all but markup: `aria-pressed` buttons keep the clear-on-second-tap
+ * behaviour a native radio cannot have.
+ */
+function ChipRow({
+  labelId,
+  label,
+  value,
+  allLabel,
+  options,
+  onChange,
+}: {
+  labelId: string;
+  label: string;
+  value: string;
+  allLabel: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div role="group" aria-labelledby={labelId} className="flex flex-col gap-1.5">
+      <span
+        id={labelId}
+        className="text-xs font-bold"
+        style={{ color: "var(--color-secondary)" }}
+      >
+        {label}
+      </span>
+      <div className="flex flex-wrap gap-1.5">
+        {[{ value: "", label: allLabel }, ...options].map((option) => {
+          const active = option.value === value;
+          return (
+            <button
+              key={option.value || "all"}
+              type="button"
+              aria-pressed={active}
+              onClick={() => onChange(active ? "" : option.value)}
+              className="min-h-8 cursor-pointer rounded-full border px-3 text-xs font-semibold outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+              style={{
+                backgroundColor: active ? "var(--color-btn)" : "var(--color-surface)",
+                color: active ? "var(--color-btn-label)" : "var(--color-body)",
+                borderColor: active
+                  ? "var(--color-btn)"
+                  : "color-mix(in srgb, var(--color-main) 12%, transparent)",
+              }}
+            >
+              {option.label}
+            </button>
+          );
+        })}
+      </div>
     </div>
   );
 }
