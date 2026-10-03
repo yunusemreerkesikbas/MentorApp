@@ -64,6 +64,15 @@ describe("notebook opening store", () => {
     expect(notebookOpening.isOpening("a")).toBe(false);
   });
 
+  it("drops a flight left in the air when the signed-in shell goes", () => {
+    fresh();
+    const run = notebookOpening.begin(opening("a"));
+    notebookOpening.underway(run);
+    notebookOpening.reset();
+    expect(notebookOpening.get()).toEqual({ run, start: null, underway: false, landing: null });
+    expect(notebookOpening.isOpening("a")).toBe(false);
+  });
+
   it("finishes back to nothing in the air and the next opening is a new run", () => {
     fresh();
     const run = notebookOpening.begin(opening("a"));

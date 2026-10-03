@@ -571,7 +571,7 @@ about 1.5 s with sound. Everything else in §9 stands.
   without a turn, no drop-in, the desk's loops (stars, motes, steam) stop and hover changes land
   without travel. Nothing waits on any of it.
 - **Source of truth:** timings in `lib/notebook-desk.ts` (`NOTEBOOK_OPENING`), the flight in
-  `components/notebook-desk/notebook-opening-overlay.tsx`, turns in
+  `components/notebook-desk/notebook-opening-flight.tsx` (`createFlight`), turns in
   `(app)/notebook/_components/use-notebook-turns.tsx`.
 
 ---

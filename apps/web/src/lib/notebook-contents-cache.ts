@@ -44,3 +44,11 @@ export function prefetchNotebookContents(
 export function forgetNotebookContents(notebookId?: string): void {
   entries.delete(cacheKey(notebookId));
 }
+
+/**
+ * Drops every cached answer: the student who asked for them is no longer the one signed in. The
+ * cache lives as long as the tab, and signing out does not reload it.
+ */
+export function forgetAllNotebookContents(): void {
+  entries.clear();
+}

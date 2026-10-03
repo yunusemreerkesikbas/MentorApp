@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { notebookOpening, useNotebookOpening } from "@/lib/notebook-opening";
+import { forgetAllNotebookContents } from "@/lib/notebook-contents-cache";
 import type { OpeningFlight } from "./notebook-opening-flight";
 
 /**
@@ -63,6 +64,17 @@ export function NotebookOpeningOverlay() {
       active = false;
     };
   }, [start]);
+
+  // What the notebook keeps between pages belongs to the student signed in now. This wrapper
+  // leaves with the signed-in shell (sign-out, a lost session), so that is where it all goes:
+  // nothing stays in the air, and no contents summary is served to whoever signs in next.
+  useEffect(
+    () => () => {
+      notebookOpening.reset();
+      forgetAllNotebookContents();
+    },
+    [],
+  );
 
   useEffect(() => {
     if (!start || underway) return;
