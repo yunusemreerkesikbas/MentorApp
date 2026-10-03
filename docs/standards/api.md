@@ -77,6 +77,16 @@ weekly counts. Existing assignments remain unchanged; new drafts use the existin
 
 ## 6. Service (module) catalog
 
+Identity phone addition (APP-114): protected `GET /v1/users/me/phone`,
+`POST /v1/users/me/phone/verifications` and
+`POST /v1/users/me/phone/verifications/:challengeId/confirm`. Status exposes only a masked number;
+requests require a session and Turnstile action `phone-verification`; confirmation never creates a
+login session. Shared contracts live in `@mentor/{types,validation}` and the generated API client.
+Payments checkout accepts additive `useTrial`; `false` purchases directly, `true` requires trial
+eligibility, and omission retains the previous automatic trial choice with the new phone gate.
+The owner-only subscription view reports trial eligibility and pending checkout recovery URLs;
+unknown outcomes block replacement until provider reconciliation.
+
 > Source: [`apps/api/src/modules/README.md`](../../apps/api/src/modules/README.md). Base paths are planned;
 > they appear in OpenAPI once a module is implemented.
 

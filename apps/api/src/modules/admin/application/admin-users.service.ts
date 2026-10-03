@@ -2,6 +2,7 @@ import { HttpStatus, Injectable } from "@nestjs/common";
 import { ASSIGNABLE_ROLES, UserRole } from "@mentor/types";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { DomainError } from "../../../common/errors/domain-error";
+import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
 import { AccountErasureService } from "../../account/application/account-erasure.service";
 import { UsersService } from "../../identity/application/users.service";
 import { UserStatus } from "../../identity/domain/identity.constants";
@@ -160,7 +161,12 @@ export class AdminUsersService {
     status: string,
   ): Promise<FieldChangeResult<string>> {
     this.assertNotSelf(actorId, userId);
-    const change = await this.repo.updateStatus(userId, status);
+    const change = await this.repo.updateStatus(userId, status).catch((error: unknown) => {
+      if (isUniqueViolation(error) && uniqueConstraint(error) === "users_active_phone_unique_idx") {
+        throw new DomainError(ErrorCode.AUTH_PHONE_UNAVAILABLE, HttpStatus.CONFLICT);
+      }
+      throw error;
+    });
     if (!change) throw new DomainError(ErrorCode.ADMIN_USER_NOT_FOUND, HttpStatus.NOT_FOUND);
     const row = await this.repo.findById(userId);
     return { user: toView(row!), before: change.before, after: change.after };

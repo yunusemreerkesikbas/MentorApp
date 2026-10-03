@@ -231,6 +231,35 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-03 — Erasure and notification review follow-up.** Student standing notes still save
+  while the coach's contacts are unverified, but the coach receives no student-note notification.
+  The due-followup email worker resolves the verified contact snapshot at send time, closing the
+  email-change race after its due-count check. W8 erasure now locks and ends every affected link,
+  revokes its sponsorship through the public payments service, then deletes the relationships.
+  **Usage:** normal account erasure uses this order automatically. **Gotchas:** a revocation failure
+  leaves ENDED links and sponsor associations intact for retry; another student's actual paid
+  subscription is preserved. Delayed grants recheck the ended/deleted link even when called
+  independently of identity's account-erasure fence. **Files:** `mentorship-link.service.ts`,
+  `mentorship-erasure.service.ts`, `mentorship-link.repository.ts`, notifications
+  `application/handlers/send-email.handler.ts`, and corresponding unit/concurrency regressions.
+
+- **2026-10-03 — Current verified contacts and atomic sponsored-seat grants.** Existing coach data
+  access, roster/cohort/followup reads and notifications now require verified email and phone on
+  an ACTIVE identity account. Changing email closes access until verification returns; closing
+  coach registration intake does not revoke existing access. Risk digest delivery resolves a
+  verified contact snapshot so an email changed after the initial gate cannot receive student
+  risk data. Sponsorship locks both identities in stable order, then W8's exact ACTIVE FREE/PAID
+  link, and inserts the payment subscription in that same transaction. A delayed grant after END
+  therefore writes nothing; a grant committed before END is found and expired by revocation.
+  **Usage:** reverify a changed coach email; normal verification and subscription lifecycle events
+  reconcile eligible seats. **Gotchas:** students retain their own reads, responses and unilateral
+  ending without coach contact verification; funding fails closed until W8 registers its link
+  eligibility callback. Definite checkout cleanup emits the existing subscription-expired event
+  to restore an eligible seat. **Files:** `coach-contact-verification.ts`, `mentorship-link.service.ts`,
+  `mentorship-{roster,cohort-brief,followup}.service.ts`, `mentorship-query.adapter.ts`,
+  `plan-task-feedback.listener.ts`, payments `sponsored-seat.service.ts`, and
+  `test/mentorship-sponsor-concurrency.e2e-spec.ts`.
+
 - **2026-10-02 — Phone verification gates for coaches and sponsored seats.** Coach registration
   and admin activation require verified email and a verified phone on an ACTIVE account before
   registry/role writes. Invite issue and redemption recheck the phone, including manually granted

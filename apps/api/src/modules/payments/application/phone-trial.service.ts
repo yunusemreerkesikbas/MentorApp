@@ -60,16 +60,16 @@ export class PhoneTrialService {
   }
 
   /** Unknown holds never expire. A matching known hosted checkout is the only safe retry. */
-  async resume(userId: string, planId: string, code: string | undefined, useTrial: boolean | undefined): Promise<CheckoutSession | null> {
-    const pending = await this.claims.findPendingForUser(userId);
+  async resume(userId: string, planId: string, code: string | undefined, useTrial: boolean | undefined, tx?: DatabaseTx): Promise<CheckoutSession | null> {
+    const pending = await this.claims.findPendingForUser(userId, tx);
     if (!pending) return null;
     if (useTrial === false || pending.planId !== planId || pending.code !== (code ?? null) || !pending.checkoutUrl) this.pending();
     return { checkoutUrl: pending.checkoutUrl };
   }
 
-  async reserve(userId: string, planId: string, code?: string) {
+  async reserve(userId: string, planId: string, code?: string, tx?: DatabaseTx) {
     try {
-      return await withServiceContext(this.db, async (tx) => {
+      const apply = async (tx: DatabaseTx) => {
         // Identity locks/rechecks ACTIVE verification. Account and phone uniqueness then exclude
         // both same-account/different-phone and different-account/same-phone races.
         const fingerprint = await this.users.getVerifiedPhoneFingerprint(userId, tx);
@@ -77,8 +77,11 @@ export class PhoneTrialService {
         if (await this.subscriptions.hasAnyForUser(userId, tx)) this.unavailable();
         await this.claims.purgeFingerprint(fingerprint, new Date(), tx);
         return this.claims.reserve({ userId, phoneFingerprint: fingerprint, planId, code: code ?? null }, tx);
-      });
+      };
+      return await (tx ? apply(tx) : withServiceContext(this.db, apply));
     } catch (error) {
+      // The caller owns rollback when reservation is part of checkout's larger transaction.
+      if (tx) throw error;
       if (!isUniqueViolation(error)) throw error;
       if (await this.claims.findPendingForUser(userId)) this.pending();
       this.unavailable();

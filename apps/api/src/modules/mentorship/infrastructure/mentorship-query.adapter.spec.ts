@@ -56,7 +56,7 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
     listDisplayIdentities: vi.fn(
       async (ids: string[]) => new Map(ids.map((id) => [id, { displayName: `Ad ${id.slice(0, 4)}` }])),
     ),
-    getNotificationContact: vi.fn(async (id: string) => ({
+    getVerifiedNotificationContact: vi.fn(async (id: string) => ({
       email: `${id.slice(0, 4)}@test.local`,
       displayName: `Koç ${id.slice(0, 4)}`,
     })),
@@ -83,7 +83,7 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
     users.isEmailVerified.mockResolvedValue(false);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
     expect(listTriageSnapshots).not.toHaveBeenCalled();
-    expect(users.getNotificationContact).not.toHaveBeenCalled();
+    expect(users.getVerifiedNotificationContact).not.toHaveBeenCalled();
     users.isEmailVerified.mockResolvedValue(true);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toMatchObject([{ coachId: COACH_A, students: [{ studentId: IDLE }] }]);
   });
@@ -178,9 +178,9 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
     });
   });
 
-  it("skips a coach with no contact row rather than half-sending", async () => {
+  it("rechecks a verified contact snapshot before delivery, including an email changed after the initial gate", async () => {
     const { adapter, users } = setup([{ coachId: COACH_A, studentId: IDLE }], [idleSnapshot(IDLE)]);
-    users.getNotificationContact.mockResolvedValueOnce(null as never);
+    users.getVerifiedNotificationContact.mockResolvedValueOnce(null as never);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
   });
 });

@@ -27,7 +27,7 @@ import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
 import { StoreButtons } from "@/components/premium/store-buttons";
-import { PendingTrialCheckout } from "@/components/premium/pending-trial-checkout";
+import { PendingCheckout } from "@/components/premium/pending-checkout";
 import { SubscriptionPlanCard } from "./subscription-plan-card";
 import {
   SubscriptionSkeletonBlocks,
@@ -148,6 +148,7 @@ export function SubscriptionShell() {
   }, []);
 
   async function checkout(plan: PlanDto, useTrial: boolean) {
+    if (!view || busy || view.subscription?.status === "INCOMPLETE" || view.trialEligibility.reason === "PENDING") return;
     setError(null);
     setBusy(true);
     const offer =
@@ -172,6 +173,12 @@ export function SubscriptionShell() {
             ? err.message
             : String(err),
       );
+      // Read the persisted intent after an uncertain response before offering another purchase.
+      try {
+        setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
+      } catch (readError) {
+        setLoadState({ status: "error", message: readError instanceof ApiClientError ? readError.message : t("eligibility_refresh_error") });
+      }
       setBusy(false);
     }
   }
@@ -186,8 +193,8 @@ export function SubscriptionShell() {
 
   async function cancel() {
     const ok = await confirm({
-      title: t(pendingTrial ? "cancel_pending_confirm_title" : "cancel_confirm_title"),
-      message: t(pendingTrial ? "cancel_pending_confirm_message" : "cancel_confirm_message"),
+      title: t(pendingCheckout ? pendingTrial ? "cancel_pending_confirm_title" : "cancel_pending_paid_confirm_title" : "cancel_confirm_title"),
+      message: t(pendingCheckout ? pendingTrial ? "cancel_pending_confirm_message" : "cancel_pending_paid_confirm_message" : "cancel_confirm_message"),
       confirmLabel: t("cancel_confirm_yes"),
       cancelLabel: t("cancel_confirm_no"),
     });
@@ -209,7 +216,7 @@ export function SubscriptionShell() {
       }
       await info({
         title: t("cancel_success_title"),
-        message: t(pendingTrial ? "cancel_pending_success_message" : "cancel_success_message"),
+        message: t(pendingCheckout ? pendingTrial ? "cancel_pending_success_message" : "cancel_pending_paid_success_message" : "cancel_success_message"),
         okLabel: t("cancel_success_ok"),
       });
     } catch (err) {
@@ -263,6 +270,8 @@ export function SubscriptionShell() {
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
   const pendingTrial = view?.trialEligibility?.reason === "PENDING";
+  const pendingCheckout = sub?.status === "INCOMPLETE" || pendingTrial;
+  const pendingCheckoutUrl = view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null;
   const plan = sub ? (plans.find((item) => item.id === sub.planId) ?? null) : null;
   const discount = view?.discount ?? null;
   const facts = listSubscriptionFacts({
@@ -276,7 +285,7 @@ export function SubscriptionShell() {
   // A sponsored seat is not the student's to cancel: there is no provider reference behind it,
   // and it ends with the coaching link rather than on a billing boundary.
   const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd && !sub?.sponsored
-    && (!pendingTrial || Boolean(view?.pendingTrialCheckoutUrl));
+    && (!pendingCheckout || Boolean(pendingCheckoutUrl));
   const showSummary = facts.length > 0 || canCancel || reason !== "NONE";
   const heroChip = heroChipKey(reason, Boolean(sub?.cancelAtPeriodEnd));
 
@@ -387,7 +396,7 @@ export function SubscriptionShell() {
                   busy={busy}
                   className={compactButtonClass}
                 >
-                  {t(pendingTrial ? "cancel_pending_button" : "cancel_button")}
+                  {t(pendingCheckout ? pendingTrial ? "cancel_pending_button" : "cancel_pending_paid_button" : "cancel_button")}
                 </Button>
               </div>
             ) : null}
@@ -397,11 +406,11 @@ export function SubscriptionShell() {
 
         <FormError message={error} />
 
-        {pendingTrial ? (
-          <Card><PendingTrialCheckout checkoutUrl={view?.pendingTrialCheckoutUrl ?? null} /></Card>
+        {pendingCheckout ? (
+          <Card><PendingCheckout checkoutUrl={pendingCheckoutUrl} isTrial={pendingTrial} /></Card>
         ) : null}
 
-        {!hasOpenSub && !pendingTrial ? (
+        {!hasOpenSub && !pendingCheckout ? (
           <>
             <motion.div
               variants={reduceMotion ? undefined : staggerItemVariants}

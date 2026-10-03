@@ -18,6 +18,8 @@ interface MockOptions {
   coach?: boolean;
   sponsorPending?: boolean;
   pendingTrial?: "known" | "unknown";
+  pendingPaid?: "known" | "unknown";
+  unknownCheckout?: boolean;
 }
 
 async function mockApi(page: Page, options: MockOptions = {}) {
@@ -27,6 +29,8 @@ async function mockApi(page: Page, options: MockOptions = {}) {
   let phoneReads = 0;
   let requestedPhone = "";
   let checkout: Record<string, unknown> | null = null;
+  let pendingPaid = options.pendingPaid;
+  let checkoutCalls = 0;
   const principal = options.coach ? { ...user, roles: ["STUDENT", "COACH"] } : user;
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.addInitScript(() => {
@@ -70,17 +74,23 @@ async function mockApi(page: Page, options: MockOptions = {}) {
     if (path === "/v1/users/me/auth-accounts/google") return json({ enabled: false, linked: false, providerEmail: null, canLink: false });
     if (path === "/v1/auth/google/status") return json({ enabled: true });
     if (path === "/v1/plans") return json([{ id: "premium-monthly", name: "Premium Aylık", periodMonths: 1, priceMinor: 24900, currency: "TRY", trialDays: 7, seatCount: 0, purchaseEnabled: true, redirectToMobile: false }]);
-    if (path === "/v1/subscription") return json({ subscription: options.pendingTrial ? {
+    if (path === "/v1/subscription") return json({ subscription: options.pendingTrial || pendingPaid ? {
       id: "pending-subscription", planId: "premium-monthly", status: "INCOMPLETE", startedAt: "2026-10-01T12:00:00.000Z",
       trialEndsAt: null, currentPeriodStart: null, currentPeriodEnd: null, cancelAtPeriodEnd: false, sponsored: false,
-    } : null, entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: options.pendingTrial ? "INCOMPLETE" : "NONE" }, features: {}, discount: null,
+    } : null, entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: options.pendingTrial || pendingPaid ? "INCOMPLETE" : "NONE" }, features: {}, discount: null,
       trialEligibility: { eligible: !options.pendingTrial && status.verified, reason: options.pendingTrial ? "PENDING" : status.verified ? "AVAILABLE" : "PHONE_REQUIRED" },
       pendingTrialCheckoutUrl: options.pendingTrial === "known" ? pendingCheckoutUrl : null,
+      pendingCheckoutUrl: options.pendingTrial === "known" || pendingPaid === "known" ? pendingCheckoutUrl : null,
     });
     if (path === "/v1/coach/access") return json({ canChat: false, mode: "NONE", reason: "PAYMENT_PREMIUM_REQUIRED" });
     if (path === "/v1/subscription/offers") return json({ offers: {}, available: [] });
     if (path === "/v1/subscription/checkout") {
+      checkoutCalls++;
       checkout = request.postDataJSON() as Record<string, unknown>;
+      if (options.unknownCheckout) {
+        pendingPaid = "unknown";
+        return json({ code: "PAYMENT_PROVIDER_UNAVAILABLE", message: "Ödeme sağlayıcısından yanıt bekleniyor." }, 503);
+      }
       return json({ checkoutUrl: `${new URL(request.headers().origin ?? "http://localhost:3100").origin}/abonelik/sonuc?status=success` });
     }
     if (path === "/v1/mentorship/my-coach") return json(options.sponsorPending ? {
@@ -99,6 +109,7 @@ async function mockApi(page: Page, options: MockOptions = {}) {
   return {
     get sent() { return sent; }, get confirms() { return confirms; }, get phoneReads() { return phoneReads; },
     get requestedPhone() { return requestedPhone; }, get checkout() { return checkout; },
+    get checkoutCalls() { return checkoutCalls; },
   };
 }
 
@@ -190,6 +201,7 @@ test("trial waits for SMS and the refreshed server eligibility before checkout",
   const api = await mockApi(page);
   await page.goto("/abonelik");
   await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
+  await expect(page.getByText("Deneme başladığında telefonunun denemede kullanıldığına dair kayıt 12 ay saklanır.", { exact: false })).toBeVisible();
   await page.getByRole("checkbox").check();
   await expect(page.getByRole("button", { name: "Denemeyi başlat" })).toBeDisabled();
   await sendCode(page);
@@ -207,6 +219,53 @@ test("an active coach link stays visible while sponsored Premium awaits phone ve
   await expect(page.getByRole("heading", { name: "Mert" })).toBeVisible();
   await expect(page.getByText("Koç bağlantın açık.", { exact: false })).toBeVisible();
   await expect(page.getByLabel("Cep telefonu numaran")).toBeVisible();
+});
+
+test("paywall trial phone verification controls remain reachable within the dialog viewport", async ({ page, context }) => {
+  const api = await mockApi(page);
+  await page.goto("/koc/sohbet");
+  await page.getByRole("button", { name: "Premium'a yükselt" }).click();
+  const dialog = page.getByTestId("premium-paywall");
+  const body = page.getByTestId("premium-paywall-body");
+  const viewport = page.viewportSize()!;
+  const dialogBounds = await dialog.boundingBox();
+  expect(dialogBounds!.y).toBeGreaterThanOrEqual(0);
+  expect(dialogBounds!.y + dialogBounds!.height).toBeLessThanOrEqual(viewport.height);
+
+  await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
+  await expect(body).toHaveCSS("overflow-y", "auto");
+  expect(await body.evaluate((element) => element.scrollHeight > element.clientHeight)).toBe(true);
+  await page.getByLabel("Cep telefonu numaran").fill("0532 123 45 67");
+  const send = page.getByRole("button", { name: "SMS kodu gönder" });
+  await send.scrollIntoViewIfNeeded();
+  const sendBounds = await send.boundingBox();
+  const scrollBounds = await body.boundingBox();
+  expect(sendBounds!.height).toBeGreaterThanOrEqual(44);
+  expect(sendBounds!.y).toBeGreaterThanOrEqual(scrollBounds!.y);
+  expect(sendBounds!.y + sendBounds!.height).toBeLessThanOrEqual(scrollBounds!.y + scrollBounds!.height + 1);
+  await send.click();
+
+  const code = page.getByLabel("SMS doğrulama kodu");
+  await expect(code).toHaveAttribute("autocomplete", "one-time-code");
+  await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  await page.evaluate(() => navigator.clipboard.writeText("123456"));
+  await code.focus();
+  await code.press("Control+V");
+  await expect(code).toHaveValue("123456");
+  const confirm = page.getByRole("button", { name: "Telefonu doğrula" });
+  await confirm.scrollIntoViewIfNeeded();
+  const confirmBounds = await confirm.boundingBox();
+  expect(confirmBounds!.height).toBeGreaterThanOrEqual(44);
+  expect(confirmBounds!.y).toBeGreaterThanOrEqual(scrollBounds!.y);
+  expect(confirmBounds!.y + confirmBounds!.height).toBeLessThanOrEqual(scrollBounds!.y + scrollBounds!.height + 1);
+  await confirm.click();
+  await expect(page.getByText("Telefonun doğrulandı:", { exact: false })).toBeVisible();
+  await page.getByRole("checkbox").check();
+  const start = page.getByRole("button", { name: "Denemeyi başlat" });
+  await expect(start).toBeEnabled();
+  await expect(start).toBeInViewport({ ratio: 1 });
+  expect(api.sent).toBe(1);
+  expect(api.confirms).toBe(1);
 });
 
 for (const surface of ["subscription", "paywall"] as const) {
@@ -238,5 +297,37 @@ for (const surface of ["subscription", "paywall"] as const) {
     }
     expect(api.checkout).toBeNull();
     expect(api.sent).toBe(0);
+  });
+
+  test(`${surface} resumes a stored paid checkout without a new checkout`, async ({ page }) => {
+    const api = await mockApi(page, { pendingPaid: "known" });
+    await page.route(pendingCheckoutUrl, (route) => route.fulfill({ contentType: "text/html", body: "<p>Stored hosted checkout</p>" }));
+    await openPendingSurface(page);
+    await expect(page.getByRole("button", { name: "Ücretli aboneliği başlat" })).toHaveCount(0);
+    if (surface === "subscription") await expect(page.getByRole("button", { name: "Bekleyen ödemeyi iptal et", exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Ödemeye devam et" }).click();
+    await expect(page).toHaveURL(pendingCheckoutUrl);
+    expect(api.checkoutCalls).toBe(0);
+  });
+
+  test(`${surface} holds an unknown paid checkout without new purchase or cancellation`, async ({ page }) => {
+    const api = await mockApi(page, { pendingPaid: "unknown" });
+    await openPendingSurface(page);
+    await expect(page.getByText("Ödemenin sonucu henüz belli değil.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Destek seçenekleri" })).toHaveAttribute("href", "/ayarlar");
+    for (const action of ["Ödemeye devam et", "Ücretli aboneliği başlat", "Denemeyi başlat", "Aboneliği iptal et", "Bekleyen ödemeyi iptal et"]) {
+      await expect(page.getByRole("button", { name: action, exact: true })).toHaveCount(0);
+    }
+    expect(api.checkoutCalls).toBe(0);
+  });
+
+  test(`${surface} reads the pending server state after an ambiguous checkout failure`, async ({ page }) => {
+    const api = await mockApi(page, { unknownCheckout: true });
+    await openPendingSurface(page);
+    await page.getByRole("checkbox").check();
+    await page.getByRole("button", { name: "Ücretli aboneliği başlat" }).click();
+    await expect(page.getByText("Ödemenin sonucu henüz belli değil.", { exact: false })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ücretli aboneliği başlat" })).toHaveCount(0);
+    expect(api.checkoutCalls).toBe(1);
   });
 }

@@ -182,9 +182,148 @@ export interface CategorizePhotoDto { [key: string]: unknown }
 
 export interface PrelabelNotebookEntryDto { [key: string]: unknown }
 
+export type FeaturePolicyResponseDtoId = typeof FeaturePolicyResponseDtoId[keyof typeof FeaturePolicyResponseDtoId];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeaturePolicyResponseDtoId = {
+  coachchat: 'coach.chat',
+  photocategorize: 'photo.categorize',
+  planai: 'plan.ai',
+  moodreflection: 'mood.reflection',
+  ghostnarration: 'ghost.narration',
+  visionnote: 'vision.note',
+  sessionreflection: 'session.reflection',
+  weeklynarration: 'weekly.narration',
+  dailygreeting: 'daily.greeting',
+  deepanalysis: 'deep.analysis',
+  mentorshipbrief: 'mentorship.brief',
+  mentorshipcohort_brief: 'mentorship.cohort_brief',
+  mentorshipsuggestions: 'mentorship.suggestions',
+} as const;
+
+export type FeaturePolicyResponseDtoWindow = typeof FeaturePolicyResponseDtoWindow[keyof typeof FeaturePolicyResponseDtoWindow];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const FeaturePolicyResponseDtoWindow = {
+  day: 'day',
+  week: 'week',
+  month: 'month',
+} as const;
+
+export interface FeaturePolicyResponseDto {
+  id: FeaturePolicyResponseDtoId;
+  freeEnabled: boolean;
+  limit: number;
+  window: FeaturePolicyResponseDtoWindow;
+}
+
+export type SubscriptionResponseDtoStatus = typeof SubscriptionResponseDtoStatus[keyof typeof SubscriptionResponseDtoStatus];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const SubscriptionResponseDtoStatus = {
+  INCOMPLETE: 'INCOMPLETE',
+  TRIALING: 'TRIALING',
+  ACTIVE: 'ACTIVE',
+  PAST_DUE: 'PAST_DUE',
+  CANCELED: 'CANCELED',
+  EXPIRED: 'EXPIRED',
+} as const;
+
+export interface SubscriptionResponseDto {
+  id: string;
+  planId: string;
+  status: SubscriptionResponseDtoStatus;
+  startedAt: string;
+  /** @nullable */
+  trialEndsAt: string | null;
+  /** @nullable */
+  currentPeriodStart: string | null;
+  /** @nullable */
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+  sponsored: boolean;
+}
+
+export type EntitlementResponseDtoTier = typeof EntitlementResponseDtoTier[keyof typeof EntitlementResponseDtoTier];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const EntitlementResponseDtoTier = {
+  FREE: 'FREE',
+  PREMIUM: 'PREMIUM',
+} as const;
+
+export interface EntitlementResponseDto {
+  tier: EntitlementResponseDtoTier;
+  isPremium: boolean;
+  /** @nullable */
+  validUntil: string | null;
+  reason: string;
+}
+
+export interface SubscriptionDiscountResponseDto {
+  listPriceMinor: number;
+  discountMinor: number;
+  chargedPriceMinor: number;
+  periodsRemaining: number;
+}
+
+export type TrialEligibilityResponseDtoReason = typeof TrialEligibilityResponseDtoReason[keyof typeof TrialEligibilityResponseDtoReason];
+
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const TrialEligibilityResponseDtoReason = {
+  AVAILABLE: 'AVAILABLE',
+  PHONE_REQUIRED: 'PHONE_REQUIRED',
+  ACCOUNT_USED: 'ACCOUNT_USED',
+  PHONE_USED: 'PHONE_USED',
+  PENDING: 'PENDING',
+  NO_TRIAL: 'NO_TRIAL',
+} as const;
+
+export interface TrialEligibilityResponseDto {
+  eligible: boolean;
+  reason: TrialEligibilityResponseDtoReason;
+}
+
+/**
+ * @nullable
+ */
+export type SubscriptionViewResponseDtoSubscription = SubscriptionResponseDto | null;
+
+export type SubscriptionViewResponseDtoFeatures = {[key: string]: FeaturePolicyResponseDto};
+
+/**
+ * @nullable
+ */
+export type SubscriptionViewResponseDtoDiscount = SubscriptionDiscountResponseDto | null;
+
+export interface SubscriptionViewResponseDto {
+  /** @nullable */
+  subscription: SubscriptionViewResponseDtoSubscription;
+  entitlement: EntitlementResponseDto;
+  features: SubscriptionViewResponseDtoFeatures;
+  /** @nullable */
+  discount: SubscriptionViewResponseDtoDiscount;
+  trialEligibility: TrialEligibilityResponseDto;
+  /** @nullable */
+  pendingTrialCheckoutUrl: string | null;
+  /** @nullable */
+  pendingCheckoutUrl: string | null;
+}
+
 export interface PromotionOffersDto { [key: string]: unknown }
 
-export interface CheckoutDto { [key: string]: unknown }
+export interface CheckoutDto {
+  /** @maxLength 64 */
+  planId: string;
+  code?: string;
+  /** True requires an eligible carded trial. False purchases directly. Omission preserves automatic trial selection. */
+  useTrial?: boolean;
+}
 
 export interface CreateAnalysisPlanTaskDto {
   /**
@@ -4422,7 +4561,7 @@ export const subscriptionsControllerListPlans = async ( options?: RequestInit): 
 
 
 export type subscriptionsControllerGetMineResponse200 = {
-  data: void
+  data: SubscriptionViewResponseDto
   status: 200
 }
     
@@ -4523,7 +4662,7 @@ export const subscriptionsControllerCheckout = async (checkoutDto: CheckoutDto, 
 
 
 export type subscriptionsControllerCancelResponse200 = {
-  data: void
+  data: SubscriptionViewResponseDto
   status: 200
 }
     

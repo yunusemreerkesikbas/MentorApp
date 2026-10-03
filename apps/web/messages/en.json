@@ -954,6 +954,8 @@
     }
   },
   "phone": {
+    "privacy_notice": "Personal data protection notice",
+    "purpose": "Phone verification unlocks a coach account, trial or coach-sponsored Premium when eligible. It does not give marketing consent.",
     "title": "Phone verification",
     "loading": "Loading phone details",
     "hint": "You can verify a Turkish mobile number by SMS. Your number stays off your public profile.",
@@ -983,6 +985,13 @@
     }
   },
   "subscription": {
+    "trial_phone_retention": "When your trial starts, a record that your phone was used for a trial is kept for 12 months. That period continues if you change your number or delete your account.",
+    "pending_paid_resume": "Your checkout is still open. You can continue on the saved payment screen.",
+    "cancel_pending_paid_button": "Cancel pending payment",
+    "cancel_pending_paid_confirm_title": "Cancel pending payment?",
+    "cancel_pending_paid_confirm_message": "We will cancel your open checkout. You can start again once the payment provider confirms the cancellation.",
+    "cancel_pending_paid_success_message": "Your pending payment request was cancelled. You can start again.",
+    "pending_paid_unknown": "The result of your payment is still unknown. You can return here later or find support in settings if it continues.",
     "continue_payment": "Continue payment",
     "pending_trial_resume": "Your trial checkout is still open. You can continue on the saved payment screen.",
     "pending_trial_unknown": "The result of your trial payment is still unknown. You can return here later or find support in settings if it continues.",
@@ -3392,7 +3401,7 @@
     "group_earlier": "Earlier"
   },
   "mentorship": {
-    "sponsored_premium_pending": "Your coach connection is active. Premium support is waiting for you and your coach to verify your phone numbers.",
+    "sponsored_premium_pending": "Your coach connection is active. Premium support is waiting for phone verification and your coach’s email verification.",
     "weekly_report_limitation_LIMITED_MOCK_ATTEMPTS": "At least one week has fewer than two mock attempts, limiting the comparison.",
     "weekly_report_limitation_MOCK_PUBLISHERS_DIFFER": "The publishers differ between weeks. A change in net score alone does not establish improvement or decline.",
     "preparation_attempts": "Mock attempts: {previous} → {current}",

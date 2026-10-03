@@ -11,9 +11,10 @@ export type PhoneTrialClaim = typeof phoneTrialClaims.$inferSelect;
 export class PhoneTrialsRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  findPendingForUser(userId: string): Promise<PhoneTrialClaim | undefined> {
-    return withServiceContext(this.db, async (tx) => (await tx.select().from(phoneTrialClaims)
-      .where(and(eq(phoneTrialClaims.userId, userId), eq(phoneTrialClaims.status, "PENDING"))).limit(1))[0]);
+  findPendingForUser(userId: string, tx?: DatabaseTx): Promise<PhoneTrialClaim | undefined> {
+    const read = async (exec: DatabaseTx) => (await exec.select().from(phoneTrialClaims)
+      .where(and(eq(phoneTrialClaims.userId, userId), eq(phoneTrialClaims.status, "PENDING"))).limit(1))[0];
+    return tx ? read(tx) : withServiceContext(this.db, read);
   }
 
   findByFingerprint(fingerprint: string): Promise<PhoneTrialClaim | undefined> {

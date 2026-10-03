@@ -4,6 +4,7 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
 import { todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
+import { coachContactVerification } from "../application/coach-contact-verification";
 import { needsAttention } from "../domain/attention";
 import { evaluateRiskFlags, type RiskThresholds } from "../domain/risk-flags";
 import type {
@@ -36,7 +37,7 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
   async listRiskDigestCandidates(now: Date): Promise<CoachRiskDigestCandidate[]> {
     const activePairs = await this.links.listAllActiveLinks();
     const coachIds = [...new Set(activePairs.map((pair) => pair.coachId))];
-    const verified = await Promise.all(coachIds.map((id) => this.users.isPhoneVerified(id)));
+    const verified = await Promise.all(coachIds.map(async (id) => (await coachContactVerification(this.users, id)) === null));
     const verifiedCoachIds = new Set(coachIds.filter((_, index) => verified[index]));
     const pairs = activePairs.filter((pair) => verifiedCoachIds.has(pair.coachId));
     if (pairs.length === 0) return [];
@@ -100,7 +101,7 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
       [...byCoach].map(async ([coachId, students]) => ({
         coachId,
         students,
-        contact: await this.users.getNotificationContact(coachId),
+        contact: await this.users.getVerifiedNotificationContact(coachId),
       })),
     );
 

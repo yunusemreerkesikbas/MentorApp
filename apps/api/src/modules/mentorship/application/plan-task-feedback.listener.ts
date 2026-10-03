@@ -1,3 +1,4 @@
+import { coachContactVerification } from "./coach-contact-verification";
 import { Injectable, Logger } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import { OnEvent } from "@nestjs/event-emitter";
@@ -111,7 +112,7 @@ export class PlanTaskFeedbackListener {
       await emit(
         link,
         people.get(event.userId)?.displayName ?? "",
-        await this.users.isPhoneVerified(link.coachId),
+        (await coachContactVerification(this.users, link.coachId)) === null,
       );
     } catch (err) {
       // Logged, not swallowed silently: the plan change already committed, so throwing here would

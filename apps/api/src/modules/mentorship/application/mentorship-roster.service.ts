@@ -82,7 +82,7 @@ export class MentorshipRosterService {
     now = new Date(),
   ): Promise<Paginated<MentorshipRosterRowDto>> {
     await this.linkService.assertEnabled();
-    await this.linkService.assertCoachPhoneVerified(coachId);
+    await this.linkService.assertCoachVerifiedContacts(coachId);
     const { rows, total } = await this.links.listByCoach(
       coachId,
       status,

@@ -2357,7 +2357,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionViewResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2443,7 +2450,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionViewResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -11047,13 +11061,257 @@
         "type": "object",
         "properties": {}
       },
+      "FeaturePolicyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "coach.chat",
+              "photo.categorize",
+              "plan.ai",
+              "mood.reflection",
+              "ghost.narration",
+              "vision.note",
+              "session.reflection",
+              "weekly.narration",
+              "daily.greeting",
+              "deep.analysis",
+              "mentorship.brief",
+              "mentorship.cohort_brief",
+              "mentorship.suggestions"
+            ]
+          },
+          "freeEnabled": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "freeEnabled",
+          "limit",
+          "window"
+        ]
+      },
+      "SubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "INCOMPLETE",
+              "TRIALING",
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED",
+              "EXPIRED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentPeriodStart": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean"
+          },
+          "sponsored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "status",
+          "startedAt",
+          "trialEndsAt",
+          "currentPeriodStart",
+          "currentPeriodEnd",
+          "cancelAtPeriodEnd",
+          "sponsored"
+        ]
+      },
+      "EntitlementResponseDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "isPremium",
+          "validUntil",
+          "reason"
+        ]
+      },
+      "SubscriptionDiscountResponseDto": {
+        "type": "object",
+        "properties": {
+          "listPriceMinor": {
+            "type": "number"
+          },
+          "discountMinor": {
+            "type": "number"
+          },
+          "chargedPriceMinor": {
+            "type": "number"
+          },
+          "periodsRemaining": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "listPriceMinor",
+          "discountMinor",
+          "chargedPriceMinor",
+          "periodsRemaining"
+        ]
+      },
+      "TrialEligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "PHONE_REQUIRED",
+              "ACCOUNT_USED",
+              "PHONE_USED",
+              "PENDING",
+              "NO_TRIAL"
+            ]
+          }
+        },
+        "required": [
+          "eligible",
+          "reason"
+        ]
+      },
+      "SubscriptionViewResponseDto": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionResponseDto"
+              }
+            ]
+          },
+          "entitlement": {
+            "$ref": "#/components/schemas/EntitlementResponseDto"
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FeaturePolicyResponseDto"
+            }
+          },
+          "discount": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionDiscountResponseDto"
+              }
+            ]
+          },
+          "trialEligibility": {
+            "$ref": "#/components/schemas/TrialEligibilityResponseDto"
+          },
+          "pendingTrialCheckoutUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "pendingCheckoutUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "subscription",
+          "entitlement",
+          "features",
+          "discount",
+          "trialEligibility",
+          "pendingTrialCheckoutUrl",
+          "pendingCheckoutUrl"
+        ]
+      },
       "PromotionOffersDto": {
         "type": "object",
         "properties": {}
       },
       "CheckoutDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "planId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string"
+          },
+          "useTrial": {
+            "type": "boolean",
+            "description": "True requires an eligible carded trial. False purchases directly. Omission preserves automatic trial selection."
+          }
+        },
+        "required": [
+          "planId"
+        ]
       },
       "CreateAnalysisPlanTaskDto": {
         "type": "object",

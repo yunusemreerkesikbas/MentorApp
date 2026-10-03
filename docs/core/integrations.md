@@ -7,6 +7,7 @@
 |---|---|---|---|
 | **Neon** | Postgres + pgvector (DB) | `DATABASE_URL` | MVP |
 | **Own JWT** | Auth (access/refresh) | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET` | MVP |
+| **Netgsm** | Turkey mobile verification SMS, application-owned OTP | `SMS_PROVIDER`, `NETGSM_*`, `PHONE_OTP_SECRET`, `PHONE_FINGERPRINT_SECRET` | Coach/trial rollout |
 | **OpenAI** | AI text, embeddings + vision classification | `OPENAI_API_KEY`, `OPENAI_*_MODEL`, `AI_PROVIDER`, `VISION_PROVIDER` | MVP |
 | **Gemini** | AI vision (photo→categorize) | `GEMINI_API_KEY`, `GEMINI_MODEL`, `VISION_PROVIDER` | MVP (premium) |
 | **iyzico** | Subscription/payments | `IYZICO_*` | MVP |
@@ -44,6 +45,38 @@
 1. **Company required** (at least sole proprietorship) + documents + legal web pages → application (§7, Phase 0).
 2. Sandbox credentials → `IYZICO_*` (`IYZICO_BASE_URL=sandbox`).
 3. Webhook must be **idempotent** (no double coin/subscription §8). Card data at iyzico (PCI not ours).
+
+### Netgsm (phone verification)
+
+- Keep `SMS_PROVIDER=disabled`, `identity.phone.enabled=false` and
+  `mentorship.seats.sponsorship_enabled=false` until setup and the delivery pilot are complete.
+- Obtain an approved sender header and OTP package. Create an API subuser with only the required
+  OTP permission, restrict it to the verified Render outbound IP ranges, and use its API password
+  rather than the main account password. Configure `NETGSM_USERCODE`, `NETGSM_API_PASSWORD`,
+  `NETGSM_MSGHEADER` and two independent random secrets of at least 32 characters.
+- Transport is native HTTPS POST to Netgsm's OTP REST v2 endpoint, with a fixed ASCII template,
+  a five-second timeout and no automatic retry. A timeout can mean a delivered SMS; the challenge
+  remains confirmable until expiry. Definitive rejection never verifies the phone.
+- Every send verifies Turnstile action `phone-verification`. Confirm the hostname matches the web
+  deployment and configure the matching site key. Codes, raw phones and credentials must never
+  appear in logs, monitoring, jobs or analytics. Local tests inject an in-memory adapter; there
+  is no production fixed-code mode.
+- Start with central registry limits: 5-minute code, 60-second resend, five guesses per challenge,
+  20 failed guesses per account/rolling 24h, ten SMS sends per account and target/rolling 24h,
+  100 global sends/rolling 24h and 1,000 per UTC calendar month. Lower a limit to zero to stop the
+  corresponding operation. Limits count attempted sends even when transport rejects them.
+- The existing daily reminder cron also purges expired phone challenges, OTP abuse counters older
+  than 32 days, and consumed trial fingerprints after 12 calendar months. Pending payment outcomes
+  have no automatic expiry; reconcile with provider evidence before releasing them.
+- Keep `PHONE_FINGERPRINT_SECRET` stable through retention. Changing it without a controlled
+  migration would reset phone-based trial matching and number-send accounting. Confirm Netgsm's
+  retention/support terms and publish the verification purpose and trial retention notice.
+- Pilot only with consented Turkcell, Vodafone and Turk Telekom numbers; record aggregate delivery
+  time and completion rates without phone/code data. Enable verification first, then sponsorship
+  only after the acceptance checks. The iyzico skeleton still blocks real carded-trial acceptance.
+
+Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/),
+[API preparation](https://bilgibankasi.netgsm.com.tr/entegrasyonlar/api-entegrasyonu-hazirlik-rehberi).
 
 ### Cloudflare (R2 + Turnstile + Access)
 - R2 bucket (zero egress) → `R2_*`. Turnstile site (signup/forum) → secret + public site key.

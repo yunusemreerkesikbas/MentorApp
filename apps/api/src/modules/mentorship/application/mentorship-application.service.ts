@@ -39,7 +39,7 @@ const QUEUE_LIMIT = 200;
  *   1. {@link assertCanInvite} — the ONE gate. COACH by itself opens nothing: the roster is empty,
  *      every student-scoped read goes through `requireActiveLink` and 404s. The only road to a
  *      student's data is an invite code, which requires verified email, verified phone and an
- *      ACTIVE registry row. Existing links also recheck the coach's verified phone.
+ *      ACTIVE registry row. Existing links also recheck the coach's current verified contacts.
  *   2. The admin can take it back ({@link setStatus}), which is why `canRegister` refuses every
  *      existing row: registration writes ACTIVE, so a suspended coach who could re-register would
  *      erase their own suspension.

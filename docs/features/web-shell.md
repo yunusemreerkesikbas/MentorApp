@@ -1101,3 +1101,19 @@ eklendi.
   is now a plain blue, bold caption with the same 14 px premium Sparkles glyph and spacing as
   `CompanionBubble`, replacing the bordered Chip. Usage and premium gating are unchanged. Related:
   `dashboard/_components/vision-board-card.tsx`, `components/panel/companion-bubble.tsx`.
+
+- **2026-10-03 — Phone purpose, trial retention and pending payment recovery (APP-114).**
+  Phone verification explains eligible coach/trial/sponsored Premium access without marketing
+  consent; choosing a trial explains that its phone-use record remains for 12 months after a
+  number change or account deletion. Subscription and paywall resume the owner-only stored URL
+  for either trial or paid `INCOMPLETE` checkouts. Unknown outcomes show wait/support and suppress
+  new purchases and cancellation. A failed checkout re-reads backend state before another attempt;
+  a failed recovery read keeps purchase unavailable until reload/reopen. Known pending cancellation
+  follows the provider-confirmed API path. Related: `components/phone-verification-card.tsx`,
+  `components/premium/{subscription-purchase-choice,pending-checkout,premium-paywall-modal}.tsx`,
+  `subscription/_components/subscription-shell.tsx`, `messages/{tr,en}.json`,
+  `e2e/phone-verification.spec.ts`. OTP resend/expiry remain server deadlines; frontend eligibility
+  is never inferred from the entered phone or successful SMS alone.
+  The paywall body scrolls independently below its fixed header and above its checkout footer;
+  desktop height follows the kit modal's 90dvh cap. The phone flow remains reachable on mobile
+  and desktop, covered by a real clipboard-paste and control-bounds browser regression.

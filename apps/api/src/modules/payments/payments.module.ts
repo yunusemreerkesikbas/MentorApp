@@ -13,7 +13,7 @@ import { SponsoredSeatListener } from "./application/sponsored-seat.listener";
 import { SponsoredSeatService } from "./application/sponsored-seat.service";
 import { FeaturePolicyService } from "./application/feature-policy.service";
 import { PhoneTrialService } from "./application/phone-trial.service";
-import { TrialCheckoutService } from "./application/trial-checkout.service";
+import { CheckoutService } from "./application/checkout.service";
 import { PhoneTrialsRepository } from "./infrastructure/phone-trials.repository";
 import { SubscriptionMaintenanceService } from "./application/subscription-maintenance.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
@@ -50,7 +50,7 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     PaymentEventsRepository,
     PhoneTrialsRepository,
     PhoneTrialService,
-    TrialCheckoutService,
+    CheckoutService,
     PaymentRewardEventsService,
     PaymentEvidenceService,
     SubscriptionsService,

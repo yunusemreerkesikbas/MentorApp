@@ -32,6 +32,7 @@ export function SubscriptionPurchaseChoice({ eligibility, trialDays, wantsTrial,
           {t("trial_choice", { days: trialDays })}
         </label>
       </fieldset>
+      {wantsTrial ? <p className="text-caption text-[var(--color-secondary)]">{t("trial_phone_retention")}</p> : null}
       {eligibility && !canChooseTrial ? <p className="text-caption text-[var(--color-secondary)]">{t(`trial_reason_${eligibility.reason}`)}</p> : null}
       {wantsTrial && eligibility?.reason === "PHONE_REQUIRED" ? (
         <PhoneVerificationCard onStatusChange={(phone) => { if (phone.verified) onPhoneVerified(); }} />

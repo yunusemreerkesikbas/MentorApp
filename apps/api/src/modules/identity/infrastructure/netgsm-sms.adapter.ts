@@ -37,7 +37,7 @@ export class NetgsmSmsAdapter {
       if (body.code === "00" && "jobid" in body && typeof body.jobid === "string") {
         return { status: "SENT", jobId: body.jobid };
       }
-      return typeof body.code === "string" && ["30", "40", "41", "50", "51", "52", "60"].includes(body.code)
+      return typeof body.code === "string" && ["20", "30", "40", "41", "50", "51", "52", "60", "70"].includes(body.code)
         ? { status: "FAILED" } : { status: "UNKNOWN" };
     } catch {
       // Do not log exception text, request/response bodies, phone, code, or credentials.

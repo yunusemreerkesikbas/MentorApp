@@ -46,6 +46,11 @@ export class SeatEventsListener {
     return this.reseat(event.userId);
   }
 
+  @OnEvent(IdentityEventTopic.EMAIL_VERIFIED)
+  onEmailVerified(event: { userId: string }): Promise<void> {
+    return this.reseat(event.userId);
+  }
+
   private async reseat(userId: string): Promise<void> {
     await this.links.reseatForUser(userId).catch((err: unknown) => {
       this.logger.error(`Reseat after an eligibility change failed for user ${userId}`, err);

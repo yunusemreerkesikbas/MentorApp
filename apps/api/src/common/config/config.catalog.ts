@@ -123,12 +123,13 @@ const identityCount = (
   def: number,
   max: number,
   description: string,
+  sensitive = false,
 ): ConfigEntryDef => ({
   category: ConfigCategory.IDENTITY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
   default: def,
-  sensitive: false,
+  sensitive,
   description,
 });
 
@@ -887,8 +888,8 @@ export const CONFIG_CATALOG = {
   "identity.phone.challenge_attempts": identityCount(5, 10, "Maximum wrong codes per challenge."),
   "identity.phone.failed_daily_limit": identityCount(20, 100, "Wrong codes per account per rolling 24 hours."),
   "identity.phone.send_daily_limit": identityCount(10, 100, "SMS sends per account and number per rolling 24 hours."),
-  "identity.phone.global_daily_limit": identityCount(100, 10000, "Global SMS sends per rolling 24 hours."),
-  "identity.phone.global_monthly_limit": identityCount(1000, 100000, "Global SMS sends per UTC calendar month."),
+  "identity.phone.global_daily_limit": identityCount(100, 10000, "Global SMS sends per rolling 24 hours.", true),
+  "identity.phone.global_monthly_limit": identityCount(1000, 100000, "Global SMS sends per UTC calendar month.", true),
   "identity.phone.provider_timeout_ms": identityCount(5000, 15000, "Netgsm request timeout. Ambiguous requests are never retried automatically."),
   "identity.phone.reauthentication_seconds": identityCount(600, 600, "Fresh login required to change a verified phone; refresh does not count."),
 } as const satisfies Record<string, ConfigEntryDef>;

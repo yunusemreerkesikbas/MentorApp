@@ -46,6 +46,7 @@ const subscription: SubscriptionView = {
   discount: null,
   trialEligibility: { eligible: true, reason: "AVAILABLE" },
   pendingTrialCheckoutUrl: null,
+  pendingCheckoutUrl: null,
 };
 
 const LIST_PRICE_OFFERS: PromotionOffersView = {

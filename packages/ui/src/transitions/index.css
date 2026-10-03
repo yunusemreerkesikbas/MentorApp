@@ -754,6 +754,16 @@
   border-color: var(--color-main);
 }
 
+/* Progress blue fill. Ink is --play-cta-ink: white on #55ACEE is ~2.4:1. */
+.t-check.t-check-accent[aria-checked="true"] {
+  background: var(--play-cta);
+  border-color: var(--play-cta);
+}
+
+.t-check.t-check-accent[aria-checked="true"] svg path {
+  stroke: var(--play-cta-ink);
+}
+
 .t-check svg {
   width: 12px;
   height: 12px;

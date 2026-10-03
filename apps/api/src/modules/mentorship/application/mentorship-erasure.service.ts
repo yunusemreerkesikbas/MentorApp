@@ -1,5 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { PlanService } from "../../coaching/application/plan.service";
+import { SponsoredSeatService } from "../../payments/application/sponsored-seat.service";
 import { MentorshipApplicationRepository } from "../infrastructure/mentorship-application.repository";
 import { MentorshipCohortBriefRepository } from "../infrastructure/mentorship-cohort-brief.repository";
 import { MentorshipInviteCodeRepository } from "../infrastructure/mentorship-invite-code.repository";
@@ -49,9 +50,14 @@ export class MentorshipErasureService {
     private readonly applications: MentorshipApplicationRepository,
     private readonly cohortBriefs: MentorshipCohortBriefRepository,
     private readonly plan: PlanService,
+    private readonly seats: SponsoredSeatService,
   ) {}
 
   async eraseUserData(userId: string): Promise<void> {
+    // Preserve sponsor_link_id until revocation succeeds. END is committed first so a delayed
+    // grant cannot create sponsorship between revocation and deletion; failure leaves a retryable link.
+    const affectedLinkIds = await this.links.endForUser(userId);
+    for (const linkId of affectedLinkIds) await this.seats.revoke(linkId);
     const purgedLinkIds = await this.links.purgeForUser(userId);
     await this.plan.clearMentorshipOrigin(purgedLinkIds);
     await this.codes.purgeForCoach(userId);

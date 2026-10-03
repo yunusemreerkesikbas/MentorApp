@@ -5,6 +5,28 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { resolveExamVariantPatch, UsersService } from "./users.service";
 
+describe("UsersService verified notification contact", () => {
+  const verified = { status: "ACTIVE", email: "verified@test.local", displayName: "Coach",
+    emailVerifiedAt: new Date(), phoneVerifiedAt: new Date(), phoneNumber: "+905321234567" };
+  const serviceFor = (row: unknown) => new UsersService(
+    { findByIdService: vi.fn().mockResolvedValue(row) } as never, {} as never, {} as never,
+  );
+
+  it("returns the verified contact from one identity snapshot", async () => {
+    expect(await serviceFor(verified).getVerifiedNotificationContact("coach")).toEqual({
+      email: verified.email, displayName: verified.displayName,
+    });
+  });
+
+  it.each([
+    { ...verified, emailVerifiedAt: null }, { ...verified, phoneVerifiedAt: null },
+    { ...verified, phoneNumber: null }, { ...verified, status: "SUSPENDED" }, undefined,
+    { ...verified, erasureStartedAt: new Date() },
+  ])("does not release student digest contact to an unverified/inactive identity", async (row) => {
+    expect(await serviceFor(row).getVerifiedNotificationContact("coach")).toBeNull();
+  });
+});
+
 describe("usernameSchema", () => {
   it("normalizes valid usernames", () => {
     expect(usernameSchema.parse(" Student_01 ")).toBe("student_01");

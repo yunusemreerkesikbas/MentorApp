@@ -100,6 +100,14 @@ targetId, before, after })` for rich diffs.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-03 · Safe phone conflicts when reactivating an account (APP-114).**
+  `PATCH /v1/admin/users/:id/status` returns localized `AUTH_PHONE_UNAVAILABLE` (409) when
+  another active account has verified the suspended user's former phone. The failed update
+  leaves the account suspended; resolve the phone ownership conflict before retrying activation.
+  Only the active-phone unique index is translated, so unrelated database failures remain visible
+  to normal error handling. Related: `admin-users.service.ts`, its unit spec, and
+  `test/admin-phone-reactivation.e2e-spec.ts` under `apps/api`.
+
 - **2026-09-24 · Login fields have real labels.** Stage 4 Chrome QA found that the visible email
   and password labels were not associated with their inputs. The admin login form now uses matching
   `htmlFor` and `id` values so keyboard and assistive-technology users can identify the fields, and

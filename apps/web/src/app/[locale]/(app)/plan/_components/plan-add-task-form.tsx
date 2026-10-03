@@ -1,8 +1,9 @@
 "use client";
 
-import { forwardRef, useEffect, useImperativeHandle, useState } from "react";
+import { forwardRef, useEffect, useId, useImperativeHandle, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { TextAreaField, TextField } from "@mentor/ui";
+import { CheckBox, Skeleton, TextAreaField, TextField, skeletonStaggerStyle } from "@mentor/ui";
 import { studyDurationMinutesSchema } from "@mentor/validation";
 import { SESSION_FOCUS_MINUTES_MIN, SESSION_FOCUS_MINUTES_MAX, SESSION_FOCUS_MINUTES_STEP } from "@mentor/types";
 import { FormError } from "@/components/form";
@@ -12,6 +13,8 @@ import {
 } from "@/components/subject-picker";
 import { useExamSubjectTaxonomy } from "@/lib/use-exam-subject-taxonomy";
 import { PlanSubjectPicker } from "./plan-subject-picker";
+import { PlanTimeField } from "./plan-time-field";
+import { canonicalHm } from "./plan-time";
 import { Link } from "@/i18n/navigation";
 import { loadAnalysisPlanFocus, validAnalysisTaskDate, type AnalysisFocusRefs } from "@/lib/analysis-plan-focus";
 
@@ -66,6 +69,9 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
     ref,
   ) {
     const t = useTranslations("plan");
+    const reduceMotion = useReducedMotion();
+    const allDayId = useId();
+    const allDayLabelId = useId();
     const taxonomy = useExamSubjectTaxonomy();
     const [title, setTitle] = useState(initialTitle);
     const [taskDate, setTaskDate] = useState(initialTaskDate);
@@ -101,8 +107,8 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
         title,
         durationMinutes: duration === "" ? null : Number(duration),
         subject: displayFocus?.subjectName ?? subject,
-        startTime: allDay ? null : startTime,
-        endTime: allDay || !endTime ? null : endTime,
+        startTime: allDay ? null : (canonicalHm(startTime) ?? startTime),
+        endTime: allDay || !endTime.trim() ? null : (canonicalHm(endTime) ?? endTime),
         description: description.trim() ? description.trim() : null,
       }),
       validate: () => {
@@ -120,9 +126,13 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
           setError(t("task_required"));
           return false;
         }
-        if (!allDay && endTime && endTime <= startTime) {
-          setError(t("time_invalid"));
-          return false;
+        if (!allDay) {
+          const start = canonicalHm(startTime);
+          const end = endTime.trim() ? canonicalHm(endTime) : null;
+          if (!start || (endTime.trim() && !end) || (end && end <= start)) {
+            setError(t("time_invalid"));
+            return false;
+          }
         }
         setError(null);
         return true;
@@ -134,11 +144,14 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
       return (
         <div className="flex flex-col gap-3">
           <TaskTitleFieldSkeleton loadingLabel={t("loading")} />
+          <Skeleton className="h-11 w-28 rounded-[var(--radius-card)]" style={skeletonStaggerStyle(2)} />
           <SubjectChipsSkeleton
             layout="stacked"
             pickLabel={t("subject_pick_label")}
             loadingLabel={t("loading")}
           />
+          <Skeleton className="h-11 w-36 rounded-[var(--radius-card)]" style={skeletonStaggerStyle(3)} />
+          <Skeleton className="h-24 w-full rounded-[var(--radius-card)]" style={skeletonStaggerStyle(4)} />
         </div>
       );
     }
@@ -162,48 +175,67 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
           required
         />
 
-        <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium">
-          <input
-            type="checkbox"
+        <label htmlFor={allDayId} className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium">
+          <CheckBox
+            id={allDayId}
+            className="t-check-accent"
             checked={allDay}
-            onChange={(e) => {
-              setAllDay(e.target.checked);
+            aria-labelledby={allDayLabelId}
+            onChange={(checked) => {
+              setAllDay(checked);
               if (error) setError(null);
             }}
-            className="h-5 w-5 cursor-pointer rounded-[6px]"
-            style={{ accentColor: "var(--color-progress)" }}
           />
-          <span style={{ color: "var(--color-main)" }}>{t("all_day")}</span>
+          <span id={allDayLabelId} style={{ color: "var(--color-main)" }}>{t("all_day")}</span>
         </label>
 
-        {!allDay ? (
-          <div className="flex items-end gap-3">
-            {/* Native time input: no picker dependency, and it gets the platform keyboard. */}
-            <TextField
-              type="time"
-              className="flex-1"
-              label={t("time_start")}
-              value={startTime}
-              onChange={(e) => {
-                const next = e.target.value;
-                setStartTime(next);
-                if (next && endTime && endTime <= next) setEndTime(plusOneHour(next));
-                if (error) setError(null);
-              }}
-              required
-            />
-            <TextField
-              type="time"
-              className="flex-1"
-              label={t("time_end")}
-              value={endTime}
-              onChange={(e) => {
-                setEndTime(e.target.value);
-                if (error) setError(null);
-              }}
-            />
-          </div>
-        ) : null}
+        <AnimatePresence initial={false}>
+          {!allDay ? (
+            <motion.div
+              key="task-times"
+              initial={reduceMotion ? false : { height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={
+                reduceMotion
+                  ? { opacity: 0, transition: { duration: 0.15 } }
+                  : {
+                      height: 0,
+                      opacity: 0,
+                      transition: { duration: 0.15, ease: [0.22, 1, 0.36, 1] as const },
+                    }
+              }
+              transition={
+                reduceMotion
+                  ? { duration: 0.15 }
+                  : { duration: 0.25, ease: [0.22, 1, 0.36, 1] as const }
+              }
+              className="overflow-hidden"
+            >
+              <div className="flex items-end gap-3 px-0.5 py-0.5">
+                <PlanTimeField
+                  label={t("time_start")}
+                  value={startTime}
+                  required
+                  onChange={(next) => {
+                    setStartTime(next);
+                    const start = canonicalHm(next);
+                    const end = canonicalHm(endTime);
+                    if (start && end && end <= start) setEndTime(plusOneHour(start));
+                    if (error) setError(null);
+                  }}
+                />
+                <PlanTimeField
+                  label={t("time_end")}
+                  value={endTime}
+                  onChange={(next) => {
+                    setEndTime(next);
+                    if (error) setError(null);
+                  }}
+                />
+              </div>
+            </motion.div>
+          ) : null}
+        </AnimatePresence>
 
         {analysisFocus || lockedFocus ? (
           <div
@@ -233,7 +265,7 @@ export const PlanAddTaskForm = forwardRef<PlanAddTaskFormHandle, PlanAddTaskForm
         <TextField
           type="number"
           label={t("duration_label")}
-          className="max-w-full self-start flex-row flex-wrap items-center gap-x-3 gap-y-1 [&>div]:w-36"
+          className="max-w-full self-start flex-row flex-wrap items-center gap-x-3 gap-y-1 [&>div]:w-36 [&_input]:[appearance:textfield] [&_input::-webkit-outer-spin-button]:appearance-none [&_input::-webkit-inner-spin-button]:appearance-none"
           dense
           value={duration}
           min={SESSION_FOCUS_MINUTES_MIN}

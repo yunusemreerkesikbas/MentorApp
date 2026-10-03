@@ -72,7 +72,7 @@ export class SendEmailHandler {
     );
     if (!(prefs?.emailEnabled ?? true)) return;
 
-    const contact = await this.users.getNotificationContact(coachId);
+    const contact = await this.users.getVerifiedNotificationContact(coachId);
     if (!contact) return;
 
     const delivery = {

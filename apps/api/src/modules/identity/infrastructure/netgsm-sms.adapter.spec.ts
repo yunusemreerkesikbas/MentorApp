@@ -24,9 +24,14 @@ describe("Netgsm OTP boundary", () => {
     expect(init.redirect).toBe("error");
   });
 
-  it.each(["30", "40", "41", "50", "51", "52", "60"])("maps definitive rejection %s without exposing provider payload", async (code) => {
+  it.each(["20", "30", "40", "41", "50", "51", "52", "60", "70"])("maps definitive rejection %s without exposing provider payload", async (code) => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code, message: "+905321234567 private" }))));
     expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "FAILED" });
+  });
+
+  it.each(["100", "unexpected"])("retains an unknown outcome for provider code %s", async (code) => {
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code }))));
+    expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "UNKNOWN" });
   });
 
   it("does not retry a timeout that may already have sent", async () => {
@@ -39,7 +44,7 @@ describe("Netgsm OTP boundary", () => {
   it("treats malformed/ambiguous acceptance conservatively", async () => {
     vi.stubGlobal("fetch", vi.fn(async () => new Response("not JSON")));
     expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "UNKNOWN" });
-    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: "00", jobid: 12345678901234567890 }))));
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ code: "00", jobid: Number("12345678901234567890") }))));
     expect(await makeAdapter().sendCode("+905321234567", "123456", 5000, 300)).toEqual({ status: "UNKNOWN" });
   });
 });

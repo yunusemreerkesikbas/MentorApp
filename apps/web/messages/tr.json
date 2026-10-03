@@ -954,6 +954,8 @@
     }
   },
   "phone": {
+    "privacy_notice": "KVKK aydınlatma metni",
+    "purpose": "Telefon doğrulama, uygun olduğunda koç hesabını, denemeyi ve koçun sağladığı Premium’u açmak için kullanılır. Bu, pazarlama izni değildir.",
     "title": "Telefon doğrulaması",
     "loading": "Telefon bilgisi yükleniyor",
     "hint": "Türkiye cep telefonu numaranı SMS ile doğrulayabilirsin. Numaran herkese açık profilinde paylaşılmaz.",
@@ -983,6 +985,13 @@
     }
   },
   "subscription": {
+    "trial_phone_retention": "Deneme başladığında telefonunun denemede kullanıldığına dair kayıt 12 ay saklanır. Numaranı değiştirsen veya hesabını silsen de bu süre devam eder.",
+    "pending_paid_resume": "Ödeme adımın açık. Kayıtlı ödeme ekranından devam edebilirsin.",
+    "cancel_pending_paid_button": "Bekleyen ödemeyi iptal et",
+    "cancel_pending_paid_confirm_title": "Bekleyen ödeme iptal edilsin mi?",
+    "cancel_pending_paid_confirm_message": "Açık ödeme adımını iptal edeceğiz. Ödeme sağlayıcısı iptali doğruladığında yeniden başlayabilirsin.",
+    "cancel_pending_paid_success_message": "Bekleyen ödeme isteğin iptal edildi. Yeniden başlayabilirsin.",
+    "pending_paid_unknown": "Ödemenin sonucu henüz belli değil. Biraz sonra buraya yeniden bakabilir, sürerse ayarlardan destek alabilirsin.",
     "continue_payment": "Ödemeye devam et",
     "pending_trial_resume": "Deneme ödeme adımın açık. Kayıtlı ödeme ekranından devam edebilirsin.",
     "pending_trial_unknown": "Deneme ödemesinin sonucu henüz belli değil. Biraz sonra buraya yeniden bakabilir, sürerse ayarlardan destek alabilirsin.",
@@ -3392,7 +3401,7 @@
     "group_earlier": "Daha eski"
   },
   "mentorship": {
-    "sponsored_premium_pending": "Koç bağlantın açık. Premium desteği için senin ve koçunun telefon doğrulaması bekleniyor.",
+    "sponsored_premium_pending": "Koç bağlantın açık. Premium desteği için telefon doğrulamaları ve koçunun e-posta doğrulaması bekleniyor.",
     "weekly_report_limitation_LIMITED_MOCK_ATTEMPTS": "Haftalardan en az birinde ikiden az deneme var; sonuç karşılaştırması sınırlı.",
     "weekly_report_limitation_MOCK_PUBLISHERS_DIFFER": "İki haftanın deneme yayıncıları farklı. Net farkı tek başına gelişim veya gerileme göstermez.",
     "preparation_attempts": "Deneme sayısı: {previous} → {current}",

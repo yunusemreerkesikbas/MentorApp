@@ -85,15 +85,16 @@ export class SubscriptionsRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /** The user's single non-terminal subscription (partial-unique enforced in DB). */
-  async findOpenForUser(userId: string): Promise<SubscriptionRow | undefined> {
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const rows = await tx
+  async findOpenForUser(userId: string, tx?: Exec): Promise<SubscriptionRow | undefined> {
+    const read = async (exec: Exec) => {
+      const rows = await exec
         .select()
         .from(subscriptions)
         .where(and(eq(subscriptions.userId, userId), notInArray(subscriptions.status, TERMINAL)))
         .limit(1);
       return rows[0];
-    });
+    };
+    return tx ? read(tx) : withUserContext(this.db, { userId }, read);
   }
 
   /**
@@ -326,9 +327,9 @@ export class SubscriptionsRepository {
   }
 
   /**
-   * Hard-delete a subscription row. Used ONLY to discard an abandoned, never-confirmed INCOMPLETE
-   * checkout so the user can retry — a deleted (vs expired) row also keeps trial-once intact, since
-   * an unpaid checkout never consumed the trial.
+   * Discard only a never-confirmed INCOMPLETE checkout after definitive provider rejection/cancel.
+   * Unknown outcomes retain the row. Deletion keeps trial-once intact because this checkout never
+   * granted access; confirmed subscriptions retain their history.
    */
   async deleteById(id: string, tx?: Exec): Promise<void> {
     await onServiceTx(this.db, tx, async (tx) => {

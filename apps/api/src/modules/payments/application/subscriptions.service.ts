@@ -20,7 +20,6 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { DomainError, NotFoundError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import type { AdminUpdatePlanInput } from "@mentor/validation";
-import { isUniqueViolation } from "../../../common/errors/postgres-error";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -39,6 +38,7 @@ import {
   PaymentsEventTopic,
   SubscriptionActivated,
   SubscriptionCanceled,
+  SubscriptionExpired,
 } from "../domain/payments.events";
 import { resolvePurchaseChannel, type PurchaseChannel } from "../domain/purchase-channel";
 import {
@@ -58,7 +58,7 @@ import { StreakService } from "../../coaching/application/streak.service";
 import { computeEntitlement, EntitlementService, hasLostAccess } from "./entitlement.service";
 import { FeaturePolicyService } from "./feature-policy.service";
 import { PhoneTrialService } from "./phone-trial.service";
-import { TrialCheckoutService } from "./trial-checkout.service";
+import { CheckoutService } from "./checkout.service";
 
 /** Identity-owned fields the promotion rules need; the controller crosses that seam, not us. */
 export interface CheckoutUser {
@@ -172,7 +172,7 @@ export class SubscriptionsService {
     @Inject(INVOICE_PORT) private readonly invoices: InvoicePort,
     private readonly rewardEvents: PaymentRewardEventsService,
     private readonly phoneTrials: PhoneTrialService,
-    private readonly trialCheckout: TrialCheckoutService,
+    private readonly checkoutService: CheckoutService,
   ) {}
 
   async listPlans(): Promise<PlanDto[]> {
@@ -247,6 +247,7 @@ export class SubscriptionsService {
       features,
       trialEligibility,
       pendingTrialCheckoutUrl,
+      pendingCheckoutUrl: sub?.status === SubscriptionStatus.INCOMPLETE ? sub.checkoutUrl ?? pendingTrialCheckoutUrl : null,
       discount: redemption
         ? {
             listPriceMinor: redemption.listPriceMinor,
@@ -549,14 +550,14 @@ export class SubscriptionsService {
       throw new DomainError(ErrorCode.PAYMENT_DISABLED, HttpStatus.SERVICE_UNAVAILABLE);
     }
 
-    const resumed = await this.phoneTrials.resume(user.id, plan.id, code, useTrial);
+    const resumed = await this.checkoutService.resume(user.id, plan, code, useTrial);
     if (resumed) return resumed;
     const open = await this.subsRepo.findOpenForUser(user.id);
     if (open && open.status !== SubscriptionStatus.INCOMPLETE && open.provider !== SUBSCRIPTION_PROVIDER_SPONSOR) {
       throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
     }
     const hadAny = await this.subsRepo.hasAnyForUser(user.id);
-    // Eligibility precedes retiring a sponsorship, abandoning an old checkout or provider I/O.
+    // Eligibility precedes retiring a sponsorship or provider I/O.
     const withTrial = await this.phoneTrials.selectTrial(user.id, plan.trialDays, useTrial, hadAny);
 
     const latest = await this.subsRepo.findLatestForUser(user.id);
@@ -572,101 +573,33 @@ export class SubscriptionsService {
     if (code && !offer.promotionId) this.rejectCode(offer.reason);
 
     const appUrl = this.config.get("APP_URL", { infer: true });
-    if (withTrial) {
-      return this.trialCheckout.start({ user, plan, offer, open, code, returnUrl: `${appUrl}/abonelik/sonuc` });
-    }
-    if (open?.status === SubscriptionStatus.INCOMPLETE) {
-      await this.promotions.voidForSubscription(open.id);
-      await this.subsRepo.deleteById(open.id);
-    } else if (open?.provider === SUBSCRIPTION_PROVIDER_SPONSOR) {
-      await this.subsRepo.expireSponsorship(open.id, new Date());
-    }
-    const { checkoutUrl, providerRef } = await this.provider.createCheckout({
-      userId: user.id,
-      userEmail: user.email,
-      plan: {
-        id: plan.id,
-        priceMinor: plan.priceMinor,
-        chargeAmountMinor: offer.chargedPriceMinor,
-        renewalAmountMinor: offer.renewalPriceMinor,
-        discountPeriods: offer.summary?.appliesToPeriods ?? 0,
-        currency: plan.currency,
-        periodMonths: plan.periodMonths,
-        trialDays: 0,
-      },
-      returnUrl: `${appUrl}/abonelik/sonuc`,
-    });
-
-    const now = new Date();
-    const periodEnd = addMonths(now, plan.periodMonths);
-
-    // Verification gate (§7): a provider with a hosted payment page (iyzico) creates an INCOMPLETE
-    // row that grants NO premium until its checkout_completed webhook activates it — an abandoned
-    // page must not grant access. The fake provider completes instantly, so it is granted its
-    // status right away. INCOMPLETE still records the intended trial/period for the activation step.
-    const initialStatus = this.provider.instantCheckout ? SubscriptionStatus.ACTIVE : SubscriptionStatus.INCOMPLETE;
-    try {
-      // One commit: a redemption without a subscription would hold a promotion seat forever, and a
-      // subscription without one would renew at the list price the user never agreed to.
-      // The provider call above stays OUTSIDE — external HTTP must never run inside a transaction.
-      await withServiceContext(this.db, async (tx) => {
-        const sub = await this.subsRepo.create(
-          {
-            userId: user.id,
-            planId: plan.id,
-            status: initialStatus,
-            provider: this.provider.provider,
-            providerRef,
-            trialEndsAt: null,
-            currentPeriodStart: now,
-            currentPeriodEnd: periodEnd,
-          },
-          tx,
-        );
-        await this.promotions.reserve({
-          tx,
-          offer,
-          userId: user.id,
-          orgId: user.orgId ?? null,
-          subscriptionId: sub.id,
-        });
-      });
-    } catch (err) {
-      // Concurrent double-checkout hit the partial-unique index (one open sub per user)
-      // → same stable code as the pre-check (review F3; mirrors the signup race fix).
-      if (isUniqueViolation(err)) {
-        throw new DomainError(ErrorCode.PAYMENT_ALREADY_SUBSCRIBED, HttpStatus.CONFLICT);
-      }
-      throw err;
-    }
-
-    return { checkoutUrl };
+    return this.checkoutService.start({ user, plan, offer, withTrial, useTrial, code, returnUrl: `${appUrl}/abonelik/sonuc` });
   }
-
   /** Self-serve cancel (§7): renewal stops; access until period end. Idempotent. */
   async cancel(userId: string, rolesHint?: string[]): Promise<SubscriptionView> {
     const sub = await this.subsRepo.findOpenForUser(userId);
     if (!sub) throw new NotFoundError();
 
-    if (sub.status === SubscriptionStatus.INCOMPLETE && sub.trialEndsAt) {
+    if (sub.status === SubscriptionStatus.INCOMPLETE) {
       if (!sub.providerRef) throw new DomainError(ErrorCode.PAYMENT_TRIAL_PENDING, HttpStatus.CONFLICT);
       await this.provider.cancel(sub.providerRef);
       const activatedMeanwhile = await withServiceContext(this.db, async (tx) => {
         const current = await this.subsRepo.lockById(sub.id, tx);
-        if (!current || current.status === SubscriptionStatus.EXPIRED) return false;
+        if (!current || current.status === SubscriptionStatus.EXPIRED) return null;
         if (current.status === SubscriptionStatus.INCOMPLETE) {
           await this.promotions.voidForSubscription(sub.id, tx);
           await this.phoneTrials.releaseForSubscription(sub.id, tx);
           await this.subsRepo.deleteById(sub.id, tx);
-          return false;
+          return "removed";
         }
         // Confirmation may win while provider.cancel is in flight. Keep its consumed claim and
         // access history; stopping renewal must never delete something already granted/charged.
         await this.subsRepo.update(sub.id, { status: SubscriptionStatus.CANCELED,
           cancelAtPeriodEnd: true, canceledAt: new Date() }, tx);
-        return true;
+        return "activated";
       });
-      if (activatedMeanwhile) this.events.emit(PaymentsEventTopic.SUBSCRIPTION_CANCELED, new SubscriptionCanceled(userId, sub.id, true));
+      if (activatedMeanwhile === "activated") this.events.emit(PaymentsEventTopic.SUBSCRIPTION_CANCELED, new SubscriptionCanceled(userId, sub.id, true));
+      if (activatedMeanwhile === "removed") this.events.emit(PaymentsEventTopic.SUBSCRIPTION_EXPIRED, new SubscriptionExpired(userId, sub.id, sub.planId));
       return this.getView(userId, rolesHint);
     }
 
@@ -801,12 +734,13 @@ export class SubscriptionsService {
         };
       }
       case "payment_failed": {
-        if (sub.status === SubscriptionStatus.INCOMPLETE && sub.trialEndsAt) {
+        if (sub.status === SubscriptionStatus.INCOMPLETE) {
           // The first checkout was definitively rejected; no access/ledger was granted.
           await this.promotions.voidForSubscription(sub.id, tx);
           await this.phoneTrials.releaseForSubscription(sub.id, tx);
           await this.subsRepo.deleteById(sub.id, tx);
-          return none;
+          return { emits: [{ topic: PaymentsEventTopic.SUBSCRIPTION_EXPIRED,
+            payload: new SubscriptionExpired(sub.userId, sub.id, sub.planId) }] };
         }
         await this.subsRepo.update(sub.id, { status: SubscriptionStatus.PAST_DUE }, tx);
         // A failed charge does NOT consume a discount period — only a succeeded one does.
@@ -840,11 +774,12 @@ export class SubscriptionsService {
         };
       }
       case "subscription_canceled": {
-        if (sub.status === SubscriptionStatus.INCOMPLETE && sub.trialEndsAt) {
+        if (sub.status === SubscriptionStatus.INCOMPLETE) {
           await this.promotions.voidForSubscription(sub.id, tx);
           await this.phoneTrials.releaseForSubscription(sub.id, tx);
           await this.subsRepo.deleteById(sub.id, tx);
-          return none;
+          return { emits: [{ topic: PaymentsEventTopic.SUBSCRIPTION_EXPIRED,
+            payload: new SubscriptionExpired(sub.userId, sub.id, sub.planId) }] };
         }
         await this.subsRepo.update(
           sub.id,
