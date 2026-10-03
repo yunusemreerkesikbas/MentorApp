@@ -279,13 +279,14 @@ export function useNotebookTurns({
         return true;
       }
 
-      // A hands-off turn waits for the pages it lands on (already read ahead, nearly always). A drag
-      // cannot wait: the finger is already moving, so it goes with what is here.
+      // A hands-off turn waits for the pages it lands on, but only when they are not already here
+      // (read ahead, nearly always): a turn that starts a frame late reads as the button lagging.
+      // A drag cannot wait at all: the finger is already moving, so it goes with what is here.
       if (!drag && target.view.kind === "spread" && target.view !== view) {
-        await within(
-          Promise.all([cache.ensure(target.view.left), cache.ensure(target.view.left + 1)]),
-          1500,
-        );
+        const { left } = target.view;
+        if (!cache.get(left) || !cache.get(left + 1)) {
+          await within(Promise.all([cache.ensure(left), cache.ensure(left + 1)]), 1500);
+        }
       }
 
       const width = box.width;
