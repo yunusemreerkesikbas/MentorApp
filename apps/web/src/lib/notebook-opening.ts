@@ -118,6 +118,15 @@ export const notebookOpening = {
     emit({ ...state, landing });
   },
 
+  /**
+   * Nothing in the air any more, whatever was: the shell that draws the flight is going (signed
+   * out, a lost session), and an opening left here would replay for whoever signs in next.
+   */
+  reset(): void {
+    if (!state.start) return;
+    emit({ run: state.run, ...IDLE });
+  },
+
   /** The overlay is gone. Leaves `run` so the next opening is still a new one. */
   finish(run: number): void {
     if (run !== state.run) return;

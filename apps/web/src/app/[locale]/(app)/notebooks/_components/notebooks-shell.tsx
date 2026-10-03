@@ -206,12 +206,14 @@ export function NotebooksShell() {
 
   /** A new notebook falls onto the desk, lands with a thud and a little dust; Puhu waves. */
   function drop(id: string) {
-    for (const timer of dropTimers.current) window.clearTimeout(timer);
+    // Changed in place: the unmount cleanup holds this array, and must see the timers set here.
+    const timers = dropTimers.current;
+    for (const timer of timers.splice(0)) window.clearTimeout(timer);
     setDroppingId(id);
-    dropTimers.current = [
+    timers.push(
       window.setTimeout(() => playNotebookSfx("land"), DROP_LAND_MS),
       window.setTimeout(() => setDroppingId(null), DROP_MS),
-    ];
+    );
   }
 
   async function handleSaved(

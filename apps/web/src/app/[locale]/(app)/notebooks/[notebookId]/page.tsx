@@ -8,5 +8,7 @@ export default async function CustomNotebookPage({
 }) {
   const { locale, notebookId } = await params;
   setRequestLocale(locale);
-  return <NotebookShell notebookId={notebookId} />;
+  // Keyed by the notebook: its page cache, unsaved pages and editor state belong to that notebook
+  // alone, and a shell reused for another one could show, then autosave, the wrong pages.
+  return <NotebookShell key={notebookId} notebookId={notebookId} />;
 }
