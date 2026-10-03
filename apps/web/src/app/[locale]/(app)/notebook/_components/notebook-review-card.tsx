@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import Image from "next/image";
 import {
   Check,
@@ -9,8 +9,8 @@ import {
   MessageCircleQuestion,
   Pencil,
   Repeat,
-  RotateCcw,
   Undo2,
+  X,
 } from "lucide-react";
 import {
   AnimatePresence,
@@ -66,6 +66,11 @@ export interface NotebookReviewCardProps {
   onSolutionNoteSave: (note: string | null) => Promise<void>;
   /** Full-size answer photo; null when this card has no solution photo. */
   onSolutionZoom: (() => void) | null;
+  /**
+   * Space turns the card. Off while something layered over the deck (the lightbox) or an answer in
+   * flight owns the moment, so the key cannot turn a card nobody is looking at.
+   */
+  shortcuts: boolean;
 }
 
 /**
@@ -102,12 +107,38 @@ export function NotebookReviewCard({
   onNoteSave,
   onSolutionNoteSave,
   onSolutionZoom,
+  shortcuts,
 }: NotebookReviewCardProps) {
   const t = useTranslations("notebook");
   const reduceMotion = useReducedMotion();
   const [flipped, setFlipped] = useState(false);
   /** A caret is in the note field: the card must stop answering and stop turning under it. */
   const [editing, setEditing] = useState(false);
+  /**
+   * The question photo failed to load. Without this the front was a blank white card with a
+   * browser broken-image glyph in the corner: nothing to recall, and no hint which mistake it was.
+   * The card falls back to the text-only front, which at least names the subject.
+   */
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const hasPhoto = Boolean(entry.url) && !photoFailed;
+
+  useEffect(() => {
+    if (!shortcuts || editing) return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key !== " " || event.repeat) return;
+      const target = event.target as HTMLElement | null;
+      if (target?.closest("input, textarea, select, [contenteditable]")) return;
+      // A focused control inside the deck already answers Space with its own click; turning the
+      // card as well would make the flip button a double flip and "Çözebildim" an answer plus a
+      // turn. Focus left *outside* the dialog (the shelf button that opened the deck keeps it) is
+      // the opposite case: the key is ours, and letting it through would press that button again.
+      if (target?.closest("button, a") && target.closest('[role="dialog"]')) return;
+      event.preventDefault();
+      setFlipped((current) => !current);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [editing, shortcuts]);
 
   /**
    * A drag ends with a click on the same element, which would flip the card the student just
@@ -189,7 +220,7 @@ export function NotebookReviewCard({
                 onEditing={setEditing}
               />
             ) : (
-              <CardFront entry={entry} />
+              <CardFront entry={entry} photo={hasPhoto} onPhotoError={() => setPhotoFailed(true)} />
             )}
           </motion.div>
         </AnimatePresence>
@@ -207,7 +238,7 @@ export function NotebookReviewCard({
             style={{ backfaceVisibility: "hidden" }}
             inert={flipped}
           >
-            <CardFront entry={entry} />
+            <CardFront entry={entry} photo={hasPhoto} onPhotoError={() => setPhotoFailed(true)} />
           </div>
           <div
             className="absolute inset-0"
@@ -231,7 +262,7 @@ export function NotebookReviewCard({
       {/* Controls sit outside the turning element: one flip toggle and one zoom button in the DOM
           instead of a duplicate pair per face, which would put a focusable control behind the card. */}
       <div className="absolute right-2 top-2 flex gap-1.5">
-        {onZoom && !flipped ? (
+        {onZoom && hasPhoto && !flipped ? (
           <CardControl
             label={t("review_zoom")}
             onClick={() => {
@@ -268,7 +299,7 @@ export function NotebookReviewCard({
             fill="var(--color-surface)"
             ink="var(--color-main)"
           >
-            <RotateCcw aria-hidden size={30} strokeWidth={2.5} />
+            <X aria-hidden size={30} strokeWidth={2.5} />
           </SwipeCue>
           <SwipeCue
             side="right"
@@ -395,7 +426,16 @@ function CardControl({
  * nothing else that could identify which mistake this is. That is a weaker front than a photo's,
  * and it is the best this entry can do.
  */
-function CardFront({ entry }: { entry: NotebookEntryDto }) {
+function CardFront({
+  entry,
+  photo,
+  onPhotoError,
+}: {
+  entry: NotebookEntryDto;
+  /** False for a text-only entry and for a photo that failed to load — both get the text front. */
+  photo: boolean;
+  onPhotoError: () => void;
+}) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
 
@@ -404,10 +444,11 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
   // other is writing. What it added instead was a coloured frame the photo has to fight, and a hard
   // band where the photo's own white met it. Only the text-only front, where both faces are words
   // and colour is the *only* thing telling them apart, keeps it.
-  if (entry.url) {
+  if (photo && entry.url) {
     return (
       <Image
         src={entry.url}
+        onError={onPhotoError}
         alt=""
         fill
         sizes="(max-width: 640px) 92vw, 26rem"
@@ -449,7 +490,7 @@ function CardFront({ entry }: { entry: NotebookEntryDto }) {
           color: "color-mix(in srgb, var(--color-main) 72%, transparent)",
         }}
       >
-        {t("review_question")}
+        {entry.url ? t("review_photo_failed") : t("review_question")}
       </p>
     </div>
   );
@@ -493,7 +534,9 @@ function CardBack({
     // which side came up is to read it. Colour answers that before the text does — and it is the
     // front that carries the tint, because the front is the one you are *asked* to look at.
     <div
-      className="flex size-full flex-col gap-4 overflow-y-auto p-5"
+      // `pt-16`: the deck's "1 / 5" chip and the flip control both sit on the card's top edge, and
+      // at `p-5` the title ran underneath them ("Etiketsiz" lost its first letters to the chip).
+      className="flex size-full flex-col gap-4 overflow-y-auto px-5 pb-5 pt-16"
       style={{ backgroundColor: "var(--color-surface)" }}
     >
       <div className="flex flex-col gap-2">
@@ -623,9 +666,14 @@ function EditableField({
     onEditing(false);
   }
 
-  /** The well both states share, so opening the editor does not resize or move the field. */
+  /**
+   * Only a field with something in it (or a caret in it) takes the leftover height. Two empty
+   * wells used to fill the whole back, so a card with nothing recorded yet read as a form to fill
+   * in rather than the answer side of a flashcard.
+   */
+  const fills = grow && (editing || Boolean(value));
   const wellClass = `flex min-h-0 flex-col rounded-[var(--radius-card)] p-3 ${
-    grow ? "flex-1" : ""
+    fills ? "flex-1" : ""
   }`;
   const wellStyle = {
     backgroundColor: "var(--color-surface-container)",
@@ -650,21 +698,22 @@ function EditableField({
           <Pencil aria-hidden size={12} />
           {value ? editLabel : addLabel}
         </span>
-        <span
-          className="overflow-y-auto text-sm text-pretty"
-          style={{
-            color: value ? "var(--color-body)" : "var(--color-secondary)",
-          }}
-        >
-          {value ?? placeholder}
-        </span>
+        {/* Empty, the well is just its one-line label; the prompt text waits in the textarea. */}
+        {value ? (
+          <span
+            className="overflow-y-auto text-sm text-pretty"
+            style={{ color: "var(--color-body)" }}
+          >
+            {value}
+          </span>
+        ) : null}
       </button>
     );
   }
 
   return (
     <div
-      className={`flex min-h-0 flex-col gap-2 ${grow ? "flex-1" : ""}`}
+      className={`flex min-h-0 flex-col gap-2 ${fills ? "flex-1" : ""}`}
       onClick={(event) => event.stopPropagation()}
     >
       <textarea
@@ -674,7 +723,7 @@ function EditableField({
         onChange={(event) => setDraft(event.target.value)}
         aria-label={editLabel}
         placeholder={placeholder}
-        className={`${wellClass} resize-none text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
+        className={`${wellClass} min-h-24 resize-none text-sm outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]`}
         style={{ ...wellStyle, color: "var(--color-main)" }}
       />
       {failed ? <FormError message={t("error_note_save")} /> : null}

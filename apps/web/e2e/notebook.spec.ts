@@ -1453,3 +1453,33 @@ test("tekrar bağlantısı desteyi açar ve parametresini tüketir", async ({
   // review they just dismissed.
   await expect.poll(() => new URL(page.url()).search).toBe("");
 });
+
+test("fotoğrafı açılmayan kart boş kalmaz; Space kartı çevirir", async ({
+  page,
+}) => {
+  const due = [
+    makeEntry({
+      subjectName: "Tarih",
+      topicName: null,
+      storageKey: "notebook/u/missing.png",
+      url: "/img/does-not-exist.png",
+    }),
+  ];
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
+
+  // A photo that will not load used to leave a blank white card; now it says what it was.
+  await expect(page.getByText("Fotoğraf açılmadı. Soruyu hatırlıyor musun?")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Fotoğrafı büyüt" })).toHaveCount(0);
+
+  // Focus is still on the shelf button that opened the deck; Space turns the card, not that button.
+  await page.keyboard.press(" ");
+  await expect(
+    page.getByRole("button", { name: "Soruya dön" }),
+  ).toHaveAttribute("aria-pressed", "true");
+});
