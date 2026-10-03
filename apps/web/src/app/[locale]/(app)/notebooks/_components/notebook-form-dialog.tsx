@@ -1,6 +1,7 @@
 "use client";
 
-import { useId, useRef, useState, type CSSProperties, type FormEvent } from "react";
+import { useId, useLayoutEffect, useRef, useState, type FormEvent } from "react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
@@ -10,12 +11,15 @@ import type {
   NotebookSummaryDto,
 } from "@mentor/types";
 import { NOTEBOOK_COVER_COLORS, NOTEBOOK_COVER_MATERIALS } from "@mentor/types";
-import { Button, Modal, TextField } from "@mentor/ui";
-import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
+import { Button } from "@mentor/ui";
+import { MenuSelect } from "@/components/menu-select";
 import {
   COVER_COLORS,
   COVER_MATERIALS,
 } from "@/components/notebook/notebook-surface";
+import "@fontsource-variable/fraunces/soft.css";
+import "@fontsource-variable/caveat/wght.css";
+import "@/components/notebook-desk/notebook-desk.css";
 import { createNotebook, updateNotebook } from "@/lib/notebook";
 
 interface ExamChoice {
@@ -25,6 +29,14 @@ interface ExamChoice {
 
 const DEFAULT_COVER = { color: "navy", material: "cloth" } as const;
 
+/** Where the paper card turns into a bottom sheet; matches `.nb-form` in notebook-desk.css. */
+const SHEET_QUERY = "(max-width: 639px)";
+
+/**
+ * Create/edit form for a notebook: ruled paper taped over the desk, with the cover it makes
+ * beside the fields (the "Defterlerim" design canvas). A bottom sheet on phones. Native
+ * `<dialog>` so it takes the top layer and the select's menu portals into it.
+ */
 export function NotebookFormDialog({
   current,
   exam,
@@ -40,7 +52,21 @@ export function NotebookFormDialog({
   const notebookT = useTranslations("notebook");
   const reactId = useId();
   const titleInputId = `notebook-title-${reactId}`;
+  const subjectLabelId = `notebook-subject-${reactId}`;
+  const colorLabelId = `notebook-color-${reactId}`;
+  const materialLabelId = `notebook-material-${reactId}`;
+  const headingId = `notebook-form-title-${reactId}`;
   const titleInputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const pressOnScrimRef = useRef(false);
+  const reduceMotion = useReducedMotion();
+  const [closing, setClosing] = useState(false);
+  // Read once at open, like the kit Modal: the entrance follows the layout it opened in.
+  const [sheet] = useState(
+    () => typeof window !== "undefined" && window.matchMedia(SHEET_QUERY).matches,
+  );
+  const hidden = sheet ? { opacity: 1, y: "100%", rotate: 0 } : { opacity: 0, y: 40, rotate: 2 };
+  const shown = sheet ? { opacity: 1, y: 0, rotate: 0 } : { opacity: 1, y: 0, rotate: -1 };
   const [title, setTitle] = useState(current?.title ?? "");
   const [subjectRef, setSubjectRef] = useState(current?.subjectRef ?? "");
   const [color, setColor] = useState<NotebookCoverColor>(
@@ -51,6 +77,13 @@ export function NotebookFormDialog({
   );
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(false);
+
+  useLayoutEffect(() => {
+    const node = dialogRef.current;
+    if (!node || node.open) return;
+    node.showModal();
+    titleInputRef.current?.focus();
+  }, []);
 
   const subjects = [...(exam?.subjects ?? [])];
   if (
@@ -94,188 +127,142 @@ export function NotebookFormDialog({
     }
   }
 
+  function requestClose() {
+    if (!saving && !closing) setClosing(true);
+  }
+
   return (
-    <Modal
-      title={current ? t("edit_title") : t("create_title")}
-      closeLabel={t("close")}
-      onClose={onClose}
-      closeDisabled={saving}
-      initialFocusRef={titleInputRef}
-      onSubmit={(event) => void submit(event)}
-      footer={
-        <>
-          <Button
+    <motion.dialog
+      ref={dialogRef}
+      className="nb-form"
+      aria-labelledby={headingId}
+      onCancel={(event) => {
+        event.preventDefault();
+        requestClose();
+      }}
+      onPointerDown={(event) => {
+        pressOnScrimRef.current = event.target === event.currentTarget;
+      }}
+      onClick={(event) => {
+        if (pressOnScrimRef.current && event.target === event.currentTarget) requestClose();
+      }}
+      initial={reduceMotion ? false : hidden}
+      animate={closing ? hidden : shown}
+      transition={{
+        duration: reduceMotion ? 0 : closing ? 0.15 : sheet ? 0.3 : 0.46,
+        ease: closing ? [0.22, 1, 0.36, 1] : [0.2, 0.9, 0.25, 1.05],
+      }}
+      onAnimationComplete={() => {
+        if (closing) onClose();
+      }}
+    >
+      <div className="nb-form-tape" aria-hidden />
+      <form className="nb-form-body" onSubmit={(event) => void submit(event)}>
+        <div className="nb-form-handle" aria-hidden />
+        <h2 id={headingId} className="nb-form-title">
+          {current ? t("edit_title") : t("create_title")}
+        </h2>
+        <div className="nb-form-row">
+          <div className="nb-form-main">
+            <label className="nb-form-label" htmlFor={titleInputId}>
+              {t("title_label")}
+            </label>
+            <input
+              id={titleInputId}
+              ref={titleInputRef}
+              className="nb-form-input"
+              type="text"
+              disabled={saving}
+              required
+              minLength={1}
+              maxLength={40}
+              autoComplete="off"
+              placeholder={t("title_placeholder")}
+              value={title}
+              onChange={(event) => setTitle(event.target.value)}
+            />
+            <span id={subjectLabelId} className="nb-form-label">
+              {t("subject_label")}
+            </span>
+            <MenuSelect
+              value={subjectRef}
+              disabled={saving || subjects.length === 0}
+              aria-labelledby={subjectLabelId}
+              options={[
+                { value: "", label: t("subject_none") },
+                ...subjects.map((subject) => ({ value: subject.slug, label: subject.name })),
+              ]}
+              onChange={setSubjectRef}
+            />
+            <span id={colorLabelId} className="nb-form-label">
+              {t("color_label")}
+            </span>
+            <div className="nb-form-swatches" role="group" aria-labelledby={colorLabelId}>
+              {NOTEBOOK_COVER_COLORS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="nb-form-swatch"
+                  aria-label={notebookT(`cover_color.${value}`)}
+                  aria-pressed={color === value}
+                  disabled={saving}
+                  style={{ backgroundColor: COVER_COLORS[value] }}
+                  onClick={() => setColor(value)}
+                />
+              ))}
+            </div>
+            <span id={materialLabelId} className="nb-form-label">
+              {t("material_label")}
+            </span>
+            <div className="nb-form-mats" role="group" aria-labelledby={materialLabelId}>
+              {NOTEBOOK_COVER_MATERIALS.map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  className="nb-form-mat"
+                  aria-pressed={material === value}
+                  disabled={saving}
+                  onClick={() => setMaterial(value)}
+                >
+                  {notebookT(`cover_material.${value}`)}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="nb-form-preview" aria-hidden>
+            <div
+              className="nb-form-mini"
+              style={{
+                backgroundColor: COVER_COLORS[color],
+                backgroundImage: COVER_MATERIALS[material],
+              }}
+            >
+              <div className="nb-form-mini-coil" />
+              <div className="nb-form-mini-label">
+                {title.trim() ? title : t("preview_title")}
+              </div>
+            </div>
+          </div>
+        </div>
+        {error ? (
+          <p role="alert" className="nb-form-error">
+            {t("error")}
+          </p>
+        ) : null}
+        <div className="nb-form-actions">
+          <button
             type="button"
-            variant="ghost"
+            className="nb-form-cancel"
             disabled={saving}
-            onClick={onClose}
+            onClick={requestClose}
           >
             {t("cancel")}
-          </Button>
-          <Button
-            type="submit"
-            busy={saving}
-            disabled={title.trim().length === 0}
-          >
+          </button>
+          <Button type="submit" busy={saving} disabled={title.trim().length === 0}>
             {t("save")}
           </Button>
-        </>
-      }
-    >
-      <TextField
-        id={titleInputId}
-        ref={titleInputRef}
-        disabled={saving}
-        required
-        minLength={1}
-        maxLength={40}
-        value={title}
-        onChange={(event) => setTitle(event.target.value)}
-        label={t("title_label")}
-      />
-      <TaxonomyCascadeSelect
-        subjects={subjects}
-        topics={[]}
-        subjectValue={subjectRef}
-        topicValue=""
-        showTopic={false}
-        disabled={saving}
-        subjectLabel={t("subject_label")}
-        emptySubjectLabel={t("subject_none")}
-        labelClassName="text-xs font-semibold"
-        onSubjectChange={setSubjectRef}
-        onTopicChange={() => undefined}
-      />
-      <fieldset className="flex flex-col gap-2 overflow-visible">
-        <legend
-          className="text-xs font-semibold"
-          style={{
-            color: "var(--color-secondary)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("color_label")}
-        </legend>
-        <div className="flex flex-wrap items-center gap-1">
-          {NOTEBOOK_COVER_COLORS.map((value) => (
-            <CoverChoiceSwatch
-              key={value}
-              label={notebookT(`cover_color.${value}`)}
-              selected={color === value}
-              disabled={saving}
-              size="dot"
-              preview={{ backgroundColor: COVER_COLORS[value] }}
-              onClick={() => setColor(value)}
-            />
-          ))}
         </div>
-      </fieldset>
-      <fieldset className="flex flex-col gap-2 overflow-visible">
-        <legend
-          className="text-xs font-semibold"
-          style={{
-            color: "var(--color-secondary)",
-            fontFamily: "var(--font-heading)",
-          }}
-        >
-          {t("material_label")}
-        </legend>
-        <div className="flex flex-wrap items-center gap-2">
-          {NOTEBOOK_COVER_MATERIALS.map((value) => (
-            <CoverChoiceSwatch
-              key={value}
-              label={notebookT(`cover_material.${value}`)}
-              selected={material === value}
-              disabled={saving}
-              size="tile"
-              preview={{
-                backgroundColor: COVER_COLORS[color],
-                backgroundImage: COVER_MATERIALS[value],
-              }}
-              onClick={() => setMaterial(value)}
-            />
-          ))}
-        </div>
-      </fieldset>
-      {error ? (
-        <p role="alert" className="text-sm text-[var(--color-danger)]">
-          {t("error")}
-        </p>
-      ) : null}
-    </Modal>
+      </form>
+    </motion.dialog>
   );
 }
-
-/**
- * Cover option preview. `dot` matches the notebook text-plate swatch (colour).
- * `tile` is a 44px material sample — cloth/kraft/leather/matte cannot be told
- * apart at plate-dot size, and a hover-only enlarge would leave touch users
- * guessing. The name still appears on hover/focus.
- */
-function CoverChoiceSwatch({
-  label,
-  selected,
-  disabled,
-  size,
-  preview,
-  onClick,
-}: {
-  label: string;
-  selected: boolean;
-  disabled?: boolean;
-  size: "dot" | "tile";
-  preview: CSSProperties;
-  onClick: () => void;
-}) {
-  const [showName, setShowName] = useState(false);
-  const isTile = size === "tile";
-  const selectedOutline = selected
-    ? "2px solid var(--color-accent)"
-    : "1px solid color-mix(in srgb, var(--color-main) 12%, transparent)";
-
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      aria-label={label}
-      aria-pressed={selected}
-      onClick={onClick}
-      onMouseEnter={() => setShowName(true)}
-      onMouseLeave={() => setShowName(false)}
-      onFocus={() => setShowName(true)}
-      onBlur={() => setShowName(false)}
-      className={
-        isTile
-          ? "relative size-11 shrink-0 cursor-pointer overflow-visible rounded-[var(--radius-card)] border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-          : "relative grid size-9 shrink-0 cursor-pointer place-items-center overflow-visible rounded-full border-0 bg-transparent p-0 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-      }
-    >
-      <span
-        aria-hidden
-        className={
-          isTile
-            ? "absolute inset-0 overflow-hidden rounded-[var(--radius-card)]"
-            : "block size-5 rounded-full"
-        }
-        style={{
-          ...preview,
-          outline: selectedOutline,
-          outlineOffset: isTile ? "0px" : "2px",
-        }}
-      />
-      {showName ? (
-        <span
-          role="tooltip"
-          className="pointer-events-none absolute -top-7 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[10px] font-semibold"
-          style={{
-            backgroundColor: "var(--color-btn)",
-            color: "var(--color-btn-label)",
-          }}
-        >
-          {label}
-        </span>
-      ) : null}
-    </button>
-  );
-}
-

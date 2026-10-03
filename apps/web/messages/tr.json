@@ -2026,6 +2026,8 @@
       "edit_title": "Defteri düzenle",
       "close": "Kapat",
       "title_label": "Defter adı",
+      "title_placeholder": "Örn. Tarih Kronolojisi",
+      "preview_title": "Defterin adı",
       "subject_label": "Ders (isteğe bağlı)",
       "subject_none": "Genel notlar",
       "color_label": "Kapak rengi",

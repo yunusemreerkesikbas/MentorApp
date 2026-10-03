@@ -2026,6 +2026,8 @@
       "edit_title": "Edit notebook",
       "close": "Close",
       "title_label": "Notebook name",
+      "title_placeholder": "e.g. History timeline",
+      "preview_title": "Your notebook",
       "subject_label": "Subject (optional)",
       "subject_none": "General notes",
       "color_label": "Cover colour",
