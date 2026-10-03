@@ -9,7 +9,7 @@
  *
  * That is the whole effect, and it is 2D on purpose: a clip polygon for each half and one
  * reflection. The previous leaf was a rigid 3D card that could only carry blank paper (bending it
- * in 3D was tried and abandoned, see `notebook-page-turn.tsx`). A fold costs nothing to compute,
+ * in 3D was tried and abandoned: hinged slices kinked the rulings at every seam). A fold costs nothing to compute,
  * keeps the real page content on both faces, and is what the eye actually reads as paper.
  *
  * Coordinates are the caller's design space (the spread's canvas units), y pointing down.
@@ -227,6 +227,83 @@ export function curlGradientCss(
     .map(([offset, color]) => `${color} ${(origin + offset).toFixed(1)}px`)
     .join(", ");
   return `linear-gradient(${((angle * 180) / Math.PI).toFixed(2)}deg, ${list})`;
+}
+
+/**
+ * The light on a fold, as gradient stops measured from the fold line in a 1080-wide page's units.
+ *
+ * - `flap`: the folded-over part. Dark right at the crease, a highlight where the paper rolls over
+ *   towards the light, then flat again: the three cues that read as a curved sheet, not a flat one.
+ * - `under`: the shadow the lifted part throws on the page it uncovers, darkest under the crease.
+ * - `front`: the flat part darkening into the crease, where it starts to bend upwards.
+ */
+export const CURL_SHADES = {
+  flap: [
+    [0, "rgba(0,0,0,0.20)"],
+    [14, "rgba(0,0,0,0.06)"],
+    [42, "rgba(255,255,255,0.42)"],
+    [110, "rgba(255,255,255,0.12)"],
+    [420, "rgba(0,0,0,0.06)"],
+  ],
+  under: [
+    [0, "rgba(0,0,0,0.42)"],
+    [24, "rgba(0,0,0,0.18)"],
+    [96, "rgba(0,0,0,0)"],
+  ],
+  front: [
+    [-64, "rgba(0,0,0,0)"],
+    [-8, "rgba(0,0,0,0.08)"],
+    [0, "rgba(0,0,0,0.16)"],
+  ],
+} as const satisfies Record<string, ReadonlyArray<readonly [number, string]>>;
+
+export interface CurlFrame {
+  /** `clip-path` for the part of the leaf still lying flat. */
+  front: string;
+  /** `clip-path` for the folded part, before it is mirrored: also the page it uncovers. */
+  folded: string;
+  /** `transform` that lays the folded part over on the other side of the crease. */
+  reflection: string;
+  flapShade: string;
+  underShade: string;
+  frontShade: string;
+  /** 0 flat … 1 standing highest: how much shadow the flap throws. */
+  lift: number;
+  progress: number;
+}
+
+/**
+ * Everything the page needs to draw one instant of a turn, for a corner at `point`. Null while the
+ * corner is at rest, which means: draw the leaf flat and nothing else.
+ *
+ * `scale` converts the shading's page units (`CURL_SHADES`) to the caller's: the leaf's width over
+ * 1080, so a phone's page and a desktop spread's page carry the same curl at their own size.
+ */
+export function curlFrame(
+  geometry: CurlGeometry,
+  point: CurlPoint,
+  scale: number,
+): CurlFrame | null {
+  const model = curlModel(geometry, point);
+  if (!model) return null;
+  const shade = (stops: ReadonlyArray<readonly [number, string]>) =>
+    curlGradientCss(
+      model,
+      geometry.leafX,
+      geometry.leafWidth,
+      geometry.height,
+      stops.map(([offset, color]) => [offset * scale, color] as const),
+    );
+  return {
+    front: curlPolygonCss(model.front),
+    folded: curlPolygonCss(model.folded),
+    reflection: curlReflectionCss(model, geometry.leafX),
+    flapShade: shade(CURL_SHADES.flap),
+    underShade: shade(CURL_SHADES.under),
+    frontShade: shade(CURL_SHADES.front),
+    lift: Math.sin(Math.PI * Math.min(1, Math.max(0, model.progress))),
+    progress: model.progress,
+  };
 }
 
 /** Ease used by the hands-off turn: slow out of the rest, quick through the middle, settles. */

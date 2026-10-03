@@ -31,7 +31,11 @@ interface PageState {
 }
 
 type PageAction =
-  | { type: "replace"; doc: NotebookPageDoc }
+  /**
+   * Swap in another page. `dirty` marks a copy that is newer than the server's, one turned away from
+   * before its save landed, so autosave picks it up again instead of treating it as saved.
+   */
+  | { type: "replace"; doc: NotebookPageDoc; dirty?: boolean }
   | { type: "checkpoint" }
   | { type: "add"; item: NotebookPageItem }
   | { type: "patch"; id: string; patch: Partial<NotebookPageItem> }
@@ -64,7 +68,7 @@ export function notebookPageReducer(
         past: [],
         future: [],
         selectedId: null,
-        dirty: false,
+        dirty: action.dirty ?? false,
       };
 
     /*

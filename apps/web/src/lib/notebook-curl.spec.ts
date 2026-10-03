@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clampCurlPoint,
   curlCorner,
+  curlFrame,
   curlGradientCss,
   curlModel,
   curlPathPoint,
@@ -105,6 +106,26 @@ describe("notebook curl geometry", () => {
     expect(curlReflectionCss(model, RIGHT.leafX)).toBe(
       "translate(980.00px, 1527.00px) rotate(90.000deg) scaleY(-1) rotate(-90.000deg) translate(-980.00px, -1527.00px)",
     );
+  });
+
+  it("draws a resting corner as a flat leaf and a turning one with its shading", () => {
+    expect(curlFrame(RIGHT, curlCorner(RIGHT), 1)).toBeNull();
+    const frame = curlFrame(RIGHT, { x: 1600, y: 1300 }, 0.5)!;
+    expect(frame.front.startsWith("polygon(")).toBe(true);
+    expect(frame.folded.startsWith("polygon(")).toBe(true);
+    expect(frame.reflection).toContain("scaleY(-1)");
+    expect(frame.flapShade.startsWith("linear-gradient(")).toBe(true);
+    expect(frame.lift).toBeGreaterThan(0);
+    expect(frame.lift).toBeLessThanOrEqual(1);
+    // Half-size shading: the highlight stop sits 21 units past the crease, not 42.
+    const flat = curlFrame(RIGHT, { x: 1980, y: 1527 }, 0.5)!;
+    expect(flat.flapShade).toContain(`rgba(255,255,255,0.42) ${(980 + 21).toFixed(1)}px`);
+  });
+
+  it("is lying flat again once the leaf is all the way over", () => {
+    const frame = curlFrame(RIGHT, curlTarget(RIGHT), 1)!;
+    expect(frame.progress).toBeCloseTo(1, 6);
+    expect(frame.lift).toBeCloseTo(0, 6);
   });
 
   it("lifts the corner in the middle of a hands-off turn", () => {

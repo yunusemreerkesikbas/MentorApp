@@ -1,6 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent as ReactPointerEvent,
+} from "react";
 import {
   ChevronLeft,
   ChevronRight,
@@ -24,25 +31,14 @@ import type {
   NotebookEntryDto,
   NotebookOverviewDto,
   NotebookPageDto,
-  NotebookPaper,
   VisionBoardTextItem,
 } from "@mentor/types";
 import { NOTEBOOK_PAGE_CANVAS, type NotebookPageItem } from "@mentor/types";
-import type {
-  NotebookCoverDoc,
-  NotebookPageDoc,
-} from "@mentor/types";
+import type { NotebookCoverDoc } from "@mentor/types";
 
-/**
- * How the mobile page slides.
- *
- * Faster than the desktop leaf, and not the same kind of motion at all: a leaf turning is an object
- * with weight and a full second is what sells it, while a page sliding is navigation and anything
- * over a third of a second reads as the phone being slow.
- */
-const MOBILE_SLIDE = { duration: 0.32, ease: [0.22, 1, 0.36, 1] } as const;
 import { FormError } from "@/components/form";
 import {
+  DEFAULT_COVER,
   NotebookCover,
   NotebookPageSurface,
   NotebookSpine,
@@ -72,7 +68,6 @@ import {
   fitWithin,
   MOBILE_LEAF_MAX_WIDTH_PX,
   MOBILE_QUERY,
-  nextView,
   NOTEBOOK_MAX_WIDTH_PX,
   NOTEBOOK_TRAY_RADIUS_CLASS,
   NOTEBOOK_Z,
@@ -86,10 +81,11 @@ import {
   boardChromeFastTransition,
   boardChromeTransition,
 } from "../../vision-board/board/_components/board-chrome-motion";
-import {
-  NotebookPageTurn,
-  PAGE_TURN_SECONDS,
-} from "@/components/notebook/notebook-page-turn";
+import { NotebookInsideCover } from "@/components/notebook-desk/notebook-book";
+import { NotebookContentsPage } from "@/components/notebook-desk/notebook-contents-page";
+import { playNotebookSfx } from "@/lib/notebook-sfx";
+import { useNotebookPageCache } from "./use-notebook-page-cache";
+import { useNotebookTurns } from "./use-notebook-turns";
 import { NotebookTextInlineEditor } from "@/components/notebook/notebook-text-inline-editor";
 import { NotebookImageLightbox } from "@/components/notebook/notebook-image-lightbox";
 import { loadExamTaxonomyBySlug, loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
@@ -105,7 +101,6 @@ import {
   fetchDueEntries,
   fetchNotebook,
   fetchNotebookOverview,
-  fetchNotebookPage,
   saveNotebookPage,
   updateNotebook,
 } from "@/lib/notebook";
@@ -242,23 +237,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     getStrokes: () => rightPage.state.doc.ink,
   });
 
-  /**
-   * The page sliding out, on mobile — a still of what was on screen a moment ago.
-   *
-   * A slide needs two pages: the one leaving and the one arriving. The leaf turn never did, because
-   * the leaf it flew was blank and opaque and the swap happened underneath it. Here the outgoing
-   * half has to still show the old page, and `mobilePage` has already moved on by the time the
-   * animation starts — so the document is kept by reference for the length of the slide. It costs
-   * nothing to hold and nothing to fetch: this is the same object that was being rendered a frame
-   * ago, not a third page pulled from the server.
-   */
-  const [outgoing, setOutgoing] = useState<{
-    seq: number;
-    dir: 1 | -1;
-    doc: NotebookPageDoc;
-    entries: NotebookEntryDto[];
-  } | null>(null);
-  const slideSeq = useRef(0);
+  /** The pages around the open spread, read ahead so a turn never waits (`use-notebook-turns`). */
+  const pageCache = useNotebookPageCache(notebookId);
+  /** Set by a turn that already put the new spread's pages in place: the read below is skipped. */
+  const placedFromCache = useRef<number | null>(null);
 
   /** Below `MOBILE_QUERY`, a spread shows one leaf at a time (`mobileSide`) instead of two. */
   const [isMobile, setIsMobile] = useState(() =>
@@ -339,19 +321,6 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     null,
   );
   const [error, setError] = useState<string | null>(null);
-  /**
-   * The leaf currently in flight, if any. `seq` only exists to remount the animation when two turns
-   * land back to back — otherwise React would keep the half-finished one on screen. `single` mirrors
-   * whatever `isMobile` was the instant the turn started, so a resize mid-flight can't change the
-   * shape of a leaf that's already airborne.
-   */
-  const [flip, setFlip] = useState<{
-    seq: number;
-    dir: 1 | -1;
-    paper: NotebookPaper;
-    single: boolean;
-  } | null>(null);
-  const flipSeq = useRef(0);
 
   /*
    * Overview, due list and exam taxonomy load together rather than in sequence: none of them needs
@@ -497,22 +466,28 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   }, [notebookId, t]);
 
   // Fetch both facing pages together: neither needs the other's answer, and chaining them would
-  // make the right page visibly pop in a beat after the left one.
+  // make the right page visibly pop in a beat after the left one. A turn that already put them in
+  // place from the read-ahead skips the read: replacing them again would throw away anything typed
+  // in the moment after the turn landed.
   useEffect(() => {
     if (view.kind !== "spread") return;
-    let cancelled = false;
     const { left } = view;
-
-    Promise.all([
-      fetchNotebookPage(left, notebookId),
-      fetchNotebookPage(left + 1, notebookId),
-    ])
+    if (placedFromCache.current === left) {
+      placedFromCache.current = null;
+      pageCache.prefetchAround(left);
+      return;
+    }
+    let cancelled = false;
+    const reads = [pageCache.ensure(left), pageCache.ensure(left + 1)];
+    if (!reads[0] || !reads[1]) return;
+    Promise.all([reads[0], reads[1]])
       .then(([leftData, rightData]) => {
         if (cancelled) return;
         setLeftMeta(leftData);
         setRightMeta(rightData);
         leftPage.dispatch({ type: "replace", doc: leftData.doc });
         rightPage.dispatch({ type: "replace", doc: rightData.doc });
+        pageCache.prefetchAround(left);
       })
       .catch(() => {
         if (!cancelled) setError(t("error_load"));
@@ -607,110 +582,113 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     notebookId,
   ]);
 
-  /* Read off the hooks up front: `turn` needs only the two papers, and depending on the hook objects
-     themselves would rebuild it every render — and with it the keydown listener it feeds. */
-  const leftPaper = leftPage.state.doc.paper;
-  const rightPaper = rightPage.state.doc.paper;
-  /**
-   * Freeze what is on screen so it can be slid off it.
-   *
-   * Nothing here schedules the removal — the slide's own `onAnimationComplete` does, keyed by the
-   * same sequence number, so a second page change while the first is still moving replaces the
-   * still instead of racing a timer that would clear the wrong one.
-   */
-  const startSlide = useCallback(
-    (dir: 1 | -1) => {
-      if (reduceMotion) return;
-      slideSeq.current += 1;
-      // Resolved from the two page hooks rather than from `mobilePage`, which is derived further
-      // down the component than this callback is defined. Same expression, no forward reference.
-      const leaving = mobileSide === "left" ? leftPage : rightPage;
-      const leavingMeta = mobileSide === "left" ? leftMeta : rightMeta;
-      setOutgoing({
-        seq: slideSeq.current,
-        dir,
-        doc: leaving.state.doc,
-        entries: leavingMeta?.entries ?? [],
-      });
-    },
-    [leftMeta, leftPage, mobileSide, reduceMotion, rightMeta, rightPage],
+  const contentsData = useNotebookContents(notebookId, view.kind === "contents");
+  // The contents spread is one turn from page 1: read those two ahead while it is open.
+  useEffect(() => {
+    if (view.kind !== "contents") return;
+    pageCache.ensure(0)?.catch(() => undefined);
+    pageCache.ensure(1)?.catch(() => undefined);
+  }, [view.kind, pageCache]);
+
+  const dueIdSet = useMemo(() => new Set(due.map((entry) => entry.id)), [due]);
+  const ownerName = user?.displayName ?? null;
+  const turnFaces = useMemo(
+    () => ({
+      insideCover: () => (
+        <div className="relative h-full w-full" style={{ containerType: "inline-size" }}>
+          <div className="absolute inset-0 overflow-hidden">
+            <NotebookInsideCover
+              cover={{ color: (cover ?? DEFAULT_COVER).color, material: (cover ?? DEFAULT_COVER).material }}
+              kicker={t("owner_kicker")}
+              owner={ownerName}
+            />
+          </div>
+        </div>
+      ),
+      contentsPage: (single: boolean) => (
+        <NotebookContentsPage contents={contentsData.contents} failed={contentsData.failed} coil={single} />
+      ),
+    }),
+    [cover, ownerName, contentsData, t],
   );
 
-  const turn = useCallback(
-    (delta: 1 | -1) => {
-      setFocusedSide("left");
-      setEditingText(null);
-
-      /*
-       * A leaf only turns *inside* an open book. Opening or closing the cover moves the whole
-       * board, not a page, so those two keep the plain crossfade they already had. The paper of the
-       * leaf we are lifting — right side going forward, left side going back — travels with it, so
-       * the flying sheet is ruled like the book it came out of.
-       */
-      if (
-        !reduceMotion &&
-        (view.kind === "spread" || (view.kind === "contents" && delta > 0))
-      ) {
-        // On mobile the pages slide past each other instead of one turning over: a phone shows
-        // one page at a time, and a book that flips a whole leaf to move one page reads as a
-        // stutter. Which of the two runs is decided here, once, so nothing downstream has to ask.
-        if (isMobile) {
-          if (view.kind === "spread") startSlide(delta);
-        } else {
-          flipSeq.current += 1;
-          setFlip({
-            seq: flipSeq.current,
-            dir: delta,
-            paper:
-              view.kind === "contents" ? "plain" : delta > 0 ? rightPaper : leftPaper,
-            single: false,
-          });
-        }
-      }
-
-      setView((current) => nextView(current, delta));
+  const turns = useNotebookTurns({
+    view,
+    setView,
+    mobileSide,
+    setMobileSide,
+    isMobile,
+    reduceMotion: reduceMotion ?? false,
+    bookRef,
+    leftPage,
+    rightPage,
+    leftMeta,
+    rightMeta,
+    setLeftMeta,
+    setRightMeta,
+    cache: pageCache,
+    notebookId,
+    dueIds: dueIdSet,
+    faces: turnFaces,
+    onPlaced: (left) => {
+      placedFromCache.current = left;
     },
-    [view, reduceMotion, leftPaper, rightPaper, isMobile, startSlide],
-  );
+  });
 
   /**
-   * The button/keyboard entry point for moving through the book. `turn` always moves a whole
-   * spread — correct for desktop, where both its pages are visible at once, but on mobile only one
-   * leaf (`mobileSide`) is on screen at a time. So on mobile, "next"/"previous" first flips within
-   * the current spread (same `NotebookPageTurn`, `single` this time) and only reaches for `turn`
-   * once that leaf is the one already facing the edge it's headed toward — a phone reader sees
-   * every page in the order a real book gives them, not two at a stride.
+   * The button/keyboard entry point for moving through the book. Inside an open book every move is
+   * a turn (`use-notebook-turns`): a spread at a time on a wide screen, a page at a time on a phone.
+   * The cover is the exception: it is a board, not a page, and swings open or shut on its own.
    */
   const goPage = useCallback(
     (dir: 1 | -1) => {
-      if (isMobile && (view.kind === "spread" || view.kind === "contents")) {
-        const atSpreadEdge =
-          dir > 0 ? mobileSide === "right" : mobileSide === "left";
-        if (!atSpreadEdge) {
-          if (view.kind === "spread") startSlide(dir);
-          setMobileSide(dir > 0 ? "right" : "left");
-          return;
-        }
+      if (turns.turning) return;
+      setEditingText(null);
+      if (view.kind === "cover") {
+        if (dir < 0) return;
+        setView({ kind: "contents" });
+        // Opened on a phone, the book shows its contents page, not the inside of the board.
+        setMobileSide("right");
+        playNotebookSfx("open");
+        return;
       }
-      turn(dir);
-      // Opening the cover on a phone shows the contents page, not the inside of the board.
-      if (isMobile) {
-        setMobileSide(view.kind === "cover" ? "right" : dir > 0 ? "left" : "right");
+      if (view.kind === "contents" && dir < 0 && (!isMobile || mobileSide === "left")) {
+        setView({ kind: "cover" });
+        playNotebookSfx("close");
+        return;
       }
+      setFocusedSide(dir > 0 ? "left" : "right");
+      void turns.start(dir);
     },
-    [isMobile, view, mobileSide, startSlide, turn],
+    [turns, view.kind, isMobile, mobileSide],
   );
 
-  const contentsData = useNotebookContents(notebookId, view.kind === "contents");
+  /** Takes a page by its corner: the turn follows the pointer from here (`NotebookPageCurl`). */
+  const grabCorner = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>, dir: 1 | -1) => {
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+      const box = bookRef.current?.getBoundingClientRect();
+      if (!box || turns.turning) return;
+      event.preventDefault();
+      event.stopPropagation();
+      setEditingText(null);
+      void turns.start(dir, {
+        pointerId: event.pointerId,
+        grab: { x: event.clientX - box.left, y: event.clientY - box.top },
+      });
+    },
+    [turns],
+  );
 
-  /** A contents line was chosen: turn straight to the spread that page lies in. */
-  const openPage = useCallback((pageIndex: number) => {
-    const { left, side } = spreadOf(pageIndex);
-    setFocusedSide(side);
-    setEditingText(null);
-    setMobileSide(side);
-    setView({ kind: "spread", left });
-  }, []);
+  /** A contents line was chosen: riffle straight to the spread that page lies in. */
+  const openPage = useCallback(
+    (pageIndex: number) => {
+      setFocusedSide(spreadOf(pageIndex).side);
+      setEditingText(null);
+      void turns.jump(pageIndex);
+    },
+    [turns],
+  );
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -1093,7 +1071,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
 
   if (!overview && !error) return <NotebookContentSkeleton />;
 
-  const dueIds = new Set(due.map((entry) => entry.id));
+  const dueIds = dueIdSet;
   const isSpread = view.kind === "spread";
   /**
    * Draw mode. While it is on, the item stage is handed no pointer callbacks at all, which is what
@@ -1119,28 +1097,20 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           ? activePanel
           : null;
   /*
-   * The spread itself no longer moves — `NotebookPageTurn` is what the eye follows, and a page that
-   * also slid underneath its own turning leaf would read as two animations fighting.
-   *
-   * ponytail: both sides crossfade over the leaf's own duration, so the swap is at its most visible
-   * near the midpoint — which is exactly when the leaf is standing over the spine covering it. Strictly
-   * true to a real book, the *revealed* side should change at t=0 and the *covered* side only at t=0.5;
-   * doing that means holding the outgoing page's document alongside the incoming one for the length of
-   * the turn. Worth it only if the half-beat ever actually reads as wrong.
+   * The spread never moves itself. A turn is drawn by its own overlay over the live pages, and ends
+   * on exactly the picture the new spread starts on (`use-notebook-turns`), so the swap underneath
+   * is instant. Only under reduced motion, where there is no turn to watch, do the pages crossfade.
    */
   const spreadVariants = {
     enter: { opacity: 0, zIndex: 2 },
     center: { opacity: 1, zIndex: 2 },
     exit: { opacity: 0, zIndex: 1 },
   };
-  const spreadFade = reduceMotion
-    ? { duration: 0.15 }
-    : isMobile
-      ? // Instant on mobile. The crossfade exists to hide the swap under a turning leaf, and there
-        // is no leaf here — the pages slide past each other, and a fade on top of a slide is two
-        // transitions competing to describe the same move.
-        { duration: 0 }
-      : { duration: PAGE_TURN_SECONDS * 0.8, ease: "easeInOut" as const };
+  const spreadFade = reduceMotion ? { duration: 0.15 } : { duration: 0 };
+  /** Where a page can be taken by its corner: never across the cover, never mid-turn or mid-drawing. */
+  const canTurnBack =
+    view.kind === "spread" || (isMobile && view.kind === "contents" && mobileSide === "right");
+  const canTurnForward = view.kind !== "cover";
   const pageLabel =
     view.kind === "cover"
       ? t("cover_label")
@@ -1608,6 +1578,13 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               ) : null}
             </AnimatePresence>
           </>
+        ) : isMobile && view.kind === "contents" ? (
+          // Holds the tool rows' place on a phone, so a turn that lands on a writing page lands on a
+          // page the same size, not one that jumps down under rows that just appeared.
+          <div className="relative z-30 flex shrink-0 flex-col gap-2">
+            <div aria-hidden="true" className="h-11" />
+            <div className="flex min-h-10 flex-wrap items-center gap-2">{dueChip}</div>
+          </div>
         ) : isMobile && dueChip ? (
           <div className="flex shrink-0">{dueChip}</div>
         ) : null}
@@ -1732,11 +1709,11 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
               </AnimatePresence>
 
               {/*
-              Two nested regions on purpose. The outer one, here, only ever swaps cover↔spread — a
-              structural change, so `mode="wait"` holds the incoming half back until the outgoing
+              Two nested regions on purpose. The outer one, here, only ever swaps cover↔open book —
+              a structural change, so `mode="wait"` holds the incoming half back until the outgoing
               one has left, rather than letting them overlap while the aspect ratio jumps from one
-              page wide to two. The inner one swaps the page contents *within* an open book, under
-              the leaf that `NotebookPageTurn` flies over them.
+              page wide to two. The contents spread and the writing spreads share the open book's
+              key: moving between them is a page turn, drawn by its own overlay further down.
 
               The cover is hinged where a real one is — its spine, the left edge — and swings through
               the same axis the leaves do, so opening the book and turning a page read as one object.
@@ -1790,13 +1767,15 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                     />
                   </motion.div>
                 ) : view.kind === "contents" ? (
+                  // Same key as the spreads': a turn from the contents to page 1 is one book being
+                  // turned, not one view leaving and another arriving.
                   <motion.div
-                    key="contents"
+                    key="open"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
-                    style={{ position: "absolute", inset: 0, display: "flex" }}
+                    style={{ position: "absolute", inset: 0, display: "flex", overflow: "hidden" }}
                   >
                     <NotebookContentsSpread
                       cover={cover}
@@ -1810,52 +1789,19 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                   </motion.div>
                 ) : (
                   <motion.div
-                    key="spread-container"
+                    key="open"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: reduceMotion ? 0.15 : 0.2 }}
-                    // Clips both the drag-turn spread and the flying leaf to the notebook's own box.
-                    // The leaf's 3D rotation (`NotebookPageTurn`) has no clip of its own — without this,
-                    // its mid-turn ink overflow reads as oversized and can even push the page to scroll.
+                    // Clips the spread to the notebook's own box: ink can overflow a page mid-stroke.
                     style={{
                       position: "absolute",
                       inset: 0,
+                      display: "flex",
                       overflow: "hidden",
                     }}
                   >
-                    {/* The page that just left, held still and slid off. Rendered outside the
-                        presence below on purpose: that one swaps a live subtree, and a live subtree
-                        cannot show the old page — `mobilePage` has already switched to the other
-                        side's document by the time this runs. This is a photograph of it. No pointer
-                        callbacks reach the stage, which is what makes it inert (`NotebookPageStage`
-                        derives that from the props it receives). */}
-                    {isMobile && outgoing ? (
-                      <motion.div
-                        key={`outgoing-${outgoing.seq}`}
-                        aria-hidden
-                        className="pointer-events-none absolute inset-0"
-                        style={{ zIndex: 3 }}
-                        initial={{ x: 0 }}
-                        animate={{ x: outgoing.dir > 0 ? "-100%" : "100%" }}
-                        transition={MOBILE_SLIDE}
-                        onAnimationComplete={() =>
-                          setOutgoing((current) =>
-                            current?.seq === outgoing.seq ? null : current,
-                          )
-                        }
-                      >
-                        <NotebookPageSurface paper={outgoing.doc.paper}>
-                          <NotebookPageStage
-                            items={outgoing.doc.items}
-                            entries={outgoing.entries}
-                            dueIds={dueIds}
-                          />
-                          <NotebookInkLayer strokes={outgoing.doc.ink} />
-                        </NotebookPageSurface>
-                      </motion.div>
-                    ) : null}
-
                     <AnimatePresence initial={false}>
                       <motion.div
                         // Mobile's key also carries `mobileSide`: flipping within a spread has no
@@ -1878,19 +1824,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                         }}
                       >
                         {isMobile ? (
-                          <motion.div
-                            className="h-full w-full"
-                            // No entrance on the very first render, and none when nothing is
-                            // leaving: `false` means "start where you are", which is what a page
-                            // that was not reached by turning should do.
-                            initial={
-                              outgoing
-                                ? { x: outgoing.dir > 0 ? "100%" : "-100%" }
-                                : false
-                            }
-                            animate={{ x: 0 }}
-                            transition={MOBILE_SLIDE}
-                          >
+                          <div className="h-full w-full">
                             <NotebookPageSurface
                               paper={mobilePage.state.doc.paper}
                             >
@@ -1973,7 +1907,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                 }
                               />
                             </NotebookPageSurface>
-                          </motion.div>
+                          </div>
                         ) : (
                           <>
                             {/* Bound on its right edge: this page's punched margin faces the spine. */}
@@ -2158,25 +2092,36 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                         )}
                       </motion.div>
                     </AnimatePresence>
-
-                    {/* The leaf itself, flying over both stages. Keyed on `seq` so a second turn
-                      restarts it rather than inheriting the first one's half-finished rotation. */}
-                    {flip ? (
-                      <NotebookPageTurn
-                        key={flip.seq}
-                        dir={flip.dir}
-                        paper={flip.paper}
-                        single={flip.single}
-                        onDone={() =>
-                          setFlip((current) =>
-                            current?.seq === flip.seq ? null : current,
-                          )
-                        }
-                      />
-                    ) : null}
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* The page being turned, drawn over the live spread until it lands. */}
+              {turns.overlay ? (
+                <div className="absolute inset-0" style={{ zIndex: NOTEBOOK_Z.overlay - 5 }}>
+                  {turns.overlay}
+                </div>
+              ) : null}
+              {!reduceMotion && !drawing && !turns.turning && view.kind !== "cover" ? (
+                <>
+                  {canTurnForward ? (
+                    <div
+                      aria-hidden="true"
+                      className="nb-dogear"
+                      data-side="right"
+                      onPointerDown={(event) => grabCorner(event, 1)}
+                    />
+                  ) : null}
+                  {canTurnBack ? (
+                    <div
+                      aria-hidden="true"
+                      className="nb-dogear"
+                      data-side="left"
+                      onPointerDown={(event) => grabCorner(event, -1)}
+                    />
+                  ) : null}
+                </>
+              ) : null}
               {!isMobile ? (
                 <div
                   className="pointer-events-none absolute inset-x-0 bottom-2 flex w-full items-center justify-center [&>*]:pointer-events-auto"
