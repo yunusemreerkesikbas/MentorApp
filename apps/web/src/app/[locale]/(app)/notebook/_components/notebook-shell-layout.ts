@@ -15,8 +15,31 @@ import type { NotebookPageDoc } from "@mentor/types";
  * A spread shows two facing pages, `left` and `left + 1` — a real notebook has no odd page on its
  * own. Turning moves by two, and turning back past page 0 closes the book: a spread you cannot
  * turn out of would read as broken, and "no visible response" is the worst answer to a swipe.
+ *
+ * Between the cover and page 0 sits the book's first spread proper: the inside of the front cover
+ * on the left, the contents page on the right (`contents`). Neither half is a writing page; the
+ * contents page is how you get to the ones that are.
  */
-export type View = { kind: "cover" } | { kind: "spread"; left: number };
+export type View =
+  | { kind: "cover" }
+  | { kind: "contents" }
+  | { kind: "spread"; left: number };
+
+/** The view one turn away from `view`, forwards (`1`) or back (`-1`). */
+export function nextView(view: View, delta: 1 | -1): View {
+  if (view.kind === "cover") return delta > 0 ? { kind: "contents" } : view;
+  if (view.kind === "contents") {
+    return delta > 0 ? { kind: "spread", left: 0 } : { kind: "cover" };
+  }
+  const left = view.left + delta * 2;
+  return left < 0 ? { kind: "contents" } : { kind: "spread", left };
+}
+
+/** The spread a page lies in, and which of its two sides it is on. */
+export function spreadOf(pageIndex: number): { left: number; side: Side } {
+  const left = pageIndex - (pageIndex % 2);
+  return { left, side: pageIndex % 2 === 0 ? "left" : "right" };
+}
 export type Side = "left" | "right";
 
 /** Matches the server's blank page, so an unsaved page and a fetched empty one render alike. */

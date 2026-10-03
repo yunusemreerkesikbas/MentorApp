@@ -1,0 +1,1496 @@
+/*
+ * The Defterlerim desk, the notebook lying on it, and the contents page it opens on.
+ *
+ * A physical scene owns its palette instead of borrowing --color-*: the wood, the wall and the
+ * window are objects in a room, and a surface retune must not repaint the desk. Same reasoning as
+ * --notebook-* in @mentor/ui and --lamp-* on the theme lamp. Light theme is daylight through the
+ * window with the lamp off; dark theme is night with the lamp lit.
+ *
+ * Everything on the notebook is measured in container-query units against the book's own width
+ * (`.nb-book` is the container), so one book reads the same at 140 px on a phone and 260 px on a
+ * wide desk, and the copy that flies off the desk is the same drawing at any size.
+ */
+
+:root {
+  --nb-font-print: "Fraunces Variable", Georgia, "Times New Roman", serif;
+  --nb-font-hand: "Caveat Variable", "Caveat", "Segoe Print", cursive;
+}
+
+.mentor-notebook-desk {
+  --desk-root: #eef0f5;
+  --desk-wall: linear-gradient(180deg, #e9e3f1 0%, #f2ece4 70%, #efe5d8 100%);
+  --desk-wall-dots: rgba(150, 110, 60, 0.09);
+  --desk-wall-shade: rgba(90, 60, 30, 0.22);
+  --desk-wood: #b88757;
+  --desk-wood-edge: #d4a77a;
+  --desk-grain-fine: 0.55;
+  --desk-grain-broad: 0.45;
+  --desk-wood-shade: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.32) 0,
+    rgba(0, 0, 0, 0.05) 140px,
+    rgba(0, 0, 0, 0) 45%,
+    rgba(0, 0, 0, 0.16) 100%
+  );
+  --desk-ink: #1d1a16;
+  --desk-ink-soft: #5d5348;
+  --desk-frame: #8a6a4f;
+  --desk-sky: linear-gradient(180deg, #8fcaf7 0%, #c9e7fd 70%, #eaf6ff 100%);
+  --desk-hill-far: #8dbf8a;
+  --desk-hill-near: #a9d1a0;
+  --desk-vignette: radial-gradient(
+    120% 95% at 47% 40%,
+    rgba(0, 0, 0, 0) 55%,
+    rgba(60, 40, 20, 0.16) 100%
+  );
+  --desk-bubble: #ffffff;
+  --desk-bubble-ink: #1d1a16;
+  --desk-chip: rgba(255, 255, 255, 0.72);
+  --desk-chip-ink: #2a2118;
+  --desk-chrome: rgba(0, 0, 0, 0.06);
+  --desk-lamp-metal: #3a4258;
+  --desk-lamp-arm: #3d4560;
+  --desk-lamp-joint: #a7aec0;
+  --desk-lamp-shade: #3b4566;
+  --desk-lamp-rim: #56618a;
+  --desk-lamp-bulb: #d9d4c6;
+  --desk-lamp-glow: 0;
+  --desk-mug: #f1e9dc;
+  --desk-mug-rim: #fbf6ee;
+  --desk-steam: rgba(255, 255, 255, 0.75);
+  --desk-puhu-filter: none;
+  --desk-night: 0;
+  --desk-day: 1;
+  --desk-shadow: #1a0e05;
+  --desk-shadow-strength: 0.5;
+  position: relative;
+  isolation: isolate;
+  background-color: var(--desk-root);
+  color: var(--desk-ink);
+}
+
+html.dark .mentor-notebook-desk {
+  --desk-root: #0d1020;
+  --desk-wall: linear-gradient(180deg, #121731 0%, #1b2040 62%, #211d34 100%);
+  --desk-wall-dots: rgba(255, 214, 150, 0.11);
+  --desk-wall-shade: rgba(0, 0, 0, 0.42);
+  --desk-wood: #4a2e1c;
+  --desk-wood-edge: #6b4630;
+  --desk-grain-fine: 0.85;
+  --desk-grain-broad: 0.35;
+  --desk-wood-shade: linear-gradient(
+    180deg,
+    rgba(0, 0, 0, 0.5) 0,
+    rgba(0, 0, 0, 0.08) 160px,
+    rgba(0, 0, 0, 0) 50%,
+    rgba(0, 0, 0, 0.32) 100%
+  );
+  --desk-ink: #f6ecdd;
+  --desk-ink-soft: #cdbba3;
+  --desk-frame: #2a1d15;
+  --desk-sky: linear-gradient(180deg, #0a1030 0%, #18265a 62%, #2e3b6c 100%);
+  --desk-hill-far: #0b1028;
+  --desk-hill-near: #121a3a;
+  --desk-vignette: radial-gradient(
+    120% 95% at 47% 42%,
+    rgba(0, 0, 0, 0) 40%,
+    rgba(4, 3, 10, 0.66) 100%
+  );
+  --desk-bubble: #fbf5e9;
+  --desk-bubble-ink: #2a2118;
+  --desk-chip: rgba(251, 245, 233, 0.92);
+  --desk-chip-ink: #2a2118;
+  --desk-chrome: rgba(255, 255, 255, 0.08);
+  --desk-lamp-metal: #1f2536;
+  --desk-lamp-arm: #262d42;
+  --desk-lamp-joint: #8f98ad;
+  --desk-lamp-shade: #2c3550;
+  --desk-lamp-rim: #46527a;
+  --desk-lamp-bulb: #ffe3a3;
+  --desk-lamp-glow: 1;
+  --desk-mug: #e6d8c2;
+  --desk-mug-rim: #f3e8d6;
+  --desk-steam: rgba(255, 240, 220, 0.5);
+  --desk-puhu-filter: brightness(0.9) saturate(0.95);
+  --desk-night: 1;
+  --desk-day: 0;
+  --desk-shadow: #000000;
+  --desk-shadow-strength: 0.62;
+}
+
+/* ── The room ─────────────────────────────────────────────────────────────────────────────── */
+
+.desk-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.desk-wall {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: calc(var(--desk-wall-h) + 24px);
+  background: var(--desk-wall);
+}
+
+.desk-wall::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--desk-wall-dots) 1.2px, transparent 1.9px);
+  background-size: 28px 28px;
+}
+
+.desk-window {
+  position: absolute;
+  top: -14px;
+  left: var(--desk-window-x);
+  width: var(--desk-window-w);
+  height: calc(var(--desk-wall-h) - 34px);
+  border: 12px solid var(--desk-frame);
+  border-top-width: 14px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--desk-sky);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.desk-window-mullion-v,
+.desk-window-mullion-h {
+  position: absolute;
+  background: var(--desk-frame);
+}
+
+.desk-window-mullion-v {
+  top: 0;
+  bottom: 0;
+  left: calc(50% - 4px);
+  width: 8px;
+}
+
+.desk-window-mullion-h {
+  left: 0;
+  right: 0;
+  top: 44%;
+  height: 8px;
+}
+
+.desk-sill {
+  position: absolute;
+  top: calc(var(--desk-wall-h) - 52px);
+  left: calc(var(--desk-window-x) - 12px);
+  width: calc(var(--desk-window-w) + 24px);
+  height: 15px;
+  border-radius: 3px;
+  background: var(--desk-frame);
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+.desk-hill {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.desk-night-only {
+  opacity: var(--desk-night);
+  transition: opacity 600ms ease;
+}
+
+.desk-day-only {
+  opacity: var(--desk-day);
+  transition: opacity 600ms ease;
+}
+
+.desk-star {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: #fff4d6;
+  animation: desk-twinkle 3.4s ease-in-out infinite;
+}
+
+.desk-moon {
+  position: absolute;
+  right: 18%;
+  top: 14%;
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: #fff1cf;
+  box-shadow: 0 0 28px 8px rgba(255, 236, 190, 0.42);
+}
+
+.desk-moon::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  top: -9px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: #101a44;
+}
+
+.desk-sun {
+  position: absolute;
+  right: 20%;
+  top: 12%;
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  background: #fff7d8;
+  box-shadow: 0 0 44px 18px rgba(255, 240, 190, 0.75);
+}
+
+.desk-cloud {
+  position: absolute;
+  width: 96px;
+  height: 26px;
+  border-radius: 26px;
+  background: #ffffff;
+  opacity: 0.95;
+  box-shadow: 24px -12px 0 4px #ffffff, 52px -3px 0 0 #ffffff;
+}
+
+.desk-village-light {
+  position: absolute;
+  width: 4px;
+  height: 5px;
+  border-radius: 1px;
+  background: #ffd27a;
+  box-shadow: 0 0 6px 1px rgba(255, 200, 110, 0.85);
+}
+
+.desk-wall-shade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: calc(var(--desk-wall-h) - 64px);
+  height: 64px;
+  background: linear-gradient(180deg, transparent, var(--desk-wall-shade));
+}
+
+.desk-wood {
+  position: absolute;
+  inset: var(--desk-wall-h) 0 0 0;
+  background-color: var(--desk-wood);
+  transition: background-color 600ms ease;
+}
+
+.desk-wood-grain {
+  position: absolute;
+  inset: 0;
+  background-repeat: repeat;
+}
+
+.desk-wood-grain[data-grain="broad"] {
+  opacity: var(--desk-grain-broad);
+  background-size: 900px 520px;
+}
+
+.desk-wood-grain[data-grain="fine"] {
+  opacity: var(--desk-grain-fine);
+  background-size: 640px 420px;
+}
+
+.desk-wood::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--desk-wood-shade);
+}
+
+.desk-wood-edge {
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 7px;
+  background: var(--desk-wood-edge);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
+
+/* Day: a patch of sun from the window, crossed by the mullions' shadow. */
+.desk-sunpatch {
+  position: absolute;
+  top: var(--desk-wall-h);
+  left: calc(var(--desk-window-x) - 8%);
+  width: calc(var(--desk-window-w) * 1.5);
+  height: 420px;
+  clip-path: polygon(26% 0, 100% 0, 74% 100%, 0 100%);
+  background:
+    linear-gradient(108deg, transparent 0 47%, rgba(80, 50, 20, 0.4) 47% 51%, transparent 51%),
+    linear-gradient(180deg, transparent 0 46%, rgba(80, 50, 20, 0.34) 46% 50%, transparent 50%),
+    linear-gradient(180deg, rgba(255, 249, 228, 0.98), rgba(255, 236, 200, 0));
+  mix-blend-mode: soft-light;
+  filter: blur(4px);
+}
+
+.desk-shaft {
+  position: absolute;
+  inset: 0;
+  clip-path: polygon(
+    calc(var(--desk-window-x) + 12px) 0,
+    calc(var(--desk-window-x) + var(--desk-window-w) - 12px) 0,
+    calc(var(--desk-window-x) + var(--desk-window-w) * 0.9) calc(var(--desk-wall-h) + 420px),
+    calc(var(--desk-window-x) - var(--desk-window-w) * 0.3) calc(var(--desk-wall-h) + 420px)
+  );
+  background: linear-gradient(196deg, rgba(255, 250, 230, 0.3), rgba(255, 244, 214, 0.08) 60%, transparent 90%);
+  filter: blur(10px);
+}
+
+/*
+ * The light layer sits over the notebooks (see `DeskLight`). It must not form a stacking context of
+ * its own: each layer below carries its own z-index and blends with the whole scene under it.
+ */
+.desk-light {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.desk-light .desk-shaft,
+.desk-light .desk-pool,
+.desk-light .desk-cone,
+.desk-light .desk-motes,
+.desk-light .desk-moonwash {
+  z-index: 15;
+}
+
+.desk-light .desk-vignette {
+  z-index: 16;
+}
+
+/* Night: the lamp's pool on the desk, the cone it falls through, and the dust that hangs in it. */
+.desk-pool {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: var(--desk-pool-w, 760px);
+  height: var(--desk-pool-h, 540px);
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  background: radial-gradient(
+    closest-side,
+    rgba(255, 172, 84, 0.5),
+    rgba(255, 146, 64, 0.18) 55%,
+    rgba(255, 140, 60, 0) 100%
+  );
+  transform: translate(var(--desk-light-x, 50%), var(--desk-light-y, 50%)) translate(-50%, -50%);
+  transition:
+    transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    width 760ms ease,
+    height 760ms ease;
+}
+
+.desk-cone {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--desk-cone, polygon(0 0, 0 0, 0 0));
+  background: linear-gradient(222deg, rgba(255, 228, 175, 0.2), rgba(255, 205, 140, 0.07) 50%, rgba(255, 190, 120, 0) 80%);
+  filter: blur(22px);
+  mix-blend-mode: screen;
+  transition: clip-path 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.desk-motes {
+  position: absolute;
+  inset: 0;
+  clip-path: var(--desk-cone, polygon(0 0, 0 0, 0 0));
+  transition: clip-path 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.desk-mote {
+  position: absolute;
+  border-radius: 50%;
+  background: #ffeacb;
+  box-shadow: 0 0 6px 1px rgba(255, 220, 160, 0.85);
+  opacity: 0;
+  animation: desk-mote 8s ease-in-out infinite;
+}
+
+.desk-moonwash {
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background: radial-gradient(34% 30% at var(--desk-window-center, 66%) 6%, rgba(130, 160, 255, 0.2), rgba(130, 160, 255, 0) 70%);
+}
+
+.desk-vignette {
+  position: absolute;
+  inset: 0;
+  background: var(--desk-vignette);
+}
+
+/* ── Things on the desk ───────────────────────────────────────────────────────────────────── */
+
+.desk-prop {
+  position: absolute;
+  pointer-events: none;
+}
+
+.desk-lamp .metal { fill: var(--desk-lamp-metal); }
+.desk-lamp .arm { stroke: var(--desk-lamp-arm); }
+.desk-lamp .joint { fill: var(--desk-lamp-joint); }
+.desk-lamp .shade { fill: var(--desk-lamp-shade); }
+.desk-lamp .rim { fill: var(--desk-lamp-rim); }
+.desk-lamp .bulb { fill: var(--desk-lamp-bulb); }
+.desk-lamp .glow { opacity: calc(var(--desk-lamp-glow) * 0.9); }
+
+.desk-lamp-head {
+  transform-box: view-box;
+  transform-origin: 130px 110px;
+  transform: rotate(var(--desk-lamp-turn, 0deg));
+  transition: transform 760ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.desk-mug .body { fill: var(--desk-mug); stroke: none; }
+.desk-mug .handle { stroke: var(--desk-mug); }
+.desk-mug .rim { fill: var(--desk-mug-rim); }
+.desk-steam {
+  stroke: var(--desk-steam);
+  opacity: 0;
+  animation: desk-steam 3.8s ease-in-out infinite;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.desk-puhu {
+  filter: var(--desk-puhu-filter);
+}
+
+/*
+ * Cuts, never dissolves: two pupil positions fading through each other read as four eyes, and
+ * eyes do not fade shut (mascot README, "gaze changes hide behind a blink").
+ */
+.desk-puhu-frame {
+  opacity: 0;
+}
+
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="ahead"] [data-frame="rest"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="left"] [data-frame="left"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="right"] [data-frame="right"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="true"] [data-frame="blink"],
+.desk-puhu-wrap[data-pose="wave"] [data-frame="wave"] {
+  opacity: 1;
+}
+
+.desk-bubble {
+  position: absolute;
+  max-width: min(290px, 70vw);
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: var(--desk-bubble);
+  color: var(--desk-bubble-ink);
+  font-size: 15px;
+  line-height: 1.45;
+  font-weight: 700;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.22);
+}
+
+.desk-bubble::before {
+  content: "";
+  position: absolute;
+  left: -6px;
+  top: 20px;
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+  background: var(--desk-bubble);
+  transform: rotate(45deg);
+}
+
+.desk-title {
+  font-family: var(--nb-font-print);
+  font-variation-settings: "SOFT" 100;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  line-height: 1.02;
+}
+
+.desk-sound {
+  display: inline-flex;
+  width: 44px;
+  height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--desk-chrome);
+  color: var(--desk-ink);
+  outline: none;
+  cursor: pointer;
+  transition: background-color 160ms ease;
+}
+
+.desk-sound:focus-visible {
+  box-shadow: 0 0 0 2px var(--color-focus-ring);
+}
+
+/* ── Layout of the scene ──────────────────────────────────────────────────────────────────── */
+
+/*
+ * The wall is the top band, where the title hangs; the desk starts at `--desk-wall-h`. Puhu and the
+ * lamp stand on the desk's far edge and rise up over the wall, which is why the notebooks start a
+ * little further down (`--desk-grid-top`): the strip between is where things stand.
+ */
+.desk-scene {
+  --desk-wall-h: 214px;
+  --desk-grid-top: 286px;
+  --desk-window-x: 67%;
+  --desk-window-w: clamp(110px, 29vw, 200px);
+}
+
+.desk-content {
+  min-height: 100%;
+  padding-top: 22px;
+}
+
+/* Fills the wall down to where the notebooks start, so the props can stand in the strip below it. */
+.desk-header {
+  min-height: calc(var(--desk-grid-top) - 22px);
+  align-content: flex-start;
+}
+
+.desk-header-text {
+  max-width: 64%;
+}
+
+/*
+ * Not on a phone: the app's own header carries Puhu a few centimetres above where this one would
+ * sit, and there is no room for the bubble that gives this one something to say. Two owls in one
+ * corner read as a glitch, not as company.
+ */
+.desk-puhu-spot {
+  display: none;
+}
+
+.desk-bubble-spot {
+  display: none;
+}
+
+.desk-lamp-spot,
+.desk-plant-spot,
+.desk-mug-spot,
+.desk-pencil-spot {
+  display: none;
+}
+
+.desk-grid {
+  position: relative;
+  z-index: 5;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 12px;
+  row-gap: 4px;
+}
+
+.desk-more,
+.desk-notice {
+  background: var(--desk-chip);
+  color: var(--desk-chip-ink);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.22);
+}
+
+.desk-notice {
+  border-radius: 6px;
+  transform: rotate(-0.6deg);
+}
+
+@media (min-width: 640px) {
+  .desk-scene {
+    --desk-wall-h: 250px;
+    --desk-grid-top: 318px;
+    --desk-window-w: clamp(180px, 24vw, 300px);
+    --desk-window-x: 52%;
+  }
+
+  .desk-header-text {
+    max-width: 440px;
+  }
+
+  .desk-puhu-spot {
+    display: block;
+    z-index: 6;
+    left: 0;
+    top: calc(var(--desk-wall-h) + 46px - 226px * 0.7);
+    transform: scale(0.7);
+    transform-origin: 0 0;
+  }
+
+  .desk-bubble-spot {
+    display: block;
+    position: absolute;
+    z-index: 6;
+    left: calc(190px * 0.7 + 8px);
+    top: calc(var(--desk-wall-h) - 96px);
+    animation: desk-bubble-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .desk-lamp-spot {
+    display: block;
+    position: absolute;
+    z-index: 6;
+    right: 0;
+    width: 220px;
+    height: 220px;
+    top: calc(var(--desk-wall-h) + 52px - 220px * 408 / 420);
+  }
+
+  .desk-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    column-gap: 20px;
+    row-gap: 8px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .desk-scene {
+    --desk-wall-h: 268px;
+    --desk-grid-top: 344px;
+  }
+
+  .desk-lamp-spot {
+    width: 250px;
+    height: 250px;
+    right: 2%;
+    top: calc(var(--desk-wall-h) + 58px - 250px * 408 / 420);
+  }
+
+  .desk-mug-spot {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    left: 34%;
+    top: calc(var(--desk-wall-h) + 34px - 150px * 0.56);
+    transform: scale(0.56);
+    transform-origin: 0 0;
+  }
+
+  .desk-plant-spot {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    left: 46%;
+    top: calc(var(--desk-wall-h) + 30px - 200px * 0.62);
+    transform: scale(0.62);
+    transform-origin: 0 0;
+  }
+
+  .desk-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    column-gap: 28px;
+    row-gap: 12px;
+  }
+}
+
+@media (min-width: 1536px) {
+  .desk-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+
+  .desk-pencil-spot {
+    display: block;
+    position: absolute;
+    z-index: 4;
+    left: 60%;
+    top: calc(var(--desk-wall-h) + 36px);
+  }
+}
+
+/* ── A notebook's place on the desk ───────────────────────────────────────────────────────── */
+
+.desk-book-slot {
+  width: min(84%, 232px);
+}
+
+.desk-book-link {
+  border-radius: 6px;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.desk-book-link:focus-visible .nb-book-front {
+  outline: 0.9cqw solid var(--color-focus-ring);
+  outline-offset: 1.6cqw;
+}
+
+.desk-cell .nb-book-3d {
+  transition: transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.desk-cell-actions {
+  background: var(--desk-chip);
+  color: var(--desk-chip-ink);
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+}
+
+/* A book that was just made falls onto the desk from above and settles, raising a little dust. */
+.desk-dropping {
+  animation: desk-drop 900ms cubic-bezier(0.5, 0, 0.85, 0.35) both;
+}
+
+@keyframes desk-drop {
+  0% { transform: translate3d(0, -70vh, 0) rotate(18deg) scale(1.18); opacity: 0; }
+  10% { opacity: 1; }
+  62% { transform: translate3d(0, 0, 0) rotate(-1.5deg) scale(1); animation-timing-function: cubic-bezier(0.2, 0.7, 0.3, 1); }
+  76% { transform: translate3d(0, -4%, 0) rotate(0.5deg) scale(1.01); animation-timing-function: cubic-bezier(0.5, 0, 0.8, 0.5); }
+  88% { transform: translate3d(0, 0, 0); }
+  100% { transform: none; opacity: 1; }
+}
+
+.desk-dust {
+  position: absolute;
+  left: 50%;
+  top: 92%;
+  width: 0;
+  height: 0;
+  transform: scaleY(0.62);
+  pointer-events: none;
+}
+
+.desk-dust > span {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
+}
+
+.desk-dust > span > i {
+  position: absolute;
+  left: -5px;
+  top: -5px;
+  border-radius: 50%;
+  background: rgba(244, 232, 210, 0.82);
+  opacity: 0;
+  animation: desk-puff 780ms cubic-bezier(0.2, 0.7, 0.3, 1) both;
+  animation-delay: calc(560ms + var(--delay, 0ms));
+}
+
+@media (max-width: 639px) {
+  .desk-book-slot {
+    width: min(88%, 200px);
+  }
+}
+
+.desk-skeleton-book {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.15cqw 4.2cqw 4.2cqw 1.15cqw;
+  background-color: color-mix(in srgb, var(--desk-ink) 12%, transparent);
+  box-shadow: 1.6cqw 2.2cqw 4cqw rgba(0, 0, 0, 0.18);
+}
+
+.nb-package-face {
+  border-radius: 1.9cqw;
+  box-shadow:
+    inset 0 0 0 0.4cqw rgba(0, 0, 0, 0.16),
+    inset -2.7cqw 0 5.8cqw rgba(0, 0, 0, 0.12);
+}
+
+.nb-package-twine {
+  position: absolute;
+  box-shadow: 0 0 0 1px rgba(80, 50, 20, 0.18);
+}
+
+.nb-package-twine[data-axis="v"] {
+  left: 57.7cqw;
+  top: 0;
+  width: 4.2cqw;
+  height: 100%;
+  background: repeating-linear-gradient(170deg, #f3e6c6 0 1.2cqw, #d6c196 1.2cqw 1.7cqw);
+}
+
+.nb-package-twine[data-axis="h"] {
+  left: 0;
+  top: 80.8cqw;
+  width: 100%;
+  height: 4.2cqw;
+  background: repeating-linear-gradient(80deg, #f3e6c6 0 1.2cqw, #d6c196 1.2cqw 1.7cqw);
+}
+
+.nb-package-bow {
+  position: absolute;
+  left: 48.5cqw;
+  top: 74.2cqw;
+  width: 22.7cqw;
+  height: 17.3cqw;
+  background:
+    radial-gradient(ellipse 5.8cqw 3.7cqw at 5.8cqw 8.65cqw, #efe0bd 62%, transparent 65%),
+    radial-gradient(ellipse 5.8cqw 3.7cqw at 16.9cqw 8.65cqw, #efe0bd 62%, transparent 65%);
+}
+
+.nb-package-tag {
+  position: absolute;
+  left: 11.5cqw;
+  top: 28.8cqw;
+  width: 45.4cqw;
+  height: 22.7cqw;
+  padding: 5.4cqw 3.5cqw 0 9.6cqw;
+  background: #fbf6ea;
+  clip-path: polygon(18% 0, 100% 0, 100% 100%, 18% 100%, 0 50%);
+  transform: rotate(-8deg);
+  font-family: var(--nb-font-hand);
+  font-weight: 700;
+  font-size: 8.8cqw;
+  line-height: 1;
+  color: #2a2118;
+  white-space: nowrap;
+}
+
+/* ── The notebook ─────────────────────────────────────────────────────────────────────────── */
+
+.nb-book {
+  container-type: inline-size;
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1080 / 1527;
+}
+
+.nb-book-3d,
+.nb-book-lift,
+.nb-book-cover {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+}
+
+.nb-book-3d {
+  transform-origin: 50% 55%;
+}
+
+.nb-book-shadow {
+  position: absolute;
+  inset: 0;
+  border-radius: 4cqw;
+  background: var(--desk-shadow, #000);
+  pointer-events: none;
+  transition:
+    transform 320ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    filter 320ms ease,
+    opacity 320ms ease;
+}
+
+/* Two shadows, the way a book on a lit desk has them: a tight contact line and a broad soft one. */
+.nb-book-shadow[data-layer="contact"] {
+  transform: translate3d(1.6cqw, 2.2cqw, -0.5cqw);
+  filter: blur(2.2cqw);
+  opacity: calc(var(--desk-shadow-strength, 0.5) * 1.1);
+}
+
+.nb-book-shadow[data-layer="ambient"] {
+  transform: translate3d(6.5cqw, 9cqw, -0.6cqw) scale(1.03);
+  filter: blur(9cqw);
+  opacity: calc(var(--desk-shadow-strength, 0.5) * 0.8);
+}
+
+[data-lifted="true"] .nb-book-shadow[data-layer="contact"] {
+  transform: translate3d(3.4cqw, 4.4cqw, -0.5cqw);
+  filter: blur(3.8cqw);
+  opacity: calc(var(--desk-shadow-strength, 0.5) * 0.55);
+}
+
+[data-lifted="true"] .nb-book-shadow[data-layer="ambient"] {
+  transform: translate3d(11cqw, 15cqw, -0.6cqw) scale(1.05);
+  filter: blur(13.5cqw);
+  opacity: calc(var(--desk-shadow-strength, 0.5) * 0.7);
+}
+
+.nb-book-lift {
+  transition: transform 300ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+[data-lifted="true"] .nb-book-lift {
+  transform: translateZ(5.4cqw);
+}
+
+[data-pressed="true"] .nb-book-lift {
+  transform: translateZ(0.6cqw) scale(0.985);
+  transition-duration: 120ms;
+}
+
+.nb-book-back {
+  position: absolute;
+  inset: 0;
+  border-radius: 1.15cqw 3.85cqw 3.85cqw 1.15cqw;
+}
+
+.nb-book-edge-bottom,
+.nb-book-edge-right {
+  position: absolute;
+  transform-origin: 0 0;
+}
+
+.nb-book-edge-bottom {
+  left: 5cqw;
+  top: 0;
+  width: 93.5cqw;
+  height: var(--nb-th);
+  transform: translate3d(0, 141.4cqw, 0) rotateX(90deg);
+}
+
+.nb-book-edge-right {
+  left: 0;
+  top: 2.3cqw;
+  width: var(--nb-th);
+  height: 136.8cqw;
+  transform: translate3d(100cqw, 0, 0) rotateY(-90deg);
+}
+
+.nb-book-tab {
+  position: absolute;
+  left: 95.4cqw;
+  width: 9.2cqw;
+  height: 11.9cqw;
+  border-radius: 0 2.3cqw 2.3cqw 0;
+  box-shadow: inset 0 -1.2cqw 0 rgba(0, 0, 0, 0.08);
+}
+
+.nb-book-ribbon {
+  position: absolute;
+  left: 71.5cqw;
+  top: 134.6cqw;
+  width: 4.6cqw;
+  height: 28.8cqw;
+  background: linear-gradient(90deg, #8a2620, #c64a3c 50%, #8a2620);
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 86%, 0 100%);
+}
+
+/*
+ * The top sheet of the page block. Full size rather than inset under the cover's overhang: once
+ * the cover swings open this sheet *is* the right-hand page of the editor's first spread, and a
+ * sheet a few percent narrower would visibly jump when the real page takes over from it.
+ */
+.nb-book-block {
+  position: absolute;
+  inset: 0;
+  border-radius: 0.8cqw 3.1cqw 3.1cqw 0.8cqw;
+  overflow: hidden;
+  background-color: var(--notebook-paper);
+}
+
+.nb-book-cover {
+  transform-origin: 0 50%;
+}
+
+.nb-book-face {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+
+.nb-book-front {
+  border-radius: 1.15cqw 4.2cqw 4.2cqw 1.15cqw;
+  box-shadow:
+    inset 0 0 0 0.4cqw rgba(0, 0, 0, 0.2),
+    inset -2.7cqw 0 5.8cqw rgba(0, 0, 0, 0.16);
+}
+
+.nb-book-inside {
+  border-radius: 4.2cqw 1.15cqw 1.15cqw 4.2cqw;
+  transform: rotateY(180deg);
+  box-shadow: inset 0 0 0 0.4cqw rgba(0, 0, 0, 0.25);
+}
+
+.nb-book-label {
+  position: absolute;
+  left: 17.7cqw;
+  top: 24.2cqw;
+  width: 72.3cqw;
+  padding: 5.4cqw 5.8cqw 4.6cqw;
+  border-radius: 2.7cqw;
+  background: #fbf6ea;
+  box-shadow:
+    0 0.4cqw 0 rgba(0, 0, 0, 0.12),
+    0 2.3cqw 5cqw rgba(0, 0, 0, 0.22),
+    inset 0 0 0 0.4cqw rgba(120, 96, 60, 0.14);
+}
+
+.nb-book-title {
+  margin: 0;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow-wrap: anywhere;
+}
+
+.nb-book-title[data-hand="false"] {
+  font-family: var(--nb-font-print);
+  font-variation-settings: "SOFT" 100;
+  font-weight: 700;
+  font-size: 10cqw;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  color: #1f2433;
+}
+
+.nb-book-title[data-hand="true"] {
+  font-family: var(--nb-font-hand);
+  font-weight: 700;
+  font-size: 12.3cqw;
+  line-height: 0.94;
+  color: #22283a;
+}
+
+.nb-book-meta {
+  margin: 2.7cqw 0 0;
+  font-weight: 800;
+  font-size: 5.2cqw;
+  line-height: 1.2;
+  color: #6a5f4f;
+}
+
+@container (max-width: 190px) {
+  .nb-book-meta {
+    display: none;
+  }
+}
+
+.nb-book-sticky {
+  position: absolute;
+  left: 48.1cqw;
+  top: 83.1cqw;
+  width: 39.6cqw;
+  min-height: 33.8cqw;
+  padding: 4.6cqw 4.2cqw;
+  border-radius: 0.4cqw 0.4cqw 4.2cqw 0.4cqw;
+  background: linear-gradient(172deg, #ffeb94, #ffd659);
+  transform: rotate(-5deg);
+  box-shadow: 0 3.5cqw 4.2cqw -2.3cqw rgba(0, 0, 0, 0.5);
+  font-family: var(--nb-font-hand);
+  font-weight: 700;
+  font-size: 8.8cqw;
+  line-height: 1;
+  color: #3b2f12;
+  pointer-events: none;
+}
+
+.nb-book-tape {
+  position: absolute;
+  left: 63.5cqw;
+  top: 7.7cqw;
+  width: 46.2cqw;
+  height: 10.8cqw;
+  transform: rotate(32deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7cqw;
+  font-family: var(--nb-font-hand);
+  font-weight: 700;
+  font-size: 6.2cqw;
+  white-space: nowrap;
+  overflow: hidden;
+  color: #1d2433;
+  clip-path: polygon(3% 0, 97% 0, 100% 25%, 97% 50%, 100% 75%, 97% 100%, 3% 100%, 0 75%, 3% 50%, 0 25%);
+  pointer-events: none;
+}
+
+.nb-book-sheen {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, rgba(255, 255, 255, 0) 32%, rgba(255, 236, 205, 0.26) 47%, rgba(255, 255, 255, 0) 62%);
+  opacity: 0;
+  transform: translateX(-8cqw);
+  transition: opacity 320ms ease, transform 700ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  pointer-events: none;
+}
+
+[data-lifted="true"] .nb-book-sheen {
+  opacity: 1;
+  transform: translateX(8cqw);
+}
+
+.nb-book-coil {
+  position: absolute;
+  left: -4.2cqw;
+  top: 3.1cqw;
+  width: 10.8cqw;
+  height: 135.4cqw;
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* The inside of the front cover: ex libris, the way a schoolbook is signed on the first board. */
+.nb-exlibris {
+  position: absolute;
+  left: 16.2cqw;
+  top: 38.5cqw;
+  width: 67.7cqw;
+  padding: 5.8cqw 5.4cqw 5cqw;
+  border-radius: 3.1cqw;
+  background: #fbf6ea;
+  text-align: center;
+  box-shadow: 0 1.9cqw 4.6cqw rgba(0, 0, 0, 0.3);
+}
+
+.nb-exlibris-kicker {
+  margin: 0;
+  font-weight: 800;
+  font-size: 3.85cqw;
+  color: #7a6c58;
+}
+
+.nb-exlibris-name {
+  margin: 0.8cqw 0 0;
+  font-family: var(--nb-font-hand);
+  font-weight: 700;
+  font-size: 11.5cqw;
+  line-height: 1.05;
+  color: #22283a;
+  overflow-wrap: anywhere;
+}
+
+.nb-exlibris-stamp {
+  width: 17.7cqw;
+  height: 17.7cqw;
+  margin: 1.2cqw auto 0;
+  object-fit: contain;
+  filter: grayscale(1) sepia(0.55) contrast(0.9);
+  opacity: 0.75;
+}
+
+/* ── The contents page ────────────────────────────────────────────────────────────────────── */
+
+/*
+ * Hairlines in the page's own units, not in px: the flying book draws this page small and scales it
+ * up, and a 1 px rule would land on the editor's page three times as thick as the real one.
+ */
+.nb-contents-margin {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 12cqw;
+  width: 0.19cqw;
+  background: var(--notebook-margin-rule);
+}
+
+.nb-contents {
+  position: absolute;
+  inset: 0;
+  padding: 12cqw 7.4cqw 7.4cqw 16cqw;
+  display: flex;
+  flex-direction: column;
+  color: #26304a;
+}
+
+.nb-contents-heading {
+  margin: 0 0 3.4cqw;
+  padding-bottom: 3.4cqw;
+  border-bottom: 0.4cqw solid rgba(31, 36, 51, 0.18);
+  font-family: var(--nb-font-print);
+  font-variation-settings: "SOFT" 100;
+  font-weight: 700;
+  font-size: 7.7cqw;
+  line-height: 1;
+  color: #1f2433;
+}
+
+.nb-contents-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* One line of contents is one ruled line of its own: the rule sits under the writing, never through it. */
+.nb-contents-row {
+  display: flex;
+  width: 100%;
+  align-items: flex-end;
+  gap: 1.9cqw;
+  height: 7.6cqw;
+  padding: 0 1.2cqw 1.1cqw;
+  margin: 0 -1.2cqw;
+  box-sizing: content-box;
+  border: 0;
+  border-bottom: 0.19cqw solid var(--notebook-rule);
+  border-radius: 1.5cqw 1.5cqw 0 0;
+  background: transparent;
+  font-family: var(--nb-font-hand);
+  font-weight: 600;
+  font-size: 5.4cqw;
+  line-height: 1;
+  color: inherit;
+  text-align: start;
+  white-space: nowrap;
+  outline: none;
+  transition: background-color 160ms ease;
+}
+
+button.nb-contents-row {
+  cursor: pointer;
+}
+
+button.nb-contents-row:hover {
+  background-color: rgba(85, 172, 238, 0.12);
+}
+
+button.nb-contents-row:focus-visible {
+  box-shadow: inset 0 0 0 0.5cqw var(--color-focus-ring);
+}
+
+.nb-contents-row-skeleton {
+  align-items: center;
+}
+
+.nb-contents-skeleton {
+  display: block;
+  height: 2.6cqw;
+  border-radius: 9999px;
+  background: rgba(38, 48, 74, 0.1);
+}
+
+.nb-contents-dot {
+  flex: none;
+  align-self: center;
+  width: 2.3cqw;
+  height: 2.3cqw;
+  margin-top: 1.2cqw;
+  border-radius: 50%;
+}
+
+.nb-contents-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  padding-bottom: 0.2cqw;
+}
+
+.nb-contents-leader {
+  flex: 1;
+  min-width: 3.8cqw;
+  height: 0;
+  margin-bottom: 0.9cqw;
+  border-bottom: 0.55cqw dotted rgba(38, 48, 74, 0.3);
+}
+
+.nb-contents-number {
+  flex: none;
+}
+
+.nb-contents-due {
+  flex: none;
+  align-self: center;
+  margin-top: 1cqw;
+  padding: 0.5cqw 1.5cqw;
+  border-radius: 9999px;
+  background: rgba(85, 172, 238, 0.18);
+  font-family: var(--font-body);
+  font-weight: 800;
+  font-size: 2.9cqw;
+  line-height: 1.2;
+  color: #1d5f93;
+}
+
+.nb-contents-empty {
+  margin: 1.5cqw 0 0;
+  font-family: var(--nb-font-hand);
+  font-weight: 600;
+  font-size: 6.2cqw;
+  line-height: 1.15;
+  color: #4a5068;
+}
+
+.nb-contents-start {
+  align-self: flex-start;
+  margin-top: 5cqw;
+  padding: 2.2cqw 4.6cqw;
+  border: 0;
+  border-radius: 9999px;
+  background: var(--play-cta, #55acee);
+  color: var(--play-cta-ink, #0f2233);
+  font-weight: 800;
+  font-size: max(3.6cqw, 14px);
+  box-shadow: 0 0.8cqw 0 var(--play-cta-edge, #3b8fd0);
+  cursor: pointer;
+  outline: none;
+}
+
+.nb-contents-start:focus-visible {
+  box-shadow: 0 0.8cqw 0 var(--play-cta-edge, #3b8fd0), 0 0 0 0.6cqw var(--color-focus-ring);
+}
+
+.nb-contents-more {
+  margin: 2.4cqw 0 0;
+  font-family: var(--nb-font-hand);
+  font-weight: 600;
+  font-size: 5cqw;
+  color: #4a5068;
+}
+
+/* ── The book in the air ──────────────────────────────────────────────────────────────────── */
+
+.nb-opening {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+}
+
+.nb-opening-scrim {
+  position: fixed;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  background: rgba(8, 7, 16, 0.46);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  cursor: pointer;
+}
+
+.nb-opening-scrim:focus-visible {
+  outline: none;
+}
+
+.nb-opening-desk-shadow {
+  position: fixed;
+  border-radius: 4%;
+  background: #000;
+  opacity: 0.5;
+  filter: blur(10px);
+  pointer-events: none;
+}
+
+.nb-opening-book {
+  position: fixed;
+  pointer-events: none;
+}
+
+/* ── Motion ───────────────────────────────────────────────────────────────────────────────── */
+
+@keyframes desk-twinkle {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+@keyframes desk-mote {
+  0% { opacity: 0; transform: translate(0, 0); }
+  25% { opacity: 0.95; }
+  70% { opacity: 0.45; }
+  100% { opacity: 0; transform: translate(22px, -54px); }
+}
+
+@keyframes desk-steam {
+  0% { opacity: 0; transform: translateY(8px); }
+  35% { opacity: 0.6; }
+  100% { opacity: 0; transform: translateY(-26px); }
+}
+
+@keyframes desk-puff {
+  0% { transform: translateX(28px) scale(0.4); opacity: 0; }
+  8% { opacity: 0.95; }
+  100% { transform: translateX(96px) scale(1.7); opacity: 0; }
+}
+
+@keyframes desk-bubble-in {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-star,
+  .desk-mote,
+  .desk-steam {
+    animation: none;
+  }
+
+  .desk-mote {
+    display: none;
+  }
+
+  .desk-steam {
+    opacity: 0.35;
+  }
+
+  .desk-pool,
+  .desk-cone,
+  .desk-motes,
+  .desk-lamp-head,
+  .desk-cell .nb-book-3d,
+  .nb-book-sheen,
+  .nb-book-lift,
+  .nb-book-shadow {
+    transition: none;
+  }
+}
+
+/* ── Turning pages ────────────────────────────────────────────────────────────────────────── */
+
+/* A riffled leaf darkens as it stands up from the book and lightens as it lies down again. */
+.nb-riffle-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.18), rgba(0, 0, 0, 0.04) 40%, rgba(255, 255, 255, 0.12));
+}
+
+.nb-riffle-shade[data-face="back"] {
+  background: linear-gradient(270deg, rgba(0, 0, 0, 0.22), rgba(0, 0, 0, 0.06) 45%, rgba(0, 0, 0, 0));
+}
+
+/*
+ * Where a page can be taken: its outer edge, from the bottom corner up to just short of the middle,
+ * with a small dog-ear at the corner that lifts a little more under the pointer. The dog-ear is the
+ * sign; the whole strip is the handle, so the corner stays reachable when something floats over it.
+ */
+.nb-dogear {
+  position: absolute;
+  bottom: 0;
+  z-index: 12;
+  width: clamp(36px, 5%, 60px);
+  height: 46%;
+  cursor: grab;
+  touch-action: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nb-dogear[data-side="right"] {
+  right: 0;
+}
+
+.nb-dogear[data-side="left"] {
+  left: 0;
+}
+
+.nb-dogear::before {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: 70%;
+  aspect-ratio: 1;
+  background: linear-gradient(315deg, #f1ebdc 0 48%, rgba(0, 0, 0, 0.18) 50%, transparent 56%);
+  box-shadow: -3px -3px 8px rgba(0, 0, 0, 0.08);
+  transition: width 200ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.nb-dogear[data-side="right"]::before {
+  right: 0;
+  border-top-left-radius: 30%;
+}
+
+.nb-dogear[data-side="left"]::before {
+  left: 0;
+  border-top-right-radius: 30%;
+  background: linear-gradient(45deg, #f1ebdc 0 48%, rgba(0, 0, 0, 0.18) 50%, transparent 56%);
+  box-shadow: 3px -3px 8px rgba(0, 0, 0, 0.08);
+}
+
+@media (hover: hover) {
+  .nb-dogear:hover::before {
+    width: 100%;
+  }
+}
+
+.nb-dogear:active {
+  cursor: grabbing;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nb-dogear::before {
+    transition: none;
+  }
+}

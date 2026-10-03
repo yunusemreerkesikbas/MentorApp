@@ -6513,6 +6513,39 @@ export const mistakeNotebookControllerLinkThread = async (id: string,
 
 
 
+export type mistakeNotebookControllerGetContentsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type mistakeNotebookControllerGetContentsResponseSuccess = (mistakeNotebookControllerGetContentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type mistakeNotebookControllerGetContentsResponse = (mistakeNotebookControllerGetContentsResponseSuccess)
+
+export const getMistakeNotebookControllerGetContentsUrl = () => {
+
+
+  
+
+  return `/v1/coaching/notebook/contents`
+}
+
+export const mistakeNotebookControllerGetContents = async ( options?: RequestInit): Promise<mistakeNotebookControllerGetContentsResponse> => {
+  
+  return http<mistakeNotebookControllerGetContentsResponse>(getMistakeNotebookControllerGetContentsUrl(),
+  {      
+    ...options,
+    method: 'GET'
+    
+    
+  }
+);}
+
+
+
 export type mistakeNotebookControllerGetPageResponse200 = {
   data: void
   status: 200
@@ -6742,6 +6775,39 @@ export const notebooksControllerDelete = async (id: string, options?: RequestIni
   {      
     ...options,
     method: 'DELETE'
+    
+    
+  }
+);}
+
+
+
+export type notebooksControllerGetContentsResponse200 = {
+  data: void
+  status: 200
+}
+    
+export type notebooksControllerGetContentsResponseSuccess = (notebooksControllerGetContentsResponse200) & {
+  headers: Headers;
+};
+;
+
+export type notebooksControllerGetContentsResponse = (notebooksControllerGetContentsResponseSuccess)
+
+export const getNotebooksControllerGetContentsUrl = (id: string,) => {
+
+
+  
+
+  return `/v1/coaching/notebooks/${id}/contents`
+}
+
+export const notebooksControllerGetContents = async (id: string, options?: RequestInit): Promise<notebooksControllerGetContentsResponse> => {
+  
+  return http<notebooksControllerGetContentsResponse>(getNotebooksControllerGetContentsUrl(id),
+  {      
+    ...options,
+    method: 'GET'
     
     
   }

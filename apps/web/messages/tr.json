@@ -2024,6 +2024,15 @@
       "cancel": "Vazgeç",
       "save": "Kaydet",
       "error": "Şimdilik kaydolmadı. Biraz sonra bir daha deneyelim."
+    },
+    "desk": {
+      "open": "{details}. Defteri aç",
+      "sound": "Masa sesleri",
+      "bubble_due": "Yanlış Defterini {time, select, night {ışığın altına} other {en öne}} koydum. Bugün {count} tekrar seni bekliyor.",
+      "bubble_idle": "Masan hazır. Hangi defterle başlıyoruz?",
+      "bubble_first": "Her ders için ayrı bir defter istersen paket masada duruyor.",
+      "bubble_new": "Yeni defterin masada. İlk sayfası seni bekliyor.",
+      "skip": "Animasyonu atla"
     }
   },
   "notebook": {
@@ -2231,7 +2240,23 @@
       "early": "Aktif sorularla erken çalış",
       "saved": "Kaydedilen cevapların geçmişine eklendi.",
       "more": "Diğer sorulara geç"
-    }
+    },
+    "contents": {
+      "heading": "İçindekiler",
+      "empty": "Burası henüz boş. Sayfayı çevir, ilk satırı sen yaz.",
+      "start": "Yazmaya başla",
+      "more": "ve {count} sayfa daha",
+      "line_label": "{title}, sayfa {page}",
+      "untitled": "Sayfa {page}",
+      "untitled_cards": "{count} soru",
+      "untitled_ink": "Çizimler",
+      "untitled_stickers": "Çıkartmalar",
+      "due": "{count} tekrar",
+      "loading": "Sayfalar okunuyor",
+      "error": "İçindekiler şu an gelmedi. Sayfaları çevirerek yine gezebilirsin."
+    },
+    "contents_label": "İçindekiler",
+    "owner_kicker": "Bu defterin sahibi"
   },
   "photo": {
     "error_type": "Yalnızca JPEG veya PNG yükleyebilirsin.",

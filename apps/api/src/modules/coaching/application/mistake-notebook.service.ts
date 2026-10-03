@@ -4,6 +4,7 @@ import { Inject, Injectable, Logger, Optional } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type {
   CreateNotebookInput,
+  NotebookContentsDto,
   NotebookDto,
   NotebookEntryDto,
   NotebookImageUploadUrlDto,
@@ -40,14 +41,25 @@ import {
 import { ContentService } from "../../content/application/content.service";
 import { advanceReview, firstReviewAt } from "../domain/notebook-review.policy";
 import {
+  contentsEntryIds,
+  summarizeNotebookPages,
+  type ContentsEntryInput,
+} from "../domain/notebook-contents.policy";
+import {
   CoachingEventTopic,
   NotebookEntryReviewed,
 } from "../domain/coaching.events";
 import {
   MistakeNotebookRepository,
   type MistakeNotebookEntryRow,
+  type NotebookEntryLabelRow,
   type NotebookSummaryRow,
 } from "../infrastructure/mistake-notebook.repository";
+
+interface ExamTaxonomy {
+  subjects: Array<{ slug: string; name: string }>;
+  topics: Array<{ subjectSlug: string; slug: string; name: string }>;
+}
 
 /** Public prefix all notebook photos live under; the orphan sweep lists exactly this. */
 export const NOTEBOOK_PREFIX = "notebook/";
@@ -295,6 +307,76 @@ export class MistakeNotebookService {
       },
     );
     return { pageIndex, doc, entries: await this.toEntryDtos(userId, entries) };
+  }
+
+  /** The system notebook's contents page. */
+  async getContents(userId: string): Promise<NotebookContentsDto> {
+    const system = await withUserContext(this.db, { userId }, (tx) =>
+      this.notebook.ensureMistakeNotebook(tx, userId, null),
+    );
+    return this.getNotebookContents(userId, system.id);
+  }
+
+  /**
+   * One line per written page: the contents page ("İçindekiler") a notebook opens on.
+   *
+   * Two reads whatever the size of the book: every page outline, then the labels of every card
+   * those pages pin. Titles are the student's own words or their own filing, never generated.
+   */
+  async getNotebookContents(
+    userId: string,
+    notebookId: string,
+  ): Promise<NotebookContentsDto> {
+    const now = new Date();
+    const { outlines, labels } = await withUserContext(
+      this.db,
+      { userId },
+      async (tx) => {
+        const book = await this.notebook.findNotebook(tx, userId, notebookId);
+        if (!book) throw new NotFoundError({ reason: "notebook_missing" });
+        const outlines = await this.notebook.listPageOutlines(
+          tx,
+          userId,
+          notebookId,
+        );
+        const entryIds = [
+          ...new Set(outlines.flatMap((page) => contentsEntryIds(page.items))),
+        ];
+        return {
+          outlines,
+          labels: await this.notebook.listEntryLabelsByIds(tx, userId, entryIds),
+        };
+      },
+    );
+    const entries = await this.toContentsEntries(labels, now);
+    return { notebookId, pages: summarizeNotebookPages(outlines, entries) };
+  }
+
+  private async toContentsEntries(
+    rows: NotebookEntryLabelRow[],
+    now: Date,
+  ): Promise<Map<string, ContentsEntryInput>> {
+    const taxonomies = await this.taxonomiesFor(rows.map((row) => row.examId));
+    return new Map(
+      rows.map((row) => {
+        const names = labelNames(
+          taxonomies.get(row.examId),
+          row.subjectRef,
+          row.topicRef,
+        );
+        return [
+          row.id,
+          {
+            id: row.id,
+            subjectRef: row.subjectRef,
+            subjectName: names.subjectName,
+            topicRef: row.topicRef,
+            topicName: names.topicName,
+            due: row.nextReviewAt !== null && row.nextReviewAt <= now,
+          },
+        ];
+      }),
+    );
   }
 
   /**
@@ -766,56 +848,29 @@ export class MistakeNotebookService {
       throw new ValidationFailedError({ reason: "unknown_topic_ref" });
   }
 
-  /**
-   * Rows → DTOs, resolving slugs to display names and keys to URLs.
-   *
-   * Taxonomy is fetched once per exam present in the batch rather than per row: a page of twelve
-   * entries is almost always one exam, and per-row lookups would turn a page render into twelve
-   * round-trips.
-   */
+  /** Rows → DTOs, resolving slugs to display names (`taxonomiesFor`) and keys to URLs. */
   private async toEntryDtos(
     userId: string,
     rows: MistakeNotebookEntryRow[],
   ): Promise<NotebookEntryDto[]> {
     if (rows.length === 0) return [];
-    const examIds = [...new Set(rows.map((row) => row.examId))];
-    const taxonomies = new Map(
-      await Promise.all(
-        examIds.map(
-          async (examId) =>
-            [
-              examId,
-              {
-                subjects: await this.content.listExamSubjectsByExamId(examId),
-                topics: await this.content.listExamTopicsByExamId(examId),
-              },
-            ] as const,
-        ),
-      ),
-    );
+    const taxonomies = await this.taxonomiesFor(rows.map((row) => row.examId));
 
     return Promise.all(rows.map(async (row) => {
-      const taxonomy = taxonomies.get(row.examId);
-      const subject = row.subjectRef
-        ? taxonomy?.subjects.find((item) => item.slug === row.subjectRef)
-        : undefined;
-      const topic =
-        row.subjectRef && row.topicRef
-          ? taxonomy?.topics.find(
-              (item) =>
-                item.subjectSlug === row.subjectRef &&
-                item.slug === row.topicRef,
-            )
-          : undefined;
+      const names = labelNames(
+        taxonomies.get(row.examId),
+        row.subjectRef,
+        row.topicRef,
+      );
       return {
         id: row.id,
         mockExamId: row.mockExamId,
         storageKey: row.storageKey,
         url: row.storageKey ? await this.storage.getPrivateUrl(row.storageKey, userId) : null,
         subjectRef: row.subjectRef,
-        subjectName: subject?.name ?? row.subjectRef,
+        subjectName: names.subjectName,
         topicRef: row.topicRef,
-        topicName: topic?.name ?? row.topicRef,
+        topicName: names.topicName,
         errorType: row.errorType as NotebookEntryDto["errorType"],
         note: row.note,
         solutionStorageKey: row.solutionStorageKey,
@@ -835,4 +890,49 @@ export class MistakeNotebookService {
       };
     }));
   }
+
+  /**
+   * Subjects and topics of every exam in a batch, fetched once per exam rather than once per row:
+   * a page of twelve cards is almost always one exam, and per-row lookups would turn one render
+   * into twelve round-trips.
+   */
+  private async taxonomiesFor(
+    examIds: string[],
+  ): Promise<Map<string, ExamTaxonomy>> {
+    return new Map(
+      await Promise.all(
+        [...new Set(examIds)].map(
+          async (examId) =>
+            [
+              examId,
+              {
+                subjects: await this.content.listExamSubjectsByExamId(examId),
+                topics: await this.content.listExamTopicsByExamId(examId),
+              },
+            ] as const,
+        ),
+      ),
+    );
+  }
+}
+
+/** Display names for a card's labels. A slug the taxonomy no longer knows stands in for its name. */
+function labelNames(
+  taxonomy: ExamTaxonomy | undefined,
+  subjectRef: string | null,
+  topicRef: string | null,
+): { subjectName: string | null; topicName: string | null } {
+  const subject = subjectRef
+    ? taxonomy?.subjects.find((item) => item.slug === subjectRef)
+    : undefined;
+  const topic =
+    subjectRef && topicRef
+      ? taxonomy?.topics.find(
+          (item) => item.subjectSlug === subjectRef && item.slug === topicRef,
+        )
+      : undefined;
+  return {
+    subjectName: subject?.name ?? subjectRef,
+    topicName: topic?.name ?? topicRef,
+  };
 }

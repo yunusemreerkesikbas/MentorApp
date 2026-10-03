@@ -2024,6 +2024,15 @@
       "cancel": "Cancel",
       "save": "Save",
       "error": "It didn't save just now. Let's try again in a moment."
+    },
+    "desk": {
+      "open": "{details}. Open the notebook",
+      "sound": "Desk sounds",
+      "bubble_due": "I put your Mistake Notebook {time, select, night {under the lamp} other {up front}}. {count, plural, one {# review is} other {# reviews are}} waiting for you today.",
+      "bubble_idle": "Your desk is ready. Which notebook are we opening?",
+      "bubble_first": "Want a notebook for each subject? The package is on the desk.",
+      "bubble_new": "Your new notebook is on the desk. Its first page is waiting.",
+      "skip": "Skip the animation"
     }
   },
   "notebook": {
@@ -2231,7 +2240,23 @@
       "early": "Review active questions early",
       "saved": "Your recorded answers are in your history.",
       "more": "Continue with other questions"
-    }
+    },
+    "contents": {
+      "heading": "Contents",
+      "empty": "Nothing here yet. Turn the page and write the first line.",
+      "start": "Start writing",
+      "more": "and {count, plural, one {# more page} other {# more pages}}",
+      "line_label": "{title}, page {page}",
+      "untitled": "Page {page}",
+      "untitled_cards": "{count, plural, one {# question} other {# questions}}",
+      "untitled_ink": "Sketches",
+      "untitled_stickers": "Stickers",
+      "due": "{count} due",
+      "loading": "Reading the pages",
+      "error": "The contents did not come through just now. You can still turn the pages."
+    },
+    "contents_label": "Contents",
+    "owner_kicker": "This notebook belongs to"
   },
   "photo": {
     "error_type": "You can only upload JPEG or PNG.",

@@ -1377,6 +1377,36 @@ export interface NotebookPageDto {
 }
 
 /**
+ * One line of a notebook's contents page ("İçindekiler"): a page that has something on it.
+ *
+ * Summarised on the server from the page document and the cards it pins, so the contents page is
+ * one read instead of a page fetch per page. Nothing here is generated: a title is the student's own
+ * first line of writing, or the topic their cards were filed under.
+ */
+export interface NotebookContentsPageDto {
+  /** Zero-based, the index the page endpoints take. The student reads it as `pageIndex + 1`. */
+  pageIndex: number;
+  /** First line of the page's top-most note, trimmed. Null when the page has no written note. */
+  noteTitle: string | null;
+  /** The topic most of the page's cards were filed under. Null when no card has one. */
+  topicName: string | null;
+  /** The subject most of the page's cards were filed under. */
+  subjectRef: string | null;
+  subjectName: string | null;
+  entryCount: number;
+  /** Cards on this page whose review moment has arrived. */
+  dueCount: number;
+  stickerCount: number;
+  inkCount: number;
+}
+
+export interface NotebookContentsDto {
+  notebookId: string;
+  /** Pages with anything on them, in page order. A notebook nobody has written in has none. */
+  pages: NotebookContentsPageDto[];
+}
+
+/**
  * Premium vision pre-labelling. Classification only, same whitelist-bounded prompt as the retired
  * standalone card (§4 #2) — the student confirms or corrects it with one tap.
  */

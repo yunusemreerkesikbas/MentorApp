@@ -543,6 +543,37 @@ swap without a slide.
 
 Under reduced motion every change lands at once.
 
+**The notebook desk (2026-10-03, "Masa").** Defterlerim is a desk, not a list: the notebooks lie on
+it as 3D books (tilted 34°, each with its own seeded spin and nudge) under the app's own light (day:
+a window and a sunbeam; night: the lamp, its cone and the pool it throws). Picking one up is the
+scene's moment and the second exception to the `Moment` budget after "Işık Yandı": decided with the
+product owner and scoped to the desk and the notebook it opens, the flight may overshoot and runs
+about 1.5 s with sound. Everything else in §9 stands.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Hover / focus | The book rises off the desk, its shadows stretch, the lamp head turns to it and the light follows | 300–320 ms, light 760 ms |
+| Press | The book sinks into the desk | 0–120 ms |
+| Lift | It comes up flat towards the student | 120–540 ms |
+| Flight | It flies to where the editor's book will stand (overshoot `cubic-bezier(.22,1.18,.32,1)`) while the room dims; the editor loads underneath from 520 ms | 470–1110 ms |
+| Open | The cover swings open in 3D onto the inside cover and the contents page | 900–1520 ms |
+| Hand-over | It settles onto the editor's own contents spread and fades, leaving the real page | 320 ms + 240 ms |
+| New book | A notebook that was just made drops onto the desk and raises a little dust | 900 ms |
+
+- **Skip:** a tap anywhere, Escape, Enter or Space ends the flight on the opened book.
+- **Turning pages:** a page turns by its corner along one straight fold and keeps what is written on
+  it (`lib/notebook-curl.ts`): hands-off 680 ms on a spread, 560 ms on a phone; dragged from the page
+  edge it follows the finger and finishes past a third of the way or on a flick. A contents line deep
+  in the book riffles there instead: 2–6 rigid leaves, 340 ms each, 80 ms apart.
+- **Sound:** synthesised in the browser (lift, open, close, land, page, riffle); the desk's speaker
+  button turns it off and the choice is remembered (`mentor.notebook-sound`).
+- **Reduced motion:** no flight (the editor opens straight onto the contents page), pages swap
+  without a turn, no drop-in, the desk's loops (stars, motes, steam) stop and hover changes land
+  without travel. Nothing waits on any of it.
+- **Source of truth:** timings in `lib/notebook-desk.ts` (`NOTEBOOK_OPENING`), the flight in
+  `components/notebook-desk/notebook-opening-overlay.tsx`, turns in
+  `(app)/notebook/_components/use-notebook-turns.tsx`.
+
 ---
 
 ## 10. Empty & loading
