@@ -21,6 +21,7 @@ import { deleteNotebook, fetchNotebooks } from "@/lib/notebook";
 import { notebookOpening, useNotebookOpening } from "@/lib/notebook-opening";
 import { playNotebookSfx } from "@/lib/notebook-sfx";
 import { prefetchNotebookContents } from "@/lib/notebook-contents-cache";
+import { preloadNotebookOpeningFlight } from "@/components/notebook-desk/notebook-opening-overlay";
 import { useTheme } from "@/lib/use-theme";
 import { NotebookFormDialog } from "./notebook-form-dialog";
 import { DeskBackdrop, DeskLight } from "./desk-backdrop";
@@ -115,6 +116,11 @@ export function NotebooksShell() {
       setLoading(false);
     }
   }
+
+  // The flight is its own chunk (see the overlay); fetched now, it is here before any book is clicked.
+  useEffect(() => {
+    preloadNotebookOpeningFlight();
+  }, []);
 
   useEffect(() => {
     let active = true;
