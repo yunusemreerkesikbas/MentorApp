@@ -556,13 +556,13 @@ html.dark .mentor-notebook-desk {
   max-width: 64%;
 }
 
+/*
+ * Not on a phone: the app's own header carries Puhu a few centimetres above where this one would
+ * sit, and there is no room for the bubble that gives this one something to say. Two owls in one
+ * corner read as a glitch, not as company.
+ */
 .desk-puhu-spot {
-  position: absolute;
-  right: 6px;
-  top: calc(var(--desk-wall-h) + 40px - 226px * 0.52);
-  transform: scale(0.52);
-  transform-origin: 100% 0;
-  z-index: 6;
+  display: none;
 }
 
 .desk-bubble-spot {
@@ -610,7 +610,8 @@ html.dark .mentor-notebook-desk {
   }
 
   .desk-puhu-spot {
-    right: auto;
+    display: block;
+    z-index: 6;
     left: 0;
     top: calc(var(--desk-wall-h) + 46px - 226px * 0.7);
     transform: scale(0.7);
