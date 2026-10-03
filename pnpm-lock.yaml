@@ -357,6 +357,9 @@ importers:
       '@fontsource-variable/dancing-script':
         specifier: ^5.3.0
         version: 5.3.0
+      '@fontsource-variable/fraunces':
+        specifier: ^5.3.0
+        version: 5.3.0
       '@fontsource-variable/merriweather':
         specifier: ^5.3.0
         version: 5.3.0
@@ -1611,6 +1614,9 @@ packages:
 
   '@fontsource-variable/dancing-script@5.3.0':
     resolution: {integrity: sha512-5Z/flvW1UPkznr0hzejY+Wq72GV3hmtJiDGw2hWMu7n6TmCTB6O2jsfySl7+xuMp6R6bWyuNrKjdpT0yt91sfw==}
+
+  '@fontsource-variable/fraunces@5.3.0':
+    resolution: {integrity: sha512-9BYGySn4AHEJdgp9Z28tQ3X+laJMEOITXkQarZXeloWQZDq5oOvXJ3kDA8c7MGIfpogIaZfjrQBqmda8POOCKA==}
 
   '@fontsource-variable/merriweather@5.3.0':
     resolution: {integrity: sha512-wK7S4NtPXWUWll/sZCdub93pqSCnFkpKFbnoOE8fh+9Ut6JFjgkc9UlBxHJ0RVMkDpoWwGwMwYYTMvd3G9aAXA==}
@@ -9142,6 +9148,8 @@ snapshots:
   '@fontsource-variable/caveat@5.3.0': {}
 
   '@fontsource-variable/dancing-script@5.3.0': {}
+
+  '@fontsource-variable/fraunces@5.3.0': {}
 
   '@fontsource-variable/merriweather@5.3.0': {}
 

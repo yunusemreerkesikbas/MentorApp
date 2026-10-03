@@ -219,6 +219,14 @@ refresh cookie. The existing `/v1/auth/{login,refresh,logout}` routes remain the
 > subject. Legacy `/v1/coaching/notebook/**` remains backward-compatible and delegates to the
 > system notebook.
 
+> Notebook contents addition (2026-10-03): `GET /v1/coaching/notebooks/:id/contents` and the
+> system-notebook alias `GET /v1/coaching/notebook/contents` return `NotebookContentsDto`
+> `{ notebookId, pages[] }`: one line per page that has anything on it (`pageIndex`, `noteTitle`,
+> `topicName`, `subjectRef`, `subjectName`, `entryCount`, `dueCount`, `stickerCount`, `inkCount`).
+> It feeds the "İçindekiler" page a notebook opens on. Titles are the student's own first line or
+> their cards' filing, never generated. Two reads per call whatever the book's size; ink is only
+> counted. No migration.
+
 > Study-room catalog addition (2026-08-25): authenticated, feature-gated `GET/POST
 > /v1/study-rooms`, `POST /v1/study-rooms/join`, member detail `GET /v1/study-rooms/:id`,
 > owner update/close `PATCH/DELETE /v1/study-rooms/:id`, invite rotation `POST

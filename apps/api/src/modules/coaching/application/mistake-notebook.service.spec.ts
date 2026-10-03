@@ -101,6 +101,22 @@ function makeRepoFake() {
         const row = entries.get(id);
         return row && row.userId === userId ? [row] : [];
       }),
+    listEntryLabelsByIds: async (_tx: unknown, userId: string, ids: string[]) =>
+      ids.flatMap((id) => {
+        const row = entries.get(id);
+        return row && row.userId === userId ? [row] : [];
+      }),
+    listPageOutlines: async () =>
+      [...pages.entries()]
+        .sort(([a], [b]) => a - b)
+        .map(([pageIndex, doc]) => {
+          const stored = doc as { items?: unknown; ink?: unknown[] };
+          return {
+            pageIndex,
+            items: stored.items,
+            inkCount: Array.isArray(stored.ink) ? stored.ink.length : 0,
+          };
+        }),
     listDueEntries: async () => [],
     updateEntry: async (
       _tx: unknown,
@@ -380,6 +396,73 @@ describe("MistakeNotebookService", () => {
         }),
       ).rejects.toThrow();
       expect(ctx.repo.pages.size).toBe(0);
+    });
+  });
+
+  describe("getContents", () => {
+    it("lists written pages with their cards' topic and what is due, skipping blank ones", async () => {
+      ctx.repo.entries.set(
+        ENTRY,
+        makeEntryRow({
+          subjectRef: "matematik",
+          topicRef: "problemler",
+          nextReviewAt: new Date("2000-01-01T00:00:00.000Z"),
+        }),
+      );
+      ctx.repo.pages.set(0, {
+        version: 1,
+        paper: "ruled",
+        items: [
+          {
+            id: ITEM,
+            kind: "entry",
+            entryId: ENTRY,
+            x: 0,
+            y: 0,
+            width: 400,
+            height: 300,
+            rotation: 0,
+            opacity: 1,
+            z: 1,
+          },
+        ],
+        ink: [],
+      });
+      ctx.repo.pages.set(1, { version: 1, paper: "ruled", items: [], ink: [] });
+      ctx.repo.pages.set(2, { version: 1, paper: "grid", items: [] });
+
+      const contents = await ctx.service.getContents(USER);
+
+      expect(contents).toEqual({
+        notebookId: NOTEBOOK,
+        pages: [
+          {
+            pageIndex: 0,
+            noteTitle: null,
+            topicName: "Problemler",
+            subjectRef: "matematik",
+            subjectName: "Matematik",
+            entryCount: 1,
+            dueCount: 1,
+            stickerCount: 0,
+            inkCount: 0,
+          },
+        ],
+      });
+    });
+
+    it("does not count a card that belongs to somebody else", async () => {
+      ctx.repo.entries.set(ENTRY, makeEntryRow({ userId: OTHER }));
+      ctx.repo.pages.set(0, {
+        version: 1,
+        paper: "ruled",
+        items: [{ id: ITEM, kind: "entry", entryId: ENTRY, x: 0, y: 0 }],
+        ink: [],
+      });
+
+      const contents = await ctx.service.getContents(USER);
+
+      expect(contents.pages[0]).toMatchObject({ entryCount: 0, topicName: null });
     });
   });
 

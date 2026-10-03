@@ -1,5 +1,6 @@
 import type {
   CreateNotebookInput,
+  NotebookContentsDto,
   NotebookDto,
   NotebookEntryDto,
   Paginated,
@@ -89,6 +90,16 @@ export async function fetchNotebookPage(
     ? `/v1/coaching/notebooks/${notebookId}/pages/${index}`
     : `/v1/coaching/notebook/pages/${index}`;
   return (await http<NotebookPageDto>(path)) as NotebookPageDto;
+}
+
+/** The contents page ("İçindekiler"): one line per written page. Omit the id for the mistake book. */
+export async function fetchNotebookContents(
+  notebookId?: string,
+): Promise<NotebookContentsDto> {
+  const path = notebookId
+    ? `/v1/coaching/notebooks/${notebookId}/contents`
+    : "/v1/coaching/notebook/contents";
+  return (await http<NotebookContentsDto>(path)) as NotebookContentsDto;
 }
 
 export async function saveNotebookPage(
