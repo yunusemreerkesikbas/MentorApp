@@ -211,6 +211,9 @@ async function mockApi(page: Page, options: MockApiOptions = {}) {
       customs = customs.filter((item) => item.id !== CUSTOM_ID);
       return json(route, null, 204);
     }
+    if (method === "GET" && path === `/v1/coaching/notebooks/${CUSTOM_ID}/contents`) {
+      return json(route, { notebookId: CUSTOM_ID, pages: [] });
+    }
     const pageMatch = path.match(
       new RegExp(`/v1/coaching/notebooks/${CUSTOM_ID}/pages/(\\d+)$`),
     );
@@ -256,6 +259,10 @@ test("koleksiyondan ders defteri oluşturulur, serbest editör açılır ve deft
   });
   await expect(page.getByText("Matematik Notlarım").first()).toBeVisible();
   await page.getByRole("button", { name: "Defteri aç" }).click();
+  // A new book opens onto empty contents, whose one way in is the first page.
+  await expect(page.getByRole("heading", { name: "İçindekiler" })).toBeVisible();
+  await page.getByRole("button", { name: "Yazmaya başla" }).click();
+  await expect(page.getByText(/^Sayfa 1(-2)?$/)).toBeVisible();
   const showTools = page.getByRole("button", { name: "Araçları göster" });
   if (await showTools.isVisible()) await showTools.click();
   await expect(page.getByRole("button", { name: "Sticker" })).toBeVisible();
@@ -361,6 +368,38 @@ test("silme başarılıyken liste yenileme tekrarı ikinci DELETE göndermez", a
   await expect.poll(() => state.listCalls).toBeGreaterThan(callsAfterFailedSync);
   await expect(syncAlert).toHaveCount(0);
   expect(state.deleteCalls).toBe(1);
+});
+
+test("masadaki defter kalkar, açılır ve editörde içindekiler sayfasına iner", async ({ page }) => {
+  const custom: NotebookDto = {
+    id: CUSTOM_ID,
+    kind: "CUSTOM",
+    title: "Tarih Defterim",
+    examId: null,
+    subjectRef: null,
+    subjectName: null,
+    cover: { color: "forest", material: "kraft" },
+    pageCount: 0,
+    dueCount: 0,
+    createdAt: "2026-08-25T10:00:00.000Z",
+    updatedAt: "2026-08-25T10:00:00.000Z",
+  };
+  await mockApi(page, { initialCustoms: [custom] });
+  await page.goto("/defterlerim");
+
+  // The book is a real link: its name says what it is and what a click does.
+  await page.getByRole("link", { name: /^Tarih Defterim, .*Defteri aç$/ }).click();
+  // In the air, the whole screen is one way out of the moment.
+  await expect(page.getByRole("button", { name: "Animasyonu atla" })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`/defterlerim/${CUSTOM_ID}$`));
+
+  // The flying book opens onto the same first spread the editor lands on, then lets go of it:
+  // what is left is the editor itself, already on its contents page, not on the closed cover.
+  await expect(page.getByRole("button", { name: "Animasyonu atla" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "İçindekiler" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Defteri aç" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Yazmaya başla" }).click();
+  await expect(page.getByText(/^Sayfa 1(-2)?$/)).toBeVisible();
 });
 
 test("İngilizce route reduced-motion altında koleksiyonu erişilebilir gösterir", async ({ page }) => {
