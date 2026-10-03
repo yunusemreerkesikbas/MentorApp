@@ -9,19 +9,19 @@ import { MentorshipRosterService } from "./mentorship-roster.service";
 const COACH = "coach";
 const STUDENT = "student";
 const required = new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, 403);
-const phoneGate = () => ({
+const contactGate = () => ({
   assertEnabled: vi.fn(),
-  assertCoachPhoneVerified: vi.fn().mockRejectedValue(required),
+  assertCoachVerifiedContacts: vi.fn().mockRejectedValue(required),
 });
 
-describe("coach collection reads require current phone verification", () => {
+describe("coach collection reads require current contact verification", () => {
   it("refuses roster before looking up students or evidence", async () => {
     const repo = { listByCoach: vi.fn() };
     const evidence = { listCohortSnapshots: vi.fn() };
     const service = new MentorshipRosterService(
       repo as never,
       {} as never,
-      phoneGate() as never,
+      contactGate() as never,
       evidence as never,
       {} as never,
       {} as never,
@@ -36,7 +36,7 @@ describe("coach collection reads require current phone verification", () => {
   it("refuses cached cohort briefs before loading private student summaries", async () => {
     const repo = { find: vi.fn() };
     const service = new MentorshipCohortBriefService(
-      phoneGate() as never,
+      contactGate() as never,
       {} as never,
       {} as never,
       repo as never,
@@ -52,7 +52,7 @@ describe("coach collection reads require current phone verification", () => {
     const repo = { listCoach: vi.fn() };
     const service = new MentorshipFollowupService(
       repo as never,
-      phoneGate() as never,
+      contactGate() as never,
       {} as never,
       { get: vi.fn(async () => true) } as never,
       {} as never,
@@ -66,7 +66,7 @@ describe("coach collection reads require current phone verification", () => {
 
   it("does not read behavioral evidence for a digest going to an unverified coach", async () => {
     const evidence = { listTriageSnapshots: vi.fn() };
-    const users = { isPhoneVerified: vi.fn(async () => false) };
+    const users = { isEmailVerified: vi.fn(async () => true), isPhoneVerified: vi.fn(async () => false) };
     const service = new MentorshipQueryAdapter(
       {
         listAllActiveLinks: vi.fn(async () => [
@@ -84,7 +84,7 @@ describe("coach collection reads require current phone verification", () => {
     expect(users.isPhoneVerified).toHaveBeenCalledWith(COACH);
   });
 
-  it("suppresses due reminders and response notifications for an unverified coach", async () => {
+  it.each(["email", "phone"])("suppresses due reminders and response notifications until coach %s is reverified", async (contact) => {
     const repo = {
       listDueCoachIds: vi.fn(async () => [COACH]),
       getDueCount: vi.fn(),
@@ -93,12 +93,13 @@ describe("coach collection reads require current phone verification", () => {
         studentId: STUDENT,
       })),
     };
+    const users = { isEmailVerified: vi.fn(async () => contact !== "email"), isPhoneVerified: vi.fn(async () => contact !== "phone") };
     const service = new MentorshipFollowupService(
       repo as never,
-      phoneGate() as never,
+      contactGate() as never,
       {} as never,
       { get: vi.fn(async () => true) } as never,
-      { isPhoneVerified: vi.fn(async () => false) } as never,
+      users as never,
       {} as never,
     );
     await expect(service.listDueCoachIds(new Date())).resolves.toEqual([]);
@@ -111,5 +112,9 @@ describe("coach collection reads require current phone verification", () => {
       service.getNotificationTarget("followup", "shared", 1),
     ).resolves.toMatchObject({ recipientId: STUDENT });
     expect(repo.getDueCount).not.toHaveBeenCalled();
+    users.isEmailVerified.mockResolvedValue(true);
+    users.isPhoneVerified.mockResolvedValue(true);
+    await expect(service.listDueCoachIds(new Date())).resolves.toEqual([COACH]);
+    await expect(service.getNotificationTarget("followup", "responded", 1)).resolves.toMatchObject({ recipientId: COACH });
   });
 });

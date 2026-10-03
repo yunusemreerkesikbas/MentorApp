@@ -1,4 +1,4 @@
-import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
+import { HttpStatus, Inject, Injectable, Logger, type OnModuleInit } from "@nestjs/common";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import {
   MENTORSHIP_DATA_SCOPE,
@@ -40,6 +40,7 @@ import {
   type MentorshipLinkRow,
 } from "../infrastructure/mentorship-link.repository";
 import { MentorshipApplicationService } from "./mentorship-application.service";
+import { coachContactVerification } from "./coach-contact-verification";
 import { MentorshipInviteService } from "./mentorship-invite.service";
 
 type DisplayPerson = { displayName: string; username: string | null };
@@ -81,7 +82,7 @@ function assertSeated(link: MentorshipLinkRow): void {
  * Missing link is 404, never 403: a 403 would confirm that the student id exists.
  */
 @Injectable()
-export class MentorshipLinkService {
+export class MentorshipLinkService implements OnModuleInit {
   private readonly logger = new Logger(MentorshipLinkService.name);
 
   constructor(
@@ -99,6 +100,13 @@ export class MentorshipLinkService {
     private readonly entitlement: EntitlementService,
   ) {}
 
+  onModuleInit(): void {
+    this.seats.registerEligibilityCheck(async (studentId, linkId, coachId, tx) => {
+      const [link] = await this.links.lockActiveInTransaction(tx, coachId, [studentId]);
+      return link?.id === linkId && holdsSeat(link.seat);
+    });
+  }
+
   /** Runtime kill-switch (config registry). Every W8 entry point calls this first. */
   async assertEnabled(): Promise<void> {
     const enabled = await this.config.get(FeatureFlag.MENTORSHIP_ENABLED);
@@ -106,9 +114,13 @@ export class MentorshipLinkService {
   }
 
   /** Protected coach reads require current verification, including manually granted COACH roles. */
-  async assertCoachPhoneVerified(coachId: string): Promise<void> {
-    if (!(await this.users.isPhoneVerified(coachId))) {
-      throw new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, HttpStatus.FORBIDDEN);
+  async assertCoachVerifiedContacts(coachId: string): Promise<void> {
+    const missing = await coachContactVerification(this.users, coachId);
+    if (missing) {
+      throw new DomainError(
+        missing === "EMAIL_UNVERIFIED" ? ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED : ErrorCode.AUTH_PHONE_REQUIRED,
+        HttpStatus.FORBIDDEN,
+      );
     }
   }
 
@@ -141,7 +153,7 @@ export class MentorshipLinkService {
     if (!link) {
       throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
-    await this.assertCoachPhoneVerified(coachId);
+    await this.assertCoachVerifiedContacts(coachId);
     assertSeated(link);
     return link;
   }
@@ -166,7 +178,7 @@ export class MentorshipLinkService {
     const [link] = await this.links.lockActiveInTransaction(tx, coachId, [studentId]);
     if (!link) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     if (!options.allowWaiting) {
-      await this.assertCoachPhoneVerified(coachId);
+      await this.assertCoachVerifiedContacts(coachId);
       assertSeated(link);
     }
     return link;
@@ -195,7 +207,7 @@ export class MentorshipLinkService {
       );
     }
     if (!options.allowWaiting) {
-      await this.assertCoachPhoneVerified(coachId);
+      await this.assertCoachVerifiedContacts(coachId);
       locked.forEach(assertSeated);
     }
     return studentIds.map((studentId) => ({
@@ -208,7 +220,7 @@ export class MentorshipLinkService {
   async listActiveScopes(
     coachId: string,
   ): Promise<Array<{ studentId: string; mentorshipLinkId: string }>> {
-    await this.assertCoachPhoneVerified(coachId);
+    await this.assertCoachVerifiedContacts(coachId);
     const links = await this.links.listActiveByCoach(coachId);
     return links
       .filter((link) => link.seat !== MentorshipSeat.NONE)
@@ -490,6 +502,7 @@ export class MentorshipLinkService {
     const link = await this.requireStudentLink(studentId);
     await this.links.setStudentNote(link.id, body);
     if (body === null || link.seat === MentorshipSeat.NONE) return;
+    if ((await coachContactVerification(this.users, link.coachId)) !== null) return;
     const student = await this.findPerson(studentId);
     this.events.emit(
       MentorshipEventTopic.STUDENT_NOTE_UPDATED,
@@ -594,7 +607,7 @@ export class MentorshipLinkService {
     if (!holdsSeat(link.seat)) return false;
     if (!(await this.config.get("mentorship.seats.sponsorship_enabled"))) return false;
     const [coachVerified, studentVerified, entitlement] = await Promise.all([
-      this.users.isPhoneVerified(link.coachId),
+      coachContactVerification(this.users, link.coachId).then((missing) => missing === null),
       this.users.isPhoneVerified(link.studentId),
       this.entitlement.getEntitlement(link.studentId),
     ]);

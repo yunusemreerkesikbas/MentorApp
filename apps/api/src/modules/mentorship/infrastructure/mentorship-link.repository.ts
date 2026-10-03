@@ -353,6 +353,22 @@ export class MentorshipLinkRepository {
     });
   }
 
+  /** Fence erasure against grants; hold every affected relationship row through its END commit. */
+  endForUser(userId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.select({ id: coachStudents.id }).from(coachStudents)
+        .where(or(eq(coachStudents.coachId, userId), eq(coachStudents.studentId, userId)))
+        .orderBy(asc(coachStudents.id)).for("update");
+      const ids = rows.map((row) => row.id);
+      if (ids.length === 0) return ids;
+      const now = new Date();
+      await tx.update(coachStudents).set({ status: "ENDED", seat: MentorshipSeat.NONE,
+        endedAt: now, updatedAt: now })
+        .where(and(inArray(coachStudents.id, ids), eq(coachStudents.status, "ACTIVE")));
+      return ids;
+    });
+  }
+
   /**
    * KVKK erasure: drop every link the user is part of, and blank an `ended_by` that points at them
    * (erasure anonymizes the `users` row rather than deleting it, so no FK cascade fires).

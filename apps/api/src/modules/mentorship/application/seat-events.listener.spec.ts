@@ -11,7 +11,7 @@ function setup() {
  * the paid seats, a student's own subscription decides whether they hold one at all.
  */
 describe("SeatEventsListener", () => {
-  it.each(["onActivated", "onCanceled", "onExpired", "onPhoneVerified"] as const)(
+  it.each(["onActivated", "onCanceled", "onExpired", "onPhoneVerified", "onEmailVerified"] as const)(
     "reseats the coaches behind the user on %s",
     async (handler) => {
       const { links, listener } = setup();

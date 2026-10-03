@@ -38,7 +38,7 @@ async function listRoster(seat = "FREE") {
       })),
     } as never,
     {} as never,
-    { assertEnabled: vi.fn(), assertCoachPhoneVerified: vi.fn() } as never,
+    { assertEnabled: vi.fn(), assertCoachVerifiedContacts: vi.fn() } as never,
     { listCohortSnapshots } as never,
     {
       listDisplayIdentities: vi.fn(async () => new Map([

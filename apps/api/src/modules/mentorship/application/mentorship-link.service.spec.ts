@@ -223,7 +223,7 @@ function setup(
       async (ids: string[]) => new Set(ids.filter((id) => (options.selfPaying ?? []).includes(id))),
     ),
   };
-  const seats = { grant: vi.fn(async () => true), revoke: vi.fn(async () => true) };
+  const seats = { registerEligibilityCheck: vi.fn(), grant: vi.fn(async () => true), revoke: vi.fn(async () => true) };
 
   // The profile the consent screen and /kocum now carry. Null is the common case: every coach
   // granted COACH by hand has no vetted application behind them.
@@ -276,6 +276,16 @@ const codeOf = async (fn: () => Promise<unknown>): Promise<string> => {
 };
 
 describe("MentorshipLinkService", () => {
+  it.each(["FREE", "PAID", "NONE", "SELF"])("registers an atomic exact-link funding check for %s", async (seat) => {
+    const { service, seats, links } = setup({ rows: [link({ seat })] });
+    service.onModuleInit();
+    const check = seats.registerEligibilityCheck.mock.calls[0]![0] as (student: string, id: string, coach: string, tx: unknown) => Promise<boolean>;
+    expect(await check(STUDENT, link().id, COACH, TX)).toBe(["FREE", "PAID"].includes(seat));
+    expect(await check(STUDENT, "stale-link-id", COACH, TX)).toBe(false);
+    expect(await check(STUDENT, link().id, OTHER_COACH, TX)).toBe(false);
+    expect(links.lockActiveInTransaction).toHaveBeenCalledWith(TX, COACH, [STUDENT]);
+  });
+
   beforeEach(() => {
     config["mentorship.enabled"] = true;
     config["mentorship.coach.max_active_students"] = 2;
@@ -424,6 +434,11 @@ describe("MentorshipLinkService", () => {
   });
 
   describe("reseating a coach's links", () => {
+    it("reports held funding for a seated student while the coach's new email is unverified", async () => {
+      const { service } = setup({ rows: [link()], unverifiedEmails: [COACH] });
+      await expect(service.getMyCoach(STUDENT)).resolves.toMatchObject({ sponsoredPremiumPending: true });
+    });
+
     it.each([COACH, STUDENT])("backfills unchanged seated links immediately after %s verifies", async (userId) => {
       const { service, seats, links } = setup({ rows: [link()] });
       await service.reseatForUser(userId);
@@ -857,6 +872,15 @@ describe("MentorshipLinkService", () => {
 
   /** QA F4 (2026-09-27): the mirror of the coach's note, written by the student for this coach. */
   describe("the student's standing note", () => {
+    it.each(["email", "phone"])("saves the student's note without notifying a coach with unverified %s", async (contact) => {
+      const { service, links, emitted } = setup({ rows: [link()],
+        unverifiedEmails: contact === "email" ? [COACH] : [],
+        unverifiedPhones: contact === "phone" ? [COACH] : [] });
+      await service.setStudentNote(STUDENT, "Yeni not");
+      expect(links.setStudentNote).toHaveBeenCalledWith(link().id, "Yeni not");
+      expect(emitted).toEqual([]);
+    });
+
     it("writes the note on the student's own link and tells the coach", async () => {
       const { service, emitted, links } = setup({ rows: [link()] });
       await service.setStudentNote(STUDENT, "Cuma akşamları çalışamıyorum.");

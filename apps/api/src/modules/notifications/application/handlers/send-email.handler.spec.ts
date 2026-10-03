@@ -33,7 +33,8 @@ function setup(options: {
     release: vi.fn().mockResolvedValue(undefined),
   };
   const users = {
-    getNotificationContact: vi.fn().mockResolvedValue(
+    getNotificationContact: vi.fn().mockResolvedValue({ email: "new-unverified@test.local", displayName: "Coach" }),
+    getVerifiedNotificationContact: vi.fn().mockResolvedValue(
       options.contact === undefined
         ? { email: "coach@test.local", displayName: "Koç Deniz" }
         : options.contact,
@@ -61,6 +62,15 @@ const guardedPayload = {
 };
 
 describe("SendEmailHandler", () => {
+  it("suppresses due email when a coach changes email after due-count verification", async () => {
+    const { handler, users, email, deliveries } = setup({ contact: null });
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getNotificationContact).not.toHaveBeenCalled();
+    expect(deliveries.tryRecord).not.toHaveBeenCalled();
+    expect(email.sendTransactional).not.toHaveBeenCalled();
+  });
+
   it("keeps legacy unguarded SEND_EMAIL payloads backward compatible", async () => {
     const { handler, email } = setup();
 
@@ -83,7 +93,7 @@ describe("SendEmailHandler", () => {
     await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(followups.getDueCount).toHaveBeenCalledWith(COACH, expect.any(Date));
-    expect(users.getNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
     expect(email.sendTransactional).toHaveBeenCalledWith({
       to: "coach@test.local",
       template: EmailTemplate.MENTORSHIP_FOLLOWUP_DUE,

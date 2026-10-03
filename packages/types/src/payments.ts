@@ -177,6 +177,8 @@ export interface SubscriptionView {
   trialEligibility: TrialEligibilityDto;
   /** Owner-only hosted URL for a known PENDING trial; null for absent or unknown outcomes. */
   pendingTrialCheckoutUrl: string | null;
+  /** Owner-only recovery URL for any pending checkout; null also covers unknown outcomes. */
+  pendingCheckoutUrl: string | null;
 }
 
 export interface TrialEligibilityDto {

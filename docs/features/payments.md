@@ -69,6 +69,24 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Serialized paid/trial checkout reservations (2026-10-03).** Paid and trial checkout now lock
+  the same ACTIVE Identity account and re-read pending claims and the open subscription in one
+  transaction. Both persist an INCOMPLETE subscription and its promotion reservation before
+  provider HTTP, so overlapping paid/trial requests cannot delete each other's reservation or
+  initialize two provider checkouts. Matching plan/code/trial intent resumes the original hosted
+  URL; an unknown outcome, including a legacy pending paid row without a saved URL, remains held
+  until verified provider evidence. `pendingCheckoutUrl` in `GET /v1/subscription` exposes the
+  current owner's known paid or trial URL; `pendingTrialCheckoutUrl` remains compatible.
+  Canceling any INCOMPLETE checkout requires a known provider reference and confirmed provider
+  cancellation. Its pending row is removed, never changed into CANCELED Premium access; an
+  activation that wins during cancellation retains its history and access until period end.
+  Definitive checkout rejection/cancellation emits the existing subscription lifecycle event
+  after cleanup so mentorship can restore an eligible sponsored seat. Usage: resume a known
+  checkout from the subscription page; wait for reconciliation when its URL is unknown.
+  Gotcha: no reservation ages out automatically and a transport timeout is not rejection evidence.
+  Related: `checkout.service.ts`, `subscriptions.service.ts`, `phone-trial.service.ts`,
+  payment/phone repositories, `checkout-reservation.e2e-spec.ts`, forward migration `0122`.
+
 - **Verified-phone carded trials and sponsorship gates (2026-10-02).** Checkout accepts
   additive `useTrial`: `false` buys without phone verification, `true` rejects unavailable trials,
   and omitted values keep automatic account-trial selection. `GET /v1/subscription` returns
@@ -330,9 +348,9 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   launch ready. There are no live iyzico calls in this development.
 - **Verification gate (shipped, WP-I; phone trials revised 2026-10-02):** hosted-page providers create an INCOMPLETE row at
   checkout-INIT; only `checkout_completed` activates it (INCOMPLETE→TRIALING/ACTIVE by the row's
-  `trialEndsAt`). INCOMPLETE grants no premium (`computeEntitlement` → `free("INCOMPLETE")`). An
-  legacy paid INCOMPLETE row is **deleted** on the next checkout. A phone-trial INCOMPLETE row is
-  retained with its phone hold until a definitive outcome; retries reuse its checkout URL. The FAKE provider stays instant (its INCOMPLETE path is exercised
+  `trialEndsAt`). INCOMPLETE grants no premium (`computeEntitlement` → `free("INCOMPLETE")`). A
+  paid or phone-trial INCOMPLETE row is retained until a definitive outcome; matching retries
+  reuse its known checkout URL, while unknown outcomes require reconciliation. The FAKE provider stays instant (its INCOMPLETE path is exercised
   only via a seeded row + signed webhook in e2e).
 - **Refund calls the provider (shipped, WP-I):** `refundLastCharge` invokes `PaymentsPort.refund()`
   before appending the `REFUND`/`REFUNDED` ledger row; the returned `refundRef` is stored in the row's

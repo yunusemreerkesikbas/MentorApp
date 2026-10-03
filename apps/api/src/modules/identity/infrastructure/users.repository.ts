@@ -41,12 +41,26 @@ export interface PublicUserSearchRow {
 export class UsersRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  /** Serialize account lifecycle and payment intent writes without exposing identity rows. */
+  async lockActiveAccount(id: string, tx: DatabaseTx): Promise<boolean> {
+    const [row] = await tx.select({ status: users.status }).from(users)
+      .where(eq(users.id, id)).for("no key update");
+    return row?.status === "ACTIVE";
+  }
+
+  async hasActiveVerifiedEmail(id: string, tx: DatabaseTx): Promise<boolean> {
+    const [row] = await tx.select({ id: users.id }).from(users).where(and(
+      eq(users.id, id), eq(users.status, "ACTIVE"), isNotNull(users.emailVerifiedAt),
+    ));
+    return row !== undefined;
+  }
+
   /** Public-service seam for payments: lock in its transaction, keeping the phone inside identity. */
   async findActiveVerifiedPhone(id: string, tx?: DatabaseTx): Promise<string | null> {
     const read = async (context: DatabaseTx, lock: boolean) => {
       const query = context.select({ phone: users.phoneNumber }).from(users).where(and(
         eq(users.id, id), eq(users.status, "ACTIVE"), isNotNull(users.phoneVerifiedAt), isNotNull(users.phoneNumber)));
-      const [row] = await (lock ? query.for("update") : query);
+      const [row] = await (lock ? query.for("no key update") : query);
       return row?.phone ?? null;
     };
     return tx ? read(tx, true) : withServiceContext(this.db, (context) => read(context, false));

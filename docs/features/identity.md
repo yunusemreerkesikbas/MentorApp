@@ -90,9 +90,32 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `PATCH /v1/users/me`                                                                      | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
 | `POST /v1/users/me/verification-email`                                                    | Resend verification email for current user                                       |
 | `POST /v1/users/me/avatar-upload-url`                                                     | Create user-scoped avatar upload URL                                             |
+| `GET /v1/users/me/phone`                                                                 | Masked phone, verification, availability and fresh-login requirement              |
+| `POST /v1/users/me/phone/verifications`                                                  | Session-bound Turkey mobile OTP, Turnstile and atomic send quotas               |
+| `POST /v1/users/me/phone/verifications/:challengeId/confirm`                             | One-use confirmation and atomic phone binding/change                             |
 | `DELETE /v1/account`                                                                      | Self-service KVKK erasure ("hesabımı sil") — irreversible                        |
 
 ## Geliştirmeler (timeline)
+
+- **Private SMS verification (2026-10-03, APP-114).** Added protected phone endpoints, shared Zod
+  normalization for Turkey mobile numbers, six-digit cryptographic codes protected with keyed HMAC,
+  session/purpose binding, expiry, replay protection and atomic Postgres quotas. One verified number
+  belongs to at most one ACTIVE account; suspended accounts cannot reclaim a number owned by another
+  active account. Changing a number requires an actual login within ten minutes; refresh rotation
+  does not refresh that time, and the old number stays bound until successful confirmation.
+  Usage: the shared web card appears in profile, coach activation, trial purchase and pending
+  sponsored Premium. Configure Netgsm and the registry flag using the integration runbook before
+  enabling sends; both are disabled by default. Delivery alone does not verify a number.
+  Identity emits only `{ userId }` after confirmation, and exports transaction-scoped active-account
+  and contact-verification seams for entitlement decisions. Erasure clears phones/challenges;
+  short-lived keyed abuse counters survive 32 days and consumed trial phone fingerprints survive
+  12 calendar months from activation (payments owns that record). Unknown payment holds require
+  provider evidence. Gotchas: phone ownership is neither legal identity nor coach qualification;
+  OTP is never an admin security factor or marketing consent. No live SMS/carrier pilot has run.
+  Related: `phone.controller.ts`, `phone.dto.ts`, `phone-verification.service.ts`,
+  `phone-verification.repository.ts`, `netgsm-sms.adapter.ts`, `schema-phone.ts`, migrations
+  `0120`/`0121`, `test/phone.e2e-spec.ts`, `phone-verification-card.tsx`,
+  [setup and retention](../core/integrations.md#netgsm-phone-verification).
 
 ### 2026-09-27 — The terms checkbox is named
 

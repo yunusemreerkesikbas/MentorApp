@@ -136,13 +136,19 @@ export class UsersService {
    * survivable while COACH was granted by hand; self-service registration makes a reachable inbox
    * the one thing standing between a stranger and an invite code, so the read has to leave identity.
    */
-  async isEmailVerified(userId: string): Promise<boolean> {
+  async isEmailVerified(userId: string, tx?: DatabaseTx): Promise<boolean> {
+    if (tx) return this.usersRepo.hasActiveVerifiedEmail(userId, tx);
     const user = await this.usersRepo.findByIdService(userId);
-    return user?.emailVerifiedAt != null;
+    return user?.status === "ACTIVE" && user.emailVerifiedAt != null;
   }
 
-  async isPhoneVerified(userId: string): Promise<boolean> {
-    return (await this.usersRepo.findActiveVerifiedPhone(userId)) !== null;
+  async isPhoneVerified(userId: string, tx?: DatabaseTx): Promise<boolean> {
+    return (await this.usersRepo.findActiveVerifiedPhone(userId, tx)) !== null;
+  }
+
+  /** Public transaction seam: payments never reads identity tables or raw phone numbers. */
+  lockActiveAccount(userId: string, tx: DatabaseTx): Promise<boolean> {
+    return this.usersRepo.lockActiveAccount(userId, tx);
   }
 
   /** The only trial seam exposed to payments. Raw phones remain inside identity. */
@@ -213,6 +219,14 @@ export class UsersService {
   ): Promise<{ email: string; displayName: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
     if (!user) return null;
+    return { email: user.email, displayName: user.displayName };
+  }
+
+  /** One verified snapshot prevents digest delivery to an email changed between separate reads. */
+  async getVerifiedNotificationContact(userId: string): Promise<{ email: string; displayName: string } | null> {
+    const user = await this.usersRepo.findByIdService(userId);
+    if (!user || user.status !== "ACTIVE" || !user.emailVerifiedAt ||
+        !user.phoneVerifiedAt || !user.phoneNumber) return null;
     return { email: user.email, displayName: user.displayName };
   }
 

@@ -13,6 +13,7 @@ import { phoneVerificationConfirmSchema, phoneVerificationRequestSchema } from "
 import { Button, Card, Skeleton, SkeletonGroup, TextField } from "@mentor/ui";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { LegalLink } from "@/components/legal-link";
 import { SignupTurnstile, turnstileSiteKey } from "@/app/[locale]/(auth)/_components/signup-turnstile";
 
 interface PhoneVerificationCardProps {
@@ -148,6 +149,8 @@ export function PhoneVerificationCard({ allowNumberChange = false, onStatusChang
       ) : (
         <>
           <p className="text-sm text-[var(--color-secondary)]">{t(changing ? "change_hint" : "hint")}</p>
+          <p className="text-caption text-[var(--color-secondary)]">{t("purpose")}</p>
+          <p className="text-caption"><LegalLink slug="kvkk-aydinlatma">{t("privacy_notice")}</LegalLink></p>
           {challenge ? (
             <>
               <p role="status" className="text-sm text-[var(--color-body)]">{t(challenge.sendStatus === "SENT" ? "sent" : "send_unknown", { number: challenge.maskedPhoneNumber })}</p>

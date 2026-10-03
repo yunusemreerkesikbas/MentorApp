@@ -141,6 +141,34 @@ describe("AdminUsersService", () => {
     });
   });
 
+  it.each([false, true])("maps an active-phone reactivation collision to a safe 409 (wrapped: %s)", async (wrapped) => {
+    users.set("u1", { ...users.get("u1")!, status: "SUSPENDED" });
+    const repo = makeRepoFake(users);
+    const violation = { code: "23505", constraint: "users_active_phone_unique_idx", detail: "private phone" };
+    vi.spyOn(repo, "updateStatus").mockRejectedValue(wrapped ? { cause: violation } : violation);
+    const reactivation = new AdminUsersService(repo as never, { eraseAccount } as never, makeUsersServiceFake(users) as never);
+
+    await expect(reactivation.setStatus("admin", "u1", "ACTIVE")).rejects.toMatchObject({
+      constructor: DomainError,
+      code: ErrorCode.AUTH_PHONE_UNAVAILABLE,
+      httpStatus: 409,
+      details: undefined,
+    });
+    expect(users.get("u1")!.status).toBe("SUSPENDED");
+  });
+
+  it.each([
+    { code: "23505", constraint: "users_email_unique_idx" },
+    { code: "23505" },
+    { code: "23514", constraint: "users_active_phone_unique_idx" },
+    new Error("database unavailable"),
+  ])("preserves unrelated status write failures (%s)", async (error) => {
+    const repo = makeRepoFake(users);
+    vi.spyOn(repo, "updateStatus").mockRejectedValue(error);
+    const failing = new AdminUsersService(repo as never, { eraseAccount } as never, makeUsersServiceFake(users) as never);
+    await expect(failing.setStatus("admin", "u1", "ACTIVE")).rejects.toBe(error);
+  });
+
   it("anonymize scrubs PII and bans, rejecting self", async () => {
     const res = await service.anonymize("admin", "u1");
     expect(res.after).toMatchObject({ status: "BANNED", displayName: "Silinmiş Kullanıcı" });

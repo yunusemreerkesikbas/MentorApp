@@ -128,6 +128,8 @@ export const users = pgTable(
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
     phoneNumber: text("phone_number"),
     phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+    /** Durable lifecycle fence while cancellation and cross-module erasure run outside a tx. */
+    erasureStartedAt: timestamp("erasure_started_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
       withTimezone: true,
@@ -2168,6 +2170,9 @@ export const subscriptions = pgTable(
     /** FAKE | IYZICO | DISABLED | SPONSOR (a coach seat — no money moved, no ledger row). */
     provider: text("provider").notNull(),
     providerRef: text("provider_ref"),
+    /** Owner-only recovery of an existing checkout; an unknown outcome stays reserved. */
+    checkoutUrl: text("checkout_url"),
+    checkoutCode: text("checkout_code"),
     /**
      * The coach link that sponsors this subscription (W8 seats), or null for a self-paid one.
      *

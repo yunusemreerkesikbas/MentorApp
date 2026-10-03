@@ -351,6 +351,7 @@ const subscription: SubscriptionView = {
   discount: null,
   trialEligibility: { eligible: false, reason: "NO_TRIAL" },
   pendingTrialCheckoutUrl: null,
+  pendingCheckoutUrl: null,
 };
 
 const enabledContextualPlacement = {
