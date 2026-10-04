@@ -93,7 +93,7 @@ const StageItem = memo(function StageItem({
         // page repairs itself on its next save, which is cheaper than rewriting every page on
         // delete.
         entry ? (
-          <NotebookEntryCard entry={entry} due={due} onPreview={onPreviewImage} />
+          <NotebookEntryCard entry={entry} due={due} selected={selected} onPreview={onPreviewImage} />
         ) : null
       ) : (
         <BoardItemView item={item} />

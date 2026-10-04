@@ -78,6 +78,13 @@
   /** The stuck-on cover label. */
   --notebook-label: #fdfbf6;
   --notebook-page-shadow: 0px 8px 24px rgba(37, 73, 150, 0.14);
+  /* A photographed question stuck onto the page: a white print, two strips of masking tape and
+     a shadow that falls downward, so it reads as paper on paper rather than a box on top. */
+  --notebook-print: #ffffff;
+  --notebook-print-shadow: 0px 10px 22px -8px rgba(30, 30, 40, 0.35), 0px 0px 0px 1px rgba(0, 0, 0, 0.04);
+  /** Caption on the print's top margin; darker than the design's #8a8170 to clear 4.5:1 on white. */
+  --notebook-print-caption: #6f6656;
+  --notebook-tape: rgba(236, 214, 170, 0.75);
 
   /* Typography — one family (DESIGN.md §3). `--font-sans` keeps Tailwind's own `font-sans`
      utility on the product face instead of the browser default. */
