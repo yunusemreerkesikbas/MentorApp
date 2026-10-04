@@ -162,58 +162,55 @@ export function NotebookEntryCard({ entry, due, selected, onPreview }: NotebookE
           <span className="relative block min-h-0 w-full flex-1 overflow-hidden">
             <Image src={entry.url} alt="" fill sizes="480px" className="object-contain" unoptimized />
 
-            {/* Details only on hover/focus — the photo itself stays clean. Sized down from the
-                page's own `DetailLines` scale: this overlay sits on a small thumbnail, not a full
-                card, and was reading as oversized captions rather than a quiet detail layer. */}
+            {/*
+              Details only on hover/focus, as a small paper slip in the photo's corner: the photo
+              stays readable underneath, unlike the dark gradient band this replaced, which hid the
+              bottom third of the question. The topic is not repeated here; it is on the print's
+              top margin already.
+            */}
             <span
               aria-hidden
-              className="pointer-events-none absolute inset-x-0 bottom-0 flex flex-col gap-[1cqw] p-[2.6cqw] opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
-              style={{ background: "linear-gradient(to top, rgba(17,17,17,0.78), transparent)" }}
+              className="pointer-events-none absolute flex translate-y-[1cqw] flex-col opacity-0 transition duration-150 ease-out group-hover:translate-y-0 group-hover:opacity-100 group-focus-within:translate-y-0 group-focus-within:opacity-100 motion-reduce:transition-none"
+              style={{
+                left: "2cqw",
+                bottom: "2cqw",
+                maxWidth: "min(72%, 300px)",
+                gap: "0.4em",
+                padding: "0.6em 0.85em",
+                borderRadius: "0.5em",
+                fontSize: "clamp(11px, 2.1cqw, 14px)",
+                lineHeight: 1.25,
+                color: "var(--notebook-ink)",
+                backgroundColor: "var(--notebook-print)",
+                boxShadow: "var(--notebook-slip-shadow)",
+              }}
             >
-              <span
-                style={{
-                  alignSelf: "flex-start",
-                  padding: "0.7cqw 2.1cqw",
-                  borderRadius: 999,
-                  fontSize: "2.3cqw",
-                  fontWeight: 600,
-                  color: "#ffffff",
-                  backgroundColor: "rgba(255,255,255,0.2)",
-                }}
-              >
+              <span className="truncate" style={{ fontWeight: 800 }}>
                 {t(`error_type.${entry.errorType}`)}
               </span>
-              {caption ? null : (
-                <span
-                  className="truncate"
-                  style={{ fontSize: "2.6cqw", fontWeight: 700, color: "#ffffff" }}
-                >
-                  {t("card_unlabelled")}
-                </span>
-              )}
               {entry.note ? (
-                <span
-                  className="line-clamp-2"
-                  style={{ fontSize: "2.1cqw", color: "rgba(255,255,255,0.85)" }}
-                >
+                <span className="line-clamp-2" style={{ color: "var(--notebook-print-caption)" }}>
                   {entry.note}
                 </span>
               ) : null}
               <span
                 style={{
-                  fontSize: "2.1cqw",
+                  fontWeight: 700,
+                  // An answer waiting outranks the review count, same as the text-only card.
                   color: entry.communityAnsweredAt
-                    ? "#93c5fd"
+                    ? "var(--notebook-answered-ink)"
                     : healed
-                      ? "#86efac"
-                      : "rgba(255,255,255,0.85)",
+                      ? "var(--notebook-healed-ink)"
+                      : "var(--notebook-print-caption)",
                 }}
               >
                 {entry.communityAnsweredAt
                   ? t("card_community_answered")
                   : healed
                     ? t("card_healed")
-                    : t("card_review_count", { count: entry.reviewCount })}
+                    : entry.reviewCount > 0
+                      ? t("card_review_count", { count: entry.reviewCount })
+                      : t("card_review_none")}
               </span>
             </span>
           </span>

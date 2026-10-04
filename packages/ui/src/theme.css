@@ -85,6 +85,13 @@
   /** Caption on the print's top margin; darker than the design's #8a8170 to clear 4.5:1 on white. */
   --notebook-print-caption: #6f6656;
   --notebook-tape: rgba(236, 214, 170, 0.75);
+  /** Ink for text set on the print (the hover slip); the design's page ink. */
+  --notebook-ink: #26304a;
+  --notebook-slip-shadow: 0px 4px 12px rgba(30, 30, 40, 0.18), 0px 0px 0px 1px rgba(0, 0, 0, 0.05);
+  /* Status ink on the print. The print stays white in both themes, so these do not follow the
+     dark-mode accent and success shades; both clear 4.5:1 on white (--color-accent does not). */
+  --notebook-answered-ink: #1d6fbf;
+  --notebook-healed-ink: #2e7d54;
 
   /* Typography — one family (DESIGN.md §3). `--font-sans` keeps Tailwind's own `font-sans`
      utility on the product face instead of the browser default. */

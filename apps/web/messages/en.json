@@ -2109,6 +2109,7 @@
     "card_unlabelled": "Unlabelled",
     "card_healed": "Healed",
     "card_review_count": "Reviewed {count} times",
+    "card_review_none": "Not reviewed yet",
     "add_title": "New mistake",
     "add_subtitle": "Photo and label are optional; the real question is why you missed it.",
     "add_photo": "Take or choose a photo",
