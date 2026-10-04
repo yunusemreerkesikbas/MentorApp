@@ -2,61 +2,38 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import type { StudyRoomTheme } from "@mentor/types";
-import { RoomBackdropSlide } from "./room-backdrop-slide";
 
 export const SESSION_FOCUS_BG_SRC = "/visuals/session-focus-bg.webp";
 
 /**
- * Immersive focus/break ground: approved visual when present, DESIGN blobs otherwise,
- * plus concentric ripples behind the timer.
- *
- * When the session is seated at a study room, the room's themed ground replaces the solo
- * one — same screen, same timer, different table. The ripples stay either way, so focus mode
- * reads as one thing whether you are alone or at a table.
+ * The plain view's dark theatre while a session runs: approved visual when present, DESIGN blobs
+ * otherwise. A room's own ground is `RoomBackdropSlide`; both are placed by `SessionStage`.
+ * Concentric ripples live on the timer ring so they share its center and diameter.
  */
-export function SessionFocusBackdrop({
-  roomTheme = null,
-  /** Travel direction for a theme change made from inside focus mode. */
-  themeDirection = 1,
-}: {
-  roomTheme?: StudyRoomTheme | null;
-  themeDirection?: 1 | -1;
-}) {
+export function SessionFocusBackdrop() {
   const [visualFailed, setVisualFailed] = useState(false);
 
   return (
     <div aria-hidden className="absolute inset-0 overflow-hidden">
-      {roomTheme ? (
-        <RoomBackdropSlide theme={roomTheme} direction={themeDirection} veilPercent={42} />
+      {visualFailed ? (
+        <BlobFallback />
       ) : (
-        <>
-          {visualFailed ? (
-            <BlobFallback />
-          ) : (
-            <Image
-              src={SESSION_FOCUS_BG_SRC}
-              alt=""
-              fill
-              priority
-              sizes="100vw"
-              className="object-cover"
-              onError={() => setVisualFailed(true)}
-            />
-          )}
-          <div
-            className="absolute inset-0"
-            style={{
-              backgroundColor: "color-mix(in srgb, var(--color-bg) 42%, transparent)",
-            }}
-          />
-        </>
+        <Image
+          src={SESSION_FOCUS_BG_SRC}
+          alt=""
+          fill
+          priority
+          sizes="100vw"
+          className="object-cover"
+          onError={() => setVisualFailed(true)}
+        />
       )}
-      <div className="absolute inset-0 grid place-items-center">
-        <span className="session-focus-ripple session-focus-ripple-1" />
-        <span className="session-focus-ripple session-focus-ripple-2" />
-        <span className="session-focus-ripple session-focus-ripple-3" />
-      </div>
+      <div
+        className="absolute inset-0"
+        style={{
+          backgroundColor: "color-mix(in srgb, var(--color-bg) 42%, transparent)",
+        }}
+      />
     </div>
   );
 }

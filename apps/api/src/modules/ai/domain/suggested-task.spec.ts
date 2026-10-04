@@ -4,7 +4,46 @@ import {
   extractFollowUps,
   extractReplyMarkers,
   extractSuggestedTask,
+  fallbackCoachTask,
 } from "./suggested-task";
+
+describe("fallbackCoachTask", () => {
+  const taxonomy = ["Türkçe", "Matematik", "Tarih"];
+
+  it("picks the verified weak subject the reply itself names", () => {
+    expect(
+      fallbackCoachTask({
+        replyText:
+          "Belki Türkçe ve Tarih'e odaklanabilirsin, ardından Matematik için kısa bir çalışma yapabilirsin.",
+        taxonomy,
+        preferred: ["Matematik"],
+        locale: "tr",
+      }),
+    ).toEqual({ title: "Matematik · 25 dk çalışma", subject: "Matematik" });
+  });
+
+  it("falls back to the first subject the reply names when none is preferred", () => {
+    expect(
+      fallbackCoachTask({
+        replyText: "Bugün Tarih'e kısa bir dönüş iyi gelir, sonra Türkçe.",
+        taxonomy,
+        preferred: ["Matematik"],
+        locale: "tr",
+      }),
+    ).toEqual({ title: "Tarih · 25 dk çalışma", subject: "Tarih" });
+  });
+
+  it("never brings in a subject the reply did not name", () => {
+    expect(
+      fallbackCoachTask({
+        replyText: "Let's pick one small History step for today.",
+        taxonomy,
+        preferred: ["Matematik"],
+        locale: "en",
+      }),
+    ).toEqual({ title: "25 min first step", subject: null });
+  });
+});
 
 const MARKER = '<<TASK{"title":"Matematik: 20 soru çöz","subject":"Matematik"}>>';
 

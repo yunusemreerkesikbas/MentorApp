@@ -1,5 +1,18 @@
 # Sınav Koçluğu Platformu — Karar Kaydı & Roadmap
 
+> **2026-09-17 lansman kararı: XP ve Coin.** Önceki ekonomi seçeneklerinin lansman kapsamını bu karar belirler.
+> Harcanabilir birimin adı **Coin**; “onaylı hak” ayrı bir birim değildir. XP kişisel seviye/yolculuk
+> ilerlemesidir; harcanmaz ve Coin'e dönüşmez. XP sıralaması lansmanda kapalıdır.
+> Profil tamamlama ve e-posta doğrulama ayrı ayrı bir kez 10 Coin; ilk abonelik ve davet kodu girme
+> ödülleri kapalıdır. Aynı UTC/ISO haftasında 5 aktif gün 15 Coin getirir. Başarılı davet, davetlinin
+> ilk pozitif başarılı tahsilatında davet edene bir kez 20 Coin verir; deneme, ücretsiz/sponsor
+> erişimi ve yenileme ödül vermez. Yalnız kaynak ödemenin iadesi ilgili ödülü geri alır.
+> Sohbet mesajı 5 Coin, haftalık derin analiz 25 Coin; bedeller merkezi ayarlardan okunur.
+> Coin ile seri kurtarma ve reklamla Coin lansmanda kapalı; ücretsiz dondurma kuralları korunur.
+> XP miktarları, eşikler, kazanım tavanları ve AI bütçe/günlük sınırları korunur. Eski bakiyeler ve
+> ledger silinmez; geçmiş kaçırılmış ödüllere toplu ödeme yapılmaz. Forum Coin onayı ve çoklu
+> cihaz canlı eşitlemesi kapsam dışıdır. Ayrıntılar: [Economy](docs/features/economy.md).
+
 > Durum: Yaşayan karar kaydı + roadmap · Oluşturma: 2026-06-02
 > **Ürün sınav-agnostik:** AI koç, ritüel, sosyal, analiz mantığı tüm sınavlarda (YKS/LGS/KPSS…) **aynı**. Sınavlar yalnızca **içerik/config** ile ayrışır (konu taksonomisi, **net kuralı** [KPSS/YKS: D−Y/4, LGS: D−Y/3], takvim kaynağı [ÖSYM/MEB], SEO içeriği). Ayrı "dikey geliştirme" yok. **KPSS = fikrin çıkış noktası + ilk tohumlanacak içerik.** *(LGS açılırsa: reşit-olmayan veli onayı/KVKK boyutu.)*
 > Kapsam: konumlandırma · bilgi merkezi · forum/ekonomi · doğrulama · retention · iş modeli · stack/mimari · roller/paneller/marketplace · MVP · ödeme · yönetim paneli.
@@ -355,6 +368,13 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
   ölçeğine indirilmiş hâli; §9 zaten koç↔B2B'yi "ayrı silo değil, bir süreklilik" sayıyor.
   Ücretli koltuk (Pro Koç) hâlâ opsiyonel ve iyzico doğrulanana kadar bayrak arkasında.
   AGENTS.md §4 #4 bu yüzden iki yoldan üç yola genişletildi.
+- **REVİZYON (2026-09-26, koç fiyat review'ı):** Koltuk artık **takip hakkı**; Premium'u
+  sponsorluk bayrağı ekliyor. İlk `free_seats` (3, admin'den) öğrenci tüm özelliklerle ücretsiz:
+  takip araçları + koç AI'ı (günlük limitli tadım, SMS OTP beklemeden; §4 #4 dördüncü yol). Ötesi
+  **kademe paketleri** (+5/+10/+20, "öğrenci başı" dille). **Tek ödeyen:** kendi Premium'unu ödeyen
+  öğrenci koltuk tutmaz. Koçun planı biterse fazla bağlar **dondurulur**, silinmez. Satış kanalı
+  önce mağaza (web ödemesi netleşene kadar); mobil uygulama ve IAP gelene kadar ücretli koltuk satışta
+  değil. Karar kaydı ve uygulama sırası: `docs/features/mentorship.md` (2026-09-26 timeline + Backlog).
 
 **B2B — en stabil/yüksek marj:**
 - Öğrenci-başı lisans (seat-based), hacme göre kademeli indirim.

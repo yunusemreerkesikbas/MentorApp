@@ -15,6 +15,7 @@ import {
 import { ApiBearerAuth, ApiBody, ApiTags } from "@nestjs/swagger";
 import type { Response } from "express";
 import type {
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   CoachAccessDto,
   CoachChatStreamEvent,
@@ -159,6 +160,17 @@ export class AiChatController {
     return this.planDraft.draft(user, dto.note);
   }
 
+  /**
+   * Seeds the "Koçla planla" wizard: what the coach will read and defaults from the student's own
+   * rhythm. Premium-gated like the preview, but no model call and no quota.
+   */
+  @Get("plan-adaptation/brief")
+  planAdaptationBrief(
+    @CurrentUser() user: RequestUser,
+  ): Promise<CoachPlanAdaptationBriefDto> {
+    return this.planAdaptation.brief(user);
+  }
+
   /** Premium adaptation preview. AI proposes; coaching mutates only after explicit confirmation. */
   @ApiBody({
     schema: {
@@ -170,6 +182,20 @@ export class AiChatController {
           properties: {
             source: { type: "string", enum: ["PLAN"] },
             note: { type: "string", maxLength: 500 },
+            days: { type: "integer", minimum: 1, maximum: 7 },
+            studyWeekdays: {
+              type: "array",
+              minItems: 1,
+              maxItems: 7,
+              uniqueItems: true,
+              items: { type: "integer", minimum: 1, maximum: 7 },
+            },
+            minutesPerDay: { type: "integer", minimum: 10, maximum: 600 },
+            focusSubjects: {
+              type: "array",
+              maxItems: 30,
+              items: { type: "string", maxLength: 80 },
+            },
           },
         },
         {
@@ -207,6 +233,10 @@ export class AiChatController {
     return this.planAdaptation.preview(user, {
       source: "PLAN",
       ...(dto.note ? { note: dto.note } : {}),
+      ...(dto.days != null ? { days: dto.days } : {}),
+      ...(dto.studyWeekdays?.length ? { studyWeekdays: dto.studyWeekdays } : {}),
+      ...(dto.minutesPerDay != null ? { minutesPerDay: dto.minutesPerDay } : {}),
+      ...(dto.focusSubjects?.length ? { focusSubjects: dto.focusSubjects } : {}),
     });
   }
 

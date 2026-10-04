@@ -1,14 +1,17 @@
 import { Injectable } from "@nestjs/common";
-import type {
-  MentorshipLinkStatus,
-  MentorshipRiskFlagId,
-  MentorshipRosterRowDto,
-  MentorshipStudentReportDto,
-  Paginated,
+import type { ListMentorshipPlanningTasksInput } from "@mentor/validation";
+import {
+  MentorshipSeat,
+  type MentorshipLinkStatus,
+  type MentorshipRiskFlagId,
+  type MentorshipRosterRowDto,
+  type MentorshipSeatId,
+  type MentorshipStudentReportDto,
+  type Paginated,
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
-import { addDays, todayIso } from "../../coaching/domain/date.util";
+import { addDays, todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
 import {
   MENTORSHIP_DROPPED_LIMIT,
@@ -20,7 +23,7 @@ import {
   evaluateRiskFlags,
   type RiskThresholds,
 } from "../domain/risk-flags";
-import { toCoachNoteDto } from "../domain/coach-note";
+import { toCoachNoteDto, toStudentNoteDto } from "../domain/coach-note";
 import { MentorshipDroppedAssignmentRepository } from "../infrastructure/mentorship-dropped-assignment.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
 import { MentorshipLinkService } from "./mentorship-link.service";
@@ -36,6 +39,23 @@ import { MentorshipLinkService } from "./mentorship-link.service";
  */
 @Injectable()
 export class MentorshipRosterService {
+  async listPlanningTasks(
+    coachId: string,
+    studentId: string,
+    query: ListMentorshipPlanningTasksInput,
+  ) {
+    await this.linkService.assertEnabled();
+    const link = await this.linkService.requireActiveLink(coachId, studentId);
+    return this.evidence.listPlanningTasks(
+      studentId,
+      link.id,
+      query.from,
+      query.to,
+      query.page,
+      query.pageSize,
+    );
+  }
+
   constructor(
     private readonly links: MentorshipLinkRepository,
     private readonly dropped: MentorshipDroppedAssignmentRepository,
@@ -62,6 +82,7 @@ export class MentorshipRosterService {
     now = new Date(),
   ): Promise<Paginated<MentorshipRosterRowDto>> {
     await this.linkService.assertEnabled();
+    await this.linkService.assertCoachVerifiedContacts(coachId);
     const { rows, total } = await this.links.listByCoach(
       coachId,
       status,
@@ -70,10 +91,11 @@ export class MentorshipRosterService {
     );
     if (rows.length === 0) return { items: [], total, page, pageSize };
 
-    // Only ACTIVE links get metrics. Ending a link revokes consent, so the history tab shows that
-    // the relationship existed and nothing about how the student is doing now.
+    // Only ACTIVE links that hold a seat get metrics. Ending a link revokes consent, so the history
+    // tab shows that the relationship existed and nothing about how the student is doing now; a
+    // link waiting for a seat is frozen, so its row says who waits and not how they are doing.
     const activeStudentIds = rows
-      .filter((row) => row.status === "ACTIVE")
+      .filter((row) => row.status === "ACTIVE" && row.seat !== MentorshipSeat.NONE)
       .map((row) => row.studentId);
     const [people, snapshots, thresholds, attentionTtlDays] = await Promise.all(
       [
@@ -83,13 +105,13 @@ export class MentorshipRosterService {
         this.config.get("mentorship.attention.ttl_days"),
       ],
     );
-    const today = todayIso(now);
+    const today = todayInIstanbul(now);
 
     const items = rows.map((link): MentorshipRosterRowDto => {
       const person = people.get(link.studentId);
       const snapshot = snapshots.get(link.studentId);
       const flags = snapshot
-        ? evaluateRiskFlags(snapshot, thresholds, today)
+        ? evaluateRiskFlags(snapshot, thresholds, today, joinedOn(link))
         : [];
       return {
         linkId: link.id,
@@ -100,11 +122,13 @@ export class MentorshipRosterService {
         status: link.status as MentorshipLinkStatus,
         acceptedAt: link.acceptedAt?.toISOString() ?? null,
         endedAt: link.endedAt?.toISOString() ?? null,
+        seat: link.seat as MentorshipSeatId,
         metrics: snapshot
           ? {
               lastActiveDate: snapshot.lastActiveDate,
               currentStreak: snapshot.currentStreak,
               focusMinutes7d: snapshot.focusMinutes7d,
+              dailyFocusMinutes14d: snapshot.dailyFocusMinutes14d,
               sessions7d: snapshot.sessions7d,
               activeDays7d: snapshot.activeDays7d,
               planCompletionRate7d: snapshot.planCompletionRate7d,
@@ -155,14 +179,14 @@ export class MentorshipRosterService {
       return;
     }
     const [snapshots, thresholds] = await Promise.all([
-      this.evidence.listCohortSnapshots([studentId], now),
+      this.evidence.listTriageSnapshots([studentId], now),
       this.thresholds(),
     ]);
     const snapshot = snapshots.get(studentId);
     // No snapshot means no evidence to triage. An empty mark is still worth writing: it records
     // that the coach looked, and `needsAttention` reads it as covering nothing if flags appear.
     const flags = snapshot
-      ? evaluateRiskFlags(snapshot, thresholds, todayIso(now))
+      ? evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now), joinedOn(link))
       : [];
     await this.links.setAttention(link.id, flags);
   }
@@ -179,7 +203,7 @@ export class MentorshipRosterService {
     // `link.id` scopes the coach-authored fields on the plan rows to THIS coach: a note left by a
     // previous coach on a task that outlived their link must not be readable by the current one.
     const droppedSince = addDays(
-      todayIso(now),
+      todayInIstanbul(now),
       -(MENTORSHIP_DROPPED_WINDOW_DAYS - 1),
     );
     const [
@@ -194,13 +218,13 @@ export class MentorshipRosterService {
       this.users.listDisplayIdentities([studentId]),
       this.users.getDiscoveryProfile(studentId),
       this.evidence.getStudentReport(studentId, now, link.id),
-      this.evidence.listCohortSnapshots([studentId], now),
+      this.evidence.listTriageSnapshots([studentId], now),
       this.thresholds(),
       this.config.get("mentorship.attention.ttl_days"),
       this.dropped.listByLink(link.id, droppedSince, MENTORSHIP_DROPPED_LIMIT),
     ]);
     const snapshot = snapshots.get(studentId)!;
-    const flags = evaluateRiskFlags(snapshot, thresholds, todayIso(now));
+    const flags = evaluateRiskFlags(snapshot, thresholds, todayInIstanbul(now), joinedOn(link));
 
     return {
       studentId,
@@ -212,6 +236,8 @@ export class MentorshipRosterService {
       // Read back to the coach who wrote it. Scoped to the live link, so a successor coach starts
       // on a blank page rather than inheriting somebody else's words.
       coachNote: toCoachNoteDto(link),
+      // The one free text of the student's on this report: they wrote it for this coach (QA F4).
+      studentNote: toStudentNoteDto(link),
       riskFlags: flags,
       attendedAt: link.attendedAt?.toISOString() ?? null,
       needsAttention: needsAttention(
@@ -242,4 +268,9 @@ export class MentorshipRosterService {
       ]);
     return { inactiveDays, planCompletionFloor, lowMoodCeiling };
   }
+}
+
+/** The Istanbul day a link was accepted: where a new student's silence starts counting. */
+function joinedOn(link: { acceptedAt: Date | null }): string | null {
+  return link.acceptedAt ? todayInIstanbul(link.acceptedAt) : null;
 }

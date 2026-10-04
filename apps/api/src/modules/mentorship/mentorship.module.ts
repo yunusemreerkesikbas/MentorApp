@@ -1,6 +1,11 @@
+import { MentorshipWeeklyBriefRepository } from "./infrastructure/mentorship-weekly-brief.repository";
 import { Module } from "@nestjs/common";
 import { MentorshipFollowupService } from "./application/mentorship-followup.service";
+import { MentorshipWeeklyBriefService } from "./application/mentorship-weekly-brief.service";
+import { MentorshipWeeklyJobRegistrar } from "./application/mentorship-weekly-job.registrar";
+import { MentorshipWeeklyReportService } from "./application/mentorship-weekly-report.service";
 import { MentorshipFollowupRepository } from "./infrastructure/mentorship-followup.repository";
+import { MentorshipWeeklyReportRepository } from "./infrastructure/mentorship-weekly-report.repository";
 import { MentorshipFollowupController } from "./presentation/mentorship-followup.controller";
 import { AiModule } from "../ai/ai.module";
 import { CoachingModule } from "../coaching/coaching.module";
@@ -20,6 +25,7 @@ import { MentorshipSelfViewService } from "./application/mentorship-self-view.se
 import { MentorshipSuggestionService } from "./application/mentorship-suggestion.service";
 import { MentorshipTemplateService } from "./application/mentorship-template.service";
 import { PlanTaskFeedbackListener } from "./application/plan-task-feedback.listener";
+import { SeatEventsListener } from "./application/seat-events.listener";
 import { MentorshipApplicationRepository } from "./infrastructure/mentorship-application.repository";
 import { MentorshipBriefHistoryRepository } from "./infrastructure/mentorship-brief-history.repository";
 import { MentorshipCohortBriefRepository } from "./infrastructure/mentorship-cohort-brief.repository";
@@ -33,6 +39,7 @@ import { MentorshipApplicationController } from "./presentation/mentorship-appli
 import { MentorshipCoachController } from "./presentation/mentorship-coach.controller";
 import { MentorshipPlanController } from "./presentation/mentorship-plan.controller";
 import { MentorshipStudentController } from "./presentation/mentorship-student.controller";
+import { MentorshipWeeklyReportController } from "./presentation/mentorship-weekly-report.controller";
 
 /**
  * W8 - mentorship: the human coach relation (roadmap §9 BYOS).
@@ -57,10 +64,16 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipCoachController,
     MentorshipPlanController,
     MentorshipStudentController,
+    MentorshipWeeklyReportController,
   ],
   providers: [
+    MentorshipWeeklyBriefRepository,
     MentorshipFollowupService,
     MentorshipFollowupRepository,
+    MentorshipWeeklyBriefService,
+    MentorshipWeeklyJobRegistrar,
+    MentorshipWeeklyReportRepository,
+    MentorshipWeeklyReportService,
     MentorshipLinkService,
     MentorshipInviteService,
     MentorshipRosterService,
@@ -75,6 +88,7 @@ import { MentorshipStudentController } from "./presentation/mentorship-student.c
     MentorshipApplicationService,
     MentorshipErasureService,
     PlanTaskFeedbackListener,
+    SeatEventsListener,
     MentorshipLinkRepository,
     MentorshipInviteCodeRepository,
     MentorshipCohortBriefRepository,

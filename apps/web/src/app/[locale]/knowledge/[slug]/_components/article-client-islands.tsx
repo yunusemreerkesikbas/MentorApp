@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { ArrowUpRight } from "lucide-react";
+import { LEDGE, LEDGE_FILLED } from "@/components/panel/panel-styles";
 import { Link } from "@/i18n/navigation";
 import { trackArticleEvent, type ArticleAnalyticsParams } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
@@ -53,10 +55,10 @@ export function ArticleSourceLink({
       target="_blank"
       rel="noopener noreferrer"
       onClick={() => trackArticleEvent("article_source_click", analyticsParams)}
-      className="inline-flex min-h-11 items-center font-semibold underline underline-offset-2 transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2"
-      style={{ color: "var(--color-secondary)" }}
+      className="inline-flex items-center gap-0.5 font-extrabold text-[var(--play-selected-ink)] underline underline-offset-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
-      {source} ↗
+      {source}
+      <ArrowUpRight className="size-3.5" aria-hidden />
     </a>
   );
 }
@@ -87,11 +89,7 @@ export function ArticleCoachCta({
             }
           : "/login"
       }
-      className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-[var(--radius-card)] px-5 py-2 text-sm font-bold text-[var(--color-btn-label)] transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2"
-      style={{
-        backgroundColor: "var(--color-btn)",
-        fontFamily: "var(--font-heading)",
-      }}
+      className={`${LEDGE} ${LEDGE_FILLED} w-full shrink-0 sm:w-auto`}
       onClick={() => trackArticleEvent("article_coach_cta_click", analyticsParams)}
     >
       {authenticated ? authenticatedLabel : anonymousLabel}

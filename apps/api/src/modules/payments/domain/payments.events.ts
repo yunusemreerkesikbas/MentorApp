@@ -5,11 +5,12 @@
  */
 
 export const PaymentsEventTopic = {
+  PAYMENT_SUCCEEDED: "payments.payment.succeeded",
   SUBSCRIPTION_ACTIVATED: "payments.subscription.activated",
   SUBSCRIPTION_CANCELED: "payments.subscription.canceled",
   PAYMENT_FAILED: "payments.payment.failed",
   PAYMENT_REFUNDED: "payments.payment.refunded",
-  /** Access actually ended (sweeper). Distinct from CANCELED, which still has paid time left. */
+  /** Access ended or an unconfirmed checkout was cleared; listeners re-evaluate current eligibility. */
   SUBSCRIPTION_EXPIRED: "payments.subscription.expired",
 } as const;
 
@@ -43,6 +44,17 @@ export class PaymentRefunded {
     readonly userId: string,
     readonly subscriptionId: string,
     readonly amountMinor: number,
+    readonly sourcePaymentId: string,
+  ) {}
+}
+
+export class PaymentSucceeded {
+  constructor(
+    readonly userId: string,
+    readonly subscriptionId: string,
+    readonly paymentId: string,
+    readonly amountMinor: number,
+    readonly paidAt: Date,
   ) {}
 }
 

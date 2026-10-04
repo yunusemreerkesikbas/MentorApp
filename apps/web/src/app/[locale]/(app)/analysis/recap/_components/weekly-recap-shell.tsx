@@ -21,7 +21,7 @@ import { PuhuImage } from "@/components/puhu-image";
 import { Link, useRouter } from "@/i18n/navigation";
 import { trackWeeklyRecapEvent } from "@/lib/analytics";
 import { narrateWeeklyReview } from "@/lib/coach";
-import { fetchDeepAnalysis, purchaseDeepAnalysis } from "@/lib/economy";
+import { fetchDeepAnalysis, purchaseDeepAnalysis, notifyEconomyChanged } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { isPremiumRequiredError } from "@/lib/premium-required";
@@ -300,6 +300,7 @@ export function WeeklyRecapShell() {
     setUnlockBusy(true);
     try {
       const view = await purchaseDeepAnalysis(state.examId);
+      notifyEconomyChanged();
       setAccess({ status: "ready", view });
       if (view.unlocked) {
         trackWeeklyRecapEvent("weekly_recap_ai_unlock", {

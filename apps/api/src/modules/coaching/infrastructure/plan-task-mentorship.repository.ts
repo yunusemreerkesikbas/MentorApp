@@ -17,7 +17,7 @@ export type MentorshipTaskVisibleSignature = Pick<
   | "startTime"
   | "endTime"
   | "coachNote"
->;
+> & { durationMinutes?: number | null };
 
 const scopePredicate = (scopes: MentorshipTaskScope[]) =>
   or(
@@ -50,6 +50,9 @@ const visibleSignaturePredicate = (
     nullableTextPredicate(planTasks.startTime, signature.startTime),
     nullableTextPredicate(planTasks.endTime, signature.endTime),
     nullableTextPredicate(planTasks.coachNote, signature.coachNote),
+    signature.durationMinutes === undefined ? undefined
+      : signature.durationMinutes === null ? isNull(planTasks.durationMinutes)
+      : eq(planTasks.durationMinutes, signature.durationMinutes),
   );
 
 export function listOwnedCoachTasks(
@@ -155,4 +158,28 @@ export function deletePendingMentorshipGroup(
       ),
     )
     .returning();
+}
+
+/**
+ * The link ended: its PENDING tasks become the student's own. The coach note leaves with the
+ * provenance, since only a coach-origin task may carry one (`plan_tasks_coach_note_origin_chk`);
+ * DONE tasks keep both, as the record of work the coach set.
+ */
+export async function releasePendingMentorshipTasks(
+  tx: DatabaseTx,
+  scope: MentorshipTaskScope,
+): Promise<number> {
+  const rows = await tx
+    .update(planTasks)
+    .set({ originType: null, originRefId: null, originMeta: null, coachNote: null, updatedAt: new Date() })
+    .where(
+      and(
+        eq(planTasks.userId, scope.studentId),
+        eq(planTasks.status, "PENDING"),
+        eq(planTasks.originType, "MENTORSHIP"),
+        eq(planTasks.originRefId, scope.mentorshipLinkId),
+      ),
+    )
+    .returning({ id: planTasks.id });
+  return rows.length;
 }

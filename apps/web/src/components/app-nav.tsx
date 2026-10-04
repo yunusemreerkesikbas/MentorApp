@@ -10,11 +10,11 @@ import {
   NotebookPen,
   PanelLeft,
   Settings,
+  UserRoundCheck,
   Users,
-  UsersRound,
 } from "lucide-react";
 
-import { useEffect, useLayoutEffect, useState } from "react";
+import { useLayoutEffect, useState } from "react";
 import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
@@ -22,12 +22,12 @@ import {
   UserRole,
   type AuthUser,
   type EconomyBalance,
-  type SubscriptionView,
+  type ExamType,
 } from "@mentor/types";
 import { NotificationBell } from "@mentor/ui";
-import { subscriptionsControllerGetMine } from "@mentor/api-client";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { PremiumBadge } from "@/components/premium/premium-badge";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import {
   ThemeLamp,
@@ -46,20 +46,20 @@ import {
   parseAppSidebarCookie,
 } from "@/lib/app-sidebar";
 import { useAuth } from "@/lib/auth-context";
+import { blogHref } from "@/lib/blog-href";
 import { isCoach } from "@/lib/coach-surface";
-import {
-  ECONOMY_CHANGED_EVENT,
-  fetchEconomyBalance,
-  isEconomyDisabled,
-} from "@/lib/economy";
+import { useEconomySnapshot } from "@/lib/economy-store";
+import { greetingKeyForHour } from "@/lib/greeting";
 import { isNavActive } from "@/lib/nav-active";
+import { useIsPremium } from "@/lib/subscription-context";
 import { useAppSidebar } from "@/lib/use-app-sidebar";
 
 /** Chrome micro-motion — DESIGN.md §9 (~150–250ms, ease-out). */
 const TAB_EASE = [0.22, 1, 0.36, 1] as const;
 /**
  * App navigation (DESIGN.md §6 Tab bar + §8 adaptation):
- *  - mobile: avatar header + floating pill tab (Koç elevated center, icons only)
+ *  - mobile: avatar header + floating pill tab, icons only, the role's home raised in the centre
+ *    (Koç for a student, Öğrencilerim for a coach); the same active look for every role
  *  - ≥1024px (lg): left sidebar with sentence-case labels; Koç is desktop floating
  *    Puhu FAB (bottom-right), not a sidebar item
  * Public profile is avatar-only on mobile; sidebar keeps Ayarlar + Topluluk.
@@ -76,6 +76,19 @@ const TAB_EASE = [0.22, 1, 0.36, 1] as const;
  * exceptions visible.
  */
 const NAV_ITEMS = [
+  /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
+     NOT `/coach`, which is the AI companion chat below. First, because it is where a coach's day
+     starts; a student never sees it, so their order is untouched.
+
+     No longer `sidebarOnly`: it used to read "a coach does roster work at a desk", but that left a
+     coach on a phone with no way into their own surface at all. The role filter below now runs on
+     the tab bar too, so this costs a student nothing. */
+  {
+    href: "/students",
+    labelKey: "students",
+    icon: UserRoundCheck,
+    roles: [UserRole.COACH],
+  },
   { href: "/dashboard", labelKey: "home", icon: House, studentOnly: true },
   { href: "/plan", labelKey: "plan", icon: Calendar },
   {
@@ -102,18 +115,6 @@ const NAV_ITEMS = [
     studentOnly: true,
   },
   { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
-  /* Human-coach surface (W8) and, since APP-090, the coach's home. `/students` (TR `/kocluk`) is
-     NOT `/coach`, which is the AI companion chat above.
-
-     No longer `sidebarOnly`: it used to read "a coach does roster work at a desk", but that left a
-     coach on a phone with no way into their own surface at all. The role filter below now runs on
-     the tab bar too, so this costs a student nothing. */
-  {
-    href: "/students",
-    labelKey: "students",
-    icon: UsersRound,
-    roles: [UserRole.COACH],
-  },
   {
     href: "/settings",
     labelKey: "settings",
@@ -123,6 +124,11 @@ const NAV_ITEMS = [
 ] as const;
 
 type NavItem = (typeof NAV_ITEMS)[number];
+
+/** Blog is public and filtered by `?family=`; a member lands on their own exam's list. */
+function navHref(href: NavItem["href"], examType: ExamType | null | undefined) {
+  return href === "/knowledge" && examType ? blogHref({ family: examType }) : href;
+}
 
 const SIDEBAR_ITEMS = NAV_ITEMS.filter(
   (i) => !("sidebarExclude" in i && i.sidebarExclude),
@@ -139,13 +145,26 @@ const SIDEBAR_ITEMS = NAV_ITEMS.filter(
  * So a coach's pill mirrors their sidebar instead. That is also exactly five items, because
  * `visibleTo` drops every `studentOnly` entry before this list is rendered. The desktop sidebar
  * is untouched in both roles — `sidebarOnly` items already render there.
+ *
+ * Both pills share one silhouette: the role's home sits raised in the centre (`ELEVATED_HREFS`),
+ * Koç for a student and Öğrencilerim for a coach, so the coach's home moves to the middle here.
  */
 function tabItemsFor(roles: readonly string[] | undefined): readonly NavItem[] {
-  const items = isCoach({ roles: roles ?? [] })
-    ? SIDEBAR_ITEMS
-    : NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly));
-  return visibleTo(items, roles);
+  if (!isCoach({ roles: roles ?? [] })) {
+    return visibleTo(
+      NAV_ITEMS.filter((i) => !("sidebarOnly" in i && i.sidebarOnly)),
+      roles,
+    );
+  }
+  const items = visibleTo(SIDEBAR_ITEMS, roles);
+  const home = items.filter((item) => item.href === "/students");
+  const rest = items.filter((item) => item.href !== "/students");
+  const middle = Math.floor(rest.length / 2);
+  return [...rest.slice(0, middle), ...home, ...rest.slice(middle)];
 }
+
+/** The raised centre of the tab pill: each role sees exactly one of these. */
+const ELEVATED_HREFS: readonly string[] = ["/coach", "/students"];
 
 /**
  * An item with no `roles` is open to everyone; otherwise the user must hold one of them. A
@@ -178,49 +197,10 @@ export function AppNav() {
   const t = useTranslations("nav");
   const ui = useTranslations("common");
   const { user } = useAuth();
-  const [balance, setBalance] = useState<EconomyBalance | null>(null);
-  const [premium, setPremium] = useState(false);
-
-  useEffect(() => {
-    let active = true;
-
-    function loadBalance() {
-      fetchEconomyBalance()
-        .then((next) => {
-          if (active) setBalance(next);
-        })
-        .catch((err: unknown) => {
-          if (!active) return;
-          if (!isEconomyDisabled(err)) setBalance(null);
-        });
-    }
-
-    loadBalance();
-    subscriptionsControllerGetMine()
-      .then((raw) => {
-        if (!active) return;
-        const view = raw as unknown as SubscriptionView;
-        setPremium(Boolean(view.entitlement?.isPremium));
-      })
-      .catch(() => {
-        if (active) setPremium(false);
-      });
-
-    function onEconomyChanged() {
-      loadBalance();
-    }
-    function onVisible() {
-      if (document.visibilityState === "visible") loadBalance();
-    }
-
-    window.addEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
-    document.addEventListener("visibilitychange", onVisible);
-    return () => {
-      active = false;
-      window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
-      document.removeEventListener("visibilitychange", onVisible);
-    };
-  }, []);
+  const { balance } = useEconomySnapshot();
+  // Shared read (see `subscription-context`): the nav used to fetch `/v1/subscription` on its own,
+  // which was one of the three calls the same page made for the same answer.
+  const premium = useIsPremium();
 
   const hideMobileChrome = hidesMobileAppChrome(pathname);
 
@@ -234,7 +214,11 @@ export function AppNav() {
       />
 
       {hideMobileChrome ? null : (
-        <header className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden">
+        // The chrome is named so a page slide (the coach screens, `coach-theme.css`) passes under it.
+        <header data-app-chrome
+          className="fixed inset-x-0 top-0 z-20 flex h-16 items-center gap-3 overflow-visible border-b border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] px-4 backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:hidden"
+          style={{ viewTransitionName: "app-topbar" }}
+        >
           {user ? (
             <MobileIdentity premium={premium} user={user} />
           ) : (
@@ -261,8 +245,9 @@ export function AppNav() {
       )}
 
       {hideMobileChrome ? null : (
-        <nav
+        <nav data-app-chrome
           className="fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-20 lg:hidden"
+          style={{ viewTransitionName: "app-tabbar" }}
           aria-label={t("aria_label")}
         >
           <MobileTabBar pathname={pathname} user={user} />
@@ -322,9 +307,9 @@ function DesktopSidebar({
   }
 
   return (
-    <aside
+    <aside data-app-chrome
       className="mentor-app-sidebar fixed inset-y-0 left-0 z-20 hidden overflow-visible flex-col border-r border-[var(--color-border)] bg-[color-mix(in_srgb,var(--color-surface)_50%,transparent)] backdrop-blur transition-colors duration-200 motion-reduce:transition-none lg:flex"
-      style={{ boxShadow: "var(--shadow-card)" }}
+      style={{ boxShadow: "var(--shadow-card)", viewTransitionName: "app-sidebar" }}
       aria-label={t("aria_label")}
       data-testid="app-sidebar"
     >
@@ -354,6 +339,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              examType={user?.examType}
             />
           ))}
         </div>
@@ -407,6 +393,7 @@ function DesktopSidebar({
               item={item}
               label={t(item.labelKey)}
               active={isNavActive(pathname, item.href)}
+              examType={user?.examType}
             />
           ))}
         </div>
@@ -447,6 +434,7 @@ function MobileTabBar({
           item={item}
           label={t(item.labelKey)}
           active={isNavActive(pathname, item.href)}
+          examType={user?.examType}
           reduceMotion={Boolean(reduceMotion)}
           transition={tabTransition}
         />
@@ -459,27 +447,30 @@ function MobileTabLink({
   item,
   label,
   active,
+  examType,
   reduceMotion,
   transition,
 }: {
   item: NavItem;
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
   reduceMotion: boolean;
   transition:
     | { duration: number }
     | { type: "spring"; stiffness: number; damping: number; mass: number };
 }) {
-  const isCoach = item.href === "/coach";
+  const elevated = ELEVATED_HREFS.includes(item.href);
   const Icon = item.icon;
   const tap = reduceMotion ? undefined : { scale: 0.94 };
 
-  if (isCoach) {
+  if (elevated) {
     return (
       <Link
         href={item.href}
         aria-current={active ? "page" : undefined}
         aria-label={label}
+        data-elevated="true"
         className="relative flex h-full min-w-0 flex-1 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
       >
         <motion.span
@@ -502,7 +493,7 @@ function MobileTabLink({
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className="relative flex h-full min-w-0 flex-1 items-center justify-center px-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
@@ -556,7 +547,12 @@ function MobileIdentity({
         >
           {greeting}
         </p>
-        <IdentityName name={user.displayName} premium={premium} />
+        {/* No crown for a coach: their plan reads as "KOÇ PRO" in the sidebar, not as a student's
+            Premium. The top bar has no room for the badge row, so it carries neither. */}
+        <IdentityName
+          name={user.displayName}
+          premium={premium && !isCoach(user)}
+        />
       </div>
     </>
   );
@@ -571,11 +567,12 @@ function SidebarIdentity({
   premium: boolean;
   user: AuthUser;
 }) {
-  const t = useTranslations("nav");
   const ui = useTranslations("common");
-  const greeting = t(greetingKeyForHour());
+  const coach = isCoach(user);
 
-  // ponytail: no card chrome — identity sits flush in the sidebar rail
+  // ponytail: no card chrome — identity sits flush in the sidebar rail.
+  // No greeting here (2026-09-21): "Günaydın" belongs to the panel page, and the sidebar is on
+  // every screen — both at once read as the same line twice.
   return (
     <div className="mb-5">
       <div className="flex items-start justify-between gap-3">
@@ -586,17 +583,12 @@ function SidebarIdentity({
         />
       </div>
       <div className="mt-3 min-w-0">
-        <p
-          className="text-lg font-bold leading-snug text-[var(--color-main)]"
-          style={{ fontFamily: "var(--font-heading)" }}
-        >
-          {greeting}
-        </p>
         <IdentityName
-          className="mt-1"
           name={user.displayName}
-          premium={premium}
+          premium={premium && !coach}
+          primary
         />
+        {coach ? <CoachIdentity pro={premium} /> : null}
       </div>
       {balance ? (
         <div className="mt-3">
@@ -607,18 +599,44 @@ function SidebarIdentity({
   );
 }
 
+/**
+ * A coach's standing under their name (DESIGN.md §2.5): "Koç" in the coach's ink, and their plan
+ * in the premium clasp's gold. No crown for a coach: the clasp already says they subscribe.
+ */
+function CoachIdentity({ pro }: { pro: boolean }) {
+  const t = useTranslations("nav");
+
+  return (
+    <p className="mt-2 flex flex-wrap gap-1.5">
+      <span className="inline-flex h-[22px] shrink-0 items-center rounded-full bg-[var(--coach-accent)] px-2 text-micro font-black tracking-[0.04em] text-[var(--color-bg)]">
+        {t("coach_role")}
+      </span>
+      {pro ? <PremiumBadge label={t("coach_pro_badge")} /> : null}
+    </p>
+  );
+}
+
 function IdentityName({
   className = "",
   name,
   premium,
+  primary = false,
 }: {
   className?: string;
   name: string;
   premium: boolean;
+  /** The sidebar has no greeting line above the name, so the name is the heading there. */
+  primary?: boolean;
 }) {
   return (
     <p className={`flex min-w-0 items-center gap-1.5 ${className}`.trim()}>
-      <span className="min-w-0 truncate text-sm leading-snug text-[var(--color-secondary)]">
+      <span
+        className={
+          primary
+            ? "min-w-0 truncate text-lg font-extrabold leading-snug text-[var(--color-main)]"
+            : "min-w-0 truncate text-sm leading-snug text-[var(--color-secondary)]"
+        }
+      >
         {name}
       </span>
       {premium ? <PremiumIdentityMark /> : null}
@@ -647,6 +665,8 @@ function AvatarLink({
           : "/settings"
       }
       aria-label={t("profile_link")}
+      // Where a celebrated achievement flies home to (achievement scene, DESIGN.md §9.1).
+      data-achievement-home=""
       className="relative shrink-0 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
     >
       <UserAvatar
@@ -672,36 +692,53 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
         <Coins className="size-3.5 text-[var(--color-progress)]" aria-hidden />
         {formatCompact(balance.coinConfirmed)}
       </span>
-      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,#FCD34D_30%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
-        <Gem className="size-3.5 text-[#B7791F]" aria-hidden />
+      <span className="inline-flex items-center gap-1 rounded-full bg-[color-mix(in_srgb,var(--color-star)_30%,var(--color-surface))] px-2 py-1 text-[11px] font-bold tabular-nums text-[var(--color-main)]">
+        {/* Raw star is ~1.5:1 on its own well; mixed toward ink it measures ~3.2:1 and follows the
+            theme, which the two hardcoded ambers it replaces did not. */}
+        <Gem
+          className="size-3.5 text-[color-mix(in_srgb,var(--color-star)_60%,var(--color-main))]"
+          aria-hidden
+        />
         {formatCompact(balance.xp)}
       </span>
     </div>
   );
 }
 
+/**
+ * The active item, the same for every role: whose tool this is is said by the "Koç" badge under
+ * the name, not by the navigation's colour (DESIGN.md §6 Tab bar).
+ */
+const ACTIVE_NAV_TONE = {
+  className: "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]",
+  color: "var(--color-main)",
+};
+
 function NavLink({
   item,
   label,
   active,
+  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
+  const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       className={`flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] px-3 py-2 text-base transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none ${
         active
-          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          ? tone.className
           : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
       }`}
       style={{
-        color: active ? "var(--color-main)" : "var(--color-secondary)",
+        color: active ? tone.color : "var(--color-secondary)",
         fontFamily: "var(--font-body)",
         fontWeight: active ? 700 : 400,
       }}
@@ -716,25 +753,28 @@ function CollapsedNavLink({
   item,
   label,
   active,
+  examType,
 }: {
   item: (typeof SIDEBAR_ITEMS)[number];
   label: string;
   active: boolean;
+  examType: ExamType | null | undefined;
 }) {
   const Icon = item.icon;
+  const tone = ACTIVE_NAV_TONE;
 
   return (
     <Link
-      href={item.href}
+      href={navHref(item.href, examType)}
       aria-current={active ? "page" : undefined}
       aria-label={label}
       className={`group relative flex size-11 cursor-pointer items-center justify-center rounded-[var(--radius-card)] transition-colors duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none ${
         active
-          ? "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]"
+          ? tone.className
           : "hover:bg-[color-mix(in_srgb,var(--color-surface)_60%,transparent)]"
       }`}
       style={{
-        color: active ? "var(--color-main)" : "var(--color-secondary)",
+        color: active ? tone.color : "var(--color-secondary)",
       }}
     >
       <NavIcon icon={Icon} active={active} />
@@ -763,14 +803,4 @@ function formatCompact(value: number) {
     maximumFractionDigits: 1,
     notation: "compact",
   }).format(value);
-}
-
-function greetingKeyForHour():
-  | "greeting_morning"
-  | "greeting_day"
-  | "greeting_evening" {
-  const hour = new Date().getHours();
-  if (hour < 12) return "greeting_morning";
-  if (hour < 18) return "greeting_day";
-  return "greeting_evening";
 }

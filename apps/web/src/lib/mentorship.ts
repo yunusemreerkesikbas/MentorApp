@@ -304,6 +304,14 @@ export async function setCoachNote(studentId: string, body: string | null): Prom
   });
 }
 
+/** The student's standing note to their coach (QA F4). `null` removes it; PUT for the same reason. */
+export async function setMyNote(body: string | null): Promise<void> {
+  await http("/v1/mentorship/my-coach/note", {
+    method: "PUT",
+    body: JSON.stringify({ body }),
+  });
+}
+
 export async function endMyCoachLink(): Promise<void> {
   await http("/v1/mentorship/my-coach", { method: "DELETE" });
 }

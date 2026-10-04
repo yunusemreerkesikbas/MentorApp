@@ -43,8 +43,24 @@ export class TodayService {
 
   async getToday(userId: string): Promise<TodayPanelResponse> {
     const today = todayIso();
-    // Identity owns the profile (display name + exam type) — read via its service, not a coaching query.
-    const profile = await this.users.getMe(userId);
+    /*
+     * Two waves, not a chain. Identity owns the profile (display name + exam type), so it is read
+     * via its service rather than a coaching query — but streak, plan, mood and session numbers do
+     * not depend on it, and they used to sit idle behind that one await. They now travel WITH it;
+     * only the calendar reads, which need `examType`, wait for the second wave.
+     */
+    const [profile, streak, tasks, mood, focusMinutesToday, focusingNow] = await Promise.all([
+      this.users.getMe(userId),
+      this.streak.getSummary(userId),
+      this.plan.listForDate(userId, today),
+      this.mood.getToday(userId),
+      this.sessions.getTodayFocusMinutes(userId),
+      // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
+      this.sessions.getFocusingNowCount().catch((err: unknown) => {
+        this.logger.warn(`focusingNow unavailable: ${String(err)}`);
+        return null;
+      }),
+    ]);
     const recapWindow = profile.examType ? weeklyReviewWindows() : null;
     const calendarPromise = this.content.getExamCalendar(
       profile.examType,
@@ -67,28 +83,10 @@ export class TodayService {
             .then((review) => review.recap.status),
     );
 
-    const [
-      calendar,
-      recapCalendar,
-      recapStatus,
-      streak,
-      tasks,
-      mood,
-      focusMinutesToday,
-      focusingNow,
-    ] = await Promise.all([
+    const [calendar, recapCalendar, recapStatus] = await Promise.all([
       calendarPromise,
       recapCalendarPromise,
       recapStatusPromise,
-      this.streak.getSummary(userId),
-      this.plan.listForDate(userId, today),
-      this.mood.getToday(userId),
-      this.sessions.getTodayFocusMinutes(userId),
-      // Ambience only — a failed aggregate must never take the daily hub down (logged fallback).
-      this.sessions.getFocusingNowCount().catch((err: unknown) => {
-        this.logger.warn(`focusingNow unavailable: ${String(err)}`);
-        return null;
-      }),
     ]);
     const countdown = this.buildCountdown(calendar, today);
 

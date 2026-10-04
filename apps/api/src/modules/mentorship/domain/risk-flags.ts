@@ -1,5 +1,5 @@
 import { MentorshipRiskFlag, type MentorshipRiskFlagId } from "@mentor/types";
-import type { CohortStudentSnapshot } from "../../coaching/domain/cohort-evidence";
+import type { CohortTriageSnapshot } from "../../coaching/domain/cohort-evidence";
 
 /**
  * Rule-based triage — deliberately not AI (roadmap §9 calls the AI brief a later layer, and a
@@ -9,7 +9,7 @@ import type { CohortStudentSnapshot } from "../../coaching/domain/cohort-evidenc
  * config so they can be calibrated from live data without a deploy; the rules themselves are here,
  * pure and testable.
  *
- * Only the domain type crosses from coaching — `CohortStudentSnapshot` is an aggregate contract,
+ * Only the domain type crosses from coaching — `CohortTriageSnapshot` is an aggregate contract,
  * not a table read, so this stays inside the workstream boundary.
  */
 export interface RiskThresholds {
@@ -26,19 +26,29 @@ const SEVERITY: MentorshipRiskFlagId[] = [
   MentorshipRiskFlag.PLAN_SLIPPING,
 ];
 
+/**
+ * `joinedOn` is the Istanbul date the student accepted THIS coach (null only for a link with no
+ * acceptance on record). Silence is counted from it as well as from the last activity: a student who
+ * joined this morning has not been quiet for the window, and one linking again is not charged with
+ * the gap before they came back.
+ */
 export function evaluateRiskFlags(
-  snapshot: CohortStudentSnapshot,
+  snapshot: CohortTriageSnapshot,
   thresholds: RiskThresholds,
   today: string,
+  joinedOn: string | null,
 ): MentorshipRiskFlagId[] {
   const flags: MentorshipRiskFlagId[] = [];
 
-  // A student who has never been active is not "inactive for 0 days" — they never started.
-  // Both cases deserve the flag, so a null last-active counts as inactive.
+  // A student who has never been active is not "inactive for 0 days" — they never started. That
+  // still deserves the flag once the window has passed since they joined, so with neither date the
+  // silence is unbounded.
+  const idleSince =
+    snapshot.lastActiveDate && joinedOn
+      ? (snapshot.lastActiveDate > joinedOn ? snapshot.lastActiveDate : joinedOn)
+      : (snapshot.lastActiveDate ?? joinedOn);
   const idleDays =
-    snapshot.lastActiveDate === null
-      ? Number.POSITIVE_INFINITY
-      : daysBetweenIso(snapshot.lastActiveDate, today);
+    idleSince === null ? Number.POSITIVE_INFINITY : daysBetweenIso(idleSince, today);
   if (idleDays > thresholds.inactiveDays) flags.push(MentorshipRiskFlag.INACTIVE);
 
   // Null completion means nothing was planned — silence, not failure. Don't flag it here;
@@ -57,7 +67,9 @@ export function evaluateRiskFlags(
     flags.push(MentorshipRiskFlag.LOW_MOOD);
   }
 
-  // Strictly below the baseline — an identical net is holding steady, not slipping.
+  // Strictly below the baseline — an identical net is holding steady, not slipping. The baseline
+  // holds only attempts of the latest attempt's exam (`CohortEvidenceRepository.latestMocks`): a
+  // first attempt on a new exam has no baseline and cannot drop.
   if (
     snapshot.latestMockNet !== null &&
     snapshot.previousMockNetAvg !== null &&
@@ -99,7 +111,10 @@ interface RiskSortable {
   metrics: { lastActiveDate: string | null } | null;
 }
 
-/** Whole days between two `yyyy-mm-dd` strings. UTC, matching the rest of coaching's day math. */
+/**
+ * Whole days between two `yyyy-mm-dd` strings: calendar arithmetic, no clock. Callers pass
+ * Europe/Istanbul days on both sides (`lastActiveDate` and `todayInIstanbul`).
+ */
 function daysBetweenIso(from: string, to: string): number {
   const ms = Date.parse(`${to}T00:00:00.000Z`) - Date.parse(`${from}T00:00:00.000Z`);
   return Math.round(ms / 86_400_000);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { FREEZE_TOKENS_PER_MONTH } from "./coaching.constants";
-import { deriveStreak } from "./streak";
+import { buildStreakWeek, deriveStreak } from "./streak";
 
 const TODAY = "2026-06-10";
 
@@ -137,5 +137,46 @@ describe("deriveStreak", () => {
     );
     expect(result.bridgedDates).toEqual(["2026-06-09", "2026-05-30", "2026-05-27"]);
     expect(result.currentStreak).toBe(13);
+  });
+});
+
+describe("buildStreakWeek", () => {
+  // 2026-06-10 is a Wednesday, so its week runs 06-08 (Mon) → 06-14 (Sun).
+  it("returns Monday through Sunday of the week today falls in", () => {
+    const week = buildStreakWeek(TODAY, active(), []);
+    expect(week).toHaveLength(7);
+    expect(week[0]!.date).toBe("2026-06-08");
+    expect(week[6]!.date).toBe("2026-06-14");
+  });
+
+  it("keeps Sunday in the week that started six days earlier", () => {
+    // The off-by-one that `getUTCDay() === 0` exists for: Sunday must not open its own week.
+    const week = buildStreakWeek("2026-06-14", active(), []);
+    expect(week[0]!.date).toBe("2026-06-08");
+    expect(week[6]!.date).toBe("2026-06-14");
+  });
+
+  it("marks active and bridged days apart, and leaves the rest untouched", () => {
+    const week = buildStreakWeek(TODAY, active("2026-06-08", "2026-06-10"), ["2026-06-09"]);
+    expect(week.map((d) => d.active)).toEqual([true, false, true, false, false, false, false]);
+    expect(week.map((d) => d.frozen)).toEqual([false, true, false, false, false, false, false]);
+  });
+
+  it("agrees with the streak walk it is built from", () => {
+    const activeDates = active("2026-06-08", "2026-06-10");
+    const { currentStreak, bridgedDates } = deriveStreak(
+      TODAY,
+      activeDates,
+      FREEZE_TOKENS_PER_MONTH,
+    );
+    const week = buildStreakWeek(TODAY, activeDates, bridgedDates);
+    // Three kept days in the band (two active + one bridged) is exactly the streak the walk counted.
+    expect(week.filter((d) => d.active || d.frozen)).toHaveLength(currentStreak + 1);
+    expect(currentStreak).toBe(2);
+  });
+
+  it("leaves days after today inactive", () => {
+    const week = buildStreakWeek(TODAY, active("2026-06-08", "2026-06-10"), []);
+    expect(week.slice(3).every((d) => !d.active && !d.frozen)).toBe(true);
   });
 });

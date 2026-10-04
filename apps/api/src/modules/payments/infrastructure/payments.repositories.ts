@@ -10,7 +10,7 @@ import {
   SubscriptionStatus,
 } from "@mentor/types";
 import { GRACE_PERIOD_DAYS } from "../domain/payments.constants";
-import type { TxStatus, TxType } from "../domain/payments.constants";
+import { TxStatus, TxType } from "../domain/payments.constants";
 
 export type PlanRow = typeof plans.$inferSelect;
 export type SubscriptionRow = typeof subscriptions.$inferSelect;
@@ -85,20 +85,40 @@ export class SubscriptionsRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   /** The user's single non-terminal subscription (partial-unique enforced in DB). */
-  async findOpenForUser(userId: string): Promise<SubscriptionRow | undefined> {
-    return withUserContext(this.db, { userId }, async (tx) => {
-      const rows = await tx
+  async findOpenForUser(userId: string, tx?: Exec): Promise<SubscriptionRow | undefined> {
+    const read = async (exec: Exec) => {
+      const rows = await exec
         .select()
         .from(subscriptions)
         .where(and(eq(subscriptions.userId, userId), notInArray(subscriptions.status, TERMINAL)))
         .limit(1);
       return rows[0];
-    });
+    };
+    return tx ? read(tx) : withUserContext(this.db, { userId }, read);
+  }
+
+  /**
+   * The open subscription of each of these users, in one query (W8 seats ask about a whole roster).
+   * SERVICE context: the rows belong to several users, so a per-user RLS context cannot read them.
+   */
+  async listOpenForUsers(userIds: readonly string[]): Promise<SubscriptionRow[]> {
+    if (userIds.length === 0) return [];
+    return withServiceContext(this.db, (tx) =>
+      tx
+        .select()
+        .from(subscriptions)
+        .where(
+          and(
+            inArray(subscriptions.userId, [...userIds]),
+            notInArray(subscriptions.status, TERMINAL),
+          ),
+        ),
+    );
   }
 
   /** Trial-once rule (§7): has this user EVER had a subscription row? */
-  async hasAnyForUser(userId: string): Promise<boolean> {
-    return withServiceContext(this.db, async (tx) => {
+  async hasAnyForUser(userId: string, tx?: Exec): Promise<boolean> {
+    return onServiceTx(this.db, tx, async (tx) => {
       const rows = await tx
         .select({ id: subscriptions.id })
         .from(subscriptions)
@@ -109,6 +129,7 @@ export class SubscriptionsRepository {
             // it, never carded it, and the moment coaching ends is exactly when a trial is worth
             // the most — walking them into a full-price wall would be the worst possible timing.
             ne(subscriptions.provider, SUBSCRIPTION_PROVIDER_SPONSOR),
+            ne(subscriptions.status, SubscriptionStatus.INCOMPLETE),
           ),
         )
         .limit(1);
@@ -147,8 +168,8 @@ export class SubscriptionsRepository {
    * non-terminal for three more days and `findOpenForUser` would keep reporting it — which would
    * block the student from starting their own checkout at the one moment they are most likely to.
    */
-  async expireSponsorship(id: string, now: Date): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async expireSponsorship(id: string, now: Date, tx?: Exec): Promise<void> {
+    await onServiceTx(this.db, tx, async (tx) => {
       await tx
         .update(subscriptions)
         .set({ status: SubscriptionStatus.EXPIRED, currentPeriodEnd: now, updatedAt: now })
@@ -201,30 +222,6 @@ export class SubscriptionsRepository {
   }
 
   /**
-   * How many of these links are actually sponsoring somebody right now.
-   *
-   * Ids in, count out — the same shape the cost metric uses, and for the same reason: the links
-   * belong to W8 and the subscriptions to W4, so the two tables meet in neither module's SQL.
-   * A link can be live without a seat (the student already pays for themselves), which is exactly
-   * why this cannot be inferred from the roster size.
-   */
-  async countSponsoredForLinks(linkIds: readonly string[]): Promise<number> {
-    if (linkIds.length === 0) return 0;
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .select({ n: count() })
-        .from(subscriptions)
-        .where(
-          and(
-            inArray(subscriptions.sponsorLinkId, [...linkIds]),
-            notInArray(subscriptions.status, TERMINAL),
-          ),
-        );
-      return rows[0]?.n ?? 0;
-    });
-  }
-
-  /**
    * End every live sponsorship at once — the kill switch.
    *
    * EXPIRED outright, for the same reason {@link expireSponsorship} does it: the sweeper waits out
@@ -253,6 +250,7 @@ export class SubscriptionsRepository {
         .select()
         .from(subscriptions)
         .where(eq(subscriptions.providerRef, providerRef))
+        .for("update")
         .limit(1);
       return rows[0];
     });
@@ -329,12 +327,12 @@ export class SubscriptionsRepository {
   }
 
   /**
-   * Hard-delete a subscription row. Used ONLY to discard an abandoned, never-confirmed INCOMPLETE
-   * checkout so the user can retry — a deleted (vs expired) row also keeps trial-once intact, since
-   * an unpaid checkout never consumed the trial.
+   * Discard only a never-confirmed INCOMPLETE checkout after definitive provider rejection/cancel.
+   * Unknown outcomes retain the row. Deletion keeps trial-once intact because this checkout never
+   * granted access; confirmed subscriptions retain their history.
    */
-  async deleteById(id: string): Promise<void> {
-    await withServiceContext(this.db, async (tx) => {
+  async deleteById(id: string, tx?: Exec): Promise<void> {
+    await onServiceTx(this.db, tx, async (tx) => {
       await tx.delete(subscriptions).where(eq(subscriptions.id, id));
     });
   }
@@ -427,6 +425,24 @@ export class PaymentEventsRepository {
         .returning({ id: paymentWebhookEvents.id });
       return rows.length > 0;
     });
+  }
+
+  async isPaymentRefunded(userId: string, paymentId: string): Promise<boolean> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.select({ id: paymentTransactions.id }).from(paymentTransactions)
+        .where(and(eq(paymentTransactions.userId, userId), eq(paymentTransactions.type, TxType.REFUND),
+          eq(paymentTransactions.status, TxStatus.REFUNDED),
+          sql`${paymentTransactions.raw}->>'sourcePaymentId' = ${paymentId}`)).limit(1);
+      return rows.length > 0;
+    });
+  }
+
+  async hasSuccessfulCharge(userId: string, tx: Exec): Promise<boolean> {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtextextended(${"first-payment:" + userId}, 0))`);
+    const rows = await tx.select({ id: paymentTransactions.id }).from(paymentTransactions)
+      .where(and(eq(paymentTransactions.userId, userId), eq(paymentTransactions.status, TxStatus.SUCCEEDED),
+        eq(paymentTransactions.type, TxType.RENEWAL), gt(paymentTransactions.amountMinor, 0))).limit(1);
+    return rows.length > 0;
   }
 
   /** Append-only charge ledger (never updated, never deleted — §3). */

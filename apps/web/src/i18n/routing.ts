@@ -59,10 +59,18 @@ export const routing = defineRouting({
       tr: "/kocluk/[studentId]",
       en: "/coaching/students/[studentId]",
     },
+    "/students/[studentId]/weekly-reports/[reportId]/print": {
+      tr: "/kocluk/[studentId]/haftalik-raporlar/[reportId]/yazdir",
+      en: "/coaching/students/[studentId]/weekly-reports/[reportId]/print",
+    },
     "/my-coach": { tr: "/kocum", en: "/my-coach" },
+    "/my-coach/weekly-reports/[reportId]": {
+      tr: "/kocum/haftalik-raporlar/[reportId]",
+      en: "/my-coach/weekly-reports/[reportId]",
+    },
     "/coach-invitation": { tr: "/kocluk-daveti", en: "/coach-invitation" },
-    /** Becoming a coach (curation, roadmap §5) — distinct from ACCEPTING one above. */
-    "/coach-application": { tr: "/koc-basvurusu", en: "/coach-application" },
+    /** Becoming a coach (self-service registration, no approval) — distinct from ACCEPTING one above. */
+    "/coach-application": { tr: "/koc-ol", en: "/become-a-coach" },
 
     "/coach/chat": { tr: "/koc/sohbet", en: "/coach/chat" },
     "/analysis": { tr: "/analiz", en: "/analysis" },
@@ -70,13 +78,19 @@ export const routing = defineRouting({
       tr: "/analiz/haftanin-hikayesi",
       en: "/analysis/weekly-story",
     },
-    "/knowledge": { tr: "/bilgi", en: "/knowledge" },
-    "/knowledge/[slug]": {
-      tr: "/bilgi/[slug]",
-      en: "/knowledge/[slug]",
-    },
+    /** Shown as "Blog" since 2026-09-23; `/bilgi` and `/en/knowledge` redirect here (next.config.ts). */
+    "/knowledge": "/blog",
+    "/knowledge/[slug]": "/blog/[slug]",
     "/profile": { tr: "/profil", en: "/profile" },
     "/settings": { tr: "/ayarlar", en: "/settings" },
+    "/settings/legal/[slug]": {
+      tr: "/ayarlar/yasal/[slug]",
+      en: "/settings/legal/[slug]",
+    },
+    "/settings/cookie-preferences": {
+      tr: "/ayarlar/cerez-tercihleri",
+      en: "/settings/cookie-preferences",
+    },
     "/subscription": { tr: "/abonelik", en: "/subscription" },
     "/subscription/result": {
       tr: "/abonelik/sonuc",

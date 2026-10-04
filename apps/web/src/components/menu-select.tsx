@@ -1,5 +1,6 @@
 "use client";
 import { ChevronDown } from "lucide-react";
+export type { MenuSelectTextSize } from "@/components/menu-select-typography";
 
 import { useId } from "react";
 import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
@@ -26,6 +27,8 @@ export interface MenuSelectProps {
   /** Associates the trigger with an external visible label (`htmlFor` on that label). */
   "aria-labelledby"?: string;
   "aria-label"?: string;
+  /** Extra classes on the portaled option panel (e.g. a scoped theme class). */
+  menuClassName?: string;
 }
 
 const fieldStyle = {
@@ -49,6 +52,7 @@ export function MenuSelect({
   menuSide = "bottom",
   "aria-labelledby": ariaLabelledBy,
   "aria-label": ariaLabel,
+  menuClassName,
 }: MenuSelectProps) {
   const reactId = useId();
   const triggerId = id ?? `menu-select-${reactId}`;
@@ -61,6 +65,8 @@ export function MenuSelect({
         side={menuSide}
         matchTriggerWidth
         panelRole="listbox"
+        // PopoverMenu's own default is `py-1` for a width-matched panel; keep it when adding classes.
+        menuClassName={menuClassName ? `${menuClassName} py-1` : undefined}
         trigger={({ open, setOpen, menuId }) => (
           <button
             type="button"

@@ -180,6 +180,11 @@
       "title": "Koçundan görevler",
       "body": "{name} planına {count} görev ekledi."
     },
+    "mentorshipAssignmentsChanged": {
+      "register": "companion",
+      "title": "Koçundan plan güncellemesi",
+      "body": "{name} planındaki görevlerde değişiklik yaptı."
+    },
     "mentorshipLinkEnded": {
       "register": "companion",
       "title": "Koçluk bağlantısı sona erdi",
@@ -204,6 +209,16 @@
       "register": "companion",
       "title": "Koçundan bir not",
       "body": "{name} sana bir not bıraktı."
+    },
+    "mentorshipStudentNote": {
+      "register": "companion",
+      "title": "{name} sana not bıraktı",
+      "body": "Notu öğrencinin raporunda görebilirsin."
+    },
+    "mentorshipWeeklyReportShared": {
+      "register": "companion",
+      "title": "Koçun haftanı değerlendirdi",
+      "body": "{name} haftalık değerlendirmeni paylaştı."
     },
     "mentorshipFollowupShared": {
       "register": "companion",

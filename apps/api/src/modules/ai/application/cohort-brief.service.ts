@@ -60,6 +60,7 @@ export class CohortBriefService {
       coach.id,
       coach.roles,
       PremiumFeatureId.MENTORSHIP_COHORT_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
 
     const prompt = buildCohortBriefPrompt(evidence, locale);

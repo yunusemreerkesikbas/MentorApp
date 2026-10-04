@@ -7,12 +7,11 @@ const CALM = "22222222-2222-4222-8222-222222222222";
 const IDLE = "33333333-3333-4333-8333-333333333333";
 const NOW = new Date("2026-09-10T07:00:00.000Z");
 
-/** Active today; nothing a rule would flag. */
+/** Active today; nothing a rule would flag. The triage shape: no strip, no streak. */
 function calmSnapshot(studentId: string) {
   return {
     studentId,
     lastActiveDate: "2026-09-10",
-    currentStreak: 4,
     focusMinutes7d: 300,
     sessions7d: 6,
     activeDays7d: 5,
@@ -38,7 +37,7 @@ type Pair = {
 };
 
 function setup(pairs: Pair[], snapshots: unknown[]) {
-  const listCohortSnapshots = vi.fn(
+  const listTriageSnapshots = vi.fn(
     async () => new Map(snapshots.map((s) => [(s as { studentId: string }).studentId, s])),
   );
   const links = {
@@ -50,12 +49,14 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
       })),
     ),
   };
-  const evidence = { listCohortSnapshots };
+  const evidence = { listTriageSnapshots };
   const users = {
+    isEmailVerified: vi.fn(async () => true),
+    isPhoneVerified: vi.fn(async () => true),
     listDisplayIdentities: vi.fn(
       async (ids: string[]) => new Map(ids.map((id) => [id, { displayName: `Ad ${id.slice(0, 4)}` }])),
     ),
-    getNotificationContact: vi.fn(async (id: string) => ({
+    getVerifiedNotificationContact: vi.fn(async (id: string) => ({
       email: `${id.slice(0, 4)}@test.local`,
       displayName: `Koç ${id.slice(0, 4)}`,
     })),
@@ -73,14 +74,24 @@ function setup(pairs: Pair[], snapshots: unknown[]) {
     users as never,
     config as never,
   );
-  return { adapter, listCohortSnapshots, users };
+  return { adapter, listTriageSnapshots, users };
 }
 
 describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
-  it("returns nothing — and asks nothing — when no link is active", async () => {
-    const { adapter, listCohortSnapshots } = setup([], []);
+  it("stops an existing coach digest when their email changes, until it is reverified", async () => {
+    const { adapter, users, listTriageSnapshots } = setup([{ coachId: COACH_A, studentId: IDLE }], [idleSnapshot(IDLE)]);
+    users.isEmailVerified.mockResolvedValue(false);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
-    expect(listCohortSnapshots).not.toHaveBeenCalled();
+    expect(listTriageSnapshots).not.toHaveBeenCalled();
+    expect(users.getVerifiedNotificationContact).not.toHaveBeenCalled();
+    users.isEmailVerified.mockResolvedValue(true);
+    await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toMatchObject([{ coachId: COACH_A, students: [{ studentId: IDLE }] }]);
+  });
+
+  it("returns nothing — and asks nothing — when no link is active", async () => {
+    const { adapter, listTriageSnapshots } = setup([], []);
+    await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
+    expect(listTriageSnapshots).not.toHaveBeenCalled();
   });
 
   it("leaves out a coach whose students are all doing fine", async () => {
@@ -104,7 +115,7 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
 
   it("snapshots the whole cohort in ONE call, however many coaches share it", async () => {
     // The cost bound that makes an unpaged digest defensible: fixed round trips, not per coach.
-    const { adapter, listCohortSnapshots } = setup(
+    const { adapter, listTriageSnapshots } = setup(
       [
         { coachId: COACH_A, studentId: IDLE },
         { coachId: COACH_B, studentId: CALM },
@@ -112,8 +123,8 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
       [idleSnapshot(IDLE), calmSnapshot(CALM)],
     );
     await adapter.listRiskDigestCandidates(NOW);
-    expect(listCohortSnapshots).toHaveBeenCalledTimes(1);
-    expect(listCohortSnapshots.mock.calls[0]![0]).toEqual([IDLE, CALM]);
+    expect(listTriageSnapshots).toHaveBeenCalledTimes(1);
+    expect(listTriageSnapshots.mock.calls[0]![0]).toEqual([IDLE, CALM]);
   });
 
   describe("a student the coach already dealt with", () => {
@@ -167,9 +178,9 @@ describe("MentorshipQueryAdapter.listRiskDigestCandidates", () => {
     });
   });
 
-  it("skips a coach with no contact row rather than half-sending", async () => {
+  it("rechecks a verified contact snapshot before delivery, including an email changed after the initial gate", async () => {
     const { adapter, users } = setup([{ coachId: COACH_A, studentId: IDLE }], [idleSnapshot(IDLE)]);
-    users.getNotificationContact.mockResolvedValueOnce(null as never);
+    users.getVerifiedNotificationContact.mockResolvedValueOnce(null as never);
     await expect(adapter.listRiskDigestCandidates(NOW)).resolves.toEqual([]);
   });
 });

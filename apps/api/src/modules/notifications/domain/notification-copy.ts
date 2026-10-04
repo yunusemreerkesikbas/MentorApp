@@ -39,10 +39,13 @@ export const NotificationCopyKey = {
   MENTORSHIP_RISK_DIGEST: "mentorshipRiskDigest",
   MENTORSHIP_ASSIGNMENT_DROPPED: "mentorshipAssignmentDropped",
   MENTORSHIP_ASSIGNMENT_PROGRESSED: "mentorshipAssignmentProgressed",
+  MENTORSHIP_ASSIGNMENTS_CHANGED: "mentorshipAssignmentsChanged",
   MENTORSHIP_COACH_NOTE: "mentorshipCoachNote",
+  MENTORSHIP_STUDENT_NOTE: "mentorshipStudentNote",
   MENTORSHIP_FOLLOWUP_SHARED: "mentorshipFollowupShared",
   MENTORSHIP_FOLLOWUP_RESPONDED: "mentorshipFollowupResponded",
   MENTORSHIP_FOLLOWUP_DUE: "mentorshipFollowupDue",
+  MENTORSHIP_WEEKLY_REPORT_SHARED: "mentorshipWeeklyReportShared",
   /** Commercial (W4b promotions) — gated on `campaignsEnabled`, unlike everything above. */
   WIN_BACK_OFFER: "winBackOffer",
 } as const;

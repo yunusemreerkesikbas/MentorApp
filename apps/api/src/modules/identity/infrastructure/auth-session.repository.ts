@@ -18,7 +18,7 @@ export class AuthSessionRepository {
   async create(userId: string, sessionId: string, refresh: NewRefresh, expectedPasswordHash?: string) {
     return withServiceContext(this.db, async (tx) => {
       const user = await lockUser(tx, userId);
-      if (!user || user.status !== "ACTIVE" ||
+      if (!user || user.status !== "ACTIVE" || user.erasureStartedAt ||
           (expectedPasswordHash !== undefined && user.passwordHash !== expectedPasswordHash)) return null;
       await tx.insert(authSessions).values({
         id: sessionId, userId, organizationId: user.organizationId, expiresAt: refresh.expiresAt,
@@ -38,7 +38,7 @@ export class AuthSessionRepository {
       const [token] = await tx.select().from(refreshTokens).where(eq(refreshTokens.id, hint.id));
       const now = new Date();
       if (!session || session.userId !== user.id || session.revokedAt ||
-          session.expiresAt <= now || !token || token.revokedAt || token.expiresAt <= now || user.status !== "ACTIVE") {
+          session.expiresAt <= now || !token || token.revokedAt || token.expiresAt <= now || user.status !== "ACTIVE" || user.erasureStartedAt) {
         await revoke(tx, user.id, hint.familyId);
         return null;
       }
@@ -54,7 +54,7 @@ export class AuthSessionRepository {
       const [row] = await tx.select({ user: users, session: authSessions }).from(authSessions)
         .innerJoin(users, eq(users.id, authSessions.userId))
         .where(and(eq(authSessions.id, sessionId), isNull(authSessions.revokedAt),
-          gt(authSessions.expiresAt, sql`now()`), eq(users.status, "ACTIVE"),
+          gt(authSessions.expiresAt, sql`now()`), eq(users.status, "ACTIVE"), isNull(users.erasureStartedAt),
           userId ? eq(users.id, userId) : undefined));
       return row ? principal(row.user, row.session.id) : null;
     });

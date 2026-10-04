@@ -10,6 +10,11 @@ import { validateProductionSecurity } from "./env-production-locks";
  */
 const envSchema = z.object({
   NODE_ENV: z.enum(["development", "test", "production"]).default("development"),
+  /**
+   * Which deployment this is. Staging runs NODE_ENV=production like prod, so this is the only
+   * thing that tells them apart. Unset, it follows NODE_ENV (see isDevToolingAllowed).
+   */
+  APP_ENV: z.enum(["development", "staging", "production"]).optional(),
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
 
@@ -76,6 +81,15 @@ const envSchema = z.object({
   POSTMARK_TOKEN: z.string().optional(),
   POSTMARK_FROM: z.string().email().optional(),
 
+  // OTP transport is disabled until Netgsm and its IP/sender restrictions are configured.
+  SMS_PROVIDER: z.enum(["disabled", "netgsm"]).default("disabled"),
+  NETGSM_USERCODE: z.string().optional(),
+  NETGSM_API_PASSWORD: z.string().optional(),
+  NETGSM_MSGHEADER: z.string().max(11).optional(),
+  PHONE_OTP_SECRET: z.string().min(32).optional(),
+  /** Keep stable for the 12-month trial retention window; rotation needs a migration. */
+  PHONE_FINGERPRINT_SECRET: z.string().min(32).optional(),
+
   // Internal cron (Render Cron → HTTP)
   CRON_SECRET: z.string().min(32).optional(),
 
@@ -94,9 +108,29 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
+/**
+ * Whether this deployment may run dev tooling: the admin "dev" switches and console email, which
+ * print verification/reset links to stdout. Unset APP_ENV follows NODE_ENV, so a production build
+ * that forgets it stays locked (fail-safe); staging opts in with APP_ENV=staging.
+ */
+export function isDevToolingAllowed(env: Pick<Env, "NODE_ENV" | "APP_ENV">): boolean {
+  const appEnv = env.APP_ENV ?? (env.NODE_ENV === "production" ? "production" : "development");
+  return appEnv !== "production";
+}
+
 /** Cross-field locks that single-field rules can't express. */
 const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
   validateProductionSecurity(env, ctx);
+  if (env.SMS_PROVIDER === "netgsm" &&
+      (!env.NETGSM_USERCODE?.trim() || !env.NETGSM_API_PASSWORD?.trim() || !env.NETGSM_MSGHEADER?.trim() ||
+       !env.PHONE_OTP_SECRET || !env.PHONE_FINGERPRINT_SECRET)) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["SMS_PROVIDER"],
+      message: "Netgsm credentials, sender, and both phone secrets are required when SMS_PROVIDER=netgsm." });
+  }
+  if (env.PHONE_OTP_SECRET && env.PHONE_OTP_SECRET === env.PHONE_FINGERPRINT_SECRET) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["PHONE_FINGERPRINT_SECRET"],
+      message: "Phone OTP and fingerprint secrets must be different." });
+  }
   // Production safety lock: the fake payments provider must never reach production.
   if (env.NODE_ENV === "production" && !env.DATABASE_MIGRATION_URL) {
     ctx.addIssue({

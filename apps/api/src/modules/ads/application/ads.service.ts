@@ -288,6 +288,11 @@ export class AdsService {
   }
 
   async completeRewardSession(id: string, userId: string): Promise<AdRewardCompletionView> {
+    if (!(await this.config.get("ads.enabled")) || !(await this.config.get("ads.rewarded.enabled"))
+      || !(await this.config.get("ads.placement.dashboard_rewarded_coin.enabled"))
+      || !(await this.config.get("economy.enabled"))) {
+      throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
+    }
     if (this.env.get("NODE_ENV", { infer: true }) === "production") {
       throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY, {
         reason: "SERVER_VERIFICATION_UNAVAILABLE",

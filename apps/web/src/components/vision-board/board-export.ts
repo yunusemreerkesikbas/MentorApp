@@ -5,6 +5,8 @@ import {
   type VisionBoardItem,
   type VisionBoardTextItem,
 } from "@mentor/types";
+import { appFontFamily } from "@/lib/app-font";
+import { FONT_FAMILIES } from "./board-font-families";
 import {
   alignAnchorX,
   boardImageSrc,
@@ -17,6 +19,8 @@ import {
   wrapText,
 } from "./board-export-layout";
 import { STICKER_ART } from "./board-stickers";
+
+export { FONT_FAMILIES } from "./board-font-families";
 
 /**
  * Renders a board document to a PNG, by hand, with the Canvas 2D API.
@@ -203,25 +207,12 @@ function drawImageItem(
   }
 }
 
-export const FONT_FAMILIES: Record<VisionBoardTextItem["font"], string> = {
-  body: '"Plus Jakarta Sans", sans-serif',
-  heading: '"Poppins", sans-serif',
-  script: '"Caveat", cursive',
-  serif: '"Playfair Display", Georgia, serif',
-  rounded: '"Baloo 2", sans-serif',
-  condensed: '"Oswald", sans-serif',
-  classic: '"Merriweather", serif',
-  impact: '"Anton", sans-serif',
-  elegant: '"Dancing Script", cursive',
-  slab: '"Bitter", serif',
-  mono: '"Space Mono", monospace',
-};
-
 function drawTextItem(ctx: CanvasRenderingContext2D, item: VisionBoardTextItem): void {
   const { width, height } = item;
   const weight = item.bold ? 700 : 400;
   const style = item.italic ? "italic" : "normal";
-  ctx.font = `${style} ${weight} ${item.size}px ${FONT_FAMILIES[item.font]}`;
+  const family = item.font === "body" ? appFontFamily() : FONT_FAMILIES[item.font];
+  ctx.font = `${style} ${weight} ${item.size}px ${family}`;
   ctx.textAlign = canvasTextAlign(item.align);
   ctx.textBaseline = "middle";
   if ("letterSpacing" in ctx) {

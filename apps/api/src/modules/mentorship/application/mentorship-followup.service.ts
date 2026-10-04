@@ -9,6 +9,7 @@ import { UsersService } from "../../identity/application/users.service";
 import { followupToday, toCoachFollowup, toSharedFollowup } from "../domain/mentorship-followup";
 import { MentorshipFollowupRepository, type FollowupRow } from "../infrastructure/mentorship-followup.repository";
 import { MentorshipLinkRepository } from "../infrastructure/mentorship-link.repository";
+import { coachContactVerification } from "./coach-contact-verification";
 import { MentorshipLinkService } from "./mentorship-link.service";
 
 function conflict(): never { throw new DomainError(ErrorCode.MENTORSHIP_FOLLOWUP_CONFLICT, HttpStatus.CONFLICT); }
@@ -90,7 +91,10 @@ export class MentorshipFollowupService {
     const active = await this.linkRepo.findActiveByStudent(studentId);
     if (!active) throw new DomainError(ErrorCode.MENTORSHIP_LINK_NOT_FOUND, HttpStatus.NOT_FOUND);
     const result = await this.links.withServiceTransaction(async (tx) => {
-      const link = await this.links.requireActiveLinkInTransaction(tx, active.coachId, studentId);
+      // The student's own side: a link frozen while it waits for a seat still takes their answer.
+      const link = await this.links.requireActiveLinkInTransaction(tx, active.coachId, studentId, {
+        allowWaiting: true,
+      });
       const row = requireRow(await this.repo.find(tx, link, id));
       if (row.sharedDecision === null) throw new DomainError(ErrorCode.MENTORSHIP_FOLLOWUP_NOT_FOUND, HttpStatus.NOT_FOUND);
       if (row.status !== "OPEN") conflict();
@@ -106,6 +110,7 @@ export class MentorshipFollowupService {
 
   async listCoach(coachId: string, query: ListMentorshipFollowupsQuery) {
     await this.assertEnabled();
+    await this.links.assertCoachVerifiedContacts(coachId);
     if (query.studentId) await this.links.requireActiveLink(coachId, query.studentId);
     const result = await this.repo.listCoach(coachId, query, followupToday(new Date()));
     const identities = await this.users.listDisplayIdentities([...new Set(result.rows.map((row) => row.studentId))]);
@@ -126,14 +131,19 @@ export class MentorshipFollowupService {
     if (!(await this.getAvailability()).enabled) return null;
     const target = await this.repo.notificationTarget(followupId, kind, version);
     if (!target) return null;
+    if (kind === "responded" && (await coachContactVerification(this.users, target.coachId)) !== null) return null;
     return kind === "shared" ? { recipientId: target.studentId, link: "/my-coach" } : { recipientId: target.coachId, link: `/students/${target.studentId}` };
   }
 
   async listDueCoachIds(now: Date): Promise<string[]> {
-    return (await this.getAvailability()).enabled ? this.repo.listDueCoachIds(followupToday(now)) : [];
+    if (!(await this.getAvailability()).enabled) return [];
+    const coachIds = await this.repo.listDueCoachIds(followupToday(now));
+    const verified = await Promise.all(coachIds.map(async (id) => (await coachContactVerification(this.users, id)) === null));
+    return coachIds.filter((_, index) => verified[index]);
   }
 
   async getDueCount(coachId: string, now: Date): Promise<number> {
-    return (await this.getAvailability()).enabled ? this.repo.getDueCount(coachId, followupToday(now)) : 0;
+    if (!(await this.getAvailability()).enabled || (await coachContactVerification(this.users, coachId)) !== null) return 0;
+    return this.repo.getDueCount(coachId, followupToday(now));
   }
 }

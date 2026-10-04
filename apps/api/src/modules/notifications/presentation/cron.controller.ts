@@ -7,6 +7,8 @@ import { NotebookReviewReminderService } from "../application/notebook-review-re
 import { MentorshipRiskDigestService } from "../application/mentorship-risk-digest.service";
 import { MentorshipFollowupDueService } from "../application/mentorship-followup-due.service";
 import { CronSecretGuard } from "../../../common/auth/cron-secret.guard";
+import { PhoneVerificationService } from "../../identity/application/phone-verification.service";
+import { PhoneTrialService } from "../../payments/application/phone-trial.service";
 
 /** Internal cron triggers (Render Cron → HTTP, no continuous polling). */
 @ApiTags("internal")
@@ -20,6 +22,8 @@ export class CronController {
     private readonly notebookReviews: NotebookReviewReminderService,
     private readonly mentorshipRiskDigest: MentorshipRiskDigestService,
     private readonly followupDue: MentorshipFollowupDueService,
+    private readonly phone: PhoneVerificationService,
+    private readonly phoneTrials: PhoneTrialService,
   ) {}
 
   @Post("process-jobs")
@@ -29,9 +33,12 @@ export class CronController {
 
   @Post("dispatch-daily-reminders")
   async dispatchDailyReminders() {
-    const reminders = await this.dailyReminders.dispatchForToday();
-    await this.followupDue.dispatchDaily();
-    return reminders;
+    const [result] = await Promise.all([
+      this.dailyReminders.dispatchForToday(),
+      this.phone.purgeExpired(),
+      this.phoneTrials.purgeExpired(),
+    ]);
+    return result;
   }
 
   /** Its own trigger, not folded into the daily reminder: different audience, different cadence. */
@@ -45,7 +52,11 @@ export class CronController {
    * the coach should read a picture the students' own nudge has already had a chance to change.
    */
   @Post("dispatch-mentorship-risk-digest")
-  dispatchMentorshipRiskDigest() {
-    return this.mentorshipRiskDigest.dispatchDaily();
+  async dispatchMentorshipRiskDigest() {
+    const [risk] = await Promise.all([
+      this.mentorshipRiskDigest.dispatchDaily(),
+      this.followupDue.dispatchDaily(),
+    ]);
+    return risk;
   }
 }

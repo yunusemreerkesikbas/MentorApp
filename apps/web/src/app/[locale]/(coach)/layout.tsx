@@ -5,14 +5,17 @@ import { NextIntlClientProvider } from "next-intl";
 import { getMessages } from "next-intl/server";
 import { pickMessages, ROUTE_MESSAGE_SCOPES } from "@/i18n/scoped-messages";
 import { CoachShell } from "./coach-shell";
-// Signal hues for the roster, scoped to `.coach-signals` on the shell below.
-import "./_components/coach-signals.css";
+import { CoachMotionConfig } from "./_components/coach-motion-config";
+// Signal hues (`.coach-signals` on the shell) and the coach's motion classes.
+import "./_components/coach-theme.css";
 
 /**
  * The HUMAN coach surface (W8). Deliberately its own route group, not part of `(app)`:
  *
  *  - the student panel is a daily ritual (streak, mood, ghost); this is a work tool (roster,
  *    report, assignments). Sharing one shell would put two mental models in one chrome.
+ *    Visual language is Nuton (same tokens as `/panel`); the difference is density and inset
+ *    grouping, not a second brand.
  *  - it carries the scoped mentorship and shared chrome messages, so the full student catalog
  *    does not cross into the coach bundle.
  *
@@ -39,7 +42,9 @@ export default async function CoachLayout({
   );
   return (
     <NextIntlClientProvider messages={messages}>
-      <CoachShell>{children}</CoachShell>
+      <CoachMotionConfig>
+        <CoachShell>{children}</CoachShell>
+      </CoachMotionConfig>
     </NextIntlClientProvider>
   );
 }

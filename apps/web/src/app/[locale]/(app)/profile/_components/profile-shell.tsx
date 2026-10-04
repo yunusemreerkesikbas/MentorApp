@@ -11,6 +11,7 @@ import {
 } from "@mentor/api-client";
 import { Card, Skeleton, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { useAuth } from "@/lib/auth-context";
 import { isCoach } from "@/lib/coach-surface";
 import { AccountLinksCard } from "./account-links-card";
@@ -23,6 +24,7 @@ import { ProfileHeader } from "./profile-header";
 import { SocialFollowCard } from "./social-follow-card";
 import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { getProfileLinks } from "@/lib/profile-links";
+import { SettingsLegalFooter } from "@/components/settings-legal-footer";
 
 type LoadState =
   | { status: "loading" }
@@ -138,6 +140,10 @@ export function ProfileShell({
           </motion.div>
 
           <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
+            <PhoneVerificationCard allowNumberChange />
+          </motion.div>
+
+          <motion.div variants={reduceMotion ? undefined : staggerItemVariants}>
             <ApplicationSupportCard />
           </motion.div>
         </section>
@@ -171,6 +177,7 @@ export function ProfileShell({
     );
 
   return (
+    <>
     <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-5 py-6 lg:px-8 lg:py-10">
       <SkeletonGroup
         label={t("loading")}
@@ -182,6 +189,8 @@ export function ProfileShell({
         </div>
       </SkeletonGroup>
     </main>
+    <SettingsLegalFooter />
+    </>
   );
 }
 

@@ -14,7 +14,7 @@ const PAGE_SIZE = 5;
 /**
  * The briefs this coach was shown about this student before today (APP-093).
  *
- * Loads on demand, never on mount. The card above it already refuses to request anything a coach
+ * Loads on demand, never on mount. The week hero already refuses to request anything a coach
  * did not ask for, and a history that fetched itself would put a request behind every page view
  * of a panel most coaches open to read one number.
  *

@@ -636,7 +636,6 @@ export class ForumDiscoveryRepository {
         .select({
           tag: getTableColumns(forumTags),
           threadCount: sql<number>`count(distinct ${forumThreads.id})::int`,
-          latestActivityAt: sql<Date>`max(${forumThreads.lastActivityAt})`,
         })
         .from(forumTags)
         .innerJoin(forumThreadTags, eq(forumThreadTags.tagId, forumTags.id))
@@ -673,7 +672,6 @@ export class ForumDiscoveryRepository {
           displayName: users.displayName,
           username: users.username,
           avatarStorageKey: users.avatarStorageKey,
-          latest: sql<Date>`max(${forumPosts.createdAt})`,
         })
         .from(forumPosts)
         .innerJoin(forumThreads, eq(forumPosts.threadId, forumThreads.id))
@@ -683,7 +681,7 @@ export class ForumDiscoveryRepository {
         .groupBy(users.id)
         .orderBy(desc(sql`max(${forumPosts.createdAt})`))
         .limit(limit);
-      return rows.map(({ latest: _latest, ...row }) => row as ForumSupporterRow);
+      return rows as ForumSupporterRow[];
     });
   }
 
@@ -781,7 +779,6 @@ export class ForumDiscoveryRepository {
           displayName: users.displayName,
           username: users.username,
           avatarStorageKey: users.avatarStorageKey,
-          latest: sql<Date>`max(${forumThreads.lastActivityAt})`,
         })
         .from(forumThreads)
         .innerJoin(users, eq(forumThreads.authorId, users.id))
@@ -795,7 +792,7 @@ export class ForumDiscoveryRepository {
         .groupBy(users.id)
         .orderBy(desc(sql`max(${forumThreads.lastActivityAt})`))
         .limit(limit);
-      return rows.map(({ latest: _latest, ...row }) => row as ForumSupporterRow);
+      return rows as ForumSupporterRow[];
     });
   }
 

@@ -7,7 +7,9 @@
 /* Nuton-based base (DESIGN.md §1): white background, near-black text. */
 html {
   --font-heading: var(--font-body);
-  --z-route-transition: 80;
+  /* Above the toast viewport (z-100): a route cover that a toast can peek over is not a cover.
+     Still under the celebration overlays (z-120), which only ever play on a revealed page. */
+  --z-route-transition: 110;
   /* Keep in sync with APP_SIDEBAR_*_PX in app-sidebar.ts */
   --app-sidebar-width: 240px;
   scrollbar-gutter: stable;
@@ -121,13 +123,14 @@ body {
   }
 }
 
+/* Overlay motion (DESIGN.md §6.1): dialog 200ms, sheet and drawer 250ms, every exit 150ms. */
 .animate-dialog-backdrop-enter {
-  animation: dialog-backdrop-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-backdrop-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: opacity;
 }
 
 .animate-dialog-backdrop-exit {
-  animation: dialog-backdrop-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-backdrop-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   will-change: opacity;
 }
 
@@ -143,7 +146,7 @@ body {
 }
 
 @utility animate-dialog-enter {
-  animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   transform-origin: center;
   will-change: transform, opacity;
 }
@@ -160,7 +163,7 @@ body {
 }
 
 @utility animate-dialog-exit {
-  animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: dialog-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   transform-origin: center;
   will-change: transform, opacity;
 }
@@ -211,6 +214,23 @@ body {
   }
 }
 
+/* `/masaya-katil`: a short bar travelling across while the seat is taken (reduced motion: a full, still bar). */
+@keyframes room-join-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* `/seans` Bugün card: the session you just finished grows into the day's strip from the left. */
+@keyframes session-strip-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
+
 @keyframes popover-enter {
   from {
     opacity: 0;
@@ -234,10 +254,10 @@ body {
 }
 
 .animate-drawer-in {
-  animation: drawer-slide-in 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: drawer-slide-in 250ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .animate-drawer-out {
-  animation: drawer-slide-out 220ms cubic-bezier(0.4, 0, 1, 1) forwards;
+  animation: drawer-slide-out 150ms cubic-bezier(0.4, 0, 1, 1) forwards;
 }
 .animate-drawer-left-in {
   animation: drawer-slide-in-left 280ms cubic-bezier(0.16, 1, 0.3, 1) forwards;
@@ -251,7 +271,7 @@ body {
     animation: popover-enter 200ms ease-out forwards;
   }
   .lg\:animate-popover-out {
-    animation: popover-exit 160ms ease-in forwards;
+    animation: popover-exit 150ms ease-in forwards;
   }
 }
 
@@ -371,35 +391,35 @@ html.mentor-sheet-open {
 }
 
 @utility animate-sheet-enter {
-  animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards;
+  animation: sheet-enter 250ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards;
   will-change: transform;
 }
 
 @utility animate-sheet-exit {
-  animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards;
+  animation: sheet-exit 150ms cubic-bezier(0.32, 0, 0.67, 0) forwards;
   will-change: transform;
 }
 
-/* Bottom sheet panel responsive animations (Apple liquid glass modal) */
+/* Bottom sheet: slides up on phones, rises as a dialog on desktop (reduced motion: below). */
 @media (max-width: 63.999rem) {
   [data-mentor-bottom-sheet-panel] {
-    animation: sheet-enter 380ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards !important;
+    animation: sheet-enter 250ms cubic-bezier(0.25, 0.82, 0.32, 1) forwards !important;
     will-change: transform;
   }
   [data-mentor-bottom-sheet-panel][data-exiting="true"] {
-    animation: sheet-exit 220ms cubic-bezier(0.32, 0, 0.67, 0) forwards !important;
+    animation: sheet-exit 150ms cubic-bezier(0.32, 0, 0.67, 0) forwards !important;
     will-change: transform;
   }
 }
 
 @media (min-width: 64rem) {
   [data-mentor-bottom-sheet-panel] {
-    animation: dialog-enter 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    animation: dialog-enter 200ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
     transform-origin: center;
     will-change: transform, opacity;
   }
   [data-mentor-bottom-sheet-panel][data-exiting="true"] {
-    animation: dialog-exit 180ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
+    animation: dialog-exit 150ms cubic-bezier(0.22, 1, 0.36, 1) forwards !important;
     transform-origin: center;
     will-change: transform, opacity;
   }
@@ -413,35 +433,65 @@ html.mentor-sheet-open {
   }
 }
 
-/* Auth sheet — slide by measured height; transition starts only after travel is set. */
+/*
+ * Auth sheet — CSS keyframes, so the entrance plays from the first paint of the server HTML and
+ * runs on the compositor while hydration is still busy (see `auth-shell.tsx`).
+ * Travel is a percentage of the sheet's own height: nothing to measure, and a form that grows
+ * after mount (Turnstile, the coach link) cannot leave a sliver showing before the slide.
+ * The exit accelerates away (ease-in) and leaves the screen entirely; the old ease-out exit slowed
+ * to a stop half off screen and sat there until the next route arrived.
+ */
+.auth-shell {
+  --auth-sheet-open-dur: 560ms;
+  --auth-sheet-close-dur: 340ms;
+  --auth-sheet-from-y: calc(100% + var(--auth-hang-overhang, 0px));
+  --auth-sheet-to-y: -100dvh;
+  --auth-sheet-from-opacity: 1;
+}
 .auth-shell[data-hang="true"] { padding-top: var(--auth-hang-overhang); }
 .auth-sheet {
-  --auth-sheet-travel: 100vh;
-  --auth-sheet-open-dur: 680ms;
-  --auth-sheet-close-dur: 420ms;
-  --auth-sheet-ease: cubic-bezier(0.25, 0.82, 0.32, 1);
   width: 100%;
-  transform: translate3d(0, var(--auth-sheet-travel), 0);
+  animation: auth-sheet-in var(--auth-sheet-open-dur) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
-.auth-sheet[data-animated="true"][data-phase="open"] {
-  transform: translate3d(0, 0, 0);
-  transition: transform var(--auth-sheet-open-dur) var(--auth-sheet-ease);
+/* The sheet's own surface continues below it, so a height swap never opens a gap at the bottom. */
+.auth-sheet::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  top: 100%;
+  height: 50dvh;
+  background: var(--color-surface);
 }
-.auth-sheet[data-animated="true"][data-phase="exiting"] {
-  transform: translate3d(0, calc(var(--auth-sheet-travel) * -1), 0);
-  transition: transform var(--auth-sheet-close-dur) var(--auth-sheet-ease);
+.auth-sheet[data-phase="exiting"] {
+  animation: auth-sheet-out var(--auth-sheet-close-dur) cubic-bezier(0.55, 0, 1, 0.45) both;
+}
+.auth-narrative {
+  transition: opacity var(--auth-sheet-close-dur) ease-in;
+}
+.auth-shell[data-phase="exiting"] .auth-narrative { opacity: 0; }
+@keyframes auth-sheet-in {
+  from { transform: translate3d(0, var(--auth-sheet-from-y), 0); opacity: var(--auth-sheet-from-opacity); }
+  to { transform: translate3d(0, 0, 0); opacity: 1; }
+}
+@keyframes auth-sheet-out {
+  from { transform: translate3d(0, 0, 0); opacity: 1; }
+  to { transform: translate3d(0, var(--auth-sheet-to-y), 0); opacity: 0; }
 }
 @media (prefers-reduced-motion: reduce) {
   .auth-sheet,
-  .auth-sheet[data-animated="true"][data-phase="open"],
-  .auth-sheet[data-animated="true"][data-phase="exiting"] {
-    transform: none !important;
-    transition: none !important;
+  .auth-sheet[data-phase="exiting"] {
+    animation: none !important;
   }
+  .auth-narrative { transition: none; }
 }
 @media (min-width: 64rem) {
+  .auth-shell {
+    --auth-sheet-from-y: 1.5rem;
+    --auth-sheet-to-y: -1rem;
+    --auth-sheet-from-opacity: 0;
+  }
   .auth-shell[data-hang="true"] { padding-top: 2rem; }
-  .auth-sheet { --auth-sheet-travel: 2rem; }
+  .auth-sheet::after { content: none; }
 }
 
 /* Plan date sheet — react-day-picker overrides (DESIGN.md tokens) */
@@ -462,7 +512,7 @@ html.mentor-sheet-open {
   );
   border: none;
   border-radius: 9999px;
-  color: var(--color-progress);
+  color: var(--play-selected-ink);
   cursor: pointer;
   font-family: var(--font-body);
   font-size: 0.75rem;
@@ -491,7 +541,7 @@ html.mentor-sheet-open {
   );
   --rdp-day_button-border-radius: 9999px;
   --rdp-day_button-border: 2px solid transparent;
-  --rdp-selected-border: 2px solid var(--color-btn);
+  --rdp-selected-border: 2px solid var(--play-cta);
   --rdp-today-color: var(--color-progress);
   --rdp-day-height: 44px;
   --rdp-day-width: 44px;
@@ -506,6 +556,7 @@ html.mentor-sheet-open {
 
 .mentor-plan-day-picker .rdp-month_grid {
   border-collapse: collapse;
+  table-layout: fixed;
   width: 100%;
 }
 
@@ -585,9 +636,9 @@ html.mentor-sheet-open {
 
 .mentor-plan-day-picker .rdp-day.rdp-selected .rdp-day_button,
 .mentor-plan-day-picker .rdp-day_button[aria-selected="true"] {
-  background-color: var(--color-btn);
-  border-color: var(--color-btn);
-  color: var(--color-btn-label);
+  background-color: var(--play-cta);
+  border-color: var(--play-cta);
+  color: var(--play-cta-ink);
   font-weight: 700;
 }
 
@@ -595,7 +646,7 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker
   .rdp-day.rdp-selected.mentor-plan-day-today
   .rdp-day_button {
-  color: var(--color-btn-label);
+  color: var(--play-cta-ink);
 }
 
 .mentor-plan-day-picker .rdp-day.mentor-plan-day .rdp-day_button::after {
@@ -614,7 +665,7 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker
   .rdp-day.rdp-selected.mentor-plan-day
   .rdp-day_button::after {
-  background-color: var(--color-btn-label);
+  background-color: var(--play-cta-ink);
 }
 
 .mentor-plan-day-picker .rdp-day_button:focus-visible,
@@ -622,6 +673,30 @@ html.mentor-sheet-open {
 .mentor-plan-day-picker .rdp-button_previous:focus-visible {
   outline: 2px solid var(--color-focus-ring);
   outline-offset: 2px;
+}
+
+.mentor-plan-day-picker-popover.mentor-plan-day-picker-wrap {
+  border: none;
+  margin: 0;
+  max-width: none;
+  padding: 0.75rem;
+}
+
+.mentor-plan-day-picker-popover .mentor-plan-day-picker {
+  --rdp-day-height: 2.25rem;
+  --rdp-day-width: 2.25rem;
+  --rdp-day_button-height: 2.25rem;
+  --rdp-day_button-width: 2.25rem;
+  --rdp-nav_button-height: 2.25rem;
+  --rdp-nav_button-width: 2.25rem;
+}
+
+.mentor-plan-day-picker-popover .rdp-root,
+.mentor-plan-day-picker-popover .rdp-months,
+.mentor-plan-day-picker-popover .rdp-month,
+.mentor-plan-day-picker-popover .rdp-month_grid {
+  min-width: 0;
+  width: 100%;
 }
 
 .mentor-plan-week-mini-calendar .mentor-plan-day-picker {
@@ -871,31 +946,37 @@ html.mentor-sheet-open {
   animation: forum-like-pop 300ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Sanitized editorial HTML from the content API. */
+/* Sanitized editorial HTML from the content API: the same reading type as `ArticleMarkdown`. */
 .mentor-article-body {
-  color: var(--color-main);
+  color: var(--color-body);
   font-size: 1rem;
-  line-height: 1.7;
+  font-weight: 600;
+  line-height: 1.75;
 }
-
+.mentor-article-body > :first-child {
+  margin-top: 0;
+}
 .mentor-article-body :is(h2, h3) {
   color: var(--color-main);
-  font-family: var(--font-heading);
-  font-weight: 700;
-  margin-block: 1.5rem 0.75rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-wrap: balance;
 }
-
 .mentor-article-body h2 {
   font-size: 1.25rem;
+  margin-block: 2.25rem 0.75rem;
 }
 .mentor-article-body h3 {
   font-size: 1.125rem;
+  margin-block: 1.75rem 0.5rem;
 }
 .mentor-article-body p {
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.25rem;
+  text-wrap: pretty;
 }
 .mentor-article-body :is(ul, ol) {
-  margin: 0 0 0.75rem 1.25rem;
+  margin: 0 0 1.25rem;
+  padding-left: 1.5rem;
 }
 .mentor-article-body ul {
   list-style: disc;
@@ -903,16 +984,34 @@ html.mentor-sheet-open {
 .mentor-article-body ol {
   list-style: decimal;
 }
-.mentor-article-body blockquote {
-  border-left: 4px solid var(--color-chip);
-  color: var(--color-secondary);
-  font-style: italic;
-  margin-block: 1rem;
-  padding-left: 1rem;
+.mentor-article-body li {
+  margin-bottom: 0.375rem;
+  padding-left: 0.25rem;
 }
+.mentor-article-body li::marker {
+  color: var(--color-secondary);
+  font-weight: 800;
+}
+.mentor-article-body strong {
+  color: var(--color-main);
+  font-weight: 800;
+}
+/* A tinted block, not a side stripe (DESIGN §8.6). */
+.mentor-article-body blockquote {
+  background: var(--play-selected);
+  border-radius: var(--radius-card);
+  margin: 0 0 1.25rem;
+  padding: 1rem 1.25rem;
+}
+.mentor-article-body blockquote p {
+  margin: 0;
+}
+/* --play-selected-ink, not --color-accent: the accent is ~2.4:1 on white (DESIGN §2.3). */
 .mentor-article-body a {
-  color: var(--color-accent);
+  color: var(--play-selected-ink);
+  font-weight: 800;
   text-decoration: underline;
+  text-underline-offset: 4px;
 }
 .mentor-article-body img {
   border-radius: var(--radius-card);
@@ -923,14 +1022,28 @@ html.mentor-sheet-open {
 .mentor-article-body table {
   border-collapse: collapse;
   display: block;
-  margin-block: 1rem;
+  margin: 0 0 1.25rem;
   overflow-x: auto;
   width: 100%;
 }
 .mentor-article-body :is(th, td) {
-  border: 1px solid color-mix(in srgb, var(--color-secondary) 25%, transparent);
-  padding: 0.625rem;
+  border-bottom: 1px solid var(--color-border);
+  padding: 0.625rem 0.75rem;
   text-align: left;
+  vertical-align: top;
+}
+.mentor-article-body th {
+  color: var(--color-main);
+  font-size: 0.875rem;
+  font-weight: 800;
+}
+@media (min-width: 40rem) {
+  .mentor-article-body {
+    font-size: 1.125rem;
+  }
+  .mentor-article-body h2 {
+    font-size: 1.375rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1049,4 +1162,34 @@ html.dark .mentor-theme-lamp {
   --lamp-shade: #5a6b8c;
   --lamp-shade-rim: #3f5075;
   --lamp-cord: color-mix(in srgb, var(--color-secondary) 80%, transparent);
+}
+
+/*
+ * App chrome during a view transition (only the coach screens start one today, `coach-theme.css`).
+ * The names are set in `app-nav.tsx`; the rules live here so any surface that adopts a view
+ * transition finds the chrome pinned, whichever page loaded first. The chrome holds still above the
+ * moving page. While a transition runs, named elements (the page and the chrome) are skipped by
+ * hit-testing, and the overlay itself lets clicks through: keep transitions short.
+ */
+::view-transition-group(app-topbar),
+::view-transition-group(app-tabbar),
+::view-transition-group(app-sidebar) {
+  animation: none;
+  z-index: 100;
+}
+
+::view-transition-old(app-topbar),
+::view-transition-old(app-tabbar),
+::view-transition-old(app-sidebar) {
+  display: none;
+}
+
+::view-transition-new(app-topbar),
+::view-transition-new(app-tabbar),
+::view-transition-new(app-sidebar) {
+  animation: none;
+}
+
+::view-transition {
+  pointer-events: none;
 }

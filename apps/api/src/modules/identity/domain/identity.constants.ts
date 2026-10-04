@@ -19,13 +19,19 @@ export type UserStatus = (typeof UserStatus)[keyof typeof UserStatus];
 export const RESET_PASSWORD_TTL_MS = 60 * 60 * 1000; // 1h
 
 /** Name of the httpOnly refresh cookie. */
-export const REFRESH_COOKIE = "mentor_refresh";
+export const REFRESH_COOKIE = "mentor_web_refresh";
 /** Cookie path: only the auth endpoints ever receive the refresh token. */
 export const REFRESH_COOKIE_PATH = "/v1/auth";
+export const ADMIN_REFRESH_COOKIE = "mentor_admin_refresh";
+export const ADMIN_REFRESH_COOKIE_PATH = "/v1/auth/admin";
+export const LEGACY_REFRESH_COOKIE = "mentor_refresh";
 
 export const GOOGLE_OAUTH_STATE_COOKIE = "mentor_google_oauth";
 export const GOOGLE_OAUTH_COOKIE_PATH = "/v1/auth/google";
 export const GOOGLE_OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
+
+/** Published terms revision recorded with every new account. */
+export const CURRENT_TERMS_VERSION = "2026-09-17";
 
 export const AuthProvider = {
   GOOGLE: "google",

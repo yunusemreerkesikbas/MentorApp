@@ -38,8 +38,8 @@ const QUEUE_LIMIT = 200;
  *
  *   1. {@link assertCanInvite} — the ONE gate. COACH by itself opens nothing: the roster is empty,
  *      every student-scoped read goes through `requireActiveLink` and 404s. The only road to a
- *      student's data is an invite code, so a verified email and an ACTIVE registry row are checked
- *      exactly there, and nowhere else has to remember.
+ *      student's data is an invite code, which requires verified email, verified phone and an
+ *      ACTIVE registry row. Existing links also recheck the coach's current verified contacts.
  *   2. The admin can take it back ({@link setStatus}), which is why `canRegister` refuses every
  *      existing row: registration writes ACTIVE, so a suspended coach who could re-register would
  *      erase their own suspension.
@@ -81,6 +81,7 @@ export class MentorshipApplicationService {
     const gate = canRegister(existing ? { status: toStatus(existing.status) } : null);
     if (!("allowed" in gate)) throw gateError(gate);
     assertNoContact(input.headline, input.bio);
+    await this.assertVerifiedContact(userId);
 
     const row = await this.applications.register(
       userId,
@@ -113,15 +114,17 @@ export class MentorshipApplicationService {
    * the profile list; not survivable now that signup routes people here on purpose.
    */
   async getRegistrationState(userId: string): Promise<MentorshipCoachRegistrationStateDto> {
-    const [open, row, emailVerified] = await Promise.all([
+    const [open, row, emailVerified, phoneVerified] = await Promise.all([
       this.config.get("mentorship.applications.open"),
       this.applications.findByUser(userId),
       this.users.isEmailVerified(userId),
+      this.users.isPhoneVerified(userId),
     ]);
     return {
       registrationOpen: open,
       registration: row ? toDto(row) : null,
       emailVerified,
+      phoneVerified,
     };
   }
 
@@ -135,9 +138,11 @@ export class MentorshipApplicationService {
    * THE GATE. Everything a coach can do TO a student starts with an invite code, so this is the one
    * place that has to be right, and the only one that checks.
    *
-   * Two conditions, and the reason each is here rather than somewhere more obvious:
+   * Contact verification and registry standing are independent conditions:
    *   - a verified email, because self-registration made a reachable inbox the only cost of
    *     becoming a coach, and an unverified address costs nothing at all;
+   *   - a verified phone belonging to an ACTIVE account, so manually assigned roles cannot bypass
+   *     the same bound as self-service registration;
    *   - an ACTIVE registry row, because that is what an admin takes away, and because a coach with
    *     no row has no profile — the student's consent screen would be blank at the exact moment
    *     they decide to hand over private data.
@@ -146,6 +151,9 @@ export class MentorshipApplicationService {
     const verdict = await this.evaluateInvite(coachId);
     if (verdict === "EMAIL_UNVERIFIED") {
       throw new DomainError(ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED, HttpStatus.FORBIDDEN);
+    }
+    if (verdict === "PHONE_UNVERIFIED") {
+      throw new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, HttpStatus.FORBIDDEN);
     }
     if (verdict === "NOT_ACTIVE") {
       throw new DomainError(ErrorCode.MENTORSHIP_COACH_NOT_ACTIVE, HttpStatus.FORBIDDEN);
@@ -164,14 +172,29 @@ export class MentorshipApplicationService {
 
   private async evaluateInvite(
     coachId: string,
-  ): Promise<"OK" | "EMAIL_UNVERIFIED" | "NOT_ACTIVE"> {
-    const [row, emailVerified] = await Promise.all([
+  ): Promise<"OK" | "EMAIL_UNVERIFIED" | "PHONE_UNVERIFIED" | "NOT_ACTIVE"> {
+    const [row, emailVerified, phoneVerified] = await Promise.all([
       this.applications.findByUser(coachId),
       this.users.isEmailVerified(coachId),
+      this.users.isPhoneVerified(coachId),
     ]);
     if (!emailVerified) return "EMAIL_UNVERIFIED";
+    if (!phoneVerified) return "PHONE_UNVERIFIED";
     if (!row || row.status !== MentorshipApplicationStatus.ACTIVE) return "NOT_ACTIVE";
     return "OK";
+  }
+
+  private async assertVerifiedContact(userId: string): Promise<void> {
+    const [emailVerified, phoneVerified] = await Promise.all([
+      this.users.isEmailVerified(userId),
+      this.users.isPhoneVerified(userId),
+    ]);
+    if (!emailVerified) {
+      throw new DomainError(ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED, HttpStatus.FORBIDDEN);
+    }
+    if (!phoneVerified) {
+      throw new DomainError(ErrorCode.AUTH_PHONE_REQUIRED, HttpStatus.FORBIDDEN);
+    }
   }
 
   /** The registry read for the admin panel. Identity and role are joined by the caller. */
@@ -195,6 +218,7 @@ export class MentorshipApplicationService {
     now = new Date(),
   ): Promise<MentorshipApplicationRow | null> {
     const active = verdict.status === MentorshipApplicationStatus.ACTIVE;
+    if (active) await this.assertVerifiedContact(userId);
     if (!active) await this.users.removeRole(userId, UserRole.COACH);
 
     const row = await this.applications.setStatus(

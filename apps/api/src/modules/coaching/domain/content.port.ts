@@ -74,6 +74,13 @@ export interface ContentPort {
   /** Resolve an exam by id (for mock-exam net computation). */
   getExamById(examId: string): Promise<ExamRef | null>;
 
+  /**
+   * The exam whose subject taxonomy the product offers for an exam type: the one the coach's
+   * planner lists. No upcoming EXAM_DATE is required (YKS/LGS rows carry no calendar, and a passed
+   * KPSS date must not unname a subject). Null when no exam type is set or content knows none.
+   */
+  getTaxonomyExamId(examType: string | null | undefined): Promise<string | null>;
+
   /** Subject taxonomy for an exam (soft-ref validation). */
   listExamSubjects(examId: string): Promise<ExamSubjectRef[]>;
 

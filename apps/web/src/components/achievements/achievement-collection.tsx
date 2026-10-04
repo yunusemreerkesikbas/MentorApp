@@ -203,9 +203,6 @@ function AchievementCollectionGuide({
             </span>
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block text-xs font-bold uppercase tracking-wide text-[var(--color-accent)]">
-              {t("next_discovery")}
-            </span>
             <span className="mt-0.5 block truncate text-sm font-bold text-[var(--color-main)]">
               {suggestedAchievement.title}
             </span>

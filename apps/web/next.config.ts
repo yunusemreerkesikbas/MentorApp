@@ -12,6 +12,15 @@ const nextConfig: NextConfig = {
       zod: "./node_modules/zod",
     },
   },
+  // Bilgi → Blog (2026-09-23). Old links, crawled URLs and the coach's "/bilgi" text keep working.
+  async redirects() {
+    return [
+      { source: "/bilgi", destination: "/blog", permanent: true },
+      { source: "/bilgi/:slug", destination: "/blog/:slug", permanent: true },
+      { source: "/en/knowledge", destination: "/en/blog", permanent: true },
+      { source: "/en/knowledge/:slug", destination: "/en/blog/:slug", permanent: true },
+    ];
+  },
   // Tree-shake lucide named imports (Next + lucide guidance).
   experimental: {
     optimizePackageImports: ["lucide-react"],

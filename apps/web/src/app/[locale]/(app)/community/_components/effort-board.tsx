@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import type { CommunitySummary } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { useEconomySnapshot } from "@/lib/economy-store";
 import { getCommunitySummary } from "@/lib/community";
 import { ProfileCard } from "./profile-card";
 import { StatSnapshot } from "./stat-snapshot";
@@ -16,6 +17,7 @@ import { MiniLeaderboard } from "./mini-leaderboard";
  * (the board is additive, never a blocker); economy-off degrades via the null fields in the payload.
  */
 export function EffortBoard() {
+  const economy = useEconomySnapshot();
   const t = useTranslations("community");
   const [data, setData] = useState<CommunitySummary | null>(null);
   const [failed, setFailed] = useState(false);
@@ -41,7 +43,7 @@ export function EffortBoard() {
         </SkeletonGroup>
       ) : (
         <>
-          <StatSnapshot streak={data.streak} xp={data.xp} level={data.level} />
+          <StatSnapshot streak={data.streak} xp={economy.balance?.xp ?? data.xp} level={economy.balance?.level ?? data.level} />
           {data.badges.length > 0 && <BadgeStrip badges={data.badges} />}
           {data.leaderboard && <MiniLeaderboard leaderboard={data.leaderboard} />}
         </>

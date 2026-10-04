@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { validateEnv } from "./env.validation";
+import { isDevToolingAllowed, validateEnv } from "./env.validation";
 
 const REQUIRED = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
@@ -242,5 +242,25 @@ describe("validateEnv", () => {
     });
     expect(env.PAYMENTS_PROVIDER).toBe("iyzico");
     expect(env.PAYMENTS_WEBHOOK_SECRET).toBeUndefined();
+  });
+});
+
+describe("APP_ENV / isDevToolingAllowed", () => {
+  // Staging runs NODE_ENV=production, so NODE_ENV alone cannot tell it from production.
+  it.each([
+    [{ NODE_ENV: "production" }, false],
+    [{ NODE_ENV: "production", APP_ENV: "production" }, false],
+    [{ NODE_ENV: "production", APP_ENV: "staging" }, true],
+    [{ NODE_ENV: "development" }, true],
+    [{ NODE_ENV: "test" }, true],
+    [{ NODE_ENV: "development", APP_ENV: "production" }, false],
+  ] as const)("%j allows dev tooling: %s", (env, allowed) => {
+    expect(isDevToolingAllowed(env)).toBe(allowed);
+  });
+
+  it("parses APP_ENV and rejects an unknown deployment name", () => {
+    expect(validateEnv({ ...REQUIRED, APP_ENV: "staging" }).APP_ENV).toBe("staging");
+    expect(validateEnv(REQUIRED).APP_ENV).toBeUndefined();
+    expect(() => validateEnv({ ...REQUIRED, APP_ENV: "prod" })).toThrow(/APP_ENV/);
   });
 });

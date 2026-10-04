@@ -1,3 +1,5 @@
+import type { DatabaseTx } from "../../database/drizzle";
+
 /**
  * Queue port (§7/§8 Ports & Adapters).
  *
@@ -12,6 +14,8 @@
 export const JOB_QUEUE_PORT = Symbol("JOB_QUEUE_PORT");
 
 export interface EnqueueOptions {
+  /** Persist the job with its source write (Postgres outbox; rollback removes both). */
+  transaction?: DatabaseTx;
   /** Earliest run time (for scheduled jobs). */
   runAt?: Date;
   /** Max attempts (handler must be idempotent). */

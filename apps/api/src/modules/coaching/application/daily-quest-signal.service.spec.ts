@@ -43,6 +43,15 @@ function build(options: { goal?: number | null; getMeFails?: boolean } = {}) {
 }
 
 describe("DailyQuestSignalService", () => {
+  it("bounds a delayed Sunday event to its original week and excludes later activity", async () => {
+    const { service, sessions, planTasks, dailyActivity } = build();
+    dailyActivity.listActiveDatesSince.mockResolvedValue(["2026-09-13", "2026-09-14"]);
+    const signals = await service.getForDate("user-1", "2026-09-13");
+    expect(signals).toMatchObject({ date: "2026-09-13", weekKey: "2026-W37", weeklyActiveDays: 1 });
+    expect(sessions.countCompletedSince).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", 300, "2026-09-13");
+    expect(planTasks.countDoneBetween).toHaveBeenCalledWith(expect.anything(), "user-1", "2026-09-07", "2026-09-13");
+  });
+
   it("returns today's quest signals from coaching repositories", async () => {
     const { service, planTasks, sessions, moods, dailyActivity, config } = build({ goal: 120 });
 
@@ -68,6 +77,7 @@ describe("DailyQuestSignalService", () => {
       "user-1",
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
       300,
+      result.date,
     );
     expect(planTasks.countDoneBetween).toHaveBeenCalled();
     expect(dailyActivity.listActiveDatesSince).toHaveBeenCalled();
@@ -89,11 +99,11 @@ describe("DailyQuestSignalService", () => {
     expect(moods.findByDate).toHaveBeenCalled();
   });
 
-  it("reports a null goal when the user has none (or the identity read fails)", async () => {
+  it("reports a null goal only when absent, and propagates identity failures for retry", async () => {
     const { service } = build();
     expect((await service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
 
     const failing = build({ getMeFails: true });
-    expect((await failing.service.getToday("user-1")).dailyFocusGoalMinutes).toBeNull();
+    await expect(failing.service.getToday("user-1")).rejects.toThrow("gone");
   });
 });

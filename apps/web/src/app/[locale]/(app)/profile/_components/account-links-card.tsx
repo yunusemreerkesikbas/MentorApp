@@ -5,14 +5,13 @@ import {
   CreditCard,
   GraduationCap,
   LogOut,
-  Scale,
   Trash2,
   UserRound,
 } from "lucide-react";
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
-import { useState, type ComponentProps, type ReactElement } from "react";
+import { useEffect, useState, type ComponentProps, type ReactElement } from "react";
 import type { AuthUser, ExamType, ExamVariant } from "@mentor/types";
 import {
   ApiClientError,
@@ -21,6 +20,8 @@ import {
 } from "@mentor/api-client";
 import { Card } from "@mentor/ui";
 import { useAuth } from "@/lib/auth-context";
+import { fetchCoachSignupOpen } from "@/lib/coach-signup";
+import { isCoach } from "@/lib/coach-surface";
 import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { FormError } from "@/components/form";
@@ -142,7 +143,6 @@ export function AccountLinksCard({
   const t = useTranslations("profile");
   const tAccount = useTranslations("profile.account");
   const tExam = useTranslations("profile.exam_settings");
-  const tLegal = useTranslations("legal");
   const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
@@ -152,6 +152,18 @@ export function AccountLinksCard({
   const { confirm } = useMentorDialog();
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [coachSignupOpen, setCoachSignupOpen] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    void fetchCoachSignupOpen().then((open) => {
+      if (active) setCoachSignupOpen(open);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
   const joined = new Intl.DateTimeFormat(locale, {
     month: "long",
     year: "numeric",
@@ -229,6 +241,7 @@ export function AccountLinksCard({
       message: t("delete_account.description"),
       confirmLabel: t("delete_account.confirm_cta"),
       cancelLabel: t("delete_account.cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
 
@@ -289,25 +302,17 @@ export function AccountLinksCard({
         <ListRow href="/my-coach" icon={<UserRound size={18} aria-hidden />}>
           {tMentorship("my_coach_title")}
         </ListRow>
-        {/* The other direction: becoming one. Always visible rather than gated on the flag —
-            the screen behind it says "closed" for itself, and a row that appears and disappears
-            with a config change is a row nobody can be told to look for. */}
-        <ListRow
-          href="/coach-application"
-          icon={<GraduationCap size={19} aria-hidden />}
-        >
-          {tMentorship("application_title")}
-        </ListRow>
-        {/* The app has no footer (bottom nav owns that space), so this is the in-app way in. */}
-        <ListRow
-          href={{
-            pathname: "/legal/[slug]",
-            params: { slug: "kullanim-kosullari" },
-          }}
-          icon={<Scale size={18} aria-hidden />}
-        >
-          {tLegal("profile_section")}
-        </ListRow>
+        {/* The other direction: becoming one. Follows `mentorship.applications.open`, so the
+            feature disappears with its flag; hidden for somebody who already coaches. A suspended
+            coach can still open the screen by URL to read the admin's reason. */}
+        {coachSignupOpen && !isCoach(user) && (
+          <ListRow
+            href="/coach-application"
+            icon={<GraduationCap size={19} aria-hidden />}
+          >
+            {tMentorship("application_title")}
+          </ListRow>
+        )}
         <ListRow
           icon={<LogOut size={18} aria-hidden />}
           onClick={() => {

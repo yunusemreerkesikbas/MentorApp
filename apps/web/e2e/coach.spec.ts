@@ -12,6 +12,7 @@ import type {
   CoachMessageDto,
   TodayPanelResponse,
 } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const taskId = "33333333-3333-4333-8333-333333333333";
 const conversationId = "44444444-4444-4444-8444-444444444444";
@@ -60,7 +61,7 @@ const pendingToday: TodayPanelResponse = {
   greetingName: "Koç Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [
     {
       id: taskId,
@@ -76,6 +77,8 @@ const pendingToday: TodayPanelResponse = {
       coachNote: null,
       origin: null,
       assignmentGroupId: null,
+    durationMinutes: null,
+    sessionFocusMinutes: 25,
     },
   ],
   nextAction: {
@@ -93,6 +96,27 @@ const pendingToday: TodayPanelResponse = {
   weeklyRecapPeriod: null,
 };
 
+test("coach accepted session uses its actual 80-minute duration", async ({ page }) => {
+  const action = { type: "START_PLAN_SESSION" as const, label: "Seansi baslat", payload: { planTaskId: taskId } };
+  const messageId = "66666666-6666-4666-8666-666666666666";
+  await mockCoachApi(page, {
+    today: pendingToday, access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+    messages: [{ id: messageId, role: "COACH", content: "Bir adimla baslayabiliriz.", sources: [], feedback: null, createdAt: new Date().toISOString(), action, actionStatus: "PROPOSED" }],
+  });
+  await page.route(`http://localhost:3001/v1/coach/messages/${messageId}/action`, route => json(route, {
+    action, status: "ACCEPTED", resultRefId: "session-80",
+    session: { id: "session-80", preset: "custom", plannedFocusMinutes: 80, subject: "Matematik", endedAt: null },
+  }));
+  await page.goto(`/koc/sohbet?c=${conversationId}`);
+  await page.getByRole("button", { name: /Onayla/ }).click();
+  await expect(page).toHaveURL(/minutes=80/);
+  await expect(page).toHaveURL(/sessionId=session-80/);
+  await expect.poll(() => page.evaluate(() => {
+    const record = window.localStorage.getItem("mentor.session.active");
+    return record ? JSON.parse(record).focusMinutes : null;
+  })).toBe(80);
+});
+
 test("landing next-action chip pending görevi seansa taşır", async ({
   page,
 }) => {
@@ -102,7 +126,10 @@ test("landing next-action chip pending görevi seansa taşır", async ({
   });
 
   await page.goto("/koc");
-  await expect(page).toHaveURL(/\/koc\/sohbet/);
+  // `/koc` redirects on the client once the RSC payload lands. Under CI's parallel load that
+  // measured ~5.5s after `goto` (the 5s default expect timeout), so the navigation gets its own
+  // budget. The assertion is that the redirect happens, not how fast.
+  await expect(page).toHaveURL(/\/koc\/sohbet/, { timeout: 15_000 });
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
 
   const chip = page.getByTestId("coach-next-action-chip");
@@ -117,18 +144,23 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
   page,
   context,
 }) => {
-  const dashboardApi = await mockCoachApi(page, { today: pendingToday });
+  // Premium on purpose: the greeting is only requested for a user entitled to it, so a free
+  // dashboard makes zero calls and the "exactly once" guard below would prove nothing.
+  const dashboardApi = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
   await page.goto("/panel");
 
-  const dashboardCard = page.getByTestId("coach-next-action");
-  await expect(
-    dashboardCard.getByText(pendingToday.nextAction.message),
-  ).toBeVisible();
-  await expect(
-    dashboardCard.getByRole("link", { name: "Odak seansına başla" }),
-  ).toHaveAttribute("href", /source=dashboard/);
+  // The panel's next action is the hero's one play ledge now (APP-103 Faz 2): the same pending task
+  // the landing chip starts, named with its own title and the session length it will open with.
+  const cta = page.getByTestId("today-path-cta");
+  await expect(cta).toHaveAccessibleName("Türkçe: 20 paragraf sorusu · 25 dk başla");
+  await expect(cta).toHaveAttribute("href", /source=dashboard/);
+  await expect(cta).toHaveAttribute("href", new RegExp(`taskId=${taskId}`));
   expect(dashboardApi.todayCalls).toBe(1);
-  expect(dashboardApi.dailyGreetingCalls).toBe(1);
+  // The greeting waits for the shared entitlement read, which may land after the hero paints.
+  await expect.poll(() => dashboardApi.dailyGreetingCalls).toBe(1);
 
   const coachPage = await context.newPage();
   const coachApi = await mockCoachApi(coachPage, {
@@ -147,12 +179,6 @@ test("dashboard ve koç landing aynı aksiyonu gösterir; dashboard bugün veris
 test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner, kaybolmaz", async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    window.localStorage.setItem(
-      "mentor_mood_prompt_deferred_date",
-      new Date().toISOString().slice(0, 10),
-    );
-  });
   const period = {
     examId: "exam-recap-1",
     startDate: "2026-07-13",
@@ -166,8 +192,8 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
   await page.goto("/panel");
 
   /*
-   * The teaser no longer disappears once opened — `panel-shell.tsx`'s `showWeeklyRecap` is
-   * `weeklyRecapState !== "hidden"`, and "hidden" only ever happens for an EMPTY week. A READY
+   * The teaser no longer disappears once opened — `weekly-recap-slot.tsx` renders it unless the
+   * state is "hidden", and "hidden" only ever happens for an EMPTY week. A READY
    * week's card stays mounted for the rest of the season, switching from its "new" copy to a
    * "tekrar izle" (replay) copy once opened — a revisit affordance, not a one-time reveal.
    */
@@ -259,7 +285,7 @@ test("tamamlanmış günde next-action chip göstermez", async ({ page }) => {
   await expect(page.getByTestId("coach-empty-landing")).toBeVisible();
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Bugün nasıl çalışmalıyım?" }),
+    page.getByRole("button", { name: "Bugün tek adım ne olsun?" }),
   ).toBeVisible();
 });
 
@@ -270,7 +296,7 @@ test("chat hakkı olmayan kullanıcıyı yalnız chat rotasında gate ile karş�
 
   await page.goto("/koc/sohbet");
 
-  await expect(page.getByText("AI koç seninle", { exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Koçun yanında" })).toBeVisible();
   await expect(page.getByTestId("coach-next-action-chip")).toHaveCount(0);
   await expect(page.getByTestId("coach-empty-landing")).toHaveCount(0);
   expect(api.todayCalls).toBe(0);
@@ -453,8 +479,10 @@ test("eski mesajları sırayla başa ekler ve görünür konumu korur", async ({
     transcript?.indexOf("En eski yanıt") ?? -1,
   );
 
-  const after = await anchor.boundingBox();
-  expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThan(20);
+  await expect.poll(async () => {
+    const after = await anchor.boundingBox();
+    return Math.abs((after?.y ?? 0) - (before?.y ?? 0));
+  }).toBeLessThan(20);
 });
 
 test("eski sayfa hatasında görünür geçmişi korur ve yeniden dener", async ({
@@ -658,6 +686,46 @@ test("stream hatasında optimistic exchangei geri alır ve metni inputa döndür
     transcript.getByText("Yarım yanıt", { exact: true }),
   ).toHaveCount(0);
 });
+const reviewSeed =
+  "Matematik dersindeki Problemler konusu yanlış defterimde tekrar ediyor. Kanıtlara bakıp tek bir sonraki adım önerebilir misin?";
+const reviewExamId = "70000000-0000-4000-8000-000000000001";
+const reviewUrl = `/koc/sohbet?seed=${encodeURIComponent(reviewSeed)}&contextMockExamId=${reviewExamId}`;
+const reviewReply = "Problemlerde bugün 10 soruyla başla.";
+
+test("AI koçla değerlendir premium öğrencide kendiliğinden başlar", async ({
+  page,
+}) => {
+  const api = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+    streamReply: reviewReply,
+  });
+
+  await page.goto(reviewUrl);
+
+  await expect(page.getByText(reviewReply)).toBeVisible({ timeout: 15_000 });
+  expect(api.streamBodies).toEqual([
+    expect.objectContaining({ message: reviewSeed, contextMockExamId: reviewExamId }),
+  ]);
+});
+
+test("AI koçla değerlendir coin öğrencide yalnız mesajı doldurur", async ({
+  page,
+}) => {
+  const api = await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "COIN", chatCost: 5, freeCoinMessagesRemainingToday: 3 },
+    streamReply: reviewReply,
+  });
+
+  await page.goto(reviewUrl);
+
+  await expect(page.getByLabel("Koçuna mesaj yaz")).toHaveValue(reviewSeed, {
+    timeout: 15_000,
+  });
+  expect(api.streamBodies).toEqual([]);
+});
+
 function makeRecentMessages(): CoachMessageDto[] {
   return Array.from(
     { length: 30 },
@@ -693,6 +761,8 @@ interface MockCoachOptions {
   messagesByConversation?: Record<string, CoachMessageDto[]>;
   messageDelaysMs?: Record<string, number>;
   streamError?: boolean;
+  /** Answers the stream with this reply and records every request body. */
+  streamReply?: string;
 }
 
 async function mockCoachApi(page: Page, options: MockCoachOptions) {
@@ -702,6 +772,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
   let conversationsBlocked = (options.conversationFailures ?? 0) > 0;
   let messageFailures = options.messageFailures ?? 0;
   let olderMessageFailures = options.olderMessageFailures ?? 0;
+  const streamBodies: unknown[] = [];
 
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
@@ -747,6 +818,22 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
         );
       }
       return json(route, options.access ?? accessNone);
+    }
+    // The subscription and `/coach/access` answer the same question from two ends, so the mock
+    // derives one from the other: a PREMIUM access mode means an entitled subscription.
+    if (method === "GET" && path === "/v1/subscription") {
+      const premium = (options.access ?? accessNone).mode === "PREMIUM";
+      return json(route, {
+        subscription: null,
+        entitlement: {
+          tier: premium ? "PREMIUM" : "FREE",
+          isPremium: premium,
+          validUntil: null,
+          reason: premium ? "ACTIVE" : "NONE",
+        },
+        features: {},
+        discount: null,
+      });
     }
     if (method === "GET" && path === "/v1/coaching/today") {
       todayCalls += 1;
@@ -862,6 +949,27 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
           'data: {"error":{"code":"AI_PROVIDER_ERROR"}}\n\n',
       });
     }
+    if (
+      method === "POST" &&
+      path === "/v1/coach/chat/stream" &&
+      options.streamReply
+    ) {
+      streamBodies.push(request.postDataJSON());
+      const done = {
+        reply: options.streamReply,
+        model: "fake",
+        conversationId: "30000000-0000-4000-8000-000000000001",
+        sources: [],
+      };
+      return route.fulfill({
+        status: 200,
+        contentType: "text/event-stream",
+        headers: corsHeaders,
+        body:
+          `data: ${JSON.stringify({ delta: options.streamReply })}\n\n` +
+          `data: ${JSON.stringify({ done })}\n\n`,
+      });
+    }
 
     return json(
       route,
@@ -880,6 +988,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
     get dailyGreetingCalls() {
       return dailyGreetingCalls;
     },
+    streamBodies,
     allowConversations() {
       conversationsBlocked = false;
     },
@@ -887,7 +996,7 @@ async function mockCoachApi(page: Page, options: MockCoachOptions) {
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100",
   "access-control-allow-credentials": "true",
 };
 

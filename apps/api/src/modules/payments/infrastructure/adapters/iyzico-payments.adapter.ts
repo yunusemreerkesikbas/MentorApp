@@ -1,7 +1,6 @@
-import { HttpStatus, Injectable, Logger } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { DomainError } from "../../../../common/errors/domain-error";
-import { ErrorCode } from "../../../../common/errors/error-code";
+import { CheckoutRejectedError } from "../../domain/checkout-rejected.error";
 import type { Env } from "../../../../config/env.validation";
 import type {
   CheckoutRequest,
@@ -72,6 +71,6 @@ export class IyzicoPaymentsAdapter implements PaymentsPort {
 
   private notVerified(method: string, ctx?: Record<string, unknown>): never {
     this.logger.error(`IyzicoPaymentsAdapter.${method} called but the adapter is UNVERIFIED ${JSON.stringify(ctx ?? {})}`);
-    throw new DomainError(ErrorCode.PAYMENT_PROVIDER_ERROR, HttpStatus.SERVICE_UNAVAILABLE);
+    throw new CheckoutRejectedError();
   }
 }

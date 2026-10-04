@@ -1,0 +1,41 @@
+{
+  "advisories": {
+    "1193686": {
+      "findings": [
+        {
+          "version": "2.10.34",
+          "paths": [
+            "apps__admin>next>baseline-browser-mapping",
+            "apps__web>next>baseline-browser-mapping",
+            "apps__web>next-intl>next>baseline-browser-mapping"
+          ],
+          "dev": false,
+          "optional": false,
+          "bundled": false
+        }
+      ],
+      "id": 1193686,
+      "title": "baseline-browser-mapping process termination on invalid input causes denial of service",
+      "module_name": "baseline-browser-mapping",
+      "vulnerable_versions": ">=2.0.0 <2.11.0",
+      "patched_versions": ">=2.11.0",
+      "severity": "moderate",
+      "cwe": "CWE-705",
+      "github_advisory_id": "GHSA-w5vr-8v7q-w6rv",
+      "url": "https://github.com/advisories/GHSA-w5vr-8v7q-w6rv"
+    }
+  },
+  "metadata": {
+    "vulnerabilities": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 0,
+      "critical": 0
+    },
+    "dependencies": 702,
+    "devDependencies": 0,
+    "optionalDependencies": 92,
+    "totalDependencies": 794
+  }
+}

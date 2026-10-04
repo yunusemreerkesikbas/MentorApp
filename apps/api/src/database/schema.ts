@@ -10,6 +10,10 @@
  * Base step ships only the `jobs` table (queue substrate). Feature tables arrive with their modules.
  */
 import { sql } from "drizzle-orm";
+import type {
+  MentorshipWeeklyBriefDto,
+  MentorshipWeeklySnapshotDto,
+} from "@mentor/types";
 import {
   type AnyPgColumn,
   boolean,
@@ -122,10 +126,21 @@ export const users = pgTable(
     /** Daily focus goal in minutes (/study-session progress + XP quest); null = no goal set. */
     dailyFocusGoalMinutes: integer("daily_focus_goal_minutes"),
     emailVerifiedAt: timestamp("email_verified_at", { withTimezone: true }),
+    phoneNumber: text("phone_number"),
+    phoneVerifiedAt: timestamp("phone_verified_at", { withTimezone: true }),
+    /** Durable lifecycle fence while cancellation and cross-module erasure run outside a tx. */
+    erasureStartedAt: timestamp("erasure_started_at", { withTimezone: true }),
     /** KVKK consent timestamp — signup is rejected without consent (§7/§9). */
     kvkkAcceptedAt: timestamp("kvkk_accepted_at", {
       withTimezone: true,
     }).notNull(),
+    /** Evidence of the binding terms revision accepted at account creation. */
+    termsAcceptedAt: timestamp("terms_accepted_at", { withTimezone: true }),
+    termsVersion: text("terms_version"),
+    /** 13+ is a self-declaration; birth date is deliberately not collected. */
+    ageEligibilityConfirmedAt: timestamp("age_eligibility_confirmed_at", {
+      withTimezone: true,
+    }),
     /** ACTIVE | SUSPENDED | BANNED (graduated enforcement — §9). */
     status: text("status").notNull().default("ACTIVE"),
     createdAt: timestamp("created_at", { withTimezone: true })
@@ -138,6 +153,8 @@ export const users = pgTable(
   (t) => [
     uniqueIndex("users_email_unique_idx").on(sql`lower(${t.email})`),
     uniqueIndex("users_username_unique_idx").on(sql`lower(${t.username})`),
+    uniqueIndex("users_active_phone_unique_idx").on(t.phoneNumber)
+      .where(sql`${t.status} = 'ACTIVE' AND ${t.phoneVerifiedAt} IS NOT NULL`),
   ],
 );
 
@@ -190,6 +207,14 @@ export const coachStudents = pgTable(
     coachNote: text("coach_note"),
     coachNoteAt: timestamp("coach_note_at", { withTimezone: true }),
     /**
+     * The student's standing note to their coach (QA F4, 2026-09-27), the mirror of `coach_note`:
+     * one row overwritten in place, not a thread. It is the only free text the coach's report
+     * carries, and only because the student wrote it for this coach; it never goes to an AI
+     * provider (the brief reads an allow-list). Cleared by `end()` for the same reason as the note.
+     */
+    studentNote: text("student_note"),
+    studentNoteAt: timestamp("student_note_at", { withTimezone: true }),
+    /**
      * The coach's last AI brief about this student (W8), cached on the link.
      *
      * No table of its own: it is one text per relationship, overwritten in place, the same shape
@@ -217,6 +242,15 @@ export const coachStudents = pgTable(
      */
     attendedAt: timestamp("attended_at", { withTimezone: true }),
     attendedFlags: text("attended_flags").array(),
+    /**
+     * The coach's seat on this link (`MentorshipSeat`): FREE and PAID hold the coach's room to
+     * follow the student, SELF pays for their own Premium and holds none, NONE waits and is frozen
+     * (the coach cannot open the student). Decided under the coach's advisory lock by
+     * `mentorship/domain/seats.ts`. Stored, not computed per read, because a free seat already held
+     * must survive a lowered `mentorship.coach.free_seats`. Defaults to NONE: a link nobody has
+     * seated yet is frozen, never silently open.
+     */
+    seat: text("seat").notNull().default("NONE"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -239,6 +273,10 @@ export const coachStudents = pgTable(
     check(
       "coach_students_source_chk",
       sql`${t.source} in ('INVITE', 'MARKETPLACE')`,
+    ),
+    check(
+      "coach_students_seat_chk",
+      sql`${t.seat} in ('FREE', 'PAID', 'SELF', 'NONE')`,
     ),
   ],
 );
@@ -1248,6 +1286,8 @@ export const planTasks = pgTable(
     startTime: time("start_time"),
     /** Wall-clock end; requires `start_time` and must be later (plan_tasks_time_range_chk). */
     endTime: time("end_time"),
+    /** Optional study length, independent of start/end times. */
+    durationMinutes: integer("duration_minutes"),
     /** Optional free-text note shown in the calendar event preview. THE STUDENT'S own words. */
     description: text("description"),
     /**
@@ -1293,6 +1333,7 @@ export const planTasks = pgTable(
       .defaultNow(),
   },
   (t) => [
+    check("plan_tasks_duration_minutes_chk", sql`${t.durationMinutes} between 5 and 200`),
     index("plan_tasks_user_date_idx").on(t.userId, t.taskDate),
     index("plan_tasks_assignment_group_idx").on(t.assignmentGroupId),
     uniqueIndex("plan_tasks_ai_coach_origin_idx")
@@ -2129,6 +2170,9 @@ export const subscriptions = pgTable(
     /** FAKE | IYZICO | DISABLED | SPONSOR (a coach seat — no money moved, no ledger row). */
     provider: text("provider").notNull(),
     providerRef: text("provider_ref"),
+    /** Owner-only recovery of an existing checkout; an unknown outcome stays reserved. */
+    checkoutUrl: text("checkout_url"),
+    checkoutCode: text("checkout_code"),
     /**
      * The coach link that sponsors this subscription (W8 seats), or null for a self-paid one.
      *
@@ -2607,12 +2651,36 @@ export const inviteRedemptions = pgTable(
       .notNull()
       .defaultNow(),
     convertedAt: timestamp("converted_at", { withTimezone: true }),
+    sourcePaymentId: text("source_payment_id"),
+    rewardOutcome: text("reward_outcome"),
   },
   (t) => [
     uniqueIndex("invite_redemptions_invited_unique_idx").on(t.invitedUserId),
     index("invite_redemptions_inviter_idx").on(t.inviterUserId),
   ],
 );
+
+/** Economy owns mutable presentation receipts; historical ledger rows have no receipt. */
+export const economyRewardReceipts = pgTable("economy_reward_receipts", {
+  ledgerId: uuid("ledger_id").primaryKey().references(() => ledgerEntries.id),
+  userId: uuid("user_id").notNull().references(() => users.id),
+  orgId: uuid("org_id").references(() => organizations.id),
+  seenAt: timestamp("seen_at", { withTimezone: true }),
+}, (t) => [
+  index("economy_reward_receipts_unseen_idx").on(t.userId).where(sql`${t.seenAt} is null`),
+  pgPolicy("economy_reward_receipts_service", {
+    for: "all",
+    using: sql`current_setting('app.role', true) = 'SERVICE'`,
+    withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+  }),
+  pgPolicy("economy_reward_receipts_owner_read", {
+    for: "select", using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+  }),
+  pgPolicy("economy_reward_receipts_owner_update", {
+    for: "update", using: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+    withCheck: sql`${t.userId} = nullif(current_setting('app.user_id', true), '')::uuid`,
+  }),
+]).enableRLS();
 
 /* --- Quests (§3 light economy): completed quest → XP/Coin (capped where needed, idempotent).
  * One row per (user, quest, period) recorded on completion; the reward is a ledger entry
@@ -4143,38 +4211,153 @@ export const notebookReviews = pgTable(
 ).enableRLS();
 
 /* W8 follow-ups: private service-only rows; student reads use an explicit safe projection. */
-export const mentorshipFollowups = pgTable("mentorship_followups", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  linkId: uuid("link_id").notNull().references(() => coachStudents.id, { onDelete: "cascade" }),
-  periodId: uuid("period_id").notNull(),
-  operationId: uuid("operation_id").notNull(),
-  requestHash: text("request_hash").notNull(),
-  responseVersion: integer("response_version"),
-  title: varchar("title", { length: 120 }).notNull(),
-  privateNote: text("private_note"),
-  sharedDecision: text("shared_decision"),
-  response: text("response").$type<"PENDING" | "ACCEPTED" | "CHANGE_REQUESTED">().notNull().default("PENDING"),
-  followUpDate: date("follow_up_date"),
-  status: text("status").$type<"OPEN" | "COMPLETED" | "CANCELLED">().notNull().default("OPEN"),
-  version: integer("version").notNull().default(1),
-  replacesId: uuid("replaces_id").references((): AnyPgColumn => mentorshipFollowups.id, { onDelete: "set null" }),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
-  respondedAt: timestamp("responded_at", { withTimezone: true }),
-  closedAt: timestamp("closed_at", { withTimezone: true }),
-}, (t) => [
-  uniqueIndex("mentorship_followups_operation_idx").on(t.linkId, t.periodId, t.operationId),
-  index("mentorship_followups_period_idx").on(t.linkId, t.periodId, t.createdAt),
-  index("mentorship_followups_due_idx").on(t.status, t.followUpDate),
-  check("mentorship_followups_status_check", sql`${t.status} IN ('OPEN', 'COMPLETED', 'CANCELLED')`),
-  check("mentorship_followups_response_check", sql`${t.response} IN ('PENDING', 'ACCEPTED', 'CHANGE_REQUESTED')`),
-  check("mentorship_followups_version_check", sql`${t.version} > 0`),
-  pgPolicy("mentorship_followups_service", {
-    for: "all",
-    using: sql`current_setting('app.role', true) = 'SERVICE'`,
-    withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
-  }),
-]).enableRLS();
+export const mentorshipFollowups = pgTable(
+  "mentorship_followups",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    periodId: uuid("period_id").notNull(),
+    operationId: uuid("operation_id").notNull(),
+    requestHash: text("request_hash").notNull(),
+    responseVersion: integer("response_version"),
+    title: varchar("title", { length: 120 }).notNull(),
+    privateNote: text("private_note"),
+    sharedDecision: text("shared_decision"),
+    response: text("response")
+      .$type<"PENDING" | "ACCEPTED" | "CHANGE_REQUESTED">()
+      .notNull()
+      .default("PENDING"),
+    followUpDate: date("follow_up_date"),
+    status: text("status")
+      .$type<"OPEN" | "COMPLETED" | "CANCELLED">()
+      .notNull()
+      .default("OPEN"),
+    version: integer("version").notNull().default(1),
+    replacesId: uuid("replaces_id").references(
+      (): AnyPgColumn => mentorshipFollowups.id,
+      { onDelete: "set null" },
+    ),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    respondedAt: timestamp("responded_at", { withTimezone: true }),
+    closedAt: timestamp("closed_at", { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex("mentorship_followups_operation_idx").on(
+      t.linkId,
+      t.periodId,
+      t.operationId,
+    ),
+    index("mentorship_followups_period_idx").on(
+      t.linkId,
+      t.periodId,
+      t.createdAt,
+    ),
+    index("mentorship_followups_due_idx").on(t.status, t.followUpDate),
+    check(
+      "mentorship_followups_status_check",
+      sql`${t.status} IN ('OPEN', 'COMPLETED', 'CANCELLED')`,
+    ),
+    check(
+      "mentorship_followups_response_check",
+      sql`${t.response} IN ('PENDING', 'ACCEPTED', 'CHANGE_REQUESTED')`,
+    ),
+    check("mentorship_followups_version_check", sql`${t.version} > 0`),
+    pgPolicy("mentorship_followups_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
+
+/* W8 completed-week reports. Version 0 is the mutable draft; finalized versions are append-only. */
+export const mentorshipWeeklyReports = pgTable(
+  "mentorship_weekly_reports",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    linkId: uuid("link_id")
+      .notNull()
+      .references(() => coachStudents.id, { onDelete: "cascade" }),
+    periodId: uuid("period_id").notNull(),
+    weekStart: date("week_start").notNull(),
+    weekEnd: date("week_end").notNull(),
+    locale: varchar("locale", { length: 5 }).notNull().default("tr"),
+    version: integer("version").notNull().default(0),
+    status: text("status")
+      .$type<
+        "DRAFT" | "BRIEF_PENDING" | "BRIEF_READY" | "BRIEF_FAILED" | "FINALIZED"
+      >()
+      .notNull()
+      .default("DRAFT"),
+    sourceFingerprint: text("source_fingerprint").notNull(),
+    snapshot: jsonb("snapshot").$type<MentorshipWeeklySnapshotDto>().notNull(),
+    brief: jsonb("brief").$type<MentorshipWeeklyBriefDto>(),
+    briefLocale: varchar("brief_locale", { length: 5 }),
+    briefPromptVersion: text("brief_prompt_version"),
+    briefCoachContext: text("brief_coach_context"),
+    briefFingerprint: text("brief_fingerprint"),
+    briefGenerationId: uuid("brief_generation_id"),
+    briefStartedAt: timestamp("brief_started_at", { withTimezone: true }),
+    coachEvaluation: text("coach_evaluation"),
+    replacesId: uuid("replaces_id").references(
+      (): AnyPgColumn => mentorshipWeeklyReports.id,
+      { onDelete: "set null" },
+    ),
+    operationId: uuid("operation_id"),
+    finalizedAt: timestamp("finalized_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("mentorship_weekly_reports_version_idx").on(
+      t.linkId,
+      t.periodId,
+      t.weekStart,
+      t.version,
+    ),
+    uniqueIndex("mentorship_weekly_reports_operation_idx")
+      .on(t.linkId, t.periodId, t.operationId)
+      .where(sql`${t.operationId} is not null`),
+    index("mentorship_weekly_reports_archive_idx").on(
+      t.linkId,
+      t.periodId,
+      t.finalizedAt,
+    ),
+    check(
+      "mentorship_weekly_reports_status_check",
+      sql`${t.status} IN ('DRAFT', 'BRIEF_PENDING', 'BRIEF_READY', 'BRIEF_FAILED', 'FINALIZED')`,
+    ),
+    check("mentorship_weekly_reports_version_check", sql`${t.version} >= 0`),
+    check(
+      "mentorship_weekly_reports_locale_check",
+      sql`${t.locale} IN ('tr', 'en')`,
+    ),
+    check(
+      "mentorship_weekly_reports_brief_locale_check",
+      sql`${t.briefLocale} IS NULL OR ${t.briefLocale} IN ('tr', 'en')`,
+    ),
+    check(
+      "mentorship_weekly_reports_finalized_check",
+      sql`(${t.status} = 'FINALIZED' AND ${t.version} > 0 AND ${t.finalizedAt} IS NOT NULL) OR (${t.status} <> 'FINALIZED' AND ${t.version} = 0 AND ${t.finalizedAt} IS NULL)`,
+    ),
+    pgPolicy("mentorship_weekly_reports_service", {
+      for: "all",
+      using: sql`current_setting('app.role', true) = 'SERVICE'`,
+      withCheck: sql`current_setting('app.role', true) = 'SERVICE'`,
+    }),
+  ],
+).enableRLS();
 
 /**
  * What one brief was measured against (APP-093).
@@ -4198,7 +4381,7 @@ export type MentorshipBriefSnapshot = {
   latestNet: number | null;
   /** Mean check-in level over the report's mood window. A score, never a diagnosis. */
   moodMean: number | null;
-  /** `coach_students.attended_at` when this brief was written — the floor of the action window. */
+  /** `coach_students.attended_at` when this brief was written: the floor of the action window. */
   attendedAt: string | null;
 };
 
@@ -4208,8 +4391,8 @@ export type MentorshipBriefSnapshot = {
  * Mirrors `MentorshipBriefDeltaDto` the way `MentorshipCohortBriefItem` mirrors its DTO: the schema
  * file does not import `@mentor/types`, and the stored shape is allowed to outlive a DTO edit.
  *
- * Storing it looks redundant next to {@link MentorshipBriefSnapshot} — two snapshots do determine
- * every metric between them — but `coachActions` is counted over rows that can later be closed,
+ * Storing it looks redundant next to {@link MentorshipBriefSnapshot}. Two snapshots do determine
+ * every metric between them, but `coachActions` is counted over rows that can later be closed,
  * replaced or deleted. Recomputing it months from now would quietly produce a different history
  * than the one the coach read, so the counted half is written down rather than re-derived.
  */
@@ -4236,11 +4419,11 @@ export type MentorshipBriefDeltaRecord = {
 };
 
 /**
- * W8 per-student brief history (APP-093) — the record, next to the link row's cache.
+ * W8 per-student brief history (APP-093): the record, next to the link row's cache.
  *
  * `coach_students.brief/brief_at/brief_fingerprint` stay exactly as they were: the LATEST text,
  * keyed by a fingerprint, so an unchanged student costs one LLM call instead of two. This table is
- * the other job — every brief actually written, so the next one can open with what changed instead
+ * the other job. Every brief actually written, so the next one can open with what changed instead
  * of starting over. A row is appended only when a model wrote something; a cache hit adds nothing.
  *
  * Period-scoped like `mentorship_followups`: re-linking rotates `coach_students.period_id`, so
@@ -4249,8 +4432,8 @@ export type MentorshipBriefDeltaRecord = {
  * only the cache.
  *
  * `link_id` is a real FK with ON DELETE CASCADE and erasure DELETES links rather than anonymizing
- * them, so this table needs no clause in `MentorshipErasureService` — the same reasoning
- * `mentorship_dropped_assignments` and `mentorship_followups` already rely on.
+ * them, so this table needs no clause in `MentorshipErasureService`. The same reasoning already
+ * covers `mentorship_dropped_assignments`, `mentorship_followups` and `mentorship_weekly_reports`.
  */
 export const mentorshipStudentBriefs = pgTable(
   "mentorship_student_briefs",
@@ -4261,7 +4444,7 @@ export const mentorshipStudentBriefs = pgTable(
       .references(() => coachStudents.id, { onDelete: "cascade" }),
     periodId: uuid("period_id").notNull(),
     brief: text("brief").notNull(),
-    /** The model that wrote it. Never `"cache"` — a cache hit writes no row. */
+    /** The model that wrote it. Never `"cache"`: a cache hit writes no row. */
     model: text("model").notNull(),
     /** Hash of the shaped evidence + locale + prompt version, same key the link-row cache uses. */
     fingerprint: text("fingerprint").notNull(),

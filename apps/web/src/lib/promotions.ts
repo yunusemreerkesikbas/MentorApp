@@ -99,7 +99,7 @@ export function pickPromotionForDialog(
 /**
  * The promotion to advertise on the dashboard banner, or null when there is nothing honest to say.
  *
- * Premium users are never shown a commercial nudge (same rule as `PremiumCampaignBanner` and the
+ * Premium users are never shown a commercial nudge (same rule as the panel membership card and the
  * ads placements).
  *
  * Priority mirrors `pickPromotionForDialog` on purpose: a coded promotion wins, because it is the

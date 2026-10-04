@@ -73,7 +73,7 @@ export class CommunityService {
 
     const [balance, leaderboard] = await Promise.all([
       this.economy.getSelfBalance(userId),
-      this.buildLeaderboard(userId, me, "weekly"),
+      (await this.config.get("community.leaderboard.enabled")) ? this.buildLeaderboard(userId, me, "weekly") : Promise.resolve(null),
     ]);
 
     return {
@@ -161,6 +161,7 @@ export class CommunityService {
    * returns an empty board when the economy is off (the client hides tabs via `economyEnabled`).
    */
   async getLeaderboard(userId: string, window: LeaderboardWindow): Promise<LeaderboardView> {
+    if (!(await this.config.get("community.leaderboard.enabled"))) throw new NotFoundError();
     const [economyEnabled, me] = await Promise.all([
       this.config.get("economy.enabled"),
       this.users.getMe(userId),

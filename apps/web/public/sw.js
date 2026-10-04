@@ -1,3 +1,8 @@
+// Take over tabs that were already open, so a notification click can reuse one of them.
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("push", (event) => {
   let data = { title: "Mentor", body: "", url: "/panel" };
   try {
@@ -19,5 +24,15 @@ self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const relative = event.notification.data?.url ?? "/panel";
   const url = new URL(relative, self.location.origin).href;
-  event.waitUntil(clients.openWindow(url));
+  // An open Mentor tab is focused and sent there; a new window only when there is none.
+  event.waitUntil(
+    clients
+      .matchAll({ type: "window" })
+      .then(([client]) =>
+        client
+          ? client.focus().then((focused) => focused.navigate(url))
+          : clients.openWindow(url),
+      )
+      .catch(() => clients.openWindow(url)),
+  );
 });

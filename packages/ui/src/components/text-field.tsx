@@ -6,12 +6,14 @@ import { useId, useState } from "react";
 
 import { ShakeField } from "./transitions/shake-field.js";
 
-export interface TextFieldProps extends React.InputHTMLAttributes<HTMLInputElement> {
+export interface TextFieldProps extends Omit<React.InputHTMLAttributes<HTMLInputElement>, "compact"> {
   label: string;
   /** Field-level error: sets `aria-invalid`, danger border, and a described message below. */
   error?: string | null;
   /** On a `type="password"` field, renders a show/hide toggle with these localized labels. */
   revealLabels?: { show: string; hide: string };
+  /** Tighter padding for dense forms (still 44px min height). */
+  dense?: boolean;
   ref?: React.Ref<HTMLInputElement>;
 }
 
@@ -26,6 +28,7 @@ export function TextField({
   className,
   error,
   revealLabels,
+  dense,
   type,
   id,
   ref,
@@ -62,7 +65,9 @@ export function TextField({
             type={effectiveType}
             aria-invalid={error ? true : undefined}
             aria-describedby={error ? errorId : undefined}
-            className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${showToggle ? "pr-12" : ""}`}
+            className={`min-h-11 w-full rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
+              dense ? "px-3 py-2 text-sm" : "px-5 py-3 text-base"
+            } ${showToggle ? "pr-12" : ""}`}
             style={{
               color: "var(--color-body)",
               boxShadow: "var(--shadow-card)",

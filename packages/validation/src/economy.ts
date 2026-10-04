@@ -32,3 +32,7 @@ export const deepAnalysisSchema = z.object({
   examId: z.string().uuid(),
 });
 export type DeepAnalysis = z.infer<typeof deepAnalysisSchema>;
+
+export const economyRewardsSeenSchema = z.object({
+  ledgerIds: z.array(z.string().uuid()).min(1).max(100),
+});

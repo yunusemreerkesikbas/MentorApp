@@ -12,7 +12,6 @@ import {
   LayoutList,
   LoaderCircle,
   MessageCircle,
-  RotateCcw,
   Settings2,
   Sparkles,
   X,
@@ -29,6 +28,7 @@ import { reviewNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
 import { putNotebookHandoff } from "@/lib/notebook-handoff";
 import {
   bySubject,
+  nearestReturnDays,
   nextUnansweredIndex,
   reviewFeedback,
   type ReviewFeedback,
@@ -352,6 +352,11 @@ export function NotebookReviewPanel({
             style={{
               background: "var(--color-surface)",
               boxShadow: "var(--shadow-card)",
+              // Overrides the scroll area's `stable` gutter. These screens almost never scroll, and
+              // the reserved gutter left a 10px white strip down the right side that cut the tinted
+              // header band short of the edge. Inline because `.mentor-scrollarea` is unlayered CSS
+              // and wins over a Tailwind utility.
+              scrollbarGutter: "auto",
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -465,6 +470,7 @@ export function NotebookReviewPanel({
                         onZoom={entry.url ? () => setZoomed(entry) : null}
                         onNoteSave={saveNote}
                         onSolutionNoteSave={saveSolutionNote}
+                        shortcuts={!zoomed && !busy}
                         onSolutionZoom={
                           entry.solutionUrl
                             ? () =>
@@ -512,7 +518,9 @@ export function NotebookReviewPanel({
                       still has to be nameable, which is what the tooltip and the aria-label are for.
                       Weight, not colour, is what separates the pair from the arrows: the verdicts
                       are 60px and centred, the arrows 44px and pushed to the margins. */}
-                  <div className="flex items-center justify-center gap-3">
+                  {/* `items-start`: the verdicts carry a caption underneath and the arrows do not, so
+                      centring the row would drop the arrows half a caption below the discs. */}
+                  <div className="flex items-start justify-center gap-3">
                     <DeckButton
                       label={t("review_prev")}
                       variant="ghost"
@@ -522,17 +530,19 @@ export function NotebookReviewPanel({
                       <ChevronLeft aria-hidden size={22} strokeWidth={2.25} />
                     </DeckButton>
 
-                    <div className="flex items-center gap-4 px-2">
+                    <div className="flex items-start gap-4 px-2">
                       <DeckButton
                         label={t("review_missed")}
+                        caption={t("review_missed_short")}
                         variant="missed"
                         disabled={busy}
                         onClick={() => void answer(false)}
                       >
-                        <RotateCcw aria-hidden size={24} strokeWidth={2.25} />
+                        <X aria-hidden size={24} strokeWidth={2.5} />
                       </DeckButton>
                       <DeckButton
                         label={t("review_solved")}
+                        caption={t("review_solved_short")}
                         variant="solved"
                         disabled={busy}
                         onClick={() => void answer(true)}
@@ -589,12 +599,20 @@ export function NotebookReviewPanel({
  */
 function DeckButton({
   label,
+  caption,
   variant,
   disabled,
   onClick,
   children,
 }: {
   label: string;
+  /**
+   * A visible word under a verdict. The glyphs alone were not enough: the "missed" one was a
+   * counter-clockwise arrow, the same shape as "Soruya dön" on the card above it, and a verdict that
+   * reads as "undo" is one nobody presses with confidence. Arrows have none; they get a 44px disc
+   * dropped by half the verdict's height so their centres still line up.
+   */
+  caption?: string;
   variant: "solved" | "missed" | "ghost";
   disabled: boolean;
   onClick: () => void;
@@ -627,7 +645,11 @@ function DeckButton({
           };
 
   return (
-    <div className="group relative flex">
+    <div
+      className={`group relative flex flex-col items-center gap-1.5 ${
+        verdict ? "" : "mt-2"
+      }`}
+    >
       <button
         type="button"
         aria-label={label}
@@ -640,6 +662,15 @@ function DeckButton({
       >
         {children}
       </button>
+      {caption ? (
+        <span
+          aria-hidden
+          className={`text-xs font-semibold ${disabled ? "opacity-30" : ""}`}
+          style={{ color: "rgba(255,255,255,0.85)" }}
+        >
+          {caption}
+        </span>
+      ) : null}
       <span
         aria-hidden
         className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
@@ -843,6 +874,15 @@ function DonePanel({
     .filter((outcome) => !outcome.solved)
     .map((outcome) => outcome.entry);
   const unfinished = skipped > 0;
+  /**
+   * When the notebook needs them next. Only on a finished deck that solved something: the
+   * nothing-solved subtitle already names the return day, and a deck left half done has cards
+   * waiting today, so a date days away would be the wrong news.
+   */
+  const nextDays =
+    !unfinished && solved > 0
+      ? nearestReturnDays(outcomes.map((outcome) => outcome.entry))
+      : null;
 
   return (
     <div className="flex flex-col">
@@ -857,7 +897,7 @@ function DonePanel({
         className={
           unfinished
             ? "flex flex-col gap-1.5 border-b border-[var(--color-border)] px-5 py-5 text-left sm:px-6"
-            : "flex flex-col items-center gap-3 px-6 pb-5 pt-7 text-center"
+            : "flex flex-col items-center gap-2.5 px-6 pb-5 pt-6 text-center"
         }
         style={{
           backgroundColor: unfinished
@@ -881,6 +921,18 @@ function DonePanel({
                 ? t("review_done_summary", { total, solved })
                 : t("review_done_none", { count: outcomes.length })}
           </p>
+          {nextDays !== null ? (
+            <p
+              className="mt-1 inline-flex items-center justify-center gap-1.5 self-center rounded-full px-3 py-1 text-xs font-semibold"
+              style={{
+                color: "var(--color-main)",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
+              <CalendarClock aria-hidden size={13} />
+              {t("review_done_next", { days: nextDays })}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -923,11 +975,10 @@ function DonePanel({
         </div>
       ) : null}
 
-      <Button
-        fullWidth
-        variant={unfinished ? "secondary" : "primary"}
-        onClick={onClose}
-      >
+      {/* Secondary in both endings. Leaving is the only thing left to do here, so it does not need
+          to shout, and a filled blue slab under the green band was two loud colours on one small
+          card. */}
+      <Button fullWidth variant="secondary" onClick={onClose}>
         {t("review_close")}
       </Button>
       </div>
@@ -963,6 +1014,9 @@ function MissedRow({
     [entry.subjectName, entry.topicName].filter(Boolean).join(" · ") ||
     t("card_unlabelled");
   const feedback = reviewFeedback(entry);
+  /** Same fallback as the card front: a photo that will not load is drawn as a text entry. */
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const photo = entry.url && !photoFailed ? entry.url : null;
 
   const previewContent = (
     <>
@@ -970,14 +1024,15 @@ function MissedRow({
         className="relative flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-[var(--radius-card)]"
         style={{ backgroundColor: "var(--color-surface)" }}
       >
-        {entry.url ? (
+        {photo ? (
           <Image
-            src={entry.url}
+            src={photo}
             alt=""
             fill
             sizes="48px"
             className="object-cover"
             unoptimized
+            onError={() => setPhotoFailed(true)}
           />
         ) : (
           // A text-only entry, not a broken image — a struck-through icon would read as an error on
@@ -997,8 +1052,10 @@ function MissedRow({
         >
           {label}
         </span>
+        {/* Wraps rather than truncating: the return day is the end of this line, and "2 gün
+            sonra dö…" cut off the one part of it the student cannot see anywhere else. */}
         <span
-          className="truncate text-xs"
+          className="text-pretty text-xs"
           style={{ color: "var(--color-secondary)" }}
         >
           {feedback?.kind === "due"
@@ -1015,7 +1072,7 @@ function MissedRow({
 
   return (
     <div className={shell}>
-      {entry.url && onPreview ? (
+      {photo && onPreview ? (
         <button
           type="button"
           aria-label={t("card_preview_aria", { type: errorTypeLabel })}
@@ -1051,9 +1108,13 @@ function MissedRow({
                   : undefined,
             })
           }
-          className="flex min-h-11 shrink-0 items-center rounded-[var(--radius-card)] px-2 text-xs font-bold text-[var(--color-accent)] outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          // An icon, named by `aria-label` and `title`. As words it was the widest thing in every
+          // row, repeated once per row, and it squeezed the row's own text into an ellipsis.
+          aria-label={t("review_done_ask")}
+          title={t("review_done_ask")}
+          className="flex size-11 shrink-0 items-center justify-center rounded-full text-[var(--color-accent)] outline-none transition-colors duration-150 hover:bg-[var(--color-accent-soft)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
         >
-          {t("review_done_ask")}
+          <MessageCircle aria-hidden size={18} />
         </Link>
       ) : null}
     </div>

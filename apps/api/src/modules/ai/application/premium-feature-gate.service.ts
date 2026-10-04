@@ -50,15 +50,41 @@ export class PremiumFeatureGateService {
     roles: string[] | undefined,
     featureId: FeatureId,
   ): Promise<boolean> {
+    return (await this.access(userId, roles, featureId)) === "ALLOWED";
+  }
+
+  /**
+   * `limitCode` replaces `PAYMENT_PREMIUM_REQUIRED` when the refusal is a used-up free taste. The
+   * coach AI surfaces pass one: a coach has no Premium to buy, so "open on Premium" would send them
+   * nowhere. With no taste switched on the refusal stays the Premium one.
+   */
+  async assertAllowed(
+    userId: string,
+    roles: string[] | undefined,
+    featureId: FeatureId,
+    limitCode?: ErrorCode,
+  ): Promise<void> {
+    const access = await this.access(userId, roles, featureId);
+    if (access === "ALLOWED") return;
+    const code =
+      access === "FREE_LIMIT_REACHED" && limitCode ? limitCode : ErrorCode.PAYMENT_PREMIUM_REQUIRED;
+    throw new DomainError(code, HttpStatus.FORBIDDEN);
+  }
+
+  private async access(
+    userId: string,
+    roles: string[] | undefined,
+    featureId: FeatureId,
+  ): Promise<"ALLOWED" | "PREMIUM_REQUIRED" | "FREE_LIMIT_REACHED"> {
     const ent = await this.entitlement.getEntitlement(userId, roles);
-    if (ent.isPremium) return true;
+    if (ent.isPremium) return "ALLOWED";
 
     const meta = PREMIUM_FEATURE_CATALOG[featureId];
     const [freeEnabled, freeLimit] = await Promise.all([
       this.config.get(meta.enabledKey as ConfigKey),
       this.config.get(meta.limitKey as ConfigKey),
     ]);
-    if (!freeEnabled) return false;
+    if (!freeEnabled) return "PREMIUM_REQUIRED";
 
     const used = await this.usage.countFeaturesSince(
       userId,
@@ -67,18 +93,11 @@ export class PremiumFeatureGateService {
     );
     return evaluateFeatureAccess({
       isPremium: false,
-      freeEnabled: Boolean(freeEnabled),
+      freeEnabled: true,
       used,
       freeLimit: Number(freeLimit),
-    }).allowed;
-  }
-
-  async assertAllowed(
-    userId: string,
-    roles: string[] | undefined,
-    featureId: FeatureId,
-  ): Promise<void> {
-    if (await this.isAllowed(userId, roles, featureId)) return;
-    throw new DomainError(ErrorCode.PAYMENT_PREMIUM_REQUIRED, HttpStatus.FORBIDDEN);
+    }).allowed
+      ? "ALLOWED"
+      : "FREE_LIMIT_REACHED";
   }
 }

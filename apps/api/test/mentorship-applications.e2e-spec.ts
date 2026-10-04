@@ -60,6 +60,8 @@ describe("mentorship coach registry (e2e)", () => {
         password: "Sifre1234",
         displayName: `Kisi ${label}`,
         kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
         ...(intent ? { intent } : {}),
       });
     expect(res.status).toBe(201);
@@ -85,6 +87,10 @@ describe("mentorship coach registry (e2e)", () => {
     svc(async (c) => {
       await c.query("update users set email_verified_at = now() where id = $1", [userId[label]]);
     });
+
+  const verifyPhone = (label: string) => svc(async (c) => {
+    await c.query("update users set phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1", [userId[label]]);
+  });
 
   const setOpen = (open: boolean) =>
     app.get(ConfigRegistryService).set(userId.admin!, "mentorship.applications.open", open);
@@ -119,8 +125,6 @@ describe("mentorship coach registry (e2e)", () => {
 
     stamp = Date.now();
     for (const label of ["admin", "student", "student2", "outsider"]) await signup(label);
-    // The one signup that carries the intent — the APP-089 entry point.
-    await signup("coach", "COACH");
 
     await svc(async (c) => {
       await c.query("update users set roles = array_append(roles,$1) where id=$2", [
@@ -130,9 +134,16 @@ describe("mentorship coach registry (e2e)", () => {
     });
     await relogin("admin");
     await setOpen(true);
+    // The one signup that carries the intent — the APP-089 entry point. It needs the intake open:
+    // a shut intake refuses the intent rather than minting a coach who cannot finish onboarding.
+    await signup("coach", "COACH");
     // The coach surface itself, so the panel assertions mean something. The two flags stay
     // independent by design — this suite is the one place both are on at once.
     await app.get(ConfigRegistryService).set(userId.admin!, "mentorship.enabled", true);
+    // Accepting a code writes a link only when a seat can be granted.
+    await app
+      .get(ConfigRegistryService)
+      .set(userId.admin!, "mentorship.seats.sponsorship_enabled", true);
   }, 120_000);
 
   afterAll(async () => {
@@ -173,6 +184,7 @@ describe("mentorship coach registry (e2e)", () => {
       registrationOpen: true,
       registration: null,
       emailVerified: false,
+      phoneVerified: false,
     });
   });
 
@@ -190,6 +202,21 @@ describe("mentorship coach registry (e2e)", () => {
     await setOpen(true);
   });
 
+  it("tells the unauthenticated signup screen whether coach signup is open", async () => {
+    // The refused coach-intent signup itself is proven in auth.service.spec: a sixth POST /auth/signup
+    // here would hit the 5/min signup throttle, not the intake gate.
+    await setOpen(false);
+    try {
+      const shut = await http().get("/v1/auth/coach-signup/status");
+      expect(shut.status).toBe(200);
+      expect(shut.body).toEqual({ open: false });
+    } finally {
+      // Reopen before anything can throw past it: every later test registers against an open intake.
+      await setOpen(true);
+    }
+    expect((await http().get("/v1/auth/coach-signup/status")).body).toEqual({ open: true });
+  });
+
   it("refuses a body that tries to badge itself", async () => {
     // `status` and `verifiedClaims` are the admin's columns; `.strict()` makes the attempt loud
     // rather than silently dropping the field and letting the registrant believe it landed.
@@ -200,26 +227,40 @@ describe("mentorship coach registry (e2e)", () => {
     expect(res.status).toBe(400);
   });
 
-  it("registers a coach as ACTIVE, unverified and unbadged", async () => {
+  it("requires verified email and phone before registering an ACTIVE, unbadged coach", async () => {
+    const missingEmail = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
+    expect(missingEmail.status).toBe(403);
+    expect(missingEmail.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
+    await verifyEmail("coach");
+    const missingPhone = await http().post("/v1/mentorship/coach-registration").set(auth("coach")).send(REGISTRATION);
+    expect(missingPhone.status).toBe(403);
+    expect(missingPhone.body.code).toBe("AUTH_PHONE_REQUIRED");
+    await verifyPhone("coach");
     const created = await http()
       .post("/v1/mentorship/coach-registration")
       .set(auth("coach"))
       .send(REGISTRATION);
     expect(created.status).toBe(201);
     expect(created.body.status).toBe("ACTIVE");
-    // Nobody approved anything, so nothing is verified. This is the normal case now, not the edge.
+    // Contact verification activates coaching; profile claims still require independent review.
     expect(created.body.verifiedClaims).toEqual([]);
 
-    const registry = await http().get("/v1/admin/coaches").set(auth("admin"));
-    expect(registry.status).toBe(200);
-    const row = registry.body.find((r: { userId: string }) => r.userId === userId.coach);
-    expect(row).toMatchObject({ status: "ACTIVE", hasCoachRole: true });
-    // The registry joins the person back on: W8 never reads `users`, admin does.
-    expect(row.email).toContain("w8reg-coach");
+    // The admin registry has a fixed 200-row cap and oldest-first ordering; repeated runs need
+    // not include this fixture in that global page. Read our own authoritative row instead.
+    const state = await http().get("/v1/mentorship/coach-registration/mine").set(auth("coach"));
+    expect(state.body).toMatchObject({
+      registration: { id: created.body.id, status: "ACTIVE" },
+      emailVerified: true,
+      phoneVerified: true,
+    });
+    expect(await rolesOf("coach")).toContain(UserRole.COACH);
   });
 
   it("still refuses the invite code until the email is verified", async () => {
-    // The registry row exists now, so this isolates the email condition on its own.
+    // Losing contact verification after registration closes the gate on every existing token.
+    await svc(async (c) => {
+      await c.query("update users set email_verified_at = null where id = $1", [userId.coach]);
+    });
     const code = await http().post("/v1/mentorship/invite-code").set(auth("coach"));
     expect(code.status).toBe(403);
     expect(code.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");

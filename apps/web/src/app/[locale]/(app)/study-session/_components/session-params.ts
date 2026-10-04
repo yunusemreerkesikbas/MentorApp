@@ -1,4 +1,9 @@
-import type { SessionPresetDto, TodayPanelResponse } from "@mentor/types";
+import type {
+  SessionPresetId,
+  SessionPresetDto,
+  TodayPanelResponse,
+} from "@mentor/types";
+import { studyDurationMinutesSchema } from "@mentor/validation";
 import { readActiveSession, resolveResume } from "@/lib/session-persistence";
 
 export const DEFAULT_PRESETS: SessionPresetDto[] = [
@@ -6,52 +11,56 @@ export const DEFAULT_PRESETS: SessionPresetDto[] = [
   { id: "50_10", label: "50 / 10 dk", focusMinutes: 50, breakMinutes: 10 },
 ];
 
+function customMinutes(value: string | null): number | null {
+  if (!value) return null;
+  const parsed = studyDurationMinutesSchema.safeParse(Number(value));
+  return parsed.success ? parsed.data : null;
+}
+
 export function parseInitialMinutes(
   presetParam: string | null,
   minutesParam: string | null,
 ): number {
-  if (minutesParam) {
-    const n = Number.parseInt(minutesParam, 10);
-    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return n;
-  }
-  if (presetParam === "50_10") return 50;
-  return 25;
+  return customMinutes(minutesParam) ?? (presetParam === "50_10" ? 50 : 25);
 }
 
 export function parseInitialBreakMinutes(
   presetParam: string | null,
   minutesParam: string | null,
 ): number {
-  if (minutesParam) {
-    const n = Number.parseInt(minutesParam, 10);
-    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return 5;
-  }
-  if (presetParam === "50_10") return 10;
-  return 5;
+  return customMinutes(minutesParam) != null
+    ? 5
+    : presetParam === "stopwatch"
+      ? 0
+      : presetParam === "50_10"
+        ? 10
+        : 5;
 }
 
 export function parseInitialPreset(
   presetParam: string | null,
   minutesParam: string | null,
-): "25_5" | "50_10" | "custom" {
-  if (minutesParam) {
-    const n = Number.parseInt(minutesParam, 10);
-    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return "custom";
-  }
-  if (presetParam === "50_10") return "50_10";
-  return "25_5";
+): SessionPresetId {
+  return customMinutes(minutesParam) != null
+    ? "custom"
+    : presetParam === "stopwatch"
+      ? "stopwatch"
+      : presetParam === "50_10"
+        ? "50_10"
+        : "25_5";
 }
 
 export function parseInitialSelectedPresetId(
   presetParam: string | null,
   minutesParam: string | null,
 ): string | null {
-  if (minutesParam) {
-    const n = Number.parseInt(minutesParam, 10);
-    if (!Number.isNaN(n) && n >= 5 && n <= 120 && n % 5 === 0) return null;
-  }
-  if (presetParam === "50_10") return "50_10";
-  return "25_5";
+  return customMinutes(minutesParam) != null
+    ? null
+    : presetParam === "stopwatch"
+      ? "stopwatch"
+      : presetParam === "50_10"
+        ? "50_10"
+        : "25_5";
 }
 
 /** Persisted session the timer hook will actually resume (not stale/finished). */

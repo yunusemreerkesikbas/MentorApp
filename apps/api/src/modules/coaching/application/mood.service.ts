@@ -41,6 +41,7 @@ export class MoodService {
     if (mood <= 2) {
       this.events.emit(CoachingEventTopic.MOOD_LOW, new MoodLow(userId, mood));
     }
+    await this.events.emitAsync(CoachingEventTopic.MOOD_SAVED, { userId, date: today });
     return this.toDto(row);
   }
 

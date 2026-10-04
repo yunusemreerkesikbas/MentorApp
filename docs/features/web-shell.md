@@ -63,6 +63,108 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+### 2026-09-25 — Subscription read timeout and panel probe sequencing
+
+A hung `GET /v1/subscription` left `subscriptionLoading` true, so the panel hero stayed on
+`TodayPathSkeleton`. `fetchSubscriptionView` now aborts after 10 seconds and settles through the
+existing null fallback. The skeleton stays up only while that read is still in flight.
+The panel resilience check holds the subscription response until `/coaching/today` has succeeded,
+then asserts the hero is still hidden. The CLS probe waits for `today-path-card` before its
+observation window and records both the mobile flex column and the desktop grid cards.
+Gotcha: a timed-out read follows the failed-fetch path, so the hero shows without premium until
+`refresh()` runs again. The 24 September CLS JSON files are that run's record and were not
+regenerated. Related: `subscription-view.ts`, `e2e/qa-panel-resilience.spec.ts`,
+`scripts/qa-panel-layout-shifts.mjs`.
+
+### 2026-09-24 — Panel layout stability after the security/performance smoke
+
+The dashboard hero skeleton now reserves space for its path rows, CTA and week band. The real
+hero waits for the shared subscription entitlement so the Free nudge does not appear in a second
+layout step; onboarding clouds wait for that same ready state. On the isolated production web/API,
+three Free-student mobile loads measured CLS 0.069–0.096 and three desktop loads 0.049–0.050,
+all below 0.1. Premium layout remains a separate Stage 2 check.
+Use `scripts/qa-panel-layout-shifts.mjs` with the disposable QA servers to repeat the measurement;
+`e2e/qa-panel-resilience.spec.ts` delays the entitlement to catch a premature hero render.
+Gotcha: the probe uses a 375×812 mobile viewport and is a local regression check, not a field
+performance sample. Related: `dashboard-content-skeleton.tsx`, `panel-shell.tsx`,
+`docs/qa/2026-09-24-security-performance.md`.
+
+### 2026-09-24 — Isolated real-API browser smoke and performance baseline
+
+The QA suite now exercises web login and refresh in two tabs, logout, private notebook media,
+TR/EN public pages, admin CSP and session refresh, and panel loading/error/retry in installed
+Chrome at desktop and mobile viewports.
+Run `qa-critical-real-api.spec.ts` and `qa-panel-resilience.spec.ts` only with the disposable
+`mentor_test` API at `localhost:3101`. The latter injects one contract-shaped 503 response to
+check the user-facing recovery path. `scripts/qa-performance-baseline.mjs` records five cold and
+warm loads for welcome, article, panel, and analysis in both viewports. It fails if a sample
+redirects or hits 429. Use `docs/qa/2026-09-24-security-performance.md` for measured results and
+limits. Gotcha: the browser baseline pauses between batches to stay below the refresh rate limit;
+the local timings are a baseline, not staging performance acceptance. Related:
+`e2e/qa-*.spec.ts`, `scripts/qa-performance-baseline.mjs`, `docs/qa/evidence/`.
+
+### 2026-09-20 — Uygulama fontu Nunito, 800/900 artık gerçek
+
+`layout.tsx` Plus Jakarta Sans'ı dört statik ağırlıkla (400–700) yüklüyordu; koddaki 102 adet
+`font-extrabold` / `font-black` kullanımı sessizce 700'e düşüyordu. Nunito **değişken** yüz olarak
+(`weight` listesi vermeden, `subsets: ["latin","latin-ext"]`) yükleniyor, `--font-body` değişkeni aynı.
+`@theme`'e `--font-sans: var(--font-body)` eklendi — Tailwind'in kendi `font-sans` utility'si bugüne
+kadar sistem fontunda kalıyordu. Kullanım: her yer `var(--font-heading|body)` üzerinden geçtiği için
+322 çağrı yeri değişmedi. Ölçüldü (tarayıcı, `document.fonts`): 700/800/900 yüzleri yükleniyor,
+32px'te genişlikler 319.6 / 325.4 / 331.4 px — yani ağırlık ekseni canlı, kırpılmıyor. Nunito'nun
+rakamları zaten eşit genişlikte (400/800/900'de "111" = "000" = 72px), bu yüzden sayaç ve geri sayım
+için ek bir çözüm gerekmedi. Gotcha: font adını **string** yazan üç yer ayrıca güncellendi —
+`weekly-recap-share-card.ts` (canvas `ctx.font`, 11 satır), vision board `board-export.ts` ve
+`board-item-view.tsx` (font seçicideki `body` etiketi). `apps/admin` kapsam dışı (Google Fonts'u
+zaten engelli). **Maliyet (ölçüldü):** önyüklenen font 49 KB → 75 KB (+25.6 KB; iki dosya, latin +
+latin-ext) — tam ağırlık ekseninin bedeli; mobil 4G'de ~0.1 sn. Gerekirse performans fazında
+ağırlık aralığı daraltılarak (ör. 400–900) geri kazanılabilir. İlgili: `apps/web/src/app/[locale]/layout.tsx`,
+`packages/ui/src/theme.css`, `packages/ui/src/tokens.ts`, `DESIGN.md` §3.
+
+### 2026-09-20 — Abonelik tek yerden okunuyor (`SubscriptionProvider`)
+
+`GET /v1/subscription` tek bir panel yüklemesinde ~3 kez gidiyordu: `AppNav` kendi başına çağırıyordu,
+`fetchSubscriptionView` yalnız uçuştayken tekilleştiriyor (sonucu unutuyor), vision kartı da aynı
+soruyu `/coach/access`'e soruyordu. Yeni `lib/subscription-context.tsx` bir kez okuyor;
+`useSubscription()`, `useIsPremium()`, `usePremiumFeature(id)` ile paylaşıyor. `(app)/app-shell.tsx`
+**ve** `(coach)/coach-shell.tsx` mount ediyor (koçun Koç Pro rozeti de aynı okumadan besleniyor).
+Geçen çağrı yerleri: `app-nav`, `panel-shell`, `premium-campaign-banner`, `promotion-dialog`,
+`use-daily-greeting`, `mood-checkin`, `session-done-state`, `analysis-ghost-teaser`,
+`plan-coach-adaptation-action`. Yan fayda: free kullanıcıya artık sunucunun `featureGate` ile
+reddettiği daily-greeting POST'u gönderilmiyor — istek entitlement'ı bekliyor. Kullanım: yeni premium
+kontrolü için `usePremiumFeature("<feature.id>")`; satın alma dönüşünde `refresh()`. Gotcha: sağlayıcı
+dışında hook `null` görünüme düşer (uyarı loglar, çökmez) — paywall modalı, `/abonelik` ve profil
+kendi detay çağrılarını korur. **Gotcha (panel şeridi):** promosyon artık teklifler + paylaşılan
+entitlement'tan türetiliyor ve ödüllü görev teklifi ondan önce geliyor; kapı olmadan şerit göreve
+açılıp promosyon gelince yer değiştiriyordu (e2e `promotion-banner.spec.ts` "iki item" testi bunu
+yakaladı). `panel-shell.tsx` şeridi promosyon kararı netleşene (`bannerPromotion !== undefined`)
+kadar boş tutuyor. İlgili: `lib/subscription-context.tsx`, `lib/subscription-view.ts`,
+`lib/premium-feature.ts`.
+
+### 2026-09-18 — `@mentor/ui` Button is the play ledge
+
+Welcome/onboarding `PlayButton` (filled blue ledge + outline ledge) is now the shared `Button`.
+`primary`/`accent` = `--play-cta` fill and 4px `--play-cta-edge`; `secondary`/`soft`/`ghost` = outline
+on `--play-line`. CTA tokens live on `html`, not `.onboarding-play-theme`. Call sites: `Button` from
+`@mentor/ui`; full-width CTAs pass `fullWidth`. Gotcha: `--color-btn` still paints nav pills, plan
+FAB, notebook compact, and a few Link-as-CTA copies — those are not this primitive. Rebuild
+`@mentor/ui` (`dist`) or web keeps serving the old black Nuton button. İlgili:
+`packages/ui/src/components/button.tsx`, `packages/ui/src/theme.css`, `DESIGN.md` §6.
+
+### 2026-09-17 — Geçici ekonomi yenileme hatası bakiyeyi silmez
+
+`refreshEconomySnapshot` artık yalnız `ECONOMY_DISABLED` olduğunda bakiyeyi temizler. Ağ veya 5xx
+hatasında son başarılı snapshot kalır, `error: true` yayınlanır; profil/sheet boş bakiyeye düşmez.
+Kullanım değişmedi: `useEconomySnapshot` / `getEconomySnapshot`. Gotcha: kullanıcı değişince
+`resetEconomySnapshot` hâlâ sıfırlar. İlgili: `lib/economy-store.ts`, `lib/economy-store.spec.ts`.
+
+### 2026-09-14 — Panel mood vs journey spotlight sıraya alındı
+
+Panel boot'ta mood check-in (tekerlek + Puhu koç notu) ile journey spotlight aynı anda
+`aria-modal` dialog açıyordu. Kutlama kuyruğu artık overlay kapısı yayınlıyor; mood o kapı
+boşalınca auto-prompt ediyor. Kullanım değişmedi. İlgili: `celebration-overlay.tsx`,
+`mood-checkin.tsx`, `notification-drawer-shell.tsx`, [community.md](./community.md).
+
 ### 2026-09-12 — Mobil tab bar koç için rol farkındalığı kazandı
 
 `sidebarOnly` bir ÖĞRENCİ kararıydı: öğrencinin pill'i beşte doluyor, o yüzden Topluluk ve Ayarlar
@@ -433,7 +535,7 @@ eklendi.
   names; users still see localized Turkish paths such as `/giris`, `/panel`, and `/profil`.
   Google OAuth and notification destinations follow the same contract. Related: `i18n/routing.ts`,
   `post-auth-destination.ts`, `google-auth-button.tsx`, `notification-drawer-shell.tsx`.
-- **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Nunito Sans
+- **Global typography smoothing** — B2C shell switched from League Spartan/Lato to one Plus Jakarta Sans
   latin-ext family for heading/body tokens. Usage: all screens continue using `--font-heading` and
   `--font-body`; no component API changes. Gotcha: visual QA should check dense pages like
   `/topluluk` because text metrics changed slightly. Related: `DESIGN.md`, `[locale]/layout.tsx`,
@@ -852,3 +954,191 @@ eklendi.
   CSS clouds remain safe fallbacks until the complete asset set is delivered. Related:
   `_components/welcome/*`, `(auth)/_components/auth-shell.tsx`, `lib/cloud-transition.tsx`,
   `public/visuals/onboarding/README.md`, `messages/{tr,en}.json`.
+
+### 2026-09-16 — Welcome and onboarding on the play surface
+
+- Welcome and onboarding use `.onboarding-play-theme` (DESIGN.md §2.5): 16px choice cards,
+  12px progress pill. The play-ledge CTA is now the global `@mentor/ui` `Button` (2026-09-18).
+- `/` is "Puhu'nun bir günü": four swipeable scenes on a native scroll-snap track. "Devam et" on
+  slides 1-3, "Atla" jumps to the last slide, which shows "Başlayalım" (signup) and "Zaten hesabım
+  var" (login). Each clip plays from the top when its slide settles and holds the last frame;
+  neighbours preload; reduced motion shows the end frame. Gotcha: `step` follows the scroll only
+  after it rests (90 ms), otherwise a smooth jump from 1 to 4 flashes through 2 and 3.
+- Onboarding order: intro → exam → (KPSS) level → why → field → daily goal → profile → "Yolun
+  hazır". Coaches skip why/field/daily goal and get the coach profile before the profile step. The
+  username is last on purpose: `hasCompletedOnboarding` stays false until the final question.
+- Why + field are written to the goal board once, when the field step is left. The upsert replaces
+  every field, so an existing board is never overwritten; `goalTitle` is derived from the answer
+  ("Eğitim alanında ilerlemek").
+- Push permission is asked in the same tap as the daily goal "Devam" (Safari/Firefox need the
+  gesture), behind a Puhu layer whose "Şimdilik geç" never waits on the browser prompt. No layer when
+  permission is already decided, unsupported or VAPID is unconfigured.
+- Motion: the welcome is scroll-linked, not timed. One rAF write per frame sets `--welcome-progress`
+  (the art trails the track by `--welcome-parallax`, zoomed 12% to pay for the drift) and
+  `--welcome-slip` (the copy gives way, and the title swap lands while it is invisible). Only `step`
+  crosses into React, once per slide. Onboarding answers arrive with a 40 ms stagger and each step
+  slides in from the direction of travel (`onboarding-direction.tsx`).
+- The cloud handover: "Panele git" closes `cloud-left`/`cloud-right` over the screen, navigates
+  underneath, and parts them only when the destination reports in — `useCloudTransitionReady(!loading)`
+  in `panel-shell.tsx` and `roster-shell.tsx`. A ready signal carries the path that sent it, so the
+  page being covered cannot open the sky on itself; a destination that never reports is released by
+  a 6 s timeout. Gotcha: the cover's mount animation is what dispatches "covered" and navigates
+  (APP-089) — never give the left cloud `initial={false}`.
+- Streaming rule: a sentence streams word by word (`StreamingText`, transitions.dev recipe) only
+  when Puhu says it. Welcome slide 1's greeting, every onboarding question, Puhu's reaction lines,
+  the push layer and "Yolun hazır"; a sub line waits for its title and is held invisible meanwhile so
+  the bubble does not resize. Welcome slides 2-4 are narration and keep the line reveal.
+- Auth sheet motion (measured on a 4x throttled phone before the change): the JS transition waited
+  650 ms for hydration on a direct load, the login ↔ signup swap jumped 160 px in one frame, and a
+  successful login left the sheet frozen half off screen for 1.2 s. Now: CSS keyframes that start on
+  the first paint and travel by the sheet's own height (no measuring), an ease-in exit that leaves
+  the screen, the destination prefetched while it leaves, a FLIP glide for the swap (phones), and
+  welcome prefetching `/signup` + `/login`.
+  Gotchas: `.auth-shell` must stay `overflow-clip` — with `overflow-hidden` the sheet's 50dvh
+  under-extension made it programmatically scrollable and a client navigation from the welcome
+  scrolled the form off the top. A `next build` next to a running `next dev` served a stale
+  `globals.css` from `.next/cache/turbopack`; delete that folder if CSS changes do not show up.
+- Assets: `public/visuals/onboarding/welcome-scene-*` (watermark row cropped, ~1.2 Mbps),
+  `cloud-left/right.webp` (keyed off the magenta-screen art) and `public/mascot/career-3d/*`; see the
+  folder README. Related: `components/onboarding-play/*`, `_components/welcome/*`,
+  `(onboarding)/_components/**`, `lib/onboarding-assets.ts`, `lib/cloud-transition.tsx`,
+  `e2e/onboarding-redesign.spec.ts`, `e2e/coach-onboarding.spec.ts`.
+
+- **Yasal belgeler ve ayarlar footer'ı (2026-09-17)** — Altı yasal belgenin TR bağlayıcı ve EN
+  bilgilendirici metinleri Mentor'un gerçek veri akışlarına göre tek registry'de tamamlandı. Public
+  `/yasal/[slug]` adresleri korunurken `/ayarlar/yasal/[slug]` aynı içeriği mevcut `AppNav` kabuğunda
+  gösterir. Ayarlar altındaki ince footer altı belgeyi ve AppNav'lı çerez tercih ekranını bağlar;
+  mobil alt bar boşluğuna taşmaz. Çerez ekranı zorunlu oturum/tema/sidebar çerezlerini, tarayıcı
+  depolamasını ve yalnız açık tercihle çalışan GA4'ü ayrı açıklar. Gotcha: Türkçe metin `FINAL`, EN
+  her zaman bilgilendirici ve `noindex`; içerik iki route için de yalnız `lib/legal.ts` üzerinden
+  güncellenir. İlgili: `lib/legal.ts`, `components/legal-document-view.tsx`,
+  `components/settings-legal-footer.tsx`, `(app)/settings/legal/[slug]/page.tsx`.
+
+- **2026-09-21 — PopoverMenu: anchor derived, not synced.** `components/popover-menu.tsx` artık kapalıyken
+  `setAnchor(null)` çağırmıyor (`react-hooks/set-state-in-effect`); ölçülen rect state'te kalır, kullanılan
+  `anchor = open ? measuredAnchor : null` render sırasında türetilir. Gotcha: yeniden açılışta layout effect
+  ilk paint'ten önce rect'i tazeler, eski rect ekrana çıkmaz.
+
+- **2026-09-21 — PR #113 review düzeltmeleri.** (1) `use-streak-rescue.ts`: prompt effect'inin per-run
+  `cancelled` bayrağı `rescue` kimliği değişince (streak yenilenince) açık modalın onayını sessizce
+  düşürüyordu; yalnız unmount'ta düşen `mountedRef` ile değişti. (2) `plan-coach-adaptation-action.tsx` ve
+  `session-done-state.tsx`: `subscriptionView` null (istek hatası) iken premium kullanıcı paywall/kilit
+  görüyordu; artık `subscriptionView ?? await refreshSubscription()`. (3) Nunito: `next/font` değişkeni
+  `--font-nunito`; `theme.css` `--font-heading/--font-body` bunu bağlar. Canvas export'lar (haftalık özet
+  kartı, vision board) hash'li aile adı yüzünden `"Nunito"` literalini bulamıyordu; `lib/app-font.ts`
+  `appFontFamily()` çözülmüş değeri okur. Gotcha: canvas'ta font string'ini literal yazma.
+
+- **2026-09-25 — Menus inside dialogs and mobile notebook controls.** `PopoverMenu` places a menu
+  inside its nearest open native dialog and positions it in that dialog's coordinates, so browser
+  top-layer rules no longer leave notebook subject options behind the form. Menus also sit above
+  mobile drawers. The notebook's expanded tool rail stays clickable below the decorative mobile
+  header. Usage is unchanged; native dialogs and mobile sheets can use the shared menu. Related:
+  `components/popover-menu.tsx`, `notebook-shell.tsx`, `notebooks.spec.ts`, `notebook.spec.ts`,
+  `vision-board.spec.ts`.
+
+- **2026-09-28 — Overlay kiti panel diline geçti (redesign turu 1, Durak A).** Dialog, BottomSheet,
+  Modal, NotificationDrawer ve Toast katı `--color-surface` üstünde; cam ve `backdrop-blur` yok. Tek
+  örtü `--color-scrim`, tek gölge `--shadow-overlay` (telefondaki alt sayfa `--shadow-sheet`), köşe
+  `--play-radius`, alt sayfanın üst köşesi `--play-sheet-radius` (artık `html` üstünde). Başlık 20/800
+  (alt sayfa ve çekmece 16/800), gövde `text-body-sm`, kapatma 44 px, ikonlar kuyusuz çizgi (22 px,
+  1.75). Onay diyaloğu tek ledge + "Vazgeç" metin bağlantısı; promo'nun ikinci seçeneği de metin.
+  Birincil ledge yazısı `--play-cta-ink` #0F2233. Hareket: diyalog 200 ms, alt sayfa ve çekmece
+  250 ms, çıkışlar 150 ms. **Kullanım:** geri alınamayan onayda `confirm({ destructive: true })`:
+  ledge `Button variant="danger"` olur, varsayılan ikon kırmızı, odak "Vazgeç"te başlar (Enter hiçbir
+  şeyi sonlandırmaz). Bayrak şu an: Koçum'da ve koçun öğrenci sayfasında bağlantıyı sonlandırma, görev
+  silme ve kaldırma, etkinlik iptali, analiz, AI sohbeti ve şablon silme, hesabı silme. Topluluktan
+  ayrılma ve abonelik iptali geri alınabildiği için nötr. **Gotcha:** Toast'ların
+  `/visuals/toast-*.svg` sanat yuvası kalktı: dosyalar hiç gelmemişti, her
+  toast önce 404 alıp yedek ikona düşüyordu. Çekmecenin alt çizgili sekmeleri büyük harf değil;
+  kategori ikonunda renk yalnız insan koç (mürekkep), AI koç (menekşe) ve başarı (seri mercanı) için.
+  Defterlerim'deki silme onayı paralel oturumun dosyasında olduğu için henüz bayraksız. İlgili:
+  `packages/ui/src/components/{dialog,bottom-sheet,notification-drawer,toast}/*`, `modal.tsx`,
+  `button.tsx`, `theme.css`, `transitions/{index,tabs-sliding}.css`,
+  `lib/{mentor-dialog.ts,dialog-lead.tsx,toast-lead.tsx,notification-drawer-shell.tsx}`,
+  `e2e/mentorship.spec.ts` (yıkıcı onay testi).
+
+- **2026-09-29 — Diyalog odağı: tanımlı, kapalı devre, geri dönen.** Bağımsız incelemenin
+  bulgusu: yıkıcı onayda odak "Vazgeç"te başladığı için ekran okuyucu sonucu hiç okumuyordu ve
+  tek Tab odağı diyalogdan arkadaki sayfaya kaçırıyordu. Artık panelin `aria-describedby`'ı mesajı
+  gösteriyor, Tab / Shift+Tab panelin içinde dönüyor, diyalog kapanınca odak onu açan kontrole
+  geri gidiyor (o kontrol eylemle kalktıysa gitmiyor; açıkken yerine gelen diyalog ilk açanı
+  korur). Çekmecenin masaüstü kapanışı 150 ms'e eşitlendi (JS zamanlayıcısıyla aynı). **Gotcha:**
+  rol bilerek `dialog` kaldı (`alertdialog` değil): testler ve gerçek API senaryoları
+  `getByRole("dialog")` ile buluyor. İlgili: `packages/ui/src/components/dialog/{dialog-provider,dialog-panel}.tsx`,
+  `apps/web/src/app/globals.css`, `e2e/mentorship.spec.ts` (Tab döngüsü, açıklama, odağın dönüşü).
+
+- **2026-09-29 — Kit `Modal`: `banner` ve `placement="sheet"` (redesign turu 2, Durak A).**
+  `placement="sheet"` lg altında ekranın altına yaslanır (üst köşeler `--play-sheet-radius`, tutamak,
+  `--shadow-sheet`, güvenli alan boşluğu; 250 ms yukarı kayar, 150 ms'de çıkar), lg ve üstünde
+  ortada kalır; `banner` başlığın üstünde kenardan kenara çizilir (masa kurmada tema karuseli).
+  Scrim'de başlayıp scrim'de biten bir basış pencereyi kapatır; içeriden başlayıp dışarı sürüklenen
+  bir metin seçimi kapatmaz. Varsayılan `center` davranışı değişmedi. **Gotcha:** sınıf listesinde
+  template deliğini bir sınıfın sonuna yapıştırma (`…scrim)]${x}`): Tailwind tarayıcısı adayı
+  okuyamaz ve kural hiç derlenmez. Bu durakta `backdrop:bg-[var(--color-scrim)]` böyle kayboldu ve
+  pencereler karartmasız açıldı; önüne boşluk koy. `e2e/study-session.spec.ts` artık `::backdrop`
+  rengini kontrol ediyor. İlgili: `packages/ui/src/components/modal.tsx`.
+
+- **2026-10-01 — Bare panel rail icons and compact journey progress.** Membership perks, daily
+  quest rows and the vision heading keep their 40 px alignment slots but remove the coloured icon
+  wells; Lucide glyphs stay 20 px at stroke 1.75 with existing semantic inks. Usage is unchanged.
+  `JourneyLevelCompact` selects `appearance="play"` on `JourneyLevelProgressBar`: a 12 px blue pill
+  with the onboarding highlight, now backed by the global `--play-cta-shine` token. This applies
+  to panel, profile balance and community summary; detailed level bars retain the default look.
+  Gotchas: fill still uses backend `progress.percent`, no previous-step animation; chest rows,
+  provenance chips, badges and buttons keep their surfaces. Related: dashboard
+  `_components/{membership-card,daily-quests-card,vision-board-card}.tsx`,
+  `components/journey-levels/{journey-level-compact,journey-level-progress}.tsx`,
+  `packages/ui/src/theme.css`, `DESIGN.md`, `e2e/panel.spec.ts`.
+
+- **2026-10-01 — Onboarding-style daily quest progress.** Daily quest rows now select
+  `ProgressLine appearance="play"`: a 12 px rounded track, upper shine stripe and 300 ms ease-out
+  fill transition. Usage and accessible progress values stay the same; completed quests retain
+  success green. Other `ProgressLine` callers keep the default 8 px line. Related:
+  `components/panel/progress-line.tsx`, `dashboard/_components/daily-quests-card.tsx`,
+  `e2e/panel.spec.ts`, `DESIGN.md`.
+
+- **2026-10-02 — Vision note provenance matches CompanionBubble.** The vision card's coach label
+  is now a plain blue, bold caption with the same 14 px premium Sparkles glyph and spacing as
+  `CompanionBubble`, replacing the bordered Chip. Usage and premium gating are unchanged. Related:
+  `dashboard/_components/vision-board-card.tsx`, `components/panel/companion-bubble.tsx`.
+
+- **2026-10-03 — Phone purpose, trial retention and pending payment recovery (APP-114).**
+  Phone verification explains eligible coach/trial/sponsored Premium access without marketing
+  consent; choosing a trial explains that its phone-use record remains for 12 months after a
+  number change or account deletion. Subscription and paywall resume the owner-only stored URL
+  for either trial or paid `INCOMPLETE` checkouts. Unknown outcomes show wait/support and suppress
+  new purchases and cancellation. A failed checkout re-reads backend state before another attempt;
+  a failed recovery read keeps purchase unavailable until reload/reopen. Known pending cancellation
+  follows the provider-confirmed API path. Related: `components/phone-verification-card.tsx`,
+  `components/premium/{subscription-purchase-choice,pending-checkout,premium-paywall-modal}.tsx`,
+  `subscription/_components/subscription-shell.tsx`, `messages/{tr,en}.json`,
+  `e2e/phone-verification.spec.ts`. OTP resend/expiry remain server deadlines; frontend eligibility
+  is never inferred from the entered phone or successful SMS alone.
+  The paywall body scrolls independently below its fixed header and above its checkout footer;
+  desktop height follows the kit modal's 90dvh cap. The phone flow remains reachable on mobile
+  and desktop, covered by a real clipboard-paste and control-bounds browser regression.
+
+- **2026-10-04 — SMS browser regression stabilization (APP-114).** The paywall regression waits
+  for the sheet entrance to settle before measuring its viewport bounds and checks the refreshed
+  trial action after verification removes the phone card. The same suite checks Turkish and
+  English verification purpose/privacy links and the trial's 12-month retention notice. Usage:
+  run `e2e/phone-verification.spec.ts` on mobile and desktop, optionally with
+  `PLAYWRIGHT_BASE_URL` for an existing development server. API responses remain mocked; real
+  SMS delivery and provider checkout are outside this browser check. Related:
+  `apps/web/e2e/phone-verification.spec.ts`.
+
+- **2026-10-04 — Load paywall SMS dependencies on demand (APP-114).** The shared provider
+  dynamically imports the existing portal only when a Premium action opens it, keeping the
+  phone form and paywall views off the dashboard's initial download. Usage:
+  open Premium as before; the first opening may wait for its client chunk. Consent, trial
+  eligibility and pending checkout recovery still come from the same API. The 38 phone browser
+  cases pass on mobile and desktop after this boundary change. Related:
+  `apps/web/src/lib/premium-paywall.tsx`, `apps/web/e2e/phone-verification.spec.ts`.
+  Production budget ledger: dashboard route-attributable JS decreased from 862,946 to
+  833,212 bytes and total JS from 1,415,318 to 1,385,584 bytes, a 29,734-byte reduction in
+  both measurements. Keep the boundary for that measured SMS gain; the dashboard budgets still
+  fail by 54,972 and 59,504 bytes. The unchanged 103,161-byte validation/Zod chunk is retained
+  by the existing `NotebookOpeningOverlay` -> `notebook-contents-cache` -> `lib/notebook`
+  -> notebook upload constants import. Phone form/paywall chunks are absent from the initial
+  dashboard manifest. Article JS remains unchanged at 436,851 route-attributable and 989,223
+  total bytes. The remaining notebook import issue is outside the SMS change.

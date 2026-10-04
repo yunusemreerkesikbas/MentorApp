@@ -7,7 +7,8 @@
 
 Notifications is the async backbone. It owns the `JobQueuePort` adapter (Postgres `jobs` table,
 `FOR UPDATE SKIP LOCKED`), an auto-polling `JobRunnerService` (handler registry + retry/dead-letter),
-the email pipeline (`EMAIL_PORT` — Postmark when `POSTMARK_TOKEN` set, logger fallback in dev), and
+the email pipeline (`EMAIL_PORT` = `RoutingEmailAdapter`: Postmark, or the stdout console sink in dev
+tooling when `dev.email.console_enabled` is on or `POSTMARK_TOKEN` is unset), and
 web push (`push_subscriptions`, `notification_preferences`, `notification_deliveries` dedupe). It also
 hosts the **Config Registry** — the runtime, admin-editable business-config mechanism distinct from
 `@nestjs/config` (env/secrets). Domain triggers: payments events → dunning/welcome emails; coaching
@@ -25,7 +26,13 @@ daily reminder (no session + no mood today).
   `Authorization: Bearer <CRON_SECRET>`; secret comparison is constant-time (`crypto.timingSafeEqual`).
 - **Email:** `EMAIL_PORT` moved to NotificationsModule (was identity). Identity auth emails enqueue
   `notifications.send-email`. Postmark HTML escape + http(s) URL validation (`email-html.util.ts`).
-- **Web Push:** VAPID keypair; `sw.js` + profil notification settings. Endpoints are restricted to
+  `RoutingEmailAdapter` picks the sink per message; `LoggerEmailAdapter` writes one
+  `[email:console]` line to stdout (the pino boundary drops freeform text) and refuses outside dev
+  tooling (`isDevToolingAllowed`, driven by `APP_ENV`).
+- **Web Push:** VAPID keypair. The browser subscribes through `apps/web/src/lib/web-push.ts`, driven
+  by the push toggle in profile/settings (on subscribes, off unsubscribes); `sw.js` shows and routes
+  the notification. Event-driven senders opt in per call with
+  `createFromTemplate(..., { push })` (APP-094). Endpoints are restricted to
   known browser push providers over HTTPS/443, DNS is resolved before registration and every send,
   private/reserved destinations and redirects are rejected, and requests use bounded timeouts.
   Daily reminders dedupe via `notification_deliveries` key `daily-reminder:{userId}:{YYYY-MM-DD}`.
@@ -37,7 +44,9 @@ daily reminder (no session + no mood today).
   (`CONFIG_CATALOG` key → { category, type, Zod schema, default, sensitive, description }); DB stores
   **overrides only** (`config_overrides`, key PK, value jsonb). Admins can't invent keys; values
   validated against the key's schema (bounds in the schema). In-memory cache (lazy load,
-  invalidate-on-write; process-scoped — fine for MVP single Render instance).
+  invalidate-on-write; process-scoped — fine for MVP single Render instance). `devOnly` entries
+  (boolean dev switches, category `dev`) do not exist outside dev tooling: unlisted, 404 on write,
+  read as `false` even with a stored override.
 - **Feature flags ARE config-registry entries** (one mechanism, not two): `ai.enabled` (true, §4/§8 AI
   kill-switch), `economy.enabled` (false), `signup.enabled` (true). `FeatureFlag` key consts exported.
 - **Secrets never in the registry** — values are plaintext in DB + audit trail; secrets stay in env only.
@@ -49,6 +58,7 @@ daily reminder (no session + no mood today).
 CRON_SECRET=...min-32-chars...
 POSTMARK_TOKEN=          # optional dev; required in production
 POSTMARK_FROM=noreply@example.com
+# APP_ENV=staging        # staging only (runs NODE_ENV=production); unlocks dev.email.console_enabled
 VAPID_PUBLIC_KEY=...
 VAPID_PRIVATE_KEY=...
 NEXT_PUBLIC_VAPID_PUBLIC_KEY=...   # web profil push subscribe
@@ -82,6 +92,12 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 |---|---|
 | `POST /v1/internal/cron/process-jobs` | Run queued jobs (CRON_SECRET-gated) |
 | `POST /v1/internal/cron/dispatch-daily-reminders` | Dispatch daily reminder jobs (CRON_SECRET-gated) |
+| `POST /v1/internal/cron/dispatch-notebook-reviews` | Dispatch due notebook review reminders (CRON_SECRET-gated) |
+| `POST /v1/internal/cron/dispatch-mentorship-risk-digest` | Coach risk digest + follow-up due summaries, 07:00 UTC (CRON_SECRET-gated) |
+| `POST /v1/notifications/push-subscriptions` | Register this browser's push endpoint (JWT; endpoint policy + per-user limit) |
+| `DELETE /v1/notifications/push-subscriptions` | Remove a push endpoint (JWT; body `endpoint`) |
+| `GET /v1/notifications/preferences` | Email / push / campaign switches (JWT) |
+| `PATCH /v1/notifications/preferences` | Update the switches (JWT) |
 | `GET /v1/notifications` | List in-app notifications (JWT; query: `category`, `page`) |
 | `PATCH /v1/notifications/read-all` | Mark all unread as read (JWT; 204) |
 | `PATCH /v1/notifications/:id/read` | Mark one notification as read (JWT) |
@@ -99,6 +115,81 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-27 · Celebration visuals load only when queued.** The app-wide notification shell
+  now loads achievement art and the journey spotlight when an unseen celebration is present.
+  Usage: the notification and celebration flow is unchanged. Gotcha: first display fetches the
+  relevant visual chunk; the installed-Chrome celebration suite covers both paths. Related:
+  `apps/web/src/lib/notification-drawer-shell.tsx`,
+  `apps/web/e2e/journey-level-celebration.spec.ts`.
+
+- **2026-09-24 — Stage/dev konsol e-postası, admin anahtarı `dev.email.console_enabled`.** Stage/dev'de
+  e-posta onay akışları gerçek inbox olmadan çalışıyor. **Bulgu:** e-posta OTP akışı yok; bütün onaylar
+  link (kayıt, yeniden gönder, e-posta değişikliği → `/eposta-dogrula?token=`; şifre sıfırlama →
+  `/sifre-sifirla?token=`). Eski "link api logunda" davranışı fiilen ölüydü: 2026-09-05 sertleştirmesinin
+  pino `logMethod` hook'u her serbest mesajı `"application log"` yapıyor, `LoggerEmailAdapter`'ın satırı
+  hiçbir yere düşmüyordu. **Ne yapıldı:** `EMAIL_PORT` artık `RoutingEmailAdapter`: her mesajda
+  `dev.email.console_enabled` açıksa ya da `POSTMARK_TOKEN` yoksa `LoggerEmailAdapter`, değilse
+  Postmark. `LoggerEmailAdapter` stdout'a tek satır yazar: `[email:console] <alıcı> <şablon>
+  <değişkenler JSON>` (link dahil). Ortam sinyali yeni `APP_ENV` (`development|staging|production`;
+  boşsa NODE_ENV'den türer, `production` → `production`). `isDevToolingAllowed` false iken (prod) iki
+  kilit: registry `devOnly` anahtarı listelemez, yazmaz (404), DB'de override kalsa bile `false` okur;
+  `LoggerEmailAdapter` da yazmayı reddeder, job düşer. **Kullanım:** stage servisine `APP_ENV=staging`
+  (stage NODE_ENV=production koşar, prod env kilitleri geçerli kalır) → admin → Ayarlar → "Test ortamı
+  (stage/dev)" → anahtar varsayılan Açık; kapatınca prod gibi Postmark. Local'de `APP_ENV` gerekmez.
+  Linki bulmak için API çıktısında `[email:console]` ya da `eposta-dogrula` ara. **Gotchas:** (1) Satır
+  istek anında değil job çalışınca basılır (`notifications.jobs.poll_interval_seconds`, varsayılan 10 sn).
+  (2) Stage logunda alıcı adresi ve tek kullanımlık token bilerek bulunur; security-release-checklist'teki
+  log denetimi prod içindir. (3) Konsol modu bütün e-postaları kapsar (dunning, risk özeti, takip dahil).
+  (4) Anahtar kapalı ama token yoksa yine konsol: gönderecek sağlayıcı yok. Anahtar `sensitive`:
+  kapatırken (gerçek gönderime geçerken) admin onay ister. `PostmarkEmailAdapter`'ın token yokken
+  loglama yolu silindi, oraya artık yalnız token varken gelinir. Testte `test/quiet-console-email.ts`
+  (vitest `setupFiles`) arka plan job yoklayıcısının bastığı `[email:console]` satırlarını düşürür;
+  bu satırları doğrulayan spec stdout'u kendisi spy'lar. (5) Bypass kodu (`123456`)
+  bilerek yok, tüketen OTP akışı yok. SMS OTP gelince `devOnly` düzenine eklenir; boolean olmayan dev
+  anahtarı registry'de ayrı bir prod değeri ister (`get()` içindeki `ponytail:` notu). (6) `render.yaml`
+  prod'a `APP_ENV=production` açıkça yazıldı; stage kopyası bunu bilerek değiştirir. **İlgili:**
+  `shared/adapters/email/{routing,logger}-email.adapter.ts`,
+  `common/config/{config.catalog,config-registry.service}.ts`, `config/env.validation.ts`,
+  `notifications.module.ts`, `apps/admin/src/app/(general)/config/{page.tsx,config-hints.ts}`,
+  `.env.example`, `render.yaml`, `docs/core/security-release-checklist.md`.
+- **2026-09-14 — Web push yeniden bağlandı, koç→öğrenci olaylarına push (APP-094).** Denetimde
+  push'un uçtan uca ölü olduğu çıktı: APP-017 (`10c85d16`, 2026-06-30) bildirim ayarları bileşenini
+  yeniden yazarken `serviceWorker.register` + `pushManager.subscribe` + abonelik POST'unu silmişti.
+  Toggle yalnız `pushEnabled` yazıyordu; 15 dk etkinlik hatırlatması dahil her push işi sıfır
+  aboneliğe gidiyordu. **İstemci:** `lib/web-push.ts` (destek, izin, abonelik yardımcıları).
+  Toggle açılınca izin ister, SW'yi kaydeder, abone olur ve uç noktayı API'ye yollar; kapanınca
+  önce tercihi kaydeder, sonra aboneliği siler. Toggle yalnız bu tarayıcı gerçekten alıyorsa açık
+  görünür (DB bayrağı herkeste varsayılan `true`). `sw.js` açık sekmeyi odaklayıp yönlendiriyor
+  (`clients.claim` + `navigate`); yeni pencere yalnız sekme yoksa. **API:**
+  `createFromTemplate(..., { push: { template, dedupeKey } })`. Push yalnız in-app satırı gerçekten
+  yazıldıysa ve tercih satırı `pushEnabled` ise kuyruğa girer. Tercih satırı yoksa kullanıcı hiç
+  abone olmamıştır (`subscribePush` satırı oluşturur), iş kuyruğa hiç girmez. **Push alan olaylar
+  (yalnız öğrenci):** koç ödev verdi, düzenledi ya da sildi (`mentorship.plan`,
+  `mentorship-plan:{studentId}:{UTC günü}`; üçü tek anahtar, günde 1 push) · takip kararı paylaşıldı
+  (`mentorship.followup-shared`, karar + version) · etkinlik oluşturuldu, güncellendi, iptal edildi
+  (`coaching.plan-event-change`, `plan-event-push:{step}:{eventId}`, güncellemede + gün). Koça push
+  yok: risk özetindeki "koçun gününü bölmemeli" kararı. `SendPushHandler` boş abonelik listesinde
+  artık teslimat kaydetmiyor; aynı günlük anahtarla sonradan abone olanın push'u yutuluyordu.
+  **Takip-vadesi dispatcher'ı:** koç başına hata izolasyonu; `sent` yalnız yeni satırı sayar.
+  **Kullanım:** API `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` ve web `NEXT_PUBLIC_VAPID_PUBLIC_KEY`
+  aynı public key ile set → `/ayarlar` → Push bildirimleri. Yeni push göndericisi: listener'da
+  `push` opsiyonu ver, şablonu `DeliveryTemplate`'e ekle. **Gotchas:** (1) Web anahtarı build'e
+  gömülür; değişince web yeniden build edilmeli ve API anahtarıyla eşleşmeli (`render.yaml` iki
+  servis, `sync: false`). (2) iOS Safari push'u yalnız ana ekrana eklenmiş PWA'ya verir; repoda
+  manifest yok, orada toggle "desteklemiyor" der. (3) Push metni in-app kopyasıyla aynıdır ve istek
+  bağlamının diliyle ya da `tr` ile çözülür; `users`'ta locale olmadığı için alıcının dili bilinmez.
+  (4) Tarayıcı aboneliği döndürürse (`pushsubscriptionchange`) yeniden abonelik yok; eski uç nokta
+  ilk 404/410'da silinir, kullanıcı ayarlardan tekrar açar. (5) `ci.yml`'da e2e için sahte
+  `NEXT_PUBLIC_VAPID_PUBLIC_KEY` var; yerelde anahtarsız build'de ilgili e2e atlanır. (6)
+  `profile.spec.ts` APP-080'den beri düşüyordu: mock'ta `/v1/users/me/auth-accounts/google` yoktu,
+  boş 204 gövdesinde `GoogleAccountCard` `.enabled` okuyup sayfayı çökertiyordu; mock eklendi.
+  **İlgili:**
+  `notifications.service.ts`, `send-push.handler.ts`, `mentorship-events.listener.ts`,
+  `plan-event-notifications.listener.ts`, `mentorship-followup-due.service.ts`,
+  `shared/notifications/constants.ts`, `apps/web/src/lib/web-push.ts`,
+  `(app)/profile/_components/notification-settings.tsx`, `apps/web/public/sw.js`,
+  `apps/web/e2e/profile.spec.ts`, [`mentorship.md`](./mentorship.md).
+
 - **2026-09-12 — Follow-up notification version lock.** Shared-event delivery rechecks PENDING + OPEN
   without matching `followups.version`; responded events match `response_version` so a later date
   bump cannot swallow the queued notify. Usage: unchanged templates and dedupe keys
@@ -111,7 +202,7 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   notes are never copied into notifications or email. Due follow-ups use the existing job queue and
   daily dispatcher, one summary per coach/Istanbul day, with preference-aware email and live access/
   due-state checks at delivery. Usage: enable mentorship and its followups flag, create a dated
-  follow-up, and run `POST /v1/internal/cron/dispatch-daily-reminders`. Closed records, ended links, and previous relationship
+  follow-up, and run `POST /v1/internal/cron/dispatch-mentorship-risk-digest`. Closed records, ended links, and previous relationship
   periods do not produce due notifications. Related: notifications followup service/listener and
   mentorship's exported followup notification read seam.
 
@@ -406,6 +497,11 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   çağrılmıyor).
 - Duyuru için push/e-posta kanalları · premium/free ve tekil kullanıcı hedefleme · kategori bazlı
   bildirim tercihi (`notification_preferences` migration'ı) · duyuru okunma oranı metriği.
+- **Koç↔öğrenci denetiminden kalanlar (APP-094):** koç tamamlama bildirimlerini günlük özete
+  çevirme (20 öğrenci = akşam 20 satır) · etkinlik oluştur/güncelle in-app dedupe'u · kullanıcı
+  locale kolonu (push ve e-posta dili) · `pushsubscriptionchange` / açılışta abonelik yeniden
+  senkronu · iOS için PWA manifest · takip topic'lerinin `MentorshipEventTopic`'e taşınması · takip
+  bildirimleri için API e2e.
 - Re-validate overrides on read against the (possibly evolved) catalog schema · cache the in-flight
   load promise · optionally Turkish catalog descriptions · multi-instance cache invalidation (pub/sub).
 

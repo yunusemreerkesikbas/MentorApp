@@ -44,6 +44,7 @@ function setup(
     open?: boolean;
     existing?: MentorshipApplicationRow | null;
     emailVerified?: boolean;
+    phoneVerified?: boolean;
   } = {},
 ) {
   const applications = {
@@ -70,6 +71,7 @@ function setup(
     addRole: vi.fn(async () => undefined),
     removeRole: vi.fn(async () => undefined),
     isEmailVerified: vi.fn(async () => options.emailVerified ?? true),
+    isPhoneVerified: vi.fn(async () => options.phoneVerified ?? true),
   };
   const service = new MentorshipApplicationService(
     applications as never,
@@ -89,6 +91,16 @@ const codeOf = async (fn: () => Promise<unknown>): Promise<string> => {
 };
 
 describe("MentorshipApplicationService.register", () => {
+  it.each([
+    [{ phoneVerified: false }, "AUTH_PHONE_REQUIRED"],
+    [{ emailVerified: false }, ErrorCode.MENTORSHIP_EMAIL_NOT_VERIFIED],
+  ] as const)("requires verified contact before activation: %j", async (options, code) => {
+    const { service, applications, users } = setup(options);
+    await expect(service.register(USER, INPUT, NOW)).rejects.toMatchObject({ code });
+    expect(applications.register).not.toHaveBeenCalled();
+    expect(users.addRole).not.toHaveBeenCalled();
+  });
+
   it("writes an ACTIVE row and grants COACH", async () => {
     const { service, applications, users } = setup();
     await expect(service.register(USER, INPUT, NOW)).resolves.toMatchObject({ status: "ACTIVE" });
@@ -174,6 +186,12 @@ describe("MentorshipApplicationService.register", () => {
 });
 
 describe("MentorshipApplicationService.assertCanInvite", () => {
+  it("refuses an ACTIVE registry coach without verified phone, including manually granted roles", async () => {
+    const { service } = setup({ existing: row(), phoneVerified: false });
+    await expect(service.assertCanInvite(USER)).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
+    await expect(service.canInvite(USER)).resolves.toBe(false);
+  });
+
   it("passes for a verified, active coach", async () => {
     const { service } = setup({ existing: row({ status: "ACTIVE" }), emailVerified: true });
     expect(await codeOf(() => service.assertCanInvite(USER))).toBe("NO_ERROR");
@@ -214,6 +232,13 @@ describe("MentorshipApplicationService.assertCanInvite", () => {
 });
 
 describe("MentorshipApplicationService.setStatus", () => {
+  it("cannot activate an unverified phone through the admin registry", async () => {
+    const { service, applications, users } = setup({ existing: row({ status: "SUSPENDED" }), phoneVerified: false });
+    await expect(service.setStatus(USER, { status: "ACTIVE", reviewNote: null }, ADMIN, NOW)).rejects.toMatchObject({ code: "AUTH_PHONE_REQUIRED" });
+    expect(applications.setStatus).not.toHaveBeenCalled();
+    expect(users.addRole).not.toHaveBeenCalled();
+  });
+
   it("revokes COACH before writing a non-active standing", async () => {
     // Same ordering rule, mirrored: a crash after the revoke leaves a stale ACTIVE row and no role,
     // which is powerless. The reverse would leave a suspended row and a working invite code.
@@ -264,6 +289,17 @@ describe("MentorshipApplicationService.setStatus", () => {
       { status: "ACTIVE", reviewNote: null, reviewedBy: ADMIN },
       NOW,
     );
+  });
+});
+
+describe("MentorshipApplicationService.getRegistrationState", () => {
+  it("reports the authoritative phone state before registration", async () => {
+    const { service } = setup({ phoneVerified: false });
+    await expect(service.getRegistrationState(USER)).resolves.toMatchObject({
+      registration: null,
+      emailVerified: true,
+      phoneVerified: false,
+    });
   });
 });
 

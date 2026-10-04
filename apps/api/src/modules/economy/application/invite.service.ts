@@ -1,3 +1,5 @@
+import { PaymentEvidenceService } from "../../payments/application/payment-evidence.service";
+import type { PaymentSucceeded } from "../../payments/domain/payments.events";
 import { HttpStatus, Injectable, Logger } from "@nestjs/common";
 import { randomBytes } from "node:crypto";
 import { Currency } from "@mentor/types";
@@ -20,7 +22,7 @@ const genCode = (): string => `MENTOR-${randomBytes(6).toString("hex").toUpperCa
 
 /**
  * Invite → conversion → coin (§3 light economy slice 2a). Reward fires ONLY when an invited user's
- * subscription activates (forward-only, verified). Reward goes to the inviter; idempotent + capped.
+ * first positive payment succeeds (forward-only, verified). Reward goes to the inviter; idempotent + capped.
  */
 @Injectable()
 export class InviteService {
@@ -32,6 +34,7 @@ export class InviteService {
     private readonly economy: EconomyService,
     private readonly quests: QuestService,
     private readonly config: ConfigRegistryService,
+    private readonly paymentEvidence: PaymentEvidenceService,
   ) {}
 
   /** The user's stable invite code (created on first request). */
@@ -74,37 +77,33 @@ export class InviteService {
   }
 
   /**
-   * On the invited user's subscription activation: flip PENDING→CONVERTED (idempotent) and reward
+   * On the invited user's first positive successful payment: flip PENDING→CONVERTED (idempotent) and reward
    * the inviter. Called by the payments-event listener. Reward is capped via EconomyService.
    */
-  async onInvitedConverted(invitedUserId: string): Promise<void> {
-    const redemption = await this.repo.markConverted(invitedUserId);
-    if (!redemption) return; // no pending redemption → nothing to reward (idempotent)
+  async onInvitedConverted(event: PaymentSucceeded): Promise<void> {
+    if (event.amountMinor <= 0) return;
     const reward = await this.config.get("economy.invite.reward_coin");
-    if (reward <= 0) return;
-    // Conversion is a fact (already marked CONVERTED); the reward is best-effort within the coin caps.
-    // A cap denial is the abuse shield working as intended (info, not an error). Other failures are
-    // logged but swallowed so this event listener never throws uncaught (reconcile = backlog/outbox).
-    try {
-      await this.economy.grant(redemption.inviterUserId, Currency.COIN, reward, {
-        reason: EconomyLedger.INVITE_CONVERTED_REASON,
-        refType: EconomyLedger.INVITE_REF_TYPE,
-        refId: redemption.id,
-        enforceLimits: true,
-      });
-    } catch (err) {
-      if (err instanceof DomainError && err.code === ErrorCode.ECONOMY_LIMIT_EXCEEDED) {
-        this.logger.log(
-          { inviterUserId: redemption.inviterUserId, redemptionId: redemption.id },
-          "invite reward skipped — inviter over coin cap",
-        );
-      } else {
-        this.logger.error(
-          { err, inviterUserId: redemption.inviterUserId, redemptionId: redemption.id },
-          "invite reward failed (conversion recorded, reward not granted)",
-        );
+    await this.repo.withServiceTx(async (tx) => {
+      const redemption = await this.repo.lockPending(event.userId, tx);
+      if (!redemption || redemption.redeemedAt > event.paidAt) return;
+      if (await this.paymentEvidence.isRefunded(event.userId, event.paymentId)) {
+        await this.repo.recordPayment(redemption.id, event.paymentId, "REFUNDED", tx);
+        return;
       }
-    }
+      let outcome = reward > 0 ? "GRANTED" : "DISABLED";
+      if (reward > 0) {
+        try {
+          await this.economy.grantInServiceTx(redemption.inviterUserId, Currency.COIN, reward, {
+            reason: EconomyLedger.INVITE_CONVERTED_REASON,
+            refType: EconomyLedger.INVITE_REF_TYPE, refId: redemption.id,
+          }, tx);
+        } catch (err) {
+          if (!(err instanceof DomainError) || err.code !== ErrorCode.ECONOMY_LIMIT_EXCEEDED) throw err;
+          outcome = "CAP_DENIED";
+        }
+      }
+      await this.repo.recordPayment(redemption.id, event.paymentId, outcome, tx);
+    });
   }
 
   /**
@@ -112,17 +111,21 @@ export class InviteService {
    * reward. Refund-only policy — a period-end cancel keeps the reward (the period was paid).
    * Clamp-to-zero + idempotent (EconomyService.reverse). Called by the refund-event listener.
    */
-  async onInvitedRefunded(invitedUserId: string): Promise<void> {
-    const redemption = await this.repo.findRedemptionByInvited(invitedUserId);
-    if (!redemption || redemption.status !== "CONVERTED") return;
+  async onInvitedRefunded(invitedUserId: string, sourcePaymentId?: string): Promise<void> {
+    await this.repo.withServiceTx(async (tx) => {
+    const redemption = await this.repo.lockRedemption(invitedUserId, tx);
+    if (!sourcePaymentId || !redemption || redemption.status !== "CONVERTED" || redemption.sourcePaymentId !== sourcePaymentId || redemption.rewardOutcome !== "GRANTED") return;
     try {
-      const reversed = await this.economy.reverse(redemption.inviterUserId, {
+      const reversed = await this.economy.reverseInServiceTx(redemption.inviterUserId, {
         originalRefType: EconomyLedger.INVITE_REF_TYPE,
         originalRefId: redemption.id,
         reason: EconomyLedger.INVITE_REVERSAL_REASON,
         refType: EconomyLedger.INVITE_REVERSAL_REF_TYPE,
         refId: redemption.id,
-      });
+      }, tx);
+      // Persist settlement even if nothing remained to debit. A replay must not claw back
+      // unrelated Coin earned later when the original reward had already been spent.
+      await this.repo.markRewardReversed(redemption.id, tx);
       if (reversed > 0) {
         this.logger.log(
           { inviterUserId: redemption.inviterUserId, redemptionId: redemption.id, reversed },
@@ -130,12 +133,14 @@ export class InviteService {
         );
       }
     } catch (err) {
-      // Refund is already recorded in payments; a reversal failure must not break the flow.
+      // Propagate to the payment outbox job so a transient failure is retried.
       this.logger.error(
         { err, inviterUserId: redemption.inviterUserId, redemptionId: redemption.id },
         "invite reward reversal failed",
       );
+      throw err;
     }
+    });
   }
 
   async summary(inviterUserId: string): Promise<InviteSummary> {

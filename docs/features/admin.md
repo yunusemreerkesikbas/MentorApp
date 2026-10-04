@@ -91,13 +91,58 @@ targetId, before, after })` for rich diffs.
 | `GET/POST /admin/content/exams` · `POST …/:slug/events` · `DELETE …/:slug/events/:type` | Exam-calendar editor (ADMIN/EDITOR) |
 | `GET /admin/users/:id/subscription` · `POST …/refund` · `POST …/cancel` | Subscription view / refund / cancel (FINANCE) |
 | `GET /admin/metrics` | KPI snapshot (read-only, no audit) |
+| `GET /admin/metrics/ai` | LLM cost windows, model/feature split, top spenders, monthly budget (read-only) |
+| `GET /admin/metrics/sponsorship` | Coach-sponsored seats + cohort cost (read-only) |
 | `GET /admin/metrics/economy` | Coin/XP faucet + sink breakdown, float, faucet reach (read-only) |
+| `GET /admin/metrics/coach-feedback` | Coach reply 👍/👎 satisfaction + recent downrated replies (read-only) |
 | `GET /admin/config` · `PATCH /admin/config/:key` | Config/flag editor (SUPER_ADMIN) |
 | `GET/POST /admin/announcements` · `POST …/:id/send` · `DELETE …/:id` | Duyuru (broadcast) editörü (SUPER_ADMIN, audited) |
 
 ## Geliştirmeler (timeline)
 
-- **Koç vetting kuyruğu (APP-082, 2026-09-06)** — Elle `POST /v1/admin/users/:id/roles/COACH`
+- **2026-10-03 · Safe phone conflicts when reactivating an account (APP-114).**
+  `PATCH /v1/admin/users/:id/status` returns localized `AUTH_PHONE_UNAVAILABLE` (409) when
+  another active account has verified the suspended user's former phone. The failed update
+  leaves the account suspended; resolve the phone ownership conflict before retrying activation.
+  Only the active-phone unique index is translated, so unrelated database failures remain visible
+  to normal error handling. Related: `admin-users.service.ts`, its unit spec, and
+  `test/admin-phone-reactivation.e2e-spec.ts` under `apps/api`.
+
+- **2026-09-24 · Login fields have real labels.** Stage 4 Chrome QA found that the visible email
+  and password labels were not associated with their inputs. The admin login form now uses matching
+  `htmlFor` and `id` values so keyboard and assistive-technology users can identify the fields, and
+  role-gated browser tests can select them by accessible name. Usage is unchanged. Related:
+  `apps/admin/src/app/login/page.tsx`, `apps/web/e2e/qa-stage4-real-api.spec.ts`.
+
+- **Independent admin session (2026-09-23)** — Admin login, refresh, and logout now call
+  `/v1/auth/admin/{login,refresh,logout}`. Its `mentor_admin_refresh` cookie is separate from web's;
+  a second tab restores the admin session from that cookie, while logging out of admin leaves web
+  signed in. After rollout, sign in once to replace the retired shared cookie. A removed panel role
+  rejects refresh and sends the user to `/login`. Related: `apps/admin/src/{lib/apiClient.ts,
+  contentApi/authProvider.tsx,app/login/page.tsx}` and the identity auth controller.
+
+- **Ayar hint'leri Türkçe (2026-09-17)** — `/config` info ikonu hover'da kısa Türkçe açıklama
+  gösterir (`config-hints.ts`, katalogdaki 133 anahtar). Yeni anahtar çevirisi yoksa API
+  `description` (İngilizce) yedek. Depolama kategorisi etiket aldı. Kullanım: admin `/config`,
+  anahtarın yanındaki info ikonu. Gotcha: metin admin kopyasıdır, öğrenci voice.md'ye bağlı
+  değil. İlgili: `apps/admin/src/app/(general)/config/*`.
+
+- **Anasayfa Duralux widget kit (2026-09-16)** — Admin `/` KPI kartları `MetricCard` yerine paylaşılan
+  Duralux-tarzı widget'lara geçti: `KpiStatRow` (CustomersStatistics), `ProgressStatRow`
+  (SiteOverviewStatistics, üç nokta menü yok), `MetricStrip` (EmailOverview), `WindowSparkBars`
+  (EstimateBarChart, yalnız d1/d7/d30), `BucketDonut` (LeadsOverviewChart, CardHeader aksiyonları
+  yok). Demo sayfalar (`widgets/statistics|charts`, `dashboards/analytics`) dokunulmadı.
+  **Kullanım:** bölümler DTO'yu `KpiItem` / `WindowSeries` / `BucketItem`'a map eder; fetch
+  `useAdminResource`. SUPPORT/FINANCE (ve umbrella) metrikleri görür, EDITOR yalnız HomeCards.
+  **Gotcha:** 3 çubuklu bar rolling window toplamıdır (24s / 7g / 30g iç içe pencereler), günlük
+  eğri değil. Tarih filtresi yok. Sahte MoM / 12 aylık sparkline yok. Top spender satırı
+  `/users/:id`'ye gider.
+  **İlgili:** `apps/admin/src/components/shared/admin/dashboard/*`,
+  `apps/admin/src/lib/useAdminResource.ts`, `apps/admin/src/app/{Metrics,AiCost,Economy,Sponsorship,CoachFeedback,Home}Cards.tsx`.
+- **Koç vetting kuyruğu (APP-082, 2026-09-06)** — **Güncel değil:** APP-089 (2026-09-08) ön onayı
+  kaldırdı. Bugünkü uçlar `GET /v1/admin/coaches?status=`, `POST /v1/admin/coaches/:userId/status`,
+  `POST /v1/admin/coaches/:userId/verified-claims`; ekran onay kuyruğu değil koç sicili. Aşağısı tarihçe.
+  Elle `POST /v1/admin/users/:id/roles/COACH`
   çağırmanın yerini alan kürasyon ekranı: `GET /v1/admin/coach-applications?status=` +
   `POST /v1/admin/coach-applications/:id/review` (`@Audit(COACH_APPLICATION_REVIEW)`,
   `@Roles(SUPER_ADMIN)` — bir başvuruyu onaylamak o rolü vermenin ta kendisi, dolayısıyla doğrudan

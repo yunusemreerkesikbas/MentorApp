@@ -84,8 +84,8 @@ export const blobsDark = {
 } as const;
 
 export const typography = {
-  heading: "'Plus Jakarta Sans', sans-serif",
-  body: "'Plus Jakarta Sans', sans-serif",
+  heading: "'Nunito', system-ui, sans-serif",
+  body: "'Nunito', system-ui, sans-serif",
 } as const;
 
 /** Uniform radius — button/field/card/chip/thumb (DESIGN.md §5). */

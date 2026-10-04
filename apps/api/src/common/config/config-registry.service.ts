@@ -1,9 +1,11 @@
 import { HttpStatus, Injectable } from "@nestjs/common";
+import { ConfigService } from "@nestjs/config";
 import { EventEmitter2 } from "@nestjs/event-emitter";
 import type { z } from "zod";
+import { isDevToolingAllowed, type Env } from "../../config/env.validation";
 import { DomainError } from "../errors/domain-error";
 import { ErrorCode } from "../errors/error-code";
-import { CONFIG_CATALOG, isConfigKey, type ConfigKey } from "./config.catalog";
+import { CONFIG_CATALOG, isConfigKey, type ConfigEntryDef, type ConfigKey } from "./config.catalog";
 import { ConfigRepository } from "./config.repository";
 
 /**
@@ -47,11 +49,18 @@ export interface ConfigChangeResult {
 @Injectable()
 export class ConfigRegistryService {
   private overrides: Map<string, unknown> | null = null;
+  private readonly devTooling: boolean;
 
   constructor(
     private readonly repo: ConfigRepository,
     private readonly events: EventEmitter2,
-  ) {}
+    env: ConfigService<Env, true>,
+  ) {
+    this.devTooling = isDevToolingAllowed({
+      NODE_ENV: env.get("NODE_ENV", { infer: true }),
+      APP_ENV: env.get("APP_ENV", { infer: true }),
+    });
+  }
 
   private async ensureLoaded(): Promise<Map<string, unknown>> {
     if (this.overrides === null) {
@@ -60,17 +69,29 @@ export class ConfigRegistryService {
     return this.overrides;
   }
 
+  /** Outside dev tooling a dev-only key does not exist (see `ConfigEntryDef.devOnly`). */
+  private isHidden(key: ConfigKey): boolean {
+    return !this.devTooling && (CONFIG_CATALOG[key] as ConfigEntryDef).devOnly === true;
+  }
+
   /** Typed read of a single key: the override if set, otherwise the catalog default. */
   async get<K extends ConfigKey>(key: K): Promise<z.infer<(typeof CONFIG_CATALOG)[K]["schema"]>> {
     const overrides = await this.ensureLoaded();
-    const value = overrides.has(key) ? overrides.get(key) : CONFIG_CATALOG[key].default;
+    // ponytail: dev-only keys are boolean switches, so "off" is false. A non-boolean dev key (an
+    // OTP bypass code, say) needs its own production value here first.
+    const value = this.isHidden(key)
+      ? false
+      : overrides.has(key)
+        ? overrides.get(key)
+        : CONFIG_CATALOG[key].default;
     return value as z.infer<(typeof CONFIG_CATALOG)[K]["schema"]>;
   }
 
   /** Catalog + effective values, for the admin panel. */
   async list(): Promise<ConfigEntryView[]> {
     const overrides = await this.ensureLoaded();
-    return (Object.keys(CONFIG_CATALOG) as ConfigKey[]).map((key) => {
+    const keys = (Object.keys(CONFIG_CATALOG) as ConfigKey[]).filter((key) => !this.isHidden(key));
+    return keys.map((key) => {
       const def = CONFIG_CATALOG[key];
       return {
         key,
@@ -88,7 +109,7 @@ export class ConfigRegistryService {
    * bounds). Returns before/after for the audit trail. Updates the cache after persisting.
    */
   async set(actorId: string, key: string, value: unknown): Promise<ConfigChangeResult> {
-    if (!isConfigKey(key)) {
+    if (!isConfigKey(key) || this.isHidden(key)) {
       throw new DomainError(ErrorCode.ADMIN_CONFIG_KEY_NOT_FOUND, HttpStatus.NOT_FOUND);
     }
     const parsed = CONFIG_CATALOG[key].schema.safeParse(value);

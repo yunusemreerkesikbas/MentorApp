@@ -1,5 +1,5 @@
 {
-  "id": "0fdf820e-1a69-49e8-a99c-f53aef9ffa34",
+  "id": "a96a24f7-7ae6-492c-b0ed-6153deb4171e",
   "prevId": "c53b8460-dcd7-4160-92e8-78ae8c557515",
   "version": "7",
   "dialect": "postgresql",
@@ -7488,8 +7488,8 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
-    "public.mentorship_student_briefs": {
-      "name": "mentorship_student_briefs",
+    "public.mentorship_weekly_reports": {
+      "name": "mentorship_weekly_reports",
       "schema": "",
       "columns": {
         "id": {
@@ -7511,20 +7511,41 @@
           "primaryKey": false,
           "notNull": true
         },
-        "brief": {
-          "name": "brief",
-          "type": "text",
+        "week_start": {
+          "name": "week_start",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
-        "model": {
-          "name": "model",
-          "type": "text",
+        "week_end": {
+          "name": "week_end",
+          "type": "date",
           "primaryKey": false,
           "notNull": true
         },
-        "fingerprint": {
-          "name": "fingerprint",
+        "locale": {
+          "name": "locale",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'tr'"
+        },
+        "version": {
+          "name": "version",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'DRAFT'"
+        },
+        "source_fingerprint": {
+          "name": "source_fingerprint",
           "type": "text",
           "primaryKey": false,
           "notNull": true
@@ -7535,14 +7556,57 @@
           "primaryKey": false,
           "notNull": true
         },
-        "delta": {
-          "name": "delta",
+        "brief": {
+          "name": "brief",
           "type": "jsonb",
           "primaryKey": false,
           "notNull": false
         },
-        "generated_at": {
-          "name": "generated_at",
+        "brief_locale": {
+          "name": "brief_locale",
+          "type": "varchar(5)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "brief_prompt_version": {
+          "name": "brief_prompt_version",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "coach_evaluation": {
+          "name": "coach_evaluation",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "replaces_id": {
+          "name": "replaces_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "operation_id": {
+          "name": "operation_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "finalized_at": {
+          "name": "finalized_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
           "type": "timestamp with time zone",
           "primaryKey": false,
           "notNull": true,
@@ -7550,8 +7614,8 @@
         }
       },
       "indexes": {
-        "mentorship_student_briefs_period_idx": {
-          "name": "mentorship_student_briefs_period_idx",
+        "mentorship_weekly_reports_version_idx": {
+          "name": "mentorship_weekly_reports_version_idx",
           "columns": [
             {
               "expression": "link_id",
@@ -7566,7 +7630,68 @@
               "nulls": "last"
             },
             {
-              "expression": "generated_at",
+              "expression": "week_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "version",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mentorship_weekly_reports_operation_idx": {
+          "name": "mentorship_weekly_reports_operation_idx",
+          "columns": [
+            {
+              "expression": "link_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "operation_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"mentorship_weekly_reports\".\"operation_id\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "mentorship_weekly_reports_archive_idx": {
+          "name": "mentorship_weekly_reports_archive_idx",
+          "columns": [
+            {
+              "expression": "link_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "period_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "finalized_at",
               "isExpression": false,
               "asc": true,
               "nulls": "last"
@@ -7579,9 +7704,9 @@
         }
       },
       "foreignKeys": {
-        "mentorship_student_briefs_link_id_coach_students_id_fk": {
-          "name": "mentorship_student_briefs_link_id_coach_students_id_fk",
-          "tableFrom": "mentorship_student_briefs",
+        "mentorship_weekly_reports_link_id_coach_students_id_fk": {
+          "name": "mentorship_weekly_reports_link_id_coach_students_id_fk",
+          "tableFrom": "mentorship_weekly_reports",
           "tableTo": "coach_students",
           "columnsFrom": [
             "link_id"
@@ -7591,13 +7716,26 @@
           ],
           "onDelete": "cascade",
           "onUpdate": "no action"
+        },
+        "mentorship_weekly_reports_replaces_id_mentorship_weekly_reports_id_fk": {
+          "name": "mentorship_weekly_reports_replaces_id_mentorship_weekly_reports_id_fk",
+          "tableFrom": "mentorship_weekly_reports",
+          "tableTo": "mentorship_weekly_reports",
+          "columnsFrom": [
+            "replaces_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
         }
       },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {
-        "mentorship_student_briefs_service": {
-          "name": "mentorship_student_briefs_service",
+        "mentorship_weekly_reports_service": {
+          "name": "mentorship_weekly_reports_service",
           "as": "PERMISSIVE",
           "for": "ALL",
           "to": [
@@ -7607,7 +7745,28 @@
           "withCheck": "current_setting('app.role', true) = 'SERVICE'"
         }
       },
-      "checkConstraints": {},
+      "checkConstraints": {
+        "mentorship_weekly_reports_status_check": {
+          "name": "mentorship_weekly_reports_status_check",
+          "value": "\"mentorship_weekly_reports\".\"status\" IN ('DRAFT', 'BRIEF_PENDING', 'BRIEF_READY', 'BRIEF_FAILED', 'FINALIZED')"
+        },
+        "mentorship_weekly_reports_version_check": {
+          "name": "mentorship_weekly_reports_version_check",
+          "value": "\"mentorship_weekly_reports\".\"version\" >= 0"
+        },
+        "mentorship_weekly_reports_locale_check": {
+          "name": "mentorship_weekly_reports_locale_check",
+          "value": "\"mentorship_weekly_reports\".\"locale\" IN ('tr', 'en')"
+        },
+        "mentorship_weekly_reports_brief_locale_check": {
+          "name": "mentorship_weekly_reports_brief_locale_check",
+          "value": "\"mentorship_weekly_reports\".\"brief_locale\" IS NULL OR \"mentorship_weekly_reports\".\"brief_locale\" IN ('tr', 'en')"
+        },
+        "mentorship_weekly_reports_finalized_check": {
+          "name": "mentorship_weekly_reports_finalized_check",
+          "value": "(\"mentorship_weekly_reports\".\"status\" = 'FINALIZED' AND \"mentorship_weekly_reports\".\"version\" > 0 AND \"mentorship_weekly_reports\".\"finalized_at\" IS NOT NULL) OR (\"mentorship_weekly_reports\".\"status\" <> 'FINALIZED' AND \"mentorship_weekly_reports\".\"version\" = 0 AND \"mentorship_weekly_reports\".\"finalized_at\" IS NULL)"
+        }
+      },
       "isRLSEnabled": true
     },
     "public.mistake_notebook_entries": {

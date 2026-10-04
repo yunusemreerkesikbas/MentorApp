@@ -1,7 +1,8 @@
 "use client";
+import { notifyEconomyChanged } from "@/lib/economy";
 import { ChevronDown, MessageSquare, PanelLeft, SquarePen } from "lucide-react";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -142,11 +143,25 @@ export function CoachChatShell() {
     else startNewChat();
   }, [routeConversationId, openConversation, startNewChat]);
 
+  // A premium review from /analiz starts on its own. Coin and free students still send the seed
+  // themselves, so a link never spends a coin by accident.
+  const applySeed = useEffectEvent((text: string) => {
+    if (
+      contextMockExamId &&
+      !routeConversationId &&
+      access.mode === CoachAccessMode.PREMIUM
+    ) {
+      void send(text);
+      return;
+    }
+    setInput(text);
+    composerRef.current?.focus();
+  });
+
   useEffect(() => {
     if (seedAppliedRef.current || !seed) return;
     seedAppliedRef.current = true;
-    setInput(seed);
-    composerRef.current?.focus();
+    applySeed(seed);
   }, [seed]);
 
   useEffect(() => {
@@ -345,6 +360,7 @@ export function CoachChatShell() {
               : String(err),
       );
     } finally {
+      notifyEconomyChanged();
       setBusy(false);
       setStreamingMessageId(null);
       composerRef.current?.focus();
@@ -421,6 +437,7 @@ export function CoachChatShell() {
               : String(err),
       );
     } finally {
+      notifyEconomyChanged();
       setBusy(false);
       setStreamingMessageId(null);
     }

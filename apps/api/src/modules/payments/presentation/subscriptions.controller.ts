@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Headers, HttpCode, Post } from "@nestjs/common";
-import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
+import { ApiBearerAuth, ApiOkResponse, ApiTags } from "@nestjs/swagger";
 import { Throttle } from "@nestjs/throttler";
 import type {
   CheckoutSession,
@@ -7,7 +7,7 @@ import type {
   PromotionOffersView,
   SubscriptionView,
 } from "@mentor/types";
-import { checkoutSchema, promotionOffersSchema } from "@mentor/validation";
+import { promotionOffersSchema } from "@mentor/validation";
 import { CurrentUser, type RequestUser } from "../../../common/auth/current-user";
 import { Public } from "../../../common/auth/public.decorator";
 import { createZodDto } from "../../../common/validation/zod-dto";
@@ -17,7 +17,7 @@ import {
   type CheckoutUser,
 } from "../application/subscriptions.service";
 
-class CheckoutDto extends createZodDto(checkoutSchema) {}
+import { CheckoutDto, SubscriptionViewResponseDto } from "./subscription.dto";
 class PromotionOffersDto extends createZodDto(promotionOffersSchema) {}
 
 @ApiTags("payments")
@@ -37,6 +37,7 @@ export class SubscriptionsController {
 
   @ApiBearerAuth()
   @Get("subscription")
+  @ApiOkResponse({ type: SubscriptionViewResponseDto })
   getMine(@CurrentUser() user: RequestUser): Promise<SubscriptionView> {
     return this.subscriptions.getView(user.id, user.roles);
   }
@@ -73,7 +74,7 @@ export class SubscriptionsController {
     @CurrentUser() user: RequestUser,
     @Body() dto: CheckoutDto,
   ): Promise<CheckoutSession> {
-    return this.subscriptions.checkout(await this.checkoutUser(user), dto.planId, dto.code);
+    return this.subscriptions.checkout(await this.checkoutUser(user), dto.planId, dto.code, dto.useTrial);
   }
 
   /** Email + signup date come from identity's public service (cross-module rule §AGENTS-2). */
@@ -89,6 +90,7 @@ export class SubscriptionsController {
 
   @ApiBearerAuth()
   @Post("subscription/cancel")
+  @ApiOkResponse({ type: SubscriptionViewResponseDto })
   @HttpCode(200)
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   cancel(@CurrentUser() user: RequestUser): Promise<SubscriptionView> {

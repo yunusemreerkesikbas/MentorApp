@@ -28,7 +28,7 @@
 - [ ] **Theme:** `html.dark` + CSS vars (DESIGN.md §2.5). Default light. New colors go through tokens —
   never `bg-white` / `#fff` / `dark:bg-black`. Tailwind `dark:` only when a value cannot be a token.
 - [ ] Uniform radius (10px token), single shadow token, 4px grid spacing — DESIGN.md §4-5.
-- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Plus Jakarta Sans latin-ext fallback).
+- [ ] Semantic HTML + WCAG AA (contrast, keyboard, focus ring, touch ≥44px). Turkish glyphs (Nunito latin-ext).
 - [ ] **Tone & copy (§0 & [`docs/copy/voice.md`](../copy/voice.md)):** encouraging, anti-shaming. Calm countdown (not alarm-red), no result ranking. Dual register (Puhu chrome / Companion coach & errors), sen address, no em dash (`—`), no AI slop, no "lütfen / kontrol et", non-monetary hak.
 - [ ] Every screen: loading / empty / error states.
 
@@ -42,7 +42,7 @@ skeleton layout** that mirrors the loaded UI — not a centered spinner, not pla
 | Layer | Owner | Rule |
 |---|---|---|
 | **Animation** | Global `@mentor/ui/theme.css` | **Same classes everywhere:** `.mentor-skeleton-shimmer` (shimmer blocks), `.mentor-skeleton-enter` (region fade-in). No `animate-pulse`, no per-screen gradient/keyframe copies. |
-| **Layout / shape** | Each screen | `*-content-skeleton.tsx` next to the feature (e.g. `plan-content-skeleton.tsx`, `koc-content-skeleton.tsx`). Match real cards, rows, headers; size/radius via `className` + DESIGN tokens. |
+| **Layout / shape** | Each screen | Skeletons live next to the feature and match real cards, rows, headers; size/radius via `className` + DESIGN tokens. A page-level `*-content-skeleton.tsx` or one skeleton per section (screens that draw at once, DESIGN.md §1 rule 7) are both fine. |
 | **A11y** | `@mentor/ui` | Wrap regions in `<SkeletonGroup label={t("loading")}>` (`role="status"`, `aria-busy`). Blocks: `<Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />`. |
 
 **Client fetch pattern:** derive `loading` from fetch state (e.g. `loadedDate !== date`); when `loading`,

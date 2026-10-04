@@ -23,6 +23,19 @@ import {
 export type MistakeNotebookEntryRow =
   typeof mistakeNotebookEntries.$inferSelect;
 export type MistakeNotebookPageRow = typeof notebookPages.$inferSelect;
+
+/** What a contents line needs from one page: its items as stored, and how many strokes it holds. */
+export interface NotebookPageOutlineRow {
+  pageIndex: number;
+  items: unknown;
+  inkCount: number;
+}
+
+/** An entry's labels and schedule, without the photos and notes a contents line never shows. */
+export type NotebookEntryLabelRow = Pick<
+  MistakeNotebookEntryRow,
+  "id" | "examId" | "subjectRef" | "topicRef" | "nextReviewAt"
+>;
 export type NotebookRow = typeof notebookTable.$inferSelect;
 export type NotebookSummaryRow = NotebookRow & {
   pageCount: number;
@@ -605,6 +618,64 @@ export class MistakeNotebookRepository {
     return rows[0];
   }
 
+  /**
+   * Every saved page of one notebook, reduced to what its contents line needs.
+   *
+   * The items come back whole (forty a page at most) but the ink only as a count: strokes are most
+   * of a page document's bytes and the contents page never draws them, so they stay in the database.
+   * `jsonb_typeof` guards the count, since `jsonb_array_length` raises on anything but an array and
+   * one odd row must not take the whole contents page down with it.
+   */
+  async listPageOutlines(
+    tx: DatabaseTx,
+    userId: string,
+    notebookId: string,
+  ): Promise<NotebookPageOutlineRow[]> {
+    return tx
+      .select({
+        pageIndex: notebookPages.pageIndex,
+        items: sql<unknown>`${notebookPages.doc} -> 'items'`,
+        inkCount: sql<number>`CASE WHEN jsonb_typeof(${notebookPages.doc} -> 'ink') = 'array' THEN jsonb_array_length(${notebookPages.doc} -> 'ink') ELSE 0 END`.mapWith(
+          Number,
+        ),
+      })
+      .from(notebookPages)
+      .where(
+        and(
+          eq(notebookPages.userId, userId),
+          eq(notebookPages.notebookId, notebookId),
+        ),
+      )
+      .orderBy(asc(notebookPages.pageIndex));
+  }
+
+  /**
+   * Labels and schedule for the entries a notebook's pages pin. Bounded by the pages themselves:
+   * `NOTEBOOK_MAX_PAGES` × `NOTEBOOK_PAGE_MAX_ENTRIES` ids at the very most.
+   */
+  async listEntryLabelsByIds(
+    tx: DatabaseTx,
+    userId: string,
+    entryIds: string[],
+  ): Promise<NotebookEntryLabelRow[]> {
+    if (entryIds.length === 0) return [];
+    return tx
+      .select({
+        id: mistakeNotebookEntries.id,
+        examId: mistakeNotebookEntries.examId,
+        subjectRef: mistakeNotebookEntries.subjectRef,
+        topicRef: mistakeNotebookEntries.topicRef,
+        nextReviewAt: mistakeNotebookEntries.nextReviewAt,
+      })
+      .from(mistakeNotebookEntries)
+      .where(
+        and(
+          eq(mistakeNotebookEntries.userId, userId),
+          inArray(mistakeNotebookEntries.id, entryIds),
+        ),
+      );
+  }
+
   /** Upsert on (notebook_id, page_index) and mark the book as recently used. */
   async upsertPage(
     tx: DatabaseTx,
@@ -720,7 +791,7 @@ export class MistakeNotebookRepository {
         subjectRef: mistakeNotebookEntries.subjectRef,
         topicRef: mistakeNotebookEntries.topicRef,
         count: sql<number>`count(*)::int`,
-        latestAt: sql<Date>`max(${mistakeNotebookEntries.createdAt})`,
+        latestAt: sql<Date>`max(${mistakeNotebookEntries.createdAt})`.mapWith(mistakeNotebookEntries.createdAt),
       })
       .from(mistakeNotebookEntries)
       .where(

@@ -58,6 +58,15 @@ export class ExamRepository {
     return rows[0]!;
   }
 
+  /** All exams in a family, including rows with no calendar events (taxonomy resolution). */
+  async listByFamily(db: Database | DatabaseTx, family: string): Promise<ExamRow[]> {
+    return db
+      .select()
+      .from(exams)
+      .where(eq(exams.family, family))
+      .orderBy(asc(exams.slug));
+  }
+
   /** All exams in a family with their EXAM_DATE event (for countdown selection). */
   async listFamilyCandidates(
     db: Database | DatabaseTx,

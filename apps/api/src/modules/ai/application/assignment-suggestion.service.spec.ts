@@ -11,6 +11,7 @@ const REPORT = {
   acceptedAt: "2026-08-01T00:00:00.000Z",
   studentExamType: "KPSS",
   coachNote: { body: "Bu öğrenciyi sıkıştırma.", updatedAt: "2026-09-01T00:00:00.000Z" },
+  studentNote: { body: "Cuma akşamları çalışamıyorum.", updatedAt: "2026-09-02T00:00:00.000Z" },
   riskFlags: ["INACTIVE"],
   attendedAt: null,
   needsAttention: true,
@@ -101,6 +102,7 @@ describe("AssignmentSuggestionService", () => {
       COACH.id,
       COACH.roles,
       "mentorship.suggestions",
+      "MENTORSHIP_AI_DAILY_LIMIT",
     );
     expect(append.mock.calls[0]![0]).toMatchObject({
       userId: COACH.id,
@@ -117,12 +119,14 @@ describe("AssignmentSuggestionService", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
-  it("sends neither the student's name nor the coach's own note to the model", async () => {
+  it("sends neither the student's name nor either note to the model", async () => {
     await service.suggest(REPORT, COACH, "tr");
     const prompt = complete.mock.calls[0]![0] as { system: string; user: string };
     // The evidence shaper is the brief's, so both exclusions are inherited rather than repeated.
     expect(prompt.user).not.toContain("Zeynep");
     expect(prompt.user).not.toContain("sıkıştırma");
+    // The student wrote their note for the coach, not for a model (QA F4).
+    expect(prompt.user).not.toContain("Cuma akşamları");
     expect(prompt.user).not.toContain("student-a");
   });
 

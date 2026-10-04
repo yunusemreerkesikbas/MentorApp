@@ -45,6 +45,8 @@ describe("content (e2e)", () => {
       password: "Sifre1234",
       displayName: "Content Test",
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(signup.status).toBe(201);
     userToken = signup.body.accessToken;
@@ -114,6 +116,24 @@ describe("content (e2e)", () => {
     expect(res.body.some((s: { slug: string }) => s.slug === "turkce")).toBe(true);
     const turkce = res.body.find((s: { slug: string }) => s.slug === "turkce");
     expect(turkce.questionCount).toBe(30);
+  });
+
+  it("GET /v1/content/exams/by-type/YKS returns the dateless current exam", async () => {
+    const res = await request(app.getHttpServer()).get("/v1/content/exams/by-type/YKS");
+    expect(res.status).toBe(200);
+    expect(res.body.slug).toBe("yks-2026");
+  });
+
+  it("GET /v1/content/exams/yks-2026/subjects is a non-empty TYT/AYT tree", async () => {
+    const res = await request(app.getHttpServer()).get("/v1/content/exams/yks-2026/subjects");
+    expect(res.status).toBe(200);
+    expect(res.body.some((s: { slug: string }) => s.slug === "tyt-turkce")).toBe(true);
+  });
+
+  it("GET /v1/content/exams/lgs-2026/topics is a non-empty LGS tree", async () => {
+    const res = await request(app.getHttpServer()).get("/v1/content/exams/lgs-2026/topics");
+    expect(res.status).toBe(200);
+    expect(res.body.length).toBeGreaterThan(0);
   });
 
   it("GET /v1/content/info-articles?family=KPSS returns seeded articles (public)", async () => {

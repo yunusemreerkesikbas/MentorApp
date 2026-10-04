@@ -29,6 +29,7 @@ export const ConfigCategory = {
   ADS: "ads",
   PROMOTIONS: "promotions",
   MENTORSHIP: "mentorship",
+  DEV: "dev",
 } as const;
 
 export const ConfigValueType = {
@@ -48,6 +49,12 @@ export interface ConfigEntryDef {
   /** Sensitive (money/coin/commission) → bounds + extra confirmation in the UI. */
   sensitive: boolean;
   description: string;
+  /**
+   * Dev tooling switch, boolean only. Outside dev tooling (`isDevToolingAllowed`, i.e. production)
+   * the registry leaves it out of the admin list, refuses writes and reads it as false, whatever
+   * `config_overrides` holds.
+   */
+  devOnly?: true;
 }
 
 const flag = (def: boolean, description: string): ConfigEntryDef => ({
@@ -116,12 +123,13 @@ const identityCount = (
   def: number,
   max: number,
   description: string,
+  sensitive = false,
 ): ConfigEntryDef => ({
   category: ConfigCategory.IDENTITY,
   type: ConfigValueType.NUMBER,
   schema: z.number().int().min(0).max(max),
   default: def,
-  sensitive: false,
+  sensitive,
   description,
 });
 
@@ -256,10 +264,36 @@ const promotionsCount = (
 });
 
 export const CONFIG_CATALOG = {
+  // First, so staging/dev admins meet it at the top of /config. Production never lists it.
+  "dev.email.console_enabled": {
+    category: ConfigCategory.DEV,
+    type: ConfigValueType.BOOLEAN,
+    schema: z.boolean(),
+    default: true,
+    // Off means real mail to whatever addresses stage holds: the admin UI confirms first.
+    sensitive: true,
+    devOnly: true,
+    description:
+      "Staging/dev only: print every email (verification and reset links included) to the API stdout instead of sending it. Off = deliver through Postmark like production. Hidden and always off in production.",
+  },
   "storage.upload.active_per_user": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1).max(4), default: 1, sensitive: false, description: "Maximum simultaneous upload tickets/streams per user." },
   "storage.upload.daily_bytes": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(1048576).max(1073741824), default: 104857600, sensitive: false, description: "Daily UTC upload byte budget per user; failed uploads consume the reserved cap." },
   "storage.upload.ticket_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(30).max(300), default: 300, sensitive: false, description: "Single-use upload ticket lifetime in seconds." },
   "storage.upload.stream_seconds": { category: "storage", type: ConfigValueType.NUMBER, schema: z.number().int().min(10).max(120), default: 60, sensitive: false, description: "Maximum duration for an authorized upload stream." },
+  // Purchase channels (APP-096) for student plans. Coach seat plans have their own pair under
+  // mentorship.seats.*; both resolve per plan in payments/domain/purchase-channel.ts.
+  "payments.web.enabled": flag(
+    true,
+    "Student plans: new web checkouts. Off refuses checkout and hides the web buy button; open subscriptions, renewals, cancel and refunds are untouched.",
+  ),
+  "payments.mobile.enabled": flag(
+    false,
+    "Student plans are sold through App Store / Google Play. Keep plans.priceMinor equal to the store price: the web shows the catalog price when it sends buyers to a store. Until the mobile app ships, its only effect is arming payments.web.redirect_to_mobile.",
+  ),
+  "payments.web.redirect_to_mobile": flag(
+    false,
+    "While an audience's web checkout is off, show App Store / Google Play buttons on the web instead of 'coming soon'. Only for audiences whose store channel is on (payments.mobile.enabled, mentorship.seats.mobile_billing_enabled).",
+  ),
   "promotions.enabled": promotionsFlag(
     false,
     "Global promotions kill-switch — off means every checkout pays the list price.",
@@ -300,6 +334,8 @@ export const CONFIG_CATALOG = {
     false,
     "Gate for the light-economy module (user-facing balance/earning).",
   ),
+  "economy.streak_rescue.enabled": flag(false, "Allow Coin purchases of streak freezes."),
+  "community.leaderboard.enabled": flag(false, "Expose XP rankings; personal XP remains available."),
   "forum.enabled": flag(
     false,
     "Gate for the forum/community module (zones, threads, moderation).",
@@ -333,25 +369,35 @@ export const CONFIG_CATALOG = {
     "Gate for the human coach surface (coach roster, invite codes, assignments). Off = W8 endpoints 403.",
   ),
   "mentorship.followups.enabled": mentorshipFlag(false, "Gate for coach follow-up records and shared decisions."),
+  "mentorship.weekly_reports.enabled": mentorshipFlag(
+    false,
+    "Gate for completed-week coach reports, AI findings, archive and printable student views.",
+  ),
   "mentorship.coach.max_active_students": mentorshipCount(
-    20,
+    // 25: the largest seat tier (+20) plus the 3 free seats has to fit, or a coach pays for seats
+    // the roster ceiling will never let them use.
+    25,
     1,
     500,
-    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students get sponsored Premium.",
+    "Hard roster ceiling per coach, and the invite-code abuse bound (no separate use counter). Distinct from mentorship.coach.free_seats, which decides how many of those students are free.",
   ),
   "mentorship.seats.sponsorship_enabled": mentorshipFlag(
     false,
-    "Gate for coach-sponsored Premium. Separate from mentorship.enabled so the coach surface can open before anyone is granted paid AI on someone else's behalf.",
+    "Whether a coach's seat also opens the student's Premium. Seats let a coach follow students either way. Off ends live sponsorships at once. Keep off until SMS OTP ships (AGENTS.md §4 #4): coach registration is self-service.",
   ),
   "mentorship.seats.billing_enabled": mentorshipFlag(
     false,
-    "List the coach-pro seat plans as purchasable. Off keeps them out of the catalog AND refuses checkout on them, so no paywall promises a purchase flow the payment provider cannot yet complete.",
+    "Coach seat plans: new web checkouts. Off refuses checkout on them and, unless mentorship.seats.mobile_billing_enabled is on, keeps them out of the catalog, so no paywall promises a purchase flow nobody can complete.",
+  ),
+  "mentorship.seats.mobile_billing_enabled": mentorshipFlag(
+    false,
+    "Coach seat plans are sold through App Store / Google Play. Lists them even with web billing off, so the web can send coaches to a store (with payments.web.redirect_to_mobile). Keep plans.priceMinor equal to the store price.",
   ),
   "mentorship.coach.free_seats": mentorshipCostCount(
     3,
     0,
     50,
-    "How many of a coach's students get sponsored Premium for free. THE cost knob: coaches x this = free premium seats, each one real LLM spend. Raise deliberately; 0 turns sponsorship off without touching the flag.",
+    "How many students a coach follows for free. While mentorship.seats.sponsorship_enabled is on, each of them also gets sponsored Premium: coaches x this = free Premium seats, each one real LLM spend. Lowering it keeps existing seats. 0 = every student needs a paid seat.",
   ),
   "mentorship.invite_code.ttl_days": mentorshipCount(
     14,
@@ -500,7 +546,7 @@ export const CONFIG_CATALOG = {
     category: ConfigCategory.ECONOMY,
     type: ConfigValueType.STRING,
     schema: z.string().max(2000),
-    default: "",
+    default: "onboarding.first-subscription,onboarding.invite-redeemed",
     sensitive: false,
     description:
       "Comma-separated quest ids to disable (kill-switch): hidden from all views, never granted. Deploy-free rollback for a misbehaving quest.",
@@ -609,11 +655,6 @@ export const CONFIG_CATALOG = {
     5,
     100000,
     "Max AI coach chat messages a free user may send per day via coin (abuse shield; premium limit is separate).",
-  ),
-  "ai.coach_personalization_v2.rollout_percent": aiCount(
-    0,
-    100,
-    "Stable user-hash rollout percentage for Personalized Mentor V2; 0 instantly restores the legacy chat strategy.",
   ),
   "ai.coach.history_max_messages": aiPositiveCount(
     10,
@@ -847,6 +888,16 @@ export const CONFIG_CATALOG = {
     100000,
     "Free-user deep-analysis unlocks per 7-day window when the taste flag is on.",
   ),
+  "identity.phone.enabled": flag(false, "Enable self-service phone verification. Does not bypass entitlement gates when off."),
+  "identity.phone.code_ttl_seconds": identityCount(300, 600, "Phone verification code lifetime in seconds."),
+  "identity.phone.resend_seconds": identityCount(60, 3600, "Minimum delay between phone code sends."),
+  "identity.phone.challenge_attempts": identityCount(5, 10, "Maximum wrong codes per challenge."),
+  "identity.phone.failed_daily_limit": identityCount(20, 100, "Wrong codes per account per rolling 24 hours."),
+  "identity.phone.send_daily_limit": identityCount(10, 100, "SMS sends per account and number per rolling 24 hours."),
+  "identity.phone.global_daily_limit": identityCount(100, 10000, "Global SMS sends per rolling 24 hours.", true),
+  "identity.phone.global_monthly_limit": identityCount(1000, 100000, "Global SMS sends per UTC calendar month.", true),
+  "identity.phone.provider_timeout_ms": identityCount(5000, 15000, "Netgsm request timeout. Ambiguous requests are never retried automatically."),
+  "identity.phone.reauthentication_seconds": identityCount(600, 600, "Fresh login required to change a verified phone; refresh does not count."),
 } as const satisfies Record<string, ConfigEntryDef>;
 
 export type ConfigKey = keyof typeof CONFIG_CATALOG;
@@ -863,6 +914,7 @@ export const FeatureFlag = {
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",
+  MENTORSHIP_APPLICATIONS_OPEN: "mentorship.applications.open",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {

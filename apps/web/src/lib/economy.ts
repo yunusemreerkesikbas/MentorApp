@@ -6,8 +6,9 @@ import type {
   QuestProgressView,
   RedeemInviteResult,
   StreakRescueView,
+  Paginated,
 } from "@mentor/types";
-import { ApiClientError, http } from "@mentor/api-client";
+import { ApiClientError, http, economyControllerUnseen, economyControllerSeen } from "@mentor/api-client";
 
 /**
  * Typed wrappers over user economy endpoints. Regen api-client when OpenAPI updates;
@@ -15,6 +16,14 @@ import { ApiClientError, http } from "@mentor/api-client";
  */
 export async function fetchEconomyBalance(): Promise<EconomyBalance> {
   return (await http<EconomyBalance>("/v1/economy/balance")) as EconomyBalance;
+}
+
+export async function fetchUnseenRewards(): Promise<Paginated<EconomyLedgerEntryView>> {
+  return await economyControllerUnseen({ page: 1, pageSize: 20 }) as unknown as Paginated<EconomyLedgerEntryView>;
+}
+
+export async function markRewardsSeen(ledgerIds: string[]): Promise<void> {
+  await economyControllerSeen({ ledgerIds });
 }
 
 export async function fetchEconomyLedger({
@@ -101,4 +110,3 @@ export function notifyCoinCelebration(amount: number, label?: string): void {
     }),
   );
 }
-

@@ -6,6 +6,8 @@
  * link (roadmap §11) and is not worth a rename migration.
  */
 
+import { MentorshipSeat, type MentorshipSeatId } from "@mentor/types";
+
 /** Invite-code prefix. `KOC` keeps it visually distinct from the economy `MENTOR-` friend code. */
 export const MENTORSHIP_INVITE_CODE_PREFIX = "MENTOR-KOC-";
 
@@ -17,7 +19,7 @@ export const MENTORSHIP_INVITE_CODE_BYTES = 6;
  * could land in year 9999 and sit in the student's calendar forever. A term is the honest ceiling
  * for "homework"; anything beyond that is a study plan, which is a different feature.
  */
-export const MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD = 120;
+export { MENTORSHIP_ASSIGNMENT_MAX_DAYS_AHEAD } from "@mentor/validation";
 
 /**
  * How far back the report reads dropped assignments. Deliberately the same 14 days coaching uses
@@ -36,26 +38,25 @@ export const MentorshipEventTopic = {
   ASSIGNMENTS_CREATED: "mentorship.assignments.created",
   ASSIGNMENT_DROPPED: "mentorship.assignment.dropped",
   ASSIGNMENT_PROGRESSED: "mentorship.assignment.progressed",
+  ASSIGNMENTS_CHANGED: "mentorship.assignments.changed",
   NOTE_UPDATED: "mentorship.note.updated",
+  STUDENT_NOTE_UPDATED: "mentorship.student_note.updated",
+  WEEKLY_REPORT_FINALIZED: "mentorship.weekly_report.finalized",
 } as const;
 
 /**
  * Which kind of seat a student landed on.
  *
- * The seat is what decides whether the student gets sponsored Premium, so the value is computed
- * inside the accept transaction (under the coach's advisory lock) and travels on the event. W8
- * decides the seat; W4 grants the entitlement. Neither module imports the other.
+ * A seat is the coach's room to follow a student. While `mentorship.seats.sponsorship_enabled` is
+ * on it also opens the student's Premium, so the value is computed inside the accept transaction
+ * (under the coach's advisory lock) and travels on the event. W8 decides the seat; W4's listener
+ * grants the entitlement, and its grant is the one that checks the flag.
  */
-export const MentorshipSeatKind = {
-  /** Inside `mentorship.coach.free_seats` — the coach sponsors this student's Premium at no cost. */
-  FREE: "FREE",
-  /** Beyond the free quota, covered by a paid seat plan. Reserved; nothing writes it yet. */
-  PAID: "PAID",
-  /** Followed, but not sponsored: the student keeps whatever tier they had. */
-  NONE: "NONE",
-} as const;
-export type MentorshipSeatKind =
-  (typeof MentorshipSeatKind)[keyof typeof MentorshipSeatKind];
+// One definition with the stored `coach_students.seat` (`MentorshipSeat` in `@mentor/types`):
+// FREE inside `mentorship.coach.free_seats`; PAID on the coach's seat plan; SELF pays for their own
+// Premium and holds no seat; NONE waits for one. An accept never emits NONE (no seat, no link).
+export const MentorshipSeatKind = MentorshipSeat;
+export type MentorshipSeatKind = MentorshipSeatId;
 
 /** A student accepted a coach's invite. Carries display names so listeners need no extra lookup. */
 export class MentorshipLinkAccepted {
@@ -84,6 +85,30 @@ export class MentorshipNoteUpdated {
   ) {}
 }
 
+/**
+ * The student wrote (or rewrote) their standing note to the coach (QA F4), the mirror of
+ * {@link MentorshipNoteUpdated}: deduped to once a day, nothing on clearing, and nothing while the
+ * link waits for a seat, because nothing reaches a frozen coach.
+ */
+export class MentorshipStudentNoteUpdated {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly studentDisplayName: string,
+  ) {}
+}
+
+/** A coach finalized a week's evaluation; the student can read it on their side now. */
+export class MentorshipWeeklyReportFinalized {
+  constructor(
+    readonly reportId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly coachDisplayName: string,
+  ) {}
+}
+
 /** A coach assigned one or more plan tasks. The student is the one who hears about it. */
 export class MentorshipAssignmentsCreated {
   constructor(
@@ -94,6 +119,21 @@ export class MentorshipAssignmentsCreated {
     readonly taskCount: number,
     /** Earliest assigned date, so the notification can link to the day the work starts. */
     readonly firstTaskDate: string,
+  ) {}
+}
+
+/**
+ * A coach edited or removed pending assignments. The student hears about it: the plan is theirs to
+ * rely on, and a task that moves or vanishes without a word leaves them working from a stale day.
+ * `taskDate` is the edited task's date, and null for a removal, which has no day left to open.
+ */
+export class MentorshipAssignmentsChanged {
+  constructor(
+    readonly linkId: string,
+    readonly coachId: string,
+    readonly studentId: string,
+    readonly coachDisplayName: string,
+    readonly taskDate: string | null,
   ) {}
 }
 

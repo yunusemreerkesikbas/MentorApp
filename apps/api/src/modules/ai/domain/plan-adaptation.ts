@@ -1,15 +1,126 @@
-import type {
-  CoachPlanAdaptationChangeDto,
-  CoachPlanAdaptationSource,
+import {
+  CoachEvidenceType,
+  type CoachPlanAdaptationBriefDto,
+  type CoachPlanAdaptationChangeDto,
+  type CoachPlanAdaptationSource,
+  type CoachUsedEvidenceDto,
 } from "@mentor/types";
+import { PLAN_ADAPTATION_MINUTES_MAX, PLAN_ADAPTATION_MINUTES_MIN } from "@mentor/validation";
+import type {
+  CoachEvidenceSnapshot,
+  CoachExamPhase,
+} from "../../coaching/domain/coach-evidence";
 import type { PlanAdaptationSnapshotTask } from "../../coaching/domain/plan-adaptation";
+import { moodLabel } from "./grounding-fact";
 import {
   promptLanguageInstruction,
   type PromptLocale,
 } from "./prompt-locale";
+import { fillPersonalizedPlanBlocks, type VerifiedPlanTopic } from "./plan-adaptation-blocks";
 
 export interface PromptPlanTask extends PlanAdaptationSnapshotTask {
   ref: string;
+}
+
+/** A pool evidence item with the opaque ref the model cites. The ref never leaves the backend. */
+export type PromptEvidence = CoachUsedEvidenceDto & { ref: string };
+
+/** Verified material for the "Neden" lines. The model only picks refs; the text is ours. */
+export interface PlanAdaptationGrounding {
+  evidence: readonly Pick<PromptEvidence, "ref" | "summary">[];
+  /** Taxonomy names, weakest first; fill blocks when the student picked no subject. */
+  weakSubjects?: readonly string[];
+  weakReason?: string | null;
+  chosenReason?: string | null;
+  notebookReason?: string | null;
+}
+
+// A plan reads the whole pool; mood and session adaptations stay as narrow as they always were.
+const PLAN_EVIDENCE: Record<
+  CoachPlanAdaptationSource,
+  readonly CoachEvidenceType[]
+> = {
+  PLAN: [
+    CoachEvidenceType.EXAM_PHASE,
+    CoachEvidenceType.WEAK_SUBJECTS,
+    CoachEvidenceType.NOTEBOOK_TOPICS,
+    CoachEvidenceType.LONG_TERM_RHYTHM,
+    CoachEvidenceType.GOAL,
+    CoachEvidenceType.PLAN_FOLLOW_THROUGH,
+    CoachEvidenceType.SUBJECT_BALANCE,
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.MOOD,
+    CoachEvidenceType.STREAK,
+  ],
+  MOOD: [
+    CoachEvidenceType.MOOD,
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.TODAY_PLAN,
+  ],
+  SESSION: [
+    CoachEvidenceType.RECENT_RHYTHM,
+    CoachEvidenceType.SUBJECT_BALANCE,
+    CoachEvidenceType.MOOD,
+  ],
+};
+const PLAN_EVIDENCE_MAX = 6;
+
+export function selectPlanEvidence(
+  source: CoachPlanAdaptationSource,
+  available: readonly CoachUsedEvidenceDto[],
+): PromptEvidence[] {
+  const byType = new Map(available.map((item) => [item.type, item]));
+  return PLAN_EVIDENCE[source]
+    .flatMap((type) => byType.get(type) ?? [])
+    .slice(0, PLAN_EVIDENCE_MAX)
+    .map((item, index) => ({ ...item, ref: `E${index + 1}` }));
+}
+
+/** Wizard defaults from the student's own rhythm; each one stays editable on the web. */
+export function suggestPlanBrief(
+  input: Pick<
+    CoachEvidenceSnapshot,
+    | "activeDays28d"
+    | "averageSessionMinutes28d"
+    | "dailyFocusGoalMinutes"
+    | "weakSubjects"
+    | "focusSubject"
+    | "weekdayActivity28d"
+  >,
+): CoachPlanAdaptationBriefDto["suggestion"] {
+  // Fewer than four active days in four weeks is not yet a rhythm worth mirroring.
+  const days =
+    input.activeDays28d != null && input.activeDays28d >= 4
+      ? Math.min(7, Math.max(3, Math.round(input.activeDays28d / 4)))
+      : null;
+  const target = input.dailyFocusGoalMinutes ?? input.averageSessionMinutes28d;
+  const minutesPerDay = target != null && target >= PLAN_ADAPTATION_MINUTES_MIN
+    ? Math.min(PLAN_ADAPTATION_MINUTES_MAX, Math.round(target))
+    : null;
+  const focusSubjects = [
+    ...new Set(
+      [input.focusSubject, ...input.weakSubjects].filter(
+        (subject): subject is string => Boolean(subject),
+      ),
+    ),
+  ].slice(0, 3);
+  // The days the student really studies on; ties go to the day with more focus minutes.
+  const ranked = input.weekdayActivity28d
+    .filter((day) => day.activeDays > 0)
+    .toSorted(
+      (a, b) =>
+        b.activeDays - a.activeDays ||
+        b.focusMinutes - a.focusMinutes ||
+        a.weekday - b.weekday,
+    );
+  const weekdays =
+    days && ranked.length
+      ? ranked
+          .slice(0, days)
+          .map((day) => day.weekday)
+          .toSorted((a, b) => a - b)
+      : null;
+  return { days, weekdays, minutesPerDay, focusSubjects };
 }
 
 export type PlanAdaptationParseResult =
@@ -27,6 +138,29 @@ function addDays(date: string, days: number): string {
   return value.toISOString().slice(0, 10);
 }
 
+/** ISO weekday, 1 = Monday. */
+function isoWeekday(date: string): number {
+  return ((new Date(`${date}T00:00:00.000Z`).getUTCDay() + 6) % 7) + 1;
+}
+
+function planWindow(todayIso: string): string[] {
+  return Array.from({ length: PLAN_WINDOW_DAYS }, (_, index) => addDays(todayIso, index));
+}
+
+/** The window dates falling on the weekdays the student picked, in window order. */
+export function studyDatesFor(todayIso: string, weekdays: readonly number[]): string[] {
+  return planWindow(todayIso).filter((date) => weekdays.includes(isoWeekday(date)));
+}
+
+/** "2026-07-22 Çarşamba": the model cannot be trusted to know which weekday a date is. */
+function namedDate(date: string, locale: PromptLocale = "tr"): string {
+  const name = new Intl.DateTimeFormat(locale === "en" ? "en-US" : "tr-TR", {
+    weekday: "long",
+    timeZone: "UTC",
+  }).format(new Date(`${date}T00:00:00.000Z`));
+  return `${date} ${name}`;
+}
+
 function normalizedTitle(title: string): string {
   return title.trim().replace(/\s+/g, " ").toLocaleLowerCase("tr-TR");
 }
@@ -38,35 +172,96 @@ function isWindowDate(date: string, start: string, end: string): boolean {
 }
 
 /** Parse and clamp provider JSON. Invalid individual changes are dropped; invalid JSON is distinct. */
+const PLAN_WINDOW_DAYS = 7;
+const PLAN_MAX_MOVES = 3;
+
+export interface PlanAdaptationRhythm {
+  days?: number;
+  /** Window dates the student picked; the only days an ADD or MOVE may land on. */
+  studyDates?: readonly string[];
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
+  topics?: readonly VerifiedPlanTopic[];
+  locale?: PromptLocale;
+}
+
 export function parsePlanAdaptation(
   text: string,
   todayIso: string,
   source: CoachPlanAdaptationSource,
   tasks: readonly PromptPlanTask[],
   capacityTasks: readonly PlanAdaptationSnapshotTask[] = tasks,
+  rhythm?: PlanAdaptationRhythm,
+  grounding?: PlanAdaptationGrounding,
 ): PlanAdaptationParseResult {
+  const personalized = source === "PLAN" && Boolean(rhythm?.minutesPerDay);
+  const reasonByRef = new Map(
+    (grounding?.evidence ?? []).map((item) => [item.ref, item.summary]),
+  );
+  // Unknown or missing refs give no reason: an honest blank beats an invented "why".
+  const modelReason = (raw: unknown): string | undefined => {
+    const ref = (raw as { evidenceRef?: unknown }).evidenceRef;
+    return typeof ref === "string" ? reasonByRef.get(ref) : undefined;
+  };
   const start = text.indexOf("{");
   const end = text.lastIndexOf("}");
-  if (start === -1 || end <= start) return { kind: "MALFORMED" };
+  if (start === -1 || end <= start) {
+    if (personalized) text = '{"changes":[]}';
+    else return { kind: "MALFORMED" };
+  }
 
   let parsed: unknown;
   try {
-    parsed = JSON.parse(text.slice(start, end + 1));
+    parsed = JSON.parse(text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1));
   } catch {
-    return { kind: "MALFORMED" };
+    if (personalized) parsed = { changes: [] };
+    else return { kind: "MALFORMED" };
   }
-  const rawChanges = (parsed as { changes?: unknown }).changes;
-  if (!Array.isArray(rawChanges)) return { kind: "MALFORMED" };
+  const received = parsed && typeof parsed === "object" ? (parsed as { changes?: unknown }).changes : undefined;
+  const rawChanges = Array.isArray(received) ? received : personalized ? [] : null;
+  if (!rawChanges) return { kind: "MALFORMED" };
 
   const windowEnd = addDays(todayIso, 6);
+  // The model reads the note and names the days it keeps free; the backend is what keeps them free.
+  const rawOffDates = parsed && typeof parsed === "object" ? (parsed as { offDates?: unknown }).offDates : undefined;
+  const offDates = new Set(
+    source === "PLAN" && Array.isArray(rawOffDates)
+      ? rawOffDates.filter(
+          (date): date is string =>
+            typeof date === "string" && isWindowDate(date, todayIso, windowEnd),
+        )
+      : [],
+  );
+  const studyDates =
+    source === "PLAN" && rhythm?.studyDates?.length ? new Set(rhythm.studyDates) : null;
+  const isOpenDay = (date: string) =>
+    !offDates.has(date) && (studyDates === null || studyDates.has(date));
   const byRef = new Map(
     tasks
       .filter((task) => task.status === "PENDING")
       .map((task) => [task.ref, task]),
   );
-  const maxMoves = source === "PLAN" ? 3 : 2;
-  const maxAdds = source === "PLAN" ? 3 : source === "SESSION" ? 1 : 0;
-  const maxTotal = source === "PLAN" ? 5 : source === "SESSION" ? 3 : 2;
+  const requestedDays = studyDates
+    ? studyDates.size
+    : source === "PLAN" &&
+    rhythm?.days != null &&
+    Number.isInteger(rhythm.days) &&
+    rhythm.days >= 1 &&
+    rhythm.days <= PLAN_WINDOW_DAYS
+      ? rhythm.days
+      : undefined;
+  const focusSubjects = (rhythm?.focusSubjects ?? [])
+    .map((name) => name.trim())
+    .filter((name) => name.length > 0);
+  const maxMoves = source === "PLAN" ? PLAN_MAX_MOVES : 2;
+  const maxAdds =
+    source === "PLAN"
+      ? (requestedDays ?? PLAN_WINDOW_DAYS)
+      : source === "SESSION"
+        ? 1
+        : 0;
+  const maxTotal =
+    source === "PLAN" ? maxMoves + maxAdds : source === "SESSION" ? 3 : 2;
 
   const seenMoveIds = new Set<string>();
   const moveCandidates: Array<
@@ -84,11 +279,13 @@ export function parsePlanAdaptation(
       seenMoveIds.has(task.id) ||
       !isWindowDate(toDate, todayIso, windowEnd) ||
       toDate === task.taskDate ||
+      !isOpenDay(toDate) ||
       (source === "MOOD" && (task.taskDate !== todayIso || toDate <= todayIso))
     ) {
       continue;
     }
     seenMoveIds.add(task.id);
+    const reason = modelReason(raw);
     moveCandidates.push({
       kind: "MOVE",
       taskId: task.id,
@@ -96,6 +293,7 @@ export function parsePlanAdaptation(
       subject: task.subject,
       fromDate: task.taskDate,
       toDate,
+      ...(reason ? { reason } : {}),
     });
   }
 
@@ -153,6 +351,28 @@ export function parsePlanAdaptation(
     }
   }
 
+  if (personalized && rhythm?.minutesPerDay) {
+    const availableDates = rhythm.studyDates?.length
+      ? rhythm.studyDates
+      : planWindow(todayIso).sort((a, b) =>
+          (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) || a.localeCompare(b),
+        );
+    const dates = availableDates
+      .filter(isOpenDay)
+      .slice(0, requestedDays ?? PLAN_WINDOW_DAYS);
+    const additions = fillPersonalizedPlanBlocks({
+      rawChanges,
+      dates,
+      minutesPerDay: rhythm.minutesPerDay,
+      titleCounts,
+      focusSubjects,
+      topics: rhythm.topics ?? [],
+      locale: rhythm.locale,
+      grounding,
+    });
+    return { kind: "VALID", changes: [...moves, ...additions] };
+  }
+
   const additions: Array<
     Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>
   > = [];
@@ -166,28 +386,145 @@ export function parsePlanAdaptation(
     const rawTitle = (raw as { title?: unknown }).title;
     const taskDate = (raw as { taskDate?: unknown }).taskDate;
     if (typeof rawTitle !== "string" || typeof taskDate !== "string") continue;
-    const title = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
+    const modelTitle = rawTitle.trim().replace(/\s+/g, " ").slice(0, TITLE_MAX);
     if (
-      !title ||
+      !modelTitle ||
       !isWindowDate(taskDate, todayIso, windowEnd) ||
+      !isOpenDay(taskDate) ||
       (source === "SESSION" && taskDate <= todayIso) ||
       (pendingByDate.get(taskDate) ?? 0) >= MAX_PENDING_PER_DAY
     ) {
       continue;
     }
-    const key = `${taskDate}:${normalizedTitle(title)}`;
-    if ((titleCounts.get(key) ?? 0) > 0) continue;
+    if (
+      requestedDays != null &&
+      additions.some((item) => item.taskDate === taskDate)
+    ) {
+      continue;
+    }
     const rawSubject = (raw as { subject?: unknown }).subject;
-    const subject =
+    const written =
       typeof rawSubject === "string" && rawSubject.trim()
         ? rawSubject.trim().slice(0, SUBJECT_MAX)
         : null;
+    const matched = focusSubjects.find(
+      (name) =>
+        name.toLocaleLowerCase("tr-TR") ===
+        (written ?? "").toLocaleLowerCase("tr-TR"),
+    );
+    const picked =
+      focusSubjects.length > 0
+        ? (matched ?? focusSubjects[additions.length % focusSubjects.length]!)
+        : written;
+    const subject = picked ? picked.slice(0, SUBJECT_MAX) : null;
+    // A reassigned subject would contradict the model's title ("Matematik" filed under Tarih).
+    const title =
+      focusSubjects.length > 0 && !matched
+        ? studyBlockTitle(subject, rhythm?.locale)
+        : modelTitle;
+    const key = `${taskDate}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
     adjustCount(titleCounts, key, 1);
     pendingByDate.set(taskDate, (pendingByDate.get(taskDate) ?? 0) + 1);
-    additions.push({ kind: "ADD", title, subject, taskDate });
+    // A block moved onto the student's chosen subject is explained by that choice, not the model.
+    const reason =
+      focusSubjects.length === 0
+        ? modelReason(raw)
+        : matched
+          ? (modelReason(raw) ?? grounding?.chosenReason ?? undefined)
+          : (grounding?.chosenReason ?? undefined);
+    additions.push({
+      kind: "ADD",
+      title,
+      subject,
+      taskDate,
+      ...(reason ? { reason } : {}),
+    });
   }
 
-  return { kind: "VALID", changes: [...moves, ...additions] };
+  const filled =
+    requestedDays == null
+      ? additions
+      : fillStudyDays(
+          additions,
+          requestedDays,
+          todayIso,
+          pendingByDate,
+          titleCounts,
+          focusSubjects,
+          rhythm?.locale,
+          isOpenDay,
+          grounding,
+        );
+
+  return { kind: "VALID", changes: [...moves, ...filled] };
+}
+
+/** The model often stops at three tasks. The chosen day count is filled here. */
+function fillStudyDays(
+  additions: Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>>,
+  requestedDays: number,
+  todayIso: string,
+  pendingByDate: Map<string, number>,
+  titleCounts: Map<string, number>,
+  focusSubjects: readonly string[],
+  locale: PromptLocale | undefined,
+  isOpenDay: (date: string) => boolean,
+  grounding?: PlanAdaptationGrounding,
+): Array<Extract<CoachPlanAdaptationChangeDto, { kind: "ADD" }>> {
+  // No chosen subject: the weakest ones fill the gap, so a filler still means something.
+  const fillSubjects =
+    focusSubjects.length > 0 ? focusSubjects : (grounding?.weakSubjects ?? []);
+  const fillReason =
+    focusSubjects.length > 0 ? grounding?.chosenReason : grounding?.weakReason;
+  const window = planWindow(todayIso).filter(isOpenDay);
+  const filled: typeof additions = [];
+  const used = new Set<string>();
+  for (const item of additions) {
+    if (filled.length >= requestedDays) break;
+    if (used.has(item.taskDate)) continue;
+    filled.push(item);
+    used.add(item.taskDate);
+  }
+  // Least-loaded days first; a title collision moves on to the next candidate day.
+  const rest = window
+    .filter((date) => !used.has(date))
+    .sort(
+      (a, b) =>
+        (pendingByDate.get(a) ?? 0) - (pendingByDate.get(b) ?? 0) ||
+        a.localeCompare(b),
+    );
+  let synthetic = 0;
+  for (const date of rest) {
+    if (filled.length >= requestedDays) break;
+    if ((pendingByDate.get(date) ?? 0) >= MAX_PENDING_PER_DAY) continue;
+    const subject = fillSubjects.length
+      ? fillSubjects[synthetic % fillSubjects.length]!
+      : null;
+    const title = studyBlockTitle(subject, locale);
+    const key = `${date}:${normalizedTitle(title)}`;
+    if ((titleCounts.get(key) ?? 0) > 0) continue;
+    synthetic += 1;
+    titleCounts.set(key, 1);
+    pendingByDate.set(date, (pendingByDate.get(date) ?? 0) + 1);
+    filled.push({
+      kind: "ADD",
+      title,
+      subject,
+      taskDate: date,
+      ...(subject && fillReason ? { reason: fillReason } : {}),
+    });
+  }
+  return filled.sort((a, b) => a.taskDate.localeCompare(b.taskDate));
+}
+
+function studyBlockTitle(
+  subject: string | null,
+  locale: PromptLocale = "tr",
+): string {
+  const en = locale === "en";
+  if (subject) return en ? `${subject} study` : `${subject} çalışması`;
+  return en ? "Study block" : "Çalışma bloğu";
 }
 
 export const PLAN_ADAPTATION_JSON_SENTINEL =
@@ -197,18 +534,33 @@ export function buildPlanAdaptationPrompt(input: {
   source: CoachPlanAdaptationSource;
   todayIso: string;
   examType: string | null;
-  recentSummary: {
-    count7d: number;
-    focusMinutes7d: number;
-    subjects: string[];
-  } | null;
+  /** Verified pool lines the model may cite by ref. Nothing else about the student enters. */
+  evidence: readonly Pick<PromptEvidence, "ref" | "type" | "summary">[];
+  examPhase?: CoachExamPhase | null;
+  /** Consented structured memory only; the service leaves it empty otherwise. */
+  memories?: readonly { key: string; value: string }[];
+  preferences?: { support: string | null; directness: string | null };
   tasks: readonly PromptPlanTask[];
   note?: string;
+  days?: number;
+  studyDates?: readonly string[];
+  minutesPerDay?: number;
+  focusSubjects?: readonly string[];
+  topics?: readonly VerifiedPlanTopic[];
   locale?: PromptLocale;
+  moodLevel?: number | null;
 }): { system: string; user: string } {
+  const named = (dates: readonly string[]) =>
+    dates.map((date) => namedDate(date, input.locale)).join(", ");
   const policy =
     input.source === "PLAN"
-      ? "En fazla 3 MOVE, 3 ADD ve toplam 5 değişiklik öner."
+      ? input.minutesPerDay
+        ? `En fazla 3 MOVE öner. Yalnız ${input.studyDates?.length ? named(input.studyDates) : input.days ? `${input.days} farklı gün` : "7 günlük pencere"} için ADD yaz. Her seçili gün için 1-3 yeni görev öner; mevcut görevler yeni programın süre bütçesinden ayrı tutulur. Her ADD için subject, topicSlug (yoksa null), activity (PRACTICE/REVIEW/RECALL/NOTEBOOK), taskDate ve evidenceRef döndür. Konuyu yalnız verilen konu listesinden seç. Günlük ${input.minutesPerDay} dakika hedefini yeni görevlerine böl; mevcut görevi aynen kopyalama.`
+        : input.studyDates?.length
+          ? `En fazla 3 MOVE öner. Yalnız şu günlere birer ADD yaz: ${named(input.studyDates)}. Başka bir güne ADD ya da MOVE yazma.`
+          : input.days
+            ? `En fazla 3 MOVE öner. Tam ${input.days} farklı güne birer ADD yaz. ${input.days} günden az gün kullanma. Aynı güne ikinci ADD yazma.`
+            : "En fazla 3 MOVE öner. ADD görevlerini 7 günlük pencerenin farklı günlerine yay. Aynı güne ikinci ADD yazma."
       : input.source === "MOOD"
         ? "Yalnız bugünkü görevlerden en fazla 2 MOVE öner; ADD önerme."
         : "En fazla 2 MOVE ve sonraki günlere 1 küçük tekrar ADD öner.";
@@ -222,26 +574,88 @@ export function buildPlanAdaptationPrompt(input: {
     promptLanguageInstruction(input.locale ?? "tr"),
     "Sen sınav çalışma planını sadeleştiren bir koçsun. Yalnız önizleme üret; hiçbir görevi silme veya tamamlama.",
     `Bugün ${input.todayIso}; hedef tarihler bugün dahil 7 günlük pencere içinde olmalı.`,
+    ...(input.source === "PLAN"
+      ? [
+          `Pencere günleri: ${named(planWindow(input.todayIso))}.`,
+          "Kullanıcının notunda boş kalsın, çalışmayacağım ya da müsait değilim dediği günler varsa o tarihleri offDates listesine yaz ve o günlere ADD ya da MOVE yazma. Böyle bir istek yoksa offDates boş liste olsun.",
+        ]
+      : []),
     policy,
-    "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma. Bir günde en fazla 3 görev olsun.",
-    "ADD görevleri küçük, somut ve kısa olsun; mevcut görevin aynı adlı kopyasını ekleme.",
-    `${PLAN_ADAPTATION_JSON_SENTINEL}: {"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD"},{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD"}]}`,
+    "MOVE için yalnız verilen T referanslarını kullan. Aynı güne taşıma yapma.",
+    input.source === "PLAN" && input.minutesPerDay
+      ? "Her gün yeni programda en fazla üç görev olsun. Süreyi son çalışma ritmine göre azaltma. Ders sayısı elveriyorsa aynı güne farklı dersler dağıt. İlk kapsamdan sonra zayıf derslere ve tekrarlanan yanlış konularına daha fazla yer ver. Önceki çalışma gününde ele alınan bir konuyu sonraki günlerde RECALL ile hatırlat. NOTEBOOK yalnız o konu için yanlış kartı kanıtı varsa kullanılabilir. GOAL hedefini sınav ve çalışma verileriyle birlikte yorumla; meslek alanından sınav ders ağırlığı uydurma. Bir görevin süresi soru çözümü ve yanlış incelemesini birlikte kapsar. RECALL notlara bakmadan kendini test etmektir."
+      : "Bir günde en fazla 3 görev olsun.",
+    "ADD görevleri somut olsun; mevcut görevin aynı adlı kopyasını ekleme.",
+    "Her değişikliğe onu en iyi açıklayan tek bir E referansını evidenceRef olarak yaz; uygun kanıt yoksa null yaz. Kanıtta olmayan bir bilgi uydurma.",
+    "Tarih veya gün sayısı yazma: sınav tarihi, kalan gün ve takvim bilgisi hiçbir başlığa girmez.",
+    ...(input.source === "PLAN" && !input.focusSubjects?.length
+      ? [
+          "Kullanıcı ders seçmediyse ADD görevlerini WEAK_SUBJECTS ve NOTEBOOK_TOPICS kanıtındaki ders ve konulara yönelt.",
+        ]
+      : []),
+    ...(input.examPhase === "FINAL"
+      ? [
+          "Sınav son düzlükte: ADD görevleri yeni konu yerine tekrar, soru çözümü ve deneme ritmi olsun.",
+        ]
+      : []),
+    `${PLAN_ADAPTATION_JSON_SENTINEL}: {${input.source === "PLAN" ? '"offDates":[],' : ""}"changes":[{"kind":"MOVE","taskRef":"T1","toDate":"YYYY-MM-DD","evidenceRef":"E1"},${input.source === "PLAN" && input.minutesPerDay ? '{"kind":"ADD","subject":"Matematik","topicSlug":"sayisal-mantik","activity":"PRACTICE","taskDate":"YYYY-MM-DD","evidenceRef":"E2"}' : '{"kind":"ADD","title":"...","subject":null,"taskDate":"YYYY-MM-DD","evidenceRef":null}'}]}`,
   ].join("\n");
-  const recent = input.recentSummary
-    ? `${input.recentSummary.count7d} seans, ${input.recentSummary.focusMinutes7d} dk; konular: ${input.recentSummary.subjects.join(", ") || "yok"}`
-    : "yakın dönem çalışma özeti yok";
+  const evidence = input.evidence.length
+    ? input.evidence
+        .map((item) => `${item.ref} | ${item.type} | ${item.summary}`)
+        .join("\n")
+    : "yok";
+  const memories = input.memories?.length
+    ? `\nİzinli hafıza: ${input.memories
+        .slice(0, 8)
+        .map((memory) => `${memory.key}=${memory.value}`)
+        .join("; ")}`
+    : "";
+  const preferenceParts = [
+    input.preferences?.support ? `destek=${input.preferences.support}` : null,
+    input.preferences?.directness
+      ? `direktlik=${input.preferences.directness}`
+      : null,
+  ].filter((part): part is string => part != null);
+  const preferences = preferenceParts.length
+    ? `\nKoçluk tercihi: ${preferenceParts.join(", ")}`
+    : "";
   const tasks = input.tasks.map((task) => ({
     ref: task.ref,
     date: task.taskDate,
     title: task.title,
     subject: task.subject,
   }));
+  const rhythm =
+    input.source === "PLAN"
+      ? [
+          input.studyDates?.length
+            ? `yalnız şu günler: ${named(input.studyDates)}`
+            : input.days
+              ? `${input.days} farklı gün`
+              : null,
+          input.minutesPerDay
+            ? `her seçili günün yeni program hedefi ${input.minutesPerDay} dakika olsun; mevcut görevler bu bütçeye dahil değildir`
+            : null,
+          input.focusSubjects?.length
+            ? `ADD subject yalnız şunlardan biri olsun: ${input.focusSubjects.join(", ")}`
+            : null,
+        ].filter((part): part is string => part != null)
+      : [];
+  const rhythmLine = rhythm.length
+    ? `\nBağlayıcı ritim: ${rhythm.join(". ")}.`
+    : "";
   const note =
     input.source === "PLAN" && input.note
       ? `\nKullanıcının açık notu: ${input.note}`
       : "";
+  const locale = input.locale ?? "tr";
+  const label = moodLabel(input.moodLevel, locale);
+  const mood = label
+    ? `\n${locale === "en" ? "Mood" : "Ruh hali"}: ${label}`
+    : "";
   return {
     system,
-    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nÇalışma özeti: ${recent}\nSinyal: ${contextSignal}\nBekleyen görevler: ${JSON.stringify(tasks)}${note}`,
+    user: `Sınav: ${input.examType ?? "belirtilmemiş"}\nKanıtlar:\n${evidence}\nSinyal: ${contextSignal}${mood}${memories}${preferences}${rhythmLine}\nBekleyen görevler: ${JSON.stringify(tasks)}${input.source === "PLAN" && input.minutesPerDay ? `\nDoğrulanmış konular: ${JSON.stringify(input.topics?.slice(0, 120) ?? [])}` : ""}${note}`,
   };
 }

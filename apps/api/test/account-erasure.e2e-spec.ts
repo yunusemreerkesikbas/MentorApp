@@ -34,6 +34,8 @@ describe("account erasure (e2e)", () => {
       displayName: `Erasure ${label}`,
       username,
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(res.status).toBe(201);
     return res.body as { accessToken: string; user: { id: string } };

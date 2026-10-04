@@ -12,7 +12,15 @@ import type { ForumCoachIntent } from "./forum.js";
 
 export type PlanTaskStatus = "PENDING" | "DONE";
 export type StudySessionStatus = "IN_PROGRESS" | "COMPLETED" | "ABANDONED";
-export type SessionPresetId = "25_5" | "50_10" | "custom";
+/** Existing session credit and persistence ceiling, independent of countdown length. */
+export const SESSION_ACTUAL_SECONDS_MAX = 86_400;
+
+export type SessionPresetId = "25_5" | "50_10" | "custom" | "stopwatch";
+
+/** Shared duration contract for plan tasks and custom focus sessions. */
+export const SESSION_FOCUS_MINUTES_MIN = 5;
+export const SESSION_FOCUS_MINUTES_MAX = 200;
+export const SESSION_FOCUS_MINUTES_STEP = 1;
 
 export const PlanTaskOriginType = {
   COMMUNITY_COACH: "COMMUNITY_COACH",
@@ -133,6 +141,10 @@ export interface PlanTaskDto {
   startTime: string | null;
   /** Wall-clock "HH:MM"; null when open-ended. Never set without `startTime`. */
   endTime: string | null;
+  /** Optional study length, independent of the calendar slot. */
+  durationMinutes: number | null;
+  /** Backend-resolved focus length: explicit duration, usable slot, otherwise null for stopwatch. */
+  sessionFocusMinutes: number | null;
   /** Free-text note shown in the calendar event preview. The STUDENT's own words. */
   description: string | null;
   /**
@@ -169,12 +181,20 @@ export type CoachPlanAdaptationChangeDto =
       subject: string | null;
       fromDate: string;
       toDate: string;
+      /** Backend-written "Neden" line: the verified evidence the coach tied to this change. */
+      reason?: string;
     }
   | {
       kind: "ADD";
       title: string;
       subject: string | null;
+      /** Backend-calculated study length; absent for legacy previews. */
+      durationMinutes?: number | null;
+      /** Verified exam-taxonomy topic, when available. */
+      topic?: string | null;
       taskDate: string;
+      /** Backend-written "Neden" line: the verified evidence the coach tied to this change. */
+      reason?: string;
     };
 
 /** Premium coach preview; no plan row is written until the user confirms selected changes. */
@@ -182,11 +202,32 @@ export interface CoachPlanAdaptationDto {
   status: CoachPlanAdaptationStatus;
   /** Backend-localized calm summary. */
   message: string;
+  /** One verified fact for the preview bubble. Null when no safe subject or plan count exists. */
+  groundingLine: string | null;
+  /** Short, backend-grounded explanation of the proposed rhythm and priorities. */
+  coachNote?: string | null;
   window: { from: string; to: string };
   /** Opaque snapshot hash used to reject stale confirmations. */
   planRevision: string;
   changes: CoachPlanAdaptationChangeDto[];
   model: string;
+  /** What the coach looked at for this preview ("Koçun baktıkları"). */
+  usedEvidence?: import("./ai.js").CoachUsedEvidenceDto[];
+}
+
+/** GET /v1/coach/plan-adaptation/brief: seeds the planning wizard. No model call. */
+export interface CoachPlanAdaptationBriefDto {
+  /** One verified sentence naming what the plan is built from. */
+  groundingLine: string | null;
+  evidence: import("./ai.js").CoachUsedEvidenceDto[];
+  /** Server-computed defaults; the student can change every one of them. */
+  suggestion: {
+    days: number | null;
+    /** ISO weekdays (1 = Monday) the student studied on most in the last 28 days; `days` of them. */
+    weekdays: number[] | null;
+    minutesPerDay: number | null;
+    focusSubjects: string[];
+  };
 }
 
 /** Result of atomically applying a user-selected adaptation preview. */
@@ -234,11 +275,27 @@ export interface StudySessionDto {
   planTaskAutoCompleted: boolean;
 }
 
+/**
+ * One day of the current week, for the panel's streak band.
+ *
+ * `active` is a real activity day; `frozen` is a day a freeze bridged (free monthly allowance or a
+ * purchased rescue), which the UI shows as kept rather than missed. Neither is derived on the
+ * client: the streak walk decides both, so the band can never contradict `currentStreak`.
+ */
+export interface StreakWeekDayDto {
+  /** yyyy-mm-dd, same calendar basis as the streak derivation. */
+  date: string;
+  active: boolean;
+  frozen: boolean;
+}
+
 /** Streak summary derived server-side from `daily_activity` / `streak_state`. */
 export interface StreakSummaryDto {
   currentStreak: number;
   longestStreak: number;
   freezeTokens: number;
+  /** Monday→Sunday of the week `today` falls in; days after today are simply inactive. */
+  week: StreakWeekDayDto[];
 }
 
 /**
@@ -1317,6 +1374,36 @@ export interface NotebookPageDto {
   doc: NotebookPageDoc;
   /** Only the entries this page's items reference, hydrated for rendering. */
   entries: NotebookEntryDto[];
+}
+
+/**
+ * One line of a notebook's contents page ("İçindekiler"): a page that has something on it.
+ *
+ * Summarised on the server from the page document and the cards it pins, so the contents page is
+ * one read instead of a page fetch per page. Nothing here is generated: a title is the student's own
+ * first line of writing, or the topic their cards were filed under.
+ */
+export interface NotebookContentsPageDto {
+  /** Zero-based, the index the page endpoints take. The student reads it as `pageIndex + 1`. */
+  pageIndex: number;
+  /** First line of the page's top-most note, trimmed. Null when the page has no written note. */
+  noteTitle: string | null;
+  /** The topic most of the page's cards were filed under. Null when no card has one. */
+  topicName: string | null;
+  /** The subject most of the page's cards were filed under. */
+  subjectRef: string | null;
+  subjectName: string | null;
+  entryCount: number;
+  /** Cards on this page whose review moment has arrived. */
+  dueCount: number;
+  stickerCount: number;
+  inkCount: number;
+}
+
+export interface NotebookContentsDto {
+  notebookId: string;
+  /** Pages with anything on them, in page order. A notebook nobody has written in has none. */
+  pages: NotebookContentsPageDto[];
 }
 
 /**

@@ -18,9 +18,8 @@ const SPONSORSHIP_FLAG_KEY = "mentorship.seats.sponsorship_enabled";
 /**
  * W8 seat events → W4 entitlement.
  *
- * Only the domain constants cross the boundary, never a service: `PaymentsModule` does not import
- * `MentorshipModule` and vice versa. Same shape as W5's `MentorshipEventsListener`, and it is what
- * keeps "who may follow whom" and "who may use the AI" two separate questions with two owners.
+ * Payments consumes W8's event constants and registered eligibility check without importing
+ * `MentorshipModule` or its repositories. W8 owns the relationship; W4 owns the entitlement.
  *
  * Best-effort. The link is already committed when we get here, and a failure to attach premium
  * must not surface as an error to the student who just accepted an invitation.
@@ -33,8 +32,11 @@ export class SponsoredSeatListener {
 
   @OnEvent(MentorshipEventTopic.LINK_ACCEPTED)
   async onLinkAccepted(event: MentorshipLinkAccepted): Promise<void> {
-    if (event.seatKind === MentorshipSeatKind.NONE) return;
-    await this.seats.grant(event.studentId, event.linkId).catch((err: unknown) => {
+    // Only a held seat carries Premium: SELF pays for themselves (one payer per student).
+    if (event.seatKind !== MentorshipSeatKind.FREE && event.seatKind !== MentorshipSeatKind.PAID) {
+      return;
+    }
+    await this.seats.grant(event.studentId, event.linkId, event.coachId).catch((err: unknown) => {
       this.logger.error(`Sponsored seat grant failed for link ${event.linkId}`, err);
     });
   }

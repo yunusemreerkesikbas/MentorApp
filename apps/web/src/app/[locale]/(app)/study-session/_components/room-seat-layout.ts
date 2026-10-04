@@ -23,6 +23,12 @@ export interface SeatLayoutOptions {
   centerYPct?: number;
   /** Where seat 0 sits, in degrees clockwise from the top of the table. */
   startAngleDeg?: number;
+  /**
+   * How many width-units one height-percent is worth. `1` on a square stage. A phone stage
+   * that is 4/3 as tall as it is wide passes `4/3`, so the walk is measured in pixels and
+   * seats do not bunch on the short axis.
+   */
+  yScale?: number;
 }
 
 /** Perimeter samples. 720 keeps the arc-length error far below one pixel at any sane table size. */
@@ -34,6 +40,7 @@ const DEFAULTS = {
   centerXPct: 50,
   centerYPct: 50,
   startAngleDeg: 0,
+  yScale: 1,
 } satisfies Required<SeatLayoutOptions>;
 
 /** Point on the ellipse at parameter `t`; t = 0 is the top, and t grows clockwise on screen. */
@@ -56,8 +63,9 @@ function pointAt(
  *
  * Coordinates are percentages, so the caller positions each seat absolutely and the layout
  * survives any container size. Radii are percentages of *different* axes, which makes the
- * arc length a screen-space approximation — exact on a square container, and visually even
- * on the near-square ones the room view uses.
+ * arc length a screen-space approximation — exact on a square container. A taller stage
+ * passes `yScale` (height ÷ width) so one percent of height counts as more than one
+ * percent of width, and the walk stays even in pixels.
  */
 export function seatPositions(
   count: number,
@@ -65,7 +73,7 @@ export function seatPositions(
 ): SeatPosition[] {
   if (!Number.isFinite(count) || count <= 0) return [];
 
-  const { radiusXPct: rx, radiusYPct: ry, centerXPct: cx, centerYPct: cy, startAngleDeg } = {
+  const { radiusXPct: rx, radiusYPct: ry, centerXPct: cx, centerYPct: cy, startAngleDeg, yScale } = {
     ...DEFAULTS,
     ...options,
   };
@@ -76,7 +84,7 @@ export function seatPositions(
   for (let i = 1; i <= SAMPLES; i++) {
     const current = pointAt((2 * Math.PI * i) / SAMPLES, cx, cy, rx, ry);
     const dx = current.leftPct - previous.leftPct;
-    const dy = current.topPct - previous.topPct;
+    const dy = (current.topPct - previous.topPct) * yScale;
     cumulative.push(cumulative[i - 1]! + Math.hypot(dx, dy));
     previous = current;
   }

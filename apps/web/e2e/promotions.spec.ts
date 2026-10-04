@@ -35,6 +35,7 @@ const plans: PlanDto[] = [
     // Purchase is live so the consent copy and the coupon field render.
     seatCount: 0,
   purchaseEnabled: true,
+  redirectToMobile: false,
   },
 ];
 
@@ -43,6 +44,9 @@ const subscription: SubscriptionView = {
   entitlement: { tier: "FREE", isPremium: false, validUntil: null, reason: "NONE" },
   features: {} as SubscriptionView["features"],
   discount: null,
+  trialEligibility: { eligible: true, reason: "AVAILABLE" },
+  pendingTrialCheckoutUrl: null,
+  pendingCheckoutUrl: null,
 };
 
 const LIST_PRICE_OFFERS: PromotionOffersView = {
@@ -87,7 +91,7 @@ const DISCOUNTED_OFFERS: PromotionOffersView = {
 };
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(process.env.PLAYWRIGHT_BASE_URL ?? "http://localhost:3100").origin,
   "access-control-allow-credentials": "true",
 };
 
@@ -171,7 +175,7 @@ test("indirimsiz kullanıcı yalnızca liste fiyatını görür", async ({ page 
   await openPaywall(page);
 
   const paywall = page.getByTestId("premium-paywall");
-  await expect(paywall.getByText("₺249,00")).toBeVisible();
+  await expect(paywall.getByRole("button", { name: /Premium Aylık/ }).getByText("₺249,00")).toBeVisible();
   // No struck-through price and no promotion badge when nothing applies.
   await expect(paywall.locator("s")).toHaveCount(0);
   await expect(paywall.getByText("Hoş geldin hediyesi")).toHaveCount(0);
@@ -192,7 +196,7 @@ test("otomatik indirimde eski fiyat üstü çizili, yeni fiyat ve rozet görün�
   await expect(planCard.getByText("Hoş geldin hediyesi")).toBeVisible();
 });
 
-test("indirimli onay metni hem ilk ödemeyi hem yenileme fiyatını açıklar", async ({
+test("ücretli ve deneme onay metni ilk ödeme ve yenileme fiyatını açıklar", async ({
   page,
 }) => {
   await mockPaywall(page, { auto: DISCOUNTED_OFFERS });
@@ -200,8 +204,10 @@ test("indirimli onay metni hem ilk ödemeyi hem yenileme fiyatını açıklar", 
 
   // Ön bilgilendirme formu: the actual total AND what renews afterwards must both be stated.
   await expect(
-    page.getByTestId("premium-paywall").getByText(/ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/),
+    page.getByTestId("premium-paywall").getByText(/İlk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/),
   ).toBeVisible();
+  await page.getByTestId("premium-paywall").getByRole("radio", { name: "7 gün denemeyle başla" }).check();
+  await expect(page.getByTestId("premium-paywall").getByText(/7 gün deneme sonrası ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/)).toBeVisible();
 });
 
 test("geçerli kupon kodu fiyatı düşürür", async ({ page }) => {
@@ -211,7 +217,7 @@ test("geçerli kupon kodu fiyatı düşürür", async ({ page }) => {
   await openPaywall(page);
 
   const paywall = page.getByTestId("premium-paywall");
-  await expect(paywall.getByText("₺249,00")).toBeVisible();
+  await expect(paywall.getByRole("button", { name: /Premium Aylık/ }).getByText("₺249,00")).toBeVisible();
 
   await paywall.getByRole("button", { name: "Kupon kodun var mı?" }).click();
   await paywall.getByLabel("Kupon kodu").fill("hosgeldin");
@@ -237,7 +243,7 @@ test("geçersiz kupon backend mesajını gösterir ve fiyatı değiştirmez", as
   await paywall.getByRole("button", { name: "Uygula" }).click();
 
   await expect(paywall.getByText("Bu kupon kodunu bulamadık.")).toBeVisible();
-  await expect(paywall.getByText("₺249,00")).toBeVisible();
+  await expect(paywall.getByRole("button", { name: /Premium Aylık/ }).getByText("₺249,00")).toBeVisible();
   await expect(paywall.locator("s")).toHaveCount(0);
 });
 

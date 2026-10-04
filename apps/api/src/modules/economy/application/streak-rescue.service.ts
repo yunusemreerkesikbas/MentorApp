@@ -26,6 +26,7 @@ export class StreakRescueService {
 
   /** Rescue offer for the gate UI: eligibility + cost + whether the balance covers it. */
   async getState(userId: string): Promise<StreakRescueView> {
+    await this.assertEnabled();
     const [{ eligible, date }, cost, balance] = await Promise.all([
       this.streak.getFreezeRescueState(userId),
       this.config.get("economy.coin.streak_freeze_cost"),
@@ -46,6 +47,7 @@ export class StreakRescueService {
    * half-applied purchase completes the apply without a second debit.
    */
   async purchase(userId: string): Promise<StreakRescueView> {
+    await this.assertEnabled();
     const { eligible, date } = await this.streak.getFreezeRescueState(userId);
     if (!eligible || !date) {
       throw new DomainError(ErrorCode.STREAK_RESCUE_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY);
@@ -76,5 +78,11 @@ export class StreakRescueService {
       throw err;
     }
     return this.getState(userId);
+  }
+
+  private async assertEnabled(): Promise<void> {
+    if (!(await this.config.get("economy.streak_rescue.enabled"))) {
+      throw new DomainError(ErrorCode.ECONOMY_DISABLED, HttpStatus.NOT_FOUND);
+    }
   }
 }

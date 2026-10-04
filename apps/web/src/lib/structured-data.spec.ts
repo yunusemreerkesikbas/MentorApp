@@ -38,16 +38,16 @@ describe("structured data", () => {
     expect(
       buildArticleStructuredData({
         article,
-        canonical: "https://mentor.example/bilgi/kpss-basvuru",
+        canonical: "https://mentor.example/blog/kpss-basvuru",
         siteOrigin: "https://mentor.example",
         publisherLogoUrl: "https://mentor.example/mascot/puhu/puhu-default.png",
       }),
     ).toMatchObject({
       "@type": "Article",
-      url: "https://mentor.example/bilgi/kpss-basvuru",
+      url: "https://mentor.example/blog/kpss-basvuru",
       mainEntityOfPage: {
         "@type": "WebPage",
-        "@id": "https://mentor.example/bilgi/kpss-basvuru",
+        "@id": "https://mentor.example/blog/kpss-basvuru",
       },
       publisher: {
         "@type": "Organization",
@@ -62,13 +62,13 @@ describe("structured data", () => {
     });
   });
 
-  it("builds a two-level public breadcrumb without the protected knowledge hub", () => {
+  it("builds a two-level breadcrumb when no trail is given (forum questions)", () => {
     expect(
       buildBreadcrumbStructuredData({
         homeName: "Mentor",
         homeUrl: "https://mentor.example",
         pageName: article.title,
-        pageUrl: "https://mentor.example/bilgi/kpss-basvuru",
+        pageUrl: "https://mentor.example/blog/kpss-basvuru",
       }).itemListElement,
     ).toEqual([
       {
@@ -81,7 +81,27 @@ describe("structured data", () => {
         "@type": "ListItem",
         position: 2,
         name: article.title,
-        item: "https://mentor.example/bilgi/kpss-basvuru",
+        item: "https://mentor.example/blog/kpss-basvuru",
+      },
+    ]);
+  });
+
+  it("puts the public blog between home and the article", () => {
+    const list = buildBreadcrumbStructuredData({
+      homeName: "Mentor",
+      homeUrl: "https://mentor.example",
+      trail: [{ name: "Blog", url: "https://mentor.example/blog" }],
+      pageName: article.title,
+      pageUrl: "https://mentor.example/blog/kpss-basvuru",
+    });
+    expect(list.itemListElement).toEqual([
+      { "@type": "ListItem", position: 1, name: "Mentor", item: "https://mentor.example" },
+      { "@type": "ListItem", position: 2, name: "Blog", item: "https://mentor.example/blog" },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: article.title,
+        item: "https://mentor.example/blog/kpss-basvuru",
       },
     ]);
   });

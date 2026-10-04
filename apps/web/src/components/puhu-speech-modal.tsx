@@ -4,24 +4,15 @@ import {
   useCallback,
   useEffect,
   useId,
-  useMemo,
   useState,
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { X } from "lucide-react";
 import { ShimmerText, StreamingText } from "@mentor/ui";
-import { PUHU_MOTION_FRAMES } from "@/lib/onboarding-assets";
+import { PuhuSpeakingMascot } from "./puhu-speaking-mascot";
 import { PuhuSpeechBubble } from "./puhu-thought-cloud";
-
-const SPEECH_FRAMES = [
-  PUHU_MOTION_FRAMES.default,
-  PUHU_MOTION_FRAMES.talkClosed,
-  PUHU_MOTION_FRAMES.blink,
-  PUHU_MOTION_FRAMES.lookDown,
-] as const;
 
 export interface PuhuSpeechModalProps {
   /** Controls overlay visibility */
@@ -67,19 +58,19 @@ export function PuhuSpeechModal({
   const reduceMotion = useReducedMotion();
   const titleId = useId();
 
-  const [mouthClosed, setMouthClosed] = useState(false);
-  const [blinking, setBlinking] = useState(false);
+  const [entered, setEntered] = useState(false);
   const [streamFinished, setStreamFinished] = useState(false);
-  const [renderedKey, setRenderedKey] = useState({ open: isOpen, text });
+  const [renderedKey, setRenderedKey] = useState({ open: isOpen, text, isLoading });
 
   // Reset stream completion when dialog opens or text changes (standard React state adjustment during render)
-  if (renderedKey.open !== isOpen || renderedKey.text !== text) {
-    setRenderedKey({ open: isOpen, text });
+  if (renderedKey.open !== isOpen || renderedKey.text !== text || renderedKey.isLoading !== isLoading) {
+    if (renderedKey.open !== isOpen) setEntered(false);
+    setRenderedKey({ open: isOpen, text, isLoading });
     setStreamFinished(false);
   }
 
   const isSpeaking = Boolean(
-    isOpen && !isLoading && text && !streamFinished && !reduceMotion,
+    isOpen && entered && !isLoading && text && !streamFinished && !reduceMotion,
   );
 
   // Lock body scroll and register keyboard Escape listener
@@ -99,40 +90,7 @@ export function PuhuSpeechModal({
     };
   }, [dismissOnEscape, isOpen, onClose]);
 
-  // Speaking mouth flapping loop (toggles talkClosed <-> default every 140ms)
-  useEffect(() => {
-    if (!isSpeaking) return;
-    const interval = window.setInterval(() => {
-      setMouthClosed((prev) => !prev);
-    }, 140);
-    return () => window.clearInterval(interval);
-  }, [isSpeaking]);
-
-  // Stream finish callback
-  const handleStreamComplete = useCallback(() => {
-    setStreamFinished(true);
-    if (!reduceMotion) {
-      setBlinking(true);
-      window.setTimeout(() => setBlinking(false), 220);
-    }
-  }, [reduceMotion]);
-
-  // Occasional gentle idle blinking when settled
-  useEffect(() => {
-    if (!isOpen || isSpeaking || isLoading || reduceMotion) return;
-    const interval = window.setInterval(() => {
-      setBlinking(true);
-      window.setTimeout(() => setBlinking(false), 180);
-    }, 4500);
-    return () => window.clearInterval(interval);
-  }, [isLoading, isOpen, isSpeaking, reduceMotion]);
-
-  const currentFrame = useMemo(() => {
-    if (blinking) return PUHU_MOTION_FRAMES.blink;
-    if (isLoading) return PUHU_MOTION_FRAMES.lookDown;
-    if (isSpeaking && mouthClosed) return PUHU_MOTION_FRAMES.talkClosed;
-    return PUHU_MOTION_FRAMES.default;
-  }, [blinking, isLoading, isSpeaking, mouthClosed]);
+  const handleStreamComplete = useCallback(() => setStreamFinished(true), []);
 
   if (typeof document === "undefined") return null;
 
@@ -170,14 +128,14 @@ export function PuhuSpeechModal({
             exit={{ opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.18 }}
             aria-label={closeAriaLabel}
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex size-10 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 z-30 flex size-11 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-white/80 hover:text-white border border-white/20 backdrop-blur-md transition-all cursor-pointer shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
           >
             <X className="size-5" />
           </motion.button>
 
           {/* Dialogue stage: bubble above Puhu on mobile; Puhu then bubble on desktop */}
           <div
-            className="relative z-10 flex w-[min(100%,20rem)] flex-col items-center overflow-visible pointer-events-auto sm:w-auto sm:max-w-none sm:flex-row sm:items-center sm:gap-3"
+            className="relative z-10 flex w-full max-w-sm flex-col items-center overflow-visible pointer-events-auto sm:max-w-xl sm:flex-row sm:items-center"
             onClick={(e) => e.stopPropagation()}
           >
             <motion.div
@@ -190,46 +148,29 @@ export function PuhuSpeechModal({
               animate={{ opacity: 1, scale: 1, y: 0 }}
               transition={{ duration: 0.28, ease: "easeOut" }}
             >
-              <div
-                className="absolute -bottom-2 inset-x-2 h-6 rounded-full blur-md opacity-30 pointer-events-none"
-                style={{
-                  background:
-                    "radial-gradient(ellipse at center, rgba(255, 200, 50, 0.6) 0%, transparent 70%)",
-                }}
-                aria-hidden="true"
-              />
-              {SPEECH_FRAMES.map((src) => (
-                <Image
-                  key={src}
-                  src={src}
-                  alt=""
-                  fill
-                  priority
-                  sizes="(max-width: 640px) 96px, 112px"
-                  className={`object-contain drop-shadow-md ${src === currentFrame ? "opacity-100" : "opacity-0"}`}
-                  aria-hidden
-                />
-              ))}
+              <PuhuSpeakingMascot isSpeaking={isSpeaking} isLoading={isLoading} />
             </motion.div>
 
             <motion.div
-              className="relative z-10 order-1 min-w-0 w-full sm:order-2 sm:w-auto sm:max-w-[22rem] select-text overflow-visible"
+              className="relative z-10 order-1 min-w-0 w-full sm:order-2 sm:flex-1 select-text overflow-visible"
               initial={
                 reduceMotion
                   ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.92, y: 10 }
+                  : { opacity: 0, scale: 0.96, y: 8 }
               }
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={
                 reduceMotion
                   ? { opacity: 0 }
-                  : { opacity: 0, scale: 0.95, y: 6 }
+                  : { opacity: 0, scale: 0.96, transition: { duration: 0.15 } }
               }
-              transition={{ duration: 0.28, ease: [0.22, 1, 0.36, 1] }}
+              transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
+              onAnimationComplete={() => { if (isOpen) setEntered(true); }}
             >
               <PuhuSpeechBubble>
                 {badgeText ? (
-                  <div className="flex items-center justify-between gap-2 mb-2">
+                  <div id={titleId} className="flex items-center gap-2 mb-3">
+                    {badgeIcon}
                     <span className="text-xs font-bold text-[var(--color-secondary)]">
                       {badgeText}
                     </span>
@@ -238,18 +179,19 @@ export function PuhuSpeechModal({
 
                 <div className="flex items-center">
                   {isLoading ? (
-                    <p className="text-sm sm:text-base font-medium text-[var(--color-secondary)] py-1">
+                    <p className="text-base font-medium text-[var(--color-secondary)] py-1">
                       <ShimmerText text={loadingText} />
                     </p>
                   ) : text ? (
-                    <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-body)]">
-                      <StreamingText
-                        text={text}
-                        onComplete={handleStreamComplete}
-                      />
+                    <p className="text-base leading-relaxed font-medium text-[var(--color-body)]">
+                      {entered || reduceMotion ? (
+                        <StreamingText key={text} text={text} onComplete={handleStreamComplete} />
+                      ) : (
+                        <span className="invisible" aria-hidden="true">{text}</span>
+                      )}
                     </p>
                   ) : (
-                    <p className="text-sm sm:text-base leading-relaxed font-medium text-[var(--color-secondary)]">
+                    <p className="text-base leading-relaxed font-medium text-[var(--color-secondary)]">
                       {loadingText}
                     </p>
                   )}

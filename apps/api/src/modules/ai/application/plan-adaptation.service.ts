@@ -1,6 +1,8 @@
 import { HttpStatus, Inject, Injectable } from "@nestjs/common";
 import {
+  CoachEvidenceType,
   PremiumFeatureId,
+  type CoachPlanAdaptationBriefDto,
   type CoachPlanAdaptationDto,
   type CoachPlanAdaptationStatus,
 } from "@mentor/types";
@@ -11,6 +13,8 @@ import { ConfigRegistryService } from "../../../common/config/config-registry.se
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { CoachEvidenceService } from "../../coaching/application/coach-evidence.service";
+import { ContentService } from "../../content/application/content.service";
 import { MoodService } from "../../coaching/application/mood.service";
 import { PlanService } from "../../coaching/application/plan.service";
 import { SessionService } from "../../coaching/application/session.service";
@@ -20,15 +24,22 @@ import {
   buildPlanAdaptationPrompt,
   parsePlanAdaptation,
   PLAN_ADAPTATION_MAX_PROMPT_TASKS,
+  selectPlanEvidence,
+  studyDatesFor,
+  suggestPlanBrief,
+  type PromptEvidence,
   type PromptPlanTask,
 } from "../domain/plan-adaptation";
 import { AiUsageRepository } from "../infrastructure/ai-usage.repository";
 import { AiBudgetGuard } from "./ai-budget.guard";
-import { ContextBuilder } from "./context-builder.service";
+import { CoachProfileService } from "./coach-profile.service";
+import { groundingFact } from "../domain/grounding-fact";
 import { promptLocale } from "../domain/prompt-locale";
 import { PremiumFeatureGateService } from "./premium-feature-gate.service";
 
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+type AdaptationSnapshot = Awaited<ReturnType<PlanService["getAdaptationSnapshot"]>>;
 
 /** Premium, user-triggered preview. This service never mutates coaching plan data. */
 @Injectable()
@@ -38,26 +49,36 @@ export class PlanAdaptationService {
     private readonly plans: PlanService,
     private readonly moods: MoodService,
     private readonly sessions: SessionService,
-    private readonly context: ContextBuilder,
+    private readonly evidence: CoachEvidenceService,
     private readonly usage: AiUsageRepository,
     private readonly config: ConfigRegistryService,
     private readonly featureGate: PremiumFeatureGateService,
     private readonly budget: AiBudgetGuard,
     private readonly i18n: I18nService,
+    private readonly profiles: CoachProfileService,
+    private readonly content: ContentService,
   ) {}
+
+  /** Wizard seed: what the coach will read and sensible defaults. No model call, no quota. */
+  async brief(user: RequestUser): Promise<CoachPlanAdaptationBriefDto> {
+    await this.assertAvailable(user);
+    const pool = await this.evidence.build(user.id);
+    return {
+      groundingLine: groundingFact({
+        signal: "COVERAGE",
+        locale: promptLocale(I18nContext.current()?.lang),
+        coverage: pool.coverage,
+      }),
+      evidence: this.visible(selectPlanEvidence("PLAN", pool.evidence)),
+      suggestion: suggestPlanBrief(pool),
+    };
+  }
 
   async preview(
     user: RequestUser,
     input: CoachPlanAdaptationInput,
   ): Promise<CoachPlanAdaptationDto> {
-    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
-      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
-    }
-    await this.featureGate.assertAllowed(
-      user.id,
-      user.roles,
-      PremiumFeatureId.PLAN_AI,
-    );
+    await this.assertAvailable(user);
 
     const snapshot = await this.plans.getAdaptationSnapshot(user.id);
     await this.assertSourceApplicable(user.id, input);
@@ -74,17 +95,32 @@ export class PlanAdaptationService {
       input.source === "MOOD" &&
       !pendingTasks.some((task) => task.taskDate === snapshot.window.from)
     ) {
-      return this.response("NO_CHANGE", snapshot, [], "rules");
+      // Nothing to lighten: no model call, but a true sentence and what it read, never a blank sheet.
+      const pool = await this.evidence.build(user.id);
+      return this.response(
+        "NO_CHANGE",
+        snapshot,
+        [],
+        "rules",
+        groundingFact({
+          signal: "REST",
+          locale: promptLocale(I18nContext.current()?.lang),
+          todayPlan: this.todayPlan(snapshot),
+        }),
+        selectPlanEvidence("MOOD", pool.evidence),
+        // Same status for the API; the words match a day that is already done.
+        "REST",
+      );
     }
 
-    const [dailyLimit, usedToday, context] = await Promise.all([
+    const [dailyLimit, usedToday, pool] = await Promise.all([
       this.config.get("ai.plan_draft.daily_limit"),
       this.usage.countFeaturesSince(
         user.id,
         [AiUsageFeature.PLAN_DRAFT, AiUsageFeature.PLAN_ADAPTATION],
         new Date(Date.now() - DAY_MS),
       ),
-      this.context.build(user.id),
+      this.evidence.build(user.id),
     ]);
     if (usedToday >= dailyLimit) {
       throw new DomainError(
@@ -105,21 +141,52 @@ export class PlanAdaptationService {
             (task) => task.taskDate === snapshot.window.from,
           )
         : referencedTasks;
+    const locale = promptLocale(I18nContext.current()?.lang);
+    const selected = selectPlanEvidence(input.source, pool.evidence);
+    let topics: Awaited<ReturnType<ContentService["listExamTopicsByExamId"]>> = [];
+    if (input.source === "PLAN" && pool.examType) {
+      try {
+        const exam = await this.content.getCurrentExamByFamily(pool.examType, pool.examVariant);
+        topics = await this.content.listExamTopicsByExamId(exam.id);
+      } catch (error) {
+        if (!(error instanceof DomainError) || error.code !== ErrorCode.CONTENT_EXAM_NOT_FOUND) throw error;
+      }
+    }
+    const studyDates =
+      input.source === "PLAN" && input.studyWeekdays?.length
+        ? studyDatesFor(snapshot.window.from, input.studyWeekdays)
+        : undefined;
+    // Preferences and memory shape a whole week; a low-mood or hard-session fix stays narrow.
+    const personal =
+      input.source === "PLAN" ? await this.personalContext(user.id) : {};
     const { system, user: userMessage } = buildPlanAdaptationPrompt({
       source: input.source,
       todayIso: snapshot.window.from,
-      examType: context.examType,
-      recentSummary: context.recentSessions
-        ? {
-            count7d: context.recentSessions.count7d,
-            focusMinutes7d: context.recentSessions.focusMinutes7d,
-            subjects: context.recentSessions.subjects,
-          }
-        : null,
+      examType: pool.examType,
+      evidence: selected,
+      examPhase: input.source === "PLAN" ? pool.examPhase : null,
+      ...personal,
       tasks: promptTasks,
       note: input.source === "PLAN" ? input.note : undefined,
-      locale: promptLocale(I18nContext.current()?.lang),
+      days: input.source === "PLAN" ? input.days : undefined,
+      studyDates,
+      minutesPerDay: input.source === "PLAN" ? input.minutesPerDay : undefined,
+      focusSubjects: input.source === "PLAN" ? input.focusSubjects : undefined,
+      topics,
+      locale,
+      moodLevel: pool.moodLevel,
     });
+    const groundingLine =
+      input.source === "PLAN"
+        ? groundingFact({ signal: "COVERAGE", locale, coverage: pool.coverage })
+        : groundingFact({
+            signal: "PLAN",
+            locale,
+            pendingSubjects: promptTasks.flatMap((task) =>
+              task.subject ? [task.subject] : [],
+            ),
+            todayPlan: this.todayPlan(snapshot),
+          });
 
     await this.budget.assertWithinBudget();
     const result = await this.llm.complete({ system, user: userMessage });
@@ -143,6 +210,31 @@ export class PlanAdaptationService {
       input.source,
       promptTasks,
       pendingTasks,
+      input.source === "PLAN"
+        ? {
+            days: input.days,
+            studyDates,
+            minutesPerDay: input.minutesPerDay,
+            focusSubjects: input.focusSubjects,
+            topics,
+            locale,
+          }
+        : undefined,
+      {
+        evidence: selected,
+        weakSubjects: pool.weakSubjects,
+        weakReason:
+          pool.evidence.find(
+            (item) => item.type === CoachEvidenceType.WEAK_SUBJECTS,
+          )?.summary ?? null,
+        chosenReason: this.i18n.translate(
+          "coaching.planAdaptation.reasonChosenSubject",
+          { lang: I18nContext.current()?.lang },
+        ) as unknown as string,
+        notebookReason: pool.evidence.find(
+          (item) => item.type === CoachEvidenceType.NOTEBOOK_TOPICS,
+        )?.summary ?? null,
+      },
     );
     if (parsed.kind === "MALFORMED") {
       throw new DomainError(
@@ -150,12 +242,96 @@ export class PlanAdaptationService {
         HttpStatus.SERVICE_UNAVAILABLE,
       );
     }
+    const coachNote = input.source === "PLAN" && input.minutesPerDay && parsed.changes.some((change) => change.kind === "ADD")
+      ? this.coachNote(pool, input.minutesPerDay, parsed.changes)
+      : null;
     return this.response(
       parsed.changes.length > 0 ? "READY" : "NO_CHANGE",
       snapshot,
       parsed.changes,
       result.model,
+      groundingLine,
+      selected,
+      undefined,
+      coachNote,
     );
+  }
+
+  private coachNote(
+    pool: Awaited<ReturnType<CoachEvidenceService["build"]>>,
+    minutes: number,
+    changes: CoachPlanAdaptationDto["changes"],
+  ): string {
+    const lang = I18nContext.current()?.lang;
+    const additions = changes.filter((change) => change.kind === "ADD");
+    const days = new Set(additions.map((change) => change.taskDate)).size;
+    const selectedSubjects = additions.flatMap((change) => change.subject ? [change.subject] : []);
+    const weak = pool.weakSubjects.filter((subject) =>
+      selectedSubjects.some((selected) => selected.toLocaleLowerCase("tr-TR") === subject.toLocaleLowerCase("tr-TR")),
+    );
+    const priority = weak.length
+      ? this.i18n.translate("coaching.planAdaptation.coachNotePriority", {
+          lang,
+          args: { subjects: weak.join(", ") },
+        }) as unknown as string
+      : "";
+    const rhythm = pool.averageSessionMinutes28d != null && pool.averageSessionMinutes28d > 0
+      ? this.i18n.translate("coaching.planAdaptation.coachNoteRhythm", {
+          lang,
+          args: { average: Math.round(pool.averageSessionMinutes28d), minutes, days },
+        }) as unknown as string
+      : this.i18n.translate("coaching.planAdaptation.coachNoteGoal", {
+          lang,
+          args: { minutes, days },
+        }) as unknown as string;
+    const goal = pool.evidence.find((item) => item.type === CoachEvidenceType.GOAL)?.summary;
+    return [goal, priority, rhythm].filter(Boolean).join(" ");
+  }
+
+  private async assertAvailable(user: RequestUser): Promise<void> {
+    if (!(await this.config.get(FeatureFlag.AI_ENABLED))) {
+      throw new DomainError(ErrorCode.AI_DISABLED, HttpStatus.NOT_FOUND);
+    }
+    await this.featureGate.assertAllowed(
+      user.id,
+      user.roles,
+      PremiumFeatureId.PLAN_AI,
+    );
+  }
+
+  /** Coaching preferences always; structured memory only after explicit consent. */
+  private async personalContext(userId: string) {
+    const profile = await this.profiles.getProfile(userId);
+    const memories =
+      profile.memoryConsent === "GRANTED"
+        ? await this.profiles.getPromptMemories(userId)
+        : [];
+    return {
+      memories,
+      preferences: {
+        support: profile.supportPreference,
+        directness: profile.directnessPreference,
+      },
+    };
+  }
+
+  private todayPlan(
+    snapshot: AdaptationSnapshot,
+  ): { total: number; done: number } | null {
+    const today = snapshot.tasks.filter(
+      (task) => task.taskDate === snapshot.window.from,
+    );
+    return today.length > 0
+      ? {
+          total: today.length,
+          done: today.filter((task) => task.status === "DONE").length,
+        }
+      : null;
+  }
+
+  /** The evidence refs are prompt plumbing; the student sees the lines only. */
+  private visible(evidence: PromptEvidence[]) {
+    return evidence.map(({ ref: _ref, ...item }) => item);
   }
 
   private async assertSourceApplicable(
@@ -191,19 +367,26 @@ export class PlanAdaptationService {
 
   private response(
     status: CoachPlanAdaptationStatus,
-    snapshot: Awaited<ReturnType<PlanService["getAdaptationSnapshot"]>>,
+    snapshot: AdaptationSnapshot,
     changes: CoachPlanAdaptationDto["changes"],
     model: string,
+    groundingLine: string | null,
+    evidence: PromptEvidence[],
+    messageKey: CoachPlanAdaptationStatus | "REST" = status,
+    coachNote: string | null = null,
   ): CoachPlanAdaptationDto {
     return {
       status,
-      message: this.i18n.translate(`coaching.planAdaptation.${status}`, {
+      message: this.i18n.translate(`coaching.planAdaptation.${messageKey}`, {
         lang: I18nContext.current()?.lang,
       }) as unknown as string,
+      groundingLine,
+      ...(coachNote ? { coachNote } : {}),
       window: snapshot.window,
       planRevision: snapshot.planRevision,
       changes,
       model,
+      usedEvidence: this.visible(evidence),
     };
   }
 }

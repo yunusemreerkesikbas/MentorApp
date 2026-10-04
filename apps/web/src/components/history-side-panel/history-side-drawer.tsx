@@ -18,10 +18,15 @@ export interface HistorySideDrawerProps {
   testId?: string;
   variant?: "default" | "liquid";
   className?: string;
+  /** Edge it slides from. `right` sits beside a right-hand rail that opens it (/seans). */
+  side?: "left" | "right";
+  /** Keep it at `lg` and up too, for screens that have no desktop rail (/seans). */
+  desktop?: boolean;
 }
 
 /**
- * Mobile left history drawer. Desktop uses HistorySideRail instead.
+ * History drawer. Phones by default, where the desktop HistorySideRail has no room; `desktop`
+ * keeps it on wide screens for pages whose history lives only here.
  */
 export function HistorySideDrawer({
   open,
@@ -33,6 +38,8 @@ export function HistorySideDrawer({
   testId = "history-side-drawer",
   variant = "default",
   className,
+  side = "left",
+  desktop = false,
 }: HistorySideDrawerProps) {
   const tClose = useTranslations("common.bottom_sheet");
   const titleId = useId();
@@ -86,7 +93,7 @@ export function HistorySideDrawer({
   if (!mounted || (!open && !closing)) return null;
 
   return createPortal(
-    <div className="fixed inset-0 z-[80] lg:hidden" data-testid={testId}>
+    <div className={`fixed inset-0 z-[80]${desktop ? "" : " lg:hidden"}`} data-testid={testId}>
       <button
         type="button"
         aria-label={tClose("close")}
@@ -104,12 +111,21 @@ export function HistorySideDrawer({
         aria-modal="true"
         aria-labelledby={titleId}
         className={[
-          "fixed inset-y-0 left-0 z-[81] flex w-[min(85vw,20rem)] flex-col",
+          "fixed inset-y-0 z-[81] flex w-[min(85vw,20rem)] flex-col",
+          side === "right" ? "right-0" : "left-0",
           isLiquid
             ? "session-liquid-drawer rounded-r-[20px]"
-            : "bg-[var(--color-surface)] rounded-r-[16px] shadow-[8px_0_24px_rgba(0,0,0,0.10)]",
+            : side === "right"
+              ? "rounded-l-[var(--play-radius)] bg-[var(--color-surface)] shadow-[var(--shadow-overlay)]"
+              : "bg-[var(--color-surface)] rounded-r-[16px] shadow-[8px_0_24px_rgba(0,0,0,0.10)]",
           "sm:w-[20rem]",
-          closing ? "animate-drawer-left-out" : "animate-drawer-left-in",
+          side === "right"
+            ? closing
+              ? "animate-drawer-out"
+              : "animate-drawer-in"
+            : closing
+              ? "animate-drawer-left-out"
+              : "animate-drawer-left-in",
           className,
         ]
           .filter(Boolean)
@@ -120,8 +136,8 @@ export function HistorySideDrawer({
             type="button"
             onClick={handleClose}
             aria-label={tClose("close")}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-            style={{ color: isLiquid ? "#ffffff" : "var(--color-secondary)" }}
+            className="absolute right-1.5 top-1.5 z-10 flex size-11 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            style={{ color: "var(--color-secondary)" }}
           >
             <X size={18} aria-hidden />
           </button>

@@ -145,6 +145,359 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-03 · Notebook review fixes (PR #133 follow-up).** The editor route keys `NotebookShell` by `notebookId`, so another notebook always gets a fresh page cache, unsaved set and editor state: a reused shell could have shown, then autosaved, the previous notebook's pages. `useNotebookContents` keeps its answer with the notebook it belongs to and never shows another notebook's lines or hides a failed read behind them. Signing out (or losing the session) unmounts the opening overlay with the signed-in shell; its cleanup now resets the opening store (`notebookOpening.reset`) and clears the contents cache (`forgetAllNotebookContents`), so nothing replays or is served to the next account in the same tab. The desk's drop-in timers are cleared on unmount. Usage unchanged. Gotcha: module-level notebook state must be dropped at the signed-in shell's boundary; the tab survives sign-out. Related: `notebooks/[notebookId]/page.tsx`, `use-notebook-contents.ts`, `notebook-opening-overlay.tsx`, `lib/notebook-opening.ts`, `lib/notebook-contents-cache.ts` (+ specs), `notebooks-shell.tsx`, DESIGN.md §9.1.
+
+- **2026-10-03 · Defterlerim desk, lift-and-open, İçindekiler and the page curl.** Decided with the product owner (direction "A · Masa"); motion budget and beats in DESIGN.md §9.1 "Masa". `/defterlerim` is a desk scene: notebooks lie on a wooden desk as 3D books (34° tilt; spin, nudge and thickness seeded from the id and page count; up to five due tabs), lit by the app theme (light: a day window and a sunbeam; dark: a night window and a lamp whose head turns to the hovered or focused book while its cone and light pool follow). From 640 px Puhu sits on the desk with one contextual bubble (due count, idle, first notebook, new notebook; on a phone the app header's Puhu stays the only one); a notebook that was just made drops onto the desk. Clicking a book lifts it, flies it to where the editor's book will stand and opens its cover onto the inside cover and the contents page; the editor mounts underneath at 520 ms and the book settles onto the editor's real first spread before it fades. The editor's cover now always opens onto that spread: the inside cover (ex-libris with the owner's name and a Puhu stamp) and **İçindekiler**, one line per written page (the first note line, else topic, subject or what is on it; due badges), where a line riffles the book to that page and an empty book offers "Yazmaya başla". New read endpoints: `GET /v1/coaching/notebook/contents` and `GET /v1/coaching/notebooks/:id/contents` (`NotebookContentsDto`), summarized by the pure `notebook-contents.policy.ts` from `doc -> 'items'` and the ink length; no schema change. Page turns: the rigid 3D leaf (`notebook-page-turn.tsx`, removed) is replaced by a corner curl that keeps the page's content (one straight fold, the back of the sheet over the page it uncovers): hands-off on arrows and keys, by hand from the page's outer edge (finishes past a third of the way or on a flick). A read-ahead cache keeps the spreads either side in hand, and pages are saved before a turn leaves them (this also closes the old autosave/turn race). Sounds are synthesised, toggled on the desk and remembered. Usage: Defterlerim → click (or Enter on) a notebook → İçindekiler → a line, "Sonraki" or a drag on the page edge. Gotchas: the hand-off between the two routes is the in-memory store `lib/notebook-opening.ts` (a reload has no book in the air, so the editor opens on its cover); only a small wrapper lives in the app shell, the flight is its own chunk the desk preloads and the wrapper keeps at module level (not `next/dynamic`: a lazy component suspends on first render and React holds the reveal ~300 ms, which the click felt as lag). The desk hides its book only once the store says `underway` (set in the flight's layout effect), and a flight that has not taken off 600 ms after the click is skipped for a plain navigation. The contents cache (`lib/notebook-contents-cache.ts`) is fresh for 8 s and dropped after every page save. `useFitSize` does not measure the book on first mount, so the landing measures `bookRef` itself. `.nb-book` is the size container (`cqw`); never give a 3D descendant `container-type` (it flattens `preserve-3d`), and keep screen-blended light layers out of stacking contexts. e2e: the cover opens onto contents, so specs that need a writing page use `openToFirstSpread` (`e2e/notebook.spec.ts`). Reduced motion: no flight, no turn animation, no drop-in. Related: `(app)/notebooks/_components/*` (desk), `components/notebook-desk/*` (book, contents page, overlay, flight, CSS), `components/notebook/notebook-page-curl.tsx`, `notebook-riffle.tsx`, `notebook-static-page.tsx`, `(app)/notebook/_components/{notebook-shell,use-notebook-turns,use-notebook-page-cache,notebook-contents-spread,use-notebook-contents,notebook-shell-layout}.ts(x)`, `lib/notebook-{desk,curl,opening,opening-geometry,sfx,contents-cache}.ts`, `apps/api/.../coaching/{domain/notebook-contents.policy,application/mistake-notebook.service,infrastructure/mistake-notebook.repository}.ts`, `e2e/notebook{,s}.spec.ts`.
+- **2026-10-03 · Desk polish: window light, double glint, one "Yeni defter", closed cover, softer page turn.** The day window now lays a soft patch of sun with the mullions' shadow on the wood plus a faint edgeless beam; the old clip-path shaft had hard edges that read as a pane of glass on the desk. Hovering or focusing a book (and the package) runs the cover glint across it twice. The header's "Yeni defter" button is gone: the wrapped package on the desk is now the one control (a focusable `role="button"` named by its tag, shown even when the list failed to load). Turning back past the contents page no longer shows a flat page-sized board: the editor shows the same closed `NotebookBook` the desk uses, held up over the blurred desk (`notebook-closed-cover.tsx`, `NotebookCoverRoom`), and the whole book opens it. Page turns are slower (860 ms spread, 640 ms phone), the corner lifts less (a high corner tilted the fold so far the sheet looked like a card pivoting on the coil), and the fold carries stronger crease, roll and cast-shadow shading. Gotchas: blur on the same box as a `clip-path` or mask keeps its edges sharp, so the sun patch blurs an outer box and masks an inner one; `DeskBackdrop` moved to `components/notebook-desk/desk-backdrop.tsx` so the editor can reuse it. Related: `notebook-desk.css`, `desk-{header,package}.tsx`, `notebooks-shell.tsx`, `notebook-shell.tsx`, `use-notebook-turns.tsx`, `notebook-page-curl.tsx`, `lib/notebook-curl.ts`.
+- **2026-10-03 · Notebook toolbar polish (rail, panel, pen tray).** Kept the rail + side panel layout and tightened it. Rail: 4.5rem wide, 11px labels, and the active item no longer stacks the focus ring on top of its black fill (`aria-pressed:focus-visible:ring-0`). Panel: 320px instead of 384px so it covers less of the left page, a header row with the category title and the collapse button (the old mid-height edge tab is gone), and the add form lost its own `Card` (box in a box). One section-label style for every panel body (`FieldLabel`, sentence case; the text panel's 10px capitals are gone); fonts are a two-column grid. Ara: a search box on top that narrows the already loaded rows by subject, topic, note, solution note and error type (client side only, the server search stays out on purpose; "N kayıt daha" still loads more), and error type and status are chip rows instead of dropdowns (tap the chosen chip again to clear); they no longer repeat in the active-filter chips. Sticker: three tabs, Puhu / Şekil / Süs (`stickerGroup` in `notebook-side-panel.tsx`; a new sticker lands in Süs unless it is a mascot or in `SHAPE_STICKERS`). Kağıt: "Sayfa" and "Kapak" sections; paper tiles show the real pattern. Gotcha: `PAPERS` is sized in `cqw` against the page container, so in the panel it fell back to the viewport and every swatch looked plain; the panel uses its own fixed 8px `PAPER_PREVIEWS`. Desktop pen tray moved from the top of the spread (across the coils and the first lines) to the bottom centre, above the pager, inside the book box; phone keeps it at the top. New keys: `notebook.paper_page_section`, `notebook.index_search_{label,placeholder}`, `notebook.sticker_group.*`. Related: `notebook-{shell,side-panel,index-panel,add-panel}.tsx`.
+- **2026-10-03 · Notebook toolbar in the design blues.** No black fills left in the notebook toolbar. Rail active item, font pills and Ara's filter chips use DESIGN.md's selected chip: `--play-selected` well, `--play-cta` rim, `--play-selected-ink` label (the same recipe as `.session-liquid-btn-obsidian`). "Kaydet" is the play CTA blue with `--play-cta-ink`. The pen tray is navy `#0f2233` (the `--play-cta-ink` value, kept as a fixed constant because the tray must look the same in both themes so a white pen stays visible); the selected pen gets a `--play-cta` tint. Related: `notebook-{rail-items,shell,side-panel,index-panel,ink-toolbar}.tsx`.
+- **2026-10-03 · Review deck polish (flash cards).** Kept the deck as is and fixed what it showed. A question photo that fails to load no longer leaves a blank white card: `CardFront` falls back to the text front ("Ders · Konu" + "Fotoğraf açılmadı. Soruyu hatırlıyor musun?") and the zoom control hides; the summary and "ikinci kez" rows fall back to the text icon the same way. This only hides the symptom, why notebook photos fail to load is still open. The back face starts at `pt-16` so the "1 / 5" chip and the flip control no longer sit on the title. Empty note and solution wells are one-line "ekle" buttons; a well only takes the leftover height once it has text or a caret. The verdict buttons have a visible caption ("Takıldım" / "Çözdüm") and the missed one uses an X instead of the counter-clockwise arrow that read as "undo"; accessible names are unchanged ("Yine çözemedim" / "Çözebildim"). Summary rows wrap instead of truncating the return day, and "Topluluğa sor" is an icon link (same accessible name). Space turns the card; it is ignored in text fields and on focused deck controls, and it is taken when focus is still outside the dialog (the shelf button that opened the deck). `stuck_copyright` is shorter. New keys: `notebook.review_{missed,solved}_short`, `notebook.review_photo_failed`. Gotcha: on master, 9 notebook e2e tests already fail (mostly mobile: sticker, ink, list toggle hidden under the mobile header); not caused by this change. Related: `notebook-review-{card,panel}.tsx`, `e2e/notebook.spec.ts`.
+- **2026-10-04 · Review deck closing screen.** The tinted header bands on the summary and "ikinci kez" screens now reach the right edge: `.mentor-scrollarea` reserves a stable scrollbar gutter, so these rarely-scrolling screens set `scrollbarGutter: "auto"` inline (a Tailwind `[scrollbar-gutter:auto]` utility loses to the unlayered global class). A finished deck that solved something adds "En yakını {days} gün sonra karşında" from `nearestReturnDays` (`notebook-review-deck.ts`, soonest non-healed `nextReviewAt`); it stays off for a deck left half done and for the nothing-solved subtitle, which already names the day. "Deftere dön" is the secondary Button in both endings. New key: `notebook.review_done_next`. Related: `notebook-review-panel.tsx`, `notebook-review-deck{,.spec}.ts`.
+- **2026-10-04 · Photo hover details as a paper slip.** The hover/focus layer on a photo card is no longer a dark gradient band across the bottom third of the photo (it hid the question and shouted "Etiketsiz"): it is a small white slip in the photo's bottom-left corner that fades and rises in. It shows the error type (bold), the note (two lines max) and the status; the topic is not repeated since the print's top margin carries it, and "Etiketsiz" no longer appears on photo cards. Zero reviews read "Henüz tekrar etmedin" instead of "0 kez tekrar ettin". Status inks use new `--notebook-answered-ink` / `--notebook-healed-ink` because the print stays white in both themes and `--color-accent` fails 4.5:1 on white; also new `--notebook-ink`, `--notebook-slip-shadow`. New key: `notebook.card_review_none`. Related: `notebook-entry-card.tsx`.
+- **2026-10-04 · Photo on a page as a taped print.** A photographed mistake on a notebook page follows the "Sayfa bileşeni" board of the "Defterlerim Yeniden Tasarım" canvas instead of a flat bordered box: a white print with a ~3cqw margin, two strips of masking tape over the top corners, a downward shadow and a small resting tilt (±1.5°, stable per entry via `restingTilt(entry.id)`). The topic (or subject) sits on the print's top margin, centred and inset past the tape; the hover overlay keeps error type, note and review count (topic only there when there is none). The tilt drops while the item is selected, so the print lines up with the selection frame and handles (`selected` now passes from `NotebookPageStage` to `NotebookEntryCard`). The photo stays `object-contain`; the letterbox falls on the print's white. The due state is a 2px `--color-progress` outline on the print. New tokens in `theme.css`: `--notebook-print`, `--notebook-print-shadow`, `--notebook-print-caption` (#6f6656, darker than the design's #8a8170 for 4.5:1), `--notebook-tape`. Gotcha: the tape hangs outside the card box, so nothing above the card may clip it. Text-only cards are unchanged. Related: `notebook-entry-card.tsx`, `notebook-page-stage.tsx`.
+- **2026-10-03 · "Yeni defter" form as the desk design's paper card.** The create/edit form no longer uses the kit `Modal` (hairline header, X, outline-ledge Vazgeç): it follows the "Defterlerim Yeniden Tasarım" canvas. A ruled cream sheet taped over the desk and tilted -1°, a Fraunces title, the name typed in Caveat with a placeholder, 36 px colour dots, Kumaş/Kraft/Deri/Düz as pills (selected = dark ink), a live 150 px cover on the right (colour, material and the typed name on its label) and "Vazgeç" as a text action before the Kaydet ledge. Phones under 640 px get the canvas's bottom sheet: handle, centred title, 44 px dots, no tape/tilt/preview, full-width Kaydet with Vazgeç under it. The subject select (not on the canvas) stays, styled as a paper field. Gotchas: paper keeps its palette in both themes, so `.nb-form` remaps `--color-main/body/secondary/surface/border` for `MenuSelect` and its menu, which portals into the open `<dialog>`; the dialog is `overflow: visible` so the tape can hang off the top, and the form inside scrolls (`max-height: 90dvh`). Escape, a scrim press and Vazgeç close it unless a save is in flight. Related: `notebook-form-dialog.tsx`, `notebook-desk.css` (`.nb-form*`), `messages/{tr,en}.json` (`notebooks.form.title_placeholder`, `preview_title`).
+
+- **2026-10-02 · Untimed tasks launch a stopwatch.** A task without explicit duration or a usable 5–200 minute calendar range now returns `sessionFocusMinutes: null`. Plan, dashboard and coach links select the additive `stopwatch` preset, counting elapsed focus upward without an automatic end or break. Pause, reload and navigation retain actual work; manual completion uses the existing minimum-focus/task/reward rules. Usage: leave an all-day task's duration empty, or select "Süresiz" before starting; select 25/5 or 50/10 to return to countdown mode. Gotchas: direct sessions still default to 25/5; existing 24-hour storage/credit retention remains, and orphaned stopwatch rows expire after that window rather than after 25 minutes. This supersedes the default-preset fallback in the earlier duration entry. No additional database migration is required because the preset is stored as text; deploy API before web. Related: `coaching.mappers.ts`, `session.service.ts`, `study-session.repository.ts`, `plan-study-session-link.ts`, `session-persistence.ts`, `use-session-timer.ts`, `use-session-restoration.ts`, `session-timer-ring.tsx`.
+
+- **2026-10-02 · Compact task-duration field.** The optional study duration sits below subject selection as an inline label and a narrow, dense numeric input rather than a full-width field. It wraps on smaller screens and retains the standard 44px touch target, optional empty state, native keyboard and 5–200 validation. Usage: enter minutes beside the duration label when creating or editing all-day or timed tasks. Related: `plan-add-task-form.tsx`.
+
+- **2026-10-02 · Independent task duration and consistent session launch.** Tasks optionally store `durationMinutes` (5–200 whole minutes), separately from calendar start/end times. Add/edit the duration in the task sheet; lists, details, AI previews and monthly subject totals display it. The backend returns `sessionFocusMinutes`: explicit duration, otherwise a valid calendar range, otherwise the default preset. Dashboard, plan and coach links all pass that same value. Accepted coach-chat actions resolve the duration on the server and return the actual session on retries. Custom sessions now accept whole minutes through 200; 25/5, 50/10 and the custom five-minute break remain available. Omitted PATCH duration preserves it; null clears it. Human-coach task edit protection includes duration, and assignment grouping/signatures keep distinct durations separate. **Gotchas:** old titles are never parsed or rewritten; edit old tasks to supply their duration. Deploy migration `0119` before API, then web. Related: `coaching.mappers.ts`, `plan.service.ts`, `plan-add-task-form.tsx`, `plan-study-session-link.ts`, `session-params.ts`, `plan-subject-summary.ts`.
+
+- **2026-10-02 · Phone room stage stands taller than it is wide.** Below 640px the table sits in a 3/4 stage instead of a square, so the two-line seat captions have floor around the oval instead of landing on it or under the pinned action. `seatPositions` takes `yScale` (4/3) so the walk stays even in pixels. Desktop stays square. Usage: open a room on a phone; the chairs and their lines sit inside the stage, clear of the table. Related: `room-seats.tsx`, `room-seat-layout.ts`, `room-shell.tsx`, `room-stage-skeleton.tsx`, `e2e/study-rooms.spec.ts`.
+
+- **2026-10-02 · Seat status wraps, invite code reads as one token.** The live and idle lines under a chair wrap to two lines (`line-clamp-2`) instead of truncating inside the 80px column. The invite code drops letter-spacing so `MASA-XXXXXX` stays one string. Name shortening (`Yunus E.`) and the seat layout are unchanged. Usage: open a room on a phone and read “Şu an masada değil”; open the invite sheet and read the code without gaps. Related: `room-seats.tsx`, `room-invite-sheet.tsx`, `e2e/study-rooms.spec.ts`.
+
+- **2026-10-02 · Study-room join copy and seated label.** A malformed invite code, a full table, and the 3-table cap each say what happened under the join field and on `/masaya-katil`. A dropped connection still asks for a retry. On the room stage, the pinned action reads "Bu masadasın" while your own seat is live, and "Bu masada çalışmaya başla" when it is empty. The link still opens the session with `?room=`. Usage: type `abc`, join a full table, or sit down and read the button. Related: `study-rooms.ts`, `room-shell.tsx`, `room-join-shell.tsx`, `messages/{tr,en}.json`, `e2e/study-session.spec.ts`, `e2e/study-rooms.spec.ts`.
+
+- **2026-10-02 · Study-room UI gaps locked in e2e.** Added characterization coverage for create/join on `/seans` and invite copy/cancel on the table: empty name, theme and seat bounds, trimmed 40-character name, cancel/Escape, quota toast, list refresh, uppercase join code, already-member / full / quota / malformed codes, one-shot `?katil=1`, hidden list on 403, empty-list copy, clipboard invite link, rotate cancel, and a member never seeing the code. Usage: `pnpm --filter @mentor/web exec playwright test e2e/study-session.spec.ts e2e/study-rooms.spec.ts e2e/join-room.spec.ts`. A red case is a product finding, not a cue to change the UI in the same pass. Flow shots land in each test's `test-results` output as `flow-*.png`. Related: `e2e/study-session.spec.ts`, `e2e/study-rooms.spec.ts`.
+
+- **2026-10-02 · Remove the Puhu planning flight.** Restored the wizard → plan-page loading button → preview flow at the user's request. Removed the preparation scene, its page-memory resume state, media assets, render script and TR/EN copy. Usage: finish the wizard and wait for the existing preview; plan personalization and minute-entry controls remain unchanged. Late results after leaving the plan page cannot open a preview. Related: `plan-coach-adaptation-action.tsx`, `use-plan-coach-preview.tsx`, `e2e/plan.spec.ts`. This supersedes the 2026-10-01 flight entry below.
+
+- **2026-10-01 · Puhu planning flight.** Completing the PLAN wizard opens a full-screen sky scene immediately while the existing request runs. Desktop and mobile use separate silent eight-second MP4 compositions, optimized imagegen posters, and live islands/birds drawn from the selected weekdays/subjects. The user requested local motion graphics after the Seedance credit preflight; no paid video generation is needed. Usage: close with X/Escape and resume through “Hazırlık sahnesine dön”; a result received while closed stays behind “Önizlemeyi aç”. Errors retain choices for manual retry/edit, Premium failures keep the paywall, and one gentle message appears after 20 seconds. Native dialogs manage focus/background interaction, reduced motion skips video/decorative motion, and failed playback leaves the poster visible. Gotchas: state lasts only on the mounted plan page; navigation/refresh does not restore a result. No API/DB changes and MOOD/SESSION keep their request path. Related: `plan-coach-adaptation-action.tsx`, `use-plan-coach-preparation.ts`, `use-plan-coach-preview.tsx`, `plan-coach-preparation-{scene,media}.tsx`, `public/mascot/puhu/planning-flight/`, `scripts/render-puhu-flight.ts`, `e2e/plan.spec.ts`.
+
+- **2026-09-30 · Independent PLAN additions and clean minute entry.** Apply requests may include `source: PLAN`; this permits up to three new tasks per day alongside existing tasks. Omitted source, MOOD and SESSION keep the previous daily capacity rule. Revision, duplicate-title and date checks still apply. Usage: accept the new program in the preview; the coach note states that existing tasks are outside its minute budget. Both minute-entry cards have no placeholder or native spinner controls and retain numeric keyboard input, validation and focus indication. Related: `plan.service.ts`, `coaching.ts` validation, `plan-coach-adaptation-action.tsx`, `minute-entry-card.tsx`.
+
+- **2026-09-29 · Plan sihirbazı ve hedef dakikalar.** Plan önizlemesinde koç notu üstte, görev nedeni kartta, kanıtların tamamı açılır bölümde. Plan sihirbazı ile kayıt onboarding’i 60/120/240/360 dk ve aynı ızgarada 10–600 dk serbest giriş sunar; eski özel hedef görünür. Gün seçimi geniş ekranda iki sütun, kısa ekranda kaydırılabilir. Uygulama seçili görevlerin doğrulanmış konusunu `plan_tasks.topic` alanına yazar, 24 değişikliğe izin verir ve İstanbul günündeki revizyonu doğrular. Kullanım: görevleri işaretleyip “Seçilenleri uygula” seç; plan arada değiştiyse önizlemeyi yeniden hazırla. İlgili: `plan.service.ts`, `plan-coach-adaptation-brief-steps.tsx`, `plan-coach-adaptation-preview.tsx`, `daily-goal-step.tsx`.
+
+- **2026-10-04 · Seans redesign turu 2, Durak D: inceleme düzeltmeleri ve gerçek API.** Bağımsız
+  incelemenin bulguları kapandı. Seans sürerken karartılan uygulama kabuğu artık tıklanmıyor ve Tab
+  almıyor: `SessionStage` ışıklar kısıkken `[data-app-chrome]` öğelerini (`app-nav.tsx`: kenar çubuğu,
+  telefon başlığı, alt menü) `inert` yapar. Masadan gelişteki siyah perde `body`'ye portal'lı (iki
+  `isolate` bağlamın içinde z-50'si kabuğun altında kalıyordu); bitmemiş perde kurulumdan çıkınca
+  sıfırlanır. Masa kurma hatası toast yerine pencerenin içinde (`role="alert"`), istek sürerken
+  "Vazgeç" kapalı. `/masaya-katil`: sonuç, efekt yeniden çalışınca (Strict Mode, auth) kaybolmuyor;
+  sayfa gerçekten kapanmadıkça yazılır (`mountedRef`). Bugün şeridi: parçalar dakikaları oranında
+  esner, hedefin kalanı boşluk olur (3 px aralıklar son parçayı artık kırpmıyor); saniyelik, hedefe
+  sayılmayan seans (`countsAsFocusSession: false`) çizilmez; yeni parça bir kez büyür. Halka konumu
+  `startSession()`'dan hemen önce ölçülür. Erişilebilirlik: `RoomNoticeCard` başlığı her değişişte
+  odağı alır, kod yenilenince odak kopyala düğmesine geçer, geçmiş çekmecesinin kapatma düğmesi 44 px.
+  Gerçek API (izole yığın: API 3201 `mentor_test` sahte sağlayıcılar, web 3200): K03 iki görünümde
+  geçti; seans akışı ve masa kur → davet kodu da gerçek API'de denendi (`coaching.study_rooms.enabled`
+  `mentor_test`'te açıldı; kapalıyken "Masaların" kartı kendini gizler). Testler:
+  `e2e/study-session.spec.ts` (kabuk `inert`, kare kare "örtü solmadan sahne inmez", sayılmayan seans,
+  pencere içi hata). Bütçe betiğindeki panel (dashboard) JS aşımı seansla ilgisiz: panel tur 2
+  dosyalarını içe aktarmıyor.
+
+- **2026-09-30 · Seans redesign turu 2, Durak E: "Işıklar kısılır" hareket seti.** `/seans` artık
+  fazlar arasında kalıcı tek bir zeminde duruyor (`session-stage.tsx`): kurulum, odak, mola ve bitiş
+  kartı aynı sahnenin üstünde çizilir; faz değişince sayfa değil ışık değişir. Başla'da odanın perdesi
+  koyulaşır (`STAGE_ROOM_VEIL`: kurulum 58 · odak 86 · mola 44 · bitiş 74, `RoomBackdrop` perdesinin
+  çarpanı; 500 ms ease-out-quint), uygulama kabuğu (kenar çubuğu, telefonda başlık ve alt menü) koyu
+  örtüyle kararır, sade görünümde karanlık salon belirir. Kurulum ekranı 200 ms'de geri çekilir (üst bar
+  yukarı, sayaç aşağı, ray yana; seanstan dönüşte aynı yoldan gelir, ilk boyamada durağan:
+  `AnimatePresence initial={false}`). Halka taşınır: Başla'da kurulum halkasının merkezi ölçülür
+  (`measureIdleRing`), odak halkası yerine çizilip oradan WAAPI ile uçurulur (FLIP, 450 ms); eski halka
+  aynı karede `[data-lights=down]` ile gizlenir, iki halka bir an bile üst üste görünmez. Odak katmanı
+  zeminin kutusuna oturur (masaüstünde kenar çubuğunun sağı), etiket ve kontroller 150 ms gecikmeyle
+  gelir; mola artık katmanı yeniden oynatmaz. Molada ışık açılır ve ısınır (`.session-break-warmth`,
+  soft-light), halkanın yayı odanın yeşiline döner (`@property --session-ring-tint`, 300 ms). Seanstan
+  dönüşte biten seans Bugün şeridine soldan büyür (`freshSessionId`, 450 ms; sayı zaten `DigitPopIn`).
+  Masada biri oturduğunda avatarı bir kez parlar, sonra nefes alır (`room-seat-arrive`, 600 ms; ilk
+  boyamadaki oturanlar parlamaz). Sürekli yeni döngü yok; reduced-motion'da hepsi anında.
+  **Gotcha:** sahne ışıklar kapalıyken `z-30` ile kabuğun üstüne çıkar ve ışık tamamen açılana dek orada
+  kalır (yoksa kenar çubuğu örtüsü solmadan geri gelir); `isolate` sarmalayıcı zemini `-z-10`'da tutar.
+  CDP `Animation.setPlaybackRate` ile yavaşlatılmış yakalamalarda framer'ın WAAPI opaklık animasyonları
+  takılı kalabilir; hareketi gerçek hızda ölçün. Testler: `e2e/study-session.spec.ts` (ışık, mola, bitiş),
+  `e2e/study-rooms.spec.ts` (koltuk parlaması, `page.clock`).
+
+- **2026-09-29 · Seans redesign turu 2, Durak C: masa durumları ve davet varışı.** Masa yüklenirken
+  boş ekran yerine sahne iskeleti var (`room-stage-skeleton.tsx`: zemin, başlık, masa elipsi, koltuklar,
+  CTA; ayrıca sayfanın Suspense fallback'i). Kemikler odanın mürekkebinden türüyor: kitin shimmer'ı
+  `--color-surface-container`/`--color-surface`'ten katman dışı bir gradyan çizdiği için `bg-` sınıfı
+  işe yaramıyor, token'lar değiştiriliyor. Bulunamayan masa (404/403) Puhu'lu sakin bir kart gösteriyor
+  ("Seansa dön" ledge); başka hatalarda "Masa şu an açılamadı" + "Yeniden dene" var. Oturan koltuğun
+  etiketi yeşil yazı yerine odanın mürekkebiyle "Matematik · 18 dk", yanında `--room-live` noktası
+  (yeni oda token'ı: koyu odalarda açık, "Ev"de koyu yeşil). `/masaya-katil` artık bir karşılama kartı
+  (`room-notice-card.tsx`, bulunamadı durumuyla ortak): katılırken Puhu, kod çipi ve ilerleme çizgisi;
+  başarıda perde kararır, masa `?hosgeldin=1` ile açılıp perdeyi kaldırır ve bayrağı adresten siler.
+  Kod geçersiz ya da yoksa "Kodu elle gir" `/seans?katil=1`'e gider ve katılma penceresi bir kez açılır;
+  zaten üyeysen "Masalarına git", ağ hatasında "Yeniden dene" var. Sayfa uygulama kabuğunun dışında
+  olduğu için pastel blob atmosferini kendisi taşıyor. **Gotcha:** `?hosgeldin=1` ve `?katil=1` tek
+  seferlik; ikisi de okunduktan hemen sonra `history.replaceState` ile adresten silinir (yenileme ya da
+  kopyalanan bağlantı normal açılır). İlgili: `room-shell.tsx`, `rooms/[id]/page.tsx`, `room-seats.tsx`,
+  `session-room-list.tsx`, `join-room/_components/room-join-shell.tsx`, `packages/ui/src/theme.css`,
+  `e2e/join-room.spec.ts`, `e2e/study-rooms.spec.ts`.
+
+- **2026-09-29 · Seans redesign turu 2, Durak B: `/seans` iki bölge.** Kurulum ekranı panel
+  çerçevesine geçti (`session-idle-view.tsx`; kabuk yönetir, bileşen çizer): sayaç ana sütunda,
+  `xl`'den itibaren 340 px ray (Bugün · Masaların · Yol arkadaşın); daha darda kartlar sayacın
+  altında, `md`'den iki sütun. Sol geçmiş rayı kalktı; geçmiş her genişlikte sağdan açılan
+  çekmecede (`HistorySideDrawer` `side="right"` + `desktop`, vizyon panosunun varsayılanı aynı).
+  Sahne zemini `fixed` (kenar çubuğundan sonra, telefon başlığının altında), sayfa tek
+  kaydırmalı. "Bugün" kartı (`session-today-card.tsx`, eski hedef kartının yerine): hedef çizgisi
+  bugün tamamlanan seanslardan oluşur (her parça bir seans), yarım kalanlar metinde; seans listesi
+  gelmezse dakikalar tek parça çizilir. Kartlar `PANEL_CARD_TITLE`, çerçeveli ledge ve metin
+  bağlantısı kullanıyor; masa adları tam görünüyor, satırda "1 kişi çalışıyor" ve "uzun süredir
+  sessiz" var. Telefon üst barı: sahne çipinin menüsü (temalar + sade görünüm), ses hapı yalnız
+  ikon, satır `justify-center-safe`. Özet tek satır ("bitiş 18:01"; saatten sonraki Türkçe ek
+  dakikanın okunuşuna göre değiştiği için "'de biter" kullanılmadı). Sade görünümde seçili ön ayar
+  panelin seçili çipi; "Başla" kitin ledge'i (hap değil). `theme.css` cam eşlemesine
+  `--play-selected(-ink)`, `--color-surface-container`, `--play-line`, `--play-track` ve açık
+  `--color-success` eklendi, panelin sınıfları camda okunuyor. **Gotcha:** Playwright'ın tam
+  sayfa görüntüsü sabit zemini yalnız ilk ekran boyunca çizer, alt kartlar beyaz üstünde görünür;
+  gerçek kaydırmada zemin yerinde kalır. Doğrulamayı kaydırılmış görünümün görüntüsüyle yap.
+  İlgili: `study-session-shell.tsx`, `session-today-card.tsx`, `session-room-list.tsx`,
+  `session-buddy-card.tsx`, `session-top-bar.tsx`, `session-setup-summary.tsx`,
+  `session-content-skeleton.tsx`, `packages/ui/src/theme.css`, `e2e/study-session.spec.ts`,
+  `e2e/qa-stage2-real-api.spec.ts` (K03 çekmeceyi her genişlikte açar).
+
+- **2026-09-29 · Seans redesign turu 2, Durak A: masa pencereleri sahnenin dışında, yıkıcı onaylar.**
+  `RoomSheet` artık kit `Modal`'ın `placement="sheet"` hali ve `document.body`'ye portal'lı. İki
+  kritik hata kapandı: pencere `.room-stage`'in içinde çizildiği için token eşlemesi davet kodunu
+  beyaz üstüne krem yazıyordu; telefonda `backdrop-filter`'lı kartın içine sıkışıp alt menünün
+  altında kalıyordu (masa kurulamıyor, koda katılınamıyordu). Masa menüsü uygulamanın
+  `PopoverMenu`'sü (zaten body'ye portal'lı). Masayı kapat, masadan ayrıl ve yol arkadaşlığını
+  bitir "ikinci dokunuşta onay" yerine kitin yıkıcı onayını kullanıyor (kırmızı ledge, odak
+  "Vazgeç"te). Katılma hatası toast değil, alanın altında; `studyRoomJoinFailure` hem pencere hem
+  `/masaya-katil` için ortak. Davet penceresi `room-invite-sheet.tsx`'e ayrıldı: mono kod çipi ve
+  kopyala, `navigator.share` varsa "Bağlantıyı paylaş", kopyalama ve yenileme sonucu bir durum
+  satırında. **Gotcha:** native `<dialog>` açıkken kit `confirm()` ya da toast açma. O katmanlar
+  üst katmanın altında kalır, karartılır ve tıklanamaz; bu yüzden "Kodu yenile" onayı pencerenin
+  içinde soruluyor. İlgili: `room-sheet.tsx`, `room-invite-sheet.tsx`, `room-shell.tsx`,
+  `room-create-sheet.tsx`, `session-room-list.tsx`, `session-buddy-card.tsx`, `lib/study-rooms.ts`
+  (+ spec), `e2e/study-session.spec.ts`, `e2e/study-rooms.spec.ts`.
+
+- **2026-09-27 · W8 link-end seam: pending coach tasks are released.**
+  `PlanService.releaseMentorshipTasksInTransaction(tx, scope)` clears origin and coach note on the
+  ending link's PENDING tasks, in W8's link-end transaction; DONE tasks keep both. The student can
+  edit them from then on (`assertMentorshipTaskEditable` no longer applies). Why and the product
+  side: mentorship.md 2026-09-27. Related: `plan-task-mentorship.repository.ts`
+  `releasePendingMentorshipTasks`, `test/mentorship-link-end.e2e-spec.ts`.
+
+- **2026-09-27 · The student plan opens the day a notification names, and shows the coach's meetings.** `/plan?date=YYYY-MM-DD`
+  now starts on that day, and a link tapped in the notification drawer while already on `/plan`
+  moves there too (the query is followed during render). Every student plan notification points
+  here: coach assignments and changes, plan events and their reminders. Before, all of them opened
+  on today. The parser is the coach plan's `coachPlanQueryTransition`. **The coach's meetings are
+  on the plan too:** until now the student plan read `/plan-tasks` only, so a meeting the coach set
+  up with the student existed in a notification and nowhere else. `use-plan-events.ts` reads
+  `/plan-events` for the selected day's month board; a meeting is a read-only row above the day's
+  tasks ("18:00 – 18:30 · Koçunla") and a `glyph: "event"` chip on every Takvim surface, and both
+  open a details sheet without edit or delete. `&event=` opens that sheet once its month has loaded.
+  **Usage:** tap "Koçundan görevler" or "Planına bir etkinlik eklendi". **Gotchas:** (1) sheets
+  render outside `AuthProvider`, so `PlanCoachEventDetails` takes "Koçunla" as a prop instead of
+  calling `useAuth`. (2) Events are best-effort like holidays: a failed read shows none. (3) The
+  Timeline view does not draw meetings yet. Related: `plan-shell.tsx`, `plan-coach-event.tsx`,
+  `use-plan-events.ts`, `lib/plan-events.ts`, `e2e/plan.spec.ts` "bildirim linki", "koçun görüşmesi".
+
+- **2026-09-27 · Dashboard journey scene loads on demand.** The journey card now loads its
+  spotlight scene when the student opens the level row, keeping the closed scene out of the
+  initial dashboard JavaScript. Usage: open "Yolculuğun" as before. Gotcha: the first opening
+  fetches the scene chunk; the opener ref is passed to the scene so focus returns after Escape
+  even if the card rerenders during loading. Related:
+  `apps/web/src/app/[locale]/(app)/dashboard/_components/journey-card.tsx`.
+
+- **2026-09-24 · Kalan ham tarih aggregate'leri `mapWith` ile çözülüyor.** Bir alttaki `coachRhythm` hatasının taraması: `listTopicSignals`, `listPhotoTopicSignals` ve `CoachingAchievementEvidenceService`'in dört `min(...)`'i artık `.mapWith(<kaynak kolon>)` ile gerçek `Date` döner. Tüketiciler `new Date(x)` ile sardığı için canlıda bozuk yol yoktu; sarmalar kalktı, `analysis.service.ts` doğrudan `row.latestAt.toISOString()` çağırıyor. **Gotcha:** unit mock'ları gerçek `Date` döndürdüğü için eksik `mapWith`'i yakalamaz; `analysis-improvement.e2e-spec.ts` konu sinyalini gerçek DB'de okur, `mapWith` olmadan 500 döner (doğrulandı). `listPhotoTopicSignals`'ın üretimde çağıranı yok. İlgili: `mistake-notebook.repository.ts`, `mock-exam-photo.repository.ts`, `coaching-achievement-evidence.service.ts`, `analysis.service.ts`.
+- **2026-09-24 · Seans ritmi havuza gerçekten ulaşıyor.** `StudySessionRepository.coachRhythm` artık hafta günü kırılımını (`weekdayActivity28d`, İstanbul takvimi) da döner. `lastActiveAt` string geldiği için `SessionService.getCoachRhythm` her seanslı öğrencide hata veriyordu ve koç ritmi hiç görmüyordu; `.mapWith` ile düzeltildi (ayrıntı: `docs/features/ai.md` 2026-09-24). **Kullanım:** koç havuzu, Koçla planla gün önerisi. **Gotcha:** ham SQL aggregate'leri kolon dönüştürücüsünden geçmez; `sql<Date>` tipi yalan söyler, `.mapWith(<kolon>)` kullan. İlgili: `study-session.repository.ts`, `session.service.ts`, `test/coach-evidence.e2e-spec.ts`.
+- **2026-09-24 · Plan sihirbazı gün seçer, dakikayı serbest alır.** "Kaç gün?" yerine "Hangi günler?" (bugünden başlayan 7 satır, `studyWeekdays`). Süre kartlarının altında 10–600 dk serbest giriş var. Ders seçiminde üst sınır yok. Nottaki boş gün istekleri sunucuda korunur (ayrıntı: `docs/features/ai.md` 2026-09-24). **Kullanım:** Plan → Koçla planla. **Gotcha:** seçici boş bırakılırsa gün kısıtı gitmez, model 7 güne yayar. İlgili: `plan-coach-adaptation-brief.tsx`, `plan-coach-adaptation-brief-steps.tsx`, `plan-coach-adaptation-brief-note.ts`.
+- **2026-09-23 · Mood Picker tooltip, streak week band pasif alev ve JourneyCard spotlight.** `packages/ui` `MoodPicker` ve dashboard `GreetingRow` butonlarına hover ve klavye odağında (`group-focus-within`) yumuşak süzülen floating tooltip rozeti eklendi; yerel tarayıcı `title` gecikmesi kalktı. `WeekBand` içinde boş kalan geçmiş tamamlanmamış (`idle`) ve gelecek (`future`) gün dairelerine pasif/hayalet alev ikonu (`opacity-30` ve `opacity-20`) yerleştirildi; zincirin tamamı görünür kılındı. `JourneyCard` seviye satırı (`JourneyLevelCompact`) tıklanabilir hale getirildi ve tıklandığında `JourneySpotlightScene` (`mode="replay"`) sinematik seviye tiyatrosunu tam ekran açacak şekilde entegre edildi. **Kullanım:** Anasayfa/Dashboard ruh hali seçimi, haftalık seri bandı ve "Yolculuğun" kartı. **Gotcha:** `JourneyLevelCompact` artık opsiyonel `trailing` desteği alır; `JourneySpotlightScene` portal olarak `document.body` üzerine biner, Escape ve kapatma düğmesiyle sorunsuz kapanır. İlgili: `packages/ui/src/components/mood-picker.tsx`, `greeting-row.tsx`, `week-band.tsx`, `journey-card.tsx`, `journey-level-compact.tsx`.
+
+- **2026-09-23 · Seans bitiş kartı: masaüstü kart, telefon tam ekran.** `CompletionOverlay` sayfayı kaydırmaz. `lg` altı panel ekranın kendisidir ve kendi içinde kayar. `lg` ve üstü ortada karttır; taşarsa kaydırma kartın içindedir, pencere kenarında scrollbar çıkmaz. İstatistik ikonlarının daire zemini yok. Ruh hali emojisinde hover (ve klavye odağı) mevcut `mood_*` metnini gösterir. **Kullanım:** seans bitince aynı ekran. **Gotcha:** `lg` kartı grid hücresinde `max-h-full` ile sınırlı; pay `lg:p-5`. İlgili: `completion-overlay.tsx`, `completion-summary.tsx`, `session-done-checkin.tsx`.
+
+- **2026-09-23 · Koç planı filtresi ve ekle düğmesi.** Öğrenci filtresi artık kadroyu çip çip basmıyor. Kapalıyken yalnız seçili değer durur ("Tüm öğrenciler" ya da bir öğrenci). İsimler menü açılınca çıkar. Ekle düğmesi ve açılan yuvarlaklar `--play-cta` / `--play-cta-ink`. **Kullanım:** Koç planı, sol raydaki öğrenci filtresi. **Gotcha:** tek öğrencili kadroda isim yine menünün içinde, kapalı satırda değil. Scrim `#111` @ %40 olarak durur. İlgili: `coach-plan-student-filter.tsx`, `coach-plan-compose-fab.tsx`.
+
+- **2026-09-23 · Ortak koç veri havuzu: `CoachEvidenceService`.** Premium AI yüzeylerinin okuduğu tek W2 sınırı beş yeni agregat kanıt üretir. `WEAK_SUBJECTS`: analiz odağıyla aynı sıralama (normalize ortalama), kıyas için en az iki ders gerekir. `NOTEBOOK_TOPICS`: 60 günde en az iki kartı olan ilk iki konu ve tekrar zamanı gelen kart sayısı. İkisi de zaten okunan `getAnalysis` sonucundan ek sorgusuz türer. `SUBJECT_BALANCE` ve `PLAN_FOLLOW_THROUGH`: `MentorshipWeeklyEvidenceService.getSnapshot` üzerinden son tamamlanan İstanbul haftası; taksonomide olmayan ders ve kategorisiz seans düşer. `EXAM_PHASE`: doğrulanmış takvim tarihinden kaba evre (FAR / MID / FINAL), tarih ve gün sayısı snapshot'a girmez. Snapshot deterministik tüketiciler için `weakSubjects`, `focusSubject`, `examPhase`, `activeDays28d`, `averageSessionMinutes28d` ve `coverage` (deneme, defter kartı, 28 günlük seans sayısı) taşır. `coachEvidence.*` metinleri `voice.md`'ye göre yeniden yazıldı ("backend odağı", "Normalize", "kaba sinyal" kalktı); netler ve tarihler yerelleşir (61,25 · 1 Ağustos). `AnalysisCoachContext` odak trendi, en çok tekrar eden üç konu ve döngü adımlarıyla genişledi. **Kullanım:** yeni bir premium AI yüzeyi kendi kanıt öncelik listesiyle bu havuzu okur, tabloya dokunmaz. **Gotcha:** kaynak hatası `safe()` ile yutulur ve `coach_evidence_source_unavailable` olarak loglanır; birim testi bunu göremez, gerçek-DB doğrulaması `apps/api/test/coach-evidence.e2e-spec.ts`. Snapshot her çağrıda hesaplanır; sohbet gecikmesi ölçülürse kullanıcı başına kısa cache eklenir. İlgili: `coach-evidence.service.ts`, `domain/coach-evidence.ts`, `analysis.service.ts`, `i18n/locales/{tr,en}/coaching.json`, [ai.md](./ai.md).
+
+- **2026-09-23 · Plan takvim ve görünüm renkleri.** Görünüm sekmelerindeki siyah hap kalktı; `SlidingTabs` varsayılanı durur (açık yüzey, `--color-main` yazı). Seçili gün `--color-btn` yerine `--play-cta` dolgu ve `--play-cta-ink` yazı. Görev noktası seçili günde aynı mürekkep. "Bugün" yazısı `--play-selected-ink`. **Kullanım:** Plan, Liste / Timeline / Takvim ve mini takvim. **Gotcha:** `--play-selected` week-range yıkamasıyla aynı açık mavi ailede, seçili günü ayırmaz; dolgu bu yüzden play CTA. (FAB ve öğrenci filtresi bir sonraki kayıtta değişti.) İlgili: `plan-view-switcher.tsx`, `apps/web/src/app/globals.css`.
+
+- **2026-09-22 · Plan ritmi API'ye bağlı.** Gün, dakika ve dersler `POST /v1/coach/plan-adaptation` gövdesinde `days`, `minutesPerDay`, `focusSubjects`. Serbest not ayrı kalır. PLAN kaynağında 3 ekleme ve toplam 5 değişiklik tavanı kalktı: seçilen gün sayısı kadar farklı güne bir ekleme, seçim yoksa 7 günlük pencere. Boş `subject` seçilen derslerle dolar. Uygulama gövdesi en fazla 10 değişiklik kabul eder. Ruh hali ve seans tavanı aynı. **Kullanım:** Plan, Koçla planla, gün sayısı, önizleme. **Gotcha:** (2026-09-23'te değişti, bir sonraki kayıt) eksik günler artık sunucuda doldurulur. Günlük hedef profile yazılmaz. İlgili: `packages/validation/src/ai.ts`, `plan-adaptation.ts`, `plan-coach-adaptation-brief.tsx`.
+
+- **2026-09-23 · Plan ritmi review düzeltmeleri (PR #116).** Seçilen dersle eşleşmeyen ya da derssiz model ADD'sinin başlığı seçilen derse göre yeniden yazılır ("Tarih · 30 dk"); günü korunur. Eksik gün doldurma, başlığı çakışan günü atlayıp sıradaki uygun güne geçer. Sentetik başlıklar istek dilinde ("History · 30 min"). `/analiz` deneme formunun varsayılan tarihi UTC değil yerel gün (gece 03:00 öncesi dünü göstermez). **Gotcha:** model doğru dersi yazdıysa kendi başlığı kalır. İlgili: `plan-adaptation.ts`, `plan-adaptation.service.ts`.
+
+- **2026-09-23 · Plan ritmi bağlayıcı.** Gün, süre ve dersler `POST /v1/coach/plan-adaptation` gövdesinde durur. Seçilen gün sayısı modelin 3 görevde durmasına bırakılmaz: eksik günler pencerede kapasitesi yeten günlere, seçilen ders ve dakika ile yazılır. **Kullanım:** Koçla planla, gün sayısı seç, önizlemeyi hazırla. **Gotcha:** çalışan API süreci eski kodu tutuyorsa hâlâ 3 ekleme döner; süreci yeniden başlat. İlgili: `apps/api/src/modules/ai/domain/plan-adaptation.ts`, `plan-adaptation.service.ts`.
+
+- **2026-09-22 · Koçla planla brief.** "Koçla planla" onboarding adım düzeninde açılır: geri, ilerleme, atla, tek soru, alttaki düğme. Sırayla gün, dakika, en fazla 3 ders ve kısa not. Bildiğimiz sınav ve günlük hedef ilk sorunun altında durur. Ruh hali ve seans kısayolları soru sormadan önizlemeye gider. Taksonomi gelmezse ders adımı yoktur. **Kullanım:** Plan → Koçla planla. **Gotcha:** son 7 günün seans özeti ekranda yok, model promptunda durur. Günlük hedef yalnız süre kartını işaretler, kaydedilmez. İlgili: `plan-coach-adaptation-brief-note.ts`, `plan-coach-adaptation-brief.tsx`, `onboarding-step-layout.tsx`, `plan-coach-adaptation-action.tsx`.
+
+- **2026-09-22 · Tek çalışma olgusu.** Konuş, değerlendir ve planla aynı doğrulanmış cümleyi görür. Cümleyi model yazmaz: son 7 günün sayacına ilk ders adı eklenir, dakika tek derse yazılmaz; değerlendirin ilk mesajında deneme odağı sayacın yerine geçer; plan önizlemesi bekleyen dersi (başlığı değil) `CompanionBubble` ile gösterir, AI rozeti yoktur. Ruh hali etiketi plan promptuna girer. **Kullanım:** değişiklik yok, mevcut "Koçla konuş", "AI koçla değerlendir" ve "Koçla planla". **Gotcha:** görev başlığı ve içindeki telefon numarası cümleye girmez; sinyal yoksa cümle ve balon yoktur. İlgili: `apps/api/src/modules/ai/domain/grounding-fact.ts`, `personalization-marker.ts`, `plan-adaptation.service.ts`, `plan-coach-adaptation-action.tsx`.
+
+- **2026-09-22 · /analiz deneme formu ve kayıt anı (redesign, Durak C, tamam).** "Deneme sonucu gir"
+  panel kartında (`analysis-entry-card.tsx`): sınav, ders ve soru sayısı, "Son denemeyi kopyala" metin
+  bağlantısı, masaüstünde tek "Ders · Doğru · Yanlış · Boş" başlık satırı, her satırın sonunda "27/30"
+  sayacı (tam = yeşil tik, aşım = kırmızı + satır hatası). **Boş kendiliğinden dolar:** saf `withScore`
+  (`analysis-types.ts` + spec), doğru ve yanlış girilince boş = soru − doğru − yanlış; öğrenci boşa
+  yazınca durur, boşu silince yeniden hesaplanır; aşımda boş boş kalır. Olay işleyicisinde, effect yok.
+  Otomatik boş açık mavi tonda görünür. Kayıtlı denemeden gelen boş (kopyala, düzenleme sheet'i) elle
+  girilmiş sayılır, üzerine yazılmaz. Aşımda Kaydet kapalı ve "{ders} satırı düzelince
+  kaydedebilirsin" notu çıkar. **Kayıt anı** (`entry-saved-card.tsx`) toast'ın, deftere geç bandının ve
+  ilk kayıttaki otomatik sekme değişiminin yerini aldı. Puhu cümlesi, "Yayın · tarih kaydedildi", net,
+  fark ve rekor, "Derslere göre fark" (`ghost.subjects`), "{n} yanlış var" cümlesi, tek ledge
+  (yanlış varsa "Yanlışları deftere taşı" → `/notebook?mockExam=`, yoksa "Gelişimini gör") ve "Yeni
+  deneme gir". Kaydedilen deneme en yenisiyse premium'da koç yorumu hemen yazılır (sayfanın tek
+  `use-ghost-narration`'ı, Gelişim hero'su aynı metni gösterir); geçmişe tarihli denemede fark ve AI
+  yok, "geçmişine ekledim" denir. Analiz yenilenemezse kayıt geri alınmaz, kart yalnız bildiğini
+  söyler (eskiden başarılı kayıttan sonra hata gösteriyordu). Forma her giriş kayıt anını temizler.
+  i18n: 124 kullanılmayan `analysis.*` / `ghost.*` anahtarı iki dilden silindi ("🏆" dahil); ad alanına
+  duyarlı tarama + next-intl tip denetimi ile doğrulandı. **Ölçüm:** analiz rotası JS 1057.8 → 791.2 KiB
+  (grafik artık `next/dynamic`); panel +1.8 KiB. Web bütçe betiğinin dört aşımı (makale toplamı, panel
+  rota/toplam, kök mesaj `analyticsConsent` 1783 B) redesign öncesi `1cc30ab0`'da da birebir aynı.
+  **Gotcha:** `:3000`'de açık bir `next dev` e2e'yi belirgin yavaşlatır; üç sayfa açan test `test.slow()`.
+  İlgili: `analysis-entry-card.tsx`, `analysis-mock-exam-form.tsx`, `entry-saved-card.tsx`,
+  `use-mock-exam-entry.ts`, `analysis-types.ts`, `analysis-history-edit-sheet.tsx`, `e2e/analysis*.ts`,
+  DESIGN.md §6.1 / §11 / §13 / §14.
+
+- **2026-09-22 · /analiz Gelişim ve Yanlışlarım yeni kartlarda (redesign, Durak B).** Gelişim'in ilk
+  kartı "Sıradaki adımın" (`focus-path-card.tsx`): Puhu balonu, dört düğümlü iyileşme yolu ve tek ledge.
+  Ledge'i saf `buildFocusPath` (`focus-path-model.ts` + spec) seçer: sinyal → "Planıma ekle"; plana bağlı →
+  "Tekrara başla · N soru" (sayı `review-summary?examId&subjectRef&topicRef&days=7`, yani açılan setle aynı
+  kapsam; 0 ise "Odaktaki yanlışları aç"); tekrarlandı → "Yeni deneme gir" (form yerinde açılır);
+  kapandı ya da başlangıç denemesi silindi → "Yeni odağı planıma ekle" + öneri. Sonra "Net seyrin" (son net,
+  fark aşağıdaysa gri, rekor rozeti; `StatLineChart` `next/dynamic` ile tembel, düz grid, token'lı tooltip,
+  rekor çizgisi, `sr-only` tablo) ve "Derslerin" (8px çubuk + son 4 denemenin eğilimi). **Premium AI yorumu
+  geri geldi:** `use-ghost-narration.ts` sayfada bir kez bağlanır, abonelik bilinmeden istek atmaz, en son
+  deneme başına tek `POST /v1/coach/ghost-narration` gönderir, `aiNarration` önbellekteyse hiç göndermez;
+  balon "Koçundan" etiketli. Free'de kural tabanlı `ghost.headline` + "İlerlemeni koçun yorumlasın · PREMIUM".
+  Yanlışlarım: "Neden kaçırıyorsun?" (hata türü satırı kendi sorularına gider, tek ledge
+  `review-summary?examId` sayısıyla), "Nerede kaçırıyorsun?" (ders ve konu tek kartta; tek ders ya da konuda
+  "%100" yerine kayıt sayısı), "Son N gün" hunisi (kaydettin → tekrar ettin → iyileşti; tekrarı gelen sayı
+  yalnız ledge'de) ve Gelişim'den taşınan "Son tekrarların". "Başka konu seç" ve 7/30 gün seçimi kalktı;
+  defterin "Analize dön"ü `from=progress` ile Gelişim'e, yoksa Yanlışlarım'a döner. Ortak parçalarda iki
+  düzeltme panele de yansır: `CompanionBubble` notu yalnız en az iki satır gizleyecekse katlar (düğme,
+  gizlediği tek satırdan fazla yer kaplıyordu); `PremiumLockNudge` oku son kelimeyle birlikte kırılır.
+  **Gotcha:** e2e'de analiz görünümü dört istekli zincirin arkasında (me → sınav → dersler → analiz); paralel
+  yerel koşuda 5 sn'yi aşabiliyor, bu yüzden testler `gotoAnalysis` ile görünümü bir kez 15 sn bekler.
+  Fixture'da `premium`, `reviewHistory` ve sayaçlı `ghostNarrationCalls` var. **Gotcha:**
+  `SubjectStrengthDto.netDelta` işaretsiz gelir (`toFixed(2)`), "+"yı bileşen ekler; test verisine "+1.25"
+  yazmak "++1.25" çizer. Silinenler: `analysis-summary-band`, `analysis-tab-progress`, `analysis-tab-mistakes`,
+  `analysis-review-progress` (+ `.module.css`), `analysis-review-history`, `analysis-improvement-loop-card`,
+  `analysis-ghost-teaser`, `analysis-sparkline`. İlgili: `focus-path-*`, `net-trend-card.tsx`,
+  `subjects-card.tsx`, `mistakes-why-card.tsx`, `mistakes-where-card.tsx`, `notebook-funnel-card.tsx`,
+  `review-history-card.tsx`, `use-review-due.ts`, `use-ghost-narration.ts`, `lib/coach.ts`,
+  `components/stat-line-chart.tsx`, `notebook-focus-review.tsx`, `e2e/analysis*.ts`.
+
+- **2026-09-21 · /analiz panel çerçevesine geçti (redesign, Durak A).** Sayfa panelin çerçevesini
+  kullanıyor: `PANEL_MAIN_CLASS`, 1280 ve üstünde ana kolon + 340px sağ kolon, altında tek kolon
+  (başlık → görünüm → geçmiş). Panelin JS düzen anahtarı (`useWideLayout`) burada yok: dar ekrandaki sıra
+  DOM sırasıyla aynı, salt CSS grid yetiyor; JS anahtarı 1280'i geçen pencere ya da tablet döndürmede
+  ana kolonu yeniden kurup yarım yazılmış formu siliyordu. Başlık kart değil: "Analiz" + sınav adı + "Deneme ekle" outline
+  ledge; sekmeler yalnız iki görünüm (Gelişim · Yanlışlarım). Form `?tab=entry` ile açılır, sekmelerin
+  yerinde "Analize dön" durur ve açıldığı görünüme döner. İkinci sol rail (`HistorySideRail/Drawer`)
+  analizden kalktı (seans ve vizyon panosunda duruyor); "Geçmiş denemeler" sağ kolon kartı: satır yerinde
+  açılır, ders başına doğru/yanlış/boş yığın çubuk (`--chart-correct` / `--chart-wrong`, iki temada
+  dataviz doğrulamalı; renk tek ipucu değil, sayılar yanında), Düzenle/Sil "…" menüsünde. Veri yükleme
+  `use-analysis-data.ts`'e, form durumu `use-mock-exam-entry.ts`'e çıktı; sayfa düzeyindeki iskelet
+  kapısı kalktı: başlık hemen boyanır, görünüm ve geçmiş kendi iskeletleriyle gelir. Panelin ortak
+  parçaları artık `apps/web/src/components/panel/` (sınıflar, `CompanionBubble`, `ProgressLine`,
+  `useWideLayout`); panelin görünümü değişmedi. **Gotcha:** `SlidingTabs` kökündeki `max-w-full` bir
+  utility ile ezilmiyor; sekme genişliğini dıştaki kapsayıcı sınırlıyor. Eski Gelişim / Yanlışlarım / form
+  içerikleri Durak B ve C'ye kadar yeni çerçevede duruyor. İlgili: `analysis-shell.tsx`,
+  `analysis-header.tsx`, `analysis-history-card.tsx`, `analysis-history-detail.tsx`,
+  `use-analysis-data.ts`, `use-mock-exam-entry.ts`, `components/panel/*`, `packages/ui/src/theme.css`,
+  `e2e/analysis.spec.ts`.
+
+- **2026-09-20 · `StreakSummaryDto.week` + `/coaching/today` iki dalgaya indi.** Panelin hafta şeridi
+  bugüne kadar bugünü ve **sonraki** altı günü çiziyordu (web tarafında UTC `todayIso`), yalnız bugünün
+  hücresi yanabiliyordu. Artık sunucu veriyor: `week`, `today`ın içinde bulunduğu haftanın Pazartesi→Pazar
+  yedi günü, her biri `{ date, active, frozen }`. Saf `buildStreakWeek(today, activeDates, bridgedDates)`
+  (`domain/streak.ts`) `deriveStreak`'in zaten döndürdüğü `bridgedDates`'ten besleniyor, ek sorgu yok;
+  `frozen` = ücretsiz aylık dondurma ya da satın alınmış kurtarma. Gün temeli bilerek streak ile aynı
+  (`date.util.ts` `todayIso()`, UTC): bant ile `currentStreak` asla çelişmemeli. **Gotcha:** streak günü
+  UTC olduğu için İstanbul'da 00.00–03.00 arası "bugün" bir gün geride görünür; bu bandın değil mevcut
+  streak sisteminin davranışı (`todayInIstanbul()` var ama gün temelini değiştirmek streak matematiğini
+  etkiler — ayrı karar). Ayrıca `TodayService.getToday` artık iki dalga: profil ile streak/plan/mood/odak
+  sorguları birlikte gidiyor, yalnız takvim okumaları (examType'a bağlı) ikinci dalgada bekliyor.
+  Kullanım: web hafta bandını `streak.week`'ten okur, kendi tarih hesabını yapmaz. İlgili:
+  `domain/streak.ts`, `application/streak.service.ts`, `application/today.service.ts`,
+  `packages/types/src/coaching.ts`, `apps/web/e2e/streak.fixture.ts`.
+
+- **2026-09-19 · Session done overlay + shared CompletionSummary.** Finishing a focus session
+  keeps the frozen room/focus ground, blurs it, and centers a reusable completion card
+  (`CompletionOverlay` + `CompletionSummary` in `@mentor/ui`). Stars fill from
+  elapsed/planned in 0.5 steps (never 0; too-short sessions stay at 1). Stat rows show
+  time, streak, and daily goal (subject or auto-completed plan task if no goal). Mood
+  check-in stays on the card; one primary CTA (new session) plus text links for remind /
+  share / dashboard. Overlay is not dismissible (no X, no backdrop/Escape close) and sits
+  at z-50 so streak/toast/dialog can still stack above. Usage: other completed surfaces
+  can reuse the card without the overlay. Gotcha: star math lives in web
+  (`sessionStarFill`), not the UI package. Related: `completion-overlay.tsx`,
+  `completion-summary.tsx`, `completion-stars.tsx`, `session-done-state.tsx`,
+  `study-session-shell.tsx`, `lib/completion-stars.ts`.
+
+- **2026-09-18 · Coach note speaking choreography.** The cloud finishes its 250ms entrance before the shared `StreamingText` word reveal starts. Puhu alternates the existing rest/talk-closed frames every 150ms with the onboarding-style 2px movement only while text streams, then returns to idle. Loading uses the thinking frame; reduced motion shows the full text without speaking movement. Usage: unchanged `PuhuSpeechModal` props, including Free and Premium notes. Gotchas: preserve mounted image frames to avoid decode flicker; closing or loading again resets the speech lifecycle and cleans up mascot timers. Related: `puhu-speech-modal.tsx`, `puhu-speaking-mascot.tsx`.
+
+- **2026-09-18 · Responsive coach thought cloud and mood copy.** Replaced the rectangular speech balloon with a theme-aware SVG cloud and two CSS thought dots. Mobile places Puhu underneath; desktop keeps Puhu to the left. Text remains selectable, uses 16px body type, and scrolls inside the cloud for long reflections. Usage: existing `PuhuSpeechModal` callers need no changes. Free mood templates now offer two-sentence, mood-specific companionship in TR/EN; crisis copy and AI eligibility are unchanged. Related: `apps/web/src/components/puhu-thought-cloud.{tsx,css}`, `puhu-speech-modal.tsx`, `apps/api/src/i18n/locales/{tr,en}/coaching.json`.
+
+- **2026-09-18 — Notebook add no longer auto-fills ders from AI.** Uploading a mistake photo
+  no longer calls `POST /v1/coaching/notebook/entries/prelabel` or shows "AI öneriyor".
+  `TaxonomyCascadeSelect` stays a manual ders/konu pick. Usage: add a card, choose subject
+  yourself. Gotcha: the AI endpoint still exists; only the web client stopped calling it.
+  Related: `notebook-add-panel.tsx`, `lib/notebook.ts`.
+
+### 2026-09-17 — XP / Coin launch integration
+
+- Economy evaluates quests after plan completion, mood saving and completed-session finalization using the original UTC action date. SESSION_FINALIZED also covers short sessions contributing to an accumulated goal; SESSION_COMPLETED keeps its existing achievement threshold. Dated signals bound the original ISO week and propagate identity failures for retry. Usage: save an action; rewards no longer require opening quests. See quest-trigger.service.ts and daily-quest-signal.service.ts.
+
+
+- **2026-09-14 — Mood auto-prompt waits for journey/achievement overlay.** Dashboard mood
+  wheel and Puhu coach note no longer open on top of the journey spotlight. They wait until
+  unseen celebrations have been fetched and the current cinematic is dismissed. Usage
+  unchanged (soft once-per-day auto-prompt; hero tile still opens anytime). Gotcha: do not
+  auto-open mood before `CelebrationOverlayProvider.ready`. Related: `mood-checkin.tsx`,
+  `celebration-overlay.tsx`, `notification-drawer-shell.tsx`.
+
+- **2026-09-14 — Weekly coach-report evidence seam.** Coaching now exposes one aggregate service
+  for mentorship instead of allowing W8 to query W2 tables. It shares the recap's completed
+  Europe/Istanbul week boundary, activity-day calculation and configured minimum focus duration,
+  then adds current/previous task totals, subject allocation and exact-scope mock comparison.
+  Unclassified sessions are returned as a separate bucket; missing data is preserved and never
+  translated to "did not study". **Usage:** `MentorshipWeeklyEvidenceService.getSnapshot` is the
+  only W8 read seam. **Gotchas:** mock attempts from different `exam_id` values never share an
+  average, even when they belong to the same exam family; all calculations stay on the backend.
+  **Related:** `application/mentorship-weekly-evidence.service.ts`,
+  `infrastructure/mentorship-weekly-evidence.repository.ts`,
+  `domain/mentorship-weekly-{report,snapshot}.ts`.
+
+- **2026-09-12 — Koç planı gooey compose + okunur overlay.** Başlıktaki Yeni görev /
+  Yeni etkinlik butonları sağ-alt plus menüye taşındı (`CoachPlanComposeFab`). SVG gooey
+  filter yalnız blob dairelerde; etiket ve ikon aynı `y` satırında hizalanır. Form
+  desktop'ta sağ drawer, mobilde ~%90 bottom-sheet. Detay kompakt inspector. Scrim
+  `backdrop-blur` + yüzey `surface 92%`. Tarih `DateField` + paylaşılan `DatePickerSheet`
+  (plan/analiz sarmalayıcıları ince kaldı); tekrar `MenuSelect`/`PopoverMenu`; katılımcı
+  `CheckBox` (`@mentor/ui`, auth cookie ile aynı). Kullanım: plus → görev/etkinlik;
+  takvim hücresi hâlâ action-sheet. Gotcha: form açıkken FAB unmount olur (drawer'ın
+  üstüne binmesin). Tarih + başlangıç/bitiş saati tek satır. Takvim ikonun altında 20rem
+  popover. Tekrar 1/3 sütun. Sayfa başlığı gizlendi; öğrenci planındaki gibi geri oku
+  `/students`e gider. Form aksiyonları overlay footer'da sağ altta. Drawer inputları
+  `compact` (px-3 / text-sm); 44px min-height durur. İlgili:
+  `coach-plan-{compose-fab,overlay,form-panel,detail,toolbar,calendar-shell,attendees,form-fields}.tsx`,
+  `components/{date-picker-sheet,date-field,menu-select,popover-menu}.tsx`.
+
+- **2026-09-12 — Koç planı overlay dark scrim + avatar.** Form/detay scrim artık
+  dialog ile aynı `#111111/40` + `backdrop-blur-sm` (önceki `--color-main` mix
+  dark temada süt sis üretiyordu). Drawer paneli opak `--color-surface`.
+  `UserAvatar` fallback chip tokenleri + `--color-main` harf; halka
+  `color-mix(main 16%)`. Katılımcı satırı `surface-container` / seçilince
+  `accent-soft`. Kullanım: Yeni etkinlik drawer. Gotcha: `frame="strong"`
+  (profil) halkası değişmedi. Plus menü scrim’i aynı dim (`coach-plan-compose-fab`).
+  İlgili: `components/coach-overlay.tsx` (eskiden `coach-plan-overlay.tsx`), `coach-plan-compose-fab.tsx`,
+  `coach-plan-attendees.tsx`, `components/user-avatar.tsx`.
+
+- **2026-09-12 — Koç planı katılımcı satırı + saat picker.** “N öğrenci seçildi”
+  kopyası kalktı; satır zeminsiz, yalnız border. Native `type=time` (OS mavi
+  AM/PM) yerine `TimeField`: saat ikonu + 24s iki sütun (saat / 5 dk), panel
+  seçimde kapanmaz. Kullanım: Yeni görev/etkinlik. Gotcha: dakika 5’lik adım;
+  öğrenci `plan-add-task-form` hâlâ native time. İlgili: `time-field.tsx`,
+  `coach-plan-{form-fields,attendees}.tsx`.
+
 - **2026-09-11 — Shared Takvim item model.** Plan calendar grids (hour, month, mobile strip,
   agenda, hover preview) now render `PlanCalendarItem<T>` instead of `PlanTaskDto`. The student
   adapter (`planTaskCalendarItem`) keeps the same pixels; the coach calendar reuses the same
@@ -1231,6 +1584,7 @@ deftere fotoğraflı bir yanlış eklenip sayfaya yerleştirildiğinde tetikleni
   `session-history-row.tsx`, `session-history-page.tsx`, `seans/gecmis/page.tsx`, `session-history.tsx`,
   `study-sessions.ts`, `study-session.repository.ts`, `packages/validation`, `coaching.e2e-spec.ts`,
   `messages/{tr,en}.json`.
+- **Shared exam taxonomy pickers (2026-09-17)** — Plan, seans, defter, defterlerim, analiz and the coach composer resolve ders/konu from `GET /v1/content/exams/by-type/:type` (not the countdown calendar) plus `/subjects` and `/topics`. Shared `exam-taxonomy.ts` + `TaxonomyCascadeSelect` (slug mode for notebooks, name mode for coach assignments). Session pill UI is unchanged. Catch-all **Diğer** is a seeded subject/topic (`diger`), not free text. Usage: set exam type (and KPSS variant) in settings. Gotcha: YKS/LGS no longer fall back to free text solely because the calendar has no date; analysis deneme form omits Diğer. Related: `apps/web/src/lib/exam-taxonomy.ts`, `taxonomy-cascade-select.tsx`, `docs/features/content.md`.
 - **Seans geçmişi tarih filtresi (2026-07-12)** — `/seans/gecmis`: Tümü · Bugün · Son 7 gün · Son 30 gün
   chip'leri. `GET /v1/study-sessions?from=&to=` (yyyy-mm-dd, inclusive UTC günler, `started_at`);
   `from > to` → 400. Konu filtresiyle birlikte. Custom date picker / detay / export yok. Dosyalar:
@@ -4362,3 +4716,36 @@ direction)` veriyor; "ileri" HOME'dan LIBRARY'ye sararken de aynı yöne seyahat
   are unchanged. On narrow screens the focus controls and period selector expand safely to one row.
   Related: `analysis-review-progress.tsx`, `analysis-review-progress.module.css`,
   `analysis-improvement-loop-card.tsx`.
+
+- **Seans light tema kontrastı (2026-09-19)** — Idle `/seans` Liquid Glass kromu `#ffffff`
+  mürekkep ve neredeyse şeffaf cam kullanıyordu; light temada `--color-bg` de beyaz olduğu için
+  sayfa "yok" gibi duruyordu. İlk geçiş `--color-main` (#111) karışımı kullandı ve light
+  zeminde soğuk gri kuyular üretti. Cam dolgusu `--color-surface`, kenar
+  `color-mix(..., var(--color-progress) ...)` (Mentor mavi), gölge `--shadow-card`.
+  Sahne / focus (`.room-stage`, `.session-focus-theme`) eski buzlu cam: yarı saydam
+  beyaz frost + `--room-ink`, fotoğraf kartların içinden görünür. **Kullanım:** Sade
+  görünüm beyaz surface; tema açıkken cam. **Gotcha:** Dolguda `--color-main` karıştırma;
+  sahne camını düz light idle'a taşıma. Odakta pause/play `session-liquid-pill` (opak
+  obsidyen değil). Dalga halkaları sayaç çapından (`--session-ring-size`) ölçeklenir,
+  viewport ortasına değil ring kutusuna oturur.
+  **İlgili:** `packages/ui/src/theme.css`, `study-session-shell.tsx`, `session-timer-ring.tsx`,
+  `session-top-bar.tsx`, `session-controls.tsx`, `session-setup-summary.tsx`,
+  `session-focus-view.tsx`, `session-history.tsx`, `history-side-panel.tsx`.
+
+- **2026-09-21 — Compose FAB: hidden reset render'da.** `coach-plan-compose-fab.tsx` `hidden` olunca menüyü
+  effect ile değil, render sırasında `if (hidden && open) setOpen(false)` ile kapatır
+  (`react-hooks/set-state-in-effect`). Davranış aynı: gizliyken açık kalmaz, tekrar görününce kapalı gelir.
+
+- **2026-09-25 — Mobile plan recurrence menu.** The recurrence fields in the coach event sheet now
+  open their option menus above the trigger, keeping weekly repeat and repeat-end choices inside
+  the visible phone area above the fixed submit action. Usage is unchanged: create an event, choose
+  `Tekrar` and `Tekrar bitişi`, then save. The shared `MenuSelect` already supports this placement;
+  do not add a second selector. Related: `coach-plan-form-fields.tsx`, `coach-plan.spec.ts`.
+
+- **2026-09-27 — Local vision-board fonts.** The collage editor keeps its ten text styles but loads
+  their font files from Fontsource packages instead of asking Next's Google-font resolver to fetch
+  them during production builds. Usage is unchanged: choose a text style in the board editor.
+  Gotcha: these faces are scoped to the board route; the PNG exporter names the same variable faces
+  so downloaded text matches the editor. Other screens still use their own typography. Related:
+  `vision-board/board/layout.tsx`, `board-font-families.ts`, `board-export.ts`,
+  `vision-board.spec.ts`, `apps/web/package.json`.

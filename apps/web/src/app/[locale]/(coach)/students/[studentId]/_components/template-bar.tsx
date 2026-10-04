@@ -1,10 +1,16 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, type Dispatch, type SetStateAction } from "react";
+import { Sparkles } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { MentorshipProgramTemplateDto } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, TextField } from "@mentor/ui";
+import { Button, ShimmerText, TextField } from "@mentor/ui";
+import {
+  NOTE_CLASS,
+  PANEL_LINK_BUTTON,
+  PANEL_QUIET_BUTTON,
+} from "@/components/mentorship/coach-ui";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { useMentorToast } from "@/lib/mentor-toast";
 import {
@@ -13,40 +19,22 @@ import {
   saveTemplate,
   suggestAssignments,
 } from "@/lib/mentorship";
-import { ComposerSelect } from "./composer-select";
 import { toTemplateTasks, type DatedDraft } from "./template-apply";
 
 /**
- * Save / load / delete for the composer's saved programs.
+ * Save / delete for the composer's saved programs, plus the AI suggestion that arrives through the
+ * same door a template does. Loading one is a menu among the planner's sources
+ * (`planning-sources.tsx`); saving sits under the program it would save.
  *
- * It owns the template list and nothing else: the composer keeps the drafts, hands them over on
- * save, and takes a template back on load. Loading fills the composer client-side — there is no
- * server-side "apply" — so the coach sees exactly what will be written and the subject/topic
- * picker stays the only real gate on a program built against another exam's taxonomy.
+ * The list lives in `useProgramTemplates` so both ends read the same rows. Loading fills the
+ * composer client-side (there is no server-side "apply"), so the coach sees exactly what will be
+ * written and the subject/topic picker stays the only real gate on a program built against another
+ * exam's taxonomy.
  */
-export function TemplateBar({
-  studentId,
-  drafts,
-  examType,
-  disabled,
-  onLoad,
-}: {
-  studentId: string;
-  drafts: readonly DatedDraft[];
-  /** The STUDENT's exam: what a template saved from this composer was built against. */
-  examType: string | null;
-  disabled: boolean;
-  onLoad: (template: MentorshipProgramTemplateDto) => void;
-}) {
-  const t = useTranslations("mentorship");
-  const common = useTranslations("common");
-  const toast = useMentorToast();
-  const dialog = useMentorDialog();
-  const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>([]);
-  const [name, setName] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [suggesting, setSuggesting] = useState(false);
-
+export function useProgramTemplates() {
+  const [templates, setTemplates] = useState<MentorshipProgramTemplateDto[]>(
+    [],
+  );
   useEffect(() => {
     let active = true;
     fetchTemplates()
@@ -60,71 +48,47 @@ export function TemplateBar({
       active = false;
     };
   }, []);
+  return [templates, setTemplates] as const;
+}
 
-  function showError(err: unknown) {
+function useShowError() {
+  const common = useTranslations("common");
+  const toast = useMentorToast();
+  return (err: unknown) =>
     toast.error({
       title: common("error_title"),
-      message: err instanceof ApiClientError ? err.message : common("error_unknown"),
+      message:
+        err instanceof ApiClientError ? err.message : common("error_unknown"),
     });
-  }
+}
 
-  async function save() {
-    const trimmed = name.trim();
-    if (trimmed === "" || drafts.length === 0) return;
-    // Saving over a name replaces the row — that IS the edit path, so it is worth one confirm.
-    if (
-      templates.some((row) => row.name === trimmed) &&
-      !(await dialog.confirm({
-        title: t("template_overwrite_title"),
-        message: t("template_overwrite_body", { name: trimmed }),
-        confirmLabel: t("template_save"),
-        cancelLabel: t("confirm_cancel"),
-      }))
-    ) {
-      return;
-    }
-    setBusy(true);
-    try {
-      const saved = await saveTemplate({ name: trimmed, examType, tasks: toTemplateTasks(drafts) });
-      setTemplates((prev) => [saved, ...prev.filter((row) => row.id !== saved.id)]);
-      setName("");
-      toast.success({ title: t("template_saved", { name: saved.name }) });
-    } catch (err) {
-      showError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
+/**
+ * The model drafts a week; it arrives through the SAME door a saved program does.
+ *
+ * `onLoad` takes a template, and a suggestion is exactly that shape, so nothing new drafts
+ * anything: the tasks land in the composer, the coach edits them, and `POST .../assignments` is
+ * still the only path onto a student's plan. `examType: null` marks it as belonging to no exam,
+ * which is honest — the model was never given a taxonomy, and every `topic` it returns is null.
+ */
+export function SuggestLink({
+  studentId,
+  disabled,
+  onLoad,
+  onPendingChange,
+}: {
+  studentId: string;
+  disabled: boolean;
+  onLoad: (template: MentorshipProgramTemplateDto) => void;
+  onPendingChange?: (pending: boolean) => void;
+}) {
+  const t = useTranslations("mentorship");
+  const toast = useMentorToast();
+  const showError = useShowError();
+  const [suggesting, setSuggesting] = useState(false);
 
-  async function remove(template: MentorshipProgramTemplateDto) {
-    const confirmed = await dialog.confirm({
-      title: t("template_delete_title"),
-      message: t("template_delete_body", { name: template.name }),
-      confirmLabel: t("template_delete_action"),
-      cancelLabel: t("confirm_cancel"),
-    });
-    if (!confirmed) return;
-    setBusy(true);
-    try {
-      await deleteTemplate(template.id);
-      setTemplates((prev) => prev.filter((row) => row.id !== template.id));
-    } catch (err) {
-      showError(err);
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  /**
-   * The model drafts a week; it arrives through the SAME door a saved program does.
-   *
-   * `onLoad` takes a template, and a suggestion is exactly that shape, so nothing new drafts
-   * anything: the tasks land in the composer, the coach edits them, and `POST .../assignments` is
-   * still the only path onto a student's plan. `examType: null` marks it as belonging to no exam,
-   * which is honest — the model was never given a taxonomy, and every `topic` it returns is null.
-   */
   async function suggest() {
     setSuggesting(true);
+    onPendingChange?.(true);
     try {
       const { tasks } = await suggestAssignments(studentId);
       if (tasks.length === 0) {
@@ -142,71 +106,155 @@ export function TemplateBar({
       showError(err);
     } finally {
       setSuggesting(false);
+      onPendingChange?.(false);
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className={PANEL_LINK_BUTTON}
+      aria-busy={suggesting || undefined}
+      disabled={disabled || suggesting}
+      onClick={() => void suggest()}
+    >
+      <Sparkles className="size-4" aria-hidden />
+      {suggesting ? <ShimmerText text={t("suggest_busy")} /> : t("suggest_action")}
+    </button>
+  );
+}
+
+/**
+ * "Şablon olarak kaydet" under the program: a quiet link that opens the name field in place.
+ * Saving over an existing name replaces that template, so it asks once.
+ */
+export function TemplateSave({
+  templates,
+  setTemplates,
+  drafts,
+  examType,
+  disabled,
+}: {
+  templates: readonly MentorshipProgramTemplateDto[];
+  setTemplates: Dispatch<SetStateAction<MentorshipProgramTemplateDto[]>>;
+  drafts: readonly DatedDraft[];
+  /** The STUDENT's exam: what a template saved from this composer was built against. */
+  examType: string | null;
+  disabled: boolean;
+}) {
+  const t = useTranslations("mentorship");
+  const toast = useMentorToast();
+  const dialog = useMentorDialog();
+  const showError = useShowError();
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  async function save() {
+    const trimmed = name.trim();
+    if (trimmed === "" || drafts.length === 0) return;
+    // Saving over a name replaces the row — that IS the edit path, so it is worth one confirm.
+    if (
+      templates.some((row) => row.name === trimmed) &&
+      !(await dialog.confirm({
+        title: t("template_overwrite_title"),
+        message: t("template_overwrite_body", { name: trimmed }),
+        confirmLabel: t("template_save_confirm"),
+        cancelLabel: t("confirm_cancel"),
+      }))
+    ) {
+      return;
+    }
+    setBusy(true);
+    try {
+      const saved = await saveTemplate({
+        name: trimmed,
+        examType,
+        tasks: toTemplateTasks(drafts),
+      });
+      setTemplates((prev) => [
+        saved,
+        ...prev.filter((row) => row.id !== saved.id),
+      ]);
+      setName("");
+      setOpen(false);
+      toast.success({ title: t("template_saved", { name: saved.name }) });
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function remove(template: MentorshipProgramTemplateDto) {
+    const confirmed = await dialog.confirm({
+      title: t("template_delete_title"),
+      message: t("template_delete_body", { name: template.name }),
+      confirmLabel: t("template_delete_action"),
+      cancelLabel: t("confirm_cancel"),
+      destructive: true,
+    });
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      await deleteTemplate(template.id);
+      setTemplates((prev) => prev.filter((row) => row.id !== template.id));
+    } catch (err) {
+      showError(err);
+    } finally {
+      setBusy(false);
     }
   }
 
   const named = templates.find((row) => row.name === name.trim());
 
   return (
-    <div
-      className="flex flex-col gap-2 border-b pb-4"
-      style={{ borderColor: "var(--color-border)" }}
-    >
-      <div className="grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]">
-        <ComposerSelect
-          label={t("template_load")}
-          value=""
-          placeholder={
-            templates.length === 0 ? t("template_none") : t("template_load_placeholder")
-          }
-          options={templates.map((row) => ({
-            value: row.id,
-            label: t("template_option", { name: row.name, count: row.tasks.length }),
-          }))}
-          disabled={disabled || templates.length === 0}
-          onChange={(id) => {
-            const template = templates.find((row) => row.id === id);
-            if (template) onLoad(template);
-          }}
-        />
-        <TextField
-          label={t("template_name")}
-          value={name}
-          maxLength={60}
-          onChange={(event) => setName(event.target.value)}
-        />
-        <div className="flex flex-wrap gap-2">
-          <Button
-            type="button"
-            variant="secondary"
-            busy={busy}
-            disabled={disabled || drafts.length === 0 || name.trim() === ""}
-            onClick={save}
-          >
-            {t("template_save")}
-          </Button>
-          {named && (
-            <Button type="button" variant="ghost" busy={busy} onClick={() => remove(named)}>
-              {t("template_delete_action")}
+    <div className="flex flex-col gap-2 pt-1">
+      <button
+        type="button"
+        className={`${PANEL_QUIET_BUTTON} self-start`}
+        aria-expanded={open}
+        disabled={disabled}
+        onClick={() => setOpen((value) => !value)}
+      >
+        {t("template_save")}
+      </button>
+      {open ? (
+        <div className="flex flex-col gap-2">
+          <div className="flex flex-wrap items-end gap-2">
+            <TextField
+              dense
+              label={t("template_name")}
+              value={name}
+              maxLength={60}
+              onChange={(event) => setName(event.target.value)}
+              className="min-w-48 flex-1"
+            />
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              className="min-h-11"
+              busy={busy}
+              disabled={disabled || name.trim() === ""}
+              onClick={() => void save()}
+            >
+              {t("template_save_confirm")}
             </Button>
-          )}
-          <Button
-            type="button"
-            variant="soft"
-            busy={suggesting}
-            disabled={disabled}
-            onClick={suggest}
-          >
-            {t("suggest_action")}
-          </Button>
+            {named ? (
+              <button
+                type="button"
+                className={PANEL_QUIET_BUTTON}
+                disabled={busy}
+                onClick={() => void remove(named)}
+              >
+                {t("template_delete_action")}
+              </button>
+            ) : null}
+          </div>
+          <p className={NOTE_CLASS}>{t("template_hint")}</p>
         </div>
-      </div>
-      <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-        {t("template_hint")}
-      </p>
-      <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
-        {t("suggest_hint")}
-      </p>
+      ) : null}
     </div>
   );
 }

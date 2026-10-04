@@ -1,0 +1,355 @@
+{
+  "purpose": "Compact index of local release-gate logs omitted from Git",
+  "rawLogsCommitted": false,
+  "generatedAt": "2026-09-26T10:27:30.6884773Z",
+  "logs": [
+    {
+      "name": "2026-09-25-browser-feedback-final.log",
+      "bytes": 1462,
+      "sha256": "c5d88fe0e621f8e218957e7d4e0677f5d031fc9495f00645d7c08e9e00066cb4",
+      "resultLines": [
+        "8 passed (14.6s)"
+      ]
+    },
+    {
+      "name": "2026-09-25-firefox-local-smoke.log",
+      "bytes": 6012,
+      "sha256": "28f2f0a515c840b76d331ebf9aea6b577d85745dba58f0a9da9cf3f0834efe91",
+      "resultLines": [
+        "4 Firefox cases stopped at browserContext.newPage before app assertions"
+      ]
+    },
+    {
+      "name": "2026-09-25-full-browser-final.log",
+      "bytes": 84875,
+      "sha256": "ff5a9f27ef9cf21cdfdfbf904c3e9a687a992f0cd17d69bcfa8048a7e10a24f9",
+      "resultLines": [
+        "69 skipped",
+        "547 passed (10.4m)"
+      ]
+    },
+    {
+      "name": "2026-09-25-full-browser-mobile-fix.log",
+      "bytes": 92227,
+      "sha256": "192844db0b57b4154ac1971105e1a39a7036db1346b470d803de3ec5c23499d7",
+      "resultLines": [
+        "2 failed",
+        "69 skipped",
+        "545 passed (13.3m)"
+      ]
+    },
+    {
+      "name": "2026-09-25-full-tests-final.log",
+      "bytes": 349875,
+      "sha256": "ed329f72216df97e835003981de184007413ff9d80f5dd2b37a94098922e9858",
+      "resultLines": [
+        "Tasks:    6 successful, 7 total"
+      ]
+    },
+    {
+      "name": "2026-09-25-journey-focus-fixed.log",
+      "bytes": 6422,
+      "sha256": "48cd669b69cfe794e75fc7a08055866a367d811ad73ae8529a62f727fe2d0fb3",
+      "resultLines": [
+        "30 passed (1.7m)"
+      ]
+    },
+    {
+      "name": "2026-09-25-journey-focus-repeat.log",
+      "bytes": 7581,
+      "sha256": "7827614a7125e309f3b894c10de5065bfbabae637b7b8cd80f31e915bb28d571",
+      "resultLines": [
+        "1 failed",
+        "17 passed (1.0m)"
+      ]
+    },
+    {
+      "name": "2026-09-25-mobile-fix-targeted.log",
+      "bytes": 4720,
+      "sha256": "7ce633de91f116ffed9b2e318627c17446cc0ec422956bba0641918b91a89411",
+      "resultLines": [
+        "1 failed",
+        "8 passed (31.1s)"
+      ]
+    },
+    {
+      "name": "2026-09-25-notebook-final.log",
+      "bytes": 370,
+      "sha256": "7371181ae1dc1415253257caf44a17ac3c680078e917cc6e0d582d17bfd90e48",
+      "resultLines": [
+        "1 passed (9.3s)"
+      ]
+    },
+    {
+      "name": "2026-09-25-stage4-all-real-chrome-desktop.log",
+      "bytes": 712,
+      "sha256": "7e99e3b97e3cfa30a0c87ed77f4074a89ed77f26bca5cdde61cdb4a20e94a466",
+      "resultLines": [
+        "3 passed (14.2s)"
+      ]
+    },
+    {
+      "name": "2026-09-25-stage4-all-real-chrome-mobile.log",
+      "bytes": 708,
+      "sha256": "0c8d95141b926f6bfe3b417d2ceff7e7aa700285d08c66b405af02b357f0c50f",
+      "resultLines": [
+        "3 passed (10.1s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-api-full-tests-app111.log",
+      "bytes": 270056,
+      "sha256": "fdbe8b4f3eb9ed22c95f6da3df7483ba9a91789ace30595dc3998955299bf051",
+      "resultLines": [
+        "Test Files  2 failed | 329 passed (331)",
+        "Tests  1 failed | 2741 passed | 36 skipped (2778)",
+        "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @mentor/api@0.0.0 test: `vitest run`",
+        "Exit status 1"
+      ]
+    },
+    {
+      "name": "2026-09-26-api-full-tests-recheck.log",
+      "bytes": 296504,
+      "sha256": "62b3323243533c53c09f2c2b7a47b2e07b9c44238d950315c7dd6c65b9f6c8e6",
+      "resultLines": [
+        "Test Files  330 passed (331)",
+        "Tests  2757 passed (2778)",
+        "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @mentor/api@0.0.0 test: `vitest run`",
+        "Exit status 1"
+      ]
+    },
+    {
+      "name": "2026-09-26-api-thread-pool-probe.log",
+      "bytes": 30218,
+      "sha256": "558df397fd573a52c353ff92bf52f877c9e3a8f4c7deff9e87c1743426e62c75",
+      "resultLines": [
+        "Two-file probe ended with Node exit -1073740791"
+      ]
+    },
+    {
+      "name": "2026-09-26-app111-coach-browser.log",
+      "bytes": 25488,
+      "sha256": "b02884392bf2094ef80c1ed3021e9bd310da29386e0c4f3d31141bbc124e2f91",
+      "resultLines": [
+        "2 failed",
+        "132 passed (3.6m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-app111-weekly-close-rerun.log",
+      "bytes": 677,
+      "sha256": "1c9a61cc8a03baababaabd7d84c72f01aca52c44dc821cb79684c30d079b387d",
+      "resultLines": [
+        "2 passed (5.6s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-build-retry.log",
+      "bytes": 11243,
+      "sha256": "ed73a5fa8c53395990c8e7ec6343a8310358ff95720d8f9090ddba2b5eb73088",
+      "resultLines": [
+        "Error: next/font: error:",
+        "Failed to fetch Playfair Display from Google Fonts.",
+        "Error: next/font: error:",
+        "Failed to fetch Poppins from Google Fonts.",
+        "Error: next/font: error:",
+        "Failed to fetch Space Mono from Google Fonts.",
+        "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @mentor/web@0.0.0 build: `next build`",
+        "Exit status 1"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-build.log",
+      "bytes": 11242,
+      "sha256": "be591de804eef0ee362ae252f9522dd83b0dc131bc0301f4a8269f4723c42047",
+      "resultLines": [
+        "Error: next/font: error:",
+        "Failed to fetch Playfair Display from Google Fonts.",
+        "Error: next/font: error:",
+        "Failed to fetch Poppins from Google Fonts.",
+        "Error: next/font: error:",
+        "Failed to fetch Space Mono from Google Fonts.",
+        "[ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL] @mentor/web@0.0.0 build: `next build`",
+        "Exit status 1"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-dev-broad.log",
+      "bytes": 15334,
+      "sha256": "28b423f87609f32dffc3f28d5279ac081852aad478ac6ffa071e9a25490ff564",
+      "resultLines": [
+        "4 skipped",
+        "100 passed (4.0m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-dev-browser.log",
+      "bytes": 1937,
+      "sha256": "4961304d123a36bf00bdf12803d1bc6062ae8e25f5e9178d0e4fa1e48b981f54",
+      "resultLines": [
+        "8 passed (23.4s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-final-typecheck.log",
+      "bytes": 16,
+      "sha256": "5a3973f79ed9becd5f23c4feff467513814de7ea381d75a4d2e339aa8b8edca9",
+      "resultLines": [
+        "tsc --noEmit completed without diagnostics"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-lint.log",
+      "bytes": 2900,
+      "sha256": "4ad189862ae064a819bb0633c5791b964c1b401262fdc25706ac6a0f712a0a77",
+      "resultLines": [
+        "eslint completed: 0 errors, 16 warnings"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-nav-lint.log",
+      "bytes": 38,
+      "sha256": "d7fddda08bd702ec06434cb8a4baed620b815d0088be5a82dd10c0f33f37278d",
+      "resultLines": [
+        "eslint e2e/coach-student.spec.ts completed without diagnostics"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-nav-recheck.log",
+      "bytes": 698,
+      "sha256": "7ebfc297d34e058697bbb77eeb548a38a7e5413d8f5b24a5f0f2d09995858953",
+      "resultLines": [
+        "2 passed (8.5s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-plan-dev.log",
+      "bytes": 11600,
+      "sha256": "452307537a7ca0d0641f11565f526ab53e5e23b599f7ba367b902d09846aa2bd",
+      "resultLines": [
+        "78 passed (2.5m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-tests.log",
+      "bytes": 10029,
+      "sha256": "4283224f53bda83f566cf5c89fabbdd635381c5e107505fe29c4d92f73323be7",
+      "resultLines": [
+        "Test Files  127 passed (127)",
+        "Tests  796 passed (796)"
+      ]
+    },
+    {
+      "name": "2026-09-26-coach-latest-weekly-dev.log",
+      "bytes": 2195,
+      "sha256": "f99d6b0de3ff66ebbf6568d3398db8fb4aad7977f52099787b02b1616e6b758e",
+      "resultLines": [
+        "12 passed (31.5s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-cohort-istanbul-date-rerun.log",
+      "bytes": 1297,
+      "sha256": "227cc9ce4cc40361c4fd91834a9a54a0acc2b598254656b7c63d16260e04c452",
+      "resultLines": [
+        "Test Files  1 passed (1)",
+        "Tests  5 passed (5)"
+      ]
+    },
+    {
+      "name": "2026-09-26-forum-startup-rerun.log",
+      "bytes": 76247,
+      "sha256": "860050282cbbfbceae0de7776ebd16cf8421a54855b7498526d9ece5f3bf3410",
+      "resultLines": [
+        "Test Files  1 passed (1)",
+        "Tests  36 passed (36)"
+      ]
+    },
+    {
+      "name": "2026-09-26-full-browser-clean.log",
+      "bytes": 84875,
+      "sha256": "5dca1a679cf102b5afaa62ac62873dce5fc815f29ab0923adac09c1e7363de21",
+      "resultLines": [
+        "69 skipped",
+        "547 passed (14.1m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-full-browser-final.log",
+      "bytes": 92445,
+      "sha256": "592846d1e30c5e651509f845cf46cee71b83d8d366de9ccfc724e7c99c8746d1",
+      "resultLines": [
+        "2 failed",
+        "69 skipped",
+        "545 passed (15.1m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-full-build-app111.log",
+      "bytes": 43043,
+      "sha256": "1eea8fdd1ee91f3d3dd8ce8765039dd7fa242f1f4f522afe0f868cbba11c7f44",
+      "resultLines": [
+        "Tasks:    8 successful, 8 total"
+      ]
+    },
+    {
+      "name": "2026-09-26-full-lint-app111.log",
+      "bytes": 49974,
+      "sha256": "e0c2641ff075d12bd9472f7f1cde3020a861c5b3f45faaf2122b6aa4822dd4ab",
+      "resultLines": [
+        "Tasks:    13 successful, 13 total"
+      ]
+    },
+    {
+      "name": "2026-09-26-full-typecheck-app111.log",
+      "bytes": 1943,
+      "sha256": "eb6d488b4e2913bd35bfa240599f310666f3d7ef99feec17277ce8b3257a2de3",
+      "resultLines": [
+        "Tasks:    13 successful, 13 total"
+      ]
+    },
+    {
+      "name": "2026-09-26-knowledge-final.log",
+      "bytes": 3143,
+      "sha256": "2162d825ec901afc9ced17571fc7728ac46058ab2542a13e291023ba39213bca",
+      "resultLines": [
+        "22 passed (20.0s)"
+      ]
+    },
+    {
+      "name": "2026-09-26-nav-dirty-budget.log",
+      "bytes": 631,
+      "sha256": "c3afcf93d29d2acfa6aa19cf757f39acb887401ab1159d19a5b4a0d194665395",
+      "resultLines": [
+        "Panel route 754.6/760 KiB; panel total 1293.8/1295 KiB; font preload 2/2; messages 248/1024, 814/2048, 4107/6144 B"
+      ]
+    },
+    {
+      "name": "2026-09-26-notebook-create-load.log",
+      "bytes": 2584,
+      "sha256": "a9df5325c24d5f6614caa2f5ec11409076839eb18a5b9074275c33867d47cce5",
+      "resultLines": [
+        "8 passed (1.9m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-popover-chrome-final.log",
+      "bytes": 4453,
+      "sha256": "36d7666df315953cec01d3f157fa46f97508256b97eb4a0f9f1203d20c69111d",
+      "resultLines": [
+        "1 skipped",
+        "27 passed (3.5m)"
+      ]
+    },
+    {
+      "name": "2026-09-26-popover-chrome.log",
+      "bytes": 7564,
+      "sha256": "e351d7ec1e9b95e6ff51ada62ebfb37ae8793c2eb42f6e7b0a12cb0248ec755e",
+      "resultLines": [
+        "1 failed",
+        "1 skipped",
+        "26 passed (1.5m)"
+      ]
+    }
+  ]
+}

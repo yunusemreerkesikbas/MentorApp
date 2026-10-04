@@ -99,27 +99,32 @@ export interface MentorshipCoachOverviewDto {
   /** Null when the coach has never issued one. */
   inviteCode: MentorshipInviteCodeDto | null;
   activeStudents: number;
-  /** `mentorship.coach.max_active_students`. Overflow is an error on redemption, not a paywall. */
+  /** `mentorship.coach.max_active_students`: the hard roster ceiling, whatever the seats say. */
   maxActiveStudents: number;
   /**
-   * How many of this coach's students get sponsored Premium (`mentorship.coach.free_seats`).
-   * Distinct from `maxActiveStudents`: that one caps who may be followed, this one caps who is
-   * paid for. A coach at 5/20 students with 3 free seats is following five and sponsoring three.
+   * How many students this coach follows for free (`mentorship.coach.free_seats`). While
+   * `sponsorshipEnabled` is on, each of them also gets sponsored Premium.
    */
   freeSeats: number;
-  /**
-   * Extra sponsored seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan.
-   * The allowance is `freeSeats + paidSeats`; past it a student is followed but not sponsored.
-   */
+  /** Extra seats the coach's own plan adds (`plans.seat_count`). 0 without a seat plan. */
   paidSeats: number;
   /**
-   * Seats actually in use right now — counted, never inferred from `activeStudents`. A live link
-   * does not imply a seat: a student who already pays for themselves is never sponsored, and
-   * lowering `freeSeats` leaves existing sponsorships standing.
+   * Seats held (FREE + PAID), the card's "used". Not `activeStudents`: a student who pays for their
+   * own Premium holds none, and neither does one waiting for a seat.
    */
   usedSeats: number;
-  /** False while `mentorship.seats.sponsorship_enabled` is off — then no seat grants anything. */
+  /** Links waiting for a seat (frozen): the coach cannot open them until one returns. */
+  waitingStudents: number;
+  /** Whether a seat also opens the student's Premium (`mentorship.seats.sponsorship_enabled`). */
   sponsorshipEnabled: boolean;
+  /**
+   * How many students the next accept can reach: `freeSeats + paidSeats`, never past
+   * `maxActiveStudents`. The same number the accept lock refuses at, so "full" is
+   * `activeStudents >= seatAllowance` and the client computes nothing else.
+   */
+  seatAllowance: number;
+  /** A coach seat plan is in the `/subscription` catalog right now (some channel sells it). */
+  seatPlansOnSale: boolean;
   dataScope: MentorshipDataScopeKey[];
 }
 
@@ -142,6 +147,11 @@ export interface MyCoachDto {
   dataScope: MentorshipDataScopeKey[];
   /** Null when the coach has not left one. Cleared with the link, never inherited by a successor. */
   coachNote: MentorshipCoachNoteDto | null;
+  /**
+   * The student's own note to this coach (QA F4), read back to them. Same shape and lifetime as
+   * `coachNote`; the coach reads it on the report.
+   */
+  studentNote: MentorshipCoachNoteDto | null;
   /** The same profile the consent screen showed, so the student can re-read what they agreed to. */
   coachProfile: MentorshipCoachProfileDto | null;
   /**
@@ -153,6 +163,13 @@ export interface MyCoachDto {
    * Null when the coach holds the role without a registry row.
    */
   coachStatus: MentorshipApplicationStatusId | null;
+  /**
+   * The coach's seats are full and this link waits for one (seat NONE): it stands, but the coach
+   * opens nothing through it and a Premium the seat carried is closed until a seat returns.
+   */
+  seatWaiting: boolean;
+  /** Sponsor access is held by phone verification; false when Premium already exists. */
+  sponsoredPremiumPending: boolean;
 }
 
 /**
@@ -173,6 +190,19 @@ export type MentorshipRiskFlagId =
   (typeof MentorshipRiskFlag)[keyof typeof MentorshipRiskFlag];
 
 /**
+ * A coach's seat on one link (W8). FREE and PAID are the coach's room to follow the student (free
+ * quota, then the coach's plan); SELF is a student who pays for their own Premium and so holds no
+ * seat; NONE waits for one and is frozen: the coach cannot open the student until a seat returns.
+ */
+export const MentorshipSeat = {
+  FREE: "FREE",
+  PAID: "PAID",
+  SELF: "SELF",
+  NONE: "NONE",
+} as const;
+export type MentorshipSeatId = (typeof MentorshipSeat)[keyof typeof MentorshipSeat];
+
+/**
  * The numbers on a roster row. Separated from the row on purpose: an ENDED link carries `null`
  * here, so "a coach who no longer follows this student sees no data" is enforced by the type
  * rather than remembered by whoever edits the mapper next. Ending a link revokes consent, and
@@ -182,6 +212,8 @@ export interface MentorshipRosterMetricsDto {
   lastActiveDate: string | null;
   currentStreak: number;
   focusMinutes7d: number;
+  /** Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 14 entries. */
+  dailyFocusMinutes14d: number[];
   sessions7d: number;
   activeDays7d: number;
   /** 0..1; null when the student planned nothing (silence, not failure). */
@@ -202,7 +234,9 @@ export interface MentorshipRosterRowDto {
   status: MentorshipLinkStatus;
   acceptedAt: string | null;
   endedAt: string | null;
-  /** Null for an ENDED link — the coach's window onto this student is closed. */
+  /** The coach's seat on this link. NONE: waiting for a seat, frozen (no metrics, not openable). */
+  seat: MentorshipSeatId;
+  /** Null for an ENDED link, and for one waiting for a seat: the coach's window is closed. */
   metrics: MentorshipRosterMetricsDto | null;
   /** Always empty for an ENDED link (no data to triage, and nothing to act on). */
   riskFlags: MentorshipRiskFlagId[];
@@ -236,6 +270,11 @@ export interface MentorshipReportPlanTaskDto {
    * reads a previous coach's note, even on a task that outlived the link that created it.
    */
   coachNote: string | null;
+}
+
+/** Safe task projection for the human coach's weekly composer. */
+export interface MentorshipPlanningTaskDto extends MentorshipReportPlanTaskDto {
+  id: string;
 }
 
 /**
@@ -274,6 +313,7 @@ export interface CoachPlanGroupedTaskDto {
   topic: string | null;
   startTime: string | null;
   endTime: string | null;
+  durationMinutes?: number | null;
   coachNote: string | null;
   participants: CoachPlanParticipantDto[];
 }
@@ -294,7 +334,10 @@ export type CoachPlanItemDto =
   | { kind: "TASK"; task: CoachPlanGroupedTaskDto }
   | { kind: "EVENT"; event: CoachPlanEventDto };
 
-/** The single-student report. Numbers, dates, statuses and task headings — never free text. */
+/**
+ * The single-student report. Numbers, dates, statuses and task headings, never the student's free
+ * text, with one exception the student chose: `studentNote`, written for this coach.
+ */
 export interface MentorshipStudentReportDto {
   studentId: string;
   studentDisplayName: string;
@@ -304,6 +347,11 @@ export interface MentorshipStudentReportDto {
   studentExamType: string | null;
   /** What THIS coach wrote for this student, read back to them. */
   coachNote: MentorshipCoachNoteDto | null;
+  /**
+   * What the student wrote for THIS coach on their Koçum screen (QA F4). Cleared with the link, and
+   * kept out of every AI prompt: the brief and the suggestions read an allow-list that omits it.
+   */
+  studentNote: MentorshipCoachNoteDto | null;
   riskFlags: MentorshipRiskFlagId[];
   /** Same pair as on the roster row, so the report can carry the same button. */
   attendedAt: string | null;
@@ -319,14 +367,23 @@ export interface MentorshipStudentReportDto {
     focusMinutes28d: number;
     activeDays28d: number;
   };
+  /**
+   * Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 28 entries.
+   * Outside `activity` on purpose: the AI brief is fed `activity` whole.
+   */
+  dailyFocusMinutes28d: number[];
   planCompletionRate7d: number | null;
   mockTrend: {
     takenAt: string;
     totalNet: number;
     publisherName: string | null;
+    /** Null when content no longer knows the exam. */
+    examName: string | null;
   }[];
   latestMockSubjects: {
     subjectRef: string;
+    /** Taxonomy name; the slug itself when the taxonomy no longer has it. */
+    subjectName: string;
     correct: number;
     wrong: number;
     blank: number;
@@ -705,6 +762,8 @@ export interface MentorshipCoachRegistrationStateDto {
   registrationOpen: boolean;
   /** Null when this person has never registered as a coach. */
   registration: MentorshipApplicationDto | null;
-  /** The invite code stays locked until this is true (APP-089). */
+  /** Coach activation and the invite code require verified email. */
   emailVerified: boolean;
+  /** Coach activation and invitations require verified phone on an ACTIVE identity account. */
+  phoneVerified: boolean;
 }

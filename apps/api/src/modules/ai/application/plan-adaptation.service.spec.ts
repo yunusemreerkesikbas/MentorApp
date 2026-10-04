@@ -1,5 +1,6 @@
 import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { CoachEvidenceType } from "@mentor/types";
 import { FeatureFlag } from "../../../common/config/config.catalog";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
@@ -9,6 +10,50 @@ import { PlanAdaptationService } from "./plan-adaptation.service";
 const USER = { id: "u1", roles: ["STUDENT"] } as never;
 const TODAY = new Date().toISOString().slice(0, 10);
 const TOMORROW = new Date(Date.now() + 86_400_000).toISOString().slice(0, 10);
+const WEAK =
+  "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6), Tarih (12).";
+const TOPICS = "Yanlış defterinde en çok kart biriken konular: Problemler (5).";
+
+const evidenceItem = (type: CoachEvidenceType, summary: string) => ({
+  type,
+  summary,
+  observedAt: "2026-09-20T09:00:00.000Z",
+});
+
+function evidenceSnapshot() {
+  return {
+    examType: "KPSS",
+    examVariant: null,
+    dailyFocusGoalMinutes: 60,
+    moodLevel: 1,
+    moodTrend: "DOWN",
+    planCompletionRate: 50,
+    pendingAiCoachPlanTaskId: null,
+    weakSubjects: ["Matematik", "Tarih"],
+    focusSubject: "Matematik",
+    examPhase: "FINAL",
+    activeDays28d: 20,
+    averageSessionMinutes28d: 43,
+    // Sunday is the rarest day, so a five-day rhythm leaves it out.
+    weekdayActivity28d: [1, 2, 3, 4, 5, 6, 7].map((weekday) => ({
+      weekday,
+      activeDays: weekday === 7 ? 1 : 3,
+      focusMinutes: weekday === 4 ? 40 : 120,
+    })),
+    coverage: { mockCount: 4, notebookCount: 9, sessions28d: 12 },
+    // Never part of the snapshot contract; proves nothing outside `evidence` reaches the prompt.
+    struggleNote: "private mood note",
+    evidence: [
+      evidenceItem(CoachEvidenceType.MOOD, "Bugünkü enerjin 5 üzerinden 1."),
+      evidenceItem(CoachEvidenceType.RECENT_RHYTHM, "Son 7 günde 3 gün çalıştın."),
+      evidenceItem(CoachEvidenceType.TODAY_PLAN, "Bugünkü planında 2 görevin 1 tanesi tamam."),
+      evidenceItem(CoachEvidenceType.WEAK_SUBJECTS, WEAK),
+      evidenceItem(CoachEvidenceType.NOTEBOOK_TOPICS, TOPICS),
+      evidenceItem(CoachEvidenceType.EXAM_PHASE, "Sınavına 30 günden az kaldı."),
+      evidenceItem(CoachEvidenceType.GOAL, "Hedef alanın: Sağlık."),
+    ],
+  };
+}
 
 describe("PlanAdaptationService", () => {
   let complete: ReturnType<typeof vi.fn>;
@@ -18,9 +63,17 @@ describe("PlanAdaptationService", () => {
   let getMood: ReturnType<typeof vi.fn>;
   let getSession: ReturnType<typeof vi.fn>;
   let getEntitlement: ReturnType<typeof vi.fn>;
+  let buildEvidence: ReturnType<typeof vi.fn>;
+  let getProfile: ReturnType<typeof vi.fn>;
+  let getPromptMemories: ReturnType<typeof vi.fn>;
+  let assertWithinBudget: ReturnType<typeof vi.fn>;
+  let getCurrentExamByFamily: ReturnType<typeof vi.fn>;
+  let listExamTopicsByExamId: ReturnType<typeof vi.fn>;
+  let aiEnabled: boolean;
   let service: PlanAdaptationService;
 
   beforeEach(() => {
+    aiEnabled = true;
     complete = vi.fn(async () => ({
       text: JSON.stringify({
         changes: [{ kind: "MOVE", taskRef: "T1", toDate: TOMORROW }],
@@ -63,30 +116,31 @@ describe("PlanAdaptationService", () => {
       sessionMood: 1,
     }));
     getEntitlement = vi.fn(async () => ({ isPremium: true }));
+    buildEvidence = vi.fn(async () => evidenceSnapshot());
+    getProfile = vi.fn(async () => ({
+      calibrationStatus: "COMPLETED",
+      memoryConsent: "DECLINED",
+      supportPreference: null,
+      directnessPreference: null,
+      updatedAt: "2026-09-20T09:00:00.000Z",
+    }));
+    getPromptMemories = vi.fn(async () => [
+      { id: "m1", key: "STUDY_TIME", value: "EVENING" },
+    ]);
+    assertWithinBudget = vi.fn(async () => undefined);
+    getCurrentExamByFamily = vi.fn(async () => ({ id: "exam-1" }));
+    listExamTopicsByExamId = vi.fn(async () => [{ subjectName: "Matematik", slug: "problemler", name: "Problemler" }]);
 
     service = new PlanAdaptationService(
       { complete } as never,
       { getAdaptationSnapshot: getSnapshot } as never,
       { getToday: getMood } as never,
       { getById: getSession } as never,
-      {
-        build: vi.fn(async () => ({
-          examType: "KPSS",
-          moodLevel: 1,
-          struggleNote: "private mood note",
-          recentSessions: {
-            count7d: 2,
-            focusMinutes7d: 50,
-            subjects: ["Matematik"],
-            lastStruggleNote: "private session note",
-          },
-          todayPlan: null,
-        })),
-      } as never,
+      { build: buildEvidence } as never,
       { append, countFeaturesSince } as never,
       {
         get: vi.fn(async (key: string) => {
-          if (key === FeatureFlag.AI_ENABLED) return true;
+          if (key === FeatureFlag.AI_ENABLED) return aiEnabled;
           if (key === "ai.plan_draft.daily_limit") return 5;
           return null;
         }),
@@ -101,8 +155,10 @@ describe("PlanAdaptationService", () => {
           }
         },
       } as never,
-      { assertWithinBudget: vi.fn(async () => undefined) } as never,
+      { assertWithinBudget } as never,
       { translate: vi.fn((key: string) => key) } as never,
+      { getProfile, getPromptMemories } as never,
+      { getCurrentExamByFamily, listExamTopicsByExamId } as never,
     );
   });
 
@@ -154,9 +210,41 @@ describe("PlanAdaptationService", () => {
       status: "NO_CHANGE",
       changes: [],
       model: "rules",
+      groundingLine: "Bugün seni bekleyen bir görev yok. Dinlenmek de planın parçası.",
+      message: "coaching.planAdaptation.REST",
     });
+    expect(result.usedEvidence?.map((item) => item.type)).toEqual([
+      CoachEvidenceType.MOOD,
+      CoachEvidenceType.RECENT_RHYTHM,
+      CoachEvidenceType.TODAY_PLAN,
+    ]);
     expect(complete).not.toHaveBeenCalled();
     expect(append).not.toHaveBeenCalled();
+  });
+
+  it("says today's work is done instead of offering nothing when every task is finished", async () => {
+    getSnapshot.mockResolvedValue({
+      window: { from: TODAY, to: TODAY },
+      planRevision: "revision",
+      tasks: [
+        {
+          id: "done-1",
+          taskDate: TODAY,
+          title: "Tamamlanan görev",
+          subject: null,
+          status: "DONE",
+          sortOrder: 0,
+        },
+      ],
+    });
+
+    const result = await service.preview(USER, { source: "MOOD" });
+
+    expect(result.groundingLine).toBe(
+      "Bugünkü 1 görevini tamamlamışsın. Bugün dinlenmek de planın parçası.",
+    );
+    expect(result.message).toBe("coaching.planAdaptation.REST");
+    expect(complete).not.toHaveBeenCalled();
   });
 
   it("validates owned completed SESSION with sessionMood=1", async () => {
@@ -176,7 +264,7 @@ describe("PlanAdaptationService", () => {
     expect(complete).not.toHaveBeenCalled();
   });
 
-  it("sends only opaque pending task refs and sanitized aggregates, then meters adaptation usage", async () => {
+  it("sends only opaque pending task refs and verified evidence, then meters adaptation usage", async () => {
     const result = await service.preview(USER, {
       source: "PLAN",
       note: "Cuma günü hafif olsun",
@@ -195,11 +283,144 @@ describe("PlanAdaptationService", () => {
     expect(prompt.user).not.toContain("task-1");
     expect(prompt.user).not.toContain("done-1");
     expect(prompt.user).not.toContain("private mood note");
-    expect(prompt.user).not.toContain("private session note");
     expect(prompt.user).toContain("Cuma günü hafif olsun");
+    expect(prompt.user).toContain("Ruh hali: çok düşük");
+    expect(result.message).toBe("coaching.planAdaptation.READY");
+    expect(result.groundingLine).toBe(
+      "4 denemene, 9 yanlış kartına ve son 28 gündeki 12 seansına baktık.",
+    );
     expect(append.mock.calls[0][0].feature).toBe(
       AiUsageFeature.PLAN_ADAPTATION,
     );
+  });
+
+  it("grounds a plan request in the evidence pool and returns the reasons it chose", async () => {
+    complete.mockResolvedValue({
+      text: JSON.stringify({
+        changes: [
+          {
+            kind: "ADD",
+            title: "Problemler 10 soru",
+            subject: "Matematik",
+            taskDate: TOMORROW,
+            evidenceRef: "E3",
+          },
+        ],
+      }),
+      promptTokens: 10,
+      completionTokens: 5,
+      model: "fake",
+    });
+
+    const result = await service.preview(USER, { source: "PLAN" });
+
+    const prompt = complete.mock.calls[0][0];
+    expect(prompt.user).toContain("E1 | EXAM_PHASE | Sınavına 30 günden az kaldı.");
+    expect(prompt.user).toContain(`E2 | WEAK_SUBJECTS | ${WEAK}`);
+    expect(prompt.user).toContain(`E3 | NOTEBOOK_TOPICS | ${TOPICS}`);
+    expect(prompt.system).toContain("Sınav son düzlükte");
+    expect(result.usedEvidence?.map((item) => item.type)).toEqual([
+      CoachEvidenceType.EXAM_PHASE,
+      CoachEvidenceType.WEAK_SUBJECTS,
+      CoachEvidenceType.NOTEBOOK_TOPICS,
+      CoachEvidenceType.GOAL,
+      CoachEvidenceType.RECENT_RHYTHM,
+      CoachEvidenceType.MOOD,
+    ]);
+    expect(result.usedEvidence?.[0]).not.toHaveProperty("ref");
+    expect(result.changes[0]).toMatchObject({
+      kind: "ADD",
+      title: "Problemler 10 soru",
+      reason: TOPICS,
+    });
+  });
+
+  it("adds structured memory only after the student consented", async () => {
+    await service.preview(USER, { source: "PLAN" });
+    expect(complete.mock.calls[0][0].user).not.toContain("STUDY_TIME");
+    expect(getPromptMemories).not.toHaveBeenCalled();
+
+    getProfile.mockResolvedValue({
+      calibrationStatus: "COMPLETED",
+      memoryConsent: "GRANTED",
+      supportPreference: "ACTION",
+      directnessPreference: "DIRECT",
+      updatedAt: "2026-09-20T09:00:00.000Z",
+    });
+    await service.preview(USER, { source: "PLAN" });
+    const prompt = complete.mock.calls[1][0].user as string;
+    expect(prompt).toContain("STUDY_TIME=EVENING");
+    expect(prompt).toContain("destek=ACTION");
+  });
+
+  it("keeps a low-mood adaptation on the narrow context", async () => {
+    getProfile.mockResolvedValue({
+      calibrationStatus: "COMPLETED",
+      memoryConsent: "GRANTED",
+      supportPreference: null,
+      directnessPreference: null,
+      updatedAt: "2026-09-20T09:00:00.000Z",
+    });
+
+    const result = await service.preview(USER, { source: "MOOD" });
+
+    const prompt = complete.mock.calls[0][0].user as string;
+    expect(prompt).toContain("E1 | MOOD |");
+    expect(prompt).not.toContain("WEAK_SUBJECTS");
+    expect(prompt).not.toContain("STUDY_TIME");
+    expect(result.groundingLine).toBe("Bekleyen işlerin arasında Matematik var.");
+  });
+
+  it("puts the selected study rhythm into the model prompt", async () => {
+    await service.preview(USER, {
+      source: "PLAN",
+      days: 5,
+      minutesPerDay: 90,
+      focusSubjects: ["Tarih"],
+    });
+
+    const prompt = complete.mock.calls.at(-1)?.[0];
+    expect(prompt.system).toContain("Yalnız 5 farklı gün için ADD yaz");
+    expect(prompt.user).toContain("90 dakika");
+    expect(prompt.user).toContain("Tarih");
+  });
+
+  it("uses a concrete subject action when the exam has no topic taxonomy", async () => {
+    getCurrentExamByFamily.mockRejectedValue(new DomainError(ErrorCode.CONTENT_EXAM_NOT_FOUND, HttpStatus.NOT_FOUND));
+    const weekday = ((new Date(`${TODAY}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    const result = await service.preview(USER, {
+      source: "PLAN", studyWeekdays: [weekday], minutesPerDay: 120, focusSubjects: ["Matematik"],
+    });
+    expect(result.changes).toHaveLength(2);
+    expect(result.changes.every((change) => change.kind === "ADD" && change.subject === "Matematik" && change.topic === null && change.durationMinutes === 60 && !/\d+\s*dk/.test(change.title))).toBe(true);
+    expect(result.coachNote).toBeTruthy();
+    expect(result.coachNote).toContain("Hedef alanın: Sağlık.");
+    expect(complete).toHaveBeenCalledOnce();
+  });
+
+  it("keeps the plan on the weekdays the student picked", async () => {
+    const tomorrowWeekday = ((new Date(`${TOMORROW}T00:00:00Z`).getUTCDay() + 6) % 7) + 1;
+    complete.mockResolvedValue({
+      text: JSON.stringify({
+        changes: [
+          { kind: "ADD", title: "Bugün blok", taskDate: TODAY },
+          { kind: "ADD", title: "Yarın blok", taskDate: TOMORROW },
+        ],
+      }),
+      promptTokens: 4,
+      completionTokens: 3,
+      model: "fake",
+    });
+
+    const result = await service.preview(USER, {
+      source: "PLAN",
+      studyWeekdays: [tomorrowWeekday],
+    });
+
+    expect(complete.mock.calls.at(-1)?.[0].system).toContain(`Yalnız şu günlere birer ADD yaz: ${TOMORROW}`);
+    expect(result.changes).toEqual([
+      expect.objectContaining({ kind: "ADD", title: "Yarın blok", taskDate: TOMORROW }),
+    ]);
   });
 
   it("rejects a SESSION that is not owned or no longer exists", async () => {
@@ -307,5 +528,54 @@ describe("PlanAdaptationService", () => {
       httpStatus: HttpStatus.SERVICE_UNAVAILABLE,
     });
     expect(append).toHaveBeenCalledOnce();
+  });
+
+  describe("brief", () => {
+    it("seeds the wizard from the pool without calling the model or spending quota", async () => {
+      const brief = await service.brief(USER);
+
+      const byType = new Map(
+        evidenceSnapshot().evidence.map((item) => [item.type, item]),
+      );
+      expect(brief).toEqual({
+        groundingLine:
+          "4 denemene, 9 yanlış kartına ve son 28 gündeki 12 seansına baktık.",
+        evidence: [
+          CoachEvidenceType.EXAM_PHASE,
+          CoachEvidenceType.WEAK_SUBJECTS,
+          CoachEvidenceType.NOTEBOOK_TOPICS,
+          CoachEvidenceType.GOAL,
+          CoachEvidenceType.RECENT_RHYTHM,
+          CoachEvidenceType.MOOD,
+        ].map((type) => byType.get(type)),
+        suggestion: {
+          days: 5,
+          weekdays: [1, 2, 3, 5, 6],
+          minutesPerDay: 60,
+          focusSubjects: ["Matematik", "Tarih"],
+        },
+      });
+      expect(complete).not.toHaveBeenCalled();
+      expect(append).not.toHaveBeenCalled();
+      expect(countFeaturesSince).not.toHaveBeenCalled();
+      expect(assertWithinBudget).not.toHaveBeenCalled();
+    });
+
+    it("stays behind the premium gate", async () => {
+      getEntitlement.mockResolvedValue({ isPremium: false });
+      await expect(service.brief(USER)).rejects.toMatchObject({
+        code: ErrorCode.PAYMENT_PREMIUM_REQUIRED,
+        httpStatus: HttpStatus.FORBIDDEN,
+      });
+      expect(buildEvidence).not.toHaveBeenCalled();
+    });
+
+    it("disappears with the AI kill switch", async () => {
+      aiEnabled = false;
+      await expect(service.brief(USER)).rejects.toMatchObject({
+        code: ErrorCode.AI_DISABLED,
+        httpStatus: HttpStatus.NOT_FOUND,
+      });
+    });
   });
 });

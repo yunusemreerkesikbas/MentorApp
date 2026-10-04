@@ -62,13 +62,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | ----------- | ----------------------------------------- | --------------------------------------------------------------------------- |
 | POST        | `/v1/auth/signup`                         | KVKK consent required; Turnstile when secret set                            |
 | POST        | `/v1/auth/login`                          | Enumeration-safe (same 401 + dummy-hash timing)                             |
+| POST        | `/v1/auth/admin/login`                    | Panel-role-gated login; separate admin refresh cookie                       |
 | GET         | `/v1/auth/google/status`                  | Public Google button availability (`enabled`, plus flag/config diagnostics) |
 | GET         | `/v1/auth/google/start`                   | Starts Google OAuth (`mode=login \| signup`; signup requires KVKK flag) |
 | GET         | `/v1/auth/google/callback`                | Google callback; sets Mentor refresh cookie then redirects to web           |
 | GET         | `/v1/users/me/auth-accounts/google`       | Current user's Google-link status                                           |
 | POST        | `/v1/users/me/auth-accounts/google/start` | Password-confirmed, session-bound Google linking start                      |
 | POST        | `/v1/auth/refresh`                        | Cookie-scoped `/v1/auth`; rotation + reuse detection                        |
+| POST        | `/v1/auth/admin/refresh`                  | Rotates only the admin cookie; requires a current panel role               |
 | POST        | `/v1/auth/logout`                         | Revokes refresh family                                                      |
+| POST        | `/v1/auth/admin/logout`                   | Revokes and clears only the admin session                                   |
 | POST        | `/v1/auth/verify-email`                   | Consumes `email_tokens`                                                     |
 | POST        | `/v1/auth/forgot-password`                | Always 200 (hides existence)                                                |
 | POST        | `/v1/auth/reset-password`                 | Revokes all sessions                                                        |
@@ -87,9 +90,68 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 | `PATCH /v1/users/me`                                                                      | Onboarding/profile (displayName, username, examType, examDate, avatarStorageKey) |
 | `POST /v1/users/me/verification-email`                                                    | Resend verification email for current user                                       |
 | `POST /v1/users/me/avatar-upload-url`                                                     | Create user-scoped avatar upload URL                                             |
+| `GET /v1/users/me/phone`                                                                 | Masked phone, verification, availability and fresh-login requirement              |
+| `POST /v1/users/me/phone/verifications`                                                  | Session-bound Turkey mobile OTP, Turnstile and atomic send quotas               |
+| `POST /v1/users/me/phone/verifications/:challengeId/confirm`                             | One-use confirmation and atomic phone binding/change                             |
 | `DELETE /v1/account`                                                                      | Self-service KVKK erasure ("hesabımı sil") — irreversible                        |
 
 ## Geliştirmeler (timeline)
+
+- **Private SMS verification (2026-10-03, APP-114).** Added protected phone endpoints, shared Zod
+  normalization for Turkey mobile numbers, six-digit cryptographic codes protected with keyed HMAC,
+  session/purpose binding, expiry, replay protection and atomic Postgres quotas. One verified number
+  belongs to at most one ACTIVE account; suspended accounts cannot reclaim a number owned by another
+  active account. Changing a number requires an actual login within ten minutes; refresh rotation
+  does not refresh that time, and the old number stays bound until successful confirmation.
+  Usage: the shared web card appears in profile, coach activation, trial purchase and pending
+  sponsored Premium. Configure Netgsm and the registry flag using the integration runbook before
+  enabling sends; both are disabled by default. Delivery alone does not verify a number.
+  Identity emits only `{ userId }` after confirmation, and exports transaction-scoped active-account
+  and contact-verification seams for entitlement decisions. Erasure clears phones/challenges;
+  short-lived keyed abuse counters survive 32 days and consumed trial phone fingerprints survive
+  12 calendar months from activation (payments owns that record). Unknown payment holds require
+  provider evidence. Gotchas: phone ownership is neither legal identity nor coach qualification;
+  OTP is never an admin security factor or marketing consent. No live SMS/carrier pilot has run.
+  Related: `phone.controller.ts`, `phone.dto.ts`, `phone-verification.service.ts`,
+  `phone-verification.repository.ts`, `netgsm-sms.adapter.ts`, `schema-phone.ts`, migrations
+  `0120`/`0121`, `test/phone.e2e-spec.ts`, `phone-verification-card.tsx`,
+  [setup and retention](../core/integrations.md#netgsm-phone-verification).
+
+### 2026-09-27 — The terms checkbox is named
+
+The signup's terms and 13+ checkbox now carries `aria-labelledby` like the KVKK one. A screen
+reader used to announce an unnamed checkbox for a legal declaration. Found by the mentorship
+real-API QA. Related: `(auth)/signup/page.tsx`, `e2e/onboarding-redesign.spec.ts`.
+
+### 2026-09-24 — Login 429 says how long to wait
+
+Throttled `429` responses (`TOO_MANY_REQUESTS`) now include the `Retry-After` seconds already set by the throttler: "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim." One second uses the singular English line. If the header is missing, the static sentence stays. Login stays at 10 requests per minute per IP. Related: `all-exceptions.filter.ts`, `i18n/locales/{tr,en}/errors.json`.
+
+### 2026-09-23 — Independent web and admin sessions
+
+Web auth now uses `mentor_web_refresh` at `/v1/auth`; the admin panel uses
+`mentor_admin_refresh` at `/v1/auth/admin`. Admin login, refresh, and logout use
+`/v1/auth/admin/{login,refresh,logout}` and require a current panel role. Logging in or out of one
+surface no longer changes the other's refresh session. The former `mentor_refresh` cookie is ignored
+and cleared on the next successful login, so users sign in once again after rollout. Existing session
+rows expire normally; no schema migration is required. Related: `identity.constants.ts`,
+`auth.controller.ts`, `auth.service.ts`, `apps/admin/src/lib/apiClient.ts`.
+
+### 2026-09-17 — XP / Coin launch integration
+
+- Committed profile updates and email verification publish dated domain events for immediate quest evaluation. No identity code accesses economy tables. Profile and email rewards remain separate and once-only. See users.service.ts, auth.service.ts and economy.md.
+
+
+- **2026-09-14 — Koç signup'ı durum bilinene kadar form göstermiyor.** `?rol=koc` ile
+  `coachOpen === null` iken (status isteği sürüyor) skeleton render edilir; önceden kapalı intake'te
+  form bir an görünüp doldurulabiliyordu. `fetchCoachSignupOpen` hata durumunda `false` döner.
+
+- **2026-09-14 — Signup koç intent'i intake flag'ine bağlandı.** `intent: COACH`, artık
+  `mentorship.applications.open` kapalıyken hesap oluşturulmadan 403 `MENTORSHIP_APPLICATIONS_CLOSED`
+  alıyor; önceden rol veriliyor ve koç onboarding'in son adımında takılıyordu. Yeni public
+  `GET /v1/auth/coach-signup/status` → `{ open }`, signup ekranı formu göstermeden önce soruyor.
+  Gotcha: kontrol e-posta var mı sorgusundan önce, yani kapalı intake'te kullanıcı adı/e-posta
+  çakışması hiç raporlanmıyor. Ayrıntı: [mentorship.md](./mentorship.md) 2026-09-14 girdisi.
 
 - **2026-09-12 — Auth table render and Google link sheet.** The auth endpoint table in this doc
   kept three columns; Google linking no longer dismisses the password sheet on backdrop while
@@ -471,6 +533,51 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 - Related: `apps/web/src/app/[locale]/(app)/profile/_components/google-account-card.tsx`,
   `packages/ui/src/components/button.tsx`, `messages/{tr,en}.json`.
 
+### 2026-09-18 — Stable welcome copy transitions
+
+- Welcome slide changes keep the shared `TextsReveal` layer mounted instead of replaying its blur
+  and vertical entrance while the scroll-linked copy transform is still moving. The copy still fades
+  out at the handover point and updates while hidden, but no longer combines two text transforms.
+- Usage is unchanged. The welcome E2E flow now guards the persistent copy layer across navigation.
+  Related: `_components/welcome/welcome-sheet.tsx`, `e2e/onboarding-redesign.spec.ts`.
+
+### 2026-09-19 — Onboarding-aligned desktop auth shell
+
+- Desktop auth now uses a centered two-column stage: the localized welcome copy sits in the same
+  bordered speech-bubble language as onboarding above the waving Puhu, and the wider form card is
+  inset from the viewport edge. Mobile keeps its existing hanging-Puhu bottom sheet.
+- Signup no longer scrolls inside the desktop card. Tall forms grow with the document so short
+  desktop viewports use one natural page scrollbar. E2E coverage protects the narrative bubble,
+  desktop inset, and lack of nested form scrolling. Related: `(auth)/_components/auth-shell.tsx`,
+  `e2e/onboarding-redesign.spec.ts`, `docs/plans/2026-09-19-auth-desktop-shell-design.md`.
+
+### 2026-09-24 — Self-service email update & avatar button DESIGN.md alignment
+
+- Users can now update their email address directly from the Profile Details modal (`ProfileEditForm`).
+- Validation (`@mentor/validation` `updateMeSchema`) now validates optional `email` via `emailSchema`.
+- Backend (`UsersService.updateMe`) validates email uniqueness (`AUTH_EMAIL_IN_USE` 409 error), resets `emailVerifiedAt` to `null` upon email change, updates the user row, and sends the new verification link through the resend quota. See the entry below.
+- Frontend (`profile-header.tsx`) replaces the disabled `LockedEmailField` with an editable `TextField`, shows a specialized success toast when email changes, and realigns "Fotoğraf seç" / "Kaldır" buttons to `DESIGN.md` secondary card action standards (10px `--radius-card`, surface background with border and card shadow, removing the out-of-place pitch-black `--color-btn` pill).
+- Related: `packages/validation/src/auth.ts`, `apps/api/src/modules/identity/application/users.service.ts`, `apps/api/src/modules/identity/application/auth.service.ts`, `apps/api/src/modules/identity/application/users.service.spec.ts`, `apps/web/src/app/[locale]/(app)/profile/_components/profile-header.tsx`, `messages/{tr,en}.json`.
+
+### 2026-09-24 — Email change uses the resend quota
+
+- An address change calls `invalidateOutstandingVerification` and then `resendVerificationEmail`. The per-user resend window applies. Signup still uses `sendVerificationEmail` and does not spend that window.
+- Unused `VERIFY_EMAIL` tokens are marked used before the new link is created. A link mailed to the previous address cannot set `emailVerifiedAt` on the new one. If the resend is rate-limited, the new address stays and no mail goes out; the student asks again from `POST /v1/users/me/verification-email`.
+- The profile form shows `profile.edit.email_error` when the address itself fails validation.
+- Related: `email-token.repository.ts`, `auth.service.ts`, `users.service.ts`, `profile-header.tsx`, `messages/{tr,en}.json`.
+
+### 2026-09-24 — Return to a protected page after signing in
+
+- The web app guard now passes the requested internal path and query to `/login?next=...` when an anonymous visitor opens a protected page. The existing `postAuthDestination` validation decides whether that path is safe and whether onboarding or a coach role changes the destination. This restores `/plan` after login without storing a token in browser storage.
+- Usage: open a protected plan link while signed out, sign in, and continue on that plan. The Stage 2 real-API Chrome smoke covers the redirect, logout, English route, and two-tab refresh. Related: `apps/web/src/app/[locale]/(app)/app-shell.tsx`, `apps/web/e2e/qa-stage2-real-api.spec.ts`, `docs/qa/2026-09-24-identity-content-coaching-results.md`.
+
+### 2026-10-04 — Durable account-erasure fence
+
+- Account erasure acquires `users.erasure_started_at` under the same `FOR NO KEY UPDATE` account lock used by checkout, before cancelling billing. Paid/trial checkout, verified email/phone/contact seams, session issuance/validation/refresh and phone verification recheck this marker. The user stays `ACTIVE` until the terminal identity scrub, preserving active verified-phone uniqueness. Usage: both self-service deletion and admin anonymization use `AccountErasureService`; no provider HTTP runs inside the fence transaction.
+- Ordinary cancellation or module-cleanup failure clears only the timestamp owned by that attempt. An unknown `INCOMPLETE` provider outcome aborts before behavioral erasure and keeps its checkout/phone claim for reconciliation. Terminal scrub clears the marker atomically; subsequent token revocation failure cannot restore availability. A refresh attempted while fenced revokes that refresh family, so the user signs in again after a failed erasure.
+- Crash recovery is deliberately fail-closed: a remaining marker returns `CONFLICT` for another erasure and denies new account work. Operators must inspect the original attempt, module cleanup and retained payment/claim records, verify provider cancellation or resolve its unknown outcome, and confirm no erasure worker is still running before calling `UsersService.releaseAccountErasure(userId, exactStartedAt)` to retry the normal orchestration. Never clear by age, release another timestamp, rewrite status to `ACTIVE`, or detach an unresolved pending claim. A scrubbed terminal user stays terminal; repair session cleanup separately.
+- Related: `account/application/account-erasure.service.ts`, identity `users.{service,repository}.ts`, `auth-session.repository.ts`, `phone-verification.repository.ts`, migration `0123_*`, `test/account-erasure-fence.e2e-spec.ts`. Deterministic barriers pause erasure after billing cancellation and test preauthorized checkout denial before any provider call.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax
@@ -488,6 +595,16 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 - **`AuthNavLink` children must be plain `string`** (avoids React 19 / Next `Link` ReactNode type clash).
 - **Landing funnel points to `/kayit` and `/giris`** — keep CTA paths aligned.
 - **e2e boot can exceed 10s on Windows** → vitest `hookTimeout: 30s`.
+
+- **Ayrık kayıt beyanları ve 13+ öz beyanı (2026-09-17)** — Kayıt ekranındaki eski birleşik
+  “KVKK + 18 yaş” kutusu ayrıldı: KVKK aydınlatmasının okunduğu ayrıca belirtilir; Kullanım
+  Koşulları kabulü en az 13 yaş öz beyanını taşır. Doğum tarihi/yılı ve ham IP toplanmaz. E-posta ve
+  Google kayıt API'leri `kvkkAccepted`, `termsAccepted` ve `ageEligibilityConfirmed` değerlerinin
+  üçünü de zorunlu doğrular. Yeni hesapta `terms_accepted_at`, `terms_version` ve
+  `age_eligibility_confirmed_at` kanıtı saklanır; mevcut hesaplar için kolonlar nullable bırakılmıştır.
+  Gotcha: bu yalnız öz beyandır, veli doğrulaması değildir ve çocuk verileri için hukukçu incelemesi
+  gerektirir. İlgili: `packages/validation/src/auth.ts`, `auth.service.ts`,
+  `google-auth.service.ts`, migration `0115_acoustic_siren.sql`, web `signup/page.tsx`.
 
 ## Related
 

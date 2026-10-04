@@ -6,7 +6,6 @@ import type {
   MentorshipBriefMetricChangeDto,
   MentorshipRiskFlagId,
 } from "@mentor/types";
-import { CalmLabel } from "../../../_components/signal-pill";
 import { RiskChip } from "../../../_components/risk-chip";
 import {
   formatCount,
@@ -25,7 +24,7 @@ import {
  * second place for the panel and the model to disagree about what changed.
  *
  * Only ARRIVED flags wear the triage vocabulary. A cleared flag is not a finding about the
- * student any more, so it reads as {@link CalmLabel} instead, and the metric and coach-action
+ * student any more, so it reads as quiet secondary text, and the metric and coach-action
  * rows wear no signal dots at all: the shell's four hues answer "which signal", and a completion
  * rate or a task count is not one. Lending them a hue would undo exactly what `signal-pill.tsx`
  * was written to fix.
@@ -78,9 +77,12 @@ function FlagRow({
         <RiskChip key={`added-${flag}`} flag={flag} />
       ))}
       {resolved.map((flag) => (
-        <CalmLabel key={`resolved-${flag}`}>
+        <span
+          key={`resolved-${flag}`}
+          className="text-xs font-semibold text-[var(--color-secondary)]"
+        >
           {t("brief_flag_resolved", { flag: t(`flag_${flag}`) })}
-        </CalmLabel>
+        </span>
       ))}
     </div>
   );

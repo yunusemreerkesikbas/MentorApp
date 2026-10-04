@@ -36,7 +36,7 @@ describe("admin economy metrics (e2e)", () => {
     const email = `aem-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `AEM ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `AEM ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 

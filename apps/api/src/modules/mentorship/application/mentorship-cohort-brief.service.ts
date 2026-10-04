@@ -1,9 +1,10 @@
 import { Injectable } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
-import type {
-  MentorshipCohortBriefDto,
-  MentorshipCohortBriefItemDto,
-  MentorshipRiskFlagId,
+import {
+  MentorshipSeat,
+  type MentorshipCohortBriefDto,
+  type MentorshipCohortBriefItemDto,
+  type MentorshipRiskFlagId,
 } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { MentorshipCohortBriefItem } from "../../../database/schema";
@@ -14,7 +15,7 @@ import {
   selectCohortBriefRows,
 } from "../../ai/domain/cohort-brief-prompt";
 import type { PromptLocale } from "../../ai/domain/prompt-locale";
-import { todayIso } from "../../coaching/domain/date.util";
+import { todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
 import { isNewForStudent, toRiskPairs } from "../domain/risk-pairs";
 import { MentorshipCohortBriefRepository } from "../infrastructure/mentorship-cohort-brief.repository";
@@ -57,6 +58,7 @@ export class MentorshipCohortBriefService {
    */
   async read(coachId: string): Promise<MentorshipCohortBriefDto | null> {
     await this.links.assertEnabled();
+    await this.links.assertCoachVerifiedContacts(coachId);
     const row = await this.repo.find(coachId);
     if (!row) return null;
     const items = await this.hydrate(coachId, row.brief.items);
@@ -79,6 +81,7 @@ export class MentorshipCohortBriefService {
     roles: string[];
   }): Promise<MentorshipCohortBriefDto> {
     await this.links.assertEnabled();
+    await this.links.assertCoachVerifiedContacts(coach.id);
     const now = new Date();
     const maxActiveStudents = await this.config.get(
       "mentorship.coach.max_active_students",
@@ -92,7 +95,9 @@ export class MentorshipCohortBriefService {
       now,
     );
     const locale = (I18nContext.current()?.lang ?? "tr") as PromptLocale;
-    const evidence = buildCohortBriefEvidence(page.items, todayIso(now));
+    // A link waiting for a seat is frozen: not counted, not described.
+    const rows = page.items.filter((item) => item.seat !== MentorshipSeat.NONE);
+    const evidence = buildCohortBriefEvidence(rows, todayInIstanbul(now));
     const fingerprint = cohortBriefFingerprint(evidence, locale);
 
     const stored = await this.repo.find(coach.id);
@@ -108,7 +113,7 @@ export class MentorshipCohortBriefService {
     }
 
     // The same selection the evidence was built from, so `S1` maps back to the student it described.
-    const selected = selectCohortBriefRows(page.items);
+    const selected = selectCohortBriefRows(rows);
     // Nobody needs the coach today. That is a real answer, not a reason to pay a model to invent
     // one — and it is still worth storing, so the next call can recognise an unchanged calm cohort.
     if (selected.length === 0) {
@@ -183,7 +188,10 @@ export class MentorshipCohortBriefService {
       1,
       maxActiveStudents,
     );
-    const active = new Set(rows.map((row) => row.studentId));
+    // A link that froze (waiting for a seat) since the brief was written is out of the window too.
+    const active = new Set(
+      rows.filter((row) => row.seat !== MentorshipSeat.NONE).map((row) => row.studentId),
+    );
     const live = items.filter((item) => active.has(item.studentId));
     if (live.length === 0) return [];
     const people = await this.users.listDisplayIdentities(

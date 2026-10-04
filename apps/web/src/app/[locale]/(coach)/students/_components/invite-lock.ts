@@ -5,15 +5,16 @@ import type { MentorshipCoachRegistrationStateDto } from "@mentor/types";
  *
  * The overview endpoint nulls the code without saying why, because the reason lives in the
  * registration state and duplicating it onto the overview would be two sources for one fact.
- * The card needs the difference anyway: EMAIL is something the coach fixes in one click, STANDING
- * is somebody else's decision and there is nothing for them to press.
+ * EMAIL resends the verification mail; PHONE opens the private SMS form in settings.
+ * STANDING is somebody else's decision and there is nothing for them to press.
  */
-export type InviteLock = "EMAIL" | "STANDING" | null;
+export type InviteLock = "EMAIL" | "PHONE" | "STANDING" | null;
 
 export function inviteLockOf(state: MentorshipCoachRegistrationStateDto): InviteLock {
   // Email first: it is the condition the coach can act on, so when both are true it is the one
   // worth reporting. The API orders its refusals the same way.
   if (!state.emailVerified) return "EMAIL";
+  if (!state.phoneVerified) return "PHONE";
   if (state.registration === null || state.registration.status !== "ACTIVE") return "STANDING";
   return null;
 }

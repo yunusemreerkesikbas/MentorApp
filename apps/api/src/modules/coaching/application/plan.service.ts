@@ -21,7 +21,7 @@ import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { addDays, todayIso } from "../domain/date.util";
+import { addDays, todayInIstanbul, todayIso } from "../domain/date.util";
 import {
   buildPlanRevision,
   PLAN_ADAPTATION_WINDOW_DAYS,
@@ -162,6 +162,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
@@ -203,6 +204,7 @@ export class PlanService {
         topic: resolved.topicName ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "ANALYSIS",
@@ -250,6 +252,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "COMMUNITY_COACH",
@@ -284,6 +287,7 @@ export class PlanService {
         topic: input.topic ?? null,
         startTime: input.startTime ?? null,
         endTime: input.endTime ?? null,
+        durationMinutes: input.durationMinutes ?? null,
         description: input.description ?? null,
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
         originType: "AI_COACH",
@@ -294,6 +298,18 @@ export class PlanService {
     });
     this.events.emit(CoachingEventTopic.PLAN_TASK_CREATED, new PlanTaskCreated(userId));
     return result;
+  }
+
+  /**
+   * W8 link-end seam: the ending link's PENDING tasks become the student's own (no coach mark, no
+   * coach note, editable); DONE ones stay the coach's record. Runs in the caller's transaction so
+   * the tasks change hands exactly when the link ends.
+   */
+  releaseMentorshipTasksInTransaction(
+    tx: DatabaseTx,
+    scope: MentorshipPlanScope,
+  ): Promise<number> {
+    return this.tasks.releasePendingMentorshipTasks(tx, scope);
   }
 
   /**
@@ -361,6 +377,7 @@ export class PlanService {
           topic: input.topic ?? null,
           startTime: input.startTime ?? null,
           endTime: input.endTime ?? null,
+          durationMinutes: input.durationMinutes ?? null,
           description: null,
           coachNote: input.coachNote ?? null,
           ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
@@ -526,6 +543,7 @@ export class PlanService {
             topic: input.topic ?? null,
             startTime: input.startTime ?? null,
             endTime: input.endTime ?? null,
+            durationMinutes: input.durationMinutes ?? null,
             description: input.description ?? null,
             ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
           }),
@@ -540,7 +558,7 @@ export class PlanService {
   }
 
   getAdaptationSnapshot(userId: string): Promise<PlanAdaptationSnapshot> {
-    const from = todayIso();
+    const from = todayInIstanbul();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     return withUserContext(this.db, { userId }, async (tx) => {
       const rows = await this.tasks.listByDateRange(tx, userId, from, to);
@@ -569,7 +587,7 @@ export class PlanService {
     userId: string,
     input: ApplyPlanAdaptationInput,
   ): Promise<ApplyPlanAdaptationResultDto> {
-    const from = todayIso();
+    const from = todayInIstanbul();
     const to = addDays(from, PLAN_ADAPTATION_WINDOW_DAYS - 1);
     const result = await withUserContext(this.db, { userId }, async (tx) => {
       await this.tasks.acquireUserLock(tx, userId);
@@ -609,6 +627,8 @@ export class PlanService {
       const additions: Array<{
         title: string;
         subject: string | null;
+        topic: string | null;
+      durationMinutes: number | null;
         taskDate: string;
         sortOrder: number;
       }> = [];
@@ -665,21 +685,25 @@ export class PlanService {
         move.sortOrder = nextOrder(move.toDate);
       }
 
+      const addedByDate = new Map<string, number>();
       for (const change of input.changes) {
         if (change.kind !== "ADD") continue;
         assertDate(change.taskDate);
         const additionTitleKey = titleKey(change.taskDate, change.title);
         if (
           (titleCounts.get(additionTitleKey) ?? 0) > 0 ||
-          (pendingByDate.get(change.taskDate) ?? 0) >= 3
+          ((input.source === "PLAN" ? addedByDate : pendingByDate).get(change.taskDate) ?? 0) >= 3
         ) {
           throw new DomainError(ErrorCode.COACHING_PLAN_CHANGED, HttpStatus.CONFLICT);
         }
         adjustTitleCount(additionTitleKey, 1);
         pendingByDate.set(change.taskDate, (pendingByDate.get(change.taskDate) ?? 0) + 1);
+        addedByDate.set(change.taskDate, (addedByDate.get(change.taskDate) ?? 0) + 1);
         additions.push({
           title: change.title,
           subject: change.subject,
+          topic: change.topic ?? null,
+          durationMinutes: change.durationMinutes ?? null,
           taskDate: change.taskDate,
           sortOrder: nextOrder(change.taskDate),
         });
@@ -736,6 +760,7 @@ export class PlanService {
         ...(input.status !== undefined && { status: input.status }),
         ...(input.startTime !== undefined && { startTime: input.startTime }),
         ...(input.endTime !== undefined && { endTime: input.endTime }),
+        ...(input.durationMinutes !== undefined && { durationMinutes: input.durationMinutes }),
         ...(input.description !== undefined && { description: input.description }),
         ...(input.sortOrder !== undefined && { sortOrder: input.sortOrder }),
       });
@@ -757,8 +782,7 @@ export class PlanService {
       this.events.emit(CoachingEventTopic.PLAN_COMPLETED, new DailyPlanCompleted(userId, planCompleted));
     }
     if (completed) {
-      this.events.emit(
-        CoachingEventTopic.PLAN_TASK_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.PLAN_TASK_COMPLETED,
         new PlanTaskCompleted(
           userId,
           completed.id,
@@ -815,7 +839,7 @@ export class PlanService {
     if (originType !== "MENTORSHIP") return;
     const touchesMoreThanStatus = (
       // `taskDate` is absent from updatePlanTaskSchema, so it can never arrive here.
-      ["title", "subject", "startTime", "endTime", "description", "sortOrder"] as const
+      ["title", "subject", "startTime", "endTime", "durationMinutes", "description", "sortOrder"] as const
     ).some((field) => (input as Record<string, unknown>)[field] !== undefined);
     if (touchesMoreThanStatus) {
       throw new DomainError(ErrorCode.COACHING_TASK_COACH_ASSIGNED, HttpStatus.FORBIDDEN);

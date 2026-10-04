@@ -70,6 +70,9 @@ export function PlanEventDetails({
           label={t("event_status")}
           value={t(task.status === "DONE" ? "event_status_done" : "event_status_pending")}
         />
+        {task.durationMinutes != null ? (
+          <DetailRow label={t("duration_label")} value={t("duration_minutes", { minutes: task.durationMinutes })} />
+        ) : null}
         {/* Two boxes, two authors: the coach's instruction is labelled as theirs, the note below
             it is the student's own. Merging them would put words in someone else's mouth. */}
         {task.coachNote ? (
@@ -116,7 +119,7 @@ export function PlanEventDetails({
   );
 }
 
-function DetailRow({
+export function DetailRow({
   label,
   value,
   multiline,

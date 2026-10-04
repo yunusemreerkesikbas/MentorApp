@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { applyPlanAdaptationSchema } from "@mentor/validation";
+import {
+  APPLY_PLAN_ADAPTATION_MAX_CHANGES,
+  applyPlanAdaptationSchema,
+} from "@mentor/validation";
 import { buildPlanRevision } from "./plan-adaptation";
 
 const task = {
@@ -60,7 +63,7 @@ describe("applyPlanAdaptationSchema", () => {
     expect(
       applyPlanAdaptationSchema.safeParse({
         ...base,
-        changes: Array.from({ length: 6 }, (_, index) => ({
+        changes: Array.from({ length: APPLY_PLAN_ADAPTATION_MAX_CHANGES + 1 }, (_, index) => ({
           kind: "ADD",
           title: `Task ${index}`,
           subject: null,

@@ -24,12 +24,15 @@
  *   `origin_ref_id` matches the reading coach's link — a coach never reads a previous coach's note.
  */
 
-/** One roster row. Computed for N students in a fixed number of batch queries, never per student. */
-export interface CohortStudentSnapshot {
+/**
+ * A roster row without its drawing: enough for the risk rules, which is all the morning digest,
+ * the coach's mark and the report's flags read. Computed for N students in a fixed number of batch
+ * queries, never per student.
+ */
+export interface CohortTriageSnapshot {
   studentId: string;
   /** Last day with a completed session or a done task (`daily_activity`), all-time. */
   lastActiveDate: string | null;
-  currentStreak: number;
   focusMinutes7d: number;
   sessions7d: number;
   activeDays7d: number;
@@ -41,6 +44,14 @@ export interface CohortStudentSnapshot {
   previousMockNetAvg: number | null;
   /** Mean of the last 7 days' check-ins, 1..5; null when the student did not check in. */
   moodLevel7dAvg: number | null;
+}
+
+/** One roster row: the triage plus what the roster screen draws. */
+export interface CohortStudentSnapshot extends CohortTriageSnapshot {
+  /** Derived from activity like the student's own streak, never read from the `streak_state` cache. */
+  currentStreak: number;
+  /** Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 14 entries. */
+  dailyFocusMinutes14d: number[];
 }
 
 /** The single-student detail view. Same rules, more depth. */
@@ -56,16 +67,26 @@ export interface StudentReportSnapshot {
     focusMinutes28d: number;
     activeDays28d: number;
   };
+  /**
+   * Focus minutes per Europe/Istanbul day, oldest first; the last entry is today. 28 entries.
+   * Beside `activity` rather than inside it: the AI brief reads `activity` whole, and a drawing
+   * series has no business changing what the brief is fed.
+   */
+  dailyFocusMinutes28d: number[];
   planCompletionRate7d: number | null;
   /** Newest first. */
   mockTrend: {
     takenAt: string;
     totalNet: number;
     publisherName: string | null;
+    /** Null when content no longer knows the exam; the client names it generically. */
+    examName: string | null;
   }[];
   /** Subject breakdown of the most recent attempt only — the weakness map the coach acts on. */
   latestMockSubjects: {
     subjectRef: string;
+    /** The taxonomy name, or the slug itself when the taxonomy no longer has it. */
+    subjectName: string;
     correct: number;
     wrong: number;
     blank: number;

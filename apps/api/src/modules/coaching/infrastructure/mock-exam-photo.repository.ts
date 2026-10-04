@@ -135,7 +135,7 @@ export class MockExamPhotoRepository {
         subjectRef: mockExamPhotoCategorizations.subjectRef,
         topicRef: mockExamPhotoCategorizations.topicRef,
         count: sql<number>`count(*)::int`,
-        latestAt: sql<Date>`max(${mockExamPhotoCategorizations.createdAt})`,
+        latestAt: sql<Date>`max(${mockExamPhotoCategorizations.createdAt})`.mapWith(mockExamPhotoCategorizations.createdAt),
       })
       .from(mockExamPhotoCategorizations)
       .innerJoin(

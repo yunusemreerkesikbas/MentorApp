@@ -1,0 +1,3183 @@
+{
+  "generatedAt": "2026-09-24T08:31:25.912Z",
+  "samples": [
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1179,
+        "transferredBytes": 2121021,
+        "ttfbMs": 8.699999928474426,
+        "loadMs": 150.09999990463257,
+        "lcpMs": 612,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1076,
+        "transferredBytes": 13177,
+        "ttfbMs": 4.600000023841858,
+        "loadMs": 53.89999997615814,
+        "lcpMs": 1008,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1135,
+        "transferredBytes": 2041821,
+        "ttfbMs": 5.200000047683716,
+        "loadMs": 120.5,
+        "lcpMs": 756,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1073,
+        "transferredBytes": 14153,
+        "ttfbMs": 4.600000023841858,
+        "loadMs": 59,
+        "lcpMs": 568,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1250,
+        "transferredBytes": 2009053,
+        "ttfbMs": 30.5,
+        "loadMs": 229.39999997615814,
+        "lcpMs": 816,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1084,
+        "transferredBytes": 14153,
+        "ttfbMs": 6.100000023841858,
+        "loadMs": 66.70000004768372,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1135,
+        "transferredBytes": 1274533,
+        "ttfbMs": 6.299999952316284,
+        "loadMs": 125.09999990463257,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1076,
+        "transferredBytes": 79782,
+        "ttfbMs": 4.299999952316284,
+        "loadMs": 52.799999952316284,
+        "lcpMs": 640,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1244,
+        "transferredBytes": 1340069,
+        "ttfbMs": 10.100000023841858,
+        "loadMs": 219.30000007152557,
+        "lcpMs": 832,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1137,
+        "transferredBytes": 46277,
+        "ttfbMs": 12.700000047683716,
+        "loadMs": 80.10000002384186,
+        "lcpMs": 604,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1348,
+        "transferredBytes": 473511,
+        "ttfbMs": 121.79999995231628,
+        "loadMs": 326.7000000476837,
+        "lcpMs": 368,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1207,
+        "transferredBytes": 30777,
+        "ttfbMs": 121.5,
+        "loadMs": 169.60000002384186,
+        "lcpMs": 516,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1474,
+        "transferredBytes": 475729,
+        "ttfbMs": 173.79999995231628,
+        "loadMs": 438.39999997615814,
+        "lcpMs": 480,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1198,
+        "transferredBytes": 31441,
+        "ttfbMs": 120,
+        "loadMs": 173.60000002384186,
+        "lcpMs": 496,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1164,
+        "transferredBytes": 473511,
+        "ttfbMs": 46.60000002384186,
+        "loadMs": 150.60000002384186,
+        "lcpMs": 340,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1126,
+        "transferredBytes": 32174,
+        "ttfbMs": 60.299999952316284,
+        "loadMs": 112.5,
+        "lcpMs": 540,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1196,
+        "transferredBytes": 473511,
+        "ttfbMs": 51.200000047683716,
+        "loadMs": 180.20000004768372,
+        "lcpMs": 348,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1083,
+        "transferredBytes": 30777,
+        "ttfbMs": 28,
+        "loadMs": 71,
+        "lcpMs": 232,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1219,
+        "transferredBytes": 475083,
+        "ttfbMs": 49.89999997615814,
+        "loadMs": 195.5,
+        "lcpMs": 484,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1134,
+        "transferredBytes": 31465,
+        "ttfbMs": 54.60000002384186,
+        "loadMs": 112.89999997615814,
+        "lcpMs": 308,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1561,
+        "transferredBytes": 699832,
+        "ttfbMs": 292.6999999284744,
+        "loadMs": 545.8999999761581,
+        "lcpMs": 944,
+        "cls": 0.330181172498726,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1898,
+        "transferredBytes": 359379,
+        "ttfbMs": 10.399999976158142,
+        "loadMs": 886.7999999523163,
+        "lcpMs": 1452,
+        "cls": 0.2638315537867941,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1155,
+        "transferredBytes": 1003691,
+        "ttfbMs": 14.899999976158142,
+        "loadMs": 141.60000002384186,
+        "lcpMs": 820,
+        "cls": 0.3944627842218933,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1084,
+        "transferredBytes": 224331,
+        "ttfbMs": 6.399999976158142,
+        "loadMs": 69.5,
+        "lcpMs": 608,
+        "cls": 0.2637151471765876,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1134,
+        "transferredBytes": 1037490,
+        "ttfbMs": 7.5,
+        "loadMs": 124.10000002384186,
+        "lcpMs": 712,
+        "cls": 0.2698041083258511,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1072,
+        "transferredBytes": 227660,
+        "ttfbMs": 4.100000023841858,
+        "loadMs": 61.5,
+        "lcpMs": 340,
+        "cls": 0.3276801639205028,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1167,
+        "transferredBytes": 1000514,
+        "ttfbMs": 9.600000023841858,
+        "loadMs": 147.40000009536743,
+        "lcpMs": 728,
+        "cls": 0.2698041083258511,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1081,
+        "transferredBytes": 223294,
+        "ttfbMs": 4.199999928474426,
+        "loadMs": 61.5,
+        "lcpMs": 432,
+        "cls": 0.261772231187362,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1112,
+        "transferredBytes": 1037488,
+        "ttfbMs": 9.599999904632568,
+        "loadMs": 91.80000007152557,
+        "lcpMs": 396,
+        "cls": 0.3277965705307093,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1073,
+        "transferredBytes": 225898,
+        "ttfbMs": 4.100000023841858,
+        "loadMs": 65.70000004768372,
+        "lcpMs": 516,
+        "cls": 0.2637151471765876,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1146,
+        "transferredBytes": 711109,
+        "ttfbMs": 9.600000023841858,
+        "loadMs": 130.90000009536743,
+        "lcpMs": 156,
+        "cls": 0.00732564892782321,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1057,
+        "transferredBytes": 23181,
+        "ttfbMs": 4.599999904632568,
+        "loadMs": 45.5,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1101,
+        "transferredBytes": 695076,
+        "ttfbMs": 6.899999976158142,
+        "loadMs": 89.40000009536743,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1082,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.6999999284744263,
+        "loadMs": 64.39999997615814,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1123,
+        "transferredBytes": 711109,
+        "ttfbMs": 6.799999952316284,
+        "loadMs": 115.5,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1107,
+        "transferredBytes": 13408,
+        "ttfbMs": 5.100000023841858,
+        "loadMs": 88.39999997615814,
+        "lcpMs": null,
+        "cls": 0.04701691378097018,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1119,
+        "transferredBytes": 711109,
+        "ttfbMs": 9.100000023841858,
+        "loadMs": 98.70000004768372,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1084,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.9000000953674316,
+        "loadMs": 64.10000002384186,
+        "lcpMs": null,
+        "cls": 0.04701691378097018,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1087,
+        "transferredBytes": 711109,
+        "ttfbMs": 7,
+        "loadMs": 78.20000004768372,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1075,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.299999952316284,
+        "loadMs": 58.800000071525574,
+        "lcpMs": null,
+        "cls": 0.04701691378097018,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1125,
+        "transferredBytes": 2120987,
+        "ttfbMs": 4,
+        "loadMs": 105.29999995231628,
+        "lcpMs": 1044,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1067,
+        "transferredBytes": 13143,
+        "ttfbMs": 3.5,
+        "loadMs": 53.700000047683716,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1091,
+        "transferredBytes": 2009019,
+        "ttfbMs": 6,
+        "loadMs": 81.79999995231628,
+        "lcpMs": 1076,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1076,
+        "transferredBytes": 144879,
+        "ttfbMs": 4.600000023841858,
+        "loadMs": 55.699999928474426,
+        "lcpMs": 452,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1103,
+        "transferredBytes": 2009019,
+        "ttfbMs": 4.200000047683716,
+        "loadMs": 83.79999995231628,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1075,
+        "transferredBytes": 14119,
+        "ttfbMs": 3.299999952316284,
+        "loadMs": 55,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1089,
+        "transferredBytes": 1976252,
+        "ttfbMs": 5.100000023841858,
+        "loadMs": 76.60000002384186,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1077,
+        "transferredBytes": 177649,
+        "ttfbMs": 5.299999952316284,
+        "loadMs": 61.5,
+        "lcpMs": 656,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1131,
+        "transferredBytes": 1812412,
+        "ttfbMs": 4.299999952316284,
+        "loadMs": 115,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1072,
+        "transferredBytes": 79011,
+        "ttfbMs": 3.8000000715255737,
+        "loadMs": 49.700000047683716,
+        "lcpMs": 524,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1163,
+        "transferredBytes": 475759,
+        "ttfbMs": 28.09999990463257,
+        "loadMs": 141.80000007152557,
+        "lcpMs": 220,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1073,
+        "transferredBytes": 33945,
+        "ttfbMs": 31.300000071525574,
+        "loadMs": 65.30000007152557,
+        "lcpMs": 404,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1131,
+        "transferredBytes": 476773,
+        "ttfbMs": 22.700000047683716,
+        "loadMs": 82.29999995231628,
+        "lcpMs": 300,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1328,
+        "transferredBytes": 34613,
+        "ttfbMs": 195.60000002384186,
+        "loadMs": 275.39999997615814,
+        "lcpMs": 512,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1429,
+        "transferredBytes": 473476,
+        "ttfbMs": 102.89999997615814,
+        "loadMs": 222.69999992847443,
+        "lcpMs": 652,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1105,
+        "transferredBytes": 30742,
+        "ttfbMs": 38.699999928474426,
+        "loadMs": 90.5,
+        "lcpMs": 536,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1248,
+        "transferredBytes": 473476,
+        "ttfbMs": 59.59999990463257,
+        "loadMs": 228.79999995231628,
+        "lcpMs": 496,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1317,
+        "transferredBytes": 32313,
+        "ttfbMs": 225.10000002384186,
+        "loadMs": 282.39999997615814,
+        "lcpMs": 636,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1138,
+        "transferredBytes": 474849,
+        "ttfbMs": 32.60000002384186,
+        "loadMs": 114.20000004768372,
+        "lcpMs": 504,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1081,
+        "transferredBytes": 33935,
+        "ttfbMs": 31.300000071525574,
+        "loadMs": 72.79999995231628,
+        "lcpMs": 360,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1123,
+        "transferredBytes": 637092,
+        "ttfbMs": 7,
+        "loadMs": 108.30000007152557,
+        "lcpMs": 508,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1085,
+        "transferredBytes": 23181,
+        "ttfbMs": 5.199999928474426,
+        "loadMs": 65.30000007152557,
+        "lcpMs": 228,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1072,
+        "transferredBytes": 630664,
+        "ttfbMs": 5.199999928474426,
+        "loadMs": 65.89999997615814,
+        "lcpMs": 336,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1055,
+        "transferredBytes": 13408,
+        "ttfbMs": 2.299999952316284,
+        "loadMs": 40.299999952316284,
+        "lcpMs": 180,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1078,
+        "transferredBytes": 637092,
+        "ttfbMs": 5.399999976158142,
+        "loadMs": 58.5,
+        "lcpMs": 308,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1087,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.0999999046325684,
+        "loadMs": 71.89999997615814,
+        "lcpMs": 244,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1109,
+        "transferredBytes": 621059,
+        "ttfbMs": 9.399999976158142,
+        "loadMs": 93.60000002384186,
+        "lcpMs": 288,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1081,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.200000047683716,
+        "loadMs": 61.10000002384186,
+        "lcpMs": 192,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1094,
+        "transferredBytes": 637092,
+        "ttfbMs": 6.700000047683716,
+        "loadMs": 77,
+        "lcpMs": 508,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1085,
+        "transferredBytes": 13390,
+        "ttfbMs": 4.100000023841858,
+        "loadMs": 63.799999952316284,
+        "lcpMs": 152,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1123,
+        "transferredBytes": 647801,
+        "ttfbMs": 8.200000047683716,
+        "loadMs": 111.29999995231628,
+        "lcpMs": 464,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1057,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.399999976158142,
+        "loadMs": 42.60000002384186,
+        "lcpMs": 176,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1074,
+        "transferredBytes": 647801,
+        "ttfbMs": 5.899999976158142,
+        "loadMs": 68.39999997615814,
+        "lcpMs": 392,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1070,
+        "transferredBytes": 13408,
+        "ttfbMs": 3,
+        "loadMs": 53.200000047683716,
+        "lcpMs": 304,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1101,
+        "transferredBytes": 647783,
+        "ttfbMs": 7.600000023841858,
+        "loadMs": 83.69999992847443,
+        "lcpMs": 452,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1075,
+        "transferredBytes": 13408,
+        "ttfbMs": 3.600000023841858,
+        "loadMs": 57,
+        "lcpMs": 264,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1101,
+        "transferredBytes": 647799,
+        "ttfbMs": 8.700000047683716,
+        "loadMs": 94.20000004768372,
+        "lcpMs": 436,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1072,
+        "transferredBytes": 13406,
+        "ttfbMs": 3.5,
+        "loadMs": 57.10000002384186,
+        "lcpMs": 280,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1118,
+        "transferredBytes": 647799,
+        "ttfbMs": 6.5,
+        "loadMs": 102,
+        "lcpMs": 312,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          },
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/giris",
+        "wallMs": 1067,
+        "transferredBytes": 13406,
+        "ttfbMs": 4.099999904632568,
+        "loadMs": 60,
+        "lcpMs": 304,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/google/status",
+            "status": 200
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 429
+          }
+        ]
+      }
+    }
+  ],
+  "summary": [
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "cold": {
+        "ttfbMs": 8.699999928474426,
+        "loadMs": 150.09999990463257,
+        "lcpMs": 786,
+        "cls": 0,
+        "wallMs": 1179,
+        "transferredBytes": 2009053
+      },
+      "warm": {
+        "ttfbMs": 4.600000023841858,
+        "loadMs": 59,
+        "lcpMs": 622,
+        "cls": 0,
+        "wallMs": 1076,
+        "transferredBytes": 14153
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "cold": {
+        "ttfbMs": 51.200000047683716,
+        "loadMs": 195.5,
+        "lcpMs": 368,
+        "cls": 0,
+        "wallMs": 1219,
+        "transferredBytes": 473511
+      },
+      "warm": {
+        "ttfbMs": 60.299999952316284,
+        "loadMs": 112.89999997615814,
+        "lcpMs": 496,
+        "cls": 0,
+        "wallMs": 1134,
+        "transferredBytes": 31441
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "cold": {
+        "ttfbMs": 9.600000023841858,
+        "loadMs": 141.60000002384186,
+        "lcpMs": 728,
+        "cls": 0.3277965705307093,
+        "wallMs": 1155,
+        "transferredBytes": 1003691
+      },
+      "warm": {
+        "ttfbMs": 4.199999928474426,
+        "loadMs": 65.70000004768372,
+        "lcpMs": 516,
+        "cls": 0.2637151471765876,
+        "wallMs": 1081,
+        "transferredBytes": 225898
+      },
+      "apiFailures": [
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "cold": {
+        "ttfbMs": 7,
+        "loadMs": 98.70000004768372,
+        "lcpMs": 156,
+        "cls": 0,
+        "wallMs": 1119,
+        "transferredBytes": 711109
+      },
+      "warm": {
+        "ttfbMs": 3.9000000953674316,
+        "loadMs": 64.10000002384186,
+        "lcpMs": null,
+        "cls": 0.04701691378097018,
+        "wallMs": 1082,
+        "transferredBytes": 13408
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "cold": {
+        "ttfbMs": 4.299999952316284,
+        "loadMs": 83.79999995231628,
+        "lcpMs": 1060,
+        "cls": 0,
+        "wallMs": 1103,
+        "transferredBytes": 2009019
+      },
+      "warm": {
+        "ttfbMs": 3.8000000715255737,
+        "loadMs": 55,
+        "lcpMs": 524,
+        "cls": 0,
+        "wallMs": 1075,
+        "transferredBytes": 79011
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "cold": {
+        "ttfbMs": 32.60000002384186,
+        "loadMs": 141.80000007152557,
+        "lcpMs": 496,
+        "cls": 0,
+        "wallMs": 1163,
+        "transferredBytes": 474849
+      },
+      "warm": {
+        "ttfbMs": 38.699999928474426,
+        "loadMs": 90.5,
+        "lcpMs": 512,
+        "cls": 0,
+        "wallMs": 1105,
+        "transferredBytes": 33935
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "cold": {
+        "ttfbMs": 6.700000047683716,
+        "loadMs": 77,
+        "lcpMs": 336,
+        "cls": 0,
+        "wallMs": 1094,
+        "transferredBytes": 637092
+      },
+      "warm": {
+        "ttfbMs": 3.200000047683716,
+        "loadMs": 63.799999952316284,
+        "lcpMs": 192,
+        "cls": 0,
+        "wallMs": 1085,
+        "transferredBytes": 13408
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "cold": {
+        "ttfbMs": 7.600000023841858,
+        "loadMs": 94.20000004768372,
+        "lcpMs": 436,
+        "cls": 0,
+        "wallMs": 1101,
+        "transferredBytes": 647799
+      },
+      "warm": {
+        "ttfbMs": 3.5,
+        "loadMs": 57,
+        "lcpMs": 280,
+        "cls": 0,
+        "wallMs": 1070,
+        "transferredBytes": 13408
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 429
+        }
+      ]
+    }
+  ]
+}

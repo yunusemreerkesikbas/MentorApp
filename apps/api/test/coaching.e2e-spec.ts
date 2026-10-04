@@ -2,6 +2,13 @@ import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import request from "supertest";
+import { eq } from "drizzle-orm";
+import { DRIZZLE } from "../src/database/database.constants";
+import type { Database } from "../src/database/drizzle";
+import { StudySessionRepository } from "../src/modules/coaching/infrastructure/study-session.repository";
+import { planTasks } from "../src/database/schema";
+import { withUserContext } from "../src/database/rls";
+import { setupSwagger } from "../src/observability/swagger";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**
@@ -11,37 +18,51 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 describe("coaching (e2e)", () => {
   let app: INestApplication;
   let userAToken = "";
+  let userAId = "";
   let userBToken = "";
   let taskId = "";
 
   beforeAll(async () => {
     process.env.DATABASE_URL =
-      process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+      process.env.TEST_DATABASE_URL ??
+      "postgres://mentor:mentor@localhost:5433/mentor_test";
     process.env.JWT_ACCESS_SECRET ??= "test-secret-test-secret-test-secret!!";
 
     const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    const moduleRef = await Test.createTestingModule({
+      imports: [AppModule],
+    }).compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
+    setupSwagger(app);
     await app.init();
 
     const stamp = Date.now();
-    const signupA = await request(app.getHttpServer()).post("/v1/auth/signup").send({
-      email: `w2a-${stamp}@test.local`,
-      password: "Sifre1234",
-      displayName: "Coaching A",
-      kvkkAccepted: true,
-    });
+    const signupA = await request(app.getHttpServer())
+      .post("/v1/auth/signup")
+      .send({
+        email: `w2a-${stamp}@test.local`,
+        password: "Sifre1234",
+        displayName: "Coaching A",
+        kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+      });
     expect(signupA.status).toBe(201);
     userAToken = signupA.body.accessToken;
+    userAId = signupA.body.user.id;
 
-    const signupB = await request(app.getHttpServer()).post("/v1/auth/signup").send({
-      email: `w2b-${stamp}@test.local`,
-      password: "Sifre1234",
-      displayName: "Coaching B",
-      kvkkAccepted: true,
-    });
+    const signupB = await request(app.getHttpServer())
+      .post("/v1/auth/signup")
+      .send({
+        email: `w2b-${stamp}@test.local`,
+        password: "Sifre1234",
+        displayName: "Coaching B",
+        kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+      });
     expect(signupB.status).toBe(201);
     userBToken = signupB.body.accessToken;
   }, 90_000);
@@ -54,11 +75,180 @@ describe("coaching (e2e)", () => {
   const authB = () => ({ Authorization: `Bearer ${userBToken}` });
 
   it("coaching endpoints require auth", async () => {
-    expect((await request(app.getHttpServer()).get("/v1/coaching/today")).status).toBe(401);
-    expect((await request(app.getHttpServer()).post("/v1/plan-tasks").send({ title: "x" })).status).toBe(
-      401,
-    );
+    expect(
+      (await request(app.getHttpServer()).get("/v1/coaching/today")).status,
+    ).toBe(401);
+    expect(
+      (
+        await request(app.getHttpServer())
+          .post("/v1/plan-tasks")
+          .send({ title: "x" })
+      ).status,
+    ).toBe(401);
   });
+
+  it("documents optional task and custom-session duration in the live OpenAPI", async () => {
+    const response = await request(app.getHttpServer()).get("/v1/docs-json");
+    expect(response.status).toBe(200);
+    const schemas = response.body.components.schemas;
+    expect(schemas.StartStudySessionDto.properties.preset.enum).toContain("stopwatch");
+    expect(schemas.CreatePlanTaskDto.properties.durationMinutes).toMatchObject({
+      type: "integer",
+      minimum: 5,
+      maximum: 200,
+      nullable: true,
+    });
+    expect(schemas.StartStudySessionDto.properties.focusMinutes).toMatchObject({
+      type: "integer",
+      minimum: 5,
+      maximum: 200,
+      nullable: false,
+    });
+    expect(
+      schemas.ApplyPlanAdaptationDto.properties.changes.items.properties
+        .durationMinutes.maximum,
+    ).toBe(200);
+  });
+
+  it("keeps stopwatches open past Pomodoro expiry, records work and closes ancient orphans", async () => {
+    const task = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({ title: "Untimed review" });
+    expect(task.body.sessionFocusMinutes).toBeNull();
+    const running = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({
+        preset: "stopwatch",
+        planTaskId: task.body.id,
+        startedAt: new Date(Date.now() - 2 * 60 * 60_000).toISOString(),
+      });
+    expect(running.status).toBe(201);
+    expect(running.body).toMatchObject({
+      preset: "stopwatch",
+      plannedFocusMinutes: null,
+      status: "IN_PROGRESS",
+    });
+    const old = await request(app.getHttpServer())
+      .post("/v1/study-sessions")
+      .set(authA())
+      .send({
+        preset: "stopwatch",
+        startedAt: new Date(Date.now() - 25 * 60 * 60_000).toISOString(),
+      });
+    expect(old.status).toBe(201);
+    const rows = await withUserContext(
+      app.get<Database>(DRIZZLE),
+      { userId: userAId },
+      async (tx) => {
+        const repo = app.get(StudySessionRepository);
+        await repo.closeStaleOpenSessions(tx, userAId, 60);
+        expect(await repo.hasActiveSession(tx, userAId, 10)).toBe(true);
+        return [
+          await repo.findById(tx, userAId, running.body.id),
+          await repo.findById(tx, userAId, old.body.id),
+        ];
+      },
+    );
+    expect(rows[0]?.status).toBe("IN_PROGRESS");
+    expect(rows[1]?.status).toBe("ABANDONED");
+    const finished = await request(app.getHttpServer())
+      .patch(`/v1/study-sessions/${running.body.id}`)
+      .set(authA())
+      .send({ status: "COMPLETED", actualFocusSeconds: 600 });
+    expect(finished.status).toBe(200);
+    expect(finished.body).toMatchObject({
+      preset: "stopwatch",
+      actualFocusSeconds: 600,
+      countsAsFocusSession: true,
+      planTaskAutoCompleted: true,
+    });
+    await request(app.getHttpServer())
+      .delete(`/v1/plan-tasks/${task.body.id}`)
+      .set(authA());
+  });
+
+  it.each([4, 201])(
+    "enforces the duration %s limit in Postgres too",
+    async (durationMinutes) => {
+      const created = await request(app.getHttpServer())
+        .post("/v1/plan-tasks")
+        .set(authA())
+        .send({ title: "Constraint check", durationMinutes: 80 });
+      expect(created.status).toBe(201);
+      await expect(
+        withUserContext(app.get<Database>(DRIZZLE), { userId: userAId }, (tx) =>
+          tx
+            .update(planTasks)
+            .set({ durationMinutes })
+            .where(eq(planTasks.id, created.body.id)),
+        ),
+      ).rejects.toMatchObject({ cause: { code: "23514" } });
+      await request(app.getHttpServer())
+        .delete(`/v1/plan-tasks/${created.body.id}`)
+        .set(authA());
+    },
+  );
+
+  it("round-trips independent duration, preserves omission, clears null and enforces ownership", async () => {
+    const created = await request(app.getHttpServer())
+      .post("/v1/plan-tasks")
+      .set(authA())
+      .send({
+        title: "Duration review",
+        durationMinutes: 80,
+        startTime: "09:00",
+        endTime: "11:00",
+      });
+    expect(created.status).toBe(201);
+    expect(created.body).toMatchObject({
+      durationMinutes: 80,
+      sessionFocusMinutes: 80,
+    });
+    const id = created.body.id;
+    const other = await request(app.getHttpServer())
+      .patch(`/v1/plan-tasks/${id}`)
+      .set(authB())
+      .send({ durationMinutes: 41 });
+    expect(other.status).toBe(404);
+    const edited = await request(app.getHttpServer())
+      .patch(`/v1/plan-tasks/${id}`)
+      .set(authA())
+      .send({ title: "Updated review" });
+    expect(edited.body).toMatchObject({
+      durationMinutes: 80,
+      sessionFocusMinutes: 80,
+    });
+    const cleared = await request(app.getHttpServer())
+      .patch(`/v1/plan-tasks/${id}`)
+      .set(authA())
+      .send({ durationMinutes: null });
+    expect(cleared.body).toMatchObject({
+      durationMinutes: null,
+      sessionFocusMinutes: 120,
+    });
+    const listed = await request(app.getHttpServer())
+      .get("/v1/plan-tasks")
+      .set(authA());
+    expect(
+      listed.body.items.find((item: { id: string }) => item.id === id),
+    ).toMatchObject({ durationMinutes: null, sessionFocusMinutes: 120 });
+    await request(app.getHttpServer())
+      .delete(`/v1/plan-tasks/${id}`)
+      .set(authA());
+  });
+
+  it.each([4, 201, 5.5])(
+    "rejects invalid study duration %s at the API boundary",
+    async (durationMinutes) => {
+      const result = await request(app.getHttpServer())
+        .post("/v1/plan-tasks")
+        .set(authA())
+        .send({ title: "Review", durationMinutes });
+      expect(result.status).toBe(400);
+    },
+  );
 
   it("signup → create plan task → toggle done → GET /today reflects task + streak", async () => {
     const create = await request(app.getHttpServer())
@@ -70,9 +260,13 @@ describe("coaching (e2e)", () => {
     expect(create.body.status).toBe("PENDING");
     taskId = create.body.id;
 
-    const before = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
+    const before = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
     expect(before.status).toBe(200);
-    expect(before.body.tasks.some((t: { id: string }) => t.id === taskId)).toBe(true);
+    expect(before.body.tasks.some((t: { id: string }) => t.id === taskId)).toBe(
+      true,
+    );
     const streakBefore = before.body.streak.currentStreak;
 
     const toggle = await request(app.getHttpServer())
@@ -82,11 +276,15 @@ describe("coaching (e2e)", () => {
     expect(toggle.status).toBe(200);
     expect(toggle.body.status).toBe("DONE");
 
-    const after = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
+    const after = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
     expect(after.status).toBe(200);
     const task = after.body.tasks.find((t: { id: string }) => t.id === taskId);
     expect(task?.status).toBe("DONE");
-    expect(after.body.streak.currentStreak).toBeGreaterThanOrEqual(streakBefore);
+    expect(after.body.streak.currentStreak).toBeGreaterThanOrEqual(
+      streakBefore,
+    );
     expect(typeof after.body.motivationalLine).toBe("string");
     expect(after.body.motivationalLine.length).toBeGreaterThan(0);
   });
@@ -186,7 +384,8 @@ describe("coaching (e2e)", () => {
     expect(titles).not.toContain("Out of range");
     expect(
       range.body.items.every(
-        (t: { taskDate: string }) => t.taskDate >= day1 && t.taskDate <= rangeTo,
+        (t: { taskDate: string }) =>
+          t.taskDate >= day1 && t.taskDate <= rangeTo,
       ),
     ).toBe(true);
     const ordered = range.body.items
@@ -213,15 +412,21 @@ describe("coaching (e2e)", () => {
     expect(res.body.message.length).toBeGreaterThan(0);
     expect(res.body.code).toBeTruthy();
 
-    const today = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
+    const today = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
     expect(today.status).toBe(200);
     expect(today.body.mood?.mood).toBe(4);
     expect(today.body.mood?.message).toBe(res.body.message);
   });
 
   it("RLS: each user only sees own plan tasks in /today", async () => {
-    const todayA = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
-    const todayB = await request(app.getHttpServer()).get("/v1/coaching/today").set(authB());
+    const todayA = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
+    const todayB = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authB());
     expect(todayA.status).toBe(200);
     expect(todayB.status).toBe(200);
 
@@ -242,7 +447,9 @@ describe("coaching (e2e)", () => {
     expect(start.body.endedAt).toBeNull();
     expect(start.body.plannedFocusMinutes).toBeNull();
 
-    const midToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
+    const midToday = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
     const streakMid = midToday.body.streak.currentStreak;
 
     const done = await request(app.getHttpServer())
@@ -254,8 +461,12 @@ describe("coaching (e2e)", () => {
     expect(done.body.endedAt).toBeTruthy();
     expect(done.body.countsAsFocusSession).toBe(true);
 
-    const afterToday = await request(app.getHttpServer()).get("/v1/coaching/today").set(authA());
-    expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(streakMid);
+    const afterToday = await request(app.getHttpServer())
+      .get("/v1/coaching/today")
+      .set(authA());
+    expect(afterToday.body.streak.currentStreak).toBeGreaterThanOrEqual(
+      streakMid,
+    );
   });
 
   it("short completed session is saved but does not count as focus session", async () => {
@@ -341,7 +552,9 @@ describe("coaching (e2e)", () => {
     expect(list.body.page).toBe(1);
     expect(list.body.pageSize).toBe(5);
     expect(Array.isArray(list.body.items)).toBe(true);
-    expect(list.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
+    expect(
+      list.body.items.some((s: { id: string }) => s.id === start.body.id),
+    ).toBe(true);
   });
 
   it("GET /study-sessions filters by subject when subject query param is set", async () => {
@@ -369,11 +582,19 @@ describe("coaching (e2e)", () => {
       .get("/v1/study-sessions?page=1&pageSize=10&subject=Matematik")
       .set(authA());
     expect(filtered.status).toBe(200);
-    expect(filtered.body.items.every((s: { subject: string }) => s.subject === "Matematik")).toBe(
-      true,
-    );
-    expect(filtered.body.items.some((s: { id: string }) => s.id === matematik.body.id)).toBe(true);
-    expect(filtered.body.items.some((s: { id: string }) => s.id === turkce.body.id)).toBe(false);
+    expect(
+      filtered.body.items.every(
+        (s: { subject: string }) => s.subject === "Matematik",
+      ),
+    ).toBe(true);
+    expect(
+      filtered.body.items.some(
+        (s: { id: string }) => s.id === matematik.body.id,
+      ),
+    ).toBe(true);
+    expect(
+      filtered.body.items.some((s: { id: string }) => s.id === turkce.body.id),
+    ).toBe(false);
 
     const empty = await request(app.getHttpServer())
       .get("/v1/study-sessions?page=1&pageSize=10&subject=Fizik")
@@ -399,16 +620,24 @@ describe("coaching (e2e)", () => {
       .get(`/v1/study-sessions?page=1&pageSize=10&from=${today}&to=${today}`)
       .set(authA());
     expect(inRange.status).toBe(200);
-    expect(inRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(true);
+    expect(
+      inRange.body.items.some((s: { id: string }) => s.id === start.body.id),
+    ).toBe(true);
 
     const outOfRange = await request(app.getHttpServer())
-      .get("/v1/study-sessions?page=1&pageSize=10&from=2000-01-01&to=2000-01-02")
+      .get(
+        "/v1/study-sessions?page=1&pageSize=10&from=2000-01-01&to=2000-01-02",
+      )
       .set(authA());
     expect(outOfRange.status).toBe(200);
-    expect(outOfRange.body.items.some((s: { id: string }) => s.id === start.body.id)).toBe(false);
+    expect(
+      outOfRange.body.items.some((s: { id: string }) => s.id === start.body.id),
+    ).toBe(false);
 
     const badRange = await request(app.getHttpServer())
-      .get("/v1/study-sessions?page=1&pageSize=10&from=2026-07-20&to=2026-07-10")
+      .get(
+        "/v1/study-sessions?page=1&pageSize=10&from=2026-07-20&to=2026-07-10",
+      )
       .set(authA());
     expect(badRange.status).toBe(400);
   });
@@ -452,7 +681,9 @@ describe("coaching (e2e)", () => {
       .get("/v1/study-sessions?page=1&pageSize=5")
       .set(authA());
     expect(list.status).toBe(200);
-    const listed = list.body.items.find((s: { id: string }) => s.id === start.body.id);
+    const listed = list.body.items.find(
+      (s: { id: string }) => s.id === start.body.id,
+    );
     expect(listed?.planTaskTitle).toBe("Seans bağlantısı");
 
     const foreign = await request(app.getHttpServer())
@@ -476,10 +707,10 @@ describe("coaching (e2e)", () => {
     const start = await request(app.getHttpServer())
       .post("/v1/study-sessions")
       .set(authA())
-      .send({ preset: "custom", focusMinutes: 35 });
+      .send({ preset: "custom", focusMinutes: 200 });
     expect(start.status).toBe(201);
     expect(start.body.preset).toBe("custom");
-    expect(start.body.plannedFocusMinutes).toBe(35);
+    expect(start.body.plannedFocusMinutes).toBe(200);
   });
 
   it("mock exam POST computes net → GET analysis returns trend", async () => {
@@ -495,7 +726,9 @@ describe("coaching (e2e)", () => {
     expect(subjects.status).toBe(200);
     expect(subjects.body.length).toBeGreaterThan(0);
 
-    const turkce = subjects.body.find((s: { slug: string }) => s.slug === "turkce");
+    const turkce = subjects.body.find(
+      (s: { slug: string }) => s.slug === "turkce",
+    );
     expect(turkce).toBeTruthy();
 
     const create = await request(app.getHttpServer())
@@ -512,7 +745,9 @@ describe("coaching (e2e)", () => {
       .get("/v1/coaching/analysis")
       .set(authA());
     expect(analysis.status).toBe(200);
-    expect(analysis.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
+    expect(
+      analysis.body.trend.some((t: { id: string }) => t.id === create.body.id),
+    ).toBe(true);
     expect(analysis.body.trend[0].totalNet).toBe("19.00");
     expect(Array.isArray(analysis.body.photoSubjectSignals)).toBe(true);
 
@@ -520,7 +755,9 @@ describe("coaching (e2e)", () => {
       .get(`/v1/coaching/analysis?examId=${exam.id}`)
       .set(authA());
     expect(scoped.status).toBe(200);
-    expect(scoped.body.trend.some((t: { id: string }) => t.id === create.body.id)).toBe(true);
+    expect(
+      scoped.body.trend.some((t: { id: string }) => t.id === create.body.id),
+    ).toBe(true);
     expect(scoped.body.subjects[0]).toMatchObject({
       subjectRef: "turkce",
       questionCount: 30,
@@ -555,18 +792,14 @@ describe("coaching (e2e)", () => {
       .send({
         examId: exam.id,
         publisherName: "İlk yayın",
-        subjects: [
-          { subjectRef: "turkce", correct: 15, wrong: 4, blank: 11 },
-        ],
+        subjects: [{ subjectRef: "turkce", correct: 15, wrong: 4, blank: 11 }],
       });
     expect(created.status).toBe(201);
 
     const updateBody = {
       takenAt: "2026-07-10T12:00:00.000Z",
       publisherName: null,
-      subjects: [
-        { subjectRef: "turkce", correct: 18, wrong: 4, blank: 8 },
-      ],
+      subjects: [{ subjectRef: "turkce", correct: 18, wrong: 4, blank: 8 }],
     };
     const updated = await request(app.getHttpServer())
       .put(`/v1/mock-exams/${created.body.id}`)
@@ -649,7 +882,11 @@ describe("coaching (e2e)", () => {
       .get("/v1/coaching/analysis")
       .set(authB());
     expect(analysisB.status).toBe(200);
-    expect(analysisB.body.trend.some((t: { id: string }) => t.id === createA.body.id)).toBe(false);
+    expect(
+      analysisB.body.trend.some(
+        (t: { id: string }) => t.id === createA.body.id,
+      ),
+    ).toBe(false);
 
     const getByIdCross = await request(app.getHttpServer())
       .get(`/v1/mock-exams/${createA.body.id}`)

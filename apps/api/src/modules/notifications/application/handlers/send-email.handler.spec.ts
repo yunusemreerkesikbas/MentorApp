@@ -33,7 +33,8 @@ function setup(options: {
     release: vi.fn().mockResolvedValue(undefined),
   };
   const users = {
-    getNotificationContact: vi.fn().mockResolvedValue(
+    getNotificationContact: vi.fn().mockResolvedValue({ email: "new-unverified@test.local", displayName: "Coach" }),
+    getVerifiedNotificationContact: vi.fn().mockResolvedValue(
       options.contact === undefined
         ? { email: "coach@test.local", displayName: "Koç Deniz" }
         : options.contact,
@@ -61,6 +62,15 @@ const guardedPayload = {
 };
 
 describe("SendEmailHandler", () => {
+  it("suppresses due email when a coach changes email after due-count verification", async () => {
+    const { handler, users, email, deliveries } = setup({ contact: null });
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getNotificationContact).not.toHaveBeenCalled();
+    expect(deliveries.tryRecord).not.toHaveBeenCalled();
+    expect(email.sendTransactional).not.toHaveBeenCalled();
+  });
+
   it("keeps legacy unguarded SEND_EMAIL payloads backward compatible", async () => {
     const { handler, email } = setup();
 
@@ -80,10 +90,10 @@ describe("SendEmailHandler", () => {
   it("rechecks due work and current contact at actual email send time", async () => {
     const { handler, email, followups, users } = setup({ dueCount: 4 });
 
-    await handler.handle(guardedPayload);
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(followups.getDueCount).toHaveBeenCalledWith(COACH, expect.any(Date));
-    expect(users.getNotificationContact).toHaveBeenCalledWith(COACH);
+    expect(users.getVerifiedNotificationContact).toHaveBeenCalledWith(COACH);
     expect(email.sendTransactional).toHaveBeenCalledWith({
       to: "coach@test.local",
       template: EmailTemplate.MENTORSHIP_FOLLOWUP_DUE,
@@ -94,7 +104,7 @@ describe("SendEmailHandler", () => {
   it("drops a queued email when no OPEN due follow-up remains in the active period", async () => {
     const { handler, email, deliveries } = setup({ dueCount: 0 });
 
-    await handler.handle(guardedPayload);
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(deliveries.tryRecord).not.toHaveBeenCalled();
     expect(email.sendTransactional).not.toHaveBeenCalled();
@@ -103,7 +113,7 @@ describe("SendEmailHandler", () => {
   it("rechecks the coach's email preference at actual send time", async () => {
     const { handler, email, deliveries } = setup({ emailEnabled: false });
 
-    await handler.handle(guardedPayload);
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(deliveries.tryRecord).not.toHaveBeenCalled();
     expect(email.sendTransactional).not.toHaveBeenCalled();
@@ -115,8 +125,8 @@ describe("SendEmailHandler", () => {
       .mockResolvedValueOnce(true)
       .mockResolvedValueOnce(false);
 
-    await handler.handle(guardedPayload);
-    await handler.handle(guardedPayload);
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
+    await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));
 
     expect(email.sendTransactional).toHaveBeenCalledTimes(1);
   });
@@ -125,7 +135,7 @@ describe("SendEmailHandler", () => {
     const failure = new Error("provider unavailable");
     const { handler, deliveries } = setup({ sendError: failure });
 
-    await expect(handler.handle(guardedPayload)).rejects.toThrow("provider unavailable");
+    await expect(handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"))).rejects.toThrow("provider unavailable");
 
     expect(deliveries.release).toHaveBeenCalledWith(
       expect.anything(),
@@ -137,4 +147,11 @@ describe("SendEmailHandler", () => {
       }),
     );
   });
+});
+
+it("drops a previous-day summary instead of sending two summaries today", async () => {
+  const { handler, email, followups } = setup();
+  await handler.handle(guardedPayload, new Date("2026-09-13T07:00:00Z"));
+  expect(followups.getDueCount).not.toHaveBeenCalled();
+  expect(email.sendTransactional).not.toHaveBeenCalled();
 });

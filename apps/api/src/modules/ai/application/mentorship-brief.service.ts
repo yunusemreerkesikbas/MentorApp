@@ -62,6 +62,7 @@ export class MentorshipBriefService {
       coach.id,
       coach.roles,
       PremiumFeatureId.MENTORSHIP_BRIEF,
+      ErrorCode.MENTORSHIP_AI_DAILY_LIMIT,
     );
 
     const prompt = buildMentorshipBriefPrompt(

@@ -1,7 +1,8 @@
 {
   "ledger": {
+    "questXp": { "title": "Görev XP’si" },
     "questReward": {
-      "title": "Görev hakkı"
+      "title": "Görev Coin’i"
     },
     "aiChatSpend": {
       "title": "Koç sohbet hakkı kullanıldı",

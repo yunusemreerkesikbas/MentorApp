@@ -31,6 +31,23 @@ export interface StreakComputation {
 
 const NO_PURCHASED: ReadonlySet<IsoDate> = new Set();
 
+/** Monday→Sunday of the week `today` falls in, on the same calendar basis as the walk above. */
+export function buildStreakWeek(
+  today: IsoDate,
+  activeDates: ReadonlySet<IsoDate>,
+  bridgedDates: readonly IsoDate[],
+): { date: IsoDate; active: boolean; frozen: boolean }[] {
+  const frozen = new Set(bridgedDates);
+  // getUTCDay(): Sunday is 0, so Sunday sits six days after its Monday, not one day before it.
+  const weekday = new Date(`${today}T00:00:00.000Z`).getUTCDay();
+  const monday = addDays(today, weekday === 0 ? -6 : 1 - weekday);
+
+  return Array.from({ length: 7 }, (_, offset) => {
+    const date = addDays(monday, offset);
+    return { date, active: activeDates.has(date), frozen: frozen.has(date) };
+  });
+}
+
 /**
  * Derive the current streak by walking backward from `today` over `activeDates`.
  *

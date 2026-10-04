@@ -31,6 +31,8 @@ describe("study rooms (e2e)", () => {
       password: PASSWORD,
       displayName: `Room ${label}`,
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     const body = res.body as { accessToken: string; user: { id: string } };
     return { email, id: body.user.id, token: body.accessToken };

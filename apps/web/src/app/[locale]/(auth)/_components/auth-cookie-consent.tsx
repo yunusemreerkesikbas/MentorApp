@@ -16,7 +16,7 @@ export function AuthCookieConsent() {
   const labelId = useId();
 
   return (
-    <div className="flex min-h-11 items-start gap-3 text-sm" style={{ color: "var(--color-body)" }}>
+    <div className="flex items-start gap-3 text-sm" style={{ color: "var(--color-body)" }}>
       <CheckBox
         checked={checked}
         onChange={setUserChoice}

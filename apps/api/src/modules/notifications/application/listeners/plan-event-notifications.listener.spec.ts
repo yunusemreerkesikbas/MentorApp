@@ -75,13 +75,13 @@ describe("PlanEventNotificationsListener", () => {
       "PLAN",
       NotificationCopyKey.PLAN_EVENT_CREATED,
       `/plan?date=${first.eventDate}&event=${first.eventId}`,
-      {
+      expect.objectContaining({
         args: {
           eventTitle: first.title,
           eventDate: first.eventDate,
           eventTime: first.startTime,
         },
-      },
+      }),
     );
     expect(notifications.createFromTemplate).toHaveBeenCalledWith(
       ATTENDEE_B,
@@ -185,6 +185,23 @@ describe("PlanEventNotificationsListener", () => {
       expect(JSON.stringify(call.slice(2))).not.toContain(ATTENDEE_B);
       expect(call[4]).not.toHaveProperty("data");
     }
+  });
+
+  it("pushes each attendee once per lifecycle step and repeats an edit at most daily", async () => {
+    const { listener, notifications } = makeListener();
+    const event = occurrence();
+
+    await listener.onCreated(new PlanEventCreated(ORGANIZER, [event]));
+    await listener.onUpdated(new PlanEventUpdated(ORGANIZER, [event]));
+    await listener.onCancelled(new PlanEventCancelled(ORGANIZER, [event]));
+
+    // One key per step: a single daily key would let a same-day creation swallow the cancellation.
+    const template = "coaching.plan-event-change";
+    expect(notifications.createFromTemplate.mock.calls.map((call) => call[4]?.push)).toEqual([
+      { template, dedupeKey: `plan-event-push:created:${event.eventId}` },
+      { template, dedupeKey: `plan-event-push:updated:${event.eventId}:2026-09-10` },
+      { template, dedupeKey: `plan-event-push:cancelled:${event.eventId}` },
+    ]);
   });
 
   it("absorbs delivery and scheduling failures after the coaching transaction", async () => {

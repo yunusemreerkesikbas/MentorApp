@@ -1,6 +1,26 @@
 {
   "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
-  "verifiedAt": "2026-07-15",
+  "verifiedAt": "2026-09-17",
+  "sources": [
+    {
+      "family": "KPSS",
+      "sourceUrl": "https://dokuman.osym.gov.tr/pdfdokuman/2026/KPSS/LISANS/kilavuz_Ld01072026.pdf",
+      "verifiedAt": "2026-07-15",
+      "note": "GY-GK paper counts from the 2026 KPSS Undergraduate Guide Table 1. Topic labels are coaching grain; Turkish/Math include editorial refinements."
+    },
+    {
+      "family": "YKS",
+      "sourceUrl": "https://www.osym.gov.tr",
+      "verifiedAt": "2026-09-17",
+      "note": "TYT/AYT/YDT question counts follow the ÖSYM paper split. Topic labels are editorial coaching grain, not a full curriculum dump. AYT Tarih/Coğrafya merge the two booklet parts."
+    },
+    {
+      "family": "LGS",
+      "sourceUrl": "https://www.meb.gov.tr",
+      "verifiedAt": "2026-09-17",
+      "note": "Six-test LGS paper counts. Topic labels are editorial coaching grain."
+    }
+  ],
   "subjects": [
     {
       "slug": "turkce",
@@ -25,6 +45,110 @@
     {
       "slug": "guncel",
       "name": "Güncel Bilgiler"
+    },
+    {
+      "slug": "tyt-turkce",
+      "name": "TYT Türkçe"
+    },
+    {
+      "slug": "tyt-tarih",
+      "name": "TYT Tarih"
+    },
+    {
+      "slug": "tyt-cografya",
+      "name": "TYT Coğrafya"
+    },
+    {
+      "slug": "tyt-felsefe",
+      "name": "TYT Felsefe"
+    },
+    {
+      "slug": "tyt-din",
+      "name": "TYT Din Kültürü"
+    },
+    {
+      "slug": "tyt-matematik",
+      "name": "TYT Matematik"
+    },
+    {
+      "slug": "tyt-fizik",
+      "name": "TYT Fizik"
+    },
+    {
+      "slug": "tyt-kimya",
+      "name": "TYT Kimya"
+    },
+    {
+      "slug": "tyt-biyoloji",
+      "name": "TYT Biyoloji"
+    },
+    {
+      "slug": "ayt-edebiyat",
+      "name": "AYT Edebiyat"
+    },
+    {
+      "slug": "ayt-tarih",
+      "name": "AYT Tarih"
+    },
+    {
+      "slug": "ayt-cografya",
+      "name": "AYT Coğrafya"
+    },
+    {
+      "slug": "ayt-felsefe",
+      "name": "AYT Felsefe Grubu"
+    },
+    {
+      "slug": "ayt-din",
+      "name": "AYT Din Kültürü"
+    },
+    {
+      "slug": "ayt-matematik",
+      "name": "AYT Matematik"
+    },
+    {
+      "slug": "ayt-fizik",
+      "name": "AYT Fizik"
+    },
+    {
+      "slug": "ayt-kimya",
+      "name": "AYT Kimya"
+    },
+    {
+      "slug": "ayt-biyoloji",
+      "name": "AYT Biyoloji"
+    },
+    {
+      "slug": "ydt-yabanci-dil",
+      "name": "YDT Yabancı Dil"
+    },
+    {
+      "slug": "lgs-turkce",
+      "name": "Türkçe"
+    },
+    {
+      "slug": "lgs-matematik",
+      "name": "Matematik"
+    },
+    {
+      "slug": "lgs-fen",
+      "name": "Fen Bilimleri"
+    },
+    {
+      "slug": "lgs-inkilap",
+      "name": "T.C. İnkılap Tarihi ve Atatürkçülük"
+    },
+    {
+      "slug": "lgs-din",
+      "name": "Din Kültürü ve Ahlak Bilgisi"
+    },
+    {
+      "slug": "lgs-ingilizce",
+      "name": "Yabancı Dil"
+    },
+    {
+      "slug": "diger",
+      "name": "Diğer"
     }
   ],
   "topics": [
@@ -55,6 +179,11 @@
     },
     {
       "subjectSlug": "turkce",
+      "slug": "anlatim-bozukluklari",
+      "name": "Anlatım bozuklukları"
+    },
+    {
+      "subjectSlug": "turkce",
       "slug": "sozel-mantik",
       "name": "Sözel mantık"
     },
@@ -72,6 +201,11 @@
       "subjectSlug": "matematik",
       "slug": "oran-yuzde-ve-oranti",
       "name": "Oran, yüzde ve orantı"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "kume-islem-ve-mantik",
+      "name": "Küme, işlem ve mantık"
     },
     {
       "subjectSlug": "matematik",
@@ -100,8 +234,18 @@
     },
     {
       "subjectSlug": "tarih",
+      "slug": "islam-ve-turk-islam-tarihi",
+      "name": "İslam ve Türk-İslam tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
       "slug": "osmanli-tarihi",
       "name": "Osmanlı tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "milli-mucadele",
+      "name": "Millî Mücadele"
     },
     {
       "subjectSlug": "tarih",
@@ -110,8 +254,18 @@
     },
     {
       "subjectSlug": "tarih",
+      "slug": "turkiye-cumhuriyeti-tarihi",
+      "name": "Türkiye Cumhuriyeti tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
       "slug": "cagdas-turk-ve-dunya-tarihi",
       "name": "Çağdaş Türk ve Dünya Tarihi"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "cagdas-dunya-siyaseti",
+      "name": "Çağdaş dünya siyaseti"
     },
     {
       "subjectSlug": "cografya",
@@ -120,13 +274,33 @@
     },
     {
       "subjectSlug": "cografya",
+      "slug": "iklim-ve-bitki-ortusu",
+      "name": "İklim ve bitki örtüsü"
+    },
+    {
+      "subjectSlug": "cografya",
       "slug": "turkiyenin-beseri-ozellikleri",
       "name": "Türkiye'nin beşerî özellikleri"
     },
     {
       "subjectSlug": "cografya",
+      "slug": "nufus-ve-yerlesme",
+      "name": "Nüfus ve yerleşme"
+    },
+    {
+      "subjectSlug": "cografya",
       "slug": "turkiyenin-ekonomik-ozellikleri",
       "name": "Türkiye'nin ekonomik özellikleri"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "enerji-ve-ulasim",
+      "name": "Enerji ve ulaşım"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "turkiye-cografya-bolgeleri",
+      "name": "Türkiye coğrafya bölgeleri"
     },
     {
       "subjectSlug": "vatandaslik",
@@ -140,13 +314,973 @@
     },
     {
       "subjectSlug": "vatandaslik",
+      "slug": "yasama",
+      "name": "Yasama"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "yurutme",
+      "name": "Yürütme"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "yargi",
+      "name": "Yargı"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "temel-hak-ve-ozgurlukler",
+      "name": "Temel hak ve özgürlükler"
+    },
+    {
+      "subjectSlug": "vatandaslik",
       "slug": "idare",
       "name": "İdare"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "mahalli-idareler",
+      "name": "Mahallî idareler"
+    },
+    {
+      "subjectSlug": "guncel",
+      "slug": "turkiye-guncel",
+      "name": "Türkiye güncel gelişmeleri"
+    },
+    {
+      "subjectSlug": "guncel",
+      "slug": "dunya-guncel",
+      "name": "Dünya güncel gelişmeleri"
     },
     {
       "subjectSlug": "guncel",
       "slug": "turkiye-ve-dunya-guncel-konular",
       "name": "Türkiye ve dünya ile ilgili genel, kültürel ve sosyoekonomik konular"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "sozcukte-anlam",
+      "name": "Sözcükte anlam"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "cumlede-anlam",
+      "name": "Cümlede anlam"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "paragraf",
+      "name": "Paragraf"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "dil-bilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "yazim-noktalama",
+      "name": "Yazım ve noktalama"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "anlatim-bozukluklari",
+      "name": "Anlatım bozuklukları"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "osmanli-oncesi",
+      "name": "Osmanlı öncesi Türk tarihi"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "osmanli",
+      "name": "Osmanlı tarihi"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "inkilap",
+      "name": "Atatürk İlkeleri ve İnkılap Tarihi"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "cagdas-turkiye",
+      "name": "Çağdaş Türkiye"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "dunya-tarihi",
+      "name": "Dünya tarihi"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "harita-bilgisi",
+      "name": "Harita bilgisi"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "fiziki",
+      "name": "Türkiye fiziki coğrafya"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "iklim",
+      "name": "İklim"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "nufus",
+      "name": "Nüfus ve yerleşme"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "ekonomi",
+      "name": "Ekonomik coğrafya"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "felsefeye-giris",
+      "name": "Felsefeye giriş"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "bilgi-felsefesi",
+      "name": "Bilgi felsefesi"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "varlik-felsefesi",
+      "name": "Varlık felsefesi"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "ahlak-felsefesi",
+      "name": "Ahlak felsefesi"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "siyaset-felsefesi",
+      "name": "Siyaset felsefesi"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "inanc",
+      "name": "İnanç"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "ibadet",
+      "name": "İbadet"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "ahlak",
+      "name": "Ahlak"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "kuran-ve-yorum",
+      "name": "Kur'an ve yorum"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "din-ve-laiklik",
+      "name": "Din ve laiklik"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "temel-kavramlar",
+      "name": "Temel kavramlar"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "sayilar",
+      "name": "Sayılar"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "bolme-bolunebilme",
+      "name": "Bölme ve bölünebilme"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "carpanlar-katlar",
+      "name": "EBOB-EKOK"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "oran-oranti",
+      "name": "Oran ve orantı"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "problemler",
+      "name": "Problemler"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "kumeler-mantik",
+      "name": "Kümeler ve mantık"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "fonksiyon-giris",
+      "name": "Fonksiyonlara giriş"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "geometri",
+      "name": "Geometri"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "madde-ve-ozellikleri",
+      "name": "Madde ve özellikleri"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "hareket-ve-kuvvet",
+      "name": "Hareket ve kuvvet"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "enerji",
+      "name": "Enerji"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "elektrik",
+      "name": "Elektrik"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "dalgalar-optik",
+      "name": "Dalgalar ve optik"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "atom-periyodik",
+      "name": "Atom ve periyodik sistem"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "kimyasal-turler",
+      "name": "Kimyasal türler arası etkileşim"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "molekuller",
+      "name": "Maddenin halleri"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "kimyasal-hesaplar",
+      "name": "Kimyasal hesaplamalar"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "karisimlar",
+      "name": "Karışımlar"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "asit-baz",
+      "name": "Asitler, bazlar ve tuzlar"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "canlilarin-ortak-ozellikleri",
+      "name": "Canlıların ortak özellikleri"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "hucre",
+      "name": "Hücre"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "kalitim",
+      "name": "Kalıtım"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "ekosistem",
+      "name": "Ekosistem"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "sistemler",
+      "name": "Canlılarda sistemler"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "anlam-bilgisi",
+      "name": "Anlam bilgisi"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "dil-bilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "siir",
+      "name": "Şiir"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "nesir",
+      "name": "Nesir"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "divan-edebiyati",
+      "name": "Divan edebiyatı"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "halk-edebiyati",
+      "name": "Halk edebiyatı"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "tanzimat-servet",
+      "name": "Tanzimat ve Servet-i Fünun"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "cumhuriyet-donemi",
+      "name": "Cumhuriyet dönemi"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "ilk-cag",
+      "name": "İlk Çağ uygarlıkları"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "islam-tarihi",
+      "name": "İslam tarihi"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "turk-islam",
+      "name": "Türk-İslam devletleri"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "osmanli-kurulus-yukselis",
+      "name": "Osmanlı kuruluş ve yükseliş"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "osmanli-duraklama-dagilma",
+      "name": "Osmanlı duraklama ve dağılma"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "inkilap",
+      "name": "Atatürk İlkeleri ve İnkılap Tarihi"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "iki-dunya-savasi",
+      "name": "İki dünya savaşı ve sonrası"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "doga-ve-insan",
+      "name": "Doğa ve insan"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "iklim",
+      "name": "İklim bilgisi"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "nufus",
+      "name": "Nüfus"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "yerlesme",
+      "name": "Yerleşme"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "ekonomi",
+      "name": "Ekonomik faaliyetler"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "turkiye-bolgeleri",
+      "name": "Türkiye'nin bölgeleri"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "jeopolitik",
+      "name": "Türkiye'nin jeopolitiği"
+    },
+    {
+      "subjectSlug": "ayt-felsefe",
+      "slug": "felsefe-tarihi",
+      "name": "Felsefe tarihi"
+    },
+    {
+      "subjectSlug": "ayt-felsefe",
+      "slug": "psikoloji",
+      "name": "Psikoloji"
+    },
+    {
+      "subjectSlug": "ayt-felsefe",
+      "slug": "sosyoloji",
+      "name": "Sosyoloji"
+    },
+    {
+      "subjectSlug": "ayt-felsefe",
+      "slug": "mantik",
+      "name": "Mantık"
+    },
+    {
+      "subjectSlug": "ayt-din",
+      "slug": "inanc-ibadet",
+      "name": "İnanç ve ibadet"
+    },
+    {
+      "subjectSlug": "ayt-din",
+      "slug": "kuran",
+      "name": "Kur'an'ı anlama"
+    },
+    {
+      "subjectSlug": "ayt-din",
+      "slug": "islam-dusuncesi",
+      "name": "İslam düşüncesi"
+    },
+    {
+      "subjectSlug": "ayt-din",
+      "slug": "dinler",
+      "name": "Yaşayan dinler"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "fonksiyonlar",
+      "name": "Fonksiyonlar"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "polinomlar",
+      "name": "Polinomlar"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "denklem-esitsizlik",
+      "name": "Denklem ve eşitsizlik"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "trigonometri",
+      "name": "Trigonometri"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "log-ustel",
+      "name": "Logaritma ve üstel"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "diziler-seriler",
+      "name": "Diziler ve seriler"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "limit-turev-integral",
+      "name": "Limit, türev, integral"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "olasilik-istatistik",
+      "name": "Olasılık ve istatistik"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "geometri",
+      "name": "Geometri"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "vektorler-kuvvet",
+      "name": "Vektörler ve kuvvet"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "tork-denge",
+      "name": "Tork ve denge"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "itme-momentum",
+      "name": "İtme ve momentum"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "elektrik-manyetizma",
+      "name": "Elektrik ve manyetizma"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "dalga-mekanigi",
+      "name": "Dalga mekaniği"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "modern-fizik",
+      "name": "Modern fizik"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "modern-atom",
+      "name": "Modern atom teorisi"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "gazlar",
+      "name": "Gazlar"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "sivi-cozeltiler",
+      "name": "Sıvı çözeltiler"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "kimyasal-tepkimelerde-denge",
+      "name": "Kimyasal denge"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "asitle-baz",
+      "name": "Asit-baz dengesi"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "elektrokimya",
+      "name": "Elektrokimya"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "organik",
+      "name": "Organik kimya"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "hucre-bolunmeleri",
+      "name": "Hücre bölünmeleri"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "kalitim",
+      "name": "Kalıtım"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "canlilarda-enerji",
+      "name": "Canlılarda enerji dönüşümleri"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "sistemler",
+      "name": "İnsan fizyolojisi"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "komuniter",
+      "name": "Komünite ve popülasyon"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "kelime",
+      "name": "Kelime bilgisi"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "dilbilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "cloze",
+      "name": "Cloze test"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "cumle-tamamlama",
+      "name": "Cümle tamamlama"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "ceviri",
+      "name": "Çeviri"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "paragraf",
+      "name": "Paragraf"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "diyalog",
+      "name": "Diyalog"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "sozcukte-anlam",
+      "name": "Sözcükte anlam"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "cumlede-anlam",
+      "name": "Cümlede anlam"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "paragraf",
+      "name": "Paragraf"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "dil-bilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "yazim-noktalama",
+      "name": "Yazım ve noktalama"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "soz-sanatlari",
+      "name": "Söz sanatları"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "carpanlar-katlar",
+      "name": "Çarpanlar ve katlar"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "ustlu-ifadeler",
+      "name": "Üslü ifadeler"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "karekok",
+      "name": "Kareköklü ifadeler"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "veri-analizi",
+      "name": "Veri analizi"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "olasilik",
+      "name": "Olasılık"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "cebirsel-ifadeler",
+      "name": "Cebirsel ifadeler ve özdeşlikler"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "denklem-esitsizlik",
+      "name": "Denklem ve eşitsizlik"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "ucgenler",
+      "name": "Üçgenler"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "donusumler",
+      "name": "Eşlik ve benzerlik"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "mevsimler-iklim",
+      "name": "Mevsimler ve iklim"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "dna-genetik",
+      "name": "DNA ve genetik kod"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "basinc",
+      "name": "Basınç"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "madde-endustri",
+      "name": "Madde ve endüstri"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "basit-makineler",
+      "name": "Basit makineler"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "enerji-donusumleri",
+      "name": "Enerji dönüşümleri"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "elektrik-yukleri",
+      "name": "Elektrik yükleri ve elektrik enerjisi"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "bir-kahraman-doguyor",
+      "name": "Bir kahraman doğuyor"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "milli-uyanis",
+      "name": "Millî uyanış"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "milli-bir-destan",
+      "name": "Millî bir destan"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "ataturkculuk",
+      "name": "Atatürkçülük ve çağdaşlaşan Türkiye"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "demokratiklesme",
+      "name": "Demokratikleşme çabaları"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "dis-politika",
+      "name": "Atatürk dönemi Türk dış politikası"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "kader-kaza",
+      "name": "Kader inancı"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "zekat-sadaka",
+      "name": "Zekât ve sadaka"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "din-ve-hayat",
+      "name": "Din ve hayat"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "hz-muhammed",
+      "name": "Hz. Muhammed ve örnek ahlakı"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "kurani-anlamak",
+      "name": "Kur'an-ı Kerim ve özellikleri"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "kelime",
+      "name": "Kelime"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "dilbilgisi",
+      "name": "Dil bilgisi"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "okuma",
+      "name": "Okuduğunu anlama"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "diyalog",
+      "name": "Diyalog"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "gunluk-ifadeler",
+      "name": "Günlük ifadeler"
+    },
+    {
+      "subjectSlug": "turkce",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "matematik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tarih",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "cografya",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "vatandaslik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "guncel",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-turkce",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-tarih",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-cografya",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-felsefe",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-din",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-matematik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-fizik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-kimya",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "tyt-biyoloji",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-edebiyat",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-tarih",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-cografya",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-felsefe",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-din",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-matematik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-fizik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-kimya",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ayt-biyoloji",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "ydt-yabanci-dil",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-turkce",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-matematik",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-fen",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-inkilap",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-din",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "lgs-ingilizce",
+      "slug": "diger",
+      "name": "Diğer"
+    },
+    {
+      "subjectSlug": "diger",
+      "slug": "diger",
+      "name": "Diğer"
     }
   ],
   "examSubjects": [
@@ -257,6 +1391,186 @@
       "subjectSlug": "guncel",
       "questionCount": 6,
       "sortOrder": 5
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "questionCount": 40,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "questionCount": 5,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "questionCount": 5,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "questionCount": 5,
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "questionCount": 5,
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "questionCount": 40,
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "questionCount": 7,
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "questionCount": 7,
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "questionCount": 6,
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "questionCount": 24,
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "questionCount": 21,
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "questionCount": 17,
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "questionCount": 12,
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "questionCount": 6,
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "questionCount": 40,
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "questionCount": 14,
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "questionCount": 13,
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "questionCount": 13,
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "questionCount": 80,
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "questionCount": 20,
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "questionCount": 20,
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "questionCount": 20,
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "questionCount": 10,
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "questionCount": 10,
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "questionCount": 10,
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "diger",
+      "questionCount": null,
+      "sortOrder": 6
     }
   ],
   "examTopics": [
@@ -293,116 +1607,218 @@
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "turkce",
-      "topicSlug": "sozel-mantik",
+      "topicSlug": "anlatim-bozukluklari",
       "sortOrder": 5
     },
     {
       "examSlug": "kpss-lisans-2026",
-      "subjectSlug": "matematik",
-      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
       "sortOrder": 6
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
       "sortOrder": 7
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "oran-yuzde-ve-oranti",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
       "sortOrder": 8
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "problemler",
+      "topicSlug": "oran-yuzde-ve-oranti",
       "sortOrder": 9
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "sayisal-mantik",
+      "topicSlug": "kume-islem-ve-mantik",
       "sortOrder": 10
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "geometri",
+      "topicSlug": "problemler",
       "sortOrder": 11
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "topicSlug": "sayisal-mantik",
       "sortOrder": 12
     },
     {
       "examSlug": "kpss-lisans-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
       "sortOrder": 13
     },
     {
       "examSlug": "kpss-lisans-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-tarihi",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
       "sortOrder": 14
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
       "sortOrder": 15
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "topicSlug": "islam-ve-turk-islam-tarihi",
       "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "milli-mucadele",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "turkiye-cumhuriyeti-tarihi",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-dunya-siyaseti",
+      "sortOrder": 22
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-fiziki-ozellikleri",
-      "sortOrder": 17
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "iklim-ve-bitki-ortusu",
+      "sortOrder": 24
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-beseri-ozellikleri",
-      "sortOrder": 18
+      "sortOrder": 25
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "nufus-ve-yerlesme",
+      "sortOrder": 26
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-ekonomik-ozellikleri",
-      "sortOrder": 19
+      "sortOrder": 27
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "enerji-ve-ulasim",
+      "sortOrder": 28
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiye-cografya-bolgeleri",
+      "sortOrder": 29
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "hukukun-temel-kavramlari",
-      "sortOrder": 20
+      "sortOrder": 30
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "anayasa-ve-insan-haklari-hukuku",
-      "sortOrder": 21
+      "sortOrder": 31
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yasama",
+      "sortOrder": 32
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yurutme",
+      "sortOrder": 33
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yargi",
+      "sortOrder": 34
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "temel-hak-ve-ozgurlukler",
+      "sortOrder": 35
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "idare",
-      "sortOrder": 22
+      "sortOrder": 36
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "mahalli-idareler",
+      "sortOrder": 37
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-guncel",
+      "sortOrder": 38
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "dunya-guncel",
+      "sortOrder": 39
     },
     {
       "examSlug": "kpss-lisans-2026",
       "subjectSlug": "guncel",
       "topicSlug": "turkiye-ve-dunya-guncel-konular",
-      "sortOrder": 23
+      "sortOrder": 40
     },
     {
       "examSlug": "kpss-onlisans-2026",
@@ -437,116 +1853,218 @@
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "turkce",
-      "topicSlug": "sozel-mantik",
+      "topicSlug": "anlatim-bozukluklari",
       "sortOrder": 5
     },
     {
       "examSlug": "kpss-onlisans-2026",
-      "subjectSlug": "matematik",
-      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
       "sortOrder": 6
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
       "sortOrder": 7
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "oran-yuzde-ve-oranti",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
       "sortOrder": 8
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "problemler",
+      "topicSlug": "oran-yuzde-ve-oranti",
       "sortOrder": 9
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "sayisal-mantik",
+      "topicSlug": "kume-islem-ve-mantik",
       "sortOrder": 10
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "geometri",
+      "topicSlug": "problemler",
       "sortOrder": 11
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "topicSlug": "sayisal-mantik",
       "sortOrder": 12
     },
     {
       "examSlug": "kpss-onlisans-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
       "sortOrder": 13
     },
     {
       "examSlug": "kpss-onlisans-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-tarihi",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
       "sortOrder": 14
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
       "sortOrder": 15
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "topicSlug": "islam-ve-turk-islam-tarihi",
       "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "milli-mucadele",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "turkiye-cumhuriyeti-tarihi",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-dunya-siyaseti",
+      "sortOrder": 22
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-fiziki-ozellikleri",
-      "sortOrder": 17
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "iklim-ve-bitki-ortusu",
+      "sortOrder": 24
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-beseri-ozellikleri",
-      "sortOrder": 18
+      "sortOrder": 25
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "nufus-ve-yerlesme",
+      "sortOrder": 26
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-ekonomik-ozellikleri",
-      "sortOrder": 19
+      "sortOrder": 27
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "enerji-ve-ulasim",
+      "sortOrder": 28
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiye-cografya-bolgeleri",
+      "sortOrder": 29
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "hukukun-temel-kavramlari",
-      "sortOrder": 20
+      "sortOrder": 30
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "anayasa-ve-insan-haklari-hukuku",
-      "sortOrder": 21
+      "sortOrder": 31
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yasama",
+      "sortOrder": 32
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yurutme",
+      "sortOrder": 33
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yargi",
+      "sortOrder": 34
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "temel-hak-ve-ozgurlukler",
+      "sortOrder": 35
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "idare",
-      "sortOrder": 22
+      "sortOrder": 36
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "mahalli-idareler",
+      "sortOrder": 37
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-guncel",
+      "sortOrder": 38
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "dunya-guncel",
+      "sortOrder": 39
     },
     {
       "examSlug": "kpss-onlisans-2026",
       "subjectSlug": "guncel",
       "topicSlug": "turkiye-ve-dunya-guncel-konular",
-      "sortOrder": 23
+      "sortOrder": 40
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
@@ -581,116 +2099,1424 @@
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "turkce",
-      "topicSlug": "sozel-mantik",
+      "topicSlug": "anlatim-bozukluklari",
       "sortOrder": 5
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
-      "subjectSlug": "matematik",
-      "topicSlug": "temel-kavramlar-ve-sayilar",
+      "subjectSlug": "turkce",
+      "topicSlug": "sozel-mantik",
       "sortOrder": 6
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "cebirsel-islemler-ve-denklemler",
+      "topicSlug": "temel-kavramlar-ve-sayilar",
       "sortOrder": 7
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "oran-yuzde-ve-oranti",
+      "topicSlug": "cebirsel-islemler-ve-denklemler",
       "sortOrder": 8
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "problemler",
+      "topicSlug": "oran-yuzde-ve-oranti",
       "sortOrder": 9
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "sayisal-mantik",
+      "topicSlug": "kume-islem-ve-mantik",
       "sortOrder": 10
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "geometri",
+      "topicSlug": "problemler",
       "sortOrder": 11
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "matematik",
-      "topicSlug": "tablo-ve-grafik-yorumlama",
+      "topicSlug": "sayisal-mantik",
       "sortOrder": 12
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-oncesi-turk-devletleri",
+      "subjectSlug": "matematik",
+      "topicSlug": "geometri",
       "sortOrder": 13
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
-      "subjectSlug": "tarih",
-      "topicSlug": "osmanli-tarihi",
+      "subjectSlug": "matematik",
+      "topicSlug": "tablo-ve-grafik-yorumlama",
       "sortOrder": 14
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "topicSlug": "osmanli-oncesi-turk-devletleri",
       "sortOrder": 15
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "tarih",
-      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "topicSlug": "islam-ve-turk-islam-tarihi",
       "sortOrder": 16
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "osmanli-tarihi",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "milli-mucadele",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "ataturk-ilkeleri-ve-inkilap-tarihi",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "turkiye-cumhuriyeti-tarihi",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-turk-ve-dunya-tarihi",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "cagdas-dunya-siyaseti",
+      "sortOrder": 22
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-fiziki-ozellikleri",
-      "sortOrder": 17
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "iklim-ve-bitki-ortusu",
+      "sortOrder": 24
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-beseri-ozellikleri",
-      "sortOrder": 18
+      "sortOrder": 25
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "nufus-ve-yerlesme",
+      "sortOrder": 26
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "cografya",
       "topicSlug": "turkiyenin-ekonomik-ozellikleri",
-      "sortOrder": 19
+      "sortOrder": 27
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "enerji-ve-ulasim",
+      "sortOrder": 28
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "turkiye-cografya-bolgeleri",
+      "sortOrder": 29
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "hukukun-temel-kavramlari",
-      "sortOrder": 20
+      "sortOrder": 30
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "anayasa-ve-insan-haklari-hukuku",
-      "sortOrder": 21
+      "sortOrder": 31
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yasama",
+      "sortOrder": 32
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yurutme",
+      "sortOrder": 33
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "yargi",
+      "sortOrder": 34
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "temel-hak-ve-ozgurlukler",
+      "sortOrder": 35
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "vatandaslik",
       "topicSlug": "idare",
-      "sortOrder": 22
+      "sortOrder": 36
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "mahalli-idareler",
+      "sortOrder": 37
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "turkiye-guncel",
+      "sortOrder": 38
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "dunya-guncel",
+      "sortOrder": 39
     },
     {
       "examSlug": "kpss-ortaogretim-2026",
       "subjectSlug": "guncel",
       "topicSlug": "turkiye-ve-dunya-guncel-konular",
+      "sortOrder": 40
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "yazim-noktalama",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "anlatim-bozukluklari",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "osmanli-oncesi",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "osmanli",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "inkilap",
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "cagdas-turkiye",
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "dunya-tarihi",
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "harita-bilgisi",
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "fiziki",
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "iklim",
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "nufus",
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "ekonomi",
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "felsefeye-giris",
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "bilgi-felsefesi",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "varlik-felsefesi",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "ahlak-felsefesi",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "siyaset-felsefesi",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "inanc",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "ibadet",
+      "sortOrder": 22
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "ahlak",
       "sortOrder": 23
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "kuran-ve-yorum",
+      "sortOrder": 24
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "din-ve-laiklik",
+      "sortOrder": 25
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "temel-kavramlar",
+      "sortOrder": 26
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "sayilar",
+      "sortOrder": 27
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "bolme-bolunebilme",
+      "sortOrder": 28
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "carpanlar-katlar",
+      "sortOrder": 29
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "oran-oranti",
+      "sortOrder": 30
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "problemler",
+      "sortOrder": 31
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "kumeler-mantik",
+      "sortOrder": 32
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "fonksiyon-giris",
+      "sortOrder": 33
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "geometri",
+      "sortOrder": 34
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "madde-ve-ozellikleri",
+      "sortOrder": 35
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "hareket-ve-kuvvet",
+      "sortOrder": 36
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "enerji",
+      "sortOrder": 37
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "elektrik",
+      "sortOrder": 38
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "dalgalar-optik",
+      "sortOrder": 39
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "atom-periyodik",
+      "sortOrder": 40
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "kimyasal-turler",
+      "sortOrder": 41
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "molekuller",
+      "sortOrder": 42
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "kimyasal-hesaplar",
+      "sortOrder": 43
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "karisimlar",
+      "sortOrder": 44
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "asit-baz",
+      "sortOrder": 45
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "canlilarin-ortak-ozellikleri",
+      "sortOrder": 46
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "hucre",
+      "sortOrder": 47
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "kalitim",
+      "sortOrder": 48
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "ekosistem",
+      "sortOrder": 49
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "sistemler",
+      "sortOrder": 50
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "anlam-bilgisi",
+      "sortOrder": 51
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 52
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "siir",
+      "sortOrder": 53
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "nesir",
+      "sortOrder": 54
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "divan-edebiyati",
+      "sortOrder": 55
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "halk-edebiyati",
+      "sortOrder": 56
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "tanzimat-servet",
+      "sortOrder": 57
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "cumhuriyet-donemi",
+      "sortOrder": 58
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "ilk-cag",
+      "sortOrder": 59
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "islam-tarihi",
+      "sortOrder": 60
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "turk-islam",
+      "sortOrder": 61
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "osmanli-kurulus-yukselis",
+      "sortOrder": 62
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "osmanli-duraklama-dagilma",
+      "sortOrder": 63
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "inkilap",
+      "sortOrder": 64
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "iki-dunya-savasi",
+      "sortOrder": 65
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "doga-ve-insan",
+      "sortOrder": 66
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "iklim",
+      "sortOrder": 67
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "nufus",
+      "sortOrder": 68
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "yerlesme",
+      "sortOrder": 69
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "ekonomi",
+      "sortOrder": 70
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "turkiye-bolgeleri",
+      "sortOrder": 71
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "jeopolitik",
+      "sortOrder": 72
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "topicSlug": "felsefe-tarihi",
+      "sortOrder": 73
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "topicSlug": "psikoloji",
+      "sortOrder": 74
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "topicSlug": "sosyoloji",
+      "sortOrder": 75
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "topicSlug": "mantik",
+      "sortOrder": 76
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "topicSlug": "inanc-ibadet",
+      "sortOrder": 77
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "topicSlug": "kuran",
+      "sortOrder": 78
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "topicSlug": "islam-dusuncesi",
+      "sortOrder": 79
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "topicSlug": "dinler",
+      "sortOrder": 80
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "fonksiyonlar",
+      "sortOrder": 81
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "polinomlar",
+      "sortOrder": 82
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "denklem-esitsizlik",
+      "sortOrder": 83
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "trigonometri",
+      "sortOrder": 84
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "log-ustel",
+      "sortOrder": 85
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "diziler-seriler",
+      "sortOrder": 86
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "limit-turev-integral",
+      "sortOrder": 87
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "olasilik-istatistik",
+      "sortOrder": 88
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "geometri",
+      "sortOrder": 89
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "vektorler-kuvvet",
+      "sortOrder": 90
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "tork-denge",
+      "sortOrder": 91
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "itme-momentum",
+      "sortOrder": 92
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "elektrik-manyetizma",
+      "sortOrder": 93
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "dalga-mekanigi",
+      "sortOrder": 94
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "modern-fizik",
+      "sortOrder": 95
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "modern-atom",
+      "sortOrder": 96
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "gazlar",
+      "sortOrder": 97
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "sivi-cozeltiler",
+      "sortOrder": 98
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "kimyasal-tepkimelerde-denge",
+      "sortOrder": 99
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "asitle-baz",
+      "sortOrder": 100
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "elektrokimya",
+      "sortOrder": 101
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "organik",
+      "sortOrder": 102
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "hucre-bolunmeleri",
+      "sortOrder": 103
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "kalitim",
+      "sortOrder": 104
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "canlilarda-enerji",
+      "sortOrder": 105
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "sistemler",
+      "sortOrder": 106
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "komuniter",
+      "sortOrder": 107
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "kelime",
+      "sortOrder": 108
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "dilbilgisi",
+      "sortOrder": 109
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "cloze",
+      "sortOrder": 110
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "cumle-tamamlama",
+      "sortOrder": 111
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "ceviri",
+      "sortOrder": 112
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "paragraf",
+      "sortOrder": 113
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "diyalog",
+      "sortOrder": 114
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "sozcukte-anlam",
+      "sortOrder": 0
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "cumlede-anlam",
+      "sortOrder": 1
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "paragraf",
+      "sortOrder": 2
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "dil-bilgisi",
+      "sortOrder": 3
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "yazim-noktalama",
+      "sortOrder": 4
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "soz-sanatlari",
+      "sortOrder": 5
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "carpanlar-katlar",
+      "sortOrder": 6
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "ustlu-ifadeler",
+      "sortOrder": 7
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "karekok",
+      "sortOrder": 8
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "veri-analizi",
+      "sortOrder": 9
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "olasilik",
+      "sortOrder": 10
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "cebirsel-ifadeler",
+      "sortOrder": 11
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "denklem-esitsizlik",
+      "sortOrder": 12
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "ucgenler",
+      "sortOrder": 13
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "donusumler",
+      "sortOrder": 14
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "mevsimler-iklim",
+      "sortOrder": 15
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "dna-genetik",
+      "sortOrder": 16
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "basinc",
+      "sortOrder": 17
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "madde-endustri",
+      "sortOrder": 18
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "basit-makineler",
+      "sortOrder": 19
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "enerji-donusumleri",
+      "sortOrder": 20
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "elektrik-yukleri",
+      "sortOrder": 21
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "bir-kahraman-doguyor",
+      "sortOrder": 22
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "milli-uyanis",
+      "sortOrder": 23
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "milli-bir-destan",
+      "sortOrder": 24
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "ataturkculuk",
+      "sortOrder": 25
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "demokratiklesme",
+      "sortOrder": 26
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "dis-politika",
+      "sortOrder": 27
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "kader-kaza",
+      "sortOrder": 28
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "zekat-sadaka",
+      "sortOrder": 29
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "din-ve-hayat",
+      "sortOrder": 30
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "hz-muhammed",
+      "sortOrder": 31
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "kurani-anlamak",
+      "sortOrder": 32
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "kelime",
+      "sortOrder": 33
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "dilbilgisi",
+      "sortOrder": 34
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "okuma",
+      "sortOrder": 35
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "diyalog",
+      "sortOrder": 36
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "gunluk-ifadeler",
+      "sortOrder": 37
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "diger",
+      "sortOrder": 41
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "diger",
+      "sortOrder": 42
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "diger",
+      "sortOrder": 43
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "diger",
+      "sortOrder": 44
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "diger",
+      "sortOrder": 45
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "diger",
+      "sortOrder": 46
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "diger",
+      "sortOrder": 41
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "diger",
+      "sortOrder": 42
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "diger",
+      "sortOrder": 43
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "diger",
+      "sortOrder": 44
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "diger",
+      "sortOrder": 45
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "diger",
+      "sortOrder": 46
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "turkce",
+      "topicSlug": "diger",
+      "sortOrder": 41
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "matematik",
+      "topicSlug": "diger",
+      "sortOrder": 42
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "tarih",
+      "topicSlug": "diger",
+      "sortOrder": 43
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "cografya",
+      "topicSlug": "diger",
+      "sortOrder": 44
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "vatandaslik",
+      "topicSlug": "diger",
+      "sortOrder": 45
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "guncel",
+      "topicSlug": "diger",
+      "sortOrder": 46
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-turkce",
+      "topicSlug": "diger",
+      "sortOrder": 115
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-tarih",
+      "topicSlug": "diger",
+      "sortOrder": 116
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-cografya",
+      "topicSlug": "diger",
+      "sortOrder": 117
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-felsefe",
+      "topicSlug": "diger",
+      "sortOrder": 118
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-din",
+      "topicSlug": "diger",
+      "sortOrder": 119
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-matematik",
+      "topicSlug": "diger",
+      "sortOrder": 120
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-fizik",
+      "topicSlug": "diger",
+      "sortOrder": 121
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-kimya",
+      "topicSlug": "diger",
+      "sortOrder": 122
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "tyt-biyoloji",
+      "topicSlug": "diger",
+      "sortOrder": 123
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-edebiyat",
+      "topicSlug": "diger",
+      "sortOrder": 124
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-tarih",
+      "topicSlug": "diger",
+      "sortOrder": 125
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-cografya",
+      "topicSlug": "diger",
+      "sortOrder": 126
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-felsefe",
+      "topicSlug": "diger",
+      "sortOrder": 127
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-din",
+      "topicSlug": "diger",
+      "sortOrder": 128
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-matematik",
+      "topicSlug": "diger",
+      "sortOrder": 129
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-fizik",
+      "topicSlug": "diger",
+      "sortOrder": 130
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-kimya",
+      "topicSlug": "diger",
+      "sortOrder": 131
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ayt-biyoloji",
+      "topicSlug": "diger",
+      "sortOrder": 132
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "ydt-yabanci-dil",
+      "topicSlug": "diger",
+      "sortOrder": 133
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-turkce",
+      "topicSlug": "diger",
+      "sortOrder": 38
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-matematik",
+      "topicSlug": "diger",
+      "sortOrder": 39
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-fen",
+      "topicSlug": "diger",
+      "sortOrder": 40
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-inkilap",
+      "topicSlug": "diger",
+      "sortOrder": 41
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-din",
+      "topicSlug": "diger",
+      "sortOrder": 42
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "lgs-ingilizce",
+      "topicSlug": "diger",
+      "sortOrder": 43
+    },
+    {
+      "examSlug": "kpss-lisans-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 47
+    },
+    {
+      "examSlug": "kpss-onlisans-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 47
+    },
+    {
+      "examSlug": "kpss-ortaogretim-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 47
+    },
+    {
+      "examSlug": "yks-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 134
+    },
+    {
+      "examSlug": "lgs-2026",
+      "subjectSlug": "diger",
+      "topicSlug": "diger",
+      "sortOrder": 44
     }
   ]
 }

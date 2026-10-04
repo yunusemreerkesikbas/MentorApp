@@ -3,13 +3,13 @@
 import { useMemo } from "react";
 import { useTranslations } from "next-intl";
 import { SegmentPillControl } from "@/components/segment-pill-control";
-import type { AnalysisTab } from "./analysis-types";
+import type { AnalysisViewTab } from "./analysis-types";
 
-const TABS: AnalysisTab[] = ["entry", "progress", "mistakes"];
+const TABS: AnalysisViewTab[] = ["progress", "mistakes"];
 
 interface AnalysisSegmentControlProps {
-  value: AnalysisTab;
-  onChange: (tab: AnalysisTab) => void;
+  value: AnalysisViewTab;
+  onChange: (tab: AnalysisViewTab) => void;
 }
 
 export function AnalysisSegmentControl({
@@ -32,9 +32,8 @@ export function AnalysisSegmentControl({
     <SegmentPillControl
       items={items}
       value={value}
-      onChange={(id) => onChange(id as AnalysisTab)}
+      onChange={(id) => onChange(id as AnalysisViewTab)}
       ariaLabel={t("label")}
-      layoutId="analysis-tab-pill"
       className="[&_.t-tab]:px-3 sm:[&_.t-tab]:px-4"
       equalWidth
       idPrefix="analysis-tab"

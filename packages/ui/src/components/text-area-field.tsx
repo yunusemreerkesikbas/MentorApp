@@ -3,11 +3,12 @@
 import type * as React from "react";
 import { useId } from "react";
 
-export interface TextAreaFieldProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {
+export interface TextAreaFieldProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "compact"> {
   label: string;
   error?: string | null;
   /** Optional hint below the field (e.g. character count). */
   hint?: string | null;
+  dense?: boolean;
 }
 
 /**
@@ -18,6 +19,7 @@ export function TextAreaField({
   className,
   error,
   hint,
+  dense,
   id,
   ...rest
 }: TextAreaFieldProps) {
@@ -28,12 +30,12 @@ export function TextAreaField({
   const describedBy =
     [error ? errorId : null, hintId].filter(Boolean).join(" ") || undefined;
 
+  // Only the label text names the field. The hint and the error describe it (aria-describedby):
+  // inside the <label> they became part of the name, and a counter hint changes it per keystroke.
   return (
-    <label
-      htmlFor={inputId}
-      className={`flex flex-col gap-1 ${className ?? ""}`}
-    >
-      <span
+    <div className={`flex flex-col gap-1 ${className ?? ""}`}>
+      <label
+        htmlFor={inputId}
         className="text-xs font-semibold"
         style={{
           color: "var(--color-secondary)",
@@ -41,13 +43,15 @@ export function TextAreaField({
         }}
       >
         {label}
-      </span>
+      </label>
       <textarea
         {...rest}
         id={inputId}
         aria-invalid={error ? true : undefined}
         aria-describedby={describedBy}
-        className="min-h-[88px] w-full resize-y rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] px-5 py-3 text-base outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+        className={`min-h-[88px] w-full resize-y rounded-[var(--radius-card)] border bg-[var(--color-surface-translucent)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] ${
+          dense ? "px-3 py-2 text-sm" : "px-5 py-3 text-base"
+        }`}
         style={{
           color: "var(--color-body)",
           boxShadow: "var(--shadow-card)",
@@ -76,6 +80,6 @@ export function TextAreaField({
           {hint}
         </span>
       ) : null}
-    </label>
+    </div>
   );
 }

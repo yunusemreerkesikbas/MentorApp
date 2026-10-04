@@ -47,6 +47,11 @@
      red (≥4.5:1 on white), calm not alarming (anti-shaming tone). focus-ring: keyboard
      focus indicator — darkened accent (≥3:1 for UI components). */
   --color-danger: #b42318;
+  /** Label and 4px edge of the destructive ledge (`Button variant="danger"`); white on danger is 6.6:1. */
+  --color-danger-ink: #ffffff;
+  --color-danger-edge: #8a1b12;
+  /** Behind every overlay (dialog, sheet, modal, drawer). Solid tint, no blur. */
+  --color-scrim: rgba(17, 17, 17, 0.4);
   /** Positive/upward signal — calm accessible green (≥4.5:1 on white); rank ▲, gains. */
   --color-success: #2e7d54;
   /** Error icon circle background (toast error leading). */
@@ -73,10 +78,40 @@
   /** The stuck-on cover label. */
   --notebook-label: #fdfbf6;
   --notebook-page-shadow: 0px 8px 24px rgba(37, 73, 150, 0.14);
+  /* A photographed question stuck onto the page: a white print, two strips of masking tape and
+     a shadow that falls downward, so it reads as paper on paper rather than a box on top. */
+  --notebook-print: #ffffff;
+  --notebook-print-shadow: 0px 10px 22px -8px rgba(30, 30, 40, 0.35), 0px 0px 0px 1px rgba(0, 0, 0, 0.04);
+  /** Caption on the print's top margin; darker than the design's #8a8170 to clear 4.5:1 on white. */
+  --notebook-print-caption: #6f6656;
+  --notebook-tape: rgba(236, 214, 170, 0.75);
+  /** Ink for text set on the print (the hover slip); the design's page ink. */
+  --notebook-ink: #26304a;
+  --notebook-slip-shadow: 0px 4px 12px rgba(30, 30, 40, 0.18), 0px 0px 0px 1px rgba(0, 0, 0, 0.05);
+  /* Status ink on the print. The print stays white in both themes, so these do not follow the
+     dark-mode accent and success shades; both clear 4.5:1 on white (--color-accent does not). */
+  --notebook-answered-ink: #1d6fbf;
+  --notebook-healed-ink: #2e7d54;
 
-  /* Typography */
-  --font-heading: "Plus Jakarta Sans", sans-serif;
-  --font-body: "Plus Jakarta Sans", sans-serif;
+  /* Typography — one family (DESIGN.md §3). `--font-sans` keeps Tailwind's own `font-sans`
+     utility on the product face instead of the browser default. */
+  --font-heading: var(--font-nunito, "Nunito"), system-ui, sans-serif;
+  --font-body: var(--font-nunito, "Nunito"), system-ui, sans-serif;
+  --font-sans: var(--font-body);
+  /*
+   * Type steps between Tailwind's defaults (DESIGN.md §3): the panel's scale, used app-wide.
+   * 12 / 14 / 16 / 18 / 20 stay Tailwind's `xs` / `sm` / `base` / `lg` / `xl`.
+   */
+  --text-micro: 11px;
+  --text-micro--line-height: 1.2;
+  --text-caption: 13px;
+  --text-caption--line-height: 1.45;
+  --text-body-sm: 15px;
+  --text-body-sm--line-height: 1.55;
+  --text-title: 22px;
+  --text-title--line-height: 1.3;
+  --text-display: 28px;
+  --text-display--line-height: 1.2;
 
   /* Radius — uniform */
   --radius-card: 10px;
@@ -84,6 +119,10 @@
   /* Shadow family — same tint; hover is one step stronger (DESIGN.md §5). */
   --shadow-card: 0px 4px 10px rgba(37, 73, 150, 0.1);
   --shadow-card-hover: 0px 6px 14px rgba(37, 73, 150, 0.1);
+  /** Floating overlays (dialog, modal, drawer, toast, desktop sheet) — one shadow, same tint. */
+  --shadow-overlay: 0px 24px 48px -12px rgba(37, 73, 150, 0.3);
+  /** A phone's bottom sheet: the same lift, cast upward. */
+  --shadow-sheet: 0px -12px 40px rgba(37, 73, 150, 0.18);
 
   /* Ambient blobs (DESIGN.md §2.2) — hue stays; opacity swaps on html.dark. */
   --blob-pink: #ff2dab;
@@ -99,6 +138,65 @@
 
 html {
   color-scheme: light;
+  /*
+   * Global CTA (DESIGN.md §6) — play ledge. Dark ink on #55acee is 6.6:1; white would be 2.4:1.
+   * `--color-btn` stays for nav pills, not for `@mentor/ui` Button.
+   */
+  --play-cta: #55acee;
+  /** Highlight stripe shared by onboarding and compact journey progress. */
+  --play-cta-shine: rgba(255, 255, 255, 0.35);
+  --play-cta-ink: #0f2233;
+  --play-cta-edge: #3b8fd0;
+  --play-line: #e7e7e7;
+  --play-track: #f0edec;
+  --play-selected-ink: #1a5fa3;
+  --play-radius: 16px;
+  /* The shared bottom sheet's top corners on phones, same as the welcome sheet. */
+  --play-sheet-radius: 28px;
+  /*
+   * Selected fill + icon wells. These started scoped to `.onboarding-play-theme`; the panel's
+   * quest rows and path nodes speak the same language, so they live on `html` now. The rest of
+   * the play set (frost, scrim, window) stays scoped — it only makes sense on art.
+   */
+  --play-selected: #e4eefe;
+  --play-well-blue: #c3d9fd;
+  --play-well-peri: #d6dbfd;
+  --play-well-violet: #ece3ff;
+  --play-well-coral: #ffe8e2;
+  --play-well-pink: #f3ddf6;
+  /*
+   * Premium identity (DESIGN.md §7): the ring reads cape-blue → clasp-gold, the badge is the
+   * clasp itself. Gold on night blue is ~9:1, so the badge label stays legible at 11px.
+   */
+  --premium-ring-from: #2f55d4;
+  --premium-ring-to: #f2b544;
+  --premium-badge-bg: #1e2a5a;
+  --premium-badge-ink: #ffd76a;
+  /*
+   * Coach identity (DESIGN.md §2.5): ink blue marks what a human coach did. The coach's workspace
+   * chrome uses it, and so does the student side for the tasks and notes that came from their
+   * coach, which is why it lives here instead of scoped to the coach shell: both sides should say
+   * "your coach" in the same colour.
+   */
+  --coach-accent: #26377f;
+  --coach-accent-soft: #e6e9f7;
+  --coach-accent-ink: #1f2c66;
+  /*
+   * Correct / wrong in a mock exam's part-to-whole bars (DESIGN.md §2.3). Checked with the dataviz
+   * palette validator in both themes; neither clears 3:1 on white, so the counts always sit beside
+   * the bar. Blank is not a category: it is the remainder, drawn on `--play-track`.
+   */
+  --chart-correct: #55acee;
+  --chart-wrong: #f3705a;
+  /*
+   * A day's focus minutes on the coach's activity strip and rhythm grid (DESIGN.md §2.3): one
+   * ordinal ramp, 1–29 / 30–89 / 90+ minutes, validated light and dark with the dataviz checker.
+   * An empty day is `--play-track`, not a step. The light end is ~2.5:1, so the drawings always
+   * carry a text alternative.
+   */
+  --chart-activity-1: #55acee;
+  --chart-activity-2: #3b8fd0;
+  --chart-activity-3: #1a5fa3;
 }
 
 ::placeholder {
@@ -132,14 +230,43 @@ html.dark {
   --color-accent-soft: #2c3d56;
   --color-streak-soft: #3a2a28;
   --color-danger: #f28b82;
+  /* The danger fill lightens in dark, so its label turns to ink (7.7:1). */
+  --color-danger-ink: #12141a;
+  --color-danger-edge: #b85a52;
+  --color-scrim: rgba(0, 0, 0, 0.58);
   --color-success: #6bc49a;
   --color-error-container: #3d2422;
   --color-focus-ring: #7eb6e8;
   --shadow-card: 0px 4px 12px rgba(37, 73, 150, 0.28);
   --shadow-card-hover: 0px 6px 16px rgba(37, 73, 150, 0.32);
+  --shadow-overlay: 0px 24px 48px -12px rgba(0, 0, 0, 0.65);
+  --shadow-sheet: 0px -12px 40px rgba(0, 0, 0, 0.5);
   --blob-pink-opacity: 0.14;
   --blob-blue-opacity: 0.2;
   --blob-cyan-opacity: 0.18;
+  --play-line: rgba(255, 255, 255, 0.1);
+  --play-track: #242833;
+  --play-selected-ink: #7eb6e8;
+  --play-selected: #2c3d56;
+  --play-well-blue: #242833;
+  --play-well-peri: #2a2f45;
+  --play-well-violet: #332c47;
+  --play-well-coral: #3a2a28;
+  --play-well-pink: #3a2a3f;
+  /* The badge keeps its night/gold pairing in dark; only the ring's blue end lifts to stay visible
+     against the charcoal surface. */
+  --premium-ring-from: #7e9bff;
+  /* Ink blue goes unreadable on charcoal, so the accent lifts and the well drops. */
+  --coach-accent: #8fa2ee;
+  --coach-accent-soft: #252b40;
+  --coach-accent-ink: #c3ccf5;
+  /* The light pair sits above the dark theme's lightness band; these are its own validated steps. */
+  --chart-correct: #3f95d8;
+  --chart-wrong: #e0634d;
+  /* The activity ramp runs dark to light here, so more minutes still read as more. */
+  --chart-activity-1: #2f6fae;
+  --chart-activity-2: #3f95d8;
+  --chart-activity-3: #94c6f4;
 }
 
 /*
@@ -178,6 +305,23 @@ html.dark {
 }
 
 /*
+ * Welcome + onboarding play surface (DESIGN.md §2.5). Choice cards, 800-weight questions,
+ * artwork chrome. CTA tokens live on `html` — `@mentor/ui` Button uses them app-wide.
+ */
+.onboarding-play-theme {
+  /* Chrome that sits on artwork, so it keeps one look in both themes. */
+  --play-frost: rgba(255, 255, 255, 0.72);
+  --play-frost-ink: #111111;
+  --play-scrim: rgba(17, 17, 17, 0.6);
+  --play-scrim-ink: #ffffff;
+  /* The lamp-lit window from the welcome's last scene ("Yolun hazır"). */
+  --play-window-frame: #2c3d56;
+  --play-window-light: #fff3d1;
+  --play-window-lamp: #ffd15c;
+  --play-window-glow: rgba(255, 209, 92, 0.45);
+}
+
+/*
  * Checkout success canvas — green → canvas linear wash (DESIGN.md `--color-success` → `--color-bg`).
  * Top is lifted with `--blob-cyan` so the band reads mint, not a dark forest slab.
  */
@@ -201,101 +345,6 @@ html.dark {
 
 .checkout-result-success canvas {
   background-color: transparent;
-}
-
-/*
- * Premium campaign banner — cyan→slate wash (DESIGN.md §8.4 CampaignPromo).
- * Pins light-canvas hues so html.dark does not invert the ink.
- * Ends on `--color-progress-track` dark (#2c3d56), not #111 — no hard charcoal drop.
- * Quiet film grain (not glitter): reference texture without sparkle.
- */
-.premium-campaign-banner {
-  --campaign-from: color-mix(in srgb, #55acee 78%, #bdebff);
-  --campaign-mid: color-mix(in srgb, #55acee 48%, #2c3d56);
-  --campaign-to: #2c3d56;
-  --campaign-ink: #ffffff;
-  --campaign-muted: color-mix(in srgb, #ffffff 80%, #2c3d56);
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: linear-gradient(
-    125deg,
-    var(--campaign-from) 0%,
-    var(--campaign-mid) 55%,
-    var(--campaign-to) 100%
-  );
-  color: var(--campaign-ink);
-  box-shadow: var(--shadow-card);
-}
-
-.premium-campaign-banner > * {
-  position: relative;
-  z-index: 1;
-}
-
-/* Specular sweep — two consecutive passes on hover, like light on glass. */
-@keyframes mentor-campaign-sheen {
-  0% {
-    opacity: 0;
-    transform: translateX(-55%) skewX(-16deg);
-  }
-
-  14% {
-    opacity: 1;
-  }
-
-  86% {
-    opacity: 1;
-    transform: translateX(55%) skewX(-16deg);
-  }
-
-  100% {
-    opacity: 0;
-    transform: translateX(55%) skewX(-16deg);
-  }
-}
-
-.premium-campaign-banner::before {
-  content: "";
-  position: absolute;
-  inset: -30% -40%;
-  z-index: 2;
-  pointer-events: none;
-  background: linear-gradient(
-    105deg,
-    transparent 38%,
-    color-mix(in srgb, var(--campaign-ink) 14%, transparent) 46%,
-    color-mix(in srgb, var(--campaign-ink) 42%, transparent) 50%,
-    color-mix(in srgb, var(--campaign-ink) 14%, transparent) 54%,
-    transparent 62%
-  );
-  opacity: 0;
-  transform: translateX(-55%) skewX(-16deg);
-  mix-blend-mode: soft-light;
-}
-
-.premium-campaign-banner:hover::before,
-.premium-campaign-banner:focus-visible::before {
-  animation: mentor-campaign-sheen 1.1s cubic-bezier(0.4, 0, 0.2, 1) 2;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .premium-campaign-banner::before {
-    content: none;
-  }
-}
-
-.premium-campaign-banner::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  border-radius: inherit;
-  opacity: 0.2;
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='4' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
-  background-size: 180px 180px;
 }
 
 /* --- Skeleton shimmer (surface-container gray; passive tab rail register) --- */
@@ -377,52 +426,79 @@ html.dark {
   --blob-pink-opacity: 0.4;
   --blob-blue-opacity: 0.6;
   --blob-cyan-opacity: 0.6;
-  --session-ripple-1: 17.5rem;
-  --session-ripple-2: 22.5rem;
-  --session-ripple-3: 28rem;
 }
 
 .session-focus-ripple {
   position: absolute;
   border-radius: 9999px;
+  width: calc(var(--session-ring-size, 280px) * var(--ripple-from));
+  height: calc(var(--session-ring-size, 280px) * var(--ripple-from));
   border: 2px solid color-mix(in srgb, var(--blob-cyan) 32%, transparent);
   pointer-events: none;
   animation: session-focus-ripple 8s ease-out infinite;
 }
 
 .session-focus-ripple-1 {
-  width: var(--session-ripple-1);
-  height: var(--session-ripple-1);
+  --ripple-from: 1;
   animation-delay: 0s;
 }
 
 .session-focus-ripple-2 {
-  width: var(--session-ripple-2);
-  height: var(--session-ripple-2);
+  --ripple-from: 1.14;
   animation-delay: -2.6s;
   border-color: color-mix(in srgb, var(--blob-blue) 28%, transparent);
 }
 
 .session-focus-ripple-3 {
-  width: var(--session-ripple-3);
-  height: var(--session-ripple-3);
+  --ripple-from: 1.28;
   animation-delay: -5.2s;
   border-color: color-mix(in srgb, var(--blob-pink) 22%, transparent);
 }
 
 @keyframes session-focus-ripple {
   0% {
-    transform: scale(0.92);
-    opacity: 0.4;
+    transform: scale(1);
+    opacity: 0.35;
   }
   70% {
-    transform: scale(1.08);
+    transform: scale(1.06);
     opacity: 0.1;
   }
   100% {
-    transform: scale(1.14);
+    transform: scale(1.1);
     opacity: 0;
   }
+}
+
+/*
+ * The session ring's arc colour, registered so focus → break fades instead of cutting. The
+ * wrapper holds the tint; its children read it as `--color-progress`, which the kit ring draws
+ * with (two elements, so the two variables never reference each other).
+ */
+@property --session-ring-tint {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #55acee;
+}
+
+.session-ring {
+  --session-ring-tint: var(--color-progress);
+  transition: --session-ring-tint 300ms ease-out;
+}
+
+/* Break is rest: the room's own "someone is here" green, a light green on the dark theatre. */
+.session-ring[data-phase="break"] {
+  --session-ring-tint: var(--room-live, #6bc49a);
+}
+
+.session-ring > * {
+  --color-progress: var(--session-ring-tint);
+}
+
+/* Break lifts the light and warms it. Soft-light, so the room keeps its own colours. */
+.session-break-warmth {
+  background: #e8a87c;
+  mix-blend-mode: soft-light;
 }
 
 /*
@@ -452,6 +528,48 @@ html.dark {
   /* The lit ground. Needs enough presence for the badge's cast shadow to land on something —
      a shadow over unlit floor is invisible. */
   --spotlight-floor: rgba(255, 244, 214, 0.24);
+}
+
+/* "Işık Yandı" achievement scene (DESIGN.md §9.1). Always night, whatever the theme cookie. The
+   light itself comes from each badge (`SCENE_LIGHT` in the scene's choreography) as the inline
+   `--scene-glow` / `--scene-alt` pair. */
+.achievement-scene-theme {
+  color-scheme: dark;
+  --color-main: #ffffff;
+  --color-body: #d9e0f7;
+  --color-focus-ring: #9ec8f0;
+  --achievement-scene-badge: clamp(196px, 29vh, 260px);
+  --achievement-eyebrow: #ffd58a;
+  --achievement-label: rgba(236, 241, 255, 0.86);
+  --achievement-chip: rgba(255, 255, 255, 0.14);
+  /* The heart of the flash and of every light: warm, never blue. */
+  --achievement-flash-core: #fffcf2;
+  --achievement-flash-warm: rgba(255, 246, 227, 0.92);
+  /* The night falls as one sheet, 1.6 viewports tall: deep at the top, dusk at its soft edge. */
+  --achievement-curtain: linear-gradient(
+    180deg,
+    #050920 0%,
+    #0a1033 20%,
+    #121b4b 40%,
+    #1b2762 54%,
+    #24317a 62.5%,
+    rgba(36, 49, 122, 0.82) 70%,
+    rgba(36, 49, 122, 0.35) 84%,
+    rgba(36, 49, 122, 0) 100%
+  );
+  --achievement-horizon:
+    radial-gradient(ellipse 130% 42% at 50% 104%, rgba(255, 168, 112, 0.42), rgba(255, 168, 112, 0) 72%),
+    radial-gradient(ellipse 70% 30% at 50% 36%, rgba(143, 184, 255, 0.16), rgba(143, 184, 255, 0) 72%);
+  /* The card back: cream rim, blue border, a night field with stars and Puhu engraved in gold. */
+  --achievement-card-rim: linear-gradient(160deg, #fcf3e6 0%, #efdcc6 46%, #d9bfa1 100%);
+  --achievement-card-border: linear-gradient(160deg, #6f97ef 0%, #3f63c9 100%);
+  --achievement-card-field: radial-gradient(120% 95% at 32% 18%, #3d5fcf 0%, #263a92 38%, #172358 72%, #111a44 100%);
+  --achievement-card-stars:
+    radial-gradient(circle at 30% 40%, rgba(255, 244, 214, 0.75) 0 0.9px, transparent 1.4px),
+    radial-gradient(circle at 70% 80%, rgba(190, 214, 255, 0.6) 0 0.7px, transparent 1.2px);
+  --achievement-card-puhu: linear-gradient(180deg, #fff6dc 0%, #ffd98f 55%, #ffc46b 100%);
+  --achievement-card-ink: #22337c;
+  --achievement-card-edge: linear-gradient(180deg, #f6e7d4, #cfb08f);
 }
 
 /* Ambient blob drift (DESIGN.md §9) — transform only; very slow. */
@@ -494,6 +612,10 @@ html.dark {
     transform: none;
   }
 
+  .session-ring {
+    transition: none;
+  }
+
   .mentor-blob-drift {
     animation: none;
     will-change: auto;
@@ -507,7 +629,9 @@ html.dark {
  * midnight. Every value below is scoped to `--room-*`; nothing leaks into app tokens.
  *
  * `--room-ink` is the contract the floating chrome reads, which is what lets one set of
- * controls sit legibly on a bright parchment room and a dark café alike.
+ * controls sit legibly on a bright parchment room and a dark café alike. App `--color-*`
+ * ink tokens are remapped on this element only so liquid glass and timer copy follow the
+ * room without hardcoded #ffffff.
  */
 .room-stage {
   /* ponytail: LIBRARY's shipped artwork (`room-library-bg.webp`) is a dim, lamp-lit
@@ -524,6 +648,9 @@ html.dark {
   --room-ink: #f7f0e4;
   --room-ink-soft: #cdb99f;
   --room-accent: #2e7d54;
+  /* "Someone is working" as a dot next to room ink. A dark room needs the light green; the
+     accent green above is for rings, and as text on the wood it did not read. */
+  --room-live: #6bc49a;
   --room-scrim: rgba(26, 20, 15, 0.66);
   /* The primary CTA is brand blue in EVERY room, not the room's accent: "sit down here"
      is the same action wherever you are, and a button that changes colour per theme is a
@@ -541,6 +668,15 @@ html.dark {
    * The caller's `veilPercent` is now a multiplier on this alpha, not a mix ratio.
    */
   --room-veil: rgba(36, 27, 20, 0.95);
+  /* Chrome on the stage reads app ink tokens. Bind them to this room's ink so a
+     dark café and a light HOME stay legible without hardcoded #ffffff. */
+  color: var(--room-ink);
+  --color-main: var(--room-ink);
+  --color-body: var(--room-ink);
+  --color-secondary: var(--room-ink-soft);
+  --color-surface-translucent: color-mix(in srgb, var(--room-ink) 12%, transparent);
+  --color-border: color-mix(in srgb, var(--room-ink) 22%, transparent);
+  --color-progress-track: color-mix(in srgb, var(--room-ink) 22%, transparent);
 }
 
 .room-stage[data-room-theme="CAFE"] {
@@ -558,6 +694,7 @@ html.dark {
 }
 
 .room-stage[data-room-theme="HOME"] {
+  color-scheme: light;
   --room-ground-from: #f3eff9;
   --room-ground-to: #e3daf1;
   --room-table: #7c6f97;
@@ -566,6 +703,7 @@ html.dark {
   --room-ink: #2a2438;
   --room-ink-soft: #665c7c;
   --room-accent: #55acee;
+  --room-live: #2e7d54;
   --room-scrim: rgba(255, 255, 255, 0.7);
   /* Half the others': a bright room with dark ink does not need to be washed pale to carry
      text — the label halo already does that job, and at full strength the artwork vanished. */
@@ -589,117 +727,137 @@ html.dark {
   animation: room-seat-breathe 3.2s ease-in-out infinite;
 }
 
+/* Someone just sat down: one ring of light leaves the avatar, then the usual breathing. */
+@keyframes room-seat-arrive {
+  0% {
+    box-shadow:
+      0 0 0 2px var(--room-accent),
+      0 0 0 0 color-mix(in srgb, var(--room-live) 70%, transparent);
+  }
+  100% {
+    box-shadow:
+      0 0 0 2px var(--room-accent),
+      0 0 0 16px color-mix(in srgb, var(--room-live) 0%, transparent);
+  }
+}
+
+.room-seat-live.room-seat-arrive {
+  animation:
+    room-seat-arrive 0.6s ease-out,
+    room-seat-breathe 3.2s ease-in-out 0.6s infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .room-seat-live {
+  .room-seat-live,
+  .room-seat-live.room-seat-arrive {
     animation: none;
     box-shadow: 0 0 0 2px var(--room-accent);
   }
 }
 
 /*
- * Liquid Glass surfaces for immersive / ambient stages (e.g. /study-session).
- * Zero opaque background wash; 100% scene refraction with specular rim glints,
- * high optical blur, and crisp luminous white typography.
+ * Session chrome: DESIGN surfaces, not ink mixed into the fill. Mixing `--color-main`
+ * (#111) onto light `--color-bg` painted cool gray wells. Fill is `--color-surface`;
+ * the rim borrows `--color-progress` so the edge stays Mentor-blue, not gray.
  */
 .session-liquid-card {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.2);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.15);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  );
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  border: 1px solid rgba(255, 255, 255, 0.22);
-  box-shadow:
-    inset 0 1.5px 1.5px 0 rgba(255, 255, 255, 0.45),
-    inset 0 -1px 1px 0 rgba(0, 0, 0, 0.12),
-    0 20px 40px 0 rgba(0, 0, 0, 0.3),
-    0 4px 12px 0 rgba(0, 0, 0, 0.15);
-  color: #ffffff;
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid color-mix(in srgb, var(--color-progress) 22%, transparent);
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
 .session-liquid-pill {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.16) 0%,
-    rgba(255, 255, 255, 0.05) 100%
-  );
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.26);
-  box-shadow:
-    inset 0 1px 1.5px 0 rgba(255, 255, 255, 0.5),
-    0 8px 24px 0 rgba(0, 0, 0, 0.2);
-  color: #ffffff;
+  background: var(--color-surface);
+  backdrop-filter: blur(16px) saturate(150%);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid color-mix(in srgb, var(--color-progress) 26%, transparent);
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
+/* Selected preset on the plain screen: the panel's selected chip, not a black pill. The stage
+   keeps its white glass below (`.room-stage .session-liquid-btn-obsidian`). */
 .session-liquid-btn-obsidian {
-  background: #ffffff;
-  color: #0f172a;
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.95);
-  box-shadow:
-    0 4px 24px 0 rgba(255, 255, 255, 0.35),
-    0 2px 8px 0 rgba(0, 0, 0, 0.2);
+  background: var(--play-selected);
+  color: var(--play-selected-ink);
+  border: 1px solid var(--play-cta);
+  box-shadow: inset 0 0 0 1px var(--play-cta);
 }
 
 .session-liquid-btn-obsidian:hover {
-  background: rgba(255, 255, 255, 0.92);
-  box-shadow:
-    0 6px 28px 0 rgba(255, 255, 255, 0.45);
+  background: color-mix(in srgb, var(--play-selected) 85%, var(--play-cta));
 }
 
 .session-liquid-rail {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.18);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.16);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
-
-  background: linear-gradient(
-    135deg,
-    rgba(255, 255, 255, 0.12) 0%,
-    rgba(255, 255, 255, 0.03) 100%
-  ) !important;
-  backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(28px) saturate(190%) contrast(105%);
-  border-right: 1px solid rgba(255, 255, 255, 0.18) !important;
-  box-shadow:
-    inset -1px 0 1.5px 0 rgba(255, 255, 255, 0.35),
-    4px 0 24px 0 rgba(0, 0, 0, 0.25);
-  color: #ffffff;
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(20px) saturate(160%);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  border-right: 1px solid color-mix(in srgb, var(--color-progress) 18%, transparent) !important;
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
 }
 
 .session-liquid-drawer {
-  --color-main: #ffffff;
-  --color-secondary: rgba(255, 255, 255, 0.72);
-  --color-border: rgba(255, 255, 255, 0.18);
-  --color-surface: rgba(255, 255, 255, 0.12);
-  --color-surface-container: rgba(255, 255, 255, 0.16);
-  --color-progress-track: rgba(255, 255, 255, 0.22);
+  background: var(--color-surface) !important;
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border-right: 1px solid color-mix(in srgb, var(--color-progress) 22%, transparent) !important;
+  box-shadow: var(--shadow-card);
+  color: var(--color-main);
+}
 
+/*
+ * Scenic / focus stages (DESIGN.md §2.5): the photo is the surface. Opaque
+ * `--color-surface` cards sit on the room like stickers. Restore frost glass +
+ * room ink; plain light idle keeps the rules above.
+ */
+.room-stage .session-liquid-card,
+.session-focus-theme .session-liquid-card,
+.room-stage .session-liquid-pill,
+.session-focus-theme .session-liquid-pill,
+.room-stage .session-liquid-rail,
+.session-focus-theme .session-liquid-rail,
+.room-stage .session-liquid-drawer,
+.session-focus-theme .session-liquid-drawer {
+  --color-main: var(--room-ink, #f4f4f5);
+  --color-secondary: var(--room-ink-soft, rgba(255, 255, 255, 0.72));
+  --color-surface: color-mix(in srgb, #ffffff 18%, transparent);
+  --color-surface-translucent: color-mix(in srgb, #ffffff 14%, transparent);
+  /* The panel's own classes (text links, outline ledge, progress line) read these, so they have
+     to follow the room too; left alone they painted near-white fills under cream ink. */
+  --color-surface-container: color-mix(in srgb, #ffffff 12%, transparent);
+  --play-selected: color-mix(in srgb, #ffffff 16%, transparent);
+  --play-selected-ink: var(--room-ink, #f4f4f5);
+  --play-line: color-mix(in srgb, #ffffff 30%, transparent);
+  --play-track: color-mix(in srgb, #ffffff 24%, transparent);
+  /* The dark-theme green: #2e7d54 is a light-surface ink and sinks into a dim room. */
+  --color-success: #6bc49a;
+  color: var(--room-ink, #f4f4f5);
   background: linear-gradient(
     135deg,
-    rgba(255, 255, 255, 0.18) 0%,
-    rgba(255, 255, 255, 0.07) 100%
+    color-mix(in srgb, #ffffff 22%, transparent) 0%,
+    color-mix(in srgb, #ffffff 8%, transparent) 100%
   ) !important;
-  backdrop-filter: blur(32px) saturate(190%) contrast(105%);
-  -webkit-backdrop-filter: blur(32px) saturate(190%) contrast(105%);
-  border-right: 1px solid rgba(255, 255, 255, 0.22) !important;
+  border-color: color-mix(in srgb, #ffffff 28%, transparent);
   box-shadow:
-    inset 1px 1px 1.5px 0 rgba(255, 255, 255, 0.45),
-    8px 0 36px 0 rgba(0, 0, 0, 0.35);
-  color: #ffffff;
+    inset 0 1.5px 1.5px 0 color-mix(in srgb, #ffffff 45%, transparent),
+    0 16px 36px 0 color-mix(in srgb, #000000 28%, transparent) !important;
+}
+
+.room-stage .session-liquid-rail,
+.session-focus-theme .session-liquid-rail,
+.room-stage .session-liquid-drawer,
+.session-focus-theme .session-liquid-drawer {
+  border-right-color: color-mix(in srgb, #ffffff 22%, transparent) !important;
+}
+
+.room-stage .session-liquid-btn-obsidian,
+.session-focus-theme .session-liquid-btn-obsidian {
+  background: color-mix(in srgb, #ffffff 92%, transparent);
+  color: var(--room-cta-ink, var(--play-cta-ink));
+  border-color: color-mix(in srgb, #ffffff 90%, transparent);
+  box-shadow: var(--shadow-card);
 }

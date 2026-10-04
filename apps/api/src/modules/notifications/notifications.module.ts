@@ -1,8 +1,7 @@
 import { Global, Module } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import type { Env } from "../../config/env.validation";
 import { LoggerEmailAdapter } from "../../shared/adapters/email/logger-email.adapter";
 import { PostmarkEmailAdapter } from "../../shared/adapters/email/postmark-email.adapter";
+import { RoutingEmailAdapter } from "../../shared/adapters/email/routing-email.adapter";
 import { PushEndpointPolicy } from "../../shared/adapters/push/push-endpoint-policy";
 import { WebPushAdapter } from "../../shared/adapters/push/web-push.adapter";
 import { EMAIL_PORT } from "../../shared/ports/email.port";
@@ -103,20 +102,14 @@ import { NotificationsController } from "./presentation/notifications.controller
     CronSecretGuard,
     LoggerEmailAdapter,
     PostmarkEmailAdapter,
+    RoutingEmailAdapter,
     WebPushAdapter,
     {
       provide: JOB_QUEUE_PORT,
       useExisting: PostgresJobQueueAdapter,
     },
-    {
-      provide: EMAIL_PORT,
-      inject: [ConfigService, LoggerEmailAdapter, PostmarkEmailAdapter],
-      useFactory: (
-        config: ConfigService<Env, true>,
-        logger: LoggerEmailAdapter,
-        postmark: PostmarkEmailAdapter,
-      ) => (config.get("POSTMARK_TOKEN", { infer: true }) ? postmark : logger),
-    },
+    // Per-message choice between console and Postmark (admin switch dev.email.console_enabled).
+    { provide: EMAIL_PORT, useExisting: RoutingEmailAdapter },
     { provide: PUSH_PORT, useExisting: WebPushAdapter },
   ],
   exports: [

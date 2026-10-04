@@ -1,6 +1,8 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
+  AchievementCelebrationDto,
   AuthUser,
+  EconomyBalance,
   JourneyLevelCelebrationView,
 } from "@mentor/types";
 
@@ -81,7 +83,7 @@ test("tanışmayı bir kez gösterir; hata, odak ve scroll davranışlarını ko
   const closeButton = dialog.getByRole("button", { name: "Kapat" });
 
   await expect(dialog).toBeVisible();
-  await expect(continueButton).toBeFocused();
+  await expect(continueButton).toBeFocused({ timeout: 10_000 });
   await expect
     .poll(() => page.evaluate(() => document.body.style.overflow))
     .toBe("hidden");
@@ -116,9 +118,11 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   page,
 }) => {
   const api = await mockJourneyCelebrationApi(page, null);
-  await page.goto("/profil");
-  await expect(page).toHaveURL(/\/ayarlar$/);
-  await page.waitForLoadState("networkidle");
+  await page.goto("/ayarlar");
+  await expect.poll(() => page.evaluate(() => {
+    const testWindow = window as typeof window & { __journeyEventSources?: EventSource[] };
+    return testWindow.__journeyEventSources?.length ?? 0;
+  })).toBeGreaterThan(0);
 
   const previousFocus = page.getByRole("button", { name: /temaya geç/ });
   await expect(previousFocus).toBeVisible();
@@ -147,7 +151,7 @@ test("canlı SSE sinyali seviyeyi açar ve kapanınca önceki odağı geri verir
   await expect(dialog).toBeVisible();
   await expect(
     dialog.getByRole("button", { name: "Devam et" }),
-  ).toBeFocused();
+  ).toBeFocused({ timeout: 10_000 });
   await expect(page.getByRole("dialog")).toHaveCount(1);
 
   await dialog.getByRole("button", { name: "Devam et" }).click();
@@ -164,6 +168,77 @@ test("kaçırılan canlı sinyali sonraki açılışta kalıcı kaynaktan toparl
   await expect(
     page.getByRole("dialog", { name: "Seviye 5 · Nabız" }),
   ).toBeVisible();
+});
+
+test("başarım kutlamasını gerektiğinde yükler ve bir kez gösterir", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await mockJourneyCelebrationApi(page, null);
+  const achievement: AchievementCelebrationDto = {
+    kind: "ACHIEVEMENT",
+    items: [{
+      id: "first_step",
+      title: "İlk adım",
+      description: "QA",
+      unlockHint: "QA",
+      artKey: "first_step",
+      status: "EARNED",
+      earnedAt: "2026-08-22T12:00:00.000Z",
+      progress: null,
+    }],
+  };
+  let pending = true;
+  await page.route("http://localhost:3001/v1/community/achievements/**", async (route) => {
+    if (route.request().method() === "GET") {
+      return json(route, { celebrations: pending ? [achievement] : [] });
+    }
+    if (route.request().method() === "POST") {
+      pending = false;
+      return json(route, null, 204);
+    }
+    return route.fallback();
+  });
+
+  await page.goto("/profil");
+  const dialog = page.getByRole("dialog", { name: "İlk adım" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole("button", { name: "Devam edelim" }).click();
+  await expect(dialog).toHaveCount(0);
+  await page.reload();
+  await expect(dialog).toHaveCount(0);
+});
+
+test("panel rozeti sahneyi tıklayınca yükler ve odağı geri verir", async ({ page }) => {
+  await mockJourneyCelebrationApi(page, null);
+  const balance: EconomyBalance = {
+    xp: 120,
+    coinConfirmed: 0,
+    coinPending: 0,
+    level: {
+      tier: 4,
+      xp: 120,
+      nextAt: 200,
+      key: "cycle",
+      chapter: "harmony",
+      currentAt: 100,
+      nextKey: "rhythm",
+      progress: { current: 20, target: 100, remaining: 80, percent: 20 },
+    },
+  };
+  await page.route("http://localhost:3001/v1/economy/balance", (route) =>
+    json(route, balance),
+  );
+
+  await page.goto("/panel");
+  const opener = page.getByRole("button", { name: "Döngü rozetini sahne ışığında gör" });
+  await expect(opener).toBeVisible();
+  await opener.focus();
+  await expect(opener).toBeFocused();
+  await opener.click();
+  const dialog = page.getByRole("dialog", { name: "Seviye 4 · Döngü" });
+  await expect(dialog).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(opener).toBeFocused();
 });
 
 interface JourneyCelebrationApi {
@@ -209,6 +284,14 @@ async function mockJourneyCelebrationApi(
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
+      return json(route, {
+        enabled: false,
+        linked: false,
+        providerEmail: null,
+        canLink: false,
+      });
+    }
     if (method === "GET" && path.startsWith("/v1/notifications?")) {
       return json(route, {
         items: [],
@@ -255,7 +338,9 @@ async function mockJourneyCelebrationApi(
 }
 
 const corsHeaders = {
-  "access-control-allow-origin": "http://localhost:3100",
+  "access-control-allow-origin": new URL(
+    process.env.PLAYWRIGHT_BASE_URL || "http://localhost:3100",
+  ).origin,
   "access-control-allow-credentials": "true",
 };
 

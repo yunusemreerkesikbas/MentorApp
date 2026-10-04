@@ -6,11 +6,10 @@ import { Suspense, useEffect, useState } from "react";
 import { authControllerVerifyEmail } from "@mentor/api-client";
 import { SectionHeading } from "@mentor/ui";
 import { FormError, FormSuccess } from "@/components/form";
-import { notifyCoinCelebration, notifyEconomyChanged } from "@/lib/economy";
+import { notifyEconomyChanged } from "@/lib/economy";
 
 function VerifyEmail() {
   const t = useTranslations("auth.verify_email");
-  const tEconomy = useTranslations("economy");
   const token = useSearchParams().get("token") ?? "";
   const [state, setState] = useState<"pending" | "ok" | "error">("pending");
   const [error, setError] = useState<string | null>(null);
@@ -24,10 +23,6 @@ function VerifyEmail() {
         if (active) {
           setState("ok");
           notifyEconomyChanged();
-          notifyCoinCelebration(
-            10,
-            tEconomy("email_verified_reward_label", { defaultValue: "E-posta Doğrulandı" }),
-          );
         }
       })
       .catch((err: unknown) => {

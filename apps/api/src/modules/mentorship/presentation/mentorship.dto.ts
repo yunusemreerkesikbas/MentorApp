@@ -69,6 +69,8 @@ export class MentorshipEventParamDto extends createZodDto(
   mentorshipEventParamSchema,
 ) {}
 export class MentorshipCoachNoteDto extends createZodDto(mentorshipCoachNoteSchema) {}
+/** The student's note to their coach (QA F4): the same body and the same 500-character ceiling. */
+export class MentorshipStudentNoteDto extends createZodDto(mentorshipCoachNoteSchema) {}
 export class MentorshipAttentionDto extends createZodDto(mentorshipAttentionSchema) {}
 export class SaveMentorshipTemplateDto extends createZodDto(saveMentorshipTemplateSchema) {}
 export class MentorshipTemplateParamDto extends createZodDto(mentorshipTemplateParamSchema) {}

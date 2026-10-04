@@ -4,12 +4,13 @@ import { MentorshipErasureService } from "./mentorship-erasure.service";
 const USER = "11111111-1111-4111-8111-111111111111";
 
 function setup(purgedLinkIds: string[]) {
-  const links = { purgeForUser: vi.fn(async () => purgedLinkIds) };
+  const links = { endForUser: vi.fn(async () => purgedLinkIds), purgeForUser: vi.fn(async () => purgedLinkIds) };
   const codes = { purgeForCoach: vi.fn(async () => undefined) };
   const templates = { purgeForCoach: vi.fn(async () => undefined) };
   const applications = { purgeForUser: vi.fn(async () => undefined) };
   const cohortBriefs = { purgeForCoach: vi.fn(async () => undefined) };
   const plan = { clearMentorshipOrigin: vi.fn(async () => purgedLinkIds.length) };
+  const seats = { revoke: vi.fn(async () => true) };
   const service = new MentorshipErasureService(
     links as never,
     codes as never,
@@ -17,11 +18,29 @@ function setup(purgedLinkIds: string[]) {
     applications as never,
     cohortBriefs as never,
     plan as never,
+    seats as never,
   );
-  return { service, links, codes, templates, applications, cohortBriefs, plan };
+  return { service, links, codes, templates, applications, cohortBriefs, plan, seats };
 }
 
 describe("MentorshipErasureService", () => {
+  it("ends affected links, revokes sponsorship while the link association exists, then purges", async () => {
+    const { service, links, seats } = setup(["link-1", "link-2"]);
+    await service.eraseUserData(USER);
+    expect(links.endForUser).toHaveBeenCalledWith(USER);
+    expect(seats.revoke.mock.calls).toEqual([["link-1"], ["link-2"]]);
+    expect(links.endForUser.mock.invocationCallOrder[0]).toBeLessThan(seats.revoke.mock.invocationCallOrder[0]!);
+    expect(seats.revoke.mock.invocationCallOrder[1]).toBeLessThan(links.purgeForUser.mock.invocationCallOrder[0]!);
+  });
+
+  it("preserves ended links for a retry if payment revocation fails", async () => {
+    const { service, links, seats, plan } = setup(["link-1"]);
+    seats.revoke.mockRejectedValueOnce(new Error("payments unavailable"));
+    await expect(service.eraseUserData(USER)).rejects.toThrow("payments unavailable");
+    expect(links.purgeForUser).not.toHaveBeenCalled();
+    expect(plan.clearMentorshipOrigin).not.toHaveBeenCalled();
+  });
+
   it("drops the links, the invite code, the templates, the application and the cohort brief", async () => {
     const { service, links, codes, templates, applications, cohortBriefs } = setup(["link-1"]);
     await service.eraseUserData(USER);

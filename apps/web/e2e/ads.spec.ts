@@ -1,5 +1,6 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type { AuthUser, TodayPanelResponse } from "@mentor/types";
+import { IDLE_STREAK } from "./streak.fixture";
 
 const sessionIds = [
   "33333333-3333-4333-8333-333333333333",
@@ -33,10 +34,13 @@ test("Premium ve STAFF hesapları rewarded GPT isteği oluşturmaz", async ({ pa
   await page.goto("/panel");
   await page.waitForTimeout(200);
   expect(premiumGptRequests).toBe(0);
-  const premiumBanner = page.getByTestId("dashboard-top-banner");
-  await expect(premiumBanner).toContainText("Bugünün görevleri seni bekliyor.");
-  await premiumBanner.getByRole("button", { name: "Görevleri aç" }).click();
-  await expect(page.getByRole("heading", { name: "Görevler" })).toBeVisible();
+  // A member's rail has no announcement card at all; the quests are one tap away in their own card.
+  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  await page
+    .getByTestId("panel-quests-card")
+    .getByRole("button", { name: "Tüm görevler" })
+    .click();
+  await expect(page.getByRole("heading", { name: "Görevler", exact: true })).toBeVisible();
   await expect(page.getByTestId("rewarded-ad-quest")).toHaveCount(0);
   expect(premiumGptRequests).toBe(0);
 
@@ -52,10 +56,14 @@ test("Premium ve STAFF hesapları rewarded GPT isteği oluşturmaz", async ({ pa
   await staffPage.goto("/panel");
   await staffPage.waitForTimeout(200);
   expect(staffGptRequests).toBe(0);
-  await expect(staffPage.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  // Staff is on the free tier, so the trial may show; the coin offer never does.
+  await expect(staffPage.getByTestId("dashboard-top-banner")).toBeVisible();
+  await expect(
+    staffPage.getByTestId("dashboard-top-banner").getByRole("button", { name: "Görevleri aç" }),
+  ).toHaveCount(0);
 });
 
-test("uygun Free kullanıcı üst şeritten görevleri açar ve GPT yalnız modal açılınca yüklenir", async ({ page }) => {
+test("uygun Free kullanıcı duyuru kartından görevleri açar ve GPT yalnız modal açılınca yüklenir", async ({ page }) => {
   let gptRequests = 0;
   page.on("request", (request) => {
     if (request.url().includes("/tag/js/gpt.js")) gptRequests += 1;
@@ -64,31 +72,32 @@ test("uygun Free kullanıcı üst şeritten görevleri açar ve GPT yalnız moda
   await mockDashboard(page);
   await page.goto("/panel");
 
-  const banner = page.getByTestId("dashboard-top-banner");
-  await expect(banner).toContainText("Günlük görevlerinde 10 Coin seni bekliyor.");
+  const banner = await showAnnouncement(page, 1);
+  await expect(banner.getByText("Günlük görevlerinde 10 Coin seni bekliyor.")).toBeVisible();
   expect(gptRequests).toBe(0);
 
   await banner.getByRole("button", { name: "Görevleri aç" }).click();
-  await expect(page.getByRole("heading", { name: "Görevler" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Görevler", exact: true })).toBeVisible();
   await expect(page.getByTestId("rewarded-ad-quest")).toBeVisible();
-  await expect(page.locator("#quests-panel > ul > li").first()).toHaveAttribute(
-    "data-testid",
-    "rewarded-ad-quest",
-  );
   await expect(page.getByTestId("daily-quest-row").first()).toHaveText(/Bugünün planından 1 görev tamamla/);
   await expect.poll(() => gptRequests).toBe(1);
 });
 
-test("üst şerit kapatılınca aynı sekmedeki yenilemede geri gelmez", async ({ page }) => {
+test("kapatılan ödül duyurusu aynı sekmedeki yenilemede geri gelmez", async ({ page }) => {
   await mockDashboard(page);
   await page.goto("/panel");
 
-  const banner = page.getByTestId("dashboard-top-banner");
+  const banner = await showAnnouncement(page, 1);
+  await expect(banner.getByText("Günlük görevlerinde 10 Coin seni bekliyor.")).toBeVisible();
   await banner.getByRole("button", { name: "Duyuruyu kapat" }).click();
-  await expect(banner).toHaveCount(0);
+  // Only the coin offer goes; the trial beside it stays, alone, so the card stops rotating.
+  await expect(banner.getByRole("button", { name: "Görevleri aç" })).toHaveCount(0);
+  await expect(banner.getByRole("button", { name: /^Duyuru \d/ })).toHaveCount(0);
 
   await page.reload();
-  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  const reloaded = page.getByTestId("dashboard-top-banner");
+  await expect(reloaded).toBeVisible();
+  await expect(reloaded.getByRole("button", { name: "Görevleri aç" })).toHaveCount(0);
 });
 
 test("iki günlük reklam hakkı ayrı tıklamalarla arka arkaya tamamlanır", async ({ page }) => {
@@ -105,12 +114,18 @@ test("iki günlük reklam hakkı ayrı tıklamalarla arka arkaya tamamlanır", a
   await expect(page.getByTestId("rewarded-ad-quest")).not.toContainText(
     "5 Coin hesabına işlendi.",
   );
-  await expect(page.getByTestId("dashboard-top-banner")).toContainText("5 Coin");
+  // One right left: the coin offer is still one of the card's two slides.
+  await expect(
+    page.getByTestId("dashboard-top-banner").getByRole("button", { name: /^Duyuru \d \/ 2$/ }),
+  ).toHaveCount(2);
   await expect(trigger).toBeEnabled();
   await trigger.click();
 
   await expect(page.getByTestId("rewarded-ad-quest")).toContainText("2/2");
-  await expect(page.getByTestId("dashboard-top-banner")).toHaveCount(0);
+  // Both rights used: the coin offer leaves the card, the trial is all that is left.
+  await expect(
+    page.getByTestId("dashboard-top-banner").getByRole("button", { name: /^Duyuru / }),
+  ).toHaveCount(0);
   expect(api.createKeys).toHaveLength(2);
   expect(api.createKeys[0]).toMatch(/^[0-9a-f-]{36}$/i);
   expect(new Set(api.createKeys).size).toBe(2);
@@ -198,7 +213,7 @@ const today: TodayPanelResponse = {
   greetingName: "Reklam Test",
   motivationalLine: "Bugün tek bir adım yeter.",
   countdown: null,
-  streak: { currentStreak: 0, longestStreak: 0, freezeTokens: 2 },
+  streak: IDLE_STREAK,
   tasks: [],
   nextAction: {
     kind: "ADD_TASK",
@@ -247,16 +262,9 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
   let completeCalls = 0;
   let closeCalls = 0;
   let rewardedCount = 0;
+  const rewardExpiresAt = new Date(Date.now() + 60 * 60 * 1000).toISOString();
   await page.addInitScript(() => {
     window.localStorage.setItem("mentor.analytics-consent.v1", "rejected");
-    window.localStorage.setItem(
-      "mentor_mood_prompt_deferred_date",
-      new Date().toISOString().slice(0, 10),
-    );
-    window.sessionStorage.setItem(
-      "mentor_panel_welcome_date",
-      new Date().toISOString().slice(0, 10),
-    );
     window.sessionStorage.setItem("mentor.desktop-coach-fab.nudge-dismissed", "1");
   });
   await page.route("**/v1/**", async (route) => {
@@ -346,7 +354,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionId,
         status: "CREATED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
       });
     }
     const completedSessionIndex = sessionIds.findIndex(
@@ -362,7 +370,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionIds[completedSessionIndex],
         status: "REWARDED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
         balance: rewardedCount * 5,
       });
     }
@@ -375,7 +383,7 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
         id: sessionIds[closedSessionIndex],
         status: "CLOSED",
         rewardCoin: 5,
-        expiresAt: "2026-08-29T14:00:00.000Z",
+        expiresAt: rewardExpiresAt,
       });
     }
     return json(route, { code: "TEST_NOT_RELEVANT", message: `${method} ${path}` }, 404);
@@ -387,12 +395,21 @@ async function mockDashboard(page: Page, options: DashboardOptions = {}) {
   };
 }
 
+/** Through the panel's quest card: the announcement card rotates, the quest card holds still. */
 async function openRewardedQuest(page: Page): Promise<void> {
   await page
-    .getByTestId("dashboard-top-banner")
-    .getByRole("button", { name: "Görevleri aç" })
+    .getByTestId("panel-quests-card")
+    .getByRole("button", { name: "Tüm görevler" })
     .click();
   await expect(page.getByTestId("rewarded-ad-quest")).toBeVisible();
+}
+
+/** Holds the rotating announcement card on one slide: hover pauses it, the dot picks the slide. */
+async function showAnnouncement(page: Page, index: number) {
+  const card = page.getByTestId("dashboard-top-banner");
+  await card.hover();
+  await card.getByRole("button", { name: new RegExp(`^Duyuru ${index} / `) }).click();
+  return card;
 }
 
 async function installRewardedGpt(page: Page, mode: "grant" | "close" | "empty" | "timeout") {

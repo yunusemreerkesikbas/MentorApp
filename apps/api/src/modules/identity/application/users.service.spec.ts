@@ -5,6 +5,28 @@ import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
 import { resolveExamVariantPatch, UsersService } from "./users.service";
 
+describe("UsersService verified notification contact", () => {
+  const verified = { status: "ACTIVE", email: "verified@test.local", displayName: "Coach",
+    emailVerifiedAt: new Date(), phoneVerifiedAt: new Date(), phoneNumber: "+905321234567" };
+  const serviceFor = (row: unknown) => new UsersService(
+    { findByIdService: vi.fn().mockResolvedValue(row) } as never, {} as never, {} as never,
+  );
+
+  it("returns the verified contact from one identity snapshot", async () => {
+    expect(await serviceFor(verified).getVerifiedNotificationContact("coach")).toEqual({
+      email: verified.email, displayName: verified.displayName,
+    });
+  });
+
+  it.each([
+    { ...verified, emailVerifiedAt: null }, { ...verified, phoneVerifiedAt: null },
+    { ...verified, phoneNumber: null }, { ...verified, status: "SUSPENDED" }, undefined,
+    { ...verified, erasureStartedAt: new Date() },
+  ])("does not release student digest contact to an unverified/inactive identity", async (row) => {
+    expect(await serviceFor(row).getVerifiedNotificationContact("coach")).toBeNull();
+  });
+});
+
 describe("usernameSchema", () => {
   it("normalizes valid usernames", () => {
     expect(usernameSchema.parse(" Student_01 ")).toBe("student_01");
@@ -22,7 +44,7 @@ describe("UsersService.updateMe", () => {
         throw Object.assign(new Error("unique"), { code: "23505" });
       }),
     };
-    const service = new UsersService(usersRepo as never, {} as never);
+    const service = new UsersService(usersRepo as never, {} as never, { emitAsync: vi.fn() } as never);
 
     await expect(
       service.updateMe("user-1", { username: "taken" }),
@@ -53,13 +75,128 @@ describe("UsersService.updateMe", () => {
     };
     const usersRepo = { updateSelf: vi.fn(async () => updated) };
     const storage = { getPublicUrl: vi.fn() };
-    const service = new UsersService(usersRepo as never, storage as never);
+    const service = new UsersService(usersRepo as never, storage as never, { emitAsync: vi.fn() } as never);
 
     await service.updateMe("user-1", { bio: "merhaba", website: null });
     expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
       bio: "merhaba",
       website: null,
     });
+  });
+
+  it("updates email and resets emailVerifiedAt to null when email changes", async () => {
+    const current = {
+      id: "user-1",
+      email: "old@example.com",
+      displayName: "Old",
+      username: "olduser",
+      avatarStorageKey: null,
+      bio: null,
+      website: null,
+      roles: ["STUDENT"],
+      organizationId: null,
+      examType: null,
+      examDate: null,
+      emailVerifiedAt: new Date(),
+      createdAt: new Date(),
+    };
+    const updated = { ...current, email: "new@example.com", emailVerifiedAt: null };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(async () => undefined),
+      updateSelf: vi.fn(async () => updated),
+    };
+    const storage = { getPublicUrl: vi.fn() };
+    const calls: string[] = [];
+    const authService = {
+      invalidateOutstandingVerification: vi.fn(async () => {
+        calls.push("invalidate");
+      }),
+      resendVerificationEmail: vi.fn(async () => {
+        calls.push("resend");
+      }),
+    };
+    const service = new UsersService(
+      usersRepo as never,
+      storage as never,
+      { emitAsync: vi.fn() } as never,
+      authService as never,
+    );
+
+    const res = await service.updateMe("user-1", { email: "new@example.com" });
+    expect(res.email).toBe("new@example.com");
+    expect(res.emailVerified).toBe(false);
+    expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
+      email: "new@example.com",
+      emailVerifiedAt: null,
+    });
+    expect(calls).toEqual(["invalidate", "resend"]);
+  });
+
+  it("rejects duplicate email with AUTH_EMAIL_IN_USE (409)", async () => {
+    const current = {
+      id: "user-1",
+      email: "old@example.com",
+      displayName: "Old",
+      username: "olduser",
+      roles: ["STUDENT"],
+    };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(async () => ({ id: "user-2", email: "taken@example.com" })),
+      updateSelf: vi.fn(),
+    };
+    const service = new UsersService(usersRepo as never, {} as never, { emitAsync: vi.fn() } as never);
+
+    await expect(
+      service.updateMe("user-1", { email: "taken@example.com" }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.AUTH_EMAIL_IN_USE,
+      httpStatus: HttpStatus.CONFLICT,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.updateSelf).not.toHaveBeenCalled();
+  });
+
+  it("does not reset emailVerifiedAt or send verification when email is unchanged", async () => {
+    const current = {
+      id: "user-1",
+      email: "same@example.com",
+      displayName: "Same",
+      username: "sameuser",
+      avatarStorageKey: null,
+      bio: null,
+      website: null,
+      roles: ["STUDENT"],
+      organizationId: null,
+      examType: null,
+      examDate: null,
+      emailVerifiedAt: new Date(),
+      createdAt: new Date(),
+    };
+    const updated = { ...current, displayName: "Updated Name" };
+    const usersRepo = {
+      findSelf: vi.fn(async () => current),
+      findByEmailService: vi.fn(),
+      updateSelf: vi.fn(async () => updated),
+    };
+    const authService = {
+      invalidateOutstandingVerification: vi.fn(),
+      resendVerificationEmail: vi.fn(),
+    };
+    const service = new UsersService(
+      usersRepo as never,
+      { getPublicUrl: vi.fn() } as never,
+      { emitAsync: vi.fn() } as never,
+      authService as never,
+    );
+
+    await service.updateMe("user-1", { displayName: "Updated Name", email: "same@example.com" });
+    expect(usersRepo.updateSelf).toHaveBeenCalledWith("user-1", {
+      displayName: "Updated Name",
+    });
+    expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
+    expect(authService.invalidateOutstandingVerification).not.toHaveBeenCalled();
+    expect(authService.resendVerificationEmail).not.toHaveBeenCalled();
   });
 });
 

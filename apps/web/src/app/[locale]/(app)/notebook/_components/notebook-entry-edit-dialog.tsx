@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useState } from "react";
 import { useTranslations } from "next-intl";
 import type {
   ExamSubjectDto,
@@ -10,7 +10,7 @@ import type {
 } from "@mentor/types";
 import { NOTEBOOK_ERROR_TYPES } from "@mentor/types";
 import { SectionHeading } from "@mentor/ui";
-import { MenuSelect } from "@/components/menu-select";
+import { TaxonomyCascadeSelect } from "@/components/taxonomy-cascade-select";
 import { FormError } from "@/components/form";
 import { NotebookCompactButton } from "@/components/notebook/notebook-compact-button";
 import { deleteNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
@@ -44,9 +44,6 @@ export function NotebookEntryEditDialog({
   onClose: () => void;
 }) {
   const t = useTranslations("notebook");
-  const reactId = useId();
-  const subjectLabelId = `notebook-edit-subject-${reactId}`;
-  const topicLabelId = `notebook-edit-topic-${reactId}`;
 
   const [errorType, setErrorType] = useState<NotebookErrorType>(
     entry.errorType,
@@ -56,10 +53,6 @@ export function NotebookEntryEditDialog({
   const [confirmingDelete, setConfirmingDelete] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
-  const subjectTopics = subjectRef
-    ? topics.filter((topic) => topic.subjectSlug === subjectRef)
-    : [];
 
   async function save() {
     setBusy(true);
@@ -172,55 +165,18 @@ export function NotebookEntryEditDialog({
           </div>
         </fieldset>
 
-        <div className="flex flex-col gap-1">
-          <span
-            id={subjectLabelId}
-            className="text-sm font-semibold"
-            style={{ color: "var(--color-main)" }}
-          >
-            {t("add_subject_label")}
-          </span>
-          <MenuSelect
-            value={subjectRef}
-            aria-labelledby={subjectLabelId}
-            options={[
-              { value: "", label: t("add_subject_none") },
-              ...subjects.map((subject) => ({
-                value: subject.slug,
-                label: subject.name,
-              })),
-            ]}
-            onChange={(next) => {
-              setSubjectRef(next);
-              // A hand-picked subject invalidates a topic that belonged to another one.
-              setTopicRef(null);
-            }}
-          />
-        </div>
-
-        {subjectTopics.length > 0 ? (
-          <div className="flex flex-col gap-1">
-            <span
-              id={topicLabelId}
-              className="text-sm font-semibold"
-              style={{ color: "var(--color-main)" }}
-            >
-              {t("add_topic_label")}
-            </span>
-            <MenuSelect
-              value={topicRef ?? ""}
-              aria-labelledby={topicLabelId}
-              options={[
-                { value: "", label: t("add_topic_none") },
-                ...subjectTopics.map((topic) => ({
-                  value: topic.slug,
-                  label: topic.name,
-                })),
-              ]}
-              onChange={(next) => setTopicRef(next || null)}
-            />
-          </div>
-        ) : null}
+        <TaxonomyCascadeSelect
+          subjects={subjects}
+          topics={topics}
+          subjectValue={subjectRef}
+          topicValue={topicRef ?? ""}
+          subjectLabel={t("add_subject_label")}
+          emptySubjectLabel={t("add_subject_none")}
+          topicLabel={t("add_topic_label")}
+          emptyTopicLabel={t("add_topic_none")}
+          onSubjectChange={setSubjectRef}
+          onTopicChange={(next) => setTopicRef(next || null)}
+        />
 
         <div className="flex gap-2">
           <NotebookCompactButton busy={busy} onClick={() => void save()}>

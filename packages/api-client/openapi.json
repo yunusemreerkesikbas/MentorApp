@@ -250,6 +250,30 @@
         ]
       }
     },
+    "/v1/auth/admin/login": {
+      "post": {
+        "operationId": "AuthController_adminLogin",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/google/start": {
       "get": {
         "operationId": "AuthController_googleStart",
@@ -267,6 +291,20 @@
     "/v1/auth/google/status": {
       "get": {
         "operationId": "AuthController_googleStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/coach-signup/status": {
+      "get": {
+        "operationId": "AuthController_coachSignupStatus",
         "parameters": [],
         "responses": {
           "200": {
@@ -306,9 +344,37 @@
         ]
       }
     },
+    "/v1/auth/admin/refresh": {
+      "post": {
+        "operationId": "AuthController_adminRefresh",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/v1/auth/logout": {
       "post": {
         "operationId": "AuthController_logout",
+        "parameters": [],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/v1/auth/admin/logout": {
+      "post": {
+        "operationId": "AuthController_adminLogout",
         "parameters": [],
         "responses": {
           "204": {
@@ -644,6 +710,113 @@
         ]
       }
     },
+    "/v1/users/me/phone": {
+      "get": {
+        "operationId": "PhoneController_getStatus",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
+    "/v1/users/me/phone/verifications": {
+      "post": {
+        "operationId": "PhoneController_requestVerification",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneVerificationRequestDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneVerificationResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
+    "/v1/users/me/phone/verifications/{challengeId}/confirm": {
+      "post": {
+        "operationId": "PhoneController_confirmVerification",
+        "parameters": [
+          {
+            "name": "challengeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PhoneVerificationConfirmDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PhoneStatusResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "phone"
+        ]
+      }
+    },
     "/v1/coach/access": {
       "get": {
         "operationId": "AiChatController_getAccess",
@@ -788,6 +961,25 @@
         ]
       }
     },
+    "/v1/coach/plan-adaptation/brief": {
+      "get": {
+        "operationId": "AiChatController_planAdaptationBrief",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "ai"
+        ]
+      }
+    },
     "/v1/coach/plan-adaptation": {
       "post": {
         "operationId": "AiChatController_planAdaptationPreview",
@@ -814,6 +1006,35 @@
                       "note": {
                         "type": "string",
                         "maxLength": 500
+                      },
+                      "days": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 7
+                      },
+                      "studyWeekdays": {
+                        "type": "array",
+                        "minItems": 1,
+                        "maxItems": 7,
+                        "uniqueItems": true,
+                        "items": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 7
+                        }
+                      },
+                      "minutesPerDay": {
+                        "type": "integer",
+                        "minimum": 10,
+                        "maximum": 600
+                      },
+                      "focusSubjects": {
+                        "type": "array",
+                        "maxItems": 30,
+                        "items": {
+                          "type": "string",
+                          "maxLength": 80
+                        }
                       }
                     }
                   },
@@ -1545,6 +1766,29 @@
         ]
       }
     },
+    "/v1/content/exams/by-type/{type}": {
+      "get": {
+        "operationId": "ContentController_currentExamByFamily",
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "tags": [
+          "content"
+        ]
+      }
+    },
     "/v1/content/exams/by-type/{type}/calendar": {
       "get": {
         "operationId": "ContentController_calendarByFamily",
@@ -2113,7 +2357,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionViewResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -2199,7 +2450,14 @@
         "parameters": [],
         "responses": {
           "200": {
-            "description": ""
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubscriptionViewResponseDto"
+                }
+              }
+            }
           }
         },
         "security": [
@@ -4112,6 +4370,25 @@
         ]
       }
     },
+    "/v1/coaching/notebook/contents": {
+      "get": {
+        "operationId": "MistakeNotebookController_getContents",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/notebook/pages/{index}": {
       "get": {
         "operationId": "MistakeNotebookController_getPage",
@@ -4312,6 +4589,34 @@
         ]
       }
     },
+    "/v1/coaching/notebooks/{id}/contents": {
+      "get": {
+        "operationId": "NotebooksController_getContents",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "coaching"
+        ]
+      }
+    },
     "/v1/coaching/notebooks/{id}/pages/{index}": {
       "get": {
         "operationId": "NotebooksController_getPage",
@@ -4436,6 +4741,92 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/rewards/unseen": {
+      "get": {
+        "operationId": "EconomyController_unseen",
+        "parameters": [
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnseenRewardsDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "economy"
+        ]
+      }
+    },
+    "/v1/economy/rewards/seen": {
+      "post": {
+        "operationId": "EconomyController_seen",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "ledgerIds"
+                ],
+                "properties": {
+                  "ledgerIds": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "items": {
+                      "type": "string",
+                      "format": "uuid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
             "description": ""
           }
         },
@@ -6929,6 +7320,80 @@
         ]
       }
     },
+    "/v1/mentorship/students/{studentId}/planning-tasks": {
+      "get": {
+        "operationId": "MentorshipCoachController_listPlanningTasks",
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipPlanningPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
     "/v1/mentorship/overview": {
       "get": {
         "operationId": "MentorshipCoachController_getOverview",
@@ -7737,6 +8202,441 @@
         ],
         "tags": [
           "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/note": {
+      "put": {
+        "operationId": "MentorshipStudentController_setNote",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipStudentNoteDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/weekly-reports": {
+      "get": {
+        "operationId": "MentorshipStudentController_myWeeklyReports",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/my-coach/weekly-reports/{reportId}": {
+      "get": {
+        "operationId": "MentorshipStudentController_myWeeklyReport",
+        "parameters": [
+          {
+            "name": "reportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportShareResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/preview": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_preview",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/brief": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_readBrief",
+        "parameters": [
+          {
+            "name": "weekStart",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      },
+      "post": {
+        "operationId": "MentorshipWeeklyReportController_generateBrief",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyPreviewResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/finalize": {
+      "post": {
+        "operationId": "MentorshipWeeklyReportController_finalize",
+        "parameters": [
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FinalizeMentorshipWeeklyReportDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_list",
+        "parameters": [
+          {
+            "name": "page",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "minimum": 1,
+              "maximum": 100,
+              "default": 20,
+              "type": "number"
+            }
+          },
+          {
+            "name": "studentId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportPageResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/{reportId}/share": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_share",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportShareResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
+        ]
+      }
+    },
+    "/v1/mentorship/students/{studentId}/weekly-reports/{reportId}": {
+      "get": {
+        "operationId": "MentorshipWeeklyReportController_get",
+        "parameters": [
+          {
+            "name": "studentId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "name": "reportId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MentorshipWeeklyReportResponseDto"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "mentorship-weekly-reports"
         ]
       }
     },
@@ -9929,6 +10829,95 @@
         "type": "object",
         "properties": {}
       },
+      "PhoneStatusResponseDto": {
+        "type": "object",
+        "properties": {
+          "verified": {
+            "type": "boolean"
+          },
+          "maskedPhoneNumber": {
+            "type": "string",
+            "nullable": true
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "reauthenticationRequired": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "verified",
+          "maskedPhoneNumber",
+          "available",
+          "reauthenticationRequired"
+        ]
+      },
+      "PhoneVerificationRequestDto": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "example": "+905321234567",
+            "maxLength": 32
+          },
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048
+          }
+        },
+        "required": [
+          "phoneNumber"
+        ]
+      },
+      "PhoneVerificationResponseDto": {
+        "type": "object",
+        "properties": {
+          "challengeId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resendAvailableAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "maskedPhoneNumber": {
+            "type": "string"
+          },
+          "sendStatus": {
+            "type": "string",
+            "enum": [
+              "SENT",
+              "UNKNOWN"
+            ]
+          }
+        },
+        "required": [
+          "challengeId",
+          "expiresAt",
+          "resendAvailableAt",
+          "maskedPhoneNumber",
+          "sendStatus"
+        ]
+      },
+      "PhoneVerificationConfirmDto": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "pattern": "^\\d{6}$",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        },
+        "required": [
+          "code"
+        ]
+      },
       "AiChatDto": {
         "type": "object",
         "properties": {
@@ -9961,7 +10950,15 @@
       },
       "CommunityCoachPlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "PlanDraftBodyDto": {
         "type": "object",
@@ -10064,17 +11061,269 @@
         "type": "object",
         "properties": {}
       },
+      "FeaturePolicyResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "coach.chat",
+              "photo.categorize",
+              "plan.ai",
+              "mood.reflection",
+              "ghost.narration",
+              "vision.note",
+              "session.reflection",
+              "weekly.narration",
+              "daily.greeting",
+              "deep.analysis",
+              "mentorship.brief",
+              "mentorship.cohort_brief",
+              "mentorship.suggestions"
+            ]
+          },
+          "freeEnabled": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "number"
+          },
+          "window": {
+            "type": "string",
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "freeEnabled",
+          "limit",
+          "window"
+        ]
+      },
+      "SubscriptionResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "planId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "INCOMPLETE",
+              "TRIALING",
+              "ACTIVE",
+              "PAST_DUE",
+              "CANCELED",
+              "EXPIRED"
+            ]
+          },
+          "startedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "trialEndsAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentPeriodStart": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "currentPeriodEnd": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "cancelAtPeriodEnd": {
+            "type": "boolean"
+          },
+          "sponsored": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "planId",
+          "status",
+          "startedAt",
+          "trialEndsAt",
+          "currentPeriodStart",
+          "currentPeriodEnd",
+          "cancelAtPeriodEnd",
+          "sponsored"
+        ]
+      },
+      "EntitlementResponseDto": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string",
+            "enum": [
+              "FREE",
+              "PREMIUM"
+            ]
+          },
+          "isPremium": {
+            "type": "boolean"
+          },
+          "validUntil": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "tier",
+          "isPremium",
+          "validUntil",
+          "reason"
+        ]
+      },
+      "SubscriptionDiscountResponseDto": {
+        "type": "object",
+        "properties": {
+          "listPriceMinor": {
+            "type": "number"
+          },
+          "discountMinor": {
+            "type": "number"
+          },
+          "chargedPriceMinor": {
+            "type": "number"
+          },
+          "periodsRemaining": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "listPriceMinor",
+          "discountMinor",
+          "chargedPriceMinor",
+          "periodsRemaining"
+        ]
+      },
+      "TrialEligibilityResponseDto": {
+        "type": "object",
+        "properties": {
+          "eligible": {
+            "type": "boolean"
+          },
+          "reason": {
+            "type": "string",
+            "enum": [
+              "AVAILABLE",
+              "PHONE_REQUIRED",
+              "ACCOUNT_USED",
+              "PHONE_USED",
+              "PENDING",
+              "NO_TRIAL"
+            ]
+          }
+        },
+        "required": [
+          "eligible",
+          "reason"
+        ]
+      },
+      "SubscriptionViewResponseDto": {
+        "type": "object",
+        "properties": {
+          "subscription": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionResponseDto"
+              }
+            ]
+          },
+          "entitlement": {
+            "$ref": "#/components/schemas/EntitlementResponseDto"
+          },
+          "features": {
+            "type": "object",
+            "additionalProperties": {
+              "$ref": "#/components/schemas/FeaturePolicyResponseDto"
+            }
+          },
+          "discount": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/SubscriptionDiscountResponseDto"
+              }
+            ]
+          },
+          "trialEligibility": {
+            "$ref": "#/components/schemas/TrialEligibilityResponseDto"
+          },
+          "pendingTrialCheckoutUrl": {
+            "type": "string",
+            "nullable": true
+          },
+          "pendingCheckoutUrl": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "subscription",
+          "entitlement",
+          "features",
+          "discount",
+          "trialEligibility",
+          "pendingTrialCheckoutUrl",
+          "pendingCheckoutUrl"
+        ]
+      },
       "PromotionOffersDto": {
         "type": "object",
         "properties": {}
       },
       "CheckoutDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "planId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "code": {
+            "type": "string"
+          },
+          "useTrial": {
+            "type": "boolean",
+            "description": "True requires an eligible carded trial. False purchases directly. Omission preserves automatic trial selection."
+          }
+        },
+        "required": [
+          "planId"
+        ]
       },
       "CreateAnalysisPlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "CompleteWeeklyReviewDto": {
         "type": "object",
@@ -10106,23 +11355,90 @@
       },
       "CreatePlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "BulkCreatePlanTasksDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "tasks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "durationMinutes": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 200,
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "ApplyPlanAdaptationDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "changes": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "additionalProperties": true,
+              "properties": {
+                "durationMinutes": {
+                  "type": "integer",
+                  "minimum": 5,
+                  "maximum": 200,
+                  "nullable": true
+                }
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "UpdatePlanTaskDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "StartStudySessionDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "focusMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": false
+          },
+          "preset": {
+            "type": "string",
+            "enum": [
+              "25_5",
+              "50_10",
+              "custom",
+              "stopwatch"
+            ]
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateStudySessionDto": {
         "type": "object",
@@ -10179,6 +11495,87 @@
       "UpdateNotebookDto": {
         "type": "object",
         "properties": {}
+      },
+      "RewardLedgerEntryDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "unit": {
+            "type": "string",
+            "enum": [
+              "XP",
+              "COIN"
+            ]
+          },
+          "amount": {
+            "type": "integer"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "CONFIRMED",
+              "REVERSED"
+            ]
+          },
+          "note": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "unit",
+          "amount",
+          "reason",
+          "status",
+          "note",
+          "title",
+          "description",
+          "createdAt"
+        ]
+      },
+      "UnseenRewardsDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RewardLedgerEntryDto"
+            }
+          },
+          "total": {
+            "type": "integer"
+          },
+          "page": {
+            "type": "integer"
+          },
+          "pageSize": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
       },
       "DeepAnalysisDto": {
         "type": "object",
@@ -10562,6 +11959,76 @@
         "type": "object",
         "properties": {}
       },
+      "MentorshipPlanningTaskResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "taskDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "title": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string",
+            "nullable": true
+          },
+          "topic": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "string"
+          },
+          "assignedByCoach": {
+            "type": "boolean"
+          },
+          "coachNote": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "taskDate",
+          "title",
+          "subject",
+          "topic",
+          "status",
+          "assignedByCoach",
+          "coachNote"
+        ]
+      },
+      "MentorshipPlanningPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipPlanningTaskResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
       "CreateMentorshipAssignmentsDto": {
         "type": "object",
         "properties": {}
@@ -10580,15 +12047,45 @@
       },
       "CreateMentorshipBatchAssignmentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "task": {
+            "type": "object",
+            "additionalProperties": true,
+            "properties": {
+              "durationMinutes": {
+                "type": "integer",
+                "minimum": 5,
+                "maximum": 200,
+                "nullable": true
+              }
+            }
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateMentorshipAssignmentDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "UpdateMentorshipAssignmentGroupDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "durationMinutes": {
+            "type": "integer",
+            "minimum": 5,
+            "maximum": 200,
+            "nullable": true
+          }
+        },
+        "additionalProperties": true
       },
       "RemoveMentorshipAssignmentGroupDto": {
         "type": "object",
@@ -10609,6 +12106,837 @@
       "MentorshipInviteCodeParamDto": {
         "type": "object",
         "properties": {}
+      },
+      "MentorshipStudentNoteDto": {
+        "type": "object",
+        "properties": {}
+      },
+      "MentorshipWeeklyPeriodResponseDto": {
+        "type": "object",
+        "properties": {
+          "startDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousStartDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "previousEndDate": {
+            "type": "string",
+            "format": "date"
+          },
+          "timeZone": {
+            "type": "string",
+            "enum": [
+              "Europe/Istanbul"
+            ]
+          }
+        },
+        "required": [
+          "startDate",
+          "endDate",
+          "previousStartDate",
+          "previousEndDate",
+          "timeZone"
+        ]
+      },
+      "MentorshipWeeklyReportListItemResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "period",
+          "version",
+          "finalizedAt",
+          "replacesId"
+        ]
+      },
+      "MentorshipWeeklyReportPageResponseDto": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyReportListItemResponseDto"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "pageSize": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "items",
+          "total",
+          "page",
+          "pageSize"
+        ]
+      },
+      "MentorshipWeeklyMetricsResponseDto": {
+        "type": "object",
+        "properties": {
+          "focusMinutes": {
+            "type": "number"
+          },
+          "sessions": {
+            "type": "number"
+          },
+          "activeDays": {
+            "type": "number"
+          },
+          "plannedTasks": {
+            "type": "number"
+          },
+          "completedTasks": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number",
+            "nullable": true
+          },
+          "hasRecordedActivity": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "focusMinutes",
+          "sessions",
+          "activeDays",
+          "plannedTasks",
+          "completedTasks",
+          "completionRate",
+          "hasRecordedActivity"
+        ]
+      },
+      "MentorshipWeeklyDeltasResponseDto": {
+        "type": "object",
+        "properties": {
+          "focusMinutes": {
+            "type": "number"
+          },
+          "sessions": {
+            "type": "number"
+          },
+          "activeDays": {
+            "type": "number"
+          },
+          "plannedTasks": {
+            "type": "number"
+          },
+          "completedTasks": {
+            "type": "number"
+          },
+          "completionRate": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "focusMinutes",
+          "sessions",
+          "activeDays",
+          "plannedTasks",
+          "completedTasks",
+          "completionRate"
+        ]
+      },
+      "MentorshipWeeklySubjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentFocusMinutes": {
+            "type": "number"
+          },
+          "currentSessions": {
+            "type": "number"
+          },
+          "previousFocusMinutes": {
+            "type": "number"
+          },
+          "previousSessions": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "subjectRef",
+          "currentFocusMinutes",
+          "currentSessions",
+          "previousFocusMinutes",
+          "previousSessions"
+        ]
+      },
+      "MentorshipWeeklyMockSubjectResponseDto": {
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string"
+          },
+          "currentAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "previousAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentAttemptCount": {
+            "type": "number"
+          },
+          "previousAttemptCount": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "subjectRef",
+          "currentAverageNet",
+          "previousAverageNet",
+          "currentAttemptCount",
+          "previousAttemptCount"
+        ]
+      },
+      "MentorshipWeeklyMockResponseDto": {
+        "type": "object",
+        "properties": {
+          "examScopeName": {
+            "type": "string",
+            "nullable": true
+          },
+          "currentAttemptCount": {
+            "type": "number"
+          },
+          "previousAttemptCount": {
+            "type": "number"
+          },
+          "currentAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "previousAverageNet": {
+            "type": "number",
+            "nullable": true
+          },
+          "currentPublishers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "previousPublishers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyMockSubjectResponseDto"
+            }
+          }
+        },
+        "required": [
+          "examScopeName",
+          "currentAttemptCount",
+          "previousAttemptCount",
+          "currentAverageNet",
+          "previousAverageNet",
+          "currentPublishers",
+          "previousPublishers",
+          "subjects"
+        ]
+      },
+      "MentorshipWeeklyShareSnapshotResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "current": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "deltas": {
+            "$ref": "#/components/schemas/MentorshipWeeklyDeltasResponseDto"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklySubjectResponseDto"
+            }
+          },
+          "mocks": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMockResponseDto"
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NO_CURRENT_ACTIVITY",
+                "NO_PREVIOUS_ACTIVITY",
+                "NO_CURRENT_MOCK",
+                "NO_PREVIOUS_MOCK",
+                "MIXED_MOCK_SCOPE",
+                "MOCK_PUBLISHERS_DIFFER",
+                "LIMITED_MOCK_ATTEMPTS",
+                "UNCLASSIFIED_SESSIONS"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "current",
+          "previous",
+          "deltas",
+          "subjects",
+          "mocks",
+          "limitations"
+        ]
+      },
+      "MentorshipWeeklyReportShareResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "coachDisplayName": {
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklyShareSnapshotResponseDto"
+          },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "studentDisplayName",
+          "coachDisplayName",
+          "period",
+          "version",
+          "finalizedAt",
+          "snapshot",
+          "subjectNames",
+          "coachEvaluation"
+        ]
+      },
+      "MentorshipWeeklyEvidenceResponseDto": {
+        "type": "object",
+        "properties": {
+          "subjectRef": {
+            "type": "string"
+          },
+          "currentAttemptCount": {
+            "type": "number"
+          },
+          "previousAttemptCount": {
+            "type": "number"
+          },
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "FOCUS_MINUTES",
+              "SESSIONS",
+              "ACTIVE_DAYS",
+              "PLANNED_TASKS",
+              "COMPLETED_TASKS",
+              "COMPLETION_RATE",
+              "MOCK_AVERAGE"
+            ]
+          },
+          "current": {
+            "type": "number",
+            "nullable": true
+          },
+          "previous": {
+            "type": "number",
+            "nullable": true
+          },
+          "delta": {
+            "type": "number",
+            "nullable": true
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "current",
+          "previous",
+          "delta"
+        ]
+      },
+      "MentorshipWeeklySnapshotResponseDto": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "current": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMetricsResponseDto"
+          },
+          "deltas": {
+            "$ref": "#/components/schemas/MentorshipWeeklyDeltasResponseDto"
+          },
+          "subjects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklySubjectResponseDto"
+            }
+          },
+          "mocks": {
+            "$ref": "#/components/schemas/MentorshipWeeklyMockResponseDto"
+          },
+          "evidence": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyEvidenceResponseDto"
+            }
+          },
+          "limitations": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "NO_CURRENT_ACTIVITY",
+                "NO_PREVIOUS_ACTIVITY",
+                "NO_CURRENT_MOCK",
+                "NO_PREVIOUS_MOCK",
+                "MIXED_MOCK_SCOPE",
+                "MOCK_PUBLISHERS_DIFFER",
+                "LIMITED_MOCK_ATTEMPTS",
+                "UNCLASSIFIED_SESSIONS"
+              ]
+            }
+          }
+        },
+        "required": [
+          "period",
+          "current",
+          "previous",
+          "deltas",
+          "subjects",
+          "mocks",
+          "evidence",
+          "limitations"
+        ]
+      },
+      "MentorshipPreparationObservationResponseDto": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "text",
+          "evidenceIds"
+        ]
+      },
+      "MentorshipMeetingPreparationResponseDto": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "number",
+            "enum": [
+              1
+            ]
+          },
+          "focus": {
+            "$ref": "#/components/schemas/MentorshipPreparationObservationResponseDto"
+          },
+          "progress": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MentorshipPreparationObservationResponseDto"
+              }
+            ]
+          },
+          "uncertainty": {
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "nextStep": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "required": [
+          "version",
+          "focus",
+          "progress",
+          "uncertainty",
+          "question",
+          "nextStep"
+        ]
+      },
+      "MentorshipWeeklyBriefFindingResponseDto": {
+        "type": "object",
+        "properties": {
+          "observation": {
+            "type": "string"
+          },
+          "evidenceIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "uncertainty": {
+            "type": "string"
+          },
+          "conversationQuestion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "observation",
+          "evidenceIds",
+          "uncertainty",
+          "conversationQuestion"
+        ]
+      },
+      "MentorshipWeeklyBriefResponseDto": {
+        "type": "object",
+        "properties": {
+          "preparation": {
+            "$ref": "#/components/schemas/MentorshipMeetingPreparationResponseDto"
+          },
+          "coachContext": {
+            "type": "string",
+            "nullable": true
+          },
+          "findings": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MentorshipWeeklyBriefFindingResponseDto"
+            }
+          },
+          "model": {
+            "type": "string"
+          },
+          "generatedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "promptVersion": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "findings",
+          "model",
+          "generatedAt",
+          "locale",
+          "promptVersion"
+        ]
+      },
+      "MentorshipWeeklyPreviewResponseDto": {
+        "type": "object",
+        "properties": {
+          "coachContext": {
+            "type": "string",
+            "nullable": true
+          },
+          "briefFingerprint": {
+            "type": "string",
+            "nullable": true
+          },
+          "briefGenerationId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "draftId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "DRAFT",
+              "BRIEF_PENDING",
+              "BRIEF_READY",
+              "BRIEF_FAILED",
+              "FINALIZED"
+            ]
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
+          },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
+          "brief": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "draftId",
+          "studentId",
+          "studentDisplayName",
+          "sourceFingerprint",
+          "status",
+          "snapshot",
+          "subjectNames",
+          "brief"
+        ]
+      },
+      "MentorshipWeeklyBriefDto": {
+        "type": "object",
+        "properties": {
+          "coachContext": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "weekStart",
+          "sourceFingerprint"
+        ]
+      },
+      "FinalizeMentorshipWeeklyReportDto": {
+        "type": "object",
+        "properties": {
+          "weekStart": {
+            "type": "string",
+            "format": "date"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "operationId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true,
+            "maxLength": 1200
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          }
+        },
+        "required": [
+          "weekStart",
+          "sourceFingerprint",
+          "operationId"
+        ]
+      },
+      "MentorshipWeeklyReportResponseDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "locale": {
+            "type": "string",
+            "enum": [
+              "tr",
+              "en"
+            ]
+          },
+          "period": {
+            "$ref": "#/components/schemas/MentorshipWeeklyPeriodResponseDto"
+          },
+          "version": {
+            "type": "number"
+          },
+          "finalizedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "replacesId": {
+            "type": "string",
+            "nullable": true,
+            "format": "uuid"
+          },
+          "studentId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "studentDisplayName": {
+            "type": "string"
+          },
+          "sourceFingerprint": {
+            "type": "string",
+            "minLength": 64,
+            "maxLength": 64
+          },
+          "snapshot": {
+            "$ref": "#/components/schemas/MentorshipWeeklySnapshotResponseDto"
+          },
+          "subjectNames": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "Subject slug → display name for the week's subjects; a slug content no longer knows is absent."
+          },
+          "coachEvaluation": {
+            "type": "string",
+            "nullable": true
+          },
+          "brief": {
+            "nullable": true,
+            "type": "object",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MentorshipWeeklyBriefResponseDto"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "locale",
+          "period",
+          "version",
+          "finalizedAt",
+          "replacesId",
+          "studentId",
+          "studentDisplayName",
+          "sourceFingerprint",
+          "snapshot",
+          "subjectNames",
+          "coachEvaluation",
+          "brief"
+        ]
       },
       "UpdateUserStatusDto": {
         "type": "object",

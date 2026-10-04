@@ -120,6 +120,11 @@ describe("postAuthDestination for a coach (APP-090)", () => {
     ).toBe("/plan?date=2026-09-09&event=11111111-1111-4111-8111-111111111111");
   });
 
+  it("returns a coach to phone settings after signing in again", () => {
+    expect(postAuthDestination(user(coach), "/settings?section=phone")).toBe("/settings?section=phone");
+    expect(postAuthDestination(user(coach), "//evil.example/settings")).toBe("/students");
+  });
+
   it("still onboards a coach whose profile is unfinished", () => {
     // The role does not skip the gate: `(app)` and `(coach)` both need a username.
     expect(postAuthDestination(user({ roles: ["STUDENT", "COACH"] }))).toBe("/onboarding");

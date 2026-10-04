@@ -1,0 +1,19 @@
+{
+  "capturedAt": "2026-09-25T21:35:01.0897727Z",
+  "head": "3055c2ff128ce790e29b85cceb4ddfa537779f6b",
+  "files": [
+    {
+      "path": "apps/web/e2e/knowledge.spec.ts",
+      "sha256": "31a2b407010ad51397a922d5b7785bc1ece8dae265d339ce5d59d74d020f33cf"
+    },
+    {
+      "path": "apps/web/e2e/notebooks.spec.ts",
+      "sha256": "394af3330e6899f8683ac960caa6c9ab7f50a9a7050def45d9596b4996233f07"
+    },
+    {
+      "path": "apps/web/src/components/popover-menu.tsx",
+      "sha256": "51584748e9488d7e9885522812d1d3ca44ab4cf56416cb54e1f777b4c9df0228"
+    }
+  ],
+  "deleted": []
+}

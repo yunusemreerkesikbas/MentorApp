@@ -1,0 +1,2 @@
+ALTER TABLE "plan_tasks" ADD COLUMN "duration_minutes" integer;--> statement-breakpoint
+ALTER TABLE "plan_tasks" ADD CONSTRAINT "plan_tasks_duration_minutes_chk" CHECK ("plan_tasks"."duration_minutes" between 5 and 200);

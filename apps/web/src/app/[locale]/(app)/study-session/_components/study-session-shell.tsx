@@ -1,8 +1,7 @@
 "use client";
 
-import { History, PanelLeft } from "lucide-react";
 import { useEffect, useRef, useState, useSyncExternalStore } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import type {
@@ -12,16 +11,13 @@ import type {
   StudyRoomTheme,
 } from "@mentor/types";
 import { ApiClientError, coachingControllerGetToday } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
-import {
-  HistorySideDrawer,
-  HistorySideRail,
-} from "@/components/history-side-panel";
+import { CompletionOverlay } from "@mentor/ui";
+import { HistorySideDrawer } from "@/components/history-side-panel";
 import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { getStudyRoom, updateStudyRoom } from "@/lib/study-rooms";
-import { ROOM_CURTAIN_MS, STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
+import { STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
 import {
   getServerSessionScene,
   getSessionScene,
@@ -43,11 +39,12 @@ import { SessionFocusView } from "./session-focus-view";
 import { SessionBuddyCard } from "./session-buddy-card";
 import { SessionControls } from "./session-controls";
 import { SessionDoneState } from "./session-done-state";
-import { RoomBackdropSlide } from "./room-backdrop-slide";
-import { SessionFocusGoalCard } from "./session-focus-goal-card";
 import { SessionHistory } from "./session-history";
+import { SessionIdleView } from "./session-idle-view";
 import { SessionRoomList } from "./session-room-list";
-import { SessionTimerRing } from "./session-timer-ring";
+import { SessionStage } from "./session-stage";
+import { measureIdleRing, SessionTimerRing, type RingCenter } from "./session-timer-ring";
+import { SessionTodayCard } from "./session-today-card";
 import { useSessionAmbientSound } from "./use-session-ambient-sound";
 import { useSessionTimer } from "./use-session-timer";
 
@@ -55,7 +52,6 @@ import { useSessionTimer } from "./use-session-timer";
  * Pomodoro session UI — setup dial (idle), immersive focus/break, done summary.
  */
 export function StudySessionShell() {
-  const reduceMotion = useReducedMotion();
   const t = useTranslations("session");
   const searchParams = useSearchParams();
   const presetParam = searchParams.get("preset");
@@ -87,7 +83,8 @@ export function StudySessionShell() {
 
   const [presets, setPresets] = useState<SessionPresetDto[]>(DEFAULT_PRESETS);
   const [presetNotice, setPresetNotice] = useState<string | null>(null);
-  const [focusGoal, setFocusGoal] = useState<FocusGoalDto | null>(null);
+  /** `undefined` while `/coaching/today` loads, `null` if it failed (the "Bugün" card hides). */
+  const [focusGoal, setFocusGoal] = useState<FocusGoalDto | null | undefined>(undefined);
   const [focusingNow, setFocusingNow] = useState<number | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(() =>
@@ -98,13 +95,16 @@ export function StudySessionShell() {
   >(null);
   const [streakBaseline, setStreakBaseline] = useState<number | null>(null);
   const [historyOpen, setHistoryOpen] = useState(false);
-  const [railOpen, setRailOpen] = useState(true);
   const [seatedRoom, setSeatedRoom] = useState<
     { id: string; name: string; theme: StudyRoomTheme; isOwner: boolean } | null
   >(null);
   const [themeBusy, setThemeBusy] = useState(false);
   /** Which way the ground travels on the next theme change — set by the arrow you pressed. */
   const [themeDirection, setThemeDirection] = useState<1 | -1>(1);
+  /** Where the setup ring stood when Start was pressed; the running ring flies in from there. */
+  const [ringFrom, setRingFrom] = useState<RingCenter | null>(null);
+  /** The session just finished, so the Bugün card can grow it into the day's strip. */
+  const [freshSessionId, setFreshSessionId] = useState<string | null>(null);
 
   const scene = useSyncExternalStore(
     subscribeSessionScene,
@@ -164,12 +164,13 @@ export function StudySessionShell() {
           setPresets(data.sessionPresets);
           setPresetNotice(null);
         }
-        if (data.focusGoal) setFocusGoal(data.focusGoal);
+        setFocusGoal(data.focusGoal ?? null);
         setFocusingNow(data.focusingNow ?? null);
       })
       .catch((err: unknown) => {
         if (!active) return;
         setPresets(DEFAULT_PRESETS);
+        setFocusGoal((goal) => goal ?? null);
         setPresetNotice(
           err instanceof ApiClientError ? err.message : t("preset_fallback"),
         );
@@ -189,6 +190,8 @@ export function StudySessionShell() {
     focusMinutes,
     breakMinutes,
     secondsLeft,
+    isStopwatch,
+    selectStopwatch,
     focusElapsed,
     isPaused,
     busy,
@@ -203,6 +206,9 @@ export function StudySessionShell() {
     reset,
   } = timer;
 
+  // A curtain that never finished (the phase left setup first) must not replay on the way back.
+  if (phase !== "idle" && curtain) setCurtain(false);
+
   const ambient = useSessionAmbientSound({
     phase,
     isPaused,
@@ -213,8 +219,9 @@ export function StudySessionShell() {
   useEffect(() => {
     initialTitleRef.current ??= document.title;
     if (phase === "focus" || phase === "break") {
-      const mm = String(Math.floor(secondsLeft / 60)).padStart(2, "0");
-      const ss = String(secondsLeft % 60).padStart(2, "0");
+      const displaySeconds = isStopwatch ? focusElapsed : secondsLeft;
+      const mm = String(Math.floor(displaySeconds / 60)).padStart(2, "0");
+      const ss = String(displaySeconds % 60).padStart(2, "0");
       const label =
         phase === "break"
           ? t("break_label")
@@ -225,7 +232,7 @@ export function StudySessionShell() {
     } else {
       document.title = initialTitleRef.current;
     }
-  }, [phase, secondsLeft, isPaused, t]);
+  }, [phase, secondsLeft, isStopwatch, focusElapsed, isPaused, t]);
   useEffect(
     () => () => {
       if (initialTitleRef.current) document.title = initialTitleRef.current;
@@ -247,6 +254,8 @@ export function StudySessionShell() {
       setQuestBaseline(null);
       setStreakBaseline(null);
     }
+    // Measured last, right before the phase changes: a scroll during the fetches above moves it.
+    setRingFrom(measureIdleRing());
     const started = await startSession();
     if (
       started &&
@@ -259,6 +268,8 @@ export function StudySessionShell() {
   };
 
   const handleReset = () => {
+    setFreshSessionId(session?.id ?? null);
+    setRingFrom(null);
     setQuestBaseline(null);
     setStreakBaseline(null);
     setPlanTaskContext({ taskTitle: null, taskId: null });
@@ -278,18 +289,6 @@ export function StudySessionShell() {
     selectPreset(presetId, minutes, breakLen);
     setSelectedPresetId(presetId);
   };
-
-  const phaseMotion = reduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 10 },
-        animate: {
-          opacity: 1,
-          y: 0,
-          transition: { duration: 0.25, ease: "easeOut" as const },
-        },
-        exit: { opacity: 0, y: -6, transition: { duration: 0.15 } },
-      };
 
   const planTaskTitle = planTaskContext.taskTitle;
   const planTaskChip = planTaskTitle ? (
@@ -344,10 +343,14 @@ export function StudySessionShell() {
       focusMinutes={focusMinutes}
       breakMinutes={breakMinutes}
       secondsLeft={secondsLeft}
+      isStopwatch={isStopwatch}
+      focusElapsed={focusElapsed}
+      onStopwatchSelect={() => { selectStopwatch(); setSelectedPresetId("stopwatch"); }}
       presets={presets}
       selectedPresetId={selectedPresetId}
       onMinutesChange={handleMinutesChange}
       onPresetSelect={handlePresetSelect}
+      flyFrom={phase === "focus" || phase === "break" ? ringFrom : null}
     />
   );
 
@@ -364,31 +367,89 @@ export function StudySessionShell() {
     />
   );
 
-  if (phase === "focus" || phase === "break") {
-    return (
-      <SessionFocusView
-        groundTheme={groundTheme}
-        themeDirection={themeDirection}
-        topBar={renderTopBar(true)}
-        planTaskChip={planTaskChip}
-        phase={phase}
-        phaseLabel={phaseLabel}
-        timerRing={timerRing}
-        sessionControls={sessionControls}
-        phaseMotion={phaseMotion}
-      />
-    );
-  }
+  const renderIdle = () => (
+    <SessionIdleView
+      key="idle"
+      groundTheme={groundTheme}
+      curtain={curtain}
+      onCurtainDone={() => setCurtain(false)}
+      topBar={renderTopBar(false)}
+      timer={
+        <>
+          {presetNotice ? (
+            <p role="status" className="text-center text-body-sm font-semibold text-[var(--color-secondary)]">
+              {presetNotice}
+            </p>
+          ) : null}
+          {planTaskChip}
+          {timerRing}
+          <SessionSetupSummary isStopwatch={isStopwatch} focusMinutes={focusMinutes} breakMinutes={breakMinutes} now={now} />
+          {sessionControls}
+          {focusingNow !== null ? (
+            <p className="flex items-center gap-1.5 text-center text-body-sm font-semibold text-[var(--color-secondary)]">
+              <span aria-hidden className="size-2 shrink-0 rounded-full bg-[var(--play-cta)]" />
+              {t("focusing_now", { count: focusingNow })}
+            </p>
+          ) : null}
+        </>
+      }
+      rail={
+        <>
+          <SessionTodayCard
+            focusGoal={focusGoal}
+            freshSessionId={freshSessionId}
+            onGoalChange={(goalMinutes) =>
+              setFocusGoal((g) => ({
+                goalMinutes,
+                focusMinutesToday: g?.focusMinutesToday ?? 0,
+              }))
+            }
+            onOpenHistory={() => setHistoryOpen(true)}
+          />
+          <SessionRoomList />
+          <SessionBuddyCard />
+        </>
+      }
+      drawer={
+        <HistorySideDrawer
+          open={historyOpen}
+          onOpenChange={setHistoryOpen}
+          title={t("history_title")}
+          side="right"
+          desktop
+          testId="session-history-drawer"
+        >
+          <SessionHistory variant="default" />
+        </HistorySideDrawer>
+      }
+    />
+  );
 
-  if (phase === "done") {
-    return (
-      <main className="mx-auto flex w-full max-w-lg flex-col gap-6 px-5 py-8 lg:px-8 lg:py-10">
-        <h1 className="sr-only">{t("title")}</h1>
-        <Card className="flex flex-col items-center gap-5 px-5 py-8 sm:px-8 sm:py-10">
+  return (
+    <SessionStage phase={phase} groundTheme={groundTheme} themeDirection={themeDirection}>
+      {/* `initial={false}`: the first paint stands still; only a return from a session animates. */}
+      <AnimatePresence initial={false}>
+        {phase === "idle" ? renderIdle() : null}
+      </AnimatePresence>
+      {phase === "focus" || phase === "break" ? (
+        <SessionFocusView
+          groundTheme={groundTheme}
+          topBar={renderTopBar(true)}
+          planTaskChip={planTaskChip}
+          phaseLabel={phaseLabel}
+          timerRing={timerRing}
+          sessionControls={sessionControls}
+        />
+      ) : null}
+      {phase === "done" ? (
+        <CompletionOverlay open label={t("done_title")}>
           <SessionDoneState
             focusElapsed={focusElapsed}
+            plannedMinutes={isStopwatch ? focusElapsed / 60 : focusMinutes}
             sessionId={session?.id ?? null}
             subject={subject}
+            planTaskTitle={planTaskContext.taskTitle}
+            focusGoal={focusGoal ?? null}
             questBaseline={questBaseline}
             streakBaseline={streakBaseline}
             countsAsFocusSession={session?.countsAsFocusSession ?? true}
@@ -397,154 +458,8 @@ export function StudySessionShell() {
             onSubmitFeedback={recordFeedback}
             onReset={handleReset}
           />
-        </Card>
-      </main>
-    );
-  }
-
-  return (
-    <main
-      className="relative isolate flex w-full min-h-[calc(100dvh-4rem-80px-env(safe-area-inset-bottom))] flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden"
-      aria-label={t("title")}
-    >
-      <h1 className="sr-only">{t("title")}</h1>
-      {groundTheme ? (
-        <div className="pointer-events-none absolute inset-0 -z-10 overflow-hidden">
-          <RoomBackdropSlide theme={groundTheme} direction={themeDirection} veilPercent={58} />
-        </div>
+        </CompletionOverlay>
       ) : null}
-      {curtain && !reduceMotion ? (
-        <motion.div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-50"
-          style={{ backgroundColor: "#000" }}
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeOut" }}
-          onAnimationComplete={() => setCurtain(false)}
-        />
-      ) : null}
-      <HistorySideRail
-        title={t("history_title")}
-        railOpen={railOpen}
-        onRailOpenChange={setRailOpen}
-        expandLabel={t("history_open")}
-        collapseLabel={t("history_collapse")}
-        variant="liquid"
-        testId="session-history-rail"
-        collapsedActions={
-          <button
-            type="button"
-            onClick={() => setRailOpen(true)}
-            className="inline-flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-[10px] transition-colors hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            aria-label={t("history_title")}
-            data-testid="session-history-rail-list"
-          >
-            <History
-              className="size-5"
-              style={{ color: "#ffffff" }}
-              strokeWidth={2.25}
-              aria-hidden
-            />
-          </button>
-        }
-      >
-        <SessionHistory variant="liquid" />
-      </HistorySideRail>
-
-      <div className="flex min-w-0 flex-1 flex-col lg:min-h-0 lg:overflow-y-auto">
-        {/* Scenery & Settings bar: max-w-2xl allows the 3 pills to sit side-by-side in one row */}
-        <div className="mx-auto flex w-full max-w-2xl justify-center px-4 pt-5 lg:px-6 lg:pt-6">
-          {renderTopBar(false)}
-        </div>
-        <div className="flex items-center gap-2 px-5 pt-4 pb-1 lg:hidden">
-          <button
-            type="button"
-            onClick={() => setHistoryOpen(true)}
-            className="inline-flex min-h-11 min-w-11 cursor-pointer items-center justify-center rounded-full session-liquid-pill transition-opacity hover:opacity-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-            aria-label={t("history_open")}
-            data-testid="session-history-open"
-          >
-            <PanelLeft
-              className="size-5"
-              style={{ color: "#ffffff" }}
-              strokeWidth={2.25}
-              aria-hidden
-            />
-          </button>
-        </div>
-
-        <div className="mx-auto flex w-full max-w-lg flex-1 flex-col justify-center px-5 py-6 lg:px-8 lg:py-10">
-          {presetNotice && (
-            <p
-              className="mb-4 text-sm"
-              style={{ color: "var(--color-secondary)" }}
-              role="status"
-            >
-              {presetNotice}
-            </p>
-          )}
-
-          <AnimatePresence mode="wait">
-            <motion.div
-              key="idle"
-              className="flex w-full flex-col items-center gap-5"
-              {...phaseMotion}
-            >
-              {planTaskChip}
-              {timerRing}
-              <SessionSetupSummary
-                focusMinutes={focusMinutes}
-                breakMinutes={breakMinutes}
-                now={now}
-              />
-              {sessionControls}
-              {focusingNow !== null ? (
-                <p
-                  className="flex items-center gap-1.5 text-center text-sm"
-                  style={{ color: "rgba(255, 255, 255, 0.72)" }}
-                >
-                  <span
-                    aria-hidden
-                    className="h-2 w-2 rounded-full"
-                    style={{ backgroundColor: "var(--color-progress)" }}
-                  />
-                  {t("focusing_now", { count: focusingNow })}
-                </p>
-              ) : null}
-            </motion.div>
-          </AnimatePresence>
-        </div>
-      </div>
-
-      <aside
-        className="flex w-full shrink-0 flex-col gap-4 px-5 pb-8 lg:h-full lg:w-72 lg:overflow-y-auto lg:border-l lg:p-4"
-        style={{
-          borderColor: "rgba(255, 255, 255, 0.12)",
-        }}
-      >
-        <SessionFocusGoalCard
-          focusGoal={focusGoal}
-          onGoalChange={(goalMinutes) =>
-            setFocusGoal((g) => ({
-              goalMinutes,
-              focusMinutesToday: g?.focusMinutesToday ?? 0,
-            }))
-          }
-        />
-        <SessionRoomList />
-        <SessionBuddyCard />
-      </aside>
-
-      <HistorySideDrawer
-        open={historyOpen}
-        onOpenChange={setHistoryOpen}
-        title={t("history_title")}
-        variant="liquid"
-        testId="session-history-drawer"
-      >
-        <SessionHistory variant="liquid" />
-      </HistorySideDrawer>
-    </main>
+    </SessionStage>
   );
 }

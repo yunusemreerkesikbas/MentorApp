@@ -36,7 +36,7 @@ interface StoredConfigOverride {
  * FakePaymentsAdapter and signed fake webhooks.
  *
  * The point of this suite is the things unit tests cannot prove: that the discounted amount really
- * reaches the LEDGER and the invoice, that an abandoned checkout gives its seat back, and that the
+ * reaches the LEDGER and the invoice, that confirmed cancellation releases a pending seat, and that the
  * global cap holds under genuine concurrency.
  */
 describe("promotions (e2e)", () => {
@@ -80,6 +80,8 @@ describe("promotions (e2e)", () => {
       password: "Sifre1234",
       displayName: `Promo ${tag}`,
       kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
     });
     expect(res.status).toBe(201);
     return { token: res.body.accessToken, userId: res.body.user.id };
@@ -250,7 +252,7 @@ describe("promotions (e2e)", () => {
     const checkout = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(token))
-      .send({ planId: "premium-monthly", code });
+      .send({ planId: "premium-monthly", useTrial: false, code });
     expect(checkout.status).toBe(200);
 
     // The agreed price is frozen on the redemption row, in the same commit as the subscription.
@@ -309,27 +311,32 @@ describe("promotions (e2e)", () => {
     expect(after.rows[0].periods_remaining).toBe(0);
   });
 
-  it("gives the seat back when a checkout is abandoned", async () => {
+  it("gives the seat back after the provider confirms cancellation of a pending checkout", async () => {
     const code = `VOID${RUN}`;
     const promotionId = await seedPromotion({ code, maxRedemptions: 1 });
     const { token, userId } = buyer;
 
-    await request(app.getHttpServer())
+    const initial = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(token))
-      .send({ planId: "premium-monthly", code });
+      .send({ planId: "premium-monthly", useTrial: false, code });
+    expect(initial.status).toBe(200);
 
     // Force the verification-gate state the hosted-page provider would leave behind.
     await serviceQuery("update subscriptions set status = 'INCOMPLETE' where user_id = $1", [
       userId,
     ]);
 
-    // A second checkout discards the abandoned row — and must release the promotion seat with it,
-    // otherwise a one-seat campaign would be permanently burned by an unpaid attempt.
+    // A pending provider outcome must not be discarded by another checkout. Only confirmed
+    // cancellation releases both the pending row and its promotion reservation.
+    const cancel = await request(app.getHttpServer()).post("/v1/subscription/cancel").set(auth(token));
+    expect(cancel.status).toBe(200);
+    const released = await serviceQuery("select status from promotion_redemptions where user_id = $1", [userId]);
+    expect(released.rows[0].status).toBe("VOIDED");
     const retry = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(token))
-      .send({ planId: "premium-monthly", code });
+      .send({ planId: "premium-monthly", useTrial: false, code });
     expect(retry.status).toBe(200);
 
     const counted = await serviceQuery(
@@ -352,11 +359,11 @@ describe("promotions (e2e)", () => {
       request(app.getHttpServer())
         .post("/v1/subscription/checkout")
         .set(auth(a.token))
-        .send({ planId: "premium-monthly", code }),
+        .send({ planId: "premium-monthly", useTrial: false, code }),
       request(app.getHttpServer())
         .post("/v1/subscription/checkout")
         .set(auth(b.token))
-        .send({ planId: "premium-monthly", code }),
+        .send({ planId: "premium-monthly", useTrial: false, code }),
     ]);
 
     const statuses = results.map((r) => r.status).sort();
@@ -380,7 +387,7 @@ describe("promotions (e2e)", () => {
     const first = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(token))
-      .send({ planId: "premium-monthly", code });
+      .send({ planId: "premium-monthly", useTrial: false, code });
     expect(first.status).toBe(200);
 
     const second = await request(app.getHttpServer())
@@ -398,10 +405,11 @@ describe("promotions (e2e)", () => {
     await seedPromotion({ code, ruleType: "WIN_BACK" });
     const { token, userId } = buyer;
 
-    await request(app.getHttpServer())
+    const paid = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(token))
-      .send({ planId: "premium-monthly" });
+      .send({ planId: "premium-monthly", useTrial: false });
+    expect(paid.status).toBe(200);
 
     // Wind the paid period into the past — exactly what a lapse looks like in the table.
     await serviceQuery(

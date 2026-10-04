@@ -1,502 +1,268 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
-import type { MentorshipStudentReportDto } from "@mentor/types";
+import { useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, SectionHeading, Skeleton, SkeletonGroup } from "@mentor/ui";
-import { EmptyState } from "@/components/empty-state";
-import { Link, useRouter } from "@/i18n/navigation";
-import { useMentorDialog } from "@/lib/mentor-dialog";
-import { useMentorToast } from "@/lib/mentor-toast";
-import { endStudentLink, fetchStudentReport, setAttention } from "@/lib/mentorship";
-import { AssignTaskForm } from "./assign-task-form";
-import { BriefCard } from "./brief-card";
-import { CoachNoteCard } from "./coach-note-card";
-import { FollowupPanel } from "./followup-panel";
+import { Button, Skeleton } from "@mentor/ui";
 import {
-  formatDate,
-  formatMood,
-  formatNet,
-  formatRate,
-  relativeDay,
-} from "../../../_components/mentorship-format";
-import { NoRiskChip, RiskChip } from "../../../_components/risk-chip";
-import { AttentionButton } from "../../_components/attention-button";
+  CoachFollowupsPanel,
+  useCoachFollowups,
+  type FollowupCompose,
+} from "@/components/mentorship/coach-followups-card";
+import { PANEL_GRID_CLASS, PANEL_HERO, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
+import { useWideLayout } from "@/components/panel/use-wide-layout";
+import { useCloudTransitionReady } from "@/lib/cloud-transition";
+import { todayInIstanbul } from "@/lib/date-time";
+import { firstName } from "@/lib/greeting";
+import { useSubscription } from "@/lib/subscription-context";
+import { genitiveOf } from "@/lib/turkish-case";
+import { AssignTaskForm, type AssignDraft } from "./assign-task-form";
+import { CoachPanel } from "./coach-panel";
+import { FollowupCard } from "./followup-card";
+import { MocksCard } from "./mocks-card";
+import { MoodCard } from "./mood-card";
+import { NoteCard } from "./note-card";
+import { PlanCard } from "./plan-card";
+import { initialPlanningState } from "./planning-state";
+import { hasTrace } from "./report-format";
+import { ReportHeader } from "./report-header";
+import { RhythmCard } from "./rhythm-card";
+import { StudentNoteCard } from "./student-note-card";
+import { useStudentBrief } from "./use-student-brief";
+import { useStudentReport } from "./use-student-report";
+import { useWeeklyReportCard } from "./use-weekly-report-card";
+import { WeekHeroCard, WeekHeroSkeleton } from "./week-hero-card";
+import { useReportDates } from "./use-report-dates";
+import { WeeklyReportCard } from "./weekly-report-card";
+import { WeeklyReportPanel } from "./weekly-report-panel";
 
+type Panel = "plan" | "followups" | "weekly" | "archive";
+
+const CARD_SKELETON = "h-48 rounded-[var(--radius-card)]";
+
+/**
+ * The coach's workspace for one student (DESIGN.md §6.1): the week leads, the standing facts sit in
+ * the rail, the long jobs open in a side panel. The layout draws at once and each part shows its own
+ * skeleton; the weekly report and the follow-ups load beside the report, not after it. Two columns
+ * from 1280px, chosen in JS so DOM order is reading order: on a phone the note, the follow-ups and
+ * the weekly card come right after the week.
+ */
 export function StudentReportShell({ studentId }: { studentId: string }) {
   const t = useTranslations("mentorship");
-  const common = useTranslations("common");
-  const locale = useLocale();
-  const toast = useMentorToast();
-  const dialog = useMentorDialog();
-  const router = useRouter();
-  const [report, setReport] = useState<MentorshipStudentReportDto | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [marking, setMarking] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const wide = useWideLayout();
+  const today = todayInIstanbul();
+  const { loading: subscriptionLoading } = useSubscription();
+  const student = useStudentReport(studentId);
+  const { report } = student;
+  const followups = useCoachFollowups(studentId);
+  const weekly = useWeeklyReportCard(studentId);
+  const weeklyDates = useReportDates();
+  const brief = useStudentBrief(studentId, report !== null && hasTrace(report));
+  const [panel, setPanel] = useState<Panel | null>(null);
+  const [compose, setCompose] = useState<FollowupCompose | null>(null);
+  // Held here, not in the panels: a panel unmounts on close, and a half-built week or note must not.
+  const [drafts, setDrafts] = useState<AssignDraft[]>([]);
+  const [planning, setPlanning] = useState(initialPlanningState);
+  const [assigning, setAssigning] = useState(false);
+  const [noteDraft, setNoteDraft] = useState<string | null>(null);
 
-  const showError = useCallback(
-    (err: unknown) => {
-      toast.error({
-        title: common("error_title"),
-        message: err instanceof ApiClientError ? err.message : common("error_unknown"),
-      });
-    },
-    [toast, common],
-  );
+  useCloudTransitionReady(report !== null || student.error !== null);
 
-  const load = useCallback(() => {
-    fetchStudentReport(studentId)
-      .then(setReport)
-      .catch((err: unknown) => {
-        setFailed(true);
-        showError(err);
-      });
-  }, [studentId, showError]);
+  const closePanel = () => setPanel(null);
+  const openFollowups = (next: FollowupCompose | null) => {
+    setCompose(next);
+    setPanel("followups");
+  };
+  const name = report ? firstName(report.studentDisplayName) : "";
+  const preview = weekly.preview;
 
-  useEffect(load, [load]);
-
-  /**
-   * Optimistic like the roster's: this is the coach's own act, and a round trip between deciding
-   * and seeing it is the friction the mark exists to remove. On failure the row snaps back.
-   */
-  const toggleAttention = useCallback(
-    async (attended: boolean) => {
-      setMarking(true);
-      const patch = (next: boolean) =>
-        setReport((prev) =>
-          prev === null
-            ? prev
-            : {
-                ...prev,
-                attendedAt: next ? new Date().toISOString() : null,
-                needsAttention: !next && prev.riskFlags.length > 0,
-              },
-        );
-      patch(attended);
-      try {
-        await setAttention(studentId, attended);
-      } catch (err) {
-        patch(!attended);
-        showError(err);
-      } finally {
-        setMarking(false);
-      }
-    },
-    [studentId, showError],
-  );
-
-  async function endLink() {
-    if (!report) return;
-    const confirmed = await dialog.confirm({
-      title: t("report_end_confirm_title"),
-      message: t("report_end_confirm_body", { name: report.studentDisplayName }),
-      confirmLabel: t("report_end_confirm_action"),
-      cancelLabel: t("confirm_cancel"),
-    });
-    if (!confirmed) return;
-    setBusy(true);
-    try {
-      await endStudentLink(studentId);
-      router.replace("/students");
-    } catch (err) {
-      showError(err);
-      setBusy(false);
-    }
-  }
-
-  if (failed) {
-    return (
-      <EmptyState
-        title={t("guard_title")}
-        description={t("guard_body")}
-        puhuVariant="encouraging"
-        action={
-          <Link href="/students">
-            <Button variant="secondary">{t("report_back")}</Button>
-          </Link>
-        }
+  const hero =
+    report && !subscriptionLoading ? (
+      <WeekHeroCard
+        report={report}
+        today={today}
+        brief={brief.brief}
+        briefDelta={brief.delta}
+        briefBusy={brief.busy}
+        onPlan={() => setPanel("plan")}
+        onNote={() => setNoteDraft((draft) => draft ?? report.coachNote?.body ?? "")}
       />
+    ) : (
+      <WeekHeroSkeleton />
     );
-  }
-
-  if (!report) {
-    return (
-      <SkeletonGroup label={t("loading")}>
-        <Skeleton className="h-10 w-56 rounded-[var(--radius-card)]" />
-        <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
-        <Skeleton className="h-48 w-full rounded-[var(--radius-card)]" />
-      </SkeletonGroup>
-    );
-  }
-
-  // Derived in the browser, not on the server: the rows are already on the wire, so a
-  // `topicProgress[]` aggregate would be a second query for arithmetic we can do here.
-  const topicProgress = summarizeTopics(report.planTasks);
-  const mine = summarizeMine(report.planTasks);
-
-  const last = relativeDay(report.activity.lastActiveDate);
-  const lastLabel =
-    last.kind === "never"
-      ? t("value_never")
-      : last.kind === "today"
-        ? t("value_today")
-        : last.kind === "yesterday"
-          ? t("value_yesterday")
-          : t("value_days_ago", { count: last.days });
-
-  return (
-    <div className="flex flex-col gap-6">
-      <Link
-        href="/students"
-        className="text-sm underline-offset-4 hover:underline"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("report_back")}
-      </Link>
-
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <SectionHeading
-          subtitle={
-            report.acceptedAt
-              ? t("my_coach_since", { date: formatDate(report.acceptedAt, locale) })
-              : undefined
-          }
-        >
-          {report.studentDisplayName}
-        </SectionHeading>
-        <div className="flex flex-wrap items-center gap-1.5">
-          {report.riskFlags.length === 0 ? (
-            <NoRiskChip />
-          ) : (
-            report.riskFlags.map((flag) => <RiskChip key={flag} flag={flag} />)
-          )}
-        </div>
-      </div>
-
-      {/* The same mark as on the roster card. Offered here too because this is the screen a coach
-          is on when they finish acting — walking back to the list to say so is the friction. */}
-      {report.riskFlags.length > 0 && (
-        <AttentionButton
-          attendedAt={report.attendedAt}
-          busy={marking}
-          onToggle={(attended) => void toggleAttention(attended)}
-        />
-      )}
-
-      {/* Above the note and the composer: the brief is what a coach reads before deciding what to
-          write. It sits BELOW the risk chips, which stay the deterministic floor it summarizes. */}
-      {/* Keyed: moving between students must remount this, or a brief about one could be read
-          under another's name while a stale request is still in flight. */}
-      <BriefCard key={studentId} studentId={studentId} />
-
-      <CoachNoteCard studentId={studentId} note={report.coachNote} onSaved={load} />
-
-      <FollowupPanel studentId={studentId} />
-
-      <AssignTaskForm
+  const note = report ? (
+    <>
+      {/* The student's words above the coach's own, so a reply reads in order. */}
+      {report.studentNote ? <StudentNoteCard name={name} note={report.studentNote} /> : null}
+      <NoteCard
         studentId={studentId}
-        studentName={report.studentDisplayName}
-        studentExamType={report.studentExamType}
-        previousTasks={report.planTasks}
-        onAssigned={load}
+        name={name}
+        note={report.coachNote}
+        draft={noteDraft}
+        onDraft={setNoteDraft}
+        onSaved={(coachNote) => {
+          student.setReport((prev) => (prev ? { ...prev, coachNote } : prev));
+          setNoteDraft(null);
+        }}
       />
-
-      <Card>
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("report_activity")}
-        </h2>
-        <dl className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3 lg:grid-cols-4">
-          <Metric label={t("metric_last_active")} value={lastLabel} />
-          <Metric label={t("metric_streak")} value={String(report.activity.currentStreak)} />
-          <Metric
-            label={t("metric_longest_streak")}
-            value={String(report.activity.longestStreak)}
-          />
-          <Metric
-            label={t("metric_plan_completion")}
-            value={formatRate(report.planCompletionRate7d, locale) ?? t("value_none")}
-          />
-          <Metric
-            label={t("metric_focus_7d")}
-            value={t("value_minutes", { count: report.activity.focusMinutes7d })}
-          />
-          <Metric
-            label={t("metric_sessions_7d")}
-            value={String(report.activity.sessions7d)}
-          />
-          <Metric
-            label={t("metric_active_days_7d")}
-            value={String(report.activity.activeDays7d)}
-          />
-          <Metric
-            label={t("metric_focus_28d")}
-            value={t("value_minutes", { count: report.activity.focusMinutes28d })}
-          />
-        </dl>
-      </Card>
-
-      <Card>
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("report_mocks")}
-        </h2>
-        {report.mockTrend.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("report_mock_empty")}
-          </p>
-        ) : (
-          <>
-            <ul className="flex flex-col gap-2">
-              {report.mockTrend.map((mock) => (
-                <li
-                  key={mock.takenAt}
-                  className="flex items-baseline justify-between gap-3 text-sm"
-                >
-                  <span style={{ color: "var(--color-secondary)" }}>
-                    {formatDate(mock.takenAt, locale)}
-                    {mock.publisherName ? ` · ${mock.publisherName}` : ""}
-                  </span>
-                  <span className="font-medium" style={{ color: "var(--color-main)" }}>
-                    {formatNet(mock.totalNet, locale)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-            {report.latestMockSubjects.length > 0 ? (
-              <div className="mt-4">
-                <h3
-                  className="mb-2 text-xs font-semibold"
-                  style={{ color: "var(--color-secondary)" }}
-                >
-                  {t("report_latest_mock_subjects")}
-                </h3>
-                {/* Wide content scrolls inside its own box; the page never scrolls sideways. */}
-                <div className="overflow-x-auto">
-                  <table className="w-full min-w-[24rem] text-sm">
-                    <thead>
-                      <tr style={{ color: "var(--color-secondary)" }}>
-                        <th className="py-1 text-left font-medium">
-                          {t("report_subject_table_subject")}
-                        </th>
-                        <th className="py-1 text-right font-medium">
-                          {t("report_subject_table_correct")}
-                        </th>
-                        <th className="py-1 text-right font-medium">
-                          {t("report_subject_table_wrong")}
-                        </th>
-                        <th className="py-1 text-right font-medium">
-                          {t("report_subject_table_blank")}
-                        </th>
-                        <th className="py-1 text-right font-medium">
-                          {t("report_subject_table_net")}
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody style={{ color: "var(--color-main)" }}>
-                      {report.latestMockSubjects.map((subject) => (
-                        <tr key={subject.subjectRef}>
-                          <td className="py-1">{subject.subjectRef}</td>
-                          <td className="py-1 text-right">{subject.correct}</td>
-                          <td className="py-1 text-right">{subject.wrong}</td>
-                          <td className="py-1 text-right">{subject.blank}</td>
-                          <td className="py-1 text-right font-medium">
-                            {formatNet(subject.net, locale)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            ) : null}
-          </>
-        )}
-      </Card>
-
-      <Card>
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("report_plan")}
-        </h2>
-        {/* The coach's own effect, which nothing else on this screen reports: the plan completion
-            rate covers everything the student planned, most of it their own. Derived here from
-            rows the page already holds — no endpoint, no query. */}
-        {mine.total > 0 && (
-          <p className="mb-3 text-sm" style={{ color: "var(--color-body)" }}>
-            {t("report_mine_done", { done: mine.done, total: mine.total })}
-          </p>
-        )}
-        {report.planTasks.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("report_plan_empty")}
-          </p>
-        ) : (
-          <ul className="flex flex-col gap-3">
-            {report.planTasks.map((task, index) => (
-              <li key={`${task.taskDate}-${index}`} className="text-sm">
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                  <span style={{ color: "var(--color-main)" }}>
-                    {task.title}
-                    {task.subject ? (
-                      <span style={{ color: "var(--color-secondary)" }}>
-                        {" · "}
-                        {task.subject}
-                        {task.topic ? ` › ${task.topic}` : ""}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-                    {task.assignedByCoach ? `${t("report_plan_from_you")} · ` : ""}
-                    {formatDate(`${task.taskDate}T00:00:00.000Z`, locale)} ·{" "}
-                    {t(`task_status_${task.status === "DONE" ? "DONE" : "PENDING"}`)}
-                  </span>
-                </div>
-                {task.coachNote ? (
-                  <p
-                    className="mt-1 border-l-2 pl-2 text-xs"
-                    style={{
-                      borderColor: "var(--color-border)",
-                      color: "var(--color-secondary)",
-                    }}
-                  >
-                    {task.coachNote}
-                  </p>
-                ) : null}
-              </li>
-            ))}
-          </ul>
-        )}
-
-        {/* Sits inside the plan card, not beside it: the living plan and what left it are one
-            answer to "did they do what I gave them", and a separate card would be empty for most
-            students most of the time. */}
-        {report.droppedAssignments.length > 0 ? (
-          <div className="mt-4 border-t pt-3" style={{ borderColor: "var(--color-border)" }}>
-            <h3 className="text-xs font-semibold" style={{ color: "var(--color-main)" }}>
-              {t("report_dropped")}
-            </h3>
-            <p className="mt-0.5 text-xs" style={{ color: "var(--color-secondary)" }}>
-              {t("report_dropped_body")}
-            </p>
-            <ul className="mt-2 flex flex-col gap-1">
-              {report.droppedAssignments.map((row) => (
-                <li
-                  key={`${row.droppedAt}-${row.title}`}
-                  className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
-                >
-                  <span style={{ color: "var(--color-secondary)" }}>{row.title}</span>
-                  <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-                    {formatDate(`${row.taskDate}T00:00:00.000Z`, locale)}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        ) : null}
-      </Card>
-
-      {topicProgress.length > 0 ? (
-        <Card>
-          <h2 className="mb-1 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-            {t("report_topic_progress")}
-          </h2>
-          <p className="mb-3 text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("report_topic_progress_body")}
-          </p>
-          <ul className="flex flex-col gap-2">
-            {topicProgress.map((row) => (
-              <li
-                key={`${row.subject}-${row.topic}`}
-                className="flex flex-wrap items-baseline justify-between gap-2 text-sm"
-              >
-                <span style={{ color: "var(--color-main)" }}>
-                  <span style={{ color: "var(--color-secondary)" }}>{row.subject} › </span>
-                  {row.topic}
-                </span>
-                <span className="text-xs font-medium" style={{ color: "var(--color-secondary)" }}>
-                  {t("report_topic_progress_count", { done: row.done, total: row.total })}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </Card>
-      ) : null}
-
-      <Card>
-        <h2 className="mb-3 text-sm font-semibold" style={{ color: "var(--color-main)" }}>
-          {t("report_mood")}
-        </h2>
-        {report.moodTrend.length === 0 ? (
-          <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-            {t("report_mood_empty")}
-          </p>
-        ) : (
-          <ul className="flex flex-wrap gap-3 text-sm">
-            {report.moodTrend.map((entry) => (
-              <li key={entry.date} style={{ color: "var(--color-main)" }}>
-                <span style={{ color: "var(--color-secondary)" }}>
-                  {formatDate(`${entry.date}T00:00:00.000Z`, locale)}
-                </span>{" "}
-                {formatMood(entry.level, locale)}
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
-      <div>
-        <Button variant="ghost" busy={busy} onClick={endLink}>
-          {t("report_end_link")}
-        </Button>
-      </div>
-    </div>
+    </>
+  ) : (
+    <Skeleton className="h-36 rounded-[var(--radius-card)]" />
   );
-}
-
-/**
- * Done-vs-total per topic, worst first — "where is this student actually stuck".
- * Only rows that carry a topic take part; an untagged task says nothing about a topic.
- */
-function summarizeTopics(
-  tasks: MentorshipStudentReportDto["planTasks"],
-): { subject: string; topic: string; done: number; total: number }[] {
-  const rows = new Map<string, { subject: string; topic: string; done: number; total: number }>();
-  for (const task of tasks) {
-    if (!task.topic || !task.subject) continue;
-    const key = `${task.subject} ${task.topic}`;
-    const row = rows.get(key) ?? { subject: task.subject, topic: task.topic, done: 0, total: 0 };
-    row.total += 1;
-    if (task.status === "DONE") row.done += 1;
-    rows.set(key, row);
-  }
-  return [...rows.values()].sort(
-    (a, b) => a.done / a.total - b.done / b.total || b.total - a.total,
+  const followupCard = (
+    <FollowupCard
+      resource={followups}
+      onCreate={() => openFollowups({ replacesId: null })}
+      onOpenHistory={() => openFollowups(null)}
+    />
   );
-}
+  const weeklyCard = (
+    <WeeklyReportCard
+      weekly={weekly}
+      joinedOn={
+        report === null
+          ? undefined
+          : report.acceptedAt
+            ? todayInIstanbul(new Date(report.acceptedAt))
+            : null
+      }
+      onOpen={(archive) => setPanel(archive ? "archive" : "weekly")}
+    />
+  );
+  const details = report ? (
+    <>
+      <RhythmCard report={report} today={today} />
+      <MocksCard report={report} />
+      <PlanCard report={report} today={today} />
+      <MoodCard report={report} today={today} />
+    </>
+  ) : (
+    <>
+      <Skeleton className={CARD_SKELETON} />
+      <Skeleton className={CARD_SKELETON} />
+    </>
+  );
 
-/**
- * How much of what THIS coach assigned got done, in the report's own 14-day window.
- *
- * Deliberately not `planCompletionRate7d`: that one covers everything the student planned, most of
- * which the coach never wrote. This is the only number on the screen that is about the coach.
- */
-function summarizeMine(tasks: MentorshipStudentReportDto["planTasks"]): {
-  done: number;
-  total: number;
-} {
-  const mine = tasks.filter((task) => task.assignedByCoach);
-  return { done: mine.filter((task) => task.status === "DONE").length, total: mine.length };
-}
-
-function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div>
-      <dt className="text-xs" style={{ color: "var(--color-secondary)" }}>
-        {label}
-      </dt>
-      <dd className="text-sm font-medium" style={{ color: "var(--color-main)" }}>
-        {value}
-      </dd>
-    </div>
+    <>
+      {/* Inert while a panel is open: the panel is modal to the report, not to the whole app. */}
+      <main inert={panel !== null} className={PANEL_MAIN_CLASS}>
+        <ReportHeader
+          studentId={studentId}
+          report={report}
+          failed={student.error !== null}
+          today={today}
+          marking={student.marking}
+          ending={student.ending}
+          showArchive={weekly.archive.length > 0}
+          onToggleAttention={(attended) => void student.toggleAttention(attended)}
+          onOpenArchive={() => setPanel("archive")}
+          onEndLink={() => void student.endLink()}
+        />
+        {student.error !== null ? (
+          <ReportError error={student.error} onRetry={student.retry} />
+        ) : wide ? (
+          <div className={PANEL_GRID_CLASS}>
+            <div className="flex min-w-0 flex-col gap-5">
+              {hero}
+              {details}
+            </div>
+            <aside className="flex min-w-0 flex-col gap-5" aria-label={t("report_actions_label")}>
+              {note}
+              {followupCard}
+              {weeklyCard}
+            </aside>
+          </div>
+        ) : (
+          <div className="flex min-w-0 flex-col gap-5">
+            {hero}
+            {note}
+            {followupCard}
+            {weeklyCard}
+            {details}
+          </div>
+        )}
+      </main>
+
+      <AnimatePresence>
+        {panel === "plan" && report ? (
+          <CoachPanel
+            key="plan"
+            title={t("report_plan_week")}
+            subtitle={t("planning_subtitle", { name, genitive: genitiveOf(name) })}
+            busy={assigning}
+            onClose={closePanel}
+          >
+            <AssignTaskForm
+              studentId={studentId}
+              studentName={report.studentDisplayName}
+              studentExamType={report.studentExamType}
+              state={planning}
+              onStateChange={setPlanning}
+              drafts={drafts}
+              onDraftsChange={setDrafts}
+              busy={assigning}
+              onBusyChange={setAssigning}
+              onAssigned={() => {
+                closePanel();
+                student.reload();
+              }}
+              onCancel={closePanel}
+            />
+          </CoachPanel>
+        ) : null}
+
+        {panel === "followups" && followups.enabled === true ? (
+          <CoachPanel
+            key="followups"
+            title={compose ? t("followup_create") : t("followup_recent_title")}
+            subtitle={
+              compose || !report || !followups.data
+                ? undefined
+                : t("followup_panel_subtitle", {
+                    name: report.studentDisplayName,
+                    count: followups.data.total,
+                  })
+            }
+            onClose={closePanel}
+          >
+            <CoachFollowupsPanel resource={followups} studentId={studentId} compose={compose} onCompose={setCompose} />
+          </CoachPanel>
+        ) : null}
+
+        {(panel === "weekly" || panel === "archive") && preview ? (
+          <WeeklyReportPanel
+            key="weekly"
+            studentId={studentId}
+            report={weekly}
+            period={weeklyDates.range(preview.snapshot.period.startDate, preview.snapshot.period.endDate)}
+            archiveOpen={panel === "archive"}
+            onClose={closePanel}
+          />
+        ) : null}
+      </AnimatePresence>
+    </>
+  );
+}
+
+/**
+ * The report did not load: said in the hero's place. A refusal (the link ended, the student is not
+ * this coach's) carries the server's own words and no retry; anything else can be asked again.
+ */
+function ReportError({ error, onRetry }: { error: unknown; onRetry: () => void }) {
+  const t = useTranslations("mentorship");
+  const refused = error instanceof ApiClientError && (error.status === 403 || error.status === 404);
+  return (
+    <section className={PANEL_HERO} role="alert">
+      <p className="text-body-sm font-semibold text-[var(--color-body)]">
+        {refused ? error.message : t("report_load_failed")}
+      </p>
+      {refused ? null : (
+        <Button type="button" variant="secondary" size="sm" className="self-start" onClick={onRetry}>
+          {t("roster_retry")}
+        </Button>
+      )}
+    </section>
   );
 }

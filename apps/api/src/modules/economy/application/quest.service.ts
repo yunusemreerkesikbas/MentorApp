@@ -51,12 +51,12 @@ export class QuestService {
    * Evaluate every onboarding quest for the user; for each newly-completed one record it and grant
    * the reward in one SERVICE tx (idempotent via progress unique + ledger refId).
    */
-  async evaluateAndGrant(userId: string): Promise<void> {
+  async evaluateAndGrant(userId: string, date?: string, strict = false): Promise<void> {
     if (!(await this.config.get("economy.enabled"))) return;
 
     const [signals, streak, cfg] = await Promise.all([
-      this.dailySignals.getToday(userId),
-      this.streak.getSummary(userId),
+      date ? this.dailySignals.getForDate(userId, date) : this.dailySignals.getToday(userId),
+      date ? this.streak.getStreakAt(userId, date) : this.streak.getSummary(userId),
       this.readQuestConfig(),
     ]);
     const activePeriodKeys = this.activePeriodKeys(signals);
@@ -74,7 +74,7 @@ export class QuestService {
 
     // Read the user's state once (self-context reads work for any trigger path — the user's own
     // request, the subscription-activated listener, or the invite-redeem hook).
-    const me = await this.users.getMe(userId).catch(() => null);
+    const me = strict ? await this.users.getMe(userId) : await this.users.getMe(userId).catch(() => null);
     if (!me) return;
     const sub = await this.subscriptions.getView(userId);
     const redeemed = await this.invites.findRedemptionByInvited(userId);
@@ -143,6 +143,7 @@ export class QuestService {
           this.logger.log({ userId, questId: q.id }, "quest reward skipped — user over coin cap");
         } else {
           this.logger.error({ err, userId, questId: q.id }, "quest reward failed");
+          if (strict) throw err;
         }
       }
     }

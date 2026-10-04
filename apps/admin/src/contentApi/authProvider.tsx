@@ -27,7 +27,7 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true);
 
     const logout = useCallback(async () => {
-        await apiClient.post("/auth/logout").catch(() => undefined);
+        await apiClient.post("/auth/admin/logout").catch(() => undefined);
         clearToken();
         router.replace("/login");
     }, [router]);
@@ -61,6 +61,10 @@ export default function AuthProvider({ children }: { children: ReactNode }) {
                     if (isNetworkError && active && attempt < NETWORK_RETRY_MAX) {
                         await new Promise((r) => setTimeout(r, networkRetryDelayMs(attempt)));
                         continue;
+                    }
+                    if (active && (error as AxiosError)?.response?.status === 403) {
+                        clearToken();
+                        router.replace("/login");
                     }
                     // Real HTTP error (e.g. 401 → interceptor cleared token + redirected), or
                     // network still down after retries: fall through to loading=false.

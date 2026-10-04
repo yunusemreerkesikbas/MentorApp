@@ -1,0 +1,547 @@
+{
+  "generatedAt": "2026-09-24T09:27:45.344Z",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.048987060546875,
+          "startTime": 795.2000000476837,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 183,
+                "width": 370,
+                "height": 204,
+                "top": 183,
+                "right": 1240,
+                "bottom": 387,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            },
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 172,
+                "top": 21,
+                "right": 1240,
+                "bottom": 193,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 293,
+                "width": 370,
+                "height": 172,
+                "top": 293,
+                "right": 1240,
+                "bottom": 465,
+                "left": 870
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.00002195892333984375,
+          "startTime": 907.5,
+          "sources": [
+            {
+              "node": "<img alt=\"\" aria-hidden=\"true\" loading=\"lazy\" width=\"72\" height=\"72\" decoding=\"async\" data-nimg=\"1\" srcset=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75 2x\" src=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75\" style=\"color: trans",
+              "previousRect": {
+                "x": 309,
+                "y": 136,
+                "width": 72,
+                "height": 72,
+                "top": 136,
+                "right": 381,
+                "bottom": 208,
+                "left": 309
+              },
+              "currentRect": {
+                "x": 309,
+                "y": 131.125,
+                "width": 72,
+                "height": 81.75,
+                "top": 131.125,
+                "right": 381,
+                "bottom": 212.875,
+                "left": 309
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 73.70000004768372,
+          "children": []
+        },
+        {
+          "at": 149.70000004768372,
+          "children": []
+        },
+        {
+          "at": 182.30000007152557,
+          "children": []
+        },
+        {
+          "at": 239.30000007152557,
+          "children": []
+        },
+        {
+          "at": 410.5,
+          "children": []
+        },
+        {
+          "at": 436.3000000715256,
+          "children": []
+        },
+        {
+          "at": 477.3000000715256,
+          "children": []
+        },
+        {
+          "at": 529.5,
+          "children": []
+        },
+        {
+          "at": 575.5,
+          "children": []
+        },
+        {
+          "at": 624.5,
+          "children": []
+        },
+        {
+          "at": 682.3999999761581,
+          "children": []
+        },
+        {
+          "at": 740.3000000715256,
+          "children": []
+        },
+        {
+          "at": 775.1000000238419,
+          "children": []
+        },
+        {
+          "at": 837.6000000238419,
+          "children": []
+        },
+        {
+          "at": 882.1000000238419,
+          "children": []
+        },
+        {
+          "at": 928.1000000238419,
+          "children": []
+        },
+        {
+          "at": 974.5,
+          "children": []
+        },
+        {
+          "at": 1028,
+          "children": []
+        },
+        {
+          "at": 1080.7000000476837,
+          "children": []
+        },
+        {
+          "at": 1127.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1188.5,
+          "children": []
+        },
+        {
+          "at": 1234,
+          "children": []
+        },
+        {
+          "at": 1279.6000000238419,
+          "children": []
+        },
+        {
+          "at": 1327.5,
+          "children": []
+        },
+        {
+          "at": 1387.5,
+          "children": []
+        },
+        {
+          "at": 1427.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1480.2000000476837,
+          "children": []
+        },
+        {
+          "at": 1526.2000000476837,
+          "children": []
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.0499852294921875,
+          "startTime": 307.10000002384186,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 204,
+                "top": 21,
+                "right": 1240,
+                "bottom": 225,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 69.10000002384186,
+          "children": []
+        },
+        {
+          "at": 132.70000004768372,
+          "children": []
+        },
+        {
+          "at": 168.30000007152557,
+          "children": []
+        },
+        {
+          "at": 218,
+          "children": []
+        },
+        {
+          "at": 281.40000009536743,
+          "children": []
+        },
+        {
+          "at": 316.8000000715256,
+          "children": []
+        },
+        {
+          "at": 371.40000009536743,
+          "children": []
+        },
+        {
+          "at": 431.8000000715256,
+          "children": []
+        },
+        {
+          "at": 479.3000000715256,
+          "children": []
+        },
+        {
+          "at": 526,
+          "children": []
+        },
+        {
+          "at": 572.5,
+          "children": []
+        },
+        {
+          "at": 618.5,
+          "children": []
+        },
+        {
+          "at": 680.9000000953674,
+          "children": []
+        },
+        {
+          "at": 726.8000000715256,
+          "children": []
+        },
+        {
+          "at": 772.8000000715256,
+          "children": []
+        },
+        {
+          "at": 818.3000000715256,
+          "children": []
+        },
+        {
+          "at": 880,
+          "children": []
+        },
+        {
+          "at": 926.9000000953674,
+          "children": []
+        },
+        {
+          "at": 972.2000000476837,
+          "children": []
+        },
+        {
+          "at": 1018.2000000476837,
+          "children": []
+        },
+        {
+          "at": 1080.9000000953674,
+          "children": []
+        },
+        {
+          "at": 1126.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1172.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1218.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1279.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1325.6000000238419,
+          "children": []
+        },
+        {
+          "at": 1371,
+          "children": []
+        },
+        {
+          "at": 1431,
+          "children": []
+        },
+        {
+          "at": 1477.9000000953674,
+          "children": []
+        },
+        {
+          "at": 1523.4000000953674,
+          "children": []
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.048987060546875,
+          "startTime": 399.2000000476837,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 183,
+                "width": 370,
+                "height": 204,
+                "top": 183,
+                "right": 1240,
+                "bottom": 387,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            },
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 172,
+                "top": 21,
+                "right": 1240,
+                "bottom": 193,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 293,
+                "width": 370,
+                "height": 172,
+                "top": 293,
+                "right": 1240,
+                "bottom": 465,
+                "left": 870
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 81.30000007152557,
+          "children": []
+        },
+        {
+          "at": 164.70000004768372,
+          "children": []
+        },
+        {
+          "at": 192,
+          "children": []
+        },
+        {
+          "at": 220.20000004768372,
+          "children": []
+        },
+        {
+          "at": 273.2000000476837,
+          "children": []
+        },
+        {
+          "at": 318.8000000715256,
+          "children": []
+        },
+        {
+          "at": 372.90000009536743,
+          "children": []
+        },
+        {
+          "at": 420,
+          "children": []
+        },
+        {
+          "at": 480.8000000715256,
+          "children": []
+        },
+        {
+          "at": 527.2000000476837,
+          "children": []
+        },
+        {
+          "at": 572.8000000715256,
+          "children": []
+        },
+        {
+          "at": 633.9000000953674,
+          "children": []
+        },
+        {
+          "at": 679.5,
+          "children": []
+        },
+        {
+          "at": 725.8000000715256,
+          "children": []
+        },
+        {
+          "at": 771.1000000238419,
+          "children": []
+        },
+        {
+          "at": 831.6000000238419,
+          "children": []
+        },
+        {
+          "at": 877.6000000238419,
+          "children": []
+        },
+        {
+          "at": 923.7000000476837,
+          "children": []
+        },
+        {
+          "at": 983.7000000476837,
+          "children": []
+        },
+        {
+          "at": 1028.7000000476837,
+          "children": []
+        },
+        {
+          "at": 1074.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1120.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1180.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1229.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1275.2000000476837,
+          "children": []
+        },
+        {
+          "at": 1320.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1381.6000000238419,
+          "children": []
+        },
+        {
+          "at": 1427.9000000953674,
+          "children": []
+        },
+        {
+          "at": 1473.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1518.5,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

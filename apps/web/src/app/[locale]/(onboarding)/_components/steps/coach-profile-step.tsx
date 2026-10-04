@@ -3,8 +3,10 @@
 import { useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
-import { TextAreaField, TextField } from "@mentor/ui";
-import { FormError } from "@/components/form";
+import { Button, TextAreaField, TextField } from "@mentor/ui";
+import { PlayFooter } from "@/components/onboarding-play/play-footer";
+import { PuhuBubble } from "@/components/onboarding-play/play-heading";
+import { PhoneVerificationCard } from "@/components/phone-verification-card";
 import { registerCoach } from "@/lib/mentorship";
 import { OnboardingStepLayout } from "../onboarding-step-layout";
 
@@ -24,9 +26,11 @@ const FORM_ID = "onboarding-coach-profile-form";
  * word wherever it is shown.
  */
 export function CoachProfileStep({
+  progress,
   onSaved,
   onBack,
 }: {
+  progress: { done: number; total: number } | null;
   onSaved: () => void;
   onBack: () => void;
 }) {
@@ -39,9 +43,10 @@ export function CoachProfileStep({
   const [years, setYears] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [phoneVerified, setPhoneVerified] = useState(false);
 
   const trimmed = (value: string) => (value.trim() === "" ? null : value.trim());
-  const canSave = headline.trim() !== "" && bio.trim() !== "" && !saving;
+  const canSave = phoneVerified && headline.trim() !== "" && bio.trim() !== "" && !saving;
 
   async function handleSave() {
     if (!canSave) return;
@@ -70,25 +75,26 @@ export function CoachProfileStep({
 
   return (
     <OnboardingStepLayout
-      step={4}
-      mascot="proud"
-      title={t("title")}
-      subtitle={t("subtitle")}
+      progress={progress}
       onBack={onBack}
-      primaryLabel={t("save")}
-      primaryFormId={FORM_ID}
-      primaryBusy={saving}
-      primaryDisabled={!canSave}
+      heading={<PuhuBubble title={t("title")} sub={t("subtitle")} />}
+      footer={
+        <PlayFooter error={error}>
+          <Button type="submit" form={FORM_ID} fullWidth busy={saving} disabled={!canSave}>
+            {t("save")}
+          </Button>
+        </PlayFooter>
+      }
     >
+      <PhoneVerificationCard onStatusChange={(phone) => setPhoneVerified(phone.verified)} />
       <form
         id={FORM_ID}
-        className="mx-auto flex w-full max-w-xl flex-col gap-4"
+        className="flex w-full flex-col gap-4"
         onSubmit={(e) => {
           e.preventDefault();
           void handleSave();
         }}
       >
-        <FormError message={error} />
 
         <TextField
           label={mentorship("application_headline_label")}

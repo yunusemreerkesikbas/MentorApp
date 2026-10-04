@@ -1,0 +1,2584 @@
+{
+  "generatedAt": "2026-09-24T09:27:21.129Z",
+  "viewport": {
+    "width": 375,
+    "height": 812
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.03185550082101806,
+          "startTime": 906.6999999284744,
+          "sources": [
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.03382594417077176,
+          "startTime": 1140.1000000238419,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.003273809523809524,
+          "startTime": 1248.7999999523163,
+          "sources": [
+            {
+              "node": "<section aria-label=\"Duyurular\" class=\"relative overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] shadow-[var(--shadow-card)]\" data-testid=\"dashboard-top-banner\"><button aria-label=\"Duyuruyu kapat\" class=\"absolute right-2 top-2 z-[2] grid size-9 place-items-center rounded-[var(--radius-card)]",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 5,
+                "y": 715.9375,
+                "width": 350,
+                "height": 96.0625,
+                "top": 715.9375,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.00011640661020650828,
+          "startTime": 1360.1000000238419,
+          "sources": [
+            {
+              "node": "<img alt=\"\" aria-hidden=\"true\" loading=\"lazy\" width=\"72\" height=\"72\" decoding=\"async\" data-nimg=\"1\" srcset=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75 2x\" src=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75\" style=\"color: trans",
+              "previousRect": {
+                "x": 41,
+                "y": 183,
+                "width": 72,
+                "height": 72,
+                "top": 183,
+                "right": 113,
+                "bottom": 255,
+                "left": 41
+              },
+              "currentRect": {
+                "x": 41,
+                "y": 178.125,
+                "width": 72,
+                "height": 81.75,
+                "top": 178.125,
+                "right": 113,
+                "bottom": 259.875,
+                "left": 41
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 94.39999997615814,
+          "children": []
+        },
+        {
+          "at": 135.89999997615814,
+          "children": []
+        },
+        {
+          "at": 233.5,
+          "children": []
+        },
+        {
+          "at": 306,
+          "children": []
+        },
+        {
+          "at": 356.6999999284744,
+          "children": []
+        },
+        {
+          "at": 393.60000002384186,
+          "children": []
+        },
+        {
+          "at": 554.6000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 595.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 634.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 686,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 735.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 795.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 841.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 884.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 935.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 985.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1039.1000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1089.7999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1136,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 707,
+              "height": 186
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 913,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1107,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1199.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1247.1000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1292.7999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1339.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1386.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1448.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1495.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1544.1000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.03185550082101806,
+          "startTime": 435.89999997615814,
+          "sources": [
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.026600985221674877,
+          "startTime": 558.5,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.03709975369458128,
+          "startTime": 706.2999999523163,
+          "sources": [
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 101.69999992847443,
+          "children": []
+        },
+        {
+          "at": 135.39999997615814,
+          "children": []
+        },
+        {
+          "at": 180.69999992847443,
+          "children": []
+        },
+        {
+          "at": 288.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 344.89999997615814,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 380.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 437.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 479.09999990463257,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 535.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 580.5999999046326,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 707,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 869,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1063,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 629.3999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 707,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 869,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1063,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 712,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 736.3999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 781.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 847,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 888.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 933.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 983.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1030.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1093.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1141.7999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1185.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1233.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1288.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1340.3999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1386.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1433.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1489.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1529.5999999046326,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.05845648604269294,
+          "startTime": 552.7999999523163,
+          "sources": [
+            {
+              "node": "<a class=\"flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden\" href=\"/defterlerim\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewB",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.03709975369458128,
+          "startTime": 673.6000000238419,
+          "sources": [
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 5,
+                "y": 696,
+                "width": 350,
+                "height": 116,
+                "top": 696,
+                "right": 355,
+                "bottom": 812,
+                "left": 5
+              },
+              "currentRect": {
+                "x": 0,
+                "y": 0,
+                "width": 0,
+                "height": 0,
+                "top": 0,
+                "right": 0,
+                "bottom": 0,
+                "left": 0
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 71,
+          "children": []
+        },
+        {
+          "at": 220.10000002384186,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 276.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 328.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 372.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 422.60000002384186,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 707,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 475.60000002384186,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 707,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 901,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 524.6000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 707,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 869,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1063,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 574.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 707,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 869,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1063,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 622.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "",
+              "y": 162,
+              "height": 525
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 707,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 869,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1063,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 680.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 729.8999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 775.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 822.5,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 885.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 929.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 976.1000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1023,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1084.1999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1131.2999999523163,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1176.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1221.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1284.3999999761581,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1331,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1379.6000000238419,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1425.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1472,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        },
+        {
+          "at": 1532.6999999284744,
+          "children": [
+            {
+              "label": "İyi günler, QA24 Eylül PerşembeBugün nasılsın",
+              "y": 80,
+              "height": 62
+            },
+            {
+              "label": "today-path-card",
+              "y": 162,
+              "height": 545
+            },
+            {
+              "label": "dashboard-top-banner",
+              "y": 727,
+              "height": 186
+            },
+            {
+              "label": "Sınava kalanResmi sınav takvimi henüz yayımla",
+              "y": 933,
+              "height": 142
+            },
+            {
+              "label": "HedefinHedefini yaz, yol bir anlam kazansın.H",
+              "y": 1095,
+              "height": 174
+            },
+            {
+              "label": "DefterlerimYanlışlarına dön veya notlarına de",
+              "y": 1289,
+              "height": 90
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

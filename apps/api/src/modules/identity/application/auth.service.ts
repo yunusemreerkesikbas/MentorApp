@@ -1,8 +1,10 @@
 import { randomBytes } from "node:crypto";
+import { EventEmitter2 } from "@nestjs/event-emitter";
+import { IdentityEventTopic } from "../domain/identity.events";
 import { HttpStatus, Inject, Injectable, Logger } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import * as argon2 from "argon2";
-import { UserRole, type AuthUser } from "@mentor/types";
+import { ADMIN_PANEL_ROLES, UserRole, type AuthUser } from "@mentor/types";
 import type {
   ForgotPasswordInput,
   LoginInput,
@@ -12,7 +14,8 @@ import type {
 } from "@mentor/validation";
 import { DomainError, UnauthorizedError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
-import { isUniqueViolation } from "../../../common/errors/postgres-error";
+import { isUniqueViolation, uniqueConstraint } from "../../../common/errors/postgres-error";
+import { FeatureFlag } from "../../../common/config/config.catalog";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import type { Env } from "../../../config/env.validation";
 import { JOB_QUEUE_PORT, type JobQueuePort } from "../../../shared/ports/job-queue.port";
@@ -20,6 +23,7 @@ import { STORAGE_PORT, type StoragePort } from "../../../shared/ports/storage.po
 import { EmailTemplate, JobName } from "../../../shared/notifications/constants";
 import {
   EmailTokenType,
+  CURRENT_TERMS_VERSION,
   RESET_PASSWORD_TTL_MS,
   UserStatus,
 } from "../domain/identity.constants";
@@ -31,6 +35,10 @@ import { TurnstileService } from "./turnstile.service";
 export interface AuthResult {
   user: AuthUser;
   tokens: IssuedTokens;
+}
+
+export interface CoachSignupStatus {
+  open: boolean;
 }
 
 @Injectable()
@@ -46,10 +54,17 @@ export class AuthService {
     private readonly configRegistry: ConfigRegistryService,
     @Inject(JOB_QUEUE_PORT) private readonly queue: JobQueuePort,
     @Inject(STORAGE_PORT) private readonly storage: StoragePort,
+    private readonly events: EventEmitter2,
   ) {}
 
   async signup(input: SignupInput): Promise<AuthResult> {
     await this.turnstile.assertValid(input.turnstileToken);
+
+    // A shut intake must not mint half a coach: COACH without the registry row that
+    // `POST /v1/mentorship/coach-registration` refuses to write, stuck on the last onboarding step.
+    if (input.intent === "COACH" && !(await this.coachSignupStatus()).open) {
+      throw new DomainError(ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED, HttpStatus.FORBIDDEN);
+    }
 
     const existing = await this.usersRepo.findByEmailService(input.email);
     if (existing) {
@@ -59,12 +74,16 @@ export class AuthService {
     const passwordHash = await argon2.hash(input.password);
     let user: UserRow;
     try {
+      const acceptedAt = new Date();
       user = await this.usersRepo.createService({
         email: input.email,
         passwordHash,
         displayName: input.displayName,
         username: input.username,
-        kvkkAcceptedAt: new Date(),
+        kvkkAcceptedAt: acceptedAt,
+        termsAcceptedAt: acceptedAt,
+        termsVersion: CURRENT_TERMS_VERSION,
+        ageEligibilityConfirmedAt: acceptedAt,
         // The ONE role a client may ask for at signup (APP-089), and it is safe because COACH on
         // its own opens nothing: every road to a student's data runs through an invite code, and
         // the code needs a verified email plus an ACTIVE registry row that only
@@ -95,7 +114,23 @@ export class AuthService {
     return { user: toAuthUser(user, this.storage), tokens };
   }
 
+  /**
+   * Whether a coach may sign up right now. Read by the unauthenticated signup screen so it can say
+   * "closed" before the form is filled, instead of discovering it from a refused submission.
+   */
+  async coachSignupStatus(): Promise<CoachSignupStatus> {
+    return { open: await this.configRegistry.get(FeatureFlag.MENTORSHIP_APPLICATIONS_OPEN) };
+  }
+
   async login(input: LoginInput): Promise<AuthResult> {
+    return this.loginWithRoleGate(input, false);
+  }
+
+  async loginAdmin(input: LoginInput): Promise<AuthResult> {
+    return this.loginWithRoleGate(input, true);
+  }
+
+  private async loginWithRoleGate(input: LoginInput, requireAdmin: boolean): Promise<AuthResult> {
     const user = await this.usersRepo.findByEmailService(input.email);
     // Same generic 401 for unknown email AND wrong password (no user enumeration).
     if (!user) {
@@ -109,6 +144,9 @@ export class AuthService {
     }
     if (user.status !== UserStatus.ACTIVE) {
       throw new DomainError(ErrorCode.AUTH_ACCOUNT_SUSPENDED, HttpStatus.FORBIDDEN);
+    }
+    if (requireAdmin && !hasAdminPanelRole(user.roles)) {
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
     }
 
     const tokens = await this.tokenService.issue({
@@ -126,6 +164,15 @@ export class AuthService {
     return { user: toAuthUser(user, this.storage), tokens };
   }
 
+  async refreshAdmin(rawRefreshToken: string): Promise<AuthResult> {
+    const result = await this.refresh(rawRefreshToken);
+    if (!hasAdminPanelRole(result.user.roles)) {
+      await this.tokenService.revokeByRawToken(result.tokens.refreshToken);
+      throw new DomainError(ErrorCode.FORBIDDEN, HttpStatus.FORBIDDEN);
+    }
+    return result;
+  }
+
   async logout(rawRefreshToken: string | undefined): Promise<void> {
     if (rawRefreshToken) await this.tokenService.revokeByRawToken(rawRefreshToken);
     // Idempotent: missing/unknown cookie is still a successful logout.
@@ -138,6 +185,12 @@ export class AuthService {
       throw new DomainError(ErrorCode.AUTH_TOKEN_EXPIRED, HttpStatus.BAD_REQUEST);
     }
     await this.usersRepo.updateService(row.userId, { emailVerifiedAt: new Date() });
+    await this.events.emitAsync(IdentityEventTopic.EMAIL_VERIFIED, { userId: row.userId, date: new Date().toISOString().slice(0, 10) });
+  }
+
+  /** Spend leftover verify links so one mailed to a previous address cannot confirm the current one. */
+  async invalidateOutstandingVerification(userId: string): Promise<void> {
+    await this.emailTokenRepo.invalidateUnused(userId, EmailTokenType.VERIFY_EMAIL);
   }
 
   async resendVerificationEmail(userId: string): Promise<void> {
@@ -163,6 +216,11 @@ export class AuthService {
     }
 
     await this.emailTokenRepo.createVerificationResendAttempt(user.id);
+    await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
+  }
+
+  /** Direct dispatch without the resend quota. Signup only; an address change uses {@link resendVerificationEmail}. */
+  async sendVerificationEmail(user: UserRow): Promise<void> {
     await this.sendEmailToken(user, EmailTokenType.VERIFY_EMAIL);
   }
 
@@ -219,7 +277,12 @@ export class AuthService {
 const DUMMY_HASH =
   "$argon2id$v=19$m=65536,t=3,p=4$c29tZXNhbHRzb21lc2FsdA$RdescudvJCsgt3ub+b+dWRWJTmaaJObG";
 
-function uniqueConstraint(err: unknown): string | undefined {
+function hasAdminPanelRole(roles: readonly string[]): boolean {
+  return roles.some((role) => ADMIN_PANEL_ROLES.some((allowed) => allowed === role));
+}
+
+/* uniqueConstraint imported from postgres-error */
+const _unused_constraint = (err: unknown) => {
   return (
     (err as { constraint?: string })?.constraint ??
     (err as { cause?: { constraint?: string } })?.cause?.constraint

@@ -24,7 +24,7 @@ describe("admin (e2e)", () => {
     const email = `w6-${label}-${Date.now()}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `W6 ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `W6 ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 
@@ -250,6 +250,9 @@ describe("admin (e2e)", () => {
     expect(res.status).toBe(200);
     const ai = res.body.find((e: { key: string }) => e.key === "ai.enabled");
     expect(ai).toMatchObject({ category: "feature-flags", type: "boolean" });
+    // Test env is dev tooling (no APP_ENV, NODE_ENV=test), so the dev switch is listed and on.
+    const devConsole = res.body.find((e: { key: string }) => e.key === "dev.email.console_enabled");
+    expect(devConsole).toMatchObject({ category: "dev", type: "boolean", value: true });
   });
 
   it("rejects config from non-admins (403)", async () => {

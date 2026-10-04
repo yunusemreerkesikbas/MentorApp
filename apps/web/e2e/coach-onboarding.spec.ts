@@ -34,10 +34,16 @@ const COACH: AuthUser = {
 /** Mutated as the wizard PATCHes, so `hasCompletedOnboarding` flips exactly when the app says it does. */
 let user: AuthUser;
 let registered: Record<string, unknown> | null;
+let phoneVerified: boolean;
 
 test.beforeEach(async ({ page }) => {
   user = { ...COACH };
   registered = null;
+  phoneVerified = true;
+
+  await page.addInitScript(() => Object.defineProperty(window, "turnstile", { value: {
+    render: (_container: unknown, widget: { callback: (token: string) => void }) => { widget.callback("test-token"); return "widget"; }, remove: () => {},
+  } }));
 
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
@@ -66,7 +72,13 @@ test.beforeEach(async ({ page }) => {
       return json(registered, 201);
     }
     if (request.method() === "GET" && path === "/v1/mentorship/coach-registration/mine") {
-      return json({ registrationOpen: true, registration: registered, emailVerified: false });
+      return json({ registrationOpen: true, registration: registered, emailVerified: false, phoneVerified });
+    }
+    if (path === "/v1/users/me/phone") return json({ verified: phoneVerified, maskedPhoneNumber: phoneVerified ? "+90 5** *** **67" : null, available: true, reauthenticationRequired: false });
+    if (path === "/v1/users/me/phone/verifications") return json({ challengeId: "44444444-4444-4444-8444-444444444444", expiresAt: new Date(Date.now() + 60_000).toISOString(), resendAvailableAt: new Date(Date.now() + 30_000).toISOString(), maskedPhoneNumber: "+90 5** *** **67", sendStatus: "SENT" }, 201);
+    if (path.endsWith("/confirm") && path.startsWith("/v1/users/me/phone/verifications/")) {
+      phoneVerified = true;
+      return json({ verified: true, maskedPhoneNumber: "+90 5** *** **67", available: true, reauthenticationRequired: false });
     }
     if (request.method() === "GET" && path === "/v1/mentorship/overview") {
       // The code is withheld, not absent: this coach has not verified their email yet.
@@ -92,11 +104,6 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
   await page.goto("/onboarding");
 
   await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByLabel("Kullanıcı adı").fill("kocmert");
-  await page.getByRole("button", { name: "Devam" }).click();
-
-  // Avatar is optional for a coach exactly as it is for a student.
-  await page.getByRole("button", { name: "Şimdilik geç" }).click();
 
   // The exam question SURVIVES on this branch, reworded. It is genuinely the coach's (which exam do
   // they coach), and `hasCompletedOnboarding` gates all of `(app)` on `username && examType` — a
@@ -107,9 +114,9 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
   await page.getByRole("radio", { name: "YKS" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
 
-  // And here is the swap: a student would be asked "Bu yolun sonunda ne var?" and would write a
-  // personal goal into a vision board. A coach is asked how to introduce them to a student.
-  await expect(page.getByText("Bu yolun sonunda ne var?")).toHaveCount(0);
+  // And here is the swap: a student would be asked why, which field and how long a day, answers
+  // that write a goal board and a study rhythm. A coach is asked how to introduce them to a student.
+  await expect(page.getByText("Bu sınav senin için ne demek?")).toHaveCount(0);
   await expect(
     page.getByRole("heading", { name: "Öğrenciye kendini nasıl anlatalım?" }),
   ).toBeVisible();
@@ -118,9 +125,6 @@ test("koç dalı öğrenci sorularını sormuyor, koç sorularını soruyor", as
 test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", async ({ page }) => {
   await page.goto("/onboarding");
   await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByLabel("Kullanıcı adı").fill("kocmert");
-  await page.getByRole("button", { name: "Devam" }).click();
-  await page.getByRole("button", { name: "Şimdilik geç" }).click();
   await page.getByRole("radio", { name: "YKS" }).click();
   await page.getByRole("button", { name: "Devam" }).click();
 
@@ -129,12 +133,17 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await page.getByRole("button", { name: "Koç hesabımı aç" }).click();
 
   // The call that actually makes them a coach — the API writes the registry row and grants COACH
-  // off the back of it, which is why this step is not skippable the way the goal step is.
+  // off the back of it, which is why this step is not skippable the way the student questions are.
   await expect.poll(() => registered).not.toBeNull();
   expect((registered as { headline: string }).headline).toBe("YKS matematik koçu");
 
+  // The username comes last, for a coach too.
+  await page.getByLabel("Kullanıcı adı").fill("kocmert");
+  await page.getByRole("button", { name: "Devam" }).click();
+
   // The blocker they can still clear themselves, said before they find a locked panel.
   await expect(page.getByText("e-postanı doğrulaman yeterli", { exact: false })).toBeVisible();
+  await page.getByRole("button", { name: "Panele git" }).click();
 
   // `/kocluk`, not `/panel`: somebody who just wrote a coach profile does not want a study plan.
   //
@@ -145,13 +154,36 @@ test("koç profilini yazınca hesabı açılıyor ve kendi paneline iniyor", asy
   await expect(page).toHaveURL(/\/kocluk$/, { timeout: 10_000 });
 });
 
-test("doğrulanmamış e-posta davet kodu yerine sebebini gösteriyor", async ({ page }) => {
+test("doğrulanmamış e-posta davet kodundan önce doğrulama istiyor", async ({ page }) => {
   registered = { id: "reg-1", status: "ACTIVE", headline: "YKS koçu", bio: "…", verifiedClaims: [] };
   user = { ...COACH, username: "kocmert", examType: "YKS" };
 
+  const registrationState = page.waitForResponse((response) =>
+    response.url().includes("/v1/mentorship/coach-registration/mine") && response.status() === 200,
+  );
   await page.goto("/kocluk");
+  await registrationState;
 
-  // No "create a code" button, because pressing it would 403. The reason is shown instead.
-  await expect(page.getByRole("button", { name: "Kod oluştur" })).toHaveCount(0);
-  await expect(page.getByText("e-postanı doğrulayınca", { exact: false })).toBeVisible();
+  // The button explains the email lock and offers verification before any code request.
+  await page.getByRole("button", { name: "Kod oluştur" }).click();
+  await expect(page.getByRole("dialog", { name: "Önce e-postanı doğrula" })).toBeVisible();
+  await expect(page.getByText("Davet kodu e-postan doğrulanınca açılır.", { exact: false })).toBeVisible();
+});
+
+test("koç kaydı telefon doğrulanmadan açılmıyor", async ({ page }) => {
+  phoneVerified = false;
+  await page.goto("/onboarding");
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("radio", { name: "YKS" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByLabel("Tek cümlede sen").fill("YKS matematik koçu");
+  await page.getByLabel("Kendini anlat").fill("Sekiz yıldır YKS adaylarıyla çalışıyorum.");
+  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeDisabled();
+  expect(registered).toBeNull();
+  await page.getByLabel("Cep telefonu numaran").fill("0532 123 45 67");
+  await page.getByRole("button", { name: "SMS kodu gönder" }).click();
+  await page.getByLabel("SMS doğrulama kodu").fill("123456");
+  await page.getByRole("button", { name: "Telefonu doğrula" }).click();
+  await expect(page.getByRole("button", { name: "Koç hesabımı aç" })).toBeEnabled();
+  expect(registered).toBeNull();
 });

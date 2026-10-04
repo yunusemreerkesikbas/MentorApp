@@ -1,0 +1,144 @@
+{
+  "version": 1,
+  "generatedAt": "2026-09-24T09:23:25.649Z",
+  "routes": {
+    "article": {
+      "routeAttributableBytes": 427554,
+      "totalBytes": 979682,
+      "fontPreloadCount": 2,
+      "routeChunks": [
+        "static/chunks/0_zl2s71pmqz4.js",
+        "static/chunks/16x25ylznyz3x.js",
+        "static/chunks/1d_7s8umuujk5.js",
+        "static/chunks/1mv7hz2k6l7t5.js",
+        "static/chunks/1rhnz37b1e0qm.js",
+        "static/chunks/1vuvs5g6m_n6c.js",
+        "static/chunks/2jiryzry4v1e-.js",
+        "static/chunks/2jw5yoxwara--.js",
+        "static/chunks/3p8aly72nvdbg.js"
+      ],
+      "totalChunks": [
+        "static/chunks/0_zl2s71pmqz4.js",
+        "static/chunks/0cz1d0mv5g_q7.js",
+        "static/chunks/0g-2zg8yp7xzd.js",
+        "static/chunks/16x25ylznyz3x.js",
+        "static/chunks/1cudh1_nqe6j0.js",
+        "static/chunks/1d_7s8umuujk5.js",
+        "static/chunks/1mv7hz2k6l7t5.js",
+        "static/chunks/1rhnz37b1e0qm.js",
+        "static/chunks/1vuvs5g6m_n6c.js",
+        "static/chunks/2jiryzry4v1e-.js",
+        "static/chunks/2jw5yoxwara--.js",
+        "static/chunks/2s_0vzr2ej9kp.js",
+        "static/chunks/2ws3rpfxcoy7-.js",
+        "static/chunks/3p8aly72nvdbg.js",
+        "static/chunks/turbopack-07t3uorccm8ln.js"
+      ]
+    },
+    "dashboard": {
+      "routeAttributableBytes": 770956,
+      "totalBytes": 1323084,
+      "routeChunks": [
+        "static/chunks/01mq_j8p4w865.js",
+        "static/chunks/0fmmnujb-had1.js",
+        "static/chunks/0hn_quf_rfq14.js",
+        "static/chunks/1-mitexwmat3u.js",
+        "static/chunks/16x25ylznyz3x.js",
+        "static/chunks/1d_7s8umuujk5.js",
+        "static/chunks/1ktyd6oia0a3_.js",
+        "static/chunks/1mv7hz2k6l7t5.js",
+        "static/chunks/1rhnz37b1e0qm.js",
+        "static/chunks/1vuvs5g6m_n6c.js",
+        "static/chunks/24unrmb_zemsw.js",
+        "static/chunks/2fapw4atfbdkq.js",
+        "static/chunks/2i7vdoziz7wz9.js",
+        "static/chunks/2jiryzry4v1e-.js",
+        "static/chunks/2jw5yoxwara--.js",
+        "static/chunks/34u1g2d453ono.js",
+        "static/chunks/3evl33v9yqshw.js",
+        "static/chunks/3p8aly72nvdbg.js"
+      ],
+      "totalChunks": [
+        "static/chunks/01mq_j8p4w865.js",
+        "static/chunks/0cz1d0mv5g_q7.js",
+        "static/chunks/0fmmnujb-had1.js",
+        "static/chunks/0g-2zg8yp7xzd.js",
+        "static/chunks/0hn_quf_rfq14.js",
+        "static/chunks/1-mitexwmat3u.js",
+        "static/chunks/16x25ylznyz3x.js",
+        "static/chunks/1cudh1_nqe6j0.js",
+        "static/chunks/1d_7s8umuujk5.js",
+        "static/chunks/1ktyd6oia0a3_.js",
+        "static/chunks/1mv7hz2k6l7t5.js",
+        "static/chunks/1rhnz37b1e0qm.js",
+        "static/chunks/1vuvs5g6m_n6c.js",
+        "static/chunks/24unrmb_zemsw.js",
+        "static/chunks/2fapw4atfbdkq.js",
+        "static/chunks/2i7vdoziz7wz9.js",
+        "static/chunks/2jiryzry4v1e-.js",
+        "static/chunks/2jw5yoxwara--.js",
+        "static/chunks/2s_0vzr2ej9kp.js",
+        "static/chunks/2ws3rpfxcoy7-.js",
+        "static/chunks/34u1g2d453ono.js",
+        "static/chunks/3evl33v9yqshw.js",
+        "static/chunks/3p8aly72nvdbg.js",
+        "static/chunks/turbopack-07t3uorccm8ln.js"
+      ]
+    }
+  },
+  "messages": {
+    "root": {
+      "namespaces": [
+        "consentBanner"
+      ],
+      "localeBytes": {
+        "tr": 248,
+        "en": 221
+      },
+      "maxBytes": 248
+    },
+    "welcome": {
+      "namespaces": [
+        "welcome"
+      ],
+      "localeBytes": {
+        "tr": 779,
+        "en": 814
+      },
+      "maxBytes": 814
+    },
+    "article": {
+      "namespaces": [
+        "article",
+        "knowledge",
+        "ads"
+      ],
+      "localeBytes": {
+        "tr": 4107,
+        "en": 3923
+      },
+      "maxBytes": 4107
+    }
+  },
+  "metrics": {
+    "articleRouteAttributableBytes": 427554,
+    "articleTotalBytes": 979682,
+    "dashboardRouteAttributableBytes": 770956,
+    "dashboardTotalBytes": 1323084,
+    "articleFontPreloadCount": 2,
+    "rootMessageBytes": 248,
+    "welcomeMessageBytes": 814,
+    "articleMessageBytes": 4107
+  },
+  "limits": {
+    "articleRouteAttributableBytes": 720896,
+    "articleTotalBytes": 1008640,
+    "dashboardRouteAttributableBytes": 778240,
+    "dashboardTotalBytes": 1326080,
+    "articleFontPreloadCount": 2,
+    "rootMessageBytes": 1024,
+    "welcomeMessageBytes": 2048,
+    "articleMessageBytes": 6144
+  },
+  "violations": []
+}

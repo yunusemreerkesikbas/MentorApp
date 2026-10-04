@@ -1,7 +1,9 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AuthUser,
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
+  PlanEventDto,
   PlanTaskDto,
   SubscriptionView,
 } from "@mentor/types";
@@ -40,11 +42,14 @@ const task: PlanTaskDto = {
   coachNote: null,
   origin: null,
   assignmentGroupId: null,
+  durationMinutes: null,
+  sessionFocusMinutes: 25,
 };
 
 const readyPreview: CoachPlanAdaptationDto = {
   status: "READY",
   message: "Planına dokunmadan güvenli bir önizleme hazırladım.",
+  groundingLine: "Bekleyen işlerin arasında Matematik var.",
   window: { from: "2026-07-21", to: "2026-07-27" },
   planRevision: revision,
   model: "fake",
@@ -62,9 +67,161 @@ const readyPreview: CoachPlanAdaptationDto = {
       title: "Kısa tekrar",
       subject: null,
       taskDate: "2026-07-22",
+      durationMinutes: 41,
     },
   ],
 };
+
+const coverageLine = "4 denemene, 9 yanlış kartına ve son 28 gündeki 12 seansına baktık.";
+const weakLine =
+  "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6).";
+const rhythmLine = "Son 28 günde 20 gün, 24 seansta 1030 dakika çalıştın. Seansların ortalama 43 dakika.";
+
+/** ISO weekday (1 = Monday) `offset` days from the browser's today, as the wizard lists them. */
+function weekdayIn(offset: number) {
+  const date = new Date();
+  date.setDate(date.getDate() + offset);
+  return ((date.getDay() + 6) % 7) + 1;
+}
+
+const brief: CoachPlanAdaptationBriefDto = {
+  groundingLine: coverageLine,
+  evidence: [
+    { type: "WEAK_SUBJECTS", summary: weakLine, observedAt: "2026-07-20T09:00:00.000Z" },
+    { type: "LONG_TERM_RHYTHM", summary: rhythmLine, observedAt: "2026-07-20T09:00:00.000Z" },
+  ],
+  suggestion: {
+    days: 2,
+    weekdays: [weekdayIn(2), weekdayIn(4)],
+    minutesPerDay: 60,
+    focusSubjects: ["Matematik"],
+  },
+};
+
+const groundedPreview: CoachPlanAdaptationDto = {
+  ...readyPreview,
+  groundingLine: coverageLine,
+  coachNote: "Seçtiğin 120 dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.",
+  usedEvidence: brief.evidence,
+  changes: [
+    { ...readyPreview.changes[0]!, reason: rhythmLine },
+    {
+      kind: "ADD",
+      title: "Matematik · 60 dk",
+      subject: "Matematik",
+      taskDate: "2026-07-22",
+      reason: weakLine,
+    },
+  ],
+};
+
+/** Walks the four wizard steps on their defaults and asks for the preview. */
+async function generateFromWizard(page: Page) {
+  const wizard = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
+  await expect(wizard).toBeVisible();
+  for (const next of [
+    "Günde yaklaşık kaç dakika?",
+    "Ağırlık vermek istediğin dersler",
+    "Bu hafta için notun (isteğe bağlı)",
+  ]) {
+    await page.getByRole("button", { name: "Devam" }).click();
+    await expect(page.getByRole("dialog", { name: next })).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+}
+
+test("görev süresi: tüm gün görevini 80 dakika ile oluşturur", async ({ page }) => {
+  const api = await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  const sheet = page.getByLabel("Yeni görev", { exact: true }).filter({ has: page.getByRole("button", { name: "Görev ekle", exact: true }) });
+  await expect(page.getByLabel("Çalışma süresi (dk)")).toHaveValue("");
+  await page.getByRole("textbox", { name: "Yeni görev", exact: true }).fill("Duration review");
+  await page.getByLabel("Çalışma süresi (dk)").fill("80");
+  await sheet.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  await expect.poll(() => api.createBodies.length).toBe(1);
+  expect(api.createBodies[0]).toMatchObject({ title: "Duration review", durationMinutes: 80 });
+  expect(api.createBodies[0]).not.toHaveProperty("startTime");
+});
+
+test("görev süresi: düzenlerken yükler, değiştirir ve temizler", async ({ page }) => {
+  const current = { ...task, taskDate: new Date().toISOString().slice(0, 10), durationMinutes: 80, sessionFocusMinutes: 80 };
+  await mockPlanApi(page, { preview: readyPreview, tasks: [current] });
+  const patches: unknown[] = [];
+  await page.route(`http://localhost:3001/v1/plan-tasks/${taskId}`, async (route) => {
+    const body = route.request().postDataJSON();
+    patches.push(body);
+    Object.assign(current, body, { sessionFocusMinutes: body.durationMinutes ?? 25 });
+    return json(route, current);
+  });
+  await page.goto("/plan");
+  await page.getByRole("tab", { name: "Liste", exact: true }).click();
+  for (const [input, expected] of [["41", 41], ["", null]] as const) {
+    await page.getByRole("button", { name: "Matematik çöz için seçenekler" }).click();
+    await page.getByRole("menuitem", { name: "Görevi düzenle" }).click();
+    const sheet = page.getByLabel("Görevi düzenle", { exact: true });
+    await expect(page.getByLabel("Çalışma süresi (dk)")).toHaveValue(expected === 41 ? "80" : "41");
+    await page.getByLabel("Çalışma süresi (dk)").fill(input);
+    await sheet.getByRole("button", { name: "Kaydet", exact: true }).click();
+    await expect.poll(() => patches.at(-1)).toMatchObject({ durationMinutes: expected });
+  }
+});
+
+test("Koçla planla beklerken sayfada yüklenir ve sonuç doğrudan önizlemeye geçer", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  const api = await mockPlanApi(page, {
+    preview: readyPreview,
+    brief,
+    previewResponse: async (route) => { await gate; await json(route, readyPreview); },
+  });
+  await page.goto("/plan");
+  const trigger = page.getByRole("button", { name: "Koçla planla" });
+  await trigger.click();
+  await generateFromWizard(page);
+  await expect.poll(() => api.previewCalls).toBe(1);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(trigger).toHaveAttribute("aria-busy", "true");
+  finish();
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview).toBeVisible();
+  await preview.getByRole("button", { name: "Kapat", exact: true }).click();
+  await expect(trigger).toBeFocused();
+  expect(api.previewCalls).toBe(1);
+});
+
+test("Plan isteğinin geç yanıtı sayfadan ayrıldıktan sonra önizleme açmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, previewResponse: async (route) => { await gate; await json(route, readyPreview); } });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await page.getByRole("link", { name: "Anasayfa", exact: true }).first().click();
+  await expect(page).toHaveURL(/\/panel$/);
+  const response = page.waitForResponse((response) => response.url().endsWith("/v1/coach/plan-adaptation"));
+  finish();
+  await response;
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
+});
+
+test("Plan önizleme sonrası yenileme sürerken başka sayfanın penceresini kapatmaz", async ({ page }) => {
+  let finish!: () => void;
+  const gate = new Promise<void>((resolve) => { finish = resolve; });
+  await mockPlanApi(page, { preview: readyPreview, afterApplyRead: gate });
+  await page.goto("/panel");
+  await page.getByRole("link", { name: "Plan", exact: true }).first().click();
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await expect(page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Görev ekle", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Yeni görev" })).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/panel$/);
+  await expect(page.getByRole("dialog", { name: "Yeni görev" })).toBeVisible();
+  finish();
+});
 
 test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", async ({
   page,
@@ -73,17 +230,23 @@ test("tek Koçla planla akışında MOVE ve ADD seçimlerini atomik uygular", as
   await page.goto("/plan");
 
   await page.getByRole("button", { name: "Koçla planla" }).click();
-  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await generateFromWizard(page);
 
-  await expect(page.getByText("Taşı", { exact: true })).toBeVisible();
-  await expect(page.getByText("Ekle", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("Bekleyen işlerin arasında Matematik var."),
+  ).toBeVisible();
+  const preview = page.getByRole("dialog", { name: "Plan uyarlama önizlemesi" });
+  await expect(preview.getByRole("checkbox", { name: /Matematik çöz/ })).toBeChecked();
+  await expect(preview.getByRole("checkbox", { name: /Kısa tekrar/ })).toBeChecked();
   await expect(page.getByText(/21 Temmuz.*23 Temmuz/)).toBeVisible();
+  await expect(preview.getByText("41 dk", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
 
   await expect(page.getByText("Planın güncellendi")).toBeVisible();
   expect(api.previewCalls).toBe(1);
   expect(api.applyBodies).toEqual([
     {
+      source: "PLAN",
       planRevision: revision,
       changes: readyPreview.changes,
     },
@@ -143,6 +306,7 @@ test("mood query akışını StrictMode altında bir kez tüketir", async ({
     ...readyPreview,
     status: "NO_CHANGE",
     message: "Şu an planını değiştirmen gerekmiyor.",
+    groundingLine: null,
     changes: [],
     model: "rules",
   };
@@ -167,7 +331,7 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
   });
   await page.goto("/plan");
   await page.getByRole("button", { name: "Koçla planla" }).click();
-  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await generateFromWizard(page);
   await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
 
   await expect(page.getByText("Planın bu sırada değişti.")).toBeVisible();
@@ -178,6 +342,104 @@ test("stale preview seçimlerini korur ve ikinci çağrıyı yalnız manuel yeni
 
   await page.getByRole("button", { name: "Yeniden hazırla" }).click();
   await expect.poll(() => api.previewCalls).toBe(2);
+});
+
+test("Koçla planla sihirbazı koçun baktıklarıyla açılır, ritmi ve zayıf dersi önerir", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 1368, height: 911 });
+  const api = await mockPlanApi(page, { preview: groundedPreview, brief });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+
+  const days = page.getByRole("dialog", { name: "Bu hafta hangi günler çalışacaksın?" });
+  await expect.poll(() => days.evaluate((element) => element.scrollHeight <= element.clientHeight)).toBe(true);
+  await expect(days.getByText(coverageLine)).toBeVisible();
+  await expect(days.getByText("Son 4 haftada en çok bu günlerde çalıştın.")).toBeVisible();
+  // Seven rows starting today, the student's most-studied weekdays already picked and badged.
+  const dayRows = days.getByRole("checkbox");
+  await expect(dayRows).toHaveCount(7);
+  await expect(dayRows.first()).toContainText("Bugün");
+  await expect(days.getByRole("checkbox", { checked: true })).toHaveCount(2);
+  await expect(dayRows.nth(2)).toHaveAttribute("aria-checked", "true");
+  await expect(dayRows.nth(2)).toContainText("Ritmin");
+  await expect(dayRows.nth(4)).toHaveAttribute("aria-checked", "true");
+  // The pre-pick is only a start: drop one, add another.
+  await dayRows.nth(4).click();
+  await dayRows.nth(5).click();
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  const minutes = page.getByRole("dialog", { name: "Günde yaklaşık kaç dakika?" });
+  await expect(minutes.getByRole("radio", { checked: true })).toContainText("60");
+  await expect(minutes.getByText("Ritmin")).toBeVisible();
+  // A typed minute count replaces the card; one out of range stops the step.
+  const custom = minutes.getByRole("spinbutton", { name: "Ya da kendin yaz" });
+  await expect(custom).not.toHaveAttribute("placeholder");
+  await expect(custom).toHaveCSS("appearance", "textfield");
+  await custom.fill("700");
+  await page.getByRole("button", { name: "Devam" }).click();
+  const tooLong = page.getByText("10 ile 600 dakika arasında bir süre yaz.");
+  await expect(tooLong).toBeVisible();
+  await custom.fill("45");
+  await expect(tooLong).toHaveCount(0);
+  await expect(minutes.getByRole("radio", { checked: true })).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  const subjects = page.getByRole("dialog", { name: "Ağırlık vermek istediğin dersler" });
+  const math = subjects.getByRole("checkbox", { name: /Matematik/ });
+  await expect(math).toHaveAttribute("aria-checked", "true");
+  await expect(math).toContainText("Koçun önerisi");
+  // No cap: every subject stays open.
+  for (const name of ["Türkçe", "Tarih", "Coğrafya"]) {
+    await subjects.getByRole("checkbox", { name: new RegExp(name) }).click();
+  }
+
+  await page.getByRole("button", { name: "Devam" }).click();
+  await page.getByRole("button", { name: "Önizlemeyi hazırla" }).click();
+  await expect(page.getByText(coverageLine)).toBeVisible();
+  await expect(page.getByText("Seçtiğin 120 dakikayı küçük görevlere böldüm; istersen süreyi değiştirebilirsin.")).toBeVisible();
+  expect(api.briefCalls).toBe(1);
+  expect(api.previewBodies).toEqual([
+    {
+      source: "PLAN",
+      studyWeekdays: [weekdayIn(2), weekdayIn(5)],
+      minutesPerDay: 45,
+      focusSubjects: ["Matematik", "Türkçe", "Tarih", "Coğrafya"],
+    },
+  ]);
+});
+
+test("önizleme koçun baktıklarını ve her görevin nedenini gösterir", async ({
+  page,
+}) => {
+  const api = await mockPlanApi(page, { preview: groundedPreview, brief });
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await generateFromWizard(page);
+
+  await expect(page.getByText(coverageLine)).toBeVisible();
+  await expect(page.getByText("PREMIUM", { exact: true })).toBeVisible();
+  await expect(page.getByText(`Neden: ${weakLine}`)).toBeVisible();
+  await expect(page.getByText(`Neden: ${rhythmLine}`)).toBeVisible();
+
+  // The full list sits behind one tap; the rows already carry the line that matters for them.
+  await page.getByText("Koçun baktıkları").click();
+  await expect(page.getByRole("listitem").filter({ hasText: weakLine })).toBeVisible();
+
+  await page.getByRole("button", { name: "Seçilenleri uygula" }).click();
+  await expect(page.getByText("Planın güncellendi")).toBeVisible();
+  expect(api.applyBodies).toHaveLength(1);
+  expect(api.applyBodies[0]).toMatchObject({ source: "PLAN" });
+});
+
+test("eski özel günlük hedef serbest giriş kartında görünür", async ({ page }) => {
+  await mockPlanApi(page, { preview: groundedPreview, brief, dailyGoalMinutes: 75 });
+  await page.goto("/plan");
+  await page.getByRole("button", { name: "Koçla planla" }).click();
+  await page.getByRole("button", { name: "Devam" }).click();
+  await expect(page.getByRole("spinbutton", { name: "Ya da kendin yaz" })).toHaveValue("75");
 });
 
 /** Today in the browser's local calendar — the calendar view's "past is read-only" rule uses it. */
@@ -197,6 +459,8 @@ const timedTask: PlanTaskDto = {
   coachNote: null,
   origin: null,
   assignmentGroupId: null,
+  durationMinutes: null,
+  sessionFocusMinutes: 25,
 };
 
 test.describe("Takvim", () => {
@@ -289,6 +553,7 @@ test.describe("Takvim", () => {
     await page.getByLabel("Yeni görev").fill("Deneme çöz");
     await page.getByLabel("Bitiş").fill("10:30");
     await page.getByLabel("Açıklama").fill("Sayısal bölüm");
+    await page.getByLabel("Çalışma süresi (dk)").fill("80");
     await sheet.getByRole("button", { name: "Görev ekle" }).click();
 
     await expect.poll(() => api.createBodies.length).toBe(1);
@@ -298,6 +563,7 @@ test.describe("Takvim", () => {
       startTime: "09:00",
       endTime: "10:30",
       description: "Sayısal bölüm",
+      durationMinutes: 80,
     });
     // The student's form omits these rather than sending explicit nulls. Server-side both are
     // `nullish()`, so absence and null mean the same thing — but only one of them is the student's
@@ -331,12 +597,19 @@ test.describe("Takvim", () => {
 
 interface MockPlanOptions {
   preview: CoachPlanAdaptationDto;
+  previewResponse?: (route: Route, call: number) => Promise<void>;
+  afterApplyRead?: Promise<void>;
+  /** Wizard seed. Left out, the route answers 501 and the wizard must work without it. */
+  brief?: CoachPlanAdaptationBriefDto;
   premium?: boolean;
+  dailyGoalMinutes?: number;
   staleApplyOnce?: boolean;
   /** Overrides the default single-task list. */
   tasks?: PlanTaskDto[];
   /** Seeds the persisted Takvim view + scale before the app boots. */
   calendar?: { scale: "day" | "week" | "month" };
+  /** Events the student takes part in (their coach's meetings); none by default. */
+  events?: PlanEventDto[];
 }
 
 for (const conflict of [false, true]) {
@@ -349,7 +622,7 @@ for (const conflict of [false, true]) {
     await page.route("**/v1/content/**", (route) => {
       const path = new URL(route.request().url()).pathname;
       const exam = { id: examId, slug: "kpss-test", name: "KPSS", family: "KPSS" };
-      return json(route, path.endsWith("/subjects") ? [{ slug: "matematik", name: "Matematik", questionCount: 30 }] : path.endsWith("/topics") ? [{ slug: "problemler", subjectSlug: "matematik", name: "Problemler" }] : path.endsWith("/exams") ? { items: [exam], total: 1, page: 1, pageSize: 100 } : { exam, events: [] });
+      return json(route, path.endsWith("/subjects") ? [{ slug: "matematik", name: "Matematik", questionCount: 30 }] : path.endsWith("/topics") ? [{ slug: "problemler", subjectSlug: "matematik", name: "Problemler" }] : path.endsWith("/exams") ? { items: [exam], total: 1, page: 1, pageSize: 100 } : path.includes("/by-type/") && !path.endsWith("/calendar") ? exam : { exam, events: [] });
     });
     await page.route("**/v1/coaching/analysis/plan-task", (route) => {
       if (route.request().method() === "OPTIONS") return json(route, null, 204);
@@ -384,9 +657,152 @@ for (const conflict of [false, true]) {
   });
 }
 
+test.describe("bildirim linki", () => {
+  // A coach's program for next week: "Koçundan görevler" links to /plan?date=<its first day>.
+  const day = istanbulDay(7);
+  const coachTask: PlanTaskDto = {
+    ...task,
+    title: "Koçun gelecek hafta görevi",
+    taskDate: day,
+    origin: { type: "MENTORSHIP", linkId: "44444444-4444-4444-8444-444444444444" },
+  };
+
+  test("?date= ile açılan plan görevin gününü gösterir", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+    await routeTasksByDate(page, [coachTask]);
+    await page.goto(`/plan?date=${day}`);
+
+    await expect(page.getByRole("button", { name: dayChip(day), exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByText("Koçun gelecek hafta görevi")).toBeVisible();
+  });
+
+  test("plandayken bildirime dokunmak görevin gününe geçer", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [] });
+    await routeTasksByDate(page, [coachTask]);
+    await page.route("http://localhost:3001/v1/notifications**", async (route) => {
+      const request = route.request();
+      const path = new URL(request.url()).pathname;
+      if (request.method() === "PATCH") return json(route, null, 204);
+      if (request.method() !== "GET" || path !== "/v1/notifications") return route.fallback();
+      return json(route, {
+        items: [
+          {
+            id: "55555555-5555-4555-8555-555555555555",
+            category: "MENTORSHIP",
+            title: "Koçundan görevler",
+            body: "Koçun planına 3 görev ekledi.",
+            readAt: null,
+            linkUrl: `/plan?date=${day}`,
+            createdAt: new Date().toISOString(),
+          },
+        ],
+        unreadCount: 1,
+        hasMore: false,
+      });
+    });
+    await page.goto("/plan");
+    await expect(page.getByRole("button", { name: "Sonraki hafta" })).toBeVisible();
+
+    await page.getByRole("button", { name: /Bildirimler/ }).first().click();
+    await page.getByText("Koçundan görevler").click();
+
+    await expect(page.getByRole("button", { name: dayChip(day), exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByText("Koçun gelecek hafta görevi")).toBeVisible();
+  });
+});
+
+test.describe("koçun görüşmesi", () => {
+  // The coach set up a meeting with this student next week; the student is an attendee.
+  const day = istanbulDay(7);
+  const meeting: PlanEventDto = {
+    id: "77777777-7777-4777-8777-777777777777",
+    seriesId: null,
+    organizerUserId: "88888888-8888-4888-8888-888888888888",
+    orgId: null,
+    title: "Haftalık görüşme",
+    description: "Denemeyi birlikte konuşalım.",
+    eventDate: day,
+    startTime: "18:00",
+    endTime: "18:30",
+    status: "SCHEDULED",
+    attendeeCount: 1,
+    recurrence: null,
+    createdAt: "2026-09-27T18:00:00.000Z",
+    updatedAt: "2026-09-27T18:00:00.000Z",
+  };
+
+  test("günün listesinde salt-okunur durur ve detayı açılır", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [], events: [meeting] });
+    await page.goto(`/plan?date=${day}`);
+
+    const row = page.getByRole("button", { name: /Haftalık görüşme/ });
+    await expect(row).toContainText("Koçunla");
+    await expect(row).toContainText("18:00 – 18:30");
+    await row.click();
+    const sheet = page.getByRole("dialog", { name: "Etkinlik detayı" });
+    await expect(sheet.getByText("Denemeyi birlikte konuşalım.")).toBeVisible();
+    // The coach's meeting is theirs to change: the student gets no edit or delete.
+    await expect(sheet.getByRole("button", { name: /Düzenle|Sil/ })).toHaveCount(0);
+  });
+
+  test("bildirimdeki &event= detayı kendiliğinden açar", async ({ page }) => {
+    await mockPlanApi(page, { preview: readyPreview, tasks: [], events: [meeting] });
+    await page.goto(`/plan?date=${day}&event=${meeting.id}`);
+
+    const sheet = page.getByRole("dialog", { name: "Etkinlik detayı" });
+    await expect(sheet.getByText("Haftalık görüşme")).toBeVisible();
+  });
+
+  test("Takvim'de o saatin çipi olarak görünür", async ({ page }) => {
+    await mockPlanApi(page, {
+      preview: readyPreview,
+      tasks: [],
+      events: [meeting],
+      calendar: { scale: "day" },
+    });
+    await page.goto(`/plan?date=${day}`);
+
+    await expect(page.getByRole("button", { name: /Haftalık görüşme/ }).first()).toBeVisible();
+  });
+});
+
+function istanbulDay(offsetDays: number): string {
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "Europe/Istanbul" }).format(
+    new Date(Date.now() + offsetDays * 86_400_000),
+  );
+}
+
+/** The week strip names a day "Pzt 28". */
+function dayChip(isoDate: string): string {
+  const day = new Date(`${isoDate}T12:00:00Z`);
+  return `${["Paz", "Pzt", "Sal", "Çar", "Per", "Cum", "Cts"][day.getUTCDay()]} ${day.getUTCDate()}`;
+}
+
+/** `mockPlanApi` returns every task for any day; this answers each day with its own tasks only. */
+async function routeTasksByDate(page: Page, tasks: PlanTaskDto[]) {
+  await page.route("http://localhost:3001/v1/plan-tasks**", async (route) => {
+    const request = route.request();
+    const url = new URL(request.url());
+    if (request.method() !== "GET" || url.pathname !== "/v1/plan-tasks") return route.fallback();
+    const date = url.searchParams.get("date");
+    const from = url.searchParams.get("from") ?? date ?? "";
+    const to = url.searchParams.get("to") ?? date ?? "";
+    const items = tasks.filter((item) => item.taskDate >= from && item.taskDate <= to);
+    return json(route, { items, total: items.length, page: 1, pageSize: 50 });
+  });
+}
+
 async function mockPlanApi(page: Page, options: MockPlanOptions) {
   let previewCalls = 0;
+  let briefCalls = 0;
   let staleApply = options.staleApplyOnce ?? false;
+  let applied = false;
   const previewBodies: unknown[] = [];
   const applyBodies: unknown[] = [];
   const createBodies: Record<string, unknown>[] = [];
@@ -401,6 +817,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     },
     features: {} as SubscriptionView["features"],
     discount: null,
+    trialEligibility: { eligible: false, reason: "NO_TRIAL" },
+    pendingTrialCheckoutUrl: null,
+    pendingCheckoutUrl: null,
   };
 
   await page.addInitScript((scale: string | null) => {
@@ -419,9 +838,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
 
     if (method === "OPTIONS") return json(route, null, 204);
     if (method === "POST" && path === "/v1/auth/refresh") {
-      return json(route, { accessToken: "test-token", expiresIn: 3600, user });
+      return json(route, { accessToken: "test-token", expiresIn: 3600, user: { ...user, dailyFocusGoalMinutes: options.dailyGoalMinutes ?? user.dailyFocusGoalMinutes } });
     }
-    if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me") return json(route, { ...user, dailyFocusGoalMinutes: options.dailyGoalMinutes ?? user.dailyFocusGoalMinutes });
     if (method === "GET" && path.startsWith("/v1/notifications")) {
       return json(route, {
         items: [],
@@ -436,6 +855,12 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     }
     if (method === "GET" && path === "/v1/subscription") {
       return json(route, subscription);
+    }
+    if (method === "GET" && path === "/v1/plan-events") {
+      const from = url.searchParams.get("from") ?? url.searchParams.get("date") ?? "";
+      const to = url.searchParams.get("to") ?? url.searchParams.get("date") ?? "";
+      const items = (options.events ?? []).filter((e) => e.eventDate >= from && e.eventDate <= to);
+      return json(route, { items, total: items.length, page: 1, pageSize: 100 });
     }
     if (method === "GET" && path === "/v1/plan-tasks/calendar") {
       return json(route, { dates: tasks.map((x) => x.taskDate) });
@@ -461,6 +886,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
       );
     }
     if (method === "GET" && path === "/v1/plan-tasks") {
+      if (applied) await options.afterApplyRead;
       return json(route, {
         items: tasks,
         total: tasks.length,
@@ -471,7 +897,12 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     if (method === "POST" && path === "/v1/coach/plan-adaptation") {
       previewCalls += 1;
       previewBodies.push(request.postDataJSON());
+      if (options.previewResponse) return options.previewResponse(route, previewCalls);
       return json(route, options.preview);
+    }
+    if (method === "GET" && path === "/v1/coach/plan-adaptation/brief" && options.brief) {
+      briefCalls += 1;
+      return json(route, options.brief);
     }
     if (method === "POST" && path === "/v1/plan-tasks/adapt") {
       applyBodies.push(request.postDataJSON());
@@ -486,6 +917,7 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
           409,
         );
       }
+      applied = true;
       return json(route, {
         moved: [{ ...task, taskDate: "2026-07-23", sortOrder: 1 }],
         added: [
@@ -503,6 +935,31 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
     if (method === "GET" && path.startsWith("/v1/economy/")) {
       return json(route, { code: "ECONOMY_DISABLED", message: "Kapalı" }, 404);
     }
+    if (
+      method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, {
+        id: "11111111-1111-4111-8111-111111111111",
+        slug: "kpss-lisans-2026",
+        name: "KPSS Lisans 2026",
+        family: "KPSS",
+        variant: "LISANS",
+        isCurrent: true,
+      });
+    }
+    if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/subjects") {
+      return json(route, [
+        { slug: "matematik", name: "Matematik", questionCount: 30, sortOrder: 0 },
+        { slug: "turkce", name: "Türkçe", questionCount: 30, sortOrder: 1 },
+        { slug: "tarih", name: "Tarih", questionCount: 27, sortOrder: 2 },
+        { slug: "cografya", name: "Coğrafya", questionCount: 18, sortOrder: 3 },
+      ]);
+    }
+    if (method === "GET" && path === "/v1/content/exams/kpss-lisans-2026/topics") {
+      return json(route, []);
+    }
 
     return json(
       route,
@@ -517,6 +974,9 @@ async function mockPlanApi(page: Page, options: MockPlanOptions) {
   return {
     get previewCalls() {
       return previewCalls;
+    },
+    get briefCalls() {
+      return briefCalls;
     },
     previewBodies,
     applyBodies,

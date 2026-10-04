@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, count, desc, eq, inArray, or, sql } from "drizzle-orm";
-import type { MentorshipRiskFlagId } from "@mentor/types";
+import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import {
+  MentorshipSeat,
+  type MentorshipRiskFlagId,
+  type MentorshipSeatId,
+} from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
@@ -12,22 +16,10 @@ export type MentorshipLinkRow = typeof coachStudents.$inferSelect;
 export interface ActiveLinkRow {
   coachId: string;
   studentId: string;
+  /** Where a new student's silence starts counting (`evaluateRiskFlags`). */
+  acceptedAt: Date | null;
   attendedAt: Date | null;
   attendedFlags: string[] | null;
-}
-
-/**
- * How many students this coach is currently following. Takes the transaction rather than opening
- * one, because the quota check in {@link MentorshipLinkRepository.acceptInvite} has to run inside
- * that call's advisory lock. One definition, two callers: the seat counter the coach reads must be
- * the same number the redemption refuses on, or the roster would promise a seat the accept denies.
- */
-async function countActive(tx: DatabaseTx, coachId: string): Promise<number> {
-  const rows = await tx
-    .select({ n: count() })
-    .from(coachStudents)
-    .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
-  return rows[0]?.n ?? 0;
 }
 
 /**
@@ -106,7 +98,8 @@ export class MentorshipLinkRepository {
   }
 
   /**
-   * Every live coach↔student pair, for the daily risk digest.
+   * Every live coach↔student pair the coach can see, for the daily risk digest. A link waiting
+   * for a seat is left out: it is frozen, and the morning email is the coach's window too.
    *
    * Deliberately unpaged: the digest evaluates the whole population once a day and one batch
    * snapshot call covers it. Two ids per row, no identity or behavioural data — the caller resolves
@@ -118,24 +111,36 @@ export class MentorshipLinkRepository {
         .select({
           coachId: coachStudents.coachId,
           studentId: coachStudents.studentId,
+          acceptedAt: coachStudents.acceptedAt,
           // The digest reads the same mark the roster does — a student the coach handled must not
           // be named again in the morning email while a different one has news.
           attendedAt: coachStudents.attendedAt,
           attendedFlags: coachStudents.attendedFlags,
         })
         .from(coachStudents)
-        .where(eq(coachStudents.status, "ACTIVE")),
+        .where(
+          and(eq(coachStudents.status, "ACTIVE"), ne(coachStudents.seat, MentorshipSeat.NONE)),
+        ),
     );
   }
 
-  /** Every live link this coach holds, by id — what payments needs to price or count their seats. */
-  async listActiveLinkIds(coachId: string): Promise<string[]> {
+  /**
+   * Coaches whose seats a change to this user's subscription can move: their own (the user is a
+   * coach whose plan changed) or their coach's (the user is a student who started or stopped
+   * paying for themselves).
+   */
+  listCoachIdsTouching(userId: string): Promise<string[]> {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx
-        .select({ id: coachStudents.id })
+        .selectDistinct({ coachId: coachStudents.coachId })
         .from(coachStudents)
-        .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
-      return rows.map((row) => row.id);
+        .where(
+          and(
+            eq(coachStudents.status, "ACTIVE"),
+            or(eq(coachStudents.coachId, userId), eq(coachStudents.studentId, userId)),
+          ),
+        );
+      return rows.map((row) => row.coachId);
     });
   }
 
@@ -153,11 +158,6 @@ export class MentorshipLinkRepository {
         )
         .orderBy(asc(coachStudents.studentId)),
     );
-  }
-
-  /** The coach's own seat count. Same predicate the quota refuses on (see {@link countActive}). */
-  countActiveByCoach(coachId: string): Promise<number> {
-    return withServiceContext(this.db, (tx) => countActive(tx, coachId));
   }
 
   async listByCoach(
@@ -181,52 +181,71 @@ export class MentorshipLinkRepository {
   }
 
   /**
-   * Accept an invite: create the ACTIVE link, or revive an ENDED one between the same pair.
-   *
-   * The quota check lives INSIDE this transaction, behind an advisory lock on the coach. Checking
-   * it in the service first would be check-then-act: two students redeeming the same code at once
-   * would both read a count below the cap and both get in. Since the invite code has no use
-   * counter of its own, the quota is the only bound it has, so it has to be a real one.
-   *
-   * The `coach_students_pair_idx` unique makes a plain insert fail on a re-link, so this upserts.
-   * Returns `"QUOTA_FULL"` when the cap is reached and `"ALREADY_ACTIVE"` when `setWhere` skipped
-   * the update (a row exists that is not ENDED).
-   *
-   * `activeBefore` rides back out because the SEAT decision has to be made under this same lock.
-   * Deciding "is this student inside the coach's free-seat quota?" in the service afterwards would
-   * be check-then-act again, and the thing being handed out this time is sponsored Premium — real
-   * LLM spend, not just a roster row.
+   * Serialize everything that decides this coach's seats (a student accepting, a reseat) on one
+   * advisory lock, released at commit. Checking outside it would be check-then-act: two students
+   * redeeming the same code at once would both read a free seat and both take it. The invite code
+   * has no use counter of its own, so the seats and the roster cap are the only bound it has.
    */
-  acceptInvite(
+  async lockCoachInTransaction(tx: DatabaseTx, coachId: string): Promise<void> {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
+    );
+  }
+
+  /** The coach's live links, read inside the caller's transaction (under the coach lock). */
+  listActiveByCoachInTransaction(tx: DatabaseTx, coachId: string): Promise<MentorshipLinkRow[]> {
+    return tx
+      .select()
+      .from(coachStudents)
+      .where(and(eq(coachStudents.coachId, coachId), eq(coachStudents.status, "ACTIVE")));
+  }
+
+  /**
+   * Create the ACTIVE link on the given seat, or revive an ENDED one between the same pair: the
+   * `coach_students_pair_idx` unique makes a plain insert fail on a re-link. Undefined when a row
+   * exists that is not ENDED (`setWhere` skipped it), so the caller's ALREADY_LINKED check stays
+   * authoritative. A link without a seat is never written: the caller refuses before this runs.
+   */
+  async insertOrReviveInTransaction(
+    tx: DatabaseTx,
     coachId: string,
     studentId: string,
-    maxActiveStudents: number,
-  ): Promise<
-    { link: MentorshipLinkRow; activeBefore: number } | "QUOTA_FULL" | "ALREADY_ACTIVE"
-  > {
-    const now = new Date();
-    return withServiceContext(this.db, async (tx) => {
-      // Serialize concurrent redemptions of one coach's code; released at commit.
-      await tx.execute(
-        sql`select pg_advisory_xact_lock(hashtextextended(${"mentorship:coach:" + coachId}, 0))`,
-      );
-      const activeBefore = await countActive(tx, coachId);
-      if (activeBefore >= maxActiveStudents) return "QUOTA_FULL";
+    seat: MentorshipSeatId,
+    now: Date,
+  ): Promise<MentorshipLinkRow | undefined> {
+    const rows = await tx
+      .insert(coachStudents)
+      .values({ coachId, studentId, status: "ACTIVE", source: "INVITE", acceptedAt: now, seat })
+      .onConflictDoUpdate({
+        target: [coachStudents.coachId, coachStudents.studentId],
+        set: {
+          status: "ACTIVE",
+          acceptedAt: now,
+          endedAt: null,
+          endedBy: null,
+          seat,
+          updatedAt: now,
+          periodId: sql`gen_random_uuid()`,
+        },
+        setWhere: eq(coachStudents.status, "ENDED"),
+      })
+      .returning();
+    return rows[0];
+  }
 
-      const rows = await tx
-        .insert(coachStudents)
-        .values({ coachId, studentId, status: "ACTIVE", source: "INVITE", acceptedAt: now })
-        .onConflictDoUpdate({
-          target: [coachStudents.coachId, coachStudents.studentId],
-          set: { status: "ACTIVE", acceptedAt: now, endedAt: null, endedBy: null, updatedAt: now, periodId: sql`gen_random_uuid()` },
-          // Only a dormant link may be revived; an already-ACTIVE row is left untouched so the
-          // caller's ALREADY_LINKED check stays authoritative.
-          setWhere: eq(coachStudents.status, "ENDED"),
-        })
-        .returning();
-      const link = rows[0];
-      return link ? { link, activeBefore } : "ALREADY_ACTIVE";
-    });
+  /** Write the seats a reseat decided. Live links only: one that ended meanwhile stays as it is. */
+  async setSeatsInTransaction(
+    tx: DatabaseTx,
+    changes: readonly { id: string; seat: MentorshipSeatId }[],
+  ): Promise<void> {
+    const now = new Date();
+    // ponytail: one UPDATE per changed link; a roster tops out at `max_active_students` (25).
+    for (const change of changes) {
+      await tx
+        .update(coachStudents)
+        .set({ seat: change.seat, updatedAt: now })
+        .where(and(eq(coachStudents.id, change.id), eq(coachStudents.status, "ACTIVE")));
+    }
   }
 
   /** ACTIVE → ENDED (idempotent). Returns the row only if this call performed the transition. */
@@ -250,6 +269,8 @@ export class MentorshipLinkRepository {
         endedBy,
         coachNote: null,
         coachNoteAt: null,
+        studentNote: null,
+        studentNoteAt: null,
         brief: null,
         briefAt: null,
         briefFingerprint: null,
@@ -271,6 +292,19 @@ export class MentorshipLinkRepository {
       const rows = await tx
         .update(coachStudents)
         .set({ coachNote: body, coachNoteAt: body === null ? null : now, updatedAt: now })
+        .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
+        .returning();
+      return rows[0];
+    });
+  }
+
+  /** The student's standing note to their coach (QA F4), the mirror of {@link setCoachNote}. */
+  setStudentNote(linkId: string, body: string | null): Promise<MentorshipLinkRow | undefined> {
+    const now = new Date();
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx
+        .update(coachStudents)
+        .set({ studentNote: body, studentNoteAt: body === null ? null : now, updatedAt: now })
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning();
       return rows[0];
@@ -316,6 +350,22 @@ export class MentorshipLinkRepository {
         .where(and(eq(coachStudents.id, linkId), eq(coachStudents.status, "ACTIVE")))
         .returning({ id: coachStudents.id });
       return rows.length > 0 ? now : undefined;
+    });
+  }
+
+  /** Fence erasure against grants; hold every affected relationship row through its END commit. */
+  endForUser(userId: string): Promise<string[]> {
+    return withServiceContext(this.db, async (tx) => {
+      const rows = await tx.select({ id: coachStudents.id }).from(coachStudents)
+        .where(or(eq(coachStudents.coachId, userId), eq(coachStudents.studentId, userId)))
+        .orderBy(asc(coachStudents.id)).for("update");
+      const ids = rows.map((row) => row.id);
+      if (ids.length === 0) return ids;
+      const now = new Date();
+      await tx.update(coachStudents).set({ status: "ENDED", seat: MentorshipSeat.NONE,
+        endedAt: now, updatedAt: now })
+        .where(and(inArray(coachStudents.id, ids), eq(coachStudents.status, "ACTIVE")));
+      return ids;
     });
   }
 

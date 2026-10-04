@@ -7,13 +7,16 @@ import {
   useEffect,
   useReducer,
   useRef,
+  useState,
   type ReactNode,
 } from "react";
-import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
+import dynamic from "next/dynamic";
 
 import { usePathname } from "@/i18n/navigation";
-import { CLOUD_ASSETS } from "@/lib/onboarding-assets";
+
+const CloudTransitionOverlay = dynamic(() =>
+  import("./cloud-transition-overlay").then((module) => module.CloudTransitionOverlay),
+);
 
 export type CloudTransitionPhase =
   | "idle"
@@ -21,20 +24,17 @@ export type CloudTransitionPhase =
   | "covered"
   | "revealing";
 
-type CloudTransitionEvent =
-  | "start"
-  | "covered"
-  | "routeChanged"
-  | "timeout"
-  | "revealed";
+type CloudTransitionEvent = "start" | "covered" | "coverTimeout" | "ready" | "timeout" | "revealed";
 
 export function cloudTransitionReducer(
   phase: CloudTransitionPhase,
   event: CloudTransitionEvent,
 ): CloudTransitionPhase {
   if (event === "start") return phase === "idle" ? "covering" : phase;
-  if (event === "covered") return phase === "covering" ? "covered" : phase;
-  if (event === "routeChanged" || event === "timeout") {
+  if (event === "covered" || event === "coverTimeout") {
+    return phase === "covering" ? "covered" : phase;
+  }
+  if (event === "ready" || event === "timeout") {
     return phase === "covered" ? "revealing" : phase;
   }
   if (event === "revealed") return phase === "revealing" ? "idle" : phase;
@@ -43,16 +43,24 @@ export function cloudTransitionReducer(
 
 type CloudTransitionContextValue = {
   startCloudTransition: (navigate: () => void) => void;
+  /** Destination pages report through {@link useCloudTransitionReady}, not by calling this. */
+  reportDestinationReady: (path: string) => void;
 };
 
 const CloudTransitionContext = createContext<CloudTransitionContextValue | null>(null);
 
-const ROUTE_CHANGE_TIMEOUT_MS = 3_500;
+/**
+ * How long the clouds wait for a destination that never says it is ready — a page without the
+ * ready hook, a fetch that hangs. Long enough for a cold panel load, short enough that nobody is
+ * left staring at a sky.
+ */
+const DESTINATION_TIMEOUT_MS = 6_000;
 
 export function CloudTransitionProvider({ children }: { children: ReactNode }) {
   const pathname = usePathname();
-  const reduceMotion = useReducedMotion() ?? false;
   const [phase, dispatch] = useReducer(cloudTransitionReducer, "idle");
+  /** The path that last reported itself ready — a signal is only worth acting on for its own page. */
+  const [readyPath, setReadyPath] = useState<string | null>(null);
   const originPathRef = useRef(pathname);
   const navigateRef = useRef<(() => void) | null>(null);
 
@@ -61,27 +69,49 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
       if (phase !== "idle") return;
       originPathRef.current = pathname;
       navigateRef.current = navigate;
+      setReadyPath(null);
       dispatch("start");
     },
     [pathname, phase],
   );
 
-  useEffect(() => {
-    if (phase !== "covered" || pathname === originPathRef.current) return;
-    const frame = requestAnimationFrame(() => dispatch("routeChanged"));
-    return () => cancelAnimationFrame(frame);
-  }, [pathname, phase]);
+  const reportDestinationReady = useCallback((path: string) => setReadyPath(path), []);
 
+  /*
+   * The signal parts the clouds only when it comes from the page now on screen, and that page is
+   * not the one we covered. The page being covered has its data too, and taking its word for it
+   * would open the sky on the screen the user just left.
+   */
   useEffect(() => {
-    if (phase !== "covered") return;
-    const timeout = window.setTimeout(
-      () => dispatch("timeout"),
-      ROUTE_CHANGE_TIMEOUT_MS,
-    );
+    if (phase !== "covered" || readyPath !== pathname || pathname === originPathRef.current) return;
+    const frame = requestAnimationFrame(() => dispatch("ready"));
+    return () => cancelAnimationFrame(frame);
+  }, [pathname, phase, readyPath]);
+
+  // The overlay chunk is what calls onDone. If it never arrives, navigate anyway.
+  useEffect(() => {
+    if (phase !== "covering") return;
+    const timeout = window.setTimeout(() => {
+      dispatch("coverTimeout");
+      const navigate = navigateRef.current;
+      navigateRef.current = null;
+      navigate?.();
+    }, DESTINATION_TIMEOUT_MS);
     return () => window.clearTimeout(timeout);
   }, [phase]);
 
-  const handleAnimationComplete = () => {
+  useEffect(() => {
+    if (phase !== "covered") return;
+    const timeout = window.setTimeout(() => dispatch("timeout"), DESTINATION_TIMEOUT_MS);
+    return () => window.clearTimeout(timeout);
+  }, [phase]);
+
+  /*
+   * The machine runs on a REAL animation (APP-089). `onAnimationComplete` dispatches "covered"
+   * and calls `navigate()`, so the left cloud always has a distance to travel. The covering
+   * timeout above is the fallback when that callback never arrives.
+   */
+  function handleCoverAnimationComplete() {
     if (phase === "covering") {
       dispatch("covered");
       const navigate = navigateRef.current;
@@ -90,96 +120,16 @@ export function CloudTransitionProvider({ children }: { children: ReactNode }) {
       return;
     }
     if (phase === "revealing") dispatch("revealed");
-  };
+  }
 
   const visible = phase !== "idle";
   const covering = phase === "covering" || phase === "covered";
-  const duration = reduceMotion ? 0.08 : 0.5;
 
   return (
-    <CloudTransitionContext.Provider value={{ startCloudTransition }}>
+    <CloudTransitionContext.Provider value={{ startCloudTransition, reportDestinationReady }}>
       {children}
-      {visible ? (
-        <motion.div
-          className="pointer-events-auto fixed inset-0 overflow-hidden"
-          style={{ zIndex: "var(--z-route-transition)" }}
-          /*
-           * A REAL mount animation, and the whole machine depends on it (found in APP-089).
-           *
-           * This was `initial={false}`, which tells framer-motion to snap to the `animate` target
-           * without animating. With nothing to animate, `onAnimationComplete` never fired — and
-           * that callback is the ONLY thing that dispatches "covered" and calls `navigate()`. So
-           * the overlay appeared, the phase stuck on "covering" forever, and the navigation never
-           * happened. The `timeout` escape hatch could not help either: its effect only arms in
-           * phase "covered", which was unreachable.
-           *
-           * Symptom in the wild: finishing onboarding left you on the completion screen under a
-           * full-screen cloud overlay. Every caller of `startCloudTransition` was affected.
-           */
-          initial={{ opacity: 0 }}
-          animate={{ opacity: covering ? 1 : 0 }}
-          transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-          onAnimationComplete={handleAnimationComplete}
-          aria-hidden
-        >
-          <CloudFallbackLayer
-            position="left"
-            src={CLOUD_ASSETS?.left}
-            covered={covering}
-            duration={duration}
-          />
-          <CloudFallbackLayer
-            position="right"
-            src={CLOUD_ASSETS?.right}
-            covered={covering}
-            duration={duration}
-          />
-          <CloudFallbackLayer
-            position="bottom"
-            src={CLOUD_ASSETS?.bottom}
-            covered={covering}
-            duration={duration}
-          />
-        </motion.div>
-      ) : null}
+      {visible ? <CloudTransitionOverlay covering={covering} onDone={handleCoverAnimationComplete} /> : null}
     </CloudTransitionContext.Provider>
-  );
-}
-
-function CloudFallbackLayer({
-  position,
-  src,
-  covered,
-  duration,
-}: {
-  position: "left" | "right" | "bottom";
-  src?: string;
-  covered: boolean;
-  duration: number;
-}) {
-  const transforms = {
-    left: { x: covered ? "-18%" : "-115%", y: "-8%" },
-    right: { x: covered ? "18%" : "115%", y: "-5%" },
-    bottom: { x: 0, y: covered ? "24%" : "115%" },
-  } as const;
-
-  return (
-    <motion.div
-      className={
-        position === "bottom"
-          ? "absolute -inset-x-[15%] bottom-0 h-[88%] rounded-[50%]"
-          : `absolute top-0 h-[120%] w-[72%] rounded-[50%] ${position === "left" ? "left-0" : "right-0"}`
-      }
-      style={src ? undefined : {
-        background: "radial-gradient(circle at 48% 38%, #ffffff 0 42%, #eef4ff 72%, #d6dbfd 100%)",
-        boxShadow: "var(--shadow-card)",
-      }}
-      initial={false}
-      animate={transforms[position]}
-      transition={{ duration, ease: [0.22, 1, 0.36, 1] }}
-    >
-      {src ? <Image src={src} alt="" fill sizes="100vw" className="object-contain" aria-hidden /> : null}
-    </motion.div>
   );
 }
 
@@ -189,4 +139,18 @@ export function useCloudTransition(): CloudTransitionContextValue {
     throw new Error("useCloudTransition must be used inside CloudTransitionProvider");
   }
   return value;
+}
+
+/**
+ * A destination page's half of the handover: the clouds stay shut until the screen behind them has
+ * its data, then part on a finished page instead of a skeleton. Safe to call unconditionally — it
+ * does nothing unless a transition is waiting.
+ */
+export function useCloudTransitionReady(ready: boolean): void {
+  const { reportDestinationReady } = useCloudTransition();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    if (ready) reportDestinationReady(pathname);
+  }, [pathname, ready, reportDestinationReady]);
 }

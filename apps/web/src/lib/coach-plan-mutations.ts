@@ -134,6 +134,7 @@ function taskVisibleSignature(
     topic: task.topic,
     startTime: task.startTime,
     endTime: task.endTime,
+    ...(task.durationMinutes !== undefined && { durationMinutes: task.durationMinutes }),
     coachNote: task.coachNote,
   };
 }

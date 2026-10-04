@@ -9,6 +9,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useTranslations } from "next-intl";
@@ -21,15 +22,16 @@ import type {
 } from "@mentor/types";
 import { NotificationDrawerProvider } from "@mentor/ui";
 import { PuhuImage } from "@/components/puhu-image";
-import { AchievementCelebration } from "@/components/achievements/achievement-celebration";
-import { JourneySpotlightScene } from "@/components/journey-levels/spotlight/journey-spotlight-scene";
+import { CelebrationOverlayProvider } from "@/lib/celebration-overlay";
+import { installLastPointer } from "@/lib/last-pointer";
+import { NOTIFICATION_ARRIVED } from "@/lib/notification-events";
+import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import {
   getUnseenAchievements,
   getUnseenJourneyLevelCelebrations,
   markAchievementsCelebrated,
   markJourneyLevelCelebrated,
 } from "@/lib/community";
-import { buildCelebrationQueue } from "@/lib/celebration-queue";
 import { useRouter } from "@/i18n/navigation";
 import {
   deleteNotification,
@@ -40,6 +42,17 @@ import {
   markNotificationUnread,
 } from "./notification-api";
 import { apiBaseUrl } from "./api-base";
+
+const AchievementCelebration = dynamic(() =>
+  import("@/components/achievements/achievement-celebration").then(
+    (module) => module.AchievementCelebration,
+  ),
+);
+const JourneySpotlightScene = dynamic(() =>
+  import("@/components/journey-levels/spotlight/journey-spotlight-scene").then(
+    (module) => module.JourneySpotlightScene,
+  ),
+);
 
 const ICON_BY_CATEGORY = {
   COACH: Brain,
@@ -52,25 +65,27 @@ const ICON_BY_CATEGORY = {
 };
 
 /**
- * The glyph is the primary category carrier (never colour alone — WCAG 1.4.1); colour only adds
- * emphasis. Tokens only: `--color-accent` is an alias of `--color-progress`, so ACHIEVEMENT and
- * FORUM used to render in the identical blue, and PLAN carried a hard-coded hex.
+ * The glyph is the category carrier (never colour alone — WCAG 1.4.1). Colour only where it means
+ * something (overlay kit, 2026-09-28): the human coach wears the coach ink (DESIGN.md §2.5), the
+ * AI coach its violet, a win the streak coral; everything else stays neutral. Four hues for seven
+ * categories read as confetti, and the light blue and yellow sat under 3:1 as thin line glyphs.
  */
 const ICON_COLOR_BY_CATEGORY: Record<NotificationCategory, string> = {
   COACH: "var(--color-chip-text)",
-  PLAN: "var(--color-progress)",
+  PLAN: "var(--color-secondary)",
   CONTENT: "var(--color-secondary)",
-  FORUM: "var(--color-progress)",
-  ACHIEVEMENT: "var(--color-star)",
-  MENTORSHIP: "var(--color-chip-text)",
-  SYSTEM: "var(--color-main)",
+  FORUM: "var(--color-secondary)",
+  // Raw coral is 2.9:1 as a thin glyph; mixed toward the main ink it clears 3:1 in both themes.
+  ACHIEVEMENT: "color-mix(in srgb, var(--color-streak) 75%, var(--color-main))",
+  MENTORSHIP: "var(--coach-accent)",
+  SYSTEM: "var(--color-secondary)",
 };
 
 function CategoryIcon({ category }: { category: NotificationCategory }) {
   const Icon = ICON_BY_CATEGORY[category];
 
   return (
-    <Icon size={18} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={2} aria-hidden />
+    <Icon size={22} color={ICON_COLOR_BY_CATEGORY[category]} strokeWidth={1.75} aria-hidden />
   );
 }
 
@@ -96,12 +111,14 @@ const CATEGORY_FALLBACK: Record<NotificationCategory, string> = {
 export function NotificationDrawerShell({ children }: NotificationDrawerShellProps) {
   const t = useTranslations("notifications");
   const tJourney = useTranslations("journey_levels");
+  const tAchievements = useTranslations("achievements");
   const router = useRouter();
   const [data, setData] = useState<NotificationListDto>(EMPTY);
   const [achievementCelebrations, setAchievementCelebrations] = useState<AchievementCelebrationDto[]>([]);
   const [journeyLevelCelebrations, setJourneyLevelCelebrations] = useState<JourneyLevelCelebrationView[]>([]);
   const [celebrationBusy, setCelebrationBusy] = useState(false);
-  const [journeyCelebrationError, setJourneyCelebrationError] = useState<string | null>(null);
+  const [celebrationError, setCelebrationError] = useState<string | null>(null);
+  const [celebrationsReady, setCelebrationsReady] = useState(false);
 
  /*
   * `?.` and `?? []` are load-bearing. `Promise.allSettled` was chosen so a failing celebration
@@ -129,6 +146,9 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   );
   const currentCelebration = celebrationQueue[0];
 
+  // The achievement scene starts its light from the tap that earned it (the task's ✓).
+  useEffect(() => installLastPointer(), []);
+
   useEffect(() => {
     void Promise.allSettled([
       listNotifications(),
@@ -148,6 +168,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
       if (journeyResult.status === "fulfilled") {
         setJourneyLevelCelebrations(journeyResult.value?.celebrations ?? []);
       }
+      setCelebrationsReady(true);
     });
   }, []);
 
@@ -173,6 +194,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
             payload = null; // heartbeat sends an empty frame — nothing to do
           }
           if (!payload?.event) return;
+          window.dispatchEvent(new Event(NOTIFICATION_ARRIVED));
           if (
             payload.event === "achievement_awarded" ||
             payload.event === "journey_level_unlocked"
@@ -249,18 +271,8 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
   const emptyState = (
     <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
       <PuhuImage variant="default" size={64} className="mb-3 opacity-80 drop-shadow-sm" />
-      <p
-        className="mb-1 text-base font-bold"
-        style={{ fontFamily: "var(--font-heading)", color: "var(--color-main)" }}
-      >
-        {t("empty_title")}
-      </p>
-      <p
-        className="text-sm"
-        style={{ fontFamily: "var(--font-body)", color: "var(--color-secondary)" }}
-      >
-        {t("empty_body")}
-      </p>
+      <p className="mb-1 text-base font-extrabold text-[var(--color-main)]">{t("empty_title")}</p>
+      <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("empty_body")}</p>
     </div>
   );
 
@@ -275,7 +287,7 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
     const current = currentCelebration;
     if (!current || celebrationBusy) return;
     setCelebrationBusy(true);
-    setJourneyCelebrationError(null);
+    setCelebrationError(null);
     try {
       if (current.type === "achievement") {
         await markAchievementsCelebrated(
@@ -291,68 +303,74 @@ export function NotificationDrawerShell({ children }: NotificationDrawerShellPro
         );
       }
     } catch {
-      if (current.type === "journey-level") {
-        setJourneyCelebrationError(
-          tJourney("celebration.acknowledge_error"),
-        );
-      }
+      setCelebrationError(
+        current.type === "journey-level"
+          ? tJourney("celebration.acknowledge_error")
+          : tAchievements("celebration_close_error"),
+      );
     } finally {
       setCelebrationBusy(false);
     }
   }
 
   return (
-    <NotificationDrawerProvider
-      items={data.items}
-      unreadCount={data.unreadCount}
-      onMarkRead={handleMarkRead}
-      onMarkUnread={handleMarkUnread}
-      onMarkAllRead={handleMarkAllRead}
-      onDelete={handleDelete}
-      onNotificationClick={handleNotificationClick}
-      renderIcon={(category: NotificationCategory) => <CategoryIcon category={category} />}
-      emptyState={emptyState}
-      labels={{
-        title: t("title"),
-        markAllRead: t("mark_all_read"),
-        markRead: t("mark_read"),
-        markUnread: t("mark_unread"),
-        deleteItem: t("delete_item"),
-        close: t("close"),
-        tabAll: t("tab_all"),
-        tabUnread: t("tab_unread"),
-        groupToday: t("group_today"),
-        groupThisWeek: t("group_this_week"),
-        groupEarlier: t("group_earlier"),
-        emptyTitle: t("empty_title"),
-        emptyBody: t("empty_body"),
-        timeJustNow: t("time_just_now"),
-        timeHoursAgo: (count) => t("time_hours_ago", { count }),
-        timeYesterday: t("time_yesterday"),
-        timeDaysAgo: (count) => t("time_days_ago", { count }),
-        unreadLabel: t("unread_label"),
-      }}
+    <CelebrationOverlayProvider
+      ready={celebrationsReady}
+      active={currentCelebration != null}
     >
-      {children}
-      <AnimatePresence initial={false} mode="wait">
-        {currentCelebration?.type === "achievement" ? (
-          <AchievementCelebration
-            key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
-            celebration={currentCelebration.celebration}
-            busy={celebrationBusy}
-            onClose={() => void handleCelebrationClose()}
-          />
-        ) : currentCelebration?.type === "journey-level" ? (
-          <JourneySpotlightScene
-            key={`journey-level:${currentCelebration.celebration.id}`}
-            mode="celebration"
-            celebration={currentCelebration.celebration}
-            busy={celebrationBusy}
-            error={journeyCelebrationError}
-            onClose={() => void handleCelebrationClose()}
-          />
-        ) : null}
-      </AnimatePresence>
-    </NotificationDrawerProvider>
+      <NotificationDrawerProvider
+        items={data.items}
+        unreadCount={data.unreadCount}
+        onMarkRead={handleMarkRead}
+        onMarkUnread={handleMarkUnread}
+        onMarkAllRead={handleMarkAllRead}
+        onDelete={handleDelete}
+        onNotificationClick={handleNotificationClick}
+        renderIcon={(category: NotificationCategory) => <CategoryIcon category={category} />}
+        emptyState={emptyState}
+        labels={{
+          title: t("title"),
+          markAllRead: t("mark_all_read"),
+          markRead: t("mark_read"),
+          markUnread: t("mark_unread"),
+          deleteItem: t("delete_item"),
+          close: t("close"),
+          tabAll: t("tab_all"),
+          tabUnread: t("tab_unread"),
+          groupToday: t("group_today"),
+          groupThisWeek: t("group_this_week"),
+          groupEarlier: t("group_earlier"),
+          emptyTitle: t("empty_title"),
+          emptyBody: t("empty_body"),
+          timeJustNow: t("time_just_now"),
+          timeHoursAgo: (count) => t("time_hours_ago", { count }),
+          timeYesterday: t("time_yesterday"),
+          timeDaysAgo: (count) => t("time_days_ago", { count }),
+          unreadLabel: t("unread_label"),
+        }}
+      >
+        {children}
+        <AnimatePresence initial={false} mode="wait">
+          {currentCelebration?.type === "achievement" ? (
+            <AchievementCelebration
+              key={`achievement:${currentCelebration.celebration.kind}:${currentCelebration.celebration.items.map((item) => item.id).join(":")}`}
+              celebration={currentCelebration.celebration}
+              busy={celebrationBusy}
+              error={celebrationError}
+              onClose={() => void handleCelebrationClose()}
+            />
+          ) : currentCelebration?.type === "journey-level" ? (
+            <JourneySpotlightScene
+              key={`journey-level:${currentCelebration.celebration.id}`}
+              mode="celebration"
+              celebration={currentCelebration.celebration}
+              busy={celebrationBusy}
+              error={celebrationError}
+              onClose={() => void handleCelebrationClose()}
+            />
+          ) : null}
+        </AnimatePresence>
+      </NotificationDrawerProvider>
+    </CelebrationOverlayProvider>
   );
 }

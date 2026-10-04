@@ -1,19 +1,31 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
+import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { ChevronRight, Plus } from "lucide-react";
 import type { StudyRoomDto, StudyRoomTheme } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Card } from "@mentor/ui";
+import { Button, Skeleton, SkeletonGroup, TextField } from "@mentor/ui";
+import {
+  PANEL_CARD_TITLE,
+  PANEL_QUIET_LINK,
+  PANEL_TEXT_LINK,
+} from "@/components/panel/panel-styles";
+import { PuhuImage } from "@/components/puhu-image";
 import { Link } from "@/i18n/navigation";
-import { createStudyRoom, joinStudyRoom, listStudyRooms } from "@/lib/study-rooms";
+import {
+  createStudyRoom,
+  joinStudyRoom,
+  listStudyRooms,
+  studyRoomJoinFailure,
+} from "@/lib/study-rooms";
 import { STUDY_ROOM_BACKDROP_SRC } from "@/lib/study-room-theme";
-import { useMentorToast } from "@/lib/mentor-toast";
 import { RoomCreateSheet } from "./room-create-sheet";
 import { RoomSheet } from "./room-sheet";
+import { SESSION_CARD_CLASS } from "./session-today-card";
 
 type State =
   | { status: "loading" }
@@ -31,11 +43,23 @@ type State =
  */
 export function SessionRoomList() {
   const t = useTranslations("session_room");
+  const titleId = useId();
   const reduceMotion = useReducedMotion();
-  const { error: showErrorToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
-  const [sheet, setSheet] = useState<"none" | "create" | "join">("none");
+  const searchParams = useSearchParams();
+  // `?katil=1` comes from "Kodu elle gir" on an invite that failed: open the join sheet once, and
+  // take the flag out of the address so a reload does not open it again.
+  const [sheet, setSheet] = useState<"none" | "create" | "join">(() =>
+    searchParams.get("katil") === "1" ? "join" : "none",
+  );
+  const askedToJoin = searchParams.get("katil") === "1";
+  useEffect(() => {
+    if (!askedToJoin) return;
+    const url = new URL(window.location.href);
+    url.searchParams.delete("katil");
+    window.history.replaceState(null, "", `${url.pathname}${url.search}${url.hash}`);
+  }, [askedToJoin]);
 
   const load = useCallback(() => {
     listStudyRooms()
@@ -59,62 +83,61 @@ export function SessionRoomList() {
     return () => clearInterval(id);
   }, [hasRooms]);
 
-  const run = async (action: () => Promise<unknown>) => {
+  // Said inside the sheet: a toast would land under the native dialog's top layer, dimmed and inert.
+  const [createError, setCreateError] = useState<string | null>(null);
+  const create = async (input: Parameters<typeof createStudyRoom>[0]) => {
     setBusy(true);
+    setCreateError(null);
     try {
-      await action();
+      await createStudyRoom(input);
       setSheet("none");
       load();
     } catch (err) {
-      showErrorToast({
-        title: t("error_title"),
-        message: err instanceof ApiClientError ? err.body.message : undefined,
-        duration: 3000,
-      });
+      setCreateError(err instanceof ApiClientError ? err.body.message : t("error_title"));
     } finally {
       setBusy(false);
     }
   };
 
-  if (state.status === "loading" || state.status === "hidden") return null;
+  if (state.status === "hidden") return null;
+  if (state.status === "loading") return <SessionRoomListSkeleton />;
+
+  const empty = state.rooms.length === 0;
 
   return (
-    <Card className="flex flex-col gap-3 px-4 py-4 session-liquid-card">
+    <section className={`${SESSION_CARD_CLASS} gap-2`} aria-labelledby={titleId}>
       <div className="flex items-center justify-between gap-2">
-        <span
-          className="text-[11px] font-semibold uppercase tracking-wide"
-          style={{ color: "var(--color-secondary)" }}
-        >
+        <h2 id={titleId} className={PANEL_CARD_TITLE}>
           {t("section_title")}
-        </span>
-        <button
-          type="button"
-          onClick={() => setSheet("create")}
-          aria-label={t("create_action")}
-          title={t("create_action")}
-          className="inline-flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-full transition-transform duration-200 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:hover:scale-100"
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--color-progress) 16%, transparent)",
-            color: "var(--color-main)",
-          }}
-        >
-          <Plus className="size-4" strokeWidth={2.5} aria-hidden />
-        </button>
+        </h2>
+        {empty ? null : (
+          <button
+            type="button"
+            onClick={() => setSheet("create")}
+            aria-label={t("create_action")}
+            title={t("create_action")}
+            className="-my-2.5 -mr-2.5 inline-flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-full text-[var(--color-main)] transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          >
+            <Plus className="size-[22px]" strokeWidth={1.75} aria-hidden />
+          </button>
+        )}
       </div>
 
-      {state.rooms.length === 0 ? (
-        <p className="text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>
-          {t("empty")}
-        </p>
+      {empty ? (
+        // First visit: Puhu says what a table is for; the two ways in sit right under it.
+        <div className="flex items-center gap-3 py-1">
+          <PuhuImage variant="encouraging" size={56} className="shrink-0" />
+          <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("empty")}</p>
+        </div>
       ) : (
         <motion.ul
-          className="flex flex-col gap-1.5"
+          className="flex flex-col"
           initial={reduceMotion ? false : "hidden"}
           animate="show"
           variants={{ show: { transition: { staggerChildren: 0.06 } } }}
         >
           <AnimatePresence initial={false}>
-            {state.rooms.map((room) => (
+            {state.rooms.map((room, index) => (
               <motion.li
                 key={room.id}
                 layout
@@ -123,6 +146,7 @@ export function SessionRoomList() {
                   show: { opacity: 1, y: 0, transition: { duration: 0.22, ease: "easeOut" } },
                 }}
                 exit={{ opacity: 0, height: 0 }}
+                className={index > 0 ? "border-t border-[var(--play-line)]" : undefined}
               >
                 <RoomRow room={room} />
               </motion.li>
@@ -131,31 +155,50 @@ export function SessionRoomList() {
         </motion.ul>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        {state.rooms.length === 0 ? (
-          <TextAction label={t("create_action")} tone="accent" onClick={() => setSheet("create")} />
+      <div className="flex flex-wrap items-center gap-x-[18px]">
+        {empty ? (
+          <button type="button" onClick={() => setSheet("create")} className={PANEL_TEXT_LINK}>
+            {t("create_action")}
+          </button>
         ) : null}
-        <TextAction label={t("join_action")} onClick={() => setSheet("join")} />
+        <button
+          type="button"
+          onClick={() => setSheet("join")}
+          className={empty ? PANEL_QUIET_LINK : PANEL_TEXT_LINK}
+        >
+          {t("join_action")}
+        </button>
       </div>
 
-      <RoomCreateSheet
-        open={sheet === "create"}
-        busy={busy}
-        onClose={() => setSheet("none")}
-        onSubmit={(input) => void run(() => createStudyRoom(input))}
-      />
-      <JoinSheet
-        open={sheet === "join"}
-        busy={busy}
-        onClose={() => setSheet("none")}
-        onSubmit={(code) => void run(() => joinStudyRoom(code))}
-      />
-    </Card>
+      {/* Mounted only while open, so every visit starts with an empty form. */}
+      {sheet === "create" ? (
+        <RoomCreateSheet
+          open
+          busy={busy}
+          error={createError}
+          onClose={() => {
+            setCreateError(null);
+            setSheet("none");
+          }}
+          onSubmit={(input) => void create(input)}
+        />
+      ) : null}
+      {sheet === "join" ? (
+        <JoinSheet
+          onClose={() => setSheet("none")}
+          onJoin={async (code) => {
+            await joinStudyRoom(code);
+            setSheet("none");
+            load();
+          }}
+        />
+      ) : null}
+    </section>
   );
 }
 
 /**
- * Theme swatch: the actual room, cropped to 40px. It used to be a token wash with a beige
+ * Theme swatch: the actual room, cropped to 44px. It used to be a token wash with a beige
  * pill on it — a drawing of "a table" that told you nothing about which room this row was,
  * while the real photo already shipped two components away. The token drawing stays as the
  * fallback for a theme whose art has not landed yet.
@@ -163,12 +206,12 @@ export function SessionRoomList() {
  * One boolean is enough here, unlike the stage and the carousel: a row's theme never changes
  * under it, so a failed src cannot come back into view.
  */
-function ThemeSwatch({ theme }: { theme: StudyRoomTheme }) {
+function ThemeSwatch({ theme, dimmed }: { theme: StudyRoomTheme; dimmed: boolean }) {
   const [failed, setFailed] = useState(false);
   return (
     <span
       aria-hidden
-      className="room-stage relative inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-[10px]"
+      className={`room-stage relative inline-flex size-11 shrink-0 items-center justify-center overflow-hidden rounded-[12px]${dimmed ? " opacity-60" : ""}`}
       data-room-theme={theme}
       style={{
         background:
@@ -188,7 +231,7 @@ function ThemeSwatch({ theme }: { theme: StudyRoomTheme }) {
           src={STUDY_ROOM_BACKDROP_SRC[theme]}
           alt=""
           fill
-          sizes="40px"
+          sizes="44px"
           className="object-cover"
           onError={() => setFailed(true)}
         />
@@ -197,118 +240,142 @@ function ThemeSwatch({ theme }: { theme: StudyRoomTheme }) {
   );
 }
 
+/**
+ * A table as a row: its room, its full name (it wraps; a truncated "Sabah Ku…" was the only
+ * thing that told two tables apart), where it stands, and who is working there now. A table
+ * nobody sat at for a while says so in words rather than fading the whole row out.
+ */
 function RoomRow({ room }: { room: StudyRoomDto }) {
   const t = useTranslations("session_room");
+  const meta = t("row_meta", {
+    theme: t(`theme_${room.theme}`),
+    filled: room.memberCount,
+    capacity: room.capacity,
+  });
   return (
     <Link
       href={{ pathname: "/study-session/rooms/[id]", params: { id: room.id } }}
-      className="group flex items-center gap-3 rounded-[var(--radius-card)] px-2 py-2 transition-colors duration-200 hover:bg-[color-mix(in_srgb,var(--color-main)_5%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
-      style={{ opacity: room.isActive ? 1 : 0.65 }}
+      className="group -mx-1.5 flex items-center gap-3 rounded-[10px] px-1.5 py-2.5 transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
     >
-      <ThemeSwatch theme={room.theme} />
-      <span className="min-w-0 flex-1 leading-tight">
-        <span
-          className="block truncate text-sm font-bold"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
-        >
+      <ThemeSwatch theme={room.theme} dimmed={!room.isActive} />
+      <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-body-sm font-extrabold leading-snug text-[var(--color-main)] [overflow-wrap:anywhere]">
           {room.name}
         </span>
-        <span className="block truncate text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t(`theme_${room.theme}`)} ·{" "}
-          {t("seats", { filled: room.memberCount, capacity: room.capacity })}
+        <span className="text-caption font-semibold text-[var(--color-secondary)]">
+          {room.isActive ? meta : `${meta} · ${t("dormant_short")}`}
         </span>
+        {room.activeCount > 0 ? (
+          <span className="inline-flex items-center gap-1.5 text-caption font-extrabold text-[var(--color-main)]">
+            <span
+              aria-hidden
+              className="size-2 shrink-0 rounded-full bg-[var(--color-success)] shadow-[0_0_0_3px_color-mix(in_srgb,var(--color-success)_24%,transparent)]"
+            />
+            {t("active_now", { count: room.activeCount })}
+          </span>
+        ) : null}
       </span>
-      {room.activeCount > 0 ? (
-        <span
-          className="flex shrink-0 items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-bold tabular-nums"
-          style={{
-            backgroundColor: "color-mix(in srgb, var(--color-success) 14%, transparent)",
-            color: "var(--color-success)",
-          }}
-        >
-          <span
-            aria-hidden
-            className="size-1.5 rounded-full animate-pulse motion-reduce:animate-none"
-            style={{ backgroundColor: "var(--color-success)" }}
-          />
-          {room.activeCount}
-        </span>
-      ) : null}
       <ChevronRight
         aria-hidden
-        className="size-4 shrink-0 opacity-0 transition-opacity duration-200 group-hover:opacity-60 motion-reduce:transition-none"
-        style={{ color: "var(--color-secondary)" }}
+        className="size-[18px] shrink-0 text-[var(--color-secondary)]"
+        strokeWidth={1.75}
       />
     </Link>
   );
 }
 
-function JoinSheet({
-  open,
-  busy,
-  onClose,
-  onSubmit,
-}: {
-  open: boolean;
-  busy: boolean;
-  onClose: () => void;
-  onSubmit: (code: string) => void;
-}) {
-  const t = useTranslations("session_room");
-  const [code, setCode] = useState("");
-
+function SessionRoomListSkeleton() {
+  const t = useTranslations("session");
   return (
-    <RoomSheet open={open} onClose={onClose} title={t("join_action")}>
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          if (!code.trim() || busy) return;
-          onSubmit(code.trim().toUpperCase());
-        }}
-        className="flex flex-col gap-4"
-      >
-        <input
-          type="text"
-          value={code}
-          autoFocus
-          onChange={(e) => setCode(e.target.value)}
-          placeholder={t("join_placeholder")}
-          aria-label={t("join_action")}
-          autoComplete="off"
-          autoCapitalize="characters"
-          className="min-h-14 rounded-[var(--radius-card)] border px-3 text-center text-lg font-bold tracking-[0.2em] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ borderColor: "var(--color-progress-track)", color: "var(--color-main)" }}
-        />
-        <button
-          type="submit"
-          disabled={busy || !code.trim()}
-          className="min-h-12 w-full cursor-pointer rounded-full text-sm font-bold disabled:opacity-50"
-          style={{ backgroundColor: "var(--color-btn)", color: "var(--color-btn-label)" }}
-        >
-          {t("join_submit")}
-        </button>
-      </form>
-    </RoomSheet>
+    <SkeletonGroup label={t("loading")} className={`${SESSION_CARD_CLASS} gap-2`}>
+      <Skeleton className="h-5 w-28 rounded-[var(--radius-card)]" />
+      {[0, 1].map((row) => (
+        <div key={row} className="flex items-center gap-3 py-2.5">
+          <Skeleton className="size-11 rounded-[12px]" />
+          <div className="flex flex-1 flex-col gap-1.5">
+            <Skeleton className="h-4 w-32 rounded-[var(--radius-card)]" />
+            <Skeleton className="h-3 w-24 rounded-[var(--radius-card)]" />
+          </div>
+        </div>
+      ))}
+    </SkeletonGroup>
   );
 }
 
-function TextAction({
-  label,
-  onClick,
-  tone = "quiet",
+/**
+ * Join by code. A failure is said under the field, where the code is, instead of in a toast
+ * that leaves nothing to fix once it fades; the field keeps focus so a retype is one step.
+ */
+function JoinSheet({
+  onClose,
+  onJoin,
 }: {
-  label: string;
-  onClick: () => void;
-  tone?: "accent" | "quiet";
+  onClose: () => void;
+  /** Resolves when joined; a rejection is explained in place. */
+  onJoin: (code: string) => Promise<void>;
 }) {
+  const t = useTranslations("session_room");
+  const fieldRef = useRef<HTMLInputElement>(null);
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const value = code.trim().toUpperCase();
+    if (!value || busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await onJoin(value);
+    } catch (err) {
+      setError(t(`join_failed_${studyRoomJoinFailure(err)}`));
+      fieldRef.current?.focus();
+    } finally {
+      setBusy(false);
+    }
+  };
+
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="min-h-11 cursor-pointer text-sm font-semibold"
-      style={{ color: tone === "accent" ? "var(--color-progress)" : "var(--color-secondary)" }}
+    <RoomSheet
+      open
+      onClose={onClose}
+      title={t("join_action")}
+      initialFocusRef={fieldRef}
+      closeDisabled={busy}
+      onSubmit={(e) => void submit(e)}
+      footer={
+        <>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className={`${PANEL_QUIET_LINK} max-lg:hidden`}
+          >
+            {t("cancel")}
+          </button>
+          <Button type="submit" busy={busy} disabled={!code.trim()} className="max-lg:w-full">
+            {t("join_submit")}
+          </Button>
+        </>
+      }
     >
-      {label}
-    </button>
+      <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("join_hint")}</p>
+      <TextField
+        ref={fieldRef}
+        label={t("join_label")}
+        value={code}
+        onChange={(e) => {
+          setCode(e.target.value);
+          setError(null);
+        }}
+        placeholder={t("join_placeholder")}
+        autoComplete="off"
+        autoCapitalize="characters"
+        spellCheck={false}
+        error={error}
+        className="[&_input]:font-mono [&_input]:uppercase [&_input]:tracking-[0.12em]"
+      />
+    </RoomSheet>
   );
 }

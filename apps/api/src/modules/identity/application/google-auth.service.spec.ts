@@ -15,6 +15,8 @@ const STATE: GoogleOAuthState = {
   locale: "tr",
   returnTo: "/dashboard",
   kvkkAccepted: true,
+  termsAccepted: true,
+  ageEligibilityConfirmed: true,
   expiresAt: Date.now() + 60_000,
 };
 

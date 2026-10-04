@@ -1,38 +1,20 @@
 "use client";
 
-import { CalendarPlus, ListPlus } from "lucide-react";
-import { Button } from "@mentor/ui";
+import { ArrowLeft } from "lucide-react";
 import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
+import { PlanWeekNavButton } from "./plan-week-nav-button";
 
-export function CoachPlanToolbar({
-  onNewTask,
-  onNewEvent,
-}: {
-  onNewTask: (trigger: HTMLButtonElement) => void;
-  onNewEvent: (trigger: HTMLButtonElement) => void;
-}) {
+export function CoachPlanToolbar() {
   const t = useTranslations("coachPlan");
+  const router = useRouter();
 
   return (
-    <header className="flex shrink-0 flex-wrap items-start justify-between gap-4">
-      <div>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--color-main)" }}>
-          {t("title")}
-        </h1>
-        <p className="mt-1" style={{ color: "var(--color-secondary)" }}>
-          {t("subtitle")}
-        </p>
-      </div>
-      <div className="flex flex-wrap justify-end gap-2">
-        <Button type="button" variant="secondary" onClick={(event) => onNewTask(event.currentTarget)}>
-          <ListPlus aria-hidden size={18} />
-          {t("new_task")}
-        </Button>
-        <Button type="button" variant="secondary" onClick={(event) => onNewEvent(event.currentTarget)}>
-          <CalendarPlus aria-hidden size={18} />
-          {t("new_event")}
-        </Button>
-      </div>
+    <header className="flex shrink-0 items-center gap-2">
+      <h1 className="sr-only">{t("title")}</h1>
+      <PlanWeekNavButton label={t("back")} onClick={() => router.push("/students")}>
+        <ArrowLeft size={20} strokeWidth={2} aria-hidden />
+      </PlanWeekNavButton>
     </header>
   );
 }

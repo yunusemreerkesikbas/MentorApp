@@ -19,6 +19,17 @@ const grounded: CoachPersonalizationDto = {
 };
 
 describe("coach personalization marker", () => {
+  it("does not record a signal whose evidence sentence is empty", () => {
+    const result = applyCoachPersonalizationMarker(
+      "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir blok dene.",
+      { ...grounded, recentSessions: { count7d: 0, focusMinutes7d: 0, subjects: [] } },
+      "tr",
+    );
+
+    expect(result.text).toBe("Bugün tek bir blok dene.");
+    expect(result.personalization.usedSignals).toEqual([]);
+  });
+
   it("turns a verified signal marker into visible evidence inside the answer", () => {
     const result = applyCoachPersonalizationMarker(
       "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek bir paragraf bloğu dene.",
@@ -27,7 +38,7 @@ describe("coach personalization marker", () => {
     );
 
     expect(result.text).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün tek bir paragraf bloğu dene.",
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. İçinde Türkçe var. Bugün tek bir paragraf bloğu dene.",
     );
     expect(result.personalization.usedSignals).toEqual(["RECENT_SESSIONS"]);
     expect(result.text).not.toContain("<<PERSONALIZATION");
@@ -57,7 +68,9 @@ describe("coach personalization marker", () => {
       "tr",
     );
 
-    expect(result.text).toContain("Son 7 günde 3 seansla 140 dakika odaklanmışsın.");
+    expect(result.text).toContain(
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. İçinde Türkçe var.",
+    );
     expect(result.personalization.usedSignals).toEqual(["RECENT_SESSIONS"]);
   });
 
@@ -66,10 +79,28 @@ describe("coach personalization marker", () => {
 
     expect(filter.push("<<PERSONAL")).toBe("");
     expect(filter.push("IZATION:RECENT_SESSIONS>>\nBugün ")).toBe(
-      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. Bugün ",
+      "Son 7 günde 3 seansla 140 dakika odaklanmışsın. İçinde Türkçe var. Bugün ",
     );
     expect(filter.push("başla.")).toBe("başla.");
     expect(filter.flush()).toBe("");
+  });
+
+  it("lets the mock focus replace the session counter", () => {
+    const result = applyCoachPersonalizationMarker(
+      "<<PERSONALIZATION:RECENT_SESSIONS>>\nBugün tek blok dene.",
+      grounded,
+      "tr",
+      "Son denemende odak Tarih, Osmanlı.",
+    );
+
+    expect(result.text).toBe(
+      "Son denemende odak Tarih, Osmanlı. Bugün tek blok dene.",
+    );
+    expect(result.text).not.toContain("Son 7 günde");
+    expect(result.personalization.usedSignals).toEqual([]);
+    expect(result.personalization.usedEvidence?.[0]?.summary).toBe(
+      "Son denemende odak Tarih, Osmanlı.",
+    );
   });
 
   it("replaces a generic method list with one diagnostic question when data is absent", () => {

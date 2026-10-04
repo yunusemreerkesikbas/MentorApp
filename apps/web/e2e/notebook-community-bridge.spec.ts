@@ -287,6 +287,20 @@ async function mockQuestionApi(page: Page) {
     }
 
     // The dialog resolves the current exam only when it opens — this is that pair of requests.
+    if (
+      method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, {
+        id: "11111111-1111-4111-8111-111111111111",
+        slug: "kpss-lisans-2026",
+        name: "KPSS Lisans 2026",
+        family: "KPSS",
+        variant: "LISANS",
+        isCurrent: true,
+      });
+    }
     if (method === "GET" && path === "/v1/content/exams/by-type/KPSS/calendar") {
       return json(route, {
         exam: {
@@ -302,6 +316,18 @@ async function mockQuestionApi(page: Page) {
       });
     }
 
+    if (
+      method === "GET" &&
+      path === "/v1/content/exams/kpss-lisans-2026/subjects"
+    ) {
+      return json(route, []);
+    }
+    if (
+      method === "GET" &&
+      path === "/v1/content/exams/kpss-lisans-2026/topics"
+    ) {
+      return json(route, []);
+    }
     if (method === "GET" && path === `/v1/forum/threads/${QUESTION_THREAD_ID}`) {
       return json(route, {
         question: {

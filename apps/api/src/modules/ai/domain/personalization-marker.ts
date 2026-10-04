@@ -1,9 +1,11 @@
 import {
+  CoachEvidenceType,
   CoachPersonalizationMode,
   CoachPersonalizationSignal,
   type CoachPersonalizationDto,
   type CoachPersonalizationSignal as CoachPersonalizationSignalType,
 } from "@mentor/types";
+import { groundingFact } from "./grounding-fact";
 import type { PromptLocale } from "./prompt-locale";
 
 const MARKER_PREFIX = "<<PERSONALIZATION:";
@@ -37,23 +39,41 @@ function evidenceSentence(
   signal: CoachPersonalizationSignalType,
   personalization: CoachPersonalizationDto,
   locale: PromptLocale,
-): string {
+): string | null {
   if (signal === CoachPersonalizationSignal.RECENT_SESSIONS) {
-    const recent = personalization.recentSessions!;
-    return locale === "en"
-      ? `Over the last 7 days, you focused for ${recent.focusMinutes7d} minutes across ${recent.count7d} sessions.`
-      : `Son 7 günde ${recent.count7d} seansla ${recent.focusMinutes7d} dakika odaklanmışsın.`;
+    return groundingFact({
+      signal: "RECENT_SESSIONS",
+      locale,
+      recentSessions: personalization.recentSessions,
+    });
   }
   if (signal === CoachPersonalizationSignal.TODAY_PLAN) {
-    const plan = personalization.todayPlan!;
-    return locale === "en"
-      ? `You have completed ${plan.done} of ${plan.total} tasks in today's plan.`
-      : `Bugünkü planındaki ${plan.total} görevin ${plan.done} tanesini tamamlamışsın.`;
+    return groundingFact({
+      signal: "TODAY_PLAN",
+      locale,
+      todayPlan: personalization.todayPlan,
+    });
   }
-  const mood = personalization.moodLevel!;
-  return locale === "en"
-    ? `You logged today's mood as ${mood} out of 5.`
-    : `Bugünkü ruh hali kaydın 5 üzerinden ${mood}.`;
+  return groundingFact({
+    signal: "MOOD",
+    locale,
+    moodLevel: personalization.moodLevel,
+  });
+}
+
+function withFocusEvidence(
+  personalization: CoachPersonalizationDto,
+  focusLine: string,
+): CoachPersonalizationDto {
+  const usedEvidence = (personalization.usedEvidence ?? []).filter(
+    (item) => item.summary !== focusLine,
+  );
+  usedEvidence.push({
+    type: CoachEvidenceType.MOCK_PERFORMANCE,
+    summary: focusLine,
+    observedAt: new Date().toISOString(),
+  });
+  return { ...personalization, usedSignals: [], usedEvidence };
 }
 
 /** Replaces the model-only prefix with verified evidence that is visible inside the coach reply. */
@@ -61,10 +81,17 @@ export function applyCoachPersonalizationMarker(
   text: string,
   personalization: CoachPersonalizationDto,
   locale: PromptLocale,
+  focusLine?: string | null,
 ): { text: string; personalization: CoachPersonalizationDto } {
   const match = MARKER_RE.exec(text);
   const requested = match?.[1] ?? null;
   const clean = match ? text.slice(match[0].length).trimStart() : text.trimStart();
+  if (focusLine) {
+    return {
+      text: clean ? `${focusLine} ${clean}` : focusLine,
+      personalization: withFocusEvidence(personalization, focusLine),
+    };
+  }
   let signal: CoachPersonalizationSignalType | null = null;
 
   if (requested && requested !== "NONE") {
@@ -78,12 +105,15 @@ export function applyCoachPersonalizationMarker(
     signal = fallbackSignal(personalization);
   }
 
-  const visible = signal ? `${evidenceSentence(signal, personalization, locale)} ${clean}` : clean;
+  const sentence = signal
+    ? evidenceSentence(signal, personalization, locale)
+    : null;
+  const visible = sentence ? `${sentence} ${clean}` : clean;
   return {
     text: visible,
     personalization: {
       ...personalization,
-      usedSignals: signal ? [signal] : [],
+      usedSignals: signal && sentence ? [signal] : [],
     },
   };
 }
@@ -92,12 +122,18 @@ export function applyCoachPersonalizationMarker(
 export function createPersonalizationMarkerFilter(
   personalization: CoachPersonalizationDto,
   locale: PromptLocale,
+  focusLine?: string | null,
 ): { push(delta: string): string; flush(): string } {
   let pending = "";
   let resolved = false;
 
   const resolve = (): string => {
-    const result = applyCoachPersonalizationMarker(pending, personalization, locale);
+    const result = applyCoachPersonalizationMarker(
+      pending,
+      personalization,
+      locale,
+      focusLine,
+    );
     pending = "";
     resolved = true;
     return result.text;

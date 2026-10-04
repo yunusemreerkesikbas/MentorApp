@@ -15,6 +15,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags } from "@nestjs/swagger";
 import type {
+  NotebookContentsDto,
   NotebookDto,
   NotebookPageDto,
   NotebookSummaryDto,
@@ -84,6 +85,15 @@ export class NotebooksController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
     return this.notebooks.deleteNotebook(user.id, id);
+  }
+
+  /** The contents page ("İçindekiler"): one line per page that has anything on it. */
+  @Get(":id/contents")
+  getContents(
+    @CurrentUser() user: RequestUser,
+    @Param("id", ParseUUIDPipe) id: string,
+  ): Promise<NotebookContentsDto> {
+    return this.notebooks.getNotebookContents(user.id, id);
   }
 
   @Get(":id/pages/:index")

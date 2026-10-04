@@ -8,7 +8,7 @@ import type { Database } from "../../../database/drizzle";
 import { withUserContext } from "../../../database/rls";
 import { FREEZE_TOKENS_PER_MONTH, STREAK_LOOKBACK_DAYS } from "../domain/coaching.constants";
 import { addDays, monthKey, todayIso, type IsoDate } from "../domain/date.util";
-import { deriveStreak } from "../domain/streak";
+import { buildStreakWeek, deriveStreak } from "../domain/streak";
 import { CoachingEventTopic, STREAK_MILESTONES, StreakBroken, StreakMilestone } from "../domain/coaching.events";
 import { DailyActivityRepository } from "../infrastructure/daily-activity.repository";
 import { StreakFreezeRepository } from "../infrastructure/streak-freeze.repository";
@@ -48,6 +48,17 @@ export class StreakService {
     return withUserContext(this.db, { userId }, async (tx) => {
       const row = await this.streak.findByUser(tx, userId);
       return row?.currentStreak ?? 0;
+    });
+  }
+
+  /** Dated reward retries must not use or overwrite today's cached streak. */
+  getStreakAt(userId: string, date: string): Promise<{ currentStreak: number }> {
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const since = addDays(date, -STREAK_LOOKBACK_DAYS);
+      const activeDates = await this.activity.listActiveDatesSince(tx, userId, since);
+      const freezes = await this.freezes.listDatesSince(tx, userId, since);
+      return deriveStreak(date, new Set(activeDates.filter((day) => day <= date)),
+        FREEZE_TOKENS_PER_MONTH, new Set(freezes.filter((day) => day <= date)));
     });
   }
 
@@ -155,7 +166,13 @@ export class StreakService {
         freezeMonth: currentMonth,
       });
 
-      return { currentStreak, longestStreak, freezeTokens };
+      return {
+        currentStreak,
+        longestStreak,
+        freezeTokens,
+        // Built from the sets already in hand — the band costs no extra query.
+        week: buildStreakWeek(today, activeDates, bridgedDates),
+      };
     });
 
     // Emit after tx commit — prevents event firing if upsert rolls back

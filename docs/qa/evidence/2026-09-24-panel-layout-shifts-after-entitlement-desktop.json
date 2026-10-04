@@ -1,0 +1,551 @@
+{
+  "generatedAt": "2026-09-24T09:20:57.354Z",
+  "viewport": {
+    "width": 1280,
+    "height": 800
+  },
+  "results": [
+    {
+      "iteration": 1,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.0499852294921875,
+          "startTime": 436.3000000715256,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 204,
+                "top": 21,
+                "right": 1240,
+                "bottom": 225,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            }
+          ]
+        },
+        {
+          "value": 0.00002195892333984375,
+          "startTime": 524.5,
+          "sources": [
+            {
+              "node": "<img alt=\"\" aria-hidden=\"true\" loading=\"lazy\" width=\"72\" height=\"72\" decoding=\"async\" data-nimg=\"1\" srcset=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=96&amp;q=75 1x, /_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75 2x\" src=\"/_next/image?url=%2Fmascot%2Fpuhu%2Fpuhu-happy.png&amp;w=256&amp;q=75\" style=\"color: trans",
+              "previousRect": {
+                "x": 309,
+                "y": 136,
+                "width": 72,
+                "height": 72,
+                "top": 136,
+                "right": 381,
+                "bottom": 208,
+                "left": 309
+              },
+              "currentRect": {
+                "x": 309,
+                "y": 131.125,
+                "width": 72,
+                "height": 81.75,
+                "top": 131.125,
+                "right": 381,
+                "bottom": 212.875,
+                "left": 309
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 124,
+          "children": []
+        },
+        {
+          "at": 177,
+          "children": []
+        },
+        {
+          "at": 256.90000009536743,
+          "children": []
+        },
+        {
+          "at": 300.90000009536743,
+          "children": []
+        },
+        {
+          "at": 324.40000009536743,
+          "children": []
+        },
+        {
+          "at": 374.5,
+          "children": []
+        },
+        {
+          "at": 424,
+          "children": []
+        },
+        {
+          "at": 474.40000009536743,
+          "children": []
+        },
+        {
+          "at": 525.9000000953674,
+          "children": []
+        },
+        {
+          "at": 580.6000000238419,
+          "children": []
+        },
+        {
+          "at": 627.7000000476837,
+          "children": []
+        },
+        {
+          "at": 674.2000000476837,
+          "children": []
+        },
+        {
+          "at": 737.7000000476837,
+          "children": []
+        },
+        {
+          "at": 783.9000000953674,
+          "children": []
+        },
+        {
+          "at": 831.9000000953674,
+          "children": []
+        },
+        {
+          "at": 878,
+          "children": []
+        },
+        {
+          "at": 924.6000000238419,
+          "children": []
+        },
+        {
+          "at": 986.9000000953674,
+          "children": []
+        },
+        {
+          "at": 1034,
+          "children": []
+        },
+        {
+          "at": 1080,
+          "children": []
+        },
+        {
+          "at": 1127.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1173.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1236.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1283,
+          "children": []
+        },
+        {
+          "at": 1328.8000000715256,
+          "children": []
+        },
+        {
+          "at": 1374.3000000715256,
+          "children": []
+        },
+        {
+          "at": 1428.2000000476837,
+          "children": []
+        },
+        {
+          "at": 1483,
+          "children": []
+        },
+        {
+          "at": 1529.3000000715256,
+          "children": []
+        }
+      ]
+    },
+    {
+      "iteration": 2,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.048987060546875,
+          "startTime": 362.39999997615814,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 183,
+                "width": 370,
+                "height": 204,
+                "top": 183,
+                "right": 1240,
+                "bottom": 387,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            },
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 172,
+                "top": 21,
+                "right": 1240,
+                "bottom": 193,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 293,
+                "width": 370,
+                "height": 172,
+                "top": 293,
+                "right": 1240,
+                "bottom": 465,
+                "left": 870
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 68.19999992847443,
+          "children": []
+        },
+        {
+          "at": 119.19999992847443,
+          "children": []
+        },
+        {
+          "at": 165.5,
+          "children": []
+        },
+        {
+          "at": 219.29999995231628,
+          "children": []
+        },
+        {
+          "at": 273.6999999284744,
+          "children": []
+        },
+        {
+          "at": 320.60000002384186,
+          "children": []
+        },
+        {
+          "at": 365.10000002384186,
+          "children": []
+        },
+        {
+          "at": 427.89999997615814,
+          "children": []
+        },
+        {
+          "at": 474.6999999284744,
+          "children": []
+        },
+        {
+          "at": 516.7999999523163,
+          "children": []
+        },
+        {
+          "at": 568.6000000238419,
+          "children": []
+        },
+        {
+          "at": 615.6999999284744,
+          "children": []
+        },
+        {
+          "at": 678,
+          "children": []
+        },
+        {
+          "at": 722.2999999523163,
+          "children": []
+        },
+        {
+          "at": 771.6999999284744,
+          "children": []
+        },
+        {
+          "at": 817.7999999523163,
+          "children": []
+        },
+        {
+          "at": 880.2999999523163,
+          "children": []
+        },
+        {
+          "at": 926.8999999761581,
+          "children": []
+        },
+        {
+          "at": 974.1000000238419,
+          "children": []
+        },
+        {
+          "at": 1020.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1066.8999999761581,
+          "children": []
+        },
+        {
+          "at": 1129.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1175.7999999523163,
+          "children": []
+        },
+        {
+          "at": 1222.6999999284744,
+          "children": []
+        },
+        {
+          "at": 1268.6999999284744,
+          "children": []
+        },
+        {
+          "at": 1316.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1378.6999999284744,
+          "children": []
+        },
+        {
+          "at": 1426.2999999523163,
+          "children": []
+        },
+        {
+          "at": 1472.6999999284744,
+          "children": []
+        },
+        {
+          "at": 1519.1999999284744,
+          "children": []
+        }
+      ]
+    },
+    {
+      "iteration": 3,
+      "finalPath": "/panel",
+      "shifts": [
+        {
+          "value": 0.048987060546875,
+          "startTime": 325.39999997615814,
+          "sources": [
+            {
+              "node": "<section class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)]\" aria-labelledby=\"vision-card-title\"><div class=\"flex items-center gap-2.5\"><span class=\"grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] bg-[var(--play-well-violet)] text-[var(--color-chip-",
+              "previousRect": {
+                "x": 870,
+                "y": 183,
+                "width": 370,
+                "height": 204,
+                "top": 183,
+                "right": 1240,
+                "bottom": 387,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 455,
+                "width": 370,
+                "height": 204,
+                "top": 455,
+                "right": 1240,
+                "bottom": 659,
+                "left": 870
+              }
+            },
+            {
+              "node": "<div class=\"rounded-[var(--radius-card)] border border-[var(--color-border)] p-6 bg-[var(--color-surface-translucent)] \" style=\"box-shadow: var(--shadow-card);\"><p class=\"text-base font-bold\" style=\"color: var(--color-main); font-family: var(--font-heading);\">Sınava kalan</p><p class=\"mt-2 text-sm\" style=\"color: var(--color-secondary);\">Resmi sınav",
+              "previousRect": {
+                "x": 870,
+                "y": 21,
+                "width": 370,
+                "height": 172,
+                "top": 21,
+                "right": 1240,
+                "bottom": 193,
+                "left": 870
+              },
+              "currentRect": {
+                "x": 870,
+                "y": 293,
+                "width": 370,
+                "height": 172,
+                "top": 293,
+                "right": 1240,
+                "bottom": 465,
+                "left": 870
+              }
+            }
+          ]
+        }
+      ],
+      "timeline": [
+        {
+          "at": 83.29999995231628,
+          "children": []
+        },
+        {
+          "at": 141.79999995231628,
+          "children": []
+        },
+        {
+          "at": 169.39999997615814,
+          "children": []
+        },
+        {
+          "at": 230.09999990463257,
+          "children": []
+        },
+        {
+          "at": 274.6999999284744,
+          "children": []
+        },
+        {
+          "at": 326.89999997615814,
+          "children": []
+        },
+        {
+          "at": 376.7999999523163,
+          "children": []
+        },
+        {
+          "at": 423.89999997615814,
+          "children": []
+        },
+        {
+          "at": 471.7999999523163,
+          "children": []
+        },
+        {
+          "at": 533.6999999284744,
+          "children": []
+        },
+        {
+          "at": 579.1999999284744,
+          "children": []
+        },
+        {
+          "at": 625.6999999284744,
+          "children": []
+        },
+        {
+          "at": 673.5999999046326,
+          "children": []
+        },
+        {
+          "at": 720,
+          "children": []
+        },
+        {
+          "at": 781.7999999523163,
+          "children": []
+        },
+        {
+          "at": 828.0999999046326,
+          "children": []
+        },
+        {
+          "at": 870.8999999761581,
+          "children": []
+        },
+        {
+          "at": 920.6999999284744,
+          "children": []
+        },
+        {
+          "at": 979.2999999523163,
+          "children": []
+        },
+        {
+          "at": 1031.5,
+          "children": []
+        },
+        {
+          "at": 1078.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1124.8999999761581,
+          "children": []
+        },
+        {
+          "at": 1171.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1232.3999999761581,
+          "children": []
+        },
+        {
+          "at": 1279.2999999523163,
+          "children": []
+        },
+        {
+          "at": 1326.7999999523163,
+          "children": []
+        },
+        {
+          "at": 1372.5999999046326,
+          "children": []
+        },
+        {
+          "at": 1434.0999999046326,
+          "children": []
+        },
+        {
+          "at": 1481.5999999046326,
+          "children": []
+        },
+        {
+          "at": 1529.0999999046326,
+          "children": []
+        }
+      ]
+    }
+  ]
+}

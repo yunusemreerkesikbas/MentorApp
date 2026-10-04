@@ -28,7 +28,8 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { createPlanTask, updatePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanAttendees } from "./coach-plan-attendees";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
-import { CoachPlanTimeFields } from "./coach-plan-form-fields";
+import { CoachPlanWhenFields } from "./coach-plan-form-fields";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 
 type TaskFormMode =
   | { kind: "CREATE"; initialDate: string; initialStartTime?: string }
@@ -136,8 +137,11 @@ export function CoachPlanTaskForm({
       busy={busy}
       onClose={onClose}
     >
-      <form className="flex flex-col gap-4" onSubmit={submit}>
+      <form className="flex min-h-0 flex-1 flex-col" onSubmit={submit}>
+        <CoachOverlayBody>
+        <div className="flex flex-col gap-4">
         <TextField
+          dense
           label={t("form_title")}
           value={title}
           required
@@ -146,27 +150,22 @@ export function CoachPlanTaskForm({
           disabled={busy}
           onChange={(event) => setTitle(event.target.value)}
         />
-        <TextField
-          type="date"
-          label={t("form_date")}
-          value={taskDate}
-          min={todayInIstanbul()}
-          required
-          disabled={busy || personalEdit}
-          onChange={(event) => setTaskDate(event.target.value)}
+        <CoachPlanWhenFields
+          date={taskDate}
+          minDate={todayInIstanbul()}
+          dateDisabled={personalEdit}
+          startTime={startTime}
+          endTime={endTime}
+          disabled={busy}
+          onDate={setTaskDate}
+          onStartTime={setStartTime}
+          onEndTime={setEndTime}
         />
         {personalEdit && (
           <p className="text-xs" style={{ color: "var(--color-secondary)" }}>
             {t("personal_task_date_fixed")}
           </p>
         )}
-        <CoachPlanTimeFields
-          startTime={startTime}
-          endTime={endTime}
-          disabled={busy}
-          onStartTime={setStartTime}
-          onEndTime={setEndTime}
-        />
         <CoachPlanAttendees
           roster={roster}
           selectedIds={attendeeIds}
@@ -175,6 +174,7 @@ export function CoachPlanTaskForm({
         />
         {(attendeeIds.length > 0 || (editing && !personalEdit)) && (
           <TextAreaField
+            dense
             label={t("coach_note_optional")}
             value={coachNote}
             maxLength={500}
@@ -184,14 +184,16 @@ export function CoachPlanTaskForm({
           />
         )}
         <FormError message={error} />
-        <div className="flex flex-wrap justify-end gap-2">
+        </div>
+        </CoachOverlayBody>
+        <CoachOverlayFooter>
           <Button type="button" variant="secondary" disabled={busy} onClick={onClose}>
             {t("form_cancel")}
           </Button>
           <Button type="submit" busy={busy}>
             {t(editing ? "save_changes" : "create_task")}
           </Button>
-        </div>
+        </CoachOverlayFooter>
       </form>
     </CoachPlanFormPanel>
   );

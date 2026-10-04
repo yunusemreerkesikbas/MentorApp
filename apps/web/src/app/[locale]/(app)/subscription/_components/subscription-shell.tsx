@@ -14,7 +14,6 @@ import {
 } from "@mentor/api-client";
 import { Button, Card, Chip, SkeletonGroup } from "@mentor/ui";
 import { FormError } from "@/components/form";
-import { LegalLink } from "@/components/legal-link";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { trackProductEvent } from "@/lib/analytics";
 import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
@@ -24,6 +23,12 @@ import {
   COACH_RETURN_TO_STORAGE_KEY,
   safeInternalReturnTo,
 } from "@/lib/community-coach-bridge";
+import { useAuth } from "@/lib/auth-context";
+import { isCoach } from "@/lib/coach-surface";
+import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
+import { StoreButtons } from "@/components/premium/store-buttons";
+import { PendingCheckout } from "@/components/premium/pending-checkout";
+import { SubscriptionPlanCard } from "./subscription-plan-card";
 import {
   SubscriptionSkeletonBlocks,
 } from "./subscription-content-skeleton";
@@ -88,13 +93,12 @@ export function SubscriptionShell() {
   const reduceMotion = useReducedMotion();
   const t = useTranslations("subscription");
   const tPaywall = useTranslations("paywall");
-  const tLegal = useTranslations("legal");
   const locale = useLocale();
   const searchParams = useSearchParams();
   const { confirm, info } = useMentorDialog();
+  const { user } = useAuth();
   const [loadState, setLoadState] = useState<LoadState>({ status: "loading" });
   const [view, setView] = useState<SubscriptionView | null>(null);
-  const [consent, setConsent] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -143,7 +147,8 @@ export function SubscriptionShell() {
     };
   }, []);
 
-  async function checkout(plan: PlanDto) {
+  async function checkout(plan: PlanDto, useTrial: boolean) {
+    if (!view || busy || view.subscription?.status === "INCOMPLETE" || view.trialEligibility.reason === "PENDING") return;
     setError(null);
     setBusy(true);
     const offer =
@@ -155,6 +160,7 @@ export function SubscriptionShell() {
     try {
       const session = (await subscriptionsControllerCheckout({
         planId: plan.id,
+        useTrial,
       })) as unknown as {
         checkoutUrl: string;
       };
@@ -167,14 +173,28 @@ export function SubscriptionShell() {
             ? err.message
             : String(err),
       );
+      // Read the persisted intent after an uncertain response before offering another purchase.
+      try {
+        setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
+      } catch (readError) {
+        setLoadState({ status: "error", message: readError instanceof ApiClientError ? readError.message : t("eligibility_refresh_error") });
+      }
       setBusy(false);
+    }
+  }
+
+  async function refreshEligibility() {
+    try {
+      setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
+    } catch (err) {
+      setError(err instanceof ApiClientError ? err.message : t("eligibility_refresh_error"));
     }
   }
 
   async function cancel() {
     const ok = await confirm({
-      title: t("cancel_confirm_title"),
-      message: t("cancel_confirm_message"),
+      title: t(pendingCheckout ? pendingTrial ? "cancel_pending_confirm_title" : "cancel_pending_paid_confirm_title" : "cancel_confirm_title"),
+      message: t(pendingCheckout ? pendingTrial ? "cancel_pending_confirm_message" : "cancel_pending_paid_confirm_message" : "cancel_confirm_message"),
       confirmLabel: t("cancel_confirm_yes"),
       cancelLabel: t("cancel_confirm_no"),
     });
@@ -196,7 +216,7 @@ export function SubscriptionShell() {
       }
       await info({
         title: t("cancel_success_title"),
-        message: t("cancel_success_message"),
+        message: t(pendingCheckout ? pendingTrial ? "cancel_pending_success_message" : "cancel_pending_paid_success_message" : "cancel_success_message"),
         okLabel: t("cancel_success_ok"),
       });
     } catch (err) {
@@ -241,10 +261,17 @@ export function SubscriptionShell() {
 
   const loading = loadState.status === "loading";
   const plans = loadState.status === "ready" ? loadState.plans : [];
-  const purchaseEnabled = plans.some((plan) => plan.purchaseEnabled);
+  // A coach is offered seat plans, a student the student plans. The open subscription's own plan is
+  // still looked up in the full list below: a coach may hold a student plan from before.
+  const catalog = plansForAudience(plans, isCoach(user));
+  const mode = purchaseMode(catalog, getStoreLinks());
+  const purchaseEnabled = mode === "checkout";
   const ent = view?.entitlement;
   const sub = view?.subscription;
   const hasOpenSub = Boolean(sub);
+  const pendingTrial = view?.trialEligibility?.reason === "PENDING";
+  const pendingCheckout = sub?.status === "INCOMPLETE" || pendingTrial;
+  const pendingCheckoutUrl = view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null;
   const plan = sub ? (plans.find((item) => item.id === sub.planId) ?? null) : null;
   const discount = view?.discount ?? null;
   const facts = listSubscriptionFacts({
@@ -257,7 +284,8 @@ export function SubscriptionShell() {
   const heroTitle = plan?.name ?? (ent?.isPremium ? t("chip_premium") : t("chip_free"));
   // A sponsored seat is not the student's to cancel: there is no provider reference behind it,
   // and it ends with the coaching link rather than on a billing boundary.
-  const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd && !sub?.sponsored;
+  const canCancel = hasOpenSub && !sub?.cancelAtPeriodEnd && !sub?.sponsored
+    && (!pendingCheckout || Boolean(pendingCheckoutUrl));
   const showSummary = facts.length > 0 || canCancel || reason !== "NONE";
   const heroChip = heroChipKey(reason, Boolean(sub?.cancelAtPeriodEnd));
 
@@ -368,7 +396,7 @@ export function SubscriptionShell() {
                   busy={busy}
                   className={compactButtonClass}
                 >
-                  {t("cancel_button")}
+                  {t(pendingCheckout ? pendingTrial ? "cancel_pending_button" : "cancel_pending_paid_button" : "cancel_button")}
                 </Button>
               </div>
             ) : null}
@@ -378,39 +406,24 @@ export function SubscriptionShell() {
 
         <FormError message={error} />
 
-        {!hasOpenSub ? (
+        {pendingCheckout ? (
+          <Card><PendingCheckout checkoutUrl={pendingCheckoutUrl} isTrial={pendingTrial} /></Card>
+        ) : null}
+
+        {!hasOpenSub && !pendingCheckout ? (
           <>
             <motion.div
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
-              {purchaseEnabled ? (
-                <label
-                  className="flex min-h-[44px] items-start gap-3 rounded-[var(--radius-card)] text-sm leading-relaxed"
-                  style={{ color: "var(--color-body)" }}
-                >
-                  <input
-                    type="checkbox"
-                    checked={consent}
-                    onChange={(e) => setConsent(e.target.checked)}
-                    className="mt-0.5 size-5 shrink-0 rounded accent-[var(--color-btn)]"
-                    aria-describedby="trial-consent-desc"
-                  />
-                  <span id="trial-consent-desc">
-                    {t("trial_consent")}
-                    {/* Distance-selling rules want the contract + pre-sale form reachable BEFORE
-                        the charge, not buried in a footer. */}
-                    <span className="mt-2 block" style={{ color: "var(--color-secondary)" }}>
-                      <LegalLink slug="mesafeli-satis-sozlesmesi">
-                        {tLegal("consent_distance_sales")}
-                      </LegalLink>
-                      {" · "}
-                      <LegalLink slug="on-bilgilendirme-formu">
-                        {tLegal("consent_pre_info")}
-                      </LegalLink>{" "}
-                      {tLegal("consent_confirm")}
-                    </span>
-                  </span>
-                </label>
+              {purchaseEnabled ? null : mode === "store" ? (
+                <Card>
+                  <div className="flex flex-col items-start gap-3">
+                    <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
+                      {t("store_handoff")}
+                    </p>
+                    <StoreButtons links={getStoreLinks()} />
+                  </div>
+                </Card>
               ) : (
                 <Card>
                   <div className="flex flex-col items-start gap-3">
@@ -425,52 +438,15 @@ export function SubscriptionShell() {
 
             <motion.div
               // One plan must not sit in a half-width column (the catalog is monthly-only today).
-              className={`grid gap-4 ${plans.length > 1 ? "sm:grid-cols-2" : ""}`}
+              className={`grid gap-4 ${catalog.length > 1 ? "sm:grid-cols-2" : ""}`}
               variants={reduceMotion ? undefined : staggerItemVariants}
             >
-              {plans.map((catalogPlan) => (
+              {catalog.map((catalogPlan) => (
                 <motion.div
                   key={catalogPlan.id}
                   variants={reduceMotion ? undefined : staggerItemVariants}
                 >
-                  <Card className="flex h-full flex-col gap-3">
-                    <p
-                      className="text-lg font-bold"
-                      style={{
-                        color: "var(--color-main)",
-                        fontFamily: "var(--font-heading)",
-                      }}
-                    >
-                      {catalogPlan.name}
-                    </p>
-                    <p
-                      className="text-2xl font-bold tabular-nums"
-                      style={{ color: "var(--color-main)" }}
-                    >
-                      {formatPrice(catalogPlan.priceMinor, locale)}
-                      <span
-                        className="text-sm font-normal"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {" "}
-                        {t("period_suffix", { months: catalogPlan.periodMonths })}
-                      </span>
-                    </p>
-                    <p
-                      className="text-sm"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {t("trial_days", { days: catalogPlan.trialDays })}
-                    </p>
-                    <Button
-                      disabled={!catalogPlan.purchaseEnabled || !consent}
-                      busy={busy}
-                      onClick={() => void checkout(catalogPlan)}
-                      className={compactButtonClass}
-                    >
-                      {t(catalogPlan.purchaseEnabled ? "start_trial" : "coming_soon")}
-                    </Button>
-                  </Card>
+                  <SubscriptionPlanCard plan={catalogPlan} view={view} mode={mode} offer={loadState.status === "ready" ? loadState.offers?.offers[catalogPlan.id] : undefined} busy={busy} onCheckout={(selected, useTrial) => void checkout(selected, useTrial)} onPhoneVerified={() => void refreshEligibility()} />
                 </motion.div>
               ))}
             </motion.div>

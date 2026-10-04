@@ -4,6 +4,7 @@ import {
   SWIPE_THRESHOLD_PX,
   SWIPE_VELOCITY_PX_PER_S,
   bySubject,
+  nearestReturnDays,
   nextUnansweredIndex,
   reviewFeedback,
   swipeVerdict,
@@ -150,5 +151,30 @@ describe("reviewFeedback", () => {
       kind: "due",
       days: 2,
     });
+  });
+});
+
+describe("nearestReturnDays", () => {
+  const NOW = new Date("2026-08-22T09:00:00.000Z");
+  const inDays = (days: number) =>
+    new Date(NOW.getTime() + days * 24 * 60 * 60 * 1000).toISOString();
+
+  it("picks the soonest scheduled card and skips healed ones", () => {
+    expect(
+      nearestReturnDays(
+        [
+          { status: "ACTIVE", nextReviewAt: inDays(7) },
+          { status: "HEALED", nextReviewAt: null },
+          { status: "ACTIVE", nextReviewAt: inDays(4) },
+        ],
+        NOW,
+      ),
+    ).toBe(4);
+  });
+
+  it("has nothing to say when no card is scheduled", () => {
+    expect(
+      nearestReturnDays([{ status: "HEALED", nextReviewAt: null }], NOW),
+    ).toBeNull();
   });
 });

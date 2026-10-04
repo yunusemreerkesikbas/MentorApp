@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { flushSync } from "react-dom";
 import { useTranslations } from "next-intl";
 import { useReducedMotion } from "framer-motion";
@@ -16,9 +16,7 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import {
   ECONOMY_CHANGED_EVENT,
   fetchQuests,
-  notifyCoinCelebration,
 } from "@/lib/economy";
-import { findNewlyCompletedQuests } from "@/lib/economy-quest-utils";
 import { QuestProgressGauge } from "./economy-quests/quest-progress-gauge";
 import { QuestNextActionCard } from "./economy-quests/quest-next-action-card";
 import { QuestSection } from "./economy-quests/quest-section";
@@ -59,7 +57,6 @@ export function EconomyQuestsCard({
     setRenderedQuests(quests);
     setCurrentQuests(quests);
   }
-  const prevQuestsRef = useRef<QuestProgressView[] | null>(null);
 
   // Listen to economy changes to refresh dynamically
   useEffect(() => {
@@ -74,20 +71,6 @@ export function EconomyQuestsCard({
     return () => window.removeEventListener(ECONOMY_CHANGED_EVENT, onEconomyChanged);
   }, []);
 
-  useEffect(() => {
-    if (prevQuestsRef.current) {
-      const completedNow = findNewlyCompletedQuests(prevQuestsRef.current, currentQuests);
-      const coinEarned = completedNow.reduce(
-        (sum, quest) =>
-          quest.rewardUnit === "COIN" ? sum + quest.rewardAmount : sum,
-        0,
-      );
-      if (coinEarned > 0) {
-        notifyCoinCelebration(coinEarned);
-      }
-    }
-    prevQuestsRef.current = currentQuests;
-  }, [currentQuests]);
 
   const dailyQuests = currentQuests.filter((quest) => quest.category === "daily_ritual");
   const weeklyQuests = currentQuests.filter((quest) => quest.category === "weekly_ritual");

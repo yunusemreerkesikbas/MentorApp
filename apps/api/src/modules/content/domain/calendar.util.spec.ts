@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { selectExamForCountdown, toExamCandidates } from "./calendar.util";
+import {
+  selectExamForCountdown,
+  selectExamForTaxonomy,
+  toExamCandidates,
+} from "./calendar.util";
 
 describe("selectExamForCountdown", () => {
   it("prefers isCurrent among upcoming exams", () => {
@@ -162,5 +166,36 @@ describe("selectExamForCountdown", () => {
       },
     ]);
     expect(selectExamForCountdown(rows, "2026-06-01")).toBeNull();
+  });
+});
+
+describe("selectExamForTaxonomy", () => {
+  it("returns a dateless current exam so YKS/LGS pickers still resolve", () => {
+    const picked = selectExamForTaxonomy([
+      {
+        slug: "yks-2026",
+        variant: null,
+        isCurrent: true,
+      },
+    ]);
+    expect(picked?.slug).toBe("yks-2026");
+  });
+
+  it("honours a KPSS guide variant instead of the family's isCurrent row", () => {
+    const rows = [
+      { slug: "kpss-lisans-2026", variant: "LISANS", isCurrent: true },
+      { slug: "kpss-ortaogretim-2026", variant: "ORTAOGRETIM", isCurrent: false },
+    ];
+    expect(selectExamForTaxonomy(rows, "ORTAOGRETIM")?.slug).toBe(
+      "kpss-ortaogretim-2026",
+    );
+    expect(selectExamForTaxonomy(rows)?.slug).toBe("kpss-lisans-2026");
+  });
+
+  it("falls back to the family when the stored variant matches nothing", () => {
+    const rows = [
+      { slug: "kpss-lisans-2026", variant: "LISANS", isCurrent: true },
+    ];
+    expect(selectExamForTaxonomy(rows, "ONLISANS")?.slug).toBe("kpss-lisans-2026");
   });
 });

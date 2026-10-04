@@ -1,0 +1,76 @@
+{
+  "capturedAt": "2026-09-27T12:15:27.4704009Z",
+  "head": "e3a0fa8739ddb1f48ee05be78c6b5f02b6768ac4",
+  "sourceSnapshot": "2026-09-27-coach-entitlement-source-snapshot.json",
+  "sourceSnapshotSha256": "996d1b2128a7be38aa29d6103b35fbd0b807d189982e5ed923616e02f34d1ed1",
+  "messageBudgets": "2026-09-27-coach-message-budgets.json",
+  "messageBudgetsSha256": "6fb633261495b507787de15944b72aed59784e7756bf8b3a4daf140170f9ebaf",
+  "qaTest": "apps/api/test/qa-coach-ai-taste.e2e-spec.ts",
+  "qaTestSha256": "bdc3f6aa846b0603c4f71fc5b21eb6dc6bc33a5d504ef339c1c75a9826ed4042",
+  "logs": [
+    {
+      "name": "2026-09-27-coach-entitlement-unit.log",
+      "sha256": "98f516b35d19c5f1b6e745da0b4e620a45e639c1f4164de05a69e4c0bc0bf4ff"
+    },
+    {
+      "name": "2026-09-27-coach-entitlement-ai-unit.log",
+      "sha256": "6ef5105f747eb8e7190db4108575a55246919cb5ac209dab3b2c8e54eee0312a"
+    },
+    {
+      "name": "2026-09-27-coach-entitlement-web-unit.log",
+      "sha256": "1a41ced1a8379df58297e6a80b6b5a5eebe9dde9b9284d45ba614620d10fd6f1"
+    },
+    {
+      "name": "2026-09-27-coach-entitlement-api-typecheck.log",
+      "sha256": "d66548006c5c7c54f315f252a8864713f539323f6c6187c23bb7db83274361fa"
+    },
+    {
+      "name": "2026-09-27-coach-entitlement-web-typecheck.log",
+      "sha256": "5a3973f79ed9becd5f23c4feff467513814de7ea381d75a4d2e339aa8b8edca9"
+    },
+    {
+      "name": "2026-09-27-coach-seats-e2e.log",
+      "sha256": "44b5beab18aa79d4a8a58f71c86c958de1114b0e960f30883aa9027a4adfd56c"
+    },
+    {
+      "name": "2026-09-27-coach-weekly-brief-e2e.log",
+      "sha256": "a8fd27d5fc955d46c9e7952a69115897a04cf943894c47d3cea46c650d3a2ed0"
+    },
+    {
+      "name": "2026-09-27-coach-ai-taste-e2e.log",
+      "sha256": "c61f959100d191df876154bb7862e8a4a4cdad704fe550bfb235fb894d4ad0ff"
+    },
+    {
+      "name": "2026-09-27-coach-seats-chrome.log",
+      "sha256": "a7076c3d763c0db9bb81b5a7a154eb5f55c1556a24afb401e4426e1bce2a00cd"
+    },
+    {
+      "name": "2026-09-27-coach-seats-chrome-rerun.log",
+      "sha256": "e3420602d8fd4c2637dfe52f70ff43f5f9f6433f04b4155777ffdc2483af8c2d"
+    },
+    {
+      "name": "2026-09-27-coach-seats-chrome-final.log",
+      "sha256": "8a3da43eb9de7abb725114e27ea379bd0df01f11aff87251172f7ef847e5421d"
+    },
+    {
+      "name": "2026-09-27-coach-production-build.log",
+      "sha256": "47b06770d21e69325aa8653f10366fa4b3b6865af512a39eb261b4baa55f6dd8"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-probe.log",
+      "sha256": "7c36951a472f427147166dd5b398566e65e611d2b18ef2f489a0b4df4ce642ae"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-with-site.log",
+      "sha256": "f257a27fcb698752c6ec1dd4cc92d0a050c9a165dcf282d54a47c5a76942b7fb"
+    },
+    {
+      "name": "2026-09-27-coach-webpack-budget-probe.log",
+      "sha256": "738ff775e2edce8578cacf984c110a3bab6fa6c20012764dd7379d04a32b94ff"
+    },
+    {
+      "name": "2026-09-27-coach-turbopack-with-site.log",
+      "sha256": "5ecd693f1a93f4c436c63d1e045078b8f3122be3b9e66eef4da300deb8623496"
+    }
+  ]
+}

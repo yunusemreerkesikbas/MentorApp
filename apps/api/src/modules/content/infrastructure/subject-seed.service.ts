@@ -23,7 +23,7 @@ interface SeedExamTopic {
 interface SeedExamSubject {
   examSlug: string;
   subjectSlug: string;
-  questionCount: number;
+    questionCount: number | null;
   sortOrder: number;
 }
 

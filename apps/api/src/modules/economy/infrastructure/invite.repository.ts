@@ -1,7 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { and, eq, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
 import { inviteRedemptions, invites } from "../../../database/schema";
 
@@ -12,6 +12,33 @@ export type RedemptionRow = typeof inviteRedemptions.$inferSelect;
 @Injectable()
 export class InviteRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  withServiceTx<T>(fn: (tx: DatabaseTx) => Promise<T>): Promise<T> {
+    return withServiceContext(this.db, fn);
+  }
+
+  async lockPending(invitedUserId: string, tx: DatabaseTx): Promise<RedemptionRow | undefined> {
+    const [row] = await tx.select().from(inviteRedemptions)
+      .where(and(eq(inviteRedemptions.invitedUserId, invitedUserId), eq(inviteRedemptions.status, "PENDING")))
+      .for("update");
+    return row;
+  }
+
+  async lockRedemption(invitedUserId: string, tx: DatabaseTx): Promise<RedemptionRow | undefined> {
+    const [row] = await tx.select().from(inviteRedemptions)
+      .where(eq(inviteRedemptions.invitedUserId, invitedUserId)).for("update");
+    return row;
+  }
+
+  async recordPayment(id: string, paymentId: string, outcome: string, tx: DatabaseTx): Promise<void> {
+    await tx.update(inviteRedemptions).set({ status: "CONVERTED", convertedAt: new Date(), sourcePaymentId: paymentId, rewardOutcome: outcome })
+      .where(eq(inviteRedemptions.id, id));
+  }
+
+  async markRewardReversed(id: string, tx: DatabaseTx): Promise<void> {
+    await tx.update(inviteRedemptions).set({ rewardOutcome: "REVERSED" })
+      .where(eq(inviteRedemptions.id, id));
+  }
 
   findByInviter(inviterUserId: string): Promise<InviteRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -58,18 +85,6 @@ export class InviteRepository {
         .insert(inviteRedemptions)
         .values({ inviterUserId, invitedUserId, code })
         .onConflictDoNothing()
-        .returning();
-      return rows[0];
-    });
-  }
-
-  /** PENDING → CONVERTED, only if currently PENDING (idempotent). Returns the row if it transitioned. */
-  markConverted(invitedUserId: string): Promise<RedemptionRow | undefined> {
-    return withServiceContext(this.db, async (tx) => {
-      const rows = await tx
-        .update(inviteRedemptions)
-        .set({ status: "CONVERTED", convertedAt: new Date() })
-        .where(and(eq(inviteRedemptions.invitedUserId, invitedUserId), eq(inviteRedemptions.status, "PENDING")))
         .returning();
       return rows[0];
     });

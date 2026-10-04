@@ -57,7 +57,8 @@ export interface NotebookInkToolbarProps {
   onClear: () => void;
 }
 
-const TRAY_BG = "#26282e";
+/** DESIGN.md's navy (`--play-cta-ink`), fixed rather than themed for the reason above. */
+const TRAY_BG = "#0f2233";
 const TRAY_BORDER = "rgba(255,255,255,0.09)";
 const CONTROL_FG = "#e7e9ee";
 
@@ -115,7 +116,7 @@ function HoverTip({
         style={{
           left: anchor.x,
           top: anchor.top - 8,
-          backgroundColor: "#111318",
+          backgroundColor: "#0a1826",
           color: CONTROL_FG,
         }}
       >
@@ -164,7 +165,7 @@ function ControlButton({
         className="inline-flex size-11 shrink-0 cursor-pointer items-center justify-center self-center rounded-full outline-none transition-colors focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-35"
         style={{
           color: CONTROL_FG,
-          backgroundColor: pressed ? "rgba(255,255,255,0.12)" : "transparent",
+          backgroundColor: pressed ? "rgba(85,172,238,0.24)" : "transparent",
         }}
       >
         {children}

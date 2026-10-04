@@ -4,6 +4,7 @@ import type {
   ExamCalendarDto,
   ExamSubjectDto,
   ExamTopicDto,
+  NotebookContentsPageDto,
   NotebookEntryDto,
   NotebookOverviewDto,
   NotebookPageDto,
@@ -16,9 +17,11 @@ import type {
  * slot placement, the error-type threshold. None of it can answer "does the cover actually open",
  * "does adding a card persist", "does a healed card go quiet". That is what this file is for.
  *
- * The book opens onto a two-page spread (left index, right index+1), each page independently
- * interactive with its own gesture session and autosave — the sidebar's arranging tools act on
- * whichever side the student last touched ("focused side", defaulting to left).
+ * The cover opens onto the book's first spread, the inside cover and the contents page
+ * ("İçindekiler"); the writing starts one turn later. From there the book is two-page spreads (left
+ * index, right index+1), each page independently interactive with its own gesture session and
+ * autosave — the sidebar's arranging tools act on whichever side the student last touched
+ * ("focused side", defaulting to left).
  */
 
 const exam = {
@@ -170,6 +173,19 @@ async function ensureNotebookToolsOpen(page: Page) {
   if (await show.isVisible()) await show.click();
 }
 
+/**
+ * Opens the closed book and turns past its contents page to the first writing spread, which is
+ * where nearly every test here starts. Waiting for the page label is what makes the next step
+ * safe: a click that lands while a page is still turning is dropped, the way a real book ignores a
+ * second hand on a page that is already moving.
+ */
+async function openToFirstSpread(page: Page) {
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await expect(page.getByRole("heading", { name: "İçindekiler" })).toBeVisible();
+  await page.getByRole("button", { name: "Sonraki" }).click();
+  await expect(page.getByText(/^Sayfa 1(-2)?$/)).toBeVisible();
+}
+
 function emptyPage(index: number): NotebookPageDto {
   return {
     pageIndex: index,
@@ -188,6 +204,8 @@ interface NotebookApiOptions {
   pages?: Record<number, NotebookPageDto>;
   /** What the index panel lists. Defaults to the due list plus whatever the pages hold. */
   indexEntries?: NotebookEntryDto[];
+  /** The contents page's lines. Defaults to none, the contents of a book nobody has written in. */
+  contents?: NotebookContentsPageDto[];
 }
 
 async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
@@ -268,6 +286,13 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
     }
     if (
       method === "GET" &&
+      (path === "/v1/content/exams/by-type/KPSS" ||
+        path.startsWith("/v1/content/exams/by-type/KPSS?"))
+    ) {
+      return json(route, exam);
+    }
+    if (
+      method === "GET" &&
       path === "/v1/content/exams/by-type/KPSS/calendar"
     ) {
       return json(route, calendar);
@@ -313,6 +338,9 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
         page: Number(url.searchParams.get("page") ?? 1),
         pageSize: Number(url.searchParams.get("pageSize") ?? 20),
       });
+    }
+    if (method === "GET" && path === "/v1/coaching/notebook/contents") {
+      return json(route, { notebookId: overview.notebook.id, pages: options.contents ?? [] });
     }
     const pageMatch = path.match(/\/v1\/coaching\/notebook\/pages\/(\d+)$/);
     if (method === "GET" && pageMatch) {
@@ -389,50 +417,129 @@ async function mockNotebookApi(page: Page, options: NotebookApiOptions = {}) {
   };
 }
 
-test("kapak açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
+test("kapak içindekilere açılır, sağ ve sol sayfalar birlikte gösterilir, kapaktan geriye gidilemez", async ({
   page,
 }, testInfo) => {
   /*
    * Below `sm` the notebook shows one leaf at a time instead of a spread, so the same book reads
    * as "Sayfa 1" rather than "Sayfa 1-2" and "Sonraki" walks a leaf at a time before turning.
    * Asserting the desktop labels on both projects is what made this fail only on mobile.
+   *
+   * Every click waits for the label it leads to before the next one: a click that lands while a
+   * page is still turning is dropped, so two clicks in a row would be one turn.
    */
   const singleLeaf = testInfo.project.name === "mobile-chromium";
+  const contents = page.getByRole("heading", { name: "İçindekiler" });
+  const label = (text: string) => page.getByText(text, { exact: true });
 
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
 
   // The book opens closed — that is the whole point of the cover.
   await expect(page.getByText("Yanlış Defterim")).toBeVisible();
-  await expect(page.getByText("Kapak")).toBeVisible();
+  await expect(label("Kapak")).toBeVisible();
 
+  // The cover opens onto the inside cover and the contents page, the way a notebook does; a fresh
+  // book's contents say so and offer the way in.
   await page.getByRole("button", { name: "Defteri aç" }).click();
-  // A spread, not a single leaf: opening the book shows pages 1 AND 2 at once — except on a
-  // phone, where there is no room for two.
-  await expect(
-    page.getByText(singleLeaf ? "Sayfa 1" : "Sayfa 1-2", { exact: true }),
-  ).toBeVisible();
+  await expect(contents).toBeVisible();
+  await expect(page.getByRole("button", { name: "Yazmaya başla" })).toBeVisible();
+
+  // One turn later: a spread, not a single leaf, pages 1 AND 2 at once — except on a phone, where
+  // there is no room for two.
+  await page.getByRole("button", { name: "Sonraki" }).click();
+  await expect(label(singleLeaf ? "Sayfa 1" : "Sayfa 1-2")).toBeVisible();
 
   await page.getByRole("button", { name: "Sonraki" }).click();
-  await expect(
-    page.getByText(singleLeaf ? "Sayfa 2" : "Sayfa 3-4", { exact: true }),
-  ).toBeVisible();
+  await expect(label(singleLeaf ? "Sayfa 2" : "Sayfa 3-4")).toBeVisible();
 
-  // Back past the first spread closes the book rather than doing nothing.
+  // Back the way it came: the pages, then the contents, then the cover closes.
   await page.getByRole("button", { name: "Önceki" }).click();
+  await expect(label(singleLeaf ? "Sayfa 1" : "Sayfa 1-2")).toBeVisible();
   await page.getByRole("button", { name: "Önceki" }).click();
-  await expect(page.getByText("Kapak")).toBeVisible();
+  await expect(contents).toBeVisible();
+  if (singleLeaf) {
+    // A phone turns back to the inside cover on its own before the cover closes over it.
+    await page.getByRole("button", { name: "Önceki" }).click();
+    await expect(contents).toHaveCount(0);
+    await expect(label("İçindekiler")).toBeVisible();
+  }
+  await page.getByRole("button", { name: "Önceki" }).click();
+  await expect(label("Kapak")).toBeVisible();
+
+  // And no further: there is nothing before the cover.
+  await page.getByRole("button", { name: "Önceki" }).click();
+  await expect(label("Kapak")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Defteri aç" })).toBeVisible();
 
   // Nothing threw on the way through — a crashed page renders an error boundary, not a cover.
   expect(api.pageErrors).toEqual([]);
 });
 
+test("içindekiler yazılı sayfaları listeler, bir satır kitabı o sayfaya çevirir", async ({
+  page,
+}, testInfo) => {
+  const singleLeaf = testInfo.project.name === "mobile-chromium";
+  const entry = makeEntry({ reviewCount: 2 });
+  const written: NotebookPageDto = {
+    pageIndex: 4,
+    doc: {
+      version: 1,
+      paper: "ruled",
+      ink: [],
+      items: [
+        {
+          id: "77777777-7777-4777-8777-777777777777",
+          kind: "entry",
+          entryId: entry.id,
+          x: 170,
+          y: 90,
+          width: 800,
+          height: 300,
+          rotation: 0,
+          opacity: 1,
+          z: 1,
+        },
+      ],
+    },
+    entries: [entry],
+  };
+  const api = await mockNotebookApi(page, {
+    pages: { 4: written },
+    contents: [
+      {
+        pageIndex: 4,
+        noteTitle: null,
+        topicName: "Problemler",
+        subjectRef: "matematik",
+        subjectName: "Matematik",
+        entryCount: 1,
+        dueCount: 0,
+        stickerCount: 0,
+        inkCount: 0,
+      },
+    ],
+  });
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: "Defteri aç" }).click();
+
+  // A line per written page, named in the student's own filing, with the page it is on.
+  const line = page.getByRole("button", { name: "Problemler, sayfa 5" });
+  await expect(line).toBeVisible();
+  await expect(page.getByRole("button", { name: "Yazmaya başla" })).toHaveCount(0);
+
+  // The line is a way in: the book riffles past the pages in between and opens on that one.
+  await line.click();
+  await expect(page.getByText(singleLeaf ? "Sayfa 5" : "Sayfa 5-6", { exact: true })).toBeVisible();
+  await expect(page.getByText("Problemler")).toBeVisible();
+  expect(api.pageErrors).toEqual([]);
+});
 test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu seçilir, sol sayfaya yerleşir", async ({
   page,
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
 
   // No "arrange the page" toggle to click first — the rail is already there, collapsed.
   await expect(
@@ -476,7 +583,7 @@ test("yan panel her zaman açık: yanlış eklenir, hata tipi zorunlu, ders/konu
 test("konu seçici derse göre daralır", async ({ page }) => {
   await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ekle" }).click();
 
@@ -605,7 +712,7 @@ test("çift tıkla kart açılır ve sol sayfadaki bir kart sağ sayfayı etkile
   await mockNotebookApi(page, { pages: { 0: seededLeft } });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
 
   // Not due, not in the strip flow — the only way to this card is arranging + opening it directly.
   await page.getByText("Problemler").dblclick();
@@ -619,7 +726,7 @@ test("sidebar sticker ekler, sayfaya yapıştırır ve otomatik kaydeder", async
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Sticker" }).click();
 
@@ -658,7 +765,7 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
 
   // No sidebar form: the note lands directly on the page, already in edit mode.
   await ensureNotebookToolsOpen(page);
@@ -668,28 +775,29 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await editor.fill("Bir daha köklü ifade unutma");
   await editor.blur();
 
-  await expect
-    .poll(() => api.savedPages.length, { timeout: 5_000 })
-    .toBeGreaterThan(0);
-  const saved = api.savedPages.find((entry) => entry.index === 0);
-  const doc = saved!.doc as { items: Array<{ kind: string; text?: string }> };
-  const notes = doc.items.filter((item) => item.kind === "text");
-  expect(notes).toHaveLength(1);
-  expect(notes[0]!.text).toBe("Bir daha köklü ifade unutma");
+  const savedNoteTexts = () => {
+    const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1);
+    const doc = latest?.doc as
+      | { items: Array<{ kind: string; text?: string }> }
+      | undefined;
+    return doc?.items.filter((item) => item.kind === "text").map((item) => item.text) ?? [];
+  };
+  await expect.poll(savedNoteTexts, { timeout: 5_000 }).toEqual([
+    "Bir daha köklü ifade unutma",
+  ]);
 
   // A second note, left empty, must never be persisted — the schema requires non-empty text.
+  const savesBeforeEmptyNote = api.savedPages.filter((entry) => entry.index === 0).length;
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   await page.getByLabel("Not metni").blur();
   await expect
     .poll(() => {
-      const latest = api.savedPages.filter((entry) => entry.index === 0).at(-1)!
-        .doc as {
-        items: Array<{ kind: string }>;
-      };
-      return latest.items.filter((item) => item.kind === "text").length;
+      if (api.savedPages.filter((entry) => entry.index === 0).length <= savesBeforeEmptyNote)
+        return [];
+      return savedNoteTexts();
     })
-    .toBe(1);
+    .toEqual(["Bir daha köklü ifade unutma"]);
 });
 
 test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizleme açılır", async ({
@@ -722,7 +830,7 @@ test("fotoğraflı kart sadece görseli gösterir; tıklayınca tam ekran önizl
   await mockNotebookApi(page, { pages: { 0: seededLeft } });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
 
   // The clickable surface is the photo itself, named for what it opens — not a chip or a topic
   // label sitting inline (those move into the hover card, which is a CSS-opacity concern better
@@ -764,7 +872,7 @@ test("çizim modunda sayfaya kalemle çizilir, geri/ileri alınır ve kaydedilir
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
 
   // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
   // prefix of the tray's own "Çizimleri sil".
@@ -823,7 +931,7 @@ test("silgi çizilen mürekkebi kaldırır, çizim modu kart sürüklemeyi kapat
 }) => {
   const api = await mockNotebookApi(page);
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   // `exact` matters here: role-name matching is a substring match by default, and "Çiz" is a
   // prefix of the tray's own "Çizimleri sil".
   await ensureNotebookToolsOpen(page);
@@ -1129,7 +1237,7 @@ test("çöp kutusu hangi silme olduğunu sorar; sayfadan kaldırmak kaydı silme
   });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await page.getByText("Problemler").click();
   await page.getByRole("button", { name: "Seçileni sil" }).click();
 
@@ -1159,7 +1267,7 @@ test("defterden silmek kaydı, kartı ve tekrar şeridini birlikte götürür", 
   });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await page.getByText("Problemler").click();
   await page.getByRole("button", { name: "Seçileni sil" }).click();
   await page.getByRole("button", { name: "Defterden sil" }).click();
@@ -1189,7 +1297,7 @@ test("kart önizlemesinden hata tipi düzeltilir", async ({ page }) => {
   });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await page.getByText("Problemler").dblclick();
 
   await page.getByRole("button", { name: "Kartı düzenle" }).click();
@@ -1243,7 +1351,7 @@ test("dizin kayıtları listeler, derse göre daraltır ve sayfaya yerleştirir"
   });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ara", exact: true }).click();
 
@@ -1284,7 +1392,7 @@ test("sayfadan kaldırılan kayıt dizinden bulunup silinebilir", async ({
   });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await page.getByText("Problemler").click();
   await page.getByRole("button", { name: "Seçileni sil" }).click();
   await page.getByRole("button", { name: "Sadece sayfadan kaldır" }).click();
@@ -1320,7 +1428,7 @@ test("uzak barındırıcıdaki foto dizinde render edilebiliyor", async ({
   const api = await mockNotebookApi(page, { indexEntries: [entry] });
 
   await page.goto("/yanlis-defteri");
-  await page.getByRole("button", { name: "Defteri aç" }).click();
+  await openToFirstSpread(page);
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Ara", exact: true }).click();
 
@@ -1344,4 +1452,34 @@ test("tekrar bağlantısı desteyi açar ve parametresini tüketir", async ({
   // Closing the deck and refreshing should leave the student where they closed it, not reopen the
   // review they just dismissed.
   await expect.poll(() => new URL(page.url()).search).toBe("");
+});
+
+test("fotoğrafı açılmayan kart boş kalmaz; Space kartı çevirir", async ({
+  page,
+}) => {
+  const due = [
+    makeEntry({
+      subjectName: "Tarih",
+      topicName: null,
+      storageKey: "notebook/u/missing.png",
+      url: "/img/does-not-exist.png",
+    }),
+  ];
+  await mockNotebookApi(page, {
+    due,
+    overview: { dueCount: 1, entryCount: 1 },
+  });
+
+  await page.goto("/yanlis-defteri");
+  await page.getByRole("button", { name: /1 soru tekrar zamanı/ }).click();
+
+  // A photo that will not load used to leave a blank white card; now it says what it was.
+  await expect(page.getByText("Fotoğraf açılmadı. Soruyu hatırlıyor musun?")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Fotoğrafı büyüt" })).toHaveCount(0);
+
+  // Focus is still on the shelf button that opened the deck; Space turns the card, not that button.
+  await page.keyboard.press(" ");
+  await expect(
+    page.getByRole("button", { name: "Soruya dön" }),
+  ).toHaveAttribute("aria-pressed", "true");
 });

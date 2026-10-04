@@ -29,6 +29,16 @@ export const UserRole = {
 } as const;
 export type UserRole = (typeof UserRole)[keyof typeof UserRole];
 
+/** Roles that may enter the admin panel, shared by API auth and the admin UI. */
+export const ADMIN_PANEL_ROLES: readonly UserRole[] = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.EDITOR,
+  UserRole.SUPPORT,
+  UserRole.FINANCE,
+  UserRole.MODERATOR,
+];
+
 /**
  * Admin sub-roles a SUPER_ADMIN may assign via the API (§9). Excludes SUPER_ADMIN/ADMIN
  * (no privilege escalation — bootstrap the first super-admin via SQL) and STAFF (own endpoint).
@@ -124,6 +134,8 @@ export * from "./ads.js";
 export * from "./mentorship.js";
 export * from "./promotions.js";
 export * from "./google-linking.js";
+export * from "./phone.js";
 
 export * from "./notebook-review.js";
 export * from "./mentorship-followup.js";
+export * from "./mentorship-weekly-report.js";

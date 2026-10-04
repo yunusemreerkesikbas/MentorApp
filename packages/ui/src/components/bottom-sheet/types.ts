@@ -72,4 +72,4 @@ export interface BottomSheetContextValue {
   ) => Promise<"apply" | "cancel">;
 }
 
-export const BOTTOM_SHEET_EXIT_MS = 240;
+export const BOTTOM_SHEET_EXIT_MS = 150;

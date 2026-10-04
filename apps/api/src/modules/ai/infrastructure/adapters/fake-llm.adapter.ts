@@ -22,6 +22,30 @@ const estimateTokens = (text: string): number =>
 @Injectable()
 export class FakeLlmAdapter implements LlmPort {
   async complete(input: LlmCompleteInput): Promise<LlmResult> {
+    if (input.system.includes('"preparation":{"version":1')) {
+      const evidence = JSON.parse(input.user) as {
+        evidence: Array<{ id: string }>;
+      };
+      const text = JSON.stringify({
+        preparation: {
+          version: 1,
+          focus: {
+            text: "Kayıtlı çalışma düzenini görüşmede birlikte değerlendir.",
+            evidenceIds: [evidence.evidence[0]!.id],
+          },
+          progress: null,
+          uncertainty: "Kayıtlar çalışmanın niteliğini tek başına göstermez.",
+          question: "Bu haftaki düzen sana nasıl geldi?",
+          nextStep: null,
+        },
+      });
+      return {
+        text,
+        model: "fake",
+        promptTokens: estimateTokens(input.system) + estimateTokens(input.user),
+        completionTokens: estimateTokens(text),
+      };
+    }
     // The cohort brief parses strictly and treats anything unparseable as a provider failure, so
     // without this branch every dev and e2e run of the coach panel would 503. Refs are echoed back
     // from the evidence rather than guessed, which also exercises the ref → student remapping.
@@ -30,9 +54,24 @@ export class FakeLlmAdapter implements LlmPort {
     if (input.system.includes(ASSIGNMENT_SUGGESTION_JSON_SENTINEL)) {
       const text = JSON.stringify({
         tasks: [
-          { dayIndex: 0, title: "Paragraf: 20 soru", subject: "Türkçe", coachNote: "Süre tutarak çöz." },
-          { dayIndex: 2, title: "Matematik: 15 problem", subject: "Matematik", coachNote: null },
-          { dayIndex: 4, title: "Deneme sonrası yanlış analizi", subject: null, coachNote: null },
+          {
+            dayIndex: 0,
+            title: "Paragraf: 20 soru",
+            subject: "Türkçe",
+            coachNote: "Süre tutarak çöz.",
+          },
+          {
+            dayIndex: 2,
+            title: "Matematik: 15 problem",
+            subject: "Matematik",
+            coachNote: null,
+          },
+          {
+            dayIndex: 4,
+            title: "Deneme sonrası yanlış analizi",
+            subject: null,
+            coachNote: null,
+          },
         ],
       });
       return {
@@ -43,7 +82,9 @@ export class FakeLlmAdapter implements LlmPort {
       };
     }
     if (input.system.includes(COHORT_BRIEF_JSON_SENTINEL)) {
-      const refs = [...input.user.matchAll(/"ref":"(S\d+)"/g)].map((match) => match[1]!);
+      const refs = [...input.user.matchAll(/"ref":"(S\d+)"/g)].map(
+        (match) => match[1]!,
+      );
       const text = JSON.stringify({
         overall: `${refs.length} öğrenci bugün dikkat istiyor.`,
         items: refs.map((ref) => ({
@@ -67,15 +108,18 @@ export class FakeLlmAdapter implements LlmPort {
         .toISOString()
         .slice(0, 10);
       const hasTask = input.user.includes('"ref":"T1"');
+      // Cites the first verified evidence line when there is one, so dev and e2e show a "Neden".
+      const evidenceRef = input.user.includes("E1 | ") ? "E1" : null;
       const text = JSON.stringify({
         changes: hasTask
           ? [
-              { kind: "MOVE", taskRef: "T1", toDate: tomorrow },
+              { kind: "MOVE", taskRef: "T1", toDate: tomorrow, evidenceRef },
               {
                 kind: "ADD",
                 title: "Kısa tekrar",
                 subject: null,
                 taskDate: later,
+                evidenceRef,
               },
             ]
           : [
@@ -84,6 +128,7 @@ export class FakeLlmAdapter implements LlmPort {
                 title: "Matematik: 20 soru çöz",
                 subject: "Matematik",
                 taskDate: tomorrow,
+                evidenceRef,
               },
             ],
       });

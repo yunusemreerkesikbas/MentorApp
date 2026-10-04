@@ -121,7 +121,7 @@ export interface SpotlightTravelTiming {
   settleMs: number;
 }
 
-export const SPOTLIGHT_TRAVEL: SpotlightTravelTiming = { reachMs: 450, settleMs: 550 };
+export const SPOTLIGHT_TRAVEL: SpotlightTravelTiming = { reachMs: 250, settleMs: 450 };
 
 export function resolveSpotlightTravel(reducedMotion: boolean): SpotlightTravelTiming {
   return reducedMotion ? { reachMs: 0, settleMs: 0 } : SPOTLIGHT_TRAVEL;

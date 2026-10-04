@@ -30,6 +30,10 @@ export const signupSchema = z.object({
   username: usernameSchema.optional(),
   /** KVKK consent is mandatory at signup (roadmap §7/§9). */
   kvkkAccepted: z.literal(true),
+  /** Binding terms acceptance, kept separate from the KVKK notice. */
+  termsAccepted: z.literal(true),
+  /** Self-declared minimum age; no birth date is collected. */
+  ageEligibilityConfirmed: z.literal(true),
   /** Cloudflare Turnstile token (enforced when the secret is configured). */
   turnstileToken: z.string().optional(),
   /**
@@ -62,10 +66,20 @@ export const googleOAuthStartQuerySchema = z
       .regex(/^\/(?!\/)[a-z0-9/_-]*$/i)
       .default("/panel"),
     kvkkAccepted: z.enum(["true"]).optional(),
+    termsAccepted: z.enum(["true"]).optional(),
+    ageEligibilityConfirmed: z.enum(["true"]).optional(),
   })
-  .refine((v) => v.mode !== "signup" || v.kvkkAccepted === "true", {
-    path: ["kvkkAccepted"],
-    message: "required",
+  .superRefine((value, context) => {
+    if (value.mode !== "signup") return;
+    for (const field of [
+      "kvkkAccepted",
+      "termsAccepted",
+      "ageEligibilityConfirmed",
+    ] as const) {
+      if (value[field] !== "true") {
+        context.addIssue({ code: "custom", path: [field], message: "required" });
+      }
+    }
   });
 export type GoogleOAuthStartQuery = z.infer<typeof googleOAuthStartQuerySchema>;
 
@@ -93,6 +107,7 @@ const emptyToNull = (v: unknown) => (typeof v === "string" && v.trim() === "" ? 
 
 export const updateMeSchema = z
   .object({
+    email: emailSchema.optional(),
     displayName: z.string().trim().min(2).max(64).optional(),
     username: usernameSchema.optional(),
     avatarStorageKey: z.string().trim().min(1).max(512).nullable().optional(),
@@ -115,13 +130,12 @@ export const updateMeSchema = z
       .regex(/^\d{4}-\d{2}-\d{2}$/)
       .refine((s) => !Number.isNaN(new Date(`${s}T00:00:00Z`).getTime()) && s === new Date(`${s}T00:00:00Z`).toISOString().slice(0, 10))
       .optional(),
-    /** Daily focus goal in minutes (15-min steps); null clears the goal. */
+    /** Daily focus goal in whole minutes; null clears the goal. */
     dailyFocusGoalMinutes: z
       .number()
       .int()
-      .min(15)
+      .min(10)
       .max(600)
-      .multipleOf(15)
       .nullable()
       .optional(),
   })

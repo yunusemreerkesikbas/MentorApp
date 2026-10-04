@@ -41,6 +41,8 @@ describe("notebook collection (e2e)", () => {
           password: PASSWORD,
           displayName: `Notebooks ${label}`,
           kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
         });
       expect(response.status).toBe(201);
       return response.body as {

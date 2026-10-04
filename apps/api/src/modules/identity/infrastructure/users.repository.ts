@@ -1,9 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, gt, inArray, isNotNull, notInArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNotNull, isNull, notInArray, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
-import type { Database } from "../../../database/drizzle";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
 import { withServiceContext, withUserContext } from "../../../database/rls";
 import { users } from "../../../database/schema";
+import { phoneVerifications } from "../../../database/schema-phone";
 
 export type UserRow = typeof users.$inferSelect;
 export type NewUser = typeof users.$inferInsert;
@@ -39,6 +40,51 @@ export interface PublicUserSearchRow {
 @Injectable()
 export class UsersRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+
+  /** Serialize account lifecycle and payment intent writes without exposing identity rows. */
+  async lockActiveAccount(id: string, tx: DatabaseTx): Promise<boolean> {
+    const [row] = await tx.select({ status: users.status, erasureStartedAt: users.erasureStartedAt }).from(users)
+      .where(eq(users.id, id)).for("no key update");
+    return row?.status === "ACTIVE" && row.erasureStartedAt === null;
+  }
+
+  /** Durable fence shares checkout's account lock; no provider work runs in this transaction. */
+  async beginAccountErasure(id: string): Promise<Date | "conflict" | undefined> {
+    return withServiceContext(this.db, async (tx) => {
+      const [row] = await tx.select({ erasureStartedAt: users.erasureStartedAt }).from(users)
+        .where(eq(users.id, id)).for("no key update");
+      if (!row) return undefined;
+      if (row.erasureStartedAt) return "conflict";
+      const startedAt = new Date();
+      await tx.update(users).set({ erasureStartedAt: startedAt }).where(eq(users.id, id));
+      return startedAt;
+    });
+  }
+
+  async releaseAccountErasure(id: string, startedAt: Date): Promise<void> {
+    await withServiceContext(this.db, async (tx) => {
+      await tx.update(users).set({ erasureStartedAt: null }).where(and(
+        eq(users.id, id), eq(users.erasureStartedAt, startedAt)));
+    });
+  }
+
+  async hasActiveVerifiedEmail(id: string, tx: DatabaseTx): Promise<boolean> {
+    const [row] = await tx.select({ id: users.id }).from(users).where(and(
+      eq(users.id, id), eq(users.status, "ACTIVE"), isNull(users.erasureStartedAt), isNotNull(users.emailVerifiedAt),
+    ));
+    return row !== undefined;
+  }
+
+  /** Public-service seam for payments: lock in its transaction, keeping the phone inside identity. */
+  async findActiveVerifiedPhone(id: string, tx?: DatabaseTx): Promise<string | null> {
+    const read = async (context: DatabaseTx, lock: boolean) => {
+      const query = context.select({ phone: users.phoneNumber }).from(users).where(and(
+        eq(users.id, id), eq(users.status, "ACTIVE"), isNull(users.erasureStartedAt), isNotNull(users.phoneVerifiedAt), isNotNull(users.phoneNumber)));
+      const [row] = await (lock ? query.for("no key update") : query);
+      return row?.phone ?? null;
+    };
+    return tx ? read(tx, true) : withServiceContext(this.db, (context) => read(context, false));
+  }
 
   async findByEmailService(email: string): Promise<UserRow | undefined> {
     return withServiceContext(this.db, async (tx) => {
@@ -363,8 +409,13 @@ export class UsersRepository {
           bio: null,
           website: null,
           avatarStorageKey: null,
+          phoneNumber: null,
+          phoneVerifiedAt: null,
+          erasureStartedAt: null,
         })
         .where(eq(users.id, id));
+
+      await tx.delete(phoneVerifications).where(eq(phoneVerifications.userId, id));
 
       const { avatarStorageKey, ...before } = current;
       return { before, after, avatarStorageKey };

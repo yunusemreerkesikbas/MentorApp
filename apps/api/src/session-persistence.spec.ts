@@ -6,7 +6,9 @@ import {
 
 const NOW = 1_700_000_000_000;
 
-function record(overrides: Partial<ActiveSessionRecord> = {}): ActiveSessionRecord {
+function record(
+  overrides: Partial<ActiveSessionRecord> = {},
+): ActiveSessionRecord {
   return {
     sessionId: "5523a9e3-8a12-4547-a998-181548f2a15a",
     phase: "focus",
@@ -26,6 +28,30 @@ function record(overrides: Partial<ActiveSessionRecord> = {}): ActiveSessionReco
 }
 
 describe("resolveResume", () => {
+  it("resumes a 200-minute custom session and caps expired credit at its full length", () => {
+    const running = record({
+      preset: "custom",
+      focusMinutes: 200,
+      focusElapsed: 10 * 60,
+      phaseEndsAt: NOW + 190 * 60_000,
+    });
+    expect(resolveResume(running, NOW)).toEqual({
+      kind: "resume-focus",
+      secondsLeft: 11400,
+    });
+    expect(
+      resolveResume(
+        {
+          ...running,
+          phaseEndsAt: NOW - 60_000,
+          focusElapsed: 199 * 60,
+          savedAt: NOW - 180_000,
+        },
+        NOW,
+      ),
+    ).toEqual({ kind: "finalize-expired", creditSeconds: 12000 });
+  });
+
   it("resumes a running focus with the wall-clock remaining", () => {
     expect(resolveResume(record(), NOW)).toEqual({
       kind: "resume-focus",
@@ -57,7 +83,10 @@ describe("resolveResume", () => {
       }),
       NOW,
     );
-    expect(result).toEqual({ kind: "finalize-expired", creditSeconds: 25 * 60 });
+    expect(result).toEqual({
+      kind: "finalize-expired",
+      creditSeconds: 25 * 60,
+    });
   });
 
   it("caps expired-focus credit at the planned length", () => {
@@ -84,7 +113,10 @@ describe("resolveResume", () => {
       }),
       NOW,
     );
-    expect(result).toEqual({ kind: "finalize-expired", creditSeconds: 12 * 60 });
+    expect(result).toEqual({
+      kind: "finalize-expired",
+      creditSeconds: 12 * 60,
+    });
   });
 
   it("resumes a running break", () => {
@@ -110,4 +142,28 @@ describe("resolveResume", () => {
     );
     expect(result).toEqual({ kind: "discard" });
   });
+});
+
+it("resumes a stopwatch beyond a preset length without auto-finalizing", () => {
+  expect(
+    resolveResume(
+      record({
+        preset: "stopwatch",
+        focusElapsed: 600,
+        savedAt: NOW - 2 * 60 * 60_000,
+      }),
+      NOW,
+    ),
+  ).toEqual({ kind: "resume-stopwatch", elapsedSeconds: 7800 });
+  expect(
+    resolveResume(
+      record({
+        preset: "stopwatch",
+        isPaused: true,
+        pausedAt: NOW - 60_000,
+        focusElapsed: 600,
+      }),
+      NOW,
+    ),
+  ).toEqual({ kind: "resume-stopwatch", elapsedSeconds: 600 });
 });

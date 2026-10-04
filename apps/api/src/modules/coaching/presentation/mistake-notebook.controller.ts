@@ -15,6 +15,7 @@ import {
 } from "@nestjs/common";
 import { ApiBearerAuth, ApiTags, ApiBody, ApiQuery } from "@nestjs/swagger";
 import type {
+  NotebookContentsDto,
   NotebookEntryDto,
   NotebookImageUploadUrlDto as NotebookImageUploadUrlResponse,
   NotebookOverviewDto,
@@ -150,6 +151,12 @@ export class MistakeNotebookController {
     @Param("id", ParseUUIDPipe) id: string,
   ): Promise<void> {
     return this.notebook.deleteEntry(user.id, id);
+  }
+
+  /** The contents page ("İçindekiler"): one line per page that has anything on it. */
+  @Get("contents")
+  getContents(@CurrentUser() user: RequestUser): Promise<NotebookContentsDto> {
+    return this.notebook.getContents(user.id);
   }
 
   /** A page the user has never saved comes back empty — turning to a blank page is not a 404. */

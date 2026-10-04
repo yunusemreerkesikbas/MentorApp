@@ -2,8 +2,9 @@ import { Injectable } from "@nestjs/common";
 import type { MentorshipRiskFlagId } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { CohortEvidenceService } from "../../coaching/application/cohort-evidence.service";
-import { todayIso } from "../../coaching/domain/date.util";
+import { todayInIstanbul } from "../../coaching/domain/date.util";
 import { UsersService } from "../../identity/application/users.service";
+import { coachContactVerification } from "../application/coach-contact-verification";
 import { needsAttention } from "../domain/attention";
 import { evaluateRiskFlags, type RiskThresholds } from "../domain/risk-flags";
 import type {
@@ -21,7 +22,8 @@ import { MentorshipLinkRepository } from "./mentorship-link.repository";
  * must never be the one the morning email calls at risk.
  *
  * Cost is bounded by the cohort, not by the number of coaches: every linked student is snapshotted
- * in ONE `listCohortSnapshots` call regardless of how many coaches they are spread across.
+ * in ONE `listTriageSnapshots` call regardless of how many coaches they are spread across, and
+ * without the roster's activity strip or live streak, which no digest line reads.
  */
 @Injectable()
 export class MentorshipQueryAdapter implements MentorshipQueryPort {
@@ -33,25 +35,32 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
   ) {}
 
   async listRiskDigestCandidates(now: Date): Promise<CoachRiskDigestCandidate[]> {
-    const pairs = await this.links.listAllActiveLinks();
+    const activePairs = await this.links.listAllActiveLinks();
+    const coachIds = [...new Set(activePairs.map((pair) => pair.coachId))];
+    const verified = await Promise.all(coachIds.map(async (id) => (await coachContactVerification(this.users, id)) === null));
+    const verifiedCoachIds = new Set(coachIds.filter((_, index) => verified[index]));
+    const pairs = activePairs.filter((pair) => verifiedCoachIds.has(pair.coachId));
     if (pairs.length === 0) return [];
 
     const studentIds = [...new Set(pairs.map((pair) => pair.studentId))];
     const [snapshots, thresholds, attentionTtlDays, people] = await Promise.all([
-      this.evidence.listCohortSnapshots(studentIds, now),
+      this.evidence.listTriageSnapshots(studentIds, now),
       this.thresholds(),
       this.config.get("mentorship.attention.ttl_days"),
       this.users.listDisplayIdentities(studentIds),
     ]);
-    const today = todayIso(now);
+    const today = todayInIstanbul(now);
 
     // Evaluate each student once, not once per coach: two coaches cannot hold the same student
-    // today, but the flags are a property of the student either way.
+    // today, so the one live link's acceptance day is the student's too.
+    const joinedOn = new Map(
+      pairs.map((pair) => [pair.studentId, pair.acceptedAt ? todayInIstanbul(pair.acceptedAt) : null]),
+    );
     const flagsByStudent = new Map<string, CoachRiskDigestStudent>();
     for (const studentId of studentIds) {
       const snapshot = snapshots.get(studentId);
       if (!snapshot) continue;
-      const flags = evaluateRiskFlags(snapshot, thresholds, today);
+      const flags = evaluateRiskFlags(snapshot, thresholds, today, joinedOn.get(studentId) ?? null);
       if (flags.length === 0) continue;
       flagsByStudent.set(studentId, {
         studentId,
@@ -92,7 +101,7 @@ export class MentorshipQueryAdapter implements MentorshipQueryPort {
       [...byCoach].map(async ([coachId, students]) => ({
         coachId,
         students,
-        contact: await this.users.getNotificationContact(coachId),
+        contact: await this.users.getVerifiedNotificationContact(coachId),
       })),
     );
 

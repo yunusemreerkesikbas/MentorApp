@@ -5,43 +5,49 @@ import { FiUsers, FiFileText, FiBookOpen, FiUserCheck } from 'react-icons/fi'
 import { useAuth } from '@/contentApi/authProvider'
 import { canSee } from '@/lib/roles'
 
-// Home feature cards, role-gated (mirrors the sidebar): a card with `roles` shows only if the
-// signed-in user holds one — so an EDITOR never sees links they can't use.
 interface HomeCard {
     href: string;
     title: string;
     desc: string;
     icon: ReactNode;
+    tone: "primary" | "success" | "teal" | "warning";
     roles?: string[];
 }
 
 const cards: HomeCard[] = [
-    { href: '/content/articles', title: 'İçerik', desc: 'Bilgi-merkezi makalelerini düzenle ve yayınla.', icon: <FiBookOpen size={22} />, roles: ['EDITOR'] },
-    { href: '/users', title: 'Kullanıcılar', desc: 'Kullanıcıları ara, rolleri yönet.', icon: <FiUsers size={22} />, roles: ['SUPPORT', 'FINANCE'] },
-    { href: '/coach-applications', title: 'Koçlar', desc: 'Koç sicili: kayıt self servis, buradan durdurabilir ve iddiaları doğrulayabilirsin.', icon: <FiUserCheck size={22} />, roles: ['SUPER_ADMIN'] },
-    { href: '/audit-log', title: 'Audit Log', desc: 'Tüm admin işlemlerinin kaydı (kim/ne/ne zaman).', icon: <FiFileText size={22} />, roles: ['SUPER_ADMIN'] },
+    { href: '/content/articles', title: 'İçerik', desc: 'Bilgi-merkezi makalelerini düzenle ve yayınla.', icon: <FiBookOpen size={17} />, tone: 'primary', roles: ['EDITOR'] },
+    { href: '/users', title: 'Kullanıcılar', desc: 'Kullanıcıları ara, rolleri yönet.', icon: <FiUsers size={17} />, tone: 'teal', roles: ['SUPPORT', 'FINANCE'] },
+    { href: '/coach-applications', title: 'Koçlar', desc: 'Koç sicili: kayıt self servis, buradan durdurabilir ve iddiaları doğrulayabilirsin.', icon: <FiUserCheck size={17} />, tone: 'success', roles: ['SUPER_ADMIN'] },
+    { href: '/audit-log', title: 'Audit Log', desc: 'Tüm admin işlemlerinin kaydı (kim/ne/ne zaman).', icon: <FiFileText size={17} />, tone: 'warning', roles: ['SUPER_ADMIN'] },
 ]
 
 export default function HomeCards() {
     const { admin } = useAuth();
     const visible = cards.filter((c) => canSee(c.roles, admin?.roles));
+    if (visible.length === 0) return null;
+
     return (
-        <div className="row g-4">
-            {visible.map((c) => (
-                <div className="col-xxl-3 col-md-6" key={c.href}>
-                    <Link href={c.href} className="card stretch stretch-full text-decoration-none">
-                        <div className="card-body">
-                            <div className="d-flex align-items-center gap-3 mb-2">
-                                <span className="d-inline-flex align-items-center justify-content-center bg-soft-primary text-primary rounded" style={{ width: 44, height: 44 }}>
-                                    {c.icon}
-                                </span>
-                                <h5 className="mb-0 text-dark">{c.title}</h5>
+        <section className="admin-dashboard-section">
+            <h2 className="admin-dashboard-section-title">Kısayollar</h2>
+            <div className="row g-4">
+                {visible.map((c) => (
+                    <div className="col-xxl-3 col-md-6" key={c.href}>
+                        <Link href={c.href} className={`card stretch stretch-full text-decoration-none admin-dashboard-home-card`}>
+                            <div className="card-body">
+                                <div className="d-flex align-items-center gap-3">
+                                    <div className={`avatar-text avatar-xl rounded text-white bg-${c.tone}`}>
+                                        {c.icon}
+                                    </div>
+                                    <div className="min-w-0">
+                                        <h5 className="mb-1 text-dark">{c.title}</h5>
+                                        <p className="fs-12 text-muted mb-0">{c.desc}</p>
+                                    </div>
+                                </div>
                             </div>
-                            <p className="fs-12 text-muted mb-0">{c.desc}</p>
-                        </div>
-                    </Link>
-                </div>
-            ))}
-        </div>
+                        </Link>
+                    </div>
+                ))}
+            </div>
+        </section>
     );
 }

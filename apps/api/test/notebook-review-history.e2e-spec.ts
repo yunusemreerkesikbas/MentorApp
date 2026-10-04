@@ -35,6 +35,8 @@ describe("notebook review history", () => {
           password: "Sifre1234",
           displayName: "Review test",
           kvkkAccepted: true,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
         });
     const a = await signup();
     expect(a.status).toBe(201);

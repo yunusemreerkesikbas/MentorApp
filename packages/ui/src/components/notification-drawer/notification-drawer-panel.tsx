@@ -31,7 +31,7 @@ export interface NotificationDrawerPanelProps {
   desktopSide?: NotificationDrawerDesktopSide;
 }
 
-const CLOSE_ANIMATION_MS = 220;
+const CLOSE_ANIMATION_MS = 150;
 
 /**
  * Read-state filter, not a category filter — the row icon already carries the category, and a
@@ -155,10 +155,10 @@ export function NotificationDrawerPanel({
 
   const panel = (
     <>
-      {/* ── Mobile: blurred backdrop ── */}
+      {/* ── Mobile: scrim ── */}
       <div
         aria-hidden
-        className="fixed inset-0 z-40 bg-black/40 backdrop-blur-[6px] lg:hidden"
+        className="fixed inset-0 z-40 bg-[var(--color-scrim)] lg:hidden"
         style={{
           animation: closing
             ? "none"
@@ -181,70 +181,50 @@ export function NotificationDrawerPanel({
         aria-label={labels.title}
         className={[
           // Mobile: fixed right drawer, rounded left edge only
-          "fixed inset-y-0 right-0 z-50 flex w-[85vw] max-w-[320px] flex-col bg-[var(--color-surface)]",
-          "max-lg:rounded-l-[16px]",
-          "shadow-[-8px_0_24px_rgba(0,0,0,0.10)]",
+          "fixed inset-y-0 right-0 z-50 flex w-[88vw] max-w-[400px] flex-col overflow-hidden bg-[var(--color-surface)]",
+          "max-lg:rounded-l-[var(--play-radius)] shadow-[var(--shadow-overlay)]",
           // Desktop defaults beside the app sidebar; alternate headers can anchor it to the right.
           "lg:inset-y-auto",
           desktopSide === "right"
             ? "lg:left-auto lg:right-4 lg:top-20"
             : "lg:right-auto lg:left-64 lg:top-4",
-          "lg:h-auto lg:max-h-[560px] lg:w-[380px] lg:max-w-none",
-          "lg:rounded-[var(--radius-card)] lg:shadow-[0_8px_32px_rgba(0,0,0,0.14)]",
+          "lg:h-auto lg:max-h-[560px] lg:w-[400px] lg:max-w-none",
+          "lg:rounded-[var(--play-radius)] lg:border lg:border-[var(--color-border)]",
           closing
             ? "animate-drawer-out lg:animate-popover-out"
             : "animate-drawer-in lg:animate-popover-in",
         ].join(" ")}
       >
         {/* Header */}
-        <div
-          className="flex shrink-0 items-center justify-between border-b px-4 py-4 lg:rounded-t-[var(--radius-card)]"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--color-main) 8%, transparent)",
-          }}
-        >
-          <h2
-            className="text-base font-bold leading-tight"
-            style={{
-              fontFamily: "var(--font-heading)",
-              color: "var(--color-main)",
-            }}
-          >
+        <div className="flex shrink-0 items-center gap-2.5 border-b border-[var(--play-line)] pb-3 pl-5 pr-2.5 pt-4">
+          <h2 className="flex min-w-0 flex-1 items-center gap-2.5 text-base font-extrabold leading-tight text-[var(--color-main)]">
             {labels.title}
             {unreadCount > 0 && (
-              <span
-                className="ml-2 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-bold text-white"
-                style={{ backgroundColor: "var(--color-progress)" }}
-              >
+              <span className="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[var(--play-selected)] px-2 text-xs font-extrabold text-[var(--play-selected-ink)]">
                 {unreadCount > 99 ? "99+" : unreadCount}
               </span>
             )}
           </h2>
 
-          <div className="flex items-center gap-2">
-            {unreadCount > 0 && (
-              <button
-                type="button"
-                onClick={onMarkAllRead}
-                aria-label={labels.markAllRead}
-                title={labels.markAllRead}
-                className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
-                style={{ color: "var(--color-progress)" }}
-              >
-                <CheckCheck size={18} aria-hidden />
-              </button>
-            )}
+          {unreadCount > 0 && (
+            // Words on desktop; the 88vw phone drawer keeps the glyph and gives the words to readers.
             <button
               type="button"
-              onClick={handleClose}
-              aria-label={labels.close}
-              className="flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_8%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] focus-visible:ring-offset-1"
-              style={{ color: "var(--color-secondary)" }}
+              onClick={onMarkAllRead}
+              className="inline-flex min-h-11 min-w-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] px-1 text-sm font-extrabold text-[var(--play-selected-ink)] underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             >
-              <X size={18} aria-hidden />
+              <CheckCheck size={22} strokeWidth={1.75} aria-hidden className="lg:hidden" />
+              <span className="max-lg:sr-only">{labels.markAllRead}</span>
             </button>
-          </div>
+          )}
+          <button
+            type="button"
+            onClick={handleClose}
+            aria-label={labels.close}
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+          >
+            <X size={22} strokeWidth={1.75} aria-hidden />
+          </button>
         </div>
 
         <SlidingTabs
@@ -270,36 +250,17 @@ export function NotificationDrawerPanel({
           {visibleItems.length === 0
             ? (emptyState ?? (
                 <div className="flex flex-col items-center justify-center px-6 py-12 text-center">
-                  <p
-                    className="mb-1 text-base font-bold"
-                    style={{
-                      fontFamily: "var(--font-heading)",
-                      color: "var(--color-main)",
-                    }}
-                  >
+                  <p className="mb-1 text-base font-extrabold text-[var(--color-main)]">
                     {labels.emptyTitle}
                   </p>
-                  <p
-                    className="text-sm"
-                    style={{
-                      fontFamily: "var(--font-body)",
-                      color: "var(--color-secondary)",
-                    }}
-                  >
+                  <p className="text-body-sm font-semibold text-[var(--color-secondary)]">
                     {labels.emptyBody}
                   </p>
                 </div>
               ))
             : groups.map((group) => (
                 <section key={group.key}>
-                  <h3
-                    className="sticky top-0 z-10 px-4 pb-1 pt-3 text-[11px] font-bold uppercase tracking-widest"
-                    style={{
-                      backgroundColor: "var(--color-surface)",
-                      fontFamily: "var(--font-heading)",
-                      color: "var(--color-secondary)",
-                    }}
-                  >
+                  <h3 className="sticky top-0 z-10 bg-[var(--color-surface)] px-5 pb-1.5 pt-3.5 text-caption font-extrabold text-[var(--color-secondary)]">
                     {labels[GROUP_LABEL_KEY[group.key]] as string}
                   </h3>
                   {group.items.map((n) => (

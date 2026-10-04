@@ -28,6 +28,8 @@ import { CoachingErasureService } from "./application/coaching-erasure.service";
 import { CoachEvidenceService } from "./application/coach-evidence.service";
 import { CohortEvidenceService } from "./application/cohort-evidence.service";
 import { CohortEvidenceRepository } from "./infrastructure/cohort-evidence.repository";
+import { MentorshipWeeklyEvidenceRepository } from "./infrastructure/mentorship-weekly-evidence.repository";
+import { MentorshipWeeklyEvidenceService } from "./application/mentorship-weekly-evidence.service";
 import { CoachingAchievementEvidenceService } from "./application/coaching-achievement-evidence.service";
 import { CONTENT_PORT } from "./domain/content.port";
 import { CoachingQueryAdapter } from "./infrastructure/coaching-query.adapter";
@@ -121,6 +123,8 @@ import { StudySessionController } from "./presentation/study-session.controller"
     MoodCheckinRepository,
     VisionBoardRepository,
     CohortEvidenceRepository,
+    MentorshipWeeklyEvidenceRepository,
+    MentorshipWeeklyEvidenceService,
     WeeklyReviewRepository,
     WeeklyReviewCompletionRepository,
     PreferenceScenarioRepository,
@@ -134,6 +138,7 @@ import { StudySessionController } from "./presentation/study-session.controller"
     CoachingErasureService,
     CoachEvidenceService,
     CohortEvidenceService,
+    MentorshipWeeklyEvidenceService,
     CoachingAchievementEvidenceService,
     DailyQuestSignalService,
     MistakeNotebookService,

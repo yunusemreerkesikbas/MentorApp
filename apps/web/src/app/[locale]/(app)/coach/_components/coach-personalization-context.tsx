@@ -3,6 +3,7 @@ import { BadgeCheck, BookOpen, ChevronDown, ClipboardCheck, Clock3, Smile } from
 
 import { useTranslations } from "next-intl";
 import type { CoachPersonalizationDto } from "@mentor/types";
+import { CoachEvidenceList } from "@/components/coach-evidence-list";
 
 export function CoachPersonalizationContext({
   personalization,
@@ -33,11 +34,9 @@ export function CoachPersonalizationContext({
       </summary>
 
       <div className="mt-1 grid gap-2 rounded-[var(--radius-card)] bg-[var(--color-surface-container)] p-3">
-        {usedEvidence.map((evidence) => (
-          <ContextLine key={`${evidence.type}:${evidence.observedAt}`} icon={BadgeCheck}>
-            {evidence.summary}
-          </ContextLine>
-        ))}
+        {usedEvidence.length > 0 ? (
+          <CoachEvidenceList evidence={usedEvidence} />
+        ) : null}
         {personalization.todayPlan && usedSignals.has("TODAY_PLAN") ? (
           <ContextLine icon={ClipboardCheck}>
             {t("today_plan", personalization.todayPlan)}

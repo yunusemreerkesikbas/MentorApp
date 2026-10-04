@@ -24,7 +24,7 @@ describe("admin metrics dashboard (e2e)", () => {
     const email = `am-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `AM ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `AM ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 

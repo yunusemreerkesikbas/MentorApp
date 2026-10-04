@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
-import { addDays } from "../domain/date.util";
+import { addDays, todayInIstanbul } from "../domain/date.util";
 import { PlanService } from "./plan.service";
 
 const USER = "u1";
-const TODAY = new Date().toISOString().slice(0, 10);
+const TODAY = todayInIstanbul();
 
 interface TaskRow {
   id: string;
@@ -12,11 +12,13 @@ interface TaskRow {
   taskDate: string;
   title: string;
   subject: string | null;
+  topic?: string | null;
   status: string;
   sortOrder: number;
   /** Absent on most fixtures — an all-day task, which is what every pre-calendar row is. */
   startTime?: string | null;
   endTime?: string | null;
+  durationMinutes?: number | null;
   description?: string | null;
   originType?: string | null;
   originRefId?: string | null;
@@ -74,10 +76,12 @@ function makePlanRepoFake(rows: TaskRow[]) {
         taskDate: data.taskDate!,
         title: data.title!,
         subject: data.subject ?? null,
+        topic: data.topic ?? null,
         status: data.status ?? "PENDING",
         sortOrder: data.sortOrder ?? 0,
         startTime: data.startTime ?? null,
         endTime: data.endTime ?? null,
+        durationMinutes: data.durationMinutes ?? null,
         description: data.description ?? null,
         originType: data.originType ?? null,
         originRefId: data.originRefId ?? null,
@@ -196,6 +200,22 @@ describe("PlanService — task toggle keeps daily_activity in sync", () => {
     });
     expect(completed.title).toBe("Bugün 25 paragraf sorusu");
     expect(completed.origin).toEqual(created.origin);
+  });
+
+  it("persists an independent study duration and preserves it on unrelated updates", async () => {
+    const task = await service.create(USER, { title: "Review", startTime: "09:00", endTime: "11:00", durationMinutes: 80 });
+    expect(task).toMatchObject({ durationMinutes: 80, sessionFocusMinutes: 80 });
+    expect(await service.update(USER, task.id, { title: "New title" }))
+      .toMatchObject({ durationMinutes: 80, sessionFocusMinutes: 80 });
+    expect(await service.update(USER, task.id, { durationMinutes: null }))
+      .toMatchObject({ durationMinutes: null, sessionFocusMinutes: 120 });
+  });
+
+  it("prevents the student changing a human coach assignment's duration", async () => {
+    const task = await service.create(USER, { title: "Review" });
+    planRepo.rows[0]!.originType = "MENTORSHIP";
+    await expect(service.update(USER, task.id, { durationMinutes: 80 }))
+      .rejects.toMatchObject({ code: "COACHING_TASK_COACH_ASSIGNED" });
   });
 
   it("persists calendar times and description, and can clear them back to all-day", async () => {
@@ -495,6 +515,8 @@ describe("PlanService plan adaptations", () => {
           kind: "ADD",
           title: "Tarih tekrar",
           subject: "Tarih",
+          topic: "Osmanlı Devleti",
+          durationMinutes: 41,
           taskDate: addDays(TODAY, 2),
         },
       ],
@@ -520,9 +542,38 @@ describe("PlanService plan adaptations", () => {
         taskDate: addDays(TODAY, 2),
         sortOrder: 0,
         title: "Tarih tekrar",
+        topic: "Osmanlı Devleti",
+        durationMinutes: 41,
+        sessionFocusMinutes: 41,
         origin: null,
       },
     ]);
+  });
+
+  it("applies up to three new PLAN tasks independently of existing daily tasks", async () => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    const changes = ["İlk", "İkinci", "Üçüncü"].map((label) => ({
+      kind: "ADD" as const, title: `${label}: 40 dk soru çöz`, subject: "Matematik", taskDate: TODAY,
+    }));
+    const result = await service.applyAdaptation(USER, {
+      planRevision: snapshot.planRevision, source: "PLAN", changes,
+    });
+    expect(result.added).toHaveLength(3);
+    expect(planRepo.rows.find((row) => row.id === "t1")!.title).toBe("Paragraf");
+    const updated = await service.getAdaptationSnapshot(USER);
+    await expect(service.applyAdaptation(USER, {
+      planRevision: updated.planRevision, source: "PLAN",
+      changes: [...changes, { ...changes[0]!, title: "Dördüncü" }].map((change) => ({ ...change, taskDate: addDays(TODAY, 3) })),
+    })).rejects.toMatchObject({ code: "COACHING_PLAN_CHANGED" });
+  });
+
+  it.each([undefined, "MOOD", "SESSION"] as const)("keeps the existing capacity rule for source %s", async (source) => {
+    const snapshot = await service.getAdaptationSnapshot(USER);
+    await expect(service.applyAdaptation(USER, {
+      planRevision: snapshot.planRevision, source,
+      changes: ["İlk", "İkinci", "Üçüncü"].map((title) => ({ kind: "ADD" as const, title, subject: "Matematik", taskDate: TODAY })),
+    })).rejects.toMatchObject({ code: "COACHING_PLAN_CHANGED" });
+    expect(planRepo.rows.some((row) => row.title === "İlk")).toBe(false);
   });
 
   it("validates target capacity from the final selected move set", async () => {

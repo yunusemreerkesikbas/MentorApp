@@ -211,6 +211,54 @@ describe("RLS isolation (e2e)", () => {
     "notebook_pages",
   ];
 
+  const phoneFixtures: Record<string, (c: PoolClient) => Promise<{ rows: { id: string }[] }>> = {
+    phone_otp_attempts: (c) => c.query(
+      "insert into phone_otp_attempts(kind, account_key, phone_key) values ('SEND', 'rls-account', 'rls-phone') returning id",
+    ),
+    phone_verifications: async (c) => {
+      const session = await c.query<{ id: string }>(
+        "insert into auth_sessions(id, user_id, expires_at) values (gen_random_uuid(), $1, now() + interval '1 day') returning id", [idA],
+      );
+      return c.query(
+        `insert into phone_verifications(id, user_id, session_id, phone_number, phone_key,
+         purpose, code_hash, expires_at, resend_available_at)
+         values (gen_random_uuid(), $1, $2, '+905321234567', 'rls-phone', 'BIND', 'rls-digest',
+         now() + interval '5 minutes', now() + interval '1 minute') returning id`,
+        [idA, session.rows[0]!.id],
+      );
+    },
+    phone_trial_claims: (c) => c.query(
+      `insert into phone_trial_claims(phone_fingerprint, user_id, plan_id)
+       select gen_random_uuid()::text, $1, id from plans limit 1 returning id`, [idA],
+    ),
+  };
+
+  it.each(Object.keys(phoneFixtures))("%s is private even to its owner and ADMIN", async (table) => {
+    await asProbe({ role: "SERVICE" }, async (c) => {
+      const seeded = await phoneFixtures[table]!(c);
+      expect(seeded.rows).toHaveLength(1);
+      const id = seeded.rows[0]!.id;
+      expect((await c.query(`select id from ${table} where id = $1`, [id])).rows).toHaveLength(1);
+      for (const role of ["", "ADMIN"]) {
+        await c.query("select set_config('app.role', $1, true), set_config('app.user_id', $2, true)", [role, idA]);
+        expect((await c.query(`select id from ${table} where id = $1`, [id])).rows).toHaveLength(0);
+      }
+    });
+  });
+
+  it.each(Object.keys(phoneFixtures))("ordinary users cannot insert into %s", async (table) => {
+    await expect(asProbe({ userId: idA }, (c) => phoneFixtures[table]!(c))).rejects.toThrow(/row-level security/);
+  });
+
+  it("forces RLS on all phone security tables", async () => {
+    const result = await admin.query<{ relname: string; relrowsecurity: boolean; relforcerowsecurity: boolean }>(
+      "select relname, relrowsecurity, relforcerowsecurity from pg_class where relname = any($1::text[])",
+      [Object.keys(phoneFixtures)],
+    );
+    expect(result.rows).toHaveLength(3);
+    expect(result.rows.every((row) => row.relrowsecurity && row.relforcerowsecurity)).toBe(true);
+  });
+
   it.each(TABLES)("as user A, B's %s rows are invisible", async (table) => {
     expect(await probeCount({ userId: idA }, table, idB)).toBe(0);
   });

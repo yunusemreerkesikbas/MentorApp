@@ -41,6 +41,8 @@ export function buildArticleStructuredData({
 interface BreadcrumbStructuredDataInput {
   homeName: string;
   homeUrl: string;
+  /** Levels between home and the page (the Blog hub for an article); none for a forum question. */
+  trail?: Array<{ name: string; url: string }>;
   pageName: string;
   pageUrl: string;
 }
@@ -48,26 +50,20 @@ interface BreadcrumbStructuredDataInput {
 export function buildBreadcrumbStructuredData({
   homeName,
   homeUrl,
+  trail = [],
   pageName,
   pageUrl,
 }: BreadcrumbStructuredDataInput) {
+  const items = [{ name: homeName, url: homeUrl }, ...trail, { name: pageName, url: pageUrl }];
   return {
     "@context": "https://schema.org",
     "@type": "BreadcrumbList",
-    itemListElement: [
-      {
-        "@type": "ListItem",
-        position: 1,
-        name: homeName,
-        item: homeUrl,
-      },
-      {
-        "@type": "ListItem",
-        position: 2,
-        name: pageName,
-        item: pageUrl,
-      },
-    ],
+    itemListElement: items.map((item, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: item.name,
+      item: item.url,
+    })),
   };
 }
 

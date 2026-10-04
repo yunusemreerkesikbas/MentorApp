@@ -1,7 +1,15 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { COACH_SEAT_PLAN_ID, SUBSCRIPTION_PROVIDER_SPONSOR, SubscriptionStatus } from "@mentor/types";
 import { ConfigRegistryService } from "../../../common/config/config-registry.service";
 import { SubscriptionsRepository } from "../infrastructure/payments.repositories";
+import { UsersService } from "../../identity/application/users.service";
+import { DRIZZLE } from "../../../database/database.constants";
+import type { Database, DatabaseTx } from "../../../database/drizzle";
+import { withServiceContext } from "../../../database/rls";
+
+type SeatEligibilityCheck = (
+  studentId: string, linkId: string, coachId: string, tx: DatabaseTx,
+) => Promise<boolean>;
 
 /**
  * Coach-sponsored Premium (W8 seats).
@@ -13,8 +21,8 @@ import { SubscriptionsRepository } from "../infrastructure/payments.repositories
  * every admin view keep working with no change at all.
  *
  * This service owns the money-shaped half of the seat. The seat DECISION belongs to W8, which
- * makes it under the accept transaction's lock and puts it on the event; the two modules never
- * import each other.
+ * makes it under the accept transaction's lock and registers the exact-link check used at grant.
+ * Payments never imports MentorshipModule or reads its tables.
  */
 /**
  * How many sponsored user ids one metrics call will gather. A ceiling, not a page size: past it
@@ -37,11 +45,19 @@ export function costPerSeatMicros(costMicros30d: number, seats: number): number 
 @Injectable()
 export class SponsoredSeatService {
   private readonly logger = new Logger(SponsoredSeatService.name);
+  private eligibilityCheck?: SeatEligibilityCheck;
 
   constructor(
     private readonly subscriptions: SubscriptionsRepository,
     private readonly config: ConfigRegistryService,
+    private readonly users: UsersService,
+    @Inject(DRIZZLE) private readonly db: Database,
   ) {}
+
+  /** W8 owns the relationship check; payments never reads mentorship tables. */
+  registerEligibilityCheck(check: SeatEligibilityCheck): void {
+    this.eligibilityCheck = check;
+  }
 
   /**
    * Grant Premium to a student on a coach's seat.
@@ -54,20 +70,33 @@ export class SponsoredSeatService {
    * expiry check when there is no end date (the shape STAFF already uses), so the seat needs no
    * monthly extension cron. It ends when {@link revoke} says it does.
    */
-  async grant(studentId: string, linkId: string): Promise<boolean> {
+  async grant(studentId: string, linkId: string, coachId: string): Promise<boolean> {
     if (!(await this.config.get("mentorship.seats.sponsorship_enabled"))) return false;
-    if (await this.subscriptions.findOpenForUser(studentId)) return false;
-
-    await this.subscriptions.create({
-      userId: studentId,
-      planId: COACH_SEAT_PLAN_ID,
-      status: SubscriptionStatus.ACTIVE,
-      provider: SUBSCRIPTION_PROVIDER_SPONSOR,
-      currentPeriodStart: new Date(),
-      currentPeriodEnd: null,
-      sponsorLinkId: linkId,
+    const eligible = this.eligibilityCheck;
+    if (!eligible) return false;
+    return withServiceContext(this.db, async (tx) => {
+      // Stable identity locks first, then relationship, then subscription. Paid/trial checkout
+      // locks the same student's identity row, so purchase and sponsorship cannot both reserve it.
+      for (const id of [...new Set([studentId, coachId])].sort()) {
+        if (!(await this.users.lockActiveAccount(id, tx))) return false;
+      }
+      if (!(await this.users.isPhoneVerified(studentId, tx)) ||
+          !(await this.users.isPhoneVerified(coachId, tx))) return false;
+      if (!(await this.users.isEmailVerified(coachId, tx))) return false;
+      // Holds the exact ACTIVE seated link through insert: a delayed grant after END fails closed.
+      if (!(await eligible(studentId, linkId, coachId, tx))) return false;
+      if (await this.subscriptions.findOpenForUser(studentId, tx)) return false;
+      await this.subscriptions.create({
+        userId: studentId,
+        planId: COACH_SEAT_PLAN_ID,
+        status: SubscriptionStatus.ACTIVE,
+        provider: SUBSCRIPTION_PROVIDER_SPONSOR,
+        currentPeriodStart: new Date(),
+        currentPeriodEnd: null,
+        sponsorLinkId: linkId,
+      }, tx);
+      return true;
     });
-    return true;
   }
 
   /**

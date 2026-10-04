@@ -2,6 +2,7 @@ import { HttpStatus } from "@nestjs/common";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { DomainError } from "../../../common/errors/domain-error";
 import { ErrorCode } from "../../../common/errors/error-code";
+import { signupSchema } from "@mentor/validation";
 import { EmailTokenType } from "../domain/identity.constants";
 import { AuthService } from "./auth.service";
 
@@ -20,6 +21,8 @@ function makeService(count: number) {
     countVerificationResendAttemptsSince: vi.fn(async () => count),
     createVerificationResendAttempt: vi.fn(async () => undefined),
     create: vi.fn(async (input) => ({ id: "token-1", ...input })),
+    invalidateUnused: vi.fn(async () => undefined),
+    consume: vi.fn(async () => undefined),
   };
   const config = {
     get: vi.fn(() => "http://localhost:3000"),
@@ -53,6 +56,107 @@ function makeService(count: number) {
   return { emailTokenRepo, queue, service };
 }
 
+describe("AuthService coach signup gate", () => {
+  function makeSignupService(open: boolean) {
+    const usersRepo = {
+      findByEmailService: vi.fn(async () => undefined),
+      createService: vi.fn(),
+    };
+    const configRegistry = {
+      get: vi.fn(async (key: string) => (key === "mentorship.applications.open" ? open : 0)),
+    };
+    const service = new AuthService(
+      usersRepo as never,
+      {} as never,
+      {} as never,
+      { assertValid: vi.fn(async () => undefined) } as never,
+      {} as never,
+      configRegistry as never,
+      {} as never,
+      {} as never,
+    );
+    return { usersRepo, service };
+  }
+
+  it("refuses a coach signup while the intake is shut, before any account exists", async () => {
+    const { usersRepo, service } = makeSignupService(false);
+
+    await expect(
+      service.signup({
+        email: "koc@example.com",
+        password: "Sifre1234",
+        displayName: "Koç",
+        kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+        intent: "COACH",
+      }),
+    ).rejects.toMatchObject({
+      code: ErrorCode.MENTORSHIP_APPLICATIONS_CLOSED,
+      httpStatus: HttpStatus.FORBIDDEN,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.findByEmailService).not.toHaveBeenCalled();
+    expect(usersRepo.createService).not.toHaveBeenCalled();
+  });
+
+  it("reports the intake the way the signup screen reads it", async () => {
+    await expect(makeSignupService(true).service.coachSignupStatus()).resolves.toEqual({ open: true });
+    await expect(makeSignupService(false).service.coachSignupStatus()).resolves.toEqual({ open: false });
+  });
+});
+
+describe("signup legal acknowledgements", () => {
+  const base = {
+    email: "student@example.com",
+    password: "Sifre1234",
+    displayName: "Student",
+    kvkkAccepted: true as const,
+  };
+
+  it("rejects signup when terms acceptance is missing", () => {
+    expect(signupSchema.safeParse({ ...base, ageEligibilityConfirmed: true }).success).toBe(false);
+  });
+
+  it("rejects signup when the 13+ eligibility declaration is missing", () => {
+    expect(signupSchema.safeParse({ ...base, termsAccepted: true }).success).toBe(false);
+  });
+
+  it("accepts signup only when both legal declarations are affirmative", () => {
+    expect(
+      signupSchema.safeParse({
+        ...base,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
+      }).success,
+    ).toBe(true);
+  });
+});
+
+describe("AuthService.verifyEmail", () => {
+  it("does not mark the address verified when the token is already closed", async () => {
+    const usersRepo = { updateService: vi.fn() };
+    const events = { emitAsync: vi.fn() };
+    const service = new AuthService(
+      usersRepo as never,
+      { consume: vi.fn(async () => undefined) } as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      events as never,
+    );
+
+    await expect(service.verifyEmail({ token: "stale" })).rejects.toMatchObject({
+      code: ErrorCode.AUTH_TOKEN_INVALID,
+      httpStatus: HttpStatus.BAD_REQUEST,
+    } satisfies Partial<DomainError>);
+    expect(usersRepo.updateService).not.toHaveBeenCalled();
+    expect(events.emitAsync).not.toHaveBeenCalled();
+  });
+});
+
 describe("AuthService.resendVerificationEmail", () => {
   beforeEach(() => vi.clearAllMocks());
 
@@ -65,6 +169,17 @@ describe("AuthService.resendVerificationEmail", () => {
     } satisfies Partial<DomainError>);
     expect(emailTokenRepo.createVerificationResendAttempt).not.toHaveBeenCalled();
     expect(queue.enqueue).not.toHaveBeenCalled();
+  });
+
+  it("closes unused verify tokens for that user", async () => {
+    const { emailTokenRepo, service } = makeService(0);
+
+    await service.invalidateOutstandingVerification(USER.id);
+
+    expect(emailTokenRepo.invalidateUnused).toHaveBeenCalledWith(
+      USER.id,
+      EmailTokenType.VERIFY_EMAIL,
+    );
   });
 
   it("records an attempt and sends a verification link when under limit", async () => {

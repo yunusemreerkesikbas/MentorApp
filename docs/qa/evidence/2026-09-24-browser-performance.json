@@ -1,0 +1,5263 @@
+{
+  "generatedAt": "2026-09-24T08:38:14.115Z",
+  "samples": [
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1154,
+        "transferredBytes": 2121021,
+        "ttfbMs": 4.300000071525574,
+        "loadMs": 129.10000002384186,
+        "lcpMs": 1108,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1100,
+        "transferredBytes": 13177,
+        "ttfbMs": 3.3000000715255737,
+        "loadMs": 77.19999992847443,
+        "lcpMs": 1068,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1117,
+        "transferredBytes": 1451999,
+        "ttfbMs": 5.5,
+        "loadMs": 84.60000002384186,
+        "lcpMs": 1056,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1079,
+        "transferredBytes": 275903,
+        "ttfbMs": 6,
+        "loadMs": 67.10000002384186,
+        "lcpMs": 1048,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1097,
+        "transferredBytes": 2009053,
+        "ttfbMs": 5.700000047683716,
+        "loadMs": 80.89999997615814,
+        "lcpMs": 1052,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1068,
+        "transferredBytes": 100169,
+        "ttfbMs": 3.100000023841858,
+        "loadMs": 56.200000047683716,
+        "lcpMs": 1040,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1086,
+        "transferredBytes": 1419231,
+        "ttfbMs": 4.200000047683716,
+        "loadMs": 77.10000002384186,
+        "lcpMs": 1064,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1071,
+        "transferredBytes": 42931,
+        "ttfbMs": 3.5999999046325684,
+        "loadMs": 55.700000047683716,
+        "lcpMs": 404,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1084,
+        "transferredBytes": 2121021,
+        "ttfbMs": 4.899999976158142,
+        "loadMs": 73.39999997615814,
+        "lcpMs": 520,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1063,
+        "transferredBytes": 13177,
+        "ttfbMs": 6.100000023841858,
+        "loadMs": 53.59999990463257,
+        "lcpMs": 980,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1175,
+        "transferredBytes": 473511,
+        "ttfbMs": 30.5,
+        "loadMs": 153.10000002384186,
+        "lcpMs": 220,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1083,
+        "transferredBytes": 33976,
+        "ttfbMs": 31,
+        "loadMs": 66.60000002384186,
+        "lcpMs": 204,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1139,
+        "transferredBytes": 475138,
+        "ttfbMs": 22.299999952316284,
+        "loadMs": 115.19999992847443,
+        "lcpMs": 284,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1211,
+        "transferredBytes": 32349,
+        "ttfbMs": 36.699999928474426,
+        "loadMs": 178,
+        "lcpMs": 432,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1642,
+        "transferredBytes": 473511,
+        "ttfbMs": 189,
+        "loadMs": 537.6999999284744,
+        "lcpMs": 716,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1418,
+        "transferredBytes": 30777,
+        "ttfbMs": 266.39999997615814,
+        "loadMs": 380.89999997615814,
+        "lcpMs": 836,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1340,
+        "transferredBytes": 475040,
+        "ttfbMs": 41.5,
+        "loadMs": 263.60000002384186,
+        "lcpMs": 444,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1225,
+        "transferredBytes": 33879,
+        "ttfbMs": 143.79999995231628,
+        "loadMs": 206.69999992847443,
+        "lcpMs": 452,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1142,
+        "transferredBytes": 476710,
+        "ttfbMs": 32.60000002384186,
+        "loadMs": 123.10000002384186,
+        "lcpMs": 232,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1184,
+        "transferredBytes": 30777,
+        "ttfbMs": 87.39999997615814,
+        "loadMs": 159.79999995231628,
+        "lcpMs": 356,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1156,
+        "transferredBytes": 1038244,
+        "ttfbMs": 11.800000071525574,
+        "loadMs": 139.29999995231628,
+        "lcpMs": 512,
+        "cls": 0.3277965705307093,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1086,
+        "transferredBytes": 227664,
+        "ttfbMs": 5.700000047683716,
+        "loadMs": 62.60000002384186,
+        "lcpMs": 500,
+        "cls": 0.3276801639205028,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1120,
+        "transferredBytes": 1039723,
+        "ttfbMs": 6.700000047683716,
+        "loadMs": 103.5,
+        "lcpMs": 652,
+        "cls": 0.2698041083258511,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1084,
+        "transferredBytes": 224998,
+        "ttfbMs": 4,
+        "loadMs": 66.79999995231628,
+        "lcpMs": 500,
+        "cls": 0.13299430949549856,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1104,
+        "transferredBytes": 988858,
+        "ttfbMs": 7.799999952316284,
+        "loadMs": 95,
+        "lcpMs": 500,
+        "cls": 0.13311071610570507,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1073,
+        "transferredBytes": 229077,
+        "ttfbMs": 4.199999928474426,
+        "loadMs": 65,
+        "lcpMs": 464,
+        "cls": 0.3276801639205028,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1106,
+        "transferredBytes": 1039061,
+        "ttfbMs": 8.699999928474426,
+        "loadMs": 98.5,
+        "lcpMs": 684,
+        "cls": 0.2698041083258511,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1086,
+        "transferredBytes": 225677,
+        "ttfbMs": 3.799999952316284,
+        "loadMs": 63.39999997615814,
+        "lcpMs": 540,
+        "cls": 0.13299430949549856,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1165,
+        "transferredBytes": 1003014,
+        "ttfbMs": 10.599999904632568,
+        "loadMs": 145.80000007152557,
+        "lcpMs": 688,
+        "cls": 0.2698041083258511,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1096,
+        "transferredBytes": 225902,
+        "ttfbMs": 6.700000047683716,
+        "loadMs": 77.79999995231628,
+        "lcpMs": 648,
+        "cls": 0.2637151471765876,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1161,
+        "transferredBytes": 803741,
+        "ttfbMs": 12.699999928474426,
+        "loadMs": 144.70000004768372,
+        "lcpMs": 836,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1073,
+        "transferredBytes": 77102,
+        "ttfbMs": 4.700000047683716,
+        "loadMs": 55.90000009536743,
+        "lcpMs": 436,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1114,
+        "transferredBytes": 802987,
+        "ttfbMs": 9.700000047683716,
+        "loadMs": 107.5,
+        "lcpMs": 704,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1087,
+        "transferredBytes": 81019,
+        "ttfbMs": 4.700000047683716,
+        "loadMs": 72.29999995231628,
+        "lcpMs": 680,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1202,
+        "transferredBytes": 802989,
+        "ttfbMs": 12.799999952316284,
+        "loadMs": 184.89999997615814,
+        "lcpMs": 876,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1079,
+        "transferredBytes": 78671,
+        "ttfbMs": 4.5,
+        "loadMs": 62.39999997615814,
+        "lcpMs": 536,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1153,
+        "transferredBytes": 804559,
+        "ttfbMs": 8.199999928474426,
+        "loadMs": 109.5,
+        "lcpMs": 684,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1151,
+        "transferredBytes": 77855,
+        "ttfbMs": 16.299999952316284,
+        "loadMs": 121,
+        "lcpMs": 1084,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1183,
+        "transferredBytes": 802971,
+        "ttfbMs": 10.299999952316284,
+        "loadMs": 156.60000002384186,
+        "lcpMs": 892,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1110,
+        "transferredBytes": 77855,
+        "ttfbMs": 9,
+        "loadMs": 92,
+        "lcpMs": 868,
+        "cls": 0.005123577373874639,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1132,
+        "transferredBytes": 2121021,
+        "ttfbMs": 4,
+        "loadMs": 111.20000004768372,
+        "lcpMs": 508,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1071,
+        "transferredBytes": 13177,
+        "ttfbMs": 3.200000047683716,
+        "loadMs": 52.199999928474426,
+        "lcpMs": 1008,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1084,
+        "transferredBytes": 2009053,
+        "ttfbMs": 4.5,
+        "loadMs": 69.39999997615814,
+        "lcpMs": null,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1086,
+        "transferredBytes": 144913,
+        "ttfbMs": 5.5,
+        "loadMs": 65.70000004768372,
+        "lcpMs": 600,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1124,
+        "transferredBytes": 1938042,
+        "ttfbMs": 4.699999928474426,
+        "loadMs": 104.5,
+        "lcpMs": 636,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1067,
+        "transferredBytes": 13421,
+        "ttfbMs": 4,
+        "loadMs": 51.39999997615814,
+        "lcpMs": 984,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1095,
+        "transferredBytes": 1288159,
+        "ttfbMs": 4.5,
+        "loadMs": 85.39999997615814,
+        "lcpMs": 624,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1075,
+        "transferredBytes": 210612,
+        "ttfbMs": 3.8000000715255737,
+        "loadMs": 61,
+        "lcpMs": 968,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1081,
+        "transferredBytes": 2814576,
+        "ttfbMs": 5.5,
+        "loadMs": 71.5,
+        "lcpMs": 740,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/",
+        "wallMs": 1090,
+        "transferredBytes": 13665,
+        "ttfbMs": 4.200000047683716,
+        "loadMs": 70.70000004768372,
+        "lcpMs": 480,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1519,
+        "transferredBytes": 474884,
+        "ttfbMs": 60.299999952316284,
+        "loadMs": 487.09999990463257,
+        "lcpMs": 392,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1115,
+        "transferredBytes": 31486,
+        "ttfbMs": 48.60000002384186,
+        "loadMs": 101.30000007152557,
+        "lcpMs": 380,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1160,
+        "transferredBytes": 475041,
+        "ttfbMs": 33.59999990463257,
+        "loadMs": 142.10000002384186,
+        "lcpMs": 340,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1099,
+        "transferredBytes": 32150,
+        "ttfbMs": 32.90000009536743,
+        "loadMs": 80.10000002384186,
+        "lcpMs": 348,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1117,
+        "transferredBytes": 474884,
+        "ttfbMs": 25.5,
+        "loadMs": 98.20000004768372,
+        "lcpMs": 448,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1080,
+        "transferredBytes": 36445,
+        "ttfbMs": 23.199999928474426,
+        "loadMs": 64.30000007152557,
+        "lcpMs": 428,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1164,
+        "transferredBytes": 473511,
+        "ttfbMs": 23.600000023841858,
+        "loadMs": 141.79999995231628,
+        "lcpMs": 468,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1100,
+        "transferredBytes": 34687,
+        "ttfbMs": 32.700000047683716,
+        "loadMs": 91.29999995231628,
+        "lcpMs": 404,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1129,
+        "transferredBytes": 473511,
+        "ttfbMs": 22.799999952316284,
+        "loadMs": 110.39999997615814,
+        "lcpMs": 412,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/blog/kpss-basvuru-sureci",
+        "wallMs": 1083,
+        "transferredBytes": 34680,
+        "ttfbMs": 25.100000023841858,
+        "loadMs": 69.80000007152557,
+        "lcpMs": 324,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 401
+          },
+          {
+            "path": "/content/info-articles/kpss-basvuru-sureci/views",
+            "status": 204
+          },
+          {
+            "path": "/ads/public/placements/knowledge.article.end",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1133,
+        "transferredBytes": 1087444,
+        "ttfbMs": 9.899999976158142,
+        "loadMs": 109.90000009536743,
+        "lcpMs": 728,
+        "cls": 0.05000718841552734,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1085,
+        "transferredBytes": 229041,
+        "ttfbMs": 8,
+        "loadMs": 69.60000002384186,
+        "lcpMs": 708,
+        "cls": 0.09286353759765624,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1101,
+        "transferredBytes": 1088832,
+        "ttfbMs": 7,
+        "loadMs": 82.69999992847443,
+        "lcpMs": 516,
+        "cls": 0.09408873291015625,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1068,
+        "transferredBytes": 232878,
+        "ttfbMs": 3.399999976158142,
+        "loadMs": 62.200000047683716,
+        "lcpMs": 604,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1091,
+        "transferredBytes": 1088832,
+        "ttfbMs": 7.100000023841858,
+        "loadMs": 75,
+        "lcpMs": 628,
+        "cls": 0.09408873291015625,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1058,
+        "transferredBytes": 233535,
+        "ttfbMs": 3.5999999046325684,
+        "loadMs": 50.300000071525574,
+        "lcpMs": 524,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1067,
+        "transferredBytes": 1088830,
+        "ttfbMs": 5.899999976158142,
+        "loadMs": 62.5,
+        "lcpMs": 560,
+        "cls": 0.00002195892333984375,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1075,
+        "transferredBytes": 232717,
+        "ttfbMs": 3.600000023841858,
+        "loadMs": 57,
+        "lcpMs": 616,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1087,
+        "transferredBytes": 1087408,
+        "ttfbMs": 7.200000047683716,
+        "loadMs": 72,
+        "lcpMs": 536,
+        "cls": 0.09408873291015625,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/panel",
+        "wallMs": 1087,
+        "transferredBytes": 230461,
+        "ttfbMs": 4.800000071525574,
+        "loadMs": 70.39999997615814,
+        "lcpMs": 684,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/mentorship/my-coach",
+            "status": 403
+          },
+          {
+            "path": "/forum/feed",
+            "status": 404
+          },
+          {
+            "path": "/economy/quests",
+            "status": 404
+          },
+          {
+            "path": "/economy/streak-rescue",
+            "status": 404
+          },
+          {
+            "path": "/coaching/vision",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/coaching/today",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/ads/reward-offers/dashboard.rewarded.coin",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription/offers",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 1,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1177,
+        "transferredBytes": 891249,
+        "ttfbMs": 7.700000047683716,
+        "loadMs": 171.5,
+        "lcpMs": 764,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1060,
+        "transferredBytes": 82684,
+        "ttfbMs": 3.5,
+        "loadMs": 43,
+        "lcpMs": 568,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 2,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1143,
+        "transferredBytes": 891249,
+        "ttfbMs": 11.699999928474426,
+        "loadMs": 132,
+        "lcpMs": 644,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1098,
+        "transferredBytes": 85844,
+        "ttfbMs": 6.899999976158142,
+        "loadMs": 78.39999997615814,
+        "lcpMs": 744,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 3,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1104,
+        "transferredBytes": 891396,
+        "ttfbMs": 6.699999928474426,
+        "loadMs": 85.89999997615814,
+        "lcpMs": 524,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1070,
+        "transferredBytes": 82684,
+        "ttfbMs": 3.600000023841858,
+        "loadMs": 53.60000002384186,
+        "lcpMs": 496,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 4,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1078,
+        "transferredBytes": 892087,
+        "ttfbMs": 5.799999952316284,
+        "loadMs": 63.199999928474426,
+        "lcpMs": 480,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1066,
+        "transferredBytes": 85784,
+        "ttfbMs": 3.6999999284744263,
+        "loadMs": 57.299999952316284,
+        "lcpMs": 368,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "iteration": 5,
+      "cold": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1086,
+        "transferredBytes": 891399,
+        "ttfbMs": 8.100000023841858,
+        "loadMs": 76.10000002384186,
+        "lcpMs": 516,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      },
+      "warm": {
+        "httpStatus": 200,
+        "finalPath": "/analiz",
+        "wallMs": 1077,
+        "transferredBytes": 82684,
+        "ttfbMs": 3.4000000953674316,
+        "loadMs": 59.10000002384186,
+        "lcpMs": 508,
+        "cls": 0,
+        "apiCalls": [
+          {
+            "path": "/auth/refresh",
+            "status": 200
+          },
+          {
+            "path": "/economy/balance",
+            "status": 404
+          },
+          {
+            "path": "/community/journey-levels/unseen",
+            "status": 200
+          },
+          {
+            "path": "/community/achievements/unseen",
+            "status": 404
+          },
+          {
+            "path": "/notifications/stream-token",
+            "status": 201
+          },
+          {
+            "path": "/users/me",
+            "status": 200
+          },
+          {
+            "path": "/notifications",
+            "status": 200
+          },
+          {
+            "path": "/notifications/stream",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/by-type/KPSS",
+            "status": 200
+          },
+          {
+            "path": "/subscription",
+            "status": 200
+          },
+          {
+            "path": "/economy/rewards/unseen",
+            "status": 404
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/subjects",
+            "status": 200
+          },
+          {
+            "path": "/content/exams/kpss-lisans-2026/topics",
+            "status": 200
+          },
+          {
+            "path": "/coaching/analysis",
+            "status": 200
+          },
+          {
+            "path": "/mock-exams",
+            "status": 200
+          }
+        ]
+      }
+    }
+  ],
+  "summary": [
+    {
+      "viewport": "mobile",
+      "route": "welcome",
+      "cold": {
+        "ttfbMs": 4.899999976158142,
+        "loadMs": 80.89999997615814,
+        "lcpMs": 1056,
+        "cls": 0,
+        "wallMs": 1097,
+        "transferredBytes": 2009053
+      },
+      "warm": {
+        "ttfbMs": 3.5999999046325684,
+        "loadMs": 56.200000047683716,
+        "lcpMs": 1040,
+        "cls": 0,
+        "wallMs": 1071,
+        "transferredBytes": 42931
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "article",
+      "cold": {
+        "ttfbMs": 32.60000002384186,
+        "loadMs": 153.10000002384186,
+        "lcpMs": 284,
+        "cls": 0,
+        "wallMs": 1175,
+        "transferredBytes": 475040
+      },
+      "warm": {
+        "ttfbMs": 87.39999997615814,
+        "loadMs": 178,
+        "lcpMs": 432,
+        "cls": 0,
+        "wallMs": 1211,
+        "transferredBytes": 32349
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "dashboard",
+      "cold": {
+        "ttfbMs": 8.699999928474426,
+        "loadMs": 103.5,
+        "lcpMs": 652,
+        "cls": 0.2698041083258511,
+        "wallMs": 1120,
+        "transferredBytes": 1038244
+      },
+      "warm": {
+        "ttfbMs": 4.199999928474426,
+        "loadMs": 65,
+        "lcpMs": 500,
+        "cls": 0.2637151471765876,
+        "wallMs": 1086,
+        "transferredBytes": 225902
+      },
+      "apiFailures": [
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "viewport": "mobile",
+      "route": "analysis",
+      "cold": {
+        "ttfbMs": 10.299999952316284,
+        "loadMs": 144.70000004768372,
+        "lcpMs": 836,
+        "cls": 0.005123577373874639,
+        "wallMs": 1161,
+        "transferredBytes": 802989
+      },
+      "warm": {
+        "ttfbMs": 4.700000047683716,
+        "loadMs": 72.29999995231628,
+        "lcpMs": 680,
+        "cls": 0.005123577373874639,
+        "wallMs": 1087,
+        "transferredBytes": 77855
+      },
+      "apiFailures": [
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "welcome",
+      "cold": {
+        "ttfbMs": 4.5,
+        "loadMs": 85.39999997615814,
+        "lcpMs": 630,
+        "cls": 0,
+        "wallMs": 1095,
+        "transferredBytes": 2009053
+      },
+      "warm": {
+        "ttfbMs": 4,
+        "loadMs": 61,
+        "lcpMs": 968,
+        "cls": 0,
+        "wallMs": 1075,
+        "transferredBytes": 13665
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "article",
+      "cold": {
+        "ttfbMs": 25.5,
+        "loadMs": 141.79999995231628,
+        "lcpMs": 412,
+        "cls": 0,
+        "wallMs": 1160,
+        "transferredBytes": 474884
+      },
+      "warm": {
+        "ttfbMs": 32.700000047683716,
+        "loadMs": 80.10000002384186,
+        "lcpMs": 380,
+        "cls": 0,
+        "wallMs": 1099,
+        "transferredBytes": 34680
+      },
+      "apiFailures": [
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        },
+        {
+          "path": "/auth/refresh",
+          "status": 401
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "dashboard",
+      "cold": {
+        "ttfbMs": 7.100000023841858,
+        "loadMs": 75,
+        "lcpMs": 560,
+        "cls": 0.09408873291015625,
+        "wallMs": 1091,
+        "transferredBytes": 1088830
+      },
+      "warm": {
+        "ttfbMs": 3.600000023841858,
+        "loadMs": 62.200000047683716,
+        "lcpMs": 616,
+        "cls": 0,
+        "wallMs": 1075,
+        "transferredBytes": 232717
+      },
+      "apiFailures": [
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/mentorship/my-coach",
+          "status": 403
+        },
+        {
+          "path": "/forum/feed",
+          "status": 404
+        },
+        {
+          "path": "/economy/quests",
+          "status": 404
+        },
+        {
+          "path": "/economy/streak-rescue",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        }
+      ]
+    },
+    {
+      "viewport": "desktop",
+      "route": "analysis",
+      "cold": {
+        "ttfbMs": 7.700000047683716,
+        "loadMs": 85.89999997615814,
+        "lcpMs": 524,
+        "cls": 0,
+        "wallMs": 1104,
+        "transferredBytes": 891396
+      },
+      "warm": {
+        "ttfbMs": 3.600000023841858,
+        "loadMs": 57.299999952316284,
+        "lcpMs": 508,
+        "cls": 0,
+        "wallMs": 1070,
+        "transferredBytes": 82684
+      },
+      "apiFailures": [
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/balance",
+          "status": 404
+        },
+        {
+          "path": "/community/achievements/unseen",
+          "status": 404
+        },
+        {
+          "path": "/economy/rewards/unseen",
+          "status": 404
+        }
+      ]
+    }
+  ]
+}

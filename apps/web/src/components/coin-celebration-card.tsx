@@ -6,6 +6,8 @@ import { useTranslations } from "next-intl";
 import { CoinCelebrationVisual } from "./coin-celebration-visual";
 
 export interface CoinCelebrationCardProps {
+  /** Completed quests do not imply a new Coin grant; use a neutral progress illustration. */
+  progressOnly?: boolean;
   badgeLabel?: string;
   title?: string;
   subtitle?: string;
@@ -22,6 +24,7 @@ export interface CoinCelebrationCardProps {
  * Replaces or crowns empty completed states with a high-triumph 3D coin illustration.
  */
 export function CoinCelebrationCard({
+  progressOnly = false,
   badgeLabel,
   title,
   subtitle,
@@ -70,13 +73,13 @@ export function CoinCelebrationCard({
 
         {/* 3D Lottie Coin Visual */}
         <div className="my-2.5 flex items-center justify-center">
-          <CoinCelebrationVisual
+          {progressOnly ? <CheckCircle2 className="size-16 text-[var(--color-success)]" aria-hidden /> : <CoinCelebrationVisual
             size="md"
             showBurst={false}
             showCoin={true}
             showGlow={true}
             reduceMotion={reduceMotion}
-          />
+          />}
         </div>
 
         {/* Title & Subtitle */}

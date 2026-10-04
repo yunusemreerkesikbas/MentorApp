@@ -2,12 +2,13 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useId, useState, useSyncExternalStore, type FormEvent } from "react";
-import { CheckBox, SectionHeading } from "@mentor/ui";
+import { useEffect, useId, useState, useSyncExternalStore, type FormEvent } from "react";
+import { CheckBox, SectionHeading, Skeleton } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { LegalLink } from "@/components/legal-link";
 import { useAuth } from "@/lib/auth-context";
 import { trackProductEvent } from "@/lib/analytics";
+import { fetchCoachSignupOpen } from "@/lib/coach-signup";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
 import {
@@ -55,13 +56,34 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [kvkkChecked, setKvkkChecked] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
   const kvkkLabelId = useId();
+  const termsLabelId = useId();
+  /** `mentorship.applications.open`. Null while unknown: neither the link nor the closed notice shows. */
+  const [coachOpen, setCoachOpen] = useState<boolean | null>(null);
 
-  function requireKvkk() {
-    if (!kvkkChecked) setError(translate("kvkk_error"));
-    return kvkkChecked;
+  useEffect(() => {
+    let active = true;
+    void fetchCoachSignupOpen().then((open) => {
+      if (active) setCoachOpen(open);
+    });
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  function requireLegalAcknowledgements() {
+    if (!kvkkChecked) {
+      setError(translate("kvkk_error"));
+      return false;
+    }
+    if (!termsChecked) {
+      setError(translate("terms_error"));
+      return false;
+    }
+    return true;
   }
 
   function applyAnalyticsChoice() {
@@ -79,6 +101,11 @@ export default function SignupPage() {
       setBusy(false);
       return;
     }
+    if (!termsChecked || data.get("terms") !== "on") {
+      setError(translate("terms_error"));
+      setBusy(false);
+      return;
+    }
     applyAuthAnalyticsChoice(data.get(AUTH_ANALYTICS_FIELD) === "on", { accept, reject });
     try {
       const user = await signup({
@@ -86,6 +113,8 @@ export default function SignupPage() {
         email: String(data.get("email")),
         password: String(data.get("password")),
         kvkkAccepted: true,
+        termsAccepted: true,
+        ageEligibilityConfirmed: true,
         ...(turnstileToken ? { turnstileToken } : {}),
         // Grants COACH, which shapes the onboarding and the home surface. It authorizes nothing on
         // its own: the invite code needs a verified email and a registry row this account does not
@@ -93,9 +122,13 @@ export default function SignupPage() {
         ...(isCoach ? { intent: "COACH" as const } : {}),
       });
       trackProductEvent("sign_up", { method: "email", intent: isCoach ? "coach" : "student" });
+      const destination = postAuthDestination(user, readAuthNextParam());
+      // Fetched while the sheet leaves, so the handover has nothing left to wait for.
+      // @ts-expect-error -- a validated internal path, transported as a plain string.
+      router.prefetch(destination);
       exitThen(() => {
         // @ts-expect-error -- a validated internal path, transported as a plain string.
-        router.push(postAuthDestination(user, readAuthNextParam()));
+        router.push(destination);
       });
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
@@ -103,6 +136,36 @@ export default function SignupPage() {
       setTurnstileToken(null);
       setTurnstileResetKey((value) => value + 1);
     }
+  }
+
+  // Coach intake unknown yet: a placeholder, never a form that may be closed.
+  if (isCoach && coachOpen === null) {
+    return (
+      <div className="flex flex-col gap-4" aria-busy="true">
+        <Skeleton className="mx-auto h-7 w-2/3" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+        <Skeleton className="h-11 w-full" />
+      </div>
+    );
+  }
+
+  // Coach intake shut: say so instead of offering a form the API would refuse on submit.
+  if (isCoach && coachOpen === false) {
+    return (
+      <div className="flex flex-col gap-4">
+        <SectionHeading as="h2" className="items-center text-center">
+          {translate("coach_closed_title")}
+        </SectionHeading>
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {translate("coach_closed_body")}
+        </p>
+        <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
+          {translate("login_prompt")}{" "}
+          <AuthNavLink href="/login">{translate("login_link")}</AuthNavLink>
+        </p>
+      </div>
+    );
   }
 
   return (
@@ -158,6 +221,25 @@ export default function SignupPage() {
           })}
         </span>
       </div>
+      <div
+        className="flex min-h-11 items-start gap-3 text-sm"
+        style={{ color: "var(--color-body)" }}
+      >
+        <CheckBox
+          checked={termsChecked}
+          onChange={setTermsChecked}
+          name="terms"
+          value="on"
+          required
+          aria-labelledby={termsLabelId}
+          className="mt-1"
+        />
+        <span id={termsLabelId}>
+          {translate.rich("terms", {
+            link: (chunks) => <LegalLink slug="kullanim-kosullari">{chunks}</LegalLink>,
+          })}
+        </span>
+      </div>
       <AuthCookieConsent />
       <SignupTurnstile onToken={setTurnstileToken} resetKey={turnstileResetKey} />
       <FormError message={error} />
@@ -165,7 +247,7 @@ export default function SignupPage() {
       <GoogleAuthButton
         mode="signup"
         onBeforeStart={() => {
-          if (!requireKvkk()) return false;
+          if (!requireLegalAcknowledgements()) return false;
           applyAnalyticsChoice();
           return true;
         }}
@@ -176,8 +258,8 @@ export default function SignupPage() {
       </p>
       {/* Quiet, and below the fold of the form on purpose. Registration is open to anyone who wants
           it, but a loud second button would invite every new student to wonder if they should be a
-          coach — the intake is self-service, not something to upsell. */}
-      {!isCoach && (
+          coach — the intake is self-service, not something to upsell. Hidden while the intake is shut. */}
+      {!isCoach && coachOpen === true && (
         <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
           {/* Object form, not a string: `@/i18n/navigation` types hrefs against the route map, so
               the query has to travel beside the pathname rather than glued onto it. */}

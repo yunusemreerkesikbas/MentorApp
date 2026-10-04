@@ -69,7 +69,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const i18n = this.currentI18n();
-    const message = this.translateCode(i18n, code);
+    const message = this.translateCode(i18n, code, this.retryAfterSeconds(res, code));
     if (code === ErrorCode.VALIDATION_ERROR) {
       details = this.localizeFieldDetails(i18n, details);
     }
@@ -101,11 +101,31 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
   }
 
+  /**
+   * Throttler writes `Retry-After` (seconds) before the 429. Other 429s leave the header unset
+   * and keep the static sentence.
+   */
+  private retryAfterSeconds(res: Response, code: string): number | undefined {
+    if (code !== ErrorCode.TOO_MANY_REQUESTS) return undefined;
+    const raw = res.getHeader("Retry-After");
+    const value = Array.isArray(raw) ? raw[0] : raw;
+    const seconds = typeof value === "number" ? value : Number(value);
+    return Number.isInteger(seconds) && seconds > 0 ? seconds : undefined;
+  }
+
   /** Resolve a localized message by error code; fall back to the code if i18n is unavailable. */
-  private translateCode(i18n: I18nContext | undefined, code: string): string {
-    const key = `errors.${code}`;
-    const translated = i18n?.translate(key) as unknown as string | undefined;
-    return translated && translated !== key ? translated : code;
+  private translateCode(i18n: I18nContext | undefined, code: string, seconds?: number): string {
+    if (seconds !== undefined) {
+      const retryKey = seconds === 1 ? "errors.TOO_MANY_REQUESTS_RETRY_ONE" : "errors.TOO_MANY_REQUESTS_RETRY";
+      const retry = this.lookup(i18n, retryKey, { seconds });
+      if (retry) return retry;
+    }
+    return this.lookup(i18n, `errors.${code}`) ?? code;
+  }
+
+  private lookup(i18n: I18nContext | undefined, key: string, args?: Record<string, unknown>): string | undefined {
+    const translated = i18n?.translate(key, args ? { args } : undefined) as unknown as string | undefined;
+    return translated && translated !== key ? translated : undefined;
   }
 
   /** Localize each Zod field issue's message via `validation.<issueCode>` (fallback to the raw message). */

@@ -52,18 +52,12 @@ export function BottomSheetPanel({
           : "lg:max-w-[480px]";
 
   const roundedClass =
-    sheet.size === "full"
-      ? "max-lg:rounded-none"
-      : sheet.size === "wide"
-        ? "max-lg:rounded-t-[20px]"
-        : "max-lg:rounded-t-[16px]";
+    sheet.size === "full" ? "max-lg:rounded-none" : "max-lg:rounded-t-[var(--play-sheet-radius)]";
 
+  // Overlay kit: solid surface, no glass. Phones lift the sheet upward; desktop floats a card.
   const panelClass =
-    "flex w-full flex-col overflow-hidden bg-[color-mix(in_srgb,var(--color-surface)_84%,transparent)] backdrop-blur-2xl backdrop-saturate-[190%] " +
-    "max-lg:border-t max-lg:border-white/80 dark:max-lg:border-white/15 " +
-    "max-lg:shadow-[0_-8px_32px_rgba(0,0,0,0.14),inset_0_1px_1px_0_rgba(255,255,255,0.7)] dark:max-lg:shadow-[0_-12px_44px_rgba(0,0,0,0.55),inset_0_1px_1px_0_rgba(255,255,255,0.12)] " +
-    "lg:rounded-[var(--radius-card)] lg:border lg:border-white/70 dark:lg:border-white/12 " +
-    "lg:shadow-[0_24px_50px_-12px_rgba(0,0,0,0.22),inset_0_1px_1.5px_0_rgba(255,255,255,0.85)] dark:lg:shadow-[0_28px_60px_-15px_rgba(0,0,0,0.65),inset_0_1px_1.5px_0_rgba(255,255,255,0.14)]";
+    "flex w-full flex-col overflow-hidden bg-[var(--color-surface)] max-lg:shadow-[var(--shadow-sheet)] " +
+    "lg:rounded-[var(--play-radius)] lg:border lg:border-[var(--color-border)] lg:shadow-[var(--shadow-overlay)]";
 
   return (
     <div
@@ -75,35 +69,19 @@ export function BottomSheetPanel({
       className={`${panelClass} ${panelSize} ${roundedClass} ${maxWidthClass} ${panelAnimation}`}
       onClick={(e) => e.stopPropagation()}
     >
-      {/* Drag handle / notch — mobile only, all sheet types (auth-shell reference) */}
-      <div
-        className="flex h-6 shrink-0 items-center justify-center lg:hidden"
-        aria-hidden
-      >
-        <div
-          className="h-1 w-9 rounded-full"
-          style={{
-            backgroundColor:
-              "color-mix(in srgb, var(--color-secondary) 40%, transparent)",
-          }}
-        />
+      {/* Drag handle — mobile only, decorative (the sheet closes by backdrop, cancel or Escape). */}
+      <div className="flex shrink-0 justify-center pb-1 pt-2.5 lg:hidden" aria-hidden>
+        <div className="h-[5px] w-10 rounded-full bg-[color-mix(in_srgb,var(--color-secondary)_40%,transparent)]" />
       </div>
 
-      {/* Header */}
+      {/* Header — an action sheet's rows draw their own top rules, so only the filter needs one. */}
       <div
-        className={`shrink-0 border-b px-5 pb-3 ${isFilter ? "flex items-center justify-between gap-3 pt-1 lg:pt-5" : "max-lg:pt-0 max-lg:text-center lg:pt-4 lg:text-left"}`}
-        style={{
-          borderColor: "color-mix(in srgb, var(--color-main) 7%, transparent)",
-        }}
+        className={`shrink-0 px-5 ${isFilter ? "flex items-center justify-between gap-2 border-b border-[var(--play-line)] pb-2.5 pt-1.5 lg:pt-4" : "pb-3.5 pt-2 max-lg:text-center lg:pt-6"}`}
       >
-        {isFilter ? <span className="w-9 shrink-0" aria-hidden /> : null}
+        {isFilter ? <span className="w-11 shrink-0" aria-hidden /> : null}
         <h2
           id={titleId}
-          className={`text-lg font-semibold leading-snug ${isFilter ? "flex-1 text-center" : ""}`}
-          style={{
-            color: "var(--color-main)",
-            fontFamily: "var(--font-heading)",
-          }}
+          className={`text-base font-extrabold leading-snug text-[var(--color-main)] ${isFilter ? "flex-1 text-center" : ""}`}
         >
           {sheet.title}
         </h2>
@@ -111,17 +89,18 @@ export function BottomSheetPanel({
           <button
             type="button"
             onClick={onClose}
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black/[0.05] hover:bg-black/[0.09] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
+            className="flex size-11 shrink-0 cursor-pointer items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] outline-none transition-colors hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none"
             aria-label={sheet.closeLabel}
           >
-            <X size={18} strokeWidth={2.2} color="var(--color-secondary)" />
+            <X size={22} strokeWidth={1.75} aria-hidden />
           </button>
         ) : null}
       </div>
 
       {/* Body */}
       <div
-        className={`min-h-0 flex-1 px-5 ${bodyScroll ? "mentor-scrollarea overflow-y-auto" : "overflow-hidden"} ${isAction ? "py-0" : "py-3"}`}
+        // Action rows skip `mentor-scrollarea`: its stable gutter made them narrower than cancel.
+        className={`min-h-0 flex-1 px-5 ${bodyScroll ? (isAction ? "overflow-y-auto" : "mentor-scrollarea overflow-y-auto") : "overflow-hidden"} ${isAction ? "py-0" : "py-4"}`}
       >
         {isAction && sheet.actions ? (
           <BottomSheetActionList
@@ -133,8 +112,8 @@ export function BottomSheetPanel({
           <div
             className={
               bodyScroll
-                ? "flex flex-col gap-4"
-                : "flex h-full min-h-0 flex-col gap-4 overflow-hidden"
+                ? "flex flex-col gap-4.5"
+                : "flex h-full min-h-0 flex-col gap-4.5 overflow-hidden"
             }
           >
             {sheet.children}
@@ -142,17 +121,13 @@ export function BottomSheetPanel({
         ) : null}
       </div>
 
-      {/* Footer */}
+      {/* Footer — cancel is a quiet full-width row, never a second ledge. */}
       {isAction && sheet.cancelLabel ? (
-        <div className="shrink-0 px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-2 lg:pb-5">
+        <div className="shrink-0 px-5 pb-[max(1.75rem,env(safe-area-inset-bottom))] pt-2.5 lg:pb-5">
           <button
             type="button"
             onClick={onCancel}
-            className="flex h-12 w-full items-center justify-center rounded-[10px] text-sm font-bold transition-all active:scale-[0.98] motion-reduce:transform-none motion-reduce:transition-none bg-black/[0.04] hover:bg-black/[0.08] dark:bg-white/[0.08] dark:hover:bg-white/[0.14] border border-black/[0.04] dark:border-white/[0.08]"
-            style={{
-              color: "var(--color-main)",
-              fontFamily: "var(--font-body)",
-            }}
+            className="flex h-[52px] w-full cursor-pointer items-center justify-center rounded-[var(--play-radius)] bg-[var(--color-surface-container)] text-body-sm font-extrabold text-[var(--color-main)] outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] active:opacity-70 motion-reduce:transition-none"
           >
             {sheet.cancelLabel}
           </button>
@@ -160,13 +135,7 @@ export function BottomSheetPanel({
       ) : null}
 
       {isFilter && sheet.applyLabel ? (
-        <div
-          className="shrink-0 border-t px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-4 lg:pb-5"
-          style={{
-            borderColor:
-              "color-mix(in srgb, var(--color-main) 7%, transparent)",
-          }}
-        >
+        <div className="shrink-0 border-t border-[var(--play-line)] px-5 pb-[max(1.5rem,env(safe-area-inset-bottom))] pt-3.5 lg:pb-5">
           <Button fullWidth busy={sheet.busyApply} onClick={onApply}>
             {sheet.applyLabel}
           </Button>

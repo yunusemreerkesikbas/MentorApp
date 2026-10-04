@@ -50,6 +50,42 @@ import {
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-01 — "Işık Yandı": a seekable scene engine for the achievement celebration
+
+- **What:** The achievement celebration is a time-driven scene, not a framer-motion tree. The
+  prototype's engine was ported to TypeScript: `scene-engine.ts` (cubic-bezier, framer's own damped
+  spring equation and units, velocity kicks, keyframes, seeded noise), `scene-choreography.ts`
+  (beats, springs, light colours, sound cues, deck layout), `scene-poses.ts` (where every part is
+  at time `t`, pure and unit-tested). React renders the structure and owns the phase; one
+  requestAnimationFrame clock (`use-scene-clock.ts`) writes transforms and opacities through
+  `data-scene` refs (`scene-frame.ts`) and repaints three canvases (stars, light behind the card,
+  light in front, `paint-*.ts`). The clock stops when nothing moves. Overshoot is allowed here only
+  (DESIGN.md §9.1).
+- **Usage:** Change motion in `scene-choreography.ts` and keep `design/achievement-scene/timeline.mjs`
+  in step; re-render the film when the timing changes. To look at a frame, drive the page with
+  Playwright's clock (`page.clock.install()`, `pauseAt`, `runFor`): it fakes `performance.now`,
+  timers and requestAnimationFrame, so every screenshot lands on an exact scene time.
+- **Gotchas:** Phase changes run on timers, never on frames (a background tab stops rAF and the CTA
+  must still arrive). Canvases cap their backing store at 1.5× and 2.5 M pixels. Sound is
+  synthesised once per session (`lib/achievement-scene-sfx.ts`); the voices the opening needs are
+  rendered at mount, while the curtain is still invisible, and the rest in idle slots; the room is a
+  convolver with the film's reverb as impulse response.
+- **Related:** `apps/web/src/components/achievements/scene/*`, `apps/web/src/lib/achievement-scene-*.ts`.
+
+### 2026-09-26 — ShimmerText ekran okuyucuya iki kez okunuyordu
+
+- **What:** Parlama bandı `.t-shimmer::before { content: attr(data-text) }` ile çiziliyor; Chromium üretilmiş içeriği erişilebilirlik ağacına koyduğu için bekleme satırı ("Asistanın bakıyor…", "Hazırlık yazılıyor…") iki kez okunuyordu (`ariaSnapshot`: `paragraph: Asistanın bakıyor… Asistanın bakıyor…`, CDP'de 2 StaticText). `::before` artık boş alternatif metin taşır: `content: attr(data-text) / "";`. Görünüm piksel piksel aynı, azaltılmış hareket kuralı yerinde.
+- **Usage:** değişmedi, `ShimmerText`.
+- **Gotchas:** Önce düz `content: attr(data-text);` satırı kalır: alt metin sözdizimini tanımayan tarayıcı (Firefox) ikinci satırı atar, düz satıra düşer (orada tekrar okunma sürer). Görsel içerik taşıyan yeni bir `::before/::after` da aynı `/ ""` kuralını alır.
+- **Related:** `packages/ui/src/transitions/index.css` (`shimmer-text.css` bölümü), `apps/web/e2e/coach-home.spec.ts` ("bir kez okunur").
+
+### 2026-09-26 — Koç ekranlarında hareket (APP-111, Durak F)
+
+- **What:** `/kocluk` ve `/kocluk/[studentId]` hareket aldı (tablo: DESIGN.md §9.1 "The coach's screens"). Tur ilerleme anı (✓ çizimi, bağlayıcı dolumu, sıradaki düğümün büyümesi, tek "Sıradaki" etiketinin kayması, sayının DigitPopIn'i), grafiklerin tek seferlik çizimi, bölümlerin iskeletten gelişi, panel başarı anı, planlayıcıda kayan gün vurgusu ve sırayla gelen taslaklar, akordeon ve alanların yükseklikle açılması, React `<ViewTransition>` ile yönlü sayfa kayması.
+- **Usage:** `CoachCheck draw` (✓, `.coach-check` = SuccessCheck'in ≈350 ms hali), `useSuccessMoment().play()` (✓'yi gösterir, sonra çözülür; azaltılmış harekette hemen), `CountPop` (sayfa açıldığındaki sayı sabit, değişince DigitPopIn; başlığı cümleyi `aria-label` olarak taşır), `drawOrder(i)` + `.coach-draw-rise/grow-x/cell/pop`, `.coach-reveal`, `.coach-flash`, `.coach-glow`, `.coach-stagger`. Sayfa geçişi: `CoachPageTransition` her `page.tsx`'i sarar; bağlantılar `transitionTypes={["nav-forward"]}` ya da `["nav-back"]` taşır, `router.push(href, { transitionTypes })` da çalışır. Paylaşılan parçalar yeni hareketi isteğe bağlı prop'la alır, `/panel` değişmez: `PathItem animateReach`, `CompanionBubble reveal`, `ProgressLine fillClassName`.
+- **Gotchas:** SkeletonReveal iki katmanı kalıcı olarak tek grid hücresinde tutar; iskeletinden kısa bir bölüm iskeletin yüksekliğinde kalır, bu yüzden koç bölümleri `.coach-reveal` kullanır. Çizim sınıfları `backwards` doldurur: bitmiş bir animasyon kalıcı `filter`/`scale` bırakmaz (kalıcı `filter`, `fixed` torunlar için içerme bloğu olur). `layout` animasyonu CSS `transition-transform` taşıyan bir öğeye konmaz (framer ile `transform` için çekişir); tur düğümünün boyut adımı bu yüzden sarmalayıcıda bir CSS `scale` animasyonu (`.coach-node-grow/shrink`). `AnimatePresence mode="wait"` ile gelen alanın odağı effect'le değil `autoFocus` ile verilir (alan eskisi çıktıktan sonra mount olur). Sürümü anahtarında taşıyan satırlar (takip) değişince yeniden mount olur; "az önce" bilgisi listeden gelir. View transition sırasında adlı öğeler (sayfanın kendisi ve kabuk) isabet testine girmez; kaymanın 300 ms'sinde anlamlı bir tık alınmaz, süre bu yüzden kısa. Kabuğun sabitleme kuralları `globals.css`'te, adların yanında: başka bir yüzey view transition kullanırsa kabuk yine yerinde kalır. Bir `Link`, önceden getirmesi bitmeden tıklanırsa sayfa tipsiz bir geçişte gelir ve kaymaz (kabul edildi). Tipsiz gezinme (tarayıcı geri tuşu, menü sekmesi) kaymaz. `layout` taşıyan liste satırlarına `layoutDependency` verin; yoksa üstlerindeki her yükseklik değişimi onları kaydırır. framer'ın `layout="size"`'ı kutuyu köşesinden büyütür; ortalanmış bir düğüm için CSS `scale` kullanın. framer, yükseklik animasyonu yeniden başlarsa `transitionEnd`'i uygulamayabilir.
+- **Related:** `(coach)/_components/{coach-theme.css, coach-motion-config.tsx, coach-page-transition.tsx, count-pop.tsx}`, `components/mentorship/{coach-check.tsx, coach-motion.ts}`, `components/panel/{path-item,companion-bubble,progress-line}.tsx`, `components/app-nav.tsx` (`viewTransitionName`), `src/types/react-canary.d.ts`.
+
 ### 2026-09-08 — Bulut geçişi hiç ilerlemiyordu (APP-089'da bulundu)
 
 `CloudTransitionProvider` faz makinesi doğruydu (`cloud-transition.spec.ts` onu zaten
@@ -111,3 +147,10 @@ kalmaya devam ediyor — onlar callback'e bağlı değil.
 - **Usage:** Import primitives from `@mentor/ui`; styles via `@import "@mentor/ui/transitions.css"` in web `globals.css`. `SkeletonGroup` `loading`+`revealed` for in-place skeleton→content.
 - **Gotchas:** No live-timer digit animation; no bounce easings; nested CSS `@import` broken under Tailwind/Next — use flattened file; Suspense fallbacks stay mount/unmount (no shared tree); Framer remains for overlays/pickers.
 - **Related:** files listed above.
+
+### 2026-10-02 — Spotlight name, beam and neighbour travel
+
+- **What:** The level name is a visible heading beneath the badge; wall lettering stays decorative with a slightly stronger ambient ink. The warm cone and cool penumbra now reach the viewport floor with a soft distance fade. Neighbour travel uses the clicked badge rectangle to enter from its actual position and size, with a 250 ms beam reach and 450 ms badge settlement.
+- **Usage:** Open a level badge from the panel/profile, then select the adjacent level. Navigation waits until the initial sweep or current travel settles; close/Escape and focus restoration stay available.
+- **Gotchas:** Reduced-motion replay keeps a fixed light and immediate badge travel; celebration retains its calm card fallback. No new assets or runtime.
+- **Related:** `components/journey-levels/spotlight/{journey-spotlight-scene,stage-backdrop,spotlight-lamp,spotlight-choreography}.tsx` (choreography is `.ts`), `e2e/panel.spec.ts`.

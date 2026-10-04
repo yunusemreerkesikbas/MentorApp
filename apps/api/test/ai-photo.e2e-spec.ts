@@ -23,15 +23,14 @@ describe("ai photo categorize (e2e)", () => {
     const email = `photo-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `Photo ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `Photo ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
 
   /**
-   * Premium through a real subscription, not `UserRole.STAFF`. STAFF does grant premium
-   * (`entitlement.service.ts`), but it also short-circuits `isMentorV2Enabled`, so a STAFF user is
-   * always on Personalized Mentor V2 and its first turn answers with a calibration question
-   * instead of calling the LLM. See ai-coach.e2e-spec.ts for the full note.
+   * Premium through a real subscription, not `UserRole.STAFF`. Every account uses Mentor V2.
+   * A fresh profile's first GENERAL or CHECK_IN turn calibrates instead of calling the LLM.
+   * See ai-coach.e2e-spec.ts.
    */
   const seedSubscription = async (userId: string) => {
     const c = await pool.connect();

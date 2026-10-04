@@ -15,6 +15,13 @@ export function isUniqueViolation(err: unknown): boolean {
   return code === "23505";
 }
 
+export function uniqueConstraint(err: unknown): string | undefined {
+  return (
+    (err as { constraint?: string })?.constraint ??
+    (err as { cause?: { constraint?: string } })?.cause?.constraint
+  );
+}
+
 export function mapPostgresError(
   err: unknown,
 ): { code: ErrorCode; status: number } | null {

@@ -5,8 +5,10 @@ import type {
   CoachConversationDto,
   CoachConversationMessagesDto,
   CoachMemoryDto,
+  CoachPlanAdaptationBriefDto,
   CoachPlanAdaptationDto,
   DailyGreetingDto,
+  GhostNarrationDto,
   Paginated,
   PlanTaskDto,
   SessionReflectionDto,
@@ -63,6 +65,13 @@ export function removeCoachContextFromUrl(href: string): string {
 
 export async function fetchCoachAccess(): Promise<CoachAccessDto> {
   return (await http<CoachAccessDto>("/v1/coach/access")) as CoachAccessDto;
+}
+
+/** "Koçla planla" wizard seed: what the coach reads and ready defaults. No model call. */
+export async function fetchPlanAdaptationBrief(): Promise<CoachPlanAdaptationBriefDto> {
+  return (await http<CoachPlanAdaptationBriefDto>(
+    "/v1/coach/plan-adaptation/brief",
+  )) as CoachPlanAdaptationBriefDto;
 }
 
 /** Premium adaptive-plan preview. This endpoint never mutates plan tasks. */
@@ -322,6 +331,17 @@ export async function fetchDailyGreeting(): Promise<DailyGreetingDto> {
   return (await http<DailyGreetingDto>("/v1/coach/daily-greeting", {
     method: "POST",
   })) as DailyGreetingDto;
+}
+
+/**
+ * Premium "geçmiş-ben" narration of the latest mock exam against the student's own past. The server
+ * caches it per attempt, so a repeat call returns the same text without another model call.
+ */
+export async function fetchGhostNarration(examId: string): Promise<GhostNarrationDto> {
+  return (await http<GhostNarrationDto>("/v1/coach/ghost-narration", {
+    method: "POST",
+    body: JSON.stringify({ examId }),
+  })) as GhostNarrationDto;
 }
 
 /** Premium session reflection after micro check-in; 403 for free — caller should stay silent. */

@@ -1,182 +1,149 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import type {
-  MentorshipFollowupResponse,
-  MentorshipSharedFollowupDto,
-} from "@mentor/types";
-import { ApiClientError } from "@mentor/api-client";
-import { Button, Card, Skeleton, SkeletonGroup } from "@mentor/ui";
-import { useLocale, useTranslations } from "next-intl";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
+import { useFormatter, useTranslations } from "next-intl";
+import { Button } from "@mentor/ui";
+import type { MentorshipSharedFollowupDto } from "@mentor/types";
+import { fetchSharedFollowups, respondToFollowup } from "@/lib/mentorship-followups";
+import { useFollowupPage } from "@/components/mentorship/use-followup-page";
+import { FollowupPageState, FollowupPagination } from "@/components/mentorship/followup-page-state";
+import { FollowupResponseTag, FollowupStatusTag } from "@/components/mentorship/followup-tags";
+import { PANEL_LINK_BUTTON } from "@/components/mentorship/coach-ui";
+import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
 
-import { FollowupStatus } from "@/components/mentorship/followup-status";
-import { appendUniqueById } from "@/lib/mentorship-followup-state";
-import {
-  fetchFollowupAvailability,
-  fetchMyCoachFollowups,
-  respondToMentorshipFollowup,
-} from "@/lib/mentorship-followups";
-import { formatDate } from "../../../(coach)/_components/mentorship-format";
-
-const PAGE_SIZE = 10;
-
+/**
+ * "Ortak kararlarımız": what the coach chose to share, and the student's answer to each. The first
+ * decision still waiting on them carries the page's one filled ledge; any later one gets the
+ * outline ledge, so the page never asks for two things at once. Answered (accepted or pushed back
+ * on), nothing is filled. The pressed control leaves with its answer, so focus moves to what that
+ * row still offers.
+ */
 export function SharedFollowupsCard() {
   const t = useTranslations("mentorship");
-  const common = useTranslations("common");
-  const locale = useLocale();
-  const [enabled, setEnabled] = useState<boolean | null>(null);
-  const [items, setItems] = useState<MentorshipSharedFollowupDto[]>([]);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(true);
-  const [busyId, setBusyId] = useState<string | null>(null);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [reload, setReload] = useState(0);
-
-  const loadPage = useCallback(async (nextPage: number) => {
-    const result = await fetchMyCoachFollowups(nextPage, PAGE_SIZE);
-    setItems((current) =>
-      nextPage === 1 ? result.items : appendUniqueById(current, result.items),
-    );
-    setPage(result.page);
-    setTotal(result.total);
-  }, []);
+  const format = useFormatter();
+  const titleId = useId();
+  const load = useCallback((page: number, signal: AbortSignal) => fetchSharedFollowups(page, 10, signal), []);
+  const resource = useFollowupPage<MentorshipSharedFollowupDto>(load);
+  const [busy, setBusy] = useState<string | null>(null);
+  const locked = useRef(false);
+  const rows = useRef(new Map<string, HTMLLIElement>());
+  /** After an answer: the row, and the other answer, which is what that row still offers. */
+  const refocus = useRef<{ id: string; action: "ACCEPTED" | "CHANGE_REQUESTED" } | null>(null);
 
   useEffect(() => {
-    let active = true;
-    setLoading(true);
-    setError(null);
-    fetchFollowupAvailability()
-      .then(async (availability) => {
-        if (!active) return;
-        setEnabled(availability.enabled);
-        if (availability.enabled) await loadPage(1);
-      })
-      .catch((failure: unknown) => {
-        if (!active) return;
-        if (failure instanceof ApiClientError && failure.body.code === "MENTORSHIP_FOLLOWUP_DISABLED") {
-          setEnabled(false);
-          return;
-        }
-        setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-  }, [common, loadPage, reload]);
+    const target = refocus.current;
+    if (!target || busy !== null) return;
+    const next = rows.current
+      .get(target.id)
+      ?.querySelector<HTMLElement>(`[data-followup-action="${target.action}"]:not([disabled])`);
+    if (!next) return; // not drawn yet: the reloaded list will run this again
+    next.focus();
+    refocus.current = null;
+  }, [resource.data, busy]);
 
-  async function respond(item: MentorshipSharedFollowupDto, response: MentorshipFollowupResponse) {
-    if (response === "PENDING") return;
-    setBusyId(item.id);
-    setError(null);
+  async function respond(item: MentorshipSharedFollowupDto, response: "ACCEPTED" | "CHANGE_REQUESTED") {
+    if (locked.current) return;
+    locked.current = true;
+    setBusy(item.id);
     try {
-      const updated = await respondToMentorshipFollowup(item.id, {
-        version: item.version,
-        response,
-      });
-      setItems((current) => current.map((row) => (row.id === updated.id ? updated : row)));
+      await respondToFollowup(item.id, { version: item.version, response });
+      refocus.current = {
+        id: item.id,
+        action: response === "ACCEPTED" ? "CHANGE_REQUESTED" : "ACCEPTED",
+      };
+      resource.reload();
     } catch (failure) {
-      setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
-      if (failure instanceof ApiClientError && failure.status === 409) {
-        setReload((value) => value + 1);
-      }
+      resource.showError(failure);
     } finally {
-      setBusyId(null);
+      locked.current = false;
+      setBusy(null);
     }
   }
 
-  async function loadMore() {
-    setLoadingMore(true);
-    try {
-      await loadPage(page + 1);
-    } catch (failure) {
-      setError(failure instanceof ApiClientError ? failure.message : common("error_unknown"));
-    } finally {
-      setLoadingMore(false);
-    }
-  }
-
-  if (enabled === false) return null;
+  if (resource.enabled === false) return null;
+  const items = resource.data?.items ?? [];
+  const firstOpen = items.find((item) => item.status === "OPEN" && item.response === "PENDING")?.id;
+  const day = (value: string) =>
+    format.dateTime(new Date(value.length === 10 ? `${value}T12:00:00.000Z` : value), {
+      day: "numeric",
+      month: "long",
+    });
 
   return (
-    <Card>
-      <h2 className="text-base font-semibold" style={{ color: "var(--color-main)" }}>
-        {t("followup_student_title")}
-      </h2>
-      <p className="mt-1 text-sm" style={{ color: "var(--color-secondary)" }}>
-        {t("followup_student_body")}
-      </p>
-      <SkeletonGroup
-        label={t("followup_loading")}
-        loading={loading}
-        revealed={
-          error && items.length === 0 ? (
-            <div role="alert" className="mt-4 flex flex-col items-start gap-3">
-              <p className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p>
-              <Button variant="secondary" onClick={() => setReload((value) => value + 1)}>
-                {t("followup_retry")}
-              </Button>
-            </div>
-          ) : items.length === 0 ? (
-            <p className="mt-4 text-sm" style={{ color: "var(--color-secondary)" }}>
-              {t("followup_student_empty")}
-            </p>
-          ) : (
-            <div className="mt-4 flex flex-col gap-4">
-              <ul className="flex flex-col gap-4">
-                {items.map((item) => (
-                  <li key={item.id} className="rounded-[var(--radius-card)] border border-[var(--color-border)] p-4">
-                    <div className="flex flex-wrap items-start justify-between gap-3">
-                      <p className="whitespace-pre-line text-sm" style={{ color: "var(--color-main)" }}>
-                        {item.sharedDecision}
-                      </p>
-                      <FollowupStatus status={item.status} response={item.response} />
-                    </div>
-                    <p className="mt-2 text-xs" style={{ color: "var(--color-secondary)" }}>
-                      {item.followUpDate
-                        ? t("followup_due", { date: formatDate(`${item.followUpDate}T12:00:00.000Z`, locale) })
-                        : t("followup_no_date")}
-                    </p>
-                    {item.status === "OPEN" ? (
-                      <div className="mt-4 flex flex-wrap gap-3" aria-label={t("followup_response_actions")}>
-                        <Button
-                          variant={item.response === "ACCEPTED" ? "soft" : "secondary"}
-                          busy={busyId === item.id}
-                          disabled={busyId !== null || item.response === "ACCEPTED"}
-                          onClick={() => void respond(item, "ACCEPTED")}
-                        >
-                          {t("followup_accept")}
-                        </Button>
-                        <Button
-                          variant={item.response === "CHANGE_REQUESTED" ? "soft" : "ghost"}
-                          busy={busyId === item.id}
-                          disabled={busyId !== null || item.response === "CHANGE_REQUESTED"}
-                          onClick={() => void respond(item, "CHANGE_REQUESTED")}
-                        >
-                          {t("followup_change_request")}
-                        </Button>
-                      </div>
+    <section aria-labelledby={titleId} className={`${PANEL_CARD} flex flex-col gap-1`}>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id={titleId} className={PANEL_CARD_TITLE}>
+          {t("followup_shared_title")}
+        </h2>
+        {resource.data && resource.data.total > 0 ? (
+          <span className="text-caption font-bold tabular-nums text-[var(--color-secondary)]">
+            {t("followup_shared_count", { count: resource.data.total })}
+          </span>
+        ) : null}
+      </div>
+      <p className="mb-1.5 text-caption font-semibold text-[var(--color-secondary)]">{t("followup_shared_body")}</p>
+      <FollowupPageState loading={resource.loading} error={resource.error} retry={resource.reload}>
+        {items.length === 0 ? (
+          <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("followup_shared_empty")}</p>
+        ) : (
+          <ul>
+            {items.map((item) => (
+              <li
+                key={item.id}
+                ref={(node) => {
+                  if (node) rows.current.set(item.id, node);
+                  else rows.current.delete(item.id);
+                }}
+                className="flex flex-col gap-2.5 border-t border-[var(--play-line)] py-3.5 first:border-t-0 first:pt-1"
+              >
+                <p className="whitespace-pre-wrap break-words text-body-sm font-extrabold text-[var(--color-main)]">
+                  {item.sharedDecision}
+                </p>
+                <div className="flex flex-wrap items-center gap-x-2.5 gap-y-1.5">
+                  {item.status === "OPEN" ? (
+                    <FollowupResponseTag response={item.response} you />
+                  ) : (
+                    <FollowupStatusTag status={item.status} />
+                  )}
+                  {item.followUpDate ? (
+                    <span className="text-caption font-semibold text-[var(--color-secondary)]">
+                      {t("followup_due", { date: day(item.followUpDate) })}
+                    </span>
+                  ) : null}
+                </div>
+                {item.status === "OPEN" ? (
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    {item.response !== "ACCEPTED" ? (
+                      <Button
+                        data-followup-action="ACCEPTED"
+                        size="sm"
+                        variant={item.id === firstOpen ? "primary" : "secondary"}
+                        busy={busy === item.id}
+                        disabled={busy !== null}
+                        onClick={() => void respond(item, "ACCEPTED")}
+                      >
+                        {t("followup_accept")}
+                      </Button>
                     ) : null}
-                  </li>
-                ))}
-              </ul>
-              {error ? <p role="alert" className="text-sm" style={{ color: "var(--color-danger)" }}>{error}</p> : null}
-              {items.length < total ? (
-                <Button variant="secondary" busy={loadingMore} onClick={() => void loadMore()}>
-                  {t("followup_load_more")}
-                </Button>
-              ) : null}
-            </div>
-          )
-        }
-        className="mt-4 flex flex-col gap-3"
-      >
-        <Skeleton className="h-28 w-full rounded-[var(--radius-card)]" />
-      </SkeletonGroup>
-    </Card>
+                    {item.response !== "CHANGE_REQUESTED" ? (
+                      <button
+                        type="button"
+                        data-followup-action="CHANGE_REQUESTED"
+                        className={PANEL_LINK_BUTTON}
+                        disabled={busy !== null}
+                        onClick={() => void respond(item, "CHANGE_REQUESTED")}
+                      >
+                        {t("followup_request_change")}
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+        {resource.data ? <FollowupPagination {...resource.data} quiet onChange={resource.setPage} /> : null}
+      </FollowupPageState>
+    </section>
   );
 }

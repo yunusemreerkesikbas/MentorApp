@@ -1,37 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { LoaderCircle, Pencil, Plus, Trash2 } from "lucide-react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+} from "react";
+import { LoaderCircle } from "lucide-react";
+import { useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type {
-  AuthUser,
-  ExamCalendarDto,
   ExamSubjectDto,
   NotebookDto,
   NotebookSummaryDto,
 } from "@mentor/types";
-import {
-  contentControllerCalendarByFamily,
-  contentControllerSubjectsBySlug,
-  usersControllerMe,
-} from "@mentor/api-client";
-import { Button } from "@mentor/ui";
-import { NotebookCover } from "@/components/notebook/notebook-surface";
-import { Link, useRouter } from "@/i18n/navigation";
+import { loadViewerExamTaxonomy } from "@/lib/exam-taxonomy";
+import { useRouter } from "@/i18n/navigation";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { deleteNotebook, fetchNotebooks } from "@/lib/notebook";
+import { notebookOpening, useNotebookOpening } from "@/lib/notebook-opening";
+import { playNotebookSfx } from "@/lib/notebook-sfx";
+import { prefetchNotebookContents } from "@/lib/notebook-contents-cache";
+import { preloadNotebookOpeningFlight } from "@/components/notebook-desk/notebook-opening-overlay";
+import { useTheme } from "@/lib/use-theme";
 import { NotebookFormDialog } from "./notebook-form-dialog";
+import { DeskBackdrop, DeskLight } from "@/components/notebook-desk/desk-backdrop";
+import { DeskHeader } from "./desk-header";
+import { DeskLamp } from "./desk-lamp";
+import { DeskPuhu } from "./desk-puhu";
+import { DeskMug, DeskPencil, DeskPlant } from "./desk-props";
+import { DeskNotebook, deskBookPose, notebookHref } from "./desk-notebook";
+import { DeskPackage } from "./desk-package";
+import { DeskSkeletonBooks } from "./desk-skeleton";
+import { DeskNotice } from "./desk-notice";
+import { useDeskFrames, useDeskLight } from "./use-desk-light";
 
 interface ExamChoice {
   id: string;
   subjects: ExamSubjectDto[];
 }
 
+/** How long a freshly made notebook takes to fall and settle, and when it touches the wood. */
+const DROP_MS = 1400;
+const DROP_LAND_MS = 560;
+
+/**
+ * The screen the editor will have for the book: this page's own column, from the top of the
+ * window down, less the phone's top bar and tab pill (`MOBILE_TAB_BAR_PADDING_CLASS`).
+ */
+function pageArea(scene: HTMLElement | null) {
+  const phone = window.matchMedia("(max-width: 1023px)").matches;
+  const top = phone ? 64 : 0;
+  const bottom = phone ? 80 : 0;
+  const box = scene?.getBoundingClientRect();
+  return {
+    x: box?.left ?? 0,
+    y: top,
+    width: box?.width ?? window.innerWidth,
+    height: window.innerHeight - top - bottom,
+  };
+}
+
+/** The key the editor knows a notebook by: the mistake notebook lives at its own route. */
+export function openingKey(item: NotebookSummaryDto): string {
+  return item.kind === "MISTAKE" ? "mistake" : item.id;
+}
+
+/**
+ * Defterlerim: the student's notebooks lying on a desk.
+ *
+ * This component owns the data and the desk's state; the room, the books and the props are drawn
+ * by their own components, and the moment a book is lifted off the desk and opened belongs to the
+ * overlay in the app shell (`notebook-opening-overlay.tsx`), because it outlives this page.
+ */
 export function NotebooksShell() {
   const t = useTranslations("notebooks");
   const notebookT = useTranslations("notebook");
   const router = useRouter();
+  const reduceMotion = useReducedMotion() ?? false;
+  const { theme } = useTheme();
   const { confirm } = useMentorDialog();
+  const opening = useNotebookOpening();
   const [items, setItems] = useState<NotebookSummaryDto[]>([]);
   const [page, setPage] = useState(1);
   const [total, setTotal] = useState(0);
@@ -43,6 +92,15 @@ export function NotebooksShell() {
   const [deleteSyncError, setDeleteSyncError] = useState(false);
   const [form, setForm] = useState<NotebookSummaryDto | "new" | null>(null);
   const [exam, setExam] = useState<ExamChoice | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [packageActive, setPackageActive] = useState(false);
+  const [droppingId, setDroppingId] = useState<string | null>(null);
+
+  const sceneRef = useRef<HTMLElement | null>(null);
+  const lampRef = useRef<SVGSVGElement | null>(null);
+  const puhuRef = useRef<HTMLElement | null>(null);
+  const { frames, register } = useDeskFrames();
+  const dropTimers = useRef<number[]>([]);
 
   async function loadFirst() {
     setLoading(true);
@@ -59,6 +117,11 @@ export function NotebooksShell() {
     }
   }
 
+  // The flight is its own chunk (see the overlay); fetched now, it is here before any book is clicked.
+  useEffect(() => {
+    preloadNotebookOpeningFlight();
+  }, []);
+
   useEffect(() => {
     let active = true;
     fetchNotebooks(1)
@@ -74,18 +137,10 @@ export function NotebooksShell() {
       .finally(() => {
         if (active) setLoading(false);
       });
-    usersControllerMe()
-      .then(async (raw) => {
-        const user = raw as unknown as AuthUser;
-        if (!user.examType) return null;
-        const calendar = (await contentControllerCalendarByFamily(
-          user.examType,
-        )) as unknown as ExamCalendarDto | null;
-        if (!calendar?.exam) return null;
-        const subjects = (await contentControllerSubjectsBySlug(
-          calendar.exam.slug,
-        )) as unknown as ExamSubjectDto[];
-        return { id: calendar.exam.id, subjects };
+    loadViewerExamTaxonomy()
+      .then((bundle) => {
+        if (!bundle.exam) return null;
+        return { id: bundle.exam.id, subjects: bundle.subjects };
       })
       .then((value) => {
         if (active) setExam(value);
@@ -93,8 +148,10 @@ export function NotebooksShell() {
       .catch(() => {
         if (active) setExam(null);
       });
+    const timers = dropTimers.current;
     return () => {
       active = false;
+      for (const timer of timers) window.clearTimeout(timer);
     };
   }, []);
 
@@ -147,8 +204,21 @@ export function NotebooksShell() {
     }
   }
 
+  /** A new notebook falls onto the desk, lands with a thud and a little dust; Puhu waves. */
+  function drop(id: string) {
+    // Changed in place: the unmount cleanup holds this array, and must see the timers set here.
+    const timers = dropTimers.current;
+    for (const timer of timers.splice(0)) window.clearTimeout(timer);
+    setDroppingId(id);
+    timers.push(
+      window.setTimeout(() => playNotebookSfx("land"), DROP_LAND_MS),
+      window.setTimeout(() => setDroppingId(null), DROP_MS),
+    );
+  }
+
   async function handleSaved(
     saved: NotebookDto,
+    created: boolean,
     wasFirstCustom: boolean,
   ): Promise<void> {
     setForm(null);
@@ -160,104 +230,181 @@ export function NotebooksShell() {
       return;
     }
     await loadFirst();
+    if (created && !reduceMotion) drop(saved.id);
+  }
+
+  function handleOpen(
+    event: ReactMouseEvent<HTMLAnchorElement>,
+    item: NotebookSummaryDto,
+  ) {
+    // Anything but a plain primary click keeps its browser meaning: a new tab, a new window.
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey
+    ) {
+      return;
+    }
+    event.preventDefault();
+    if (opening.start) return;
+    const frame = frames.current.get(item.id);
+    const box = frame?.getBoundingClientRect();
+    const title = item.title ?? notebookT("cover_title");
+    const lifted = activeId === item.id;
+    prefetchNotebookContents(item.kind === "MISTAKE" ? undefined : item.id);
+    notebookOpening.begin({
+      book: {
+        key: openingKey(item),
+        kind: item.kind,
+        title,
+        cover: item.cover,
+        pageCount: item.pageCount,
+        dueCount: item.dueCount,
+        subject:
+          item.kind === "CUSTOM" && item.subjectName
+            ? { key: item.subjectRef ?? item.subjectName, name: item.subjectName }
+            : null,
+        meta: t("pages", { count: item.pageCount }),
+        dueLabel:
+          item.kind === "MISTAKE" && item.dueCount > 0
+            ? t("due", { count: item.dueCount })
+            : null,
+      },
+      from: box
+        ? { x: box.left, y: box.top, width: box.width, height: box.height }
+        : { x: window.innerWidth / 2, y: window.innerHeight / 2, width: 0, height: 0 },
+      area: pageArea(sceneRef.current),
+      pose: { ...deskBookPose(item, lifted), lifted },
+      navigate: () => router.push(notebookHref(item)),
+    });
   }
 
   const customCount = items.filter((item) => item.kind === "CUSTOM").length;
+  const mistake = items.find((item) => item.kind === "MISTAKE") ?? null;
+  // The copy flies in its place; under reduced motion there is no copy, so the book stays put.
+  const awayKey = opening.underway && !reduceMotion ? (opening.start?.book.key ?? null) : null;
+  const litId = activeId ?? mistake?.id ?? items[0]?.id ?? null;
+  useDeskLight({
+    sceneRef,
+    lampRef,
+    puhuRef,
+    frames,
+    targets: { litId, activeId },
+    layoutKey: `${loading}:${items.map((item) => item.id).join(",")}`,
+  });
+
+  const bubble = droppingId
+    ? t("desk.bubble_new")
+    : mistake && mistake.dueCount > 0
+      ? t("desk.bubble_due", {
+          count: mistake.dueCount,
+          time: theme === "dark" ? "night" : "day",
+        })
+      : customCount === 0
+        ? t("desk.bubble_first")
+        : t("desk.bubble_idle");
 
   return (
-    <main className="mx-auto flex w-full max-w-[1440px] flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--color-main)]">
-            {t("title")}
-          </h1>
-          <p className="mt-1 text-sm text-[var(--color-secondary)]">
-            {t("subtitle")}
-          </p>
-        </div>
-        <Button type="button" onClick={() => setForm("new")}>
-          <Plus aria-hidden size={18} />
-          {t("create")}
-        </Button>
-      </header>
+    <main
+      ref={sceneRef}
+      className="mentor-notebook-desk desk-scene min-h-[100dvh] overflow-hidden"
+    >
+      <DeskBackdrop />
+      <div className="desk-content relative mx-auto w-full max-w-[1360px] px-4 pb-20 sm:px-6 lg:px-10">
+        <DeskHeader />
 
-      {loading ? <NotebookGridSkeleton /> : null}
-      {!loading && error ? (
-        <div className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-8 text-center">
-          <p className="text-[var(--color-secondary)]">{t("error")}</p>
-          <button
-            type="button"
-            onClick={() => void loadFirst()}
-            className="mt-4 min-h-11 rounded-[var(--radius-button)] bg-[var(--color-btn)] px-5 font-semibold text-[var(--color-btn-label)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            {t("retry")}
-          </button>
-        </div>
-      ) : null}
-      {!loading && !error ? (
-        <>
-          <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {items.map((item) => (
-              <NotebookCard
-                key={item.id}
-                item={item}
-                systemTitle={notebookT("cover_title")}
-                onEdit={() => setForm(item)}
-                onDelete={() => void remove(item)}
-              />
-            ))}
-          </div>
+        <DeskPuhu
+          className="desk-puhu-spot"
+          waving={droppingId !== null}
+          reduceMotion={reduceMotion}
+          onElement={(element) => {
+            puhuRef.current = element;
+          }}
+        />
+        {!loading && !error ? (
+          <p className="desk-bubble desk-bubble-spot" role="status">
+            {bubble}
+          </p>
+        ) : null}
+        <DeskLamp
+          lampRef={(element) => {
+            lampRef.current = element;
+          }}
+          className="desk-prop desk-lamp-spot"
+        />
+        <DeskPlant className="desk-plant-spot" />
+        <DeskMug className="desk-mug-spot" />
+        <DeskPencil className="desk-pencil-spot" />
+
+        <section aria-label={t("title")} className="desk-grid">
+          {loading ? <DeskSkeletonBooks /> : null}
+          {!loading && !error
+            ? items.map((item) => {
+                const title = item.title ?? notebookT("cover_title");
+                return (
+                  <DeskNotebook
+                    key={item.id}
+                    item={item}
+                    title={title}
+                    lifted={activeId === item.id}
+                    dropping={droppingId === item.id}
+                    away={awayKey === openingKey(item)}
+                    frameRef={register(item.id)}
+                    onActive={(id) => setActiveId(id)}
+                    onOpen={handleOpen}
+                    onEdit={() => setForm(item)}
+                    onDelete={() => void remove(item)}
+                  />
+                );
+              })
+            : null}
+          {!loading ? (
+            <DeskPackage
+              label={t("create")}
+              lifted={packageActive}
+              onActive={setPackageActive}
+              onOpen={() => setForm("new")}
+            />
+          ) : null}
+        </section>
+
+        <div className="relative z-[5] mt-8 flex flex-col items-center gap-3">
+          {!loading && error ? (
+            <DeskNotice message={t("error")} actionLabel={t("retry")} onAction={() => void loadFirst()} />
+          ) : null}
           {failedDelete ? (
-            <div
-              role="alert"
-              className="mx-auto flex flex-wrap items-center justify-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-secondary)]"
-            >
-              <span>{t("delete_error", { title: failedDelete.title ?? "" })}</span>
-              <button
-                type="button"
-                onClick={() => void remove(failedDelete)}
-                className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              >
-                {t("retry")}
-              </button>
-            </div>
+            <DeskNotice
+              alert
+              message={t("delete_error", { title: failedDelete.title ?? "" })}
+              actionLabel={t("retry")}
+              onAction={() => void remove(failedDelete)}
+            />
           ) : null}
           {deleteSyncError ? (
-            <div
-              role="alert"
-              className="mx-auto flex flex-wrap items-center justify-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-secondary)]"
-            >
-              <span>{t("delete_sync_error")}</span>
-              <button
-                type="button"
-                onClick={() => void resyncAfterDelete()}
-                className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              >
-                {t("retry")}
-              </button>
-            </div>
+            <DeskNotice
+              alert
+              message={t("delete_sync_error")}
+              actionLabel={t("retry")}
+              onAction={() => void resyncAfterDelete()}
+            />
           ) : null}
           {loadMoreError ? (
-            <div
-              role="alert"
-              className="mx-auto flex flex-wrap items-center justify-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 text-sm text-[var(--color-secondary)]"
-            >
-              <span>{t("load_more_error")}</span>
-              <button
-                type="button"
-                disabled={loadingMore}
-                onClick={() => void loadMore()}
-                className="min-h-11 rounded-[var(--radius-button)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
-              >
-                {t("retry")}
-              </button>
-            </div>
-          ) : items.length < total ? (
+            <DeskNotice
+              alert
+              message={t("load_more_error")}
+              actionLabel={t("retry")}
+              disabled={loadingMore}
+              onAction={() => void loadMore()}
+            />
+          ) : !loading && !error && items.length < total ? (
             <button
               type="button"
               disabled={loadingMore}
               onClick={() => void loadMore()}
-              className="mx-auto inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-button)] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 font-semibold text-[var(--color-main)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
+              className="desk-more inline-flex min-h-11 items-center gap-2 rounded-full px-5 font-extrabold outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-60"
             >
               {loadingMore ? (
                 <LoaderCircle
@@ -269,8 +416,9 @@ export function NotebooksShell() {
               {t("load_more")}
             </button>
           ) : null}
-        </>
-      ) : null}
+        </div>
+      </div>
+      <DeskLight />
 
       {form ? (
         <NotebookFormDialog
@@ -278,107 +426,10 @@ export function NotebooksShell() {
           exam={exam}
           onClose={() => setForm(null)}
           onSaved={(saved) =>
-            void handleSaved(
-              saved,
-              form === "new" && customCount === 0,
-            )
+            void handleSaved(saved, form === "new", form === "new" && customCount === 0)
           }
         />
       ) : null}
     </main>
-  );
-}
-
-function NotebookCard({
-  item,
-  systemTitle,
-  onEdit,
-  onDelete,
-}: {
-  item: NotebookSummaryDto;
-  systemTitle: string;
-  onEdit: () => void;
-  onDelete: () => void;
-}) {
-  const t = useTranslations("notebooks");
-  const title = item.title ?? systemTitle;
-  const href =
-    item.kind === "MISTAKE"
-      ? ("/notebook" as const)
-      : ({
-          pathname: "/notebooks/[notebookId]" as const,
-          params: { notebookId: item.id },
-        } as const);
-  return (
-    <article className="group relative rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 shadow-[var(--shadow-card)]">
-      {item.kind === "CUSTOM" ? (
-        <div className="absolute end-2 top-2 z-10 flex rounded-full bg-[var(--color-surface)] opacity-100 shadow-[var(--shadow-card)] transition-opacity duration-150 motion-reduce:transition-none [@media(hover:hover)]:pointer-events-none [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-focus-within:pointer-events-auto [@media(hover:hover)]:group-focus-within:opacity-100 [@media(hover:hover)]:group-hover:pointer-events-auto [@media(hover:hover)]:group-hover:opacity-100">
-          <button
-            type="button"
-            aria-label={t("edit", { title })}
-            onClick={onEdit}
-            className="flex size-11 items-center justify-center rounded-full focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <Pencil aria-hidden size={18} />
-          </button>
-          <button
-            type="button"
-            aria-label={t("delete", { title })}
-            onClick={onDelete}
-            className="flex size-11 items-center justify-center rounded-full text-[var(--color-danger)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            <Trash2 aria-hidden size={18} />
-          </button>
-        </div>
-      ) : null}
-      <Link
-        href={href}
-        className="block rounded-[var(--radius-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      >
-        <div className="mx-auto aspect-[3/4] w-full max-w-64 overflow-hidden rounded-[var(--radius-card)]">
-          <NotebookCover title={title} cover={item.cover} />
-        </div>
-        <div className="mt-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <h2 className="truncate font-bold text-[var(--color-main)]">
-              {title}
-            </h2>
-            <p className="mt-1 text-sm text-[var(--color-secondary)]">
-              {t("pages", { count: item.pageCount })}
-            </p>
-          </div>
-          {item.subjectName ? (
-            <span className="shrink-0 rounded-full px-2.5 py-1 text-xs font-semibold text-[var(--color-main)]">
-              {item.subjectName}
-            </span>
-          ) : null}
-        </div>
-        {item.kind === "MISTAKE" ? (
-          <p className="mt-3 text-sm font-semibold text-[var(--color-secondary)]">
-            {t("due", { count: item.dueCount })}
-          </p>
-        ) : null}
-      </Link>
-    </article>
-  );
-}
-
-function NotebookGridSkeleton() {
-  return (
-    <div
-      aria-hidden
-      className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4"
-    >
-      {Array.from({ length: 12 }, (_, index) => (
-        <div
-          key={index}
-          className="mentor-skeleton-shimmer rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] p-4"
-        >
-          <div className="mx-auto aspect-[3/4] w-full max-w-64 rounded-[var(--radius-card)] bg-[var(--color-surface-alt)]" />
-          <div className="mt-4 h-5 w-2/3 rounded bg-[var(--color-surface-alt)]" />
-          <div className="mt-2 h-4 w-1/3 rounded bg-[var(--color-surface-alt)]" />
-        </div>
-      ))}
-    </div>
   );
 }

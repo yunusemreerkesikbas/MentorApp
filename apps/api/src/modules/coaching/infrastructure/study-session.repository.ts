@@ -1,3 +1,4 @@
+import { SESSION_ACTUAL_SECONDS_MAX } from "@mentor/types";
 import { Injectable } from "@nestjs/common";
 import { and, desc, eq, getTableColumns, gte, inArray, isNotNull, isNull, lt, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
@@ -22,11 +23,12 @@ const RECENT_SUMMARY_SCAN_ROWS = 20;
  * orphaned row (tab died) stops reading as active once its planned time elapses instead of
  * lingering for hours. Preset lengths are the domain defaults when `plannedFocusMinutes` is null.
  */
+// ponytail: no session heartbeat yet; orphaned stopwatches expire after the existing 24-hour resume window.
 function runningNow(graceMinutes: number) {
   return and(
     eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
     isNull(studySessions.endedAt),
-    sql`now() < ${studySessions.startedAt} + (coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes}) * interval '1 minute'`,
+    sql`now() < ${studySessions.startedAt} + (case when ${studySessions.preset} = 'stopwatch' then ${SESSION_ACTUAL_SECONDS_MAX / 60} else coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes} end) * interval '1 minute'`,
   );
 }
 
@@ -64,6 +66,7 @@ export interface CoachRhythmRow {
   averageFocusSeconds28d: number;
   dominantTimeBand: "MORNING" | "AFTERNOON" | "EVENING" | "NIGHT" | null;
   lastActiveAt: Date | null;
+  weekdayActivity28d: { weekday: number; activeDays: number; focusSeconds: number }[];
 }
 
 /** Data access for `study_sessions` (RLS-scoped `tx` from the service). */
@@ -118,7 +121,7 @@ export class StudySessionRepository {
           eq(studySessions.userId, userId),
           eq(studySessions.status, StudySessionStatus.IN_PROGRESS),
           isNull(studySessions.endedAt),
-          sql`${studySessions.startedAt} < now() - (coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes}) * interval '1 minute'`,
+          sql`${studySessions.startedAt} < now() - (case when ${studySessions.preset} = 'stopwatch' then ${SESSION_ACTUAL_SECONDS_MAX / 60} else coalesce(${studySessions.plannedFocusMinutes}, case ${studySessions.preset} when '50_10' then 50 else 25 end) + ${graceMinutes} end) * interval '1 minute'`,
         ),
       );
   }
@@ -260,7 +263,8 @@ export class StudySessionRepository {
       when extract(hour from ${studySessions.startedAt} at time zone 'Europe/Istanbul') between 17 and 21 then 'EVENING'
       else 'NIGHT'
     end`;
-    const [aggregateRows, bandRows] = await Promise.all([
+    const weekday = sql<number>`extract(isodow from ${studySessions.startedAt} at time zone 'Europe/Istanbul')::int`;
+    const [aggregateRows, bandRows, weekdayRows] = await Promise.all([
       tx
         .select({
           sessions7d: sql<number>`count(*) filter (where ${studySessions.startedAt} >= ${since7d})::int`,
@@ -271,7 +275,9 @@ export class StudySessionRepository {
           focusSeconds28d: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
           activeDays28d: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date)::int`,
           averageFocusSeconds28d: sql<number>`coalesce(round(avg(${studySessions.actualFocusSeconds})), 0)::int`,
-          lastActiveAt: sql<Date | null>`max(${studySessions.startedAt})`,
+          // Raw SQL skips the column decoder: without mapWith this is a string and the caller's
+          // toISOString() threw, so the whole rhythm silently fell out of the coach's pool.
+          lastActiveAt: sql<Date | null>`max(${studySessions.startedAt})`.mapWith(studySessions.startedAt),
         })
         .from(studySessions)
         .where(completed),
@@ -285,6 +291,15 @@ export class StudySessionRepository {
         .groupBy(band)
         .orderBy(desc(sql`sum(${studySessions.actualFocusSeconds})`))
         .limit(1),
+      tx
+        .select({
+          weekday,
+          activeDays: sql<number>`count(distinct (${studySessions.startedAt} at time zone 'Europe/Istanbul')::date)::int`,
+          focusSeconds: sql<number>`coalesce(sum(${studySessions.actualFocusSeconds}), 0)::int`,
+        })
+        .from(studySessions)
+        .where(completed)
+        .groupBy(weekday),
     ]);
     const row = aggregateRows[0];
     return {
@@ -298,6 +313,7 @@ export class StudySessionRepository {
       averageFocusSeconds28d: row?.averageFocusSeconds28d ?? 0,
       dominantTimeBand: bandRows[0]?.band ?? null,
       lastActiveAt: row?.lastActiveAt ?? null,
+      weekdayActivity28d: weekdayRows,
     };
   }
 
@@ -471,6 +487,7 @@ export class StudySessionRepository {
     userId: string,
     sinceDate: string,
     minFocusSeconds: number,
+    untilDate?: string,
   ): Promise<number> {
     const rows = await tx
       .select({ count: sql<number>`count(*)::int` })
@@ -482,6 +499,7 @@ export class StudySessionRepository {
           isNotNull(studySessions.endedAt),
           gte(studySessions.actualFocusSeconds, minFocusSeconds),
           gte(studySessions.startedAt, new Date(`${sinceDate}T00:00:00Z`)),
+          untilDate ? lt(studySessions.startedAt, parseIsoDate(addDays(untilDate, 1))) : undefined,
         ),
       );
     return rows[0]?.count ?? 0;

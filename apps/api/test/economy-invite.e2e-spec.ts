@@ -1,3 +1,5 @@
+import { JobRunnerService } from "../src/modules/notifications/application/job-runner.service";
+import { SubscriptionsService } from "../src/modules/payments/application/subscriptions.service";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
@@ -7,10 +9,10 @@ import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { UserRole } from "@mentor/types";
 import { signFakeWebhook } from "../src/modules/payments/infrastructure/adapters/fake-payments.adapter";
+import { TEST_PHONE_FINGERPRINT_SECRET } from "./phone-test-harness";
 
 const SECRET = "test-payments-webhook-secret"; // matches vitest env
 const RUN = Date.now();
-const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 /**
  * W6 economy slice 2a (e2e): invite → conversion → coin, against a real Postgres (RLS active).
@@ -23,19 +25,41 @@ describe("economy invite (e2e)", () => {
   let adminToken = "";
   let ayseToken = "";
   let burakToken = "";
+  let burakId = "";
+  let adminId = "";
 
   const signup = async (label: string) => {
     const email = `inv-${label}-${RUN}@test.local`;
     const res = await request(app.getHttpServer())
       .post("/v1/auth/signup")
-      .send({ email, password: "Sifre1234", displayName: `Inv ${label}`, kvkkAccepted: true });
+      .send({ email, password: "Sifre1234", displayName: `Inv ${label}`, kvkkAccepted: true, termsAccepted: true, ageEligibilityConfirmed: true });
     return { email, ...(res.body as { accessToken: string; user: { id: string } }) };
   };
+
+  /** Only the carded-trial buyer needs a verified phone; invite/earned-right users do not. */
+  async function verifyTrialPhone(userId: string): Promise<void> {
+    const client = await pool.connect();
+    try {
+      await client.query("begin");
+      await client.query("select set_config('app.role','SERVICE',true)");
+      await client.query(
+        "update users set phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = $1",
+        [userId],
+      );
+      await client.query("commit");
+    } catch (error) {
+      await client.query("rollback");
+      throw error;
+    } finally {
+      client.release();
+    }
+  }
 
   beforeAll(async () => {
     process.env.DATABASE_URL =
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    process.env.PHONE_FINGERPRINT_SECRET = TEST_PHONE_FINGERPRINT_SECRET;
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
@@ -56,6 +80,9 @@ describe("economy invite (e2e)", () => {
     const burak = await signup("burak");
     ayseToken = ayse.accessToken;
     burakToken = burak.accessToken;
+    burakId = burak.user.id;
+    adminId = admin.user.id;
+    await verifyTrialPhone(burakId);
 
     // Promote admin → ADMIN (SERVICE-context SQL) then re-login for the role in the JWT.
     const c = await pool.connect();
@@ -134,7 +161,7 @@ describe("economy invite (e2e)", () => {
     const checkout = await request(app.getHttpServer())
       .post("/v1/subscription/checkout")
       .set(auth(burakToken))
-      .send({ planId: "premium-monthly" });
+      .send({ planId: "premium-monthly", useTrial: true });
     expect(checkout.status).toBe(200);
     const providerRef = new URL(checkout.body.checkoutUrl).searchParams.get("ref")!;
 
@@ -148,16 +175,55 @@ describe("economy invite (e2e)", () => {
       return request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body));
     };
 
-    await fire("a");
-    await wait(600); // listener runs async after emit
+    const trialBalance = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
+    expect(trialBalance.body.coinConfirmed).toBe(0);
+    await Promise.all([fire("a"), fire("a")]);
+    await app.get(JobRunnerService).processBatch(100);
 
     const bal1 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
     expect(bal1.body.coinConfirmed).toBe(20);
 
     // A second activation must NOT double-reward (redemption already CONVERTED + grant idempotent).
     await fire("b");
-    await wait(600);
+    await app.get(JobRunnerService).processBatch(100);
     const bal2 = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
     expect(bal2.body.coinConfirmed).toBe(20);
   }, 30_000);
+
+  it("a renewal refund keeps the initial payment reward", async () => {
+    await app.get(SubscriptionsService).refundLastCharge(burakId, 100, "e2e renewal refund", adminId);
+    await app.get(JobRunnerService).processBatch(100);
+    const balance = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(ayseToken));
+    expect(balance.body.coinConfirmed).toBe(20);
+  });
+
+  it("refund of the source payment reverses its reward even while economy is disabled", async () => {
+    const inviter = await signup("refund-inviter");
+    const invited = await signup("refund-invited");
+    await verifyTrialPhone(invited.user.id);
+    const invite = await request(app.getHttpServer()).get("/v1/economy/invite").set(auth(inviter.accessToken));
+    await request(app.getHttpServer()).post("/v1/economy/invite/redeem")
+      .set(auth(invited.accessToken)).send({ code: invite.body.code }).expect(201);
+    const checkout = await request(app.getHttpServer()).post("/v1/subscription/checkout")
+      .set(auth(invited.accessToken)).send({ planId: "premium-monthly", useTrial: true }).expect(200);
+    const providerRef = new URL(checkout.body.checkoutUrl).searchParams.get("ref")!;
+    const { body, headers } = signFakeWebhook(SECRET, {
+      eventId: `evt_refund_source_${RUN}`, type: "payment_succeeded", providerRef, amountMinor: 24900,
+    });
+    await request(app.getHttpServer()).post("/v1/webhooks/payments").set(headers).send(JSON.parse(body)).expect(200);
+    await app.get(JobRunnerService).processBatch(100);
+    const before = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
+    expect(before.body.coinConfirmed).toBe(20);
+    await request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled")
+      .set(auth(adminToken)).send({ value: false }).expect(200);
+    try {
+      await app.get(SubscriptionsService).refundLastCharge(invited.user.id, 100, "e2e source refund", adminId);
+      await app.get(JobRunnerService).processBatch(100);
+    } finally {
+      await request(app.getHttpServer()).patch("/v1/admin/config/economy.enabled")
+        .set(auth(adminToken)).send({ value: true }).expect(200);
+    }
+    const after = await request(app.getHttpServer()).get("/v1/economy/balance").set(auth(inviter.accessToken));
+    expect(after.body.coinConfirmed).toBe(0);
+  });
 });

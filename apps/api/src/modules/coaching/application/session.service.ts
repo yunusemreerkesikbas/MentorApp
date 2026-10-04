@@ -22,6 +22,7 @@ import {
   RECENT_SESSION_WINDOW_DAYS,
   RECENT_SUBJECTS_MAX,
   STALE_SESSION_GRACE_MINUTES,
+  SESSION_PRESETS,
   type RecentSessionSummary,
 } from "../domain/coaching.constants";
 import {
@@ -39,7 +40,7 @@ import {
   StudySessionRepository,
   type CoWorkerRow,
 } from "../infrastructure/study-session.repository";
-import { toStudySessionDto } from "./coaching.mappers";
+import { planTaskSessionMinutes, toStudySessionDto } from "./coaching.mappers";
 import type { CoachRhythmEvidence } from "../domain/coach-evidence";
 import { hasSevenFullIstanbulDaysBetween } from "../domain/achievement-evidence";
 
@@ -203,6 +204,10 @@ export class SessionService {
       averageSessionMinutes28d: Math.round(rhythm.averageFocusSeconds28d / 60),
       dominantTimeBand: rhythm.dominantTimeBand,
       lastActiveAt: rhythm.lastActiveAt?.toISOString() ?? null,
+      weekdayActivity28d: rhythm.weekdayActivity28d.map(({ focusSeconds, ...day }) => ({
+        ...day,
+        focusMinutes: Math.round(focusSeconds / 60),
+      })),
     };
   }
 
@@ -301,15 +306,27 @@ export class SessionService {
           HttpStatus.NOT_FOUND,
         );
       }
+      const minutes = planTaskSessionMinutes(task);
+      const defaultMinutes = SESSION_PRESETS[0]!.focusMinutes;
       const created = await this.sessions.create(tx, {
         userId,
         startedAt: new Date(),
-        preset: "25_5",
-        plannedFocusMinutes: null,
+        preset: minutes === null ? "stopwatch" : minutes === defaultMinutes ? "25_5" : "custom",
+        plannedFocusMinutes: minutes === defaultMinutes ? null : minutes,
         subject: task.subject,
         planTaskId,
       });
       return toStudySessionDto(created, minFocusSeconds);
+    });
+  }
+
+  /** W3 seam: reads the actual session on accepted-action retries without starting another. */
+  async getFromAiCoach(userId: string, sessionId: string): Promise<StudySessionDto> {
+    const minFocusSeconds = await this.getMinFocusSeconds();
+    return withUserContext(this.db, { userId }, async (tx) => {
+      const row = await this.sessions.findById(tx, userId, sessionId);
+      if (!row) throw new DomainError(ErrorCode.COACHING_SESSION_NOT_FOUND, HttpStatus.NOT_FOUND);
+      return toStudySessionDto(row, minFocusSeconds);
     });
   }
 
@@ -386,8 +403,7 @@ export class SessionService {
     if (completedPlanTask) {
       // A session seated at a coach's assignment completes it automatically — real work, so the
       // event (and the coach's notification behind it) is the honest outcome, not a false positive.
-      this.events.emit(
-        CoachingEventTopic.PLAN_TASK_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.PLAN_TASK_COMPLETED,
         new PlanTaskCompleted(
           userId,
           completedPlanTask.id,
@@ -397,13 +413,18 @@ export class SessionService {
         ),
       );
     }
-    // XP / quest rewards only for sessions that meet the min-focus threshold (roadmap §261).
+    // Every completed session may reach the accumulated daily goal; ritual eligibility is
+    // still computed by coaching signals using the existing min-focus threshold.
+    if (input.status === "COMPLETED") {
+      await this.events.emitAsync(CoachingEventTopic.SESSION_FINALIZED,
+        new StudySessionCompleted(userId, new Date(dto.startedAt)));
+    }
+    // Existing achievement events retain their min-focus eligibility (roadmap §261).
     if (
       input.status === "COMPLETED" &&
       qualifiesAsFocusSession(input.actualFocusSeconds, minFocusSeconds)
     ) {
-      this.events.emit(
-        CoachingEventTopic.SESSION_COMPLETED,
+      await this.events.emitAsync(CoachingEventTopic.SESSION_COMPLETED,
         new StudySessionCompleted(userId, new Date(dto.startedAt)),
       );
     }

@@ -7,6 +7,7 @@ import type {
 } from "../infrastructure/ad-reward-session.repository";
 
 const CONFIG: Record<string, number | boolean> = {
+  "economy.enabled": true,
   "ads.enabled": true,
   "ads.display.enabled": true,
   "ads.rewarded.enabled": true,

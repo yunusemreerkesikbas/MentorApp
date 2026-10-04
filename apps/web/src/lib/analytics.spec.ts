@@ -5,6 +5,7 @@ import {
   trackArticleEvent,
   trackCoachEvent,
   trackCommunityEvent,
+  trackMentorshipWeeklyReportEvent,
   trackProductEvent,
   trackWeeklyRecapEvent,
 } from "./analytics";
@@ -47,6 +48,46 @@ describe("article analytics", () => {
     trackArticleEvent("article_source_click", params);
 
     expect(dataLayer).toEqual([["event", "article_source_click", params]]);
+  });
+});
+
+describe("mentorship weekly report analytics", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("queues only structural fields without student ids, content or performance values", () => {
+    const dataLayer: unknown[] = [];
+    vi.stubGlobal("window", {
+      localStorage: {
+        getItem: vi.fn((key: string) =>
+          key === ANALYTICS_CONSENT_KEY ? "accepted" : null,
+        ),
+      },
+      dataLayer,
+    });
+
+    trackMentorshipWeeklyReportEvent("mentorship_weekly_report_finalize", {
+      surface: "student_report",
+      has_brief: true,
+      has_coach_evaluation: true,
+    });
+
+    expect(dataLayer).toEqual([
+      [
+        "event",
+        "mentorship_weekly_report_finalize",
+        {
+          surface: "student_report",
+          has_brief: true,
+          has_coach_evaluation: true,
+        },
+      ],
+    ]);
+    const queuedEvent = dataLayer[0] as unknown[];
+    expect(JSON.stringify(queuedEvent[2])).not.toMatch(
+      /studentId|userId|name|net|minute|content|evaluationText/i,
+    );
   });
 });
 

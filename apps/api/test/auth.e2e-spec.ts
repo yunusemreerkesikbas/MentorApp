@@ -1,5 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
+import { ThrottlerStorage } from "@nestjs/throttler";
 import cookieParser from "cookie-parser";
 import request from "supertest";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -8,6 +9,12 @@ import { ConfigRegistryService } from "../src/common/config/config-registry.serv
 import { AVATAR_MAX_BYTES } from "../src/modules/identity/domain/avatar";
 import { PG_POOL } from "../src/database/database.constants";
 import type { Pool } from "pg";
+
+const LEGAL_ACKNOWLEDGEMENTS = {
+  kvkkAccepted: true,
+  termsAccepted: true,
+  ageEligibilityConfirmed: true,
+} as const;
 
 /**
  * W0 identity e2e — full auth lifecycle against a real Postgres (RLS active).
@@ -34,7 +41,13 @@ describe("identity (e2e)", () => {
       "http://localhost:3001/v1/auth/google/callback";
 
     const { AppModule } = await import("../src/app.module");
-    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    // Signup lifecycle tests share one in-memory IP. Rate limiting has its own focused e2e.
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(ThrottlerStorage)
+      .useValue({
+        increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }),
+      })
+      .compile();
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
@@ -51,7 +64,7 @@ describe("identity (e2e)", () => {
       password,
       displayName: "W0 Test",
       username,
-      kvkkAccepted: true,
+      ...LEGAL_ACKNOWLEDGEMENTS,
     });
     expect(res.status).toBe(201);
     expect(res.body.accessToken).toBeTruthy();
@@ -61,8 +74,19 @@ describe("identity (e2e)", () => {
     expect(JSON.stringify(res.body)).not.toContain("passwordHash");
 
     userId = res.body.user.id;
+    const consent = await app.get<Pool>(PG_POOL).query<{
+      terms_accepted_at: Date | null;
+      terms_version: string | null;
+      age_eligibility_confirmed_at: Date | null;
+    }>(
+      "select terms_accepted_at, terms_version, age_eligibility_confirmed_at from users where id = $1",
+      [userId],
+    );
+    expect(consent.rows[0]).toMatchObject({ terms_version: "2026-09-17" });
+    expect(consent.rows[0]?.terms_accepted_at).toBeInstanceOf(Date);
+    expect(consent.rows[0]?.age_eligibility_confirmed_at).toBeInstanceOf(Date);
     const setCookie = res.headers["set-cookie"]?.[0] ?? "";
-    expect(setCookie).toContain("mentor_refresh=");
+    expect(setCookie).toContain("mentor_web_refresh=");
     expect(setCookie.toLowerCase()).toContain("httponly");
     accessToken = res.body.accessToken;
     refreshCookie = setCookie.split(";")[0]!;
@@ -74,7 +98,7 @@ describe("identity (e2e)", () => {
       password,
       displayName: "Dup",
       username: `w0_dup_${runId}`,
-      kvkkAccepted: true,
+      ...LEGAL_ACKNOWLEDGEMENTS,
     });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe("AUTH_EMAIL_IN_USE");
@@ -86,7 +110,7 @@ describe("identity (e2e)", () => {
       password,
       displayName: "Dup Username",
       username: username.toUpperCase(),
-      kvkkAccepted: true,
+      ...LEGAL_ACKNOWLEDGEMENTS,
     });
     expect(res.status).toBe(409);
     expect(res.body.code).toBe("AUTH_USERNAME_IN_USE");
@@ -97,7 +121,7 @@ describe("identity (e2e)", () => {
       email: `nousername-${email}`,
       password,
       displayName: "No Username",
-      kvkkAccepted: true,
+      ...LEGAL_ACKNOWLEDGEMENTS,
     });
     expect(res.status).toBe(201);
     expect(res.body.user.username).toBeNull();
@@ -109,6 +133,32 @@ describe("identity (e2e)", () => {
       password,
       displayName: "NoKvkk",
       kvkkAccepted: false,
+      termsAccepted: true,
+      ageEligibilityConfirmed: true,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects signup without terms acceptance", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `terms-${email}`,
+      password,
+      displayName: "No Terms",
+      kvkkAccepted: true,
+      ageEligibilityConfirmed: true,
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe("VALIDATION_ERROR");
+  });
+
+  it("rejects signup without the 13+ eligibility declaration", async () => {
+    const res = await request(app.getHttpServer()).post("/v1/auth/signup").send({
+      email: `age-${email}`,
+      password,
+      displayName: "No Age Declaration",
+      kvkkAccepted: true,
+      termsAccepted: true,
     });
     expect(res.status).toBe(400);
     expect(res.body.code).toBe("VALIDATION_ERROR");

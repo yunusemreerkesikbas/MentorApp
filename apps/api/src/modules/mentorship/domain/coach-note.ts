@@ -19,3 +19,11 @@ export function toCoachNoteDto(link: {
   if (body === null || body === "" || at === null) return null;
   return { body, updatedAt: at.toISOString() };
 }
+
+/** The student's note to their coach (QA F4): the same pairing, from its own two columns. */
+export function toStudentNoteDto(link: {
+  studentNote?: string | null;
+  studentNoteAt?: Date | null;
+}): MentorshipCoachNoteDto | null {
+  return toCoachNoteDto({ coachNote: link.studentNote, coachNoteAt: link.studentNoteAt });
+}

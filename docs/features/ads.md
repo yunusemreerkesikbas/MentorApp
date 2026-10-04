@@ -45,6 +45,20 @@ kapatılmalıdır; doğrudan/reservation envanteri kullanılmalıdır.
 
 ## Geliştirmeler (timeline)
 
+- **2026-09-25 · Reward completion feedback restored.** The dashboard quest sheet now shows the
+  existing localized success toast after a fake/verified reward completion while refreshing the
+  remaining offer. The browser fixture uses a future session expiry instead of a dated value, and
+  checks two grants and idempotent retry on mobile and desktop. Use the optional "Reklamı izle"
+  action to see the confirmation; no API contract or production ad flag changed. Related:
+  `panel-shell.tsx`, `e2e/ads.spec.ts`.
+
+- **2026-09-25 · Reward QA fixture follows the economy gate.** The rewarded-session unit and
+  Postgres E2E fixtures explicitly enable `economy.enabled` while testing grants, replay and
+  cross-user denial, then restore the previous override. This matches the existing server rule:
+  reward completion is unavailable when economy is off. Run the two ads suites against isolated
+  `mentor_test`; no production flag changes are implied. Related: `ads.service.spec.ts`,
+  `test/ads.e2e-spec.ts`.
+
 - **2026-09-06 — Rewarded Coin üretimde fail-closed** — Google Ad Manager web rewarded formatı
   sunucu tarafı doğrulama kanıtı vermediği için üretimde istemci `rewardedSlotGranted` olayı Coin
   basamaz. Teklif `SERVER_VERIFICATION_UNAVAILABLE` gerekçesiyle kapalı döner; daha önce üretilmiş

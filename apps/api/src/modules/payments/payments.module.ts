@@ -1,3 +1,5 @@
+import { PaymentRewardEventsService } from "./application/payment-reward-events.service";
+import { PaymentEvidenceService } from "./application/payment-evidence.service";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import type { Env } from "../../config/env.validation";
@@ -10,6 +12,9 @@ import { EntitlementService } from "./application/entitlement.service";
 import { SponsoredSeatListener } from "./application/sponsored-seat.listener";
 import { SponsoredSeatService } from "./application/sponsored-seat.service";
 import { FeaturePolicyService } from "./application/feature-policy.service";
+import { PhoneTrialService } from "./application/phone-trial.service";
+import { CheckoutService } from "./application/checkout.service";
+import { PhoneTrialsRepository } from "./infrastructure/phone-trials.repository";
 import { SubscriptionMaintenanceService } from "./application/subscription-maintenance.service";
 import { SubscriptionsService } from "./application/subscriptions.service";
 import { WebhookService } from "./application/webhook.service";
@@ -43,6 +48,11 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
     PlansRepository,
     SubscriptionsRepository,
     PaymentEventsRepository,
+    PhoneTrialsRepository,
+    PhoneTrialService,
+    CheckoutService,
+    PaymentRewardEventsService,
+    PaymentEvidenceService,
     SubscriptionsService,
     SubscriptionMaintenanceService,
     FeaturePolicyService,
@@ -72,6 +82,6 @@ import { SubscriptionsController } from "./presentation/subscriptions.controller
   ],
   // SponsoredSeatService is exported for the admin metrics surface, which is the one place
   // allowed to hold both "who has a seat" and "what AI cost" at the same time.
-  exports: [EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService],
+  exports: [PaymentEvidenceService, EntitlementService, PremiumGuard, SubscriptionsService, SponsoredSeatService, PhoneTrialService],
 })
 export class PaymentsModule {}

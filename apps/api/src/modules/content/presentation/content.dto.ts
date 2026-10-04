@@ -1,5 +1,6 @@
 import { createZodDto } from "../../../common/validation/zod-dto";
 import {
+  examFamilyCurrentQuerySchema,
   examFamilyParamSchema,
   examSlugParamSchema,
   geoSearchQuerySchema,
@@ -14,6 +15,10 @@ import {
 export class ListExamsQueryDto extends createZodDto(paginationQuerySchema) {}
 
 export class ExamFamilyParamDto extends createZodDto(examFamilyParamSchema) {}
+
+export class ExamFamilyCurrentQueryDto extends createZodDto(
+  examFamilyCurrentQuerySchema,
+) {}
 
 export class ExamSlugParamDto extends createZodDto(examSlugParamSchema) {}
 

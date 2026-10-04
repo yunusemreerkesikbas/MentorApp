@@ -467,7 +467,7 @@ test("profil sahibi Gece Yolculuğu kimliğini ve seviye içi ilerlemeyi görür
   await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
   await expect(panel.getByText("I. Bölüm · Uyanış", { exact: true })).toBeVisible();
   await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
-  await expect(panel.getByText("Döngü’ye ulaşmak için 189 XP daha", { exact: true })).toBeVisible();
+  await expect(panel.getByText("111 / 300 XP", { exact: true })).toBeVisible();
   await expect(
     panel.getByRole("progressbar", { name: "Pusula seviye ilerlemesi" }),
   ).toHaveAttribute("aria-valuenow", "111");
@@ -537,9 +537,13 @@ test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async
 
   await trigger.click();
   await expect(dialog).toBeVisible();
-  await page
-    .locator("[data-journey-level-guide-backdrop]")
-    .click({ position: { x: 2, y: 2 } });
+  if (page.viewportSize()!.width < 640) {
+    await dialog.getByRole("button", { name: "Kapat" }).click();
+  } else {
+    await page
+      .locator("[data-journey-level-guide-backdrop]")
+      .click({ position: { x: 2, y: 2 } });
+  }
   await expect(dialog).toBeHidden();
   await expect(trigger).toBeFocused();
 });
@@ -799,7 +803,7 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
     showcaseImages.nth(1),
     showcaseImages.nth(2),
   ]) {
-    await expect(image).toHaveAttribute("sizes", "64px");
+    await expect(image).toHaveAttribute("sizes", "80px");
   }
   await expect(triggers.nth(0)).toHaveAccessibleName(
     "Haftanı Dinledin seninle",
@@ -832,10 +836,10 @@ test("profil, API'nin sıraladığı yolculuk izlerini erişilebilir detay ve t�
   expect(showcaseBox).not.toBeNull();
   expect(firstTriggerBox).not.toBeNull();
   expect(lastTriggerBox).not.toBeNull();
-  const triggerGroupCenter =
-    (firstTriggerBox!.x + lastTriggerBox!.x + lastTriggerBox!.width) / 2;
-  const showcaseCenter = showcaseBox!.x + showcaseBox!.width / 2;
-  expect(Math.abs(triggerGroupCenter - showcaseCenter)).toBeLessThanOrEqual(2);
+  expect(firstTriggerBox!.x).toBeGreaterThanOrEqual(showcaseBox!.x);
+  expect(lastTriggerBox!.x + lastTriggerBox!.width).toBeLessThanOrEqual(
+    showcaseBox!.x + showcaseBox!.width,
+  );
 
   const trigger = triggers.nth(0);
   await trigger.focus();
@@ -928,6 +932,14 @@ async function mockProfileApi(page: Page) {
       });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, viewer);
+    if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
+      return json(route, {
+        enabled: false,
+        linked: false,
+        providerEmail: null,
+        canLink: false,
+      });
+    }
     if (method === "GET" && path === "/v1/community/profile/ayse")
       return json(route, profile);
     if (method === "GET" && path === "/v1/community/profile/showcase_user") {

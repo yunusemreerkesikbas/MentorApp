@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { AnimatePresence } from "framer-motion";
 import { ApiClientError } from "@mentor/api-client";
 import type { CoachPlanItemDto, PlanEventMutationScope } from "@mentor/types";
 import { Button } from "@mentor/ui";
@@ -23,6 +24,7 @@ import {
 import { deletePlanTask } from "@/lib/plan-tasks";
 import { CoachPlanEventScopeChoices } from "./coach-plan-event-scope";
 import { CoachPlanFormPanel } from "./coach-plan-form-panel";
+import { CoachOverlayBody, CoachOverlayFooter } from "@/components/coach-overlay";
 
 export function CoachPlanDetailActions({
   item,
@@ -64,6 +66,7 @@ export function CoachPlanDetailActions({
       message: t("remove_task_body"),
       confirmLabel: t("remove_task"),
       cancelLabel: t("form_cancel"),
+      destructive: true,
     });
     if (!confirmed) return;
     setBusy(true);
@@ -103,6 +106,7 @@ export function CoachPlanDetailActions({
       message: t("cancel_event_body"),
       confirmLabel: t("cancel_event"),
       cancelLabel: t("form_cancel"),
+      destructive: true,
     });
     requestAnimationFrame(() => restoreCoachPlanTrigger(trigger));
     if (!confirmed) return;
@@ -125,7 +129,7 @@ export function CoachPlanDetailActions({
 
   return (
     <>
-      <div className="flex flex-wrap gap-2 border-t pt-4" style={{ borderColor: "var(--color-border)" }}>
+      <CoachOverlayFooter>
         <Button
           type="button"
           variant="secondary"
@@ -150,29 +154,34 @@ export function CoachPlanDetailActions({
         >
           {t(item.kind === "TASK" ? "remove" : "cancel")}
         </Button>
-      </div>
-      {scopePrompt && (
+      </CoachOverlayFooter>
+      <AnimatePresence>
+      {scopePrompt ? (
         <CoachPlanFormPanel
+          key="event-scope"
           title={t("event_scope")}
           busy={busy}
           onClose={closeScopePrompt}
         >
-          <div className="flex flex-col gap-4">
+          <CoachOverlayBody>
             <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
               {t("cancel_scope_body")}
             </p>
-            <CoachPlanEventScopeChoices value={scope} onChange={setScope} />
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="secondary" onClick={closeScopePrompt}>
-                {t("form_cancel")}
-              </Button>
-              <Button type="button" disabled={!scope} onClick={() => void cancelEvent(scope)}>
-                {t("continue")}
-              </Button>
+            <div className="mt-4">
+              <CoachPlanEventScopeChoices value={scope} onChange={setScope} />
             </div>
-          </div>
+          </CoachOverlayBody>
+          <CoachOverlayFooter>
+            <Button type="button" variant="secondary" onClick={closeScopePrompt}>
+              {t("form_cancel")}
+            </Button>
+            <Button type="button" disabled={!scope} onClick={() => void cancelEvent(scope)}>
+              {t("continue")}
+            </Button>
+          </CoachOverlayFooter>
         </CoachPlanFormPanel>
-      )}
+      ) : null}
+      </AnimatePresence>
     </>
   );
 }

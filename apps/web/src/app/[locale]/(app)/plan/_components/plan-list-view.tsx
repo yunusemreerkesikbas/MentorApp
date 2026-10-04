@@ -1,14 +1,17 @@
 "use client";
 
-import type { PlanTaskDto } from "@mentor/types";
+import type { PlanEventDto, PlanTaskDto } from "@mentor/types";
 import { Card, SectionHeading } from "@mentor/ui";
 import { useTranslations } from "next-intl";
 import { PlanAddTaskButton } from "./plan-add-task-button";
+import { PlanCoachEventRow } from "./plan-coach-event";
 import { PlanListSkeleton } from "./plan-content-skeleton";
 import { PlanTaskRow } from "./plan-task-row";
 
 export function PlanListView({
   tasks,
+  events = [],
+  onOpenEvent,
   loading,
   busyId,
   readOnly,
@@ -20,6 +23,9 @@ export function PlanListView({
   onDismissCompletionPrompt,
 }: {
   tasks: PlanTaskDto[];
+  /** The day's meetings (the coach's); listed above the tasks, read-only. */
+  events?: PlanEventDto[];
+  onOpenEvent?: (event: PlanEventDto) => void;
   loading: boolean;
   busyId: string | null;
   readOnly?: boolean;
@@ -49,10 +55,13 @@ export function PlanListView({
         {t("tasks_title")}
       </SectionHeading>
 
-      {visible.length === 0 ? (
+      {visible.length === 0 && events.length === 0 ? (
         <PlanEmptyInline />
       ) : (
         <div className="mt-3 flex flex-col">
+          {events.map((event) => (
+            <PlanCoachEventRow key={event.id} event={event} onOpen={() => onOpenEvent?.(event)} />
+          ))}
           {visible.map((task) => (
             <PlanTaskRow
               key={task.id}

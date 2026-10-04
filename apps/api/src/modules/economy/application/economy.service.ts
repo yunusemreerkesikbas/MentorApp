@@ -285,8 +285,15 @@ export class EconomyService {
 
   /** Self balance + the XP tier derived from the shared curve (admin reads stay on raw sums). */
   async getSelfBalance(userId: string): Promise<EconomyBalance> {
-    const balance = await this.repo.balanceSelf(userId);
-    return { ...balance, level: deriveLevel(balance.xp) };
+    const [balance, chatCost, analysisCost] = await Promise.all([
+      this.repo.balanceSelf(userId), this.config.get("economy.coin.ai_chat_cost"),
+      this.config.get("economy.coin.deep_analysis_cost"),
+    ]);
+    return { ...balance, level: deriveLevel(balance.xp), usage: {
+      chatCost, analysisCost,
+      chatMessages: chatCost > 0 ? Math.floor(Math.max(0, balance.coinConfirmed) / chatCost) : 0,
+      weeklyAnalyses: analysisCost > 0 ? Math.floor(Math.max(0, balance.coinConfirmed) / analysisCost) : 0,
+    } };
   }
   getAdminBalance(userId: string): Promise<Balance> {
     return this.repo.balanceService(userId);
@@ -349,15 +356,23 @@ export class EconomyService {
    * doesn't exist (it was cap-denied). Returns the reversed amount (0 = nothing reversed).
    */
   async reverse(userId: string, opts: ReverseOptions): Promise<number> {
-    let reversed = 0;
-    await this.repo.withServiceTx(async (tx) => {
+    return this.reverseInTx(userId, opts);
+  }
+
+  /** Same as {@link reverse} inside an existing SERVICE tx (invite refund holds the redemption lock). */
+  async reverseInServiceTx(userId: string, opts: ReverseOptions, tx: DatabaseTx): Promise<number> {
+    return this.reverseInTx(userId, opts, tx);
+  }
+
+  private async reverseInTx(userId: string, opts: ReverseOptions, exec?: DatabaseTx): Promise<number> {
+    const run = async (tx: DatabaseTx): Promise<number> => {
       await this.repo.acquireUserLock(userId, tx);
-      if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) return; // already reversed
+      if (await this.repo.existsByRef(opts.refType, opts.refId, tx)) return 0; // already reversed
       const original = await this.repo.findByRef(opts.originalRefType, opts.originalRefId, tx);
-      if (!original || original.amount <= 0) return; // grant never landed (cap-denied at grant time)
+      if (!original || original.amount <= 0) return 0; // grant never landed (cap-denied at grant time)
       const balance = await this.repo.balanceService(userId, tx);
       const amount = Math.min(original.amount, Math.max(0, balance.coinConfirmed));
-      if (amount <= 0) return; // already spent down to zero — clamp forfeits the remainder
+      if (amount <= 0) return 0; // already spent down to zero — clamp forfeits the remainder
       await this.repo.append(
         {
           userId,
@@ -372,9 +387,9 @@ export class EconomyService {
         },
         tx,
       );
-      reversed = amount;
-    });
-    return reversed;
+      return amount;
+    };
+    return exec ? run(exec) : this.repo.withServiceTx(run);
   }
 
   /** Rolling 24h count of AI chat coin spends (free-coin daily limit). */
