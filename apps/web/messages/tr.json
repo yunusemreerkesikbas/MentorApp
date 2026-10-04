@@ -2155,6 +2155,7 @@
     "review_note_cancel": "Vazgeç",
     "error_note_save": "Not kaydedilemedi.",
     "review_done_summary": "{total} karttan {solved} tanesini çözdün.",
+    "review_done_next": "En yakını {days} gün sonra karşında",
     "review_feedback_due": "{days} gün sonra tekrar",
     "review_feedback_healed": "Bu kart iyileşti",
     "review_done_healed": "{count} kart iyileşti ve tekrar döngüsünden çıktı.",

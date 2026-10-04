@@ -28,6 +28,7 @@ import { reviewNotebookEntry, updateNotebookEntry } from "@/lib/notebook";
 import { putNotebookHandoff } from "@/lib/notebook-handoff";
 import {
   bySubject,
+  nearestReturnDays,
   nextUnansweredIndex,
   reviewFeedback,
   type ReviewFeedback,
@@ -351,6 +352,11 @@ export function NotebookReviewPanel({
             style={{
               background: "var(--color-surface)",
               boxShadow: "var(--shadow-card)",
+              // Overrides the scroll area's `stable` gutter. These screens almost never scroll, and
+              // the reserved gutter left a 10px white strip down the right side that cut the tinted
+              // header band short of the edge. Inline because `.mentor-scrollarea` is unlayered CSS
+              // and wins over a Tailwind utility.
+              scrollbarGutter: "auto",
             }}
             onClick={(event) => event.stopPropagation()}
           >
@@ -868,6 +874,15 @@ function DonePanel({
     .filter((outcome) => !outcome.solved)
     .map((outcome) => outcome.entry);
   const unfinished = skipped > 0;
+  /**
+   * When the notebook needs them next. Only on a finished deck that solved something: the
+   * nothing-solved subtitle already names the return day, and a deck left half done has cards
+   * waiting today, so a date days away would be the wrong news.
+   */
+  const nextDays =
+    !unfinished && solved > 0
+      ? nearestReturnDays(outcomes.map((outcome) => outcome.entry))
+      : null;
 
   return (
     <div className="flex flex-col">
@@ -882,7 +897,7 @@ function DonePanel({
         className={
           unfinished
             ? "flex flex-col gap-1.5 border-b border-[var(--color-border)] px-5 py-5 text-left sm:px-6"
-            : "flex flex-col items-center gap-3 px-6 pb-5 pt-7 text-center"
+            : "flex flex-col items-center gap-2.5 px-6 pb-5 pt-6 text-center"
         }
         style={{
           backgroundColor: unfinished
@@ -906,6 +921,18 @@ function DonePanel({
                 ? t("review_done_summary", { total, solved })
                 : t("review_done_none", { count: outcomes.length })}
           </p>
+          {nextDays !== null ? (
+            <p
+              className="mt-1 inline-flex items-center justify-center gap-1.5 self-center rounded-full px-3 py-1 text-xs font-semibold"
+              style={{
+                color: "var(--color-main)",
+                backgroundColor: "var(--color-surface)",
+              }}
+            >
+              <CalendarClock aria-hidden size={13} />
+              {t("review_done_next", { days: nextDays })}
+            </p>
+          ) : null}
         </div>
       </div>
 
@@ -948,11 +975,10 @@ function DonePanel({
         </div>
       ) : null}
 
-      <Button
-        fullWidth
-        variant={unfinished ? "secondary" : "primary"}
-        onClick={onClose}
-      >
+      {/* Secondary in both endings. Leaving is the only thing left to do here, so it does not need
+          to shout, and a filled blue slab under the green band was two loud colours on one small
+          card. */}
+      <Button fullWidth variant="secondary" onClick={onClose}>
         {t("review_close")}
       </Button>
       </div>
