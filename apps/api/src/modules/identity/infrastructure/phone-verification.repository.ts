@@ -115,7 +115,7 @@ export class PhoneVerificationRepository {
   }
 
   private async state(tx: DatabaseTx, userId: string, sessionId: string, lock = false) {
-    const query = tx.select().from(users).where(and(eq(users.id, userId), eq(users.status, "ACTIVE")));
+    const query = tx.select().from(users).where(and(eq(users.id, userId), eq(users.status, "ACTIVE"), isNull(users.erasureStartedAt)));
     const [user] = await (lock ? query.for("update") : query);
     if (!user) return null;
     const [session] = await tx.select().from(authSessions).where(and(

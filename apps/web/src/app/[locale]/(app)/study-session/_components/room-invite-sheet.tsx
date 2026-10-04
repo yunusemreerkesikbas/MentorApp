@@ -37,6 +37,7 @@ export function RoomInviteSheet({
   const askTitleRef = useRef<HTMLParagraphElement>(null);
   const [status, setStatus] = useState<{ error: boolean; text: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const copyRef = useRef<HTMLButtonElement>(null);
   const [asking, setAsking] = useState(false);
   const [rotating, setRotating] = useState(false);
 
@@ -74,6 +75,8 @@ export function RoomInviteSheet({
       setAsking(false);
       setCopied(false);
       setStatus({ error: false, text: t("invite_rotated") });
+      // The confirm group that had focus is gone; land on the new code's copy button.
+      copyRef.current?.focus();
     } catch (err) {
       setStatus({
         error: true,
@@ -96,6 +99,7 @@ export function RoomInviteSheet({
           </code>
           <button
             type="button"
+            ref={copyRef}
             onClick={() => void copy()}
             aria-label={copied ? t("invite_link_copied") : t("invite_copy_link")}
             title={copied ? t("invite_link_copied") : t("invite_copy_link")}

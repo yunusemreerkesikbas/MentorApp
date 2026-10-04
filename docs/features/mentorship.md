@@ -231,6 +231,9 @@ flag that cries wolf costs the coach more than it gives.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-04 — Real-contact prerequisites in legacy HTTP fixtures.** Follow-up and daily AI-taste coach fixtures now carry both verified email and verified phone, matching the current authorization gate. The follow-up HTTP regression deliberately removes email, then restores email while leaving phone unverified, and asserts the respective `MENTORSHIP_EMAIL_NOT_VERIFIED` and `AUTH_PHONE_REQUIRED` denials before continuing normal behavior. The existing admin/COACH regression checks the same sequence: elevated roles do not bypass student-data contact requirements. **Usage:** run `test/mentorship-followups.e2e-spec.ts`, `test/mentorship.e2e-spec.ts` and `test/qa-coach-ai-taste.e2e-spec.ts` against the dedicated test database. **Gotchas:** only positive coach fixtures are verified; negative cases remain unverified, and student self-service reads still use their own link. The AI-taste test asserts the student's phone remains absent and unverified while a successful draft is charged to the coach, preserving the daily taste's independence from student SMS OTP. **Related:** those three test files; `mentorship-link.service.ts`.
+  **Verification:** 80 mentorship HTTP cases passed (70 core, 9 follow-up, 1 daily taste), alongside 43 auth/payment/promotion regressions in the serialized retry. `--hookTimeout 120000` accommodates app boot on this Windows host; no assertion or authorization gate is weakened.
+
 - **2026-10-03 — Erasure and notification review follow-up.** Student standing notes still save
   while the coach's contacts are unverified, but the coach receives no student-note notification.
   The due-followup email worker resolves the verified contact snapshot at send time, closing the

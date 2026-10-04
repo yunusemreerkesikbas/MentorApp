@@ -25,11 +25,14 @@ import { RoomThemeCarousel } from "./room-theme-carousel";
 export function RoomCreateSheet({
   open,
   busy,
+  error = null,
   onClose,
   onSubmit,
 }: {
   open: boolean;
   busy: boolean;
+  /** Why the last attempt failed, said above the actions; the sheet stays open. */
+  error?: string | null;
   onClose: () => void;
   onSubmit: (input: { name: string; theme: StudyRoomTheme; capacity: number }) => void;
 }) {
@@ -56,7 +59,12 @@ export function RoomCreateSheet({
       footer={
         <>
           {/* Phones close from the handle row's X; a second way out would crowd the ledge. */}
-          <button type="button" onClick={onClose} className={`${PANEL_QUIET_LINK} max-lg:hidden`}>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className={`${PANEL_QUIET_LINK} max-lg:hidden`}
+          >
             {t("cancel")}
           </button>
           <Button type="submit" busy={busy} disabled={!name.trim()} className="max-lg:w-full">
@@ -104,6 +112,12 @@ export function RoomCreateSheet({
           </span>
         </div>
       </div>
+
+      {error ? (
+        <p role="alert" className="text-body-sm font-semibold text-[var(--color-danger)]">
+          {error}
+        </p>
+      ) : null}
     </RoomSheet>
   );
 }

@@ -139,7 +139,7 @@ export class UsersService {
   async isEmailVerified(userId: string, tx?: DatabaseTx): Promise<boolean> {
     if (tx) return this.usersRepo.hasActiveVerifiedEmail(userId, tx);
     const user = await this.usersRepo.findByIdService(userId);
-    return user?.status === "ACTIVE" && user.emailVerifiedAt != null;
+    return user?.status === "ACTIVE" && !user.erasureStartedAt && user.emailVerifiedAt != null;
   }
 
   async isPhoneVerified(userId: string, tx?: DatabaseTx): Promise<boolean> {
@@ -149,6 +149,17 @@ export class UsersService {
   /** Public transaction seam: payments never reads identity tables or raw phone numbers. */
   lockActiveAccount(userId: string, tx: DatabaseTx): Promise<boolean> {
     return this.usersRepo.lockActiveAccount(userId, tx);
+  }
+
+  async beginAccountErasure(userId: string): Promise<Date> {
+    const startedAt = await this.usersRepo.beginAccountErasure(userId);
+    if (!startedAt) throw new NotFoundError();
+    if (startedAt === "conflict") throw new DomainError(ErrorCode.CONFLICT, HttpStatus.CONFLICT);
+    return startedAt;
+  }
+
+  releaseAccountErasure(userId: string, startedAt: Date): Promise<void> {
+    return this.usersRepo.releaseAccountErasure(userId, startedAt);
   }
 
   /** The only trial seam exposed to payments. Raw phones remain inside identity. */
@@ -218,14 +229,14 @@ export class UsersService {
     userId: string,
   ): Promise<{ email: string; displayName: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
-    if (!user) return null;
+    if (!user || user.erasureStartedAt) return null;
     return { email: user.email, displayName: user.displayName };
   }
 
   /** One verified snapshot prevents digest delivery to an email changed between separate reads. */
   async getVerifiedNotificationContact(userId: string): Promise<{ email: string; displayName: string } | null> {
     const user = await this.usersRepo.findByIdService(userId);
-    if (!user || user.status !== "ACTIVE" || !user.emailVerifiedAt ||
+    if (!user || user.status !== "ACTIVE" || user.erasureStartedAt || !user.emailVerifiedAt ||
         !user.phoneVerifiedAt || !user.phoneNumber) return null;
     return { email: user.email, displayName: user.displayName };
   }

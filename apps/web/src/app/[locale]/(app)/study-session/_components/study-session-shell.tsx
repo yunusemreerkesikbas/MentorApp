@@ -206,6 +206,9 @@ export function StudySessionShell() {
     reset,
   } = timer;
 
+  // A curtain that never finished (the phase left setup first) must not replay on the way back.
+  if (phase !== "idle" && curtain) setCurtain(false);
+
   const ambient = useSessionAmbientSound({
     phase,
     isPaused,
@@ -238,7 +241,6 @@ export function StudySessionShell() {
   );
 
   const handleStartSession = async () => {
-    setRingFrom(measureIdleRing());
     try {
       const [questsResult, todayResult] = await Promise.all([
         fetchQuests().catch((err) =>
@@ -252,6 +254,8 @@ export function StudySessionShell() {
       setQuestBaseline(null);
       setStreakBaseline(null);
     }
+    // Measured last, right before the phase changes: a scroll during the fetches above moves it.
+    setRingFrom(measureIdleRing());
     const started = await startSession();
     if (
       started &&

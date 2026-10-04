@@ -48,6 +48,16 @@ export function RoomJoinShell() {
   // or router identity changes. Keyed (rather than a plain boolean) so React's development
   // remount still lands its result on the live instance instead of a discarded one.
   const attemptedRef = useRef<string | null>(null);
+  // Results land unless the page is really gone. A per-run flag would drop them: the effect
+  // re-runs (auth, router, reduced motion; Strict Mode in dev) while the join is still pending,
+  // and `attemptedRef` rightly stops the re-run from asking again, so nobody would report back.
+  const mountedRef = useRef(true);
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   const code = readCode(params);
 
@@ -57,8 +67,6 @@ export function RoomJoinShell() {
     if (attemptedRef.current === key) return;
     attemptedRef.current = key;
 
-    // Set by cleanup: a result arriving after unmount must not update a dead instance.
-    let active = true;
     const invitePath = `/join-room?kod=${encodeURIComponent(code)}`;
 
     if (status === "anonymous") {
@@ -84,16 +92,12 @@ export function RoomJoinShell() {
           arrive();
           return;
         }
-        if (active) setLeaving(true);
+        if (mountedRef.current) setLeaving(true);
         window.setTimeout(arrive, ROOM_CURTAIN_MS);
       })
       .catch((err: unknown) => {
-        if (active) setAsyncFailure(studyRoomJoinFailure(err));
+        if (mountedRef.current) setAsyncFailure(studyRoomJoinFailure(err));
       });
-
-    return () => {
-      active = false;
-    };
   }, [code, status, user, router, attempt, reduceMotion]);
 
   const failure: FailureReason | null = code ? asyncFailure : "no_code";

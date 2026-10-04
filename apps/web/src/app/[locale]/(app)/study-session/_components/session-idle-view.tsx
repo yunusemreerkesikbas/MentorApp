@@ -1,11 +1,14 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useSyncExternalStore, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { StudyRoomTheme } from "@mentor/types";
 import { PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 import { ROOM_CURTAIN_MS } from "@/lib/study-room-theme";
+
+const noopSubscribe = () => () => {};
 
 /**
  * Start steps the setup back, each part its own way (top bar up, timer down, rail aside), and
@@ -48,6 +51,8 @@ export function SessionIdleView({
 }) {
   const t = useTranslations("session");
   const reduceMotion = useReducedMotion();
+  // The curtain portals to `body`; false on the server and during hydration, true after.
+  const onClient = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   return (
     <main
@@ -56,17 +61,22 @@ export function SessionIdleView({
       aria-label={t("title")}
     >
       <h1 className="sr-only">{t("title")}</h1>
-      {curtain && !reduceMotion ? (
-        <motion.div
-          aria-hidden
-          className="pointer-events-none fixed inset-0 z-50"
-          style={{ backgroundColor: "#000" }}
-          initial={{ opacity: 1 }}
-          animate={{ opacity: 0 }}
-          transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeOut" }}
-          onAnimationComplete={onCurtainDone}
-        />
-      ) : null}
+      {/* Portalled: inside this `isolate` main (and the stage) its z-50 would sit under the app
+          chrome, and the sidebar would pop out of the black before the room does. */}
+      {curtain && !reduceMotion && onClient
+        ? createPortal(
+            <motion.div
+              aria-hidden
+              className="pointer-events-none fixed inset-0 z-50"
+              style={{ backgroundColor: "#000" }}
+              initial={{ opacity: 1 }}
+              animate={{ opacity: 0 }}
+              transition={{ duration: ROOM_CURTAIN_MS / 1000, ease: "easeOut" }}
+              onAnimationComplete={onCurtainDone}
+            />,
+            document.body,
+          )
+        : null}
 
       <div className={PANEL_MAIN_CLASS}>
         <motion.div className="flex justify-center" {...recede(reduceMotion, { y: -8 })}>

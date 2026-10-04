@@ -8,8 +8,13 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import dynamic from "next/dynamic";
 import type { PremiumFeatureId } from "@mentor/types";
-import { PremiumPaywallModal } from "@/components/premium/premium-paywall-modal";
+
+const PremiumPaywallModal = dynamic(
+  () => import("@/components/premium/premium-paywall-modal").then((module) => module.PremiumPaywallModal),
+  { ssr: false },
+);
 
 export interface PaywallOpenOptions {
   sourceFeature?: PremiumFeatureId;

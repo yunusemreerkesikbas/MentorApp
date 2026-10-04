@@ -52,6 +52,14 @@ export function SessionStage({
     const id = window.setTimeout(() => setSettled(true), reduceMotion ? 0 : LIGHTS_MS);
     return () => window.clearTimeout(id);
   }, [dark, settled, reduceMotion]);
+  // Under the cover the app chrome is only a ghost: it must not take a click or a Tab stop
+  // (`data-app-chrome` marks the sidebar, the phone header and the tab bar in `app-nav.tsx`).
+  useEffect(() => {
+    if (!dark) return;
+    const chrome = document.querySelectorAll<HTMLElement>("[data-app-chrome]");
+    chrome.forEach((el) => (el.inert = true));
+    return () => chrome.forEach((el) => (el.inert = false));
+  }, [dark]);
 
   return (
     <div

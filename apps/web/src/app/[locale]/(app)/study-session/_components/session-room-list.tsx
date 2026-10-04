@@ -23,7 +23,6 @@ import {
   studyRoomJoinFailure,
 } from "@/lib/study-rooms";
 import { STUDY_ROOM_BACKDROP_SRC } from "@/lib/study-room-theme";
-import { useMentorToast } from "@/lib/mentor-toast";
 import { RoomCreateSheet } from "./room-create-sheet";
 import { RoomSheet } from "./room-sheet";
 import { SESSION_CARD_CLASS } from "./session-today-card";
@@ -46,7 +45,6 @@ export function SessionRoomList() {
   const t = useTranslations("session_room");
   const titleId = useId();
   const reduceMotion = useReducedMotion();
-  const { error: showErrorToast } = useMentorToast();
   const [state, setState] = useState<State>({ status: "loading" });
   const [busy, setBusy] = useState(false);
   const searchParams = useSearchParams();
@@ -85,18 +83,17 @@ export function SessionRoomList() {
     return () => clearInterval(id);
   }, [hasRooms]);
 
-  const run = async (action: () => Promise<unknown>) => {
+  // Said inside the sheet: a toast would land under the native dialog's top layer, dimmed and inert.
+  const [createError, setCreateError] = useState<string | null>(null);
+  const create = async (input: Parameters<typeof createStudyRoom>[0]) => {
     setBusy(true);
+    setCreateError(null);
     try {
-      await action();
+      await createStudyRoom(input);
       setSheet("none");
       load();
     } catch (err) {
-      showErrorToast({
-        title: t("error_title"),
-        message: err instanceof ApiClientError ? err.body.message : undefined,
-        duration: 3000,
-      });
+      setCreateError(err instanceof ApiClientError ? err.body.message : t("error_title"));
     } finally {
       setBusy(false);
     }
@@ -178,8 +175,12 @@ export function SessionRoomList() {
         <RoomCreateSheet
           open
           busy={busy}
-          onClose={() => setSheet("none")}
-          onSubmit={(input) => void run(() => createStudyRoom(input))}
+          error={createError}
+          onClose={() => {
+            setCreateError(null);
+            setSheet("none");
+          }}
+          onSubmit={(input) => void create(input)}
         />
       ) : null}
       {sheet === "join" ? (
@@ -345,7 +346,12 @@ function JoinSheet({
       onSubmit={(e) => void submit(e)}
       footer={
         <>
-          <button type="button" onClick={onClose} className={`${PANEL_QUIET_LINK} max-lg:hidden`}>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className={`${PANEL_QUIET_LINK} max-lg:hidden`}
+          >
             {t("cancel")}
           </button>
           <Button type="submit" busy={busy} disabled={!code.trim()} className="max-lg:w-full">
