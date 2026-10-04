@@ -56,6 +56,7 @@ const PUHU_LEFT = 100 - PUHU_WIDTH / 2;
 const PAGE_MS = [2200, 3200] as const;
 const BLINK_MS = 170;
 
+/** Puhu reading on the desk's book stack. Decorative, so hidden from screen readers. */
 export function DeskPuhu({
   waving,
   reduceMotion,

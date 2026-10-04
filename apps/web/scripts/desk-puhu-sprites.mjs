@@ -16,7 +16,7 @@
 // way for all, then keyed and scaled by key-alpha.mjs. The script prints the canvas and the feet's
 // pivots for DESK_PUHU_ART in desk-puhu.tsx.
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -34,6 +34,7 @@ const EYE_CHANGE = 44;
 const FRAMES = ["read-left", "read-right", "blink", "peek-left", "peek-right", "wave"];
 const EYE_FRAMES = ["read-right", "blink", "peek-left", "peek-right"];
 
+/** Splits argv into positional paths and `--name=value` flags (a bare `--name` is `true`). */
 function parseArgs(argv) {
   const positional = [];
   const flags = {};
@@ -48,6 +49,7 @@ function parseArgs(argv) {
   return { positional, flags };
 }
 
+/** RGB distance from the magenta key of the pixel whose bytes start at `at`. */
 function distanceToKey(data, at) {
   const dr = data[at] - KEY[0];
   const dg = data[at + 1] - KEY[1];
@@ -55,6 +57,7 @@ function distanceToKey(data, at) {
   return Math.sqrt(dr * dr + dg * dg + db * db);
 }
 
+/** Whether a pixel is Puhu rather than background. */
 function isSubject(image, x, y) {
   return distanceToKey(image.data, (y * image.width + x) * 4) > SUBJECT_DISTANCE;
 }
@@ -149,6 +152,7 @@ function regions(mask, width, height) {
   return found.sort((a, b) => b.size - a.size);
 }
 
+/** Whether a colour is the feet's orange: red high, blue low, green in between. */
 const isFootColour = (r, g, b) => r > 170 && b < 130 && r - b > 110 && g > 60 && g < r - 15;
 
 /** The two feet of a frame, left then right, as pixel lists. */
@@ -168,6 +172,7 @@ function findFeet(image) {
   return feet.sort((a, b) => a.left - b.left);
 }
 
+/** A pixel list as a 0/1 mask over a canvas of `length` pixels. */
 function maskOf(pixels, length) {
   const mask = new Uint8Array(length);
   for (const at of pixels) mask[at] = 1;
@@ -313,6 +318,7 @@ function eyesOnto(base, frame) {
   return { image: out, patches: patches.length };
 }
 
+/** The inclusive box around everything that is not background. */
 function subjectBounds(image) {
   let left = image.width;
   let right = 0;
@@ -330,6 +336,7 @@ function subjectBounds(image) {
   return { left, right, top, bottom };
 }
 
+/** Cuts `box` (inclusive) out of an image; any part of it past the edge is filled with the key. */
 function crop(image, box) {
   const width = box.right - box.left + 1;
   const height = box.bottom - box.top + 1;
@@ -393,6 +400,8 @@ const box = {
 };
 const canvas = { width: box.right - box.left + 1, height: box.bottom - box.top + 1 };
 
+// key-alpha.mjs writes straight into out-dir and does not create it.
+mkdirSync(outDir, { recursive: true });
 const work = mkdtempSync(join(tmpdir(), "desk-puhu-"));
 try {
   for (const [name, image] of Object.entries(sprites)) {
