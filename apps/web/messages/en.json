@@ -2155,6 +2155,7 @@
     "review_note_cancel": "Cancel",
     "error_note_save": "The note could not be saved.",
     "review_done_summary": "You solved {solved} of {total} cards.",
+    "review_done_next": "Next one is back in {days} days",
     "review_feedback_due": "Back in {days} days",
     "review_feedback_healed": "This card has healed",
     "review_done_healed": "{count} cards healed and left the rotation.",

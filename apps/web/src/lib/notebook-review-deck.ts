@@ -134,3 +134,24 @@ export function reviewFeedback(
   // deck shows by simply having it in it. Guarding here rather than rendering "0 gün sonra".
   return days >= 1 ? { kind: "due", days } : null;
 }
+
+/**
+ * Days until the soonest of these cards comes back, or null when none of them is scheduled.
+ *
+ * The closing screen's forward line. A deck finished with everything solved used to end on a count
+ * and a button, which told the student what they did and nothing about when the notebook needs them
+ * next. Healed cards and anything without a future date are left out, the same as `reviewFeedback`.
+ */
+export function nearestReturnDays(
+  entries: readonly { status: string; nextReviewAt: string | null }[],
+  now: Date = new Date(),
+): number | null {
+  let nearest: number | null = null;
+  for (const entry of entries) {
+    const feedback = reviewFeedback(entry, now);
+    if (feedback?.kind === "due" && (nearest === null || feedback.days < nearest)) {
+      nearest = feedback.days;
+    }
+  }
+  return nearest;
+}
