@@ -68,15 +68,15 @@ describe("mentorship followups HTTP and database", () => {
           password: "Sifre1234",
           displayName: `Followup ${who}`,
           kvkkAccepted: true,
-      termsAccepted: true,
-      ageEligibilityConfirmed: true,
+          termsAccepted: true,
+          ageEligibilityConfirmed: true,
         });
       expect(result.status).toBe(201);
       ids[who] = result.body.user.id;
       tokens[who] = result.body.accessToken;
     }
     await sql(
-      "update users set roles = array_append(roles, 'COACH'), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = any($1::uuid[])",
+      "update users set roles = array_append(roles, 'COACH'), email_verified_at = now(), phone_number = '+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at = now() where id = any($1::uuid[])",
       [[ids.coach, ids.other]],
     );
     const config = app.get(ConfigRegistryService);
@@ -110,6 +110,20 @@ describe("mentorship followups HTTP and database", () => {
     expect(
       (await http().post(base()).set(auth("other")).send(draft())).status,
     ).toBe(404);
+  });
+  it("requires current verified email and phone even for a coach with an active link", async () => {
+    try {
+      await sql("update users set email_verified_at = null where id = $1", [ids.coach]);
+      const noEmail = await http().post(base()).set(auth("coach")).send(draft());
+      expect(noEmail.status).toBe(403);
+      expect(noEmail.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
+      await sql("update users set email_verified_at = now(), phone_verified_at = null where id = $1", [ids.coach]);
+      const noPhone = await http().post(base()).set(auth("coach")).send(draft());
+      expect(noPhone.status).toBe(403);
+      expect(noPhone.body.code).toBe("AUTH_PHONE_REQUIRED");
+    } finally {
+      await sql("update users set email_verified_at = now(), phone_verified_at = now() where id = $1", [ids.coach]);
+    }
   });
   it("atomically deduplicates creates, rejects key reuse, and whitelists student output", async () => {
     const input = draft();

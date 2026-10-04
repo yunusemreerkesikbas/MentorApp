@@ -1117,3 +1117,28 @@ eklendi.
   The paywall body scrolls independently below its fixed header and above its checkout footer;
   desktop height follows the kit modal's 90dvh cap. The phone flow remains reachable on mobile
   and desktop, covered by a real clipboard-paste and control-bounds browser regression.
+
+- **2026-10-04 — SMS browser regression stabilization (APP-114).** The paywall regression waits
+  for the sheet entrance to settle before measuring its viewport bounds and checks the refreshed
+  trial action after verification removes the phone card. The same suite checks Turkish and
+  English verification purpose/privacy links and the trial's 12-month retention notice. Usage:
+  run `e2e/phone-verification.spec.ts` on mobile and desktop, optionally with
+  `PLAYWRIGHT_BASE_URL` for an existing development server. API responses remain mocked; real
+  SMS delivery and provider checkout are outside this browser check. Related:
+  `apps/web/e2e/phone-verification.spec.ts`.
+
+- **2026-10-04 — Load paywall SMS dependencies on demand (APP-114).** The shared provider
+  dynamically imports the existing portal only when a Premium action opens it, keeping the
+  phone form and paywall views off the dashboard's initial download. Usage:
+  open Premium as before; the first opening may wait for its client chunk. Consent, trial
+  eligibility and pending checkout recovery still come from the same API. The 38 phone browser
+  cases pass on mobile and desktop after this boundary change. Related:
+  `apps/web/src/lib/premium-paywall.tsx`, `apps/web/e2e/phone-verification.spec.ts`.
+  Production budget ledger: dashboard route-attributable JS decreased from 862,946 to
+  833,212 bytes and total JS from 1,415,318 to 1,385,584 bytes, a 29,734-byte reduction in
+  both measurements. Keep the boundary for that measured SMS gain; the dashboard budgets still
+  fail by 54,972 and 59,504 bytes. The unchanged 103,161-byte validation/Zod chunk is retained
+  by the existing `NotebookOpeningOverlay` -> `notebook-contents-cache` -> `lib/notebook`
+  -> notebook upload constants import. Phone form/paywall chunks are absent from the initial
+  dashboard manifest. Article JS remains unchanged at 436,851 route-attributable and 989,223
+  total bytes. The remaining notebook import issue is outside the SMS change.

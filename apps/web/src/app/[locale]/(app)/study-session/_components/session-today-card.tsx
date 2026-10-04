@@ -73,6 +73,8 @@ export function SessionTodayCard({
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(DEFAULT_GOAL);
   const [saving, setSaving] = useState(false);
+  // Grown once: editing the goal remounts the strip, and the new segment must not grow again.
+  const [freshGrown, setFreshGrown] = useState(false);
   // Snapshot once whether today's celebration already fired (focusGoal arrives async).
   const [celebratedAtMount] = useState(() => hasCelebratedToday());
 
@@ -104,8 +106,10 @@ export function SessionTodayCard({
   if (focusGoal === undefined || sessions === null) return <SessionTodayCardSkeleton />;
 
   // The API lists newest first; the strip reads left to right through the day.
+  // Only sessions that count toward the goal draw: one finished in seconds is COMPLETED but under
+  // the platform's minimum, and a segment beside "0 / 120 dk" would contradict the number.
   const completed = sessions
-    .filter((s) => s.status === "COMPLETED")
+    .filter((s) => s.status === "COMPLETED" && s.countsAsFocusSession !== false)
     .map((s) => ({ id: s.id, minutes: Math.max(1, Math.round(s.actualFocusSeconds / 60)) }))
     .reverse();
   const abandoned = sessions.filter((s) => s.status === "ABANDONED").length;
@@ -185,7 +189,8 @@ export function SessionTodayCard({
               label={stripLabel}
               goal={goalMinutes}
               segments={segments}
-              freshId={freshSessionId}
+              freshId={freshGrown ? null : freshSessionId}
+              onFreshGrown={() => setFreshGrown(true)}
               reached={reached}
             />
           ) : null}
@@ -245,6 +250,8 @@ export function SessionTodayCard({
 /**
  * The goal as a track, filled by one segment per completed session. Scaled to the goal, or to
  * the day's total once it runs past the goal, so an over-achieving day fills rather than spills.
+ * Segments grow by their minutes and a spacer takes what is left of the goal, so the 3px gaps
+ * come out of the track instead of pushing the last segment (often the fresh one) out of view.
  * The session just finished grows in from the left, once, as the lights come back up.
  */
 function GoalStrip({
@@ -252,15 +259,17 @@ function GoalStrip({
   goal,
   segments,
   freshId,
+  onFreshGrown,
   reached,
 }: {
   label: string;
   goal: number;
   segments: { id: string; minutes: number }[];
   freshId: string | null;
+  onFreshGrown: () => void;
   reached: boolean;
 }) {
-  const scale = Math.max(goal, segments.reduce((sum, s) => sum + s.minutes, 0));
+  const left = goal - segments.reduce((sum, s) => sum + s.minutes, 0);
   return (
     <div
       role="img"
@@ -271,14 +280,16 @@ function GoalStrip({
         <span
           key={segment.id}
           data-fresh={segment.id === freshId || undefined}
-          className={`block h-full min-w-1.5 shrink-0 rounded-full ${reached ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}${
+          onAnimationEnd={segment.id === freshId ? onFreshGrown : undefined}
+          className={`block h-full min-w-1.5 basis-0 rounded-full ${reached ? "bg-[var(--color-success)]" : "bg-[var(--play-cta)]"}${
             segment.id === freshId
               ? " origin-left animate-[session-strip-grow_0.45s_cubic-bezier(0.25,1,0.5,1)_0.2s_both] motion-reduce:animate-none"
               : ""
           }`}
-          style={{ width: `${(segment.minutes / scale) * 100}%` }}
+          style={{ flexGrow: segment.minutes }}
         />
       ))}
+      {left > 0 ? <span aria-hidden className="basis-0" style={{ flexGrow: left }} /> : null}
     </div>
   );
 }

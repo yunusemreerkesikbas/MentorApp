@@ -397,13 +397,20 @@ describe("mentorship (e2e)", () => {
     inviteCode = rotate.body.code;
   });
 
-  it("SUPER_ADMIN passes @Roles(COACH) but the link gate still refuses", async () => {
+  it("SUPER_ADMIN passes @Roles(COACH) but verification and link gates still refuse", async () => {
     // RolesGuard grants admins any @Roles(); the gate is what actually protects student data.
     const roster = await http()
       .get("/v1/mentorship/students")
       .set(auth("admin"));
     expect(roster.status).toBe(403);
-    expect(roster.body.code).toBe("AUTH_PHONE_REQUIRED");
+    expect(roster.body.code).toBe("MENTORSHIP_EMAIL_NOT_VERIFIED");
+
+    await svc(async (client) => {
+      await client.query("update users set email_verified_at = now() where id = $1", [userId.admin]);
+    });
+    const withoutPhone = await http().get("/v1/mentorship/students").set(auth("admin"));
+    expect(withoutPhone.status).toBe(403);
+    expect(withoutPhone.body.code).toBe("AUTH_PHONE_REQUIRED");
 
     const reach = await http()
       .delete(`/v1/mentorship/students/${userId.student}`)

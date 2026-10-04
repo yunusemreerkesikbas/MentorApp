@@ -176,6 +176,25 @@ pnpm --filter @mentor/api test
 
 - **2026-09-29 · Plan sihirbazı ve hedef dakikalar.** Plan önizlemesinde koç notu üstte, görev nedeni kartta, kanıtların tamamı açılır bölümde. Plan sihirbazı ile kayıt onboarding’i 60/120/240/360 dk ve aynı ızgarada 10–600 dk serbest giriş sunar; eski özel hedef görünür. Gün seçimi geniş ekranda iki sütun, kısa ekranda kaydırılabilir. Uygulama seçili görevlerin doğrulanmış konusunu `plan_tasks.topic` alanına yazar, 24 değişikliğe izin verir ve İstanbul günündeki revizyonu doğrular. Kullanım: görevleri işaretleyip “Seçilenleri uygula” seç; plan arada değiştiyse önizlemeyi yeniden hazırla. İlgili: `plan.service.ts`, `plan-coach-adaptation-brief-steps.tsx`, `plan-coach-adaptation-preview.tsx`, `daily-goal-step.tsx`.
 
+- **2026-10-04 · Seans redesign turu 2, Durak D: inceleme düzeltmeleri ve gerçek API.** Bağımsız
+  incelemenin bulguları kapandı. Seans sürerken karartılan uygulama kabuğu artık tıklanmıyor ve Tab
+  almıyor: `SessionStage` ışıklar kısıkken `[data-app-chrome]` öğelerini (`app-nav.tsx`: kenar çubuğu,
+  telefon başlığı, alt menü) `inert` yapar. Masadan gelişteki siyah perde `body`'ye portal'lı (iki
+  `isolate` bağlamın içinde z-50'si kabuğun altında kalıyordu); bitmemiş perde kurulumdan çıkınca
+  sıfırlanır. Masa kurma hatası toast yerine pencerenin içinde (`role="alert"`), istek sürerken
+  "Vazgeç" kapalı. `/masaya-katil`: sonuç, efekt yeniden çalışınca (Strict Mode, auth) kaybolmuyor;
+  sayfa gerçekten kapanmadıkça yazılır (`mountedRef`). Bugün şeridi: parçalar dakikaları oranında
+  esner, hedefin kalanı boşluk olur (3 px aralıklar son parçayı artık kırpmıyor); saniyelik, hedefe
+  sayılmayan seans (`countsAsFocusSession: false`) çizilmez; yeni parça bir kez büyür. Halka konumu
+  `startSession()`'dan hemen önce ölçülür. Erişilebilirlik: `RoomNoticeCard` başlığı her değişişte
+  odağı alır, kod yenilenince odak kopyala düğmesine geçer, geçmiş çekmecesinin kapatma düğmesi 44 px.
+  Gerçek API (izole yığın: API 3201 `mentor_test` sahte sağlayıcılar, web 3200): K03 iki görünümde
+  geçti; seans akışı ve masa kur → davet kodu da gerçek API'de denendi (`coaching.study_rooms.enabled`
+  `mentor_test`'te açıldı; kapalıyken "Masaların" kartı kendini gizler). Testler:
+  `e2e/study-session.spec.ts` (kabuk `inert`, kare kare "örtü solmadan sahne inmez", sayılmayan seans,
+  pencere içi hata). Bütçe betiğindeki panel (dashboard) JS aşımı seansla ilgisiz: panel tur 2
+  dosyalarını içe aktarmıyor.
+
 - **2026-09-30 · Seans redesign turu 2, Durak E: "Işıklar kısılır" hareket seti.** `/seans` artık
   fazlar arasında kalıcı tek bir zeminde duruyor (`session-stage.tsx`): kurulum, odak, mola ve bitiş
   kartı aynı sahnenin üstünde çizilir; faz değişince sayfa değil ışık değişir. Başla'da odanın perdesi

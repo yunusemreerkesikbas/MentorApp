@@ -62,10 +62,10 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 | Endpoint | Purpose |
 |---|---|
-| `POST /v1/subscriptions/checkout` | Start checkout (consent required) |
+| `POST /v1/subscription/checkout` | Start or resume an owned checkout (`useTrial` selects trial/direct purchase) |
 | `POST /v1/webhooks/payments` | Provider webhook (raw body, signature-verified) |
-| `GET /v1/subscriptions/current` | Subscription view + entitlement |
-| `POST /v1/subscriptions/cancel` | Cancel (access until period end) |
+| `GET /v1/subscription` | Subscription view, entitlement, trial eligibility and pending checkout recovery |
+| `POST /v1/subscription/cancel` | Cancel confirmed pending checkout, or stop renewal with access until period end |
 
 ## Geliştirmeler (timeline)
 
@@ -109,7 +109,7 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   operator evidence before reconciliation. Do not delete a hold solely because it is old. The
   iyzico skeleton makes no live calls; its local refusal is explicitly definitive. Sponsored-seat
   `grant(studentId, linkId, coachId)` verifies BOTH ACTIVE phones centrally even when sponsorship is
-  enabled. Related: `phone-trial.service.ts`, `trial-checkout.service.ts`,
+  enabled. Related: `phone-trial.service.ts`, `checkout.service.ts`,
   `phone-trials.repository.ts`, `schema-phone-trials.ts`, `subscriptions.service.ts`,
   `sponsored-seat.service.ts`, migration `0120`, `payments.e2e-spec.ts`, `phone-trials.e2e-spec.ts`.
 
@@ -286,6 +286,11 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
   idempotencyKey)` is wired — called (fake: deterministic no-op; iyzico: `notVerified` until keys)
   **before** the ledger append, so a provider failure rolls back the record; the `admin-refund:<uuid>`
   is the Idempotency-Key. No DB migration (status is a text column). *(2026-07-20.)*
+
+### 2026-10-04 — Explicit checkout intent in integration regressions
+
+- Promotion tests select direct purchase with `useTrial: false` while their buyers remain phone-unverified. A pending promotion reservation is released only after provider-confirmed cancellation; another checkout no longer discards an unresolved attempt. Trial conversion and refund tests keep `useTrial: true` with verified-phone fixtures, preserving coverage of the initial charge versus renewal reward lifecycle. Invite-only users still need no phone verification.
+- Usage: run `promotions.e2e-spec.ts` and `economy-invite.e2e-spec.ts` against the dedicated test database. Omitting `useTrial` intentionally retains automatic first-subscription trial selection and its phone requirement. Related: `apps/api/test/promotions.e2e-spec.ts`, `apps/api/test/economy-invite.e2e-spec.ts`.
 
 ## Gotchas / Known issues
 

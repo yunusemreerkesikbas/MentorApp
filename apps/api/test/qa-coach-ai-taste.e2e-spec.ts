@@ -75,7 +75,7 @@ describe("coach AI free taste (e2e)", () => {
       users[label] = { id: response.body.user.id, token: response.body.accessToken };
     }
 
-    await serviceQuery("update users set roles=array_append(roles,$1), email_verified_at=now() where id=$2", [
+    await serviceQuery("update users set roles=array_append(roles,$1), email_verified_at=now(), phone_number='+905' || lpad((abs(hashtext(id::text)::bigint) % 1000000000)::text, 9, '0'), phone_verified_at=now() where id=$2", [
       UserRole.COACH,
       users.coach!.id,
     ]);
@@ -120,6 +120,8 @@ describe("coach AI free taste (e2e)", () => {
     expect(await usageCount("coach")).toBe(0);
 
     await config.set(users.coach!.id, "ai.features.mentorship.suggestions.free_enabled", true);
+    const studentPhone = await serviceQuery("select phone_number, phone_verified_at from users where id=$1", [users.student!.id]);
+    expect(studentPhone.rows[0]).toMatchObject({ phone_number: null, phone_verified_at: null });
     const first = await http().post(path).set(auth("coach"));
     expect(first.status).toBe(200);
     expect(first.body.tasks.length).toBeGreaterThan(0);

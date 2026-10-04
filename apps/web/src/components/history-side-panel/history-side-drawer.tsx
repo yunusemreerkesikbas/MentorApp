@@ -136,7 +136,7 @@ export function HistorySideDrawer({
             type="button"
             onClick={handleClose}
             aria-label={tClose("close")}
-            className="absolute right-3 top-3 z-10 flex h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+            className="absolute right-1.5 top-1.5 z-10 flex size-11 items-center justify-center rounded-full transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_10%,transparent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
             style={{ color: "var(--color-secondary)" }}
           >
             <X size={18} aria-hidden />

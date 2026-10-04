@@ -483,7 +483,7 @@ test("vazgeç ve escape masa kurma isteği atmaz", async ({ page }, testInfo) =>
   ).toBe(false);
 });
 
-test("masa kotası dolunca pencere açık kalır ve toast söyler", async ({
+test("masa kotası dolunca pencere açık kalır ve nedeni pencerede söyler", async ({
   page,
 }, testInfo) => {
   await mockApi(page, {
@@ -500,10 +500,8 @@ test("masa kotası dolunca pencere açık kalır ve toast söyler", async ({
   await dialog.getByLabel("Masa adı").fill("Dördüncü Masa");
   await dialog.getByRole("button", { name: "Masayı kur" }).click();
 
-  const toast = page
-    .getByRole("alert")
-    .filter({ hasText: "Masa işlemi tamamlanamadı" });
-  await expect(toast).toContainText("En fazla 3 masaya üye olabilirsin");
+  // Inside the sheet: a toast would sit under the native dialog's top layer, dimmed and inert.
+  await expect(dialog.getByRole("alert")).toContainText("En fazla 3 masaya üye olabilirsin");
   await expect(dialog).toBeVisible();
   await flowShot(page, testInfo, "create-quota");
 });
@@ -704,8 +702,6 @@ test("iki bölge: geniş ekranda ray sayacın sağında, 1024'te altında iki s�
   const today = page.getByRole("heading", { name: "Bugün", level: 2 });
   const rooms = page.getByRole("heading", { name: "Masaların", level: 2 });
   await expect(today).toBeVisible();
-  // The left history rail is gone: history lives in the drawer now.
-  await expect(page.getByTestId("session-history-rail")).toHaveCount(0);
 
   const startBox = (await start.boundingBox())!;
   const todayBox = (await today.boundingBox())!;
@@ -840,6 +836,10 @@ test("Başla'da ışıklar kısılır: menü karanlıkta kalır, halka sahnenin 
     warmth: 0,
   });
   expect(focus.veil).toBeCloseTo(0.86, 2);
+  // Under the cover the chrome is a ghost: no click, no Tab stop.
+  for (const chrome of await page.locator("[data-app-chrome]").all()) {
+    await expect(chrome).toHaveJSProperty("inert", true);
+  }
   // The setup screen is gone and one ring is left, centred on the room rather than the window.
   await expect(
     page.getByRole("heading", { name: "Bugün", level: 2 }),
@@ -918,6 +918,7 @@ test("bitişte ışık açılır ve biten seans Bugün şeridine eklenir", async
   // Only the session just finished grows in; the day's earlier ones stay put.
   await expect(today.locator("[data-fresh]")).toHaveCount(1);
   await expect.poll(async () => (await stageLights(page)).zIndex).toBe("auto");
+  await expect(page.locator("[data-app-chrome]").first()).toHaveJSProperty("inert", false);
   expect(await stageLights(page)).toMatchObject({
     phase: "idle",
     cover: 0,
@@ -985,4 +986,51 @@ test("stopwatch setup can switch back to a timed preset", async ({ page }) => {
   await expect(
     page.getByRole("button", { name: "S\u00fcresiz", exact: true }),
   ).toHaveAttribute("aria-pressed", "false");
+});
+
+test("saniyelik, sayılmayan seans şeride çizilmez", async ({ page }) => {
+  await mockApi(page, {
+    sessions: [
+      { ...sessionAt("s-short", 5, 0, "Matematik"), countsAsFocusSession: false },
+      { ...sessionAt("s-1", 120, 25, "Matematik"), countsAsFocusSession: true },
+    ],
+  });
+  await page.goto("/seans");
+
+  const today = page.getByRole("region", { name: "Bugün" });
+  await expect(today.getByRole("img")).toHaveAttribute(
+    "aria-label",
+    "Günlük hedefin 120 dakika. 1 seansla 45 dakika tamamladın.",
+  );
+});
+
+test("ışık açılırken sahne menünün üstünde kalır, sonra iner (hareket açık)", async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await mockApi(page);
+  await page.goto("/seans");
+  await page.getByRole("button", { name: "Başla" }).click();
+  await page.getByRole("button", { name: "Seansı bitir" }).click();
+  // Sample every frame from the click on: the stage may only drop under the chrome once the
+  // cover has faded, or the sidebar would pop back through the dark.
+  await page.evaluate(() => {
+    const frames: { z: string; cover: number }[] = [];
+    (window as unknown as { __frames: typeof frames }).__frames = frames;
+    const sample = () => {
+      const stage = document.querySelector<HTMLElement>("[data-testid=session-stage]");
+      const cover = stage?.querySelector<HTMLElement>("[data-stage-cover]");
+      if (stage && cover) {
+        frames.push({ z: getComputedStyle(stage).zIndex, cover: Number(getComputedStyle(cover).opacity) });
+      }
+      if (frames.length < 120) requestAnimationFrame(sample);
+    };
+    requestAnimationFrame(sample);
+  });
+  await page.getByRole("button", { name: "Yeni seans" }).click();
+  await expect.poll(async () => (await stageLights(page)).zIndex, { timeout: 3000 }).toBe("auto");
+  const frames = await page.evaluate(
+    () => (window as unknown as { __frames: { z: string; cover: number }[] }).__frames,
+  );
+  expect(frames.filter((f) => f.z === "auto" && f.cover > 0.02)).toEqual([]);
+  await expect(page.locator("[data-session-ring]")).toHaveCount(1);
+  await expect(page.locator("[data-session-ring]")).toBeVisible();
 });

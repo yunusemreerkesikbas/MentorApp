@@ -122,6 +122,8 @@ async function sendCode(page: Page) {
 test("settings accepts a full OTP, keeps an invalid attempt recoverable and normalizes the phone", async ({ page }) => {
   const api = await mockApi(page, { unknownSend: true });
   await page.goto("/ayarlar");
+  await expect(page.getByText("Bu, pazarlama izni değildir.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "KVKK aydınlatma metni", exact: true })).toHaveAttribute("href", "/yasal/kvkk-aydinlatma");
   await sendCode(page);
   await expect(page.getByText("Gönderim sonucu henüz belli değil.", { exact: false })).toBeVisible();
   expect(api.sent).toBe(1);
@@ -199,6 +201,11 @@ test("paid checkout never asks for SMS and sends an explicit paid choice", async
 
 test("trial waits for SMS and the refreshed server eligibility before checkout", async ({ page }) => {
   const api = await mockApi(page);
+  await page.goto("/en/subscription");
+  await page.getByRole("radio", { name: "Start with a 7-day trial" }).check();
+  await expect(page.getByText("kept for 12 months", { exact: false })).toBeVisible();
+  await expect(page.getByText("It does not give marketing consent.", { exact: false })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Personal data protection notice" })).toBeVisible();
   await page.goto("/abonelik");
   await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
   await expect(page.getByText("Deneme başladığında telefonunun denemede kullanıldığına dair kayıt 12 ay saklanır.", { exact: false })).toBeVisible();
@@ -228,9 +235,11 @@ test("paywall trial phone verification controls remain reachable within the dial
   const dialog = page.getByTestId("premium-paywall");
   const body = page.getByTestId("premium-paywall-body");
   const viewport = page.viewportSize()!;
-  const dialogBounds = await dialog.boundingBox();
-  expect(dialogBounds!.y).toBeGreaterThanOrEqual(0);
-  expect(dialogBounds!.y + dialogBounds!.height).toBeLessThanOrEqual(viewport.height);
+  // The CSS sheet entrance may still be moving when the trigger click resolves.
+  await expect.poll(async () => {
+    const bounds = await dialog.boundingBox();
+    return bounds !== null && bounds.y >= 0 && bounds.y + bounds.height <= viewport.height;
+  }).toBe(true);
 
   await page.getByRole("radio", { name: "7 gün denemeyle başla" }).check();
   await expect(body).toHaveCSS("overflow-y", "auto");
@@ -259,7 +268,8 @@ test("paywall trial phone verification controls remain reachable within the dial
   expect(confirmBounds!.y).toBeGreaterThanOrEqual(scrollBounds!.y);
   expect(confirmBounds!.y + confirmBounds!.height).toBeLessThanOrEqual(scrollBounds!.y + scrollBounds!.height + 1);
   await confirm.click();
-  await expect(page.getByText("Telefonun doğrulandı:", { exact: false })).toBeVisible();
+  // Refreshed eligibility removes the verification card once the trial can start.
+  await expect(code).toHaveCount(0);
   await page.getByRole("checkbox").check();
   const start = page.getByRole("button", { name: "Denemeyi başlat" });
   await expect(start).toBeEnabled();

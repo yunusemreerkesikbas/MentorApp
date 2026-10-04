@@ -26,7 +26,7 @@ export interface AccountErasureResult {
  * identity is foundational (everyone imports it), so putting the orchestration there would create a
  * cycle. Each module still erases its OWN tables (workstreams §2) — this only sequences them.
  *
- * Order matters: the subscription is cancelled FIRST so an erased account never keeps getting billed.
+ * Order matters: fence new work, then cancel billing before scrubbing personal data.
  * Steps 1-3 throw on failure (a half-done erasure must not be reported as success); the whole flow is
  * idempotent, so the caller can safely retry. Storage cleanup is best-effort — the DB scrub already
  * landed and a storage hiccup must not undo it.
@@ -54,6 +54,28 @@ export class AccountErasureService {
   ) {}
 
   async eraseAccount(userId: string, status: string): Promise<AccountErasureResult> {
+    const startedAt = await this.users.beginAccountErasure(userId);
+    let change: Awaited<ReturnType<UsersService["anonymizeAccount"]>>;
+    try {
+      change = await this.eraseFencedAccount(userId, status);
+    } catch (err) {
+      // Only the owner may reopen a failed attempt; a process crash leaves the fence durable.
+      await this.users.releaseAccountErasure(userId, startedAt);
+      throw err;
+    }
+
+    // The terminal scrub already cleared the fence. Session/storage failures must never reopen it.
+    await this.tokens.revokeAllForUser(userId);
+    if (change.avatarStorageKey) {
+      await this.storage.deleteObject(change.avatarStorageKey).catch((err: unknown) => {
+        this.logger.warn(`Avatar object not deleted for user ${userId}: ${String(err)}`);
+      });
+    }
+    this.logger.log(`Account erased for user ${userId} (status=${status})`);
+    return { before: change.before, after: change.after };
+  }
+
+  private async eraseFencedAccount(userId: string, status: string) {
     // 1. Stop the money first — an erased account must not keep renewing.
     await this.subscriptions.cancel(userId).catch((err: unknown) => {
       if (err instanceof NotFoundError) return; // no open subscription — nothing to cancel
@@ -70,18 +92,7 @@ export class AccountErasureService {
     await this.notificationsErasure.eraseUserData(userId);
     await this.phoneTrials.detachUser(userId);
 
-    // 3. Identity row (identity owns `users`) + kill every session.
-    const change = await this.users.anonymizeAccount(userId, status);
-    await this.tokens.revokeAllForUser(userId);
-
-    // 4. Avatar object — best-effort; the DB no longer points at it.
-    if (change.avatarStorageKey) {
-      await this.storage.deleteObject(change.avatarStorageKey).catch((err: unknown) => {
-        this.logger.warn(`Avatar object not deleted for user ${userId}: ${String(err)}`);
-      });
-    }
-
-    this.logger.log(`Account erased for user ${userId} (status=${status})`);
-    return { before: change.before, after: change.after };
+    // 3. Identity owns the terminal scrub and atomically clears the fence.
+    return this.users.anonymizeAccount(userId, status);
   }
 }

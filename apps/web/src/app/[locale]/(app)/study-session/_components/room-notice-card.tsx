@@ -1,10 +1,15 @@
-import { useId, type ReactNode } from "react";
+"use client";
+
+import { useEffect, useId, useRef, type ReactNode } from "react";
 import { PuhuImage, type PuhuVariant } from "@/components/puhu-image";
 
 /**
  * A table's one-card moments: arriving by invite, a code that no longer works, a table that is
  * gone. Puhu leans over the card's top edge, one sentence says what happened, and the actions
  * say what to do next, so no path ends on a bare line of text.
+ *
+ * Focus goes to the title whenever it changes (joining → a failure, loading → not found), so a
+ * screen reader hears the new state instead of nothing.
  */
 export function RoomNoticeCard({
   puhu,
@@ -19,6 +24,10 @@ export function RoomNoticeCard({
   children?: ReactNode;
 }) {
   const titleId = useId();
+  const titleRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    titleRef.current?.focus();
+  }, [title]);
   return (
     <section
       aria-labelledby={titleId}
@@ -27,7 +36,11 @@ export function RoomNoticeCard({
       <span className="absolute -top-16 left-1/2 -translate-x-1/2">
         <PuhuImage variant={puhu} size={112} priority />
       </span>
-      <h1 id={titleId} className="text-balance text-xl font-extrabold leading-snug text-[var(--color-main)]">
+      <h1
+        ref={titleRef}
+        id={titleId}
+        tabIndex={-1}
+        className="text-balance outline-none text-xl font-extrabold leading-snug text-[var(--color-main)]">
         {title}
       </h1>
       {body ? (
