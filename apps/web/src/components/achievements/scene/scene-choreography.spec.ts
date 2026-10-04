@@ -30,7 +30,7 @@ describe("resolveBeats", () => {
     expect(beats.quiet!).toBeGreaterThan(beats.ready!);
   });
 
-  it("never lets an early tap ignite before the orb exists", () => {
+  it("never ignites before the orb exists", () => {
     expect(resolveBeats({ ignitedAt: 0.2, exitAt: null, count: 1 }).ignite).toBe(CHOREO.orbReady);
   });
 
@@ -60,20 +60,16 @@ describe("exitDuration", () => {
 
 describe("cues", () => {
   it("sorts the ignite cues and keeps the chime on the burst", () => {
-    const cues = igniteCues({ cards: 1, byTap: true, copyAfter: 1.3 });
+    const cues = igniteCues({ cards: 1, copyAfter: 1.3 });
     expect(cues.map((c) => c.at)).toEqual([...cues.map((c) => c.at)].sort((a, b) => a - b));
     const burst = cues.find((c) => c.voice === "burst")!;
     const chime = cues.find((c) => c.voice === "chime")!;
     expect(chime.at - burst.at).toBeCloseTo(0.02);
-    expect(cues[0]!.voice).toBe("tap");
-  });
-
-  it("drops the tap when the light came on by itself", () => {
-    expect(igniteCues({ cards: 1, byTap: false, copyAfter: 1.3 }).some((c) => c.voice === "tap")).toBe(false);
+    expect(cues[0]!.voice).toBe("burst");
   });
 
   it("gives every dealt card its own swish and landing", () => {
-    const cues = igniteCues({ cards: 3, byTap: false, copyAfter: 2.2 });
+    const cues = igniteCues({ cards: 3, copyAfter: 2.2 });
     expect(cues.filter((c) => c.voice === "swish")).toHaveLength(3);
     expect(cues.filter((c) => c.voice === "land")).toHaveLength(3);
   });

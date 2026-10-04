@@ -7,7 +7,6 @@ import {
   deckBadgePose,
   exitBadgePose,
   flashOpacity,
-  hintPose,
   orbPose,
   singleBadgePose,
   type StageGeometry,
@@ -37,12 +36,6 @@ describe("the light before the badge", () => {
   it("squashes the orb for the windup", () => {
     const windup = orbPose(lit.ignite! + CHOREO.windup * 0.9, lit)!;
     expect(windup.sx).toBeGreaterThan(windup.sy);
-  });
-
-  it("shows the hint only while the light waits", () => {
-    expect(hintPose(0.8, lit).opacity).toBe(0);
-    expect(hintPose(1.5, lit).opacity).toBeGreaterThan(0.9);
-    expect(hintPose(lit.ignite! + 0.2, lit).opacity).toBe(0);
   });
 
   it("flashes on the burst and lets it go", () => {

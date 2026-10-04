@@ -42,7 +42,6 @@ export function AchievementCelebration({
       key={celebrationKey}
       cards={cards}
       text={{
-        hint: t("celebration_ignite"),
         eyebrow: summary
           ? t("history_eyebrow", { count })
           : t(`celebration_items.${first.id}.eyebrow`),
@@ -52,7 +51,6 @@ export function AchievementCelebration({
           : t(`celebration_items.${first.id}.body`),
         cta: t("continue"),
       }}
-      igniteLabel={t("celebration_ignite_aria")}
       litAnnouncement={t("celebration_eyebrow")}
       moreLabel={(rest) => t("celebration_more", { count: rest })}
       busy={busy}

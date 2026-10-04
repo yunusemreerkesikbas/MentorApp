@@ -28,7 +28,6 @@ export type SfxVoice =
   | "spark"
   | "gather"
   | "pop"
-  | "tap"
   | "burst"
   | "chime"
   | "swish"
@@ -59,7 +58,6 @@ const VOICE_LENGTH: Record<SfxVoice, number> = {
   spark: 0.62,
   gather: GATHER_LENGTH,
   pop: 0.09,
-  tap: 0.05,
   burst: 1.05,
   chime: Math.max(...ACHIEVEMENT_CHIME_NOTES.map((note) => note.offset + note.duration)),
   swish: 0.3,
@@ -128,10 +126,6 @@ const VOICES: Record<SfxVoice, (track: Track) => void> = {
   },
   gather,
   pop: (track) => tone(track, { freq: 560, dur: 0.09, gain: 0.14, attack: 0.003, decay: 0.03, glide: 0.7 }),
-  tap: (track) => {
-    noiseSweep(track, { dur: 0.012, from: 5000, to: 2500, gain: 0.5, shape: "fall" });
-    tone(track, { freq: 2900, dur: 0.05, gain: 0.07, decay: 0.012 });
-  },
   burst,
   // The app's own three-note signature (achievement-sound.ts), voiced like the film.
   chime: (track) => {
@@ -171,7 +165,6 @@ const VOICE_SEED: Record<SfxVoice, number> = {
   spark: 1,
   gather: 2,
   pop: 3,
-  tap: 4,
   burst: 5,
   chime: 6,
   swish: 7,

@@ -32,7 +32,6 @@ const SP = {
   flip: spring(SPRINGS.flip),
   title: spring(SPRINGS.title),
   ledge: spring(SPRINGS.ledge),
-  hint: spring(SPRINGS.hint),
   orbLand: spring(SPRINGS.orbLand),
   toss: spring(SPRINGS.toss),
 };
@@ -120,7 +119,7 @@ export function orbPose(t: number, beats: SceneBeats): OrbPose | null {
   const since = t - CHOREO.sparkLand;
   const squash = SP.orbLand.x(since);
   const breathe =
-    t > CHOREO.hintAt ? 1 + 0.09 * Math.sin(((t - CHOREO.hintAt) / 0.82) * Math.PI * 2) : 1;
+    t > CHOREO.breatheAt ? 1 + 0.09 * Math.sin(((t - CHOREO.breatheAt) / 0.82) * Math.PI * 2) : 1;
   const windup = beats.ignite === null ? 0 : ease.inCubic(progress(t, beats.ignite, CHOREO.windup));
   const waitEnd = beats.ignite ?? AUTO_IGNITE_AT;
   return {
@@ -130,17 +129,6 @@ export function orbPose(t: number, beats: SceneBeats): OrbPose | null {
     sy: (1 - 0.42 * squash) * (1 - 0.34 * windup),
     heat: progress(t, CHOREO.orbReady, waitEnd - CHOREO.orbReady),
     windup,
-  };
-}
-
-/** "Dokun, ışığı yak": pops in, leaves with the ignite. */
-export function hintPose(t: number, beats: SceneBeats): { opacity: number; y: number; scale: number } {
-  const pop = SP.hint.value(t - CHOREO.hintAt);
-  const leave = beats.ignite === null ? 0 : ease.inQuad(progress(t, beats.ignite, 0.12));
-  return {
-    opacity: t < CHOREO.hintAt ? 0 : clamp(progress(t, CHOREO.hintAt, 0.16) - leave),
-    y: (1 - pop) * 10,
-    scale: (0.6 + 0.4 * pop) * (1 - 0.08 * leave),
   };
 }
 

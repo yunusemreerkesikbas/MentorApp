@@ -67,6 +67,16 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-01 · The achievement scene plays by itself.** Product decision after seeing it on the
+  preview page: no "Dokun, ışığı yak" and nothing to tap. The light comes on 1.5 s after the orb is
+  ready (same timing as before), so the ignite button, its Enter/Space path, the inviting rings
+  around the orb, the tap-to-skip after the burst, the hint's and the tap's sounds and the
+  `celebration_ignite*` keys are gone. Focus sits on the dialog while the scene plays and moves to
+  "Devam edelim" when it settles; Escape still closes at any point. The film in
+  `design/achievement-scene/` keeps its tap as the historical reference (README notes the
+  difference). Related: `components/achievements/scene/*`, `e2e/achievement-celebration.spec.ts`,
+  DESIGN.md §9.1.
+
 - **2026-10-01 · Achievement scene preview page (development only).** `pnpm dev`, then
   `/dev/basari-sahnesi` (or `/en/dev/basari-sahnesi`) plays the scene on a stand-in panel with
   sample data: no API, login or earned achievement needed. "Bitti olarak işaretle" starts it (the
