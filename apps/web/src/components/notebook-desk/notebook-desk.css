@@ -506,12 +506,37 @@ html.dark .mentor-notebook-desk {
   opacity: 0;
 }
 
-.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="ahead"] [data-frame="rest"],
-.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="left"] [data-frame="left"],
-.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="right"] [data-frame="right"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="ahead"][data-read="left"] [data-frame="readLeft"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="ahead"][data-read="right"] [data-frame="readRight"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="left"] [data-frame="peekLeft"],
+.desk-puhu-wrap[data-pose="idle"][data-blink="false"][data-gaze="right"] [data-frame="peekRight"],
 .desk-puhu-wrap[data-pose="idle"][data-blink="true"] [data-frame="blink"],
 .desk-puhu-wrap[data-pose="wave"] [data-frame="wave"] {
   opacity: 1;
+}
+
+/*
+ * His feet dangle over the edge of the top book, swinging in and out against each other. Each
+ * turns about its own ankle (`DESK_PUHU_ART.feet[].pivot`); the belly was painted in under them,
+ * so a swing never uncovers a hole.
+ */
+.desk-puhu-foot {
+  animation: desk-puhu-swing 1.4s ease-in-out infinite alternate;
+}
+
+.desk-puhu-foot[data-foot="right"] {
+  animation-delay: -1.4s;
+}
+
+@keyframes desk-puhu-swing {
+  from { transform: rotate(-7deg); }
+  to { transform: rotate(7deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .desk-puhu-foot {
+    animation: none;
+  }
 }
 
 .desk-bubble {
