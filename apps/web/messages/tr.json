@@ -2109,6 +2109,7 @@
     "card_unlabelled": "Etiketsiz",
     "card_healed": "İyileşti",
     "card_review_count": "{count} kez tekrar ettin",
+    "card_review_none": "Henüz tekrar etmedin",
     "add_title": "Yeni yanlış",
     "add_subtitle": "Fotoğraf ve etiket isteğe bağlı; asıl soru neden kaçırdığın.",
     "add_photo": "Fotoğraf çek veya seç",
