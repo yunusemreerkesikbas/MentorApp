@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { CalendarPlus, PenLine } from "lucide-react";
 import { useTranslations } from "next-intl";
-import type { MentorshipStudentReportDto } from "@mentor/types";
+import type { MentorshipBriefDeltaDto, MentorshipStudentReportDto } from "@mentor/types";
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
 import { CompanionBubble } from "@/components/panel/companion-bubble";
 import {
@@ -16,6 +16,8 @@ import {
 import { firstName } from "@/lib/greeting";
 import { worstFlag } from "../../../_components/flag-order";
 import { durationLabel, hasTrace } from "./report-format";
+import { BriefDeltaBand } from "./brief-delta-band";
+import { BriefHistoryList } from "./brief-history-list";
 import { FilmLegend, WeekFilmstrip } from "./week-filmstrip";
 import { buildWeekFilm, weekSummary } from "./week-filmstrip-model";
 
@@ -28,6 +30,7 @@ export function WeekHeroCard({
   report,
   today,
   brief,
+  briefDelta,
   briefBusy,
   onPlan,
   onNote,
@@ -36,6 +39,8 @@ export function WeekHeroCard({
   /** Europe/Istanbul `yyyy-mm-dd`. */
   today: string;
   brief: string | null;
+  /** Null on the first brief of a period: there is nothing earlier to measure against. */
+  briefDelta: MentorshipBriefDeltaDto | null;
   briefBusy: boolean;
   onPlan: () => void;
   onNote: () => void;
@@ -64,6 +69,7 @@ export function WeekHeroCard({
 
   return (
     <section className={`${PANEL_HERO} coach-reveal`} aria-labelledby="week-title" data-testid="week-hero">
+      {ai && briefDelta ? <BriefDeltaBand delta={briefDelta} /> : null}
       <CompanionBubble
         puhu="host"
         text={line}
@@ -106,6 +112,7 @@ export function WeekHeroCard({
           {t("week_leave_note")}
         </button>
       </div>
+      {ai ? <BriefHistoryList studentId={report.studentId} /> : null}
     </section>
   );
 }

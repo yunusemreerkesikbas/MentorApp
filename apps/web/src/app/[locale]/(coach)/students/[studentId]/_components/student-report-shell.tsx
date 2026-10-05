@@ -83,6 +83,7 @@ export function StudentReportShell({ studentId }: { studentId: string }) {
         report={report}
         today={today}
         brief={brief.brief}
+        briefDelta={brief.delta}
         briefBusy={brief.busy}
         onPlan={() => setPanel("plan")}
         onNote={() => setNoteDraft((draft) => draft ?? report.coachNote?.body ?? "")}

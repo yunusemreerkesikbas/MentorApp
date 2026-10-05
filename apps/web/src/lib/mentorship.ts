@@ -7,6 +7,7 @@ import type {
   MentorshipSharedDataDto,
   MentorshipInviteCodeDto,
   MentorshipBriefDto,
+  MentorshipBriefHistoryItemDto,
   MentorshipInvitationPreviewDto,
   MentorshipProgramTemplateDto,
   MentorshipProgramTemplateTaskDto,
@@ -193,6 +194,23 @@ export async function generateBrief(studentId: string): Promise<MentorshipBriefD
     `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief`,
     { method: "POST" },
   )) as MentorshipBriefDto;
+}
+
+/**
+ * Every brief written about this student in the current relationship period, newest first.
+ *
+ * GET and free, unlike `generateBrief`: these rows were already paid for once. Re-linking rotates
+ * the period, so a revived relationship reads back empty rather than returning briefs about a
+ * relationship both sides had walked away from.
+ */
+export async function fetchBriefHistory(
+  studentId: string,
+  page = 1,
+  pageSize = 5,
+): Promise<Paginated<MentorshipBriefHistoryItemDto>> {
+  return (await http<Paginated<MentorshipBriefHistoryItemDto>>(
+    `/v1/mentorship/students/${encodeURIComponent(studentId)}/brief-history?page=${page}&pageSize=${pageSize}`,
+  )) as Paginated<MentorshipBriefHistoryItemDto>;
 }
 
 /**

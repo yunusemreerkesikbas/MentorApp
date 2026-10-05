@@ -1,5 +1,5 @@
 import { Injectable, Inject } from "@nestjs/common";
-import { and, asc, count, desc, eq, isNotNull, lte, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, gt, isNotNull, lte, or, sql } from "drizzle-orm";
 import type { ListMentorshipFollowupsQuery } from "@mentor/validation";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database, DatabaseTx } from "../../../database/drizzle";
@@ -72,6 +72,26 @@ export class MentorshipFollowupRepository {
     return withServiceContext(this.db, async (tx) => {
       const rows = await tx.selectDistinct({ coachId: coachStudents.coachId }).from(followups).innerJoin(coachStudents, currentPeriod).where(due(today));
       return rows.map((row) => row.coachId);
+    });
+  }
+
+  /**
+   * What the coach did on this relationship between two briefs (APP-093).
+   *
+   * Opened counts rows created in the window; closed counts rows that reached COMPLETED or
+   * CANCELLED in it, whenever they were opened — a follow-up the coach opened last month and closed
+   * this week is something they did this week.
+   *
+   * Period-scoped through the caller's `(linkId, periodId)`, not through `currentPeriod`: the
+   * brief already holds the gate's link row, and joining `coach_students` again would ask the same
+   * question twice.
+   */
+  countInWindow(linkId: string, periodId: string, since: Date): Promise<{ opened: number; closed: number }> {
+    return withServiceContext(this.db, async (tx) => {
+      const scope = and(eq(followups.linkId, linkId), eq(followups.periodId, periodId));
+      const [opened] = await tx.select({ n: count() }).from(followups).where(and(scope, gt(followups.createdAt, since)));
+      const [closed] = await tx.select({ n: count() }).from(followups).where(and(scope, isNotNull(followups.closedAt), gt(followups.closedAt, since)));
+      return { opened: opened?.n ?? 0, closed: closed?.n ?? 0 };
     });
   }
 

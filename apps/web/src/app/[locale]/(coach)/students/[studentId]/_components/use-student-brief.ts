@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { PremiumFeatureId } from "@mentor/types";
+import { PremiumFeatureId, type MentorshipBriefDeltaDto } from "@mentor/types";
 import { generateBrief } from "@/lib/mentorship";
 import { usePremiumFeature } from "@/lib/subscription-context";
 
@@ -17,24 +17,31 @@ import { usePremiumFeature } from "@/lib/subscription-context";
  * Keyed by student: a reply that lands after the coach moved on never shows under the next name.
  * Unavailable or failing, `brief` stays null. No toast and no nudge (the entitlement is decided
  * elsewhere; this screen reflects it).
+ *
+ * `delta` is null on the first brief of a period. The hero uses that to skip the "since last time"
+ * band; a band that said nothing moved would be answering a question nobody could ask yet.
  */
 export function useStudentBrief(
   studentId: string,
   wanted: boolean,
-): { brief: string | null; busy: boolean } {
+): { brief: string | null; delta: MentorshipBriefDeltaDto | null; busy: boolean } {
   const available = usePremiumFeature(PremiumFeatureId.MENTORSHIP_BRIEF);
   const run = available && wanted;
-  const [result, setResult] = useState<{ studentId: string; brief: string | null } | null>(null);
+  const [result, setResult] = useState<{
+    studentId: string;
+    brief: string | null;
+    delta: MentorshipBriefDeltaDto | null;
+  } | null>(null);
 
   useEffect(() => {
     if (!run) return;
     let active = true;
     generateBrief(studentId)
       .then((reply) => {
-        if (active) setResult({ studentId, brief: reply.brief });
+        if (active) setResult({ studentId, brief: reply.brief, delta: reply.delta });
       })
       .catch(() => {
-        if (active) setResult({ studentId, brief: null });
+        if (active) setResult({ studentId, brief: null, delta: null });
       });
     return () => {
       active = false;
@@ -42,5 +49,9 @@ export function useStudentBrief(
   }, [run, studentId]);
 
   const mine = result?.studentId === studentId ? result : null;
-  return { brief: run ? (mine?.brief ?? null) : null, busy: run && mine === null };
+  return {
+    brief: run ? (mine?.brief ?? null) : null,
+    delta: run ? (mine?.delta ?? null) : null,
+    busy: run && mine === null,
+  };
 }

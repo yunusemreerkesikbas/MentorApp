@@ -52,3 +52,8 @@ export function formatDate(iso: string, locale: string): string {
     year: "numeric",
   }).format(new Date(iso));
 }
+
+/** Whole counts (days, sessions, minutes, mocks) in the reader's locale. */
+export function formatCount(value: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(value);
+}
