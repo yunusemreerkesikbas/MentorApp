@@ -97,6 +97,11 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-05 — Netgsm release preparation.** Kept the reviewed sender minimum and extended transport acceptance: an empty/whitespace task ID with code 00 stays UNKNOWN, without retry. Added a disabled-transport no-call check and renewed privacy/phone/trial/sponsorship acceptance. Usage: follow the ordered checklist in docs/core/integrations.md for sender approval/KEP, SMS service permission, OTP package, actual Render egress, secrets, Turnstile, migration and isolated carrier pilot. Gotchas: preliminary application is not approval; Render ranges may require provider format confirmation; identity.phone.enabled=false blocks both sends and confirmations, while a zero global daily quota pauses only sends. Production switches stay off; no live SMS or production migration was performed. Related: netgsm-sms.adapter{,.spec}.ts, env-phone.validation.spec.ts, docs/qa/2026-10-05-netgsm-release-prep.md.
+
+
+- **2026-10-04 — Netgsm REST v2 documentation review.** Compared the adapter against the live official OTP section: HTTPS POST, Basic Auth, flat `msgheader`/`msg`/`no` JSON, ten-digit Turkey mobile destination, one ASCII segment, string `jobid` and documented rejection codes match. Found and fixed the missing three-character sender minimum in Netgsm-enabled startup validation; disabled SMS still permits an empty sender. Usage: configure the subscriber number as `NETGSM_USERCODE`, the API subuser password and the approved 3-11-character header. Gotchas: Netgsm's three-minute transport window is separate from our five-minute code validity and five-second HTTP deadline; acceptance is not delivery or verification. Unknown outcomes are not retried automatically. Related: `env-phone.validation.spec.ts`, `env.validation.ts`, `netgsm-sms.adapter{,.spec}.ts`, `docs/core/integrations.md`; source: [official OTP contract](https://www.netgsm.com.tr/dokuman/#otp-sms). Transport tests inject responses; the consented live carrier pilot remains pending.
+
 - **Private SMS verification (2026-10-03, APP-114).** Added protected phone endpoints, shared Zod
   normalization for Turkey mobile numbers, six-digit cryptographic codes protected with keyed HMAC,
   session/purpose binding, expiry, replay protection and atomic Postgres quotas. One verified number

@@ -48,35 +48,135 @@
 
 ### Netgsm (phone verification)
 
-- Keep `SMS_PROVIDER=disabled`, `identity.phone.enabled=false` and
-  `mentorship.seats.sponsorship_enabled=false` until setup and the delivery pilot are complete.
-- Obtain an approved sender header and OTP package. Create an API subuser with only the required
-  OTP permission, restrict it to the verified Render outbound IP ranges, and use its API password
-  rather than the main account password. Configure `NETGSM_USERCODE`, `NETGSM_API_PASSWORD`,
-  `NETGSM_MSGHEADER` and two independent random secrets of at least 32 characters.
-- Transport is native HTTPS POST to Netgsm's OTP REST v2 endpoint, with a fixed ASCII template,
-  a five-second timeout and no automatic retry. A timeout can mean a delivered SMS; the challenge
-  remains confirmable until expiry. Definitive rejection never verifies the phone.
-- Every send verifies Turnstile action `phone-verification`. Confirm the hostname matches the web
-  deployment and configure the matching site key. Codes, raw phones and credentials must never
-  appear in logs, monitoring, jobs or analytics. Local tests inject an in-memory adapter; there
-  is no production fixed-code mode.
-- Start with central registry limits: 5-minute code, 60-second resend, five guesses per challenge,
-  20 failed guesses per account/rolling 24h, ten SMS sends per account and target/rolling 24h,
-  100 global sends/rolling 24h and 1,000 per UTC calendar month. Lower a limit to zero to stop the
-  corresponding operation. Limits count attempted sends even when transport rejects them.
-- The existing daily reminder cron also purges expired phone challenges, OTP abuse counters older
-  than 32 days, and consumed trial fingerprints after 12 calendar months. Pending payment outcomes
-  have no automatic expiry; reconcile with provider evidence before releasing them.
-- Keep `PHONE_FINGERPRINT_SECRET` stable through retention. Changing it without a controlled
-  migration would reset phone-based trial matching and number-send accounting. Confirm Netgsm's
-  retention/support terms and publish the verification purpose and trial retention notice.
-- Pilot only with consented Turkcell, Vodafone and Turk Telekom numbers; record aggregate delivery
-  time and completion rates without phone/code data. Enable verification first, then sponsorship
-  only after the acceptance checks. The iyzico skeleton still blocks real carded-trial acceptance.
+The implementation is complete enough for offline acceptance; carrier delivery is a separate
+release gate. Follow this checklist in order. Never put credentials, identity documents,
+raw phones or codes in Git, screenshots, CI artifacts, logs, Sentry, analytics, jobs or LLM input.
 
-Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/),
-[API preparation](https://bilgibankasi.netgsm.com.tr/entegrasyonlar/api-entegrasyonu-hazirlik-rehberi).
+#### 1. Finish provider onboarding
+
+- [ ] Request the sender under Online Applications / Sender Name Application. A preliminary
+  application is not approval. For a new header, upload the required documents in Netgsm only,
+  then send the generated form from your own send-capable KEP account to the recipient shown
+  in the portal. Wait for approval and confirm the exact header appears among assigned senders.
+  Existing preapproved names follow the portal's separate confirmation flow.
+- [ ] Sender must relate to the subscriber/business and contain 3-11 characters. A temporary
+  name still requires approval; later request another approved header and update the env value.
+- [ ] Confirm the API subuser is active, API access is approved and SMS Hizmeti is authorized.
+  Grant only required service access. Do not assume grayed granular UI checkboxes imply a
+  signature problem. Use the API subuser password, never the main portal password.
+- [ ] Confirm an active OTP SMS package/campaign and remaining OTP units. Ordinary SMS credits
+  do not replace OTP units. Check expiry before the pilot; no automatic purchase is performed.
+- Netgsm explicitly exempts API SMS sending from e-signature use. This concerns runtime requests;
+  it does not remove the separate KEP/form requirements during sender onboarding.
+
+#### 2. Restrict the actual API server's network access
+
+- [ ] Render: open the NestJS service, Connect / Outbound, and record every current egress range
+  for that service. Web/static-site addresses and inbound DNS addresses are not API egress IPs.
+- [ ] Configure Netgsm API IP Access Management for these verified ranges. Render may use any IP
+  in a range and regional ranges are shared, so credentials remain necessary. Confirm Netgsm's
+  supported range format before entering it; do not assume CIDR support or allow only one sampled IP.
+- [ ] If Netgsm cannot represent all required ranges, resolve with provider support or separately
+  approved dedicated outbound IPs before rollout. Do not remove the restriction as a fallback.
+- [ ] Pilot from the isolated deployment's own egress. Review restrictions after a region/service
+  change; do not broadly allow developer or CI addresses just to make tests pass.
+
+#### 3. Prepare secrets and Turnstile while production stays off
+
+| Setting | Required value |
+| --- | --- |
+| SMS_PROVIDER | disabled during preparation; netgsm only in the isolated live pilot initially |
+| NETGSM_USERCODE | Subscriber number used as the Basic Auth username |
+| NETGSM_API_PASSWORD | Active API subuser password |
+| NETGSM_MSGHEADER | Exact approved 3-11-character sender; approval cannot be inferred from length |
+| PHONE_OTP_SECRET | Independent cryptographically random secret, at least 32 characters |
+| PHONE_FINGERPRINT_SECRET | A different random secret, at least 32 characters; stable through retention |
+
+- [ ] Generate each application secret independently in the approved secret-management workflow.
+  Enter secrets directly in server configuration, not chat, command arguments or documentation.
+  Missing credentials/secrets or invalid sender length reject Netgsm-enabled startup.
+- [ ] Configure the real Turnstile keys and allowed web hostname for the target deployment.
+  Every send verifies action phone-verification. Test stubs must never become a production bypass.
+- [ ] Confirm identity.phone.enabled=false and mentorship.seats.sponsorship_enabled=false in
+  production. Env controls transport; registry flags control availability and sponsored rollout.
+- [ ] Preserve PHONE_FINGERPRINT_SECRET through the 12-calendar-month trial retention window.
+  Blind rotation would reset phone-based matching and number-send accounting. Replacing the key
+  requires a separately designed migration, not a routine config update.
+
+#### 4. Verify schema and the application-owned OTP contract
+
+- [ ] Apply the full migration journal through the normal deployment process using the migration
+  role/URL. Do not execute just the phone SQL files manually or edit applied migrations.
+  0120 creates phone/challenge/trial tables and indexes; 0121 forces SERVICE-only RLS;
+  0122 persists resumable checkout data; 0123 adds the account-erasure fence. Existing users
+  retain null phone fields; there is no legacy-coach grace period or verification bypass.
+- [ ] Verify a fresh test DB and an existing test DB upgraded from immediately before 0120,
+  including a preexisting user and subscription. Reapplying the journal must be idempotent.
+- Native HTTPS POST uses /sms/rest/v2/otp with Basic Auth and flat msgheader/msg/no JSON.
+  The fixed ASCII message remains one segment (<=155 characters), with a ten-digit Turkey
+  mobile destination, no scheduling and no automatic retry. Long jobid values remain strings.
+- Code validity defaults to five minutes; provider transport window is three minutes;
+  HTTP timeout defaults to five seconds. These are different clocks. API acceptance never
+  proves delivery or ownership. Only successful application code confirmation verifies a phone.
+- Central defaults: 60-second resend, five wrong codes/challenge, 20 wrong codes/account/rolling
+  24h, ten sends/account and target/rolling 24h, 100 global sends/rolling 24h, 1,000/UTC calendar
+  month, and fresh login within ten minutes for number changes. Refresh does not count.
+  Attempted sends consume quota even on rejection; account/session switching does not reset it.
+- The daily reminder cron purges expired challenges, abuse counters older than 32 days and
+  consumed trial fingerprints after 12 calendar months. Unknown payment claims never expire
+  automatically; reconcile with provider evidence before releasing them.
+
+#### 5. Run the separate carrier pilot and enable deliberately
+
+- [ ] After sender/network/package setup, use an isolated deployment and test DB with real
+  Netgsm transport and identity.phone.enabled=true; keep sponsorship disabled. Exercise the
+  normal authenticated UI/API with real Turnstile, not a direct send or fixed-code shortcut.
+- [ ] Obtain consented Turkcell, Vodafone and Turk Telekom test numbers. Record only operator,
+  elapsed delivery time and verification outcome, not phones, codes, user IDs or provider bodies.
+  Each operator must successfully receive and confirm a code before initial acceptance.
+  A three-number pilot is a smoke check, not statistical proof of reliability.
+- [ ] Check resend invalidation, manual recovery after UNKNOWN, fresh-login number change and
+  no premature coach/trial/sponsorship entitlement. Unsafe or failed checks block production.
+- [ ] Publish the verification purpose and twelve-month trial-retention notice; confirm the
+  provider's retention/support terms. Phone verification is not marketing consent.
+- [ ] After full CI and pilot acceptance, configure production transport then enable phone
+  verification. Enable sponsorship separately only after its eligibility/budget checks pass.
+  Real carded trials also require the completed iyzico adapter and separate payment acceptance.
+
+#### 6. Troubleshoot and stop safely
+
+| Outcome | Operator check | Application behavior |
+| --- | --- | --- |
+| 20 | Fixed message text and <=155-character ASCII length | FAILED; phone remains unverified |
+| 30 | Subscriber number, API subuser password/status, API access and actual egress allowlist | FAILED; no automatic retry |
+| 40-41 | Exact approved sender assigned to this account | FAILED; never use an unapproved fallback |
+| 50-52 | Turkey mobile format; no fixed-line or international destination | FAILED |
+| 60 | Active OTP package/campaign and remaining units | FAILED; ordinary SMS balance is insufficient |
+| 70 | Request contract and required fields | FAILED |
+| 100, timeout, non-2xx, malformed or unknown reply | Provider/transport state is uncertain | UNKNOWN; no automatic retry |
+| 00 plus a nonempty string jobid | Request accepted, not delivery confirmed | SENT; ownership still needs code confirmation |
+
+This table is a private operator guide; do not forward raw provider bodies or exception text to
+clients or monitoring. UNKNOWN may already have sent: leave its challenge confirmable until
+expiry while verification is available; user-initiated resend obeys cooldown and invalidates
+its predecessor. Do not retry a timed-out HTTP call or treat it as a payment-claim cancellation.
+
+- Emergency stop: set identity.phone.enabled=false. **Existing behavior blocks both new sends
+  and pending confirmations with AUTH_PHONE_DISABLED (503).** Verified contacts and retained
+  trial history are not deleted, and entitlement gates remain in force. To pause only sends
+  while allowing pending confirmations, set identity.phone.global_daily_limit=0 instead.
+- Keep sponsorship disabled during preparation/pilot. Its flag stops new grants; it is not
+  proof that every previously funded entitlement has been revoked. Follow the mentorship
+  revocation runbook for any required existing-seat cleanup.
+- Restore the previous quota/flag values only after the provider issue is resolved and checks
+  pass. Never roll back schema, delete history, rotate fingerprint secrets or weaken contact
+  checks to restore availability.
+
+Sources checked 2026-10-05: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
+[API preparation](https://bilgibankasi.netgsm.com.tr/entegrasyonlar/api-entegrasyonu-hazirlik-rehberi),
+[sender application](https://bilgibankasi.netgsm.com.tr/sms/toplu-sms/gonderici-adi-talebi),
+[API e-signature distinction](https://bilgibankasi.netgsm.com.tr/sms/toplu-sms/sms-gonderimlerinde-e-imza-kullanimi),
+[Render egress](https://render.com/docs/outbound-ip-addresses).
 
 ### Cloudflare (R2 + Turnstile + Access)
 - R2 bucket (zero egress) → `R2_*`. Turnstile site (signup/forum) → secret + public site key.
