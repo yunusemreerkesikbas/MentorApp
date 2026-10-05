@@ -1,27 +1,53 @@
 "use client";
 
-import { motion, useReducedMotion, type Variants } from "framer-motion";
-import { Check } from "lucide-react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type RefObject,
+} from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import type { NotebookEntryDto } from "@mentor/types";
-import { REVIEW_CARD_WIDTH } from "./notebook-review-card";
+import {
+  FAN_TIMING,
+  dealDelay,
+  dealDuration,
+  fanGeometry,
+  foldPlacement,
+  followAnchor,
+  handPlacement,
+  pilePlacement,
+  type FanGeometry,
+  type FanPlacement,
+  type ReviewCardBox,
+} from "@/lib/notebook-review-fan";
+import { DeckButton } from "./notebook-review-deck-button";
+import {
+  NotebookReviewFanCard,
+  type FanCardRole,
+  type FanCardTiming,
+} from "./notebook-review-fan-card";
 
 /**
- * The deck seen from above: the cards themselves, stacked, each showing only its title band.
+ * The deck as a hand of cards ("Yelpaze").
  *
- * It was a list of rows — thumbnail, title, error type — grouped under subject headings. That is a
- * perfectly good list and the wrong object: the student is holding a deck of cards, and the way you
- * find a card in a deck is by fanning it and reading the edges, not by consulting an index of it.
- * The stack says "there are nine of these and you are on the fourth" in one glance, which is the
- * only question this screen exists to answer.
+ * It used to be a stack of title slabs that replaced the card: a good list and the wrong object.
+ * The student is holding a deck, and the list is now that deck held in the hand. The review card
+ * shrinks into its slot, the two cards drawn behind it spread out beside it, and the cards already
+ * answered sit on a small pile in the corner, so progress is something you can see thin out rather
+ * than a tick on a row. A tap lifts a card back up into the review card.
  *
- * Deliberately still not a checklist. There is no answer control on any slab: tapping one takes you
- * to that card, where the question is, and the answer is given there. Ticking a question you never
- * looked at is the one thing this feature cannot survive.
+ * Navigation only, as before. Nothing in the hand answers a card; the answer is given on the card,
+ * where the question is.
  *
- * The subject grouping that used to live in headings is gone from here entirely — the deck arrives
- * already ordered so one subject's cards sit together (`bySubject`). Headings between the slabs
- * would cut the deck into three piles anyway; the illusion only holds while the stack is continuous.
+ * Geometry lives in `lib/notebook-review-fan.ts`. The cards move on CSS transitions rather than
+ * Framer: twenty transforms with their own delays are the compositor's job, and a transition that
+ * changes target mid-flight (browsing while the deal is still landing) just retargets.
  */
 
 export interface NotebookReviewListProps {
@@ -29,222 +55,396 @@ export interface NotebookReviewListProps {
   entries: NotebookEntryDto[];
   /** By id, not position — the panel and the list must agree on which card is which. */
   currentId: string | null;
+  /** In answer order: a `Set` keeps insertion order, and the pile is stacked in it. */
   answered: ReadonlySet<string>;
-  onPick: (entryId: string) => void;
+  /** The review card's box. The hand is dealt from it and folds back into it. */
+  origin: RefObject<HTMLElement | null>;
+  /** The card the hand is folding back onto, while it does; null while the hand is open. */
+  folding: string | null;
+  /** Asks the panel to fold the hand onto a card: the one picked, or the current one to close. */
+  onFold: (entryId: string) => void;
+  /** The fold has landed and the review card can take over. */
+  onFolded: () => void;
 }
 
-/**
- * How much of each slab the next one covers.
- *
- * The gap left over is the whole design: too little and the titles collide, too much and the slabs
- * stop reading as one deck and become a list with rounded rows again. At a 64px slab this leaves a
- * 44px band — still a legal touch target, and enough for one line of title.
- */
-const STACK_OVERLAP_PX = 20;
+/** Pointer travel before a press on the hand becomes a drag through it. */
+const DRAG_SLOP_PX = 6;
+/** One wheel notch, one card: a trackpad's stream of tiny deltas would otherwise race through. */
+const WHEEL_GAP_MS = 120;
+const EASE_OUT = "var(--ease-smooth-out)";
+const EASE_FOLD = "cubic-bezier(0.4, 0, 0.2, 1)";
 
-/**
- * The gap between one card landing and the next — the deck deals itself when the list opens.
- *
- * The stack used to appear whole, which made the switch from card to list a hard cut: nine slabs
- * where a moment ago there was one card. Dealing them says the thing the view is for — this is your
- * deck, and there are this many left in it — in the half second before the student reads a word.
- *
- * 45ms is picked from the deck's own length. Nine cards land in 400ms of stagger, which is under the
- * ~500ms where a sequence stops reading as one motion and becomes a queue you wait for; a fifty-card
- * deck would need the cap this does not have, and a fifty-card review day is a different problem.
- */
-const DEAL_STAGGER_S = 0.045;
-
-/**
- * Each card arrives from below and behind, along the same Z axis every other lift on this pile
- * uses — it slides *into* the stack rather than fading in on top of it. Reduced motion keeps the
- * stagger's order (it is information: this is the deck, dealt in order) and drops the travel.
- */
-const dealVariants: Variants = {
-  hidden: { opacity: 0, y: 24, z: -90 },
-  shown: {
-    opacity: 1,
-    y: 0,
-    z: 0,
-    transition: { duration: 0.34, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-const dealVariantsReduced: Variants = {
-  hidden: { opacity: 0 },
-  shown: { opacity: 1, transition: { duration: 0.15 } },
-};
+type Phase = "fold" | "dealing" | "open";
 
 export function NotebookReviewList({
   entries,
   currentId,
   answered,
-  onPick,
+  origin,
+  folding,
+  onFold,
+  onFolded,
 }: NotebookReviewListProps) {
-  const reduceMotion = useReducedMotion();
+  const t = useTranslations("notebook");
+  const reduceMotion = useReducedMotion() ?? false;
+  const rootRef = useRef<HTMLDivElement>(null);
+  const buttons = useRef(new Map<string, HTMLButtonElement>());
+  const drag = useRef<{ x: number; pointer: number; start: number; moved: boolean } | null>(null);
+  const suppressClick = useRef(false);
+  const wheelAt = useRef(0);
 
-  return (
-    <div
-      // `overflow-x-clip` is not decoration. `overflow-y-auto` on its own leaves the x axis
-      // `visible`, which CSS then computes to `auto` — so the lifted card poked out by a few
-      // pixels and the deck grew a horizontal scrollbar across its foot.
-      className={`max-h-[62vh] ${REVIEW_CARD_WIDTH} overflow-y-auto overflow-x-clip px-4 pb-10 pt-2`}
-      style={{
-        // Real perspective, not a stack of flat slabs: the deck is tilted away from the reader so
-        // the cards further up genuinely recede. `perspective` lives on the scroll container and
-        // the rotation on the list inside it, because a transformed element cannot also be the
-        // thing that scrolls — the two fight over the same box.
-        perspective: "1100px",
-        perspectiveOrigin: "50% 0%",
-        // The fade is what sells "the deck continues past the edge" — and unlike the old flat
-        // list, this view always has something meaningful under the mask, because the slab there
-        // is a card and not a heading. Softer at the top, where the cards slide out of view.
-        maskImage:
-          "linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 24px), transparent 100%)",
-        WebkitMaskImage:
-          "linear-gradient(to bottom, transparent 0, #000 32px, #000 calc(100% - 24px), transparent 100%)",
-      }}
-    >
-      <motion.ol
-        className="flex flex-col"
-        initial="hidden"
-        animate="shown"
-        variants={{
-          shown: { transition: { staggerChildren: DEAL_STAGGER_S } },
-        }}
-        style={{
-          transformStyle: "preserve-3d",
-          // Hinged at the top edge, so the near end of the deck is the one under the reader's
-          // thumb. 10° is the whole budget: past about 14° the titles start to foreshorten into
-          // an unreadable squash, and this has to stay a list you can read, not a diorama.
-          transform: "rotateX(10deg)",
-          transformOrigin: "50% 0%",
-        }}
-      >
-        {entries.map((entry, position) => (
-          <StackCard
+  const [layout, setLayout] = useState<{ geometry: FanGeometry; box: ReviewCardBox } | null>(
+    null,
+  );
+  // Reduced motion skips the deal: the hand crossfades in already open.
+  const [phase, setPhase] = useState<Phase>(reduceMotion ? "open" : "fold");
+  const [dragging, setDragging] = useState(false);
+
+  const hand = useMemo(
+    () => entries.filter((entry) => !answered.has(entry.id)).map((entry) => entry.id),
+    [answered, entries],
+  );
+  const pile = useMemo(
+    () => [...answered].filter((id) => entries.some((entry) => entry.id === id)),
+    [answered, entries],
+  );
+  const [browse, setBrowse] = useState(() => {
+    const id = currentId && hand.includes(currentId) ? currentId : (hand[0] ?? null);
+    return { id, anchor: Math.max(0, id ? hand.indexOf(id) : 0) };
+  });
+  const browsed = Math.max(0, browse.id ? hand.indexOf(browse.id) : 0);
+  const currentAt = currentId ? hand.indexOf(currentId) : -1;
+  const dealOrigin = currentAt >= 0 ? currentAt : browsed;
+
+  // Measured before the first paint, so the hand's first frame lies exactly over the review card it
+  // replaces. A frame later would show the dialog with neither.
+  useLayoutEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const measure = () => {
+      const frame = root.getBoundingClientRect();
+      const geometry = fanGeometry(frame.width, frame.height);
+      const card = origin.current?.getBoundingClientRect();
+      const box =
+        card && card.width > 0
+          ? {
+              x: card.left - frame.left + card.width / 2,
+              y: card.top - frame.top + card.height / 2,
+              width: card.width,
+            }
+          : { x: geometry.handX, y: geometry.handY, width: geometry.cardWidth };
+      setLayout({ geometry, box });
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(root);
+    return () => observer.disconnect();
+  }, [origin]);
+
+  // The deal starts two frames after the hand was painted folded, or the browser merges the two
+  // states and the cards appear in place instead of travelling there.
+  useEffect(() => {
+    if (phase !== "fold" || !layout) return;
+    let second = 0;
+    const first = requestAnimationFrame(() => {
+      second = requestAnimationFrame(() => setPhase("dealing"));
+    });
+    return () => {
+      cancelAnimationFrame(first);
+      cancelAnimationFrame(second);
+    };
+  }, [layout, phase]);
+
+  useEffect(() => {
+    if (phase !== "dealing") return;
+    const timer = setTimeout(() => setPhase("open"), dealDuration(hand.length, dealOrigin));
+    return () => clearTimeout(timer);
+  }, [dealOrigin, hand.length, phase]);
+
+  useEffect(() => {
+    if (!folding) return;
+    const timer = setTimeout(
+      onFolded,
+      reduceMotion ? FAN_TIMING.fadeMs : FAN_TIMING.foldMs + 40,
+    );
+    return () => clearTimeout(timer);
+  }, [folding, onFolded, reduceMotion]);
+
+  // Focus goes to the card the deck is on, once, so ←/→ and Enter work straight away.
+  const focused = useRef(false);
+  useEffect(() => {
+    if (!layout || focused.current || !browse.id) return;
+    focused.current = true;
+    buttons.current.get(browse.id)?.focus({ preventScroll: true });
+  }, [browse.id, layout]);
+
+  const browseTo = useCallback(
+    (position: number, focus = false) => {
+      if (!layout || hand.length === 0 || folding) return;
+      const next = Math.min(hand.length - 1, Math.max(0, position));
+      const id = hand[next]!;
+      setBrowse((current) =>
+        current.id === id
+          ? current
+          : { id, anchor: followAnchor(current.anchor, next, hand.length, layout.geometry.window) },
+      );
+      if (focus) buttons.current.get(id)?.focus({ preventScroll: true });
+    },
+    [folding, hand, layout],
+  );
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const to =
+        event.key === "ArrowRight"
+          ? browsed + 1
+          : event.key === "ArrowLeft"
+            ? browsed - 1
+            : event.key === "Home"
+              ? 0
+              : event.key === "End"
+                ? hand.length - 1
+                : null;
+      if (to === null || folding) return;
+      event.preventDefault();
+      browseTo(to, true);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [browseTo, browsed, folding, hand.length]);
+
+  const folded = !reduceMotion && (phase === "fold" || folding !== null);
+  const foldOn = folding ?? currentId;
+  const foldAt = foldOn ? hand.indexOf(foldOn) : -1;
+  const chrome = phase !== "fold" && !folding;
+
+  const cards = layout
+    ? entries.map((entry, deckIndex) => {
+        const { geometry, box } = layout;
+        const pileRank = pile.indexOf(entry.id);
+        const position = hand.indexOf(entry.id);
+        let role: FanCardRole;
+        let placement: FanPlacement;
+        let timing: FanCardTiming | null = null;
+        if (pileRank >= 0) {
+          role = "pile";
+          placement = pilePlacement(geometry, pileRank, pile.length);
+          if (folded) placement = { ...placement, opacity: 0 };
+          timing = {
+            ms: FAN_TIMING.browseMs,
+            delay: 0,
+            ease: EASE_OUT,
+            fadeMs: folding ? 200 : FAN_TIMING.chromeMs,
+            fadeDelay: phase === "dealing" ? FAN_TIMING.chromeDelayMs : 0,
+          };
+        } else if (folded) {
+          const rank = foldAt < 0 ? position : (position - foldAt + hand.length) % hand.length;
+          role = rank === 0 ? "top" : rank <= 2 ? "behind" : "inside";
+          placement = foldPlacement(geometry, box, rank);
+          timing =
+            rank === 0
+              ? { ms: FAN_TIMING.foldMs, delay: 0, ease: EASE_OUT, fadeMs: 200, fadeDelay: 0 }
+              : {
+                  ms: FAN_TIMING.foldRestMs,
+                  delay: 0,
+                  ease: EASE_FOLD,
+                  fadeMs: FAN_TIMING.foldRestMs,
+                  fadeDelay: 0,
+                };
+        } else {
+          role = "hand";
+          placement = handPlacement(geometry, {
+            size: hand.length,
+            position,
+            browsed,
+            anchor: browse.anchor,
+          });
+          const delay = phase === "dealing" ? dealDelay(position, dealOrigin) : 0;
+          timing = {
+            ms:
+              phase === "dealing"
+                ? FAN_TIMING.dealMs
+                : dragging
+                  ? FAN_TIMING.dragMs
+                  : FAN_TIMING.browseMs,
+            delay,
+            ease: EASE_OUT,
+            fadeMs: 240,
+            fadeDelay: delay,
+          };
+        }
+        // The first frame lands without travel (it is the review card, already on screen), and
+        // reduced motion never travels at all.
+        if (phase === "fold" || reduceMotion) timing = null;
+        return (
+          <NotebookReviewFanCard
             key={entry.id}
             entry={entry}
-            first={position === 0}
-            // Later cards sit on top of earlier ones, the way a dealt pile does. Without this the
-            // browser's paint order does the opposite and every slab is tucked *behind* the one
-            // above it, which reads as a list of tabs rather than a stack.
-            depth={position}
+            role={role}
+            placement={placement}
+            timing={timing}
+            slot={{
+              left: geometry.handX - geometry.cardWidth / 2,
+              top: geometry.handY - geometry.cardHeight / 2,
+              width: geometry.cardWidth,
+              height: geometry.cardHeight,
+            }}
+            faceWidth={box.width}
+            hoverLift={geometry.hoverLift}
             current={entry.id === currentId}
-            done={answered.has(entry.id)}
-            variants={reduceMotion ? dealVariantsReduced : dealVariants}
-            onPick={() => onPick(entry.id)}
+            browsed={position === browsed}
+            progress={t("review_progress", {
+              current: deckIndex + 1,
+              total: entries.length,
+            })}
+            onPick={() => {
+              if (!suppressClick.current && !folding) onFold(entry.id);
+            }}
+            buttonRef={(node) => {
+              if (!node) return;
+              buttons.current.set(entry.id, node);
+              return () => {
+                buttons.current.delete(entry.id);
+              };
+            }}
           />
-        ))}
-      </motion.ol>
-    </div>
-  );
-}
+        );
+      })
+    : null;
 
-/**
- * One card in the pile, seen edge-on.
- *
- * The shadow points *up*, not down: what a slab has to prove is that the card above it is resting
- * on it, and a downward shadow on an overlapping stack lands underneath the neighbour that covers
- * it, where nobody sees it. The current card is lifted out of the pile rather than merely tinted —
- * "where am I" is the one thing that has to survive a glance at nine near-identical slabs.
- */
-function StackCard({
-  entry,
-  first,
-  depth,
-  current,
-  done,
-  variants,
-  onPick,
-}: {
-  entry: NotebookEntryDto;
-  first: boolean;
-  depth: number;
-  current: boolean;
-  done: boolean;
-  variants: Variants;
-  onPick: () => void;
-}) {
-  const t = useTranslations("notebook");
-  // Same "Ders · Konu" the card back carries, so the two never name the same card differently.
-  const label =
-    [entry.subjectName, entry.topicName].filter(Boolean).join(" · ") ||
-    t("card_unlabelled");
+  const browsedEntry = entries.find((entry) => entry.id === browse.id);
+  const chromeStyle = {
+    opacity: chrome ? 1 : 0,
+    transition: reduceMotion
+      ? "none"
+      : `opacity ${FAN_TIMING.chromeMs}ms ease-out ${phase === "dealing" ? FAN_TIMING.chromeDelayMs : 0}ms`,
+  };
 
   return (
-    <motion.li
-      variants={variants}
-      // Every lift on this pile happens along Z, the axis the deck is tilted on: a card rises out
-      // of the stack towards the reader instead of sliding up the page. `scale` did that job in two
-      // dimensions and cost a horizontal scrollbar; Z is free, because the perspective that makes a
-      // raised card look bigger is the one the whole pile already sits in.
-      //
-      // On the `li`, not the button, because Z only exists inside the `ol`'s 3D context — and all
-      // three states live in one class string so the hover cannot be overwritten by an inline
-      // transform. The current card rises further on hover rather than dropping to the hover value.
-      //
-      // `transition-[translate]`, not `transition-transform`: Tailwind's `translate-z-*` writes the
-      // standalone `translate` property, so a transform transition watches a property that never
-      // changes and the card would snap up with no travel at all. That split is also why the deal
-      // animation and the hover lift can share this element without fighting — Framer writes
-      // `transform`, the hover writes `translate`, and CSS composes the two.
-      className={`relative transition-[translate] duration-200 ease-out motion-reduce:transition-none ${
-        current ? "translate-z-[34px]" : ""
-      } ${
-        done
-          ? ""
-          : current
-            ? "hover:translate-z-[50px] focus-within:translate-z-[50px]"
-            : "hover:translate-z-[24px] focus-within:translate-z-[24px]"
-      }`}
-      style={{
-        marginTop: first ? 0 : -STACK_OVERLAP_PX,
-        zIndex: current ? 999 : depth,
+    <motion.div
+      ref={rootRef}
+      // A stacking context of its own, so the cards' z-indexes stay under the dialog's close / list
+      // / edit row (`z-10`) instead of competing with it; `z-[1]` rather than `z-0` keeps it over the
+      // verdict row, which is still fading out underneath while the hand is dealt.
+      className="absolute inset-0 z-[1] touch-none select-none"
+      initial={reduceMotion ? { opacity: 0 } : false}
+      animate={{ opacity: reduceMotion && folding ? 0 : 1 }}
+      transition={{ duration: FAN_TIMING.fadeMs / 1000, ease: "easeOut" }}
+      onPointerDown={(event) => {
+        suppressClick.current = false;
+        if (folding || event.button !== 0) return;
+        drag.current = { x: event.clientX, pointer: event.pointerId, start: browsed, moved: false };
+      }}
+      onPointerMove={(event) => {
+        const state = drag.current;
+        if (!state || state.pointer !== event.pointerId || !layout) return;
+        const dx = event.clientX - state.x;
+        if (!state.moved) {
+          if (Math.abs(dx) < DRAG_SLOP_PX) return;
+          state.moved = true;
+          event.currentTarget.setPointerCapture(event.pointerId);
+          setDragging(true);
+        }
+        // The lifted card follows the finger across the hand, the way a card game's hand does.
+        browseTo(state.start + Math.round(dx / layout.geometry.dragStep));
+      }}
+      onPointerUp={() => {
+        const state = drag.current;
+        drag.current = null;
+        if (!state?.moved) return;
+        suppressClick.current = true;
+        setDragging(false);
+      }}
+      onPointerCancel={() => {
+        drag.current = null;
+        setDragging(false);
+      }}
+      onWheel={(event) => {
+        const delta =
+          Math.abs(event.deltaX) > Math.abs(event.deltaY) ? event.deltaX : event.deltaY;
+        const now = performance.now();
+        if (Math.abs(delta) < 4 || now - wheelAt.current < WHEEL_GAP_MS) return;
+        wheelAt.current = now;
+        browseTo(browsed + Math.sign(delta));
+      }}
+      onClick={(event) => {
+        // Never up to the dialog: a tap beside the hand puts the hand away, it does not end the
+        // review. Escape works the same way, one layer at a time.
+        event.stopPropagation();
+        if (suppressClick.current) {
+          suppressClick.current = false;
+          return;
+        }
+        if (event.target === event.currentTarget && !folding && currentId) onFold(currentId);
       }}
     >
-      <button
-        type="button"
-        disabled={done}
-        aria-current={current ? "true" : undefined}
-        onClick={onPick}
-        // No lift of its own: the `li` above owns that, and a button sliding up inside a card that
-        // is already rising towards the reader reads as two things moving, not one card.
-        className="flex min-h-16 w-full cursor-pointer items-center gap-2 rounded-[var(--radius-card)] px-4 pb-5 pt-3 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default"
-        style={{
-          backgroundColor: current
-            ? "var(--color-accent-soft)"
-            : "var(--color-surface)",
-          border: `1px solid color-mix(in srgb, var(--color-main) ${
-            current ? "22%" : "10%"
-          }, transparent)`,
-          boxShadow: current
-            ? "0 -10px 26px -8px rgba(0,0,0,0.45), 0 14px 30px -12px rgba(0,0,0,0.5)"
-            : "0 -8px 18px -10px rgba(0,0,0,0.35)",
-          opacity: done ? 0.45 : 1,
-        }}
-      >
-        <span
-          className="min-w-0 flex-1 truncate text-center text-sm font-bold uppercase tracking-wide"
-          style={{ color: "var(--color-main)" }}
-        >
-          {label}
-        </span>
-        {/* Absolute so it cannot shove the title off centre: the titles have to line up down the
-            pile, and a check on three of nine slabs would nudge exactly those three. Inset to the
-            same asymmetric padding as the label — centring it on the whole slab would put it in the
-            strip the next card covers. */}
-        {done ? (
-          <span className="absolute bottom-5 right-4 top-3 flex items-center">
-            <Check
-              aria-label={t("review_list_done")}
-              size={16}
-              strokeWidth={2.5}
-              style={{ color: "var(--color-success)" }}
-            />
-          </span>
-        ) : null}
-      </button>
-    </motion.li>
+      {layout ? (
+        <>
+          <div
+            aria-hidden
+            className="absolute rounded-[var(--radius-card)] border-2 border-dashed"
+            style={{
+              left: layout.geometry.pileX - layout.geometry.pileWidth / 2,
+              top: layout.geometry.pileY - layout.geometry.pileHeight / 2,
+              width: layout.geometry.pileWidth,
+              height: layout.geometry.pileHeight,
+              borderColor: "rgba(255,255,255,0.35)",
+              ...chromeStyle,
+              opacity: chrome && pile.length === 0 ? 1 : 0,
+            }}
+          />
+          <p
+            className="absolute text-xs font-extrabold text-white sm:text-caption"
+            style={{
+              left: layout.geometry.pileLabel.left,
+              top: layout.geometry.pileLabel.top,
+              width: layout.geometry.pileLabel.width,
+              textAlign: layout.geometry.pileLabel.align,
+              ...chromeStyle,
+            }}
+          >
+            {pile.length > 0
+              ? t("review_list_pile", { count: pile.length })
+              : t("review_list_pile_empty")}
+          </p>
+
+          <ol aria-label={t("review_list_title")}>{cards}</ol>
+
+          <div
+            className="absolute inset-x-0 z-[1100] flex items-start justify-center gap-3.5"
+            style={{ top: layout.geometry.navY, ...chromeStyle }}
+            inert={!chrome}
+          >
+            <DeckButton
+              label={t("review_prev")}
+              variant="ghost"
+              disabled={browsed <= 0}
+              onClick={() => browseTo(browsed - 1)}
+            >
+              <ChevronLeft aria-hidden size={22} strokeWidth={2.25} />
+            </DeckButton>
+            <span
+              aria-hidden
+              className="mt-2 flex h-11 min-w-16 items-center justify-center text-sm font-extrabold tabular-nums text-white"
+            >
+              {browsedEntry
+                ? t("review_progress", {
+                    current: entries.indexOf(browsedEntry) + 1,
+                    total: entries.length,
+                  })
+                : null}
+            </span>
+            <DeckButton
+              label={t("review_next")}
+              variant="ghost"
+              disabled={browsed >= hand.length - 1}
+              onClick={() => browseTo(browsed + 1)}
+            >
+              <ChevronRight aria-hidden size={22} strokeWidth={2.25} />
+            </DeckButton>
+          </div>
+        </>
+      ) : null}
+    </motion.div>
   );
 }
