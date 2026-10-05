@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import type {
   AuthUser,
+  PhoneStatusDto,
   MentorshipCohortBriefDto,
   MentorshipFollowupDto,
   MentorshipRiskFlagId,
@@ -150,6 +151,9 @@ async function mockApi(page: Page, user: AuthUser, options: MockOptions = {}) {
       return json({ accessToken: "test-token", expiresIn: 3600, user });
     }
     if (path === "/v1/users/me") return json(user);
+    if (method === "GET" && path === "/v1/users/me/phone") {
+      return json({ verified: false, maskedPhoneNumber: null, available: false, reauthenticationRequired: false } satisfies PhoneStatusDto);
+    }
     // The settings screen dereferences this body; a bare 204 would throw before it paints.
     if (path === "/v1/users/me/auth-accounts/google") return json({ enabled: false, linked: false, email: null });
     if (path === "/v1/subscription") {

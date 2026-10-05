@@ -10,7 +10,7 @@ rollout. Preserve other workspace edits; iyzico and dashboard performance remain
 
 - [x] Validate the Netgsm contract and finish boundary fixes.
 - [x] Complete the ordered onboarding/network/secrets/migration/pilot/stop runbook.
-- [ ] Renew focused unit, real DB and TR/EN browser evidence; rehearse fresh and upgrade migrations.
+- [x] Renew focused unit, real DB and TR/EN browser evidence; rehearse fresh and upgrade migrations.
 - [ ] Review, run full CI scope, prepare a draft PR and record outstanding gates.
 
 ## Rulings
@@ -29,3 +29,8 @@ Pending current runs. See the dated QA report for final command results and exte
 
 - Task 1: complete. New empty/whitespace jobid tests failed (2 failures, 22 pass), then the guard passed in the 119-test focused unit run.
 - Task 2: complete. Checklist reflects verified official docs and existing kill-switch behavior.
+
+- Broad verification exposed missing phone DTOs in four profile/settings browser mocks. Corrected exact GET fixtures only; original scene/navigation assertions remain intact.
+- Broad verification exposed a stale coach AI brief test signature. Added the already-existing null delta argument; both daily-limit tests pass without changing production AI.
+- Full API attempt: 354 passing files, 3,092 passing assertions; auth boot hit 30s and one stale AI test failed. Corrected AI test passes separately; auth retry passed 26/26 with a 120s test-boot allowance. Full browser inventory remains pending.
+- Journey scene assertions still expect the previous dialog; record independently rather than rewriting journey UI in this OTP follow-up.
