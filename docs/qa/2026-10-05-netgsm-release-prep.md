@@ -1,4 +1,4 @@
-# Netgsm release preparation verification, 5 October 2026
+# Netgsm release preparation verification, 5–6 October 2026
 
 ## Scope
 
@@ -23,7 +23,8 @@ Netgsm call, portal permission change, purchase or rollout occurred.
 | Phone browser acceptance | Chromium mobile and desktop, 38/38 passed (TR/EN, paste, deadlines/resend, disabled provider, reauthentication, sponsorship, explicit paid/trial and resumable checkout). Mock API responses, not carrier evidence. |
 | Full workspace tests | Failed: API 354 files / 3,092 assertions passed, one stale AI-call assertion failed, and auth 26 cases skipped after 30s boot timeout; web 142 files / 919 assertions plus seven Node script tests passed. The stale AI test is fixed (2/2 pass). Auth alone passed 26/26 with --hookTimeout 120000, without a committed timeout change. This is not a green single full-suite run. |
 | Dashboard performance budget | FAIL: attributed 833,417 / 778,240 bytes (+55,177), total 1,385,789 / 1,326,080 (+59,709). Other reported budget checks passed. No threshold/gate changes. |
-| Remote CI | [Run 37368844229](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/37368844229) FAILED on dashboard performance; secret scan, audit, lint, typecheck and build passed. Later test/seeded-API/browser steps were skipped, not passed. Remote dashboard sizes: 833,490 / 778,240 and 1,385,922 / 1,326,080 bytes. |
+| Remote CI | [Initial run 37368844229](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/37368844229) and [code/fixture head run 37373814199](https://github.com/yunusemreerkesikbas/MentorApp/actions/runs/37373814199) FAILED on dashboard performance; secret scan, audit, lint, typecheck and build passed. Later test/seeded-API/browser steps were skipped, not passed. Remote dashboard sizes: 833,490 / 778,240 and 1,385,922 / 1,326,080 bytes. |
+| Full browser inventory | FAIL: 916 cases, 787 passed, 20 failed, 109 skipped in 22.5 minutes, two workers. All 38 phone cases passed within this full run as well. Existing viewport/feature skips remain; no new skip or weakened assertion. |
 | Fresh diff review | No actionable finding; independent reviewer did not execute tests. |
 
 Shared package build was required in the clean worktree before tests could resolve package
@@ -54,7 +55,7 @@ phone GET. They now return a typed unavailable/unverified status; no send/confir
 behavior changed. Targeted rerun passed 16 cases and still failed eight journey-scene cases, whose
 assertions expect the previous dialog while production loads JourneySpotlightScene. These unrelated
 journey assertions remain a separate gate; their checks were not weakened or skipped. A subsequent six-worker attempt was stopped after host slowdowns (snapshot: 478 pass, 12 fail);
-it is not a completed or passing suite. A complete two-worker, 916-case inventory is running.
+it is not a completed or passing suite. The subsequent complete two-worker run finished with 787 passed, 20 failed and 109 skipped across 916 cases. Its 38 phone cases all passed.
 
 The AI daily-limit failure used an obsolete three-argument brief.generate call after delta became
 an explicit parameter. Adding null aligns the existing call and preserves the coach payer assertion;
@@ -63,7 +64,18 @@ both daily-limit tests pass. No production AI logic changed.
 A subsequent auth rerun met local PostgreSQL recovery (57P03) before tests. The existing shared
 local container recovered automatically; no data reset or container restart was performed. Only
 this task's isolated browser API was restarted. After stopping heavy concurrent work, auth passed 26/26 in 38.92s total with a 120s setup
-allowance (no repository timeout change). Update final browser evidence before closing.
+allowance (no repository timeout change). These focused reruns do not replace the failed full-workspace attempt.
+
+## Separate browser work
+
+The completed inventory has 20 failures in four files: journey-level-celebration.spec.ts (8),
+notebook.spec.ts (10), notebooks.spec.ts (1), and community-member-profile.spec.ts (1). Journey
+assertions still request the old combined tier/name dialog label, while the current spotlight scene
+uses the scene name; the separate readable-name spotlight test passed. Notebook failures cover
+sticker/note/drawing/eraser/edit/remove controls, and the community failure covers profile/bookmark
+URL history. Their complete root causes are not established by this OTP follow-up. Investigate
+these flows separately and rerun the unchanged full inventory; no UI production patch or test bypass
+was added to hide them. The original phone DTO error no longer occurred in the completed run.
 
 ## Separate dashboard work
 
@@ -75,6 +87,7 @@ Do not change the limit, skip the check, or call the draft merge-ready while thi
 
 ## Remaining gates
 
+- Resolve the separately recorded browser failures and obtain a green complete workspace test run.
 - Fresh complete CI, including secret scan and dashboard performance budget. The preceding
   dashboard budget failure is tracked separately; do not raise budgets, skip the gate or call
   a failing/skipped pipeline green.
@@ -83,6 +96,13 @@ Do not change the limit, skip the check, or call the draft merge-ready while thi
 - Normal target migration deployment and consented three-operator carrier pilot. Mock transport
   and browser tests establish behavior, not live delivery. Keep production phone/sponsor rollout off.
 - Completed iyzico integration and separate real-card acceptance before live carded trials.
+
+## Handoff
+
+[Draft PR #145](https://github.com/yunusemreerkesikbas/MentorApp/pull/145) contains the bounded code,
+test-fixture maintenance and runbook changes. Code and local verification work are recorded; merge
+and live-release acceptance remain blocked by the gates above. Task-owned test servers stopped and
+the final dedicated browser database was removed after the completed run.
 
 See ../plans/2026-10-05-netgsm-release-prep.md for the execution rulings and
 ../core/integrations.md for rollout/stop semantics. Phone kill-switch blocks both sends and
