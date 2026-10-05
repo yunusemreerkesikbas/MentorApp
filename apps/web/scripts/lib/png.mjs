@@ -137,16 +137,52 @@ function chunk(type, body) {
   return Buffer.concat([head, body, crc]);
 }
 
+/**
+ * Filters one row the way most encoders do: every filter is tried and the one whose output sums to
+ * the smallest absolute bytes is kept, which is what lets deflate shrink soft gradients.
+ */
+function filterRow(line, prev, bpp) {
+  let best = null;
+  let bestScore = Infinity;
+  for (let filter = 0; filter <= 4; filter++) {
+    const out = Buffer.alloc(line.length + 1);
+    out[0] = filter;
+    let score = 0;
+    for (let x = 0; x < line.length; x++) {
+      const a = x >= bpp ? line[x - bpp] : 0;
+      const b = prev ? prev[x] : 0;
+      const c = x >= bpp && prev ? prev[x - bpp] : 0;
+      let predicted = 0;
+      if (filter === 1) predicted = a;
+      else if (filter === 2) predicted = b;
+      else if (filter === 3) predicted = (a + b) >> 1;
+      else if (filter === 4) {
+        const p = a + b - c;
+        const pa = Math.abs(p - a);
+        const pb = Math.abs(p - b);
+        const pc = Math.abs(p - c);
+        predicted = pa <= pb && pa <= pc ? a : pb <= pc ? b : c;
+      }
+      const value = (line[x] - predicted) & 0xff;
+      out[x + 1] = value;
+      score += value < 128 ? value : 256 - value;
+    }
+    if (score < bestScore) {
+      bestScore = score;
+      best = out;
+    }
+  }
+  return best;
+}
+
 /** Writes flat RGBA bytes as a true-colour-with-alpha PNG. */
 export function encodeRgba({ width, height, data }) {
   const stride = width * 4;
   const raw = Buffer.alloc(height * (stride + 1));
   for (let y = 0; y < height; y++) {
-    raw[y * (stride + 1)] = 0;
-    Buffer.from(data.buffer, data.byteOffset + y * stride, stride).copy(
-      raw,
-      y * (stride + 1) + 1,
-    );
+    const line = Buffer.from(data.buffer, data.byteOffset + y * stride, stride);
+    const prev = y > 0 ? Buffer.from(data.buffer, data.byteOffset + (y - 1) * stride, stride) : null;
+    filterRow(line, prev, 4).copy(raw, y * (stride + 1));
   }
 
   const ihdr = Buffer.alloc(13);

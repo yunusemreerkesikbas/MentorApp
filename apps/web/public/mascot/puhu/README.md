@@ -90,6 +90,39 @@ node apps/web/scripts/inspect-png.mjs out.png   # read the content box back into
 Add `--trim` for the shade only. Keep `--max` identical across every owl sprite so they stay aligned,
 and re-measure `OWL_ART` / `SHADE_ART` from `inspect-png.mjs` whenever the art changes.
 
+## Desk reading scene (`desk/`)
+
+Defterlerim's desk Puhu (`(app)/notebooks/_components/desk-puhu.tsx`): he sits on the stack of
+books with a teal book open in both wings, reads left page then right page, looks up when a
+notebook is lifted, waves when a new one lands, and swings his feet over the top book's edge.
+
+| File             | Content                                                            | Canvas    |
+| ---------------- | ------------------------------------------------------------------ | --------- |
+| `read-left.png`  | Reading, pupils on the left page; the base the others are cut from | 360 × 384 |
+| `read-right.png` | Same, pupils on the right page                                     | 360 × 384 |
+| `blink.png`      | Same, eyes closed                                                  | 360 × 384 |
+| `peek-left.png`  | Same, pupils up and toward the viewer's left                       | 360 × 384 |
+| `peek-right.png` | Same, pupils up and toward the viewer's right                      | 360 × 384 |
+| `wave.png`       | One wing waving, the book in the other, smiling                    | 360 × 384 |
+| `foot-left.png`  | The left foot alone                                                | 360 × 384 |
+| `foot-right.png` | The right foot alone                                               | 360 × 384 |
+
+None of the body frames have feet: both feet are their own layers on the same canvas, drawn over
+the body and swung in CSS about the pivots in `DESK_PUHU_ART`. Belly was painted in where the feet
+overlapped it, so a swing never uncovers a hole. The eye frames are `read-left` with only what
+changed around the glasses pasted in, so cutting between them moves the eyes and nothing else.
+
+Built from six image-generator edits of one render (magenta background, same canvas and pose,
+feet hanging clear of the body), named as the table minus feet (`read-left.png` … `wave.png`):
+
+```bash
+node apps/web/scripts/desk-puhu-sprites.mjs path/to/raw-frames --max=384
+```
+
+The script crops all of them with one box, keys them through `key-alpha.mjs` and prints the canvas,
+`seat` and the two foot pivots. Copy those into `DESK_PUHU_ART` whenever the art changes. The raw
+frames are not in the repo; keep them with the design files so the set can be rebuilt.
+
 ## Size scale (DESIGN.md §8.2)
 
 | Token | px  | Use via `PuhuImage`     |

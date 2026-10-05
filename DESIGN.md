@@ -567,9 +567,15 @@ about 1.5 s with sound. Everything else in §9 stands.
   in the book riffles there instead: 2–6 rigid leaves, 340 ms each, 80 ms apart.
 - **Sound:** synthesised in the browser (lift, open, close, land, page, riffle); the desk's speaker
   button turns it off and the choice is remembered (`mentor.notebook-sound`).
+- **Puhu (2026-10-04):** he sits on the stack of books reading a book of his own (from 640 px).
+  His eyes hold the left page, then the right (2.2–3.2 s each, cut like a reader's jump), and a
+  170 ms blink carries them back; his feet swing over the top book's edge, ±7° against each other,
+  1.4 s each way. A lifted or focused notebook makes him look up from the book towards it; a new
+  notebook makes him wave with the book in his other wing. Art and pivots: `public/mascot/puhu/desk/`
+  and `DESK_PUHU_ART` in `desk-puhu.tsx`.
 - **Reduced motion:** no flight (the editor opens straight onto the contents page), pages swap
-  without a turn, no drop-in, the desk's loops (stars, motes, steam) stop and hover changes land
-  without travel. Nothing waits on any of it.
+  without a turn, no drop-in, the desk's loops (stars, motes, steam, Puhu's reading and swinging
+  feet) stop and hover changes land without travel. Nothing waits on any of it.
 - **Source of truth:** timings in `lib/notebook-desk.ts` (`NOTEBOOK_OPENING`), the flight in
   `components/notebook-desk/notebook-opening-flight.tsx` (`createFlight`), turns in
   `(app)/notebook/_components/use-notebook-turns.tsx`.
