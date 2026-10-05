@@ -336,6 +336,11 @@ export interface NotebookPageSurfaceProps {
   /** The page's own content — the board stage, in practice. */
   children?: ReactNode;
   className?: string;
+  /**
+   * False while an item is being carried to the facing page: the page stops clipping so the item
+   * can be seen crossing the spine instead of vanishing at the page's edge.
+   */
+  clip?: boolean;
 }
 
 /**
@@ -350,6 +355,7 @@ export function NotebookPageSurface({
   coil = true,
   children,
   className,
+  clip = true,
 }: NotebookPageSurfaceProps) {
   // One flag drives ruling inset, margin rule, coil column and content padding together, so a page
   // can never end up ruled for one edge and padded for the other.
@@ -363,7 +369,7 @@ export function NotebookPageSurface({
         position: "relative",
         width: "100%",
         height: "100%",
-        overflow: "hidden",
+        overflow: clip ? "hidden" : "visible",
         backgroundColor: "var(--notebook-paper)",
         boxShadow: "var(--notebook-page-shadow)",
       }}
