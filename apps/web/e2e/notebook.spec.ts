@@ -1021,20 +1021,20 @@ test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler"
     overview: { dueCount: 3, entryCount: 3 },
   });
 
-  // The deck deals itself in with a per-slab stagger, so without this the slabs never satisfy
-  // Playwright's "stable" check and a click on one waits out the whole timeout. The component
-  // already has a reduced-motion variant set; this asks for it.
+  // The hand is dealt out of the review card with a per-card stagger, so without this the cards
+  // never satisfy Playwright's "stable" check and a click on one waits out the whole timeout. Under
+  // reduced motion the hand crossfades in already open; this asks for that.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await page.goto("/yanlis-defteri");
   await page.getByRole("button", { name: /3 soru tekrar zamanı/ }).click();
   await page.getByRole("button", { name: "Listeyi aç" }).click();
 
   // Still grouped by subject in first-seen order — `bySubject()` sorts the deck once as the panel
-  // opens, so the student never bounces Matematik → Tarih → Matematik. What changed with APP-046 is
-  // how that grouping is shown: the subject HEADINGS are gone, because a heading between two slices
-  // broke the stack illusion the list is built on. Each row carries its own `Ders · Konu` instead,
-  // the same label the back of the card uses. The seed order below is Problemler, Kurtuluş Savaşı,
-  // Kümeler — so this asserts the regrouping, not the input.
+  // opens, so the student never bounces Matematik → Tarih → Matematik. There are no subject
+  // headings: each card in the hand carries its own `Ders · Konu` band, the same label the back of
+  // the card uses, and the list items stay in deck order whether a card is in the hand or on the
+  // answered pile. The seed order below is Problemler, Kurtuluş Savaşı, Kümeler — so this asserts
+  // the regrouping, not the input.
   const rows = page.getByRole("dialog").getByRole("listitem");
   await expect(rows).toHaveCount(3);
   await expect(rows.nth(0)).toContainText("Matematik · Problemler");
@@ -1043,28 +1043,21 @@ test("liste ders başlıklarıyla gruplar, karta atlar ve cevaplananı kilitler"
   // Navigation only: the list never offers a verdict.
   await expect(page.getByRole("button", { name: "Çözebildim" })).toHaveCount(0);
 
-  // Jumping lands on that card, not the one after it: `pickCard` seeks by id and closes the list
-  // in the same move, so the verdict buttons are waiting straight after the click. Only the row's
-  // NAME changed with the redesign — the old `/^Kümeler/` stopped matching once the label became
-  // `Ders · Konu`, and a click that quietly hit nothing left the deck sitting on card one.
-  // Aimed at the label, not the button: the slabs overlap by design (64px slab, 44px visible band)
-  // and sit under a `perspective` + `rotateX` stack, so the button's bounding-box centre falls in
-  // the half its neighbour covers. Clicking there is swallowed and the deck quietly stays put,
-  // which reads as "jumping is broken". The label lives in the exposed band — that asymmetric
-  // `pt-3 pb-5` is exactly what puts it there — so it is also where a real thumb lands.
-  await page
-    .getByRole("dialog")
-    .getByText("Matematik · Kümeler", { exact: true })
-    .click();
+  // Jumping lands on that card, not the one after it: the hand folds onto the card by id and the
+  // panel jumps there when the fold lands, so the verdict buttons come back on that card. Kümeler
+  // is the middle of a three-card hand, upright and uncovered, so the button's own centre is where a
+  // thumb lands; the card the deck is on (Problemler) is the lifted one at the left.
+  await page.getByRole("button", { name: "Matematik · Kümeler" }).click();
   await page.getByRole("button", { name: "Çözebildim" }).click();
 
-  // An answered card stays in the stack but cannot be reviewed twice — a second answer would reset
+  // An answered card stays in the deck but cannot be reviewed twice — a second answer would reset
   // its interval ladder and quietly undo the student's own progress. There is no "N kart kaldı"
   // chip to check any more: the deck is the count now, and the line above it was a caption reading
   // out what the picture already showed.
   await page.getByRole("button", { name: "Listeyi aç" }).click();
-  // It stays in the stack rather than vanishing from it — dimmed, ticked, and disabled. The tick
-  // joins the accessible name ("… Cevapladın"), which the substring match below tolerates.
+  // It leaves the hand for the answered pile rather than vanishing from the deck — ticked and
+  // disabled. The tick joins the accessible name ("…, Cevapladın"), which the substring match below
+  // tolerates.
   await expect(page.getByRole("dialog").getByRole("listitem")).toHaveCount(3);
   await expect(
     page.getByRole("button", { name: "Matematik · Kümeler" }),

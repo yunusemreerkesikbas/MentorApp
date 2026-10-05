@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import {
   BookOpenCheck,
@@ -33,11 +34,13 @@ import {
   reviewFeedback,
   type ReviewFeedback,
 } from "@/lib/notebook-review-deck";
+import { REVIEW_STACK_LAYERS } from "@/lib/notebook-review-fan";
 import {
   NotebookReviewCard,
   REVIEW_CARD_BOX,
   REVIEW_CARD_WIDTH,
 } from "./notebook-review-card";
+import { DeckButton } from "./notebook-review-deck-button";
 import { NotebookReviewList } from "./notebook-review-list";
 
 interface NotebookReviewPanelProps {
@@ -67,7 +70,8 @@ interface NotebookReviewPanelProps {
  * counter just says where you are. There is deliberately no running tally of right and wrong
  * answers either: "çözemedim" costs a shorter interval and nothing else, and a scoreboard climbing
  * beside the deck is how a review flow teaches students to lie to it. The list view is navigation
- * only, for the same reason (`NotebookReviewList`).
+ * only, for the same reason (`NotebookReviewList`): the deck fanned out as a hand of cards, dealt
+ * from the review card and folded back into it.
  *
  * The panel owns the deck; `NotebookReviewCard` owns one card. What used to be two card shells
  * here (photo / text-only) is now the card's own concern, and what used to overlay the photo —
@@ -131,6 +135,20 @@ export function NotebookReviewPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [listOpen, setListOpen] = useState(false);
+  /**
+   * The card the open list is folding back onto, while it does. The list closes in two steps — the
+   * hand folds into the review card, then the card takes over — so "closing" is a state of its own,
+   * and Escape, the toggle and a tap beside the hand all start the same fold.
+   */
+  const [listTarget, setListTarget] = useState<string | null>(null);
+  /**
+   * Bumped when the list lands on a different card. It remounts the card's `AnimatePresence`, so the
+   * picked card is simply there — the hand already flew it into place, and the deck's own "answered
+   * card flies out, next one rises" swap would play a second, wrong animation on top.
+   */
+  const [jump, setJump] = useState(0);
+  /** The review card's box: where the list's hand is dealt from and folds back into. */
+  const cardBoxRef = useRef<HTMLDivElement>(null);
   /** Full-size photo, opened from the card. Owned here so Escape can be handed to it cleanly. */
   const [zoomed, setZoomed] = useState<NotebookEntryDto | null>(null);
   /**
@@ -176,14 +194,25 @@ export function NotebookReviewPanel({
     else onClose();
   }, [index, onClose, outcomes.length]);
 
-  /** Jump to a card by id rather than by position — the list and the deck are the same array. */
-  const pickCard = useCallback(
-    (id: string) => {
-      setIndex(deck.findIndex((card) => card.id === id));
-      setListOpen(false);
-    },
-    [deck],
-  );
+  /** Starts the list's fold onto a card — the one picked, or the current one to just close it. */
+  const foldList = useCallback((id: string) => {
+    setListTarget((current) => current ?? id);
+  }, []);
+
+  /**
+   * The fold has landed: jump to its card by id rather than by position — the list and the deck are
+   * the same array. A card answered while the list was open (an answer still in flight when it
+   * opened) is not jumped to; the deck has already moved past it.
+   */
+  const listFolded = useCallback(() => {
+    const next = deck.findIndex((card) => card.id === listTarget);
+    if (next >= 0 && next !== index && listTarget && !answered.has(listTarget)) {
+      setJump((current) => current + 1);
+      setIndex(next);
+    }
+    setListOpen(false);
+    setListTarget(null);
+  }, [answered, deck, index, listTarget]);
 
   /**
    * Move the cursor without answering, skipping anything already done and wrapping at both ends.
@@ -231,6 +260,10 @@ export function NotebookReviewPanel({
         advance(entry.id);
         if (!solved && wasProgressing && !updated.communityThreadId) {
           setStuck(updated);
+          // The stuck screen replaces the deck; a list still open behind it would deal itself in
+          // again the moment the student skips past it.
+          setListOpen(false);
+          setListTarget(null);
         }
       } catch {
         setError(t("error_review"));
@@ -282,8 +315,9 @@ export function NotebookReviewPanel({
       if (event.key === "Escape") {
         // Escape backs out one layer at a time: the list first, the whole review only once the
         // student is looking at a card again.
-        if (listOpen) setListOpen(false);
-        else leave();
+        if (listOpen) {
+          if (entry) foldList(entry.id);
+        } else leave();
         return;
       }
       if (listOpen || busy || stuck || !entry) return;
@@ -292,7 +326,7 @@ export function NotebookReviewPanel({
     };
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
-  }, [busy, entry, leave, listOpen, step, stuck, zoomed]);
+  }, [busy, entry, foldList, leave, listOpen, step, stuck, zoomed]);
 
   /** Answered cards fly out the way they were sent; the next one rises from the stack behind. */
   const cardVariants = {
@@ -306,7 +340,12 @@ export function NotebookReviewPanel({
 
   const remaining = deck.filter((card) => !answered.has(card.id)).length;
 
-  return (
+  // Portalled to the body, like the app's other full-screen dialogs. Rendered in place it sat inside
+  // the notebook shell's `isolate` stacking context, under the app chrome: on a phone the header
+  // covered the list toggle and the close button and the tab bar covered the deck's foot, and on a
+  // laptop the sidebar stayed lit beside the scrim. The list's hand needs the whole screen anyway.
+  if (typeof document === "undefined") return null;
+  return createPortal(
     <AnimatePresence>
       <motion.div
         key="notebook-review"
@@ -325,7 +364,10 @@ export function NotebookReviewPanel({
             <OverlayControl
               label={listOpen ? t("review_list_close") : t("review_list")}
               pressed={listOpen}
-              onClick={() => setListOpen((current) => !current)}
+              onClick={() => {
+                if (!listOpen) setListOpen(true);
+                else foldList(entry.id);
+              }}
             >
               <LayoutList aria-hidden size={19} strokeWidth={2.25} />
             </OverlayControl>
@@ -379,199 +421,215 @@ export function NotebookReviewPanel({
             className="flex flex-col items-center gap-4"
             onClick={(event) => event.stopPropagation()}
           >
-            {/* No "N kart kaldı" chip over the list. The deck now *is* the count — nine slabs,
-                two of them checked off — so the line was a caption reading out what the picture
-                already shows, sitting where the filter chips need to be. */}
+            {/* The list is drawn over the card view rather than instead of it. The card stays laid
+                out (hidden) underneath, so the hand can measure the box it is dealt from and fold
+                back into, and the card keeps its own state — a note half-typed on its back survives
+                a look at the list. No "N kart kaldı" chip over the list either: the deck *is* the
+                count, the hand thinning out and the pile growing. */}
             {listOpen ? (
               <NotebookReviewList
                 entries={deck}
-                currentId={entry?.id ?? null}
+                currentId={entry.id}
                 answered={answered}
-                onPick={pickCard}
+                origin={cardBoxRef}
+                folding={listTarget}
+                onFold={foldList}
+                onFolded={listFolded}
               />
-            ) : (
-              <>
-                <div className="relative flex items-center justify-center">
-                  {/* On the card's own top-left corner rather than a chip floating above the deck.
-                      The chip cost a whole row of vertical space on a screen whose card is already
-                      capped by viewport height, and a progress counter belongs to the card it is
-                      counting. It sits outside the turning element, so it does not flip with it. */}
-                  {deck.length > 1 ? (
-                    <span
-                      className="pointer-events-none absolute left-2 top-2 z-10 rounded-full px-2.5 py-1 text-xs font-semibold"
-                      style={{
-                        color: "var(--color-main)",
-                        backgroundColor:
-                          "color-mix(in srgb, var(--color-surface) 80%, transparent)",
-                        boxShadow: "var(--shadow-card)",
-                      }}
-                    >
-                      {t("review_progress", {
-                        current: index + 1,
-                        total: deck.length,
-                      })}
-                    </span>
-                  ) : null}
+            ) : null}
+            <div
+              ref={cardBoxRef}
+              className="relative flex items-center justify-center"
+              // Hidden, not unmounted: the hand's copy of this card takes its place in the same
+              // frame, and the real one comes back in the frame the fold lands.
+              style={{ visibility: listOpen ? "hidden" : undefined }}
+            >
+              {/* On the card's own top-left corner rather than a chip floating above the deck.
+                  The chip cost a whole row of vertical space on a screen whose card is already
+                  capped by viewport height, and a progress counter belongs to the card it is
+                  counting. It sits outside the turning element, so it does not flip with it. */}
+              {deck.length > 1 ? (
+                <span
+                  className="pointer-events-none absolute left-2 top-2 z-10 rounded-full px-2.5 py-1 text-xs font-semibold"
+                  style={{
+                    color: "var(--color-main)",
+                    backgroundColor:
+                      "color-mix(in srgb, var(--color-surface) 80%, transparent)",
+                    boxShadow: "var(--shadow-card)",
+                  }}
+                >
+                  {t("review_progress", {
+                    current: index + 1,
+                    total: deck.length,
+                  })}
+                </span>
+              ) : null}
 
-                  {/* The rest of the deck, as one card peeking out behind the live one. Cheaper
-                      than a real stack and says the same thing: there is more after this. */}
-                  {/* The rest of the deck, as two cards fanned out behind the live one.
-                      Cheaper than a real stack and says the same thing — there is more after this —
-                      but *aligned* copies said it badly: a card squarely behind another reads as a
-                      drop shadow, not as a second card. The tilt is what makes it a pile. */}
-                  {STACK_LAYERS.filter((layer) => remaining > layer.after).map(
-                    (layer) => (
-                      <div
-                        key={layer.after}
-                        aria-hidden
-                        className={`pointer-events-none absolute ${REVIEW_CARD_BOX} rounded-[var(--radius-card)]`}
-                        style={{
-                          // Same surface as the live card. They were tinted while the front was
-                          // tinted too; once the photo front went back to plain surface, a coloured
-                          // pile behind a colourless card was just an inconsistency. What makes them
-                          // read as cards is the tilt, not a fill.
-                          backgroundColor: "var(--color-surface)",
-                          border:
-                            "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
-                          boxShadow: "var(--shadow-card)",
-                          opacity: layer.opacity,
-                          // Rotate last, scale first (CSS applies these right to left), so the
-                          // offset is not eaten by the shrink and the tilt pivots on the card's own
-                          // middle rather than swinging it sideways.
-                          transform: `translateY(${layer.y}px) rotate(${layer.rotate}deg) scale(${layer.scale})`,
-                        }}
-                      />
-                    ),
-                  )}
-
-                  <AnimatePresence
-                    mode="wait"
-                    custom={direction}
-                    initial={false}
-                  >
-                    <motion.div
-                      key={entry.id}
-                      custom={direction}
-                      variants={cardVariants}
-                      initial="enter"
-                      animate="center"
-                      exit="exit"
-                      transition={{
-                        duration: reduceMotion ? 0 : 0.28,
-                        ease: "easeOut",
-                      }}
-                      className="relative"
-                    >
-                      <NotebookReviewCard
-                        entry={entry}
-                        busy={busy}
-                        onSolved={() => void answer(true)}
-                        onMissed={() => void answer(false)}
-                        onZoom={entry.url ? () => setZoomed(entry) : null}
-                        onNoteSave={saveNote}
-                        onSolutionNoteSave={saveSolutionNote}
-                        shortcuts={!zoomed && !busy}
-                        onSolutionZoom={
-                          entry.solutionUrl
-                            ? () =>
-                                setZoomed({ ...entry, url: entry.solutionUrl })
-                            : null
-                        }
-                      />
-                    </motion.div>
-                  </AnimatePresence>
-                </div>
-
-                <div className={`flex ${REVIEW_CARD_WIDTH} flex-col gap-3`}>
-                  <FormError message={error} />
-
-                  {/* What the last answer actually did — the thing the deck used to be silent
-                      about. A fixed-height slot, empty or not: letting it collapse would bounce the
-                      button row on every answer, and the buttons are where the thumb is aiming.
-                      `aria-live` announces it without taking focus off the deck. */}
-                  <p
-                    aria-live="polite"
-                    className="flex h-5 items-center justify-center gap-1.5 text-center text-xs font-semibold"
+              {/* The rest of the deck, as one card peeking out behind the live one. Cheaper
+                  than a real stack and says the same thing: there is more after this. */}
+              {/* The rest of the deck, as two cards fanned out behind the live one.
+                  Cheaper than a real stack and says the same thing — there is more after this —
+                  but *aligned* copies said it badly: a card squarely behind another reads as a
+                  drop shadow, not as a second card. The tilt is what makes it a pile. */}
+              {REVIEW_STACK_LAYERS.filter((layer) => remaining > layer.after).map(
+                (layer) => (
+                  <div
+                    key={layer.after}
+                    aria-hidden
+                    className={`pointer-events-none absolute ${REVIEW_CARD_BOX} rounded-[var(--radius-card)]`}
                     style={{
-                      color:
-                        feedback?.kind === "healed"
-                          ? "var(--color-success)"
-                          : "rgba(255,255,255,0.75)",
+                      // Same surface as the live card. They were tinted while the front was
+                      // tinted too; once the photo front went back to plain surface, a coloured
+                      // pile behind a colourless card was just an inconsistency. What makes them
+                      // read as cards is the tilt, not a fill.
+                      backgroundColor: "var(--color-surface)",
+                      border:
+                        "1px solid color-mix(in srgb, var(--color-main) 10%, transparent)",
+                      boxShadow: "var(--shadow-card)",
+                      opacity: layer.opacity,
+                      // Rotate last, scale first (CSS applies these right to left), so the
+                      // offset is not eaten by the shrink and the tilt pivots on the card's own
+                      // middle rather than swinging it sideways.
+                      transform: `translateY(${layer.y}px) rotate(${layer.rotate}deg) scale(${layer.scale})`,
                     }}
+                  />
+                ),
+              )}
+
+              <AnimatePresence
+                key={jump}
+                mode="wait"
+                custom={direction}
+                initial={false}
+              >
+                <motion.div
+                  key={entry.id}
+                  custom={direction}
+                  variants={cardVariants}
+                  initial="enter"
+                  animate="center"
+                  exit="exit"
+                  transition={{
+                    duration: reduceMotion ? 0 : 0.28,
+                    ease: "easeOut",
+                  }}
+                  className="relative"
+                >
+                  <NotebookReviewCard
+                    entry={entry}
+                    busy={busy}
+                    onSolved={() => void answer(true)}
+                    onMissed={() => void answer(false)}
+                    onZoom={entry.url ? () => setZoomed(entry) : null}
+                    onNoteSave={saveNote}
+                    onSolutionNoteSave={saveSolutionNote}
+                    shortcuts={!zoomed && !busy && !listOpen}
+                    onSolutionZoom={
+                      entry.solutionUrl
+                        ? () =>
+                            setZoomed({ ...entry, url: entry.solutionUrl })
+                        : null
+                    }
+                  />
+                </motion.div>
+              </AnimatePresence>
+            </div>
+
+            <div
+              className={`flex ${REVIEW_CARD_WIDTH} flex-col gap-3 transition-opacity duration-200 ease-out motion-reduce:transition-none`}
+              // The hand brings its own arrows; the verdicts step back while it is out, and
+              // `inert` keeps them out of reach, since there is nothing to answer in a list.
+              style={{ opacity: listOpen ? 0 : 1 }}
+              aria-hidden={listOpen || undefined}
+              inert={listOpen}
+            >
+              <FormError message={error} />
+
+              {/* What the last answer actually did — the thing the deck used to be silent
+                  about. A fixed-height slot, empty or not: letting it collapse would bounce the
+                  button row on every answer, and the buttons are where the thumb is aiming.
+                  `aria-live` announces it without taking focus off the deck. */}
+              <p
+                aria-live="polite"
+                className="flex h-5 items-center justify-center gap-1.5 text-center text-xs font-semibold"
+                style={{
+                  color:
+                    feedback?.kind === "healed"
+                      ? "var(--color-success)"
+                      : "rgba(255,255,255,0.75)",
+                }}
+              >
+                {feedback?.kind === "healed" ? (
+                  <>
+                    <Sparkles aria-hidden size={13} />
+                    {t("review_feedback_healed")}
+                  </>
+                ) : feedback?.kind === "due" ? (
+                  <>
+                    <CalendarClock aria-hidden size={13} />
+                    {t("review_feedback_due", { days: feedback.days })}
+                  </>
+                ) : null}
+              </p>
+
+              {/* Four glyphs and no prose. The words moved into the hover/focus tooltip each
+                  button carries: on the deck they were four labels competing with the card, and
+                  after the first card nobody reads them again — but a glyph nobody can name yet
+                  still has to be nameable, which is what the tooltip and the aria-label are for.
+                  Weight, not colour, is what separates the pair from the arrows: the verdicts
+                  are 60px and centred, the arrows 44px and pushed to the margins. */}
+              {/* `items-start`: the verdicts carry a caption underneath and the arrows do not, so
+                  centring the row would drop the arrows half a caption below the discs. */}
+              <div className="flex items-start justify-center gap-3">
+                <DeckButton
+                  label={t("review_prev")}
+                  variant="ghost"
+                  disabled={busy || remaining < 2}
+                  onClick={() => step(-1)}
+                >
+                  <ChevronLeft aria-hidden size={22} strokeWidth={2.25} />
+                </DeckButton>
+
+                <div className="flex items-start gap-4 px-2">
+                  <DeckButton
+                    label={t("review_missed")}
+                    caption={t("review_missed_short")}
+                    variant="missed"
+                    disabled={busy}
+                    onClick={() => void answer(false)}
                   >
-                    {feedback?.kind === "healed" ? (
-                      <>
-                        <Sparkles aria-hidden size={13} />
-                        {t("review_feedback_healed")}
-                      </>
-                    ) : feedback?.kind === "due" ? (
-                      <>
-                        <CalendarClock aria-hidden size={13} />
-                        {t("review_feedback_due", { days: feedback.days })}
-                      </>
-                    ) : null}
-                  </p>
-
-                  {/* Four glyphs and no prose. The words moved into the hover/focus tooltip each
-                      button carries: on the deck they were four labels competing with the card, and
-                      after the first card nobody reads them again — but a glyph nobody can name yet
-                      still has to be nameable, which is what the tooltip and the aria-label are for.
-                      Weight, not colour, is what separates the pair from the arrows: the verdicts
-                      are 60px and centred, the arrows 44px and pushed to the margins. */}
-                  {/* `items-start`: the verdicts carry a caption underneath and the arrows do not, so
-                      centring the row would drop the arrows half a caption below the discs. */}
-                  <div className="flex items-start justify-center gap-3">
-                    <DeckButton
-                      label={t("review_prev")}
-                      variant="ghost"
-                      disabled={busy || remaining < 2}
-                      onClick={() => step(-1)}
-                    >
-                      <ChevronLeft aria-hidden size={22} strokeWidth={2.25} />
-                    </DeckButton>
-
-                    <div className="flex items-start gap-4 px-2">
-                      <DeckButton
-                        label={t("review_missed")}
-                        caption={t("review_missed_short")}
-                        variant="missed"
-                        disabled={busy}
-                        onClick={() => void answer(false)}
-                      >
-                        <X aria-hidden size={24} strokeWidth={2.5} />
-                      </DeckButton>
-                      <DeckButton
-                        label={t("review_solved")}
-                        caption={t("review_solved_short")}
-                        variant="solved"
-                        disabled={busy}
-                        onClick={() => void answer(true)}
-                      >
-                        {busy ? (
-                          <LoaderCircle
-                            aria-hidden
-                            size={24}
-                            strokeWidth={2.5}
-                            className="animate-spin motion-reduce:animate-none"
-                          />
-                        ) : (
-                          <Check aria-hidden size={26} strokeWidth={2.75} />
-                        )}
-                      </DeckButton>
-                    </div>
-
-                    <DeckButton
-                      label={t("review_next")}
-                      variant="ghost"
-                      disabled={busy || remaining < 2}
-                      onClick={() => step(1)}
-                    >
-                      <ChevronRight aria-hidden size={22} strokeWidth={2.25} />
-                    </DeckButton>
-                  </div>
+                    <X aria-hidden size={24} strokeWidth={2.5} />
+                  </DeckButton>
+                  <DeckButton
+                    label={t("review_solved")}
+                    caption={t("review_solved_short")}
+                    variant="solved"
+                    disabled={busy}
+                    onClick={() => void answer(true)}
+                  >
+                    {busy ? (
+                      <LoaderCircle
+                        aria-hidden
+                        size={24}
+                        strokeWidth={2.5}
+                        className="animate-spin motion-reduce:animate-none"
+                      />
+                    ) : (
+                      <Check aria-hidden size={26} strokeWidth={2.75} />
+                    )}
+                  </DeckButton>
                 </div>
-              </>
-            )}
+
+                <DeckButton
+                  label={t("review_next")}
+                  variant="ghost"
+                  disabled={busy || remaining < 2}
+                  onClick={() => step(1)}
+                >
+                  <ChevronRight aria-hidden size={22} strokeWidth={2.25} />
+                </DeckButton>
+              </div>
+            </div>
           </div>
         )}
 
@@ -579,117 +637,11 @@ export function NotebookReviewPanel({
             notebook page underneath — the deck stays exactly where it was when it closes. */}
         <NotebookImageLightbox entry={zoomed} onClose={() => setZoomed(null)} />
       </motion.div>
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body,
   );
 }
 
-/**
- * Every control under the card: the two verdicts and the two arrows that move past one.
- *
- * One component because the four are one row and have to line up — same ring, same disabled
- * treatment, same tooltip — and three near-identical button bodies is how a row drifts out of
- * alignment on the next edit. What differs is only weight, which is the whole point: `solved` is a
- * filled disc, `missed` an outlined one the same size, and `ghost` is smaller and quieter, because
- * an arrow that looked like a verdict would invite walking the deck without grading a single card.
- *
- * ponytail: the tooltip is a sibling span on `group-hover` / `group-focus-visible`, not a floating
- * library. It has one placement (above), never flips, and lives inside a fixed dialog with room
- * over it — every reason to reach for a positioning engine is absent here. It is `aria-hidden`; the
- * accessible name is the `aria-label`, so the two never disagree.
- */
-function DeckButton({
-  label,
-  caption,
-  variant,
-  disabled,
-  onClick,
-  children,
-}: {
-  label: string;
-  /**
-   * A visible word under a verdict. The glyphs alone were not enough: the "missed" one was a
-   * counter-clockwise arrow, the same shape as "Soruya dön" on the card above it, and a verdict that
-   * reads as "undo" is one nobody presses with confidence. Arrows have none; they get a 44px disc
-   * dropped by half the verdict's height so their centres still line up.
-   */
-  caption?: string;
-  variant: "solved" | "missed" | "ghost";
-  disabled: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  const verdict = variant !== "ghost";
-  const style =
-    variant === "solved"
-      ? {
-          // Same inversion the card's swipe cue handles: the success green flips between themes,
-          // so the glyph on top of it takes the button label colour rather than a literal white.
-          backgroundColor: "var(--color-success)",
-          color: "var(--color-btn-label)",
-          border: "1px solid transparent",
-          boxShadow:
-            "0 8px 24px color-mix(in srgb, var(--color-success) 35%, transparent)",
-        }
-      : variant === "missed"
-        ? {
-            // Outlined and never red. Missing a card costs a shorter interval, not a scolding —
-            // the same reasoning as the swipe cue it mirrors.
-            backgroundColor: "rgba(255,255,255,0.10)",
-            color: "#ffffff",
-            border: "1px solid rgba(255,255,255,0.45)",
-          }
-        : {
-            backgroundColor: "rgba(255,255,255,0.12)",
-            color: "#ffffff",
-            border: "1px solid transparent",
-          };
-
-  return (
-    <div
-      className={`group relative flex flex-col items-center gap-1.5 ${
-        verdict ? "" : "mt-2"
-      }`}
-    >
-      <button
-        type="button"
-        aria-label={label}
-        disabled={disabled}
-        onClick={onClick}
-        className={`flex ${
-          verdict ? "size-[60px]" : "size-11"
-        } shrink-0 cursor-pointer items-center justify-center rounded-full outline-none transition-transform duration-150 hover:scale-105 focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-transparent active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 disabled:hover:scale-100 motion-reduce:transition-none motion-reduce:hover:scale-100 motion-reduce:active:scale-100`}
-        style={style}
-      >
-        {children}
-      </button>
-      {caption ? (
-        <span
-          aria-hidden
-          className={`text-xs font-semibold ${disabled ? "opacity-30" : ""}`}
-          style={{ color: "rgba(255,255,255,0.85)" }}
-        >
-          {caption}
-        </span>
-      ) : null}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute bottom-full left-1/2 mb-2 -translate-x-1/2 whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-within:opacity-100 motion-reduce:transition-none"
-        style={{ backgroundColor: "rgba(255,255,255,0.18)", color: "#ffffff" }}
-      >
-        {label}
-      </span>
-    </div>
-  );
-}
-
-/**
- * The two cards drawn behind the live one, furthest first.
- *
- * Fixed values, not jitter: a random tilt per render is a pile that rearranges itself every time
- * React re-runs, and "the deck moved on its own" is a bug report. `after` is how many cards must
- * still be unanswered for that layer to be worth drawing — no point promising two more cards when
- * there is one.
- */
 /**
  * How long the answer line stays up.
  *
@@ -698,11 +650,6 @@ function DeckButton({
  * close button, and a message that outlives its card is worse than one that leaves early.
  */
 const FEEDBACK_MS = 2200;
-
-const STACK_LAYERS = [
-  { after: 2, y: 26, rotate: 3.5, scale: 0.93, opacity: 0.45 },
-  { after: 1, y: 14, rotate: -2.5, scale: 0.965, opacity: 0.7 },
-];
 
 /** Round control floating on the backdrop — close, and the list toggle beside it. */
 function OverlayControl({

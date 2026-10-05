@@ -580,6 +580,35 @@ about 1.5 s with sound. Everything else in §9 stands.
   `components/notebook-desk/notebook-opening-flight.tsx` (`createFlight`), turns in
   `(app)/notebook/_components/use-notebook-turns.tsx`.
 
+**The review fan (2026-10-05, "Yelpaze").** The flash card deck's list is a hand of cards held in
+front of the student, not a checklist. The review card shrinks into its slot, the deck spreads around
+it, and answered cards lie on a small pile top left ("Cevapladıkların · N"). This is a Progress
+moment, not a second desk: ease-out throughout, nothing overshoots, the deal is over inside the
+600 ms budget.
+
+| Beat | What happens | Time |
+| --- | --- | --- |
+| Deal | The review card shrinks into its own slot in the hand and the others spread out from it, the nearest first | 480 ms each, 24 ms apart up to five cards out (≤600 ms) |
+| Chrome | The pile, its count and the arrows fade in once the hand has landed | 250 ms from 300 ms |
+| Browse | The lifted card settles back, the next rises, and the hand slides when that card sits outside the window | 300 ms, 200 ms under a finger |
+| Hover | The card under the pointer rises along its own tilt | 200 ms |
+| Pick / close | The chosen card grows back into the review card with its "3 / 9" chip; the rest fold in behind it a touch quicker, so it lands last | 460 ms / 400 ms |
+
+- **What a card says:** the question's own front (photo or text) and a "Ders · Konu" band, nothing
+  else. The error type stays on the back: a list that printed it on every front would answer the card
+  before it was turned. The card the deck is on is ringed and lifted; an answered one sits on the
+  pile with a ✓ and cannot be tapped, so nothing here reviews a card twice.
+- **Crowded hands:** the fan never opens past 30° and never crowds a band under the next card. Beyond
+  the window (five cards each side on a desktop, two on a phone) the rest squeeze to 1.1° at the
+  edges, and the window follows the browsed card.
+- **Reaching it:** ←/→/Home/End move along the hand, Enter or Space opens a card, Escape folds the
+  hand back; a drag or the wheel slides it. One tab stop, the lifted card, the way a radio group works.
+- **Reduced motion:** no deal and no fold, the hand crossfades in and out (150 ms) and every other
+  change lands at once.
+- **Source of truth:** geometry and timings in `lib/notebook-review-fan.ts` (`fanGeometry`,
+  `FAN_TIMING`), the hand in `(app)/notebook/_components/notebook-review-list.tsx`, one card in
+  `notebook-review-fan-card.tsx`.
+
 ---
 
 ## 10. Empty & loading

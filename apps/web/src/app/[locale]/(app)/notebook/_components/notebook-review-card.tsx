@@ -425,16 +425,22 @@ function CardControl({
  * A text-only entry has no photo to show, so its subject line stands in as the prompt — there is
  * nothing else that could identify which mistake this is. That is a weaker front than a photo's,
  * and it is the best this entry can do.
+ *
+ * Exported for the list's fan (`NotebookReviewFanCard`), which shows every card by this same front:
+ * the card that shrinks into the hand has to be the card that was on screen.
  */
-function CardFront({
+export function CardFront({
   entry,
   photo,
   onPhotoError,
+  priority = true,
 }: {
   entry: NotebookEntryDto;
   /** False for a text-only entry and for a photo that failed to load — both get the text front. */
   photo: boolean;
   onPhotoError: () => void;
+  /** The review card's photo is the screen; the fan's are a dozen at once and can wait their turn. */
+  priority?: boolean;
 }) {
   const t = useTranslations("notebook");
   const label = entry.topicName ?? entry.subjectName;
@@ -453,7 +459,7 @@ function CardFront({
         fill
         sizes="(max-width: 640px) 92vw, 26rem"
         className="object-contain"
-        priority
+        priority={priority}
         // The bucket host is not in `images.remotePatterns` — the app configures none — so the
         // optimizer refuses it and `next/image` throws on render. Every other notebook photo
         // (entry card, lightbox, add panel) has always passed `unoptimized` for this reason;
