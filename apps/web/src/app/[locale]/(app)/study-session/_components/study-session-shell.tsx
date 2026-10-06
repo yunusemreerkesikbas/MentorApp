@@ -17,7 +17,6 @@ import { fetchQuests, isEconomyDisabled } from "@/lib/economy";
 import { trackCoachEvent } from "@/lib/analytics";
 import { parsePlanTaskContextFromParams } from "@/lib/plan-study-session-link";
 import { getStudyRoom, updateStudyRoom } from "@/lib/study-rooms";
-import { STUDY_ROOM_AMBIENT } from "@/lib/study-room-theme";
 import {
   getServerSessionScene,
   getSessionScene,
@@ -212,7 +211,8 @@ export function StudySessionShell() {
   const ambient = useSessionAmbientSound({
     phase,
     isPaused,
-    suggestedTrackId: roomTheme ? STUDY_ROOM_AMBIENT[roomTheme] : null,
+    sceneTheme: activeTheme,
+    suggestedTrackId: roomTheme ? "scene" : null,
   });
 
   const initialTitleRef = useRef<string | null>(null);
@@ -455,6 +455,8 @@ export function StudySessionShell() {
             countsAsFocusSession={session?.countsAsFocusSession ?? true}
             sessionStatus={session?.status ?? null}
             planTaskAutoCompleted={session?.planTaskAutoCompleted ?? false}
+            theme={activeTheme}
+            endedAt={session?.endedAt ?? null}
             onSubmitFeedback={recordFeedback}
             onReset={handleReset}
           />

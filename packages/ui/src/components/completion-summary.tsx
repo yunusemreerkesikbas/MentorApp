@@ -1,7 +1,11 @@
 "use client";
 
 import type * as React from "react";
-import { CompletionStars } from "./completion-stars.js";
+import { motion, useReducedMotion } from "framer-motion";
+import { CompletionStars, completionStarsRevealSeconds } from "./completion-stars.js";
+
+/** Copy rises in right behind the last star, one short beat apart. */
+const COPY_STEP_S = 0.06;
 
 export interface CompletionStat {
   id: string;
@@ -29,6 +33,8 @@ export interface CompletionSummaryProps {
 /**
  * Shared "completed" surface: stars, title, optional stat rows, then caller chrome.
  * No i18n and no scoring — pass copy and `filled` in.
+ * The stars play first; title, status, each stat row and the caller's chrome follow in order.
+ * Reduced motion shows everything at once.
  */
 export function CompletionSummary({
   title,
@@ -43,34 +49,59 @@ export function CompletionSummary({
   className,
 }: CompletionSummaryProps) {
   const TitleTag = titleAs;
+  const reduceMotion = Boolean(useReducedMotion());
+  const copyStart = completionStarsRevealSeconds(total) - 0.1;
+  const rise = (step: number) =>
+    reduceMotion
+      ? {}
+      : {
+          initial: { opacity: 0, y: 10 },
+          animate: { opacity: 1, y: 0 },
+          transition: {
+            duration: 0.3,
+            delay: copyStart + step * COPY_STEP_S,
+            ease: [0.22, 1, 0.36, 1] as const,
+          },
+        };
+  const statCount = stats?.length ?? 0;
 
   return (
     <div
       className={`flex min-h-full w-full max-w-none flex-col items-center justify-center gap-5 rounded-none border-0 bg-[var(--color-surface)] py-[max(1.5rem,env(safe-area-inset-top))] pr-[max(1.25rem,env(safe-area-inset-right))] pb-[max(1.5rem,env(safe-area-inset-bottom))] pl-[max(1.25rem,env(safe-area-inset-left))] lg:max-h-full lg:min-h-0 lg:w-full lg:max-w-[24rem] lg:justify-start lg:overflow-y-auto lg:overscroll-contain lg:rounded-[var(--radius-card)] lg:border lg:border-[var(--color-border)] lg:px-8 lg:py-10 lg:[box-shadow:var(--shadow-card)] ${className ?? ""}`}
     >
       <CompletionStars filled={filled} total={total} label={starsLabel} />
-      <TitleTag
-        id={titleId}
-        className="text-center text-xl font-bold"
-        style={{
-          color: "var(--color-main)",
-          fontFamily: "var(--font-heading)",
-          textWrap: "balance",
-        }}
-      >
-        {title}
-      </TitleTag>
-      {status}
+      <motion.div className="w-full" {...rise(0)}>
+        <TitleTag
+          id={titleId}
+          className="text-center text-xl font-bold"
+          style={{
+            color: "var(--color-main)",
+            fontFamily: "var(--font-heading)",
+            textWrap: "balance",
+          }}
+        >
+          {title}
+        </TitleTag>
+      </motion.div>
+      {status ? (
+        <motion.div className="w-full" {...rise(1)}>
+          {status}
+        </motion.div>
+      ) : null}
       {stats && stats.length > 0 ? (
         <ul className="flex w-full flex-col gap-2">
-          {stats.map((stat) => (
-            <li key={stat.id}>
+          {stats.map((stat, index) => (
+            <motion.li key={stat.id} {...rise(2 + index)}>
               <CompletionStatRow stat={stat} />
-            </li>
+            </motion.li>
           ))}
         </ul>
       ) : null}
-      {children}
+      {children ? (
+        <motion.div className="w-full" {...rise(2 + statCount)}>
+          {children}
+        </motion.div>
+      ) : null}
     </div>
   );
 }

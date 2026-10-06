@@ -1,5 +1,4 @@
 import type { StudyRoomTheme } from "@mentor/types";
-import type { AmbientTrackId } from "@/lib/ambient-tracks";
 
 /**
  * Client-side room constants. The API is the authority on the bounds (enforced in
@@ -11,17 +10,6 @@ export const STUDY_ROOM_CAPACITY_MIN = 2;
 export const STUDY_ROOM_CAPACITY_MAX = 10;
 /** Four seats — a friend group, and a table that doesn't look empty with two people at it. */
 export const STUDY_ROOM_CAPACITY_DEFAULT = 4;
-
-/**
- * Default ambient track per theme, reusing the tracks the session screen already ships — a
- * library sounds like `soft`, a café like `warm`, a home like `rain`. Seeds the first
- * impression only; the moment the user touches the ambient picker their choice sticks.
- */
-export const STUDY_ROOM_AMBIENT: Record<StudyRoomTheme, AmbientTrackId> = {
-  LIBRARY: "soft",
-  CAFE: "warm",
-  HOME: "rain",
-};
 
 /**
  * Room artwork lives in its own folder rather than the flat `/visuals` drop (whose README asks

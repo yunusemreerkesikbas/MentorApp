@@ -1,34 +1,50 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import dynamic from "next/dynamic";
 import { useReducedMotion } from "framer-motion";
+import { Share } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type {
   FocusGoalDto,
   QuestProgressView,
+  StudyRoomTheme,
   StudySessionStatus,
   TodayPanelResponse,
 } from "@mentor/types";
 import { coachingControllerGetToday } from "@mentor/api-client";
 import { Button, CompletionSummary } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
 import { useStreakCelebration } from "@/components/streak-celebration";
 import { requestSessionReflection } from "@/lib/coach";
 import { recoverSuggestedTask, sanitizeCoachDisplayText } from "@/lib/coach-reply-markers";
-import { sessionStarFill } from "@/lib/completion-stars";
+import { COMPLETION_STAR_TOTAL, sessionStarFill } from "@/lib/completion-stars";
 import { isPremiumFeatureAvailable } from "@/lib/premium-feature";
 import { usePremiumPaywall } from "@/lib/premium-paywall";
 import { useSubscription } from "@/lib/subscription-context";
 import { fetchQuests, isEconomyDisabled, notifyEconomyChanged } from "@/lib/economy";
 import { useMentorToast } from "@/lib/mentor-toast";
 import { scheduleSessionReturnReminder } from "@/lib/notification-api";
-import { getProfileLinks } from "@/lib/profile-links";
 import { resolveSessionShare } from "@/lib/session-share";
 import {
   SessionDoneMoodCheckin,
   SessionDoneSavedCheckin,
 } from "./session-done-checkin";
 import { buildSessionDoneStats } from "./session-done-stats";
+
+const ConfettiBurst = dynamic(
+  () => import("@/components/confetti-burst").then((module) => ({ default: module.ConfettiBurst })),
+  { ssr: false },
+);
+
+/** The share window draws a canvas and loads a handwriting face: only when it is opened. */
+const SessionShareSheet = dynamic(
+  () => import("./session-share-sheet").then((module) => ({ default: module.SessionShareSheet })),
+  { ssr: false },
+);
+
+/** Confetti meets the big centre star as it lands (`CompletionStars` reveal order). */
+const CONFETTI_DELAY_MS = 550;
+const CONFETTI_FALLBACK_MS = 6_500;
 
 function unwrapTodayResponse(response: unknown): TodayPanelResponse {
   return ((response as { data?: TodayPanelResponse }).data ?? response) as TodayPanelResponse;
@@ -62,6 +78,10 @@ export interface SessionDoneStateProps {
   countsAsFocusSession?: boolean;
   sessionStatus?: StudySessionStatus | null;
   planTaskAutoCompleted?: boolean;
+  /** The room on screen when the session ended: the share card's photo and light. */
+  theme: StudyRoomTheme;
+  /** From the finished session; the share card's date and part of the day. */
+  endedAt?: string | null;
   onSubmitFeedback: (mood: number, struggleNote?: string) => Promise<void>;
   onReset: () => void;
 }
@@ -78,6 +98,8 @@ export function SessionDoneState({
   countsAsFocusSession = true,
   sessionStatus = null,
   planTaskAutoCompleted = false,
+  theme,
+  endedAt = null,
   onSubmitFeedback,
   onReset,
 }: SessionDoneStateProps) {
@@ -145,6 +167,19 @@ export function SessionDoneState({
     countsAsFocusSession,
     abandoned: sessionStatus === "ABANDONED",
   });
+  const fullStars = filled >= COMPLETION_STAR_TOTAL;
+  const [confetti, setConfetti] = useState<"waiting" | "playing" | "done">("waiting");
+
+  useEffect(() => {
+    if (!fullStars || reduceMotion) return;
+    const start = window.setTimeout(() => setConfetti("playing"), CONFETTI_DELAY_MS);
+    const fallback = window.setTimeout(() => setConfetti("done"), CONFETTI_FALLBACK_MS);
+    return () => {
+      window.clearTimeout(start);
+      window.clearTimeout(fallback);
+    };
+  }, [fullStars, reduceMotion]);
+
   const filledLabel = filled.toLocaleString(locale, {
     minimumFractionDigits: filled % 1 === 0 ? 0 : 1,
     maximumFractionDigits: 1,
@@ -214,30 +249,10 @@ export function SessionDoneState({
     }
   };
 
-  const shareParts = resolveSessionShare(focusElapsed, currentStreak);
-  const handleShare = async () => {
-    if (!shareParts) return;
-    const text = shareParts.streakDays
-      ? t("share_text_with_streak", {
-          minutes: shareParts.minutes,
-          days: shareParts.streakDays,
-        })
-      : t("share_text", { minutes: shareParts.minutes });
-    const url = getProfileLinks().shareUrl;
-    try {
-      if (navigator.share) {
-        await navigator.share({ text, url });
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(`${text} ${url}`);
-        toast.success({ title: t("share_copied_title"), duration: 2500 });
-      } else {
-        throw new Error("clipboard unavailable");
-      }
-    } catch (err) {
-      if (err instanceof DOMException && err.name === "AbortError") return;
-      toast.error({ title: t("share_error_title"), duration: 3000 });
-    }
-  };
+  const shareParts = resolveSessionShare(focusElapsed, countsAsFocusSession);
+  const [shareOpen, setShareOpen] = useState(false);
+  // Fixed once: the card's date and part of the day must not move while the window is open.
+  const [endedAtDate] = useState(() => (endedAt ? new Date(endedAt) : new Date()));
 
   const handleRemindTomorrow = async () => {
     if (remindStatus !== "idle") return;
@@ -274,11 +289,17 @@ export function SessionDoneState({
   return (
     <>
       {celebration}
+      {/* One celebration at a time (DESIGN.md §9.1): a streak milestone takes the stage. */}
+      {confetti === "playing" && !celebration ? (
+        <div aria-hidden className="pointer-events-none fixed inset-0 z-10">
+          <ConfettiBurst onComplete={() => setConfetti("done")} />
+        </div>
+      ) : null}
       <CompletionSummary
         title={t("done_title")}
         titleAs="h1"
         filled={filled}
-        starsLabel={t("stars_label", { filled: filledLabel, total: 3 })}
+        starsLabel={t("stars_label", { filled: filledLabel, total: COMPLETION_STAR_TOTAL })}
         stats={stats}
         status={
           statusLine ? (
@@ -318,10 +339,16 @@ export function SessionDoneState({
             />
           )}
 
-          <div className="flex w-full flex-col gap-1">
+          <div className="flex w-full flex-col gap-3">
             <Button onClick={onReset} variant="primary" fullWidth>
               {t("new_session")}
             </Button>
+            {shareParts ? (
+              <Button variant="secondary" fullWidth onClick={() => setShareOpen(true)}>
+                <Share size={20} strokeWidth={2.25} aria-hidden />
+                {t("share_cta")}
+              </Button>
+            ) : null}
             <button
               type="button"
               onClick={() => void handleRemindTomorrow()}
@@ -334,32 +361,19 @@ export function SessionDoneState({
             >
               {remindStatus === "done" ? t("return_remind_done") : t("return_remind_cta")}
             </button>
-            {shareParts ? (
-              <button
-                type="button"
-                onClick={() => void handleShare()}
-                className={LINK_CLASS}
-                style={{
-                  color: "var(--color-main)",
-                  fontFamily: "var(--font-heading)",
-                }}
-              >
-                {t("share_cta")}
-              </button>
-            ) : null}
-            <Link
-              href="/dashboard"
-              className={LINK_CLASS}
-              style={{
-                color: "var(--color-main)",
-                fontFamily: "var(--font-heading)",
-              }}
-            >
-              {t("back_panel")}
-            </Link>
           </div>
         </div>
       </CompletionSummary>
+      {shareOpen && shareParts ? (
+        <SessionShareSheet
+          minutes={shareParts.minutes}
+          subject={subject?.trim() ? subject.trim() : null}
+          stars={filled}
+          theme={theme}
+          endedAt={endedAtDate}
+          onClose={() => setShareOpen(false)}
+        />
+      ) : null}
     </>
   );
 }

@@ -249,6 +249,11 @@ Long Turkish copy: `text-wrap: pretty`. Multi-line H1 only: `text-wrap: balance`
 - The switch is made in JS (`matchMedia("(min-width: 1280px)")`) rather than CSS `order`, so every
   card mounts once and **DOM order always equals visual order** (keyboard and screen-reader order
   follow what is on screen).
+- **Exception, `/seans` (2026-10-06):** the scene is a stage, so its frame drops the `max-w-6xl` cap
+  (`SESSION_*_CLASS` in `session-idle-view.tsx`). The top bar and timer share one centre axis; the
+  340 px rail sits at the content area's right edge. Once the frame holds a rail's width on both
+  sides (container query, 78 rem), an empty mirror column puts that axis on the page's centre line.
+  Below `xl` it stacks as before.
 
 ---
 
@@ -540,8 +545,26 @@ swap without a slide.
 | Break | The light lifts and warms (veil 44 + a soft-light wash); the ring's arc turns `--room-live` | 500 ms / 300 ms |
 | Back at setup | The setup returns the way it left; the session just finished grows into the day strip from the left and the count pops | 200 ms / 450 ms |
 | Room | A member who sits down: one ring of light leaves the avatar, then the usual breathing; arriving from an invite, the black curtain lifts | 600 ms / 280 ms |
+| Done (2026-10-06) | The stars pop in one by one, the big centre one last (scale 0 → 1.18 → 1 with a small turn); a filled star sweeps its fill, rings once and throws six sparks; title, status, each stat row and the check-in rise in behind them. Three full stars add the confetti lottie once, unless a streak celebration has the stage | star 420 ms, 140 ms apart; sparks 550 ms; copy 300 ms, 60 ms apart |
+| Share card (2026-10-06) | "Seansı paylaş" opens the card putting itself together: the print drops onto the table and settles at -2.5°, the room photo develops out of grey, two strips of tape land, the caption is written in from the left, the sticker stars pop (the done card's pop), Puhu's sticker comes up over the corner, the wordmark fades in. One canvas function draws both this and the shared PNG (its last frame) | 2.6 s once |
 
-Under reduced motion every change lands at once.
+Under reduced motion every change lands at once (the share card shows its last frame).
+
+The done stars' ~18 % overshoot is a product-owner call (2026-10-06), scoped to `CompletionStars`
+like the achievement scene's: the §9 no-bounce rule stands everywhere else.
+
+Back at setup the stage stays raised over the app chrome until the cover's own fade ends
+(`transitionend` with the cover out, a 1.5 s backstop), not a parallel 500 ms timer: a click
+flushes the effect before the browser starts the fade, and on a slow frame the timer won.
+
+**The share card (2026-10-06, canvas "Seans paylaşım kartı", direction 1 "Polaroid").** A
+1080×1920 story PNG of one counted session, no name on it: the room the session was studied in
+as a taped instant print, the caption in Caveat ("50 dk Matematik", then place and part of the
+day), the session's stars as stickers, Puhu's sticker, the wordmark and the site host. The
+room palettes are the stage's (`.room-stage[data-room-theme]`), fixed, since the card leaves the
+app. A session that did not count has no card. Phones hand the PNG to the system share sheet;
+elsewhere the window downloads or copies it, and says so inside the window (toasts sit under a
+native dialog). `lib/session-share-card.ts`, `session-share-sheet.tsx`.
 
 **The notebook desk (2026-10-03, "Masa").** Defterlerim is a desk, not a list: the notebooks lie on
 it as 3D books (tilted 34°, each with its own seeded spin and nudge) under the app's own light (day:
