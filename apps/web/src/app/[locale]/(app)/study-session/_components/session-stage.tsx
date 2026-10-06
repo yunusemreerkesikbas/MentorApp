@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { StudyRoomTheme } from "@mentor/types";
 import { RoomBackdropSlide } from "./room-backdrop-slide";
@@ -46,11 +46,31 @@ export function SessionStage({
   const reduceMotion = useReducedMotion();
   const dark = phase !== "idle";
   const [settled, setSettled] = useState(!dark);
+  const coverRef = useRef<HTMLDivElement>(null);
   if (dark && settled) setSettled(false);
   useEffect(() => {
     if (dark || settled) return;
-    const id = window.setTimeout(() => setSettled(true), reduceMotion ? 0 : LIGHTS_MS);
-    return () => window.clearTimeout(id);
+    const settle = () => setSettled(true);
+    if (reduceMotion) {
+      const id = window.setTimeout(settle, 0);
+      return () => window.clearTimeout(id);
+    }
+    // The cover's own fade decides. A click flushes this effect before the browser has started
+    // the transition, so a bare 500ms timer ended first on a slow frame and the sidebar showed
+    // through a cover still at ~90%. Only an end with the cover out counts: a quick "Yeni seans"
+    // can catch the lights-down fade still finishing. The timer backs up a fade that never runs.
+    const cover = coverRef.current;
+    // Reading the style starts the fade now rather than at the next (possibly late) frame.
+    if (cover) void getComputedStyle(cover).opacity;
+    const onEnd = () => {
+      if (cover && Number(getComputedStyle(cover).opacity) < 0.01) settle();
+    };
+    cover?.addEventListener("transitionend", onEnd);
+    const id = window.setTimeout(settle, LIGHTS_MS * 3);
+    return () => {
+      cover?.removeEventListener("transitionend", onEnd);
+      window.clearTimeout(id);
+    };
   }, [dark, settled, reduceMotion]);
   // Under the cover the app chrome is only a ghost: it must not take a click or a Tab stop
   // (`data-app-chrome` marks the sidebar, the phone header and the tab bar in `app-nav.tsx`).
@@ -69,6 +89,7 @@ export function SessionStage({
       data-lights={dark ? "down" : "up"}
     >
       <div
+        ref={coverRef}
         aria-hidden
         data-stage-cover
         className={`session-focus-theme pointer-events-none fixed inset-0 -z-20 bg-[var(--color-bg)] ${LIGHTS_CLASS}`}
