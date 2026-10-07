@@ -1,3 +1,4 @@
+import { statSync } from "node:fs";
 import {
   expect,
   test,
@@ -717,6 +718,35 @@ test("iki bölge: geniş ekranda ray sayacın sağında, 1024'te altında iki s�
   expect(narrowRooms.x).toBeGreaterThan(narrowToday.x + 200);
 });
 
+test("geniş ekranda sayaç ve üst bar sayfanın ortasında, ray sağ kenarda", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name.startsWith("mobile"),
+    "genişlik testi masaüstü projesinde",
+  );
+  await page.setViewportSize({ width: 1600, height: 900 });
+  await mockApi(page);
+  await page.goto("/seans");
+
+  const start = page.getByRole("button", { name: "Başla" });
+  const pills = page
+    .getByRole("button", { name: "Ortam sesi" })
+    .locator("xpath=ancestor::div[contains(@class,'overflow-x-auto')][1]");
+  const today = page.getByRole("region", { name: "Bugün" });
+  await expect(today).toBeVisible();
+
+  // The page's own main box is the content area (after the sidebar, before any scrollbar gutter).
+  const main = (await start.locator("xpath=ancestor::main[1]").boundingBox())!;
+  const centre = main.x + main.width / 2;
+  const mid = (box: { x: number; width: number }) => box.x + box.width / 2;
+  expect(Math.abs(mid((await start.boundingBox())!) - centre)).toBeLessThan(2);
+  expect(Math.abs(mid((await pills.boundingBox())!) - centre)).toBeLessThan(2);
+  // The rail sits at the right edge, only the frame's 40px gutter between.
+  const todayBox = (await today.boundingBox())!;
+  expect(main.x + main.width - (todayBox.x + todayBox.width)).toBeLessThanOrEqual(41);
+});
+
 test("telefonda Başla ilk ekranda, üst barın hiçbir hapı kesik değil", async ({
   page,
 }, testInfo) => {
@@ -730,12 +760,54 @@ test("telefonda Başla ilk ekranda, üst barın hiçbir hapı kesik değil", asy
 
   const viewport = page.viewportSize()!;
   const subject = page.getByText("Ders seç").first();
-  const sound = page.getByRole("button", { name: "Odak müziği" });
+  const sound = page.getByRole("button", { name: "Ortam sesi" });
   const subjectBox = (await subject.boundingBox())!;
   const soundBox = (await sound.boundingBox())!;
   expect(subjectBox.x).toBeGreaterThanOrEqual(0);
   expect(soundBox.x + soundBox.width).toBeLessThanOrEqual(viewport.width);
   expect(soundBox.height).toBeGreaterThanOrEqual(44);
+});
+
+test("Sahneye uygun ses odanın iki döngüsünü çalar ve sahne değişince onu izler", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    testInfo.project.name.startsWith("mobile"),
+    "tema okları masaüstü üst barında",
+  );
+  // Record what starts playing instead of playing it: the loops are `new Audio()`, never in the DOM.
+  await page.addInitScript(() => {
+    const w = window as unknown as { played: string[] };
+    w.played = [];
+    HTMLMediaElement.prototype.play = function play(this: HTMLMediaElement) {
+      w.played.push(new URL(this.src).pathname);
+      return Promise.resolve();
+    };
+  });
+  await mockApi(page);
+  await page.goto("/seans");
+  const played = () =>
+    page.evaluate(() => (window as unknown as { played: string[] }).played.splice(0));
+
+  await page.getByRole("button", { name: "Ortam sesi" }).click();
+  await page.getByRole("menuitem", { name: "Sahneye uygun" }).click();
+  // Idle: a short preview of the room on screen, ambience and music together.
+  await expect.poll(played).toEqual(
+    expect.arrayContaining([
+      "/audio/scene-library-ambience.mp3",
+      "/audio/scene-library-music.mp3",
+    ]),
+  );
+
+  await page.getByRole("button", { name: "Sonraki tema" }).click();
+  await expect(page.getByText("Kafe", { exact: true }).first()).toBeVisible();
+  await page.getByRole("button", { name: "Başla" }).click();
+  await expect.poll(played).toEqual(
+    expect.arrayContaining([
+      "/audio/scene-cafe-ambience.mp3",
+      "/audio/scene-cafe-music.mp3",
+    ]),
+  );
 });
 
 test("Bugün kartı hedefi seanslardan çizer ve Tüm geçmiş çekmeceyi açar", async ({
@@ -1033,4 +1105,85 @@ test("ışık açılırken sahne menünün üstünde kalır, sonra iner (hareket
   expect(frames.filter((f) => f.z === "auto" && f.cover > 0.02)).toEqual([]);
   await expect(page.locator("[data-session-ring]")).toHaveCount(1);
   await expect(page.locator("[data-session-ring]")).toBeVisible();
+});
+
+/** Finishes a stopwatch session of `minutes`: the done card, counted unless a route says not. */
+async function finishStopwatch(page: Page, minutes: number) {
+  await page.clock.install();
+  await page.goto("/seans?preset=stopwatch");
+  await page.getByRole("button", { name: "Başla", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Duraklat", exact: true })).toBeVisible();
+  await page.clock.fastForward(minutes * 60_000);
+  await page.getByRole("button", { name: "Seansı bitir", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Yeni seans" })).toBeVisible();
+}
+
+type SharedFile = { name: string; type: string; size: number };
+
+test("sayılmayan kısa deneme paylaşılmaz", async ({ page }) => {
+  await mockApi(page);
+  // Registered after `mockApi`, so it answers the finish first: the server did not count it.
+  await page.route("http://localhost:3001/v1/study-sessions/s-new", (route) =>
+    route.request().method() === "PATCH"
+      ? json(route, { ...sessionAt("s-new", 0, 2, "Matematik"), countsAsFocusSession: false })
+      : route.fallback(),
+  );
+  await finishStopwatch(page, 2);
+
+  await expect(page.getByText("Kısa bir deneme. Serine sayılmadı, sorun değil.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Seansı paylaş" })).toHaveCount(0);
+});
+
+test("seans kartı hazırlanır ve masaüstünde PNG olarak iner", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name.startsWith("mobile"), "indirme yolu masaüstünde");
+  // A desktop without Web Share for files: the window offers the download first.
+  await page.addInitScript(() => {
+    Object.defineProperty(navigator, "canShare", { value: undefined, configurable: true });
+  });
+  await mockApi(page);
+  await finishStopwatch(page, 50);
+
+  await page.getByRole("button", { name: "Seansı paylaş" }).click();
+  const sheet = page.getByRole("dialog", { name: "Seansını paylaş" });
+  await expect(sheet.getByRole("img", { name: /^Paylaşım kartı: 50 dk odak, / })).toBeVisible();
+  await expect(sheet.getByText("Kartta adın yok, yalnızca bu seans var.")).toBeVisible();
+
+  const downloading = page.waitForEvent("download");
+  await sheet.getByRole("button", { name: "Görseli indir" }).click();
+  const download = await downloading;
+  expect(download.suggestedFilename()).toBe("mentor-seans.png");
+  expect(statSync(await download.path()).size).toBeGreaterThan(50_000);
+  await expect(sheet.getByRole("status")).toHaveText("Görsel indirildi.");
+});
+
+test("telefonda seans kartı sistemin paylaşım penceresine PNG olarak gider", async ({
+  page,
+}, testInfo) => {
+  test.skip(!testInfo.project.name.startsWith("mobile"), "telefon testi");
+  // Stand in for the phone's share sheet and keep what it was handed.
+  await page.addInitScript(() => {
+    const shared: { name: string; type: string; size: number }[] = [];
+    (window as unknown as { __shared: typeof shared }).__shared = shared;
+    Object.defineProperty(navigator, "canShare", { value: () => true, configurable: true });
+    Object.defineProperty(navigator, "share", {
+      configurable: true,
+      value: async (data: ShareData) => {
+        for (const file of data.files ?? []) {
+          shared.push({ name: file.name, type: file.type, size: file.size });
+        }
+      },
+    });
+  });
+  await mockApi(page);
+  await finishStopwatch(page, 50);
+
+  await page.getByRole("button", { name: "Seansı paylaş" }).click();
+  const sheet = page.getByRole("dialog", { name: "Seansını paylaş" });
+  await sheet.getByRole("button", { name: "Paylaş", exact: true }).click();
+  const shared = () =>
+    page.evaluate(() => (window as unknown as { __shared: SharedFile[] }).__shared);
+  await expect.poll(shared).toEqual([
+    expect.objectContaining({ name: "mentor-seans.png", type: "image/png" }),
+  ]);
+  expect((await shared())[0].size).toBeGreaterThan(50_000);
 });

@@ -105,10 +105,12 @@ import {
   updateNotebook,
 } from "@/lib/notebook";
 import {
+  centredAt,
   createNoteItem,
   createStickerItem,
-  nextEntrySlot,
+  entrySlot,
 } from "@/lib/notebook-layout";
+import type { NotebookDrop } from "@/lib/notebook-drop";
 import { useItemGesture } from "@/components/stage/use-item-gesture";
 import { SelectionOverlay } from "@/components/stage/selection-overlay";
 import {
@@ -122,6 +124,8 @@ import { useMentorToast } from "@/lib/mentor-toast";
 import { reviewFeedback } from "@/lib/notebook-review-deck";
 import { NotebookEntryEditDialog } from "./notebook-entry-edit-dialog";
 import { NotebookRemoveChoiceDialog } from "./notebook-remove-choice-dialog";
+import { useNotebookPageTransfer } from "./use-notebook-page-transfer";
+import { NotebookEdgeHint, NotebookPageHint } from "./notebook-page-hint";
 
 /** The side panel's header, per category. "draw" never opens the panel; it is listed for the type. */
 const PANEL_TITLE_KEYS = {
@@ -205,6 +209,28 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   const [previewEntry, setPreviewEntry] = useState<NotebookEntryDto | null>(
     null,
   );
+  /**
+   * A photo dragged in from the computer, waiting in the add form, with the page and spot it was
+   * let go on: once the form is saved, the card lands there rather than at the next free spot.
+   * `nonce` lets the same file be dropped twice.
+   */
+  const [droppedPhoto, setDroppedPhoto] = useState<{
+    file: File;
+    nonce: number;
+    side: Side;
+    point: { x: number; y: number };
+  } | null>(null);
+  /*
+   * The dropped photo belongs to the add form it opened. Leaving that form drops it, or the next
+   * card filed the ordinary way would land where an abandoned photo was once let go. Adjusted while
+   * rendering, React's way of resetting state when something else changes, not in an effect.
+   */
+  const addFormOpen = activePanel === "add" && !detailCollapsed;
+  const [addFormWasOpen, setAddFormWasOpen] = useState(addFormOpen);
+  if (addFormWasOpen !== addFormOpen) {
+    setAddFormWasOpen(addFormOpen);
+    if (!addFormOpen) setDroppedPhoto(null);
+  }
 
   const leftPage = useNotebookPage(EMPTY_PAGE);
   const rightPage = useNotebookPage(EMPTY_PAGE);
@@ -866,43 +892,55 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   );
 
   /**
-   * Place a freshly saved entry on the focused page.
+   * Place a freshly saved entry on a page: the focused one unless a drop said otherwise.
    *
    * The entry row already exists at this point — placing it only records where its card sits, and
-   * the autosave effect persists that. If the focused page is full we say so rather than stacking a
-   * card off the bottom edge where nobody would find it.
+   * the autosave effect persists that. Without a spot, the card takes the first free one on the page
+   * (`entrySlot`); a page is never "full", the student decides what goes where.
    */
   /** The placement itself, without deciding what the side panel should do afterwards. */
   const placeEntryOnPage = useCallback(
-    (entry: NotebookEntryDto, aspect: number | null) => {
-      const slot = nextEntrySlot(focused.state.doc.items, aspect);
-      if (!slot) {
-        setError(t("error_page_full"));
-        return;
-      }
-      focused.dispatch({
+    (
+      entry: NotebookEntryDto,
+      aspect: number | null,
+      at?: { side: Side; point: { x: number; y: number } } | null,
+    ) => {
+      const side = at?.side ?? (isMobile ? mobileSide : focusedSide);
+      const page = side === "left" ? leftPage : rightPage;
+      const slot = entrySlot(page.state.doc.items, aspect);
+      page.dispatch({
         type: "add",
         item: {
           ...slot,
+          ...(at ? centredAt(at.point, slot) : null),
           id: crypto.randomUUID(),
           kind: "entry",
           entryId: entry.id,
           opacity: 1,
         },
       });
-      const setMeta = focusedSide === "left" ? setLeftMeta : setRightMeta;
+      const setMeta = side === "left" ? setLeftMeta : setRightMeta;
       setMeta((current) =>
         current
           ? { ...current, entries: [...current.entries, entry] }
           : current,
       );
     },
-    [focused, focusedSide, t],
+    [isMobile, mobileSide, focusedSide, leftPage, rightPage],
   );
 
   const handleCreated = useCallback(
     (entry: NotebookEntryDto, aspect: number | null) => {
-      placeEntryOnPage(entry, aspect);
+      // A photo dropped onto a page lands where it was dropped; one picked in the form, at the next
+      // free spot on the focused page.
+      placeEntryOnPage(
+        entry,
+        aspect,
+        droppedPhoto
+          ? { side: droppedPhoto.side, point: droppedPhoto.point }
+          : null,
+      );
+      setDroppedPhoto(null);
       // The add form is finished with, so get out of the way and show the card that just landed.
       // Placing from the index is the opposite: the student is browsing a list and may well place
       // another, so that path deliberately leaves the panel open.
@@ -928,7 +966,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
         },
       });
     },
-    [placeEntryOnPage, t, toast],
+    [placeEntryOnPage, droppedPhoto, t, toast],
   );
 
   /**
@@ -1006,10 +1044,16 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   );
 
   /** Ids already on one of the two open pages — what the index checks before offering to place. */
-  const placedEntryIds = new Set(
-    [...leftPage.state.doc.items, ...rightPage.state.doc.items].flatMap(
-      (item) => (item.kind === "entry" ? [item.entryId] : []),
-    ),
+  const leftItems = leftPage.state.doc.items;
+  const rightItems = rightPage.state.doc.items;
+  const placedEntryIds = useMemo(
+    () =>
+      new Set(
+        [...leftItems, ...rightItems].flatMap((item) =>
+          item.kind === "entry" ? [item.entryId] : [],
+        ),
+      ),
+    [leftItems, rightItems],
   );
 
   /**
@@ -1029,6 +1073,62 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
     },
     [placeEntryOnPage],
   );
+
+  /**
+   * Something dragged onto a page from outside the book, let go at `point` on that page's canvas.
+   *
+   * A sticker or a card from the index lands right there. A photo from the computer cannot become a
+   * card on its own: the error type is the one question the notebook insists on, so the add form
+   * opens with the photo already in it, and the card lands at the drop spot once it is saved.
+   */
+  const handlePageDrop = useCallback(
+    async (side: Side, drop: NotebookDrop, point: { x: number; y: number }) => {
+      setFocusedSide(side);
+      const page = side === "left" ? leftPage : rightPage;
+      if (drop.kind === "sticker") {
+        const item = createStickerItem(drop.asset, page.state.doc.items);
+        page.dispatch({
+          type: "add",
+          item: { ...item, ...centredAt(point, item) },
+        });
+        return;
+      }
+      if (drop.kind === "entry") {
+        // Same rule as the index's own button: one copy of a card across the open pages.
+        if (placedEntryIds.has(drop.entry.id)) return;
+        const aspect = drop.entry.url
+          ? await measureImageAspect(drop.entry.url).catch(() => null)
+          : null;
+        placeEntryOnPage(drop.entry, aspect, { side, point });
+        return;
+      }
+      setDroppedPhoto({ file: drop.file, nonce: Date.now(), side, point });
+      setActivePanel("add");
+      setDetailCollapsed(false);
+    },
+    [leftPage, rightPage, placeEntryOnPage, placedEntryIds],
+  );
+
+  const transfer = useNotebookPageTransfer({
+    bookRef,
+    isMobile,
+    mobileSide,
+    setMobileSide,
+    setFocusedSide,
+    leftPage,
+    rightPage,
+    leftGesture,
+    rightGesture,
+    leftMeta,
+    rightMeta,
+    setLeftMeta,
+    setRightMeta,
+    onTransferred: (itemId) =>
+      setEditingText((current) => (current?.id === itemId ? null : current)),
+    onDrop: (side, drop, point) => void handlePageDrop(side, drop, point),
+    // Photos make mistake cards: only the mistake notebook holds them, and only with an exam set.
+    acceptFiles: !notebookId && exam != null,
+  });
 
   /** Persist book-level cover metadata independently from page autosave. */
   const handleCover = useCallback(
@@ -1133,6 +1233,20 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
   /** The single page mobile shows — derived once here rather than repeated in every prop below. */
   const mobilePage = mobileSide === "left" ? leftPage : rightPage;
   const mobileGesture = mobileSide === "left" ? leftGesture : rightGesture;
+  const leftStage = transfer.stageHandlers("left");
+  const rightStage = transfer.stageHandlers("right");
+  const mobileStage = mobileSide === "left" ? leftStage : rightStage;
+  /**
+   * The outline on a wide spread: loud on the page something held would land on, quiet on the page
+   * the open panel adds to. Nothing at all while the panel is shut or the pen is out: an outline
+   * that is always there stops meaning anything.
+   */
+  const pageHintFor = (side: Side): "target" | "drop" | null =>
+    transfer.dropSide === side
+      ? "drop"
+      : !detailCollapsed && !drawing && !transfer.draggingSide && focusedSide === side
+        ? "target"
+        : null;
   const mobileInk = mobileSide === "left" ? leftInk : rightInk;
   const mobileMeta = mobileSide === "left" ? leftMeta : rightMeta;
 
@@ -1608,6 +1722,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                               : null
                           }
                           onCreated={handleCreated}
+                          droppedPhoto={droppedPhoto}
                           onAddSticker={(asset) =>
                             focused.dispatch({
                               type: "add",
@@ -1858,9 +1973,14 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                         }}
                       >
                         {isMobile ? (
-                          <div className="h-full w-full">
+                          <div
+                            data-notebook-page={mobileSide}
+                            className="relative h-full w-full"
+                            {...transfer.dropHandlers(mobileSide)}
+                          >
                             <NotebookPageSurface
                               paper={mobilePage.state.doc.paper}
+                              clip={transfer.draggingSide !== mobileSide}
                             >
                               <NotebookPageStage
                                 items={mobilePage.state.doc.items}
@@ -1880,17 +2000,14 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                 onItemPointerDown={
                                   drawing
                                     ? undefined
-                                    : (event, item) =>
-                                        mobileGesture.begin(event, item, {
-                                          kind: "move",
-                                        })
+                                    : mobileStage.onItemPointerDown
                                 }
                                 onItemDoubleClick={(item) =>
                                   handleItemDoubleClick(mobileSide, item)
                                 }
                                 onPreviewImage={setPreviewEntry}
-                                onPointerMove={mobileGesture.move}
-                                onPointerUp={mobileGesture.end}
+                                onPointerMove={mobileStage.onPointerMove}
+                                onPointerUp={mobileStage.onPointerUp}
                                 renderOverlay={(item) =>
                                   item.kind === "text" &&
                                   editingText?.side === mobileSide &&
@@ -1941,16 +2058,50 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                 }
                               />
                             </NotebookPageSurface>
+                            {/* A panel drag held over the leaf lights the whole page; an item
+                                dragged to its edge lights only that edge, where letting go turns it. */}
+                            <NotebookPageHint
+                              mode={
+                                transfer.dropSide === mobileSide &&
+                                !transfer.draggingSide
+                                  ? "drop"
+                                  : null
+                              }
+                              reduceMotion={reduceMotion ?? false}
+                            />
+                            <NotebookEdgeHint
+                              toward={
+                                transfer.draggingSide &&
+                                transfer.dropSide &&
+                                transfer.dropSide !== transfer.draggingSide
+                                  ? transfer.dropSide
+                                  : null
+                              }
+                              label={
+                                transfer.dropSide === "left"
+                                  ? t("move_to_left_page")
+                                  : t("move_to_right_page")
+                              }
+                              reduceMotion={reduceMotion ?? false}
+                            />
                           </div>
                         ) : (
                           <>
                             {/* Bound on its right edge: this page's punched margin faces the spine. */}
                             <div
-                              className="h-full"
-                              style={{ width: `${PAGE_PERCENT}%` }}
+                              data-notebook-page="left"
+                              className="relative h-full"
+                              style={{
+                                width: `${PAGE_PERCENT}%`,
+                                // The page an item is carried from draws over its neighbour, so the
+                                // item stays visible all the way across the spine.
+                                zIndex: transfer.draggingSide === "left" ? 2 : undefined,
+                              }}
+                              {...transfer.dropHandlers("left")}
                             >
                               <NotebookPageSurface
                                 paper={leftPage.state.doc.paper}
+                                clip={transfer.draggingSide !== "left"}
                                 binding="right"
                                 coil={false}
                               >
@@ -1972,17 +2123,14 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   onItemPointerDown={
                                     drawing
                                       ? undefined
-                                      : (event, item) =>
-                                          leftGesture.begin(event, item, {
-                                            kind: "move",
-                                          })
+                                      : leftStage.onItemPointerDown
                                   }
                                   onItemDoubleClick={(item) =>
                                     handleItemDoubleClick("left", item)
                                   }
                                   onPreviewImage={setPreviewEntry}
-                                  onPointerMove={leftGesture.move}
-                                  onPointerUp={leftGesture.end}
+                                  onPointerMove={leftStage.onPointerMove}
+                                  onPointerUp={leftStage.onPointerUp}
                                   renderOverlay={(item) =>
                                     item.kind === "text" &&
                                     editingText?.side === "left" &&
@@ -2031,17 +2179,29 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   }
                                 />
                               </NotebookPageSurface>
+                              <NotebookPageHint
+                                mode={pageHintFor("left")}
+                                reduceMotion={reduceMotion ?? false}
+                              />
                             </div>
 
                             {/* One coil across both pages — what actually makes this an open book. */}
                             <NotebookSpine />
 
                             <div
-                              className="h-full"
-                              style={{ width: `${PAGE_PERCENT}%` }}
+                              data-notebook-page="right"
+                              className="relative h-full"
+                              style={{
+                                width: `${PAGE_PERCENT}%`,
+                                // The page an item is carried from draws over its neighbour, so the
+                                // item stays visible all the way across the spine.
+                                zIndex: transfer.draggingSide === "right" ? 2 : undefined,
+                              }}
+                              {...transfer.dropHandlers("right")}
                             >
                               <NotebookPageSurface
                                 paper={rightPage.state.doc.paper}
+                                clip={transfer.draggingSide !== "right"}
                                 coil={false}
                               >
                                 <NotebookPageStage
@@ -2062,17 +2222,14 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   onItemPointerDown={
                                     drawing
                                       ? undefined
-                                      : (event, item) =>
-                                          rightGesture.begin(event, item, {
-                                            kind: "move",
-                                          })
+                                      : rightStage.onItemPointerDown
                                   }
                                   onItemDoubleClick={(item) =>
                                     handleItemDoubleClick("right", item)
                                   }
                                   onPreviewImage={setPreviewEntry}
-                                  onPointerMove={rightGesture.move}
-                                  onPointerUp={rightGesture.end}
+                                  onPointerMove={rightStage.onPointerMove}
+                                  onPointerUp={rightStage.onPointerUp}
                                   renderOverlay={(item) =>
                                     item.kind === "text" &&
                                     editingText?.side === "right" &&
@@ -2121,6 +2278,10 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
                                   }
                                 />
                               </NotebookPageSurface>
+                              <NotebookPageHint
+                                mode={pageHintFor("right")}
+                                reduceMotion={reduceMotion ?? false}
+                              />
                             </div>
                           </>
                         )}
