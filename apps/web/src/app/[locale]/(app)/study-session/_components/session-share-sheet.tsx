@@ -7,8 +7,10 @@ import { useLocale, useTranslations } from "next-intl";
 import type { StudyRoomTheme } from "@mentor/types";
 import { Button, Modal } from "@mentor/ui";
 import { PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
+import { historyDateRange } from "@/lib/history-date-range";
 import { getProfileLinks } from "@/lib/profile-links";
-import { shareDaypart } from "@/lib/session-share";
+import { shareSessionOrdinal } from "@/lib/session-share";
+import { listStudySessions } from "@/lib/study-sessions";
 import {
   loadSessionShareCardAssets,
   renderSessionShareCardPng,
@@ -18,6 +20,8 @@ import {
 import { SessionSharePreview } from "./session-share-preview";
 
 export interface SessionShareSheetProps {
+  /** The finished session, to place it among today's ("bugünün 2. seansı"). */
+  sessionId: string | null;
   minutes: number;
   subject: string | null;
   /** The done card's star fill, 0.5 steps out of three. */
@@ -28,14 +32,15 @@ export interface SessionShareSheetProps {
   onClose: () => void;
 }
 
-type Outcome = "saved" | "copied" | "failed" | null;
 
 /**
  * "Seansı paylaş": the session as a taped polaroid, 1080×1920 (canvas "Seans paylaşım kartı",
  * direction 1). A phone hands the PNG to the system share sheet; elsewhere it downloads or copies.
- * Feedback stays in the window: toasts sit under a native dialog's top layer.
+ * Only a failure speaks (inside the window: toasts sit under a native dialog's top layer); a
+ * download or copy is its own feedback.
  */
 export function SessionShareSheet({
+  sessionId,
   minutes,
   subject,
   stars,
@@ -49,14 +54,28 @@ export function SessionShareSheet({
   const [png, setPng] = useState<Blob | null>(null);
   const [broken, setBroken] = useState(false);
   const [sharing, setSharing] = useState(false);
-  const [outcome, setOutcome] = useState<Outcome>(null);
+  const [failed, setFailed] = useState(false);
+  /** Which counted session of today this was; null while loading, 0 when the list failed. */
+  const [ordinal, setOrdinal] = useState<number | null>(null);
   // Read once: this window only renders in the browser (dynamic import, no SSR).
   const [canShareFile] = useState(canShareImage);
   const [canCopyImage] = useState(
     () => typeof ClipboardItem !== "undefined" && Boolean(navigator.clipboard?.write),
   );
 
-  const model = useMemo<SessionShareCardModel>(() => {
+  useEffect(() => {
+    let active = true;
+    const { from, to } = historyDateRange("today");
+    listStudySessions(1, 50, undefined, from, to)
+      .then((res) => active && setOrdinal(shareSessionOrdinal(res.items, sessionId)))
+      .catch(() => active && setOrdinal(0));
+    return () => {
+      active = false;
+    };
+  }, [sessionId]);
+
+  const model = useMemo<SessionShareCardModel | null>(() => {
+    if (ordinal === null) return null;
     const hours = Math.floor(minutes / 60);
     const rest = minutes % 60;
     const duration =
@@ -72,17 +91,25 @@ export function SessionShareSheet({
       caption: subject
         ? t("share_card_subject", { duration, subject })
         : t("share_card_focus", { duration }),
-      placeLine: t("share_card_place_line", {
-        place: t(`share_card_place_${theme}`),
-        daypart: t(`share_card_daypart_${shareDaypart(endedAt)}`),
-      }),
+      // "bugünün 2. seansı · evde"; without the day's list, the room alone.
+      placeLine:
+        ordinal === 0
+          ? t(`share_card_place_${theme}`)
+          : t("share_card_place_line", {
+              nth:
+                ordinal === 1
+                  ? t("share_card_first")
+                  : t("share_card_nth", { count: ordinal }),
+              place: t(`share_card_place_${theme}`),
+            }),
       dateLabel: t("share_card_date", { day, weekday }),
       stars,
       siteLabel: siteHost(),
     };
-  }, [t, locale, minutes, subject, stars, theme, endedAt]);
+  }, [t, locale, minutes, subject, stars, theme, endedAt, ordinal]);
 
   useEffect(() => {
+    if (!model) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -105,14 +132,14 @@ export function SessionShareSheet({
   const handleShare = async () => {
     if (!png || sharing) return;
     setSharing(true);
-    setOutcome(null);
+    setFailed(false);
     try {
       await navigator.share({
         files: [new File([png], fileName, { type: "image/png" })],
         text: t("share_text", { minutes }),
       });
     } catch (error) {
-      if (!(error instanceof DOMException && error.name === "AbortError")) setOutcome("failed");
+      if (!(error instanceof DOMException && error.name === "AbortError")) setFailed(true);
     } finally {
       setSharing(false);
     }
@@ -128,16 +155,14 @@ export function SessionShareSheet({
     anchor.click();
     anchor.remove();
     window.setTimeout(() => URL.revokeObjectURL(url), 0);
-    setOutcome("saved");
   };
 
   const handleCopy = async () => {
     if (!png) return;
     try {
       await navigator.clipboard.write([new ClipboardItem({ "image/png": png })]);
-      setOutcome("copied");
     } catch {
-      setOutcome("failed");
+      setFailed(true);
     }
   };
 
@@ -150,64 +175,51 @@ export function SessionShareSheet({
       closeLabel={t("share_close")}
       onClose={onClose}
       placement="sheet"
-      size="wide"
     >
-      <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-stretch lg:gap-10">
+      <div className="flex flex-col items-center gap-5">
         <SessionSharePreview
           model={model}
           assets={assets}
-          label={t("share_card_label", { caption: model.caption, place: model.placeLine })}
+          label={
+            model ? t("share_card_label", { caption: model.caption, place: model.placeLine }) : ""
+          }
         />
-        <div className="flex w-full min-w-0 flex-col gap-4 lg:justify-between lg:py-2">
-          <div className="flex flex-col gap-2 text-center lg:text-left">
-            <p className="hidden text-base leading-relaxed text-[var(--color-secondary)] lg:block">
-              {t("share_sheet_body")}
+        <div className="flex w-full flex-col gap-3">
+          {broken || failed ? (
+            <p role="alert" className="text-center text-body-sm font-semibold text-[var(--color-main)]">
+              {broken ? t("share_card_failed") : t("share_error_title")}
             </p>
-            <p className="text-body-sm leading-normal text-[var(--color-secondary)]">
-              {t("share_privacy")}
-            </p>
-          </div>
-          <div className="flex flex-col gap-3">
-            {broken || outcome === "failed" ? (
-              <p role="alert" className="text-center text-body-sm font-semibold text-[var(--color-main)] lg:text-left">
-                {broken ? t("share_card_failed") : t("share_error_title")}
-              </p>
-            ) : (
-              <p role="status" className="min-h-5 text-center text-body-sm font-semibold text-[var(--color-main)] lg:text-left">
-                {outcome === "saved" ? t("share_saved") : outcome === "copied" ? t("share_copied_image") : ""}
-              </p>
-            )}
-            {canShareFile ? (
-              <>
-                <Button fullWidth busy={preparing || sharing} disabled={!png} onClick={() => void handleShare()}>
-                  <Share {...iconProps} />
-                  {t("share_action")}
+          ) : null}
+          {canShareFile ? (
+            <>
+              <Button fullWidth busy={preparing || sharing} disabled={!png} onClick={() => void handleShare()}>
+                <Share {...iconProps} />
+                {t("share_action")}
+              </Button>
+              <button
+                type="button"
+                disabled={!png}
+                onClick={handleDownload}
+                className={`${PANEL_QUIET_LINK} w-full justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60`}
+              >
+                <Download size={18} strokeWidth={2.25} aria-hidden />
+                {t("share_save")}
+              </button>
+            </>
+          ) : (
+            <>
+              <Button fullWidth busy={preparing} disabled={!png} onClick={handleDownload}>
+                <Download {...iconProps} />
+                {t("share_download")}
+              </Button>
+              {canCopyImage ? (
+                <Button variant="secondary" fullWidth disabled={!png} onClick={() => void handleCopy()}>
+                  <Copy {...iconProps} />
+                  {t("share_copy_image")}
                 </Button>
-                <button
-                  type="button"
-                  disabled={!png}
-                  onClick={handleDownload}
-                  className={`${PANEL_QUIET_LINK} w-full justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-60`}
-                >
-                  <Download size={18} strokeWidth={2.25} aria-hidden />
-                  {t("share_save")}
-                </button>
-              </>
-            ) : (
-              <>
-                <Button fullWidth busy={preparing} disabled={!png} onClick={handleDownload}>
-                  <Download {...iconProps} />
-                  {t("share_download")}
-                </Button>
-                {canCopyImage ? (
-                  <Button variant="secondary" fullWidth disabled={!png} onClick={() => void handleCopy()}>
-                    <Copy {...iconProps} />
-                    {t("share_copy_image")}
-                  </Button>
-                ) : null}
-              </>
-            )}
-          </div>
+              ) : null}
+            </>
+          )}
         </div>
       </div>
     </Modal>

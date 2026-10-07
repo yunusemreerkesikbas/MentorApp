@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import dynamic from "next/dynamic";
-import { ArrowRight, BookOpen } from "lucide-react";
+import { ArrowRightIcon as ArrowRight } from "@solar-icons/react/linear/arrow-right";
+import { NotebookIcon as Notebook } from "@solar-icons/react/bold/notebook";
 import type { PlanTaskDto, PlanTaskStatus, QuestProgressView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { CountdownCard } from "@mentor/ui";
@@ -280,7 +281,7 @@ function NotebooksLink() {
       href="/notebooks"
       className="flex min-h-11 items-center gap-3 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] lg:hidden"
     >
-      <BookOpen aria-hidden className="size-5 text-[var(--color-accent)]" />
+      <Notebook size={20} aria-hidden className="size-5 text-[var(--play-selected-ink)]" />
       <span className="min-w-0 flex-1">
         <span className="block font-bold text-[var(--color-main)]">
           {t("notebooks_quick_title")}
@@ -289,7 +290,7 @@ function NotebooksLink() {
           {t("notebooks_quick_copy")}
         </span>
       </span>
-      <ArrowRight aria-hidden className="size-4 shrink-0 text-[var(--color-secondary)]" />
+      <ArrowRight size={16} aria-hidden className="size-4 shrink-0 text-[var(--color-secondary)]" />
     </Link>
   );
 }

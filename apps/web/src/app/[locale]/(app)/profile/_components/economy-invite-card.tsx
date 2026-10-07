@@ -1,5 +1,6 @@
 "use client";
-import { Gift, X } from "lucide-react";
+import { GiftIcon as Gift } from "@solar-icons/react/bold/gift";
+import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
 
 import { useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
@@ -206,7 +207,7 @@ export function EconomyInviteCard({
           className="absolute right-3 top-[max(0.75rem,env(safe-area-inset-top))] z-20 grid size-11 place-items-center rounded-full bg-[color-mix(in_srgb,var(--color-surface)_90%,transparent)] text-[var(--color-main)] shadow-[var(--shadow-card)] outline-none transition-opacity hover:opacity-95 focus-visible:ring-2 focus-visible:ring-white sm:right-3 sm:top-3"
           aria-label={translate("invite_close")}
         >
-          <X size={20} strokeWidth={2.25} aria-hidden />
+          <X size={20} strokeWidth={1.75} aria-hidden />
         </button>
 
         <div className="relative z-[1] flex min-h-0 flex-1 flex-col max-sm:min-h-0">
@@ -371,7 +372,7 @@ export function EconomyInviteCard({
                 disabled={busy}
               />
               <Button type="submit" disabled={busy} fullWidth className="gap-2.5">
-                <Gift size={24} strokeWidth={2.2} aria-hidden />
+                <Gift size={24} strokeWidth={1.75} aria-hidden />
                 {busy ? translate("redeeming") : translate("use_code")}
               </Button>
               {redeemError ? <FormError message={redeemError} /> : null}

@@ -1,5 +1,5 @@
 "use client";
-import { ExternalLink } from "lucide-react";
+import { SquareTopDownIcon as ExternalLink } from "@solar-icons/react/linear/square-top-down";
 
 import { useTranslations } from "next-intl";
 import { Card } from "@mentor/ui";

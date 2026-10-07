@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronRight } from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto, PhotoTopicSignalDto } from "@mentor/types";
 import { PANEL_CARD, PANEL_CARD_TITLE } from "@/components/panel/panel-styles";
@@ -69,6 +69,7 @@ export function MistakesWhereCard({
                 </span>
                 <span aria-hidden className="block">
                   <ProgressLine
+                    appearance="play"
                     label={subject.subjectName}
                     value={subject.sharePercent}
                     max={100}
@@ -98,6 +99,8 @@ export function MistakesWhereCard({
                           {t("topic_count", { count: topic.count })}
                         </span>
                         <ChevronRight
+                          size={16}
+                          strokeWidth={1.75}
                           className="size-4 shrink-0 text-[var(--color-secondary)]"
                           aria-hidden
                         />

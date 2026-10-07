@@ -1145,15 +1145,15 @@ test("seans kartı hazırlanır ve masaüstünde PNG olarak iner", async ({ page
 
   await page.getByRole("button", { name: "Seansı paylaş" }).click();
   const sheet = page.getByRole("dialog", { name: "Seansını paylaş" });
-  await expect(sheet.getByRole("img", { name: /^Paylaşım kartı: 50 dk odak, / })).toBeVisible();
-  await expect(sheet.getByText("Kartta adın yok, yalnızca bu seans var.")).toBeVisible();
+  await expect(sheet.getByRole("img", { name: /^Paylaşım kartı: 50 dk odak, bugünün \d+\. seansı · / })).toBeVisible();
 
   const downloading = page.waitForEvent("download");
   await sheet.getByRole("button", { name: "Görseli indir" }).click();
   const download = await downloading;
   expect(download.suggestedFilename()).toBe("mentor-seans.png");
   expect(statSync(await download.path()).size).toBeGreaterThan(50_000);
-  await expect(sheet.getByRole("status")).toHaveText("Görsel indirildi.");
+  // A download is its own feedback: nothing else speaks in the window.
+  await expect(sheet.getByRole("alert")).toHaveCount(0);
 });
 
 test("telefonda seans kartı sistemin paylaşım penceresine PNG olarak gider", async ({

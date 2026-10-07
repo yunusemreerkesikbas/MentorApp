@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
-import { ChevronRight } from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import type { MyCoachDto } from "@mentor/types";
 import { Link } from "@/i18n/navigation";
 import { fetchMyCoach } from "@/lib/mentorship";
@@ -66,7 +66,7 @@ export function MyCoachCard() {
         </div>
         <Link href="/my-coach" className={PANEL_TEXT_LINK}>
           {t("my_coach_open")}
-          <ChevronRight className="size-4" aria-hidden />
+          <ChevronRight size={16} className="size-4" aria-hidden />
         </Link>
       </div>
       {coach.coachNote ? (

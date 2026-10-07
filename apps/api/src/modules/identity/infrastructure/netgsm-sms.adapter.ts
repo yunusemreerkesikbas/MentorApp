@@ -6,6 +6,7 @@ import type { Env } from "../../../config/env.validation";
 export type SmsSendResult = { status: "SENT" | "UNKNOWN" | "FAILED"; jobId?: string };
 
 @Injectable()
+// REST v2 OTP contract: https://www.netgsm.com.tr/dokuman/#otp-sms
 export class NetgsmSmsAdapter {
   constructor(private readonly config: ConfigService<Env, true>) {}
 

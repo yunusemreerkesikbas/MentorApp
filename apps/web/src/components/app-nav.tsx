@@ -1,21 +1,8 @@
 "use client";
-import {
-  BookOpen,
-  Calendar,
-  ChartColumn,
-  Coins,
-  Gem,
-  House,
-  MessageCircle,
-  NotebookPen,
-  PanelLeft,
-  Settings,
-  UserRoundCheck,
-  Users,
-} from "lucide-react";
+import { SidebarMinimalisticIcon } from "@solar-icons/react/linear/sidebar-minimalistic";
+import { Coins, Gem } from "lucide-react";
 
 import { useLayoutEffect, useState } from "react";
-import type { LucideIcon } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import {
@@ -27,6 +14,7 @@ import {
 import { NotificationBell } from "@mentor/ui";
 
 import { LanguageToggle } from "@/components/language-toggle";
+import { AppNavIcon } from "@/components/app-nav-icon";
 import { PremiumBadge } from "@/components/premium/premium-badge";
 import { PremiumIdentityMark } from "@/components/premium/premium-identity-mark";
 import {
@@ -86,39 +74,39 @@ const NAV_ITEMS = [
   {
     href: "/students",
     labelKey: "students",
-    icon: UserRoundCheck,
+    icon: "students",
     roles: [UserRole.COACH],
   },
-  { href: "/dashboard", labelKey: "home", icon: House, studentOnly: true },
-  { href: "/plan", labelKey: "plan", icon: Calendar },
+  { href: "/dashboard", labelKey: "home", icon: "home", studentOnly: true },
+  { href: "/plan", labelKey: "plan", icon: "plan" },
   {
     href: "/coach",
     labelKey: "coach",
-    icon: MessageCircle,
+    icon: "coach",
     sidebarExclude: true,
     studentOnly: true,
   },
   {
     href: "/analysis",
     labelKey: "analysis",
-    icon: ChartColumn,
+    icon: "analysis",
     studentOnly: true,
   },
-  { href: "/knowledge", labelKey: "knowledge", icon: BookOpen },
+  { href: "/knowledge", labelKey: "knowledge", icon: "knowledge" },
   /* Sidebar-only for now: the mobile tab pill is full at five, and the notebook's own return
      path is the review notification, not a tab the user hunts for. */
   {
     href: "/notebooks",
     labelKey: "notebook",
-    icon: NotebookPen,
+    icon: "notebook",
     sidebarOnly: true,
     studentOnly: true,
   },
-  { href: "/community", labelKey: "community", icon: Users, sidebarOnly: true },
+  { href: "/community", labelKey: "community", icon: "community", sidebarOnly: true },
   {
     href: "/settings",
     labelKey: "settings",
-    icon: Settings,
+    icon: "settings",
     sidebarOnly: true,
   },
 ] as const;
@@ -329,7 +317,7 @@ function DesktopSidebar({
             aria-label={t("sidebar_expand")}
             data-testid="app-sidebar-expand"
           >
-            <PanelLeft size={20} strokeWidth={2.25} aria-hidden />
+            <SidebarMinimalisticIcon size={20} strokeWidth={1.75} aria-hidden focusable="false" />
           </button>
         )}
         <div className="flex flex-col items-center gap-1">
@@ -378,7 +366,7 @@ function DesktopSidebar({
             aria-label={t("sidebar_collapse")}
             data-testid="app-sidebar-collapse"
           >
-            <PanelLeft size={20} strokeWidth={2.25} aria-hidden />
+            <SidebarMinimalisticIcon size={20} strokeWidth={1.75} aria-hidden focusable="false" />
           </button>
         </div>
 
@@ -476,8 +464,8 @@ function MobileTabLink({
         <motion.span
           className="absolute -top-3 grid size-11 place-items-center rounded-full shadow-[var(--shadow-card)]"
           animate={{
-            backgroundColor: active ? "var(--color-btn)" : "var(--color-bg)",
-            color: active ? "var(--color-btn-label)" : "var(--color-main)",
+            backgroundColor: active ? "var(--play-selected)" : "var(--color-bg)",
+            color: active ? "var(--play-selected-ink)" : "var(--color-main)",
           }}
           whileHover={reduceMotion ? undefined : { scale: 1.05 }}
           whileTap={tap}
@@ -485,7 +473,7 @@ function MobileTabLink({
             reduceMotion ? { duration: 0 } : { duration: 0.2, ease: TAB_EASE }
           }
         >
-          <Icon size={20} strokeWidth={active ? 2.4 : 2.15} aria-hidden />
+          <AppNavIcon icon={Icon} active={active} size={20} />
         </motion.span>
       </Link>
     );
@@ -501,7 +489,7 @@ function MobileTabLink({
       <motion.span
         className="relative grid size-11 place-items-center"
         animate={{
-          color: active ? "var(--color-btn-label)" : "var(--color-secondary)",
+          color: active ? "var(--play-selected-ink)" : "var(--color-secondary)",
         }}
         whileHover={
           reduceMotion || active ? undefined : { color: "var(--color-main)" }
@@ -514,13 +502,13 @@ function MobileTabLink({
         {active ? (
           <motion.span
             layoutId="mobile-tab-active-circle"
-            className="absolute inset-0 rounded-full bg-[var(--color-btn)]"
+            className="absolute inset-0 rounded-full bg-[var(--play-selected)]"
             transition={transition}
             aria-hidden
           />
         ) : null}
         <span className="relative">
-          <NavIcon icon={Icon} active={active} />
+          <AppNavIcon icon={Icon} active={active} />
         </span>
       </motion.span>
     </Link>
@@ -710,7 +698,7 @@ function EconomyPills({ balance }: { balance: EconomyBalance | null }) {
  * the name, not by the navigation's colour (DESIGN.md §6 Tab bar).
  */
 const ACTIVE_NAV_TONE = {
-  className: "bg-[color-mix(in_srgb,var(--color-surface)_80%,transparent)]",
+  className: "bg-[var(--play-selected)]",
   color: "var(--color-main)",
 };
 
@@ -743,7 +731,7 @@ function NavLink({
         fontWeight: active ? 700 : 400,
       }}
     >
-      <NavIcon icon={Icon} active={active} />
+      <AppNavIcon icon={Icon} active={active} />
       {label}
     </Link>
   );
@@ -777,7 +765,7 @@ function CollapsedNavLink({
         color: active ? tone.color : "var(--color-secondary)",
       }}
     >
-      <NavIcon icon={Icon} active={active} />
+      <AppNavIcon icon={Icon} active={active} />
       <span
         aria-hidden
         className="pointer-events-none absolute left-full top-1/2 z-30 ml-2 -translate-y-1/2 whitespace-nowrap rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-2 py-1 text-sm font-semibold text-[var(--color-main)] opacity-0 shadow-[var(--shadow-card)] transition-opacity duration-200 group-hover:opacity-100 group-focus-visible:opacity-100 motion-reduce:transition-none"
@@ -786,16 +774,6 @@ function CollapsedNavLink({
       </span>
     </Link>
   );
-}
-
-function NavIcon({
-  icon: Icon,
-  active,
-}: {
-  icon: LucideIcon;
-  active: boolean;
-}) {
-  return <Icon size={22} strokeWidth={active ? 2.25 : 2} aria-hidden />;
 }
 
 function formatCompact(value: number) {

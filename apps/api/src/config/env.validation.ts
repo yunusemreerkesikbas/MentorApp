@@ -127,6 +127,10 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["SMS_PROVIDER"],
       message: "Netgsm credentials, sender, and both phone secrets are required when SMS_PROVIDER=netgsm." });
   }
+  if (env.SMS_PROVIDER === "netgsm" && (env.NETGSM_MSGHEADER?.trim().length ?? 0) < 3) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["NETGSM_MSGHEADER"],
+      message: "Netgsm sender header must contain 3 to 11 characters." });
+  }
   if (env.PHONE_OTP_SECRET && env.PHONE_OTP_SECRET === env.PHONE_FINGERPRINT_SECRET) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["PHONE_FINGERPRINT_SECRET"],
       message: "Phone OTP and fingerprint secrets must be different." });

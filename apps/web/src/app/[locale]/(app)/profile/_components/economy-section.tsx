@@ -1,5 +1,4 @@
 "use client";
-import { Coins, Gift, ListChecks } from "lucide-react";
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
@@ -169,16 +168,15 @@ export function EconomySection({ refreshKey = 0 }: EconomySectionProps) {
           </h2>
         </div>
         <div className="flex flex-col gap-0.5">
-          <ListRow icon={<Coins size={18} aria-hidden />} onClick={showBalance}>
+          <ListRow onClick={showBalance}>
             {t("balance_title")}
           </ListRow>
           <ListRow
-            icon={<ListChecks size={18} aria-hidden />}
             onClick={showQuests}
           >
             {t("quests_title")}
           </ListRow>
-          <ListRow icon={<Gift size={18} aria-hidden />} onClick={showInvite}>
+          <ListRow onClick={showInvite}>
             {t("invite_title")}
           </ListRow>
         </div>
