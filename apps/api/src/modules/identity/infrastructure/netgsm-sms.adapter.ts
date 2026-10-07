@@ -6,6 +6,7 @@ import type { Env } from "../../../config/env.validation";
 export type SmsSendResult = { status: "SENT" | "UNKNOWN" | "FAILED"; jobId?: string };
 
 @Injectable()
+// REST v2 OTP contract: https://www.netgsm.com.tr/dokuman/#otp-sms
 export class NetgsmSmsAdapter {
   constructor(private readonly config: ConfigService<Env, true>) {}
 
@@ -34,7 +35,7 @@ export class NetgsmSmsAdapter {
       if (!result.ok) return { status: "UNKNOWN" };
       const body: unknown = await result.json();
       if (!body || typeof body !== "object" || !("code" in body)) return { status: "UNKNOWN" };
-      if (body.code === "00" && "jobid" in body && typeof body.jobid === "string") {
+      if (body.code === "00" && "jobid" in body && typeof body.jobid === "string" && body.jobid.trim().length > 0) {
         return { status: "SENT", jobId: body.jobid };
       }
       return typeof body.code === "string" && ["20", "30", "40", "41", "50", "51", "52", "60", "70"].includes(body.code)

@@ -1,0 +1,153 @@
+{
+  "version": 1,
+  "generatedAt": "2026-10-05T20:23:58.059Z",
+  "routes": {
+    "article": {
+      "routeAttributableBytes": 436890,
+      "totalBytes": 989262,
+      "fontPreloadCount": 2,
+      "routeChunks": [
+        "static/chunks/04mcctc5j9i1w.js",
+        "static/chunks/09oyjhu1b4iwx.js",
+        "static/chunks/0cg2rt1f_sg4q.js",
+        "static/chunks/2auw1wx-km4np.js",
+        "static/chunks/2ns6hkqayxf3j.js",
+        "static/chunks/2yoreh4htgxb5.js",
+        "static/chunks/3ol1i00jq1q5q.js",
+        "static/chunks/43ew5ob2thwos.js"
+      ],
+      "totalChunks": [
+        "static/chunks/04mcctc5j9i1w.js",
+        "static/chunks/09oyjhu1b4iwx.js",
+        "static/chunks/0cg2rt1f_sg4q.js",
+        "static/chunks/0cz1d0mv5g_q7.js",
+        "static/chunks/0yui6irn3u277.js",
+        "static/chunks/19grkgnmyjxhx.js",
+        "static/chunks/2auw1wx-km4np.js",
+        "static/chunks/2hlncdoxiv2db.js",
+        "static/chunks/2ns6hkqayxf3j.js",
+        "static/chunks/2yoreh4htgxb5.js",
+        "static/chunks/316shxn_p88dd.js",
+        "static/chunks/3ol1i00jq1q5q.js",
+        "static/chunks/43ew5ob2thwos.js",
+        "static/chunks/turbopack-0w98zes0cb1ml.js"
+      ]
+    },
+    "dashboard": {
+      "routeAttributableBytes": 833417,
+      "totalBytes": 1385789,
+      "routeChunks": [
+        "static/chunks/04mcctc5j9i1w.js",
+        "static/chunks/09oyjhu1b4iwx.js",
+        "static/chunks/0brni1xc3io7y.js",
+        "static/chunks/0cg2rt1f_sg4q.js",
+        "static/chunks/0f5b-3p61o3ox.js",
+        "static/chunks/0rv5ydkgq7gb1.js",
+        "static/chunks/0vmu4-speouyq.js",
+        "static/chunks/12ytw8ydewvd8.js",
+        "static/chunks/20fbpl4gpg37a.js",
+        "static/chunks/2auw1wx-km4np.js",
+        "static/chunks/2ieyr9fe-xcmm.js",
+        "static/chunks/2ns6hkqayxf3j.js",
+        "static/chunks/2t3z6_7uyz02v.js",
+        "static/chunks/2yoreh4htgxb5.js",
+        "static/chunks/3ol1i00jq1q5q.js",
+        "static/chunks/3ptd_uni699hc.js",
+        "static/chunks/3wwa-4gbkj1af.js"
+      ],
+      "totalChunks": [
+        "static/chunks/04mcctc5j9i1w.js",
+        "static/chunks/09oyjhu1b4iwx.js",
+        "static/chunks/0brni1xc3io7y.js",
+        "static/chunks/0cg2rt1f_sg4q.js",
+        "static/chunks/0cz1d0mv5g_q7.js",
+        "static/chunks/0f5b-3p61o3ox.js",
+        "static/chunks/0rv5ydkgq7gb1.js",
+        "static/chunks/0vmu4-speouyq.js",
+        "static/chunks/0yui6irn3u277.js",
+        "static/chunks/12ytw8ydewvd8.js",
+        "static/chunks/19grkgnmyjxhx.js",
+        "static/chunks/20fbpl4gpg37a.js",
+        "static/chunks/2auw1wx-km4np.js",
+        "static/chunks/2hlncdoxiv2db.js",
+        "static/chunks/2ieyr9fe-xcmm.js",
+        "static/chunks/2ns6hkqayxf3j.js",
+        "static/chunks/2t3z6_7uyz02v.js",
+        "static/chunks/2yoreh4htgxb5.js",
+        "static/chunks/316shxn_p88dd.js",
+        "static/chunks/3ol1i00jq1q5q.js",
+        "static/chunks/3ptd_uni699hc.js",
+        "static/chunks/3wwa-4gbkj1af.js",
+        "static/chunks/turbopack-0w98zes0cb1ml.js"
+      ]
+    }
+  },
+  "messages": {
+    "root": {
+      "namespaces": [
+        "consentBanner"
+      ],
+      "localeBytes": {
+        "tr": 248,
+        "en": 221
+      },
+      "maxBytes": 248
+    },
+    "welcome": {
+      "namespaces": [
+        "welcome"
+      ],
+      "localeBytes": {
+        "tr": 779,
+        "en": 814
+      },
+      "maxBytes": 814
+    },
+    "article": {
+      "namespaces": [
+        "article",
+        "knowledge",
+        "ads"
+      ],
+      "localeBytes": {
+        "tr": 4107,
+        "en": 3923
+      },
+      "maxBytes": 4107
+    }
+  },
+  "metrics": {
+    "articleRouteAttributableBytes": 436890,
+    "articleTotalBytes": 989262,
+    "dashboardRouteAttributableBytes": 833417,
+    "dashboardTotalBytes": 1385789,
+    "articleFontPreloadCount": 2,
+    "rootMessageBytes": 248,
+    "welcomeMessageBytes": 814,
+    "articleMessageBytes": 4107
+  },
+  "limits": {
+    "articleRouteAttributableBytes": 720896,
+    "articleTotalBytes": 1008640,
+    "dashboardRouteAttributableBytes": 778240,
+    "dashboardTotalBytes": 1326080,
+    "articleFontPreloadCount": 2,
+    "rootMessageBytes": 1024,
+    "welcomeMessageBytes": 2048,
+    "articleMessageBytes": 6144
+  },
+  "violations": [
+    {
+      "key": "dashboardRouteAttributableBytes",
+      "actual": 833417,
+      "limit": 778240,
+      "overBy": 55177
+    },
+    {
+      "key": "dashboardTotalBytes",
+      "actual": 1385789,
+      "limit": 1326080,
+      "overBy": 59709
+    }
+  ]
+}

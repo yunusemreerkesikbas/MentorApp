@@ -27,7 +27,7 @@ function services() {
 describe("coach AI surfaces name the daily limit", () => {
   it("the student brief", async () => {
     const s = services();
-    await expect(s.brief.generate({} as never, COACH, "tr")).rejects.toThrow("refused");
+    await expect(s.brief.generate({} as never, null, COACH, "tr")).rejects.toThrow("refused");
     expect(s.gate.assertAllowed).toHaveBeenCalledWith(
       COACH.id,
       COACH.roles,

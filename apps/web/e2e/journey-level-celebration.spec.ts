@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AchievementCelebrationDto,
   AuthUser,
+  PhoneStatusDto,
   EconomyBalance,
   JourneyLevelCelebrationView,
 } from "@mentor/types";
@@ -284,6 +285,9 @@ async function mockJourneyCelebrationApi(
       return json(route, { accessToken: "test-token", expiresIn: 3600, user });
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
+    if (method === "GET" && path === "/v1/users/me/phone") {
+      return json(route, { verified: false, maskedPhoneNumber: null, available: false, reauthenticationRequired: false } satisfies PhoneStatusDto);
+    }
     if (method === "GET" && path === "/v1/users/me/auth-accounts/google") {
       return json(route, {
         enabled: false,
