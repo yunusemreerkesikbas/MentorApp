@@ -2,6 +2,7 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import type {
   AchievementCollectionDto,
   AuthUser,
+  PhoneStatusDto,
   PublicProfile,
 } from "@mentor/types";
 
@@ -786,6 +787,15 @@ async function mockProfileApi(page: Page) {
         providerEmail: null,
         canLink: false,
       });
+    }
+    if (method === "GET" && path === "/v1/users/me/phone") {
+      const phone: PhoneStatusDto = {
+        verified: false,
+        maskedPhoneNumber: null,
+        available: false,
+        reauthenticationRequired: false,
+      };
+      return json(route, phone);
     }
     if (method === "GET" && path === "/v1/community/profile/ayse")
       return json(route, profile);

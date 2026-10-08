@@ -13,6 +13,7 @@ const pendingCheckoutUrl = "https://payment.test.local/hosted/checkout?token=sto
 
 interface MockOptions {
   phone?: Partial<PhoneStatusDto>;
+  phoneEmpty?: boolean;
   unknownSend?: boolean;
   lifetimeMs?: number;
   coach?: boolean;
@@ -55,7 +56,10 @@ async function mockApi(page: Page, options: MockOptions = {}) {
       status = { ...status, reauthenticationRequired: false };
       return json({ accessToken: "test-token", expiresIn: 3600, user: principal });
     }
-    if (path === "/v1/users/me/phone") { phoneReads++; return json(status); }
+    if (path === "/v1/users/me/phone") {
+      phoneReads++;
+      return options.phoneEmpty ? route.fulfill({ status: 204, headers }) : json(status);
+    }
     if (path === "/v1/users/me/phone/verifications") {
       sent++;
       requestedPhone = (request.postDataJSON() as { phoneNumber: string }).phoneNumber;
@@ -157,6 +161,14 @@ test("unavailable SMS has a clear state and no verification bypass", async ({ pa
   await page.goto("/en/settings");
   await expect(page.getByText("SMS verification is unavailable right now.", { exact: false })).toBeVisible();
   await expect(page.getByRole("button", { name: "Send SMS code" })).toHaveCount(0);
+  expect(api.sent).toBe(0);
+});
+
+test("an empty phone status degrades to a retry instead of crashing settings", async ({ page }) => {
+  const api = await mockApi(page, { phoneEmpty: true });
+  await page.goto("/ayarlar");
+  await expect(page.getByRole("button", { name: "Yeniden dene" })).toBeVisible();
+  await expect(page.getByText("This page couldn't load")).toHaveCount(0);
   expect(api.sent).toBe(0);
 });
 

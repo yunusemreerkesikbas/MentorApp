@@ -1180,3 +1180,12 @@ eklendi.
   and four temporary browser checks passed. The browser checks cover TR student / EN coach,
   active/inactive glyph changes, expanded/collapsed sidebar, mobile (including raised home),
   light/dark selection and computed icon-to-selection-surface contrast of at least 3:1.
+
+- **2026-10-08 — Empty phone status no longer crashes settings.** `PhoneVerificationCard` treats an
+  empty status response (the client returns `undefined` for a 204) like a failed load: it shows
+  the existing "Yeniden dene" button and never hands `undefined` to `onStatusChange`, so profile,
+  coach activation, trial and sponsored Premium callers stay alive. Gotcha: a catch-all 204 mock
+  in an e2e spec used to take `/ayarlar` down with "This page couldn't load"; any spec that opens
+  settings or a phone card must mock `GET /v1/users/me/phone` with a real `PhoneStatusDto`.
+  Usage: `e2e/community-member-profile.spec.ts` now mocks it; `e2e/phone-verification.spec.ts`
+  covers the empty-body case. Related: `components/phone-verification-card.tsx`.
