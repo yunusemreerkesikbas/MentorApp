@@ -1,5 +1,6 @@
 "use client";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { AltArrowLeftIcon as ChevronLeft } from "@solar-icons/react/linear/alt-arrow-left";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 
 import { DayPicker } from "react-day-picker";
 import { enGB, tr } from "react-day-picker/locale";
@@ -34,7 +35,7 @@ function PlanPickerChevron({
   return (
     <Icon
       size={18}
-      strokeWidth={2}
+      strokeWidth={1.75}
       aria-hidden
       style={{ color: "var(--color-main)", opacity: disabled ? 0.4 : 1 }}
     />

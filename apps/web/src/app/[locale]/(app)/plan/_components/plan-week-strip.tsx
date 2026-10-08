@@ -1,5 +1,7 @@
 "use client";
-import { Calendar, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarIcon as Calendar } from "@solar-icons/react/linear/calendar";
+import { AltArrowLeftIcon as ChevronLeft } from "@solar-icons/react/linear/alt-arrow-left";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 
 import { useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
@@ -101,7 +103,7 @@ export function PlanWeekStrip({
           onClick={() => goWeek(-7)}
           compact={compact}
         >
-          <ChevronLeft size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
+          <ChevronLeft size={compact ? 18 : 20} strokeWidth={1.75} aria-hidden />
         </PlanWeekNavButton>
         <p
           className="min-w-0 flex-1 truncate text-center text-sm font-bold whitespace-nowrap"
@@ -119,7 +121,7 @@ export function PlanWeekStrip({
               onClick={onOpenCalendar}
               compact={compact}
             >
-              <Calendar size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
+              <Calendar size={compact ? 18 : 20} strokeWidth={1.75} aria-hidden />
             </PlanWeekNavButton>
           ) : null}
           <PlanWeekNavButton
@@ -127,7 +129,7 @@ export function PlanWeekStrip({
             onClick={() => goWeek(7)}
             compact={compact}
           >
-            <ChevronRight size={compact ? 18 : 20} strokeWidth={2} aria-hidden />
+            <ChevronRight size={compact ? 18 : 20} strokeWidth={1.75} aria-hidden />
           </PlanWeekNavButton>
         </div>
       </div>

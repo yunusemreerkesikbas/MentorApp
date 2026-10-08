@@ -97,6 +97,41 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-07 · Blue notification toggles.** Notification preferences locally override
+  `--toggle-on-bg` with DESIGN.md's `--play-cta` blue. Usage: Ayarlar → Bildirim ayarları;
+  enabled email, push and campaign switches use the same blue as onboarding progress.
+  Gotchas: off, disabled, thumb, focus and reduced-motion styles keep the shared Toggle
+  behavior; other switches are unaffected. Related: `profile/_components/notification-settings.tsx`.
+  Validation: touched-file lint and temporary mobile/desktop browser checks confirmed the
+  enabled switch's computed background is `rgb(85, 172, 238)` (`#55ACEE`).
+
+- **2026-10-07 · Text-first settings menus.** Removed leading decorative icons and their
+  alignment slots from account, economy, notification, application and coach-scope settings
+  rows. `ListRow` now renders its optional icon slot only when supplied, preserving the
+  Google logo. Usage: Ayarlar; menu labels align directly with the row padding. Gotchas:
+  trailing navigation chevrons, verification badges, icon-only profile controls, destructive
+  text tone and all existing interactions are retained. Related:
+  `profile/_components/{account-links-card,application-support-card,notification-settings,
+  economy-section,coach-scope-card}.tsx`.
+  Validation: touched-file lint and all six applicable mobile/desktop profile scenarios passed;
+  the desktop legal-navigation case passed on rerun after an initial timeout. Two push
+  subscription cases skipped because no VAPID public key is configured.
+
+- **2026-10-07 · Settings icon consistency.** Settings account, notification, application,
+  economy, verification and profile controls now use direct Solar imports. Solid semantic
+  row icons use neutral ink; directional, edit, delete and loading controls use Linear.
+  The exam row uses a target, balance a wallet, and coach signup an academic cap. The redundant
+  notification-heading bell was removed. Usage: Ayarlar and its existing profile, invite
+  and coach-scope dialogs. Gotchas: Google branding, Premium identity, row alignment,
+  confirmation flows and preferences are unchanged; icon slots keep their existing surfaces.
+  Related: `profile/_components/{account-links-card,application-support-card,notification-settings,
+  economy-section,profile-header,google-account-card,social-follow-card,coach-scope-card,
+  coach-scope-modal,economy-invite-card}.tsx`.
+  Validation: touched-file lint, Solar export checks and six existing mobile/desktop profile
+  scenarios passed. Two push subscription cases skipped because no VAPID public key is configured.
+
+- **2026-10-04 — Netgsm REST v2 documentation review.** Compared the adapter against the live official OTP section: HTTPS POST, Basic Auth, flat `msgheader`/`msg`/`no` JSON, ten-digit Turkey mobile destination, one ASCII segment, string `jobid` and documented rejection codes match. Found and fixed the missing three-character sender minimum in Netgsm-enabled startup validation; disabled SMS still permits an empty sender. Usage: configure the subscriber number as `NETGSM_USERCODE`, the API subuser password and the approved 3-11-character header. Gotchas: Netgsm's three-minute transport window is separate from our five-minute code validity and five-second HTTP deadline; acceptance is not delivery or verification. Unknown outcomes are not retried automatically. Related: `env-phone.validation.spec.ts`, `env.validation.ts`, `netgsm-sms.adapter{,.spec}.ts`, `docs/core/integrations.md`; source: [official OTP contract](https://www.netgsm.com.tr/dokuman/#otp-sms). Transport tests inject responses; the consented live carrier pilot remains pending.
+
 - **Private SMS verification (2026-10-03, APP-114).** Added protected phone endpoints, shared Zod
   normalization for Turkey mobile numbers, six-digit cryptographic codes protected with keyed HMAC,
   session/purpose binding, expiry, replay protection and atomic Postgres quotas. One verified number

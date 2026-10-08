@@ -1,5 +1,11 @@
 "use client";
-import { BadgeCheck, ImagePlus, LoaderCircle, MailWarning, Pencil, Trash2 } from "lucide-react";
+import { VerifiedCheckIcon as BadgeCheck } from "@solar-icons/react/bold/verified-check";
+import { GalleryAddIcon as ImagePlus } from "@solar-icons/react/bold/gallery-add";
+import { RefreshIcon as LoaderCircle } from "@solar-icons/react/linear/refresh";
+import { LetterUnreadIcon as MailWarning } from "@solar-icons/react/bold/letter-unread";
+import { Pen2Icon as Pencil } from "@solar-icons/react/linear/pen-2";
+import { TrashBinTrashIcon as Trash2 } from "@solar-icons/react/linear/trash-bin-trash";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 
 import {
   useCallback,
@@ -138,7 +144,7 @@ export function ProfileHeader({
             title={t("email_verified")}
             className="absolute -right-1 bottom-1 grid size-8 place-items-center rounded-full border-2 border-[var(--color-bg)] bg-[var(--color-surface)] text-[var(--color-main)] shadow-[var(--shadow-card)]"
           >
-            <BadgeCheck size={17} strokeWidth={2.2} aria-hidden />
+            <BadgeCheck size={17} strokeWidth={1.75} aria-hidden />
           </span>
         ) : (
           <button
@@ -163,12 +169,12 @@ export function ProfileHeader({
               {resendingVerification ? (
                 <LoaderCircle
                   size={16}
-                  strokeWidth={2.4}
+                  strokeWidth={1.75}
                   className="animate-spin motion-reduce:animate-none"
                   aria-hidden
                 />
               ) : (
-                <MailWarning size={16} strokeWidth={2.2} aria-hidden />
+                <MailWarning size={16} strokeWidth={1.75} aria-hidden />
               )}
             </span>
           </button>
@@ -199,7 +205,7 @@ export function ProfileHeader({
           style={{ color: "var(--color-accent)" }}
         >
           {t("community_profile_link")}
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6" /></svg>
+          <ChevronRight size={14} strokeWidth={1.75} aria-hidden />
         </Link>
       ) : null}
     </section>

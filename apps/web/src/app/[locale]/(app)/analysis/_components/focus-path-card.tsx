@@ -1,6 +1,9 @@
 "use client";
 
-import { PencilLine, Play, Plus, Sparkles } from "lucide-react";
+import { Pen2Icon as PencilLine } from "@solar-icons/react/bold/pen-2";
+import { PlayIcon as Play } from "@solar-icons/react/bold/play";
+import { AddIcon as Plus } from "@solar-icons/react/linear/add";
+import { StarsIcon as Sparkles } from "@solar-icons/react/bold/stars";
 import { useLocale, useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { CompanionBubble } from "@/components/panel/companion-bubble";
@@ -65,7 +68,7 @@ export function FocusPathCard({
         </div>
         <EmptyFocusPath />
         <button type="button" onClick={onNewExam} className={`${LEDGE} ${LEDGE_FILLED} w-full cursor-pointer sm:w-auto sm:self-start`}>
-          <Plus className="size-5" strokeWidth={2.5} aria-hidden />
+          <Plus size={20} className="size-5" strokeWidth={2.5} aria-hidden />
           {t("cta_first_exam")}
         </button>
       </section>
@@ -131,7 +134,7 @@ function FocusBody({ view, onNewExam }: { view: FocusView; onNewExam: () => void
           onClick={() => track("coach")}
           className={`${LEDGE_TEXT_LINK} gap-1.5 self-end sm:ml-auto sm:self-auto`}
         >
-          <Sparkles className="size-4 fill-current text-[var(--premium-ring-from)]" aria-hidden />
+          <Sparkles size={16} className="size-4 fill-current text-[var(--premium-ring-from)]" aria-hidden />
           {tCycle("coach")}
         </Link>
       ) : null}
@@ -197,7 +200,7 @@ function FocusLedge({
   if (cta.kind === "ADD_TO_PLAN") {
     return (
       <Link href={{ pathname: "/plan", query: cta.query }} onClick={() => track("plan")} className={filled}>
-        <Plus className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
+        <Plus size={20} className="size-5 shrink-0" strokeWidth={2.5} aria-hidden />
         {cta.newFocus ? tCycle("add_new_focus") : tCycle("add_to_plan")}
       </Link>
     );
@@ -205,7 +208,7 @@ function FocusLedge({
   if (cta.kind === "REVIEW") {
     return (
       <Link href={{ pathname: "/notebook", query: cta.query }} onClick={() => track("notebook")} className={filled}>
-        <Play className="size-[18px] shrink-0 fill-current" aria-hidden />
+        <Play size={18} className="size-[18px] shrink-0 fill-current" aria-hidden />
         {cta.count != null ? t("cta_review_count", { count: cta.count }) : t("cta_review")}
       </Link>
     );
@@ -224,7 +227,7 @@ function FocusLedge({
   // A new exam keeps the student on this page: the form opens in place.
   return (
     <button type="button" onClick={onNewExam} className={`${filled} cursor-pointer`}>
-      <PencilLine className="size-5 shrink-0" strokeWidth={2.4} aria-hidden />
+      <PencilLine size={20} className="size-5 shrink-0" aria-hidden />
       {t("cta_new_exam")}
     </button>
   );

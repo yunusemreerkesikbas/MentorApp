@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowRightDownIcon as ArrowDownRight } from "@solar-icons/react/linear/arrow-right-down";
+import { ArrowRightUpIcon as ArrowUpRight } from "@solar-icons/react/linear/arrow-right-up";
 import { useTranslations } from "next-intl";
 import type { CoachingAnalysisDto } from "@mentor/types";
 import { Chip } from "@mentor/ui";
@@ -53,9 +54,9 @@ export function SubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
                     className={`inline-flex shrink-0 items-center gap-0.5 text-caption font-extrabold tabular-nums ${delta > 0 ? "text-[var(--color-success)]" : "text-[var(--color-secondary)]"}`}
                   >
                     {delta > 0 ? (
-                      <ArrowUpRight className="size-3.5" strokeWidth={2.6} aria-hidden />
+                      <ArrowUpRight size={14} className="size-3.5" strokeWidth={1.75} aria-hidden />
                     ) : (
-                      <ArrowDownRight className="size-3.5" strokeWidth={2.6} aria-hidden />
+                      <ArrowDownRight size={14} className="size-3.5" strokeWidth={1.75} aria-hidden />
                     )}
                     <span className="sr-only">{t("trend_aria")}</span>
                     {signed}
@@ -73,6 +74,7 @@ export function SubjectsCard({ analysis }: { analysis: CoachingAnalysisDto }) {
               </div>
               {percent != null ? (
                 <ProgressLine
+                  appearance="play"
                   label={t("bar_label", { subject: subject.subjectName, percent })}
                   value={percent}
                   max={100}

@@ -1,0 +1,12 @@
+Solar Icons by 480 Design
+
+Original collection: https://www.figma.com/community/file/1166831539721848736
+License: Creative Commons Attribution 4.0 International (CC BY 4.0)
+https://creativecommons.org/licenses/by/4.0/
+
+Mentor uses Solar Linear and Bold icons in its app navigation, dashboard,
+and analysis mistakes panel.
+Icon sizing, colour and line stroke width are adapted to Mentor's design system;
+the original icon geometry is retained.
+
+React implementation: https://github.com/saoudi-h/solar-icons (MIT)

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useLocale, useTranslations } from "next-intl";
-import { BadgeCheck } from "lucide-react";
+import { VerifiedCheckIcon as BadgeCheck } from "@solar-icons/react/bold/verified-check";
 import {
   googleLinkingControllerStart,
   googleLinkingControllerStatus,

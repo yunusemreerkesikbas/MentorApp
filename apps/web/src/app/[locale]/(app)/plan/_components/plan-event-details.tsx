@@ -1,5 +1,7 @@
 "use client";
-import { Clock, Pencil, Trash2 } from "lucide-react";
+import { ClockCircleIcon as Clock } from "@solar-icons/react/linear/clock-circle";
+import { Pen2Icon as Pencil } from "@solar-icons/react/linear/pen-2";
+import { TrashBinTrashIcon as Trash2 } from "@solar-icons/react/linear/trash-bin-trash";
 
 import type { PlanTaskDto } from "@mentor/types";
 import { useLocale, useTranslations } from "next-intl";
@@ -50,7 +52,7 @@ export function PlanEventDetails({
           className="flex items-center gap-2 text-sm"
           style={{ color: "var(--color-body)" }}
         >
-          <Clock size={16} strokeWidth={2} aria-hidden />
+          <Clock size={16} strokeWidth={1.75} aria-hidden />
           {when}
         </p>
       </div>
@@ -96,7 +98,7 @@ export function PlanEventDetails({
               fontFamily: "var(--font-heading)",
             }}
           >
-            <Pencil size={16} strokeWidth={2} aria-hidden />
+            <Pencil size={16} strokeWidth={1.75} aria-hidden />
             {t("task_action_edit")}
           </button>
           ) : null}
@@ -110,7 +112,7 @@ export function PlanEventDetails({
               fontFamily: "var(--font-heading)",
             }}
           >
-            <Trash2 size={16} strokeWidth={2} aria-hidden />
+            <Trash2 size={16} strokeWidth={1.75} aria-hidden />
             {t("task_action_delete")}
           </button>
         </div>

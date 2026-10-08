@@ -21,14 +21,22 @@ export function resolveSessionShare(
   return { minutes };
 }
 
-export type ShareDaypart = "morning" | "noon" | "afternoon" | "evening" | "night";
+export interface ShareDaySession {
+  id: string;
+  status: string;
+  startedAt: string;
+  countsAsFocusSession?: boolean;
+}
 
-/** The part of the day a session ended in, by local hour, for the card's second line. */
-export function shareDaypart(endedAt: Date): ShareDaypart {
-  const hour = endedAt.getHours();
-  if (hour >= 5 && hour < 11) return "morning";
-  if (hour >= 11 && hour < 14) return "noon";
-  if (hour >= 14 && hour < 18) return "afternoon";
-  if (hour >= 18 && hour < 22) return "evening";
-  return "night";
+/**
+ * Which counted session of the day this one was, 1-based, from today's list (any order). The
+ * finished session counts even if the list has not caught up with it yet.
+ */
+export function shareSessionOrdinal(today: ShareDaySession[], sessionId: string | null): number {
+  const counted = today.filter(
+    (s) => s.status === "COMPLETED" && s.countsAsFocusSession !== false,
+  );
+  const self = counted.find((s) => s.id === sessionId);
+  if (!self) return counted.length + 1;
+  return counted.filter((s) => s.startedAt <= self.startedAt).length;
 }

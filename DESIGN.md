@@ -352,6 +352,43 @@ from them (2026-09-22).
 
 ## 7. Iconography
 
+- **Navigation trial (2026-10-06):** `AppNav` uses Solar **Linear** for inactive destinations and
+  **Bold** for the active destination, in both sidebar widths and the mobile tab bar.
+  Selected glyphs use `--play-selected-ink` on `--play-selected`; sidebar labels retain
+  `--color-main`. This trial overrides §6's monochrome active circle, consistently for both roles.
+  Keep 22 px glyph size (20 px raised centre) and role filtering. Linear stroke is 1.75 px;
+  sidebar expand/collapse uses Solar Linear at 20 px. Home uses Home 2, analysis Chart 2,
+  Blog Document Text (distinct from the spiral Notebook), and settings the full Settings gear.
+  The coin/XP identity glyphs keep their current icons. Credit 480 Design (CC BY 4.0) through
+  Settings → icon credits. This is a visual trial,
+  not an app-wide icon migration.
+- **Settings menus (2026-10-07):** account, notification, application, economy and coach-scope
+  rows use text labels without leading decorative icons or empty alignment slots. Keep trailing
+  navigation chevrons, the Google logo, profile verification badges and icon-only edit controls.
+  Destructive account actions rely on their danger text tone. `ListRow` renders its optional
+  icon slot only when a meaningful identity mark is supplied.
+- **Dashboard extension (2026-10-06):** panel-owned destination and ritual glyphs use Solar Bold:
+  Clipboard Check for a plan task, Stopwatch for focus, Heart for mood, Chart 2 for analysis,
+  Chat Round Dots for conversation, Notebook for study and notebooks, Target for a goal.
+  Use the existing `--play-selected-ink` for study tools, `--color-success` for completed quests,
+  `--color-streak` for mood, and premium inks for premium perks. Path glyphs inherit their
+  node's contrasting foreground; do not force blue into blue action buttons.
+  Keep existing sizes: 20 px card glyphs, 24 px path stops (28 px current), 12 px coach marks;
+  14–18 px secondary controls. Controls use Solar Linear; the custom weekly chest and branded
+  Puhu, mood, flame, journey and premium artwork remain. This extension is scoped to `/panel`.
+- **Daily quest simplification (2026-10-07):** task rows in `DailyQuestsCard` use their titles,
+  progress and reward text without leading glyphs or reserved icon slots. Completion remains
+  visible through green progress/reward ink. Keep the weekly chest glyph and the all-quests arrow.
+- **Analysis mistakes extension (2026-10-06):** reason rows in `#analysis-panel-mistakes` use
+  text, counts and progress bars, with no leading icons or reserved icon slots. Recent reviews
+  keep 20 px Solar Bold outcome glyphs in transparent 40 px alignment slots: solved reviews
+  use `--color-success`, retries `--color-secondary`. Arrows remain Solar Linear and the review
+  CTA retains Bold Play, with ink following its action surface.
+- **Analysis progress extension (2026-10-07):** the improvement path uses Solar Bold for signal
+  (Lightbulb), plan (Clipboard Check), review (Restart), measure (Pen 2), completion (Check Circle)
+  and the current review's Play. Keep path surfaces and inherited ink, 24 px stops / 28 px current.
+  Hero actions use matching Bold glyphs, with Linear Add; net/subject direction arrows and header
+  controls are Linear, while the record Star and AI-provenance Stars stay Bold at existing sizes.
 - Thin line icons (Lucide / Feather-style): ~24–28 px nav box.
 - Active `#111`, inactive `#666`. Like/heart pink when active; star amber.
 - **No emoji as UI icons.** Soft-3D visuals are not substitutes for icons in chrome.
@@ -559,12 +596,13 @@ flushes the effect before the browser starts the fade, and on a slow frame the t
 
 **The share card (2026-10-06, canvas "Seans paylaşım kartı", direction 1 "Polaroid").** A
 1080×1920 story PNG of one counted session, no name on it: the room the session was studied in
-as a taped instant print, the caption in Caveat ("50 dk Matematik", then place and part of the
-day), the session's stars as stickers, Puhu's sticker, the wordmark and the site host. The
+as a taped instant print, the caption in Caveat ("50 dk Matematik", then "bugünün 2. seansı · evde", the session's
+place among the day's counted ones), the session's stars as stickers, Puhu's sticker, the wordmark and the site host. The
 room palettes are the stage's (`.room-stage[data-room-theme]`), fixed, since the card leaves the
 app. A session that did not count has no card. Phones hand the PNG to the system share sheet;
-elsewhere the window downloads or copies it, and says so inside the window (toasts sit under a
-native dialog). `lib/session-share-card.ts`, `session-share-sheet.tsx`.
+elsewhere the window downloads or copies it. The window holds only the card and its actions;
+a download or copy is its own feedback, and only a failure speaks (inside the window: toasts sit
+under a native dialog). `lib/session-share-card.ts`, `session-share-sheet.tsx`.
 
 **The notebook desk (2026-10-03, "Masa").** Defterlerim is a desk, not a list: the notebooks lie on
 it as 3D books (tilted 34°, each with its own seeded spin and nudge) under the app's own light (day:

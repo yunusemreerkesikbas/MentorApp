@@ -1,6 +1,8 @@
 "use client";
 
-import { Check, ChevronRight, RotateCcw } from "lucide-react";
+import { CheckCircleIcon as Solved } from "@solar-icons/react/bold/check-circle";
+import { RestartIcon as Retry } from "@solar-icons/react/bold/restart";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 import { useEffect, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 import type { NotebookReviewHistoryItem, Paginated } from "@mentor/types";
@@ -17,9 +19,8 @@ const PAGE_SIZE = 5;
 const DAYS = 30;
 const ROW =
   "flex min-h-14 items-center gap-3 border-t border-[color-mix(in_srgb,var(--color-main)_7%,transparent)] py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]";
-const SOLVED_WELL =
-  "bg-[color-mix(in_srgb,var(--color-success)_16%,var(--color-surface))] text-[var(--color-success)]";
-const MISSED_WELL = "bg-[var(--play-track)] text-[var(--color-secondary)]";
+const SOLVED_TONE = "text-[var(--color-success)]";
+const MISSED_TONE = "text-[var(--color-secondary)]";
 
 /**
  * "Son tekrarların": the last reviews answered in the notebook, newest first, each opening its own
@@ -134,12 +135,12 @@ export function ReviewHistoryCard({ examId }: { examId: string }) {
                 >
                   <span
                     aria-hidden
-                    className={`grid size-10 shrink-0 place-items-center rounded-[var(--radius-card)] ${item.solved ? SOLVED_WELL : MISSED_WELL}`}
+                    className={`grid size-10 shrink-0 place-items-center ${item.solved ? SOLVED_TONE : MISSED_TONE}`}
                   >
                     {item.solved ? (
-                      <Check className="size-5" strokeWidth={2.6} />
+                      <Solved size={20} className="size-5" />
                     ) : (
-                      <RotateCcw className="size-5" strokeWidth={2.2} />
+                      <Retry size={20} className="size-5" />
                     )}
                   </span>
                   <span className="min-w-0 flex-1">
@@ -152,6 +153,8 @@ export function ReviewHistoryCard({ examId }: { examId: string }) {
                     </span>
                   </span>
                   <ChevronRight
+                    size={18}
+                    strokeWidth={1.75}
                     className="size-[18px] shrink-0 text-[var(--color-secondary)]"
                     aria-hidden
                   />
