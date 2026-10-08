@@ -10803,7 +10803,14 @@
       },
       "LoginDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Single-use Turnstile token. Required for production web submissions."
+          }
+        },
+        "additionalProperties": true
       },
       "VerifyEmailDto": {
         "type": "object",
@@ -10811,7 +10818,14 @@
       },
       "ForgotPasswordDto": {
         "type": "object",
-        "properties": {}
+        "properties": {
+          "turnstileToken": {
+            "type": "string",
+            "maxLength": 2048,
+            "description": "Single-use Turnstile token. Required for production web submissions."
+          }
+        },
+        "additionalProperties": true
       },
       "ResetPasswordDto": {
         "type": "object",

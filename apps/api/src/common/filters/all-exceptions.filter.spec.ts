@@ -3,7 +3,7 @@ import type { ArgumentsHost } from "@nestjs/common";
 import { I18nContext } from "nestjs-i18n";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { Sentry } from "../../observability/sentry";
-import { NotFoundError } from "../errors/domain-error";
+import { DomainError, NotFoundError } from "../errors/domain-error";
 import { AllExceptionsFilter } from "./all-exceptions.filter";
 
 vi.mock("../../observability/sentry", () => ({ Sentry: { captureException: vi.fn() } }));
@@ -16,6 +16,7 @@ function mockHost(requestId = REQUEST_ID, headers: Record<string, string | numbe
     status: vi.fn().mockReturnThis(),
     json: vi.fn().mockReturnThis(),
     getHeader: (name: string) => headers[name],
+    setHeader: vi.fn((name: string, value: string) => { headers[name] = value; }),
   };
   const host = {
     switchToHttp: () => ({
@@ -94,6 +95,14 @@ describe("AllExceptionsFilter", () => {
     expect(res.json.mock.calls[0]![0]).toMatchObject({
       message: "Biraz hızlı gittik. Kısa bir nefes, sonra tekrar.",
     });
+  });
+
+  it("publishes the durable account quota's remaining fixed window", () => {
+    mockErrorCatalog({ "errors.TOO_MANY_REQUESTS_RETRY": "Try again in {seconds} seconds." });
+    const { host, res } = mockHost();
+    filter.catch(new DomainError("TOO_MANY_REQUESTS", 429, { retryAfter: 900 }), host);
+    expect(res.setHeader).toHaveBeenCalledWith("Retry-After", "900");
+    expect(res.json.mock.calls[0]![0]).toMatchObject({ message: "Try again in 900 seconds." });
   });
 });
 

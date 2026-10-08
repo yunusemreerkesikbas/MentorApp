@@ -62,6 +62,18 @@ http://localhost:3000/panel               # daily ritual hub
 | Auth shell       | `(auth)/layout` | shared `AuthShell` (Mentor branding, motion card, "Ana sayfaya dön")                         |
 
 ## Geliştirmeler (timeline)
+- **Web document CSP (2026-10-08)**: enforced one nonce-based script policy on public/authenticated TR/EN documents; the proxy replaces spoofed headers and preserves next-intl rewrites. Root HTML is request-scoped (`revalidate=0`), bootstrap/JSON-LD/consent scripts and provider loaders carry nonces, and HTML/CDN responses use no-store. Production blocks inline handlers and JavaScript eval; inline CSS and separate WASM permissions preserve existing rendering. Token documents use no-referrer; GPT uses SafeFrame. **Usage:** configure the runtime `WEB_CSP_STORAGE_ORIGINS` with exact public CDN and signed R2 origins; production also requires `NEXT_PUBLIC_API_URL`. **Gotchas:** public HTML loses static/CDN caching; validate real provider compatibility and SSR capacity before release. Removed obsolete legal-page static parameter generation after QA reproduced a 500; sitemap publication preserves the FINAL placeholder build guard. **Validation:** 19 unit checks, 112 distinct mobile/desktop Chromium cases, targeted lint/type checks and an isolated webpack production build passed. Full CI/live deployment validation remain pending. **Files:** `src/proxy.ts`, `src/lib/content-security-policy{,.spec}.ts`, `[locale]/layout.tsx`, `src/lib/{analytics-consent,turnstile,google-publisher-tag,legal}`, legal page routes, `e2e/browser-security.spec.ts`, `.env.example`, `render.yaml`, CI; [QA details](../plans/2026-10-08-web-browser-security-qa.md), [design](../plans/2026-10-08-web-browser-security-design.md).
+
+- **2026-10-08 — Browser security response-header foundation.** Every web route response
+  now declares framing denial, content-type sniffing protection, an origin-limited external
+  referrer policy and restricted microphone/geolocation/USB permissions. Production uses
+  host-scoped HSTS; Next's framework-identifying header is disabled. Usage: rebuild/deploy
+  web and verify response headers on documents and static files. Camera capture, clipboard
+  and native sharing remain available. Gotchas: no subdomain/preload HSTS policy was added;
+  this does not implement strict CSP yet. Three targeted tests and targeted TypeScript/ESLint
+  checks passed in isolation; a full app/browser/edge run remains pending. See the CSP and
+  public-cache/navigation decisions in `docs/plans/2026-10-08-web-browser-security-design.md`.
+  Related: `apps/web/next.config.ts`, `src/lib/security-headers{,.spec}.ts`.
 
 ### 2026-09-25 — Subscription read timeout and panel probe sequencing
 
@@ -1142,6 +1154,32 @@ eklendi.
   -> notebook upload constants import. Phone form/paywall chunks are absent from the initial
   dashboard manifest. Article JS remains unchanged at 436,851 route-attributable and 989,223
   total bytes. The remaining notebook import issue is outside the SMS change.
+
+- **2026-10-06 — Solar navigation icon trial.** App navigation uses Solar Linear for inactive
+  destinations and Bold Duotone for the selected destination; sidebar expand/collapse also uses
+  Solar Linear. Usage: browse the student or coach menu on mobile, expanded desktop sidebar or
+  collapsed rail; selected state, role filtering, labels, colour tokens and motion stay intact.
+  Gotchas: this is navigation-only, not a global migration; coin/XP glyphs keep their semantics.
+  Individual icon imports avoid loading the catalogue. Solar artwork is CC BY 4.0 by 480 Design,
+  credited through Settings → icon credits and `public/icon-credits.txt`. Related:
+  `components/{app-nav,app-nav-icon,settings-legal-footer}.tsx`, `messages/{tr,en}.json`,
+  `apps/web/package.json`, `pnpm-lock.yaml`, `e2e/profile.spec.ts`, `DESIGN.md` §7.
+  Validation: web typecheck, touched-file lint and 10 sidebar/i18n unit cases pass. Browser
+  checks cover mobile/desktop route selection, expanded/collapsed rail, light/dark themes,
+  English coach navigation and the Settings credit link. Development-only checks hide the
+  Next.js indicator because it covers the collapsed rail's lamp; no app CSS was changed for it.
+
+- **2026-10-06 — Navigation semantics and selected palette refinement.** Home now uses Home 2,
+  analysis an unframed Chart 2, Blog a Document Text page (distinct from the spiral Notebook),
+  and settings a full gear. Usage: the selected destination uses Solar Bold in
+  `--play-selected-ink` on `--play-selected` across expanded/collapsed sidebar and mobile,
+  including the raised student/coach home. Sidebar labels keep the main ink. Gotcha: this
+  replaces the trial's muted duotone selection and overrides the monochrome mobile circle;
+  no role, destination or other screen changes. Related: `components/{app-nav,app-nav-icon}.tsx`,
+  `DESIGN.md` §7. Validation: web typecheck, touched-component lint, 10 sidebar/i18n unit cases
+  and four temporary browser checks passed. The browser checks cover TR student / EN coach,
+  active/inactive glyph changes, expanded/collapsed sidebar, mobile (including raised home),
+  light/dark selection and computed icon-to-selection-surface contrast of at least 3:1.
 
 - **2026-10-08 — Empty phone status no longer crashes settings.** `PhoneVerificationCard` treats an
   empty status response (the client returns `undefined` for a 204) like a failed load: it shows

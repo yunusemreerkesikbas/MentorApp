@@ -15,11 +15,12 @@ interface NewRefresh { tokenHash: string; expiresAt: Date }
 export class AuthSessionRepository {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
-  async create(userId: string, sessionId: string, refresh: NewRefresh, expectedPasswordHash?: string) {
+  async create(userId: string, sessionId: string, refresh: NewRefresh, expectedPasswordHash?: string, expectedEmail?: string) {
     return withServiceContext(this.db, async (tx) => {
       const user = await lockUser(tx, userId);
       if (!user || user.status !== "ACTIVE" || user.erasureStartedAt ||
-          (expectedPasswordHash !== undefined && user.passwordHash !== expectedPasswordHash)) return null;
+          (expectedPasswordHash !== undefined && user.passwordHash !== expectedPasswordHash) ||
+          (expectedEmail !== undefined && user.email !== expectedEmail)) return null;
       await tx.insert(authSessions).values({
         id: sessionId, userId, organizationId: user.organizationId, expiresAt: refresh.expiresAt,
       });
@@ -79,7 +80,9 @@ export class AuthSessionRepository {
     return withServiceContext(this.db, async (tx) => {
       const [hint] = await tx.select().from(emailTokens).where(and(
         eq(emailTokens.tokenHash, tokenHash), eq(emailTokens.type, "RESET_PASSWORD")));
-      if (!hint || !await lockUser(tx, hint.userId)) return "invalid";
+      if (!hint) return "invalid";
+      const user = await lockUser(tx, hint.userId);
+      if (!user || user.status !== "ACTIVE" || user.erasureStartedAt) return "invalid";
       const [token] = await tx.select().from(emailTokens).where(eq(emailTokens.id, hint.id));
       if (!token || token.usedAt) return "invalid";
       if (token.expiresAt <= new Date()) return "expired";
@@ -92,11 +95,11 @@ export class AuthSessionRepository {
   }
 }
 
-function lockUser(tx: DatabaseTx, userId: string) {
+export function lockUser(tx: DatabaseTx, userId: string) {
   return tx.select().from(users).where(eq(users.id, userId)).for("update").then((rows) => rows[0]);
 }
 
-async function revoke(tx: DatabaseTx, userId: string, sessionId?: string) {
+export async function revoke(tx: DatabaseTx, userId: string, sessionId?: string) {
   await tx.update(authSessions).set({ revokedAt: sql`now()` }).where(and(
     eq(authSessions.userId, userId), isNull(authSessions.revokedAt),
     sessionId ? eq(authSessions.id, sessionId) : undefined));

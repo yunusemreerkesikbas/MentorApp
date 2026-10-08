@@ -10,7 +10,11 @@ import {
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
-import { CircularBackLink } from "@/components/circular-back-link";
+import {
+  PANEL_CARD_TITLE,
+  PANEL_GRID_CLASS,
+  PANEL_MAIN_CLASS,
+} from "@/components/panel/panel-styles";
 import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkPost,
@@ -33,7 +37,9 @@ import { BookmarkButton } from "../../../_components/bookmark-button";
 import { ThreadComposer } from "../../../[slug]/_components/thread-composer";
 import { ThreadMenu } from "../../../[slug]/_components/thread-menu";
 import { PostDetailSkeleton } from "../../../_components/post-skeleton";
-import { CommunityTrendRail } from "../../../_components/community-trend-rail";
+import { CommunityPresenceCard } from "../../../_components/community-presence";
+import { COMMUNITY_CARD_FLUSH } from "../../../_components/community-row";
+import { DetailCrumb } from "../../../_components/detail-crumb";
 import { CommentIcon } from "../../../_components/forum-icons";
 import { useCommunityQuickReply } from "../../../_components/community-quick-reply";
 
@@ -43,7 +49,10 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; comment: CommentView; replies: CommentView[]; zoneId: string };
 
-/** Comment detail — a focused comment + its direct replies (Twitter-style recursive navigation). */
+/**
+ * Comment detail: a focused comment + its direct replies (recursive navigation), on the panel
+ * frame. The crumb's middle step goes back one level (the post, or the parent comment).
+ */
 export function CommentShell({ postId }: { postId: string }) {
   const t = useTranslations("community");
   const highlightId = useSearchParams().get("highlight");
@@ -130,78 +139,76 @@ export function CommentShell({ postId }: { postId: string }) {
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-2xl px-4 py-6 lg:px-8">
+      <main className={PANEL_MAIN_CLASS}>
         <FormError message={state.message} />
       </main>
     );
   }
 
   const { comment, replies } = state;
-  const backHref = comment.parentPostId
-    ? {
-        pathname: "/community/comment/[postId]" as const,
-        params: { postId: comment.parentPostId },
-      }
-    : {
-        pathname: "/community/message/[threadId]" as const,
-        params: { threadId: comment.threadId },
-      };
 
   return (
-    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-      <section className="min-w-0 bg-[var(--color-surface)] sm:my-6 sm:overflow-hidden sm:rounded-[var(--radius-card)] sm:border sm:border-[var(--color-border)]">
-      <header className="flex min-h-16 items-center gap-3 border-b border-[var(--color-border)] px-3 sm:px-4">
-        <CircularBackLink href={backHref} label={t("back_short")} variant="soft" />
-        <h1 className="text-xl font-extrabold tracking-[-0.025em] text-[var(--color-main)]">
-          {t("post_detail_title")}
-        </h1>
-      </header>
-
-      <div className="border-b border-[var(--color-border)]">
-        <FocusedComment
-          comment={comment}
-          onToggleReaction={onToggleReaction}
-          onToggleBookmark={onToggleBookmark}
-          zoneId={state.zoneId}
-          onReplyCountChange={(delta) => changeReplyCount(comment.id, delta)}
-          onReplyCreated={appendFocusedReply}
-        />
-      </div>
-
-      {/* Reply composer — always directly under the post, before any replies */}
-      <div className="border-b border-[var(--color-border)]">
-        <ThreadComposer
-          placeholder={t("reply_placeholder")}
-          submitLabel={t("reply_submit")}
-          onSubmit={onReply}
-          zoneId={state.zoneId}
-        />
-      </div>
-
-      {/* Replies (nothing shown when empty — the composer above is the call to action) */}
-      {replies.length > 0 && (
-        <>
-          <h2 className="border-b border-[var(--color-border)] px-4 py-3 text-sm font-extrabold text-[var(--color-main)]">
-            {t("replies_title")}
-          </h2>
-          <div className="divide-y divide-[var(--color-border)]">
-            {replies.map((r) => (
-              <CommentRow
-                key={r.id}
-                comment={r}
-                onToggleReaction={onToggleReaction}
-                onToggleBookmark={onToggleBookmark}
-                highlighted={r.id === highlightId}
-                zoneId={state.zoneId}
-                onReplyCountChange={(delta) => changeReplyCount(r.id, delta)}
-              />
-            ))}
+    <main className={PANEL_MAIN_CLASS}>
+      <h1 className="sr-only">{t("comment_detail_title")}</h1>
+      <DetailCrumb
+        items={[
+          { label: t("title"), href: "/community" },
+          comment.parentPostId
+            ? {
+                label: t("comment_detail_parent"),
+                href: { pathname: "/community/comment/[postId]", params: { postId: comment.parentPostId } },
+              }
+            : {
+                label: t("post_detail_title"),
+                href: { pathname: "/community/message/[threadId]", params: { threadId: comment.threadId } },
+              },
+          { label: t("comment_detail_title") },
+        ]}
+      />
+      <div className={PANEL_GRID_CLASS}>
+        <div className="flex min-w-0 flex-col gap-5">
+          <div className={COMMUNITY_CARD_FLUSH}>
+            <FocusedComment
+              comment={comment}
+              onToggleReaction={onToggleReaction}
+              onToggleBookmark={onToggleBookmark}
+              zoneId={state.zoneId}
+              onReplyCountChange={(delta) => changeReplyCount(comment.id, delta)}
+              onReplyCreated={appendFocusedReply}
+            />
           </div>
-        </>
-      )}
-      </section>
-      <div className="sticky top-20 hidden pt-6 xl:block">
-        <CommunityTrendRail />
+
+          {/* The reply composer always sits above the replies; with none, it is the call to action. */}
+          <section className={COMMUNITY_CARD_FLUSH} aria-labelledby="replies-title">
+            <h2 id="replies-title" className={`${PANEL_CARD_TITLE} px-5 pt-5`}>
+              {t("replies_title")}
+            </h2>
+            <ThreadComposer
+              placeholder={t("reply_placeholder")}
+              submitLabel={t("reply_submit")}
+              onSubmit={onReply}
+              zoneId={state.zoneId}
+            />
+            {replies.length > 0 ? (
+              <div className="divide-y divide-[var(--color-border)] border-t border-[var(--color-border)]">
+                {replies.map((r) => (
+                  <CommentRow
+                    key={r.id}
+                    comment={r}
+                    onToggleReaction={onToggleReaction}
+                    onToggleBookmark={onToggleBookmark}
+                    highlighted={r.id === highlightId}
+                    zoneId={state.zoneId}
+                    onReplyCountChange={(delta) => changeReplyCount(r.id, delta)}
+                  />
+                ))}
+              </div>
+            ) : null}
+          </section>
+        </div>
+        <aside className="flex min-w-0 flex-col gap-5" aria-label={t("hub_rail_label")}>
+          <CommunityPresenceCard />
+        </aside>
       </div>
     </main>
   );
@@ -226,7 +233,7 @@ function FocusedComment({
   const locale = useLocale();
   const { openQuickReply } = useCommunityQuickReply();
   return (
-    <div className="group flex items-start gap-3 py-4 pl-3 pr-4">
+    <div className="group flex items-start gap-3 px-4 py-4 sm:px-5 sm:py-5">
       <AuthorLink username={comment.authorUsername}>
         <AuthorAvatar name={comment.authorName} size={40} src={comment.authorAvatarUrl} />
       </AuthorLink>
@@ -234,23 +241,23 @@ function FocusedComment({
         <div className="flex items-center gap-1.5">
           <AuthorLink
             username={comment.authorUsername}
-            className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+            className="flex-shrink truncate text-body-sm font-extrabold hover:underline"
           >
-            <span style={{ color: "var(--color-main)" }}>{comment.authorName || t("unknown_author")}</span>
+            <span className="text-[var(--color-main)]">{comment.authorName || t("unknown_author")}</span>
           </AuthorLink>
           {comment.authorUsername && (
-            <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
+            <span className="flex-shrink truncate text-caption font-semibold text-[var(--color-secondary)]">
               @{comment.authorUsername}
             </span>
           )}
-          <span className="flex-shrink-0 whitespace-nowrap text-xs" style={{ color: "var(--color-secondary)" }}>
+          <span className="flex-shrink-0 whitespace-nowrap text-caption font-semibold text-[var(--color-secondary)]">
             · {relativeTime(comment.createdAt, locale)}
           </span>
           <span className="ml-auto flex-shrink-0">
             <ThreadMenu targetId={comment.id} targetType={ModerationTargetType.POST} />
           </span>
         </div>
-        <p className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-[22px]" style={{ color: "var(--color-body)" }}>
+        <p className="mt-1.5 whitespace-pre-wrap break-words text-base font-semibold text-[var(--color-body)]">
           <MentionText text={comment.body} />
         </p>
         <AttachmentGallery attachments={comment.attachments} />
@@ -287,7 +294,7 @@ function FocusedComment({
           >
             <CommentIcon />
             {comment.replyCount > 0 ? (
-              <span className="text-[13px] tabular-nums">{comment.replyCount}</span>
+              <span className="text-caption font-extrabold tabular-nums">{comment.replyCount}</span>
             ) : null}
           </button>
 

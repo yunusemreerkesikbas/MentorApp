@@ -1,6 +1,7 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ThrottlerStorage } from "@nestjs/throttler";
 import { and, eq, gte, sql } from "drizzle-orm";
@@ -31,6 +32,7 @@ describe("private phone verification boundary (e2e)", () => {
       .overrideProvider(TurnstileService).useValue(turnstile)
       .overrideProvider(ThrottlerStorage).useValue({ increment: async () => ({ totalHits: 1, timeToExpire: 0, isBlocked: false, timeToBlockExpire: 0 }) })
       .compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     await app.init();

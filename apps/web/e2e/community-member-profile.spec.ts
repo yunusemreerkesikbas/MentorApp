@@ -170,7 +170,7 @@ const completeAchievementCollection: AchievementCollectionDto = {
   })),
 };
 
-test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async ({
+test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikte korur", async ({
   page,
   context,
 }, testInfo) => {
@@ -193,26 +193,18 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
     await page.setViewportSize(viewport);
     await page.goto("/topluluk/uye/ayse");
 
-    await expect(
-      page.getByRole("heading", { name: profile.displayName }),
-    ).toBeVisible();
-    await expect(page.locator(".community-header__profile")).toHaveAttribute(
-      "href",
-      "/topluluk/uye/yunus_emre",
-    );
-    await expect(
-      page
-        .locator(".community-header__profile")
-        .locator(":scope > img, :scope > span")
-        .first(),
-    ).toHaveCSS("border-top-width", "0px");
-    expect(
-      await page
-        .locator(".community-header__profile")
-        .locator(":scope > img, :scope > span")
-        .first()
-        .evaluate((element) => getComputedStyle(element).boxShadow),
-    ).toContain("0px 0px 0px 1px");
+    const card = page.locator(".profile-card");
+    await expect(card.getByRole("heading", { level: 1, name: profile.displayName })).toBeVisible();
+    // The viewer's own profile lives at the foot of the sidebar (Topluluk Tur 1); on phones the
+    // sidebar is the rooms drawer, so there is no header chip to check.
+    if (viewport.width >= 1024) {
+      const ownProfile = page
+        .locator(".community-workspace__sidebar")
+        .getByRole("link", { name: /Profilim/ });
+      await expect(ownProfile).toHaveAttribute("href", "/topluluk/uye/yunus_emre");
+      // Someone else's profile is not "Profilim" (the route template is the same).
+      await expect(ownProfile).not.toHaveAttribute("aria-current", "page");
+    }
     const headerBack = page
       .locator(".community-header")
       .getByRole("link", { name: "Topluluk" });
@@ -221,236 +213,90 @@ test("üye profili responsive hero, aksiyonlar ve seviye panelini korur", async 
     } else {
       await expect(headerBack).toHaveCount(0);
     }
-    await expect(
-      page.locator(".profile-hero").getByRole("link", { name: "Topluluk" }),
-    ).toHaveCount(0);
-    await expect(page.getByTestId("premium-identity-mark")).toBeVisible();
-    await expect(page.getByRole("img", { name: "Premium üye" })).toBeVisible();
-    await expect(page.getByText("12", { exact: true }).first()).toBeVisible();
-    await expect(
-      page.getByRole("img", {
-        name: `${profile.displayName} profil fotoğrafı`,
-      }),
-    ).toBeVisible();
+
+    // The card, no cover (Topluluk Tur 2): identity, bio, site, counts, the one ledge.
+    await expect(page.locator(".profile-hero")).toHaveCount(0);
+    await expect(card.getByTestId("premium-identity-mark")).toBeVisible();
+    await expect(card.getByRole("img", { name: `${profile.displayName} profil fotoğrafı` })).toBeVisible();
+    await expect(card.getByText("@ayse · KPSS", { exact: false })).toBeVisible();
+    await expect(card.getByText(profile.bio!)).toBeVisible();
+    await expect(card.getByRole("link", { name: "mentor.test/ayse" })).toHaveAttribute("href", profile.website!);
+    await expect(card.getByRole("button", { name: /1\.130\s*takipçi/ })).toBeVisible();
+    await expect(card.getByRole("button", { name: /475\s*takip$/ })).toBeVisible();
+    await expect(card.getByText("8 günlük seri 🔥")).toBeVisible();
+    await expect(card.getByRole("button", { name: "Takip et", exact: true })).toBeVisible();
+    await expect(card.getByRole("button", { name: /Yol arkadaşı ol/ })).toBeVisible();
     expect(
-      await page
-        .locator(".profile-hero")
-        .evaluate((element) => getComputedStyle(element).backgroundColor),
-    ).toBe("rgb(255, 255, 255)");
-    await expect(page.locator(".profile-hero__mist")).toHaveCount(0);
-    const identitySurface = await page
-      .locator(".profile-hero__identity")
-      .evaluate((element) => {
-        const style = getComputedStyle(element);
-        return {
-          backgroundColor: style.backgroundColor,
-          borderTopWidth: style.borderTopWidth,
-          borderTopLeftRadius: style.borderTopLeftRadius,
-          borderTopRightRadius: style.borderTopRightRadius,
-        };
-      });
-    expect(identitySurface.backgroundColor).toBe("rgb(255, 255, 255)");
-    const heroComposition = await page
-      .locator(".profile-hero")
-      .evaluate((hero) => {
-        const media = hero.querySelector<HTMLElement>(".profile-hero__media");
-        const identity = hero.querySelector<HTMLElement>(
-          ".profile-hero__identity",
-        );
-        if (!media || !identity)
-          throw new Error("Profile hero surfaces are missing");
-        return {
-          heroHeight: hero.getBoundingClientRect().height,
-          mediaHeight: media.getBoundingClientRect().height,
-          identityHeight: identity.getBoundingClientRect().height,
-        };
-      });
-    if (viewport.width < 1280) {
-      expect(identitySurface.borderTopWidth).toBe("1px");
-      expect(identitySurface.borderTopLeftRadius).not.toBe("0px");
-      expect(identitySurface.borderTopRightRadius).not.toBe("0px");
-      await expect(page.locator(".profile-header")).toHaveCSS(
-        "border-left-width",
-        "1px",
-      );
-      expect(
-        heroComposition.mediaHeight / heroComposition.heroHeight,
-      ).toBeGreaterThan(0.58);
-      expect(
-        heroComposition.mediaHeight / heroComposition.heroHeight,
-      ).toBeLessThan(0.64);
-      expect(heroComposition.identityHeight).toBeLessThan(
-        heroComposition.mediaHeight,
-      );
-    } else {
-      expect(identitySurface.borderTopWidth).toBe("0px");
-      expect(heroComposition.heroHeight).toBe(360);
-      expect(heroComposition.mediaHeight).toBe(180);
-    }
-    expect(
-      await page.evaluate(
-        () => document.documentElement.scrollWidth <= window.innerWidth,
-      ),
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
     ).toBe(true);
+
+    // The journey: under the card below 1280 px, in the sticky rail above it.
+    const railPanel = page.locator("aside .profile-progress-panel");
+    const inlinePanel = page.locator(".profile-progress-mobile .profile-progress-panel");
+    if (viewport.width >= 1280) {
+      await expect(railPanel).toBeVisible();
+      await expect(inlinePanel).toBeHidden();
+      expect(
+        await railPanel.evaluate((element) => getComputedStyle(element.parentElement!).position),
+      ).toBe("sticky");
+    } else {
+      await expect(inlinePanel).toBeVisible();
+      await expect(railPanel).toBeHidden();
+    }
 
     if (viewport.width < 1024) {
       const channelsButton = page
         .locator(".community-header")
         .getByRole("button", { name: "Kanallar" });
       await expect(channelsButton).toBeVisible();
-      await expect(page.getByText("Kanallar", { exact: true })).toHaveCount(0);
 
       if (viewport.width === 375) {
-        const avatarTrigger = page
-          .getByRole("button", { name: "Profil fotoğrafını aç" })
-          .first();
+        const avatarTrigger = card.getByRole("button", { name: "Profil fotoğrafını aç" });
         await avatarTrigger.click();
         const preview = page.getByRole("dialog", {
           name: `${profile.displayName} profil fotoğrafı önizlemesi`,
         });
         await expect(preview).toBeVisible();
         await expect(
-          preview.getByRole("img", {
-            name: `${profile.displayName} profil fotoğrafı`,
-          }),
+          preview.getByRole("img", { name: `${profile.displayName} profil fotoğrafı` }),
         ).toBeVisible();
         await page.keyboard.press("Escape");
         await expect(preview).toBeHidden();
         await expect(avatarTrigger).toBeFocused();
 
         await channelsButton.click();
-        await expect(
-          page.getByRole("dialog", { name: "Kanallar" }),
-        ).toBeVisible();
+        await expect(page.getByRole("dialog", { name: "Kanallar" })).toBeVisible();
         await page.keyboard.press("Escape");
-        await expect(
-          page.getByRole("dialog", { name: "Kanallar" }),
-        ).toBeHidden();
+        await expect(page.getByRole("dialog", { name: "Kanallar" })).toBeHidden();
         await expect(channelsButton).toBeFocused();
-      }
-    }
-
-    const desktopPanel = page
-      .locator("aside")
-      .filter({ hasText: "Yolculuk seviyesi" });
-    if (viewport.width >= 1280) {
-      await expect(desktopPanel).toBeVisible();
-      await expect(page.locator(".profile-desktop-avatar")).toBeVisible();
-      await expect(page.locator(".profile-desktop-avatar")).toHaveCSS(
-        "width",
-        "96px",
-      );
-      await expect(page.locator(".profile-desktop-avatar img")).toHaveCSS(
-        "border-top-width",
-        "0px",
-      );
-      await expect(page.locator(".profile-desktop-avatar img")).toHaveCSS(
-        "outline-width",
-        "1px",
-      );
-      expect(
-        await page
-          .locator(".profile-desktop-avatar img")
-          .evaluate((element) => getComputedStyle(element).boxShadow),
-      ).toContain("0px 0px 0px 4px");
-      await expect(page.locator(".profile-header")).toHaveCSS(
-        "border-left-width",
-        "0px",
-      );
-      const actionRow = page.locator(".profile-header__action-row");
-      const actionBox = await actionRow.boundingBox();
-      const headerBox = await page.locator(".profile-header").boundingBox();
-      const avatarBox = await page
-        .locator(".profile-desktop-avatar")
-        .boundingBox();
-      expect(actionBox).not.toBeNull();
-      expect(headerBox).not.toBeNull();
-      expect(avatarBox).not.toBeNull();
-      expect(
-        Math.abs(
-          actionBox!.x + actionBox!.width - (headerBox!.x + headerBox!.width),
-        ),
-      ).toBeLessThanOrEqual(20);
-      expect(actionBox!.y).toBeGreaterThanOrEqual(avatarBox!.y);
-      expect(actionBox!.y).toBeLessThanOrEqual(
-        avatarBox!.y + avatarBox!.height,
-      );
-      await expect(
-        actionRow.getByRole("button", { name: "Profili paylaş" }),
-      ).toHaveCSS("width", "40px");
-      await expect(
-        actionRow.getByRole("button", { name: "Takip et" }),
-      ).toHaveCSS("min-width", "144px");
-      const metricBoxes = await page
-        .locator(".profile-metrics > *")
-        .evaluateAll((elements) =>
-          elements.map((element) => element.getBoundingClientRect()),
-        );
-      expect(metricBoxes).toHaveLength(3);
-      expect(
-        metricBoxes[1]!.x - (metricBoxes[0]!.x + metricBoxes[0]!.width),
-      ).toBeLessThanOrEqual(32);
-      expect(
-        metricBoxes[2]!.x - (metricBoxes[1]!.x + metricBoxes[1]!.width),
-      ).toBeLessThanOrEqual(32);
-      expect(
-        await desktopPanel.evaluate(
-          (element) => getComputedStyle(element).position,
-        ),
-      ).toBe("sticky");
-    } else {
-      await expect(page.locator(".profile-desktop-avatar")).toBeHidden();
-      await expect(desktopPanel).toBeHidden();
-      await expect(page.getByText("Yolculuk seviyesi").first()).toBeVisible();
-
-      if (viewport.width === 375) {
-        const compactPanel = page.locator(
-          ".profile-progress-mobile .profile-progress-panel",
-        );
-        const panelBox = await compactPanel.boundingBox();
-        expect(panelBox).not.toBeNull();
-        expect(panelBox!.height).toBeLessThanOrEqual(460);
-        await expect(compactPanel).toHaveCSS("box-shadow", "none");
-        expect(
-          await compactPanel.evaluate(
-            (element) => getComputedStyle(element).backgroundImage,
-          ),
-        ).toBe("none");
       }
     }
 
     await page.screenshot({
       path: testInfo.outputPath(`member-profile-${viewport.width}.png`),
       fullPage: true,
+      // The skeleton fades out with a blur; capture the settled page, not the crossfade.
+      animations: "disabled",
     });
   }
 
   await page.getByRole("button", { name: "Profili paylaş" }).click();
   await expect(page.getByText("Profil bağlantısı kopyalandı")).toBeVisible();
 
-  const followButton = page.getByRole("button", {
-    name: "Takip et",
-    exact: true,
-  });
+  // The follow call fails in this mock: the button says "Takiptesin", then rolls back.
+  const followButton = page.getByRole("button", { name: "Takip et", exact: true });
   await followButton.click();
-  await expect(
-    page.getByRole("button", { name: "Takip ediliyor", exact: true }),
-  ).toBeVisible();
+  await expect(page.getByRole("button", { name: "Takiptesin", exact: true })).toBeVisible();
   await expect(followButton).toBeVisible();
 
+  // A long name stays on one card without side scroll, and a broken photo falls back to initials.
   await page.goto("/topluluk/uye/broken");
   await expect(
-    page.getByRole("heading", {
-      name: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
-    }),
+    page.getByRole("heading", { name: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı" }),
   ).toBeVisible();
-  await expect(
-    page.locator(".profile-desktop-avatar").getByText("ÇS", { exact: true }),
-  ).toBeVisible();
+  await expect(page.locator(".profile-avatar").getByText("ÇS", { exact: true })).toBeVisible();
   expect(
-    await page.evaluate(
-      () => document.documentElement.scrollWidth <= window.innerWidth,
-    ),
+    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
   ).toBe(true);
 });
 
@@ -472,6 +318,12 @@ test("profil sahibi Gece Yolculuğu kimliğini ve seviye içi ilerlemeyi görür
   await expect(
     panel.getByRole("progressbar", { name: "Pusula seviye ilerlemesi" }),
   ).toHaveAttribute("aria-valuenow", "111");
+  // Their own profile lights "Profilim" in the sidebar (phones carry the sidebar in the drawer).
+  if ((page.viewportSize()?.width ?? 0) >= 1024) {
+    await expect(
+      page.locator(".community-workspace__sidebar").getByRole("link", { name: /Profilim/ }),
+    ).toHaveAttribute("aria-current", "page");
+  }
 });
 
 test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini görmez", async ({
@@ -486,7 +338,8 @@ test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini gör
 
   const panel = page.locator(".profile-progress-panel:visible");
   await expect(panel.getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
-  await expect(panel.getByText("Kendi yönünü bulmaya başladın.", { exact: true })).toBeVisible();
+  // A visitor reads about the owner, not to themselves (Topluluk Tur 2).
+  await expect(panel.getByText("Kendi yönünü bulmaya başladı.", { exact: true })).toBeVisible();
   await expect(panel.getByRole("progressbar")).toHaveCount(0);
   await expect(panel.getByText(/XP daha/)).toHaveCount(0);
 
@@ -606,23 +459,17 @@ test("kendi profili ve bookmarks URL geçmişi doğru aksiyonları kullanır", a
     page.getByRole("button", { name: "Takip et", exact: true }),
   ).toHaveCount(0);
 
-  await page
-    .getByRole("button", { name: "Kaydedilenler", exact: true })
-    .click();
-  await expect(page).toHaveURL(/\?tab=bookmarks$/);
+  // Saved items moved to their own page (Topluluk Tur 2): no tab here, and old links land there.
+  await expect(page.getByRole("button", { name: "Kaydedilenler", exact: true })).toHaveCount(0);
   await expect(
-    page.getByRole("button", { name: "Kaydedilenler", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
-
-  await page.goBack();
-  await expect(
-    page.getByRole("button", { name: "Gönderiler", exact: true }),
+    page.getByRole("button", { name: "Paylaşımlar", exact: true }),
   ).toHaveAttribute("aria-current", "page");
 
   await page.goto("/topluluk/uye/yunus_emre?tab=bookmarks");
-  await expect(
-    page.getByRole("button", { name: "Kaydedilenler", exact: true }),
-  ).toHaveAttribute("aria-current", "page");
+  await expect(page).toHaveURL(/\/topluluk\/kayitli$/);
+  await expect(page.getByRole("heading", { level: 1, name: "Kaydedilenler" })).toBeVisible();
+
+  await page.goto("/topluluk/uye/yunus_emre");
 
   await editProfileLinks.click();
   await expect(page).toHaveURL(/\/ayarlar\?section=profile$/);

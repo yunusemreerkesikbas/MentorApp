@@ -1,20 +1,19 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
-import { Settings, Share2 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import {
-  type ForumPublicPerson,
-  type ForumThreadSummary,
-  type ThreadView,
-  type ZoneMemberStatus,
-  type ZoneView,
-} from "@mentor/types";
+import type { ForumPublicPerson, ForumThreadSummary, ThreadView, ZoneMemberStatus, ZoneView } from "@mentor/types";
+import type { AttachmentInput, ForumPollInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import {
+  PANEL_CARD,
+  PANEL_CARD_TITLE,
+  PANEL_GRID_CLASS,
+  PANEL_MAIN_CLASS,
+  PANEL_QUIET_LINK,
+} from "@/components/panel/panel-styles";
 import { replaceReaction } from "@/lib/forum-reactions";
 import {
   bookmarkThread,
@@ -28,17 +27,16 @@ import {
   type ThreadSort,
   unreactThread,
 } from "@/lib/forum";
-import type { AttachmentInput, ForumPollInput } from "@mentor/validation";
+import { AuthorAvatar } from "../../_components/author-avatar";
+import { CommunityPostCard } from "../../_components/community-post-card";
+import { CommunityPresenceCard } from "../../_components/community-presence";
+import { COMMUNITY_CARD_FLUSH, COMMUNITY_ROW_LIST } from "../../_components/community-row";
+import { PostListSkeleton } from "../../_components/post-skeleton";
 import { AskComposer } from "./ask-composer";
-import { JoinButton } from "./join-button";
 import { QuestionListItem } from "./question-list-item";
 import { ThreadComposer } from "./thread-composer";
-import { CommunityPostCard } from "../../_components/community-post-card";
+import { ZONE_TABPANEL_ID, ZoneHeader, type ZoneTab } from "./zone-header";
 import { ZoneShellSkeleton } from "./zone-shell-skeleton";
-import { AuthorAvatar } from "../../_components/author-avatar";
-import { CommunityTrendRail } from "../../_components/community-trend-rail";
-import { TabContentSkeleton } from "../../_components/tab-content-skeleton";
-import { PostListSkeleton } from "../../_components/post-skeleton";
 
 interface Ready {
   zone: ZoneView;
@@ -50,50 +48,43 @@ interface Ready {
   contributors: ForumPublicPerson[];
   pinnedThreads: ForumThreadSummary[];
 }
-type State =
-  | { status: "loading" }
-  | { status: "disabled" }
-  | { status: "error"; message: string }
-  | ({ status: "ready" } & Ready);
+type State = { status: "loading" } | { status: "disabled" } | { status: "error"; message: string } | ({ status: "ready" } & Ready);
 
-type ZoneTab = "popular" | "recent" | "media" | "about";
+/** Keeps a sort switch from flashing its skeleton for a single frame. */
 const TAB_SKELETON_MIN_MS = 320;
 
+/**
+ * A room on the panel frame: its header card, the composer for members, then the posts (or
+ * questions) in one card; the rail holds who is studying now and the room's contributors.
+ */
 export function ZoneShell({ slug }: { slug: string }) {
   const t = useTranslations("community");
-  const reduceMotion = useReducedMotion();
   const [state, setState] = useState<State>({ status: "loading" });
   const [activeTab, setActiveTab] = useState<ZoneTab>("recent");
-  const [shareCopied, setShareCopied] = useState(false);
   const sortRequestIdRef = useRef(0);
 
   useEffect(() => {
     let active = true;
-    (async () => {
-      try {
-        const result = await getZoneFeed(slug);
-        if (active) {
-          setState({
-            status: "ready",
-            zone: result.zone,
-            threads: result.feed.items,
-            nextCursor: result.feed.nextCursor,
-            loadingMore: false,
-            switchingSort: false,
-            sort: "recent",
-            contributors: result.contributors,
-            pinnedThreads: result.pinnedThreads,
-          });
-        }
-      } catch (err) {
+    getZoneFeed(slug)
+      .then((result) => {
         if (!active) return;
-        if (isForumDisabled(err)) return setState({ status: "disabled" });
         setState({
-          status: "error",
-          message: err instanceof ApiClientError ? err.body.message : t("error"),
+          status: "ready",
+          zone: result.zone,
+          threads: result.feed.items,
+          nextCursor: result.feed.nextCursor,
+          loadingMore: false,
+          switchingSort: false,
+          sort: "recent",
+          contributors: result.contributors,
+          pinnedThreads: result.pinnedThreads,
         });
-      }
-    })();
+      })
+      .catch((err: unknown) => {
+        if (!active) return;
+        if (isForumDisabled(err)) setState({ status: "disabled" });
+        else setState({ status: "error", message: err instanceof ApiClientError ? err.body.message : t("error") });
+      });
     return () => {
       active = false;
     };
@@ -103,447 +94,240 @@ export function ZoneShell({ slug }: { slug: string }) {
     setState((s) => (s.status === "ready" ? { status: "ready", ...fn(s) } : s));
   }, []);
 
-  const onJoined = useCallback(
-    (status: ZoneMemberStatus) => patchReady((r) => ({ ...r, zone: { ...r.zone, myStatus: status } })),
-    [patchReady],
-  );
-
-  const onLeft = useCallback(
-    () => patchReady((r) => ({ ...r, zone: { ...r.zone, myStatus: null, myRole: null } })),
+  const patchThread = useCallback(
+    (threadId: string, fn: (thread: ThreadView) => ThreadView) =>
+      patchReady((r) => ({ ...r, threads: r.threads.map((th) => (th.id === threadId ? fn(th) : th)) })),
     [patchReady],
   );
 
   const onPost = useCallback(
     async (body: string, attachments: AttachmentInput[], poll?: ForumPollInput) => {
-      const ready = state.status === "ready" ? state : null;
-      if (!ready) return;
-      const created = await postThread(ready.zone.id, body, undefined, attachments, undefined, poll);
+      if (state.status !== "ready") return;
+      const created = await postThread(state.zone.id, body, undefined, attachments, undefined, poll);
       patchReady((r) => ({ ...r, threads: [created, ...r.threads] }));
     },
     [state, patchReady],
   );
 
-  const onToggleReaction = useCallback(
-    (threadId: string, nextEmoji: string | null, previousEmoji: string | null) => {
-      patchReady((ready) => ({
-        ...ready,
-        threads: ready.threads.map((thread) =>
-          thread.id === threadId ? replaceReaction(thread, nextEmoji) : thread,
-        ),
-      }));
-      const call = nextEmoji
-        ? reactThread(threadId, nextEmoji)
-        : previousEmoji
-          ? unreactThread(threadId, previousEmoji)
-          : Promise.resolve();
-      call.catch(() => {
-        patchReady((ready) => ({
-          ...ready,
-          threads: ready.threads.map((thread) =>
-            thread.id === threadId ? replaceReaction(thread, previousEmoji) : thread,
-          ),
-        }));
-      });
-    },
-    [patchReady],
-  );
+  const onToggleReaction = (threadId: string, nextEmoji: string | null, previousEmoji: string | null) => {
+    patchThread(threadId, (th) => replaceReaction(th, nextEmoji));
+    const call = nextEmoji
+      ? reactThread(threadId, nextEmoji)
+      : previousEmoji
+        ? unreactThread(threadId, previousEmoji)
+        : Promise.resolve();
+    call.catch(() => patchThread(threadId, (th) => replaceReaction(th, previousEmoji)));
+  };
 
-  const onToggleBookmark = useCallback(
-    (threadId: string, adding: boolean) => {
-      patchReady((r) => ({
-        ...r,
-        threads: r.threads.map((th) => (th.id === threadId ? { ...th, myBookmarked: adding } : th)),
-      }));
-      bookmarkThread(threadId, adding).catch(() => {
-        patchReady((r) => ({
-          ...r,
-          threads: r.threads.map((th) =>
-            th.id === threadId ? { ...th, myBookmarked: !adding } : th,
-          ),
-        }));
-      });
-    },
-    [patchReady],
-  );
+  const onToggleBookmark = (threadId: string, adding: boolean) => {
+    patchThread(threadId, (th) => ({ ...th, myBookmarked: adding }));
+    bookmarkThread(threadId, adding).catch(() => patchThread(threadId, (th) => ({ ...th, myBookmarked: !adding })));
+  };
 
-  const onPinThread = useCallback(
-    (threadId: string, pinned: boolean) => {
-      patchReady((r) => ({
-        ...r,
-        threads: r.threads
-          .map((th) => (th.id === threadId ? { ...th, isPinned: pinned } : th))
-          .sort((a, b) =>
-            a.isPinned === b.isPinned
-              ? b.createdAt.localeCompare(a.createdAt)
-              : a.isPinned
-                ? -1
-                : 1,
-          ),
-      }));
-      pinThread(threadId, pinned).catch(() => {
-        patchReady((r) => ({
-          ...r,
-          threads: r.threads.map((th) => (th.id === threadId ? { ...th, isPinned: !pinned } : th)),
-        }));
-      });
-    },
-    [patchReady],
-  );
+  const onPinThread = (threadId: string, pinned: boolean) => {
+    patchReady((r) => ({
+      ...r,
+      threads: r.threads
+        .map((th) => (th.id === threadId ? { ...th, isPinned: pinned } : th))
+        .sort((a, b) => (a.isPinned === b.isPinned ? b.createdAt.localeCompare(a.createdAt) : a.isPinned ? -1 : 1)),
+    }));
+    pinThread(threadId, pinned).catch(() => patchThread(threadId, (th) => ({ ...th, isPinned: !pinned })));
+  };
 
-  const onDeleteThread = useCallback(
-    (threadId: string) => {
-      patchReady((r) => ({ ...r, threads: r.threads.filter((th) => th.id !== threadId) }));
-      void deleteThread(threadId);
-    },
-    [patchReady],
-  );
+  const onDeleteThread = (threadId: string) => {
+    patchReady((r) => ({ ...r, threads: r.threads.filter((th) => th.id !== threadId) }));
+    void deleteThread(threadId);
+  };
 
-  const onLoadMore = useCallback(async () => {
-    const ready = state.status === "ready" ? state : null;
-    if (!ready || !ready.nextCursor) return;
+  const onLoadMore = async () => {
+    if (state.status !== "ready" || !state.nextCursor) return;
+    const { zone, nextCursor, sort } = state;
     patchReady((r) => ({ ...r, loadingMore: true }));
     try {
-      const feed = await listThreads(ready.zone.id, ready.nextCursor, ready.sort);
-      patchReady((r) => ({
-        ...r,
-        threads: [...r.threads, ...feed.items],
-        nextCursor: feed.nextCursor,
-        loadingMore: false,
-      }));
+      const feed = await listThreads(zone.id, nextCursor, sort);
+      patchReady((r) => ({ ...r, threads: [...r.threads, ...feed.items], nextCursor: feed.nextCursor, loadingMore: false }));
     } catch {
       patchReady((r) => ({ ...r, loadingMore: false }));
     }
-  }, [state, patchReady]);
+  };
 
-  const onChangeSort = useCallback(
-    (sort: ThreadSort) => {
-      const ready = state.status === "ready" ? state : null;
-      if (!ready || ready.sort === sort) return;
-      const requestId = ++sortRequestIdRef.current;
-      patchReady((r) => ({ ...r, sort, switchingSort: true }));
-      const minimumSkeleton = new Promise<void>((resolve) => {
-        window.setTimeout(resolve, TAB_SKELETON_MIN_MS);
-      });
-      void (async () => {
-        try {
-          const feed = await listThreads(ready.zone.id, undefined, sort);
-          await minimumSkeleton;
-          if (requestId !== sortRequestIdRef.current) return;
-          patchReady((r) => ({
-            ...r,
-            threads: feed.items,
-            nextCursor: feed.nextCursor,
-            switchingSort: false,
-          }));
-        } catch {
-          await minimumSkeleton;
-          if (requestId !== sortRequestIdRef.current) return;
-          patchReady((r) => ({ ...r, switchingSort: false }));
-        }
-      })();
-    },
-    [state, patchReady],
-  );
-
-  const onChangeTab = useCallback(
-    (tab: ZoneTab) => {
-      setActiveTab(tab);
-      if (tab === "recent" || tab === "popular") onChangeSort(tab);
-    },
-    [onChangeSort],
-  );
-
-  const onShareZone = useCallback(async () => {
-    const url = window.location.href;
-    if (navigator.share) {
+  const onChangeTab = (tab: ZoneTab) => {
+    setActiveTab(tab);
+    if (tab === "about" || state.status !== "ready" || state.sort === tab) return;
+    const zoneId = state.zone.id;
+    const requestId = ++sortRequestIdRef.current;
+    patchReady((r) => ({ ...r, sort: tab, switchingSort: true }));
+    const minimumSkeleton = new Promise<void>((resolve) => window.setTimeout(resolve, TAB_SKELETON_MIN_MS));
+    void (async () => {
       try {
-        await navigator.share({ url });
-        return;
-      } catch (error) {
-        if (error instanceof DOMException && error.name === "AbortError") return;
+        const feed = await listThreads(zoneId, undefined, tab);
+        await minimumSkeleton;
+        if (requestId !== sortRequestIdRef.current) return;
+        patchReady((r) => ({ ...r, threads: feed.items, nextCursor: feed.nextCursor, switchingSort: false }));
+      } catch {
+        await minimumSkeleton;
+        if (requestId === sortRequestIdRef.current) patchReady((r) => ({ ...r, switchingSort: false }));
       }
-    }
-    await navigator.clipboard.writeText(url);
-    setShareCopied(true);
-    window.setTimeout(() => setShareCopied(false), 1800);
-  }, []);
+    })();
+  };
 
-  if (state.status === "loading") {
-    return <ZoneShellSkeleton label={t("loading")} />;
-  }
-  if (state.status === "disabled") {
-    return <Centered>{t("soon_title")}</Centered>;
-  }
-  if (state.status === "error") {
+  if (state.status === "loading") return <ZoneShellSkeleton label={t("loading")} />;
+  if (state.status === "disabled" || state.status === "error") {
     return (
-      <main className="px-5 py-8 lg:px-6">
-        <FormError message={state.message} />
+      <main className={PANEL_MAIN_CLASS}>
+        {state.status === "error" ? (
+          <FormError message={state.message} />
+        ) : (
+          <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("soon_title")}</p>
+        )}
       </main>
     );
   }
 
   const { zone, threads, nextCursor, loadingMore, switchingSort, contributors, pinnedThreads } = state;
   const isMember = zone.myStatus === "ACTIVE";
-  const canCompose = isMember || zone.canModerate;
   const isQa = zone.type === "QA";
-  const visibleThreads =
-    activeTab === "media"
-      ? threads.filter((thread) => thread.attachments.length > 0)
-      : threads;
-  const memberFaces = contributors.slice(0, 5);
-  const tabs: Array<{ id: ZoneTab; label: string }> = [
-    { id: "popular", label: t("sort_popular") },
-    { id: "recent", label: t("sort_recent") },
-    { id: "media", label: t("zone_tab_media") },
-    { id: "about", label: t("zone_tab_about") },
-  ];
 
   return (
-    <main className="mx-auto grid min-w-0 max-w-[924px] items-start gap-6 xl:grid-cols-[600px_300px]">
-    <section className="min-w-0 bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
-      <header>
-        <div className="relative aspect-[3/1] overflow-hidden bg-[var(--community-blue-soft)]">
-          <Image
-            src="/img/feed.png"
-            alt=""
-            fill
-            priority
-            sizes="600px"
-            className="object-cover object-[center_58%]"
+    <main className={PANEL_MAIN_CLASS}>
+      <div className={PANEL_GRID_CLASS}>
+        <div className="flex min-w-0 flex-col gap-5">
+          <ZoneHeader
+            zone={zone}
+            people={contributors}
+            tab={activeTab}
+            onTab={onChangeTab}
+            onJoined={(status: ZoneMemberStatus) => patchReady((r) => ({ ...r, zone: { ...r.zone, myStatus: status } }))}
+            onLeft={() => patchReady((r) => ({ ...r, zone: { ...r.zone, myStatus: null, myRole: null } }))}
           />
-        </div>
 
-        <div className="px-4 pb-4 pt-3">
-          <div className="flex items-start justify-between gap-4">
-            <div className="min-w-0">
-              <h1 className="text-2xl font-extrabold leading-tight tracking-[-0.03em] text-[var(--color-main)] sm:text-[28px]">
-                {zone.title}
-              </h1>
-              <span className="mt-2 inline-flex min-h-7 items-center rounded-[10px] border border-[var(--color-border)] px-2.5 text-xs font-bold text-[var(--color-body-text)]">
-                {t(`type_${zone.type.toLowerCase()}` as `type_${string}`)}
-              </span>
-            </div>
-
-            <div className="flex shrink-0 items-center gap-1">
-              <button
-                type="button"
-                onClick={() => void onShareZone()}
-                aria-label={shareCopied ? t("share_copied") : t("zone_share")}
-                title={shareCopied ? t("share_copied") : t("zone_share")}
-                className="community-post-action grid size-11 place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-              >
-                <Share2 size={19} aria-hidden />
-              </button>
-              {zone.canModerate ? (
-                <Link
-                  href={{ pathname: "/community/[slug]/management", params: { slug: zone.slug } }}
-                  aria-label={t("manage_link")}
-                  title={t("manage_link")}
-                  className="community-post-action grid size-11 place-items-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                >
-                  <Settings size={19} aria-hidden />
-                </Link>
-              ) : null}
-              <JoinButton
-                zoneId={zone.id}
-                myStatus={zone.myStatus}
-                myRole={zone.myRole}
-                joinPolicy={zone.joinPolicy}
-                onJoined={onJoined}
-                onLeft={onLeft}
-              />
-            </div>
-          </div>
-
-          <div className="mt-3 flex items-center gap-2">
-            {memberFaces.length > 0 ? (
-              <div className="flex -space-x-2" aria-hidden>
-                {memberFaces.map((person) => (
-                  <span key={person.id} className="rounded-full ring-2 ring-white">
-                    <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={28} />
-                  </span>
-                ))}
-              </div>
-            ) : null}
-            <p className="text-sm font-bold text-[var(--color-main)] tabular-nums">
-              {t("members", { count: zone.memberCount })}
-            </p>
-          </div>
-        </div>
-      </header>
-
-      <div className="grid grid-cols-4 border-y border-[var(--color-border)]" role="tablist" aria-label={t("sort_label") }>
-        {tabs.map((tab) => {
-          const active = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              role="tab"
-              aria-selected={active}
-              onClick={() => onChangeTab(tab.id)}
-              className="relative min-h-14 px-2 text-sm font-bold text-[var(--color-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
-            >
-              <span className={active ? "text-[var(--color-main)]" : undefined}>{tab.label}</span>
-              {active ? (
-                <motion.span
-                  layoutId="community-zone-tab-indicator"
-                  className="absolute inset-x-4 bottom-0 h-1 rounded-full bg-[var(--community-blue-ink)]"
-                  transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 480, damping: 30 }}
-                  aria-hidden
-                />
-              ) : null}
-            </button>
-          );
-        })}
-      </div>
-
-      <AnimatePresence mode="popLayout" initial={false}>
-      {activeTab === "about" ? (
-        <motion.section
-          key="about"
-          initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.985 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.99 }}
-          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 30 }}
-          className="space-y-7 px-5 py-6"
-          aria-labelledby="zone-about-title"
-        >
-          <div>
-            <h2 id="zone-about-title" className="text-lg font-extrabold text-[var(--color-main)]">{t("zone_tab_about")}</h2>
-            <p className="mt-2 text-[15px] leading-6 text-[var(--color-body-text)]">
-              {zone.description ?? t("zone_about_empty")}
-            </p>
-          </div>
-          {contributors.length > 0 ? (
-            <div>
-              <h2 className="text-sm font-extrabold text-[var(--color-main)]">{t("zone_contributors")}</h2>
-              <div className="mt-3 grid gap-1 sm:grid-cols-2">
-                {contributors.map((person) => (
-                  <Link
-                    key={person.id}
-                    href={{ pathname: "/community/member/[username]", params: { username: person.username } }}
-                    className="flex min-h-12 items-center gap-3 py-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                  >
-                    <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={32} />
-                    <span className="truncate text-sm font-bold text-[var(--color-body-text)]">{person.displayName}</span>
-                  </Link>
-                ))}
-              </div>
-            </div>
-          ) : null}
-          {pinnedThreads.length > 0 ? (
-            <div>
-              <h2 className="text-sm font-extrabold text-[var(--color-main)]">{t("pinned_posts")}</h2>
-              <div className="mt-3 divide-y divide-[var(--color-border)] border-y border-[var(--color-border)]">
-                {pinnedThreads.map((thread) => (
-                  <p key={thread.id} className="py-3 text-sm font-bold text-[var(--color-body-text)]">
-                    {thread.title ?? thread.bodyExcerpt}
-                  </p>
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </motion.section>
-      ) : (
-        <motion.div
-          key={activeTab}
-          initial={reduceMotion ? false : { opacity: 0, x: 34, scale: 0.985 }}
-          animate={{ opacity: 1, x: 0, scale: 1 }}
-          exit={reduceMotion ? { opacity: 0 } : { opacity: 0, x: -24, scale: 0.99 }}
-          transition={reduceMotion ? { duration: 0 } : { type: "spring", stiffness: 360, damping: 30 }}
-          className="divide-y divide-[var(--color-border)] border-b border-[var(--color-border)]"
-        >
-          {switchingSort && (activeTab === "recent" || activeTab === "popular") ? (
-            <TabContentSkeleton label={t("loading")} variant="feed" />
-          ) : (
-          <>
-          {activeTab !== "media" ? (
-            canCompose ? (
-              isQa ? (
-                <div className="p-4"><AskComposer zone={zone} /></div>
-              ) : (
-                <ThreadComposer
-                  placeholder={t("compose_placeholder")}
-                  submitLabel={t("compose_send")}
-                  onSubmit={onPost}
-                  zoneId={zone.id}
-                  audience={zone}
-                  allowPoll={zone.type === "CHAT" || (zone.type === "ANNOUNCEMENT" && zone.canModerate)}
-                />
-              )
-            ) : (
-              <p className="px-4 py-4 text-sm text-[var(--color-secondary)]">{t("compose_join_first")}</p>
-            )
-          ) : null}
-
-          {visibleThreads.length === 0 ? (
-            <p className="px-4 py-12 text-center text-sm text-[var(--color-secondary)]">
-              {activeTab === "media" ? t("zone_media_empty") : isQa ? t("qa_empty") : t("feed_empty")}
-            </p>
-          ) : isQa ? (
-            <div className="grid gap-3 p-4">
-              {visibleThreads.map((question) => <QuestionListItem key={question.id} question={question} />)}
-            </div>
-          ) : (
-            visibleThreads.map((thread) => (
-              <CommunityPostCard
-                key={thread.id}
-                thread={thread}
-                onToggleReaction={(nextEmoji, previousEmoji) =>
-                  onToggleReaction(thread.id, nextEmoji, previousEmoji)
-                }
-                onToggleBookmark={(adding) => onToggleBookmark(thread.id, adding)}
-                canModerate={zone.canModerate}
-                onPin={(pinned) => onPinThread(thread.id, pinned)}
-                onDelete={() => onDeleteThread(thread.id)}
-                onReplyCountChange={(delta) =>
-                  patchReady((ready) => ({
-                    ...ready,
-                    threads: ready.threads.map((entry) =>
-                      entry.id === thread.id
-                        ? { ...entry, commentCount: Math.max(0, entry.commentCount + delta) }
-                        : entry,
-                    ),
-                  }))
-                }
-                clickable
-              />
-            ))
-          )}
-          </>
-          )}
-        </motion.div>
-      )}
-      </AnimatePresence>
-
-      {activeTab !== "about" && nextCursor ? (
-        loadingMore ? (
-          <PostListSkeleton label={t("loading")} count={2} />
-        ) : (
-        <div className="flex justify-center p-5">
-          <button
-            type="button"
-            onClick={() => void onLoadMore()}
-            className="min-h-11 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 font-bold"
+          <div
+            id={ZONE_TABPANEL_ID}
+            role="tabpanel"
+            aria-labelledby={`zone-tab-${activeTab}`}
+            className="flex min-w-0 flex-col gap-5"
           >
-            {t("load_more")}
-          </button>
+          {activeTab === "about" ? (
+            <ZoneAbout zone={zone} pinned={pinnedThreads} />
+          ) : (
+            <>
+              {isMember || zone.canModerate ? (
+                isQa ? (
+                  <AskComposer zone={zone} />
+                ) : (
+                  <div className={COMMUNITY_CARD_FLUSH}>
+                    <ThreadComposer
+                      placeholder={t("compose_placeholder")}
+                      submitLabel={t("compose_send")}
+                      onSubmit={onPost}
+                      zoneId={zone.id}
+                      audience={zone}
+                      allowPoll={zone.type === "CHAT" || (zone.type === "ANNOUNCEMENT" && zone.canModerate)}
+                    />
+                  </div>
+                )
+              ) : null}
+
+              {switchingSort ? (
+                <PostListSkeleton label={t("loading")} count={3} variant="card" />
+              ) : threads.length === 0 ? (
+                <p className={`${PANEL_CARD} px-6 py-10 text-center text-body-sm font-semibold text-[var(--color-secondary)]`}>
+                  {isQa ? t("qa_empty") : t("feed_empty")}
+                </p>
+              ) : (
+                <div className={`${COMMUNITY_CARD_FLUSH} ${isQa ? "divide-y divide-[var(--color-border)]" : ""}`}>
+                  {isQa
+                    ? threads.map((question) => <QuestionListItem key={question.id} question={question} />)
+                    : threads.map((thread) => (
+                        <CommunityPostCard
+                          key={thread.id}
+                          thread={thread}
+                          onToggleReaction={(nextEmoji, previousEmoji) => onToggleReaction(thread.id, nextEmoji, previousEmoji)}
+                          onToggleBookmark={(adding) => onToggleBookmark(thread.id, adding)}
+                          canModerate={zone.canModerate}
+                          onPin={(pinned) => onPinThread(thread.id, pinned)}
+                          onDelete={() => onDeleteThread(thread.id)}
+                          onReplyCountChange={(delta) =>
+                            patchThread(thread.id, (th) => ({ ...th, commentCount: Math.max(0, th.commentCount + delta) }))
+                          }
+                          clickable
+                        />
+                      ))}
+                </div>
+              )}
+
+              {nextCursor ? (
+                loadingMore ? (
+                  <PostListSkeleton label={t("loading")} count={2} />
+                ) : (
+                  <button type="button" onClick={() => void onLoadMore()} className={`${PANEL_QUIET_LINK} self-center`}>
+                    {t("load_more")}
+                  </button>
+                )
+              ) : null}
+            </>
+          )}
+          </div>
         </div>
-        )
-      ) : null}
-    </section>
-    <div className="sticky top-20 hidden pt-6 xl:block">
-      <CommunityTrendRail />
-    </div>
+
+        <aside className="flex min-w-0 flex-col gap-5" aria-label={t("zone_tab_about")}>
+          <CommunityPresenceCard />
+          <ZoneContributors people={contributors} />
+        </aside>
+      </div>
     </main>
   );
 }
 
-function Centered({ children }: { children: React.ReactNode }) {
+function ZoneContributors({ people }: { people: ForumPublicPerson[] }) {
+  const t = useTranslations("community");
+  if (people.length === 0) return null;
   return (
-    <main className="mx-auto flex min-h-[40vh] w-full max-w-3xl items-center justify-center px-5 py-8">
-      <p style={{ color: "var(--color-secondary)" }}>{children}</p>
-    </main>
+    <section className={`${PANEL_CARD} flex flex-col gap-1`} aria-labelledby="zone-contributors-title">
+      <h2 id="zone-contributors-title" className={PANEL_CARD_TITLE}>
+        {t("zone_contributors")}
+      </h2>
+      <div className={COMMUNITY_ROW_LIST}>
+        {people.slice(0, 5).map((person) => (
+          <Link
+            key={person.id}
+            href={{ pathname: "/community/member/[username]", params: { username: person.username } }}
+            className="flex min-h-12 items-center gap-3 py-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]"
+          >
+            <AuthorAvatar name={person.displayName} src={person.avatarUrl} size={32} />
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate text-sm font-extrabold text-[var(--color-main)]">{person.displayName}</span>
+              <span className="truncate text-caption font-semibold text-[var(--color-secondary)]">@{person.username}</span>
+            </span>
+          </Link>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function ZoneAbout({ zone, pinned }: { zone: ZoneView; pinned: ForumThreadSummary[] }) {
+  const t = useTranslations("community");
+  return (
+    <section className={`${PANEL_CARD} flex flex-col gap-5`} aria-labelledby="zone-about-title">
+      <div className="flex flex-col gap-2">
+        <h2 id="zone-about-title" className={PANEL_CARD_TITLE}>
+          {t("zone_tab_about")}
+        </h2>
+        <p className="text-body-sm font-semibold text-[var(--color-body)]">{zone.description ?? t("zone_about_empty")}</p>
+      </div>
+      {pinned.length > 0 ? (
+        <div className="flex flex-col gap-1">
+          <h3 className="text-sm font-extrabold text-[var(--color-main)]">{t("pinned_posts")}</h3>
+          <div className={COMMUNITY_ROW_LIST}>
+            {pinned.map((thread) => (
+              <p key={thread.id} className="py-3 text-body-sm font-bold text-[var(--color-body)]">
+                {thread.title ?? thread.bodyExcerpt}
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }

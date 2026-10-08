@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resolveSessionShare, shareDaypart } from "./session-share";
+import { resolveSessionShare, shareSessionOrdinal } from "./session-share";
 
 describe("resolveSessionShare", () => {
   it("shares a counted session in whole minutes", () => {
@@ -16,15 +16,22 @@ describe("resolveSessionShare", () => {
   });
 });
 
-describe("shareDaypart", () => {
-  const at = (hour: number) => new Date(2026, 9, 6, hour, 30);
+describe("shareSessionOrdinal", () => {
+  const done = (id: string, hour: number, counts = true) => ({
+    id,
+    status: "COMPLETED",
+    startedAt: `2026-10-07T${String(hour).padStart(2, "0")}:00:00.000Z`,
+    countsAsFocusSession: counts,
+  });
 
-  it("names the part of the day by local hour", () => {
-    expect(shareDaypart(at(5))).toBe("morning");
-    expect(shareDaypart(at(11))).toBe("noon");
-    expect(shareDaypart(at(14))).toBe("afternoon");
-    expect(shareDaypart(at(18))).toBe("evening");
-    expect(shareDaypart(at(22))).toBe("night");
-    expect(shareDaypart(at(3))).toBe("night");
+  it("counts only finished, counted sessions up to this one", () => {
+    const today = [done("c", 15), done("short", 12, false), done("a", 9), done("b", 11)];
+    expect(shareSessionOrdinal(today, "b")).toBe(2);
+    expect(shareSessionOrdinal(today, "c")).toBe(3);
+  });
+
+  it("adds the finished session when the list has not caught up", () => {
+    expect(shareSessionOrdinal([done("a", 9)], "new")).toBe(2);
+    expect(shareSessionOrdinal([], "new")).toBe(1);
   });
 });

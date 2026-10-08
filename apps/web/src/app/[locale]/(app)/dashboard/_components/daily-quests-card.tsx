@@ -1,29 +1,12 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import {
-  CalendarCheck,
-  ChevronRight,
-  Clock3,
-  Heart,
-  ListChecks,
-  type LucideIcon,
-} from "lucide-react";
-import type { QuestAction, QuestProgressView } from "@mentor/types";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
+import type { QuestProgressView } from "@mentor/types";
 import { ChestIcon } from "./today-path";
 import { CHEST_QUEST_ID } from "./today-path-model";
 import { PANEL_CARD, PANEL_CARD_TITLE, PANEL_TEXT_LINK } from "@/components/panel/panel-styles";
 import { ProgressLine } from "@/components/panel/progress-line";
-
-const ICON_BY_ACTION: Partial<Record<NonNullable<QuestAction>, [LucideIcon, string]>> = {
-  plan: [CalendarCheck, "text-[var(--play-selected-ink)]"],
-  "study-session": [Clock3, "text-[var(--play-selected-ink)]"],
-  "mood-checkin": [Heart, "text-[var(--color-streak)]"],
-};
-const DEFAULT_ICON: [LucideIcon, string] = [
-  ListChecks,
-  "text-[var(--color-chip-text)]",
-];
 
 /**
  * Today's ritual quests with their progress, and the weekly chest. The list only shows; acting on a
@@ -92,7 +75,7 @@ export function DailyQuestsCard({
         className={`${PANEL_TEXT_LINK} -mb-2 self-start`}
       >
         {t("quests_open_all")}
-        <ChevronRight className="size-4" aria-hidden />
+        <ChevronRight size={16} className="size-4" aria-hidden />
       </button>
     </section>
   );
@@ -102,7 +85,6 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
   const economyT = useTranslations("economy");
   const target = Math.max(quest.progressTarget ?? 1, 1);
   const current = quest.completed ? target : Math.min(quest.progressCurrent ?? 0, target);
-  const [Icon, color] = (quest.action && ICON_BY_ACTION[quest.action]) || DEFAULT_ICON;
   const reward =
     quest.rewardUnit === "XP"
       ? economyT("quest_reward_xp", { count: quest.rewardAmount })
@@ -112,12 +94,6 @@ function QuestLine({ quest }: { quest: QuestProgressView }) {
 
   return (
     <li className="flex items-center gap-3">
-      <span
-        className={`grid size-10 shrink-0 place-items-center ${quest.completed ? "text-[var(--color-success)]" : color}`}
-        aria-hidden
-      >
-        <Icon className="size-5" strokeWidth={1.75} />
-      </span>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-sm font-extrabold text-[var(--color-main)]">

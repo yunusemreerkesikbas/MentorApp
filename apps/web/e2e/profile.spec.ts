@@ -27,7 +27,10 @@ test("ayarlar yasal footer bağlantısını AppNav içindeki belgeye açar", asy
   await page.goto("/ayarlar");
 
   const footer = page.getByRole("contentinfo", { name: "Yasal" });
-  await expect(footer.getByRole("link")).toHaveCount(7);
+  await expect(footer.getByRole("link")).toHaveCount(8);
+  await expect(footer.getByRole("link", { name: "İkon kaynakları" })).toHaveAttribute(
+    "href", "/icon-credits.txt",
+  );
   await footer.getByRole("link", { name: "Kullanım Koşulları" }).click();
 
   await expect(page).toHaveURL(/\/ayarlar\/yasal\/kullanim-kosullari$/);

@@ -1,7 +1,8 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { Check, EyeOff } from "lucide-react";
+import { CheckCircleIcon as Check } from "@solar-icons/react/bold/check-circle";
+import { EyeClosedIcon as EyeOff } from "@solar-icons/react/bold/eye-closed";
 import type { MentorshipDataScopeKey } from "@mentor/types";
 import { Modal } from "@mentor/ui";
 
@@ -44,7 +45,7 @@ export function CoachScopeModal({
             <Check
               aria-hidden
               size={16}
-              strokeWidth={2.5}
+              strokeWidth={1.75}
               className="mt-[3px] flex-none"
               style={{ color: "var(--color-success)" }}
             />
@@ -84,7 +85,7 @@ export function CoachScopeModal({
           <EyeOff
             aria-hidden
             size={16}
-            strokeWidth={2}
+            strokeWidth={1.75}
             style={{ color: "var(--color-secondary)" }}
           />
           {t("coach_scope_never_title")}

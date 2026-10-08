@@ -19,7 +19,8 @@ export function SessionSharePreview({
   assets,
   label,
 }: {
-  model: SessionShareCardModel;
+  /** Null until the day's list settles the caption. */
+  model: SessionShareCardModel | null;
   /** Null while the photo and the handwriting face load: the frame shimmers. */
   assets: SessionShareCardAssets | null;
   label: string;
@@ -30,7 +31,7 @@ export function SessionSharePreview({
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas?.getContext("2d");
-    if (!canvas || !ctx || !assets) return;
+    if (!canvas || !ctx || !assets || !model) return;
     // Back the canvas at device pixels and draw in the card's 1080×1920 space.
     const box = canvas.getBoundingClientRect();
     const dpr = window.devicePixelRatio || 1;
@@ -64,7 +65,7 @@ export function SessionSharePreview({
 
   return (
     <div
-      className={`aspect-[9/16] h-[min(28rem,50dvh)] shrink-0 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-container)] shadow-[var(--shadow-overlay)] lg:h-[32rem]${assets ? "" : " mentor-skeleton-shimmer"}`}
+      className={`aspect-[9/16] h-[min(28rem,50dvh)] shrink-0 overflow-hidden rounded-[var(--radius-card)] bg-[var(--color-surface-container)] shadow-[var(--shadow-overlay)]${assets && model ? "" : " mentor-skeleton-shimmer"}`}
     >
       <canvas ref={canvasRef} role="img" aria-label={label} className="block size-full" />
     </div>

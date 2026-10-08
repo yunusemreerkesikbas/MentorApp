@@ -292,7 +292,7 @@ export class GoogleAuthService {
 }
 
 function sanitizeReturnTo(value: string): string {
-  return /^\/(?!\/)[a-z0-9/_-]*$/i.test(value) ? value : "/dashboard";
+  return /^\/(?!\/)[a-z0-9/_-]*(?:\?section=phone)?$/i.test(value) ? value : "/dashboard";
 }
 
 function displayNameFromGoogle(name: string | undefined, email: string): string {

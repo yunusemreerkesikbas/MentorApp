@@ -20,8 +20,7 @@ function makeService(count: number) {
   const emailTokenRepo = {
     countVerificationResendAttemptsSince: vi.fn(async () => count),
     createVerificationResendAttempt: vi.fn(async () => undefined),
-    create: vi.fn(async (input) => ({ id: "token-1", ...input })),
-    invalidateUnused: vi.fn(async () => undefined),
+    create: vi.fn(async (input, _email, enqueue) => { await enqueue({}); return { id: "token-1", ...input }; }),
     consume: vi.fn(async () => undefined),
   };
   const config = {
@@ -51,6 +50,7 @@ function makeService(count: number) {
     configRegistry as never,
     queue as never,
     storage as never,
+    {} as never, {} as never,
   );
 
   return { emailTokenRepo, queue, service };
@@ -72,6 +72,8 @@ describe("AuthService coach signup gate", () => {
       { assertValid: vi.fn(async () => undefined) } as never,
       {} as never,
       configRegistry as never,
+      {} as never,
+      {} as never,
       {} as never,
       {} as never,
     );
@@ -138,7 +140,7 @@ describe("AuthService.verifyEmail", () => {
     const events = { emitAsync: vi.fn() };
     const service = new AuthService(
       usersRepo as never,
-      { consume: vi.fn(async () => undefined) } as never,
+      { verify: vi.fn(async () => ({ status: "invalid" })) } as never,
       {} as never,
       {} as never,
       {} as never,
@@ -146,6 +148,7 @@ describe("AuthService.verifyEmail", () => {
       {} as never,
       {} as never,
       events as never,
+      {} as never,
     );
 
     await expect(service.verifyEmail({ token: "stale" })).rejects.toMatchObject({
@@ -171,17 +174,6 @@ describe("AuthService.resendVerificationEmail", () => {
     expect(queue.enqueue).not.toHaveBeenCalled();
   });
 
-  it("closes unused verify tokens for that user", async () => {
-    const { emailTokenRepo, service } = makeService(0);
-
-    await service.invalidateOutstandingVerification(USER.id);
-
-    expect(emailTokenRepo.invalidateUnused).toHaveBeenCalledWith(
-      USER.id,
-      EmailTokenType.VERIFY_EMAIL,
-    );
-  });
-
   it("records an attempt and sends a verification link when under limit", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-07-05T10:00:00.000Z"));
@@ -199,6 +191,8 @@ describe("AuthService.resendVerificationEmail", () => {
           type: EmailTokenType.VERIFY_EMAIL,
           expiresAt: new Date("2026-07-05T10:03:00.000Z"),
         }),
+        USER.email,
+        expect.any(Function),
       );
       expect(queue.enqueue).toHaveBeenCalled();
     } finally {

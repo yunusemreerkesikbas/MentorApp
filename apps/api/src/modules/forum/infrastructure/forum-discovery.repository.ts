@@ -7,6 +7,7 @@ import {
   getTableColumns,
   inArray,
   isNull,
+  ne,
   or,
   sql,
 } from "drizzle-orm";
@@ -215,6 +216,8 @@ export class ForumDiscoveryRepository {
     weights: DiscoveryWeights;
     requireReplies?: boolean;
     featuredOnly?: boolean;
+    /** Other people's QA questions with no answer and no accepted post ("Cevap bekleyenler"). */
+    unanswered?: boolean;
   }): Promise<DiscoveryThreadRow[]> {
     if (opts.authorIds && opts.authorIds.length === 0) return [];
     if (opts.threadIds && opts.threadIds.length === 0) return [];
@@ -280,6 +283,14 @@ export class ForumDiscoveryRepository {
       if (opts.zoneTypes) conditions.push(inArray(forumZones.type, opts.zoneTypes));
       if (opts.requireReplies) conditions.push(sql`${commentCount} > 0`);
       if (opts.featuredOnly) conditions.push(sql`${forumThreads.featuredUntil} > now()`);
+      if (opts.unanswered) {
+        conditions.push(
+          eq(forumZones.type, "QA"),
+          sql`${commentCount} = 0`,
+          isNull(forumThreads.acceptedPostId),
+          ne(forumThreads.authorId, opts.viewerId),
+        );
+      }
       if (opts.tag) {
         conditions.push(sql`exists (
           select 1 from ${forumThreadTags} ftt

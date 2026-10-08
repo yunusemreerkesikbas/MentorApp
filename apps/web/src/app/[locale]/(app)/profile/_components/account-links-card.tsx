@@ -1,13 +1,5 @@
 "use client";
-import {
-  CalendarDays,
-  ChevronRight,
-  CreditCard,
-  GraduationCap,
-  LogOut,
-  Trash2,
-  UserRound,
-} from "lucide-react";
+import { AltArrowRightIcon as ChevronRight } from "@solar-icons/react/linear/alt-arrow-right";
 
 import { useLocale, useTranslations } from "next-intl";
 import { Link, useRouter } from "@/i18n/navigation";
@@ -26,6 +18,8 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { FormError } from "@/components/form";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { isReauthenticationRequired } from "@/lib/account-security";
+import { useAccountSecurity } from "@/lib/use-account-security";
 
 export function ListRow({
   children,
@@ -43,7 +37,7 @@ export function ListRow({
   description?: number | string;
   externalHref?: string;
   href?: ComponentProps<typeof Link>["href"];
-  icon: ReactElement;
+  icon?: ReactElement;
   onClick?: () => void;
   showChevron?: boolean;
   trailing?: ReactElement;
@@ -54,17 +48,19 @@ export function ListRow({
   const style = { color: danger ? "var(--color-danger)" : "var(--color-main)" };
   const label = (
     <span className="flex min-w-0 items-center gap-3">
-      <span
-        className="flex size-7 shrink-0 items-center justify-center transition-colors"
-        style={{
-          color: danger ? "var(--color-danger)" : "var(--color-secondary)",
-        }}
-      >
-        {icon}
-      </span>
+      {icon ? (
+        <span
+          className="flex size-7 shrink-0 items-center justify-center transition-colors"
+          style={{
+            color: danger ? "var(--color-danger)" : "var(--color-secondary)",
+          }}
+        >
+          {icon}
+        </span>
+      ) : null}
       <span className="min-w-0">
         <span
-          className="block truncate text-sm font-medium leading-5"
+          className="block truncate text-md font-medium leading-5"
           style={{
             color: danger ? "var(--color-danger)" : "var(--color-main)",
             fontFamily: "var(--font-body)",
@@ -86,7 +82,7 @@ export function ListRow({
       <ChevronRight
         className="shrink-0 text-[var(--color-secondary)]/60 transition-colors group-hover:text-[var(--color-secondary)]"
         size={16}
-        strokeWidth={2}
+        strokeWidth={1.75}
         aria-hidden
       />
     ) : null);
@@ -146,6 +142,7 @@ export function AccountLinksCard({
   const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
+  const signInAgain = useAccountSecurity();
   const router = useRouter();
   const { actionSheet } = useMentorBottomSheet();
   const toast = useMentorToast();
@@ -254,6 +251,10 @@ export function AccountLinksCard({
       await logout().catch(() => undefined);
       router.replace("/");
     } catch (err) {
+      if (isReauthenticationRequired(err)) {
+        await signInAgain("reauth");
+        return;
+      }
       setDeleteError(
         err instanceof ApiClientError
           ? err.body.message
@@ -277,14 +278,12 @@ export function AccountLinksCard({
       </div>
       <div className="flex flex-col gap-0.5">
         <ListRow
-          icon={<GraduationCap size={19} aria-hidden />}
           description={examSummary}
           onClick={() => void openExamSheet()}
         >
           {t("exam_label")}
         </ListRow>
         <ListRow
-          icon={<CalendarDays size={19} aria-hidden />}
           description={joined}
           showChevron={false}
         >
@@ -292,14 +291,13 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow
           href="/subscription"
-          icon={<CreditCard size={18} aria-hidden />}
         >
           {tAccount("subscription")}
         </ListRow>
         {/* The only way into the mentorship flow. /my-coach answers both states on its own: no
             coach yet -> the invite-code screen, linked -> the data-scope contract. A student
             handed a code looks under "Koçum", so the row carries no separate hint. */}
-        <ListRow href="/my-coach" icon={<UserRound size={18} aria-hidden />}>
+        <ListRow href="/my-coach">
           {tMentorship("my_coach_title")}
         </ListRow>
         {/* The other direction: becoming one. Follows `mentorship.applications.open`, so the
@@ -308,13 +306,11 @@ export function AccountLinksCard({
         {coachSignupOpen && !isCoach(user) && (
           <ListRow
             href="/coach-application"
-            icon={<GraduationCap size={19} aria-hidden />}
           >
             {tMentorship("application_title")}
           </ListRow>
         )}
         <ListRow
-          icon={<LogOut size={18} aria-hidden />}
           onClick={() => {
             void logout().catch(() => {
               toast.error({ title: tAccount("logout_error"), duration: 3000 });
@@ -326,7 +322,6 @@ export function AccountLinksCard({
         </ListRow>
         <ListRow
           danger
-          icon={<Trash2 size={18} aria-hidden />}
           onClick={() => void deleteAccount()}
           showChevron={false}
         >

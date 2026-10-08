@@ -17,6 +17,7 @@ const envSchema = z.object({
   APP_ENV: z.enum(["development", "staging", "production"]).optional(),
   PORT: z.coerce.number().int().positive().default(3001),
   APP_URL: z.string().url().default("http://localhost:3000"),
+  ADMIN_APP_URL: z.string().url().default("http://localhost:3002"),
 
   // Comma-separated allowed CORS origins. Required HTTPS origins in production.
   CORS_ORIGINS: z.string().optional(),
@@ -28,6 +29,10 @@ const envSchema = z.object({
 
   // Auth — own JWT (§8). Required since W0 identity (fail-fast).
   JWT_ACCESS_SECRET: z.string().min(32),
+  /** Independent HMAC key for durable auth counters; never reuse a JWT or edge secret. */
+  AUTH_RATE_LIMIT_SECRET: z.string().min(32),
+  /** Cloudflare overwrites x-mentor-origin-secret on requests to the API. */
+  EDGE_ORIGIN_SECRET: z.string().min(32).optional(),
   /** Access token TTL in seconds (short-lived; client silently refreshes). */
   JWT_ACCESS_TTL: z.coerce.number().int().positive().default(900),
   /** Refresh token TTL in seconds (opaque token, httpOnly cookie). */
@@ -126,6 +131,10 @@ const envSchemaWithLocks = envSchema.superRefine((env, ctx) => {
        !env.PHONE_OTP_SECRET || !env.PHONE_FINGERPRINT_SECRET)) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["SMS_PROVIDER"],
       message: "Netgsm credentials, sender, and both phone secrets are required when SMS_PROVIDER=netgsm." });
+  }
+  if (env.SMS_PROVIDER === "netgsm" && (env.NETGSM_MSGHEADER?.trim().length ?? 0) < 3) {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["NETGSM_MSGHEADER"],
+      message: "Netgsm sender header must contain 3 to 11 characters." });
   }
   if (env.PHONE_OTP_SECRET && env.PHONE_OTP_SECRET === env.PHONE_FINGERPRINT_SECRET) {
     ctx.addIssue({ code: z.ZodIssueCode.custom, path: ["PHONE_FINGERPRINT_SECRET"],

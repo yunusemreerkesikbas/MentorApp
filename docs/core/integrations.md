@@ -54,9 +54,15 @@
   OTP permission, restrict it to the verified Render outbound IP ranges, and use its API password
   rather than the main account password. Configure `NETGSM_USERCODE`, `NETGSM_API_PASSWORD`,
   `NETGSM_MSGHEADER` and two independent random secrets of at least 32 characters.
+- `NETGSM_USERCODE` is the Netgsm subscriber number used as the Basic Auth username, not
+  the API subuser's display name. `NETGSM_API_PASSWORD` is that subuser's password.
+  `NETGSM_MSGHEADER` must be the approved sender, 3-11 characters; invalid lengths fail startup.
 - Transport is native HTTPS POST to Netgsm's OTP REST v2 endpoint, with a fixed ASCII template,
   a five-second timeout and no automatic retry. A timeout can mean a delivered SMS; the challenge
   remains confirmable until expiry. Definitive rejection never verifies the phone.
+- Netgsm documents a three-minute OTP transport window. This is separate from our five-minute
+  code validity and five-second HTTP deadline; neither API acceptance nor elapsed delivery time
+  proves phone ownership. The application verifies the user-supplied code before granting rights.
 - Every send verifies Turnstile action `phone-verification`. Confirm the hostname matches the web
   deployment and configure the matching site key. Codes, raw phones and credentials must never
   appear in logs, monitoring, jobs or analytics. Local tests inject an in-memory adapter; there
@@ -75,7 +81,7 @@
   time and completion rates without phone/code data. Enable verification first, then sponsorship
   only after the acceptance checks. The iyzico skeleton still blocks real carded-trial acceptance.
 
-Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/),
+Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
 [API preparation](https://bilgibankasi.netgsm.com.tr/entegrasyonlar/api-entegrasyonu-hazirlik-rehberi).
 
 ### Cloudflare (R2 + Turnstile + Access)

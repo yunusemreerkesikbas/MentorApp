@@ -15,6 +15,10 @@ function publicHttpsOrigin(value: string): URL | undefined {
 interface ProductionSecurityEnv {
   NODE_ENV: string;
   APP_URL: string;
+  ADMIN_APP_URL: string;
+  EDGE_ORIGIN_SECRET?: string;
+  AUTH_RATE_LIMIT_SECRET: string;
+  JWT_ACCESS_SECRET: string;
   CORS_ORIGINS?: string;
   TURNSTILE_SECRET_KEY?: string;
   TURNSTILE_EXPECTED_HOSTNAME?: string;
@@ -26,10 +30,20 @@ export function validateProductionSecurity(env: ProductionSecurityEnv, ctx: z.Re
   if (env.NODE_ENV !== "production") return;
   const issue = (path: keyof ProductionSecurityEnv, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
   const appUrl = publicHttpsOrigin(env.APP_URL);
+  const adminUrl = publicHttpsOrigin(env.ADMIN_APP_URL);
   if (!appUrl) issue("APP_URL", "APP_URL must be an HTTPS origin with a public hostname in production.");
+  if (!adminUrl) issue("ADMIN_APP_URL", "ADMIN_APP_URL must be an HTTPS origin with a public hostname in production.");
+  if (!env.EDGE_ORIGIN_SECRET) issue("EDGE_ORIGIN_SECRET", "EDGE_ORIGIN_SECRET is required in production.");
+  if (env.AUTH_RATE_LIMIT_SECRET === env.JWT_ACCESS_SECRET || env.AUTH_RATE_LIMIT_SECRET === env.EDGE_ORIGIN_SECRET ||
+      env.EDGE_ORIGIN_SECRET === env.JWT_ACCESS_SECRET) {
+    issue("AUTH_RATE_LIMIT_SECRET", "Auth rate-limit, JWT and edge secrets must be independent.");
+  }
   const origins = env.CORS_ORIGINS?.split(",").map((origin) => origin.trim());
   if (!origins?.length || origins.some((origin) => publicHttpsOrigin(origin)?.origin !== origin)) {
     issue("CORS_ORIGINS", "CORS_ORIGINS must explicitly list HTTPS origins with public hostnames in production.");
+  }
+  if (appUrl && adminUrl && (!origins?.includes(appUrl.origin) || !origins?.includes(adminUrl.origin))) {
+    issue("CORS_ORIGINS", "CORS_ORIGINS must include APP_URL and ADMIN_APP_URL in production.");
   }
   if (!env.TURNSTILE_SECRET_KEY?.trim()) issue("TURNSTILE_SECRET_KEY", "TURNSTILE_SECRET_KEY is required in production.");
   if (!env.TURNSTILE_EXPECTED_HOSTNAME || env.TURNSTILE_EXPECTED_HOSTNAME !== appUrl?.hostname) {

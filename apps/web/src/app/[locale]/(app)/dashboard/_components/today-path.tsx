@@ -1,7 +1,11 @@
 "use client";
 
 import { useTranslations } from "next-intl";
-import { BookOpen, Check, GraduationCap, Play, Plus } from "lucide-react";
+import { NotebookIcon as Notebook } from "@solar-icons/react/bold/notebook";
+import { CheckCircleIcon as Completed } from "@solar-icons/react/bold/check-circle";
+import { SquareAcademicCapIcon as AcademicCap } from "@solar-icons/react/bold/square-academic-cap";
+import { PlayIcon as Play } from "@solar-icons/react/bold/play";
+import { AddIcon as Plus } from "@solar-icons/react/linear/add";
 import type { PlanTaskDto, PlanTaskStatus } from "@mentor/types";
 import {
   PATH_NODE_BASE as NODE_BASE,
@@ -70,7 +74,7 @@ export function TodayPath({
           title={t("path_earlier_done", { count: path.hiddenBefore })}
           node={
             <span className={`${NODE_BASE} ${NODE_TONE.done}`} aria-hidden>
-              <Check className="size-5" strokeWidth={3} />
+              <Completed size={20} className="size-5" />
             </span>
           }
         />
@@ -88,7 +92,7 @@ export function TodayPath({
               className={`${NODE_BASE} size-12 border-2 border-dashed border-[color-mix(in_srgb,var(--color-secondary)_45%,transparent)] bg-[var(--color-surface)] text-[var(--color-secondary)] sm:size-14`}
               aria-label={t("path_first_step_aria")}
             >
-              <Plus className="size-6" strokeWidth={2.5} aria-hidden />
+              <Plus size={24} className="size-6" strokeWidth={2.5} aria-hidden />
             </Link>
           }
         />
@@ -185,7 +189,7 @@ function TaskNode({
   const t = useTranslations("panel");
   const router = useRouter();
   const { task, state } = node;
-  const Icon = state === "done" ? Check : state === "current" ? Play : BookOpen;
+  const Icon = state === "done" ? Completed : state === "current" ? Play : Notebook;
 
   return (
     <PopoverMenu
@@ -215,14 +219,13 @@ function TaskNode({
               {t("node_next")}
             </span>
           ) : null}
-          <Icon
+          <Icon size={state === "current" ? 28 : 24}
             className={state === "current" ? "size-7 fill-current" : "size-6"}
-            strokeWidth={state === "done" ? 3 : 2.2}
             aria-hidden
           />
           {node.fromCoach ? (
             <span className="absolute -right-1.5 -top-1.5 grid size-6 place-items-center rounded-full border-2 border-[var(--color-surface)] bg-[var(--coach-accent)] text-[var(--color-bg)]">
-              <GraduationCap className="size-3" strokeWidth={2.5} aria-hidden />
+              <AcademicCap size={12} className="size-3" aria-hidden />
             </span>
           ) : null}
         </button>

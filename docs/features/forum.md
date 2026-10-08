@@ -97,7 +97,7 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/search?q=` | Grouped full-text community search (threads, QA questions, public zones, tags, public-safe people; max 5 each) |
 | `GET /v1/forum/hub` | Discovery hub: featured, continue/new blend, trend tags, supporters, room suggestions |
 | `GET /v1/forum/trends?scope=relevant\|exam\|general&limit=` | Exam-aware, time-windowed community tag trends |
-| `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&contentType=&cursor=` | Global relevant/following feed; `contentType=posts|questions` is additive, with server ranking and opaque cursor |
+| `GET /v1/forum/feed?scope=&sort=&tag=&zoneType=&contentType=&unanswered=&cursor=` | Global relevant/following feed; `contentType=posts|questions` is additive, with server ranking and opaque cursor. `unanswered=true` = others' QA questions with no answer. An empty first `trending` page falls back to `recent`; `effectiveSort` says which ranking was used |
 | `GET /v1/forum/tags` | Locale-resolved active curated tags |
 | `GET /v1/forum/zones/:slug/feed` | Zone metadata + first feed page + contributors + pinned threads in one request |
 | `PATCH /v1/forum/threads/:id` · `PATCH /v1/forum/posts/:id` | Owner-only, time/interaction-locked editing |
@@ -108,6 +108,216 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 | `GET /v1/forum/public/questions?limit=` | Public QA refs (sitemap) |
 
 ## Geliştirmeler (timeline)
+
+- **Tur 2 durak G: kapanış (2026-10-08)**
+  - **Dokümanlar:** DESIGN.md §6.1'e Identity card ve League list, §12.3 Tur 2 kaydı, §13 işaretli;
+    api.md üye listesi + şikâyet özeti; community.md timeline.
+  - **Ziyaretçi metinleri:** başkasının profilinde yolculuk hikâyesi ve rozet açıklamaları üçüncü şahısla
+    (`story_visitor`, `badge_*_description_other`); "Rozetleri" başlığı.
+  - **Silinenler:** hiçbir yerde açılmayan efor panosu zinciri (6 dosya) ve kullanılmayan 11 çeviri anahtarı.
+  - **İnceleme (9 bulgu, 7 düzeltildi):** onaylanan üye Üyeler listesine ve sayısına geçer; sayılar
+    yüklenirken "· 0" yerine yalnız etiket; ikinci şikâyet sekmesi "Gizlenenler" (yoksayılanlar zaten
+    düşer, geri alınacak olanlar burada); kayıttan çıkarma geri alması artık ardındaki satıra demirli;
+    eski `?tab=bookmarks` linki profili boşuna yüklemiyor; Kazanımlar yüklenemezse "paylaşım yok" yerine
+    hata; sayı düğmeleri "1.130 takipçi" diye okunur (boşluk). Atlananlar: Akış `?sort=`/`?content`
+    yalnız açılışta okunuyor (kenar çubuğu Akış'a dönünce sekme kalıyor); profil yolculuk paneli iki kez
+    render (biri CSS ile gizli).
+
+- **Tur 2 durak F: oda yönetimi panel dilinde (2026-10-08)**
+  - Sayfa panel çerçevesinde: `DetailCrumb` (Topluluk › oda › Yönetim), "Oda yönetimi" başlığı, iki kart,
+    rail'de `ZoneMiniCard`. Yükleme iskeleti; yetkisizse odaya geri gönderilir (önceki gibi).
+  - `members-card.tsx`: Bekleyenler · Üyeler (`SegmentPillControl`, sayılarla). Satır kişiyi gösterir
+    (avatar, ad, @kullanıcı, istek zamanı ya da rol: Sahip / Moderatör / Üye); kimlik kodu yok. Onayla
+    outline ledge, Reddet sessiz kelime; "Çıkar" destructive onay ister ("Odadan çıkarılsın mı?").
+    Telefonda ad en az 10 rem tutar, düğmeler altına iner.
+  - `reports-card.tsx`: Açık · Çözülenler. Satır: "Gönderi · Spam ya da reklam" (Türkçe sebep), içerik özeti
+    (`ReportView.excerpt`), zaman ve varsa not. Yoksay sessiz, Gizle destructive onaylı (çözülenlerden
+    geri alınabilir), çözülenlerde "Geri al". Moderasyon sakin tonda (voice.md).
+  - Hata olursa satır yerinde kalır ve toast söyler (önce sessizdi). `pending-members.tsx` ve
+    `report-queue.tsx` silindi. "Kaldır" → "Çıkar".
+  - **Testler:** yeni `e2e/community-management.spec.ts` (isimle bekleyenler, onay, çıkarma ve gizleme
+    onayları, Türkçe sebep + özet, moderatör olmayan geri gönderilir).
+
+- **Tur 2 durak E: Emek panosu → Haftalık lig (2026-10-08)**
+  - Podyum, taç ve AI arka plan görseli (`public/leaderboard/podium-bg.png`) kalktı; sayfa panel çerçevesinde.
+    Başlık sekmeye göre: Haftalık lig / Bugünün ligi / Tüm zamanların ligi; alt satır neyle sıralandığını
+    söyler; sayaç "Lig 3g 12s sonra yenilenir". Pencere seçici `SegmentPillControl` (eski sabit beyaz hap
+    koyu temada okunmuyordu); pencere yüklenirken yalnız tablo iskelete döner, seçici yerinde kalır.
+  - `league-you-card.tsx`: "Ligde 14. sıradasın" + çabaya dair tezahürat + XP (sayarak yükselir) + "Yükseldi"
+    ya da "yeni"; listede değilsen "Seansa başla". Aşağı hareket kartta hiç söylenmez.
+  - `league-list.tsx`: tek kart, sıra, ilk 3'te madalya (`MEDAL`), kişi, hareket (yukarı yeşil, aşağı gri,
+    kırmızı yok), XP; ilk sıralarda değilsen "···" sonrası renkli satırda "Sen". Rail: rozetler + "Şu an N kişi".
+  - `league-reset.ts` (+ spec): İstanbul gün/hafta sınırı, eski `nextResetIst`.
+  - **Adres:** `/topluluk/siralama` → `/topluluk/lig`, `/en/community/leaderboard` → `/en/community/league`
+    (308, `next.config.ts`); iç yol `/community/leaderboard` aynı. Kenar çubuğunun aktif kontrolleri route
+    şablonuyla eşitlemeye indi (yerelleşmiş yol karşılaştırmaları hiç tutmuyordu).
+  - Tezahüratlardaki "bu hafta" kalktı (Bugün ve Tüm zamanlar sekmesinde de görünüyorlardı).
+  - **Testler:** yeni `e2e/community-league.spec.ts` (yönlendirme, kart, liste, "Sen" satırı, sekme başlığı,
+    koyu tema seçili sekme okunur). Ekran görüntüsünden önce kartın sayan XP'sinin oturmasını bekle.
+
+- **Tur 2 durak D: profil kimlik kartı (2026-10-08)**
+  - Avatardan büyütülmüş 440 px kapak ve X düzeni (600 + 300) kalktı; profil panel çerçevesinde.
+    `profile-identity-card.tsx`: 72 px avatar (dokununca tam boy fotoğraf), ad + PREMIUM işareti,
+    "@kullanıcı · sınav · katılım", tanıtım, site, "N takipçi  N takip  N günlük seri 🔥" (noktasız; telefonda
+    satır kayınca boşta "·" kalmasın), tek ledge "Takip et" (takip ediyorsan outline "Takiptesin"), sahibine
+    outline "Profili düzenle", yol arkadaşı metin bağlantısı ("Yol arkadaşı ol" / "Davet yolda!").
+    Kazanım vitrini kartın altında kaldı.
+  - Yolculuk + rozetler `profile-progress-panel.tsx` (panel kartı): masaüstünde yapışkan rail'de, 1280 px
+    altında kartın hemen altında. Ziyaretçide rozet başlığı "Rozetleri" (`BadgeStrip ownerView`).
+  - Sekmeler + liste `profile-activity.tsx` (Paylaşımlar · Kazanımlar, tek kartta, oda adı her öğenin üstünde).
+    Fotoğraf önizlemesi `profile-photo-preview.tsx`. `profile-header.tsx` ve kapak CSS'i (81 satır) silindi;
+    `profile-shell.tsx` 466 → 348.
+  - `UserAvatar` + `onError` (additive): kırık fotoğraf adresi baş harflere düşer (önce kapak `img`'si yapıyordu).
+  - **Gotcha:** iskelet metin sütununda `min-w-0` yoksa 256 px'lik çubuk 375 px'de yatay kaydırma açar;
+    `SkeletonGroup` iskeleti açılıştan sonra da DOM'da tuttuğu için bu yüklü sayfada da görünür. Ekran
+    görüntüsünü `animations: "disabled"` ile al, yoksa iskeletin bulanık geçişi yakalanır.
+  - **Testler:** `community-member-profile.spec.ts` ilk testi kart için yeniden yazıldı (4 genişlik, foto
+    önizleme, takip geri alma, kırık foto, yatay kaydırma yok); 34/34 geçti. `/ayarlar` "Profil bilgileri"
+    adımı dengesiz (bir koşuda geçti, sonrakinde kırıldı), profil dışı.
+
+- **Tur 2 durak C: Kaydedilenler kendi sayfası (2026-10-08)**
+  - `/topluluk/kayitli` artık gerçek sayfa (`saved-shell.tsx`, panel çerçevesi): başlık + "yalnız sen
+    görürsün" alt satırı, gönderi ve yorumlar tek kartta, rail'de cevap bekleyen sorular ve "Şu an N kişi".
+    Boşken Puhu balonu + "Akış'a göz at"; yüklenirken kart iskeleti (önce "Yükleniyor…" yazısı).
+  - **Kayıttan çıkarma:** satır hemen düşer; sunucu reddederse eski yerine geri gelir ve toast söyler
+    (önce öğe her durumda kayboluyordu).
+  - **Profil:** Kaydedilenler sekmesi kalktı (`SavedShell embedded` ve `saved-profile-redirect` silindi).
+    Eski `?tab=bookmarks|saved` bağlantıları `/community/saved`'e yönlenir. Kenar çubuğundaki
+    "Kaydedilenler" doğrudan sayfaya gider ve kullanıcı adı olmayanlara da görünür.
+  - **Kırık görsel:** kodda karşılığı yok. Kaydedilenler, Akış ve odalar aynı `buildThreadViews` /
+    `decorateComments` eşleyicisini ve aynı `AttachmentGallery`'yi kullanıyor; dev ortamı görselleri
+    sahte depolama ucundan sunuyor, eski kayıtların dosyaları büyük olasılıkla orada yok. Stage'de
+    tekrar ederse depolama tarafına bakılmalı.
+  - **Testler:** yeni `e2e/community-saved.spec.ts` (liste, reddedilen kayıttan çıkarma geri gelir, boş
+    durum, koyu tema); profil e2e'si sekme yerine yönlendirmeyi doğruluyor.
+
+- **Tur 2 durak B: topluluğun dili Duolingo tonunda (2026-10-08)**
+  - **Karar (kullanıcı):** tüm Topluluk enerjik Puhu sesiyle konuşur. Emek panosu → **Haftalık lig**
+    (başlık sekmeye göre değişir: Bugünün ligi, Tüm zamanların ligi). Kurallar `docs/copy/voice.md`
+    "Topluluk: enerjik Puhu" bölümünde: cümle başına en çok bir ünlem, satır başına en çok bir emoji,
+    `aria-label` içinde emoji yok; sıralama utancı, ligden düşme ve sıranın dibi dili yasak; hata,
+    şikâyet, moderasyon ve ödeme sakin tonda.
+  - **Uygulama:** `messages/{tr,en}.json` `community` bölümünde 65 metin değişti, kullanılmayan 49 anahtar
+    silindi (Gündem, eski panel kartı, eski Akış etiketleri). Değişiklik yalnız bu bölümde, satır satır;
+    dosyanın geri kalanı (başka oturumların değişiklikleri) olduğu gibi. `rank_you_standing` artık `{rank}`
+    alıyor ("Ligde 14. sıradasın"). "Şikayet" → "Şikâyet" yazımı birleşti.
+  - **Testler:** Tur 1 e2e'lerindeki metin iddiaları yeni metne çekildi (Keşfet, Akış, detay, profil,
+    defter köprüsü).
+  - **Gotcha:** dört topluluk e2e dosyasını varsayılan paralel işçilerle aynı anda koşmak profil ve detay
+    sayfalarında zaman aşımı veriyor; kırmızı görünce `--workers=1` ile tekrar dene.
+
+- **Tur 2 durak A: moderasyonda isim ve özet, Gündem kalktı (2026-10-08)**
+  - **Üye listesi:** `GET /v1/forum/zones/:id/members` satırları artık `displayName`, `username` ve
+    `avatarUrl` taşıyor (additive, `users` ile left join). Oda yönetimi kimlik kodu yerine kişiyi
+    gösterebilir.
+  - **Şikâyet kuyruğu:** `ReportView` + `excerpt` (additive). Konuda başlık yoksa gövdenin, yorumda
+    gövdenin ilk 160 karakteri; silinmiş içerikte de dolu, gizlenen içeriği geri almadan önce görülebilsin.
+  - **Gündem:** sayfa ve `/community/trends` rotası silindi. `/topluluk/gundem` ve `/en/community/trends`
+    `next.config.ts` üzerinden 308 ile Akış `?sort=top`'a gider. Akış artık `?sort=` derin bağını
+    okuyor (`readFeedTab`). Kenar çubuğunda Gündem yok; Keşfet gündem kartının "Tümünü gör"ü Popüler'e.
+  - **Silinenler:** `trends-shell`, `trend-topic-list`, `tab-content-skeleton` (oda sekmesi artık kart
+    iskeleti), içi boşalan `community-tab-transition.spec.ts`.
+  - **Gotcha:** forum e2e'yi `-t` ile süzünce ortak kurulum testleri atlanıyor ve ilgisiz kırmızılar
+    çıkıyor; dosyanın tamamını çalıştır (37/37).
+
+- **Topluluk Tur 1 kapanışı: inceleme düzeltmeleri (2026-10-08, durak E)** — Bağımsız kod incelemesi
+  12 bulgu çıkardı, 11'i düzeltildi:
+  - **API:** `unanswered=true` artık hangi sekmeden gelirse gelsin `recent` sıralanır (trending/top
+    penceresi en eski bekleyen soruyu saklıyordu; "El uzat" Keşfet'in listelediği soruyu
+    gösteremiyordu). `effectiveSort` bunu söyler, Akış bekleyenlerde fallback notu göstermez.
+  - **Kenar çubuğu:** "Profilim" / "Kaydedilenler" hiç seçili görünmüyordu. next-intl `usePathname`
+    burada route şablonunu (`/community/member/[username]`) döndürüyor; kimin profili olduğu artık
+    `useParams().username`'dan okunuyor.
+  - **Sayfa yolu:** linkler de kısalabiliyor, uzun oda adı telefonda taşmıyor.
+  - **Hatalar:** oda katılma/ayrılma ve Keşfet'teki "Katıl" hatası artık toast ile söyleniyor (önce
+    yakalanmamış promise ya da sessiz).
+  - **Oda sekmeleri:** tam tab deseni (`aria-controls`, `tabpanel`, ok/Home/End, oda adıyla etiket).
+  - **Yükleme:** detay iskeleti panel çerçevesinde.
+  - **Sayılar:** "N yorum" gönderideki sayıyla aynı (`thread.commentCount`); "N üye · M mesaj"
+    binlik ayırıcıyla ve tek yerde (`useZoneMeta`).
+  - **Diğer:** "Masaya katıl" 44 px; ataç düğmesi tek bileşen (`composer-attach-button.tsx`).
+
+  Ertelenen: `focusingNow` için tüm `GET /v1/coaching/today` okunuyor (profil, plan, takvim, haftalık
+  değerlendirme). Hafif bir varlık ucu coaching izinin işi; sayfa başına birkaç gereksiz okuma, işlev
+  doğru.
+
+- **Soru, gönderi ve yorum detayları panel diline geçti (2026-10-07, Topluluk Tur 1 durak D)** — Üç
+  detay sayfası da panel çerçevesinde (`PANEL_MAIN_CLASS` / `PANEL_GRID_CLASS`) ve üstte `DetailCrumb`
+  (Topluluk › oda › sayfa; geri butonlu header kalktı). Soru: tek durum (`QuestionStatusLabel`, eski
+  "Yanıtlandı" çipi gitti), etiketler düz `#metin`, yazar satırı; "Ben de çözemedim" düğmesinin adı canvas
+  kararıyla **"Ben de takıldım"** oldu (yine deftere ekleme eylemi, sayılmaz). Cevaplar tek kartta, başlık
+  "N cevap" (0 ise "Cevap bekliyor"; eski "0 yorum" hatası bitti); kabul edilen cevap önde, yeşil
+  çerçevede ve "✓ Çözüm" satırıyla (dolgu yok), cevaplarda artık yazar adı/avatarı var. "Cevabını yaz"
+  kartı cevapların altında (`answer-composer.tsx`, tek araç satırı, `Button size="sm"` "Cevapla"; koç
+  dönüşünde odaklanır). Rail: "Bu soruda" (Soran / Çözümü yazdı / Cevap yazdı) + `HubWaitingQuestions
+  exclude={id}`. Gönderi: gönderi kartı + tek kartta "N yorum", yazma alanı ve yorumlar; rail'de odası
+  (`ZoneMiniCard`, "Odaya git") ve `CommunityPresenceCard` (Gündemde rail'i detaydan kalktı). Yorum
+  detayı: aynı çerçeve, yolun orta adımı bir üst seviyeye döner (gönderi ya da "Önceki yorum").
+  `ThreadComposer` dolgusu satırlarla hizalandı (`px-4 sm:px-5`). Kalan `window.confirm` yoktu (durak C'de
+  bitmişti). `forum-image-picker.tsx` artık kullanılmadığı için silindi; boşa düşen `answered`,
+  `answer_submitting`, `back_short`, `detail_participants` anahtarları kaldırıldı. İlgili:
+  `question/[threadId]/_components/{question-shell,answer-item,answer-composer,question-rail,accept-button}.tsx`,
+  `message/[threadId]/_components/message-shell.tsx`, `comment/[postId]/_components/comment-shell.tsx`,
+  `_components/{detail-crumb,zone-mini-card,comment-row,hub-waiting-questions}.tsx`,
+  `e2e/community-detail.spec.ts`.
+
+- **Akış, odalar ve gönderi satırı panel diline geçti (2026-10-07, Topluluk Tur 1 durak C)** — Akış:
+  sıralama masaüstünde tam genişlik segment (Öne çıkan · En yeni · Popüler · Takip ettiklerin), telefonda
+  filtre sheet'i; içerik çipleri Tümü · Paylaşımlar · Sorular · **Cevap bekleyen** (`unanswered=true`,
+  seçili çip siyah dolgu); etiket menüsü çip satırının sağında. `effectiveSort === "recent"` iken "Son
+  günlerde öne çıkan bir konuşma yok…" notu. Derin bağlar: `?content=waiting` çipi açık getirir;
+  `?compose=post` composer'ı açıp odaklar, `?compose=question` soru penceresini açar, ikisi de tek
+  kullanımlık (`clearSpentQueryParam`). Rail: `CommunityPresenceCard` (`focusingNow` yoksa yok), yol
+  arkadaşı (`partnerOnly`), Gündemde yalnız doluysa (`CommunityTrendRail` artık yükleniyor/hata/boşta
+  hiçbir şey çizmez). `global-composer.tsx` 668 → 393 satır: `composer-type-selector.tsx`,
+  `use-composer-hashtags.ts`, `use-notebook-handoff.ts`; "Yayınla" küçük play ledge. Odalar: stok görsel
+  yerine nötr tür ikonu + başlık + açıklama + "N üye · M mesaj"; üye değilsen tek ledge "Odaya katıl"
+  ve yazma alanı yok, üyeysen "Ayrıl" oda menüsünde (`useZoneMembership`, REQUEST odada destructive
+  onay, sonra `community:zones-changed`); sekmeler En yeni · En popüler · Hakkında (Medya yalnız yüklü
+  sayfayı süzdüğü için kalktı; sekme geçişi artık iskeletle). Soru-cevap odası: tek kart içinde satırlar,
+  her soruda tek durum (`QuestionStatusLabel`); soru composer'ında ataç emoji/sayaç/ledge ile aynı satırda.
+  Gönderi satırı: oda meta metni (çip yok), tek sayılı kalp (sayı kalbin yanında, dokununca tepki verenler;
+  pembe metin `--color-main` ile karışık, AA için), panel tip ölçeği, silme `useConfirmDelete` (kit
+  destructive dialog). Gotcha: `PANEL_CARD` + `p-0` çalışmaz (üretilen CSS'te `p-5` kazanır), dolgusuz kart
+  için `COMMUNITY_CARD_FLUSH`. `SessionBuddyCard` 204/boş yanıtı artık "gizli" sayar (önce render'da
+  çöküp bütün sayfayı düşürüyordu). İlgili: `feed/_components/{feed-shell,feed-toolbar,global-composer,
+  discovery-feed-card,feed-content-filter}.tsx`, `[slug]/_components/{zone-shell,zone-header,join-button,
+  ask-composer,question-list-item,thread-item,thread-composer}.tsx`, `_components/{community-presence,
+  community-trend-rail,reaction-bar,use-confirm-delete,community-row}.tsx`, `e2e/community-feed.spec.ts`.
+
+- **Keşfet + topluluk chrome'u panel diline geçti (2026-10-07, Topluluk Tur 1 durak B)** — `/topluluk`
+  artık "Bugün toplulukta": Puhu balonu (kural tabanlı satır, sessiz toplulukta ayrı cümle), ekranın tek
+  ledge'i "Bir şey paylaş" (`/community/feed?compose=post`), yanında "Soru sor" (`?compose=question`; Akış
+  tarafı durak C'de bağlanır) ve `GET /v1/coaching/today` `focusingNow` varsa "Şu an N kişi seninle çalışıyor
+  · Masaya katıl". Bölümler kendi verisini yükler, söyleyecek sözü yoksa hiç çizilmez: cevap bekleyenler
+  (`unanswered=true`, "El uzat" → `?content=waiting`), kaldığın yerden (öne çıkan + devam), sana uygun odalar
+  (satır başına "Katıl" metin eylemi; katılınca `community:zones-changed` olayı kenar çubuğunu yeniden
+  gruplar), rail'de yol arkadaşı (`SessionBuddyCard` `partnerOnly`: eşleşme ya da bekleyen istek yoksa
+  gizli), bu hafta yazanlar ve doluysa Gündemde. Stok görsel ve renkli oda kuyuları yok; oda türü
+  `ZoneTypeIcon` ile nötr. Chrome: masaüstünde ayrı üst çubuk kalktı, başlık + arama kenar çubuğunun
+  tepesinde tek yapışkan sütun; telefonda aynı header `display: contents` ile 64 px üst çubuk (X, oda
+  çekmecesi, "Topluluk", arama ikonu). Kenar çubuğu: "Keşfet", "Odaların" / "Diğer odalar", yeşil üyelik
+  noktası yok, altta "Profilim". Gotcha: `community-parity.css` katmansız olduğu için `font: inherit`
+  reset'i butonlardaki her `font-*` utility'sini eziyordu; artık `@layer base` içinde. Hub'daki
+  `helpfulVoteCount` "Faydalı" oyudur, "Ben de çözemedim" deftere ekleme eylemidir (sayılmaz). İlgili:
+  `community/_components/hub-*.tsx`, `community-row.tsx`, `question-status-label.tsx`, `thread-href.ts`,
+  `zone-sidebar.tsx`, `community-header.tsx`, `layout.tsx`, `session-buddy-card.tsx`,
+  `e2e/community-hub.spec.ts`, `community-hub-redesign.spec.ts`.
+
+- **Akış sessiz toplulukta boş kalmıyor + cevap bekleyenler (2026-10-07, Topluluk Tur 1 durak A)** —
+  `trending` son `forum.discovery.trending_window_hours` (72) saatte hareket görmeyeni eliyordu; üç gün
+  sessizlikte Akış "Konuşma henüz uyanmadı" diyor, panelin "Topluluktan" kartı da kayboluyordu. Artık
+  cursor'sız ilk `trending` sayfası boşsa sunucu aynı filtrelerle `recent` döner ve `ForumFeed.effectiveSort`
+  hangi sıralamanın kullanıldığını söyler (eski sunucularda alan yok: istenen sıralama say). `effectiveSort`'u
+  okumayan istemci de sayfalayabilsin diye `sort=trending` + `recent` cursor kabul edilir; başka sort'un
+  cursor'ı hâlâ 400. Yeni `unanswered=true` filtresi başkalarının cevapsız, kabul edilmiş cevabı olmayan QA
+  sorularını getirir (silinmiş cevap sayılmaz). Kullanım: `GET /v1/forum/feed?sort=recent&unanswered=true&limit=3`.
+  Gotcha: query string boolean'ı `z.enum(["true","false"])` ile okunur, `z.coerce.boolean` "false"'u true yapar;
+  `@mentor/validation` API'ye `dist`'ten gelir, şema değişince paketi build et. Web: topluluğun X paleti
+  (`community-parity.css`) kalktı, `--community-*` artık panel tokenlarına takma ad; light temada topluluk
+  kapsamında soğuk gri (#f4f7fb) ve görünür hairline. İlgili: `forum-discovery.{service,repository}.ts`,
+  `packages/{types,validation}/src/forum.ts`, `lib/forum.ts`, `community/_components/question-status.ts`,
+  `test/forum.e2e-spec.ts` ("quiet community").
 
 - **Ham tarih aggregate'leri (2026-09-24)** — `ForumAchievementEvidenceService`'in beş
   `min(createdAt)`'i `.mapWith(<kaynak kolon>)` ile gerçek `Date` döner; `new Date(row.earnedAt)`

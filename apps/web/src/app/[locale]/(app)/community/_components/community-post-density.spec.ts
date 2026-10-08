@@ -20,7 +20,7 @@ describe("shared community post density", () => {
     expect(threadItem).toContain("<AttachmentGallery attachments={thread.attachments} />");
     expect(threadItem).toContain('<div className="mt-1 flex w-full');
     expect(threadItem).toContain("min-h-11 min-w-11");
-    expect(threadItem).toContain("text-[15px] leading-[1.55]");
+    expect(threadItem).toContain("text-body-sm font-semibold");
   });
 
   it("shares typography and outer density with the discovery feed renderer", () => {
@@ -31,12 +31,13 @@ describe("shared community post density", () => {
 
     expect(discoveryCard).toContain("bg-[var(--color-surface)] px-4 py-3");
     expect(discoveryCard).not.toContain("sm:p-5");
-    expect(discoveryCard).toContain("text-[15px] leading-[1.55]");
+    expect(discoveryCard).toContain("text-body-sm font-semibold");
   });
 
-  it("uses thirteen pixel reaction totals in the shared action row", () => {
+  it("puts the reaction total beside the heart on the caption step", () => {
     const reactionBar = readFileSync(resolve(COMPONENT_DIR, "reaction-bar.tsx"), "utf8");
 
-    expect(reactionBar).toContain("px-1.5 text-[13px] tabular-nums");
+    expect(reactionBar).toContain("px-1.5 text-caption font-extrabold tabular-nums");
+    expect(reactionBar).not.toContain("order-last ml-auto");
   });
 });

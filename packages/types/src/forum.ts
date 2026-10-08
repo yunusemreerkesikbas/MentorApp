@@ -76,6 +76,10 @@ export interface ZoneView {
 /** GET /v1/forum/zones/:id/members — owner/mod view (e.g. pending join requests to approve). */
 export interface ZoneMemberView {
   userId: string;
+  /** The member's public identity, so a moderator approves a person, not an id. */
+  displayName: string;
+  username: string | null;
+  avatarUrl: string | null;
   role: ZoneRole;
   status: ZoneMemberStatus;
   createdAt: string;
@@ -458,6 +462,12 @@ export interface ForumFeed {
   items: ForumFeedItem[];
   nextCursor: string | null;
   context: ForumFeedContext;
+  /**
+   * The sort the items were actually ranked by. A first `trending` page with nothing inside the
+   * trending window comes back as `recent`, so a quiet community never shows an empty feed.
+   * Optional for older servers; read a missing value as the requested sort.
+   */
+  effectiveSort?: ForumFeedSort;
 }
 
 export interface ForumHubView {
@@ -593,6 +603,8 @@ export interface ReportView {
   reporterId: string;
   reason: ReportReason;
   note: string | null;
+  /** First 160 characters of the reported thread (title, else body) or post; null when gone. */
+  excerpt: string | null;
   status: ReportStatus;
   createdAt: string;
 }

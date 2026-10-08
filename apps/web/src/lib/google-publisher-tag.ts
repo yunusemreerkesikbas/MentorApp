@@ -14,6 +14,7 @@ type GoogleTag = {
   defineSlot: (path: string, sizes: ReadonlyArray<readonly [number, number]>, id: string) => { addService: (service: GptService) => GptSlot } | null;
   defineOutOfPageSlot: (path: string, format: string) => { addService: (service: GptService) => GptSlot } | null;
   pubads: () => GptService;
+  setConfig: (config: { safeFrame: { forceSafeFrame: boolean } }) => void;
   enableServices: () => void;
   display: (idOrSlot: string | GptSlot) => void;
   destroySlots: (slots: GptSlot[]) => boolean;
@@ -32,6 +33,7 @@ export function loadLimitedGpt(): Promise<GoogleTag> {
     const existing = document.querySelector<HTMLScriptElement>(`script[src="${LIMITED_GPT_URL}"]`);
     if (existing?.dataset.loaded === "true") return resolve(window.googletag!);
     const script = existing ?? document.createElement("script");
+    script.nonce = document.querySelector<HTMLScriptElement>("script[nonce]")?.nonce ?? "";
     script.async = true;
     script.src = LIMITED_GPT_URL;
     script.crossOrigin = "anonymous";
@@ -50,6 +52,7 @@ export async function withGpt<T>(run: (gpt: GoogleTag) => T): Promise<T> {
 }
 
 export function configureLimitedPrivacy(gpt: GoogleTag, treatment: AdAudienceTreatment): void {
+  gpt.setConfig({ safeFrame: { forceSafeFrame: true } });
   gpt.pubads().setPrivacySettings({
     limitedAds: true,
     childDirectedTreatment: treatment === "CHILD" ? true : null,

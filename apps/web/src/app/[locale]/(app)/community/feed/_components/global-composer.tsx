@@ -1,96 +1,53 @@
 "use client";
 
-import { Check, ChevronDown, ListChecks, Paperclip } from "lucide-react";
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { ListChecks, Paperclip } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import type { ForumTagView, ThreadView, ZoneView } from "@mentor/types";
 import { forumPollInputSchema, type ForumPollInput } from "@mentor/validation";
 import { ApiClientError } from "@mentor/api-client";
-import { useDialog } from "@mentor/ui";
-import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
+import { Button, useDialog } from "@mentor/ui";
 import { trackCommunityEvent } from "@/lib/analytics";
 import { useAuth } from "@/lib/auth-context";
-import {
-  getForumTrends,
-  listForumTags,
-  listZones,
-  postThread,
-} from "@/lib/forum";
-import { useMentorToast } from "@/lib/mentor-toast";
-import { linkNotebookThread } from "@/lib/notebook";
+import { getForumTrends, listForumTags, listZones, postThread } from "@/lib/forum";
 import { clearSpentQueryParam } from "@/lib/spent-query-param";
 import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
 import { AudienceSelector } from "../../_components/audience-selector";
 import { AuthorAvatar } from "../../_components/author-avatar";
 import { ComposerBodyField } from "../../_components/composer-body-field";
-import {
-  collectSuggestedTagIds,
-  filterHashtagSuggestions,
-  getActiveHashtagToken,
-  replaceHashtagToken,
-  type HashtagToken,
-} from "../../_components/composer-hashtags";
-import {
-  eligibleComposerZones,
-  type ComposerAudienceMode,
-} from "../../_components/composer-audience";
+import { collectSuggestedTagIds } from "../../_components/composer-hashtags";
+import { eligibleComposerZones, type ComposerAudienceMode } from "../../_components/composer-audience";
 import { resolveComposerThreadText } from "../../_components/composer-thread-text";
-import {
-  DEFAULT_FORUM_POLL,
-  ForumPollComposer,
-} from "../../_components/forum-poll-composer";
+import { DEFAULT_FORUM_POLL, ForumPollComposer } from "../../_components/forum-poll-composer";
 import { HashtagSuggestions } from "../../_components/hashtag-suggestions";
-import {
-  FORUM_ATTACHMENT_ACCEPT,
-  useForumImagePicker,
-} from "../../_components/use-forum-image-picker";
-import {
-  getComposerPresentation,
-  shouldCollapseComposerOnOutside,
-} from "./composer-presentation";
-import {
-  clearNotebookHandoff,
-  readNotebookHandoff,
-} from "@/lib/notebook-handoff";
+import { FORUM_ATTACHMENT_ACCEPT, useForumImagePicker } from "../../_components/use-forum-image-picker";
+import { ComposerTypeSelector } from "./composer-type-selector";
+import { getComposerPresentation, shouldCollapseComposerOnOutside } from "./composer-presentation";
 import { QuestionComposerDialog } from "./question-composer-dialog";
 import { rankQuestionTags } from "./question-composer-state";
+import { useComposerHashtags } from "./use-composer-hashtags";
+import { useNotebookHandoff } from "./use-notebook-handoff";
 
 type ComposerMode = ComposerAudienceMode;
 
-/**
- * The query parameter the mistake notebook hands over on, carrying the entry whose question the
- * student is about to ask. See `NotebookReviewPanel`'s stuck screen.
- */
-const NOTEBOOK_ENTRY_PARAM = "notebookEntry";
+/** Keşfet's ledges land here: `?compose=post` opens this box, `?compose=question` the question dialog. */
+const COMPOSE_PARAM = "compose";
+
+const TOOL =
+  "flex size-10 items-center justify-center rounded-[var(--radius-card)] text-[var(--color-secondary)] hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40";
 
 export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const t = useTranslations("community");
   const { user } = useAuth();
-  const hashtagListboxId = useId();
+  const searchParams = useSearchParams();
   const composerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const dialog = useDialog();
   const picker = useForumImagePicker();
-  const {
-    items,
-    error: attachmentError,
-    addFiles,
-    removeAt,
-    uploadAll,
-    reset,
-    fileRef,
-    atLimit,
-  } = picker;
-  const [expanded, setExpanded] = useState(false);
+  const { items, error: attachmentError, addFiles, removeAt, uploadAll, reset, fileRef, atLimit } = picker;
+  const [expanded, setExpanded] = useState(() => searchParams.get(COMPOSE_PARAM) === "post");
   const [mode, setMode] = useState<ComposerMode>("share");
   const [zones, setZones] = useState<ZoneView[]>([]);
   const [tags, setTags] = useState<ForumTagView[]>([]);
@@ -99,78 +56,37 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [pollTitle, setPollTitle] = useState("");
-  const [hashtagToken, setHashtagToken] = useState<HashtagToken | null>(null);
-  const [activeHashtagIndex, setActiveHashtagIndex] = useState(0);
   const [poll, setPoll] = useState<ForumPollInput | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [manualQuestionOpen, setManualQuestionOpen] = useState(false);
+  const [manualQuestionOpen, setManualQuestionOpen] = useState(
+    () => searchParams.get(COMPOSE_PARAM) === "question",
+  );
   const reduceMotion = useReducedMotion();
+  const hashtags = useComposerHashtags({ tags, body, setBody, bodyRef });
+  const clearHashtag = hashtags.clear;
+  const notebook = useNotebookHandoff();
+  // They already pressed "ask in the community"; making them pick question mode again here would be
+  // asking the same thing twice.
+  const questionDialogOpen = manualQuestionOpen || Boolean(notebook.entryId);
 
-  /*
-   * Handoff from the mistake notebook: a card the student missed twice, whose question they are
-   * being offered the community for. The notebook cannot create the thread itself — which zone a
-   * question belongs in depends on what the user has joined — so it sends them here with the entry
-   * id, and the link back to the card is made once the thread exists.
-   */
-  const toast = useMentorToast();
-  const searchParams = useSearchParams();
-  /**
-   * Spent once, and derived rather than mirrored into state by an effect: with the handoff open the
-   * dialog is open, and consuming it is what closes it. A second question in the same visit is just
-   * a question — it must not link itself to the same card.
-   */
-  const [handoffSpent, setHandoffSpent] = useState(false);
-  const handoffEntryId = handoffSpent
-    ? null
-    : searchParams.get(NOTEBOOK_ENTRY_PARAM);
-  // They already pressed "ask in the community"; making them pick question mode again here would
-  // be asking the same thing twice.
-  const questionDialogOpen = manualQuestionOpen || Boolean(handoffEntryId);
-
-  /**
-   * What the notebook left behind on its way here — the card's labels, for the banner and the title.
-   *
-   * Derived, not mirrored into state by an effect: the read is a pure lookup keyed by the id already
-   * in the URL, so there is nothing to synchronise. Only a payload matching *this* card is used; an
-   * older one belongs to a question that was already asked.
-   */
-  const handoff = handoffEntryId ? readNotebookHandoff(handoffEntryId) : null;
-
-  /** Marks the handoff used up here, and takes the parameter out of the address bar with it. */
-  const spendHandoff = useCallback(() => {
-    setHandoffSpent(true);
-    clearNotebookHandoff();
-    clearSpentQueryParam(NOTEBOOK_ENTRY_PARAM);
+  // The compose instruction is single-use: read once into state above, then out of the address bar.
+  useEffect(() => {
+    const compose = new URLSearchParams(window.location.search).get(COMPOSE_PARAM);
+    if (!compose) return;
+    clearSpentQueryParam(COMPOSE_PARAM);
+    if (compose === "post") requestAnimationFrame(() => bodyRef.current?.focus());
   }, []);
 
-  const handleQuestionCreated = useCallback(
-    async (thread: ThreadView) => {
-      setManualQuestionOpen(false);
-      if (handoffEntryId) {
-        // Never blocks the question: the thread is already posted and public. A failed link is
-        // worth telling the student about (the card just will not show the answer badge), not
-        // worth pretending the whole thing failed.
-        try {
-          await linkNotebookThread(handoffEntryId, thread.id);
-          toast.success({ title: t("notebook_linked") });
-        } catch {
-          toast.error({ title: t("notebook_link_failed") });
-        }
-        spendHandoff();
-      }
-      onCreated();
-    },
-    [handoffEntryId, onCreated, spendHandoff, t, toast],
-  );
+  const handleQuestionCreated = async (thread: ThreadView) => {
+    setManualQuestionOpen(false);
+    await notebook.linkCreated(thread);
+    onCreated();
+  };
 
   useEffect(() => {
     let active = true;
-    Promise.all([
-      listZones(),
-      listForumTags(),
-      getForumTrends("relevant", 6).catch(() => null),
-    ])
+    Promise.all([listZones(), listForumTags(), getForumTrends("relevant", 6).catch(() => null)])
       .then(([zoneResult, tagResult, trendResult]) => {
         if (!active) return;
         setZones(zoneResult.items);
@@ -187,45 +103,23 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     if (!expanded) return;
     const handlePointerDown = (event: PointerEvent) => {
       if (composerRef.current?.contains(event.target as Node)) return;
-      if (
-        shouldCollapseComposerOnOutside({ mode, hasPoll: Boolean(poll), busy })
-      ) {
+      if (shouldCollapseComposerOnOutside({ mode, hasPoll: Boolean(poll), busy })) {
         setExpanded(false);
-        setHashtagToken(null);
+        clearHashtag();
       }
     };
     document.addEventListener("pointerdown", handlePointerDown);
     return () => document.removeEventListener("pointerdown", handlePointerDown);
-  }, [busy, expanded, mode, poll]);
+  }, [busy, expanded, mode, poll, clearHashtag]);
 
-  const eligibleZones = useMemo(
-    () => eligibleComposerZones(zones, mode),
-    [mode, zones],
-  );
-  const questionZones = useMemo(
-    () => eligibleComposerZones(zones, "question"),
-    [zones],
-  );
-  const questionTags = useMemo(
-    () => rankQuestionTags(tags, trendingTagIds),
-    [tags, trendingTagIds],
-  );
+  const eligibleZones = useMemo(() => eligibleComposerZones(zones, mode), [mode, zones]);
+  const questionZones = useMemo(() => eligibleComposerZones(zones, "question"), [zones]);
+  const questionTags = useMemo(() => rankQuestionTags(tags, trendingTagIds), [tags, trendingTagIds]);
   const selectedZone = eligibleZones.find((zone) => zone.id === zoneId) ?? null;
-  const hashtagSuggestions = useMemo(
-    () =>
-      hashtagToken ? filterHashtagSuggestions(tags, hashtagToken.query) : [],
-    [hashtagToken, tags],
-  );
   const composerBody = poll ? pollTitle : body;
-  const presentation = getComposerPresentation({
-    expanded,
-    mode,
-    hasPoll: Boolean(poll),
-  });
-  const tagIds = useMemo(
-    () => collectSuggestedTagIds(composerBody, tags),
-    [composerBody, tags],
-  );
+  const presentation = getComposerPresentation({ expanded, mode, hasPoll: Boolean(poll) });
+  const tagIds = useMemo(() => collectSuggestedTagIds(composerBody, tags), [composerBody, tags]);
+  const canSubmit = !busy && Boolean(composerBody.trim()) && Boolean(selectedZone);
 
   const changeMode = (nextMode: ComposerMode) => {
     if (nextMode === "question") {
@@ -238,7 +132,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     setTitle("");
     setPollTitle("");
     setPoll(null);
-    setHashtagToken(null);
+    hashtags.clear();
     setError(null);
     setExpanded(true);
   };
@@ -258,19 +152,15 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
     }
     setPollTitle(body);
     setBody("");
-    setHashtagToken(null);
-    setExpanded(true);
-    setPoll({
-      ...DEFAULT_FORUM_POLL,
-      options: [...DEFAULT_FORUM_POLL.options],
-    });
+    hashtags.clear();
+    setPoll({ ...DEFAULT_FORUM_POLL, options: [...DEFAULT_FORUM_POLL.options] });
   };
 
   const removePoll = () => {
     setBody(pollTitle);
     setPollTitle("");
     setPoll(null);
-    setHashtagToken(null);
+    hashtags.clear();
   };
 
   const chooseAttachment = async () => {
@@ -290,13 +180,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
   };
 
   const submit = async () => {
-    const threadText = resolveComposerThreadText({
-      mode,
-      body,
-      title,
-      pollTitle,
-      hasPoll: Boolean(poll),
-    });
+    const threadText = resolveComposerThreadText({ mode, body, title, pollTitle, hasPoll: Boolean(poll) });
     if (busy || !selectedZone || !threadText.body) {
       if (!selectedZone) setError(t("audience_required"));
       return;
@@ -322,96 +206,36 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
         tagIds,
         parsedPoll?.success ? parsedPoll.data : undefined,
       );
-      trackCommunityEvent("forum_thread_created", {
-        mode,
-        zone_type: selectedZone.type,
-        tag_count: tagIds.length,
-      });
+      trackCommunityEvent("forum_thread_created", { mode, zone_type: selectedZone.type, tag_count: tagIds.length });
       setTitle("");
       setBody("");
       setPollTitle("");
-      setHashtagToken(null);
+      hashtags.clear();
       setPoll(null);
       reset();
       setExpanded(false);
       onCreated();
     } catch (submitError) {
-      setError(
-        submitError instanceof ApiClientError
-          ? submitError.body.message
-          : t("error"),
-      );
+      setError(submitError instanceof ApiClientError ? submitError.body.message : t("error"));
     } finally {
       setBusy(false);
     }
   };
 
-  const syncHashtag = (value: string, caret: number) => {
-    setHashtagToken(getActiveHashtagToken(value, caret));
-    setActiveHashtagIndex(0);
-  };
-
-  const selectHashtag = (tag: ForumTagView) => {
-    if (!hashtagToken) return;
-    const next = replaceHashtagToken(body, hashtagToken, tag);
-    setBody(next.value);
-    setHashtagToken(null);
-    requestAnimationFrame(() => {
-      bodyRef.current?.focus();
-      bodyRef.current?.setSelectionRange(next.caret, next.caret);
-    });
-  };
-
-  const handleHashtagKeyDown = (
-    event: React.KeyboardEvent<HTMLTextAreaElement>,
-  ): boolean => {
-    if (!hashtagToken) return false;
-    if (
-      (event.key === "ArrowDown" || event.key === "ArrowUp") &&
-      hashtagSuggestions.length > 0
-    ) {
-      event.preventDefault();
-      const direction = event.key === "ArrowDown" ? 1 : -1;
-      setActiveHashtagIndex(
-        (current) =>
-          (current + direction + hashtagSuggestions.length) %
-          hashtagSuggestions.length,
-      );
-      return true;
-    }
-    if (
-      (event.key === "Enter" || event.key === "Tab") &&
-      hashtagSuggestions.length > 0
-    ) {
-      if (event.metaKey || event.ctrlKey) return false;
-      event.preventDefault();
-      selectHashtag(
-        hashtagSuggestions[
-          Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)
-        ]!,
-      );
-      return true;
-    }
-    if (event.key === "Escape") {
-      event.preventDefault();
-      setHashtagToken(null);
-      return true;
-    }
-    return false;
-  };
+  const submitButton = (
+    <Button size="sm" disabled={!canSubmit} onClick={() => void submit()}>
+      {t("composer_submit")}
+    </Button>
+  );
 
   return (
     <>
       <div
         ref={composerRef}
-        className="mb-4 rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)]"
+        className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] sm:px-5"
       >
         <div className="flex items-start gap-3">
-          <AuthorAvatar
-            name={user?.displayName ?? "Mentor"}
-            src={user?.avatarUrl}
-            size={40}
-          />
+          <AuthorAvatar name={user?.displayName ?? "Mentor"} src={user?.avatarUrl} size={40} />
           <div className="min-w-0 flex-1">
             <AnimatePresence initial={false}>
               {presentation.showAudience && presentation.showTypeSelector ? (
@@ -420,10 +244,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                   initial={reduceMotion ? false : { height: 0, opacity: 0 }}
                   animate={{ height: "auto", opacity: 1 }}
                   exit={{ height: 0, opacity: 0 }}
-                  transition={{
-                    duration: reduceMotion ? 0 : 0.15,
-                    ease: [0.22, 1, 0.36, 1],
-                  }}
+                  transition={{ duration: reduceMotion ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] }}
                   className="overflow-hidden"
                 >
                   <div className="flex flex-wrap items-center gap-2 pb-1">
@@ -437,11 +258,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                       }}
                       disabled={busy}
                     />
-                    <ComposerTypeSelector
-                      value={mode}
-                      onChange={changeMode}
-                      disabled={busy}
-                    />
+                    <ComposerTypeSelector value={mode} onChange={changeMode} disabled={busy} />
                   </div>
                 </motion.div>
               ) : null}
@@ -470,12 +287,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
             {presentation.showBody ? (
               <motion.div
                 layout={reduceMotion ? false : "size"}
-                transition={{
-                  layout: {
-                    duration: reduceMotion ? 0 : 0.15,
-                    ease: [0.22, 1, 0.36, 1],
-                  },
-                }}
+                transition={{ layout: { duration: reduceMotion ? 0 : 0.15, ease: [0.22, 1, 0.36, 1] } }}
                 className="relative rounded-[var(--radius-card)]"
               >
                 <ComposerBodyField
@@ -490,21 +302,18 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                   hideLabel
                   minimal
                   textareaRef={bodyRef}
-                  onCaretChange={syncHashtag}
-                  onKeyDown={handleHashtagKeyDown}
+                  onCaretChange={hashtags.sync}
+                  onKeyDown={hashtags.onKeyDown}
                   autocomplete={{
-                    expanded: Boolean(hashtagToken),
-                    controls: hashtagListboxId,
-                    activeDescendant:
-                      hashtagSuggestions.length > 0
-                        ? `${hashtagListboxId}-${Math.min(activeHashtagIndex, hashtagSuggestions.length - 1)}`
-                        : undefined,
+                    expanded: Boolean(hashtags.token),
+                    controls: hashtags.listboxId,
+                    activeDescendant: hashtags.activeDescendant,
                   }}
                   onFocus={() => {
                     setExpanded(true);
                     trackCommunityEvent("forum_composer_open", { mode });
                   }}
-                  onBlur={() => setHashtagToken(null)}
+                  onBlur={hashtags.clear}
                   onSubmit={() => void submit()}
                   toolbarActions={
                     <>
@@ -515,7 +324,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                           aria-pressed={Boolean(poll)}
                           disabled={busy || Boolean(poll)}
                           onClick={() => void addPoll()}
-                          className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"
+                          className={TOOL}
                         >
                           <ListChecks size={18} aria-hidden />
                         </button>
@@ -525,31 +334,22 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
                         aria-label={t("attach")}
                         disabled={busy || atLimit}
                         onClick={() => void chooseAttachment()}
-                        className="flex size-8 items-center justify-center rounded-full text-[var(--color-secondary)] hover:bg-[var(--color-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-40"
+                        className={TOOL}
                       >
                         <Paperclip size={18} aria-hidden />
                       </button>
                     </>
                   }
-                  footerAction={
-                    <button
-                      type="button"
-                      disabled={busy || !composerBody.trim() || !selectedZone}
-                      onClick={() => void submit()}
-                      className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
-                    >
-                      {t("composer_submit")}
-                    </button>
-                  }
+                  footerAction={submitButton}
                 />
-                {hashtagToken ? (
+                {hashtags.token ? (
                   <HashtagSuggestions
-                    id={hashtagListboxId}
-                    query={hashtagToken.query}
-                    suggestions={hashtagSuggestions}
-                    activeIndex={activeHashtagIndex}
-                    onActiveIndexChange={setActiveHashtagIndex}
-                    onSelect={selectHashtag}
+                    id={hashtags.listboxId}
+                    query={hashtags.token.query}
+                    suggestions={hashtags.suggestions}
+                    activeIndex={hashtags.activeIndex}
+                    onActiveIndexChange={hashtags.setActiveIndex}
+                    onSelect={hashtags.select}
                   />
                 ) : null}
               </motion.div>
@@ -563,38 +363,17 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
               hidden
               onChange={(event) => addFiles(event.target.files)}
             />
-            {expanded ? (
-              <AttachmentPreviewStrip items={items} onRemove={removeAt} />
-            ) : null}
+            {expanded ? <AttachmentPreviewStrip items={items} onRemove={removeAt} /> : null}
             {expanded && poll ? (
-              <ForumPollComposer
-                value={poll}
-                onChange={setPoll}
-                onRemove={removePoll}
-                disabled={busy}
-              />
+              <ForumPollComposer value={poll} onChange={setPoll} onRemove={removePoll} disabled={busy} />
             ) : null}
 
             {error || attachmentError ? (
-              <p
-                role="alert"
-                className="mt-3 text-sm text-[var(--color-error)]"
-              >
+              <p role="alert" className="mt-3 text-caption font-semibold text-[var(--color-danger)]">
                 {error ?? attachmentError}
               </p>
             ) : null}
-            {expanded && poll ? (
-              <div className="mt-3 flex justify-end">
-                <button
-                  type="button"
-                  disabled={busy || !composerBody.trim() || !selectedZone}
-                  onClick={() => void submit()}
-                  className="min-h-10 rounded-full bg-[var(--color-btn)] px-5 text-sm font-bold text-[var(--color-btn-label)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-40"
-                >
-                  {t("composer_submit")}
-                </button>
-              </div>
-            ) : null}
+            {expanded && poll ? <div className="mt-3 flex justify-end">{submitButton}</div> : null}
           </div>
         </div>
       </div>
@@ -602,67 +381,13 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
         open={questionDialogOpen}
         zones={questionZones}
         tags={questionTags}
-        handoff={handoff}
+        handoff={notebook.handoff}
         onClose={() => {
           setManualQuestionOpen(false);
-          spendHandoff();
+          notebook.spend();
         }}
         onCreated={(thread) => void handleQuestionCreated(thread)}
       />
     </>
-  );
-}
-
-function ComposerTypeSelector({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: ComposerMode;
-  onChange: (mode: ComposerMode) => void;
-  disabled: boolean;
-}) {
-  const t = useTranslations("community");
-  const options = (["share", "question"] as const).map((mode) => ({
-    mode,
-    label: t(mode === "share" ? "composer_share" : "composer_question"),
-  }));
-  const selectedLabel = options.find((option) => option.mode === value)?.label;
-
-  return (
-    <PopoverMenu
-      align="left"
-      panelRole="listbox"
-      menuClassName="w-44"
-      trigger={({ open, setOpen, menuId }) => (
-        <button
-          type="button"
-          disabled={disabled}
-          aria-label={t("composer_type_label")}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          aria-controls={open ? menuId : undefined}
-          onClick={() => setOpen(!open)}
-          className="flex h-8 items-center gap-1 rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] px-3 text-xs font-bold text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:opacity-50"
-        >
-          {selectedLabel}
-          <ChevronDown size={14} aria-hidden />
-        </button>
-      )}
-    >
-      {options.map((option) => (
-        <PopoverMenuItem
-          key={option.mode}
-          role="option"
-          selected={option.mode === value}
-          onClick={() => onChange(option.mode)}
-        >
-          <span className="flex items-center justify-between gap-3">
-            {option.label}
-            {option.mode === value ? <Check size={16} aria-hidden /> : null}
-          </span>
-        </PopoverMenuItem>
-      ))}
-    </PopoverMenu>
   );
 }

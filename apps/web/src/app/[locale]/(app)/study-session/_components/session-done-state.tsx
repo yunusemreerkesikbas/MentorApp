@@ -366,6 +366,7 @@ export function SessionDoneState({
       </CompletionSummary>
       {shareOpen && shareParts ? (
         <SessionShareSheet
+          sessionId={sessionId}
           minutes={shareParts.minutes}
           subject={subject?.trim() ? subject.trim() : null}
           stars={filled}

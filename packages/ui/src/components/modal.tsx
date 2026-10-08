@@ -28,8 +28,6 @@ export interface ModalProps {
    * centred dialog from `lg` up. `center` (default) is centred at every width.
    */
   placement?: "center" | "sheet";
-  /** `wide` gives a two-column body room from `lg` (52rem); the default fits one column. */
-  size?: "default" | "wide";
 }
 
 /** Where `placement="sheet"` turns into a bottom sheet (the kit bottom sheet's breakpoint). */
@@ -56,7 +54,6 @@ export function Modal({
   className,
   banner,
   placement = "center",
-  size = "default",
 }: ModalProps) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const pressOnScrimRef = useRef(false);
@@ -140,7 +137,7 @@ export function Modal({
       onAnimationComplete={() => {
         if (closing) onClose();
       }}
-      className={`m-auto w-[min(92vw,32.5rem)] rounded-[var(--play-radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-overlay)] backdrop:bg-[var(--color-scrim)] ${size === "wide" ? "lg:w-[min(92vw,52rem)]" : ""} ${sheet ? SHEET_CLASS : ""}`}
+      className={`m-auto w-[min(92vw,32.5rem)] rounded-[var(--play-radius)] border border-[var(--color-border)] bg-[var(--color-surface)] p-0 text-[var(--color-main)] shadow-[var(--shadow-overlay)] backdrop:bg-[var(--color-scrim)] ${sheet ? SHEET_CLASS : ""}`}
     >
       {sheet ? (
         <span

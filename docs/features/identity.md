@@ -97,6 +97,41 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-07 · Blue notification toggles.** Notification preferences locally override
+  `--toggle-on-bg` with DESIGN.md's `--play-cta` blue. Usage: Ayarlar → Bildirim ayarları;
+  enabled email, push and campaign switches use the same blue as onboarding progress.
+  Gotchas: off, disabled, thumb, focus and reduced-motion styles keep the shared Toggle
+  behavior; other switches are unaffected. Related: `profile/_components/notification-settings.tsx`.
+  Validation: touched-file lint and temporary mobile/desktop browser checks confirmed the
+  enabled switch's computed background is `rgb(85, 172, 238)` (`#55ACEE`).
+
+- **2026-10-07 · Text-first settings menus.** Removed leading decorative icons and their
+  alignment slots from account, economy, notification, application and coach-scope settings
+  rows. `ListRow` now renders its optional icon slot only when supplied, preserving the
+  Google logo. Usage: Ayarlar; menu labels align directly with the row padding. Gotchas:
+  trailing navigation chevrons, verification badges, icon-only profile controls, destructive
+  text tone and all existing interactions are retained. Related:
+  `profile/_components/{account-links-card,application-support-card,notification-settings,
+  economy-section,coach-scope-card}.tsx`.
+  Validation: touched-file lint and all six applicable mobile/desktop profile scenarios passed;
+  the desktop legal-navigation case passed on rerun after an initial timeout. Two push
+  subscription cases skipped because no VAPID public key is configured.
+
+- **2026-10-07 · Settings icon consistency.** Settings account, notification, application,
+  economy, verification and profile controls now use direct Solar imports. Solid semantic
+  row icons use neutral ink; directional, edit, delete and loading controls use Linear.
+  The exam row uses a target, balance a wallet, and coach signup an academic cap. The redundant
+  notification-heading bell was removed. Usage: Ayarlar and its existing profile, invite
+  and coach-scope dialogs. Gotchas: Google branding, Premium identity, row alignment,
+  confirmation flows and preferences are unchanged; icon slots keep their existing surfaces.
+  Related: `profile/_components/{account-links-card,application-support-card,notification-settings,
+  economy-section,profile-header,google-account-card,social-follow-card,coach-scope-card,
+  coach-scope-modal,economy-invite-card}.tsx`.
+  Validation: touched-file lint, Solar export checks and six existing mobile/desktop profile
+  scenarios passed. Two push subscription cases skipped because no VAPID public key is configured.
+
+- **2026-10-04 — Netgsm REST v2 documentation review.** Compared the adapter against the live official OTP section: HTTPS POST, Basic Auth, flat `msgheader`/`msg`/`no` JSON, ten-digit Turkey mobile destination, one ASCII segment, string `jobid` and documented rejection codes match. Found and fixed the missing three-character sender minimum in Netgsm-enabled startup validation; disabled SMS still permits an empty sender. Usage: configure the subscriber number as `NETGSM_USERCODE`, the API subuser password and the approved 3-11-character header. Gotchas: Netgsm's three-minute transport window is separate from our five-minute code validity and five-second HTTP deadline; acceptance is not delivery or verification. Unknown outcomes are not retried automatically. Related: `env-phone.validation.spec.ts`, `env.validation.ts`, `netgsm-sms.adapter{,.spec}.ts`, `docs/core/integrations.md`; source: [official OTP contract](https://www.netgsm.com.tr/dokuman/#otp-sms). Transport tests inject responses; the consented live carrier pilot remains pending.
+
 - **Private SMS verification (2026-10-03, APP-114).** Added protected phone endpoints, shared Zod
   normalization for Turkey mobile numbers, six-digit cryptographic codes protected with keyed HMAC,
   session/purpose binding, expiry, replay protection and atomic Postgres quotas. One verified number
@@ -577,6 +612,54 @@ rows expire normally; no schema migration is required. Related: `identity.consta
 - Ordinary cancellation or module-cleanup failure clears only the timestamp owned by that attempt. An unknown `INCOMPLETE` provider outcome aborts before behavioral erasure and keeps its checkout/phone claim for reconciliation. Terminal scrub clears the marker atomically; subsequent token revocation failure cannot restore availability. A refresh attempted while fenced revokes that refresh family, so the user signs in again after a failed erasure.
 - Crash recovery is deliberately fail-closed: a remaining marker returns `CONFLICT` for another erasure and denies new account work. Operators must inspect the original attempt, module cleanup and retained payment/claim records, verify provider cancellation or resolve its unknown outcome, and confirm no erasure worker is still running before calling `UsersService.releaseAccountErasure(userId, exactStartedAt)` to retry the normal orchestration. Never clear by age, release another timestamp, rewrite status to `ACTIVE`, or detach an unresolved pending claim. A scrubbed terminal user stays terminal; repair session cleanup separately.
 - Related: `account/application/account-erasure.service.ts`, identity `users.{service,repository}.ts`, `auth-session.repository.ts`, `phone-verification.repository.ts`, migration `0123_*`, `test/account-erasure-fence.e2e-spec.ts`. Deterministic barriers pause erasure after billing cancellation and test preauthorized checkout denial before any provider call.
+
+### 2026-10-07 — Pre-release account security
+
+- Production API requests verify the Cloudflare-overwritten origin secret before body parsing,
+  then trust only a valid `CF-Connecting-IP`. Auth POSTs require the exact web/admin Origin;
+  admin login/refresh also bind the signed Access email to the application account.
+- Auth IP and account quotas use atomic fixed windows in `auth_rate_limits`, with HMAC keys
+  and SERVICE-only FORCE RLS. Web/admin login share quotas; password recovery silently skips
+  exhausted account quotas. Daily maintenance removes expired counters.
+- Login/recovery reuse Turnstile with action checks and reset after every submission. Email
+  changes and self-deletion require a session created within ten minutes; refresh preserves its
+  age. Email change, verification/reset link invalidation and all-session revocation commit
+  under one user lock. Token creation/consumption use the same lock; invalid reset links are
+  rejected before password hashing. Queued mail checks its current recipient before delivery.
+- Usage: apply `0125_account_security`, supply an independent `AUTH_RATE_LIMIT_SECRET`, and
+  configure production `EDGE_ORIGIN_SECRET`, HTTPS `ADMIN_APP_URL`, Cloudflare header overwrite
+  and Access MFA using the security release checklist. Old sessions return localized
+  `AUTH_REAUTHENTICATION_REQUIRED`; password/Google sign-in returns to settings for explicit
+  confirmation. Email changes clear cookies and all tabs return to login without putting the
+  new address in a URL. An unchanged submitted email also clears browser refresh cookies.
+- Related: identity rate/token/session/user repositories and services, `common/http/edge-origin.ts`,
+  auth guards, auth/profile web forms, `lib/use-account-security.ts`, shared auth validation,
+  migration `0125_*`, security unit/Postgres/browser fixtures and
+  `docs/core/security-release-checklist.md`. Real Cloudflare/Render evidence and full CI remain
+  mandatory before release.
+
+### 2026-10-08 — Account security browser QA coverage
+
+- Added TR/EN regression scenarios for challenge renewal after rate errors, duplicate
+  submissions, invalid addresses, generic password-reset confirmation, unchanged-email
+  edits, non-reauthentication mutation errors, deletion cancellation and security copy.
+- Extracted deterministic dummy API/Turnstile fixtures. The dedicated CAPTCHA CI build
+  runs both security suites; use the commands and coverage matrix in
+  `docs/plans/2026-10-08-account-security-qa.md`.
+- Browser execution caught a profile-edit crash: the sheet viewport is outside AuthProvider.
+  ProfileHeader now passes its authenticated re-login callback into ProfileEditForm instead
+  of invoking the auth hook from sheet content. Uncaught page errors fail the browser tests.
+- Verification: all 78 Chromium executions passed across mobile/desktop viewports, with no
+  skips or retries. Targeted TypeScript checks passed for the suites and shared fixture.
+  Targeted ESLint also passed for the test files and both changed profile components.
+- Gotcha: browser API/provider responses are simulated, so UI success does not prove
+  backend limits or Cloudflare configuration. Full CI and the actual Render bind/proxy
+  check remain release gates; a 127.0.0.1-bound local server reproduced a TR auth redirect
+  loop, while the localhost-bound browser server loaded correctly.
+- Related: `apps/web/e2e/account-security*.spec.ts`,
+  `apps/web/e2e/helpers/account-security.ts`, `.github/workflows/ci.yml`,
+  `profile/_components/profile-header.tsx`, `profile-edit-form.tsx`,
+  `docs/core/security-release-checklist.md`.
 
 ## Gotchas / Known issues
 

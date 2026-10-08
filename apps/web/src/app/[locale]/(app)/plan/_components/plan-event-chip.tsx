@@ -1,6 +1,7 @@
 "use client";
 
-import { CalendarDays, ListTodo } from "lucide-react";
+import { CalendarIcon as CalendarDays } from "@solar-icons/react/bold/calendar";
+import { ChecklistIcon as ListTodo } from "@solar-icons/react/bold/checklist";
 import type { CSSProperties } from "react";
 import type { PlanCalendarItem } from "@/lib/plan-calendar-item";
 import { formatTimeRange } from "./plan-utils";
@@ -60,9 +61,9 @@ export function PlanEventChip<T>({
   const range = formatTimeRange(item.startTime, item.endTime);
   const glyph =
     item.glyph === "task" ? (
-      <ListTodo size={11} strokeWidth={2.25} aria-hidden className="shrink-0" />
+      <ListTodo size={11} strokeWidth={1.75} aria-hidden className="shrink-0" />
     ) : item.glyph === "event" ? (
-      <CalendarDays size={11} strokeWidth={2.25} aria-hidden className="shrink-0" />
+      <CalendarDays size={11} strokeWidth={1.75} aria-hidden className="shrink-0" />
     ) : (
       item.icon
     );

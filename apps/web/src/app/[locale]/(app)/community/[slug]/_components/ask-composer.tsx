@@ -4,18 +4,23 @@ import { useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { ApiClientError } from "@mentor/api-client";
 import type { ZoneView } from "@mentor/types";
-import { Button, TextField } from "@mentor/ui";
+import { Button } from "@mentor/ui";
 import { useRouter } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
+import { PANEL_CARD } from "@/components/panel/panel-styles";
 import { postThread } from "@/lib/forum";
-import { ForumImagePicker } from "../../_components/forum-image-picker";
+import { AttachmentPreviewStrip } from "../../_components/attachment-preview-strip";
+import { COMMUNITY_FIELD } from "../../_components/community-row";
+import { ComposerAttachButton } from "../../_components/composer-attach-button";
 import { useForumImagePicker } from "../../_components/use-forum-image-picker";
 import { useMentionAutocomplete } from "../../_components/use-mention-autocomplete";
 import { MentionSuggestions } from "../../_components/mention-suggestions";
 import { EmojiPickerButton } from "../../_components/EmojiPickerButton";
-import { AudienceSelector } from "../../_components/audience-selector";
 
-/** Ask a question in a QA zone (title + body + images) → navigate to the new question detail. */
+/**
+ * Ask a question in a QA room (title + body + files) → the new question's page. One tool row under
+ * the body: emoji and attach on the left, the count and the room's ledge on the right.
+ */
 export function AskComposer({ zone }: { zone: ZoneView }) {
   const t = useTranslations("community");
   const router = useRouter();
@@ -25,32 +30,32 @@ export function AskComposer({ zone }: { zone: ZoneView }) {
   const bodyRef = useRef<HTMLTextAreaElement>(null);
   const mention = useMentionAutocomplete(zone.id, bodyRef, setBody);
   const picker = useForumImagePicker();
+  const { items, removeAt, addFiles, fileRef, atLimit, uploadAll, setError, error } = picker;
+  const ready = title.trim().length >= 5 && Boolean(body.trim());
 
   const submit = async () => {
-    if (title.trim().length < 5 || !body.trim()) return;
+    if (!ready) return;
     setBusy(true);
-    picker.setError(null);
+    setError(null);
     try {
-      const attachments = await picker.uploadAll();
+      const attachments = await uploadAll();
       const created = await postThread(zone.id, body.trim(), title.trim(), attachments);
-      router.push({
-        pathname: "/community/question/[threadId]",
-        params: { threadId: created.id },
-      });
+      router.push({ pathname: "/community/question/[threadId]", params: { threadId: created.id } });
     } catch (err) {
-      picker.setError(err instanceof ApiClientError ? err.body.message : t("error"));
+      setError(err instanceof ApiClientError ? err.body.message : t("error"));
       setBusy(false);
     }
   };
 
   return (
-    <div className="flex flex-col gap-3 rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5">
-      <AudienceSelector zones={[zone]} value={zone.id} locked />
-      <TextField
-        label={t("ask_title_placeholder")}
+    <section className={`${PANEL_CARD} flex flex-col gap-3`} aria-label={t("ask_submit")}>
+      <input
         value={title}
         onChange={(e) => setTitle(e.target.value)}
         maxLength={200}
+        placeholder={t("ask_title_placeholder")}
+        aria-label={t("ask_title_placeholder")}
+        className={`${COMMUNITY_FIELD} font-extrabold`}
       />
       <div className="relative">
         <textarea
@@ -61,30 +66,26 @@ export function AskComposer({ zone }: { zone: ZoneView }) {
           onBlur={mention.close}
           onKeyDown={(e) => void mention.onKeyDown(e)}
           placeholder={t("ask_body_placeholder")}
+          aria-label={t("ask_body_placeholder")}
           rows={4}
           maxLength={4000}
-          className="w-full resize-y rounded-[10px] border border-[var(--color-border)] bg-[var(--color-soft)] p-3 text-base outline-none placeholder:text-[var(--color-secondary)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
+          className={`${COMMUNITY_FIELD} resize-y py-3`}
           {...mention.inputProps}
         />
         <MentionSuggestions mention={mention} />
       </div>
-      <div className="flex items-center justify-between">
-        <EmojiPickerButton
-          textareaRef={bodyRef}
-          value={body}
-          onValueChange={setBody}
-          disabled={busy}
-        />
-        <span className="text-xs text-[var(--color-secondary)]">{body.length}/4000</span>
-      </div>
-      <ForumImagePicker picker={picker} disabled={busy} />
-      <FormError message={picker.error} />
-      <div className="flex justify-end">
-        <Button busy={busy} onClick={() => void submit()}>
+      <AttachmentPreviewStrip items={items} onRemove={removeAt} />
+      <FormError message={error} />
+      <div className="flex items-center gap-1">
+        <EmojiPickerButton textareaRef={bodyRef} value={body} onValueChange={setBody} disabled={busy} />
+        <ComposerAttachButton fileRef={fileRef} addFiles={addFiles} atLimit={atLimit} disabled={busy} />
+        <span className="ml-auto mr-3 text-caption font-semibold tabular-nums text-[var(--color-secondary)]">
+          {body.length}/4000
+        </span>
+        <Button size="sm" busy={busy} disabled={!ready} onClick={() => void submit()}>
           {t("ask_submit")}
         </Button>
       </div>
-    </div>
+    </section>
   );
 }

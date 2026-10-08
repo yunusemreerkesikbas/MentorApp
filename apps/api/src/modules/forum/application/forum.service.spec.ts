@@ -91,6 +91,37 @@ describe("ForumService", () => {
     expect(repo.upsertMember).not.toHaveBeenCalled();
   });
 
+  it("lists members with their public name and avatar for the moderator", async () => {
+    repo.listMembers.mockResolvedValue([
+      {
+        zoneId: "z1",
+        userId: "u2",
+        role: "MEMBER",
+        status: "PENDING",
+        createdAt: new Date("2026-10-08T09:00:00Z"),
+        displayName: "Zeynep Kaya",
+        username: "zeynep_k",
+        avatarStorageKey: "avatars/u2.webp",
+      },
+    ]);
+
+    const members = await svc.listMembers(
+      { userId: "u1", platformRoles: [UserRole.STUDENT], zoneRole: ZoneRole.OWNER },
+      "z1",
+      "PENDING",
+    );
+
+    expect(members).toEqual([
+      expect.objectContaining({
+        userId: "u2",
+        displayName: "Zeynep Kaya",
+        username: "zeynep_k",
+        avatarUrl: "https://cdn/avatars/u2.webp",
+        status: "PENDING",
+      }),
+    ]);
+  });
+
   it("non-staff non-owner cannot approve members", async () => {
     await expect(
       svc.approveMember({ userId: "u1", platformRoles: [UserRole.STUDENT], zoneRole: null }, "z1", "u2", true),

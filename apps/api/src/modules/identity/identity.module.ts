@@ -1,3 +1,5 @@
+import { AuthRateLimitService } from "./application/auth-rate-limit.service";
+import { AuthRateLimitRepository } from "./infrastructure/auth-rate-limit.repository";
 import { Module } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtModule } from "@nestjs/jwt";
@@ -46,6 +48,8 @@ import { NetgsmSmsAdapter } from "./infrastructure/netgsm-sms.adapter";
   controllers: [AuthController, UsersController, FollowController, GoogleLinkingController, PhoneController],
   providers: [
     AuthService,
+    AuthRateLimitService,
+    AuthRateLimitRepository,
     GoogleAuthService,
     GoogleLinkingService,
     GoogleLinkingRepository,
@@ -66,6 +70,6 @@ import { NetgsmSmsAdapter } from "./infrastructure/netgsm-sms.adapter";
     PhoneVerificationRepository,
     NetgsmSmsAdapter,
   ],
-  exports: [UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService, PhoneVerificationService],
+  exports: [AuthService, AuthRateLimitService, UsersRepository, UsersService, FollowService, BuddyService, TokenService, SocialErasureService, PhoneVerificationService],
 })
 export class IdentityModule {}

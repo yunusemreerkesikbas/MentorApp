@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
-import { Sparkles, Target, X } from "lucide-react";
+import { StarsIcon as Sparkles } from "@solar-icons/react/bold/stars";
+import { TargetIcon as Target } from "@solar-icons/react/bold/target";
+import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
 import type { VisionDto, VisionNoteDto } from "@mentor/types";
 import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api-client";
 import { Link } from "@/i18n/navigation";
@@ -101,12 +103,7 @@ export function VisionBoardCard() {
     <>
       <section className={PANEL_CARD} aria-labelledby="vision-card-title">
         <div className="flex items-center gap-2.5">
-          <span
-            className="grid size-10 shrink-0 place-items-center text-[var(--color-chip-text)]"
-            aria-hidden
-          >
-            <Target className="size-5" strokeWidth={1.75} />
-          </span>
+          
           <h2 id="vision-card-title" className={PANEL_CARD_TITLE}>
             {translate("card_title")}
           </h2>
@@ -160,7 +157,7 @@ export function VisionBoardCard() {
                     Quiet on purpose: this is a provenance label for the sentence below it, not an
                     action — the note itself stays glanceable rather than hidden behind a click. */}
                 <span className="mb-1 flex items-center gap-1.5 text-xs font-extrabold text-[var(--play-selected-ink)]">
-                  <Sparkles aria-hidden className="size-3.5 fill-current text-[var(--premium-ring-from)]" />
+                  <Sparkles size={14} aria-hidden className="size-3.5 fill-current text-[var(--premium-ring-from)]" />
                   {translate("coach_chip")}
                 </span>
                 <p className="text-sm" style={{ color: "var(--color-body)" }}>

@@ -1,6 +1,6 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createTestApp } from "./app-harness";
 
@@ -26,6 +26,16 @@ describe("auth signup rate limit (e2e)", () => {
     for (let attempt = 1; attempt <= 6; attempt += 1) {
       const response = await request(app.getHttpServer()).post("/v1/auth/signup").send({});
       expect(response.status, `attempt ${attempt}`).toBe(attempt <= 5 ? 400 : 429);
+      if (attempt === 6) expect(Number(response.headers["retry-after"])).toBeGreaterThan(0);
+    }
+  });
+
+  it("shares one IP window between web and admin password login", async () => {
+    for (let attempt = 1; attempt <= 11; attempt += 1) {
+      const route = attempt % 2 ? "/v1/auth/login" : "/v1/auth/admin/login";
+      const response = await request(app.getHttpServer()).post(route).send({});
+      expect(response.status, `attempt ${attempt}`).toBe(attempt <= 10 ? 400 : 429);
+      if (attempt === 11) expect(Number(response.headers["retry-after"])).toBeGreaterThan(0);
     }
   });
 });

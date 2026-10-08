@@ -20,6 +20,7 @@ export function AcceptButton({
   return (
     <Button
       variant="secondary"
+      size="sm"
       busy={busy}
       onClick={async () => {
         setBusy(true);

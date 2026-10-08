@@ -2,6 +2,13 @@ import type { ForumFeedScope, ForumFeedSort } from "@mentor/types";
 
 export type FeedTab = "featured" | "recent" | "top" | "following";
 
+const TABS: readonly FeedTab[] = ["featured", "recent", "top", "following"];
+
+/** `?sort=` deep links (the retired Gündem lands on `top`); anything unknown is the default tab. */
+export function readFeedTab(value: string | null): FeedTab {
+  return TABS.find((tab) => tab === value) ?? "featured";
+}
+
 export function feedTabToQuery(tab: FeedTab): {
   scope: ForumFeedScope;
   sort: ForumFeedSort;
