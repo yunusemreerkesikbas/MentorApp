@@ -10,9 +10,9 @@ export const turnstileSiteKey = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim
 export function SignupTurnstile({ onToken, resetKey, action = "signup" }: {
   onToken: (token: string | null) => void;
   resetKey: number;
-  action?: "signup" | "phone-verification";
+  action?: "signup" | "login" | "forgot-password" | "phone-verification";
 }) {
-  const translate = useTranslations(action === "signup" ? "auth.turnstile" : "phone.turnstile");
+  const translate = useTranslations(action === "phone-verification" ? "phone.turnstile" : "auth.turnstile");
   const container = useRef<HTMLDivElement>(null);
   const [attempt, setAttempt] = useState(0);
   const [state, setState] = useState("loading");

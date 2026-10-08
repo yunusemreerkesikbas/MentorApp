@@ -4,7 +4,7 @@ import { Test } from "@nestjs/testing";
 import { validateEnv } from "../src/config/env.validation";
 import { DatabaseModule } from "../src/database/database.module";
 import { HealthModule } from "../src/health/health.module";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 /**

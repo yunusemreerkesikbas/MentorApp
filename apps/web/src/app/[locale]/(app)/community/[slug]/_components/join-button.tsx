@@ -1,126 +1,86 @@
 "use client";
 
 import { useState } from "react";
-import { LoaderCircle } from "lucide-react";
 import { useTranslations } from "next-intl";
 import type { ZoneJoinPolicy, ZoneMemberStatus, ZoneRole } from "@mentor/types";
-import { useDialog } from "@mentor/ui";
+import { ApiClientError } from "@mentor/api-client";
+import { Button } from "@mentor/ui";
 import { joinZone, leaveZone } from "@/lib/forum";
+import { useMentorDialog } from "@/lib/mentor-dialog";
+import { useMentorToast } from "@/lib/mentor-toast";
+import { ZONES_CHANGED_EVENT } from "../../_components/zone-sidebar";
 
 /**
- * Join/leave toggle in the zone header. States:
- * - non-member → "Katıl";
- * - PENDING → waiting note + withdraw-request button (no confirm — low stakes);
- * - ACTIVE member/mod → "Ayrıl" (confirm only for REQUEST zones: re-joining needs re-approval);
- * - OWNER → nothing (owner cannot leave; transfer = backlog).
+ * A room membership's actions. Joining is the visitor's one ledge (the composer is the member's);
+ * leaving and withdrawing a request live in the room menu. Confirm only for REQUEST rooms, where
+ * coming back needs approval again. The owner cannot leave (transfer is backlog).
  */
-export function JoinButton({
+export function useZoneMembership({
   zoneId,
-  myStatus,
   myRole,
   joinPolicy,
   onJoined,
   onLeft,
 }: {
   zoneId: string;
-  myStatus: ZoneMemberStatus | null;
   myRole: ZoneRole | null;
   joinPolicy: ZoneJoinPolicy;
   onJoined: (status: ZoneMemberStatus) => void;
   onLeft: () => void;
 }) {
   const t = useTranslations("community");
-  const dialog = useDialog();
+  const dialog = useMentorDialog();
+  const toast = useMentorToast();
   const [busy, setBusy] = useState(false);
 
-  const leave = async () => {
+  const run = async (action: () => Promise<void>) => {
     setBusy(true);
     try {
-      await leaveZone(zoneId);
-      onLeft();
+      await action();
+      window.dispatchEvent(new Event(ZONES_CHANGED_EVENT));
+    } catch (error) {
+      // Callers fire and forget, so a failure is said here rather than left unhandled.
+      toast.error({ title: error instanceof ApiClientError ? error.body.message : t("error") });
     } finally {
       setBusy(false);
     }
   };
 
-  if (myStatus === "ACTIVE") {
-    if (myRole === "OWNER") return null;
-    return (
-      <CompactMembershipButton
-        busy={busy}
-        label={busy ? t("leaving") : t("leave")}
-        onClick={async () => {
-          if (joinPolicy === "REQUEST") {
-            const ok = await dialog.confirm({
-              title: t("leave_confirm_title"),
-              message: t("leave_confirm_message"),
-              confirmLabel: t("leave_confirm_yes"),
-              cancelLabel: t("report_cancel"),
-              closeLabel: t("attach_close"),
-            });
-            if (!ok) return;
-          }
-          await leave();
-        }}
-      />
-    );
-  }
+  const join = () =>
+    run(async () => {
+      const { status } = await joinZone(zoneId);
+      onJoined(status);
+    });
 
-  if (myStatus === "PENDING") {
-    return (
-      <span className="inline-flex items-center gap-1.5">
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {t("join_pending")}
-        </span>
-        <CompactMembershipButton
-          busy={busy}
-          label={t("cancel_request")}
-          onClick={() => void leave()}
-        />
-      </span>
-    );
-  }
+  const leave = async (confirm: boolean) => {
+    if (confirm && joinPolicy === "REQUEST") {
+      const ok = await dialog.confirm({
+        title: t("leave_confirm_title"),
+        message: t("leave_confirm_message"),
+        confirmLabel: t("leave_confirm_yes"),
+        cancelLabel: t("report_cancel"),
+        destructive: true,
+      });
+      if (!ok) return;
+    }
+    await run(async () => {
+      await leaveZone(zoneId);
+      onLeft();
+    });
+  };
 
-  return (
-    <CompactMembershipButton
-      busy={busy}
-      label={busy ? t("joining") : t("join")}
-      onClick={async () => {
-        setBusy(true);
-        try {
-          const { status } = await joinZone(zoneId);
-          onJoined(status);
-        } finally {
-          setBusy(false);
-        }
-      }}
-    />
-  );
+  return { busy, join, leave, canLeave: myRole !== "OWNER" };
 }
 
-function CompactMembershipButton({
-  label,
-  busy,
-  onClick,
-}: {
-  label: string;
-  busy: boolean;
-  onClick: () => void | Promise<void>;
-}) {
+/** The visitor's ledge in the room header, with one line on what joining gives. */
+export function ZoneJoinLedge({ busy, onJoin }: { busy: boolean; onJoin: () => void }) {
+  const t = useTranslations("community");
   return (
-    <button
-      type="button"
-      disabled={busy}
-      aria-busy={busy || undefined}
-      onClick={() => void onClick()}
-      className="group inline-flex min-h-11 min-w-11 items-center justify-center rounded-[var(--radius-card)] p-1 outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-not-allowed disabled:opacity-60"
-    >
-      <span className="inline-flex h-8 items-center justify-center gap-1.5 rounded-[var(--radius-card)] border border-[color-mix(in_srgb,var(--color-main)_15%,transparent)] px-2.5 text-xs font-bold text-[var(--color-main)]">
-        {busy ? (
-          <LoaderCircle size={14} strokeWidth={2.5} className="animate-spin motion-reduce:animate-none" aria-hidden />
-        ) : null}
-        {label}
-      </span>
-    </button>
+    <div className="flex flex-col items-start gap-2">
+      <Button busy={busy} onClick={onJoin} className="w-full sm:w-auto">
+        {busy ? t("joining") : t("zone_join_ledge")}
+      </Button>
+      <p className="text-caption font-semibold text-[var(--color-secondary)]">{t("zone_join_hint")}</p>
+    </div>
   );
 }

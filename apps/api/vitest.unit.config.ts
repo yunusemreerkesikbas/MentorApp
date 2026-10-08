@@ -10,6 +10,7 @@ export default defineConfig({
       AI_PROVIDER: "fake",
       VISION_PROVIDER: "fake",
       JWT_ACCESS_SECRET: "test-secret-test-secret-test-secret!!",
+      AUTH_RATE_LIMIT_SECRET: "test-auth-rate-secret-0000000000000000",
       PAYMENTS_WEBHOOK_SECRET: "test-payments-webhook-secret",
     },
     include: ["src/**/*.spec.ts"],

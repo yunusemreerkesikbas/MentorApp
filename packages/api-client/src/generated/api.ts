@@ -7,11 +7,25 @@
 import { http } from '../http';
 export interface SignupDto { [key: string]: unknown }
 
-export interface LoginDto { [key: string]: unknown }
+export interface LoginDto {
+  /**
+   * Single-use Turnstile token. Required for production web submissions.
+   * @maxLength 2048
+   */
+  turnstileToken?: string;
+  [key: string]: unknown;
+ }
 
 export interface VerifyEmailDto { [key: string]: unknown }
 
-export interface ForgotPasswordDto { [key: string]: unknown }
+export interface ForgotPasswordDto {
+  /**
+   * Single-use Turnstile token. Required for production web submissions.
+   * @maxLength 2048
+   */
+  turnstileToken?: string;
+  [key: string]: unknown;
+ }
 
 export interface ResetPasswordDto { [key: string]: unknown }
 

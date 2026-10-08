@@ -1,8 +1,18 @@
 import { describe, expect, it } from "vitest";
 
-import { LEGAL_DOCUMENTS, LEGAL_SLUGS, PLACEHOLDER_MARKER } from "./legal";
+import { LEGAL_DOCUMENTS, LEGAL_SLUGS, PLACEHOLDER_MARKER, publishedLegalDocs } from "./legal";
 
 describe("legal document registry", () => {
+  it("refuses to publish incomplete FINAL documents through the build-time sitemap", () => {
+    const document = LEGAL_DOCUMENTS["kvkk-aydinlatma"];
+    const original = document.en.body;
+    try {
+      document.en.body += PLACEHOLDER_MARKER;
+      expect(() => publishedLegalDocs()).toThrow("placeholders");
+    } finally {
+      document.en.body = original;
+    }
+  });
   it("publishes all six complete documents in both locales", () => {
     expect(LEGAL_SLUGS).toHaveLength(6);
     expect(new Set(LEGAL_SLUGS).size).toBe(6);

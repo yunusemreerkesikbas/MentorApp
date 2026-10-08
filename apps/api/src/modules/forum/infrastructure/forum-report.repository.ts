@@ -1,11 +1,20 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, desc, eq, sql } from "drizzle-orm";
+import { and, desc, eq, getTableColumns, sql } from "drizzle-orm";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
 import { withServiceContext } from "../../../database/rls";
-import { forumModerationActions, forumReports } from "../../../database/schema";
+import { forumModerationActions, forumPosts, forumReports, forumThreads } from "../../../database/schema";
 
 export type ReportRow = typeof forumReports.$inferSelect;
+/** A queue row with the start of what was reported, so the moderator can judge without opening it. */
+export type ReportListRow = ReportRow & { excerpt: string | null };
+
+/** First 160 characters of the reported thread (title, else body) or post, deleted or not. */
+const EXCERPT = sql<string | null>`case ${forumReports.targetType}
+  when 'THREAD' then (select left(coalesce(t.title, t.body), 160) from ${forumThreads} t where t.id = ${forumReports.targetId})
+  else (select left(p.body, 160) from ${forumPosts} p where p.id = ${forumReports.targetId})
+end`;
+const LIST_COLUMNS = { ...getTableColumns(forumReports), excerpt: EXCERPT };
 type NewAction = typeof forumModerationActions.$inferInsert;
 
 /**
@@ -50,12 +59,12 @@ export class ForumReportRepository {
   async listByZone(
     zoneId: string,
     opts: { status?: string; page: number; pageSize: number },
-  ): Promise<ReportRow[]> {
+  ): Promise<ReportListRow[]> {
     return withServiceContext(this.db, async (tx) => {
       const conds = [eq(forumReports.zoneId, zoneId)];
       if (opts.status) conds.push(eq(forumReports.status, opts.status));
       return tx
-        .select()
+        .select(LIST_COLUMNS)
         .from(forumReports)
         .where(and(...conds))
         .orderBy(desc(forumReports.createdAt))
@@ -64,11 +73,11 @@ export class ForumReportRepository {
     });
   }
 
-  async listAll(opts: { status?: string; page: number; pageSize: number }): Promise<ReportRow[]> {
+  async listAll(opts: { status?: string; page: number; pageSize: number }): Promise<ReportListRow[]> {
     return withServiceContext(this.db, async (tx) => {
       const where = opts.status ? eq(forumReports.status, opts.status) : undefined;
       return tx
-        .select()
+        .select(LIST_COLUMNS)
         .from(forumReports)
         .where(where)
         .orderBy(desc(forumReports.createdAt))

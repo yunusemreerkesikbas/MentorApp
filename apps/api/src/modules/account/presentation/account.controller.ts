@@ -27,7 +27,7 @@ export class AccountController {
     @CurrentUser() user: RequestUser,
     @Res({ passthrough: true }) res: Response,
   ): Promise<void> {
-    await this.erasure.eraseAccount(user.id, UserStatus.DELETED);
+    await this.erasure.eraseAccount(user.id, UserStatus.DELETED, user.sessionId);
     // Sessions are already revoked server-side; drop the refresh cookie too (logout pattern).
     res.clearCookie(REFRESH_COOKIE, { path: REFRESH_COOKIE_PATH });
   }

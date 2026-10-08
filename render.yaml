@@ -22,6 +22,12 @@ services:
         sync: false
       - key: APP_URL
         sync: false
+      - key: ADMIN_APP_URL
+        sync: false
+      - key: EDGE_ORIGIN_SECRET
+        sync: false
+      - key: AUTH_RATE_LIMIT_SECRET
+        generateValue: true
       - key: CORS_ORIGINS
         sync: false
       - key: CLOUDFLARE_ACCESS_TEAM_DOMAIN
@@ -98,6 +104,8 @@ services:
       - key: NODE_ENV
         value: production
       - key: NEXT_PUBLIC_API_URL
+        sync: false
+      - key: WEB_CSP_STORAGE_ORIGINS
         sync: false
       - key: NEXT_PUBLIC_SITE_URL
         sync: false

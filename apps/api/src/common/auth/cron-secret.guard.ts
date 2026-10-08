@@ -5,9 +5,9 @@ import {
   UnauthorizedException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
-import { timingSafeEqual } from "node:crypto";
 import type { Request } from "express";
 import type { Env } from "../../config/env.validation";
+import { secretEqual } from "./secret-equal";
 
 /** Protects internal cron endpoints — shared secret via header (Render Cron). Cross-cutting: used by
  * any module exposing an `internal/cron` endpoint (notifications, forum). */
@@ -25,17 +25,10 @@ export class CronSecretGuard implements CanActivate {
       req.header("x-cron-secret") ??
       req.header("authorization")?.replace(/^Bearer\s+/i, "") ??
       "";
-    if (!this.safeEqual(provided, expected)) {
+    if (!secretEqual(provided, expected)) {
       throw new UnauthorizedException();
     }
     return true;
   }
 
-  /** Constant-time comparison — avoids leaking the secret via response timing. */
-  private safeEqual(provided: string, expected: string): boolean {
-    const a = Buffer.from(provided);
-    const b = Buffer.from(expected);
-    // timingSafeEqual throws on length mismatch; the length check itself is not secret.
-    return a.length === b.length && timingSafeEqual(a, b);
-  }
 }

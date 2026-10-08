@@ -14,6 +14,7 @@ const report = (over: Record<string, unknown> = {}) => ({
   status: "OPEN",
   resolvedBy: null,
   resolvedAt: null,
+  excerpt: "bu linke tıkla",
   createdAt: new Date("2026-06-22T10:00:00Z"),
   ...over,
 });
@@ -86,6 +87,7 @@ describe("ForumModerationService", () => {
   it("a zone owner reads the zone queue", async () => {
     const res = await svc(ZoneRole.OWNER).listZoneReports(actor("u1"), "z1", { page: 1, pageSize: 20 });
     expect(res.items).toHaveLength(1);
+    expect(res.items[0]).toMatchObject({ excerpt: "bu linke tıkla" });
   });
 
   it("only platform staff read the global queue", async () => {

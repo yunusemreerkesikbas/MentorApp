@@ -1,74 +1,28 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import type { ForumTrendsView } from "@mentor/types";
-import { useTranslations } from "next-intl";
-import { Link } from "@/i18n/navigation";
 import { getForumTrends } from "@/lib/forum";
-import { TrendTopicList } from "./trend-topic-list";
+import { HubTrends } from "./hub-rail";
 
-type RailState =
-  | { status: "loading" }
-  | { status: "ready"; data: ForumTrendsView }
-  | { status: "error" };
-
+/**
+ * "Popüler etiketler" on the Akış and room rails. Tags are optional on posts, so trends are often empty: then,
+ * and while loading or after an error, there is no card at all (DESIGN.md §10).
+ */
 export function CommunityTrendRail() {
-  const t = useTranslations("community");
-  const [state, setState] = useState<RailState>({ status: "loading" });
-
-  const load = useCallback(() => {
-    setState({ status: "loading" });
-    getForumTrends("relevant", 5)
-      .then((data) => setState({ status: "ready", data }))
-      .catch(() => setState({ status: "error" }));
-  }, []);
+  const [items, setItems] = useState<ForumTrendsView["items"]>([]);
 
   useEffect(() => {
     let active = true;
     getForumTrends("relevant", 5)
       .then((data) => {
-        if (active) setState({ status: "ready", data });
+        if (active) setItems(data.items);
       })
-      .catch(() => {
-        if (active) setState({ status: "error" });
-      });
+      .catch(() => undefined);
     return () => {
       active = false;
     };
   }, []);
 
-  return (
-    <aside className="overflow-hidden rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)]" aria-labelledby="community-trends-title">
-      <h2 id="community-trends-title" className="px-4 pb-3 pt-4 text-xl font-extrabold tracking-[-0.025em] text-[var(--color-main)]">
-        {t("trends_title")}
-      </h2>
-
-      {state.status === "loading" ? (
-        <div className="space-y-4 border-t border-[var(--color-border)] px-4 py-4" aria-label={t("loading")}>
-          {Array.from({ length: 3 }).map((_, index) => (
-            <div key={index} className="animate-pulse space-y-2">
-              <div className="h-3 w-24 rounded bg-[var(--color-soft)]" />
-              <div className="h-4 w-36 rounded bg-[var(--color-surface-container)]" />
-              <div className="h-3 w-16 rounded bg-[var(--color-soft)]" />
-            </div>
-          ))}
-        </div>
-      ) : state.status === "error" ? (
-        <div className="border-t border-[var(--color-border)] px-4 py-5">
-          <p className="text-sm text-[var(--color-secondary)]">{t("trends_error")}</p>
-          <button type="button" onClick={load} className="mt-2 min-h-11 text-sm font-bold text-[var(--community-blue-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
-            {t("refresh")}
-          </button>
-        </div>
-      ) : state.data.items.length === 0 ? (
-        <p className="border-t border-[var(--color-border)] px-4 py-6 text-sm text-[var(--color-secondary)]">{t("trends_empty")}</p>
-      ) : (
-        <TrendTopicList items={state.data.items} />
-      )}
-
-      <Link href="/community/trends" className="block min-h-12 border-t border-[var(--color-border)] px-4 py-3 text-sm font-bold text-[var(--community-blue-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--color-focus-ring)]">
-        {t("trends_more")}
-      </Link>
-    </aside>
-  );
+  return <HubTrends tags={items} />;
 }

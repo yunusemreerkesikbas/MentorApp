@@ -174,7 +174,7 @@ export interface CommunityAnalyticsParams {
     scope: "relevant" | "following";
   };
   forum_feed_kind_selected: {
-    kind: "all" | "posts" | "questions";
+    kind: "all" | "posts" | "questions" | "waiting";
   };
   forum_coach_bridge_impression: {
     zone_type: "CHAT" | "QA";

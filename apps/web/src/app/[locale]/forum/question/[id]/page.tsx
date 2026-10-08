@@ -1,5 +1,6 @@
 import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
@@ -59,6 +60,7 @@ export default async function PublicQuestionPage({ params }: PageProps) {
   return (
     <div className="min-h-screen" style={{ backgroundColor: "var(--color-bg)" }}>
       <script
+        nonce={(await headers()).get("x-nonce") ?? undefined}
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdHtml(jsonLd) }}
       />

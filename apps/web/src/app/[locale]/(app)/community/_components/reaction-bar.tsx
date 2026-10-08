@@ -21,7 +21,7 @@ interface ReactionBarProps {
   ) => void | Promise<void>;
 }
 
-/** LinkedIn-style default reaction action plus a right-aligned people-summary trigger. */
+/** One heart (hold or hover for the palette) and its count, which lists the people who reacted. */
 export function ReactionBar({
   targetType,
   targetId,
@@ -228,33 +228,26 @@ export function ReactionBar({
         </AnimatePresence>
       </div>
 
+      {/* One counted heart (canvas, 2026-10-07): the total sits beside the control that adds to it;
+          tapping the number lists who reacted. No emoji stack on the far side of the row. */}
       {summary.hasReactions ? (
-        <motion.button
+        <button
           type="button"
           aria-label={t("reaction_total", { count: summary.total })}
           onClick={(event) => {
             event.stopPropagation();
             handleOpenDetails();
           }}
-          whileHover={reduceMotion ? undefined : { scale: 1.03 }}
-          whileTap={reduceMotion ? undefined : { scale: 0.96 }}
-          transition={{ duration: 0.18, ease: "easeOut" }}
-          className="order-last ml-auto flex min-h-11 items-center rounded-full px-1.5 text-[13px] tabular-nums focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{ color: "var(--color-secondary)" }}
+          className="-ml-2 flex min-h-11 min-w-8 items-center rounded-full px-1.5 text-caption font-extrabold tabular-nums hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+          // Pink text needs the main ink mixed in: plain #ff2dab is ~3:1 at 13 px on white.
+          style={{
+            color: currentEmoji
+              ? "color-mix(in srgb, var(--color-like-active) 72%, var(--color-main))"
+              : "var(--color-secondary)",
+          }}
         >
-          <span className="flex items-center" aria-hidden>
-            {summary.emojis.slice(0, 3).map((emoji, index) => (
-              <span
-                key={emoji}
-                className="flex size-6 items-center justify-center rounded-full bg-[var(--color-surface)] text-sm ring-1 ring-[var(--color-surface)]"
-                style={{ marginLeft: index === 0 ? 0 : -6, zIndex: 3 - index }}
-              >
-                {emoji}
-              </span>
-            ))}
-          </span>
-          <span className="ml-1.5">{summary.total}</span>
-        </motion.button>
+          {summary.total}
+        </button>
       ) : null}
     </>
   );

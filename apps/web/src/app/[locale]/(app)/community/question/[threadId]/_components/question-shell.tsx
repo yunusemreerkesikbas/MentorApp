@@ -1,49 +1,53 @@
 "use client";
-import { NotebookPen, Users } from "lucide-react";
+import { NotebookPen } from "lucide-react";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLocale, useTranslations } from "next-intl";
 import {
   ModerationTargetType,
-  type ForumCoachIntent,
+  type AnswerView,
   type QuestionDetail,
   type ZoneView,
 } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { Chip } from "@mentor/ui";
-import { Link } from "@/i18n/navigation";
 import { FormError } from "@/components/form";
-import { useAuth } from "@/lib/auth-context";
-import { trackCoachEvent, trackCommunityEvent } from "@/lib/analytics";
 import {
-  communityReturnPlaceholderKey,
-  parseCommunityReturnContext,
-} from "@/lib/community-coach-bridge";
+  PANEL_CARD,
+  PANEL_CARD_TITLE,
+  PANEL_GRID_CLASS,
+  PANEL_MAIN_CLASS,
+} from "@/components/panel/panel-styles";
+import { useAuth } from "@/lib/auth-context";
+import { trackCommunityEvent } from "@/lib/analytics";
+import { parseCommunityReturnContext } from "@/lib/community-coach-bridge";
 import {
   bookmarkPost,
   bookmarkThread,
   getQuestion,
   isForumDisabled,
   listZones,
-  postAnswer,
   setHelpfulVote,
 } from "@/lib/forum";
 import { questionUrl } from "@/lib/forum-public";
+import { relativeTime } from "@/lib/relative-time";
 import { ReportButton } from "../../../_components/report-button";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { AuthorAvatar } from "../../../_components/author-avatar";
+import { AuthorLink } from "../../../_components/author-link";
+import { COMMUNITY_ROW_LIST } from "../../../_components/community-row";
+import { DetailCrumb } from "../../../_components/detail-crumb";
 import { ForumMarkdown } from "../../../_components/forum-markdown";
 import { HelpfulButton } from "../../../_components/helpful-button";
-import { ForumImagePicker } from "../../../_components/forum-image-picker";
-import { useForumImagePicker } from "../../../_components/use-forum-image-picker";
+import { QuestionStatusLabel } from "../../../_components/question-status-label";
+import { questionStatus } from "../../../_components/question-status";
 import { SendButton } from "../../../_components/send-button";
 import { BookmarkButton } from "../../../_components/bookmark-button";
 import { NotebookAddDialog } from "./notebook-add-dialog";
-import { useMentionAutocomplete } from "../../../_components/use-mention-autocomplete";
-import { MentionSuggestions } from "../../../_components/mention-suggestions";
-import { EmojiPickerButton } from "../../../_components/EmojiPickerButton";
 import { AcceptButton } from "./accept-button";
+import { AnswerComposer } from "./answer-composer";
 import { AnswerItem } from "./answer-item";
+import { QuestionRail } from "./question-rail";
 import { CommunityCoachBridge } from "../../../_components/community-coach-bridge";
 import { PostDetailSkeleton } from "../../../_components/post-skeleton";
 
@@ -53,6 +57,10 @@ type State =
   | { status: "error"; message: string }
   | { status: "ready"; detail: QuestionDetail; zone: ZoneView | null };
 
+/**
+ * A question on the panel frame: the question card, the answers card ("N cevap", the solution in a
+ * green frame first), then "Sen de el uzat!"; the rail shows who is in it and other waiting questions.
+ */
 export function QuestionShell({ threadId }: { threadId: string }) {
   const t = useTranslations("community");
   const locale = useLocale();
@@ -64,10 +72,10 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   const { user } = useAuth();
   const [state, setState] = useState<State>({ status: "loading" });
   /**
-   * "I could not solve this either" — the community end of the notebook bridge. Kept as local
-   * session state rather than read back from the server: the entry the dialog creates is the
-   * student's own row in another bounded context, and re-fetching the whole thread to learn that
-   * they just pressed a button they were standing in front of would be a round trip for nothing.
+   * "Ben de takıldım": the community end of the notebook bridge. Kept as local session state rather
+   * than read back from the server: the entry the dialog creates is the student's own row in another
+   * bounded context, and re-fetching the whole thread to learn that they just pressed a button they
+   * were standing in front of would be a round trip for nothing.
    */
   const [notebookOpen, setNotebookOpen] = useState(false);
   const [notebookAdded, setNotebookAdded] = useState(false);
@@ -121,42 +129,20 @@ export function QuestionShell({ threadId }: { threadId: string }) {
 
   const onToggleHelpful = useCallback(
     (targetType: "THREAD" | "POST", targetId: string, adding: boolean) => {
+      const bump = <T extends { helpfulVoteCount?: number }>(item: T) => ({
+        ...item,
+        myHelpfulVote: adding,
+        helpfulVoteCount: Math.max(0, (item.helpfulVoteCount ?? 0) + (adding ? 1 : -1)),
+      });
       setState((current) => {
         if (current.status !== "ready") return current;
-        if (targetType === "THREAD") {
-          const question = current.detail.question;
-          return {
-            ...current,
-            detail: {
-              ...current.detail,
-              question: {
-                ...question,
-                myHelpfulVote: adding,
-                helpfulVoteCount: Math.max(
-                  0,
-                  (question.helpfulVoteCount ?? 0) + (adding ? 1 : -1),
-                ),
-              },
-            },
-          };
-        }
+        const { question, answers } = current.detail;
         return {
           ...current,
-          detail: {
-            ...current.detail,
-            answers: current.detail.answers.map((answer) =>
-              answer.id === targetId
-                ? {
-                    ...answer,
-                    myHelpfulVote: adding,
-                    helpfulVoteCount: Math.max(
-                      0,
-                      (answer.helpfulVoteCount ?? 0) + (adding ? 1 : -1),
-                    ),
-                  }
-                : answer,
-            ),
-          },
+          detail:
+            targetType === "THREAD"
+              ? { ...current.detail, question: bump(question) }
+              : { ...current.detail, answers: answers.map((a) => (a.id === targetId ? bump(a) : a)) },
         };
       });
       setHelpfulVote(targetType, targetId, adding).catch(() => void load());
@@ -196,7 +182,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
   if (state.status === "disabled") return <Centered>{t("soon_title")}</Centered>;
   if (state.status === "error") {
     return (
-      <main className="mx-auto w-full max-w-3xl px-5 py-8 lg:px-8">
+      <main className={PANEL_MAIN_CLASS}>
         <FormError message={state.message} />
       </main>
     );
@@ -204,156 +190,132 @@ export function QuestionShell({ threadId }: { threadId: string }) {
 
   const { question, answers } = state.detail;
   const { zone } = state;
-  const isAsker = user?.id === question.authorId;
-  const canAccept = isAsker && question.status === "OPEN";
+  const canAccept = user?.id === question.authorId && question.status === "OPEN";
   // Share the anonymous page only once the question is actually indexable — ForumPublicService
   // requires at least one answer, so sharing earlier would hand out a 404 link.
   const sharePublicUrl = answers.length > 0 ? questionUrl(question.id) : undefined;
-  const participantNames = Array.from(
-    new Set([question.authorName, ...answers.map((answer) => answer.authorName)]),
-  ).slice(0, 8);
-  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium" }).format(
-    new Date(question.createdAt),
+  const shareHref = {
+    pathname: "/community/question/[threadId]",
+    params: { threadId: question.id },
+  } as const;
+  const title = question.title ?? question.body.slice(0, 80);
+  const accepted = answers.filter((a) => a.isAccepted);
+  const others = answers.filter((a) => !a.isAccepted);
+
+  const renderAnswer = (a: AnswerView) => (
+    <AnswerItem
+      key={a.id}
+      answer={a}
+      shareHref={shareHref}
+      sharePublicUrl={sharePublicUrl}
+      onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
+      onToggleHelpful={(adding) => onToggleHelpful("POST", a.id, adding)}
+      accept={
+        // Own answers are never acceptable (API rejects self-accept — XP farm guard).
+        canAccept && !a.isAccepted && a.authorId !== user?.id ? (
+          <AcceptButton threadId={threadId} postId={a.id} onAccepted={() => void load()} />
+        ) : undefined
+      }
+      report={<ReportButton targetType={ModerationTargetType.POST} targetId={a.id} />}
+    />
   );
 
   return (
-    <main className="mx-auto w-full max-w-[1180px] px-4 py-5 sm:px-7 lg:px-8 lg:py-6">
-      <nav aria-label={t("breadcrumb_label")} className="flex min-h-11 flex-wrap items-center gap-2 border-b border-[var(--color-border)] pb-4 text-[13px] text-[var(--color-secondary)]">
-        <Link href="/community" className="font-semibold text-[var(--color-body)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]">
-          {t("title")}
-        </Link>
-        <span aria-hidden="true">›</span>
-        {zone ? (
-          <Link
-            href={{ pathname: "/community/[slug]", params: { slug: zone.slug } }}
-            className="focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          >
-            {zone.title}
-          </Link>
-        ) : (
-          <span>{t("type_qa")}</span>
-        )}
-        <span aria-hidden="true">›</span>
-        <span aria-current="page" className="max-w-[24rem] truncate text-[var(--color-main)]">
-          {question.title}
-        </span>
-      </nav>
-
-      <div className="mt-5 grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_304px]">
-      <div className="min-w-0">
-      <div className="rounded-[14px] border border-[var(--color-border)] bg-[var(--color-surface)] p-5 shadow-[var(--shadow-card)] sm:p-7">
-        <div className="flex items-start justify-between gap-3">
-          <h1
-            className="text-[24px] font-extrabold leading-[1.2] tracking-[-0.03em] text-[var(--color-main)] sm:text-[28px]"
-          >
-            {question.title ?? question.body.slice(0, 80)}
-          </h1>
-          {question.status === "ANSWERED" ? <Chip>{t("answered")}</Chip> : null}
-        </div>
-        <p className="mt-2 text-xs text-[var(--color-secondary)]">
-          {when}
-        </p>
-        <div className="mt-5">
-          <ForumMarkdown markdown={question.body} />
-        </div>
-        <AttachmentGallery attachments={question.attachments} />
-        <div className="-ml-1.5 mt-3 flex items-center gap-1">
-          <SendButton
-            href={{
-              pathname: "/community/question/[threadId]",
-              params: { threadId: question.id },
-            }}
-            publicUrl={sharePublicUrl}
-          />
-          <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
-          {/* Beside the bookmark on purpose, and clearly not the same thing: bookmarking keeps a
-              question you liked, this one is the student saying they could not solve it either —
-              which is what puts it on their own weakness map. */}
-          <button
-            type="button"
-            disabled={notebookAdded}
-            onClick={() => setNotebookOpen(true)}
-            className="inline-flex min-h-9 cursor-pointer items-center gap-1.5 rounded-full px-3 text-xs font-semibold outline-none transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default disabled:opacity-60 disabled:hover:bg-transparent motion-reduce:transition-none"
-            style={{
-              color: "var(--color-main)",
-              border: "1px solid color-mix(in srgb, var(--color-main) 15%, transparent)",
-            }}
-          >
-            <NotebookPen aria-hidden size={13} />
-            {notebookAdded ? t("notebook_added") : t("notebook_add_action")}
-          </button>
-          <HelpfulButton
-            count={question.helpfulVoteCount ?? 0}
-            selected={question.myHelpfulVote ?? false}
-            canVote={question.canHelpfulVote ?? true}
-            onToggle={(adding) => onToggleHelpful("THREAD", question.id, adding)}
-          />
-          <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
-        </div>
-        {question.tags?.length ? (
-          <div className="mt-3 flex flex-wrap gap-2">
-            {question.tags.slice(0, 3).map((tag) => (
-              <span key={tag.id} className="rounded-full bg-[var(--community-coral-soft)] px-2.5 py-1 text-xs font-semibold text-[var(--community-coral)]">
-                #{tag.slug}
+    <main className={PANEL_MAIN_CLASS}>
+      <DetailCrumb
+        items={[
+          { label: t("title"), href: "/community" },
+          zone
+            ? { label: zone.title, href: { pathname: "/community/[slug]", params: { slug: zone.slug } } }
+            : { label: t("type_qa") },
+          { label: title },
+        ]}
+      />
+      <div className={PANEL_GRID_CLASS}>
+        <div className="flex min-w-0 flex-col gap-5">
+          <article className={`${PANEL_CARD} flex flex-col gap-3 sm:p-6`} aria-labelledby="question-title">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <QuestionStatusLabel
+                status={questionStatus({ commentCount: answers.length, acceptedPostId: question.acceptedPostId })}
+              />
+              {question.tags?.slice(0, 3).map((tag) => (
+                <span key={tag.id} className="text-caption font-bold text-[var(--color-secondary)]">
+                  #{tag.slug}
+                </span>
+              ))}
+            </div>
+            <h1
+              id="question-title"
+              className="text-xl font-extrabold leading-snug tracking-[-0.01em] text-[var(--color-main)] sm:text-title"
+            >
+              {title}
+            </h1>
+            <div className="flex min-w-0 items-center gap-2.5">
+              <AuthorLink username={question.authorUsername} className="shrink-0">
+                <AuthorAvatar name={question.authorName} src={question.authorAvatarUrl} size={32} />
+              </AuthorLink>
+              <AuthorLink username={question.authorUsername} className="min-w-0 truncate hover:underline">
+                <span className="text-body-sm font-extrabold text-[var(--color-main)]">
+                  {question.authorName || t("unknown_author")}
+                </span>
+              </AuthorLink>
+              <span className="min-w-0 truncate text-caption font-semibold text-[var(--color-secondary)]">
+                {question.authorUsername ? `@${question.authorUsername} · ` : ""}
+                {relativeTime(question.createdAt, locale)}
               </span>
-            ))}
-          </div>
-        ) : null}
-      </div>
+            </div>
+            <ForumMarkdown markdown={question.body} />
+            <AttachmentGallery attachments={question.attachments} />
+            <div className="-ml-2 flex flex-wrap items-center gap-1">
+              {/* Not the bookmark: this is the student saying they are stuck on it too, which puts it
+                  in their own mistake notebook (the dialog explains). */}
+              <button
+                type="button"
+                disabled={notebookAdded}
+                onClick={() => setNotebookOpen(true)}
+                className="inline-flex min-h-11 cursor-pointer items-center gap-1.5 rounded-full px-3 text-caption font-extrabold text-[var(--color-main)] transition-colors duration-150 hover:bg-[var(--color-surface-container)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] disabled:cursor-default disabled:text-[var(--play-selected-ink)] disabled:hover:bg-transparent motion-reduce:transition-none"
+              >
+                <NotebookPen aria-hidden size={16} />
+                {notebookAdded ? t("notebook_added") : t("notebook_add_action")}
+              </button>
+              <HelpfulButton
+                count={question.helpfulVoteCount ?? 0}
+                selected={question.myHelpfulVote ?? false}
+                canVote={question.canHelpfulVote ?? true}
+                onToggle={(adding) => onToggleHelpful("THREAD", question.id, adding)}
+              />
+              <SendButton href={shareHref} publicUrl={sharePublicUrl} />
+              <BookmarkButton bookmarked={question.myBookmarked} onToggle={onToggleQuestionBookmark} />
+              <span className="ml-auto">
+                <ReportButton targetType={ModerationTargetType.THREAD} targetId={question.id} />
+              </span>
+            </div>
+          </article>
 
-      <CommunityCoachBridge bridge={question.coachBridge} />
+          <CommunityCoachBridge bridge={question.coachBridge} />
 
-      <h2 className="mb-3 mt-8 text-[20px] font-extrabold tracking-[-0.025em] text-[var(--color-main)]">
-        {t("comment_total", { count: answers.length })}
-      </h2>
+          <section className={`${PANEL_CARD} flex flex-col gap-2`} aria-labelledby="answers-title">
+            <h2 id="answers-title" className={PANEL_CARD_TITLE}>
+              {answers.length > 0 ? t("status_answers", { count: answers.length }) : t("status_waiting")}
+            </h2>
+            {answers.length === 0 ? (
+              <p className="text-body-sm font-semibold text-[var(--color-secondary)]">{t("answers_empty")}</p>
+            ) : (
+              <div className="flex flex-col gap-2">
+                {accepted.map(renderAnswer)}
+                {others.length > 0 ? <div className={COMMUNITY_ROW_LIST}>{others.map(renderAnswer)}</div> : null}
+              </div>
+            )}
+          </section>
 
-      <div className="rounded-[13px] border border-[var(--color-border)] bg-[var(--color-surface)] p-4 sm:p-5">
-        <AnswerComposer
-          threadId={threadId}
-          zoneId={question.zoneId}
-          returnIntent={returnContext?.intent ?? null}
-          onPosted={() => void load()}
-        />
-      </div>
-
-      {answers.length === 0 ? (
-        <p className="mt-5 py-6 text-sm text-[var(--color-secondary)]">{t("answers_empty")}</p>
-      ) : (
-        <div className="mt-5 flex flex-col gap-4 border-t border-[var(--color-border)] pt-5">
-          {answers.map((a) => (
-            <AnswerItem
-              key={a.id}
-              answer={a}
-              shareHref={{
-                pathname: "/community/question/[threadId]",
-                params: { threadId: question.id },
-              }}
-              sharePublicUrl={sharePublicUrl}
-              onToggleBookmark={(adding) => onToggleAnswerBookmark(a.id, adding)}
-              onToggleHelpful={(adding) => onToggleHelpful("POST", a.id, adding)}
-              accept={
-                // Own answers are never acceptable (API rejects self-accept — XP farm guard).
-                canAccept && !a.isAccepted && a.authorId !== user?.id ? (
-                  <AcceptButton threadId={threadId} postId={a.id} onAccepted={() => void load()} />
-                ) : undefined
-              }
-              report={<ReportButton targetType={ModerationTargetType.POST} targetId={a.id} />}
-            />
-          ))}
+          <AnswerComposer
+            threadId={threadId}
+            zoneId={question.zoneId}
+            returnIntent={returnContext?.intent ?? null}
+            onPosted={() => void load()}
+          />
         </div>
-      )}
-
-      </div>
-      <aside className="hidden border-l border-[var(--color-border)] pl-5 xl:block" aria-label={t("detail_context_title")}>
-        <h2 className="flex items-center gap-2 text-[13px] font-extrabold text-[var(--color-secondary)]"><Users size={16} className="text-[var(--community-blue-ink)]" aria-hidden />{t("detail_participants")}</h2>
-        <div className="mt-3 grid gap-1">
-          {participantNames.map((name) => (
-            <span key={name} className="min-h-11 rounded-[9px] px-3 py-3 text-sm font-semibold text-[var(--color-body-text)] hover:bg-[var(--color-surface)]">
-              {name}
-            </span>
-          ))}
-        </div>
-      </aside>
+        <QuestionRail question={question} answers={answers} />
       </div>
 
       {notebookOpen ? (
@@ -367,110 +329,6 @@ export function QuestionShell({ threadId }: { threadId: string }) {
         />
       ) : null}
     </main>
-  );
-}
-
-/** Inline answer composer (kept local — not the chat ThreadComposer, to avoid cross-route coupling). */
-function AnswerComposer({
-  threadId,
-  zoneId,
-  onPosted,
-  returnIntent,
-}: {
-  threadId: string;
-  zoneId: string;
-  onPosted: () => void;
-  returnIntent: ForumCoachIntent | null;
-}) {
-  const t = useTranslations("community");
-  const [value, setValue] = useState("");
-  const [busy, setBusy] = useState(false);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const mention = useMentionAutocomplete(zoneId, textareaRef, setValue);
-  const picker = useForumImagePicker();
-
-  useEffect(() => {
-    if (!returnIntent) return;
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    textarea.focus({ preventScroll: true });
-    textarea.scrollIntoView({
-      block: "center",
-      behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
-        ? "auto"
-        : "smooth",
-    });
-  }, [returnIntent]);
-
-  const send = async () => {
-    const body = value.trim();
-    if (!body) return;
-    setBusy(true);
-    picker.setError(null);
-    try {
-      const attachments = await picker.uploadAll();
-      await postAnswer(threadId, body, attachments);
-      trackCommunityEvent("forum_reply_created", { target: "thread", zone_type: "QA" });
-      if (returnIntent) {
-        trackCoachEvent("coach_community_return_reply_created", {
-          intent: returnIntent,
-          zone_type: "QA",
-        });
-      }
-      setValue("");
-      picker.reset();
-      onPosted();
-    } catch (err) {
-      picker.setError(err instanceof ApiClientError ? err.body.message : t("error"));
-    } finally {
-      setBusy(false);
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2">
-      <div className="relative">
-        <textarea
-          ref={textareaRef}
-          value={value}
-          onChange={(e) => setValue(e.target.value)}
-          onSelect={mention.sync}
-          onBlur={mention.close}
-          onKeyDown={(e) => void mention.onKeyDown(e)}
-          placeholder={
-            returnIntent
-              ? t(communityReturnPlaceholderKey(returnIntent))
-              : t("answer_placeholder")
-          }
-          rows={3}
-          maxLength={4000}
-          className="min-h-[120px] w-full resize-y rounded-[10px] border border-[var(--color-border)] bg-[var(--color-soft)] p-4 text-[15px] leading-6 text-[var(--color-body-text)] outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          {...mention.inputProps}
-        />
-        <MentionSuggestions mention={mention} />
-      </div>
-      <div className="flex items-center justify-between">
-        <EmojiPickerButton
-          textareaRef={textareaRef}
-          value={value}
-          onValueChange={setValue}
-          disabled={busy}
-        />
-        <span className="text-xs text-[var(--color-secondary)]">{value.length}/4000</span>
-      </div>
-      <ForumImagePicker picker={picker} disabled={busy} />
-      <FormError message={picker.error} />
-      <div className="flex justify-end">
-        <button
-          type="button"
-          disabled={busy}
-          onClick={() => void send()}
-          className="min-h-11 rounded-[10px] bg-[var(--community-blue)] px-5 text-sm font-bold text-white hover:bg-[var(--community-blue-hover)] disabled:opacity-50"
-        >
-          {busy ? t("answer_submitting") : t("answer_submit")}
-        </button>
-      </div>
-    </div>
   );
 }
 

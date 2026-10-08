@@ -11,6 +11,7 @@
   "TOO_MANY_REQUESTS_RETRY": "That was a bit fast. Try again in {seconds} seconds.",
   "TOO_MANY_REQUESTS_RETRY_ONE": "That was a bit fast. Try again in {seconds} second.",
   "SERVICE_UNAVAILABLE": "The service is down right now. Let's try again in a moment.",
+  "AUTH_REAUTHENTICATION_REQUIRED": "Sign in again to continue with this action.",
   "AUTH_INVALID_CREDENTIALS": "Incorrect email or password.",
   "AUTH_EMAIL_IN_USE": "An account with this email already exists.",
   "AUTH_USERNAME_IN_USE": "This username is already taken.",

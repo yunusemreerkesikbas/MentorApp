@@ -18,6 +18,8 @@ import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
 import { useMentorDialog } from "@/lib/mentor-dialog";
 import { FormError } from "@/components/form";
 import { useMentorToast } from "@/lib/mentor-toast";
+import { isReauthenticationRequired } from "@/lib/account-security";
+import { useAccountSecurity } from "@/lib/use-account-security";
 
 export function ListRow({
   children,
@@ -140,6 +142,7 @@ export function AccountLinksCard({
   const tMentorship = useTranslations("mentorship");
   const locale = useLocale();
   const { logout } = useAuth();
+  const signInAgain = useAccountSecurity();
   const router = useRouter();
   const { actionSheet } = useMentorBottomSheet();
   const toast = useMentorToast();
@@ -248,6 +251,10 @@ export function AccountLinksCard({
       await logout().catch(() => undefined);
       router.replace("/");
     } catch (err) {
+      if (isReauthenticationRequired(err)) {
+        await signInAgain("reauth");
+        return;
+      }
       setDeleteError(
         err instanceof ApiClientError
           ? err.body.message

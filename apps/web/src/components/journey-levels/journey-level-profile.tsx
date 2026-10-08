@@ -14,7 +14,7 @@ import { JourneyLevelMedallion } from "./journey-level-medallion";
 import { JourneyLevelProgressBar } from "./journey-level-progress";
 import { JourneySpotlightScene } from "./spotlight/journey-spotlight-scene";
 
-type LevelNameKey = `levels.${JourneyLevelKey}.${"name" | "story"}`;
+type LevelNameKey = `levels.${JourneyLevelKey}.${"name" | "story" | "story_visitor"}`;
 type ChapterLabelKey = `chapters.${JourneyLevelChapterId}.label`;
 
 export function JourneyLevelProfile({
@@ -29,7 +29,8 @@ export function JourneyLevelProfile({
   const [spotlightOpen, setSpotlightOpen] = useState(false);
   const openerRef = useRef<HTMLButtonElement>(null);
   const name = t(`levels.${level.key}.name` as LevelNameKey);
-  const story = t(`levels.${level.key}.story` as LevelNameKey);
+  // A visitor reads the level about the owner ("başladı"), never addressed to themselves ("başladın").
+  const story = t(`levels.${level.key}.${isOwner ? "story" : "story_visitor"}` as LevelNameKey);
   const chapterLabel = t(`chapters.${level.chapter}.label` as ChapterLabelKey);
 
   return (

@@ -1,4 +1,5 @@
 import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { PANEL_CARD, PANEL_GRID_CLASS, PANEL_MAIN_CLASS } from "@/components/panel/panel-styles";
 
 export function PostListSkeleton({
   label,
@@ -48,17 +49,33 @@ export function PostListSkeleton({
   );
 }
 
+/** Question, post and comment detail while loading: the crumb, the post card, the replies card and the rail. */
 export function PostDetailSkeleton({ label }: { label: string }) {
   return (
-    <main className="mx-auto min-w-0 max-w-[600px] bg-[var(--color-surface)] sm:my-6 sm:border-x sm:border-[var(--color-border)]">
-      <PostListSkeleton label={label} count={1} />
-      <div className="border-y border-[var(--color-border)] px-4 py-4">
-        <SkeletonGroup label={label} className="space-y-3">
-          <Skeleton className="h-16 w-full rounded-[var(--radius-card)]" />
-          <Skeleton className="ml-auto h-10 w-24 rounded-[var(--radius-card)]" />
-        </SkeletonGroup>
-      </div>
-      <PostListSkeleton label={label} count={2} />
+    <main className={PANEL_MAIN_CLASS}>
+      <SkeletonGroup label={label} className="flex flex-col gap-5">
+        <Skeleton className="h-4 w-56 rounded-full" />
+        <div className={PANEL_GRID_CLASS}>
+          {/* Plain shapes, not PostListSkeleton: its own status region would nest inside this one. */}
+          <div className="flex min-w-0 flex-col gap-5">
+            <div className={`${PANEL_CARD} flex gap-3`}>
+              <Skeleton className="size-10 shrink-0 rounded-full" />
+              <div className="flex min-w-0 flex-1 flex-col gap-3">
+                <Skeleton className="h-4 w-40 rounded-full" />
+                <Skeleton className="h-4 w-full rounded-full" />
+                <Skeleton className="h-4 w-4/5 rounded-full" />
+              </div>
+            </div>
+            <div className={`${PANEL_CARD} flex flex-col gap-4`}>
+              <Skeleton className="h-5 w-24 rounded-full" />
+              <Skeleton className="h-16 w-full rounded-[var(--radius-card)]" />
+              <Skeleton className="h-4 w-full rounded-full" />
+              <Skeleton className="h-4 w-3/4 rounded-full" />
+            </div>
+          </div>
+          <Skeleton className="h-32 w-full rounded-[var(--radius-card)]" />
+        </div>
+      </SkeletonGroup>
     </main>
   );
 }

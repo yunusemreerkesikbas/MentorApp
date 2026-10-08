@@ -47,6 +47,24 @@ describe("TurnstileService", () => {
     await expect(service().assertValid("token")).resolves.toBeUndefined();
   });
 
+  it.each(["login", "forgot-password"])("validates the explicit %s action", async (action) => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: true,
+      json: async () => ({ success: true, hostname: "app.mentor.test", action }) }));
+    await expect(service().assertValid("token", action)).resolves.toBeUndefined();
+    await expect(service().assertValid("token", "signup"))
+      .rejects.toMatchObject({ code: "AUTH_TURNSTILE_FAILED" });
+  });
+
+  it("rejects a previously accepted token when the provider reports reuse", async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true, hostname: "app.mentor.test", action: "login" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: false, "error-codes": ["timeout-or-duplicate"] }) });
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(service().assertValid("single-use", "login")).resolves.toBeUndefined();
+    await expect(service().assertValid("single-use", "login"))
+      .rejects.toMatchObject({ code: "AUTH_TURNSTILE_FAILED" });
+  });
+
   it("keeps unconfigured local development working", async () => {
     vi.stubGlobal("fetch", vi.fn());
     await expect(service({ NODE_ENV: "development", TURNSTILE_SECRET_KEY: undefined }).assertValid(undefined)).resolves.toBeUndefined();

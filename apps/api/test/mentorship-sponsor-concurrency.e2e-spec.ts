@@ -1,7 +1,8 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { eq, inArray, sql } from "drizzle-orm";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { withServiceContext } from "../src/database/rls";
 import { coachStudents, subscriptions, users } from "../src/database/schema";
@@ -34,6 +35,7 @@ describe("sponsored seat relationship races (e2e)", () => {
     process.env.PAYMENTS_PROVIDER = "fake";
     const { AppModule } = await import("../src/app.module");
     const module = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     await app.init();

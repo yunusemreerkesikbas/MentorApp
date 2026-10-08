@@ -1,7 +1,8 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
-import request from "supertest";
+import request from "./browser-request";
 import { eq } from "drizzle-orm";
 import { DRIZZLE } from "../src/database/database.constants";
 import type { Database } from "../src/database/drizzle";
@@ -32,6 +33,7 @@ describe("coaching (e2e)", () => {
     const moduleRef = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

@@ -8,7 +8,7 @@ import { writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { NestFactory } from "@nestjs/core";
 import { DocumentBuilder, SwaggerModule, type OpenAPIObject, type ParameterObject } from "@nestjs/swagger";
-import { addStudyDurationProperties } from "../src/observability/swagger";
+import { addAuthSecurityProperties, addStudyDurationProperties } from "../src/observability/swagger";
 import { AppModule } from "../src/app.module";
 
 async function main(): Promise<void> {
@@ -23,6 +23,7 @@ async function main(): Promise<void> {
   const document = SwaggerModule.createDocument(app, config);
   addMissingPathParameters(document);
   addStudyDurationProperties(document);
+  addAuthSecurityProperties(document);
 
   const out = resolve(__dirname, "../../../packages/api-client/openapi.json");
   writeFileSync(out, JSON.stringify(document, null, 2));

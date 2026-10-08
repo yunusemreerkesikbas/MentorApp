@@ -45,7 +45,7 @@ function clearGaCookies(): void {
   }
 }
 
-export function AnalyticsConsentProvider({ children }: { children: ReactNode }) {
+export function AnalyticsConsentProvider({ children, nonce }: { children: ReactNode; nonce: string }) {
   const translate = useTranslations("consentBanner");
   const pathname = usePathname();
   const hideBanner = !isPublicConsentBannerPath(pathname);
@@ -97,6 +97,7 @@ export function AnalyticsConsentProvider({ children }: { children: ReactNode }) 
       {measurementId && consent === "accepted" && (
         <Script
           id="mentor-ga4"
+          nonce={nonce}
           src={`https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`}
           strategy="afterInteractive"
           onLoad={initializeGa}

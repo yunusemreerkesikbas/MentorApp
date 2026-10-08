@@ -75,7 +75,7 @@ export function CommentRow({
       tabIndex={0}
       onClick={open}
       onKeyDown={onKeyDown}
-      className="group flex cursor-pointer touch-manipulation items-start gap-3 py-4 pl-3 pr-4 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_1.5%,transparent)] focus-visible:outline-none focus-visible:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)]"
+      className="group flex cursor-pointer touch-manipulation items-start gap-3 px-4 py-4 sm:px-5 transition-colors hover:bg-[color-mix(in_srgb,var(--color-main)_1.5%,transparent)] focus-visible:outline-none focus-visible:bg-[color-mix(in_srgb,var(--color-main)_2%,transparent)]"
       // ponytail: persistent tint marks the highlighted reply — no fade timer; add one if it reads as sticky.
       style={highlighted ? { background: "color-mix(in srgb, var(--color-chip) 14%, var(--color-surface))" } : undefined}
     >
@@ -87,16 +87,16 @@ export function CommentRow({
         <div className="flex items-center gap-1.5">
           <AuthorLink
             username={comment.authorUsername}
-            className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+            className="flex-shrink truncate text-body-sm font-extrabold hover:underline"
           >
-            <span style={{ color: "var(--color-main)" }}>{comment.authorName || t("unknown_author")}</span>
+            <span className="text-[var(--color-main)]">{comment.authorName || t("unknown_author")}</span>
           </AuthorLink>
           {comment.authorUsername && (
-            <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
+            <span className="flex-shrink truncate text-caption font-semibold text-[var(--color-secondary)]">
               @{comment.authorUsername}
             </span>
           )}
-          <span className="flex-shrink-0 whitespace-nowrap text-xs" style={{ color: "var(--color-secondary)" }}>
+          <span className="flex-shrink-0 whitespace-nowrap text-caption font-semibold text-[var(--color-secondary)]">
             · {relativeTime(comment.createdAt, locale)}
           </span>
           <span className="ml-auto flex-shrink-0" onClick={(e) => e.stopPropagation()}>
@@ -104,7 +104,7 @@ export function CommentRow({
           </span>
         </div>
 
-        <p className="mt-1 whitespace-pre-wrap break-words text-[15px] leading-[22px]" style={{ color: "var(--color-body)" }}>
+        <p className="mt-1 whitespace-pre-wrap break-words text-body-sm font-semibold text-[var(--color-body)]">
           <MentionText text={comment.body} />
         </p>
 
@@ -148,7 +148,7 @@ export function CommentRow({
           >
             <CommentIcon />
             {comment.replyCount > 0 && (
-              <span className="text-[13px] tabular-nums">{comment.replyCount}</span>
+              <span className="text-caption font-extrabold tabular-nums">{comment.replyCount}</span>
             )}
           </button>
 

@@ -1,9 +1,13 @@
 "use client";
 
 import type { ReactNode } from "react";
+import { Check } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { AnswerView } from "@mentor/types";
+import { relativeTime } from "@/lib/relative-time";
 import { AttachmentGallery } from "../../../_components/attachment-gallery";
+import { AuthorAvatar } from "../../../_components/author-avatar";
+import { AuthorLink } from "../../../_components/author-link";
 import { MentionText } from "../../../_components/mention-text";
 import {
   SendButton,
@@ -13,8 +17,9 @@ import { BookmarkButton } from "../../../_components/bookmark-button";
 import { HelpfulButton } from "../../../_components/helpful-button";
 
 /**
- * One answer. Accepted answers are highlighted; `accept`/`report` are slots filled by the shell.
- * QA answers have no page of their own, so "send" shares the parent question (`shareHref`).
+ * One answer: who wrote it, what they said, "Faydalı" first. The accepted answer sits in a green
+ * frame with a "Çözüm" line, no tinted fill (canvas revision, 2026-10-07). `accept`/`report` are
+ * slots filled by the shell. QA answers have no page of their own, so "send" shares the question.
  */
 export function AnswerItem({
   answer,
@@ -36,37 +41,56 @@ export function AnswerItem({
 }) {
   const t = useTranslations("community");
   const locale = useLocale();
-  const when = new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeStyle: "short" }).format(
-    new Date(answer.createdAt),
-  );
 
   return (
-    <article className={answer.isAccepted ? "rounded-[12px] bg-[var(--community-green-soft)] p-4" : "border-b border-[var(--color-border)] px-1 py-4"}>
-      <div className="flex items-center justify-between gap-3">
-        <span className="text-xs" style={{ color: "var(--color-secondary)" }}>
-          {when}
-        </span>
+    <article
+      className={
+        answer.isAccepted
+          ? "flex gap-3 rounded-[var(--radius-card)] border-2 border-[var(--color-success)] p-4"
+          : "flex gap-3 py-4"
+      }
+    >
+      <AuthorLink username={answer.authorUsername} className="shrink-0">
+        <AuthorAvatar name={answer.authorName} src={answer.authorAvatarUrl} size={32} />
+      </AuthorLink>
+      <div className="flex min-w-0 flex-1 flex-col gap-1">
         {answer.isAccepted ? (
-          <span className="rounded-full bg-[var(--color-surface)] px-2.5 py-1 text-xs font-bold text-[var(--community-green)]">
-            ✓ {t("accepted")}
+          <span className="inline-flex items-center gap-1 text-caption font-extrabold text-[var(--color-success)]">
+            <Check size={15} strokeWidth={2.5} aria-hidden />
+            {t("answer_solution")}
           </span>
         ) : null}
-      </div>
-      <p className="mt-2 whitespace-pre-wrap text-[15px] leading-[22px]" style={{ color: "var(--color-main)" }}>
-        <MentionText text={answer.body} />
-      </p>
-      <AttachmentGallery attachments={answer.attachments} />
-      <div className="-ml-1.5 mt-3 flex items-center gap-1">
-        <SendButton href={shareHref} publicUrl={sharePublicUrl} />
-        <BookmarkButton bookmarked={answer.myBookmarked} onToggle={onToggleBookmark} />
-        <HelpfulButton
-          count={answer.helpfulVoteCount ?? 0}
-          selected={answer.myHelpfulVote ?? false}
-          canVote={answer.canHelpfulVote ?? true}
-          onToggle={onToggleHelpful}
-        />
-        {accept}
-        {report}
+        <div className="flex min-w-0 items-center gap-1.5">
+          <AuthorLink username={answer.authorUsername} className="min-w-0 truncate hover:underline">
+            <span className="text-body-sm font-extrabold text-[var(--color-main)]">
+              {answer.authorName || t("unknown_author")}
+            </span>
+          </AuthorLink>
+          {answer.authorUsername ? (
+            <span className="min-w-0 truncate text-caption font-semibold text-[var(--color-secondary)]">
+              @{answer.authorUsername}
+            </span>
+          ) : null}
+          <span className="shrink-0 whitespace-nowrap text-caption font-semibold text-[var(--color-secondary)]">
+            · {relativeTime(answer.createdAt, locale)}
+          </span>
+        </div>
+        <p className="whitespace-pre-wrap break-words text-body-sm font-semibold text-[var(--color-body)]">
+          <MentionText text={answer.body} />
+        </p>
+        <AttachmentGallery attachments={answer.attachments} />
+        <div className="-ml-2 flex flex-wrap items-center gap-1">
+          <HelpfulButton
+            count={answer.helpfulVoteCount ?? 0}
+            selected={answer.myHelpfulVote ?? false}
+            canVote={answer.canHelpfulVote ?? true}
+            onToggle={onToggleHelpful}
+          />
+          <SendButton href={shareHref} publicUrl={sharePublicUrl} />
+          <BookmarkButton bookmarked={answer.myBookmarked} onToggle={onToggleBookmark} />
+          {accept}
+          <span className="ml-auto">{report}</span>
+        </div>
       </div>
     </article>
   );

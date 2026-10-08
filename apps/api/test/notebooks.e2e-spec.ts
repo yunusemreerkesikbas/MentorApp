@@ -1,8 +1,9 @@
+import { disableAuthRateLimits } from "./app-harness";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
 const RUN = Date.now();
@@ -28,6 +29,7 @@ describe("notebook collection (e2e)", () => {
 
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

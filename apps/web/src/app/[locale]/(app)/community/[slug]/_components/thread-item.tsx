@@ -1,8 +1,11 @@
 "use client";
 
 import { useState, type KeyboardEvent } from "react";
+import { Pin } from "lucide-react";
 import { useLocale, useTranslations } from "next-intl";
 import type { CommentView, ThreadView } from "@mentor/types";
+import { Button } from "@mentor/ui";
+import { PANEL_QUIET_LINK } from "@/components/panel/panel-styles";
 import { useRouter } from "@/i18n/navigation";
 import { relativeTime } from "@/lib/relative-time";
 import { deleteThread, updateForumThread } from "@/lib/forum";
@@ -17,6 +20,8 @@ import { BookmarkButton } from "../../_components/bookmark-button";
 import { ComposerBodyField } from "../../_components/composer-body-field";
 import { useCommunityQuickReply } from "../../_components/community-quick-reply";
 import { ForumPollCard } from "../../_components/forum-poll-card";
+import { COMMUNITY_FIELD } from "../../_components/community-row";
+import { useConfirmDelete } from "../../_components/use-confirm-delete";
 import { ThreadMenu } from "./thread-menu";
 
 export function ThreadItem({
@@ -45,6 +50,7 @@ export function ThreadItem({
   const locale = useLocale();
   const router = useRouter();
   const { openQuickReply } = useCommunityQuickReply();
+  const confirmDelete = useConfirmDelete();
   const [editing, setEditing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [deleted, setDeleted] = useState(false);
@@ -90,7 +96,7 @@ export function ThreadItem({
     }
   };
   const removeThread = async () => {
-    if (!window.confirm(t("delete_confirm"))) return;
+    if (!(await confirmDelete())) return;
     if (onDelete) {
       onDelete();
       return;
@@ -130,29 +136,25 @@ export function ThreadItem({
           <div className="flex min-w-0 items-center gap-1.5">
             <AuthorLink
               username={thread.authorUsername}
-              className="flex-shrink truncate text-[15px] font-semibold hover:underline"
+              className="flex-shrink truncate text-body-sm font-extrabold text-[var(--color-main)] hover:underline"
             >
-              <span style={{ color: "var(--color-main)" }}>{thread.authorName || t("unknown_author")}</span>
+              {thread.authorName || t("unknown_author")}
             </AuthorLink>
             {thread.authorUsername && (
-              <span className="flex-shrink truncate text-[13px]" style={{ color: "var(--color-secondary)" }}>
+              <span className="flex-shrink truncate text-caption font-semibold text-[var(--color-secondary)]">
                 @{thread.authorUsername}
               </span>
             )}
+            {/* Pinned is said in words beside the name, not as a chip. */}
             {thread.isPinned && (
-              <span
-                className="rounded-full px-2 py-0.5 text-[10px] font-semibold"
-                style={{
-                  background: "color-mix(in srgb, var(--color-chip) 20%, var(--color-surface))",
-                  color: "var(--color-chip-text)",
-                }}
-              >
+              <span className="inline-flex shrink-0 items-center gap-1 text-xs font-extrabold text-[var(--color-secondary)]">
+                <Pin size={13} strokeWidth={2} aria-hidden />
                 {t("pinned")}
               </span>
             )}
           </div>
           <div className="flex flex-shrink-0 items-center gap-2">
-            <span className="whitespace-nowrap text-xs" style={{ color: "var(--color-secondary)" }}>
+            <span className="whitespace-nowrap text-caption font-semibold text-[var(--color-secondary)]">
               {relativeTime(thread.createdAt, locale)}
             </span>
             {/* Menu owns its own clicks — don't let them trigger the row navigation. */}
@@ -174,14 +176,14 @@ export function ThreadItem({
         {editing ? (
           <div className="mt-3 grid gap-3" onClick={(event) => event.stopPropagation()}>
             {thread.title !== null ? (
-              <label className="grid gap-1.5 text-sm font-bold text-[var(--color-main)]">
+              <label className="grid gap-1.5 text-caption font-bold text-[var(--color-secondary)]">
                 {t("composer_title")}
                 <input
                   value={draftTitle}
                   onChange={(event) => setDraftTitle(event.target.value)}
                   maxLength={200}
                   disabled={busy}
-                  className="min-h-12 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-soft)] px-4 text-[15px] font-normal outline-none disabled:cursor-not-allowed disabled:opacity-60 focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+                  className={COMMUNITY_FIELD}
                 />
               </label>
             ) : null}
@@ -197,44 +199,34 @@ export function ThreadItem({
               onSubmit={() => void saveEdit()}
             />
             {editError ? (
-              <p role="alert" className="text-[13px] text-[var(--color-error)]">
+              <p role="alert" className="text-caption font-semibold text-[var(--color-danger)]">
                 {editError}
               </p>
             ) : null}
-            <div className="flex justify-end gap-2 border-t border-[var(--color-border)] pt-4">
-              <button
-                type="button"
-                disabled={busy}
-                className="min-h-11 rounded-[10px] border border-[var(--color-border)] bg-[var(--color-surface)] px-5 text-sm font-bold text-[var(--color-body-text)] disabled:opacity-50"
-                onClick={() => setEditing(false)}
-              >
+            <div className="flex items-center justify-end gap-[18px] pt-2">
+              <button type="button" disabled={busy} className={PANEL_QUIET_LINK} onClick={() => setEditing(false)}>
                 {t("cancel")}
               </button>
-              <button
-                type="button"
-                disabled={busy || !draftBody.trim()}
-                className="min-h-11 rounded-[10px] bg-[var(--color-btn)] px-6 text-sm font-bold text-[var(--color-btn-label)] transition-opacity duration-150 hover:opacity-85 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none"
-                onClick={() => void saveEdit()}
-              >
+              <Button size="sm" disabled={busy || !draftBody.trim()} onClick={() => void saveEdit()}>
                 {t("save")}
-              </button>
+              </Button>
             </div>
           </div>
         ) : displayedTitle ? (
-          <h2 className="mt-2 text-[18px] font-extrabold leading-[1.2] tracking-[-0.025em] text-[var(--color-main)] sm:text-[18px]">
+          <h2 className="mt-2 text-lg font-extrabold leading-snug text-[var(--color-main)]">
             {displayedTitle}
           </h2>
         ) : null}
         {!editing ? (
           <p
-            className={`${displayedTitle ? "text-[var(--color-secondary)]" : "text-[var(--color-body-text)]"} whitespace-pre-wrap break-words text-[15px] leading-[1.55]`}
+            className={`${displayedTitle ? "text-[var(--color-secondary)]" : "text-[var(--color-body)]"} whitespace-pre-wrap break-words text-body-sm font-semibold`}
           >
             <MentionText text={displayedBody} />
           </p>
         ) : null}
 
         {!editing && editError ? (
-          <p role="alert" className="mt-2 text-[13px] text-[var(--color-error)]">
+          <p role="alert" className="mt-2 text-caption font-semibold text-[var(--color-danger)]">
             {editError}
           </p>
         ) : null}
@@ -283,7 +275,7 @@ export function ThreadItem({
               <CommentIcon />
             </span>
             {thread.commentCount > 0 ? (
-              <span className="text-[13px]">{thread.commentCount}</span>
+              <span className="text-caption font-extrabold">{thread.commentCount}</span>
             ) : null}
           </button>
 

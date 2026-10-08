@@ -11,10 +11,22 @@ One product, two narrators. Pick **before** writing; never mix in the same messa
 
 | Register | Speaks when | Feels like | Emoji |
 |---|---|---|---|
-| **Puhu** | Celebration, empty inbox, first-visit empty (plan, community, analysis, notebook, session, study room, buddy, vision card, achievements, weekly effort board), daily invite, economy invite overlay (eyebrow/headline), streak milestone, streak-rescue success overlay, “remind me tomorrow”, task-done toast, quest-complete toast (`quest_reward_*`), empty coach chat, FAB nudge, onboarding slides/greeting, paywall delight headlines, weekly recap host, achievement collection chrome (`how_to_earn`, `earned`, `earned_on`, showcase aria) | A lively companion nearby. First-person plural (“we”). The mascot is felt, not named on every line. | At most one |
-| **Companion** | Coach chat (LLM + rule fallbacks), mood check-in, low mood, streak broken, streak-rescue offer/insufficient (`streak_rescue_hint` … `insufficient`), notebook review, payment, official/admin broadcast, form/API errors, filter/search empty, rights ledger, quest cards (title/badge) and ledger quest lines, quest sheet intro (`quests_subtitle`), optional rewarded-ad offer (`ads.rewarded`), knowledge/calendar empty, invite conversion condition (`invite_subtitle`, `redeem_pending`), rank banners and “you’re not on the board yet” (effort, not place), coach access gate (`coach.gate` default/insufficient), deep-analysis insufficient (`analysis.deep.insufficient`) | Unnamed, calm, “I’m here.” Invitation, never a scold. | None in ritual copy; LLM: at most one, and only in a light moment |
+| **Puhu** | Celebration, empty inbox, first-visit empty (plan, community, analysis, notebook, session, study room, buddy, vision card, achievements, weekly league), daily invite, economy invite overlay (eyebrow/headline), streak milestone, streak-rescue success overlay, “remind me tomorrow”, task-done toast, quest-complete toast (`quest_reward_*`), empty coach chat, FAB nudge, onboarding slides/greeting, paywall delight headlines, weekly recap host, achievement collection chrome (`how_to_earn`, `earned`, `earned_on`, showcase aria) | A lively companion nearby. First-person plural (“we”). The mascot is felt, not named on every line. | At most one |
+| **Companion** | Coach chat (LLM + rule fallbacks), mood check-in, low mood, streak broken, streak-rescue offer/insufficient (`streak_rescue_hint` … `insufficient`), notebook review, payment, official/admin broadcast, form/API errors, filter/search empty, rights ledger, quest cards (title/badge) and ledger quest lines, quest sheet intro (`quests_subtitle`), optional rewarded-ad offer (`ads.rewarded`), knowledge/calendar empty, invite conversion condition (`invite_subtitle`, `redeem_pending`), coach access gate (`coach.gate` default/insufficient), deep-analysis insufficient (`analysis.deep.insufficient`) | Unnamed, calm, “I’m here.” Invitation, never a scold. | None in ritual copy; LLM: at most one, and only in a light moment |
 
 Distress / crisis copy (`coaching.mood.SERIOUS_DISTRESS`, 112) is **untouchable** — do not rewrite for wit.
+
+## Topluluk: enerjik Puhu (2026-10-08)
+
+The community screens (web `community.*`: Keşfet, Akış, rooms, details, profile, saved, Haftalık lig)
+speak in a **Duolingo-like Puhu**: short, warm, cheering. Product decision after the Topluluk Tur 2 canvas.
+
+- Headings, empty states, CTAs, cheers and rank banners are Puhu. One `!` per sentence, at most one emoji
+  per line, never in an `aria-label`. “Harika gidiyorsun!”, “Sen de el uzat!”, “Bekleyen soru kalmadı! 🎉”.
+- The leaderboard is **Haftalık lig** (title follows the tab: Bugünün ligi, Tüm zamanların ligi). Placement
+  may be said (“Ligde 14. sıradasın”); the cheer is always about effort and never about others.
+- Still banned here: ranking shame, league demotion (“ligden düştün”), bottom-of-the-list or loss-aversion
+  lines, guilt. Errors, reports, moderation (“Şikâyetler”, “Oda yönetimi”) and payment stay companion.
 
 ## Coach chat vs chrome
 
@@ -69,8 +81,8 @@ Distress / crisis copy (`coaching.mood.SERIOUS_DISTRESS`, 112) is **untouchable*
 | Serini kurtaralım mı? / serini kısalttı, geri al | Günü dondur / Dün boş kaldı. Coin ile dondurursan seri yerinde durur. | Companion |
 | Serin kurtarıldı! 🔥 | Serin yerinde. / Kaçırılan gün donduruldu. Yol durmadı. | Puhu |
 | Reklamı tamamla, Coin kazan / Ödül doğrulanamadı. Lütfen… | Reklamı bitirince Coin hak düşer. / Hak doğrulanamadı. Tekrar deneme… | Companion |
-| Sıralamada yerini al / Zirvedesin! / Podyumdasın | Bu hafta henüz bir iz yok. / Bu hafta emeğin yanımızda. | Companion / Puhu |
-| Sıralama / Leaderboard (sayfa başlığı) | Emek panosu / Effort board | Companion |
+| Sıralamada yerini al / Podyumdasın | Lige katılmak için bu haftanın ilk XP'si yeter. / Bu hafta ligi sen sürüklüyorsun, harikasın! 🔥 | Puhu (Topluluk) |
+| Sıralama / Emek panosu (sayfa başlığı) | Haftalık lig / Weekly league (sekmeye göre: Bugünün ligi, Tüm zamanların ligi) | Puhu (Topluluk) |
 | Koç için hak kazan / Profilden … hakkı kazanabilirsin | Koç için hak / Profilden görev veya davet. Sohbet hakkı orada düşer. | Companion |
 | Görev tamamlayarak kazanabilirsin. / Complete quests to earn more. | Görevlerden hak düşebilir. / A right can land from quests. | Companion |
 | Nasıl kazanılır? / {title} kazanıldı | Nasıl uyanır? / {title} seninle | Puhu |
@@ -86,7 +98,7 @@ Distress / crisis copy (`coaching.mood.SERIOUS_DISTRESS`, 112) is **untouchable*
 - Email subjects/bodies: `notifications.json` → `email.*` (HTML skeleton stays in the Postmark adapter)
 - Coach fallbacks: `apps/api/src/i18n/locales/{tr,en}/coaching.json` (`mood.*` except `SERIOUS_DISTRESS`, `motivation.*`, `nextAction.*`, `mentorV2.calibration`)
 - AI chat persona: `mentor-prompt.ts`. `coachSystemBase` in `ai.constants.ts` still feeds the other coach prompts. Prompts that produce student text follow the same em-dash ban as chrome.
-- Web chrome: `apps/web/messages/{tr,en}.json` (coach, plan/community/analysis/notebook, session, study room, economy ledger empty + invite overlay + quest sheet intro / quest-complete toast, streak-rescue offer + success, optional rewarded-ad offer, weekly effort board empty + rank banners, knowledge, vision, achievements empties + collection chrome, coach access gate, deep-analysis insufficient)
+- Web chrome: `apps/web/messages/{tr,en}.json` (coach, plan/community/analysis/notebook, session, study room, economy ledger empty + invite overlay + quest sheet intro / quest-complete toast, streak-rescue offer + success, optional rewarded-ad offer, weekly league empty + rank banners, knowledge, vision, achievements empties + collection chrome, coach access gate, deep-analysis insufficient)
 - API errors: `apps/api/src/i18n/locales/{tr,en}/errors.json` (student keys; leave `ADMIN_*` for operators)
 - Ledger row labels: `apps/api/src/i18n/locales/{tr,en}/economy.json` (`ledger.*`; companion, hak not ödül)
 - Quest card titles, badges, and ledger quest lines: `economy.json` (`quests.*`; companion. `{target}` resolves on the card; ledger strips `{target}`. `{days}`/`{count}` come from the quest id.)
