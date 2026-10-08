@@ -1,5 +1,6 @@
 import { setRequestLocale } from "@/i18n/locale";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { notFound } from "next/navigation";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getTranslations } from "next-intl/server";
@@ -142,12 +143,14 @@ export default async function PublicArticlePage({ params }: PageProps) {
         panelLabel={translate("panel")}
         blogLabel={translate("blog")}
       >
-        <script
-          type="application/ld+json"
+      <script
+        nonce={(await headers()).get("x-nonce") ?? undefined}
+        type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(articleJsonLd) }}
         />
-        <script
-          type="application/ld+json"
+      <script
+        nonce={(await headers()).get("x-nonce") ?? undefined}
+        type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: jsonLdHtml(breadcrumbJsonLd) }}
         />
         <ArticleContent

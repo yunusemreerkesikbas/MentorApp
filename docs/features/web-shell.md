@@ -62,6 +62,18 @@ http://localhost:3000/panel               # daily ritual hub
 | Auth shell       | `(auth)/layout` | shared `AuthShell` (Mentor branding, motion card, "Ana sayfaya dön")                         |
 
 ## Geliştirmeler (timeline)
+- **Web document CSP (2026-10-08)**: enforced one nonce-based script policy on public/authenticated TR/EN documents; the proxy replaces spoofed headers and preserves next-intl rewrites. Root HTML is request-scoped (`revalidate=0`), bootstrap/JSON-LD/consent scripts and provider loaders carry nonces, and HTML/CDN responses use no-store. Production blocks inline handlers and JavaScript eval; inline CSS and separate WASM permissions preserve existing rendering. Token documents use no-referrer; GPT uses SafeFrame. **Usage:** configure the runtime `WEB_CSP_STORAGE_ORIGINS` with exact public CDN and signed R2 origins; production also requires `NEXT_PUBLIC_API_URL`. **Gotchas:** public HTML loses static/CDN caching; validate real provider compatibility and SSR capacity before release. Removed obsolete legal-page static parameter generation after QA reproduced a 500; sitemap publication preserves the FINAL placeholder build guard. **Validation:** 19 unit checks, 112 distinct mobile/desktop Chromium cases, targeted lint/type checks and an isolated webpack production build passed. Full CI/live deployment validation remain pending. **Files:** `src/proxy.ts`, `src/lib/content-security-policy{,.spec}.ts`, `[locale]/layout.tsx`, `src/lib/{analytics-consent,turnstile,google-publisher-tag,legal}`, legal page routes, `e2e/browser-security.spec.ts`, `.env.example`, `render.yaml`, CI; [QA details](../plans/2026-10-08-web-browser-security-qa.md), [design](../plans/2026-10-08-web-browser-security-design.md).
+
+- **2026-10-08 — Browser security response-header foundation.** Every web route response
+  now declares framing denial, content-type sniffing protection, an origin-limited external
+  referrer policy and restricted microphone/geolocation/USB permissions. Production uses
+  host-scoped HSTS; Next's framework-identifying header is disabled. Usage: rebuild/deploy
+  web and verify response headers on documents and static files. Camera capture, clipboard
+  and native sharing remain available. Gotchas: no subdomain/preload HSTS policy was added;
+  this does not implement strict CSP yet. Three targeted tests and targeted TypeScript/ESLint
+  checks passed in isolation; a full app/browser/edge run remains pending. See the CSP and
+  public-cache/navigation decisions in `docs/plans/2026-10-08-web-browser-security-design.md`.
+  Related: `apps/web/next.config.ts`, `src/lib/security-headers{,.spec}.ts`.
 
 ### 2026-09-25 — Subscription read timeout and panel probe sequencing
 

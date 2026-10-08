@@ -2,16 +2,20 @@
 
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useSyncExternalStore, type FormEvent } from "react";
 import { SectionHeading } from "@mentor/ui";
 import { Field, FormError, SubmitButton } from "@/components/form";
 import { GoogleAuthFeedback } from "@/components/google-auth-feedback";
 import { useAuth } from "@/lib/auth-context";
 import { trackProductEvent } from "@/lib/analytics";
 import { postAuthDestination, readAuthNextParam } from "@/lib/post-auth-destination";
+import { loginSecurityReason } from "@/lib/account-security";
 import { AuthNavLink } from "../_components/auth-nav-link";
 import { useAuthSheetExit } from "../_components/auth-shell";
 import { GoogleAuthButton } from "../_components/google-auth-button";
+import { SignupTurnstile, turnstileSiteKey } from "../_components/signup-turnstile";
+
+const subscribe = () => () => {};
 
 export default function LoginPage() {
   const translate = useTranslations("auth.login");
@@ -21,9 +25,13 @@ export default function LoginPage() {
   const exitThen = useAuthSheetExit();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const reason = useSyncExternalStore(subscribe, () => loginSecurityReason(window.location.search), () => null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (busy || (turnstileSiteKey && !turnstileToken)) return;
     setError(null);
     setBusy(true);
     const data = new FormData(e.currentTarget);
@@ -31,6 +39,7 @@ export default function LoginPage() {
       const user = await login({
         email: String(data.get("email")),
         password: String(data.get("password")),
+        ...(turnstileToken ? { turnstileToken } : {}),
       });
       trackProductEvent("login", { method: "email" });
       const destination = postAuthDestination(user, readAuthNextParam());
@@ -44,6 +53,9 @@ export default function LoginPage() {
     } catch (err) {
       setError(err instanceof Error ? err.message : String(err));
       setBusy(false);
+    } finally {
+      setTurnstileToken(null);
+      setTurnstileResetKey((value) => value + 1);
     }
   }
 
@@ -52,6 +64,7 @@ export default function LoginPage() {
       <SectionHeading as="h2" className="items-center text-center">
         {translate("title")}
       </SectionHeading>
+      {reason ? <p role="status" className="text-sm text-[var(--color-secondary)]">{translate(reason)}</p> : null}
       <Field
         label={translate("email")}
         name="email"
@@ -72,7 +85,8 @@ export default function LoginPage() {
       </div>
       <FormError message={error} />
       <GoogleAuthFeedback />
-      <SubmitButton busy={busy}>{translate("submit")}</SubmitButton>
+      <SignupTurnstile action="login" onToken={setTurnstileToken} resetKey={turnstileResetKey} />
+      <SubmitButton busy={busy} disabled={Boolean(turnstileSiteKey && !turnstileToken)}>{translate("submit")}</SubmitButton>
       <GoogleAuthButton mode="login" />
       <p className="text-center text-sm" style={{ color: "var(--color-secondary)" }}>
         {translate("register_prompt")}{" "}

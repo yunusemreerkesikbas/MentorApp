@@ -26,11 +26,14 @@ function setup(roles: string[]) {
     rotate: vi.fn(async () => ({ userId: user.id, tokens })),
     revokeByRawToken: vi.fn(async () => undefined),
   };
+  const rates = { consumeAccount: vi.fn(async () => ({ allowed: true, retryAfter: 0 })) };
+  const config = { get: vi.fn(() => "test") };
   const service = new AuthService(
-    users as never, {} as never, tokenService as never, {} as never,
-    {} as never, {} as never, {} as never, {} as never, {} as never,
+    users as never, {} as never, tokenService as never,
+    { assertValid: vi.fn(async () => undefined) } as never,
+    config as never, {} as never, {} as never, {} as never, {} as never, rates as never,
   );
-  return { service, tokenService };
+  return { service, tokenService, rates, config };
 }
 
 describe("admin auth role gate", () => {
@@ -58,5 +61,30 @@ describe("admin auth role gate", () => {
     const { service, tokenService } = setup(["STUDENT", "SUPPORT"]);
     await expect(service.refreshAdmin("old-refresh")).resolves.toMatchObject({ tokens });
     expect(tokenService.revokeByRawToken).not.toHaveBeenCalled();
+  });
+
+  it("revokes the rotated session when the signed Access email differs", async () => {
+    const { service, tokenService } = setup(["SUPPORT"]);
+    await expect(service.refreshAdmin("old-refresh", "other@example.com"))
+      .rejects.toMatchObject({ httpStatus: 403 });
+    expect(tokenService.rotate).toHaveBeenCalledWith("old-refresh");
+    expect(tokenService.revokeByRawToken).toHaveBeenCalledWith("refresh");
+  });
+
+  it("requires Access identity before rotating a production admin session", async () => {
+    const { service, tokenService, config } = setup(["SUPPORT"]);
+    config.get.mockReturnValue("production");
+    await expect(service.refreshAdmin("old-refresh")).rejects.toMatchObject({ httpStatus: 403 });
+    expect(tokenService.rotate).not.toHaveBeenCalled();
+  });
+
+  it("spends the same account quota for successful web and admin logins", async () => {
+    const { service, rates } = setup(["SUPPORT"]);
+    const input = { email: "person@example.com", password: "Sifre1234" };
+    await service.login(input);
+    await service.loginAdmin(input);
+    expect(rates.consumeAccount.mock.calls).toEqual([
+      ["login", input.email], ["login", input.email],
+    ]);
   });
 });

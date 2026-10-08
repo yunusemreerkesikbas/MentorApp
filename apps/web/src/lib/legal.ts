@@ -5,9 +5,8 @@
  * The registry is the single content source for both public and authenticated legal routes.
  *
  * GUARDRAIL: a `FINAL` document may not still contain `{{`. `assertPublishable` enforces it and
- * runs during static generation of every legal page, so an unfinished document cannot reach
- * production — `pnpm build` fails instead. This is deliberately NOT a unit test: `apps/web` has no
- * test runner, and a build-time failure is harder to skip than a test nobody runs.
+ * runs while generating the sitemap at build time and when rendering legal pages. Legal
+ * HTML is dynamic for CSP nonces; the publication guard must not depend on prerendering it.
  *
  * The product owner requested FINAL publication before counsel review. Future legal review should
  * revise this registry in place so consent links, public pages, and settings never drift apart.
@@ -382,8 +381,7 @@ export function getLegalDoc(slug: string): LegalDoc | null {
 
 /**
  * Fails the build when a document claims to be FINAL but still carries pending markers.
- * Called from the legal page — static generation covers every slug × locale, so the check runs
- * on every build without a test runner.
+ * Called by sitemap publication at build time and by legal pages at request time.
  */
 export function assertPublishable(doc: LegalDoc): void {
   if (doc.status !== "FINAL") return;
@@ -399,4 +397,7 @@ export function assertPublishable(doc: LegalDoc): void {
 
 /** Documents safe to advertise (sitemap). DRAFT ones are noindex, so they stay out. */
 export const publishedLegalDocs = (): LegalDoc[] =>
-  LEGAL_SLUGS.map((s) => LEGAL_DOCUMENTS[s]).filter((d) => d.status === "FINAL");
+  LEGAL_SLUGS.map((s) => LEGAL_DOCUMENTS[s]).filter((doc) => {
+    assertPublishable(doc);
+    return doc.status === "FINAL";
+  });

@@ -12,6 +12,7 @@ import { AppModule } from "./app.module";
 import type { Env } from "./config/env.validation";
 import { setupSwagger } from "./observability/swagger";
 import { configureBodyParsers } from "./common/http/body-parsers";
+import { edgeOriginMiddleware } from "./common/http/edge-origin";
 
 function corsOrigins(config: ConfigService<Env, true>): string[] {
   const raw = config.get("CORS_ORIGINS", { infer: true });
@@ -22,8 +23,9 @@ function corsOrigins(config: ConfigService<Env, true>): string[] {
       .filter(Boolean);
   }
   const appUrl = config.get("APP_URL", { infer: true });
+  const adminUrl = config.get("ADMIN_APP_URL", { infer: true });
   // Dev defaults: web :3000, admin :3002.
-  return Array.from(new Set([appUrl, "http://localhost:3000", "http://localhost:3002"]));
+  return Array.from(new Set([appUrl, adminUrl]));
 }
 
 async function bootstrap(): Promise<void> {
@@ -40,6 +42,7 @@ async function bootstrap(): Promise<void> {
 
   // Security headers + CORS (unknown origins blocked) + body size limit (→ 413 on excess).
   app.use(helmet());
+  app.use(edgeOriginMiddleware(config));
   app.use(cookieParser());
   app.enableCors({ origin: corsOrigins(config), credentials: true });
   configureBodyParsers(app.getHttpAdapter().getInstance());

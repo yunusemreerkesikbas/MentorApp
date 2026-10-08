@@ -67,14 +67,15 @@ export function GoogleAuthButton({ mode, onBeforeStart }: GoogleAuthButtonProps)
 
   function handleClick() {
     if (onBeforeStart && !onBeforeStart()) return;
+    const next = mode === "login" ? readAuthNextParam() : null;
     const params = new URLSearchParams({
       mode,
       locale,
       returnTo: getPathname({
         locale: locale as Locale,
-        href: mode === "login" && readAuthNextParam() === "/settings?section=phone"
+        href: next === "/settings?section=phone"
           ? { pathname: "/settings", query: { section: "phone" } }
-          : "/dashboard",
+          : next === "/profile" ? "/profile" : "/dashboard",
       }),
     });
     if (mode === "signup") {

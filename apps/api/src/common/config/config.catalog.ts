@@ -133,6 +133,10 @@ const identityCount = (
   description,
 });
 
+const authCount = (def: number, max: number, description: string): ConfigEntryDef => ({
+  ...identityCount(def, max, description, true), schema: z.number().int().min(1).max(max),
+});
+
 const notificationCount = (
   def: number,
   max: number,
@@ -888,6 +892,20 @@ export const CONFIG_CATALOG = {
     100000,
     "Free-user deep-analysis unlocks per 7-day window when the taste flag is on.",
   ),
+  "identity.auth.reauthentication_seconds": authCount(600, 600, "Fresh login window for email changes and self deletion."),
+  "identity.auth_rate.ip_window_seconds": authCount(60, 3600, "Authentication IP fixed window in seconds."),
+  "identity.auth_rate.account_window_seconds": authCount(900, 86400, "Authentication account fixed window in seconds."),
+  "identity.auth_rate.login_account_limit": authCount(10, 100, "Password attempts per account window, across web and admin."),
+  "identity.auth_rate.forgot_account_limit": authCount(3, 20, "Password reset emails per account window."),
+  "identity.auth_rate.forgot_send_gap_seconds": authCount(60, 3600, "Minimum gap between reset emails."),
+  "identity.auth_rate.login_ip_limit": authCount(10, 1000, "Authentication login IP limit."),
+  "identity.auth_rate.signup_ip_limit": authCount(5, 1000, "Authentication signup IP limit."),
+  "identity.auth_rate.forgot_ip_limit": authCount(5, 1000, "Authentication forgot IP limit."),
+  "identity.auth_rate.reset_ip_limit": authCount(10, 1000, "Authentication reset IP limit."),
+  "identity.auth_rate.verify_ip_limit": authCount(20, 1000, "Authentication verify IP limit."),
+  "identity.auth_rate.refresh_ip_limit": authCount(30, 1000, "Authentication refresh IP limit."),
+  "identity.auth_rate.oauth_ip_limit": authCount(20, 1000, "Authentication oauth IP limit."),
+  "identity.auth_rate.other_ip_limit": authCount(300, 1000, "Authentication other IP limit."),
   "identity.phone.enabled": flag(false, "Enable self-service phone verification. Does not bypass entitlement gates when off."),
   "identity.phone.code_ttl_seconds": identityCount(300, 600, "Phone verification code lifetime in seconds."),
   "identity.phone.resend_seconds": identityCount(60, 3600, "Minimum delay between phone code sends."),

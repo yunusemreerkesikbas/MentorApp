@@ -4,6 +4,7 @@ import { validateEnv } from "./env.validation";
 const REQUIRED = {
   DATABASE_URL: "postgres://u:p@localhost:5432/db",
   JWT_ACCESS_SECRET: "a".repeat(32),
+  AUTH_RATE_LIMIT_SECRET: "r".repeat(32),
   PAYMENTS_WEBHOOK_SECRET: "b".repeat(16),
 };
 const NETGSM = {

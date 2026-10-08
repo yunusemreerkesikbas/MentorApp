@@ -42,7 +42,7 @@ const featured = thread(
   8,
 );
 
-test("topluluk hub redesign sözleşmesini masaüstü ve mobilde korur", async ({
+test("Keşfet: tek ledge, cevap bekleyenler, kaldığın yerden, odalar ve yanında olanlar", async ({
   page,
 }, testInfo) => {
   await mockCommunityApi(page);
@@ -51,50 +51,99 @@ test("topluluk hub redesign sözleşmesini masaüstü ve mobilde korur", async (
   );
 
   await page.goto("/topluluk");
-  // The hub dropped its own page-title heading — the featured thread's own quote leads the page
-  // instead, so that's what proves the hub actually loaded.
-  await expect(
-    page.getByRole("region", { name: "Öne çıkan gönderi" }),
-  ).toBeVisible();
-  const featuredImage = page.getByRole("img", {
-    name: "Birlikte konuşmayı ve paylaşmayı anlatan topluluk görseli",
-  });
-  await expect(featuredImage).toBeVisible();
+  const hero = page.getByRole("region", { name: "Bugün aklında ne var?" });
+  await expect(hero).toBeVisible();
+  // One filled ledge on the screen (DESIGN.md §1 rule 1); asking a question is the text link.
+  await expect(hero.getByRole("link", { name: "Bir şey paylaş" })).toBeVisible();
+  await expect(hero.getByRole("link", { name: "Soru sor" })).toBeVisible();
+  await expect(hero.getByText("Şu an 38 kişi seninle çalışıyor")).toBeVisible();
+  // Puhu speaks in the hero's bubble (DESIGN.md §1 rule 4): the artwork must actually load.
   await expect
     .poll(() =>
-      featuredImage.evaluate(
-        (element) =>
-          element instanceof HTMLImageElement &&
-          element.complete &&
-          element.naturalWidth > 0,
-      ),
+      hero.locator("img").first().evaluate((img) => img instanceof HTMLImageElement && img.complete && img.naturalWidth > 0),
     )
     .toBe(true);
-  await expect(page.getByText(featured.title, { exact: true })).toBeVisible();
-  // The effort board ("Emek Panosu") moved off the hub entirely — it's part of the feed route's
-  // right rail (`community-right-rail.tsx`) now, not this landing page.
-  await expect(page.getByText("Konuşmalar büyüdükçe etiketler burada uyanır.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Katıl" })).toHaveCount(2);
+
+  const waiting = page.getByRole("region", { name: "Cevap bekleyen sorular" });
+  await expect(waiting.getByText(waitingQuestion.title, { exact: true })).toBeVisible();
+
+  const continued = page.getByRole("region", { name: "Kaldığın yerden devam!" });
+  await expect(continued.getByText("Öne çıkan", { exact: true })).toBeVisible();
+  await expect(continued.getByText(featured.title, { exact: true })).toBeVisible();
+
+  const rooms = page.getByRole("region", { name: "Sana uygun odalar" });
+  await expect(rooms.getByRole("button", { name: /^Katıl: / })).toHaveCount(2);
+
+  await expect(page.getByRole("region", { name: "Yol arkadaşın" })).toBeVisible();
+  await expect(page.getByText("Merve Doğan, Elif Demir ve 1 kişi daha bu hafta el uzattı!")).toBeVisible();
+  // Nothing trending → no "Popüler etiketler" card at all, and no stock artwork or XP anywhere.
+  await expect(page.getByRole("region", { name: "Popüler etiketler" })).toHaveCount(0);
+  await expect(page.locator('img[src*="/img/feed.png"]')).toHaveCount(0);
   await expect(page.getByText(/\bXP\b/)).toHaveCount(0);
 
   if (testInfo.project.name.startsWith("desktop")) {
-    // Two wordmarks exist in the DOM at once now (one per breakpoint, CSS-hidden either way).
-    await expect(page.locator(".community-header__wordmark").first()).toHaveText("Mentor");
-    await expect(
-      page
-        .locator(".community-workspace__sidebar")
-        .getByRole("link", { name: "Matematik & Geometri", exact: true }),
-    ).toBeVisible();
-    await expect(page.getByText(/\d+ mesaj/)).toHaveCount(0);
+    const sidebar = page.locator(".community-workspace__sidebar");
+    await expect(page.getByRole("heading", { level: 1, name: "Bugün toplulukta" })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: "Keşfet" })).toHaveAttribute("aria-current", "page");
+    await expect(sidebar.getByText("Odaların", { exact: true })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: "Matematik & Geometri", exact: true })).toBeVisible();
+    await expect(sidebar.getByRole("link", { name: /Profilim/ })).toBeVisible();
+  } else {
+    await expect(page.getByRole("button", { name: "Kanallar" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Toplulukta ara" })).toBeVisible();
   }
 
   await page.screenshot({
     path: testInfo.outputPath("community-hub.png"),
     fullPage: true,
   });
+
+  await page.context().addCookies([{ name: "mentor-theme", value: "dark", url: page.url() }]);
+  await page.reload();
+  await expect(hero).toBeVisible();
+  await page.screenshot({
+    path: testInfo.outputPath("community-hub-dark.png"),
+    fullPage: true,
+  });
 });
 
-async function mockCommunityApi(page: Page) {
+test("Keşfet sessiz toplulukta söyleyecek sözü olmayan bölümleri göstermez", async ({ page }) => {
+  await mockCommunityApi(page, { quiet: true });
+  await page.goto("/topluluk");
+
+  await expect(page.getByText("Burası yeni uyanıyor!", { exact: false })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Sana uygun odalar" })).toBeVisible();
+  for (const name of ["Cevap bekleyen sorular", "Kaldığın yerden devam!", "Yol arkadaşın", "Bu haftanın yardımseverleri 🙌"]) {
+    await expect(page.getByRole("region", { name })).toHaveCount(0);
+  }
+  await expect(page.getByText(/seninle çalışıyor/)).toHaveCount(0);
+});
+
+const waitingQuestion = thread(
+  "t9",
+  zones[3],
+  people[2],
+  "Bölünebilme kurallarında 11'e bölünebilme nasıl uygulanır?",
+  "Basamakları toplarken artı eksi mantığı nasıl işliyor?",
+  0,
+  0,
+);
+
+const buddy = {
+  active: {
+    pairId: "pair-1",
+    partner: { userId: "p2", displayName: "Elif Demir", username: "elif_demir", avatarUrl: null },
+    focusMinutesToday: 45,
+    currentStreak: 12,
+    partnerStudyingNow: true,
+    canNudge: true,
+    nudgeCooldownEndsAt: null,
+  },
+  outgoing: null,
+  incoming: [],
+};
+
+async function mockCommunityApi(page: Page, { quiet = false }: { quiet?: boolean } = {}) {
   await page.route("http://localhost:3001/v1/**", async (route) => {
     const request = route.request();
     const url = new URL(request.url());
@@ -109,7 +158,26 @@ async function mockCommunityApi(page: Page) {
     if (method === "GET" && path.startsWith("/v1/forum/zones?")) {
       return json(route, { items: zones, page: 1, pageSize: 100, total: zones.length });
     }
+    if (method === "GET" && url.pathname === "/v1/forum/feed" && url.searchParams.get("unanswered") === "true") {
+      const items = quiet ? [] : [waitingQuestion];
+      return json(route, { items, nextCursor: null, effectiveSort: "recent", context: { activeThreads: [], suggestedThreads: [] } });
+    }
+    if (method === "GET" && path === "/v1/coaching/today") {
+      return json(route, { focusingNow: quiet ? null : 38 });
+    }
+    if (method === "GET" && path === "/v1/buddy") {
+      return json(route, quiet ? { active: null, outgoing: null, incoming: [] } : buddy);
+    }
     if (method === "GET" && path === "/v1/forum/hub") {
+      if (quiet) {
+        return json(route, {
+          featured: null,
+          continueDiscussions: [],
+          trendingTags: [],
+          supporters: [],
+          recommendedZones: [zones[0], zones[3]],
+        });
+      }
       return json(route, {
         featured,
         continueDiscussions: [

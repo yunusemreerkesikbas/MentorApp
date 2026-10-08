@@ -181,7 +181,7 @@ export function ThreadComposer({
 
   return (
     <div
-      className={`relative flex flex-col gap-2 overflow-hidden ${variant === "reply-dialog" ? "px-4 py-4 sm:px-5" : "py-4 pl-3 pr-4"}`}
+      className="relative flex flex-col gap-2 overflow-hidden px-4 py-4 sm:px-5"
       aria-busy={busy}
     >
       {submitProgress > 0 && (
@@ -235,7 +235,7 @@ export function ThreadComposer({
             placeholder={placeholder}
             rows={1}
             maxLength={4000}
-            className="block min-h-11 w-full resize-none overflow-hidden border-0 bg-transparent text-[15px] leading-[22px] outline-none placeholder:font-medium placeholder:text-[color:var(--color-secondary)]"
+            className="block min-h-11 w-full resize-none overflow-hidden border-0 bg-transparent text-body-sm font-semibold outline-none placeholder:font-medium placeholder:text-[color:var(--color-secondary)]"
             style={{ color: "var(--color-main)", fontFamily: "var(--font-body)" }}
             {...mention.inputProps}
           />
@@ -299,9 +299,10 @@ export function ThreadComposer({
               disabled={busy || !value.trim()}
               onClick={() => void send()}
               className={`flex cursor-pointer items-center justify-center rounded-full font-bold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 motion-reduce:transition-none ${variant === "reply-dialog" ? "min-h-11 px-5 text-sm" : "h-9 w-9"}`}
+              // The play colour, not the nav black: sending is the composer's one action.
               style={{
-                background: value.trim() ? "var(--color-btn)" : "var(--color-soft)",
-                color: value.trim() ? "var(--color-btn-label)" : "var(--color-secondary)",
+                background: value.trim() ? "var(--play-cta)" : "var(--play-track)",
+                color: value.trim() ? "var(--play-cta-ink)" : "var(--color-secondary)",
               }}
             >
               {variant === "reply-dialog" ? (

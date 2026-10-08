@@ -613,6 +613,54 @@ rows expire normally; no schema migration is required. Related: `identity.consta
 - Crash recovery is deliberately fail-closed: a remaining marker returns `CONFLICT` for another erasure and denies new account work. Operators must inspect the original attempt, module cleanup and retained payment/claim records, verify provider cancellation or resolve its unknown outcome, and confirm no erasure worker is still running before calling `UsersService.releaseAccountErasure(userId, exactStartedAt)` to retry the normal orchestration. Never clear by age, release another timestamp, rewrite status to `ACTIVE`, or detach an unresolved pending claim. A scrubbed terminal user stays terminal; repair session cleanup separately.
 - Related: `account/application/account-erasure.service.ts`, identity `users.{service,repository}.ts`, `auth-session.repository.ts`, `phone-verification.repository.ts`, migration `0123_*`, `test/account-erasure-fence.e2e-spec.ts`. Deterministic barriers pause erasure after billing cancellation and test preauthorized checkout denial before any provider call.
 
+### 2026-10-07 — Pre-release account security
+
+- Production API requests verify the Cloudflare-overwritten origin secret before body parsing,
+  then trust only a valid `CF-Connecting-IP`. Auth POSTs require the exact web/admin Origin;
+  admin login/refresh also bind the signed Access email to the application account.
+- Auth IP and account quotas use atomic fixed windows in `auth_rate_limits`, with HMAC keys
+  and SERVICE-only FORCE RLS. Web/admin login share quotas; password recovery silently skips
+  exhausted account quotas. Daily maintenance removes expired counters.
+- Login/recovery reuse Turnstile with action checks and reset after every submission. Email
+  changes and self-deletion require a session created within ten minutes; refresh preserves its
+  age. Email change, verification/reset link invalidation and all-session revocation commit
+  under one user lock. Token creation/consumption use the same lock; invalid reset links are
+  rejected before password hashing. Queued mail checks its current recipient before delivery.
+- Usage: apply `0125_account_security`, supply an independent `AUTH_RATE_LIMIT_SECRET`, and
+  configure production `EDGE_ORIGIN_SECRET`, HTTPS `ADMIN_APP_URL`, Cloudflare header overwrite
+  and Access MFA using the security release checklist. Old sessions return localized
+  `AUTH_REAUTHENTICATION_REQUIRED`; password/Google sign-in returns to settings for explicit
+  confirmation. Email changes clear cookies and all tabs return to login without putting the
+  new address in a URL. An unchanged submitted email also clears browser refresh cookies.
+- Related: identity rate/token/session/user repositories and services, `common/http/edge-origin.ts`,
+  auth guards, auth/profile web forms, `lib/use-account-security.ts`, shared auth validation,
+  migration `0125_*`, security unit/Postgres/browser fixtures and
+  `docs/core/security-release-checklist.md`. Real Cloudflare/Render evidence and full CI remain
+  mandatory before release.
+
+### 2026-10-08 — Account security browser QA coverage
+
+- Added TR/EN regression scenarios for challenge renewal after rate errors, duplicate
+  submissions, invalid addresses, generic password-reset confirmation, unchanged-email
+  edits, non-reauthentication mutation errors, deletion cancellation and security copy.
+- Extracted deterministic dummy API/Turnstile fixtures. The dedicated CAPTCHA CI build
+  runs both security suites; use the commands and coverage matrix in
+  `docs/plans/2026-10-08-account-security-qa.md`.
+- Browser execution caught a profile-edit crash: the sheet viewport is outside AuthProvider.
+  ProfileHeader now passes its authenticated re-login callback into ProfileEditForm instead
+  of invoking the auth hook from sheet content. Uncaught page errors fail the browser tests.
+- Verification: all 78 Chromium executions passed across mobile/desktop viewports, with no
+  skips or retries. Targeted TypeScript checks passed for the suites and shared fixture.
+  Targeted ESLint also passed for the test files and both changed profile components.
+- Gotcha: browser API/provider responses are simulated, so UI success does not prove
+  backend limits or Cloudflare configuration. Full CI and the actual Render bind/proxy
+  check remain release gates; a 127.0.0.1-bound local server reproduced a TR auth redirect
+  loop, while the localhost-bound browser server loaded correctly.
+- Related: `apps/web/e2e/account-security*.spec.ts`,
+  `apps/web/e2e/helpers/account-security.ts`, `.github/workflows/ci.yml`,
+  `profile/_components/profile-header.tsx`, `profile-edit-form.tsx`,
+  `docs/core/security-release-checklist.md`.
+
 ## Gotchas / Known issues
 
 - **Refresh cookie is scoped to `/v1/auth`** — it never travels with normal API calls. SameSite=lax

@@ -1,5 +1,5 @@
 import { Inject, Injectable } from "@nestjs/common";
-import { and, asc, desc, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
+import { and, asc, desc, eq, getTableColumns, inArray, isNotNull, isNull, sql } from "drizzle-orm";
 import { ZoneMemberStatus, ZoneRole } from "@mentor/types";
 import { DRIZZLE } from "../../../database/database.constants";
 import type { Database } from "../../../database/drizzle";
@@ -8,6 +8,12 @@ import { forumThreads, forumZoneMembers, forumZones, users } from "../../../data
 
 export type ZoneRow = typeof forumZones.$inferSelect;
 export type MemberRow = typeof forumZoneMembers.$inferSelect;
+/** A member-list row with the person's public identity, so a moderator sees who, not an id. */
+export type MemberListRow = MemberRow & {
+  displayName: string;
+  username: string | null;
+  avatarStorageKey: string | null;
+};
 
 /** One @mention autocomplete candidate — an ACTIVE member with a username (APP-021). */
 export interface MemberSearchRow {
@@ -198,13 +204,19 @@ export class ForumZoneRepository {
   }
 
   /** SERVICE context — owner/mod member list; the caller must pass forum.policy first. */
-  async listMembers(zoneId: string, status?: string): Promise<MemberRow[]> {
+  async listMembers(zoneId: string, status?: string): Promise<MemberListRow[]> {
     return withServiceContext(this.db, async (tx) => {
       const conds = [eq(forumZoneMembers.zoneId, zoneId)];
       if (status) conds.push(eq(forumZoneMembers.status, status));
       return tx
-        .select()
+        .select({
+          ...getTableColumns(forumZoneMembers),
+          displayName: sql<string>`coalesce(${users.displayName}, '')`,
+          username: users.username,
+          avatarStorageKey: users.avatarStorageKey,
+        })
         .from(forumZoneMembers)
+        .leftJoin(users, eq(users.id, forumZoneMembers.userId))
         .where(and(...conds))
         .orderBy(desc(forumZoneMembers.createdAt));
     });

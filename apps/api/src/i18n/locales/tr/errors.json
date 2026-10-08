@@ -11,6 +11,7 @@
   "TOO_MANY_REQUESTS_RETRY": "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim.",
   "TOO_MANY_REQUESTS_RETRY_ONE": "Biraz hızlı gittik. {seconds} saniye sonra tekrar deneyelim.",
   "SERVICE_UNAVAILABLE": "Servis şimdi kapalı. Biraz sonra bir daha deneyelim.",
+  "AUTH_REAUTHENTICATION_REQUIRED": "Bu işlem için yeniden giriş yapman gerekiyor.",
   "AUTH_INVALID_CREDENTIALS": "E-posta veya şifre hatalı.",
   "AUTH_EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",
   "AUTH_USERNAME_IN_USE": "Bu kullanıcı adı zaten alınmış.",

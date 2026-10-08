@@ -430,6 +430,7 @@ async function installRewardedGpt(page: Page, mode: "grant" | "close" | "empty" 
       setPrivacySettings() {},
     };
     const googletag = {
+      setConfig() {},
       cmd: { push(callback: () => void) { callback(); return 1; } },
       enums: { OutOfPageFormat: { REWARDED: "REWARDED" } },
       defineSlot: () => null,

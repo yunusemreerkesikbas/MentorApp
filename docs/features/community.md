@@ -67,6 +67,24 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-08 · Emek panosu → Haftalık lig; profil ve rozetler ziyaretçiye göre (Topluluk Tur 2).**
+  Backend değişmedi; `GET /v1/community/summary` ve `/leaderboard?window=` aynı. Web:
+  - Sıralama sayfası **Haftalık lig** (`/topluluk/lig`, `/topluluk/siralama` 308): senin kartın + tek kartta
+    liste, podyum ve AI görseli yok; ayrıntı `docs/features/forum.md` Tur 2 durak E.
+  - Profil kimlik kartı + yolculuk paneli (`member/[username]/_components/profile-*.tsx`). Başkasının
+    profilinde yolculuk hikâyesi ve rozet açıklamaları üçüncü şahısla: `journey_levels.levels.*.story_visitor`
+    ve `community.badge_*_description_other` (`JourneyLevelProfile` `isOwner`, `BadgeStrip ownerView`).
+  - Hiçbir yerde açılmayan eski efor panosu zinciri silindi: `effort-board`, `effort-board-drawer`,
+    `mini-leaderboard`, `community-right-rail`, `stat-snapshot`, `hide-companion`. Yolculuk sözleşme testi
+    artık iki seviye yüzeyini (profil, ekonomi bakiyesi) kontrol ediyor.
+
+- **2026-10-07 · Yoldaşlık sinyalleri Topluluk'ta (Topluluk Tur 1).** Topluluk ekranları bu modülden iki
+  şeyi okuyor, backend değişmedi: yol arkadaşı kartı (`SessionBuddyCard`, `/v1/buddy`) Keşfet ve Akış
+  rail'inde `partnerOnly` ile yalnız aktif eşleşme ya da bekleyen istek varsa görünür, öneri listesi
+  `/seans`'ta kalır; "Şu an N kişi seninle çalışıyor" `GET /v1/coaching/today` `focusingNow`'dan gelir,
+  eşik altında `null` → kart yok. Gotcha: `/v1/buddy` 204 (boş gövde) dönebilir; kart bunu artık "gizli"
+  sayıyor (önce render'da çöküp sayfayı düşürüyordu). Ayrıntı: `docs/features/forum.md` durak A–D.
+
 - **2026-10-01 · The achievement scene plays by itself.** Product decision after seeing it on the
   preview page: no "Dokun, ışığı yak" and nothing to tap. The light comes on 1.5 s after the orb is
   ready (same timing as before), so the ignite button, its Enter/Space path, the inviting rings

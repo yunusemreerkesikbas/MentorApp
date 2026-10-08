@@ -1,9 +1,10 @@
+import { disableAuthRateLimits } from "./app-harness";
 import { NotebookReviewRepository } from "../src/modules/coaching/infrastructure/notebook-review.repository";
 
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { randomUUID } from "node:crypto";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 describe("notebook review history", () => {
@@ -24,6 +25,7 @@ describe("notebook review history", () => {
     const module = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
+    disableAuthRateLimits(module);
     app = module.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     await app.init();

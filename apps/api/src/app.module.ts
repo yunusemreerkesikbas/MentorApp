@@ -1,8 +1,10 @@
+import { AuthOriginGuard } from "./common/auth/auth-origin.guard";
+import { AuthThrottlerGuard } from "./modules/identity/presentation/auth-throttler.guard";
 import { Module } from "@nestjs/common";
 import { ConfigModule } from "@nestjs/config";
 import { APP_FILTER, APP_GUARD, APP_PIPE } from "@nestjs/core";
 import { EventEmitterModule } from "@nestjs/event-emitter";
-import { ThrottlerGuard, ThrottlerModule } from "@nestjs/throttler";
+import { ThrottlerModule } from "@nestjs/throttler";
 import { LoggerModule } from "nestjs-pino";
 import { JwtAuthGuard } from "./common/auth/jwt-auth.guard";
 import { RolesGuard } from "./common/auth/roles.guard";
@@ -75,7 +77,8 @@ import { buildLoggerConfig } from "./observability/logger.config";
   providers: [
     { provide: APP_PIPE, useClass: ZodValidationPipe },
     { provide: APP_FILTER, useClass: AllExceptionsFilter },
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
+    { provide: APP_GUARD, useClass: AuthOriginGuard },
+    { provide: APP_GUARD, useClass: AuthThrottlerGuard },
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     CloudflareAccessVerifier,
     { provide: APP_GUARD, useClass: CloudflareAccessGuard },

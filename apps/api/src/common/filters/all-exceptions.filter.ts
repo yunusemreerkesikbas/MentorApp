@@ -56,6 +56,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       status = exception.httpStatus;
       code = String(exception.code);
       details = exception.details; // authored, safe to expose
+      if (status === HttpStatus.TOO_MANY_REQUESTS && details && typeof details === "object" &&
+          "retryAfter" in details && Number.isInteger(details.retryAfter) && Number(details.retryAfter) > 0) {
+        res.setHeader("Retry-After", String(details.retryAfter));
+      }
     } else {
       const pg = mapPostgresError(exception);
       if (pg) {

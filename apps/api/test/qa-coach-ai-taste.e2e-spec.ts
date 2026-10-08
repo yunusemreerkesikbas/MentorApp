@@ -1,10 +1,11 @@
+import { disableAuthRateLimits } from "./app-harness";
 import { randomUUID } from "node:crypto";
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
 import { UserRole } from "@mentor/types";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
-import request from "supertest";
+import request from "./browser-request";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 
@@ -55,6 +56,7 @@ describe("coach AI free taste (e2e)", () => {
       process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
     const { AppModule } = await import("../src/app.module");
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    disableAuthRateLimits(moduleRef);
     app = moduleRef.createNestApplication({ logger: false });
     app.setGlobalPrefix("v1");
     app.use(cookieParser());

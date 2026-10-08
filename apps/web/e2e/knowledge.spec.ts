@@ -605,6 +605,7 @@ async function installDisplayGpt(page: Page, empty: boolean): Promise<void> {
       },
     };
     const googletag = {
+      setConfig() {},
       cmd: { push(callback: () => void) { callback(); return 1; } },
       enums: { OutOfPageFormat: { REWARDED: "REWARDED" } },
       defineSlot(_path: string, sizes: number[][]) {

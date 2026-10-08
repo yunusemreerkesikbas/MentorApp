@@ -1,82 +1,55 @@
 "use client";
-import { Check, ChevronDown, ListFilter } from "lucide-react";
 
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import { Info } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import type {
-  ForumFeed,
-  ForumFeedItem,
-  ForumFeedScope,
-  ForumFeedSort,
-  ForumTagView,
-} from "@mentor/types";
+import type { ForumFeed, ForumFeedItem, ForumFeedScope, ForumFeedSort, ForumTagView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
-import { MenuSelect, type MenuSelectOption } from "@/components/menu-select";
-import { PopoverMenu, PopoverMenuItem } from "@/components/popover-menu";
-import { SegmentPillControl } from "@/components/segment-pill-control";
+import {
+  PANEL_CARD,
+  PANEL_GRID_CLASS,
+  PANEL_MAIN_CLASS,
+  PANEL_QUIET_LINK,
+} from "@/components/panel/panel-styles";
 import { trackCommunityEvent } from "@/lib/analytics";
-import { useMentorBottomSheet } from "@/lib/mentor-bottom-sheet";
-import {
-  getForumFeed,
-  isForumDisabled,
-  listForumTags,
-} from "@/lib/forum";
-import { DiscoveryFeedCard } from "./discovery-feed-card";
-import { PostListSkeleton } from "../../_components/post-skeleton";
+import { getForumFeed, isForumDisabled, listForumTags } from "@/lib/forum";
+import { SessionBuddyCard } from "../../../study-session/_components/session-buddy-card";
+import { CommunityPresenceCard } from "../../_components/community-presence";
 import { CommunityTrendRail } from "../../_components/community-trend-rail";
+import { COMMUNITY_CARD_FLUSH } from "../../_components/community-row";
+import { PostListSkeleton } from "../../_components/post-skeleton";
+import { DiscoveryFeedCard } from "./discovery-feed-card";
 import { GlobalComposer } from "./global-composer";
-import {
-  toForumFeedContentType,
-  type FeedContentFilter,
-} from "./feed-content-filter";
-import {
-  feedQueryToTab,
-  feedTabToQuery,
-  type FeedTab,
-} from "./feed-tab-selection";
+import { readFeedContentFilter, toForumFeedContentQuery, type FeedContentFilter } from "./feed-content-filter";
+import { feedQueryToTab, feedTabToQuery, readFeedTab, type FeedTab } from "./feed-tab-selection";
+import { FeedToolbar } from "./feed-toolbar";
 
 type Ready = ForumFeed & { status: "ready"; loadingMore: boolean };
-type State =
-  | { status: "loading" }
-  | { status: "disabled" }
-  | { status: "error"; message: string }
-  | Ready;
+type State = { status: "loading" } | { status: "disabled" } | { status: "error"; message: string } | Ready;
 
-type FeedFilterSheetHandle = {
-  getValues: () => { tab: FeedTab; tag: string };
-};
-
+/**
+ * Akış on the panel frame: controls, the composer, then the posts in one card; the rail holds who is
+ * studying now, your buddy and (when there are any) trending tags. A quiet "Öne çıkan" comes back as
+ * the newest posts from the server, and the page says so.
+ */
 export function FeedShell() {
   const t = useTranslations("community");
   const searchParams = useSearchParams();
-  const { filterSheet } = useMentorBottomSheet();
-  const filterFormRef = useRef<FeedFilterSheetHandle>(null);
-  const [scope, setScope] = useState<ForumFeedScope>("relevant");
-  const [sort, setSort] = useState<ForumFeedSort>("trending");
+  const [scope, setScope] = useState<ForumFeedScope>(
+    () => feedTabToQuery(readFeedTab(searchParams.get("sort"))).scope,
+  );
+  const [sort, setSort] = useState<ForumFeedSort>(
+    () => feedTabToQuery(readFeedTab(searchParams.get("sort"))).sort,
+  );
   const [tag, setTag] = useState(searchParams.get("tag") ?? "");
-  const [contentFilter, setContentFilter] = useState<FeedContentFilter>("all");
+  const [contentFilter, setContentFilter] = useState<FeedContentFilter>(() =>
+    readFeedContentFilter(searchParams.get("content")),
+  );
   const [tags, setTags] = useState<ForumTagView[]>([]);
   const [state, setState] = useState<State>({ status: "loading" });
   const [refreshVersion, setRefreshVersion] = useState(0);
   const queryKey = `${scope}:${sort}:${tag}:${contentFilter}:${refreshVersion}`;
-  const activeTab = feedQueryToTab(scope, sort);
-  const feedTabs = [
-    { id: "featured", label: t("feed_sort_trending") },
-    { id: "recent", label: t("feed_sort_recent") },
-    { id: "top", label: t("feed_sort_top") },
-    { id: "following", label: t("feed_scope_following") },
-  ];
-  const tabOptions = feedTabs.map(({ id, label }) => ({ value: id, label }));
-  const tagOptions = [
-    { value: "", label: t("feed_all_tags") },
-    ...tags.map((entry) => ({ value: entry.slug, label: `#${entry.slug}` })),
-  ];
-  const contentFilterItems = [
-    { id: "all", label: t("feed_content_all") },
-    { id: "posts", label: t("feed_content_posts") },
-    { id: "questions", label: t("feed_content_questions") },
-  ];
 
   const load = useCallback(
     (cursor?: string) =>
@@ -84,7 +57,7 @@ export function FeedShell() {
         scope,
         sort,
         tag: tag || undefined,
-        contentType: toForumFeedContentType(contentFilter),
+        ...toForumFeedContentQuery(contentFilter),
         cursor,
       }),
     [scope, sort, tag, contentFilter],
@@ -105,57 +78,19 @@ export function FeedShell() {
       .catch((error: unknown) => {
         if (!active) return;
         if (isForumDisabled(error)) setState({ status: "disabled" });
-        else {
-          setState({
-            status: "error",
-            message: error instanceof ApiClientError ? error.body.message : t("error"),
-          });
-        }
+        else setState({ status: "error", message: error instanceof ApiClientError ? error.body.message : t("error") });
       });
     return () => {
       active = false;
     };
   }, [load, queryKey, t]);
 
-  const setTab = (nextTab: string) => {
-    const tab = nextTab as FeedTab;
-    const { scope: nextScope, sort: nextSort } = feedTabToQuery(tab);
+  const setTab = (tab: FeedTab) => {
+    const next = feedTabToQuery(tab);
     setState({ status: "loading" });
-    setScope(nextScope);
-    setSort(nextSort);
-    trackCommunityEvent("forum_feed_tab_selected", { sort: nextSort, scope: nextScope });
-  };
-
-  const openMobileFilters = async () => {
-    await filterSheet({
-      title: t("feed_filters"),
-      applyLabel: t("feed_apply_filters"),
-      children: (
-        <FeedFilterSheet
-          ref={filterFormRef}
-          initialTab={activeTab}
-          initialTag={tag}
-          tagOptions={tagOptions}
-          tabOptions={tabOptions}
-        />
-      ),
-      onApply: () => {
-        const values = filterFormRef.current?.getValues();
-        if (!values) return;
-        const query = feedTabToQuery(values.tab);
-        setState({ status: "loading" });
-        setScope(query.scope);
-        setSort(query.sort);
-        setTag(values.tag);
-      },
-    });
-  };
-
-  const refetch = () => {
-    setState({ status: "loading" });
-    load()
-      .then((feed) => setState({ ...feed, status: "ready", loadingMore: false }))
-      .catch(() => setState({ status: "error", message: t("error") }));
+    setScope(next.scope);
+    setSort(next.sort);
+    trackCommunityEvent("forum_feed_tab_selected", { sort: next.sort, scope: next.scope });
   };
 
   const loadMore = () => {
@@ -166,21 +101,11 @@ export function FeedShell() {
       .then((feed) =>
         setState((current) =>
           current.status === "ready"
-            ? {
-                ...current,
-                items: [...current.items, ...feed.items],
-                nextCursor: feed.nextCursor,
-                context: feed.context,
-                loadingMore: false,
-              }
+            ? { ...current, items: [...current.items, ...feed.items], nextCursor: feed.nextCursor, context: feed.context, loadingMore: false }
             : current,
         ),
       )
-      .catch(() =>
-        setState((current) =>
-          current.status === "ready" ? { ...current, loadingMore: false } : current,
-        ),
-      );
+      .catch(() => setState((current) => (current.status === "ready" ? { ...current, loadingMore: false } : current)));
   };
 
   const updateItem = (id: string, next: ForumFeedItem | null) => {
@@ -188,255 +113,119 @@ export function FeedShell() {
       current.status === "ready"
         ? {
             ...current,
-            items: next
-              ? current.items.map((item) => (item.id === id ? next : item))
-              : current.items.filter((item) => item.id !== id),
+            items: next ? current.items.map((item) => (item.id === id ? next : item)) : current.items.filter((item) => item.id !== id),
           }
         : current,
     );
   };
 
-  return (
-    <main className="min-w-0 px-4 py-7 sm:px-7 lg:px-8 lg:py-8">
-      <div className="mx-auto max-w-[1180px]">
-        <div className="flex flex-nowrap items-center gap-3 border-b border-[var(--color-border)] pb-4">
-          <button
-            type="button"
-            aria-label={t("feed_filters")}
-            onClick={() => void openMobileFilters()}
-            className="relative flex min-h-11 items-center justify-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-bold text-[var(--color-main)] shadow-[var(--shadow-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] sm:hidden"
-          >
-            <ListFilter size={19} aria-hidden />
-            {t("feed_filter_button")}
-            {tag || (scope === "relevant" ? sort !== "trending" : sort !== "recent") ? (
-              <span className="absolute right-2 top-2 size-2 rounded-full bg-[var(--community-blue-ink)]" aria-hidden />
-            ) : null}
-          </button>
-          <div className="hidden sm:block">
-            <PopoverMenu
-              align="left"
-              panelRole="listbox"
-              menuClassName="w-56"
-              trigger={({ open, setOpen, menuId }) => (
-                <button
-                  type="button"
-                  aria-haspopup="listbox"
-                  aria-expanded={open}
-                  aria-controls={open ? menuId : undefined}
-                  onClick={() => setOpen(!open)}
-                  className="flex min-h-11 items-center gap-2 rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 text-sm font-bold text-[var(--color-main)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-                >
-                  <ListFilter size={18} aria-hidden />
-                  {t("feed_filter_button")}
-                  <ChevronDown size={16} aria-hidden className={open ? "rotate-180" : ""} />
-                </button>
-              )}
-            >
-              {feedTabs.map((item) => (
-                <PopoverMenuItem
-                  key={item.id}
-                  role="option"
-                  selected={item.id === activeTab}
-                  onClick={() => setTab(item.id)}
-                >
-                  <span className="flex items-center justify-between gap-3">
-                    {item.label}
-                    {item.id === activeTab ? <Check size={17} aria-hidden /> : null}
-                  </span>
-                </PopoverMenuItem>
-              ))}
-            </PopoverMenu>
-          </div>
-          <div className="ml-auto hidden flex-wrap items-center gap-2 sm:flex">
-          <MenuSelect
-            value={tag}
-            onChange={(value) => {
-              setState({ status: "loading" });
-              setTag(value);
-            }}
-            aria-label={t("feed_filter_tag")}
-            options={tagOptions}
-            className="w-52"
-            textSize="sm"
-          />
-          {tag && (
-            <button
-              type="button"
-              onClick={() => {
-                setState({ status: "loading" });
-                setTag("");
-              }}
-              className="min-h-11 rounded-xl px-3 text-sm font-bold underline-offset-4 hover:underline"
-            >
-              {t("feed_clear_filters")}
-            </button>
-          )}
-          </div>
-        </div>
+  // Waiting questions always come newest first (server rule), so that is not a fallback to explain.
+  const fellBack =
+    state.status === "ready" &&
+    sort === "trending" &&
+    contentFilter !== "waiting" &&
+    state.effectiveSort === "recent" &&
+    state.items.length > 0;
 
-        <div className="mt-5 grid w-full grid-cols-[minmax(0,1fr)] items-start justify-center gap-6 xl:grid-cols-[minmax(0,600px)_300px]">
-          <section className="w-full min-w-0 max-w-[600px] justify-self-center xl:justify-self-auto" aria-live="polite" aria-busy={state.status === "loading"}>
-            <GlobalComposer
-              onCreated={() => {
-                setScope("relevant");
-                setSort("recent");
-                setTag("");
-                setContentFilter("all");
-                setState({ status: "loading" });
-                setRefreshVersion((current) => current + 1);
-              }}
-            />
-            <div className="mb-3 overflow-x-auto py-1">
-              <SegmentPillControl
-                items={contentFilterItems}
-                value={contentFilter}
-                onChange={(value) => {
+  return (
+    <main className={PANEL_MAIN_CLASS}>
+      <h1 className="sr-only text-display font-extrabold tracking-[-0.01em] text-[var(--color-main)] lg:not-sr-only">
+        {t("feed_title")}
+      </h1>
+      <div className={PANEL_GRID_CLASS}>
+        <section className="flex min-w-0 flex-col gap-4" aria-live="polite" aria-busy={state.status === "loading"}>
+          <FeedToolbar
+            tab={feedQueryToTab(scope, sort)}
+            tag={tag}
+            tags={tags}
+            content={contentFilter}
+            onTab={setTab}
+            onTag={(next) => {
+              setState({ status: "loading" });
+              setTag(next);
+            }}
+            onContent={(next) => {
+              setState({ status: "loading" });
+              setContentFilter(next);
+              trackCommunityEvent("forum_feed_kind_selected", { kind: next });
+            }}
+          />
+          <GlobalComposer
+            onCreated={() => {
+              setScope("relevant");
+              setSort("recent");
+              setTag("");
+              setContentFilter("all");
+              setState({ status: "loading" });
+              setRefreshVersion((current) => current + 1);
+            }}
+          />
+          {fellBack ? (
+            <p className="flex items-center gap-2 text-caption font-bold text-[var(--color-secondary)]">
+              <Info size={16} className="shrink-0" aria-hidden />
+              {t("feed_fallback_recent")}
+            </p>
+          ) : null}
+          {state.status === "loading" ? (
+            <PostListSkeleton label={t("loading")} variant="card" />
+          ) : state.status === "disabled" ? (
+            <FeedNotice title={t("soon_title")} body={t("soon_desc")} />
+          ) : state.status === "error" ? (
+            <FeedNotice title={t("feed_error_title")} body={state.message}>
+              <button
+                type="button"
+                onClick={() => {
                   setState({ status: "loading" });
-                  setContentFilter(value as FeedContentFilter);
-                  trackCommunityEvent("forum_feed_kind_selected", {
-                    kind: value as FeedContentFilter,
-                  });
+                  setRefreshVersion((v) => v + 1);
                 }}
-                ariaLabel={t("feed_content_filter_label")}
-                layoutId="community-feed-content-pill"
-                idPrefix="community-feed-content"
-                equalWidth
-              />
-            </div>
-            {state.status === "loading" ? (
-              <PostListSkeleton label={t("loading")} variant="card" />
-            ) : state.status === "disabled" ? (
-              <EmptyState title={t("soon_title")} body={t("soon_desc")} />
-            ) : state.status === "error" ? (
-              <EmptyState title={t("feed_error_title")} body={state.message}>
-                <button
-                  type="button"
-                  onClick={refetch}
-                  className="mt-4 min-h-11 rounded-xl px-4 font-bold text-[var(--color-btn-label)]"
-                  style={{ background: "var(--color-btn)" }}
-                >
-                  {t("refresh")}
-                </button>
-              </EmptyState>
-            ) : state.items.length === 0 ? (
-              <EmptyState
-                title={t("feed_empty_title")}
-                body={
-                  scope === "following"
+                className={PANEL_QUIET_LINK}
+              >
+                {t("refresh")}
+              </button>
+            </FeedNotice>
+          ) : state.items.length === 0 ? (
+            <FeedNotice
+              title={contentFilter === "waiting" ? t("feed_waiting_empty_title") : t("feed_empty_title")}
+              body={
+                contentFilter === "waiting"
+                  ? t("feed_waiting_empty")
+                  : scope === "following"
                     ? t("following_feed_empty")
                     : t("feed_empty_filtered")
-                }
-              />
-            ) : (
-              <>
-                <div className="overflow-hidden rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)]">
-                  {state.items.map((item) => (
-                    <DiscoveryFeedCard
-                      key={item.id}
-                      item={item}
-                      onChange={(next) => updateItem(item.id, next)}
-                    />
-                  ))}
-                </div>
-                {state.loadingMore ? (
-                  <div className="mt-4">
-                    <PostListSkeleton label={t("loading")} count={2} variant="card" />
-                  </div>
-                ) : state.nextCursor ? (
-                  <div className="mt-5 flex justify-center">
-                    <button
-                      type="button"
-                      onClick={loadMore}
-                      className="min-h-11 rounded-xl border bg-[var(--color-surface)] px-5 font-bold"
-                    >
-                      {t("load_more")}
-                    </button>
-                  </div>
-                ) : null}
-              </>
-            )}
-          </section>
-
-          <div className="sticky top-20 hidden xl:block">
-            <CommunityTrendRail />
-          </div>
-        </div>
+              }
+            />
+          ) : (
+            <>
+              <div className={COMMUNITY_CARD_FLUSH}>
+                {state.items.map((item) => (
+                  <DiscoveryFeedCard key={item.id} item={item} onChange={(next) => updateItem(item.id, next)} />
+                ))}
+              </div>
+              {state.loadingMore ? (
+                <PostListSkeleton label={t("loading")} count={2} variant="card" />
+              ) : state.nextCursor ? (
+                <button type="button" onClick={loadMore} className={`${PANEL_QUIET_LINK} self-center`}>
+                  {t("load_more")}
+                </button>
+              ) : null}
+            </>
+          )}
+        </section>
+        <aside className="flex min-w-0 flex-col gap-5" aria-label={t("hub_rail_label")}>
+          <CommunityPresenceCard />
+          <SessionBuddyCard className={`${PANEL_CARD} flex flex-col gap-3`} partnerOnly />
+          <CommunityTrendRail />
+        </aside>
       </div>
     </main>
   );
 }
 
-const FeedFilterSheet = forwardRef<
-  FeedFilterSheetHandle,
-  {
-    initialTag: string;
-    initialTab: FeedTab;
-    tabOptions: MenuSelectOption[];
-    tagOptions: MenuSelectOption[];
-  }
->(function FeedFilterSheet(
-  { initialTab, initialTag, tabOptions, tagOptions },
-  ref,
-) {
-  const t = useTranslations("community");
-  const [draftTab, setDraftTab] = useState<FeedTab>(initialTab);
-  const [draftTag, setDraftTag] = useState(initialTag);
-
-  useImperativeHandle(ref, () => ({
-    getValues: () => ({ tab: draftTab, tag: draftTag }),
-  }));
-
+function FeedNotice({ title, body, children }: { title: string; body: string; children?: React.ReactNode }) {
   return (
-    <div className="grid gap-4">
-      <div className="grid gap-2 text-sm font-bold text-[var(--color-main)]">
-        {t("feed_sort_label")}
-        <MenuSelect
-          value={draftTab}
-          onChange={(value) => setDraftTab(value as FeedTab)}
-          options={tabOptions}
-          aria-label={t("feed_sort_label")}
-        />
-      </div>
-      <div className="grid gap-2 text-sm font-bold text-[var(--color-main)]">
-        {t("feed_filter_tag")}
-        <MenuSelect
-          value={draftTag}
-          onChange={setDraftTag}
-          options={tagOptions}
-          aria-label={t("feed_filter_tag")}
-        />
-      </div>
-      {draftTab !== "featured" || draftTag ? (
-        <button
-          type="button"
-          onClick={() => {
-            setDraftTag("");
-            setDraftTab("featured");
-          }}
-          className="min-h-11 justify-self-start px-1 text-sm font-bold text-[var(--community-blue-ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        >
-          {t("feed_clear_filters")}
-        </button>
-      ) : null}
-    </div>
-  );
-});
-
-function EmptyState({
-  title,
-  body,
-  children,
-}: {
-  title: string;
-  body: string;
-  children?: React.ReactNode;
-}) {
-  return (
-    <div className="rounded-2xl border border-dashed bg-[var(--color-surface)] px-6 py-14 text-center">
-      <h2 className="text-lg font-extrabold">{title}</h2>
-      <p className="mx-auto mt-2 max-w-md text-sm" style={{ color: "var(--color-secondary)" }}>
-        {body}
-      </p>
+    <div className={`${PANEL_CARD} flex flex-col items-center gap-1 px-6 py-10 text-center`}>
+      <h2 className="text-base font-extrabold text-[var(--color-main)]">{title}</h2>
+      <p className="max-w-md text-body-sm font-semibold text-[var(--color-secondary)]">{body}</p>
       {children}
     </div>
   );

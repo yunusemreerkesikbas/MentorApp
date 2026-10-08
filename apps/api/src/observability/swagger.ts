@@ -23,9 +23,24 @@ export function setupSwagger(app: INestApplication): void {
 
   const document = SwaggerModule.createDocument(app, config);
   addStudyDurationProperties(document);
+  addAuthSecurityProperties(document);
   SwaggerModule.setup("v1/docs", app, document, {
     jsonDocumentUrl: "v1/docs-json",
   });
+}
+
+/** Additive auth fields stay optional in /v1; production web enforces Turnstile server-side. */
+export function addAuthSecurityProperties(document: OpenAPIObject): void {
+  for (const name of ["LoginDto", "ForgotPasswordDto"]) {
+    const schema = document.components?.schemas?.[name];
+    if (!schema || "$ref" in schema) continue;
+    schema.additionalProperties = true;
+    schema.properties = {
+      ...schema.properties,
+      turnstileToken: { type: "string", maxLength: 2048,
+        description: "Single-use Turnstile token. Required for production web submissions." },
+    };
+  }
 }
 
 /** Zod DTOs have no Swagger property metadata. Document this additive contract without

@@ -27,10 +27,12 @@ export interface UserAvatarProps {
   name: string;
   size?: number;
   src?: string | null;
+  /** The photo failed to load (a broken or expired URL); the caller can fall back to initials. */
+  onError?: () => void;
 }
 
 /** Shared user identity avatar. Content and attachment thumbnails must not use this component. */
-export function UserAvatar({ alt = "", className = "", frame = "default", name, size = 36, src }: UserAvatarProps) {
+export function UserAvatar({ alt = "", className = "", frame = "default", name, size = 36, src, onError }: UserAvatarProps) {
   const resolvedSrc = resolveAvatarUrl(src ?? null);
   const frameClass =
     frame === "strong"
@@ -43,7 +45,7 @@ export function UserAvatar({ alt = "", className = "", frame = "default", name, 
     return (
       // Public/signed R2 URLs are not constrained to Next Image remote patterns.
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={resolvedSrc} alt={alt} className={sharedClass} decoding="async" style={style} />
+      <img src={resolvedSrc} alt={alt} className={sharedClass} decoding="async" style={style} onError={onError} />
     );
   }
 
