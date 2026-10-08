@@ -85,8 +85,11 @@ export function FeedShell() {
     };
   }, [load, queryKey, t]);
 
+  // Re-selecting the current tab, chip or tag leaves the query unchanged, so nothing reloads: the
+  // skeleton set here would then stay for good. Only a real change resets the list.
   const setTab = (tab: FeedTab) => {
     const next = feedTabToQuery(tab);
+    if (next.scope === scope && next.sort === sort) return;
     setState({ status: "loading" });
     setScope(next.scope);
     setSort(next.sort);
@@ -141,10 +144,12 @@ export function FeedShell() {
             content={contentFilter}
             onTab={setTab}
             onTag={(next) => {
+              if (next === tag) return;
               setState({ status: "loading" });
               setTag(next);
             }}
             onContent={(next) => {
+              if (next === contentFilter) return;
               setState({ status: "loading" });
               setContentFilter(next);
               trackCommunityEvent("forum_feed_kind_selected", { kind: next });

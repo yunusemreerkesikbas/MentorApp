@@ -349,6 +349,23 @@ test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini gör
   await dialog.getByRole("button", { name: "Kapat" }).click();
 });
 
+test("yüklenen profil ve oda listesi 'Yükleniyor…' canlı bölgesinin içinde kalmaz", async ({
+  page,
+}) => {
+  // SkeletonGroup's reveal mode kept role="status" + aria-live + "Yükleniyor…" around the loaded
+  // content, so a screen reader met the whole profile as a polite loading announcement.
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/ayse");
+  await expect(page.locator(".profile-progress-panel:visible").getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(page.locator("main h1").first()).toBeVisible();
+  await expect(page.locator('[role="status"] h1')).toHaveCount(0);
+  await expect(page.locator('[aria-live] h1')).toHaveCount(0);
+});
+
 test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async ({
   page,
 }) => {

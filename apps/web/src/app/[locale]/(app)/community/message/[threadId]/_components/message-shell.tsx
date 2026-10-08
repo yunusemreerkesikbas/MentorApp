@@ -6,6 +6,7 @@ import { useTranslations } from "next-intl";
 import { type CommentView, type ThreadDetail, type ThreadView, type ZoneView } from "@mentor/types";
 import { ApiClientError } from "@mentor/api-client";
 import { FormError } from "@/components/form";
+import { useRouter } from "@/i18n/navigation";
 import {
   PANEL_CARD_TITLE,
   PANEL_GRID_CLASS,
@@ -52,6 +53,7 @@ type State =
  */
 export function MessageShell({ threadId }: { threadId: string }) {
   const t = useTranslations("community");
+  const router = useRouter();
   const searchParams = useSearchParams();
   const highlightId = searchParams.get("highlight");
   const returnContext = parseCommunityReturnContext({
@@ -244,6 +246,9 @@ export function MessageShell({ threadId }: { threadId: string }) {
               onToggleBookmark={onToggleThreadBookmark}
               onReplyCountChange={changeThreadReplyCount}
               onReplyCreated={appendQuickComment}
+              afterDelete={() =>
+                router.replace(zone ? { pathname: "/community/[slug]", params: { slug: zone.slug } } : "/community")
+              }
             />
           </div>
 

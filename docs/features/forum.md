@@ -109,6 +109,31 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk QA turu: RLS'te yazar adları, takılan Akış, silme sonrası yol (2026-10-08)**
+  - **Yazar adları (P1):** üretim rolü RLS'e tabi (`database-role-safety.ts`) ve `users` politikası yalnız
+    kendi satırını okutuyor. Kullanıcı bağlamındaki 13 thread/post okuması (oda akışı ve listesi, gönderi,
+    yorum ve yanıt detayı, soru + cevaplar, profil paylaşımları, soru araması) başkalarının adını boş
+    döndürüyordu, arayüz "Kullanıcı ?" yazıyordu. Dev ve CI superuser ile bağlandığı için RLS'i atlıyor,
+    görünmüyordu. `infrastructure/forum-author-cards.ts` `withAuthorCards`: satırlar kullanıcı bağlamında
+    kalır, yalnız ad, kullanıcı adı ve avatar SERVICE ile eklenir (keşif akışının zaten döndürdüğü alanlar).
+    Test: `test/forum-author-names-rls.e2e-spec.ts` API'yi NOSUPERUSER NOBYPASSRLS bir rolle kaldırır.
+  - **Gotcha:** kullanıcı bağlamında yeni bir `users` join'i başka kullanıcılar için boş gelir ve
+    superuser'la koşan e2e'ler bunu görmez. Yeni bir yazar okuması eklersen sonucu `withAuthorCards`'tan
+    geçir ve bu spec'e bir satır ekle.
+  - **Akış iskelette kalıyordu:** seçili sekmeye, çipe ya da etikete yeniden dokunmak (paylaşım Akış'ı
+    kendiliğinden "En yeni"ye çevirdikten sonra "En yeni"ye basmak dahil) listeyi iskelete alıyor ama sorgu
+    değişmediği için yükleme hiç başlamıyordu. `feed-shell.tsx` değişmeyen seçimi yok sayar
+    (`e2e/community-feed.spec.ts`). Oda sekmeleri zaten korumalıydı.
+  - **Silme sonrası yol:** gönderi detayında silmek `router.back()` yapıyordu; bildirim ya da paylaşılan
+    bağlantıyla açılmış sayfanın arkasında geçmiş olmadığı için sekme `about:blank`e düşüyordu.
+    `ThreadItem afterDelete`, detay odasına `replace` eder (`e2e/community-detail.spec.ts`).
+  - **Canlı bölge:** `@mentor/ui` `SkeletonGroup` reveal modu yüklenen içeriği `role="status"`,
+    `aria-live` ve "Yükleniyor…" içinde tutuyordu (profil, oda kenar çubuğu). Artık yalnız yüklenirken
+    (`e2e/community-member-profile.spec.ts`).
+  - **Açık (raporlandı, düzeltilmedi):** koç köprüsünden onaylanan görev `AI_COACH` olarak kaydediliyor;
+    web `POST /v1/coach/conversations/:id/plan-tasks`'i çağırmadığı için `COMMUNITY_COACH` kökeni ve
+    "görev bitti, tartışmaya dön" composer'ı arayüzden açılamıyor. `master`'da da aynı.
+
 - **Tur 2 durak G: kapanış (2026-10-08)**
   - **Dokümanlar:** DESIGN.md §6.1'e Identity card ve League list, §12.3 Tur 2 kaydı, §13 işaretli;
     api.md üye listesi + şikâyet özeti; community.md timeline.
