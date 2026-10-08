@@ -46,6 +46,9 @@ export function PhoneVerificationCard({ allowNumberChange = false, onStatusChang
     phoneControllerGetStatus()
       .then((response) => {
         if (!active) return;
+        // An empty body (204) is no status: fail into the retry state so neither the card nor
+        // its onStatusChange callers ever dereference undefined.
+        if (!response) throw new Error("Empty phone status response");
         const next = response as unknown as PhoneStatusDto;
         setStatus(next);
         callback.current?.(next);
