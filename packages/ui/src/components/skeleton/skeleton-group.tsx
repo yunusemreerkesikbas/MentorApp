@@ -21,7 +21,8 @@ export interface SkeletonGroupProps extends React.HTMLAttributes<HTMLDivElement>
 /**
  * Accessible wrapper for page-composed skeleton layouts.
  * Sets `role="status"` + `aria-busy`; enter motion is global, children are page-owned.
- * Optional `loading` + `revealed` uses the shared SkeletonReveal transition.
+ * Optional `loading` + `revealed` uses the shared SkeletonReveal transition and drops the status
+ * role once `loading` is false.
  */
 export function SkeletonGroup({
   children,
@@ -34,12 +35,14 @@ export function SkeletonGroup({
   ...rest
 }: SkeletonGroupProps) {
   if (loading != null && revealed != null) {
+    // The status region exists only while loading: once revealed, the content is the page, and a
+    // live "Yükleniyor…" region around it would make screen readers treat it as an announcement.
     return (
       <div
-        role="status"
+        role={loading ? "status" : undefined}
         aria-busy={loading || undefined}
-        aria-live="polite"
-        aria-label={label}
+        aria-live={loading ? "polite" : undefined}
+        aria-label={loading ? label : undefined}
         {...rest}
         className={className}
         style={style}
