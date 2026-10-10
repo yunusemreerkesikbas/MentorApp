@@ -27,10 +27,19 @@ export class CommunityCoachPlanTaskService {
     if (!(await this.conversations.isOwned(userId, conversationId))) {
       throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
     }
+    const task = await this.createIfCommunity(userId, conversationId, input);
+    if (!task) throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
+    return task;
+  }
+
+  /** Same hand-off, but null (not 404) for a non-community chat, so callers can fall back. */
+  async createIfCommunity(
+    userId: string,
+    conversationId: string,
+    input: CreatePlanTaskInput,
+  ): Promise<PlanTaskDto | null> {
     const origin = await this.conversations.getOrigin(userId, conversationId);
-    if (origin?.type !== "COMMUNITY_THREAD") {
-      throw new DomainError(ErrorCode.NOT_FOUND, HttpStatus.NOT_FOUND);
-    }
+    if (origin?.type !== "COMMUNITY_THREAD") return null;
 
     const bridge = await this.forum.getBridge(userId, origin.refId);
     return this.plans.createFromCommunityCoach(userId, input, {

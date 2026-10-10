@@ -1043,3 +1043,11 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   `mock-exams/{id}/categorize-photo` ucu geriye dönük uyumluluk için duruyor ama artık hiçbir
   istemci çağırmıyor; `mock_exam_photo_categorizations` yazılmıyor (temizlik ayrı migration).
   İlgili: `photo-categorize.service.ts`, `ai-mock-exam-photo.controller.ts`, `ai.dto.ts`.
+
+- **2026-10-10 — `CoachActionService`: CREATE_PLAN_TASK community-origin sohbette `COMMUNITY_COACH`.**
+  `getOwnedCoachAction` artık `conversationId` da dönüyor (iç yönlendirme verisi; `stripInternal` ile
+  public sonuca sızmıyor). Konuşma `COMMUNITY_THREAD` kökenliyse görev
+  `CommunityCoachPlanTaskService.createIfCommunity` ile oluşur, aksi hâlde `createFromAiCoach`.
+  Forum köprüsü kapanmış/konu silinmişse `getBridge` hata fırlatır; aksiyon ACCEPTED'da kalır ve
+  yeniden denenebilir (sessizce `AI_COACH`'a düşmüyoruz). Test:
+  `coach-action.service.spec.ts` + `ai-coach.e2e-spec.ts` (community köprü senaryosu).

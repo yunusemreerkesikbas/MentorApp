@@ -43,6 +43,68 @@ describe("CoachActionService", () => {
     );
   });
 
+  it("files the task as COMMUNITY_COACH when the chat is community-origin, without leaking conversationId", async () => {
+    const messages = {
+      getOwnedCoachAction: vi.fn(async () => ({
+        action,
+        status: CoachActionStatus.PROPOSED,
+        resultRefId: null,
+        conversationId: "conv-1",
+      })),
+      transitionAction: vi.fn(async () => true),
+      setActionResult: vi.fn(async () => true),
+    };
+    const plan = { createFromAiCoach: vi.fn() };
+    const community = {
+      createIfCommunity: vi.fn(async () => ({ id: "task-community" })),
+    };
+    const service = new CoachActionService(
+      messages as never,
+      plan as never,
+      undefined,
+      community as never,
+    );
+
+    const result = await service.decide("user-1", "message-1", "ACCEPT");
+    expect(result).toEqual({
+      action,
+      status: CoachActionStatus.ACCEPTED,
+      resultRefId: "task-community",
+    });
+    expect(community.createIfCommunity).toHaveBeenCalledWith(
+      "user-1",
+      "conv-1",
+      action.payload,
+    );
+    expect(plan.createFromAiCoach).not.toHaveBeenCalled();
+  });
+
+  it("falls back to AI_COACH when the chat is not community-origin", async () => {
+    const messages = {
+      getOwnedCoachAction: vi.fn(async () => ({
+        action,
+        status: CoachActionStatus.PROPOSED,
+        resultRefId: null,
+        conversationId: "conv-1",
+      })),
+      transitionAction: vi.fn(async () => true),
+      setActionResult: vi.fn(async () => true),
+    };
+    const plan = { createFromAiCoach: vi.fn(async () => ({ id: "task-ai" })) };
+    const community = { createIfCommunity: vi.fn(async () => null) };
+    const service = new CoachActionService(
+      messages as never,
+      plan as never,
+      undefined,
+      community as never,
+    );
+
+    await expect(
+      service.decide("user-1", "message-1", "ACCEPT"),
+    ).resolves.toMatchObject({ resultRefId: "task-ai" });
+    expect(plan.createFromAiCoach).toHaveBeenCalledTimes(1);
+  });
+
   it("cancels without mutating coaching data", async () => {
     const messages = {
       getOwnedCoachAction: vi.fn(async () => ({

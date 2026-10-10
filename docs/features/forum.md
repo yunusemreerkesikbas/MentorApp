@@ -971,6 +971,17 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   **Gotcha:** yeni bir yükleme özelliği eklerken prefix'i yalnız servise yazmak yetmez —
   `storage-prefixes.ts`'e de eklenmeli, yoksa dev'de çalışıp production'da 400 verir.
 
+- **2026-10-10 — Topluluk sohbetinde "Plana ekle" onayı artık `COMMUNITY_COACH` üretir.**
+  Önceden #planlama gibi bir etiketten koça geçen öğrenci kartı onaylayınca görev `AI_COACH` olarak
+  yazılıyordu; plan satırında "Topluluktan" kaynak linki ve `?composer=community-return` dönüş
+  composer'ı hiç açılmıyordu. Artık `CoachActionService` (`POST /v1/coach/messages/:id/action`)
+  konuşmanın kökenine bakıyor: `COMMUNITY_THREAD` ise `CommunityCoachPlanTaskService.createIfCommunity`
+  ile görev topluluk kökeniyle açılıyor, değilse eski `AI_COACH` yolu aynen çalışıyor.
+  **Gotcha:** web tarafı değişmedi, kasıtlı; onay hâlâ aynı uçtan geçtiği için PROPOSED→ACCEPTED
+  idempotency'si korunuyor. `POST /v1/coach/conversations/:id/plan-tasks` ise kartsız, doğrudan
+  oluşturma ucu olarak duruyor. `COMMUNITY_COACH` için `AI_COACH`'taki gibi mesaj başına unique index
+  yok; çift görevi action durum makinesi engelliyor.
+
 - **Mocked e2e: üye profili avatarı CSP'ye takılıyordu (2026-10-10)** —
   `community-member-profile.spec.ts` avatar fixture'ı `https://cdn.test/ayse.svg` idi; production
   CSP `img-src` yalnız API origin'i + `WEB_CSP_STORAGE_ORIGINS` (CI'da boş) kabul ettiği için
