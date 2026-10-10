@@ -981,3 +981,14 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   idempotency'si korunuyor. `POST /v1/coach/conversations/:id/plan-tasks` ise kartsız, doğrudan
   oluşturma ucu olarak duruyor. `COMMUNITY_COACH` için `AI_COACH`'taki gibi mesaj başına unique index
   yok; çift görevi action durum makinesi engelliyor.
+
+- **Mocked e2e: üye profili avatarı CSP'ye takılıyordu (2026-10-10)** —
+  `community-member-profile.spec.ts` avatar fixture'ı `https://cdn.test/ayse.svg` idi; production
+  CSP `img-src` yalnız API origin'i + `WEB_CSP_STORAGE_ORIGINS` (CI'da boş) kabul ettiği için
+  tarayıcı görseli engelliyor, avatar baş harflere düşüyordu. Fixture artık API origin'inde
+  (`http://localhost:3001/test-assets/*.svg`, `/v1` dışında olduğu için genel mock'a takılmaz).
+  **Gotcha:** e2e fixture görselleri başka host'a konursa CSP yüzünden sessizce görünmez olur.
+  Aynı test dört viewport'ta tam sayfa screenshot aldığı için 30 sn varsayılan süreye yakındı;
+  `test.setTimeout(60_000)`. "Profil bilgileri" dialog adımı ve `mentorship.spec.ts` Koçum /
+  veri kapsamı testleri güncel master'da (9c3b30f9) 3×2 tekrarla kararlı geçiyor; ayrı düzeltme
+  gerekmedi (Koçum satırı `/ayarlar` hesap kartında duruyor, `/profil` oraya yönleniyor).
