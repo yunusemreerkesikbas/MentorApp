@@ -21,7 +21,8 @@ describe("proxy matcher", () => {
     "/_next/static/chunk.js",
     "/_vercel/insights/script.js",
     "/favicon.ico",
-    "/images/logo.svg",
+    "/img/logo.svg",
+    "/ads.txt",
   ])("excludes infrastructure or static route %s", (url) => {
     expect(
       unstable_doesMiddlewareMatch({ config, nextConfig: {}, url }),

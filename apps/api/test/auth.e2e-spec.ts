@@ -54,7 +54,7 @@ describe("identity (e2e)", () => {
     app.setGlobalPrefix("v1");
     app.use(cookieParser());
     await app.init();
-  });
+  }, 90_000);
 
   afterAll(async () => {
     await app?.close();

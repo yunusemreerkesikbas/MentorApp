@@ -7,6 +7,9 @@ const sessionIds = [
   "44444444-4444-4444-8444-444444444444",
 ] as const;
 test.use({ serviceWorkers: "block" });
+test.beforeEach(async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("mentor.advertising-consent.v1", "accepted"));
+});
 const baseUser: AuthUser = {
   id: "22222222-2222-4222-8222-222222222222",
   email: "ads@test.local",

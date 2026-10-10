@@ -29,9 +29,17 @@ beforeEach(() => {
 
 afterEach(() => {
   vi.useRealTimers();
+  vi.unstubAllGlobals();
 });
 
 describe("fetchSubscriptionView", () => {
+  it("signals a successful entitlement refresh to mounted ad slots", async () => {
+    const dispatchEvent = vi.fn();
+    vi.stubGlobal("window", { dispatchEvent });
+    read.mockResolvedValueOnce({ entitlement: { isPremium: true } } as never);
+    await fetchSubscriptionView();
+    expect(dispatchEvent).toHaveBeenCalledWith(expect.objectContaining({ type: "mentor:subscription-changed" }));
+  });
   it("returns null when the subscription read never settles", async () => {
     read.mockImplementation(hangUntilAbort);
 

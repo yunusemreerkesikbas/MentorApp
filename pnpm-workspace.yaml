@@ -10,7 +10,10 @@ overrides:
   multer: 2.3.0
   nanoid@3: 3.3.18
   postcss: 8.5.28
+  proxy-addr: 2.0.8
   qs: 6.16.0
+  sharp: 0.35.5
+  source-map-js: 1.2.2
 auditConfig:
   ignoreGhsas:
     # braces <=3.0.3 stack-exhaustion DoS. No patched 3.0.4 is published on npm yet.

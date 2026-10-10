@@ -73,7 +73,7 @@ export function MobileThemeLamp() {
   return (
     <div className="relative size-11 shrink-0">
       <div
-        className="mentor-theme-lamp absolute right-0 z-[1]"
+        className="mentor-theme-lamp pointer-events-none absolute right-0 z-[1]"
         style={{
           top: -HEADER_HANG_OFFSET_PX,
           ...trackRingStyle(layout.trackPadding),
@@ -151,8 +151,9 @@ function ThemeLampScene({
       aria-label={lit ? t("theme_to_light") : t("theme_to_dark")}
       aria-pressed={lit}
       title={t("theme_toggle_label")}
-      className="relative block cursor-pointer rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ width: layout.width, height: layout.height }}
+      className="pointer-events-auto relative block cursor-pointer rounded-[var(--radius-card)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
+      // Header art may hang over the page; its hit area must stay inside the bar.
+      style={{ width: layout.width, height: variant === "header" ? 44 + HEADER_HANG_OFFSET_PX * 2 : layout.height }}
       {...buttonHandlers}
     >
       <motion.span

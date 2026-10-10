@@ -30,7 +30,7 @@ const profile: PublicProfile = {
   username: "ayse",
   achievementsEnabled: false,
   achievementShowcase: null,
-  avatarUrl: "https://cdn.test/ayse.svg",
+  avatarUrl: "/e2e-avatar/ayse.svg",
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",
   bio: "Her gün biraz daha ileri.",
@@ -754,10 +754,10 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
 });
 
 async function mockProfileApi(page: Page) {
-  await page.route("https://cdn.test/missing.svg", async (route) => {
+  await page.route("**/e2e-avatar/missing.svg", async (route) => {
     await route.fulfill({ status: 404, body: "" });
   });
-  await page.route("https://cdn.test/ayse.svg", async (route) => {
+  await page.route("**/e2e-avatar/ayse.svg", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
@@ -832,7 +832,7 @@ async function mockProfileApi(page: Page) {
         userId: "member-broken",
         displayName: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
         username: "cok_uzun_kullanici_adi_ile_tasma_kontrolu",
-        avatarUrl: "https://cdn.test/missing.svg",
+        avatarUrl: "/e2e-avatar/missing.svg",
       });
     }
     if (method === "GET" && path === "/v1/community/profile/yunus_emre") {

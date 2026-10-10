@@ -2,10 +2,9 @@
 
 import Script from "next/script";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { useTranslations } from "next-intl";
-import { Link, usePathname } from "@/i18n/navigation";
 import { ANALYTICS_CONSENT_KEY } from "./analytics";
-import { isPublicConsentBannerPath } from "./consent-banner-path";
+import { AdvertisingConsentProvider } from "./advertising-consent";
+import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 type Consent = "accepted" | "rejected" | null;
 
@@ -20,8 +19,10 @@ const measurementId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID;
 
 function readStoredConsent(): Consent {
   if (typeof window === "undefined") return null;
-  const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
-  if (saved === "accepted" || saved === "rejected") return saved;
+  try {
+    const saved = window.localStorage.getItem(ANALYTICS_CONSENT_KEY);
+    if (saved === "accepted" || saved === "rejected") return saved;
+  } catch { /* Unavailable storage leaves optional analytics disabled. */ }
   return null;
 }
 
@@ -46,9 +47,6 @@ function clearGaCookies(): void {
 }
 
 export function AnalyticsConsentProvider({ children, nonce }: { children: ReactNode; nonce: string }) {
-  const translate = useTranslations("consentBanner");
-  const pathname = usePathname();
-  const hideBanner = !isPublicConsentBannerPath(pathname);
   const [consent, setConsent] = useState<Consent>(null);
   /** False until localStorage is read — avoids flashing the banner on every load. */
   const [hydrated, setHydrated] = useState(false);
@@ -93,6 +91,7 @@ export function AnalyticsConsentProvider({ children, nonce }: { children: ReactN
 
   return (
     <ConsentContext.Provider value={{ consent, accept, reject }}>
+      <AdvertisingConsentProvider>
       {children}
       {measurementId && consent === "accepted" && (
         <Script
@@ -103,21 +102,8 @@ export function AnalyticsConsentProvider({ children, nonce }: { children: ReactN
           onLoad={initializeGa}
         />
       )}
-      {measurementId && hydrated && consent === null && !hideBanner && (
-        <section
-          role="dialog"
-          aria-label={translate("title")}
-          className="fixed inset-x-4 bottom-4 z-[100] mx-auto max-w-2xl rounded-[var(--radius-card)] border bg-white p-4 shadow-lg"
-          style={{ borderColor: "color-mix(in srgb, var(--color-secondary) 24%, transparent)" }}
-        >
-          <h2 className="font-bold" style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}>{translate("title")}</h2>
-          <p className="mt-1 text-sm leading-relaxed" style={{ color: "var(--color-secondary)" }}>{translate("body")} <Link className="underline" href="/cookie-preferences">{translate("details")}</Link></p>
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
-            <button type="button" onClick={reject} className="min-h-11 rounded-[var(--radius-card)] border px-4 text-sm font-semibold" style={{ color: "var(--color-main)" }}>{translate("reject")}</button>
-            <button type="button" onClick={accept} className="min-h-11 rounded-[var(--radius-card)] px-4 text-sm font-bold text-white" style={{ backgroundColor: "var(--color-btn)" }}>{translate("accept")}</button>
-          </div>
-        </section>
-      )}
+      <CookieConsentBanner analytics={{ consent, accept, reject }} analyticsHydrated={hydrated} analyticsEnabled={Boolean(measurementId)} />
+      </AdvertisingConsentProvider>
     </ConsentContext.Provider>
   );
 }

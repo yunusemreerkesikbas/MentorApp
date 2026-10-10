@@ -67,6 +67,13 @@ Data wrapper: `apps/web/src/lib/community.ts`.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-09 — Browser regression coverage:** Journey celebration lifecycle checks now run with
+  normal and reduced motion, using each presentation's accessible dialog name while retaining
+  acknowledgement, keyboard focus, scroll lock, SSE recovery and replay assertions. Public-profile
+  avatar fixtures use mocked same-origin images so the production CSP remains enabled during tests.
+  Usage: run `journey-level-celebration.spec.ts` and `community-member-profile.spec.ts` with Playwright.
+  Related files: `apps/web/e2e/{journey-level-celebration,community-member-profile}.spec.ts`.
+
 - **2026-10-08 · Emek panosu → Haftalık lig; profil ve rozetler ziyaretçiye göre (Topluluk Tur 2).**
   Backend değişmedi; `GET /v1/community/summary` ve `/leaderboard?window=` aynı. Web:
   - Sıralama sayfası **Haftalık lig** (`/topluluk/lig`, `/topluluk/siralama` 308): senin kartın + tek kartta

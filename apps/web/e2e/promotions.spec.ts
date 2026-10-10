@@ -96,6 +96,7 @@ const corsHeaders = {
 };
 
 interface Options {
+  trialUsed?: boolean;
   /** Offers returned when the client asks WITHOUT a code (the automatic path). */
   auto?: PromotionOffersView;
   /** Offers returned when the client sends this exact code; anything else is rejected. */
@@ -120,7 +121,12 @@ async function mockPaywall(page: Page, options: Options = {}) {
     }
     if (method === "GET" && path === "/v1/users/me") return json(route, user);
     if (method === "GET" && path === "/v1/plans") return json(route, plans);
-    if (method === "GET" && path === "/v1/subscription") return json(route, subscription);
+    if (method === "GET" && path === "/v1/subscription") return json(route, {
+      ...subscription,
+      trialEligibility: options.trialUsed
+        ? { eligible: false, reason: "ACCOUNT_USED" }
+        : subscription.trialEligibility,
+    });
 
     if (method === "POST" && path === "/v1/subscription/offers") {
       const body = request.postDataJSON() as { code?: string } | null;
@@ -196,19 +202,20 @@ test("otomatik indirimde eski fiyat üstü çizili, yeni fiyat ve rozet görün�
   await expect(planCard.getByText("Hoş geldin hediyesi")).toBeVisible();
 });
 
-test("ücretli ve deneme onay metni ilk ödeme ve yenileme fiyatını açıklar", async ({
-  page,
-}) => {
-  await mockPaywall(page, { auto: DISCOUNTED_OFFERS });
-  await openPaywall(page);
+for (const trialUsed of [false, true]) {
+  test(`${trialUsed ? "ücretli" : "otomatik deneme"} onay metni ilk ödeme ve yenileme fiyatını açıklar`, async ({ page }) => {
+    await mockPaywall(page, { auto: DISCOUNTED_OFFERS, trialUsed });
+    await openPaywall(page);
 
-  // Ön bilgilendirme formu: the actual total AND what renews afterwards must both be stated.
-  await expect(
-    page.getByTestId("premium-paywall").getByText(/İlk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/),
-  ).toBeVisible();
-  await page.getByTestId("premium-paywall").getByRole("radio", { name: "7 gün denemeyle başla" }).check();
-  await expect(page.getByTestId("premium-paywall").getByText(/7 gün deneme sonrası ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/)).toBeVisible();
-});
+    const paywall = page.getByTestId("premium-paywall");
+    // Pre-purchase consent must disclose both the first charge and every renewal.
+    await expect(paywall.getByRole("checkbox")).toHaveAccessibleName(trialUsed
+      ? /İlk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/
+      : /7 gün deneme sonrası ilk ödeme[\s\S]*₺199,20[\s\S]*₺249,00/);
+    await expect(paywall.getByRole("radio")).toHaveCount(0);
+    await expect(paywall.getByRole("button", { name: trialUsed ? "Ücretli aboneliği başlat" : "Denemeyi başlat", exact: true })).toBeDisabled();
+  });
+}
 
 test("geçerli kupon kodu fiyatı düşürür", async ({ page }) => {
   await mockPaywall(page, {
