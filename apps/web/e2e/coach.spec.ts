@@ -241,6 +241,32 @@ test("dashboard recap teaser'ı açıldıktan sonra tekrar-izle kartına döner,
   ).toBeVisible();
 });
 
+test("ilk ziyaret tercih kartı selamlamanın üstüne binmez", async ({ page }) => {
+  // The card used to be centred in a box shorter than itself, so it rose over the greeting.
+  await mockCoachApi(page, {
+    today: pendingToday,
+    access: { canChat: true, mode: "PREMIUM", dailyMessagesRemaining: 10 },
+  });
+  await page.route("http://localhost:3001/v1/coach/profile", (route) =>
+    json(route, {
+      calibrationStatus: "NOT_STARTED",
+      memoryConsent: "PENDING",
+      supportPreference: null,
+      directnessPreference: null,
+      updatedAt: "2026-10-01T10:00:00.000Z",
+    }));
+  await page.goto("/koc/sohbet");
+  const landing = page.getByTestId("coach-empty-landing");
+  const card = landing.locator("section").filter({ hasText: "Zorlandığında nasıl destek olayım?" });
+  await expect(card).toBeVisible();
+  const help = landing.locator("h2").first();
+  const helpBox = await help.boundingBox();
+  const cardBox = await card.boundingBox();
+  expect(cardBox!.y, "card starts below the greeting").toBeGreaterThanOrEqual(helpBox!.y + helpBox!.height);
+  await card.getByRole("button", { name: "Şimdilik atla" }).scrollIntoViewIfNeeded();
+  await expect(card.getByRole("button", { name: "Şimdilik atla" })).toBeInViewport();
+});
+
 test("boş plan için görev ekleme chip'ini gösterir", async ({ page }) => {
   const emptyToday: TodayPanelResponse = {
     ...pendingToday,

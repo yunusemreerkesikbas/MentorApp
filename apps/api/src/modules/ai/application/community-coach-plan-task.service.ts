@@ -40,4 +40,31 @@ export class CommunityCoachPlanTaskService {
       zoneType: bridge.zone.type as "CHAT" | "QA",
     });
   }
+
+  /**
+   * An accepted "Plana ekle" inside a community-origin conversation. Returns null when the chat has
+   * no community origin or its source is no longer live, so the caller keeps an ordinary AI task.
+   */
+  async createForCoachMessage(
+    userId: string,
+    conversationId: string,
+    input: CreatePlanTaskInput,
+    coachMessageId: string,
+  ): Promise<PlanTaskDto | null> {
+    const origin = await this.conversations.getOrigin(userId, conversationId);
+    if (origin?.type !== "COMMUNITY_THREAD") return null;
+    const bridge = await this.forum.tryGetBridge(userId, origin.refId);
+    if (!bridge) return null;
+    return this.plans.createFromCommunityCoach(
+      userId,
+      input,
+      {
+        conversationId,
+        threadId: bridge.threadId,
+        intent: bridge.intent,
+        zoneType: bridge.zone.type as "CHAT" | "QA",
+      },
+      coachMessageId,
+    );
+  }
 }

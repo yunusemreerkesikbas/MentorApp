@@ -43,6 +43,56 @@ describe("CoachActionService", () => {
     );
   });
 
+  it("keeps the community source when the task comes from a community-origin conversation", async () => {
+    const messages = {
+      getOwnedCoachAction: vi.fn(async () => ({
+        action,
+        status: CoachActionStatus.PROPOSED,
+        resultRefId: null,
+        conversationId: "conversation-1",
+      })),
+      transitionAction: vi.fn(async () => true),
+      setActionResult: vi.fn(async () => true),
+    };
+    const plan = { createFromAiCoach: vi.fn() };
+    const community = { createForCoachMessage: vi.fn(async () => ({ id: "task-community" })) };
+    const service = new CoachActionService(messages as never, plan as never, undefined, community as never);
+
+    await expect(service.decide("user-1", "message-1", "ACCEPT")).resolves.toEqual({
+      action,
+      status: CoachActionStatus.ACCEPTED,
+      resultRefId: "task-community",
+    });
+    expect(community.createForCoachMessage).toHaveBeenCalledWith(
+      "user-1",
+      "conversation-1",
+      expect.objectContaining({ title: "Matematik tekrar" }),
+      "message-1",
+    );
+    expect(plan.createFromAiCoach).not.toHaveBeenCalled();
+  });
+
+  it("falls back to an AI coach task when the conversation has no live community source", async () => {
+    const messages = {
+      getOwnedCoachAction: vi.fn(async () => ({
+        action,
+        status: CoachActionStatus.PROPOSED,
+        resultRefId: null,
+        conversationId: "conversation-1",
+      })),
+      transitionAction: vi.fn(async () => true),
+      setActionResult: vi.fn(async () => true),
+    };
+    const plan = { createFromAiCoach: vi.fn(async () => ({ id: "task-ai" })) };
+    const community = { createForCoachMessage: vi.fn(async () => null) };
+    const service = new CoachActionService(messages as never, plan as never, undefined, community as never);
+
+    await expect(service.decide("user-1", "message-1", "ACCEPT")).resolves.toMatchObject({
+      resultRefId: "task-ai",
+    });
+    expect(plan.createFromAiCoach).toHaveBeenCalledWith("user-1", expect.anything(), "message-1");
+  });
+
   it("cancels without mutating coaching data", async () => {
     const messages = {
       getOwnedCoachAction: vi.fn(async () => ({

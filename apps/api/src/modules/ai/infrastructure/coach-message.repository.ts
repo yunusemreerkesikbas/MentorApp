@@ -221,6 +221,7 @@ export class CoachMessageRepository {
     action: CoachActionDto;
     status: CoachActionStatus;
     resultRefId: string | null;
+    conversationId: string;
   } | null> {
     return withUserContext(this.db, { userId }, async (tx) => {
       const [row] = await tx
@@ -228,6 +229,7 @@ export class CoachMessageRepository {
           action: coachMessages.action,
           status: coachMessages.actionStatus,
           resultRefId: coachMessages.actionResultRefId,
+          conversationId: coachMessages.conversationId,
         })
         .from(coachMessages)
         .where(
@@ -243,6 +245,7 @@ export class CoachMessageRepository {
         action: row.action as CoachActionDto,
         status: row.status as CoachActionStatus,
         resultRefId: row.resultRefId ?? null,
+        conversationId: row.conversationId,
       };
     });
   }
