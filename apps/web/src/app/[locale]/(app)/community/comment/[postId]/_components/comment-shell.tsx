@@ -234,7 +234,7 @@ function FocusedComment({
   const { openQuickReply } = useCommunityQuickReply();
   return (
     <div className="group flex items-start gap-3 px-4 py-4 sm:px-5 sm:py-5">
-      <AuthorLink username={comment.authorUsername}>
+      <AuthorLink decorative username={comment.authorUsername}>
         <AuthorAvatar name={comment.authorName} size={40} src={comment.authorAvatarUrl} />
       </AuthorLink>
       <div className="min-w-0 flex-1">

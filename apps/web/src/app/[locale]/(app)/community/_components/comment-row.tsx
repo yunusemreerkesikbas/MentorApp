@@ -79,7 +79,7 @@ export function CommentRow({
       // ponytail: persistent tint marks the highlighted reply — no fade timer; add one if it reads as sticky.
       style={highlighted ? { background: "color-mix(in srgb, var(--color-chip) 14%, var(--color-surface))" } : undefined}
     >
-      <AuthorLink username={comment.authorUsername}>
+      <AuthorLink decorative username={comment.authorUsername}>
         <AuthorAvatar name={comment.authorName} size={36} src={comment.authorAvatarUrl} />
       </AuthorLink>
       <div className="min-w-0 flex-1">

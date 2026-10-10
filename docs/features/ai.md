@@ -103,6 +103,24 @@ pnpm --filter @mentor/api test -- --grep "ai"
 
 ## Geliştirmeler (timeline)
 
+- **Topluluktan gelen görev kaynağını koruyor; ilk tercih kartı selamlamaya binmiyor (2026-10-10)**
+  - **Kaynak (F-04):** topluluk kökenli bir sohbette kabul edilen "Plana ekle" `AI_COACH` olarak
+    kaydediliyordu; web `POST /v1/coach/conversations/:id/plan-tasks`'i hiç çağırmadığı için
+    `COMMUNITY_COACH` görev, plandaki "Topluluktan" bağlantısı ve "görev bitti, tartışmaya dön" composer'ı
+    arayüzden açılamıyordu. Artık karar sunucuda: `CoachActionService` önce
+    `CommunityCoachPlanTaskService.createForCoachMessage`'ı dener; sohbetin kökeni `COMMUNITY_THREAD` ve
+    köprü hâlâ canlıysa görev `COMMUNITY_COACH` olur, değilse (bayrak kapalı, konu silinmiş) eskisi gibi
+    `AI_COACH`. Köken istemciden alınmaz. Onay ucu ve yanıtı aynı (`conversationId` yanıta sızmaz).
+  - **Tekrar güvenliği:** mesaj başına tek görev; `origin_meta.coachMessageId` kullanıcı kilidi içinde
+    aranır (AI_COACH'taki unique index'in karşılığı).
+  - **AI çıktı özeti:** `aiCoachOutcomeSummary` artık `COMMUNITY_COACH` görevleri de sayar; ikisi de
+    öğrencinin onayladığı AI önerisi.
+  - **Tercih kartı:** boş sohbetteki ilk ziyaret kartı, kendisinden kısa bir alanda ortalandığı için
+    selamlamanın üstüne çıkıyordu. Orta alan artık kayan bir sütun, içerik `my-auto` ile ortalanır
+    (`coach-empty-landing.tsx`).
+  - **Testler:** `coach-action.service.spec.ts` (topluluk yolu + geri düşme), `test/ai-coach.e2e-spec.ts`
+    (köken, idempotent tekrar), `e2e/coach.spec.ts` (kart selamlamanın altında başlar).
+
 - **2026-10-02 · Accepted coach actions preserve stopwatch sessions.** Starting an untimed task through an accepted coach action creates the `stopwatch` preset with null planned minutes and returns that actual session on retries. The coach link opens the same upward-counting mode used by plan and dashboard. Usage: approve the start action for a task without an explicit duration or usable calendar range. Gotchas: AI programs with allocated minutes retain countdown behavior; no duration is inferred from old titles. Related: `session.service.ts`, `coaching.mappers.ts`, `coach-action-card.tsx`, `session-params.ts`.
 
 - **2026-10-02 · Plan minutes are structured task data.** Personalized plan blocks, including legacy day-count requests with a minute budget, carry `durationMinutes` from the backend allocator through preview selection and the coaching apply transaction. New block titles contain the verified topic and action; minutes are displayed separately, so later duration edits do not leave stale generated title numbers. Allocation remains exact: 125 minutes becomes 42/42/41; 600 becomes 200/200/200. **Usage:** choose the daily budget in “Koçla planla”, review each task's separate duration, then apply selected tasks. **Gotchas:** existing task titles and free-text model titles are not parsed for duration; no prompt or model routing change. Related: `plan-adaptation-blocks.ts`, shared coaching types/validation, `plan-coach-adaptation-preview.tsx`, `plan.service.ts`.
@@ -1051,3 +1069,14 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   Forum köprüsü kapanmış/konu silinmişse `getBridge` hata fırlatır; aksiyon ACCEPTED'da kalır ve
   yeniden denenebilir (sessizce `AI_COACH`'a düşmüyoruz). Test:
   `coach-action.service.spec.ts` + `ai-coach.e2e-spec.ts` (community köprü senaryosu).
+
+- **2026-10-10 — F-04 iki kez düzeltilmişti, birleştirildi (master `c278b72` + APP-118).**
+  Akış: `CoachActionService` → `CommunityCoachPlanTaskService.createForCoachMessage`. Bu yol
+  `createIfCommunity`'nin yerini alır; `createIfCommunity` yalnızca kartsız
+  `POST /v1/coach/conversations/:id/plan-tasks` ucunda kalır.
+  `stripInternal` kaldırıldı; `conversationId` `decide()` başında ayrılıyor.
+  - **Davranış farkı (yukarıdaki "sessizce düşmüyoruz" notunun yerine geçer):** köprü kapalıysa ya da
+    konu silinmişse görev artık hata vermeden `AI_COACH` olur. Bu yolda `tryGetBridge` kullanılıyor.
+  - **İdempotency:** `origin_meta.coachMessageId` ile mesaj başına tek `COMMUNITY_COACH` görev olur.
+    `findCommunityCoachTaskForMessage` bunu user lock altında yapar. Aynı kartın tekrar onayı aynı
+    görevi döner.

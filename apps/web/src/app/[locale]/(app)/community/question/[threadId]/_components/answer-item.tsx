@@ -50,7 +50,7 @@ export function AnswerItem({
           : "flex gap-3 py-4"
       }
     >
-      <AuthorLink username={answer.authorUsername} className="shrink-0">
+      <AuthorLink decorative username={answer.authorUsername} className="shrink-0">
         <AuthorAvatar name={answer.authorName} src={answer.authorAvatarUrl} size={32} />
       </AuthorLink>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
@@ -61,7 +61,8 @@ export function AnswerItem({
           </span>
         ) : null}
         <div className="flex min-w-0 items-center gap-1.5">
-          <AuthorLink username={answer.authorUsername} className="min-w-0 truncate hover:underline">
+          {/* The name keeps its width (cut only if it alone is wider than the row); the handle gives way. */}
+          <AuthorLink username={answer.authorUsername} className="min-w-0 max-w-full shrink-0 truncate hover:underline">
             <span className="text-body-sm font-extrabold text-[var(--color-main)]">
               {answer.authorName || t("unknown_author")}
             </span>

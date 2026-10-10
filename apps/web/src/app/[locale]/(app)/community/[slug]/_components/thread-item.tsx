@@ -128,7 +128,7 @@ export function ThreadItem({
   return (
     <div {...rowProps}>
       <div className="shrink-0">
-        <AuthorLink username={thread.authorUsername}>
+        <AuthorLink decorative username={thread.authorUsername}>
           <AuthorAvatar name={thread.authorName} size={40} src={thread.authorAvatarUrl} />
         </AuthorLink>
       </div>

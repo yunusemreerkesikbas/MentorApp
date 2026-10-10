@@ -56,8 +56,10 @@ export function CoachEmptyLanding() {
         </h2>
       </div>
 
-      <div className="relative flex min-h-0 w-full flex-1 items-center justify-center py-2">
-        <div className="flex w-full flex-col items-center">
+      {/* Centred with my-auto in a scrolling column: when the first-visit preference card is taller
+          than the space left, it starts under the greeting and scrolls instead of rising over it. */}
+      <div className="relative flex min-h-0 w-full flex-1 flex-col overflow-y-auto py-2">
+        <div className="my-auto flex w-full flex-col items-center">
           <CoachCalibrationCard />
           <PuhuImage
             variant="encouraging"

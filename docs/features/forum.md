@@ -109,6 +109,21 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk QA turu 2: erişilebilirlik ve küçük UX (2026-10-10)**
+  - **Avatar bağlantıları:** gönderi, yorum, yanıt, soru, cevap ve tepki listesinde avatarı saran profil
+    bağlantısının erişilebilir adı yoktu (baş harfler `aria-hidden`). Hemen yanında aynı profile giden ad
+    bağlantısı olduğundan avatar bağlantısı artık `AuthorLink decorative` (`aria-hidden`, `tabIndex=-1`).
+  - **Mobil filtre düğmesi:** adı yalnız seçili sıralamaydı ("Öne çıkan"). Artık "Filtreler: Öne çıkan" ve
+    `aria-haspopup="dialog"`.
+  - **Onaylı oda ipucu:** REQUEST odada "Hepsi tek dokunuş uzakta!" yerine `zone_join_hint_request`
+    ("Bu oda onaylı. İsteğin oda sahibine gider, onaylanınca yazmaya başlarsın.").
+  - **Cevap kartında ad:** telefonda ad ile `@kullanıcı` eşit kısalıyordu ("Koç Cem …"). Ad artık
+    genişliğini korur, yalnız `@kullanıcı` kısalır.
+  - **Silinmiş gönderi:** `requireThread` silinmiş konuyu uygulama düzeyinde de 404 yapar (RLS'i atlayan
+    dev/CI/e2e rolünde detay, tepki, pin ve yorum yolları silinmiş içeriği döndürebiliyordu).
+  - **Testler:** `e2e/community-detail.spec.ts` (adsız bağlantı yok, 375 px ad kesilmez),
+    `e2e/community-feed.spec.ts` (onaylı oda ipucu, mobil filtre adı), `forum-thread.service.spec.ts`.
+
 - **Topluluk QA turu: RLS'te yazar adları, takılan Akış, silme sonrası yol (2026-10-08)**
   - **Yazar adları (P1):** üretim rolü RLS'e tabi (`database-role-safety.ts`) ve `users` politikası yalnız
     kendi satırını okutuyor. Kullanıcı bağlamındaki 13 thread/post okuması (oda akışı ve listesi, gönderi,
@@ -992,3 +1007,14 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   `test.setTimeout(60_000)`. "Profil bilgileri" dialog adımı ve `mentorship.spec.ts` Koçum /
   veri kapsamı testleri güncel master'da (9c3b30f9) 3×2 tekrarla kararlı geçiyor; ayrı düzeltme
   gerekmedi (Koçum satırı `/ayarlar` hesap kartında duruyor, `/profil` oraya yönleniyor).
+
+- **2026-10-10 — F-04 iki kez düzeltilmişti, birleştirildi (master `c278b72` + APP-118).**
+  Akış: `CoachActionService` → `CommunityCoachPlanTaskService.createForCoachMessage`. Bu yol
+  `createIfCommunity`'nin yerini alır; `createIfCommunity` yalnızca kartsız
+  `POST /v1/coach/conversations/:id/plan-tasks` ucunda kalır.
+  `stripInternal` kaldırıldı; `conversationId` `decide()` başında ayrılıyor.
+  - **Davranış farkı (yukarıdaki "sessizce düşmüyoruz" notunun yerine geçer):** köprü kapalıysa ya da
+    konu silinmişse görev artık hata vermeden `AI_COACH` olur. Bu yolda `tryGetBridge` kullanılıyor.
+  - **İdempotency:** `origin_meta.coachMessageId` ile mesaj başına tek `COMMUNITY_COACH` görev olur.
+    `findCommunityCoachTaskForMessage` bunu user lock altında yapar. Aynı kartın tekrar onayı aynı
+    görevi döner.

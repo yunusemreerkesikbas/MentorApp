@@ -85,6 +85,34 @@ test("Gönderi detayı: yol Topluluk › oda › Gönderi, yorumlar tek kartta, 
   await page.screenshot({ path: testInfo.outputPath("post.png"), fullPage: true });
 });
 
+test("Soru detayı (375 px): çözüm kartında yazar adı kesilmez, önce @kullanıcı adı kısalır", async ({ page }) => {
+  await mockApi(page);
+  const coach = { id: "p7", name: "Koç Cem Aydın", username: "koccem_aydin_kpss" };
+  await page.route(/\/v1\/forum\/threads\/q3(\?|$)/, (route) =>
+    json(route, { question, answers: [answer("a1", coach, answers[0]!.body, true), answers[1]] }));
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/topluluk/soru/q3");
+  const name = page.locator("section[aria-labelledby='answers-title'] article").first().getByText(coach.name, { exact: true });
+  await expect(name).toBeVisible();
+  // The truncating box is the name link around the span.
+  expect(await name.evaluate((el) => { const box = el.closest("a") ?? el; return box.scrollWidth <= box.clientWidth + 1; }), "name is not cut").toBe(true);
+});
+
+test("Detaylarda adsız bağlantı yok: avatar bağlantısı adın tekrarı olarak gizlenir", async ({ page }) => {
+  // The avatar repeated the name link next to it but had no accessible name of its own, so a screen
+  // reader announced an empty link before every post, comment and answer.
+  await mockApi(page);
+  // The accessibility tree is the truth: the avatar's initials are aria-hidden, so its text is no name.
+  const unnamedLinks = async () =>
+    ((await page.locator("main").ariaSnapshot()).match(/^\s*- link(?::\s*$|\s*$)/gm) ?? []).length;
+  for (const path of ["/topluluk/mesaj/t1", "/topluluk/soru/q3"]) {
+    await page.goto(path);
+    await expect(page.locator("main h1").first()).toBeAttached();
+    await expect(page.getByText(/Bu hafta her gün|Üç tur yapıyorum/).first()).toBeVisible();
+    expect(await unnamedLinks(), `${path} has no unnamed links`).toBe(0);
+  }
+});
+
 test("Gönderi detayı: doğrudan açılan kendi gönderisini silen odasına döner, uygulamadan çıkmaz", async ({ page }) => {
   // A notification or shared link opens the detail with no history behind it; router.back() then
   // left the app for about:blank.

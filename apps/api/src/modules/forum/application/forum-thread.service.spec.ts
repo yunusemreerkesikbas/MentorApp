@@ -192,6 +192,13 @@ describe("ForumThreadService", () => {
     );
   });
 
+  it("404s a deleted thread even when the DB role skips RLS (dev, CI, e2e)", async () => {
+    threadRepo.findById.mockResolvedValue(threadRow({ deletedAt: new Date() }));
+    await expect(
+      svc(makeZoneRepo()).getThreadDetail("u2", "t1"),
+    ).rejects.toMatchObject({ httpStatus: HttpStatus.NOT_FOUND });
+  });
+
   it("maps author avatar storage key to authorAvatarUrl", async () => {
     threadRepo.findById.mockResolvedValue(
       threadRow({ authorAvatarStorageKey: "avatars/u1/a.png" }),

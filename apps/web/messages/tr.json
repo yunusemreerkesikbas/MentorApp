@@ -520,6 +520,7 @@
     "zone_menu": "Oda menüsü",
     "zone_join_ledge": "Odaya katıl",
     "zone_join_hint": "Katıl, yaz, soru sor, el uzat. Hepsi tek dokunuş uzakta!",
+    "zone_join_hint_request": "Bu oda onaylı. İsteğin oda sahibine gider, onaylanınca yazmaya başlarsın.",
     "group_mine": "Odaların",
     "group_others": "Diğer odalar",
     "profile_nav": "Profilim",

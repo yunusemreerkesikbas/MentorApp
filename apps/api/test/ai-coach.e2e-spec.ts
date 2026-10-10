@@ -446,6 +446,31 @@ describe("ai coach chat (e2e)", () => {
     expect(await aiUsageCount(premiumId)).toBe(usageBeforeTask);
     expect(await coinBalance(premiumId)).toBe(coinsBeforeTask);
 
+    // Accepting the coach's own "Plana ekle" in this chat keeps the community source (F-04).
+    const proposal = (history.body.items as Array<{ id: string; role: string; action?: { type: string } | null }>)
+      .find((message) => message.role === "COACH" && message.action?.type === "CREATE_PLAN_TASK");
+    expect(proposal, "fake coach proposes a plan task").toBeTruthy();
+    const accepted = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${proposal!.id}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(accepted.status).toBe(201);
+    expect(accepted.body).not.toHaveProperty("conversationId");
+    const acceptedTask = await pool.query(
+      "select origin_type, origin_ref_id, origin_meta from plan_tasks where id=$1",
+      [accepted.body.resultRefId],
+    );
+    expect(acceptedTask.rows[0]).toMatchObject({
+      origin_type: "COMMUNITY_COACH",
+      origin_ref_id: sent.body.conversationId,
+      origin_meta: { threadId, intent: "PLAN", zoneType: "CHAT", coachMessageId: proposal!.id },
+    });
+    const retried = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${proposal!.id}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(retried.body.resultRefId).toBe(accepted.body.resultRefId);
+
     const updatedTask = await request(app.getHttpServer())
       .patch(`/v1/plan-tasks/${createdTask.body.id}`)
       .set({ Authorization: `Bearer ${premiumToken}` })

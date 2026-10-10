@@ -11,16 +11,8 @@ import {
 } from "../../../common/errors/domain-error";
 import { PlanService } from "../../coaching/application/plan.service";
 import { SessionService } from "../../coaching/application/session.service";
-import { CommunityCoachPlanTaskService } from "./community-coach-plan-task.service";
 import { CoachMessageRepository } from "../infrastructure/coach-message.repository";
-
-/** conversationId is internal routing data, never part of the public result. */
-function stripInternal<T extends { conversationId?: string }>(
-  row: T,
-): Omit<T, "conversationId"> {
-  const { conversationId: _omit, ...rest } = row;
-  return rest;
-}
+import { CommunityCoachPlanTaskService } from "./community-coach-plan-task.service";
 
 /** Executes only an explicitly accepted, backend-allowlisted coach action. */
 @Injectable()
@@ -37,11 +29,14 @@ export class CoachActionService {
     messageId: string,
     decision: CoachActionDecisionInput["decision"],
   ): Promise<CoachActionResultDto> {
-    let current = await this.messages.getOwnedCoachAction(userId, messageId);
-    if (!current) throw new NotFoundError();
+    const owned = await this.messages.getOwnedCoachAction(userId, messageId);
+    if (!owned) throw new NotFoundError();
+    // The conversation only routes the task; it is not part of the action result.
+    const { conversationId, ...stored } = owned;
+    let current: CoachActionResultDto = stored;
 
     if (decision === "CANCEL") {
-      if (current.status === CoachActionStatus.CANCELLED) return stripInternal(current);
+      if (current.status === CoachActionStatus.CANCELLED) return current;
       if (current.status !== CoachActionStatus.PROPOSED)
         throw new ConflictError();
       const cancelled = await this.messages.transitionAction(
@@ -51,10 +46,10 @@ export class CoachActionService {
         CoachActionStatus.CANCELLED,
       );
       if (!cancelled) throw new ConflictError();
-      return { ...stripInternal(current), status: CoachActionStatus.CANCELLED };
+      return { ...current, status: CoachActionStatus.CANCELLED };
     }
 
-    if (current.status === CoachActionStatus.COMPLETED) return stripInternal(current);
+    if (current.status === CoachActionStatus.COMPLETED) return current;
     if (current.status === CoachActionStatus.CANCELLED)
       throw new ConflictError();
     if (current.status === CoachActionStatus.PROPOSED) {
@@ -65,10 +60,11 @@ export class CoachActionService {
         CoachActionStatus.ACCEPTED,
       );
       if (!claimed) {
-        current = await this.messages.getOwnedCoachAction(userId, messageId);
-        if (!current || current.status !== CoachActionStatus.ACCEPTED) {
+        const latest = await this.messages.getOwnedCoachAction(userId, messageId);
+        if (!latest || latest.status !== CoachActionStatus.ACCEPTED) {
           throw new ConflictError();
         }
+        current = { action: latest.action, status: latest.status, resultRefId: latest.resultRefId };
       } else {
         current = { ...current, status: CoachActionStatus.ACCEPTED };
       }
@@ -76,12 +72,7 @@ export class CoachActionService {
 
     let resultRefId = current.resultRefId;
     if (!resultRefId) {
-      resultRefId = await this.execute(
-        userId,
-        messageId,
-        current.action,
-        current.conversationId,
-      );
+      resultRefId = await this.execute(userId, messageId, conversationId, current.action);
       if (resultRefId)
         await this.messages.setActionResult(userId, messageId, resultRefId);
     }
@@ -91,27 +82,26 @@ export class CoachActionService {
       this.sessions
         ? await this.sessions.getFromAiCoach(userId, resultRefId)
         : undefined;
-    return { ...stripInternal(current), resultRefId, ...(session ? { session } : {}) };
+    return { ...current, resultRefId, ...(session ? { session } : {}) };
   }
 
   private async execute(
     userId: string,
     messageId: string,
+    conversationId: string,
     action: CoachActionResultDto["action"],
-    conversationId?: string,
   ): Promise<string | null> {
     switch (action.type) {
       case CoachActionType.CREATE_PLAN_TASK: {
-        // A community-origin chat files the task as COMMUNITY_COACH (source link + return composer).
-        const communityTask =
-          conversationId && this.communityTasks
-            ? await this.communityTasks.createIfCommunity(
-                userId,
-                conversationId,
-                action.payload,
-              )
-            : null;
-        if (communityTask) return communityTask.id;
+        // A chat opened from a community thread keeps that source on the task, so finishing it can
+        // lead back to the discussion. No live source (flag off, thread gone) = an ordinary AI task.
+        const community = await this.communityTasks?.createForCoachMessage(
+          userId,
+          conversationId,
+          action.payload,
+          messageId,
+        );
+        if (community) return community.id;
         const task = await this.plans.createFromAiCoach(
           userId,
           action.payload,

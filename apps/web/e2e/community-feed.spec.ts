@@ -108,6 +108,27 @@ test("Oda: üye değilsen tek ledge 'Odaya katıl', yazma alanı yok; katılınc
   await expect(page.getByPlaceholder("Aklında ne var?", { exact: true })).toBeVisible();
 });
 
+test("Onaylı oda: katılma ipucu onay gerektiğini söyler, 'tek dokunuş' demez", async ({ page }) => {
+  await mockApi(page);
+  const requestZone = { ...chatZone, joinPolicy: "REQUEST", myStatus: null, myRole: null };
+  await page.route(/\/v1\/forum\/zones\/genel-sohbet\/feed(\?|$)/, (route) =>
+    json(route, zoneFeed(requestZone, [])));
+  await page.goto("/topluluk/genel-sohbet");
+
+  await expect(page.getByRole("button", { name: "Odaya katıl" })).toBeVisible();
+  await expect(page.getByText("Hepsi tek dokunuş uzakta!", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("Bu oda onaylı.", { exact: false })).toBeVisible();
+});
+
+test("Mobil Akış: filtre düğmesi ne açtığını söyler (Filtreler: seçili sıralama)", async ({ page }, testInfo) => {
+  test.skip(!testInfo.project.name.startsWith("mobile"), "The filter sheet trigger exists only on phones.");
+  await mockApi(page);
+  await page.goto("/topluluk/akis");
+  const trigger = page.getByRole("button", { name: "Filtreler: Öne çıkan" });
+  await expect(trigger).toBeVisible();
+  await expect(trigger).toHaveAttribute("aria-haspopup", "dialog");
+});
+
 test("Soru-cevap odası: her soruda tek durum; bekliyor, cevap sayısı, çözüldü", async ({ page }, testInfo) => {
   await mockApi(page);
   await page.goto("/topluluk/soru-cevap");
