@@ -478,6 +478,50 @@ describe("ai coach chat (e2e)", () => {
     expect(updatedTask.status).toBe(200);
     expect(updatedTask.body.origin).toEqual(createdTask.body.origin);
 
+    // Approving the AI's own "Plana ekle" card in this community chat files a COMMUNITY_COACH task.
+    const seed = await pool.connect();
+    let actionMessageId: string;
+    try {
+      await seed.query("begin");
+      await seed.query("select set_config('app.role','SERVICE',true)");
+      const inserted = await seed.query(
+        `insert into coach_messages (user_id, conversation_id, role, content, action, action_status)
+         values ($1, $2, 'COACH', 'Planına ekleyelim mi?', $3::jsonb, 'PROPOSED') returning id`,
+        [
+          premiumId,
+          sent.body.conversationId,
+          JSON.stringify({
+            type: "CREATE_PLAN_TASK",
+            label: "Plana ekle",
+            payload: { title: "Onaydan gelen görev", subject: "Türkçe" },
+          }),
+        ],
+      );
+      actionMessageId = inserted.rows[0].id;
+      await seed.query("commit");
+    } finally {
+      seed.release();
+    }
+    const approved = await request(app.getHttpServer())
+      .post(`/v1/coach/messages/${actionMessageId}/action`)
+      .set({ Authorization: `Bearer ${premiumToken}` })
+      .send({ decision: "ACCEPT" });
+    expect(approved.status).toBe(201);
+    expect(approved.body).not.toHaveProperty("conversationId");
+    const plan = await request(app.getHttpServer())
+      .get("/v1/plan-tasks")
+      .set({ Authorization: `Bearer ${premiumToken}` });
+    const approvedTask = (plan.body.items as { id: string; origin: Record<string, unknown> }[]).find(
+      (t) => t.id === approved.body.resultRefId,
+    );
+    expect(approvedTask?.origin).toEqual({
+      type: "COMMUNITY_COACH",
+      conversationId: sent.body.conversationId,
+      threadId,
+      intent: "PLAN",
+      zoneType: "CHAT",
+    });
+
     await request(app.getHttpServer())
       .post(`/v1/coach/conversations/${sent.body.conversationId}/plan-tasks`)
       .set({ Authorization: `Bearer ${freeToken}` })

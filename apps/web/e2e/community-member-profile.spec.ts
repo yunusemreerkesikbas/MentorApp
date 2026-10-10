@@ -30,7 +30,7 @@ const profile: PublicProfile = {
   username: "ayse",
   achievementsEnabled: false,
   achievementShowcase: null,
-  avatarUrl: "https://cdn.test/ayse.svg",
+  avatarUrl: "http://localhost:3001/test-assets/ayse.svg",
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",
   bio: "Her gün biraz daha ileri.",
@@ -174,6 +174,8 @@ test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikt
   page,
   context,
 }, testInfo) => {
+  // Four viewports with full-page screenshots: ~25s of work, too close to the 30s default under load.
+  test.setTimeout(60_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await mockProfileApi(page);
   await page.addInitScript(() => {
@@ -771,10 +773,13 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
 });
 
 async function mockProfileApi(page: Page) {
-  await page.route("https://cdn.test/missing.svg", async (route) => {
+  // Fixture images live on the API origin: the production CSP `img-src` only allows that origin
+  // (plus WEB_CSP_STORAGE_ORIGINS, unset in CI), so a foreign CDN host is blocked and the avatar
+  // falls back to initials.
+  await page.route("http://localhost:3001/test-assets/missing.svg", async (route) => {
     await route.fulfill({ status: 404, body: "" });
   });
-  await page.route("https://cdn.test/ayse.svg", async (route) => {
+  await page.route("http://localhost:3001/test-assets/ayse.svg", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
@@ -849,7 +854,7 @@ async function mockProfileApi(page: Page) {
         userId: "member-broken",
         displayName: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
         username: "cok_uzun_kullanici_adi_ile_tasma_kontrolu",
-        avatarUrl: "https://cdn.test/missing.svg",
+        avatarUrl: "http://localhost:3001/test-assets/missing.svg",
       });
     }
     if (method === "GET" && path === "/v1/community/profile/yunus_emre") {

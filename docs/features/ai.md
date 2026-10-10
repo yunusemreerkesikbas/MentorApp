@@ -1061,3 +1061,22 @@ excludeTailExchange`) — model kendi kötü yanıtına çapa atmasın. Mesaj sa
   `mock-exams/{id}/categorize-photo` ucu geriye dönük uyumluluk için duruyor ama artık hiçbir
   istemci çağırmıyor; `mock_exam_photo_categorizations` yazılmıyor (temizlik ayrı migration).
   İlgili: `photo-categorize.service.ts`, `ai-mock-exam-photo.controller.ts`, `ai.dto.ts`.
+
+- **2026-10-10 — `CoachActionService`: CREATE_PLAN_TASK community-origin sohbette `COMMUNITY_COACH`.**
+  `getOwnedCoachAction` artık `conversationId` da dönüyor (iç yönlendirme verisi; `stripInternal` ile
+  public sonuca sızmıyor). Konuşma `COMMUNITY_THREAD` kökenliyse görev
+  `CommunityCoachPlanTaskService.createIfCommunity` ile oluşur, aksi hâlde `createFromAiCoach`.
+  Forum köprüsü kapanmış/konu silinmişse `getBridge` hata fırlatır; aksiyon ACCEPTED'da kalır ve
+  yeniden denenebilir (sessizce `AI_COACH`'a düşmüyoruz). Test:
+  `coach-action.service.spec.ts` + `ai-coach.e2e-spec.ts` (community köprü senaryosu).
+
+- **2026-10-10 — F-04 iki kez düzeltilmişti, birleştirildi (master `c278b72` + APP-118).**
+  Akış: `CoachActionService` → `CommunityCoachPlanTaskService.createForCoachMessage`. Bu yol
+  `createIfCommunity`'nin yerini alır; `createIfCommunity` yalnızca kartsız
+  `POST /v1/coach/conversations/:id/plan-tasks` ucunda kalır.
+  `stripInternal` kaldırıldı; `conversationId` `decide()` başında ayrılıyor.
+  - **Davranış farkı (yukarıdaki "sessizce düşmüyoruz" notunun yerine geçer):** köprü kapalıysa ya da
+    konu silinmişse görev artık hata vermeden `AI_COACH` olur. Bu yolda `tryGetBridge` kullanılıyor.
+  - **İdempotency:** `origin_meta.coachMessageId` ile mesaj başına tek `COMMUNITY_COACH` görev olur.
+    `findCommunityCoachTaskForMessage` bunu user lock altında yapar. Aynı kartın tekrar onayı aynı
+    görevi döner.

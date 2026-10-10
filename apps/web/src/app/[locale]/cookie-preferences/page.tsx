@@ -10,7 +10,7 @@ export default async function CookiePreferencesPage() {
   return (
     <div className="min-h-screen">
       <div className="mx-auto max-w-2xl px-5 pt-8 lg:px-8"><Link href="/" className="text-sm font-semibold underline" style={{ color: "var(--color-accent)" }}>{translate("back")}</Link></div>
-      <NextIntlClientProvider messages={pickMessages(await getMessages(), ["analyticsConsent"])}>
+      <NextIntlClientProvider messages={pickMessages(await getMessages(), ["analyticsConsent", "advertisingConsent"])}>
         <CookiePreferencesContent />
       </NextIntlClientProvider>
     </div>

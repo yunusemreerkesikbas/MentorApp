@@ -278,6 +278,7 @@ test("refresh oturumu yoksa public header giriş bağlantısını korur", async 
 test("anonim makale reklamı doğrulanmış slug ile limited ayarları display öncesi uygular", async ({
   page,
 }) => {
+  await page.addInitScript(() => localStorage.setItem("mentor.advertising-consent.v1", "accepted"));
   await page.setViewportSize({ width: 1280, height: 240 });
   await installDisplayGpt(page, false);
   const api = await mockKnowledgeApi(page, { authenticated: false });
@@ -301,7 +302,8 @@ test("anonim makale reklamı doğrulanmış slug ile limited ayarları display �
     (window as unknown as { __mentorGptLog: string[] }).__mentorGptLog,
   );
   expect(log.indexOf("privacy:limited")).toBeLessThan(log.indexOf("display"));
-  expect(log).toContain("sizes:320x100,728x90");
+  // The article column is narrower than 728px, even on this desktop viewport.
+  expect(log).toContain("sizes:320x100");
   expect(api.unexpected).toEqual([]);
 });
 
@@ -309,6 +311,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
   page,
   context,
 }) => {
+  await context.addInitScript(() => localStorage.setItem("mentor.advertising-consent.v1", "accepted"));
   await installDisplayGpt(page, true);
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.route(
@@ -325,7 +328,7 @@ test("contextual no-fill alanı çöker; Premium kullanıcı GPT indirmez", asyn
       ),
     )
     .toBe(true);
-  await adSlot.evaluate((element) => element.scrollIntoView({ block: "center" }));
+  await page.getByRole("region", { name: "Bu konu kafanı mı kurcalıyor?" }).scrollIntoViewIfNeeded();
   await expect(adSlot).toBeHidden();
 
   const premiumPage = await context.newPage();

@@ -25,6 +25,7 @@ describe("economy onboarding quests (e2e)", () => {
   let adminToken = "";
   let questerToken = "";
   let questerId = "";
+  let questerEmail = "";
 
   const signup = async (label: string) => {
     const email = `eq-${label}-${RUN}@test.local`;
@@ -90,6 +91,7 @@ describe("economy onboarding quests (e2e)", () => {
     const quester = await signup("quester");
     questerToken = quester.accessToken;
     questerId = quester.user.id;
+    questerEmail = quester.email;
 
     await grantRole(admin.user.id, UserRole.ADMIN);
     const login = await request(app.getHttpServer())
@@ -205,7 +207,7 @@ describe("economy onboarding quests (e2e)", () => {
   it("verified email grants its own ten Coin exactly once", async () => {
     const token = randomBytes(32).toString("hex");
     await app.get(EmailTokenRepository).create({ userId: questerId, type: EmailTokenType.VERIFY_EMAIL,
-      tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 60_000) });
+      tokenHash: hashToken(token), expiresAt: new Date(Date.now() + 60_000) }, questerEmail, async () => undefined);
     await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(200);
     expect((await balance()).coinConfirmed).toBe(20);
     await request(app.getHttpServer()).post("/v1/auth/verify-email").send({ token }).expect(400);

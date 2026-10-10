@@ -985,3 +985,36 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   var; `forum-attachments/` geri `forum/` yapılınca 2 test kırmızıya dönüyor (doğrulandı).
   **Gotcha:** yeni bir yükleme özelliği eklerken prefix'i yalnız servise yazmak yetmez —
   `storage-prefixes.ts`'e de eklenmeli, yoksa dev'de çalışıp production'da 400 verir.
+
+- **2026-10-10 — Topluluk sohbetinde "Plana ekle" onayı artık `COMMUNITY_COACH` üretir.**
+  Önceden #planlama gibi bir etiketten koça geçen öğrenci kartı onaylayınca görev `AI_COACH` olarak
+  yazılıyordu; plan satırında "Topluluktan" kaynak linki ve `?composer=community-return` dönüş
+  composer'ı hiç açılmıyordu. Artık `CoachActionService` (`POST /v1/coach/messages/:id/action`)
+  konuşmanın kökenine bakıyor: `COMMUNITY_THREAD` ise `CommunityCoachPlanTaskService.createIfCommunity`
+  ile görev topluluk kökeniyle açılıyor, değilse eski `AI_COACH` yolu aynen çalışıyor.
+  **Gotcha:** web tarafı değişmedi, kasıtlı; onay hâlâ aynı uçtan geçtiği için PROPOSED→ACCEPTED
+  idempotency'si korunuyor. `POST /v1/coach/conversations/:id/plan-tasks` ise kartsız, doğrudan
+  oluşturma ucu olarak duruyor. `COMMUNITY_COACH` için `AI_COACH`'taki gibi mesaj başına unique index
+  yok; çift görevi action durum makinesi engelliyor.
+
+- **Mocked e2e: üye profili avatarı CSP'ye takılıyordu (2026-10-10)** —
+  `community-member-profile.spec.ts` avatar fixture'ı `https://cdn.test/ayse.svg` idi; production
+  CSP `img-src` yalnız API origin'i + `WEB_CSP_STORAGE_ORIGINS` (CI'da boş) kabul ettiği için
+  tarayıcı görseli engelliyor, avatar baş harflere düşüyordu. Fixture artık API origin'inde
+  (`http://localhost:3001/test-assets/*.svg`, `/v1` dışında olduğu için genel mock'a takılmaz).
+  **Gotcha:** e2e fixture görselleri başka host'a konursa CSP yüzünden sessizce görünmez olur.
+  Aynı test dört viewport'ta tam sayfa screenshot aldığı için 30 sn varsayılan süreye yakındı;
+  `test.setTimeout(60_000)`. "Profil bilgileri" dialog adımı ve `mentorship.spec.ts` Koçum /
+  veri kapsamı testleri güncel master'da (9c3b30f9) 3×2 tekrarla kararlı geçiyor; ayrı düzeltme
+  gerekmedi (Koçum satırı `/ayarlar` hesap kartında duruyor, `/profil` oraya yönleniyor).
+
+- **2026-10-10 — F-04 iki kez düzeltilmişti, birleştirildi (master `c278b72` + APP-118).**
+  Akış: `CoachActionService` → `CommunityCoachPlanTaskService.createForCoachMessage`. Bu yol
+  `createIfCommunity`'nin yerini alır; `createIfCommunity` yalnızca kartsız
+  `POST /v1/coach/conversations/:id/plan-tasks` ucunda kalır.
+  `stripInternal` kaldırıldı; `conversationId` `decide()` başında ayrılıyor.
+  - **Davranış farkı (yukarıdaki "sessizce düşmüyoruz" notunun yerine geçer):** köprü kapalıysa ya da
+    konu silinmişse görev artık hata vermeden `AI_COACH` olur. Bu yolda `tryGetBridge` kullanılıyor.
+  - **İdempotency:** `origin_meta.coachMessageId` ile mesaj başına tek `COMMUNITY_COACH` görev olur.
+    `findCommunityCoachTaskForMessage` bunu user lock altında yapar. Aynı kartın tekrar onayı aynı
+    görevi döner.

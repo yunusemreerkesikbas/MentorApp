@@ -4,9 +4,10 @@ import { Test } from "@nestjs/testing";
 import cookieParser from "cookie-parser";
 import { Pool } from "pg";
 import request from "./browser-request";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { AdsService } from "../src/modules/ads/application/ads.service";
+import { EconomyService } from "../src/modules/economy/application/economy.service";
 
 const RUN = Date.now();
 const ARTICLE_SLUG = `lgs-reklam-guvenligi-${RUN}`;
@@ -16,6 +17,7 @@ const AD_CONFIG_OVERRIDES = {
   "economy.enabled": true,
   "ads.enabled": true,
   "ads.display.enabled": true,
+  "ads.display.allowed_countries": "TR",
   "ads.rewarded.enabled": true,
   "ads.placement.knowledge_article_end.enabled": true,
   "ads.placement.dashboard_rewarded_coin.enabled": true,
@@ -111,10 +113,22 @@ describe("ads stabilization (e2e)", () => {
                'https://www.meb.gov.tr',now(),'e2e-editor',now())`,
       [ARTICLE_SLUG],
     );
+    await serviceQuery(`insert into info_articles (slug,title,body,family,category,source,source_url,verified_at,verified_by,published_at)
+      values ($1,'Draft','Draft','KPSS','APPLICATION','ÖSYM','https://www.osym.gov.tr',now(),'e2e-editor',null)`, [`${ARTICLE_SLUG}-draft`]);
   }, 90_000);
 
   afterAll(async () => {
     if (pool) {
+      if (app) {
+        const pending = await serviceQuery(
+          "select id,user_id from ad_reward_sessions where user_id=any($1::uuid[]) and status='CREATED'",
+          [[firstUserId, secondUserId].filter(Boolean)],
+        );
+        for (const session of pending.rows) {
+          await app.get(AdsService).closeRewardSession(session.id, session.user_id);
+        }
+      }
+      await serviceQuery("delete from info_articles where slug=any($1::text[])", [[ARTICLE_SLUG, `${ARTICLE_SLUG}-draft`]]);
       await serviceQuery(
         "delete from config_overrides where key = any($1::text[])",
         [Object.keys(AD_CONFIG_OVERRIDES)],
@@ -139,7 +153,7 @@ describe("ads stabilization (e2e)", () => {
     expect(verified.body).toMatchObject({ enabled: true, audienceTreatment: "CHILD" });
 
     const unverified = await request(app.getHttpServer())
-      .get("/v1/ads/public/placements/knowledge.article.end?contentSlug=unpublished-context&examType=KPSS")
+      .get(`/v1/ads/public/placements/knowledge.article.end?contentSlug=${ARTICLE_SLUG}-draft&examType=KPSS`)
       .set("cf-ipcountry", "TR");
     expect(unverified.status).toBe(200);
     expect(unverified.body).toMatchObject({
@@ -147,6 +161,36 @@ describe("ads stabilization (e2e)", () => {
       reason: "CONTEXT_UNVERIFIED",
       adUnitPath: null,
     });
+  });
+
+  it.each([null, "US", "XX"])("denies display outside Turkey for anonymous and Free visitors (%s)", async (country) => {
+    for (const token of [null, firstToken]) {
+      const path = token ? "placements" : "public/placements";
+      const call = request(app.getHttpServer()).get(`/v1/ads/${path}/knowledge.article.end?contentSlug=${ARTICLE_SLUG}`);
+      if (token) call.set("Authorization", `Bearer ${token}`);
+      if (country) call.set("cf-ipcountry", country);
+      const response = await call;
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({ enabled: false, reason: "REGION_NOT_ENABLED" });
+    }
+  });
+
+  it("serves Free in Turkey but removes eligibility for Premium and STAFF", async () => {
+    const placement = () => request(app.getHttpServer())
+      .get(`/v1/ads/placements/knowledge.article.end?contentSlug=${ARTICLE_SLUG}`)
+      .set({ Authorization: `Bearer ${firstToken}`, "cf-ipcountry": "TR" });
+    expect((await placement()).body).toMatchObject({ enabled: true, audienceTreatment: "CHILD" });
+    try {
+      await serviceQuery(`insert into subscriptions (user_id,plan_id,status,provider,provider_ref,current_period_start,current_period_end)
+        values ($1,'premium-monthly','ACTIVE','IYZICO',$2,now(),now() + interval '30 days')`, [firstUserId, `ads-premium-${RUN}`]);
+      expect((await placement()).body).toMatchObject({ enabled: false, reason: "PREMIUM_AD_FREE" });
+      await serviceQuery("delete from subscriptions where user_id=$1", [firstUserId]);
+      await serviceQuery("update users set roles='{STUDENT,STAFF}' where id=$1", [firstUserId]);
+      expect((await placement()).body).toMatchObject({ enabled: false, reason: "PREMIUM_AD_FREE" });
+    } finally {
+      await serviceQuery("delete from subscriptions where user_id=$1", [firstUserId]);
+      await serviceQuery("update users set roles='{STUDENT}' where id=$1", [firstUserId]);
+    }
   });
 
   it("rejects EEA traffic and invalid idempotency headers", async () => {
@@ -206,11 +250,16 @@ describe("ads stabilization (e2e)", () => {
       [created.body.id],
     );
 
-    const results = await Promise.all([
-      app.get(AdsService).expireDueSessions(),
-      app.get(AdsService).expireDueSessions(),
-    ]);
-    expect(results.reduce((sum, result) => sum + result.expired, 0)).toBe(1);
+    const release = vi.spyOn(app.get(EconomyService), "releaseCoinGrantInServiceTx");
+    try {
+      await Promise.all([
+        app.get(AdsService).expireDueSessions(),
+        app.get(AdsService).expireDueSessions(),
+      ]);
+      expect(release.mock.calls.filter(([, grant]) => grant.refId === created.body.id)).toHaveLength(1);
+    } finally {
+      release.mockRestore();
+    }
 
     const unauthorized = await request(app.getHttpServer())
       .post("/v1/internal/cron/expire-ad-reward-sessions");

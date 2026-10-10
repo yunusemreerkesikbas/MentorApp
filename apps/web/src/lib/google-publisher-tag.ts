@@ -1,4 +1,5 @@
 import type { AdAudienceTreatment } from "@mentor/types";
+import { readAdvertisingConsent } from "./advertising-consent-storage";
 
 type GptSlot = object;
 type GptEvent = { slot: GptSlot; isEmpty?: boolean; makeRewardedVisible?: () => void };
@@ -17,7 +18,7 @@ type GoogleTag = {
   setConfig: (config: { safeFrame: { forceSafeFrame: boolean } }) => void;
   enableServices: () => void;
   display: (idOrSlot: string | GptSlot) => void;
-  destroySlots: (slots: GptSlot[]) => boolean;
+  destroySlots: (slots?: GptSlot[]) => boolean;
 };
 
 declare global { interface Window { googletag?: GoogleTag } }
@@ -27,6 +28,7 @@ let loader: Promise<GoogleTag> | null = null;
 
 /** The limited-ads build is the only GPT script Mentor loads. */
 export function loadLimitedGpt(): Promise<GoogleTag> {
+  if (readAdvertisingConsent() !== "accepted") return Promise.reject(new Error("Advertising consent required"));
   if (loader) return loader;
   loader = new Promise((resolve, reject) => {
     window.googletag ??= { cmd: [] } as unknown as GoogleTag;
@@ -47,7 +49,10 @@ export function loadLimitedGpt(): Promise<GoogleTag> {
 export async function withGpt<T>(run: (gpt: GoogleTag) => T): Promise<T> {
   const gpt = await loadLimitedGpt();
   return new Promise<T>((resolve, reject) => gpt.cmd.push(() => {
-    try { resolve(run(gpt)); } catch (error) { reject(error); }
+    try {
+      if (readAdvertisingConsent() !== "accepted") throw new Error("Advertising consent required");
+      resolve(run(gpt));
+    } catch (error) { reject(error); }
   }));
 }
 

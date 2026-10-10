@@ -68,7 +68,7 @@ describe("document CSP", () => {
     const matches = (path: string) => new RegExp(`^${config.matcher[0]}$`).test(path);
     expect(matches("/en/knowledge/a.topic")).toBe(true);
     expect(matches("/en/login")).toBe(true);
-    for (const path of ["/api/test", "/_next/static/app.js", "/sw.js", "/mascot/puhu/auth/hang-rest.png", "/video/puhu-fire.mp4"]) expect(matches(path)).toBe(false);
+    for (const path of ["/api/test", "/_next/static/app.js", "/sw.js", "/ads.txt", "/mascot/puhu/auth/hang-rest.png", "/video/puhu-fire.mp4"]) expect(matches(path)).toBe(false);
     vi.stubEnv("NEXT_PUBLIC_API_URL", "https://api.example/v1");
     const prefetch = proxy(new NextRequest("https://mentor.example/en/login", { headers: { "next-router-prefetch": "1" } }));
     expect(prefetch.headers.get("content-security-policy")).toContain("'strict-dynamic'");

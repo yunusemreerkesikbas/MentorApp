@@ -109,7 +109,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const unsubscribe = getAuthSessionCoordinator().subscribe((event) => {
       clearSession();
-      if (event === "session-changed") silentRefreshRef.current();
+      if (event === "session-changed") {
+        // A changed cookie is unresolved, not anonymous: defer public/ad eligibility until refresh.
+        setStatus("loading");
+        silentRefreshRef.current();
+      }
     });
     silentRefreshRef.current();
     return () => {
@@ -156,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       },
       setUserFromServer,
     }),
-    [status, user, applySession, clearSession, setUserFromServer],
+    [status, user, applySession, setUserFromServer],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

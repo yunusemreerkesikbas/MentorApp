@@ -69,6 +69,32 @@ signFakeWebhook(secret, { type: "payment_failed", providerRef }) → POST /v1/we
 
 ## Geliştirmeler (timeline)
 
+- **Browser coverage aligned with automatic trials (2026-10-10).** Phone verification and
+  promotion fixtures now use `ACCOUNT_USED` for paid purchases and the automatic trial
+  disclosure for eligible accounts. Usage: run `phone-verification.spec.ts` and
+  `promotions.spec.ts`; all 52 mobile/desktop cases passed. SMS verification still resets
+  billing consent, ambiguous checkout recovery remains covered, and both discounted first
+  charge and renewal prices are asserted. Gotcha: the retired paid/trial selector is no
+  longer a valid test target. Related: `apps/web/e2e/{phone-verification,promotions}.spec.ts`.
+
+- **Quiet paid start for returning accounts (2026-10-09).** The paywall and subscription cards
+  no longer explain that an account/phone already used its trial. Usage: returning buyers see
+  the plan price, paid-start button and immediate-charge consent; eligible trial buyers still see
+  trial details and required phone verification. Eligibility and checkout intent are unchanged.
+  Related: `subscription-trial-notice.tsx`, `e2e/subscription-trial.spec.ts`, `messages/{tr,en}.json`.
+
+- **Automatic trial in web purchases (2026-10-09).** Removed the paid/trial start selector from
+  the Premium paywall and subscription plan cards. An eligible account automatically gets the
+  selected plan's configured trial (currently seven days); accounts/phones that already used it
+  start paid. Usage: choose a plan, complete phone verification when required, then accept the
+  matching billing disclosure and continue. Verification and plan changes reset consent;
+  switching plans keeps automatic trial selection. Existing backend eligibility, carded checkout,
+  promotions and pending-checkout recovery remain authoritative. The large paywall was split into
+  a purchase hook, footer and plan picker. Related: `premium-paywall-modal.tsx`,
+  `use-premium-paywall.ts`, `premium-paywall-footer.tsx`, `premium-paywall-plan-picker.tsx`,
+  `subscription-trial-notice.tsx`, `subscription-plan-card.tsx`, `subscription-trial.ts`,
+  `messages/{tr,en}.json`, `e2e/subscription-trial.spec.ts`.
+
 - **Serialized paid/trial checkout reservations (2026-10-03).** Paid and trial checkout now lock
   the same ACTIVE Identity account and re-read pending claims and the open subscription in one
   transaction. Both persist an INCOMPLETE subscription and its promotion reservation before
