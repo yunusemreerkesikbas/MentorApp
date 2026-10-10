@@ -153,7 +153,7 @@ export function ZoneHeader({
           </div>
         </div>
         {!member && !pending ? (
-          <ZoneJoinLedge busy={membership.busy} onJoin={() => void membership.join()} />
+          <ZoneJoinLedge busy={membership.busy} joinPolicy={zone.joinPolicy} onJoin={() => void membership.join()} />
         ) : null}
       </div>
       <div

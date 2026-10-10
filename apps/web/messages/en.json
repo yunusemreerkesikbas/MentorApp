@@ -520,6 +520,7 @@
     "zone_menu": "Room menu",
     "zone_join_ledge": "Join the room",
     "zone_join_hint": "Join to post, ask and lend a hand. It's one tap away!",
+    "zone_join_hint_request": "This room needs approval. Your request goes to the room owner; once approved, you can post.",
     "group_mine": "Your rooms",
     "group_others": "Other rooms",
     "profile_nav": "My profile",

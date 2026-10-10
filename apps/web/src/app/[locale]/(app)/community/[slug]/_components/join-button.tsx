@@ -73,14 +73,22 @@ export function useZoneMembership({
 }
 
 /** The visitor's ledge in the room header, with one line on what joining gives. */
-export function ZoneJoinLedge({ busy, onJoin }: { busy: boolean; onJoin: () => void }) {
+export function ZoneJoinLedge({
+  busy,
+  joinPolicy,
+  onJoin,
+}: {
+  busy: boolean;
+  joinPolicy: ZoneJoinPolicy;
+  onJoin: () => void;
+}) {
   const t = useTranslations("community");
   return (
     <div className="flex flex-col items-start gap-2">
       <Button busy={busy} onClick={onJoin} className="w-full sm:w-auto">
         {busy ? t("joining") : t("zone_join_ledge")}
       </Button>
-      <p className="text-caption font-semibold text-[var(--color-secondary)]">{t("zone_join_hint")}</p>
+      <p className="text-caption font-semibold text-[var(--color-secondary)]">{t(joinPolicy === "REQUEST" ? "zone_join_hint_request" : "zone_join_hint")}</p>
     </div>
   );
 }

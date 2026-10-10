@@ -251,7 +251,7 @@ export function QuestionShell({ threadId }: { threadId: string }) {
               {title}
             </h1>
             <div className="flex min-w-0 items-center gap-2.5">
-              <AuthorLink username={question.authorUsername} className="shrink-0">
+              <AuthorLink decorative username={question.authorUsername} className="shrink-0">
                 <AuthorAvatar name={question.authorName} src={question.authorAvatarUrl} size={32} />
               </AuthorLink>
               <AuthorLink username={question.authorUsername} className="min-w-0 truncate hover:underline">

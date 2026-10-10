@@ -96,6 +96,8 @@ export function FeedToolbar({
       <div className="-mx-5 flex items-center gap-2 overflow-x-auto px-5 pb-1 sm:mx-0 sm:flex-wrap sm:px-0" role="group" aria-label={t("feed_content_filter_label")}>
         <button
           type="button"
+          aria-haspopup="dialog"
+          aria-label={`${t("feed_filters")}: ${tag ? `#${tag}` : activeTabLabel}`}
           onClick={() => void openSheet()}
           className={`${CHIP} gap-1.5 border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-main)] sm:hidden`}
         >
