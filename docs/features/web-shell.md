@@ -1189,3 +1189,10 @@ eklendi.
   settings or a phone card must mock `GET /v1/users/me/phone` with a real `PhoneStatusDto`.
   Usage: `e2e/community-member-profile.spec.ts` now mocks it; `e2e/phone-verification.spec.ts`
   covers the empty-body case. Related: `components/phone-verification-card.tsx`.
+
+- **2026-10-10 — Proxy matcher no longer skips dotted paths.** Since the browser-security work
+  (`docs/plans/2026-10-08-web-browser-security-design.md`) only the explicit static namespaces in
+  `src/proxy.ts` (`img`, `mascot`, `visuals`, ... plus a few root files) bypass the proxy; any other
+  path, `/images/logo.svg` included, gets the CSP/security headers. There is no `public/images`.
+  Gotcha: a new top-level folder under `public/` goes through the proxy until you add it to the
+  matcher; `src/proxy.spec.ts` pins both sides.
