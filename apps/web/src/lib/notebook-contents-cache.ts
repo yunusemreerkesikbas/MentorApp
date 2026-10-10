@@ -1,5 +1,4 @@
 import type { NotebookContentsDto } from "@mentor/types";
-import { fetchNotebookContents } from "./notebook";
 
 /**
  * The contents page, fetched the moment a notebook is clicked on the desk.
@@ -31,7 +30,11 @@ export function prefetchNotebookContents(
   const key = cacheKey(notebookId);
   const cached = entries.get(key);
   if (cached && Date.now() - cached.at < FRESH_MS) return cached.promise;
-  const promise = fetchNotebookContents(notebookId);
+  // The app shell clears this cache on sign-out. Keep the notebook's upload validation out of
+  // that initial bundle; the desk/editor only loads the client when it actually needs contents.
+  const promise = import("./notebook").then(({ fetchNotebookContents }) =>
+    fetchNotebookContents(notebookId),
+  );
   entries.set(key, { at: Date.now(), promise });
   // A failed read must not be served to the next caller as if it were an answer.
   promise.catch(() => {

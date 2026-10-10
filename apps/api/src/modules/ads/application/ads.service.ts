@@ -52,11 +52,12 @@ export class AdsService {
     },
   ): Promise<AdPlacementView> {
     const placement = AD_PLACEMENTS[placementId];
-    const [globalEnabled, formatEnabled, placementEnabled, rolloutPercent, entitlement] = await Promise.all([
+    const [globalEnabled, formatEnabled, placementEnabled, rolloutPercent, allowedCountries, entitlement] = await Promise.all([
       this.config.get("ads.enabled"),
       this.config.get(placement.format === "DISPLAY" ? "ads.display.enabled" : "ads.rewarded.enabled"),
       this.config.get(placement.configKey as "ads.placement.knowledge_article_end.enabled"),
       this.config.get("ads.rewarded.web.rollout_percent"),
+      this.config.get("ads.display.allowed_countries"),
       context.userId
         ? this.entitlements.getEntitlement(context.userId, context.roles)
         : Promise.resolve({ isPremium: false }),
@@ -72,6 +73,7 @@ export class AdsService {
       isPremium: entitlement.isPremium,
       userId: context.userId,
       rolloutPercent,
+      displayAllowedCountries: allowedCountries.split(",").filter(Boolean),
     });
     const adUnitPath = this.adUnitPath(placementId);
     const contextUnverified = placement.format === "DISPLAY" && context.contextVerified === false;
@@ -237,6 +239,9 @@ export class AdsService {
     if (existing) return this.toSession(existing);
     const offer = await this.getRewardOffer(placementId, user.id, user.roles, countryCode);
     if (!offer.eligible) {
+      // A concurrent creation can commit between the first lookup and the offer check.
+      const replay = await this.repo.findByIdempotencyKey(user.id, requestKey);
+      if (replay) return this.toSession(replay);
       throw new DomainError(ErrorCode.ADS_NOT_ELIGIBLE, HttpStatus.UNPROCESSABLE_ENTITY, { reason: offer.reason });
     }
     const ttlSeconds = await this.config.get("ads.rewarded.web.session_ttl_seconds");

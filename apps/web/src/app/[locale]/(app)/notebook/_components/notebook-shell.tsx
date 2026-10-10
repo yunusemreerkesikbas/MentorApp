@@ -976,6 +976,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
    */
   const handleEntryPatched = useCallback((updated: NotebookEntryDto) => {
     setIndexRefreshKey((key) => key + 1);
+    setSingleReview((current) => current?.id === updated.id ? updated : current);
     const patchMeta = (meta: NotebookPageDto | null) =>
       meta && meta.entries.some((entry) => entry.id === updated.id)
         ? {
@@ -1533,7 +1534,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           onEntryUpdated={handleEntryPatched}
           onClose={() => setStudyDeck(null)}
         />
-      ) : singleReview ? (
+      ) : singleReview && !editingEntry ? (
         <NotebookReviewPanel
           entries={[singleReview]}
           onReviewed={(updated) => {
@@ -1543,7 +1544,7 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           onEntryUpdated={handleEntryPatched}
           // Only here, never on the due deck: correcting a card's filing belongs to looking at that
           // one card, and a destructive action has no business in a review session.
-          onEdit={setEditingEntry}
+          onEdit={exam ? setEditingEntry : undefined}
           onClose={() => setSingleReview(null)}
         />
       ) : null}
@@ -1555,9 +1556,6 @@ export function NotebookShell({ notebookId }: { notebookId?: string }) {
           topics={exam.topics}
           onSaved={(updated) => {
             handleEntryPatched(updated);
-            setSingleReview((current) =>
-              current && current.id === updated.id ? updated : current,
-            );
             setEditingEntry(null);
           }}
           onDeleted={handleEntryDeleted}

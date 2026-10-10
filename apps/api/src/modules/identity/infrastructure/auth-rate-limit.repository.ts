@@ -21,8 +21,8 @@ export class AuthRateLimitRepository {
           expires_at = CASE WHEN auth_rate_limits.expires_at <= now()
             THEN now() + ${windowSeconds} * interval '1 second' ELSE auth_rate_limits.expires_at END,
           next_allowed_at = now() + ${gapSeconds} * interval '1 second'
-        WHERE (auth_rate_limits.expires_at <= now() AND auth_rate_limits.next_allowed_at <= now()) OR
-          (auth_rate_limits.hits < ${limit} AND auth_rate_limits.next_allowed_at <= now())
+        WHERE (auth_rate_limits.expires_at <= now() OR auth_rate_limits.hits < ${limit})
+          AND (${gapSeconds} = 0 OR auth_rate_limits.next_allowed_at <= now())
         RETURNING key`);
       if (result.rows.length) return { allowed: true, retryAfter: 0 };
       const [row] = await tx.select({

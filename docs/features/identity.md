@@ -97,6 +97,31 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-10 · Auth lifecycle setup budget follows measured cold startup.** The identity HTTP
+  suites give only `beforeAll` the existing 90-second full-app setup allowance. A diagnostic
+  measured AppModule loading at 38.217 seconds, Nest compilation at 0.355 seconds and app
+  initialization at 15.125 seconds, exceeding the former 30-second hook before auth assertions.
+  Usage: run `test/auth.e2e-spec.ts` and `test/auth-rate-limit.e2e-spec.ts` normally. Gotcha: the
+  15-second per-test deadline and all scenarios are unchanged; separate CLI 120-second
+  diagnostics passed before this fix. The quota suite independently measured a 51.474-second
+  import, confirming the same loader cost; its shared-IP limits remain real and unchanged.
+  Related: those specs, `.verification-api-{auth,rate}-bootstrap.log`.
+
+- **2026-10-09 · Fixed-window admission with no send gap.** Auth counters skip the send-gap
+  comparison when the configured gap is zero. PostgreSQL transaction timestamps can otherwise
+  reject an older concurrent transaction before the quota is exhausted. Usage: normal login,
+  signup and other fixed-window limits retain their configured caps; positive reset-email send
+  gaps still apply. Gotcha: rejected requests still leave expiry and counters unchanged. Related:
+  `auth-rate-limit.repository.ts`, `test/auth-security-repository.e2e-spec.ts` (deterministic older
+  transaction regression, concurrent quotas and independent storage processes).
+
+- **2026-10-09 · Unresolved cross-tab account changes stay loading.** The auth provider clears
+  credentials and marks the session `loading` until the changed cookie refresh resolves, instead
+  of temporarily exposing anonymous policy. Usage: login/account changes in another tab pause
+  display ads until the actual account is known. Gotcha: a failed refresh still becomes anonymous;
+  logout behavior is unchanged. Related: `auth-context.tsx`, `e2e/blog-ads.spec.ts` delayed refresh
+  regression, `docs/features/ads.md`.
+
 - **2026-10-07 · Blue notification toggles.** Notification preferences locally override
   `--toggle-on-bg` with DESIGN.md's `--play-cta` blue. Usage: Ayarlar → Bildirim ayarları;
   enabled email, push and campaign switches use the same blue as onboarding progress.

@@ -115,6 +115,8 @@ services:
         sync: false
       - key: NEXT_PUBLIC_GA_MEASUREMENT_ID
         sync: false
+      - key: GOOGLE_ADS_PUBLISHER_ID
+        sync: false
       - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
         sync: false
       - key: NEXT_PUBLIC_SENTRY_DSN

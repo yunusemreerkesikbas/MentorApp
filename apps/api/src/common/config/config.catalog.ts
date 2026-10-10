@@ -316,6 +316,14 @@ export const CONFIG_CATALOG = {
   ),
   "ads.enabled": adsFlag(false, "Global advertising kill-switch."),
   "ads.display.enabled": adsFlag(false, "Enable contextual display inventory."),
+  "ads.display.allowed_countries": {
+    category: ConfigCategory.ADS,
+    type: ConfigValueType.STRING,
+    schema: z.string().max(256).regex(/^(?:[A-Z]{2}(?:,[A-Z]{2})*)?$/),
+    default: "TR",
+    sensitive: true,
+    description: "Display country allowlist (uppercase comma-separated codes). Empty blocks all display ads; unknown country is always blocked. CMP-required countries remain blocked.",
+  },
   "ads.rewarded.enabled": adsFlag(false, "Enable voluntary rewarded advertising."),
   "ads.placement.knowledge_article_end.enabled": adsFlag(
     false,

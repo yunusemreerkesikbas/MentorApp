@@ -33,5 +33,5 @@ export default function proxy(request: NextRequest) {
 export const config = {
   // Keep dotted page slugs protected. Public assets live in these explicit namespaces.
   // Prefetch/RSC requests also need trusted nonce headers for dynamic rendering.
-  matcher: ["/((?!(?:api|_next|_vercel|cdn-cgi|img|mascot|visuals|video|audio|animation|lottie|achievements|leaderboard)(?:/|$)|(?:favicon\\.ico|sw\\.js|manifest\\.(?:json|webmanifest)|robots\\.txt|sitemap\\.xml|icon-credits\\.txt)$).*)"],
+  matcher: ["/((?!(?:api|_next|_vercel|cdn-cgi|img|mascot|visuals|video|audio|animation|lottie|achievements|leaderboard)(?:/|$)|(?:favicon\\.ico|sw\\.js|manifest\\.(?:json|webmanifest)|robots\\.txt|ads\\.txt|sitemap\\.xml|icon-credits\\.txt)$).*)"],
 };

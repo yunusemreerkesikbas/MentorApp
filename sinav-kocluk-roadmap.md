@@ -383,6 +383,16 @@ Ek gelir             → sponsorlu/öne-çıkarma (Faz 2-3, dikkatli)
 - Basit kurum lisansı **Faz 2'ye cash tamponu** olarak öne çekilebilir (taslakta Faz 3'tü).
 
 ### Karar: Kontrollü reklam + sponsorlu keşif
+- **İlk gelir pilotu (2026-10-09):** Türkiye'deki anonim ve Free okuyuculara KPSS/YKS/LGS blog
+  yazılarının sonunda tek Google limited reklam. Analitikten bağımsız reklam verisi tercihi kabul
+  edilmeden etiket yüklenmez; Premium ve STAFF reklamsız kalır. Kişiselleştirme kapalıdır.
+  Programmatic limited ads yalnız tercih kontrolleri ve gizlilik değerlendirmesi tamamlandığında
+  açılır; kötüye kullanım tespiti için çerez ve yerel depolama kullanabilir. İlk gerçek gösterimden
+  başlayan 14 günlük keşif pilotunda doluluk, görüntülenebilirlik, gelir ve eCPM izlenir; düşük
+  trafikle gelir yeterliliği hakkında kesin sonuç çıkarılmaz. Hedef alan adı `puhukoc.com` henüz
+  alınmadı; gerçek Google/site onayı ve üretim kanıtı olmadan genel üretim bayrakları açılmaz.
+  Defter/pano sponsorları, tek seferlik tema/kapak/sticker ve kaynak satış ortaklığı sonraki
+  doğrulamalara bırakılır; bu pilot bunların satış altyapısını içermez.
 - Genel ürün akışına klasik banner/CPM reklamı yayılmaz. İstisna: bilgi merkezi sonunda tek
   contextual limited banner ve Free dashboard'da tamamen gönüllü Coin rewarded reklamı. Premium
   ve STAFF tamamen reklamsızdır; görev/seans/mood/koç akışına reklam girmez. Interstitial, sticky ve

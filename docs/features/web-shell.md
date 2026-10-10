@@ -62,6 +62,38 @@ http://localhost:3000/panel               # daily ritual hub
 | Auth shell       | `(auth)/layout` | shared `AuthShell` (Mentor branding, motion card, "Ana sayfaya dön")                         |
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-10 · PR #154 conflict resolution.** The proxy matcher tests retain the blog
+  pilot's `/ads.txt` bypass and master's protected `/images` regression. Member-profile
+  browser fixtures use the CSP-allowed API origin from master, retaining its loaded-content
+  accessibility regression. Usage: run `proxy.spec.ts` and `community-member-profile.spec.ts`.
+  Gotcha: this updates test fixtures, not the production CSP allowlist. Before browser checks,
+  build web with its workspace dependencies (`turbo run build --filter=@mentor/web`) to avoid
+  testing stale `@mentor/ui` output. Validation: 10 proxy tests, all 36 mobile/desktop profile
+  cases, touched-file lint and all five web/dependency build tasks passed. Hosted CI reruns
+  after the PR branch update. Related:
+  `src/proxy.spec.ts`, `e2e/community-member-profile.spec.ts`.
+
+- **2026-10-10 · Mobile theme hit area stays inside the header.** The decorative lamp and owl
+  retain their hanging layout, but the pointer tracking wrapper passes through clicks and the
+  theme button ends at the header boundary. Usage: theme switching remains available in the
+  top bar; notebook note/drawing controls below it receive touches. Added a browser regression
+  that switches theme before editing a note and checks the button's boundary. Gotcha: the
+  illustration below the bar is decorative, so tapping it does not change theme. Related:
+  `src/components/theme-lamp/theme-lamp.tsx`, `e2e/notebook.spec.ts`.
+
+- **2026-10-09 · Dashboard bundle budget restored.** The signed-in shell's notebook cache cleanup
+  no longer eagerly imports the notebook client and its shared upload schemas. Contents fetches
+  load that client on demand; in-flight deduplication, failed-read retry and account-change cache
+  clearing stay intact. Usage: no configuration change; the notebook desk/editor still prefetches
+  contents before opening. Production-build dashboard JS dropped from 843.3 to 739.2 KiB for
+  route chunks (760 KiB limit) and from 1382.7 to 1278.6 KiB including runtime (1295 KiB limit).
+  All eight existing budget gates pass without raising limits. Four cache tests and a fresh
+  independent review passed. Gotchas: the public article remains close to its total JS limit;
+  these are uncompressed chunk sizes, not field load-time measurements. Related:
+  `src/lib/notebook-contents-cache.ts`, `scripts/check-web-performance-budgets.mjs`,
+  [`release verification`](../plans/2026-10-09-blog-ads-release-verification.md).
+
 - **Web document CSP (2026-10-08)**: enforced one nonce-based script policy on public/authenticated TR/EN documents; the proxy replaces spoofed headers and preserves next-intl rewrites. Root HTML is request-scoped (`revalidate=0`), bootstrap/JSON-LD/consent scripts and provider loaders carry nonces, and HTML/CDN responses use no-store. Production blocks inline handlers and JavaScript eval; inline CSS and separate WASM permissions preserve existing rendering. Token documents use no-referrer; GPT uses SafeFrame. **Usage:** configure the runtime `WEB_CSP_STORAGE_ORIGINS` with exact public CDN and signed R2 origins; production also requires `NEXT_PUBLIC_API_URL`. **Gotchas:** public HTML loses static/CDN caching; validate real provider compatibility and SSR capacity before release. Removed obsolete legal-page static parameter generation after QA reproduced a 500; sitemap publication preserves the FINAL placeholder build guard. **Validation:** 19 unit checks, 112 distinct mobile/desktop Chromium cases, targeted lint/type checks and an isolated webpack production build passed. Full CI/live deployment validation remain pending. **Files:** `src/proxy.ts`, `src/lib/content-security-policy{,.spec}.ts`, `[locale]/layout.tsx`, `src/lib/{analytics-consent,turnstile,google-publisher-tag,legal}`, legal page routes, `e2e/browser-security.spec.ts`, `.env.example`, `render.yaml`, CI; [QA details](../plans/2026-10-08-web-browser-security-qa.md), [design](../plans/2026-10-08-web-browser-security-design.md).
 
 - **2026-10-08 — Browser security response-header foundation.** Every web route response

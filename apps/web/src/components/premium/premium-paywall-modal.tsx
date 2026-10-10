@@ -1,47 +1,18 @@
 "use client";
 
-import { useEffect, useId, useState, useSyncExternalStore, type ComponentType } from "react";
+import { useEffect, useId, useSyncExternalStore, type ComponentType } from "react";
 import { createPortal } from "react-dom";
 import { motion, useReducedMotion } from "framer-motion";
-import { useLocale, useTranslations } from "next-intl";
-import { CalendarDays, Camera, MessageCircle, Sparkles, Tag, X } from "lucide-react";
-import type {
-  PlanDto,
-  PremiumFeatureId,
-  PromotionOffersView,
-  SubscriptionView,
-} from "@mentor/types";
-import {
-  staggerItemVariants,
-  staggerListVariants,
-} from "@/lib/stagger-motion";
-import {
-  ApiClientError,
-  subscriptionsControllerCheckout,
-  subscriptionsControllerGetMine,
-  subscriptionsControllerListPlans,
-} from "@mentor/api-client";
-import { Button, Skeleton, SkeletonGroup } from "@mentor/ui";
+import { useTranslations } from "next-intl";
+import { CalendarDays, Camera, MessageCircle, Sparkles, X } from "lucide-react";
+import type { PremiumFeatureId } from "@mentor/types";
+import { Skeleton, SkeletonGroup } from "@mentor/ui";
+import { staggerItemVariants, staggerListVariants } from "@/lib/stagger-motion";
 import { FormError } from "@/components/form";
-import { LegalLink } from "@/components/legal-link";
-import { trackProductEvent } from "@/lib/analytics";
-import { buildBeginCheckoutParams } from "@/lib/checkout-analytics";
-import { fetchAutoPromotionOffers, fetchPromotionOffers } from "@/lib/promotions";
-import { getStoreLinks, plansForAudience, purchaseMode } from "@/lib/purchase-mode";
-import { StoreButtons } from "./store-buttons";
-import { SubscriptionPurchaseChoice } from "./subscription-purchase-choice";
-import { PendingCheckout } from "./pending-checkout";
-
-function apiMessage(err: unknown): string {
-  return err instanceof ApiClientError || err instanceof Error ? err.message : String(err);
-}
-
-function formatPrice(minor: number, locale: string): string {
-  return (minor / 100).toLocaleString(locale === "en" ? "en-GB" : "tr-TR", {
-    style: "currency",
-    currency: "TRY",
-  });
-}
+import { SubscriptionTrialNotice } from "./subscription-trial-notice";
+import { PremiumPaywallFooter } from "./premium-paywall-footer";
+import { PremiumPaywallPlanPicker } from "./premium-paywall-plan-picker";
+import { usePremiumPaywall } from "./use-premium-paywall";
 
 function headlineKey(feature: PremiumFeatureId | undefined): string {
   switch (feature) {
@@ -100,9 +71,6 @@ export function PremiumPaywallModal({
   onClose,
 }: PremiumPaywallModalProps) {
   const t = useTranslations("paywall");
-  const tSub = useTranslations("subscription");
-  const tLegal = useTranslations("legal");
-  const locale = useLocale();
   const titleId = useId();
   const reduceMotion = useReducedMotion();
   const mounted = useSyncExternalStore(
@@ -110,21 +78,8 @@ export function PremiumPaywallModal({
     getClientMountedSnapshot,
     getServerMountedSnapshot,
   );
-  const [loading, setLoading] = useState(true);
-  const [plans, setPlans] = useState<PlanDto[]>([]);
-  const [view, setView] = useState<SubscriptionView | null>(null);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [consent, setConsent] = useState(false);
-  const [wantsTrial, setWantsTrial] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
-  const [offers, setOffers] = useState<PromotionOffersView | null>(null);
-  const [couponOpen, setCouponOpen] = useState(false);
-  const [couponInput, setCouponInput] = useState("");
-  const [appliedCode, setAppliedCode] = useState<string | null>(null);
-  const [couponBusy, setCouponBusy] = useState(false);
-  const [couponError, setCouponError] = useState<string | null>(null);
+  const purchase = usePremiumPaywall(initialCode);
+  const { loading, purchaseEnabled, pendingCheckout, selected, view, loadError, refreshEligibility } = purchase;
 
   useEffect(() => {
     document.documentElement.classList.add("mentor-dialog-open");
@@ -141,295 +96,7 @@ export function PremiumPaywallModal({
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  useEffect(() => {
-    let active = true;
-    /**
-     * With a handed-over coupon, resolve WITH it and remember it as applied. A stale or
-     * now-ineligible code must not break the paywall, so a rejection falls back to the automatic
-     * offer and the user simply sees the list price — never an error blocking a purchase.
-     */
-    const loadOffers = initialCode
-      ? fetchPromotionOffers(initialCode)
-          .then((resolved) => ({ resolved, applied: initialCode }))
-          .catch(async () => ({ resolved: await fetchAutoPromotionOffers(), applied: null }))
-      : fetchAutoPromotionOffers().then((resolved) => ({ resolved, applied: null }));
-
-    Promise.all([
-      subscriptionsControllerListPlans(),
-      subscriptionsControllerGetMine(),
-      loadOffers,
-    ])
-      .then(([planRows, subscriptionView, promotionOffers]) => {
-        if (!active) return;
-        // The paywall sells student Premium; seat plans are a coach's purchase on /abonelik.
-        const nextPlans = plansForAudience(planRows as unknown as PlanDto[], false);
-        setPlans(nextPlans);
-        setView(subscriptionView as unknown as SubscriptionView);
-        setOffers(promotionOffers.resolved);
-        if (promotionOffers.applied) {
-          setAppliedCode(promotionOffers.applied);
-          setCouponOpen(true);
-        }
-        setSelectedId(nextPlans[0]?.id ?? null);
-      })
-      .catch((err: unknown) => {
-        if (!active) return;
-        setLoadError(
-          err instanceof ApiClientError
-            ? err.message
-            : err instanceof Error
-              ? err.message
-              : String(err),
-        );
-      })
-      .finally(() => {
-        if (active) setLoading(false);
-      });
-    return () => {
-      active = false;
-    };
-    // The modal mounts fresh on every open and the provider sets `initialCode` before mounting,
-    // so this runs once per open — it is not a live subscription to the prop.
-  }, [initialCode]);
-
-  const mode = purchaseMode(plans, getStoreLinks());
-  const purchaseEnabled = mode === "checkout";
-  const pendingTrial = view?.trialEligibility?.reason === "PENDING";
-  const pendingCheckout = view?.subscription?.status === "INCOMPLETE" || pendingTrial;
-  const selected = plans.find((plan) => plan.id === selectedId) ?? plans[0];
-  const selectedOffer = selected ? offers?.offers[selected.id] : undefined;
-  const selectedDiscount =
-    selectedOffer && selectedOffer.discountMinor > 0 ? selectedOffer : undefined;
-  const featuredPeriod = Math.max(0, ...plans.map((plan) => plan.periodMonths));
-  const showValueBadge = plans.length > 1 && featuredPeriod > 1;
-
-  async function checkout() {
-    if (!selected || !view || busy || pendingCheckout) return;
-    setError(null);
-    setBusy(true);
-    trackProductEvent(
-      "begin_checkout",
-      buildBeginCheckoutParams(selected, selectedDiscount?.chargedPriceMinor),
-    );
-    try {
-      const session = (await subscriptionsControllerCheckout({
-        planId: selected.id,
-        useTrial: wantsTrial,
-        ...(appliedCode ? { code: appliedCode } : {}),
-      })) as unknown as { checkoutUrl: string };
-      window.location.assign(session.checkoutUrl);
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : String(err),
-      );
-      // An ambiguous provider response can have persisted an intent. Read it before retrying.
-      try {
-        setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
-      } catch (readError) {
-        setView(null);
-        setLoadError(apiMessage(readError));
-      }
-      setBusy(false);
-    }
-  }
-
-  async function refreshEligibility() {
-    try {
-      setView(await subscriptionsControllerGetMine() as unknown as SubscriptionView);
-    } catch (err) {
-      setError(apiMessage(err));
-    }
-  }
-
-  async function applyCoupon() {
-    const code = couponInput.trim().toUpperCase();
-    if (!code) return;
-    setCouponBusy(true);
-    setCouponError(null);
-    try {
-      // The API rejects an unusable code with the same localized error checkout would raise,
-      // so what the user reads here is exactly what would have stopped the purchase.
-      setOffers(await fetchPromotionOffers(code));
-      setAppliedCode(code);
-    } catch (err) {
-      setCouponError(apiMessage(err));
-    } finally {
-      setCouponBusy(false);
-    }
-  }
-
-  async function clearCoupon() {
-    setAppliedCode(null);
-    setCouponInput("");
-    setCouponError(null);
-    setOffers(await fetchAutoPromotionOffers());
-  }
-
   if (!mounted) return null;
-
-  const trialDays = wantsTrial ? selected?.trialDays ?? 0 : 0;
-  /**
-   * The pre-purchase disclosure (ön bilgilendirme formu) must state the ACTUAL total charged and,
-   * when only the first period is discounted, the price of every renewal after it.
-   */
-  const consentText = selectedDiscount
-    ? tSub(
-        selectedDiscount.promotion && selectedDiscount.promotion.appliesToPeriods > 1
-          ? trialDays > 0
-            ? "trial_consent_discounted_periods"
-            : "consent_discounted_periods"
-          : trialDays > 0
-            ? "trial_consent_discounted"
-            : "consent_discounted",
-        {
-          trialDays,
-          periods: selectedDiscount.promotion?.appliesToPeriods ?? 1,
-          introPrice: formatPrice(selectedDiscount.chargedPriceMinor, locale),
-          renewalPrice: formatPrice(selectedDiscount.renewalPriceMinor, locale),
-        },
-      )
-    : trialDays > 0
-      ? tSub("trial_consent_days", { days: trialDays })
-      : tSub("paid_consent", { price: formatPrice(selected?.priceMinor ?? 0, locale) });
-
-  const couponField = appliedCode ? (
-    <div
-      className="flex min-h-11 items-center justify-between gap-3 rounded-[var(--radius-card)] px-3 py-2 text-xs"
-      style={{ backgroundColor: "var(--color-surface-container)" }}
-    >
-      <span
-        className="flex items-center gap-2 font-semibold"
-        style={{ color: "var(--color-main)" }}
-      >
-        <Tag size={16} aria-hidden />
-        {t("coupon_applied")}: {appliedCode}
-      </span>
-      <button
-        type="button"
-        onClick={() => void clearCoupon()}
-        className="min-h-11 px-2 underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-        style={{ color: "var(--color-secondary)" }}
-      >
-        {t("coupon_clear")}
-      </button>
-    </div>
-  ) : couponOpen ? (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center gap-2">
-        <input
-          type="text"
-          inputMode="text"
-          autoComplete="off"
-          aria-label={t("coupon_label")}
-          placeholder={t("coupon_placeholder")}
-          value={couponInput}
-          onChange={(event) => setCouponInput(event.target.value.toUpperCase())}
-          onKeyDown={(event) => {
-            if (event.key === "Enter") {
-              event.preventDefault();
-              void applyCoupon();
-            }
-          }}
-          maxLength={32}
-          className="min-h-11 flex-1 rounded-[var(--radius-card)] border px-3 text-sm uppercase tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-          style={{
-            backgroundColor: "var(--color-bg)",
-            borderColor: "var(--color-border)",
-            color: "var(--color-main)",
-          }}
-        />
-        <Button
-          variant="secondary"
-          className="!min-h-11 !px-4 !py-2 !text-sm"
-          busy={couponBusy}
-          disabled={couponInput.trim().length === 0}
-          onClick={() => void applyCoupon()}
-        >
-          {t("coupon_apply")}
-        </Button>
-      </div>
-      <FormError message={couponError} />
-    </div>
-  ) : (
-    <button
-      type="button"
-      onClick={() => setCouponOpen(true)}
-      className="flex min-h-11 items-center gap-2 self-start text-xs font-semibold underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)]"
-      style={{ color: "var(--color-secondary)" }}
-    >
-      <Tag size={16} aria-hidden />
-      {t("coupon_toggle")}
-    </button>
-  );
-
-  const footer = pendingCheckout ? <PendingCheckout checkoutUrl={view?.pendingCheckoutUrl ?? view?.pendingTrialCheckoutUrl ?? null} isTrial={pendingTrial} /> : (
-    <motion.div
-      className="flex flex-col gap-3"
-      initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
-    >
-      {purchaseEnabled ? couponField : null}
-
-      {purchaseEnabled ? (
-        <label
-          className="flex min-h-11 items-start gap-3 text-[10px] leading-relaxed"
-          style={{ color: "var(--color-body)" }}
-        >
-          <input
-            type="checkbox"
-            checked={consent}
-            onChange={(event) => setConsent(event.target.checked)}
-            className="mt-1 size-5 shrink-0 rounded accent-[var(--color-btn)]"
-          />
-          <span>
-            {consentText}
-            <span
-              className="mt-2 block text-xs"
-              style={{ color: "var(--color-secondary)" }}
-            >
-              <LegalLink slug="mesafeli-satis-sozlesmesi" tone="plain">
-                {tLegal("consent_distance_sales")}
-              </LegalLink>
-              {" · "}
-              <LegalLink slug="on-bilgilendirme-formu" tone="plain">
-                {tLegal("consent_pre_info")}
-              </LegalLink>{" "}
-              {tLegal("consent_confirm")}
-            </span>
-          </span>
-        </label>
-      ) : (
-        <p className="text-sm" style={{ color: "var(--color-secondary)" }}>
-          {tSub(mode === "store" ? "store_handoff" : "payments_coming_soon")}
-        </p>
-      )}
-
-      <FormError message={error} />
-
-      {purchaseEnabled ? (
-        <Button
-          fullWidth
-          className="min-h-[60px]"
-          disabled={!view || !selected || !consent || !selected.purchaseEnabled || view.entitlement.isPremium || (wantsTrial && !view.trialEligibility.eligible)}
-          busy={busy}
-          onClick={() => void checkout()}
-        >
-          {tSub(wantsTrial ? "start_trial" : "start_paid")}
-        </Button>
-      ) : mode === "store" ? (
-        <StoreButtons links={getStoreLinks()} />
-      ) : (
-        <Button fullWidth className="min-h-[60px]" disabled>
-          {tSub("coming_soon")}
-        </Button>
-      )}
-    </motion.div>
-  );
 
   const panel = (
     <div
@@ -586,9 +253,9 @@ export function PremiumPaywallModal({
           </div>
         ) : null}
 
-        {!loading && purchaseEnabled && !pendingCheckout && selected ? (
+        {!loading && purchaseEnabled && !pendingCheckout && selected && purchase.includesTrial ? (
           <div className="mt-5">
-            <SubscriptionPurchaseChoice eligibility={view?.trialEligibility} trialDays={selected.trialDays} wantsTrial={wantsTrial} onChange={(next) => { setWantsTrial(next); setConsent(false); }} onPhoneVerified={() => void refreshEligibility()} />
+            <SubscriptionTrialNotice eligibility={view?.trialEligibility} trialDays={selected.trialDays} onPhoneVerified={() => void refreshEligibility()} />
           </div>
         ) : null}
 
@@ -601,107 +268,12 @@ export function PremiumPaywallModal({
           </SkeletonGroup>
         ) : null}
 
-        {!loading && !pendingCheckout && plans.length > 0 ? (
-          <motion.div
-            // One plan must not sit in a half-width column (the catalog is monthly-only today).
-            className={`mt-5 grid gap-3 lg:mt-4 ${plans.length > 1 ? "grid-cols-2" : "grid-cols-1"}`}
-            variants={reduceMotion ? undefined : staggerListVariants}
-            initial={reduceMotion ? false : "hidden"}
-            animate="show"
-          >
-            {plans.map((plan) => {
-              const selectedPlan = plan.id === selected?.id;
-              const cardOffer = offers?.offers[plan.id];
-              const planOffer =
-                cardOffer && cardOffer.discountMinor > 0 ? cardOffer : undefined;
-              const isFeatured =
-                showValueBadge && plan.periodMonths === featuredPeriod;
-              const periodLabel =
-                plan.periodMonths === 1
-                  ? t("per_month")
-                  : t("per_months", { months: plan.periodMonths });
-              return (
-                <motion.button
-                  key={plan.id}
-                  type="button"
-                  variants={reduceMotion ? undefined : staggerItemVariants}
-                  onClick={() => { setSelectedId(plan.id); setWantsTrial(false); setConsent(false); }}
-                  aria-pressed={selectedPlan}
-                  className="relative min-h-11 rounded-[var(--paywall-plan-radius)] px-3 py-3 text-left transition-[border-color,background-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-focus-ring)] motion-reduce:transition-none motion-reduce:active:scale-100"
-                  style={{
-                    backgroundColor: selectedPlan
-                      ? "var(--color-bg)"
-                      : "var(--color-surface-container)",
-                    border: "2px solid",
-                    borderColor: selectedPlan
-                      ? "var(--color-main)"
-                      : "transparent",
-                  }}
-                >
-                  {isFeatured ? (
-                    <motion.span
-                      className="absolute -top-2 right-2 whitespace-nowrap rounded-[var(--radius-card)] px-2 py-0.5 text-xs font-semibold"
-                      style={{
-                        backgroundColor: "var(--color-success)",
-                        color: "var(--color-btn-label)",
-                      }}
-                      initial={reduceMotion ? false : { opacity: 0, scale: 0.86 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.25, delay: 0.2, ease: "easeOut" }}
-                    >
-                      {t("badge_value")}
-                    </motion.span>
-                  ) : null}
-                  <p
-                    className="text-xs font-semibold"
-                    style={{ color: "var(--color-secondary)" }}
-                  >
-                    {plan.name}
-                  </p>
-                  {planOffer ? (
-                    <p className="mt-2 text-xs font-semibold leading-tight">
-                      <span className="sr-only">{t("price_before")}: </span>
-                      <s
-                        className="tabular-nums"
-                        style={{ color: "var(--color-secondary)" }}
-                      >
-                        {formatPrice(planOffer.listPriceMinor, locale)}
-                      </s>
-                    </p>
-                  ) : null}
-                  <p
-                    className={`text-xl font-bold tabular-nums leading-tight ${planOffer ? "mt-0.5" : "mt-2"}`}
-                    style={{
-                      color: "var(--color-main)",
-                      fontFamily: "var(--font-heading)",
-                    }}
-                  >
-                    {formatPrice(planOffer?.chargedPriceMinor ?? plan.priceMinor, locale)}
-                    <span
-                      className="text-sm font-semibold"
-                      style={{ color: "var(--color-secondary)" }}
-                    >
-                      {periodLabel}
-                    </span>
-                  </p>
-                  {planOffer?.promotion ? (
-                    <p
-                      className="mt-1 text-xs font-semibold"
-                      style={{ color: "var(--color-success)" }}
-                    >
-                      {planOffer.promotion.label}
-                    </p>
-                  ) : null}
-                </motion.button>
-              );
-            })}
-          </motion.div>
-        ) : null}
+        <PremiumPaywallPlanPicker purchase={purchase} />
 
       </div>
 
       <div className="relative z-[1] shrink-0 px-5 pb-[max(16px,env(safe-area-inset-bottom))] pt-3 lg:px-8 lg:pb-6 lg:pt-4">
-        {footer}
+        <PremiumPaywallFooter purchase={purchase} />
       </div>
     </div>
   );

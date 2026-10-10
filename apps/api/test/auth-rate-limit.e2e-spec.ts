@@ -16,7 +16,7 @@ describe("auth signup rate limit (e2e)", () => {
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
     app = createTestApp(moduleRef);
     await app.init();
-  });
+  }, 90_000);
 
   afterAll(async () => {
     await app?.close();

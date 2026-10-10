@@ -169,6 +169,8 @@ async function pickOption(page: Page, field: string, option: string) {
 
 /** Mobile collapses the page-tool rail to a pen circle; expand it before tapping Ekle/Çiz/…. */
 async function ensureNotebookToolsOpen(page: Page) {
+  const coachHint = page.getByTestId("desktop-coach-fab").getByRole("button", { name: "Kapat", exact: true });
+  if (await coachHint.isVisible()) await coachHint.click();
   const show = page.getByRole("button", { name: "Araçları göster" });
   if (await show.isVisible()) await show.click();
 }
@@ -770,6 +772,16 @@ test("not: tıklayınca sayfa üzerinde düzenlenebilir alan açılır; boş bı
   await openToFirstSpread(page);
 
   // No sidebar form: the note lands directly on the page, already in edit mode.
+  const header = page.locator("header[data-app-chrome]");
+  if (await header.isVisible()) {
+    const theme = header.getByRole("button", { name: "Koyu temaya geç" });
+    await theme.click();
+    await expect(header.getByRole("button", { name: "Açık temaya geç" })).toHaveAttribute("aria-pressed", "true");
+    const headerBox = await header.boundingBox();
+    const themeBox = await header.getByRole("button", { name: "Açık temaya geç" }).boundingBox();
+    expect(headerBox).not.toBeNull();
+    expect(themeBox!.y + themeBox!.height).toBeLessThanOrEqual(headerBox!.y + headerBox!.height);
+  }
   await ensureNotebookToolsOpen(page);
   await page.getByRole("button", { name: "Not" }).click();
   const editor = page.getByLabel("Not metni");
@@ -1296,11 +1308,45 @@ test("kart önizlemesinden hata tipi düzeltilir", async ({ page }) => {
   await page.getByText("Problemler").dblclick();
 
   await page.getByRole("button", { name: "Kartı düzenle" }).click();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeHidden();
   await page.getByRole("button", { name: "Bilmiyordum" }).click();
   await page.getByRole("button", { name: "Değişiklikleri kaydet" }).click();
 
   await expect.poll(() => api.patches.length).toBe(1);
   expect(api.patches[0]?.body).toMatchObject({ errorType: "UNKNOWN_TOPIC" });
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+});
+
+test("kart ayarları iptal edilince kaydedilmiş çözüm korunur", async ({ page }) => {
+  const entry = makeEntry({ reviewCount: 2, solutionNote: "Önceki çözüm." });
+  const api = await mockNotebookApi(page, { pages: { 0: seededEntryPage(entry) } });
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+  await page.getByText("Problemler").dblclick();
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await page.getByRole("button", { name: "Çözümü düzenle" }).click();
+  await page.getByLabel("Çözümü düzenle").fill("Paydaları eşitle.");
+  await page.getByRole("button", { name: "Notu kaydet" }).click();
+  await expect.poll(() => api.patches.length).toBe(1);
+  await page.getByRole("button", { name: "Soruya dön" }).click();
+  await page.getByRole("button", { name: "Kartı düzenle" }).click();
+  await page.getByRole("button", { name: "Vazgeç", exact: true }).click();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await expect(page.getByText("Paydaları eşitle.", { exact: true })).toBeVisible();
+});
+
+test("ders bilgisi alınamazsa kart önizlemesi okunabilir kalır", async ({ page }) => {
+  const entry = makeEntry({ reviewCount: 2 });
+  await mockNotebookApi(page, { pages: { 0: seededEntryPage(entry) } });
+  await page.route("**/v1/content/exams/by-type/KPSS**", (route) => json(route, {}, 503));
+  await page.goto("/yanlis-defteri");
+  await openToFirstSpread(page);
+  await page.getByText("Problemler").dblclick();
+  await expect(page.getByRole("dialog", { name: "Tekrar zamanı" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Kartı düzenle" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Çevir" }).click();
+  await expect(page.getByRole("button", { name: "Soruya dön" })).toHaveAttribute("aria-pressed", "true");
 });
 
 test("denemeden gelen öğrenci ekleme formunu deneme bağlı bulur", async ({

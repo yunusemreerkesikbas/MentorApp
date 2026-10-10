@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { useTranslations } from "next-intl";
 import { StarsIcon as Sparkles } from "@solar-icons/react/bold/stars";
-import { TargetIcon as Target } from "@solar-icons/react/bold/target";
 import { CloseCircleIcon as X } from "@solar-icons/react/linear/close-circle";
 import type { VisionDto, VisionNoteDto } from "@mentor/types";
 import { aiVisionControllerNote, coachingControllerGetVision } from "@mentor/api-client";

@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 import { Pool } from "pg";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { createDatabase, type Database } from "../src/database/drizzle";
 import { withServiceContext } from "../src/database/rls";
@@ -77,6 +77,17 @@ describe("durable auth limits and serialized account security (Postgres)", () =>
     expect((await rates.consume(key, 3, 900, 60)).allowed).toBe(false);
     const [row] = await withServiceContext(db, (tx) => tx.select().from(authRateLimits).where(eq(authRateLimits.key, key)));
     expect(row!.hits).toBe(1);
+  });
+
+  it("does not impose a send gap on a transaction that started before the previous admission", async () => {
+    const key = rateKey();
+    await db.transaction(async (tx) => {
+      await tx.execute(sql`select now()`);
+      expect((await rates.consume(key, 2, 900)).allowed).toBe(true);
+      const olderTransaction = new AuthRateLimitRepository(tx as unknown as Database);
+      expect((await olderTransaction.consume(key, 2, 900)).allowed).toBe(true);
+    });
+    expect((await rates.consume(key, 2, 900)).allowed).toBe(false);
   });
 
   it("shares the fixed-window quota between independent API storage processes", async () => {

@@ -145,6 +145,19 @@ pnpm --filter @mentor/api test
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-10 · Plan test fixtures follow each feature's day policy.** Task CRUD,
+  daily activity and today's summary use UTC fixtures; plan adaptations retain Istanbul
+  calendar dates. Usage: run `plan.service.spec.ts`, including between Istanbul and UTC
+  midnight. Gotcha: production date policies are unchanged. Related:
+  `plan.service.spec.ts`, `plan.service.ts`, `date.util.ts`.
+
+- **2026-10-10 · Notebook card editing hides the review overlay.** Opening a card's edit
+  dialog temporarily hides its review preview, so the preview portal cannot intercept edit
+  or delete controls. Closing/saving the edit restores the current review. Usage: open a
+  card preview, choose edit, change the error type and save. Browser coverage asserts that
+  the preview disappears during editing and returns after saving. Related:
+  `notebook/_components/notebook-shell.tsx`, `e2e/notebook.spec.ts`.
+
 - **2026-10-07 · Plan icon consistency, first pass.** Student plan task menus, add controls,
   week/month navigation, calendar task/event chips and event detail actions now use direct
   Solar imports. Coach provenance uses an academic cap and community links use Chat Round Dots;
