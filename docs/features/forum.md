@@ -970,3 +970,14 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   var; `forum-attachments/` geri `forum/` yapılınca 2 test kırmızıya dönüyor (doğrulandı).
   **Gotcha:** yeni bir yükleme özelliği eklerken prefix'i yalnız servise yazmak yetmez —
   `storage-prefixes.ts`'e de eklenmeli, yoksa dev'de çalışıp production'da 400 verir.
+
+- **Mocked e2e: üye profili avatarı CSP'ye takılıyordu (2026-10-10)** —
+  `community-member-profile.spec.ts` avatar fixture'ı `https://cdn.test/ayse.svg` idi; production
+  CSP `img-src` yalnız API origin'i + `WEB_CSP_STORAGE_ORIGINS` (CI'da boş) kabul ettiği için
+  tarayıcı görseli engelliyor, avatar baş harflere düşüyordu. Fixture artık API origin'inde
+  (`http://localhost:3001/test-assets/*.svg`, `/v1` dışında olduğu için genel mock'a takılmaz).
+  **Gotcha:** e2e fixture görselleri başka host'a konursa CSP yüzünden sessizce görünmez olur.
+  Aynı test dört viewport'ta tam sayfa screenshot aldığı için 30 sn varsayılan süreye yakındı;
+  `test.setTimeout(60_000)`. "Profil bilgileri" dialog adımı ve `mentorship.spec.ts` Koçum /
+  veri kapsamı testleri güncel master'da (9c3b30f9) 3×2 tekrarla kararlı geçiyor; ayrı düzeltme
+  gerekmedi (Koçum satırı `/ayarlar` hesap kartında duruyor, `/profil` oraya yönleniyor).
