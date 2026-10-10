@@ -85,6 +85,24 @@ test("Gönderi detayı: yol Topluluk › oda › Gönderi, yorumlar tek kartta, 
   await page.screenshot({ path: testInfo.outputPath("post.png"), fullPage: true });
 });
 
+test("Gönderi detayı: doğrudan açılan kendi gönderisini silen odasına döner, uygulamadan çıkmaz", async ({ page }) => {
+  // A notification or shared link opens the detail with no history behind it; router.back() then
+  // left the app for about:blank.
+  await mockApi(page);
+  const own = {
+    ...thread("t2", chatZone.id, { id: user.id, name: user.displayName, username: user.username! }, "Silinecek kısa not.", null),
+    capabilities: { canEdit: true, canDelete: true, canModerate: false, editDeadline: null },
+  };
+  await page.route("http://localhost:3001/v1/forum/threads/t2/detail", (route) => json(route, { thread: own, comments: [] }));
+  await page.goto("/topluluk/mesaj/t2");
+  await expect(page.getByText(own.body)).toBeVisible();
+
+  await page.getByRole("button", { name: "İşlemler" }).click();
+  await page.getByRole("menuitem", { name: "Sil" }).click();
+  await page.getByRole("alertdialog").or(page.getByRole("dialog")).getByRole("button", { name: "Sil" }).click();
+  await expect(page).toHaveURL(/\/topluluk\/genel-sohbet$/);
+});
+
 const questionTitle = "Deneme sınavında zaman yönetimi için önerin ne?";
 const question = {
   ...thread("q3", qaZone.id, asker, "Matematiğe takılıp Türkçeye vakit kalmıyor. Nasıl bir sıra izlemeliyim?", questionTitle),

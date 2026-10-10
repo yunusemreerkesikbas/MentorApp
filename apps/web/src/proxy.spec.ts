@@ -28,4 +28,11 @@ describe("proxy matcher", () => {
       unstable_doesMiddlewareMatch({ config, nextConfig: {}, url }),
     ).toBe(false);
   });
+
+  // Only explicit static namespaces bypass the proxy; /images is not one, so it gets security headers.
+  it("proxies paths outside the static allowlist, dotted or not", () => {
+    expect(
+      unstable_doesMiddlewareMatch({ config, nextConfig: {}, url: "/images/logo.svg" }),
+    ).toBe(true);
+  });
 });

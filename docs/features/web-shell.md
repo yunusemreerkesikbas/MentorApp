@@ -63,6 +63,17 @@ http://localhost:3000/panel               # daily ritual hub
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-10 · PR #154 conflict resolution.** The proxy matcher tests retain the blog
+  pilot's `/ads.txt` bypass and master's protected `/images` regression. Member-profile
+  browser fixtures use the CSP-allowed API origin from master, retaining its loaded-content
+  accessibility regression. Usage: run `proxy.spec.ts` and `community-member-profile.spec.ts`.
+  Gotcha: this updates test fixtures, not the production CSP allowlist. Before browser checks,
+  build web with its workspace dependencies (`turbo run build --filter=@mentor/web`) to avoid
+  testing stale `@mentor/ui` output. Validation: 10 proxy tests, all 36 mobile/desktop profile
+  cases, touched-file lint and all five web/dependency build tasks passed. Hosted CI reruns
+  after the PR branch update. Related:
+  `src/proxy.spec.ts`, `e2e/community-member-profile.spec.ts`.
+
 - **2026-10-10 · Mobile theme hit area stays inside the header.** The decorative lamp and owl
   retain their hanging layout, but the pointer tracking wrapper passes through clicks and the
   theme button ends at the header boundary. Usage: theme switching remains available in the
@@ -1210,3 +1221,10 @@ eklendi.
   settings or a phone card must mock `GET /v1/users/me/phone` with a real `PhoneStatusDto`.
   Usage: `e2e/community-member-profile.spec.ts` now mocks it; `e2e/phone-verification.spec.ts`
   covers the empty-body case. Related: `components/phone-verification-card.tsx`.
+
+- **2026-10-10 — Proxy matcher no longer skips dotted paths.** Since the browser-security work
+  (`docs/plans/2026-10-08-web-browser-security-design.md`) only the explicit static namespaces in
+  `src/proxy.ts` (`img`, `mascot`, `visuals`, ... plus a few root files) bypass the proxy; any other
+  path, `/images/logo.svg` included, gets the CSP/security headers. There is no `public/images`.
+  Gotcha: a new top-level folder under `public/` goes through the proxy until you add it to the
+  matcher; `src/proxy.spec.ts` pins both sides.

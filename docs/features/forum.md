@@ -109,6 +109,31 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
 
 ## Geliştirmeler (timeline)
 
+- **Topluluk QA turu: RLS'te yazar adları, takılan Akış, silme sonrası yol (2026-10-08)**
+  - **Yazar adları (P1):** üretim rolü RLS'e tabi (`database-role-safety.ts`) ve `users` politikası yalnız
+    kendi satırını okutuyor. Kullanıcı bağlamındaki 13 thread/post okuması (oda akışı ve listesi, gönderi,
+    yorum ve yanıt detayı, soru + cevaplar, profil paylaşımları, soru araması) başkalarının adını boş
+    döndürüyordu, arayüz "Kullanıcı ?" yazıyordu. Dev ve CI superuser ile bağlandığı için RLS'i atlıyor,
+    görünmüyordu. `infrastructure/forum-author-cards.ts` `withAuthorCards`: satırlar kullanıcı bağlamında
+    kalır, yalnız ad, kullanıcı adı ve avatar SERVICE ile eklenir (keşif akışının zaten döndürdüğü alanlar).
+    Test: `test/forum-author-names-rls.e2e-spec.ts` API'yi NOSUPERUSER NOBYPASSRLS bir rolle kaldırır.
+  - **Gotcha:** kullanıcı bağlamında yeni bir `users` join'i başka kullanıcılar için boş gelir ve
+    superuser'la koşan e2e'ler bunu görmez. Yeni bir yazar okuması eklersen sonucu `withAuthorCards`'tan
+    geçir ve bu spec'e bir satır ekle.
+  - **Akış iskelette kalıyordu:** seçili sekmeye, çipe ya da etikete yeniden dokunmak (paylaşım Akış'ı
+    kendiliğinden "En yeni"ye çevirdikten sonra "En yeni"ye basmak dahil) listeyi iskelete alıyor ama sorgu
+    değişmediği için yükleme hiç başlamıyordu. `feed-shell.tsx` değişmeyen seçimi yok sayar
+    (`e2e/community-feed.spec.ts`). Oda sekmeleri zaten korumalıydı.
+  - **Silme sonrası yol:** gönderi detayında silmek `router.back()` yapıyordu; bildirim ya da paylaşılan
+    bağlantıyla açılmış sayfanın arkasında geçmiş olmadığı için sekme `about:blank`e düşüyordu.
+    `ThreadItem afterDelete`, detay odasına `replace` eder (`e2e/community-detail.spec.ts`).
+  - **Canlı bölge:** `@mentor/ui` `SkeletonGroup` reveal modu yüklenen içeriği `role="status"`,
+    `aria-live` ve "Yükleniyor…" içinde tutuyordu (profil, oda kenar çubuğu). Artık yalnız yüklenirken
+    (`e2e/community-member-profile.spec.ts`).
+  - **Açık (raporlandı, düzeltilmedi):** koç köprüsünden onaylanan görev `AI_COACH` olarak kaydediliyor;
+    web `POST /v1/coach/conversations/:id/plan-tasks`'i çağırmadığı için `COMMUNITY_COACH` kökeni ve
+    "görev bitti, tartışmaya dön" composer'ı arayüzden açılamıyor. `master`'da da aynı.
+
 - **Tur 2 durak G: kapanış (2026-10-08)**
   - **Dokümanlar:** DESIGN.md §6.1'e Identity card ve League list, §12.3 Tur 2 kaydı, §13 işaretli;
     api.md üye listesi + şikâyet özeti; community.md timeline.
@@ -945,3 +970,25 @@ Public SEO: `/[locale]/forum/soru/[id]` (SSR, TR-indexed, JSON-LD).
   var; `forum-attachments/` geri `forum/` yapılınca 2 test kırmızıya dönüyor (doğrulandı).
   **Gotcha:** yeni bir yükleme özelliği eklerken prefix'i yalnız servise yazmak yetmez —
   `storage-prefixes.ts`'e de eklenmeli, yoksa dev'de çalışıp production'da 400 verir.
+
+- **2026-10-10 — Topluluk sohbetinde "Plana ekle" onayı artık `COMMUNITY_COACH` üretir.**
+  Önceden #planlama gibi bir etiketten koça geçen öğrenci kartı onaylayınca görev `AI_COACH` olarak
+  yazılıyordu; plan satırında "Topluluktan" kaynak linki ve `?composer=community-return` dönüş
+  composer'ı hiç açılmıyordu. Artık `CoachActionService` (`POST /v1/coach/messages/:id/action`)
+  konuşmanın kökenine bakıyor: `COMMUNITY_THREAD` ise `CommunityCoachPlanTaskService.createIfCommunity`
+  ile görev topluluk kökeniyle açılıyor, değilse eski `AI_COACH` yolu aynen çalışıyor.
+  **Gotcha:** web tarafı değişmedi, kasıtlı; onay hâlâ aynı uçtan geçtiği için PROPOSED→ACCEPTED
+  idempotency'si korunuyor. `POST /v1/coach/conversations/:id/plan-tasks` ise kartsız, doğrudan
+  oluşturma ucu olarak duruyor. `COMMUNITY_COACH` için `AI_COACH`'taki gibi mesaj başına unique index
+  yok; çift görevi action durum makinesi engelliyor.
+
+- **Mocked e2e: üye profili avatarı CSP'ye takılıyordu (2026-10-10)** —
+  `community-member-profile.spec.ts` avatar fixture'ı `https://cdn.test/ayse.svg` idi; production
+  CSP `img-src` yalnız API origin'i + `WEB_CSP_STORAGE_ORIGINS` (CI'da boş) kabul ettiği için
+  tarayıcı görseli engelliyor, avatar baş harflere düşüyordu. Fixture artık API origin'inde
+  (`http://localhost:3001/test-assets/*.svg`, `/v1` dışında olduğu için genel mock'a takılmaz).
+  **Gotcha:** e2e fixture görselleri başka host'a konursa CSP yüzünden sessizce görünmez olur.
+  Aynı test dört viewport'ta tam sayfa screenshot aldığı için 30 sn varsayılan süreye yakındı;
+  `test.setTimeout(60_000)`. "Profil bilgileri" dialog adımı ve `mentorship.spec.ts` Koçum /
+  veri kapsamı testleri güncel master'da (9c3b30f9) 3×2 tekrarla kararlı geçiyor; ayrı düzeltme
+  gerekmedi (Koçum satırı `/ayarlar` hesap kartında duruyor, `/profil` oraya yönleniyor).

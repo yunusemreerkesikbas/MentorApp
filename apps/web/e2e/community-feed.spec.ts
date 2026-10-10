@@ -47,6 +47,22 @@ test("Akış: sessiz öne çıkan en yenilere düşer, not söylenir, sorunun du
   expect(feedQueries.some((q) => q.get("unanswered") === "true" && q.get("contentType") === "questions")).toBe(true);
 });
 
+test("Akış: seçili sekmeye ya da çipe yeniden dokunmak listeyi iskelette bırakmaz", async ({ page }, testInfo) => {
+  // The selected tab/chip used to reset the list to its skeleton without asking for a new page:
+  // the query was unchanged, so nothing reloaded and the skeleton stayed for good.
+  await mockApi(page);
+  await page.goto("/topluluk/akis");
+  const post = page.getByText("Herkese kolay gelsin, bu hafta verimli geçsin.");
+  await expect(post).toBeVisible();
+
+  await page.getByRole("button", { name: "Tümü" }).click();
+  await expect(post).toBeVisible();
+  if (testInfo.project.name.startsWith("desktop")) {
+    await page.getByRole("tab", { name: "Öne çıkan" }).click();
+    await expect(post).toBeVisible();
+  }
+});
+
 test("Akış: ?content=waiting çipi açık gelir, ?compose=question soru penceresini açar", async ({ page }) => {
   const feedQueries = await mockApi(page);
   await page.goto("/topluluk/akis?content=waiting");

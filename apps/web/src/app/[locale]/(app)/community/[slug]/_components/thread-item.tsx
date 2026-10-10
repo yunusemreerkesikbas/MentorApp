@@ -31,6 +31,7 @@ export function ThreadItem({
   canModerate,
   onPin,
   onDelete,
+  afterDelete,
   clickable = false,
   onReplyCountChange,
   onReplyCreated,
@@ -41,6 +42,8 @@ export function ThreadItem({
   canModerate?: boolean;
   onPin?: (pinned: boolean) => void;
   onDelete?: () => void;
+  /** Where the detail page goes once its own post is gone (a direct link has no history to go back to). */
+  afterDelete?: () => void;
   /** Feed rows open the post detail on click (Twitter-style); the detail page's own thread doesn't. */
   clickable?: boolean;
   onReplyCountChange?: (delta: 1 | -1) => void;
@@ -104,7 +107,7 @@ export function ThreadItem({
     try {
       await deleteThread(thread.id);
       setDeleted(true);
-      if (!clickable) router.back();
+      afterDelete?.();
     } catch (error) {
       setEditError(error instanceof Error ? error.message : t("action_failed"));
     }

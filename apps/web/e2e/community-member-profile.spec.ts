@@ -30,7 +30,7 @@ const profile: PublicProfile = {
   username: "ayse",
   achievementsEnabled: false,
   achievementShowcase: null,
-  avatarUrl: "/e2e-avatar/ayse.svg",
+  avatarUrl: "http://localhost:3001/test-assets/ayse.svg",
   examType: "KPSS",
   createdAt: "2026-01-01T00:00:00.000Z",
   bio: "Her gün biraz daha ileri.",
@@ -174,6 +174,8 @@ test("üye profili kimlik kartı, aksiyonlar ve yolculuk panelini her genişlikt
   page,
   context,
 }, testInfo) => {
+  // Four viewports with full-page screenshots: ~25s of work, too close to the 30s default under load.
+  test.setTimeout(60_000);
   await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   await mockProfileApi(page);
   await page.addInitScript(() => {
@@ -348,6 +350,23 @@ test("ziyaretçi yolculuk kimliğini görür fakat sayısal XP ilerlemesini gör
   await expect(dialog).toBeVisible();
   await expect(dialog.getByRole("progressbar")).toHaveCount(0);
   await dialog.getByRole("button", { name: "Kapat" }).click();
+});
+
+test("yüklenen profil ve oda listesi 'Yükleniyor…' canlı bölgesinin içinde kalmaz", async ({
+  page,
+}) => {
+  // SkeletonGroup's reveal mode kept role="status" + aria-live + "Yükleniyor…" around the loaded
+  // content, so a screen reader met the whole profile as a polite loading announcement.
+  await mockProfileApi(page);
+  await page.addInitScript(() =>
+    window.localStorage.setItem("mentor.analytics-consent.v1", "rejected"),
+  );
+
+  await page.goto("/topluluk/uye/ayse");
+  await expect(page.locator(".profile-progress-panel:visible").getByText("Seviye 3 · Pusula", { exact: true })).toBeVisible();
+  await expect(page.locator("main h1").first()).toBeVisible();
+  await expect(page.locator('[role="status"] h1')).toHaveCount(0);
+  await expect(page.locator('[aria-live] h1')).toHaveCount(0);
 });
 
 test("Gece Yolculuğu rehberi erişilebilir dialog davranışını korur", async ({
@@ -754,10 +773,13 @@ test("showcase chrome'u İngilizce rota için yerelleştirilir", async ({ page }
 });
 
 async function mockProfileApi(page: Page) {
-  await page.route("**/e2e-avatar/missing.svg", async (route) => {
+  // Fixture images live on the API origin: the production CSP `img-src` only allows that origin
+  // (plus WEB_CSP_STORAGE_ORIGINS, unset in CI), so a foreign CDN host is blocked and the avatar
+  // falls back to initials.
+  await page.route("http://localhost:3001/test-assets/missing.svg", async (route) => {
     await route.fulfill({ status: 404, body: "" });
   });
-  await page.route("**/e2e-avatar/ayse.svg", async (route) => {
+  await page.route("http://localhost:3001/test-assets/ayse.svg", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "image/svg+xml",
@@ -832,7 +854,7 @@ async function mockProfileApi(page: Page) {
         userId: "member-broken",
         displayName: "Çok Uzun İsimli Bir Topluluk Üyesi Soyadı",
         username: "cok_uzun_kullanici_adi_ile_tasma_kontrolu",
-        avatarUrl: "/e2e-avatar/missing.svg",
+        avatarUrl: "http://localhost:3001/test-assets/missing.svg",
       });
     }
     if (method === "GET" && path === "/v1/community/profile/yunus_emre") {
