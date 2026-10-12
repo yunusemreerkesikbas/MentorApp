@@ -1,0 +1,246 @@
+# Staging Blueprint. Production uses render.yaml. Setup: docs/core/deployment.md.
+# Stage has independent services, credentials, database and media buckets.
+services:
+  - type: web
+    name: mentor-s1-api
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    domains: [s1-api.puhukoc.com]
+    renderSubdomainPolicy: enabled
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@mentor/api
+    preDeployCommand: pnpm --filter @mentor/api db:migrate
+    startCommand: pnpm --filter @mentor/api start:prod
+    healthCheckPath: /v1/health/ready
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      # APP_ENV is the deployment name; NODE_ENV stays production on stage too.
+      - key: APP_ENV
+        value: staging
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_MIGRATION_URL
+        sync: false
+      - key: APP_URL
+        value: https://s1.puhukoc.com
+      - key: ADMIN_APP_URL
+        value: https://s1-admin.puhukoc.com
+      - key: EDGE_ORIGIN_SECRET
+        sync: false
+      - key: AUTH_RATE_LIMIT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://s1.puhukoc.com,https://s1-admin.puhukoc.com
+      - key: CLOUDFLARE_ACCESS_TEAM_DOMAIN
+        sync: false
+      - key: CLOUDFLARE_ACCESS_AUD
+        sync: false
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+      - key: GOOGLE_OAUTH_CLIENT_ID
+        sync: false
+      - key: GOOGLE_OAUTH_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_OAUTH_REDIRECT_URI
+        sync: false
+      - key: AI_PROVIDER
+        value: openai
+      - key: OPENAI_API_KEY
+        sync: false
+      - key: VISION_PROVIDER
+        value: gemini
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: STORAGE_PROVIDER
+        value: r2
+      - key: R2_ACCOUNT_ID
+        sync: false
+      - key: R2_ACCESS_KEY_ID
+        sync: false
+      - key: R2_SECRET_ACCESS_KEY
+        sync: false
+      - key: R2_PUBLIC_BUCKET
+        value: puhu-s1-public
+      - key: R2_PRIVATE_BUCKET
+        value: puhu-s1-private
+      - key: R2_PUBLIC_BASE_URL
+        value: https://s1-media.puhukoc.com
+      - key: R2_JURISDICTION
+        value: eu
+      - key: PAYMENTS_PROVIDER
+        value: disabled
+      - key: TURNSTILE_SECRET_KEY
+        sync: false
+      - key: TURNSTILE_EXPECTED_HOSTNAME
+        value: s1.puhukoc.com
+      - key: TURNSTILE_EXPECTED_ACTION
+        value: signup
+      - key: TURNSTILE_VERIFY_TIMEOUT_MS
+        value: 5000
+      - key: POSTMARK_TOKEN
+        sync: false
+      - key: POSTMARK_FROM
+        value: noreply@puhukoc.com
+      - key: CRON_SECRET
+        generateValue: true
+      - key: VAPID_PUBLIC_KEY
+        sync: false
+      - key: VAPID_PRIVATE_KEY
+        sync: false
+      - key: VAPID_SUBJECT
+        value: https://s1.puhukoc.com
+      - key: SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: mentor-s1-web
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    domains: [s1.puhukoc.com]
+    renderSubdomainPolicy: disabled
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@mentor/web
+    startCommand: pnpm --filter @mentor/web start:prod
+    healthCheckPath: /tr
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: NEXT_PUBLIC_API_URL
+        value: https://s1-api.puhukoc.com/v1
+      - key: WEB_CSP_STORAGE_ORIGINS
+        sync: false
+      - key: NEXT_PUBLIC_SITE_URL
+        value: https://s1.puhukoc.com
+      - key: NEXT_PUBLIC_TURNSTILE_SITE_KEY
+        sync: false
+      - key: NEXT_PUBLIC_VAPID_PUBLIC_KEY
+        sync: false
+      - key: NEXT_PUBLIC_GA_MEASUREMENT_ID
+        sync: false
+      - key: GOOGLE_ADS_PUBLISHER_ID
+        sync: false
+      - key: NEXT_PUBLIC_GOOGLE_SITE_VERIFICATION
+        sync: false
+      - key: NEXT_PUBLIC_SENTRY_DSN
+        sync: false
+
+  - type: web
+    name: mentor-s1-admin
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    domains: [s1-admin.puhukoc.com]
+    renderSubdomainPolicy: disabled
+    buildCommand: corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@mentor/admin
+    startCommand: pnpm --filter @mentor/admin start:prod
+    healthCheckPath: /login
+    envVars:
+      - key: NODE_VERSION
+        value: 22.22.0
+      - key: NODE_ENV
+        value: production
+      - key: APP_ENV
+        value: staging
+      - key: NEXT_PUBLIC_API_URL
+        value: https://s1-api.puhukoc.com/v1
+
+  - type: cron
+    name: mentor-s1-process-jobs
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    schedule: "*/5 * * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/process-jobs" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-s1-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-s1-api
+          envVarKey: CRON_SECRET
+
+  - type: cron
+    name: mentor-s1-daily-reminders
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    schedule: "0 6 * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/dispatch-daily-reminders" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-s1-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-s1-api
+          envVarKey: CRON_SECRET
+  # 07:00 UTC = 10:00 TRT — after the students' own 06:00 nudge has had a chance to change the
+  # picture the coach is about to read, and clear of the 03:30 subscription sweep.
+  - type: cron
+    name: mentor-s1-mentorship-risk-digest
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    schedule: "0 7 * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/dispatch-mentorship-risk-digest" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-s1-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-s1-api
+          envVarKey: CRON_SECRET
+  - type: cron
+    name: mentor-s1-expire-subscriptions
+    branch: master
+    runtime: node
+    region: frankfurt
+    plan: 0.5c-512mb
+    autoDeployTrigger: checksPass
+    schedule: "30 3 * * *"
+    buildCommand: echo cron-ready
+    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/expire-subscriptions" --header "x-cron-secret:${CRON_SECRET}"
+    envVars:
+      - key: API_HOST
+        fromService:
+          type: web
+          name: mentor-s1-api
+          property: host
+      - key: CRON_SECRET
+        fromService:
+          type: web
+          name: mentor-s1-api
+          envVarKey: CRON_SECRET

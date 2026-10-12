@@ -7,6 +7,7 @@ import { publishedLegalDocs } from "@/lib/legal";
 
 /** Sitemap: canonical public content only. Best-effort if the API is down. */
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  if (process.env.APP_ENV === "staging") return [];
   const entries: MetadataRoute.Sitemap = [
     // Only FINAL documents — a DRAFT is noindex, so advertising it would contradict the page.
     ...publishedLegalDocs().map((doc) => ({

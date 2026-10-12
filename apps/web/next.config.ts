@@ -7,7 +7,7 @@ const withNextIntl = createNextIntlPlugin("./src/i18n/request.ts");
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
-    return [{ source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") }];
+    return [{ source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production", process.env.APP_ENV === "staging") }];
   },
   turbopack: {
     resolveAlias: {

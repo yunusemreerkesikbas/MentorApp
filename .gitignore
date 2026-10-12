@@ -70,3 +70,6 @@ Thumbs.db
 apps/web/test-results/
 apps/web/playwright-report/
 apps/api/eval-results/
+
+# Local deployment evidence; never includes published source
+.artifacts/deployment/

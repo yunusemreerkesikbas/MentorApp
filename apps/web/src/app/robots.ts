@@ -3,6 +3,9 @@ import { siteUrl } from "@/lib/forum-public";
 
 /** Route metadata owns indexability so crawlers can read each page's noindex directive. */
 export default function robots(): MetadataRoute.Robots {
+  if (process.env.APP_ENV === "staging") {
+    return { rules: { userAgent: "*", disallow: "/" } };
+  }
   return {
     rules: {
       userAgent: "*",

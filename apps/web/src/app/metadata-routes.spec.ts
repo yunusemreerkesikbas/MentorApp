@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("@/lib/forum-public", () => ({
   fetchPublicQuestionRefs: vi.fn(async () => []),
@@ -19,6 +19,8 @@ import robots from "./robots";
 import sitemap from "./sitemap";
 
 describe("metadata routes", () => {
+  beforeEach(() => vi.stubEnv("APP_ENV", "production"));
+  afterEach(() => vi.unstubAllEnvs());
   it("allows crawlers to read route-level noindex directives", () => {
     expect(robots()).toEqual({
       rules: { userAgent: "*", allow: "/" },

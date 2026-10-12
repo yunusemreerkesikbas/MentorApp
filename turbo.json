@@ -6,6 +6,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["APP_ENV", "NEXT_PUBLIC_*", "WEB_CSP_STORAGE_ORIGINS", "GOOGLE_ADS_PUBLISHER_ID"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": {

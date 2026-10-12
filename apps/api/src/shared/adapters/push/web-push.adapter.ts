@@ -21,7 +21,7 @@ export class WebPushAdapter implements PushPort {
   ) {
     const publicKey = config.get("VAPID_PUBLIC_KEY", { infer: true });
     const privateKey = config.get("VAPID_PRIVATE_KEY", { infer: true });
-    const subject = config.get("VAPID_SUBJECT", { infer: true }) ?? "mailto:hello@mentor.app";
+    const subject = config.get("VAPID_SUBJECT", { infer: true }) ?? "https://puhukoc.com";
     if (publicKey && privateKey) {
       webpush.setVapidDetails(subject, publicKey, privateKey);
       this.configured = true;

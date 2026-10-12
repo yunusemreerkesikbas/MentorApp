@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [master, "feature/**"]
+    branches: [master, "feature/**", "feat/**", "codex/**"]
   pull_request:
     branches: [master]
 
@@ -30,7 +30,8 @@ jobs:
       # Destructive account fixtures require a dedicated database ending in _test.
       TEST_DATABASE_URL: postgres://mentor:mentor@localhost:5432/mentor_test
       AUTH_RATE_LIMIT_SECRET: ci-test-auth-rate-secret-00000000000000
-      NEXT_PUBLIC_SITE_URL: https://mentor.example
+      APP_ENV: staging
+      NEXT_PUBLIC_SITE_URL: https://s1.puhukoc.com
       NEXT_PUBLIC_API_URL: http://localhost:3001/v1
       NEXT_PUBLIC_GA_MEASUREMENT_ID: G-CI0000000
       # Not a real key: the settings e2e stubs the browser push API and only needs push to be live.
@@ -58,6 +59,9 @@ jobs:
 
       - name: Audit production dependencies
         run: pnpm audit --prod --audit-level high
+
+      - name: Check stage and production deployment configuration
+        run: pnpm check:deployment
 
       - name: Scan repository for secrets
         uses: gitleaks/gitleaks-action@v2
