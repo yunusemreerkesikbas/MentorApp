@@ -13,6 +13,12 @@ before releasing. Local checks do not confirm that the hosts are live.
 
 ## Geliştirmeler (timeline)
 
+- **2026-10-13 · CI scan triage.** The first PR run misclassified the literal environment-key
+  name `R2_PRIVATE_BUCKET` in three new deployment definitions as `generic-api-key`. Added only
+  their exact historical fingerprints to `.gitleaksignore`; no file, directory, rule or future
+  commit is excluded. No credential value was present. Keep secret scan and full CI mandatory.
+  Related: `.gitleaksignore`, PR #156, `scripts/check-deployment.mts`, stage Render definitions.
+
 - **2026-10-13 · Free stage bootstrap and real database verification.** Reduced the selected
   stage to two Free services/two custom domains; the admin hostname is reserved, with no admin
   deployment or DNS record. Verified Render Hobby/no-card and its unused domain allowance.
