@@ -77,11 +77,10 @@ const weakLine =
   "Denemelerinde en çok desteğe ihtiyaç duyan dersler (ortalama net): Matematik (9,6).";
 const rhythmLine = "Son 28 günde 20 gün, 24 seansta 1030 dakika çalıştın. Seansların ortalama 43 dakika.";
 
-/** ISO weekday (1 = Monday) `offset` days from the browser's today, as the wizard lists them. */
+/** Match the wizard's Istanbul day even when the CI runner is still on the previous UTC day. */
 function weekdayIn(offset: number) {
-  const date = new Date();
-  date.setDate(date.getDate() + offset);
-  return ((date.getDay() + 6) % 7) + 1;
+  const date = new Date(`${istanbulDay(offset)}T12:00:00Z`);
+  return ((date.getUTCDay() + 6) % 7) + 1;
 }
 
 const brief: CoachPlanAdaptationBriefDto = {

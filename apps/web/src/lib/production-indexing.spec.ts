@@ -14,22 +14,10 @@ vi.mock("./content-api", () => ({
   infoArticleUrl: vi.fn(),
 }));
 
-afterEach(() => {
-  vi.unstubAllEnvs();
-  vi.clearAllMocks();
-});
+afterEach(() => vi.clearAllMocks());
 
-describe("deployment indexing", () => {
-  it("blocks staging crawlers and publishes no sitemap or API requests", async () => {
-    vi.stubEnv("APP_ENV", "staging");
-    expect(robots()).toEqual({ rules: { userAgent: "*", disallow: "/" } });
-    expect(await sitemap()).toEqual([]);
-    expect(fetchPublicQuestionRefs).not.toHaveBeenCalled();
-    expect(fetchInfoArticlesByFamily).not.toHaveBeenCalled();
-  });
-
-  it("advertises the production sitemap and canonical public pages", async () => {
-    vi.stubEnv("APP_ENV", "production");
+describe("production indexing", () => {
+  it("advertises the owned domain sitemap and canonical public pages", async () => {
     expect(robots()).toEqual({
       rules: { userAgent: "*", allow: "/" },
       sitemap: "https://puhukoc.com/sitemap.xml",

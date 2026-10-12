@@ -33,18 +33,15 @@ interface TurboConfig { tasks: { build: { env: string[] } } }
 const root = new URL("../", import.meta.url);
 const readJson = <T,>(path: string): T => JSON.parse(readFileSync(new URL(path, root), "utf8")) as T;
 const blueprints = [
-  { file: "render.yaml", environment: "production", prefix: "mentor-", hostPrefix: "", site: "puhukoc.com", trigger: "off", bucket: "prod", plan: "0.5c-512mb", scheduled: true, hasAdmin: true },
-  { file: "render.staging.yaml", environment: "staging", prefix: "mentor-s1-", hostPrefix: "s1-", site: "s1.puhukoc.com", trigger: "checksPass", bucket: "s1", plan: "0.5c-512mb", scheduled: true, hasAdmin: true },
-  { file: "render.staging-low-cost.yaml", environment: "staging", prefix: "mentor-s1-", hostPrefix: "s1-", site: "s1.puhukoc.com", trigger: "off", bucket: "s1", plan: "free", scheduled: false, hasAdmin: false },
+  { file: "render.yaml", environment: "production", prefix: "mentor-", hostPrefix: "", site: "puhukoc.com", trigger: "off", bucket: "prod", plan: "0.5c-512mb" },
 ];
 
-// Alternative stage profiles intentionally manage the same resources. Never apply both.
 const allNames = new Map<string, string>();
 const allDomains = new Map<string, string>();
 for (const config of blueprints) {
   const blueprint = load(readFileSync(new URL(config.file, root), "utf8")) as Blueprint;
-  assert.equal(blueprint.services.length, config.scheduled ? 7 : config.hasAdmin ? 3 : 2, `${config.file}: incorrect service count`);
-  assert.equal(blueprint.services.filter((item) => item.type === "cron").length, config.scheduled ? 4 : 0);
+  assert.equal(blueprint.services.length, 7, `${config.file}: incorrect service count`);
+  assert.equal(blueprint.services.filter((item) => item.type === "cron").length, 4);
   assert.equal(new Set(blueprint.services.map((item) => item.name)).size, blueprint.services.length);
   const byName = new Map(blueprint.services.map((service) => [service.name, service]));
   const service = (suffix: string) => {
@@ -57,11 +54,7 @@ for (const config of blueprints) {
   const adminHost = `${config.hostPrefix}admin.puhukoc.com`;
   const api = service("api");
   const web = service("web");
-  const admin = config.hasAdmin ? service("admin") : undefined;
-  if (!config.hasAdmin) {
-    assert.equal(blueprint.services.flatMap((item) => item.domains ?? []).length, 2,
-      "Minimum-cost stage must remain within the two-domain allowance of an otherwise empty Hobby workspace");
-  }
+  const admin = service("admin");
 
   for (const item of blueprint.services) {
     assert.ok(!allNames.has(item.name) || allNames.get(item.name) === config.environment, `${item.name}: reused service across environments`);
@@ -88,17 +81,17 @@ for (const config of blueprints) {
     assert.equal(value(item, "NODE_ENV"), "production", `${item.name}: runtime security locks must remain enabled`);
     assert.equal(value(item, "APP_ENV"), config.environment, `${item.name}: deployment environment mismatch`);
     assert.equal(value(item, "NODE_VERSION"), "22.22.0", `${item.name}: unpinned runtime`);
-    assert.ok(item.buildCommand.includes("install --frozen-lockfile --prod=false"), `${item.name}: build tooling missing`);
-    assert.ok(item.buildCommand.includes("turbo run build --filter=@mentor/"), `${item.name}: workspace dependencies not built`);
+    const suffix = item.name.slice(config.prefix.length);
+    assert.equal(item.buildCommand,
+      `corepack enable && pnpm install --frozen-lockfile --prod=false && pnpm exec turbo run build --filter=@mentor/${suffix}`,
+      `${item.name}: build tooling or workspace dependency build missing`);
   }
   assert.deepEqual(api.domains, [apiHost]);
   assert.deepEqual(web.domains, [config.site]);
   assert.equal(api.renderSubdomainPolicy, "enabled", "API Render hostname must remain available for authenticated cron");
   assert.equal(web.renderSubdomainPolicy, "disabled", "Web must use the canonical custom domain");
-  if (admin) {
-    assert.deepEqual(admin.domains, [adminHost]);
-    assert.equal(admin.renderSubdomainPolicy, "disabled", "Admin must not bypass Cloudflare through its Render hostname");
-  }
+  assert.deepEqual(admin.domains, [adminHost]);
+  assert.equal(admin.renderSubdomainPolicy, "disabled", "Admin must not bypass Cloudflare through its Render hostname");
   assert.equal(value(api, "APP_URL"), `https://${config.site}`);
   assert.equal(value(api, "ADMIN_APP_URL"), `https://${adminHost}`);
   assert.equal(value(api, "CORS_ORIGINS"), `https://${config.site},https://${adminHost}`);
@@ -108,21 +101,22 @@ for (const config of blueprints) {
   assert.equal(value(api, "R2_PRIVATE_BUCKET"), `puhu-${config.bucket}-private`);
   assert.equal(value(api, "R2_JURISDICTION"), "eu");
   assert.equal(value(api, "PAYMENTS_PROVIDER"), "disabled");
-  assert.notEqual(value(api, "AI_PROVIDER"), "fake");
-  assert.notEqual(value(api, "VISION_PROVIDER"), "fake");
+  assert.equal(value(api, "AI_PROVIDER"), "openai");
+  assert.equal(value(api, "VISION_PROVIDER"), "gemini");
   assert.equal(value(api, "STORAGE_PROVIDER"), "r2");
-  for (const key of ["DATABASE_URL", "DATABASE_MIGRATION_URL", "EDGE_ORIGIN_SECRET", "POSTMARK_TOKEN", "TURNSTILE_SECRET_KEY"]) {
+  const suppliedSecrets = ["DATABASE_URL", "DATABASE_MIGRATION_URL", "EDGE_ORIGIN_SECRET", "POSTMARK_TOKEN", "TURNSTILE_SECRET_KEY",
+    "CLOUDFLARE_ACCESS_TEAM_DOMAIN", "CLOUDFLARE_ACCESS_AUD", "OPENAI_API_KEY", "GEMINI_API_KEY"];
+  for (const key of suppliedSecrets) {
     assert.deepEqual(api.envVars.find((env) => env.key === key), { key, sync: false }, `${api.name}: ${key} must be supplied separately`);
   }
   for (const key of ["JWT_ACCESS_SECRET", "AUTH_RATE_LIMIT_SECRET", "CRON_SECRET"]) {
     assert.deepEqual(api.envVars.find((env) => env.key === key), { key, generateValue: true }, `${api.name}: ${key} must be independently generated`);
   }
-  assert.equal(api.preDeployCommand, config.scheduled ? "pnpm --filter @mentor/api db:migrate" : undefined,
-    `${api.name}: Free services require separate manual migrations`);
+  assert.equal(api.preDeployCommand, "pnpm --filter @mentor/api db:migrate");
+  assert.equal(api.startCommand, "pnpm --filter @mentor/api start:prod");
   assert.equal(api.healthCheckPath, "/v1/health/ready");
   assert.equal(value(web, "NEXT_PUBLIC_SITE_URL"), `https://${config.site}`);
-  const frontends: Array<readonly [Service, "web" | "admin"]> = [[web, "web"]];
-  if (admin) frontends.push([admin, "admin"]);
+  const frontends: Array<readonly [Service, "web" | "admin"]> = [[web, "web"], [admin, "admin"]];
   for (const [item, suffix] of frontends) {
     assert.equal(value(item, "NEXT_PUBLIC_API_URL"), `https://${apiHost}/v1`);
     assert.equal(item.startCommand, `pnpm --filter @mentor/${suffix} start:prod`);

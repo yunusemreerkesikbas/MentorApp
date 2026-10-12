@@ -9,7 +9,7 @@ describe("web security headers", () => {
   it("wires the headers to every Next.js response without advertising the framework", async () => {
     expect(nextConfig.poweredByHeader).toBe(false);
     expect(await nextConfig.headers?.()).toEqual([
-      { source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production", process.env.APP_ENV === "staging") },
+      { source: "/:path*", headers: webSecurityHeaders(process.env.NODE_ENV === "production") },
     ]);
   });
   it("blocks framing, content sniffing and unnecessary device access without blocking uploads or sharing", () => {
@@ -24,18 +24,8 @@ describe("web security headers", () => {
   it("enforces HTTPS in production without applying a blanket policy to other subdomains", () => {
     const production = Object.fromEntries(webSecurityHeaders(true).map(({ key, value }) => [key, value]));
     expect(production["Strict-Transport-Security"]).toBe("max-age=31536000");
+    expect(production["X-Robots-Tag"]).toBeUndefined();
     expect(webSecurityHeaders(false).some(({ key }) => key === "Strict-Transport-Security")).toBe(false);
   });
 
-  it("prevents indexing every staging response while keeping production indexable", async () => {
-    vi.stubEnv("NODE_ENV", "production");
-    vi.stubEnv("APP_ENV", "staging");
-    try {
-      const rules = await nextConfig.headers?.();
-      expect(rules?.[0]?.headers).toContainEqual({ key: "X-Robots-Tag", value: "noindex, nofollow, noarchive" });
-      expect(webSecurityHeaders(true).some(({ key }) => key === "X-Robots-Tag")).toBe(false);
-    } finally {
-      vi.unstubAllEnvs();
-    }
-  });
 });

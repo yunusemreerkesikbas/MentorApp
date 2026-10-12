@@ -19,8 +19,8 @@
 
 - **[setup.md](./setup.md)** — local setup (Node/pnpm/Docker/Postgres), env files, W5 notifications smoke test, ports, troubleshooting.
 - **[integrations.md](./integrations.md)** — account + environment wiring for Neon / OpenAI / Gemini / iyzico / Cloudflare R2+Turnstile+Access / Postmark / Sentry / Render.
-- **[deployment.md](./deployment.md)** — `puhukoc.com` / `s1.puhukoc.com` setup, DNS/TLS, isolated stage/prod resources, deployment and rollback procedure.
-- **[staging-cost-options.md](./staging-cost-options.md)** — on-demand Free hosting proposal, quota/idle limitations and the actual staging provisioning state.
+- **[deployment.md](./deployment.md)** — production `puhukoc.com` setup, release prerequisites, DNS/TLS, deployment and rollback.
+- **[deferred-staging.md](./deferred-staging.md)** — recoverable staging work, retained resources and optional temporary rehearsal.
 - **[security-release-checklist.md](./security-release-checklist.md)** — production session/key rotation, restricted DB role, private-media migration and browser/security release gates.
 - **[file-structure.md](./file-structure.md)** — monorepo folder tree + package dependency direction + module internal structure.
 - **[conventions.md](./conventions.md)** — cross-cutting basics: language, config & secrets, git, **ticket registry (APP-NNN)**, feature-doc rule, testing, quality gates.

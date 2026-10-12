@@ -1,4 +1,4 @@
-# Production Blueprint. Stage uses render.staging.yaml. Setup: docs/core/deployment.md.
+# Production Blueprint. Apply only after release/budget approval. Setup: docs/core/deployment.md.
 # Existing service names are retained to avoid replacing deployed resources.
 services:
   - type: web
@@ -19,7 +19,7 @@ services:
         value: 22.22.0
       - key: NODE_ENV
         value: production
-      # APP_ENV is the deployment name; NODE_ENV stays production on stage too.
+      # APP_ENV labels monitoring; NODE_ENV enables the production security checks.
       - key: APP_ENV
         value: production
       - key: DATABASE_URL

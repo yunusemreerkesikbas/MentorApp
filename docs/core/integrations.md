@@ -164,10 +164,10 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   sweep; AdsModule does not create a second in-process scheduler.
 
 ### Render (hosting)
-- Native Node services, single region **Frankfurt/EU**. Production uses `render.yaml`; minimum-cost
-  stage uses `render.staging-low-cost.yaml` instead of the full `render.staging.yaml` profile.
-  Separate credentials go into the Render dashboard. Follow
-  [deployment.md](./deployment.md) for domains, isolation, provisioning and release gates.
+- Native Node services, single region **Frankfurt/EU**. Production uses `render.yaml` with manual
+  deployments and separately supplied credentials. Follow [deployment.md](./deployment.md) for
+  domains, provisioning and release gates. Permanent staging is deferred; retained resources
+  and optional rehearsals are recorded in [deferred-staging.md](./deferred-staging.md).
 - Cost shield (§8): Neon max-CU + budget alert + Cloudflare edge rate-limit.
 
 > ⚠️ **Phase 0 prerequisites (pre-launch, §7):** company setup, iyzico application, legal web pages
