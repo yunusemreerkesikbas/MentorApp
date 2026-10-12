@@ -95,6 +95,7 @@ jobs:
       - name: Start seeded API for browser tests
         env:
           NODE_ENV: test
+          APP_ENV: development
           APP_URL: http://localhost:3100
           DATABASE_URL: ${{ env.TEST_DATABASE_URL }}
           JWT_ACCESS_SECRET: ci-browser-test-access-secret-00000000
