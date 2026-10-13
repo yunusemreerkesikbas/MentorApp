@@ -489,6 +489,10 @@ export const CONFIG_CATALOG = {
     3600,
     "How often API instances poll the jobs table for pending notification/email jobs.",
   ),
+  "notifications.daily_reminder.email_enabled": flag(
+    true,
+    "Send student daily-reminder emails. Disable for the pilot to preserve the transactional email quota; inbox and opted-in push remain enabled.",
+  ),
   "notifications.push.max_subscriptions": notificationCount(
     5,
     20,
@@ -952,6 +956,7 @@ export const FeatureFlag = {
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",
   MENTORSHIP_APPLICATIONS_OPEN: "mentorship.applications.open",
+  DAILY_REMINDER_EMAIL_ENABLED: "notifications.daily_reminder.email_enabled",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {
