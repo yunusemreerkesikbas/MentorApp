@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import { CONFIG_CATALOG } from "../../../../common/config/config.catalog";
 import { EmailTemplate } from "../../domain/notifications.constants";
 import { SendEmailHandler } from "./send-email.handler";
 
@@ -10,6 +11,7 @@ function setup(options: {
   claimed?: boolean;
   contact?: { email: string; displayName: string } | null;
   sendError?: Error;
+  dailyEmailEnabled?: boolean;
 } = {}) {
   const tx = { execute: vi.fn().mockResolvedValue(undefined) };
   const db = {
@@ -40,6 +42,10 @@ function setup(options: {
         : options.contact,
     ),
   };
+  const auth = { deliverCurrentEmailToken: vi.fn(async (_hash: string, _to: string, deliver: () => Promise<void>) => deliver()) };
+  const registry = { get: vi.fn().mockResolvedValue(
+    options.dailyEmailEnabled ?? CONFIG_CATALOG["notifications.daily_reminder.email_enabled"].default,
+  ) };
   const handler = Reflect.construct(SendEmailHandler, [
     email,
     db,
@@ -47,8 +53,10 @@ function setup(options: {
     preferences,
     deliveries,
     users,
+    auth,
+    registry,
   ]) as SendEmailHandler;
-  return { handler, email, followups, preferences, deliveries, users };
+  return { handler, email, followups, preferences, deliveries, users, auth, registry };
 }
 
 const guardedPayload = {
@@ -62,6 +70,28 @@ const guardedPayload = {
 };
 
 describe("SendEmailHandler", () => {
+  it("suppresses a previously queued daily email after reminder email is paused", async () => {
+    const { handler, email, registry } = setup({ dailyEmailEnabled: false });
+    await handler.handle({ to: "student@test.local", template: EmailTemplate.DAILY_REMINDER });
+    expect(email.sendTransactional).not.toHaveBeenCalled();
+    expect(registry.get).toHaveBeenCalledWith("notifications.daily_reminder.email_enabled");
+  });
+
+  it("delivers a queued daily email when the reminder channel remains enabled", async () => {
+    const { handler, email } = setup();
+    await handler.handle({ to: "student@test.local", template: EmailTemplate.DAILY_REMINDER });
+    expect(email.sendTransactional).toHaveBeenCalledWith(expect.objectContaining({ template: EmailTemplate.DAILY_REMINDER }));
+  });
+
+  it.each([EmailTemplate.VERIFY_EMAIL, EmailTemplate.RESET_PASSWORD])("keeps %s outside the reminder pause", async (template) => {
+    const { handler, email, auth, registry } = setup({ dailyEmailEnabled: false });
+    const executionGuard = { type: "identity-email-token", tokenHash: "a".repeat(64) };
+    await handler.handle({ to: "student@test.local", template, executionGuard });
+    expect(auth.deliverCurrentEmailToken).toHaveBeenCalledOnce();
+    expect(email.sendTransactional).toHaveBeenCalledWith(expect.objectContaining({ template }));
+    expect(registry.get).not.toHaveBeenCalled();
+  });
+
   it("suppresses due email when a coach changes email after due-count verification", async () => {
     const { handler, users, email, deliveries } = setup({ contact: null });
     await handler.handle(guardedPayload, new Date("2026-09-12T07:00:00Z"));

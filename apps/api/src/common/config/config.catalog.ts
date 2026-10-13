@@ -479,6 +479,10 @@ export const CONFIG_CATALOG = {
     3600,
     "How often API instances poll the jobs table for pending notification/email jobs.",
   ),
+  "notifications.daily_reminder.email_enabled": flag(
+    true,
+    "Send student daily-reminder emails. Disable for the pilot to preserve the transactional email quota; inbox and opted-in push remain enabled.",
+  ),
   "notifications.push.max_subscriptions": notificationCount(
     5,
     20,
@@ -937,6 +941,7 @@ export const FeatureFlag = {
   FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
+  DAILY_REMINDER_EMAIL_ENABLED: "notifications.daily_reminder.email_enabled",
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",

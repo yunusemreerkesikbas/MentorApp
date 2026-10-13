@@ -1,5 +1,7 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
+import { ConfigRegistryService } from "../../../../common/config/config-registry.service";
+import { FeatureFlag } from "../../../../common/config/config.catalog";
 import { DRIZZLE } from "../../../../database/database.constants";
 import type { Database } from "../../../../database/drizzle";
 import { withServiceContext } from "../../../../database/rls";
@@ -40,6 +42,7 @@ export class SendEmailHandler {
     private readonly deliveries: NotificationDeliveryRepository,
     private readonly users: UsersService,
     private readonly auth: AuthService,
+    private readonly config: ConfigRegistryService,
   ) {}
 
   async handle(payload: unknown, now = new Date()): Promise<void> {
@@ -49,6 +52,8 @@ export class SendEmailHandler {
       return;
     }
     const data = sendEmailPayloadSchema.parse(payload);
+    if (data.template === EmailTemplate.DAILY_REMINDER &&
+        await this.config.get(FeatureFlag.DAILY_REMINDER_EMAIL_ENABLED) !== true) return;
     // This template must never fall through to delivery without its access guard.
     if (data.template === EmailTemplate.MENTORSHIP_FOLLOWUP_DUE) {
       followupDuePayloadSchema.parse(payload);
