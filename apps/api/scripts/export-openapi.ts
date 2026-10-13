@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   app.setGlobalPrefix("v1");
 
   const config = new DocumentBuilder()
-    .setTitle("Mentor API")
+    .setTitle("PuhuKoç API")
     .setVersion("1.0")
     .addBearerAuth()
     .build();

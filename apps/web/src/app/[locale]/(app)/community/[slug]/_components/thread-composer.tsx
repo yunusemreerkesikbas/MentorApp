@@ -212,7 +212,7 @@ export function ThreadComposer({
       )}
       <div className="flex items-start gap-3">
         <AuthorAvatar
-          name={user?.displayName ?? "Mentor"}
+          name={user?.displayName ?? "Yoldaş"}
           src={user?.avatarUrl}
           size={40}
         />

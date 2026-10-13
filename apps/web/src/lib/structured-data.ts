@@ -27,7 +27,7 @@ export function buildArticleStructuredData({
     publisher: {
       "@type": "Organization",
       "@id": `${siteOrigin}/#organization`,
-      name: "Mentor",
+      name: "PuhuKoç",
       url: siteOrigin,
       logo: { "@type": "ImageObject", url: publisherLogoUrl },
     },

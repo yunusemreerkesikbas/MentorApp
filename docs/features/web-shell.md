@@ -1228,3 +1228,20 @@ eklendi.
   path, `/images/logo.svg` included, gets the CSP/security headers. There is no `public/images`.
   Gotcha: a new top-level folder under `public/` goes through the proxy until you add it to the
   matcher; `src/proxy.spec.ts` pins both sides.
+
+- **2026-10-13 — Display name is "PuhuKoç".** The product moves to `puhukoc.com`; every user-facing
+  "Mentor" became "PuhuKoç": web copy (`messages/{tr,en}.json`, paywall `brand` included), nav and
+  public wordmarks, metadata/OG/JSON-LD, tab titles, both share cards, the push fallback title in
+  `public/sw.js`, API email subjects and Google-auth errors, blog seed meta titles and the admin
+  wordmark/title. Display name only: `@mentor/*`, `mentor-*` classes, storage keys and env vars are
+  unchanged. Usage: write `PuhuKoç` in copy (PuhuKoç'ta, PuhuKoç'un, PuhuKoç'u); `puhukoc` only in
+  domains and addresses; the Netgsm OTP text says `PuhuKoc` because the SMS stays ASCII (a `ç`
+  switches it to Unicode and shortens the segment). "Puhu" stays the mascot, never the product.
+  The six legal texts (`src/lib/legal.ts`, `updatedAt` 2026-10-13), the AI system prompts, the
+  Swagger/OpenAPI title and the ICS `PRODID` (`PuhuKoc`) follow the name too; the fallback display
+  name for an account with no name is now `"Yoldaş"` (`google-auth.service.ts`, the two community
+  composers), because the brand as a person's name reads like an official account.
+  Gotchas: the legal contact stays `info@mentor.com` until the owner names a new mailbox
+  (`docs/core/deployment.md`); "Mentor V2" is the AI engine's name, not the brand, and stays; the
+  seed only renames `metaTitle` on a fresh database, existing article rows keep theirs;
+  `NETGSM_MSGHEADER` is an operator-registered value and does not follow this rename.

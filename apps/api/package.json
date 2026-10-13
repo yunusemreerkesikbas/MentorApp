@@ -2,7 +2,7 @@
   "name": "@mentor/api",
   "version": "0.0.0",
   "private": true,
-  "description": "Mentor backend — NestJS modular monolith (§8). Single API, /v1, serves web+mobile.",
+  "description": "PuhuKoç backend — NestJS modular monolith (§8). Single API, /v1, serves web+mobile.",
   "scripts": {
     "build": "nest build",
     "dev": "nest start --watch",

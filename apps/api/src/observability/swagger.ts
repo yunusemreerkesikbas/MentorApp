@@ -15,8 +15,8 @@ import {
  */
 export function setupSwagger(app: INestApplication): void {
   const config = new DocumentBuilder()
-    .setTitle("Mentor API")
-    .setDescription("Mentor backend — single API, versioned /v1.")
+    .setTitle("PuhuKoç API")
+    .setDescription("PuhuKoç backend — single API, versioned /v1.")
     .setVersion("1.0")
     .addBearerAuth()
     .build();

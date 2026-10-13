@@ -50,7 +50,7 @@ const article: InfoArticleDto = {
   featuredUntil: null,
   family: "KPSS",
   category: "APPLICATION",
-  metaTitle: "KPSS Başvuru Süreci | Mentor Blog",
+  metaTitle: "KPSS Başvuru Süreci | PuhuKoç Blog",
   metaDescription: "KPSS başvuru rehberi.",
   publishedAt: "2026-01-01T12:00:00.000Z",
   source: "ÖSYM",
@@ -202,7 +202,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   const api = await mockKnowledgeApi(page, { authenticated: false });
   await page.goto(`/en/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(
     page.getByRole("link", { name: "Sign in to ask the Coach" }),
   ).toHaveAttribute("href", "/en/login");
@@ -216,7 +216,7 @@ test("anonim ve İngilizce ziyaretçiye lokalize rehberlik sunar", async ({
   );
   await expect(page.locator('meta[property="og:site_name"]')).toHaveAttribute(
     "content",
-    "Mentor",
+    "PuhuKoç",
   );
   await expect(page.locator('meta[property="og:locale"]')).toHaveAttribute(
     "content",
@@ -250,7 +250,7 @@ test("oturumlu ziyaretçi de public chrome görür ve panel bağlantısı alır"
 
   await page.goto(`/blog/${article.slug}`);
 
-  await expect(page.getByRole("link", { name: "Mentor" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "PuhuKoç" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Panele dön" })).toHaveAttribute(
     "href",
     "/panel",

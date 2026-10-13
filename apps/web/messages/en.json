@@ -793,10 +793,10 @@
       "title": "Your Google account",
       "loading": "Loading your Google connection",
       "linked": "Google account linked: {email}",
-      "description": "For your account security, confirm your current Mentor password. You will then be redirected to link your Google account with the same email.",
-      "password": "Current Mentor password",
-      "password_hint": "Your Google password is never requested; only your existing Mentor account is verified.",
-      "password_required": "Enter your current Mentor password to continue.",
+      "description": "For your account security, confirm your current PuhuKoç password. You will then be redirected to link your Google account with the same email.",
+      "password": "Current PuhuKoç password",
+      "password_hint": "Your Google password is never requested; only your existing PuhuKoç account is verified.",
+      "password_required": "Enter your current PuhuKoç password to continue.",
       "connect": "Link Google account",
       "verify_first": "Verify your email before linking your Google account.",
       "cancel": "Cancel",
@@ -893,16 +893,16 @@
       "recommend": "Recommend",
       "help": "Help Center",
       "feedback": "Feedback",
-      "share_title": "Mentor",
+      "share_title": "PuhuKoç",
       "share_text": "A calm coach that stays with you through exam prep.",
       "share_copied_title": "Link copied",
-      "share_copied_message": "You can share the Mentor link.",
+      "share_copied_message": "You can share the PuhuKoç link.",
       "share_error_title": "Could not share",
       "share_error_message": "We could not share the link right now."
     },
     "social": {
       "title": "Follow us",
-      "subtitle": "Mentor updates and short notes."
+      "subtitle": "PuhuKoç updates and short notes."
     },
     "notifications": {
       "title": "Notification settings",
@@ -1043,7 +1043,7 @@
     "coupon_apply": "Apply",
     "coupon_clear": "Remove",
     "coupon_applied": "Coupon applied",
-    "brand": "Mentor",
+    "brand": "PuhuKoç",
     "badge_premium": "Premium",
     "badge_value": "Recommended",
     "per_month": "/mo",
@@ -1698,7 +1698,7 @@
         "days": "{count} days",
         "count": "{count}",
         "subject": "{name} · {minutes} min",
-        "signature": "Mentor × Puhu"
+        "signature": "PuhuKoç × Puhu"
       },
       "unlock": {
         "cta": "Unlock the AI Puhu note for {cost} coins",
@@ -1916,15 +1916,15 @@
     "share_card_first": "today's first session",
     "share_card_date": "{weekday}, {day}",
     "share_card_label": "Share card: {caption}, {place}",
-    "share_text": "I focused for {minutes} minutes on Mentor today 🎯",
+    "share_text": "I focused for {minutes} minutes on PuhuKoç today 🎯",
     "share_error_title": "Couldn't share",
     "history_day_yesterday": "Yesterday"
   },
   "knowledge": {
     "title": "Blog",
     "subtitle": "Verified posts on the exam process, with their official sources.",
-    "meta_title": "Blog | Mentor",
-    "meta_title_family": "{family} posts | Mentor Blog",
+    "meta_title": "Blog | PuhuKoç",
+    "meta_title_family": "{family} posts | PuhuKoç Blog",
     "meta_description": "Verified, officially sourced posts on the KPSS, YKS and LGS process.",
     "topics_label": "Topic",
     "all_topics": "All",
@@ -1943,7 +1943,7 @@
     "days_remaining": "{days} days to the exam",
     "last_verified": "Last verified: {date}",
     "calendar_download": "Add to calendar",
-    "calendar_name": "Mentor exam calendar",
+    "calendar_name": "PuhuKoç exam calendar",
     "last_verified_prefix": "Last verified",
     "calendar_pending_desc": "The official exam calendar is not published yet. It will sit here when announced.",
     "source_label": "Source",
@@ -1954,7 +1954,7 @@
       "lgs": "LGS"
     },
     "related_posts": "Related posts",
-    "editor_fallback": "Mentor Editor",
+    "editor_fallback": "PuhuKoç Editor",
     "share_title": "Share",
     "share_whatsapp": "Share on WhatsApp",
     "share_x": "Share on X",
@@ -2745,7 +2745,7 @@
     "consent_confirm": "I understand and agree."
   },
   "article": {
-    "not_found_title": "Article not found | Mentor",
+    "not_found_title": "Article not found | PuhuKoç",
     "source_label": "Source:",
     "last_verified": "Last verified: {date}",
     "trust_badge": "Verified content",
@@ -2774,7 +2774,7 @@
     "advertising_body": "Blog posts may show non-personalized Google ads. Google may use your IP address to deliver ads, and cookies and browser storage to detect abuse. Your advertising choice is independent of analytics. You can keep reading if you reject.",
     "save_failed": "Your choice could not be saved. Check browser storage and try again.",
     "title": "Your analytics cookie choice",
-    "body": "We measure anonymous usage data only with your permission to improve Mentor.",
+    "body": "We measure anonymous usage data only with your permission to improve PuhuKoç.",
     "details": "View details and preferences",
     "reject": "Reject",
     "accept": "Accept"
@@ -2790,7 +2790,7 @@
     "storage_heading": "Browser storage",
     "storage_body": "Your analytics and advertising choices are stored separately, alongside plan view and some device-only interface preferences in localStorage or sessionStorage. These values are not cookies sent with every request and are removed when you reset the feature or clear browser data.",
     "analytics_heading": "Optional analytics",
-    "analytics_body": "Google Analytics loads only after you choose Accept. Google analytics cookies beginning with _ga may then be created. If you reject analytics, Mentor attempts to remove them and sends no new analytics event.",
+    "analytics_body": "Google Analytics loads only after you choose Accept. Google analytics cookies beginning with _ga may then be created. If you reject analytics, PuhuKoç attempts to remove them and sends no new analytics event.",
     "current": "Current choice: {value}",
     "accepted": "Accepted",
     "rejected": "Rejected",

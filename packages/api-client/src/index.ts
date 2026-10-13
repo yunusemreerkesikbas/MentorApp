@@ -1,5 +1,5 @@
 /**
- * @mentor/api-client — typed client for the Mentor API (/v1).
+ * @mentor/api-client — typed client for the PuhuKoç API (/v1).
  *
  * - `configureApiClient` + `http` (fetch mutator: cookie credentials + bearer + ApiError).
  * - `./generated/api` — orval output from the OpenAPI spec. Regenerate:

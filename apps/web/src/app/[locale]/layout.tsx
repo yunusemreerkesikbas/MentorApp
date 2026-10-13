@@ -34,13 +34,13 @@ export const revalidate = 0;
 
 const META = {
   tr: {
-    title: "Mentor: Sınav Yoldaşın",
+    title: "PuhuKoç: Sınav Yoldaşın",
     description:
       "Sınav hazırlığında seni anlayan, devam ettiren ve yalnız bırakmayan AI koç + topluluk.",
     ogLocale: "tr_TR" as const,
   },
   en: {
-    title: "Mentor: Your Exam Companion",
+    title: "PuhuKoç: Your Exam Companion",
     description:
       "An AI coach + community that understands you, keeps you going, and never leaves you alone on the road to your exam.",
     ogLocale: "en_US" as const,
@@ -59,7 +59,7 @@ export async function generateMetadata({
   const socialImage = `${origin}/mascot/puhu/puhu-default.png`;
   return {
     metadataBase: new URL(origin),
-    applicationName: "Mentor",
+    applicationName: "PuhuKoç",
     title: m.title,
     description: m.description,
     icons: {
@@ -70,10 +70,10 @@ export async function generateMetadata({
       title: m.title,
       description: m.description,
       locale: m.ogLocale,
-      siteName: "Mentor",
+      siteName: "PuhuKoç",
       type: "website",
       url: origin,
-      images: [{ url: socialImage, alt: "Mentor" }],
+      images: [{ url: socialImage, alt: "PuhuKoç" }],
     },
     twitter: {
       card: "summary_large_image",

@@ -40,7 +40,7 @@ export function PublicChrome({
               href="/"
               className={`inline-flex min-h-11 items-center text-lg font-black tracking-[-0.01em] text-[var(--color-main)] sm:text-xl ${FOCUS}`}
             >
-              Mentor
+              PuhuKoç
             </Link>
             <Link
               href={blogHref({ family: user?.examType ?? undefined })}

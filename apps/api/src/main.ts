@@ -57,7 +57,7 @@ async function bootstrap(): Promise<void> {
 
   const port = config.get("PORT", { infer: true });
   await app.listen(port);
-  app.get(Logger).log(`Mentor API → http://localhost:${port}/v1`);
+  app.get(Logger).log(`PuhuKoç API → http://localhost:${port}/v1`);
 }
 
 void bootstrap();

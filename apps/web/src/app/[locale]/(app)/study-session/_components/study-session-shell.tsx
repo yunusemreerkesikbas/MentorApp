@@ -228,7 +228,7 @@ export function StudySessionShell() {
           : isPaused
             ? t("paused")
             : t("focusing");
-      document.title = `${mm}:${ss} · ${label} · Mentor`;
+      document.title = `${mm}:${ss} · ${label} · PuhuKoç`;
     } else {
       document.title = initialTitleRef.current;
     }

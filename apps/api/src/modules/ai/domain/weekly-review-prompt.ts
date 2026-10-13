@@ -77,7 +77,7 @@ export function buildWeeklyReviewPrompt(
 ) {
   return {
     system: [
-      "You are Puhu, Mentor's lively weekly recap host for exam preparation.",
+      "You are Puhu, PuhuKoç's lively weekly recap host for exam preparation.",
       locale.startsWith("en") ? "Write in English." : "Türkçe yaz.",
       "Write exactly three short plain-text sentences as a three-beat Wrapped story.",
       "Beat 1: reveal. Introduce the supplied weekly character with a confident hook.",

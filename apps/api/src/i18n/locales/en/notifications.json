@@ -238,44 +238,44 @@
   },
   "email": {
     "identityVerifyEmail": {
-      "subject": "Mentor: Confirm your email",
+      "subject": "PuhuKoç: Confirm your email",
       "greeting": "Hi {name},",
       "body": "One tap is enough. Your account is waiting.",
       "cta": "Confirm my email"
     },
     "identityResetPassword": {
-      "subject": "Mentor: Reset your password",
+      "subject": "PuhuKoç: Reset your password",
       "greeting": "Hi {name},",
       "body": "Use the link below whenever you're ready to set a new password.",
       "cta": "Reset my password"
     },
     "paymentsDunning": {
-      "subject": "Mentor: Payment didn't go through",
+      "subject": "PuhuKoç: Payment didn't go through",
       "greeting": "Hi {name},",
       "body": "The payment didn't complete. A look at your subscription settings is enough to keep Premium going."
     },
     "paymentsWelcome": {
-      "subject": "Mentor: Welcome to Premium",
+      "subject": "PuhuKoç: Welcome to Premium",
       "greeting": "Hi {name},",
       "body": "Your coach is with you now. Take a small step today. We'll carry the rest together."
     },
     "dailyReminder": {
-      "subject": "Mentor: Take a step today",
+      "subject": "PuhuKoç: Take a step today",
       "greeting": "Hi {name},",
       "body": "Want to set aside a small step for yourself today? We're right here with you."
     },
     "fallback": {
-      "subject": "Mentor",
+      "subject": "PuhuKoç",
       "body": "We have a note for you."
     },
     "mentorshipRiskDigest": {
-      "subject": "Mentor: {count} students worth a look today",
+      "subject": "PuhuKoç: {count} students worth a look today",
       "greeting": "Hi {displayName},",
       "body": "{names} may be struggling lately. You can check their reports in the panel.",
       "cta": "Open my students"
     },
     "mentorshipFollowupDue": {
-      "subject": "Mentor: You have {count} follow-ups to look at today",
+      "subject": "PuhuKoç: You have {count} follow-ups to look at today",
       "greeting": "Hi {displayName},",
       "body": "Open follow-ups are waiting on your student list.",
       "cta": "Open my students"

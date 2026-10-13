@@ -296,6 +296,6 @@ function sanitizeReturnTo(value: string): string {
 }
 
 function displayNameFromGoogle(name: string | undefined, email: string): string {
-  const value = (name ?? email.split("@")[0] ?? "Mentor").trim().slice(0, 64);
-  return value.length >= 2 ? value : "Mentor";
+  const value = (name ?? email.split("@")[0] ?? "Yoldaş").trim().slice(0, 64);
+  return value.length >= 2 ? value : "Yoldaş";
 }
