@@ -28,7 +28,8 @@ auth/payment/migration/storage changes; see [deferred-staging.md](./deferred-sta
 Resolve these items before authorizing production provisioning:
 
 - Approve the Render service/cron/domain/build/traffic budget, Neon compute/storage limits and
-  provider usage budgets. `render.yaml` includes three paid web services and four cron jobs.
+  provider usage budgets. `render.yaml` uses two single-instance paid web services, a Free
+  admin service and three daily cron jobs (the low-cost launch profile below).
   Manual deploy settings do not prevent billing or an initial Blueprint deployment.
 - Obtain dedicated production runtime/migration DB URLs and JWT, rate-limit, edge, cron and
   VAPID secrets. Supply production OpenAI, Gemini, R2, Turnstile, Postmark and Sentry settings.
@@ -63,8 +64,75 @@ Resolve these items before authorizing production provisioning:
 6. Supply `sync: false` values in provider secret settings and maintain them there after setup.
    Independently generated API secrets must not be shared with staging. Keep
    `NODE_ENV=production` and `APP_ENV=production`; runtime production checks stay enabled.
-7. Verify `/v1/health/ready`, restricted-role startup and pool usage. The four existing cron
+7. Verify `/v1/health/ready`, restricted-role startup and pool usage. The three daily cron
    services reference `mentor-api` and its `CRON_SECRET`; preserve their UTC schedules.
+   The paid API's existing `JobRunnerService` handles the queue automatically; its secret-
+   protected `process-jobs` HTTP endpoint remains available for manual catch-up.
+
+### Low-cost launch profile and overage controls
+
+Owner-selected on 2026-10-13: keep the reader-facing web and API always on; accept cold starts
+only for admin. This keeps Next.js server rendering, API jobs and all security gates intact.
+
+| Render item | Launch choice | Monthly base, USD |
+|---|---|---:|
+| Web | `0.5c-512mb`, one instance | 7 |
+| API | `0.5c-512mb`, one instance | 7 |
+| Admin | Free, single instance | 0 |
+| Daily reminders, coach digest, subscription expiry | Three daily cron services | At least 3 |
+| Compute + cron subtotal | Hobby workspace, no paid workspace upgrade | **At least 17** |
+| Custom domains | Two included; each additional billed hostname | +0.25 each |
+
+Prices checked on 2026-10-13: [Render pricing](https://render.com/pricing),
+[custom domains](https://render.com/docs/custom-domains),
+[cron billing](https://render.com/docs/cronjobs#compute-plans-and-billing).
+The three explicit hostnames imply 17.25/month before other usage; reserve 17.50 if the
+automatically added `www` alias also counts toward billed domains. Confirm the actual domain
+count in Billing after setup. Taxes, Neon, AI, email, storage and usage above allowances are
+separate. This is a minimum estimate, not a total spending cap.
+
+The queue catch-up cron was removed because the always-on API already polls pending jobs.
+The other schedules remain 06:00, 07:00 and 03:30 UTC. Their HTTP calls fail on error and use
+10-second connection / 60-second request limits to avoid a hung request accruing cron runtime.
+A timeout is a failed maintenance run: inspect the provider logs and queue, then retry through
+the protected endpoint after checking its result. It is not successful task completion.
+
+Admin Free can sleep after 15 minutes idle and take about a minute to wake. Its 750 monthly
+Free instance hours are shared across the workspace; adding more Free services can exhaust
+them. This operator-only trade-off was accepted; do not move web/API to Free or auto-upgrade
+admin. Keep Access enabled before publication and test admin sessions after wake/restart.
+See [Free limitations](https://render.com/docs/free).
+
+**Observed account settings, 2026-10-13:** Puhukoc is on Hobby; no services, payment card,
+pending charges or usage. Included usage is 500 pipeline minutes, 5 GB bandwidth, two custom
+domains and 750 Free instance hours. The Starter build pipeline already has a **$0 additional
+monthly spend limit**. These observations are not settings guaranteed by the Blueprint.
+
+- Preserve the $0 pipeline limit in Workspace Settings → Build Pipeline. Once included
+  minutes run out, new builds/pre-deploy tasks stop; existing apps continue running. This
+  also prevents a recovery build until the next period unless a separately approved limit
+  increase is made. Keep automatic deploys off and complete CI before a manual release.
+- Render has no documented workspace-wide spending cap for compute, domains and bandwidth.
+  Its pipeline limit does **not** stop bandwidth charges after a card is linked. Hobby includes
+  5 GB/month, then public outbound traffic costs $0.15/GB. For example, 20 GB/month adds
+  `(20 - 5) * 0.15 = $2.25` for bandwidth alone. See
+  [bandwidth billing](https://render.com/docs/outbound-bandwidth) and
+  [pipeline limits](https://render.com/docs/build-pipeline#setting-a-spend-limit).
+- At launch, verify one paid instance per service, no autoscaling, the billed domain count
+  and the workspace notification address. During the pilot, check Billing and per-service
+  Metrics daily. At 400 pipeline minutes or 4 GB bandwidth (80% of included usage), investigate
+  before more usage accumulates. Provider emails warn about approaching/exceeded usage;
+  notification is not automatic cost containment.
+- Use the existing selective Cloudflare caching for public static/media assets and R2 media
+  delivery. Keep API/admin/HTML/RSC caching bypasses; never cache private responses to save
+  money. Investigate large assets, abusive traffic, repeat builds or excessive service egress.
+- Keep separate Neon/provider usage budgets. Before enabling AI, set a positive
+  `ai.budget.monthly_cap_usd_cents`; the catalog's `0` default means **no cap**, not zero spend.
+  Provider safety and live acceptance gates remain required before opening paid resources.
+
+`pnpm check:deployment` rejects a paid admin, Free web/API, extra instances/autoscaling,
+the redundant queue cron, changed daily schedules or unbounded/unauthenticated cron HTTP.
+It checks source configuration, not live billing settings or a hard account budget.
 
 Web/admin Render subdomains are disabled to prevent duplicate public URLs and Access bypass.
 The API Render hostname remains enabled for secret-authenticated cron calls; ordinary direct

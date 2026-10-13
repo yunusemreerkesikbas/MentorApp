@@ -7,6 +7,7 @@ services:
     runtime: node
     region: frankfurt
     plan: 0.5c-512mb
+    numInstances: 1
     autoDeployTrigger: off
     domains: [api.puhukoc.com]
     renderSubdomainPolicy: enabled
@@ -105,6 +106,7 @@ services:
     runtime: node
     region: frankfurt
     plan: 0.5c-512mb
+    numInstances: 1
     autoDeployTrigger: off
     domains: [puhukoc.com]
     renderSubdomainPolicy: disabled
@@ -142,7 +144,8 @@ services:
     branch: master
     runtime: node
     region: frankfurt
-    plan: 0.5c-512mb
+    # Accepted launch trade-off: only the operator UI may sleep; web/API stay always on.
+    plan: free
     autoDeployTrigger: off
     domains: [admin.puhukoc.com]
     renderSubdomainPolicy: disabled
@@ -160,28 +163,6 @@ services:
         value: https://api.puhukoc.com/v1
 
   - type: cron
-    name: mentor-process-jobs
-    branch: master
-    runtime: node
-    region: frankfurt
-    plan: 0.5c-512mb
-    autoDeployTrigger: off
-    schedule: "*/5 * * * *"
-    buildCommand: echo cron-ready
-    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/process-jobs" --header "x-cron-secret:${CRON_SECRET}"
-    envVars:
-      - key: API_HOST
-        fromService:
-          type: web
-          name: mentor-api
-          property: host
-      - key: CRON_SECRET
-        fromService:
-          type: web
-          name: mentor-api
-          envVarKey: CRON_SECRET
-
-  - type: cron
     name: mentor-daily-reminders
     branch: master
     runtime: node
@@ -190,7 +171,7 @@ services:
     autoDeployTrigger: off
     schedule: "0 6 * * *"
     buildCommand: echo cron-ready
-    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/dispatch-daily-reminders" --header "x-cron-secret:${CRON_SECRET}"
+    startCommand: curl --fail --show-error --silent --connect-timeout 10 --max-time 60 --request POST "https://${API_HOST}/v1/internal/cron/dispatch-daily-reminders" --header "x-cron-secret:${CRON_SECRET}"
     envVars:
       - key: API_HOST
         fromService:
@@ -213,7 +194,7 @@ services:
     autoDeployTrigger: off
     schedule: "0 7 * * *"
     buildCommand: echo cron-ready
-    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/dispatch-mentorship-risk-digest" --header "x-cron-secret:${CRON_SECRET}"
+    startCommand: curl --fail --show-error --silent --connect-timeout 10 --max-time 60 --request POST "https://${API_HOST}/v1/internal/cron/dispatch-mentorship-risk-digest" --header "x-cron-secret:${CRON_SECRET}"
     envVars:
       - key: API_HOST
         fromService:
@@ -234,7 +215,7 @@ services:
     autoDeployTrigger: off
     schedule: "30 3 * * *"
     buildCommand: echo cron-ready
-    startCommand: curl --fail --show-error --silent --request POST "https://${API_HOST}/v1/internal/cron/expire-subscriptions" --header "x-cron-secret:${CRON_SECRET}"
+    startCommand: curl --fail --show-error --silent --connect-timeout 10 --max-time 60 --request POST "https://${API_HOST}/v1/internal/cron/expire-subscriptions" --header "x-cron-secret:${CRON_SECRET}"
     envVars:
       - key: API_HOST
         fromService:

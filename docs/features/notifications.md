@@ -131,6 +131,14 @@ if (await this.config.get(FeatureFlag.AI_ENABLED)) { /* … */ }
   [measured cost profile](../qa/2026-10-13-pilot-cost-profile.md). The proposed release allocation
   remains a separate decision; no new endpoint, migration, provider, Blueprint or resource change.
 
+- **2026-10-13 · Low-cost Render queue processing.** Removed the paid five-minute queue
+  catch-up cron from the launch Blueprint; the always-on API's existing polling runner
+  still delivers queued jobs. Daily reminders, coach digest and subscription expiry keep
+  their existing UTC schedules, with bounded HTTP timeouts. Usage: check queue health and
+  use the protected `process-jobs` endpoint for manual recovery. Gotcha: do not move API
+  compute to Free; asleep instances cannot poll. Related: `render.yaml`,
+  `scripts/check-deployment.mts`, `job-runner.service{,.spec}.ts`, `docs/core/deployment.md`.
+
 - **2026-09-27 · Celebration visuals load only when queued.** The app-wide notification shell
   now loads achievement art and the journey spotlight when an unseen celebration is present.
   Usage: the notification and celebration flow is unchanged. Gotcha: first display fetches the
