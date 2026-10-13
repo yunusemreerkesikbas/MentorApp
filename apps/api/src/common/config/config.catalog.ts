@@ -941,11 +941,11 @@ export const FeatureFlag = {
   FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
-  DAILY_REMINDER_EMAIL_ENABLED: "notifications.daily_reminder.email_enabled",
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",
   MENTORSHIP_APPLICATIONS_OPEN: "mentorship.applications.open",
+  DAILY_REMINDER_EMAIL_ENABLED: "notifications.daily_reminder.email_enabled",
 } as const satisfies Record<string, ConfigKey>;
 
 export function isConfigKey(key: string): key is ConfigKey {
