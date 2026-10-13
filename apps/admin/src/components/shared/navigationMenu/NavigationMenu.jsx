@@ -17,9 +17,9 @@ const NavigationManu = () => {
             <div className="navbar-wrapper">
                 <div className="m-header">
                     <Link href="/" className="b-brand">
-                        {/* Mentor admin brand (text — no Duralux logo asset). */}
-                        <span className="logo logo-lg fw-bolder fs-4 text-primary">Mentor</span>
-                        <span className="logo logo-sm fw-bolder fs-4 text-primary">M</span>
+                        {/* PuhuKoç admin brand (text — no Duralux logo asset). */}
+                        <span className="logo logo-lg fw-bolder fs-4 text-primary">PuhuKoç</span>
+                        <span className="logo logo-sm fw-bolder fs-4 text-primary">P</span>
                     </Link>
                 </div>
 

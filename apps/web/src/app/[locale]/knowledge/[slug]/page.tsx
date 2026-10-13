@@ -37,7 +37,7 @@ export async function generateMetadata({
     const translate = await getTranslations("article");
     return { title: translate("not_found_title") };
   }
-  const title = article.metaTitle ?? `${article.title} | Mentor Blog`;
+  const title = article.metaTitle ?? `${article.title} | PuhuKoç Blog`;
   const description = article.metaDescription ?? undefined;
   const canonical = infoArticleUrl(article.slug);
   const origin = siteUrl();
@@ -60,9 +60,9 @@ export async function generateMetadata({
       description,
       type: "article",
       url: canonical,
-      siteName: "Mentor",
+      siteName: "PuhuKoç",
       locale: locale === "en" ? "en_US" : "tr_TR",
-      images: image ? [image] : [{ url: fallbackImage, alt: "Mentor" }],
+      images: image ? [image] : [{ url: fallbackImage, alt: "PuhuKoç" }],
       publishedTime: article.publishedAt ?? undefined,
       modifiedTime: article.updatedAt,
     },
@@ -127,7 +127,7 @@ export default async function PublicArticlePage({ params }: PageProps) {
     publisherLogoUrl: `${origin}/mascot/puhu/puhu-default.png`,
   });
   const breadcrumbJsonLd = buildBreadcrumbStructuredData({
-    homeName: "Mentor",
+    homeName: "PuhuKoç",
     homeUrl: origin,
     trail: [{ name: translate("blog"), url: blogUrl(article.family as ExamType) }],
     pageName: article.title,

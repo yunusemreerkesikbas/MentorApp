@@ -138,7 +138,7 @@ export function RoomJoinShell() {
         />
       </div>
       <p aria-hidden className="absolute left-5 top-6 text-xl font-black tracking-[-0.01em] text-[var(--color-main)] lg:left-10 lg:top-8">
-        Mentor
+        PuhuKoç
       </p>
 
       {failure === null ? (

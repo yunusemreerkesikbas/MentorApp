@@ -15,8 +15,8 @@ type PageProps = { params: Promise<{ locale: string; id: string }> };
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { locale, id } = await params;
   const q = await fetchPublicQuestion(id);
-  if (!q) return { title: "Mentor", robots: { index: false, follow: false } };
-  const title = `${q.title} | Mentor Topluluk`;
+  if (!q) return { title: "PuhuKoç", robots: { index: false, follow: false } };
+  const title = `${q.title} | PuhuKoç Topluluk`;
   const description = q.body.replace(/\s+/g, " ").trim().slice(0, 155);
   const canonical = questionUrl(id);
   const fallbackImage = `${siteUrl()}/mascot/puhu/puhu-default.png`;
@@ -31,9 +31,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       description,
       type: "article",
       url: canonical,
-      siteName: "Mentor",
+      siteName: "PuhuKoç",
       locale: locale === "en" ? "en_US" : "tr_TR",
-      images: [{ url: fallbackImage, alt: "Mentor" }],
+      images: [{ url: fallbackImage, alt: "PuhuKoç" }],
     },
     twitter: {
       card: "summary_large_image",
@@ -74,7 +74,7 @@ export default async function PublicQuestionPage({ params }: PageProps) {
             className="text-lg font-bold transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 motion-reduce:transition-none"
             style={{ color: "var(--color-main)", fontFamily: "var(--font-heading)" }}
           >
-            Mentor
+            PuhuKoç
           </Link>
           <Link
             href="/login"

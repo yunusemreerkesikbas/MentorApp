@@ -793,10 +793,10 @@
       "title": "Google hesabın",
       "loading": "Google bağlantın yükleniyor",
       "linked": "Google hesabın bağlı: {email}",
-      "description": "Hesap güvenliğin için mevcut Mentor şifreni doğrula. Ardından Google ile giriş yapabilmek için aynı e-postaya ait hesabını bağlayacaksın.",
-      "password": "Mevcut Mentor şifren",
-      "password_hint": "Google şifren asla istenmez; yalnızca mevcut Mentor hesabın doğrulanır.",
-      "password_required": "Devam etmek için mevcut Mentor şifreni yaz.",
+      "description": "Hesap güvenliğin için mevcut PuhuKoç şifreni doğrula. Ardından Google ile giriş yapabilmek için aynı e-postaya ait hesabını bağlayacaksın.",
+      "password": "Mevcut PuhuKoç şifren",
+      "password_hint": "Google şifren asla istenmez; yalnızca mevcut PuhuKoç hesabın doğrulanır.",
+      "password_required": "Devam etmek için mevcut PuhuKoç şifreni yaz.",
       "connect": "Google hesabını bağla",
       "verify_first": "Google hesabını bağlamak için önce e-postanı doğrula.",
       "cancel": "Vazgeç",
@@ -893,16 +893,16 @@
       "recommend": "Tavsiye et",
       "help": "Yardım Merkezi",
       "feedback": "Geri Bildirim",
-      "share_title": "Mentor",
+      "share_title": "PuhuKoç",
       "share_text": "Sınav yolculuğunda yanında kalacak sakin bir koç.",
       "share_copied_title": "Bağlantı kopyalandı",
-      "share_copied_message": "Mentor bağlantısını paylaşabilirsin.",
+      "share_copied_message": "PuhuKoç bağlantısını paylaşabilirsin.",
       "share_error_title": "Paylaşım açılamadı",
       "share_error_message": "Bağlantıyı şu an paylaşamadık."
     },
     "social": {
       "title": "Takip et",
-      "subtitle": "Mentor'un güncellemeleri ve kısa notları."
+      "subtitle": "PuhuKoç'un güncellemeleri ve kısa notları."
     },
     "notifications": {
       "title": "Bildirim ayarları",
@@ -1043,7 +1043,7 @@
     "coupon_apply": "Uygula",
     "coupon_clear": "Kaldır",
     "coupon_applied": "Kupon uygulandı",
-    "brand": "Mentor",
+    "brand": "PuhuKoç",
     "badge_premium": "Premium",
     "badge_value": "Önerilen",
     "per_month": "/ay",
@@ -1698,7 +1698,7 @@
         "days": "{count} gün",
         "count": "{count}",
         "subject": "{name} · {minutes} dk",
-        "signature": "Mentor × Puhu"
+        "signature": "PuhuKoç × Puhu"
       },
       "unlock": {
         "cta": "{cost} coin ile AI Puhu notunu aç",
@@ -1916,15 +1916,15 @@
     "share_card_first": "bugünün ilk seansı",
     "share_card_date": "{day}, {weekday}",
     "share_card_label": "Paylaşım kartı: {caption}, {place}",
-    "share_text": "Bugün Mentor'da {minutes} dakika odaklandım 🎯",
+    "share_text": "Bugün PuhuKoç'ta {minutes} dakika odaklandım 🎯",
     "share_error_title": "Paylaşılamadı",
     "history_day_yesterday": "Dün"
   },
   "knowledge": {
     "title": "Blog",
     "subtitle": "Sınav sürecine dair doğrulanmış yazılar, resmî kaynaklarıyla.",
-    "meta_title": "Blog | Mentor",
-    "meta_title_family": "{family} yazıları | Mentor Blog",
+    "meta_title": "Blog | PuhuKoç",
+    "meta_title_family": "{family} yazıları | PuhuKoç Blog",
     "meta_description": "KPSS, YKS ve LGS sürecine dair resmî kaynaklı, doğrulanmış yazılar.",
     "topics_label": "Konu",
     "all_topics": "Tümü",
@@ -1943,7 +1943,7 @@
     "days_remaining": "Sınava {days} gün kaldı",
     "last_verified": "Son doğrulama: {date}",
     "calendar_download": "Takvime ekle",
-    "calendar_name": "Mentor sınav takvimi",
+    "calendar_name": "PuhuKoç sınav takvimi",
     "last_verified_prefix": "Son doğrulama",
     "calendar_pending_desc": "Resmî sınav takvimi henüz yayımlanmadı. Duyurulunca burada durur.",
     "source_label": "Kaynak",
@@ -1954,7 +1954,7 @@
       "lgs": "LGS"
     },
     "related_posts": "İlgili yazılar",
-    "editor_fallback": "Mentor Editör",
+    "editor_fallback": "PuhuKoç Editör",
     "share_title": "Paylaş",
     "share_whatsapp": "WhatsApp ile paylaş",
     "share_x": "X ile paylaş",
@@ -2745,7 +2745,7 @@
     "consent_confirm": " anladım ve onaylıyorum."
   },
   "article": {
-    "not_found_title": "Makale bulunamadı | Mentor",
+    "not_found_title": "Makale bulunamadı | PuhuKoç",
     "source_label": "Kaynak:",
     "last_verified": "Son doğrulama: {date}",
     "trust_badge": "Doğrulanmış içerik",
@@ -2774,7 +2774,7 @@
     "advertising_body": "Blog yazılarında kişiselleştirilmemiş Google reklamları gösterebiliriz. Google reklam iletimi için IP adresini, kötüye kullanım tespiti için çerez ve tarayıcı depolamasını kullanabilir. Reklam tercihin analitikten bağımsızdır. Reddetsen de okumaya devam edebilirsin.",
     "save_failed": "Tercihin kaydedilemedi. Tarayıcı depolamasını kontrol edip yeniden deneyebilirsin.",
     "title": "Analitik çerez tercihin",
-    "body": "Mentor'u geliştirmek için kimlik bilgisi içermeyen kullanım verilerini yalnız izninle ölçeriz.",
+    "body": "PuhuKoç'u geliştirmek için kimlik bilgisi içermeyen kullanım verilerini yalnız izninle ölçeriz.",
     "details": "Ayrıntıları ve tercihini gör",
     "reject": "Reddet",
     "accept": "Kabul et"

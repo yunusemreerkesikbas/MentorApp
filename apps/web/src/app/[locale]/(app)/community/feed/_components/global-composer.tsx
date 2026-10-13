@@ -235,7 +235,7 @@ export function GlobalComposer({ onCreated }: { onCreated: () => void }) {
         className="rounded-[var(--radius-card)] border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-3 shadow-[var(--shadow-card)] sm:px-5"
       >
         <div className="flex items-start gap-3">
-          <AuthorAvatar name={user?.displayName ?? "Mentor"} src={user?.avatarUrl} size={40} />
+          <AuthorAvatar name={user?.displayName ?? "Yoldaş"} src={user?.avatarUrl} size={40} />
           <div className="min-w-0 flex-1">
             <AnimatePresence initial={false}>
               {presentation.showAudience && presentation.showTypeSelector ? (

@@ -2554,7 +2554,7 @@ export const coinGrantReservations = pgTable(
 );
 
 /* =============================== Ads =====================================
- * Rewarded-ad control state. Passive banner impressions stay in Google Ad Manager; Mentor stores
+ * Rewarded-ad control state. Passive banner impressions stay in Google Ad Manager; PuhuKoç stores
  * only reward sessions needed for abuse prevention, idempotency and aggregate operational metrics.
  * RLS: SERVICE/ADMIN only. Account erasure may delete these control rows; the ledger stays immutable.
  * ========================================================================= */

@@ -53,11 +53,11 @@ const LEGAL_COPY = {
   kvkk: {
     tr: `## Veri Sorumlusunun Kimliği
 
-6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusu ${CONTROLLER_TR} adresindeki Yunus Emre Erkesikbaş'tır. Bu metin, Mentor web uygulamasındaki kişisel veri işleme faaliyetleri hakkında ilgili kişileri bilgilendirir.
+6698 sayılı Kişisel Verilerin Korunması Kanunu (KVKK) kapsamında veri sorumlusu ${CONTROLLER_TR} adresindeki Yunus Emre Erkesikbaş'tır. Bu metin, PuhuKoç web uygulamasındaki kişisel veri işleme faaliyetleri hakkında ilgili kişileri bilgilendirir.
 
 ## İşlenen Kişisel Veriler
 
-Hesap ve iletişim verileri (ad soyad, kullanıcı adı, e-posta), üyelik ve güvenlik kayıtları, sınav türü ve hedefleri, çalışma planı ve seansları, deneme sonuçları, duygu check-in'leri, yüklenen görseller, yanlış defteri ve hedef panosu içerikleri, AI koç görüşmeleri, topluluk gönderileri ve etkileşimleri, insan koçluğu bağlantı ve ilerleme sinyalleri, abonelik ve ödeme işlem referansları, cihaz ve teknik günlükler işlenebilir. Kart bilgileri Mentor tarafından saklanmaz; ödeme sağlayıcısı iyzico tarafından işlenir. Doğum tarihi toplanmaz; kayıt sırasında yalnızca 13 yaş ve üzeri olunduğuna dair öz beyan alınır.
+Hesap ve iletişim verileri (ad soyad, kullanıcı adı, e-posta), üyelik ve güvenlik kayıtları, sınav türü ve hedefleri, çalışma planı ve seansları, deneme sonuçları, duygu check-in'leri, yüklenen görseller, yanlış defteri ve hedef panosu içerikleri, AI koç görüşmeleri, topluluk gönderileri ve etkileşimleri, insan koçluğu bağlantı ve ilerleme sinyalleri, abonelik ve ödeme işlem referansları, cihaz ve teknik günlükler işlenebilir. Kart bilgileri PuhuKoç tarafından saklanmaz; ödeme sağlayıcısı iyzico tarafından işlenir. Doğum tarihi toplanmaz; kayıt sırasında yalnızca 13 yaş ve üzeri olunduğuna dair öz beyan alınır.
 
 ## İşleme Amaçları ve Hukuki Sebepler
 
@@ -78,11 +78,11 @@ Veriler yalnız işleme amacı, sözleşme ilişkisi, güvenlik ihtiyacı ve uyg
 KVKK m.11 uyarınca verilerinizin işlenip işlenmediğini öğrenme, bilgi isteme, amacı ve amaca uygun kullanımı öğrenme, aktarılan kişileri bilme, düzeltme, silme veya yok etme isteme, bu işlemlerin alıcılara bildirilmesini isteme, yalnız otomatik analiz sonucu aleyhe bir sonuca itiraz etme ve zararın giderilmesini talep etme haklarına sahipsiniz. Kimliğinizi doğrulamaya elverişli talebinizi **info@mentor.com** adresine veya yukarıdaki posta adresine iletebilirsiniz.`,
     en: `## Data Controller
 
-The data controller under Turkish Law No. 6698 is Yunus Emre Erkesikbaş at ${CONTROLLER_EN}. This notice explains personal-data processing in the Mentor web application. The Turkish version is binding.
+The data controller under Turkish Law No. 6698 is Yunus Emre Erkesikbaş at ${CONTROLLER_EN}. This notice explains personal-data processing in the PuhuKoç web application. The Turkish version is binding.
 
 ## Data We Process
 
-Mentor may process account and contact data, membership and security records, exam goals, study plans and sessions, mock-exam results, mood check-ins, uploaded media, notebook and vision-board content, AI-coach conversations, community activity, human-coaching links and progress signals, subscription and payment references, and device or technical logs. Card details are processed by iyzico and are not stored by Mentor. No date of birth is collected; signup records only a self-declaration that the user is at least 13.
+PuhuKoç may process account and contact data, membership and security records, exam goals, study plans and sessions, mock-exam results, mood check-ins, uploaded media, notebook and vision-board content, AI-coach conversations, community activity, human-coaching links and progress signals, subscription and payment references, and device or technical logs. Card details are processed by iyzico and are not stored by PuhuKoç. No date of birth is collected; signup records only a self-declaration that the user is at least 13.
 
 ## Purposes and Legal Grounds
 
@@ -101,11 +101,11 @@ Data is retained only for the service, security, legal duty, or dispute period t
   privacy: {
     tr: `## Kapsam
 
-Bu politika Mentor'un web uygulaması, hesap, AI koç, çalışma araçları, topluluk, insan koçluğu, abonelik ve destek özelliklerinde bilgilerin nasıl kullanıldığını sade dille açıklar. KVKK kapsamındaki ayrıntılı hukuki bilgilendirme için KVKK Aydınlatma Metni geçerlidir.
+Bu politika PuhuKoç'un web uygulaması, hesap, AI koç, çalışma araçları, topluluk, insan koçluğu, abonelik ve destek özelliklerinde bilgilerin nasıl kullanıldığını sade dille açıklar. KVKK kapsamındaki ayrıntılı hukuki bilgilendirme için KVKK Aydınlatma Metni geçerlidir.
 
 ## Topladığımız ve Ürettiğimiz Bilgiler
 
-Hesap bilgileri, sınav ve çalışma tercihleri, planlar, seanslar, deneme sonuçları, kullanıcının gönüllü yazdığı metinler ve yüklediği görseller, topluluk içerikleri, koçluk ilişkisi sinyalleri, abonelik durumu ve güvenlik günlükleri işlenebilir. Mentor, fotoğraftan soru çözmez; görsel yalnız konu sınıflandırması için kullanılır. Ham AI itirafları insan koça aktarılmaz; yalnız ürünün tanımladığı özet sinyaller paylaşılır.
+Hesap bilgileri, sınav ve çalışma tercihleri, planlar, seanslar, deneme sonuçları, kullanıcının gönüllü yazdığı metinler ve yüklediği görseller, topluluk içerikleri, koçluk ilişkisi sinyalleri, abonelik durumu ve güvenlik günlükleri işlenebilir. PuhuKoç, fotoğraftan soru çözmez; görsel yalnız konu sınıflandırması için kullanılır. Ham AI itirafları insan koça aktarılmaz; yalnız ürünün tanımladığı özet sinyaller paylaşılır.
 
 ## Bilgileri Nasıl Kullanırız
 
@@ -124,17 +124,17 @@ Türkiye'deki uygun anonim ve Free okuyucular blog yazısı sonunda tek bir kiş
 Analitik tercihi çerez tercihleri ekranından değiştirilebilir. AI hafızası ve insan koçluğu paylaşımı kendi ekranlarından yönetilir. Hesap ayarlarından verilerinize erişebilir, düzeltme isteyebilir veya hesap silme sürecini başlatabilirsiniz. Sorular ve hak talepleri **info@mentor.com** adresine gönderilebilir.`,
     en: `## Scope
 
-This policy explains in plain language how Mentor uses information across accounts, AI coaching, study tools, community, human coaching, subscriptions, and support. The Turkish KVKK Notice contains the binding legal detail.
+This policy explains in plain language how PuhuKoç uses information across accounts, AI coaching, study tools, community, human coaching, subscriptions, and support. The Turkish KVKK Notice contains the binding legal detail.
 
 ## Information and Uses
 
-Mentor may process account details, exam and study preferences, plans, sessions, mock results, voluntarily submitted text and media, community content, coaching signals, subscription status, and security logs. Photos are used only to classify a topic, never to solve a question. Raw AI confessions are not disclosed to a human coach; only defined signals may be shared.
+PuhuKoç may process account details, exam and study preferences, plans, sessions, mock results, voluntarily submitted text and media, community content, coaching signals, subscription status, and security logs. Photos are used only to classify a topic, never to solve a question. Raw AI confessions are not disclosed to a human coach; only defined signals may be shared.
 
 Information is used to operate accounts, personalise study tools, show progress, provide AI and human coaching, run payments and notifications, protect security, and answer support requests. Official exam facts come from verified editorial content rather than free-generated AI output.
 
 ## Providers, Analytics and AI
 
-Mentor may use Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
+PuhuKoç may use Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and Gemini. Google Analytics loads only after an affirmative choice. AI payloads are minimised and masked, but users should not type identity, contact, or payment details into chats.
 
 ## Controls
 
@@ -147,15 +147,15 @@ Analytics choices can be changed on the cookie-preferences page. AI memory and h
   terms: {
     tr: `## Taraflar ve Kabul
 
-Bu Kullanım Koşulları, hizmet sağlayıcı Yunus Emre Erkesikbaş ile Mentor hesabı oluşturan kullanıcı arasındadır. Hesap açan kişi koşulları kabul ettiğini ve en az 13 yaşında olduğunu beyan eder. 13 yaş altındaki kişiler hesap açamaz; yanlış yaş beyanı tespit edilirse hesap güvenlik ve yasal yükümlülükler gözetilerek askıya alınabilir veya kapatılabilir.
+Bu Kullanım Koşulları, hizmet sağlayıcı Yunus Emre Erkesikbaş ile PuhuKoç hesabı oluşturan kullanıcı arasındadır. Hesap açan kişi koşulları kabul ettiğini ve en az 13 yaşında olduğunu beyan eder. 13 yaş altındaki kişiler hesap açamaz; yanlış yaş beyanı tespit edilirse hesap güvenlik ve yasal yükümlülükler gözetilerek askıya alınabilir veya kapatılabilir.
 
 ## Hesap ve Güvenlik
 
-Kullanıcı doğru bilgi vermek, giriş bilgilerini korumak ve hesabındaki faaliyetlerden sorumludur. Hesap devredilemez. Şüpheli kullanım derhal **info@mentor.com** adresine bildirilmelidir. Mentor, güvenliği korumak için oturumları sonlandırabilir veya doğrulama isteyebilir.
+Kullanıcı doğru bilgi vermek, giriş bilgilerini korumak ve hesabındaki faaliyetlerden sorumludur. Hesap devredilemez. Şüpheli kullanım derhal **info@mentor.com** adresine bildirilmelidir. PuhuKoç, güvenliği korumak için oturumları sonlandırabilir veya doğrulama isteyebilir.
 
 ## Hizmetin Kullanımı
 
-Mentor bir sınava hazırlık yoldaşlığı ve çalışma organizasyonu hizmetidir; başarı, yerleşme veya belirli bir sonuç garanti etmez. Kullanıcı hukuka aykırı, yanıltıcı, taciz edici, başkasının hakkını ihlal eden içerik paylaşamaz; hizmeti otomatik kötüye kullanamaz, güvenliğini aşamaz veya başka kullanıcıların verilerine erişmeye çalışamaz. Topluluk ve koçluk alanlarında saygılı iletişim esastır.
+PuhuKoç bir sınava hazırlık yoldaşlığı ve çalışma organizasyonu hizmetidir; başarı, yerleşme veya belirli bir sonuç garanti etmez. Kullanıcı hukuka aykırı, yanıltıcı, taciz edici, başkasının hakkını ihlal eden içerik paylaşamaz; hizmeti otomatik kötüye kullanamaz, güvenliğini aşamaz veya başka kullanıcıların verilerine erişmeye çalışamaz. Topluluk ve koçluk alanlarında saygılı iletişim esastır.
 
 ## AI ve Resmî Bilgi Sınırları
 
@@ -163,18 +163,18 @@ AI çıktıları eğitim ve organizasyon desteğidir; hukuk, sağlık veya psiko
 
 ## Fikri Mülkiyet ve Kullanıcı İçeriği
 
-Mentor yazılımı, tasarımı ve editoryal içerikleri üzerindeki haklar saklıdır. Kullanıcı kendi içeriğinin haklarını korur ve içeriği yalnız hizmetin sunulması, saklanması, görüntülenmesi ve seçtiği paylaşım alanlarında iletilmesi için gerekli sınırlı kullanım iznini verir. Hukuka aykırı veya hak ihlali oluşturan içerik kaldırılabilir.
+PuhuKoç yazılımı, tasarımı ve editoryal içerikleri üzerindeki haklar saklıdır. Kullanıcı kendi içeriğinin haklarını korur ve içeriği yalnız hizmetin sunulması, saklanması, görüntülenmesi ve seçtiği paylaşım alanlarında iletilmesi için gerekli sınırlı kullanım iznini verir. Hukuka aykırı veya hak ihlali oluşturan içerik kaldırılabilir.
 
 ## Ücretli Hizmetler, Değişiklik ve Sona Erme
 
-Ücretli özelliklerde fiyat, dönem, deneme ve otomatik yenileme bilgisi satın alma öncesinde gösterilir. Kullanıcı aboneliğini ilgili ekrandan yönetebilir. Mentor hizmeti güvenlik, mevzuat veya ürün gereksinimleri için değiştirebilir; esaslı değişiklikler uygun kanaldan duyurulur. Kullanıcı hesabını ayarlardan silebilir. İhlal, dolandırıcılık veya güvenlik riski halinde erişim sınırlandırılabilir.
+Ücretli özelliklerde fiyat, dönem, deneme ve otomatik yenileme bilgisi satın alma öncesinde gösterilir. Kullanıcı aboneliğini ilgili ekrandan yönetebilir. PuhuKoç hizmeti güvenlik, mevzuat veya ürün gereksinimleri için değiştirebilir; esaslı değişiklikler uygun kanaldan duyurulur. Kullanıcı hesabını ayarlardan silebilir. İhlal, dolandırıcılık veya güvenlik riski halinde erişim sınırlandırılabilir.
 
 ## Sorumluluk ve Uyuşmazlık
 
-Mentor hizmeti makul özenle sunar ancak internet, üçüncü taraf sağlayıcı veya kullanıcı kaynaklı kesintilerden mevzuatın izin verdiği ölçüde sorumlu değildir. Emredici tüketici hakları saklıdır. Türk hukuku uygulanır; tüketici hakem heyeti ve tüketici mahkemeleri dahil kanunen yetkili mercilere başvuru hakkı korunur.`,
+PuhuKoç hizmeti makul özenle sunar ancak internet, üçüncü taraf sağlayıcı veya kullanıcı kaynaklı kesintilerden mevzuatın izin verdiği ölçüde sorumlu değildir. Emredici tüketici hakları saklıdır. Türk hukuku uygulanır; tüketici hakem heyeti ve tüketici mahkemeleri dahil kanunen yetkili mercilere başvuru hakkı korunur.`,
     en: `## Parties and Acceptance
 
-These Terms are between service provider Yunus Emre Erkesikbaş and the Mentor account holder. A person creating an account accepts the Terms and declares that they are at least 13. Accounts are not available to children under 13; a false age declaration may lead to suspension or closure subject to safety and legal duties.
+These Terms are between service provider Yunus Emre Erkesikbaş and the PuhuKoç account holder. A person creating an account accepts the Terms and declares that they are at least 13. Accounts are not available to children under 13; a false age declaration may lead to suspension or closure subject to safety and legal duties.
 
 ## Account and Acceptable Use
 
@@ -182,24 +182,24 @@ Users must provide accurate information, protect credentials, and remain respons
 
 ## Nature of the Service and AI
 
-Mentor supports exam preparation and study organisation but does not guarantee success or placement. AI output is educational support, not legal, medical, or psychological treatment. Photo features classify topics and do not solve questions. Critical exam facts are supplied through verified data cards and should also be checked against the relevant authority.
+PuhuKoç supports exam preparation and study organisation but does not guarantee success or placement. AI output is educational support, not legal, medical, or psychological treatment. Photo features classify topics and do not solve questions. Critical exam facts are supplied through verified data cards and should also be checked against the relevant authority.
 
 ## Content, Paid Services and Termination
 
-Mentor retains rights in its software, design, and editorial content. Users retain their content and grant the limited permission needed to store, display, and deliver it through selected features. Price, billing period, trial, and renewal terms are shown before purchase. Users may manage subscriptions and delete their account in settings. Access may be restricted for breach, fraud, or security risk.
+PuhuKoç retains rights in its software, design, and editorial content. Users retain their content and grant the limited permission needed to store, display, and deliver it through selected features. Price, billing period, trial, and renewal terms are shown before purchase. Users may manage subscriptions and delete their account in settings. Access may be restricted for breach, fraud, or security risk.
 
 ## Liability and Law
 
-Mentor uses reasonable care but, to the extent permitted by law, is not liable for outages caused by networks, providers, or users. Mandatory consumer rights remain unaffected. Turkish law applies and statutory consumer authorities and courts remain available.`,
+PuhuKoç uses reasonable care but, to the extent permitted by law, is not liable for outages caused by networks, providers, or users. Mandatory consumer rights remain unaffected. Turkish law applies and statutory consumer authorities and courts remain available.`,
   },
   distance: {
     tr: `## Taraflar ve Konu
 
-Sağlayıcı: ${CONTROLLER_TR}. Alıcı, elektronik ortamda Mentor aboneliğini satın alan kullanıcıdır. Bu sözleşme, sipariş özetinde gösterilen dijital abonelik hizmetinin uzaktan satışına ilişkindir.
+Sağlayıcı: ${CONTROLLER_TR}. Alıcı, elektronik ortamda PuhuKoç aboneliğini satın alan kullanıcıdır. Bu sözleşme, sipariş özetinde gösterilen dijital abonelik hizmetinin uzaktan satışına ilişkindir.
 
 ## Hizmet, Bedel ve Ödeme
 
-Paketin adı, kapsamı, vergiler dahil toplam bedeli, faturalama dönemi, varsa deneme süresi ve indirim satın alma ekranında siparişe özgü olarak gösterilir ve bu sözleşmenin ayrılmaz parçasıdır. Ödeme iyzico altyapısıyla alınır; Mentor kart numarası veya güvenlik kodu saklamaz. Abonelik ekranında aksi belirtilmedikçe plan seçilen dönem sonunda otomatik yenilenir ve kullanıcı yenilemeden önce iptal edebilir.
+Paketin adı, kapsamı, vergiler dahil toplam bedeli, faturalama dönemi, varsa deneme süresi ve indirim satın alma ekranında siparişe özgü olarak gösterilir ve bu sözleşmenin ayrılmaz parçasıdır. Ödeme iyzico altyapısıyla alınır; PuhuKoç kart numarası veya güvenlik kodu saklamaz. Abonelik ekranında aksi belirtilmedikçe plan seçilen dönem sonunda otomatik yenilenir ve kullanıcı yenilemeden önce iptal edebilir.
 
 ## İfa ve Dijital İçeriğe Erişim
 
@@ -214,11 +214,11 @@ Emredici tüketici mevzuatındaki cayma hakları saklıdır. Cayma hakkının me
 Destek, iptal ve cayma bildirimleri **info@mentor.com** adresine iletilir. Kullanıcının tüketici hakem heyeti, tüketici mahkemesi ve diğer kanuni mercilere başvuru hakkı saklıdır.`,
     en: `## Parties and Subject
 
-Provider: ${CONTROLLER_EN}. The customer is the user purchasing a Mentor subscription online. This agreement governs the distance sale of the digital subscription shown in the order summary. The Turkish version is binding.
+Provider: ${CONTROLLER_EN}. The customer is the user purchasing a PuhuKoç subscription online. This agreement governs the distance sale of the digital subscription shown in the order summary. The Turkish version is binding.
 
 ## Service, Price and Payment
 
-The plan, scope, tax-inclusive total, billing period, trial, and discount are displayed before purchase and form part of this agreement. Payments use iyzico; Mentor does not store card numbers or security codes. Unless stated otherwise at checkout, a plan renews at the end of its period and can be cancelled before renewal.
+The plan, scope, tax-inclusive total, billing period, trial, and discount are displayed before purchase and form part of this agreement. Payments use iyzico; PuhuKoç does not store card numbers or security codes. Unless stated otherwise at checkout, a plan renews at the end of its period and can be cancelled before renewal.
 
 ## Performance, Withdrawal and Refunds
 
@@ -235,7 +235,7 @@ Sağlayıcı ${CONTROLLER_TR}. Destek, şikâyet, iptal ve cayma talepleri aynı
 
 ## Hizmetin Temel Nitelikleri
 
-Mentor; seçilen pakete göre çalışma planı, analiz, AI koç, içerik, topluluk veya diğer dijital özelliklere süreli erişim sağlar. Satın alınan paketin güncel özellikleri, sınırları ve dönem bilgisi ödeme öncesindeki paket ve sipariş özetinde gösterilir.
+PuhuKoç; seçilen pakete göre çalışma planı, analiz, AI koç, içerik, topluluk veya diğer dijital özelliklere süreli erişim sağlar. Satın alınan paketin güncel özellikleri, sınırları ve dönem bilgisi ödeme öncesindeki paket ve sipariş özetinde gösterilir.
 
 ## Bedel, Ödeme ve Yenileme
 
@@ -254,7 +254,7 @@ The provider is ${CONTROLLER_EN}. Support, complaints, cancellation, and withdra
 
 ## Main Characteristics
 
-Depending on the selected plan, Mentor provides time-limited access to study planning, analysis, AI coaching, content, community, or other digital features. Current features, limits, period, tax-inclusive total, payment method, trial, discount, and renewal price appear in the plan and order summary before purchase.
+Depending on the selected plan, PuhuKoç provides time-limited access to study planning, analysis, AI coaching, content, community, or other digital features. Current features, limits, period, tax-inclusive total, payment method, trial, discount, and renewal price appear in the plan and order summary before purchase.
 
 ## Performance, Renewal and Withdrawal
 
@@ -275,7 +275,7 @@ Kullanıcının açık talebi ve bilgilendirilmiş onayıyla dijital hizmetin ca
 
 ## İptal ve Bedel İadesi
 
-Aboneliğin iptali sonraki yenilemeyi durdurur; aksi emredici mevzuattan doğmadıkça başlamış veya kullanılmış dönemi otomatik olarak geriye dönük iade etmez. Geçerli cayma, mükerrer tahsilat veya hizmetin sağlayıcı kaynaklı sunulamaması halinde iade, kullanılan ödeme aracına ve yasal süreler içinde yapılır. Banka veya ödeme kuruluşunun hesaba yansıtma süresi Mentor'un kontrolü dışında olabilir.
+Aboneliğin iptali sonraki yenilemeyi durdurur; aksi emredici mevzuattan doğmadıkça başlamış veya kullanılmış dönemi otomatik olarak geriye dönük iade etmez. Geçerli cayma, mükerrer tahsilat veya hizmetin sağlayıcı kaynaklı sunulamaması halinde iade, kullanılan ödeme aracına ve yasal süreler içinde yapılır. Banka veya ödeme kuruluşunun hesaba yansıtma süresi PuhuKoç'un kontrolü dışında olabilir.
 
 ## İnceleme ve Başvuru
 
@@ -290,11 +290,11 @@ If digital performance starts before the withdrawal period expires following the
 
 ## Cancellation and Refund
 
-Cancellation stops the next renewal; it does not automatically refund a started or consumed period unless mandatory law requires it. Valid withdrawal, duplicate charges, or provider-caused non-delivery are refunded to the original payment method within applicable legal timeframes. Bank processing time may be outside Mentor's control.
+Cancellation stops the next renewal; it does not automatically refund a started or consumed period unless mandatory law requires it. Valid withdrawal, duplicate charges, or provider-caused non-delivery are refunded to the original payment method within applicable legal timeframes. Bank processing time may be outside PuhuKoç's control.
 
 ## Review
 
-Mentor reviews subscription, access, acknowledgement, usage, and payment records and communicates the result by email. Statutory consumer authorities and courts remain available.`,
+PuhuKoç reviews subscription, access, acknowledgement, usage, and payment records and communicates the result by email. Statutory consumer authorities and courts remain available.`,
   },
 } as const;
 
@@ -302,7 +302,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kvkk-aydinlatma": {
     slug: "kvkk-aydinlatma",
     status: "FINAL",
-    updatedAt: "2026-10-09",
+    updatedAt: "2026-10-13",
     tr: {
       title: "KVKK Aydınlatma Metni",
       body: LEGAL_COPY.kvkk.tr,
@@ -316,7 +316,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "gizlilik-politikasi": {
     slug: "gizlilik-politikasi",
     status: "FINAL",
-    updatedAt: "2026-10-09",
+    updatedAt: "2026-10-13",
     tr: {
       title: "Gizlilik Politikası",
       body: LEGAL_COPY.privacy.tr,
@@ -330,7 +330,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "kullanim-kosullari": {
     slug: "kullanim-kosullari",
     status: "FINAL",
-    updatedAt: "2026-09-17",
+    updatedAt: "2026-10-13",
     tr: {
       title: "Kullanım Koşulları",
       body: LEGAL_COPY.terms.tr,
@@ -344,7 +344,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "mesafeli-satis-sozlesmesi": {
     slug: "mesafeli-satis-sozlesmesi",
     status: "FINAL",
-    updatedAt: "2026-09-17",
+    updatedAt: "2026-10-13",
     tr: {
       title: "Mesafeli Satış Sözleşmesi",
       body: LEGAL_COPY.distance.tr,
@@ -358,7 +358,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "on-bilgilendirme-formu": {
     slug: "on-bilgilendirme-formu",
     status: "FINAL",
-    updatedAt: "2026-09-17",
+    updatedAt: "2026-10-13",
     tr: {
       title: "Ön Bilgilendirme Formu",
       body: LEGAL_COPY.preInfo.tr,
@@ -372,7 +372,7 @@ export const LEGAL_DOCUMENTS: Record<LegalSlug, LegalDoc> = {
   "iade-ve-cayma-hakki": {
     slug: "iade-ve-cayma-hakki",
     status: "FINAL",
-    updatedAt: "2026-09-17",
+    updatedAt: "2026-10-13",
     tr: {
       title: "İade ve Cayma Hakkı",
       body: LEGAL_COPY.refund.tr,

@@ -152,7 +152,7 @@ export function drawSessionShareCard(
   ctx.textBaseline = "top";
   ctx.fillStyle = room.ink;
   ctx.font = `900 60px ${sans}`;
-  ctx.fillText("Mentor", 540, 1606 + 16 * (1 - foot));
+  ctx.fillText("PuhuKoç", 540, 1606 + 16 * (1 - foot));
   ctx.fillStyle = room.inkSoft;
   ctx.font = `700 32px ${sans}`;
   ctx.fillText(model.siteLabel, 540, 1676 + 16 * (1 - foot), 900);

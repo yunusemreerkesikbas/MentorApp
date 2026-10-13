@@ -39,7 +39,7 @@ export default function AdminLoginPage() {
                         <div className="col-xl-4 col-lg-6 col-md-8">
                             <div className="card border-0 shadow-sm">
                                 <div className="card-body p-4 p-sm-5">
-                                    <h2 className="fs-20 fw-bolder mb-2">Mentor Admin</h2>
+                                    <h2 className="fs-20 fw-bolder mb-2">PuhuKoç Admin</h2>
                                     <p className="fs-13 text-muted mb-4">
                                         Ekip girişi — yalnızca yetkili hesaplar (§9).
                                     </p>

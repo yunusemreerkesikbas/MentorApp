@@ -11,8 +11,8 @@ import SettingSideBarProvider from "@/contentApi/settingSideBarProvider";
 const themeInitScript = `try{if(localStorage.getItem("skinTheme")==="dark"){document.documentElement.classList.add("app-skin-dark")}}catch{}`;
 
 export const metadata = {
-  title: "Mentor | Admin",
-  description: "Mentor internal admin panel — team only (§9).",
+  title: "PuhuKoç | Admin",
+  description: "PuhuKoç internal admin panel — team only (§9).",
 };
 
 export default async function RootLayout({ children }) {

@@ -19,7 +19,7 @@ const article: InfoArticleDto = {
   verifiedAt: "2026-01-12T09:00:00.000Z",
   verifiedBy: "editor",
   updatedAt: "2026-01-12T09:00:00.000Z",
-  author: { name: "Mentor Editör", title: null, bio: null },
+  author: { name: "PuhuKoç Editör", title: null, bio: null },
   coverImage: {
     url: "https://cdn.example/kpss.webp",
     alt: "KPSS başvuru ekranı",
@@ -52,7 +52,7 @@ describe("structured data", () => {
       publisher: {
         "@type": "Organization",
         "@id": "https://mentor.example/#organization",
-        name: "Mentor",
+        name: "PuhuKoç",
         url: "https://mentor.example",
         logo: {
           "@type": "ImageObject",
@@ -65,7 +65,7 @@ describe("structured data", () => {
   it("builds a two-level breadcrumb when no trail is given (forum questions)", () => {
     expect(
       buildBreadcrumbStructuredData({
-        homeName: "Mentor",
+        homeName: "PuhuKoç",
         homeUrl: "https://mentor.example",
         pageName: article.title,
         pageUrl: "https://mentor.example/blog/kpss-basvuru",
@@ -74,7 +74,7 @@ describe("structured data", () => {
       {
         "@type": "ListItem",
         position: 1,
-        name: "Mentor",
+        name: "PuhuKoç",
         item: "https://mentor.example",
       },
       {
@@ -88,14 +88,14 @@ describe("structured data", () => {
 
   it("puts the public blog between home and the article", () => {
     const list = buildBreadcrumbStructuredData({
-      homeName: "Mentor",
+      homeName: "PuhuKoç",
       homeUrl: "https://mentor.example",
       trail: [{ name: "Blog", url: "https://mentor.example/blog" }],
       pageName: article.title,
       pageUrl: "https://mentor.example/blog/kpss-basvuru",
     });
     expect(list.itemListElement).toEqual([
-      { "@type": "ListItem", position: 1, name: "Mentor", item: "https://mentor.example" },
+      { "@type": "ListItem", position: 1, name: "PuhuKoç", item: "https://mentor.example" },
       { "@type": "ListItem", position: 2, name: "Blog", item: "https://mentor.example/blog" },
       {
         "@type": "ListItem",

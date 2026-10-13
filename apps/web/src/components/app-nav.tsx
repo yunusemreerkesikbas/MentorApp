@@ -218,7 +218,7 @@ export function AppNav() {
                 fontFamily: "var(--font-heading)",
               }}
             >
-              Mentor
+              PuhuKoç
             </Link>
           )}
           <div className="ml-auto flex shrink-0 items-center gap-1">
@@ -356,7 +356,7 @@ function DesktopSidebar({
               fontFamily: "var(--font-heading)",
             }}
           >
-            Mentor
+            PuhuKoç
           </Link>
           <button
             type="button"

@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   // out of the index too (same rule the knowledge pages already apply).
   const noindex = doc.status !== "FINAL" || locale === "en";
   return {
-    title: `${content.title} | Mentor`,
+    title: `${content.title} | PuhuKoç`,
     alternates: { canonical },
     robots: noindex ? { index: false, follow: true } : undefined,
   };

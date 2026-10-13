@@ -28,7 +28,7 @@ export class NetgsmSmsAdapter {
         body: JSON.stringify({
           msgheader: this.config.get("NETGSM_MSGHEADER", { infer: true }),
           no: phoneNumber.slice(3),
-          msg: `Mentor dogrulama kodun: ${code}. ${Math.ceil(ttlSeconds / 60)} dakika gecerli. Bu kodu kimseyle paylasma.`,
+          msg: `PuhuKoc dogrulama kodun: ${code}. ${Math.ceil(ttlSeconds / 60)} dakika gecerli. Bu kodu kimseyle paylasma.`,
         }),
       });
       // A transport/proxy failure does not establish whether the provider accepted the SMS.

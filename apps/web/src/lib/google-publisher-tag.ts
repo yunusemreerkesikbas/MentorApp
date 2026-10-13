@@ -26,7 +26,7 @@ declare global { interface Window { googletag?: GoogleTag } }
 const LIMITED_GPT_URL = "https://pagead2.googlesyndication.com/tag/js/gpt.js";
 let loader: Promise<GoogleTag> | null = null;
 
-/** The limited-ads build is the only GPT script Mentor loads. */
+/** The limited-ads build is the only GPT script PuhuKoç loads. */
 export function loadLimitedGpt(): Promise<GoogleTag> {
   if (readAdvertisingConsent() !== "accepted") return Promise.reject(new Error("Advertising consent required"));
   if (loader) return loader;
