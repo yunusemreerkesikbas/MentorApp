@@ -10,7 +10,7 @@ export const AD_PLACEMENTS: Record<
   [AdPlacementId.KNOWLEDGE_ARTICLE_END]: {
     id: AdPlacementId.KNOWLEDGE_ARTICLE_END,
     format: "DISPLAY",
-    sizes: [[320, 100], [728, 90]],
+    sizes: [[320, 100], [300, 250], [728, 90]],
     configKey: "ads.placement.knowledge_article_end.enabled",
     envKey: "GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT",
   },

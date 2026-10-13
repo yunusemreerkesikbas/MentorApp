@@ -88,8 +88,8 @@ export function ContextualAdSlot({
   return (
     <aside ref={containerRef} aria-label={t("label")} className={status === "loading" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
       <span className="mb-1 text-micro uppercase tracking-widest text-[var(--color-secondary)]">{t("label")}</span>
-      {/* Reserve the maximum declared Google inventory height (320x100 / 728x90). */}
-      <div id={slotId} className="min-h-[100px] max-w-full overflow-hidden" />
+      {/* Reserve the maximum declared inventory height (300x250 / 320x100 / 728x90). */}
+      <div id={slotId} className="min-h-[250px] max-w-full overflow-hidden" />
     </aside>
   );
 }

@@ -6,7 +6,7 @@ import type { ExamType } from "@mentor/types";
 
 const ContextualAdSlot = dynamic(
   () => import("./contextual-ad-slot").then((module) => module.ContextualAdSlot),
-  { loading: () => <div aria-hidden className="my-4 min-h-[100px]" /> },
+  { loading: () => <div aria-hidden className="my-4 min-h-[250px]" /> },
 );
 
 /** Keep ad policy and Google tag code off the initial article path. */
@@ -36,7 +36,7 @@ export function DeferredContextualAdSlot({
   }, []);
 
   return (
-    <div ref={boundary} className={!nearViewport ? "min-h-[100px]" : "min-h-px"}>
+    <div ref={boundary} className={!nearViewport ? "min-h-[250px]" : "min-h-px"}>
       {nearViewport ? <ContextualAdSlot contentSlug={contentSlug} examType={examType} /> : null}
     </div>
   );
