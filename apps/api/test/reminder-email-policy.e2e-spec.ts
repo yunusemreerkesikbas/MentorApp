@@ -1,6 +1,10 @@
 import type { INestApplication } from "@nestjs/common";
 import { Test } from "@nestjs/testing";
-import type { Pool } from "pg";
+import { randomUUID } from "node:crypto";
+import { resolve } from "node:path";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { migrate } from "drizzle-orm/node-postgres/migrator";
+import { Pool } from "pg";
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { ConfigRegistryService } from "../src/common/config/config-registry.service";
 import { DRIZZLE, PG_POOL } from "../src/database/database.constants";
@@ -26,13 +30,32 @@ describe("pilot daily reminder email control (real PostgreSQL)", () => {
   let queue: PostgresJobQueueAdapter;
   let jobs: JobRepository;
   let actorId: string;
+  let admin: Pool | undefined;
+  let databaseCreated = false;
+  const database = `mentor_reminder_${randomUUID().replaceAll("-", "")}_test`;
+  const originalDatabaseUrl = process.env.DATABASE_URL;
   const runId = Date.now();
   const sendTransactional = vi.fn(async () => undefined);
   const candidates = vi.fn();
   const key = "notifications.daily_reminder.email_enabled";
 
   beforeAll(async () => {
-    process.env.DATABASE_URL = process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test";
+    const target = new URL(process.env.TEST_DATABASE_URL ?? "postgres://mentor:mentor@localhost:5433/mentor_test");
+    if (!["localhost", "127.0.0.1", "[::1]"].includes(target.hostname) || !target.pathname.endsWith("_test")) {
+      throw new Error("Reminder fixtures require a localhost test database; no cloud database is accepted.");
+    }
+    target.pathname = "/postgres";
+    admin = new Pool({ connectionString: target.toString() });
+    await admin.query(`CREATE DATABASE "${database}"`);
+    databaseCreated = true;
+    target.pathname = `/${database}`;
+    process.env.DATABASE_URL = target.toString();
+    const migrationPool = new Pool({ connectionString: target.toString() });
+    try {
+      await migrate(drizzle(migrationPool), { migrationsFolder: resolve(__dirname, "../drizzle") });
+    } finally {
+      await migrationPool.end();
+    }
     const { AppModule } = await import("../src/app.module");
     const module = await Test.createTestingModule({ imports: [AppModule] })
       .overrideProvider(EMAIL_PORT).useValue({ sendTransactional })
@@ -61,8 +84,17 @@ describe("pilot daily reminder email control (real PostgreSQL)", () => {
   });
 
   afterAll(async () => {
-    if (registry && actorId) await registry.set(actorId, key, true);
-    await app?.close();
+    try {
+      await app?.close();
+    } finally {
+      try {
+        if (databaseCreated) await admin?.query(`DROP DATABASE "${database}" WITH (FORCE)`);
+      } finally {
+        await admin?.end();
+        if (originalDatabaseUrl === undefined) delete process.env.DATABASE_URL;
+        else process.env.DATABASE_URL = originalDatabaseUrl;
+      }
+    }
   });
 
   it("retains inbox/push while leaving the user's email preference intact", async () => {
@@ -96,8 +128,9 @@ describe("pilot daily reminder email control (real PostgreSQL)", () => {
 
   it("delivers reminder email after explicit re-enable", async () => {
     await registry.set(actorId, key, true);
-    await queue.enqueue(JobName.SEND_EMAIL, { to: `reminder-${runId}@test.local`, template: EmailTemplate.DAILY_REMINDER });
+    const { jobId } = await queue.enqueue(JobName.SEND_EMAIL, { to: `reminder-${runId}@test.local`, template: EmailTemplate.DAILY_REMINDER });
     await runner.processBatch();
-    expect(sendTransactional).toHaveBeenCalledWith(expect.objectContaining({ template: EmailTemplate.DAILY_REMINDER }));
+    expect(await jobs.findById(jobId)).toMatchObject({ status: "COMPLETED", attempts: 1 });
+    expect(sendTransactional).toHaveBeenCalledWith(expect.objectContaining({ to: `reminder-${runId}@test.local`, template: EmailTemplate.DAILY_REMINDER }));
   });
 });

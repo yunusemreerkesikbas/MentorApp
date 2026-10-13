@@ -151,6 +151,11 @@ passed afterward. Four new real-PostgreSQL cases verified inbox/push preservatio
 user preferences, completed/suppressed queued daily mail, guarded verification/reset delivery
 and explicit re-enable. The existing 26 auth and six health cases also passed: 71 unique
 targeted tests. API typecheck, targeted ESLint, build and deployment validation passed.
+The first full CI exposed shared queue contamination: an earlier suite's runnable jobs occupied
+the runner's first batch. Reproducing with 75 older local fixture jobs produced the same two
+failures. The reminder suite now creates/migrates/drops its own uniquely named localhost test
+database, preserving the real claim/handler/token paths and strict assertions. It does not
+clear another suite's queue or change production ordering, batch size or provider behavior.
 
 One initial local health setup exceeded its existing 30-second limit during concurrent checks.
 The focused repeat used a CLI-only 90-second Windows hook allowance; the health setup completed
