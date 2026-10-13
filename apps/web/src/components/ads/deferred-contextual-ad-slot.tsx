@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ExamType } from "@mentor/types";
-import { useAdvertisingConsent } from "@/lib/advertising-consent";
 
 const ContextualAdSlot = dynamic(
   () => import("./contextual-ad-slot").then((module) => module.ContextualAdSlot),
@@ -20,7 +19,6 @@ export function DeferredContextualAdSlot({
 }) {
   const boundary = useRef<HTMLDivElement>(null);
   const [nearViewport, setNearViewport] = useState(false);
-  const { consent } = useAdvertisingConsent();
 
   useEffect(() => {
     const target = boundary.current;
@@ -38,8 +36,8 @@ export function DeferredContextualAdSlot({
   }, []);
 
   return (
-    <div ref={boundary} className={consent === "accepted" && !nearViewport ? "min-h-[100px]" : "min-h-px"}>
-      {nearViewport && consent === "accepted" ? <ContextualAdSlot contentSlug={contentSlug} examType={examType} /> : null}
+    <div ref={boundary} className={!nearViewport ? "min-h-[100px]" : "min-h-px"}>
+      {nearViewport ? <ContextualAdSlot contentSlug={contentSlug} examType={examType} /> : null}
     </div>
   );
 }

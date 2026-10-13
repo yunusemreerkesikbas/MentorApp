@@ -3,13 +3,11 @@
 import { useTranslations } from "next-intl";
 
 import { useAnalyticsConsent } from "@/lib/analytics-consent";
-import { useAdvertisingConsent } from "@/lib/advertising-consent";
 
 export function CookiePreferencesContent() {
   const translate = useTranslations("analyticsConsent");
   const { consent, accept, reject } = useAnalyticsConsent();
-  const ads = useAdvertisingConsent();
-  const adCopy = useTranslations("advertisingConsent");
+  const adCopy = useTranslations("advertisingDisclosure");
 
   return (
     <main className="mx-auto w-full max-w-2xl px-5 py-8 lg:px-8 lg:py-10">
@@ -30,12 +28,6 @@ export function CookiePreferencesContent() {
       <section aria-label={adCopy("heading")} className="mt-7">
         <h2 className="text-lg font-bold text-[var(--color-main)]">{adCopy("heading")}</h2>
         <p className="mt-2 leading-relaxed text-[var(--color-secondary)]">{adCopy("body")}</p>
-        <p className="mt-3 text-sm text-[var(--color-secondary)]">{translate("current", { value: translate(ads.consent === "accepted" ? "accepted" : ads.consent === "rejected" ? "rejected" : "unset") })}</p>
-        <div className="mt-6 flex flex-wrap gap-3">
-          <button type="button" onClick={ads.reject} className="min-h-11 rounded-[var(--radius-card)] border border-[var(--color-border)] px-4 font-semibold text-[var(--color-main)]">{translate("reject")}</button>
-          <button type="button" onClick={ads.accept} className="min-h-11 rounded-[var(--radius-card)] bg-[var(--color-btn)] px-4 font-bold text-[var(--color-btn-label)]">{translate("accept")}</button>
-        </div>
-        {ads.saveFailed && <p role="alert" className="mt-3 text-sm text-[var(--color-secondary)]">{adCopy("save_failed")}</p>}
       </section>
     </main>
   );

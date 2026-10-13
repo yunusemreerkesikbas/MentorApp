@@ -65,11 +65,11 @@ Veriler; hesabın kurulması ve güvenli işletilmesi, sözleşmenin ifası, ça
 
 ## Aktarım ve Yurt Dışı Hizmet Sağlayıcıları
 
-Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Postmark (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
+Hizmetin çalışması için veriler, amaçla sınırlı ve gerekli olduğu ölçüde Neon (veritabanı), Cloudflare (güvenlik, Turnstile ve R2 depolama), Postmark (işlemsel e-posta), iyzico (ödeme), Sentry (hata izleme), Google (OAuth, sınırlı reklamlar ve yalnız izin verilirse Analytics), OpenAI (metin ve içerik tabanlı AI işlemleri) ve Gemini (görselden konu sınıflandırma) gibi hizmet sağlayıcılarla paylaşılabilir. AI sağlayıcılarına mümkün olduğunca kişisel veriden arındırılmış özet gönderilir; ödeme, kimlik ve iletişim bilgileri AI istemlerine kasıtlı olarak dahil edilmez. Sağlayıcıların yurt dışında bulunması veya yurt dışındaki altyapıdan hizmet vermesi halinde KVKK'nın yurt dışı aktarım hükümleri uygulanır.
 
 ## Saklama ve Güvenlik
 
-Blog yazılarının sonunda, Türkiye'deki uygun anonim ve Free ziyaretçilere tek bir kişiselleştirilmemiş Google reklamı gösterilebilir. Reklam etiketi yalnız analitikten bağımsız reklam verisi tercihi kabul edildiğinde yüklenir. Google, reklamı iletmek için IP adresini; sahte trafik ve kötüye kullanım tespiti için çerez ve yerel depolamayı kullanabilir ve yurt dışında veri işleyebilir. Google'ın [veri kullanımı açıklaması](https://policies.google.com/technologies/partner-sites) bu işlemeyi açıklar. Profilde veya içerikte daha sıkı çocuk/genç reklam koruması uygulanır; profil, sınav sonucu ve AI görüşmeleri reklam sağlayıcısına gönderilmez. Premium ve STAFF reklamsızdır. Reddetmek hizmete erişimi engellemez. Reklam tercihi [çerez tercihleri](/cerez-tercihleri) ekranında değiştirilebilir; izin geri alındığında reklam kaldırılır ve belge yeniden yüklenir.
+Türkiye'deki uygun anonim ve Free ziyaretçilere blog yazısı sonunda tek, kişiselleştirilmemiş Google reklamı otomatik gösterilebilir. Premium ve STAFF reklamsızdır. Analitik tercihi reklam gösterimini değiştirmez; Google Analytics yalnız ayrı kabul sonrasında yüklenir. Kişiselleştirilmiş reklam ve davranışsal hedefleme kapalıdır. Google, reklamı iletmek için IP adresini; programatik sınırlı reklam açıkken sahte trafik ve kötüye kullanım tespiti için çerez ve yerel depolamayı kullanabilir ve yurt dışında veri işleyebilir. Google'ın [veri kullanımı açıklaması](https://policies.google.com/technologies/partner-sites) bu işlemeyi açıklar. Profilde veya içerikte daha sıkı çocuk/genç reklam koruması uygulanır; profil, sınav sonucu ve AI görüşmeleri reklam sağlayıcısına gönderilmez. Analitik tercihi [çerez tercihleri](/cerez-tercihleri) ekranında değiştirilebilir; analitiği reddetmek reklamları kaldırmaz.
 
 Veriler yalnız işleme amacı, sözleşme ilişkisi, güvenlik ihtiyacı ve uygulanabilir yasal yükümlülükler için gerekli süre boyunca tutulur. Hesap silme talebinde profil ve davranışsal serbest metin silinir veya anonimleştirilir; ödeme, güvenlik, uyuşmazlık ve append-only defter kayıtları mevzuat ya da hakların korunması için gerekli olduğu ölçüde anonim veya sınırlı biçimde korunabilir. Erişim kontrolü, RLS, şifreleme, kısa ömürlü oturumlar, kayıt ve izleme tedbirleri uygulanır.
 
@@ -94,7 +94,7 @@ Necessary data may be shared, in a purpose-limited way, with Neon, Cloudflare, P
 
 ## Retention, Security and Your Rights
 
-Eligible anonymous and Free readers in Turkey may see one non-personalized Google ad at the end of a blog article. The ad tag loads only after a separate advertising data choice is accepted; analytics permission is not reused. Google may use IP addresses for delivery and cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Premium and STAFF stay ad-free. Rejecting does not block access. Withdraw permission in [cookie preferences](/en/cookie-preferences) to remove ads and reload the document.
+Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized Google ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; Google Analytics loads only after separate acceptance. Personalized ads and behavioral targeting are disabled. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Analytics choices can be changed in [cookie preferences](/en/cookie-preferences); rejecting analytics does not remove ads.
 
 Data is retained only for the service, security, legal duty, or dispute period that requires it. Account deletion removes or anonymises profile data and behavioural free text, while limited payment, security, dispute, and append-only ledger records may remain where legally necessary. You may exercise the rights listed in Article 11 of Law No. 6698 by writing to **info@mentor.com** or the postal address above.`,
   },
@@ -113,13 +113,13 @@ Bilgiler hesabı çalıştırmak, kişisel çalışma deneyimi sunmak, ilerlemey
 
 ## Sağlayıcılar, Analitik ve AI
 
-Altyapıda Neon, Cloudflare, Postmark, iyzico ve Sentry; giriş ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
+Altyapıda Neon, Cloudflare, Postmark, iyzico ve Sentry; giriş, sınırlı reklamlar ve izinli analitikte Google; AI metin işlemlerinde OpenAI; görsel konu sınıflandırmada Gemini kullanılabilir. Google Analytics yalnız açık tercih sonrasında yüklenir. AI sağlayıcılarına gönderilen içerik veri minimizasyonu ve maskeleme kurallarına tabidir; yine de kullanıcıların e-posta, telefon, kimlik veya ödeme bilgilerini sohbetlere yazmaması gerekir.
 
 ## Tercihleriniz ve Güvenlik
 
-### İsteğe bağlı reklam verisi
+### Ücretsiz kullanımda reklamlar
 
-Türkiye'deki uygun anonim ve Free okuyucular blog yazısı sonunda tek bir kişiselleştirilmemiş Google reklamı görebilir. Reklam verisi tercihi analitikten ayrıdır; eski analitik izni reklam izni sayılmaz. Tercih kabul edilmeden Google reklam etiketi yüklenmez. Google reklam iletimi için IP adresini, sahte trafik ve kötüye kullanım tespiti için çerez ve tarayıcı depolamasını kullanabilir, veriyi yurt dışında işleyebilir. Ayrıntılar: [Google'ın veri kullanımı](https://policies.google.com/technologies/partner-sites). Premium ve STAFF reklamsızdır. Reddetmek okumayı veya uygulamaya erişimi engellemez. [Çerez tercihleri](/cerez-tercihleri) üzerinden izin geri alındığında aktif reklam kaldırılır ve sayfa yeniden yüklenerek reklam etiketinin çalışması sonlandırılır.
+Türkiye'deki uygun anonim ve Free ziyaretçilere blog yazısı sonunda tek, kişiselleştirilmemiş Google reklamı otomatik gösterilebilir. Premium ve STAFF reklamsızdır. Analitik tercihi reklam gösterimini değiştirmez; Google Analytics yalnız ayrı kabul sonrasında yüklenir. Kişiselleştirilmiş reklam ve davranışsal hedefleme kapalıdır. Google, reklamı iletmek için IP adresini; programatik sınırlı reklam açıkken sahte trafik ve kötüye kullanım tespiti için çerez ve yerel depolamayı kullanabilir ve yurt dışında veri işleyebilir. Google'ın [veri kullanımı açıklaması](https://policies.google.com/technologies/partner-sites) bu işlemeyi açıklar. Profilde veya içerikte daha sıkı çocuk/genç reklam koruması uygulanır; profil, sınav sonucu ve AI görüşmeleri reklam sağlayıcısına gönderilmez. Analitik tercihi [çerez tercihleri](/cerez-tercihleri) ekranında değiştirilebilir; analitiği reddetmek reklamları kaldırmaz.
 
 Analitik tercihi çerez tercihleri ekranından değiştirilebilir. AI hafızası ve insan koçluğu paylaşımı kendi ekranlarından yönetilir. Hesap ayarlarından verilerinize erişebilir, düzeltme isteyebilir veya hesap silme sürecini başlatabilirsiniz. Sorular ve hak talepleri **info@mentor.com** adresine gönderilebilir.`,
     en: `## Scope
@@ -138,9 +138,9 @@ PuhuKoç may use Neon, Cloudflare, Postmark, iyzico, Sentry, Google, OpenAI, and
 
 ## Controls
 
-### Optional advertising data
+### Ads in free access
 
-Eligible anonymous and Free readers in Turkey may see one non-personalized Google ad at the end of a blog article. Advertising choices are independent of analytics, including older analytics permission. The Google ad tag is not loaded before acceptance. Google may use IP addresses for delivery and cookies and browser storage for invalid traffic and abuse detection, and process data abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). Premium and STAFF stay ad-free; rejecting does not block reading or access. Withdrawing permission in [cookie preferences](/en/cookie-preferences) removes active ads and reloads the page to stop the ad tag.
+Eligible anonymous and Free visitors in Turkey may automatically see one non-personalized Google ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; Google Analytics loads only after separate acceptance. Personalized ads and behavioral targeting are disabled. Google may use IP addresses for delivery and, when programmatic limited ads are enabled, cookies and local storage for invalid traffic and abuse detection, with processing abroad. See [Google's data-use explanation](https://policies.google.com/technologies/partner-sites). The stricter child/teen protection of the profile and article is applied; profiles, exam results and AI conversations are not sent to the ad provider. Analytics choices can be changed in [cookie preferences](/en/cookie-preferences); rejecting analytics does not remove ads.
 
 Analytics choices can be changed on the cookie-preferences page. AI memory and human-coaching sharing have their own controls. Account settings provide access, correction, and deletion paths. Questions may be sent to **info@mentor.com**.`,
   },
@@ -156,6 +156,8 @@ Kullanıcı doğru bilgi vermek, giriş bilgilerini korumak ve hesabındaki faal
 ## Hizmetin Kullanımı
 
 PuhuKoç bir sınava hazırlık yoldaşlığı ve çalışma organizasyonu hizmetidir; başarı, yerleşme veya belirli bir sonuç garanti etmez. Kullanıcı hukuka aykırı, yanıltıcı, taciz edici, başkasının hakkını ihlal eden içerik paylaşamaz; hizmeti otomatik kötüye kullanamaz, güvenliğini aşamaz veya başka kullanıcıların verilerine erişmeye çalışamaz. Topluluk ve koçluk alanlarında saygılı iletişim esastır.
+
+Ücretsiz kullanım reklamlarla desteklenir. Bu aşamada Türkiye'deki uygun anonim ve Free ziyaretçilere blog yazısı sonunda tek bir kişiselleştirilmemiş reklam otomatik gösterilebilir. Premium ve STAFF reklamsızdır. Analitik tercihi reklam gösterimini değiştirmez; veri işleme ayrıntıları Gizlilik Politikası ve KVKK Aydınlatma Metni'nde açıklanır.
 
 ## AI ve Resmî Bilgi Sınırları
 
@@ -179,6 +181,8 @@ These Terms are between service provider Yunus Emre Erkesikbaş and the PuhuKoç
 ## Account and Acceptable Use
 
 Users must provide accurate information, protect credentials, and remain responsible for account activity. Accounts are not transferable. Users may not submit unlawful, deceptive, harassing, or rights-infringing content; automate abuse; bypass security; or access another person's data.
+
+Free access is supported by advertising. At this stage, eligible anonymous and Free visitors in Turkey may automatically see one non-personalized ad at the end of a blog article. Premium and STAFF stay ad-free. Analytics choices do not change ad delivery; processing details are explained in the Privacy Policy and KVKK Notice.
 
 ## Nature of the Service and AI
 

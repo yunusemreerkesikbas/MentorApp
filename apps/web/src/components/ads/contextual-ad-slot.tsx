@@ -4,7 +4,6 @@ import { useEffect, useId, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { AdPlacementId, type ExamType } from "@mentor/types";
 import { useAuth } from "@/lib/auth-context";
-import { useAdvertisingConsent } from "@/lib/advertising-consent";
 import { fetchAdPlacement, fetchPublicAdPlacement } from "@/lib/ads";
 import { onSubscriptionChanged } from "@/lib/subscription-events";
 import { configureLimitedPrivacy, withGpt, type GptEvent, type GptSlot } from "@/lib/google-publisher-tag";
@@ -18,7 +17,6 @@ export function ContextualAdSlot({
   examType,
 }: { placementId?: AdPlacementId; contentSlug: string; examType?: ExamType }) {
   const { status, user } = useAuth();
-  const { consent } = useAdvertisingConsent();
   const t = useTranslations("ads");
   const reactId = useId();
   const slotId = `mentor-ad-${reactId.replaceAll(":", "")}`;
@@ -38,7 +36,7 @@ export function ContextualAdSlot({
   }, []);
 
   useEffect(() => {
-    if (status === "loading" || consent !== "accepted") return;
+    if (status === "loading") return;
     let cancelled = false;
     let slot: GptSlot | null = null;
     let removeRenderListener: (() => void) | null = null;
@@ -85,10 +83,10 @@ export function ContextualAdSlot({
       })
       .catch(() => { if (!cancelled) { stop(); setRenderState("empty"); } });
     return stop;
-  }, [contentSlug, examType, placementId, slotId, status, user, consent, revision]);
+  }, [contentSlug, examType, placementId, slotId, status, user, revision]);
 
   return (
-    <aside ref={containerRef} aria-label={t("label")} className={status === "loading" || consent !== "accepted" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
+    <aside ref={containerRef} aria-label={t("label")} className={status === "loading" || renderState === "empty" ? "hidden" : "my-4 flex flex-col items-center"}>
       <span className="mb-1 text-micro uppercase tracking-widest text-[var(--color-secondary)]">{t("label")}</span>
       {/* Reserve the maximum declared Google inventory height (320x100 / 728x90). */}
       <div id={slotId} className="min-h-[100px] max-w-full overflow-hidden" />

@@ -131,22 +131,27 @@ Provider references: [OTP API](https://www.netgsm.com.tr/dokuman/#otp-sms),
   `https://puhukoc.com/ads.txt` after domain/DNS/hosting setup and Google's Authorized/Ready status.
   Match the seller ID to the connected demand account. Keep production ad flags off meanwhile.
 - In **Admin → Global settings → Network settings**, keep Programmatic limited ads off until
-  independent advertising consent and the updated privacy/foreign-transfer copy have passed
-  review. Then enable it for contextual Google demand in this pilot: limited ads disables
+  the actual data processing, lawful basis for automatic serving in Turkey and updated
+  privacy/foreign-transfer copy have passed review. This source change is not a consent signal
+  or legal approval. If the configured processing requires consent, do not activate automatic
+  programmatic delivery without a reviewed alternative. After review, enable contextual Google
+  demand for this pilot: limited ads disables
   personalization but programmatic mode may use IVT-only cookies and local storage. Block adult,
   gambling, dating, alcohol/tobacco, violent and other age-inappropriate categories; apply child
   treatment to LGS inventory.
-- The web loads Google's limited-ads GPT URL only after both **advertising acceptance** and backend
-  eligibility, when the article end approaches the viewport. Existing analytics choices are never
-  reused. Rejection preserves access; withdrawal destroys slots and reloads the document, including
-  cross-tab withdrawal. Account changes and subscription reads recheck eligibility.
+- The web automatically loads Google's limited-ads GPT URL after backend eligibility, when the
+  article end approaches the viewport. There is no visitor advertising accept/reject switch.
+  Optional analytics is still opt-in; rejecting it does not disable ads or grant ad-free access.
+  The retired advertising choice is not read, rewritten or promoted to consent. Account changes
+  and subscription reads recheck eligibility; Premium/STAFF remove existing slots.
   `ads.display.allowed_countries` defaults to `TR` (uppercase comma-separated country codes);
   empty allowlist or unknown `cf-ipcountry` denies display. Ensure Cloudflare overwrites country
   headers and the API origin cannot bypass that trusted edge. EEA/UK/Switzerland stays
   off until a compatible CMP and legal review exist. Update privacy/cookie/foreign-transfer copy
   before rollout; limited ads is not synonymous with “no data processing.”
-- Staging: use the official test article inventory above; check mobile/desktop, unknown/rejected/
-  accepted consent, separate analytics permission, withdrawal, login/account switch, Free→Premium,
+- Rehearsal: use the official test article inventory above in an isolated environment; check
+  mobile/desktop, absent/rejected/accepted legacy advertising values, optional analytics choices,
+  automatic display, login/account switch, Free→Premium,
   no-fill and ad-blocking. Local browser suites stub GPT and do not prove a real Google fill.
 - Production gate: require account/site approval, correct ads.txt, separate production inventory,
   connected demand, policy/category and privacy review, full CI, and a restricted production smoke

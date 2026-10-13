@@ -3,7 +3,6 @@
 import Script from "next/script";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
 import { ANALYTICS_CONSENT_KEY } from "./analytics";
-import { AdvertisingConsentProvider } from "./advertising-consent";
 import { CookieConsentBanner } from "@/components/cookie-consent-banner";
 
 type Consent = "accepted" | "rejected" | null;
@@ -91,7 +90,6 @@ export function AnalyticsConsentProvider({ children, nonce }: { children: ReactN
 
   return (
     <ConsentContext.Provider value={{ consent, accept, reject }}>
-      <AdvertisingConsentProvider>
       {children}
       {measurementId && consent === "accepted" && (
         <Script
@@ -103,7 +101,6 @@ export function AnalyticsConsentProvider({ children, nonce }: { children: ReactN
         />
       )}
       <CookieConsentBanner analytics={{ consent, accept, reject }} analyticsHydrated={hydrated} analyticsEnabled={Boolean(measurementId)} />
-      </AdvertisingConsentProvider>
     </ConsentContext.Provider>
   );
 }

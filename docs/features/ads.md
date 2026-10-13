@@ -4,9 +4,9 @@
 
 - Pilot: one contextual Google limited ad at the end of `/blog/[slug]` for anonymous and Free
   readers in Turkey, across published KPSS/YKS/LGS articles. Premium and STAFF stay ad-free.
-- Backend eligibility AND independent advertising acceptance are required before GPT loads.
-  Old analytics permission is not advertising permission. Unknown/rejected choices leave reading
-  available without loading Google. Cookie preferences manage both categories separately.
+- Backend eligibility controls automatic display for anonymous/Free readers. There is no visitor
+  advertising accept/reject switch. Optional analytics remains separately opt-in; rejecting it
+  does not disable ads. Cookie preferences disclose ad processing without presenting ad permission.
 - Notebook/Vision Board ads and their policy evaluation are deferred. Sponsor placements,
   one-time cosmetic purchases and affiliate/institutional pilots have no new sales infrastructure.
 - Existing rewarded development/test code remains; production stays fail-closed without server
@@ -46,26 +46,24 @@ environment-backed: `GAM_KNOWLEDGE_ARTICLE_END_AD_UNIT`, `GAM_DASHBOARD_REWARDED
 No new provider or database table is added. Published article validation and the stricter
 profile/content CHILD or TEEN treatment are preserved.
 
-The web stores the explicit choice in `mentor.advertising-consent.v1`; analytics keeps its existing
-key. No consent migration occurs. Withdrawal destroys slots and reloads the entire document;
-cross-tab storage changes also revoke active ads. If browser storage refuses a withdrawal write,
-the current document stops all slots/queued work and shows a retry error; it avoids reloading into
-the stale saved acceptance until the rejection can be persisted. Ad policy and GPT code are deferred
-until the article end approaches the viewport, with space reserved for declared inventory heights. No-fill,
-provider errors or blocking preserve the article. Auth changes and subscription refresh signals
-invalidate policy, cancel pending callbacks and remove the old slot before eligibility is reread.
+The retired `mentor.advertising-consent.v1` value is neither read nor rewritten and is never
+interpreted as data consent. Google policy and GPT code remain deferred until the article end
+approaches the viewport, with space reserved for declared inventory heights. No-fill, provider
+errors or blocking preserve the article. Auth changes and subscription refresh signals invalidate
+policy, cancel pending callbacks and remove the old slot before eligibility is reread.
 
 Set web-server `GOOGLE_ADS_PUBLISHER_ID` to the real Google seller ID to serve `/ads.txt`. Blank
 returns 404, malformed values fail rather than publishing fake sellers. `puhukoc.com` is the
-intended domain, not yet purchased as of 2026-10-09. Domain registration, Google account selection,
+purchased domain; live DNS/hosting setup remains pending. Google account selection,
 AdSense/site approval, actual Google demand connected in Ad Manager, production inventory and
 privacy/policy review remain external prerequisites. Ad Manager account creation alone is not a
 revenue integration. Disable Auto ads to keep this single placement.
 
 GPT uses the limited URL and `limitedAds: true` before display. **Programmatic limited ads** stays
-off until preference controls and legal review are complete; then enable it for Google contextual
+off until the actual data processing, lawful basis for automatic serving in Turkey and
+international transfers have been reviewed; then enable it for Google contextual
 demand. It disables personalization but may use IVT-only cookies/local storage. Production flags
-stay off until staging official inventory, full CI and a restricted real production impression /
+stay off until an isolated rehearsal with official inventory, full CI and a restricted real production impression /
 revenue report have been verified. The detailed sequence and rollback are in
 [`integrations.md`](../core/integrations.md#google-ad-manager-web-v1).
 
@@ -79,6 +77,30 @@ real eligible impressions appearing in reporting and zero Google requests for ex
 Low traffic cannot establish revenue sufficiency. Keep passive per-user ad logs out of Mentor DB.
 
 ## Geliştirmeler (timeline)
+
+- **2026-10-13 · Automatic Free blog ads.** Removed the advertising opt-in provider, banner
+  choices, storage guards and withdrawal flow. Backend-eligible anonymous/Free readers now request
+  the single limited ad automatically near the article end, regardless of optional analytics.
+  Premium/STAFF, country/content checks, CHILD/TEEN protections and lifecycle cancellation remain.
+  TR/EN cookie and legal copy now disclose ads rather than offering ad-free access by rejection.
+  Usage: configure approved inventory and follow the existing rollout gates; production flags stay
+  off. Gotchas: this is not user consent, legal certification or cookie-free programmatic demand;
+  Ad Manager controls IVT storage network-wide. Do not enable automatic programmatic delivery
+  before documenting an appropriate legal basis; if consent is required for the configured
+  processing, use a reviewed alternative rather than silently enabling it. No sponsor integration
+  or fake fallback revenue was added. Related: `components/ads/*`, cookie components,
+  `analytics-consent.tsx`, `google-publisher-tag{,.spec}.ts`, `messages/{tr,en}.json`, `legal.ts`,
+  `e2e/blog-ads.spec.ts`, `docs/core/integrations.md`.
+  Verification: 33 relevant web unit tests and 31 existing API ad unit tests passed; 26 automatic
+  ad browser cases and 8 compatibility cases passed on mobile/desktop Chrome with stubbed GPT.
+  After the analytics fixture changed, all 6 affected browser cases passed again. Changed-file
+  lint, translation-key parity and a focused TypeScript check of changed files/dependencies passed.
+  Browser tests used the local development server, not a production build or live Google demand.
+  The first isolated-server attempt hit an existing Next dev lock; the running user server was
+  reused without stopping it. Parallel dev compilation then delayed assets beyond test deadlines;
+  trace evidence identified that delay, and sequential local runs passed. Full web typecheck remains
+  blocked by a stale generated `coach-application/page.js` reference and the pre-existing missing
+  `hasCoach` field in `invite-lock.spec.ts`. Full CI/build and live/legal rollout remain pending.
 
 - **2026-10-10 · Release checks and concurrent reward retries.** Restored the dashboard
   performance gate by deferring the notebook client's initial import; all eight budget checks
