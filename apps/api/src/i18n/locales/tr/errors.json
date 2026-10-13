@@ -14,6 +14,8 @@
   "AUTH_REAUTHENTICATION_REQUIRED": "Bu işlem için yeniden giriş yapman gerekiyor.",
   "AUTH_INVALID_CREDENTIALS": "E-posta veya şifre hatalı.",
   "AUTH_EMAIL_IN_USE": "Bu e-posta adresiyle bir hesap zaten var.",
+  "AUTH_SIGNUP_CLOSED": "Yeni kayıtlar şu anda kapalı. Mevcut hesabınla giriş yapabilirsin.",
+  "AUTH_PILOT_INVITATION_REQUIRED": "Şu anda davetli bir grupla ilerliyoruz. Kayıt için davetli e-posta adresini kullanabilirsin.",
   "AUTH_USERNAME_IN_USE": "Bu kullanıcı adı zaten alınmış.",
   "AUTH_TOKEN_INVALID": "Bu bağlantı geçersiz. Yeniden talep etmen yeterli.",
   "AUTH_TOKEN_EXPIRED": "Bu bağlantının süresi doldu. Yeniden talep etmen yeterli.",

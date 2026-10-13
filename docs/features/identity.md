@@ -97,6 +97,33 @@ pnpm --filter @mentor/web dev      # /kayit → /panel akışı; verify/reset li
 
 ## Geliştirmeler (timeline)
 
+### 2026-10-13 · Invited pilot registration
+
+- Password and Google account creation share an API admission policy. `signup.enabled=false`
+  now actually stops new accounts; `signup.pilot.enabled=true` requires an exact invited email.
+  Empty lists reject everyone. Defaults retain public registration until operators explicitly
+  enable the pilot. Existing login, linking, CAPTCHA, verified Google identity and legal consent
+  checks keep their existing behavior; admission grants no new roles, subscription or AI rights.
+- The private comma-separated `PILOT_INVITED_EMAILS` API environment setting uses shared email
+  validation/trim/lowercase rules, rejects malformed or duplicate entries, and never enters the
+  audited/public config registry. No wildcard, domain, plus-alias or dotted-address expansion.
+  Error responses and OAuth redirects carry generic localized TR/EN copy, never the list.
+- Usage: close `signup.enabled`; populate the private API environment and restart the API;
+  enable `signup.pilot.enabled` and set `signup.pilot.max_invited_emails` (default/max 50; start
+  with the chosen cohort); then reopen `signup.enabled`. Verify invited/uninvited password and
+  Google flows. A blank list, zero capacity with a nonempty list, or a list larger than the cap
+  admits nobody. Correct the list/cap rather than silently selecting its first entries.
+- Gotchas: the cap limits invitation-list size, not historical account count. Removing an email
+  affects future signup, not existing accounts; use existing suspension/revocation tools when
+  withdrawing account access. List edits require API restart. Flag caching is process-local:
+  this pilot assumes one API instance; coordinate restarts if multiple instances exist.
+  Reopening public intake requires explicitly disabling pilot mode and enabling signup.
+- Related: `application/signup-admission.ts`, password/Google auth services, `config/env.validation.ts`,
+  `config/pilot-invited-emails.ts`, config catalog, error locales, `.env.example`, `render.yaml`,
+  unit/HTTP admission regressions and `apps/web/e2e/pilot-signup.spec.ts`. No migration, new
+  endpoint, production activation, provider credential, DNS or billing change is included.
+
+
 - **2026-10-10 · Auth lifecycle setup budget follows measured cold startup.** The identity HTTP
   suites give only `beforeAll` the existing 90-second full-app setup allowance. A diagnostic
   measured AppModule loading at 38.217 seconds, Nest compilation at 0.355 seconds and app

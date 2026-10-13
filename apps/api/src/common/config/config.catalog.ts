@@ -368,6 +368,16 @@ export const CONFIG_CATALOG = {
     true,
     "Registration kill-switch — disable new sign-ups.",
   ),
+  "signup.pilot.enabled": flag(
+    false,
+    "Require an exact invited-email match for new password and Google accounts. The private list lives in API environment settings.",
+  ),
+  "signup.pilot.max_invited_emails": identityCount(
+    50,
+    50,
+    "Maximum invitation-list size for the pilot. Oversized lists close admission until corrected; this is not a lifetime account quota.",
+    true,
+  ),
   "coaching.preference_simulation.enabled": flag(
     false,
     "Runtime gate for the free YKS 3D campus and preference comparison beta.",
@@ -937,6 +947,7 @@ export const FeatureFlag = {
   FORUM_COACH_BRIDGE_ENABLED: "forum.coach_bridge.enabled",
   GOOGLE_OAUTH_ENABLED: "identity.google_oauth.enabled",
   SIGNUP_ENABLED: "signup.enabled",
+  SIGNUP_PILOT_ENABLED: "signup.pilot.enabled",
   PREFERENCE_SIMULATION_ENABLED: "coaching.preference_simulation.enabled",
   STUDY_ROOMS_ENABLED: "coaching.study_rooms.enabled",
   MENTORSHIP_ENABLED: "mentorship.enabled",
